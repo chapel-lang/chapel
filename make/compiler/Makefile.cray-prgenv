@@ -67,8 +67,12 @@ SPECIALIZE_CFLAGS =
 export PE_PKGCONFIG_PRODUCTS := PE_CHAPEL:$(PE_PKGCONFIG_PRODUCTS)
 export PE_CHAPEL_MODULE_NAME := chapel
 
-# ugni and gasnet-{aries, gemini} require pmi and ugni
+# ugni, ofi-gni and gasnet-{aries, gemini} require pmi and ugni
 ifeq ($(CHPL_MAKE_COMM), ugni)
+export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
+endif
+ifeq ($(CHPL_MAKE_COMM), ofi)
+# Don't need to add ugni, because it will be added by libfabric
 export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
 endif
 ifeq ($(CHPL_MAKE_COMM), gasnet)

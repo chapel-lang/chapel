@@ -282,10 +282,11 @@ EXE_SUFFIX =
 
 
 #
-# include compiler- and platform-specific settings
+# include chplenv-specific settings
 #
 -include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_COMPILER)
 -include $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
 -include $(CHPL_MAKE_HOME)/make/tasks/Makefile.$(CHPL_MAKE_TASKS)
+-include $(CHPL_MAKE_HOME)/make/comm/Makefile.$(CHPL_MAKE_COMM)
 
 .SECONDARY: $(OBJ_SUBDIR_TIMESTAMP)
