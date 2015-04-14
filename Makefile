@@ -115,7 +115,7 @@ module-docs: chpldoc
 
 docs: module-docs
 
-chplvis: FORCE
+chplvis: compiler FORCE # third-party-fltk
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
@@ -140,6 +140,7 @@ clobber: FORCE
 	cd modules && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
+	cd tools/chplvis && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
 
