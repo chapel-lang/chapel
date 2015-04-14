@@ -183,7 +183,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     
     // Process the line
     linedata = strchr(line, ':');
-    if (linedata) {
+    if (linedata ) {
       if (sscanf (linedata, ": %ld.%ld%ln", &sec, &usec, &nextCh) != 2) {
 	printf ("Can't read time from '%s'\n", linedata);
       }
@@ -250,6 +250,12 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  newEvent = new E_fork(sec, usec, nid, rnid, line[1] == '_');
 	}
 	break;
+
+      case 'm':  // Tag in the data
+	printf ("-%ld-", sec);
+	nextCh++;
+	newEvent = new E_tag(sec,&linedata[nextCh]);
+	break;
       
       default:
 	/* Do nothing */ ;
@@ -258,17 +264,43 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     //  Add the newEvent to the list
     if (newEvent) {
       if (theEvents.empty()) {
+	printf ("B");
 	theEvents.push_front(newEvent);
       } else {
-	while (itr != theEvents.end() && *itr < newEvent) itr++;
-	theEvents.insert(itr, newEvent);
+	if (itr == theEvents.end()) {
+	  printf("E");
+	  theEvents.insert(itr, newEvent);
+	} else {
+	  while (itr != theEvents.end()
+		 && (*itr)->Ekind() != Ev_tag 
+	         && *itr < newEvent)
+	    itr++;
+	  if (itr != theEvents.end() && (*itr)->Ekind() == Ev_tag) {
+	    if (newEvent->Ekind() != Ev_tag) {
+	      printf("+");
+	      theEvents.insert(itr, newEvent);
+	    } else {
+	      if ((*itr)->tsec() == newEvent->tsec()) {
+		printf("x");
+		itr++;  // Move past the tag.
+	      } else {
+		fprintf (stderr, "Data Error: tag missmatch. %ld vs %ld\n",
+			 (*itr)->tsec(), newEvent->tsec());
+	      }
+	    }
+	  } else {
+	    printf(".");
+	    theEvents.insert(itr, newEvent);
+	  }
+	}
       }
     }
-      
   }
+  printf ("\n");
+
   if (nErrs) fprintf(stderr, "%d errors in data file '%s'.\n", nErrs, filename);
-
+  
   if ( !feof(data) ) return 0;
-
+  
   return 1;
 }

@@ -35,11 +35,17 @@ module VisualDebug
 
   extern proc chpl_vdebug_start ( rootname: c_string, time:real);
   extern proc chpl_vdebug_stop ();
+  extern proc chpl_vdebug_tag ( tagname: c_string );
 
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();
     coforall l in Locales do
       on l do chpl_vdebug_start (rootname.c_str(), now);
+  }
+
+  proc tagVdebug ( tagname : string ) {
+    coforall l in Locales do
+      on l do chpl_vdebug_tag (tagname.c_str());
   }
 
   proc stopVdebug () {

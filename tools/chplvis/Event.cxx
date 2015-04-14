@@ -28,5 +28,6 @@ bool operator < (Event &lh, Event &rh)
 
 bool operator == (Event &lh, Event &rh)
 {
+  printf("=");
   return lh.sec == rh.sec && lh.usec == rh.usec;
 }

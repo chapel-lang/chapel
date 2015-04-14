@@ -144,6 +144,10 @@ void ViewField::processData()
 	  if (++theLocales[fp->dstId()].numTasks > maxTasks)
 	    maxTasks = theLocales[fp->dstId()].numTasks;
 	}
+	break;
+      case Ev_tag:
+	printf ("Should be processing a tag.\n");
+	break;
     }
   }
   Info->setMaxes(maxTasks, maxComms);

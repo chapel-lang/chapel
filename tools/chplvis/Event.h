@@ -17,10 +17,12 @@
  * limitations under the License.
  */
 
+#include <string>
+
 #ifndef _EVENT_H_
 #define _EVENT_H_
 
-enum Event_kind {Ev_task, Ev_comm, Ev_fork};
+enum Event_kind {Ev_task, Ev_comm, Ev_fork, Ev_tag};
 
 class Event {  // Base class for events .....
 
@@ -86,6 +88,19 @@ class E_fork : public Event {
      bool fast() { return isFast; }
 
      virtual int Ekind() {return Ev_fork;}
+
+};
+
+class E_tag : public Event {
+
+   private:
+     std::string tag_name;
+
+   public:
+     E_tag (long tagno, char *tag) : Event(tagno,0) // sec is tag no!
+       { tag_name = tag; }
+
+     virtual int Ekind() {return Ev_tag;}
 
 };
 

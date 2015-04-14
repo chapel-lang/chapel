@@ -68,8 +68,8 @@ extern int chpl_dprintf(int fd, const char * format, ...)
 extern void chpl_vdebug_start(const char *, double now); 
 //  stop collecting data
 extern void chpl_vdebug_stop(void);
-//  Mark the data with a character tag
-extern void chpl_vdebug_mark(const char *);
+//  Tag the data with a character tag
+extern void chpl_vdebug_tag(const char *);
 
 // End Visual Debug support
 

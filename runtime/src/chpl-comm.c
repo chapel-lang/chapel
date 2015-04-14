@@ -162,6 +162,7 @@ static int chpl_make_vdebug_file (const char *rootname, int namelen) {
 }
 
 void chpl_vdebug_start(const char *fileroot, double now) {
+  chpl_vdebug = 0;
   if (chpl_vdebug_fd == -1) {
 
     // Initial call, open file and write initialization information
@@ -170,7 +171,7 @@ void chpl_vdebug_start(const char *fileroot, double now) {
     int  temp;
 
     // Get the root of the file name.
-    rootname = (fileroot == NULL) ? ".Vdebug" : fileroot; 
+    rootname = (fileroot == NULL || fileroot[0] == 0) ? ".Vdebug" : fileroot; 
     namelen = strlen(rootname)+3;
     temp =  chpl_numNodes;
     while (temp > 1) { 
@@ -194,10 +195,12 @@ void chpl_vdebug_stop(void) {
   chpl_vdebug = 0;
 }
 
-extern void chpl_vdebug_mark(const char *str)
+void chpl_vdebug_tag(const char *str)
 {
-  if (chpl_vdebug_fd == -1) {
-    chpl_dprintf (chpl_vdebug_fd, "mark: %s\n", str);
+  static int tag_no = 0;  // A unique tag number for sorting tags ...
+
+  if (chpl_vdebug) {
+    chpl_dprintf (chpl_vdebug_fd, "mark-tag: %d.0 %s\n", ++tag_no, str);
   }  
 }
 
