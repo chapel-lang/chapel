@@ -83,8 +83,7 @@ checkControlFlow(Expr* expr, const char* context) {
       if (call->isPrimitive(PRIM_RETURN)) {
         USR_FATAL_CONT(call, "return is not allowed in %s", context);
       } else if (call->isPrimitive(PRIM_YIELD)) {
-        if (!strcmp(context, "begin statement") ||
-            !strcmp(context, "yield statement"))
+        if (!strcmp(context, "begin statement"))
           USR_FATAL_CONT(call, "yield is not allowed in %s", context);
       }
     } else if (GotoStmt* gs = toGotoStmt(ast1)) {

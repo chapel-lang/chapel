@@ -200,8 +200,13 @@ def LauncherTimeoutArgs(seconds):
 #
 
 # Escape all special characters
-def ShellEscape(str):
-    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
+def ShellEscape(arg):
+    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', arg)
+
+# Escape all special characters but leave spaces alone
+def ShellEscapeCommand(arg):
+    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{}])', r'\\\1', arg)
+
 
 # Grabs the start and end of the output and replaces non-printable chars with ~
 def trim_output(output):
@@ -340,14 +345,16 @@ def which(program):
 
 
 # print (compopts: XX, execopts: XX) for later decoding of failed tests
-def printTestVariation(compoptsnum, execoptsnum=0):
-    if compoptsnum==0 and execoptsnum==0:
+def printTestVariation(compoptsnum, compoptslist,
+                       execoptsnum=0, execoptslist=[] ):
+    if ( (compoptsnum==0 or len(compoptslist) == 1) and
+         (execoptsnum==0 or len(execoptslist) == 1) ):
         return;
 
     sys.stdout.write(' (')
-    if compoptsnum != 0:
+    if compoptsnum != 0 and len(compoptslist) > 1:
         sys.stdout.write('compopts: %d'%(compoptsnum))
-    if execoptsnum != 0:
+    if execoptsnum != 0 and len(execoptslist) > 1:
         if compoptsnum != 0:
             sys.stdout.write(', ')
         sys.stdout.write('execopts: %d'%(execoptsnum))
@@ -478,6 +485,7 @@ if not os.access(compiler,os.R_OK|os.X_OK):
     Fatal('Cannot execute compiler \''+compiler+'\'')
 
 is_chpldoc = compiler.endswith('chpldoc')
+is_chpl_ipe = compiler.endswith('chpl-ipe')
 
 path_to_compiler=os.path.abspath(os.path.dirname(compiler))
 # Assume chpl binary is 2 directory levels down in the base installation
@@ -505,7 +513,8 @@ utildir = os.path.realpath(utildir)
 # We open the compileline inside of CHPL_HOME rather than CHPL_TEST_UTIL_DIR on
 # purpose. compileline will not work correctly in some configurations when run
 # outside of its directory tree.
-p = subprocess.Popen([os.path.join(chpl_home,'util','config','compileline'), '--compile'],
+p = subprocess.Popen([os.path.join(chpl_home,'util','config','compileline'),
+                        '--compile'],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 c_compiler = p.communicate()[0].rstrip()
 if p.returncode != 0:
@@ -948,7 +957,7 @@ for testname in testsrc:
         timer = None
     futuretest=''
 
-    if test_is_chpldoc:
+    if test_is_chpldoc or is_chpl_ipe:
         executebin = False
     else:
         executebin = execute
@@ -1071,7 +1080,12 @@ for testname in testsrc:
                 do_not_test=True
                 break
             else:
-                redirectin=f
+                # chpl-ipe only has a "compile" step, so any stdin needs to be
+                # passed to compiler.
+                if is_chpl_ipe:
+                    compstdin = f
+                else:
+                    redirectin = f
 
         if suffix==futureSuffix:
             testfuturesfile=True
@@ -1178,6 +1192,7 @@ for testname in testsrc:
 
     clist = list()
     curFileTestStart = time.time()
+
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
@@ -1223,6 +1238,12 @@ for testname in testsrc:
         args = []
         if test_is_chpldoc:
             args += globalChpldocOpts + shlex.split(compopts)
+        elif is_chpl_ipe:
+            # No arguments work for chpl-ipe as of 2015-04-08. (thomasvandoren)
+            # TODO: When chpl-ipe does support command line flags, decide if it
+            #       will use COMPOPTS/.compopts or some other filename.
+            #       (thomasvandoren, 2015-04-08)
+            pass
         else:
             args += ['-o', execname] + envCompopts + shlex.split(compopts)
         args += [testname]
@@ -1270,6 +1291,7 @@ for testname in testsrc:
         # remember to add the cleaner solution soon.
         #
         comptimeout = 2*timeout
+        cmd=ShellEscapeCommand(cmd);
         sys.stdout.write('[Executing compiler %s'%(cmd))
         if args:
             sys.stdout.write(' %s'%(' '.join(args)))
@@ -1287,7 +1309,7 @@ for testname in testsrc:
             if status == 222:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, test_filename))
-                printTestVariation(compoptsnum);
+                printTestVariation(compoptsnum, compoptslist);
                 sys.stdout.write(']\n')
                 cleanup(execname)
                 cleanup(printpassesfile)
@@ -1302,7 +1324,7 @@ for testname in testsrc:
             except ReadTimeoutException:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, test_filename))
-                printTestVariation(compoptsnum);
+                printTestVariation(compoptsnum, compoptslist);
                 sys.stdout.write(']\n')
                 KillProc(p, killtimeout)
                 cleanup(execname)
@@ -1319,6 +1341,14 @@ for testname in testsrc:
         print('[Elapsed compilation time for "{0}" - {1:.3f} '
             'seconds]'.format(test_name, elapsedCompTime))
 
+        # remove some_file: output from C compilers
+        if is_c_test:
+          for arg in args:
+            if arg.endswith(".c"):
+              # remove lines like
+              # somefile.c:
+              # that some C compilers emit when compiling multiple files
+              output = output.replace(arg + ":\n", "");
 
         if (status!=0 or not executebin):
             # Save original output
@@ -1384,7 +1414,7 @@ for testname in testsrc:
                 sys.stdout.write('%s[Error '%(futuretest))
             sys.stdout.write('matching compiler output for %s/%s'%
                                  (localdir, test_filename))
-            printTestVariation(compoptsnum);
+            printTestVariation(compoptsnum, compoptslist);
             sys.stdout.write(']\n')
 
             if (result != 0 and futuretest != ''):
@@ -1398,7 +1428,7 @@ for testname in testsrc:
                         # bad file doesn't match, which is bad
                         sys.stdout.write('[Error matching .bad file ')
                     sys.stdout.write('for %s/%s'%(localdir, test_filename))
-                    printTestVariation(compoptsnum);
+                    printTestVariation(compoptsnum, compoptslist);
                     sys.stdout.write(']\n');
 
             cleanup(execname)
@@ -1486,7 +1516,7 @@ for testname in testsrc:
                     sys.stdout.write('[Success finding compiler performance keys for %s/%s]\n'% (localdir, test_filename))
                 else:
                     sys.stdout.write('[Error finding compiler performance keys for %s/%s.]\n'% (localdir, test_filename))
-                    printTestVariation(compoptsnum);
+                    printTestVariation(compoptsnum, compoptslist);
                     sys.stdout.write('computePerfStats output was:\n%s\n'%(compkeysOutput))
                     sys.stdout.flush()
                     sys.stdout.write('Deleting .dat files for %s/%s because of failure to find all keys\n'%(localdir, test_filename))
@@ -1518,7 +1548,6 @@ for testname in testsrc:
             if redirectin_set_in_loop:
                 redirectin = redirectin_original_value
                 redirectin_set_in_loop = False
-
             if (len(compoptslist)==1) and (len(execoptslist)==1):
                 onlyone = True
                 execlog = get_exec_log_name(execname)
@@ -1566,7 +1595,8 @@ for testname in testsrc:
             if not os.access(execname, os.R_OK|os.X_OK):
                 sys.stdout.write('%s[Error could not locate executable %s for %s/%s'%
                                  (futuretest, execname, localdir, test_filename))
-                printTestVariation(compoptsnum, execoptsnum)
+                printTestVariation(compoptsnum, compoptslist,
+                                   execoptsnum, execoptslist)
                 sys.stdout.write(']\n')
                 break; # on to next compopts
 
@@ -1674,7 +1704,8 @@ for testname in testsrc:
                         exectimeout = True
                         sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                         (futuretest, localdir, test_filename))
-                        printTestVariation(compoptsnum, execoptsnum);
+                        printTestVariation(compoptsnum, compoptslist,
+                                           execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
                         sys.stdout.write(trim_output(output))
@@ -1698,7 +1729,8 @@ for testname in testsrc:
                         exectimeout = True
                         sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                         (futuretest, localdir, test_filename))
-                        printTestVariation(compoptsnum, execoptsnum);
+                        printTestVariation(compoptsnum, compoptslist,
+                                           execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
                         sys.stdout.write(trim_output(output))
@@ -1730,7 +1762,8 @@ for testname in testsrc:
                         exectimeout = True
                         sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                         (futuretest, localdir, test_filename))
-                        printTestVariation(compoptsnum, execoptsnum);
+                        printTestVariation(compoptsnum, compoptslist,
+                                           execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
                         KillProc(p, killtimeout)
 
@@ -1850,7 +1883,8 @@ for testname in testsrc:
                         sys.stdout.write('matching program output for %s/%s'%
                                         (localdir, test_filename))
                         if result!=0:
-                            printTestVariation(compoptsnum, execoptsnum);
+                            printTestVariation(compoptsnum, compoptslist,
+                                               execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
 
                         if (result != 0 and futuretest != ''):
@@ -1864,7 +1898,7 @@ for testname in testsrc:
                                     # bad file doesn't match, which is bad
                                     sys.stdout.write('[Error matching .bad file ')
                                 sys.stdout.write('for %s/%s'%(localdir, test_filename))
-                                printTestVariation(compoptsnum);
+                                printTestVariation(compoptsnum, compoptslist);
                                 sys.stdout.write(']\n');
 
 
@@ -1908,7 +1942,8 @@ for testname in testsrc:
                         sys.stdout.write(' matching performance keys for %s/%s'%
                                         (localdir, test_filename))
                         if status!=0:
-                            printTestVariation(compoptsnum, execoptsnum);
+                            printTestVariation(compoptsnum, compoptslist,
+                                               execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
 
                     if exectimeout or status != 0:

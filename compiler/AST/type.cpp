@@ -509,10 +509,9 @@ void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs);
   *file << this->docsDirective();
   *file << "enum ";
-  AstToText* info = new AstToText();
-  info->appendEnumDecl(this);
-  *file << info->text();
-  delete info;
+  AstToText info;
+  info.appendEnumDecl(this);
+  *file << info.text();
   *file << std::endl;
 
   // In rst mode, ensure there is an empty line between the enum signature and
