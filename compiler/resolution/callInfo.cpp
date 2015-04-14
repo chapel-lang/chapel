@@ -22,7 +22,7 @@
 #include "expr.h"
 
 
-CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
+CallInfo::CallInfo(CallExpr* icall, bool checkonly) : call(icall), scope(NULL) {
   if (SymExpr* se = toSymExpr(call->baseExpr))
     name = se->var->name;
   else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr))
@@ -50,10 +50,16 @@ CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
     Type* t = se->var->type;
-    if (t == dtUnknown)
-      USR_FATAL(call, "use of '%s' before encountering its definition, type unknown", se->var->name);
-    if (t->symbol->hasFlag(FLAG_GENERIC))
-      INT_FATAL(call, "the type of the actual argument '%s' is generic", se->var->name);
+    if (t == dtUnknown) {
+      if (checkonly) call = NULL;
+      else USR_FATAL(call, "use of '%s' before encountering its definition,"
+                           "type unknown", se->var->name);
+    }
+    if (t->symbol->hasFlag(FLAG_GENERIC)) {
+      if (checkonly) call = NULL;
+      else INT_FATAL(call, "the type of the actual argument '%s' is generic",
+                            se->var->name);
+    }
     actuals.add(se->var);
   }
 }

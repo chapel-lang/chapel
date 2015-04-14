@@ -461,12 +461,13 @@ void reorderActuals(FnSymbol* fn,
 
 
 // do we need to add some coercion from the actual to the formal?
-static bool needToAddCoercion(Type* actualType, Symbol* actualSym,
+static bool needToAddCoercion(CallExpr* call,
+                              Type* actualType, Symbol* actualSym,
                               Type* formalType, FnSymbol* fn) {
   if (actualType == formalType)
     return false;
   else
-    return canCoerce(actualType, actualSym, formalType, fn) ||
+    return canCoerce(call, actualType, actualSym, formalType, fn) ||
            isDispatchParent(actualType, formalType);
 }
 
@@ -649,7 +650,7 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
     do {
       c2 = false;
       Type* actualType = actualSym->type;
-      if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
+      if (needToAddCoercion(info->call, actualType, actualSym, formalType, fn)) {
         // addArgCoercion() updates currActual, actualSym, c2
         addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
       }
@@ -821,7 +822,7 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
     Type* actualType = actuals->v[j]->type;
     Symbol* actualSym = actuals->v[j];
     bool promotes = false;
-    if (canDispatch(actualType, actualSym, formal->type, fn, &promotes)){
+    if (canDispatch(info->call, actualType, actualSym, formal->type, fn, &promotes)){
       if (promotes) {
         promotion_wrapper_required = true;
         promoted_subs.put(formal, actualType->symbol);

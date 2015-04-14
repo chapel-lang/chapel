@@ -35,8 +35,8 @@ FnSymbol* requiresImplicitDestroy(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);
 
-bool canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes = NULL);
-bool canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn = NULL, bool* promotes = NULL, bool paramCoerce = false);
+bool canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes = NULL);
+bool canDispatch(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn = NULL, bool* promotes = NULL, bool paramCoerce = false);
 
 const char* toString(Type* type);
 const char* toString(CallInfo* info);
@@ -56,6 +56,7 @@ void      instantiateBody(FnSymbol* fn);
 void resolveFormals(FnSymbol* fn);
 void resolveBlockStmt(BlockStmt* blockStmt);
 void resolveCall(CallExpr* call);
+FnSymbol* tryResolveCall(CallExpr* call);
 void resolveFns(FnSymbol* fn);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
