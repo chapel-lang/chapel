@@ -6864,73 +6864,6 @@ computeStandardModuleSet() {
   }
 }
 
-/*
-static PrimitiveType* discoverPrimitiveParentAndCheck(Expr* storesName,
-                                               PrimitiveType* child);
-static void addPrimitiveTypeToHierarchy(PrimitiveType*       pt,
-                                Vec<PrimitiveType*>* localSeen);
-
-static void addPrimitiveTypeToHierarchy(PrimitiveType* pt) {
-  Vec<PrimitiveType*> localSeen; // types in potential cycle
-
-  return addPrimitiveTypeToHierarchy(pt, &localSeen);
-}
-static void addPrimitiveTypeToHierarchy(PrimitiveType*       pt,
-                                       Vec<PrimitiveType*>* localSeen) {
-  static Vec<PrimitiveType*> globalSeen; // classes already in hierarchy
-
-  if (localSeen->set_in(pt))
-    USR_FATAL(pt, "Primitive type hierarchy is cyclic");
-
-  if (globalSeen.set_in(pt))
-    return;
-
-  globalSeen.set_add(pt);
-
-  for_alist(expr, pt->inherits) {
-    PrimitiveType* parentType;
-    Expr* resolvedExpr = resolveExpr(expr);
-    parentType = discoverPrimitiveParentAndCheck(resolvedExpr, pt);
-
-    localSeen->set_add(pt);
-
-    addPrimitiveTypeToHierarchy(parentType, localSeen);
-
-    pt->dispatchParents.add(parentType);
-
-    // Also set the default value to the parent's default value.
-    pt->defaultValue = parentType->defaultValue;
-
-    bool inserted = parentType->dispatchChildren.add_exclusive(pt);
-
-    INT_ASSERT(inserted);
-  }
-}
-
-PrimitiveType* discoverPrimitiveParentAndCheck(Expr* storesName,
-                                               PrimitiveType* child) {
-  SymExpr* se = toSymExpr(storesName);
-
-  INT_ASSERT(se);
-
-  Symbol*            sym = se->var;
-  TypeSymbol*        ts  = toTypeSymbol(sym);
-
-  //    printf("looking up %s\n", se->unresolved);
-  if (!ts)
-    USR_FATAL(storesName, "Illegal parent primitive type");
-
-  //    printf("found it in %s\n", sym->getModule()->name);
-  PrimitiveType* pt = toPrimitiveType(ts->type);
-
-  if (!pt)
-    USR_FATAL(storesName, "Illegal parent primitive type %s", ts->name);
-
-  return pt;
-}
-
-*/
-
 
 void
 resolve() {
@@ -6952,11 +6885,6 @@ resolve() {
   unmarkDefaultedGenerics();
 
   resolveExternVarSymbols();
-
-  // Resolve the parents for type aliases.
-  //forv_Vec(PrimitiveType, pt, gPrimitiveTypes) {
-  //  addPrimitiveTypeToHierarchy(pt);
-  //}
 
   // --ipe does not build a mainModule
   if (mainModule)
