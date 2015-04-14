@@ -282,8 +282,6 @@ void Expr::prettyPrint(std::ostream *o) {
 }
 
 Expr* Expr::remove() {
-  INT_ASSERT (this != NULL);
-
   if (list) {
     if (next)
       next->prev = prev;

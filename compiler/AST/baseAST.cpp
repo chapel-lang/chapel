@@ -307,8 +307,6 @@ const char* BaseAST::stringLoc(void) const {
 
 
 ModuleSymbol* BaseAST::getModule() {
-  INT_ASSERT(this != NULL);
-
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x;
   else if (Type* x = toType(this))
@@ -324,8 +322,6 @@ ModuleSymbol* BaseAST::getModule() {
 
 
 FnSymbol* BaseAST::getFunction() {
-  INT_ASSERT(this != NULL);
-
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x->initFn;
   else if (FnSymbol* x = toFnSymbol(this))
