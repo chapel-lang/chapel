@@ -1102,7 +1102,8 @@ static bool isDestructorFormal(SymExpr* se)
 static bool isDestructorArg(SymExpr* se)
 {
   if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
-    if (parent->hasFlag(FLAG_DESTRUCTOR))
+    if (parent->hasFlag(FLAG_DESTRUCTOR) ||
+        parent->hasFlag(FLAG_AUTO_DESTROY_FN))
       if (CallExpr* call = toCallExpr(se->parentExpr))
         if (FnSymbol* fn = call->isResolved())
           if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
