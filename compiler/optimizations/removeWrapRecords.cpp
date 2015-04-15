@@ -44,7 +44,8 @@ removeWrapRecords() {
   // because code associated with accesses to the removed
   // _valueType field will remain
   //
-  if (fNoDeadCodeElimination || fNoInline || fNoCopyPropagation)
+  // I think the above comment no longer applies after PR#1387.
+  if (fNoDeadCodeElimination) // || fNoInline || fNoCopyPropagation)
     return;
  
   //
