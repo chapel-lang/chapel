@@ -252,7 +252,6 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	break;
 
       case 'm':  // Tag in the data
-	printf ("-%ld-", sec);
 	nextCh++;
 	newEvent = new E_tag(sec,&linedata[nextCh]);
 	break;
@@ -264,24 +263,20 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     //  Add the newEvent to the list
     if (newEvent) {
       if (theEvents.empty()) {
-	printf ("B");
 	theEvents.push_front(newEvent);
       } else {
 	if (itr == theEvents.end()) {
-	  printf("E");
 	  theEvents.insert(itr, newEvent);
 	} else {
 	  while (itr != theEvents.end()
 		 && (*itr)->Ekind() != Ev_tag 
-	         && *itr < newEvent)
+	         && **itr < *newEvent)
 	    itr++;
 	  if (itr != theEvents.end() && (*itr)->Ekind() == Ev_tag) {
 	    if (newEvent->Ekind() != Ev_tag) {
-	      printf("+");
 	      theEvents.insert(itr, newEvent);
 	    } else {
-	      if ((*itr)->tsec() == newEvent->tsec()) {
-		printf("x");
+	      if (**itr == *newEvent) {
 		itr++;  // Move past the tag.
 	      } else {
 		fprintf (stderr, "Data Error: tag missmatch. %ld vs %ld\n",
@@ -289,14 +284,12 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	      }
 	    }
 	  } else {
-	    printf(".");
 	    theEvents.insert(itr, newEvent);
 	  }
 	}
       }
     }
   }
-  printf ("\n");
 
   if (nErrs) fprintf(stderr, "%d errors in data file '%s'.\n", nErrs, filename);
   

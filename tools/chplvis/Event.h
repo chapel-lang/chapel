@@ -32,14 +32,14 @@ class Event {  // Base class for events .....
   public:
     Event(long esec, long eusec): sec(esec), usec(eusec) {};
 
-    friend bool operator < (Event &lh, Event &rh);
-    friend bool operator == (Event &lh, Event &rh);
-
     long tsec () { return sec; }
     long tusec () { return usec; }
 
     virtual int Ekind() = 0;
 };
+
+bool operator < (Event &lh, Event &rh);
+bool operator == (Event &lh, Event &rh);
 
 
 class  E_task : public Event {
