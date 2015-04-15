@@ -56,6 +56,11 @@ record list {
    */
   var length: int;
 
+  /* list destructor
+
+     It simply calls the destroy() method. */
+  proc ~list() { destroy(); }
+
   /*
     Iterate over the list, yielding each element.
 
