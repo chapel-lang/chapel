@@ -69,3 +69,14 @@ COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 endif
+
+# Fixups for XE and XT flags
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM), cray-xe)
+# put XE cross-compilation pathscale-specific settings here
+XE_GEN_CFLAGS = -OPT:Olimit=0
+endif
+
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM), cray-xt)
+# put XT cross-compilation pathscale-specific settings here
+XT_GEN_CFLAGS = -OPT:Olimit=0
+endif

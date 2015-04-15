@@ -27,3 +27,4 @@ RUNTIME_CUDA_CFLAGS = $(DEVICEEMU) -arch sm_13 --compiler-options -fno-strict-al
 
 #TODO : add --gpu-architecture and/or --gpu-code based on CHPL_TARGET_ARCH
 #TODO : device NO_IEEE float with --use_fast_math perhaps
+

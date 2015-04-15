@@ -17,6 +17,7 @@
 
 # Suppress warning about variables used before defined
 CRAYPE_GEN_CFLAGS = -hnomessage=7212 -hipa2
+CRAYPE_COMP_CFLAGS =
 
 NO_IEEE_FLOAT_GEN_CFLAGS = -hfp2
 IEEE_FLOAT_GEN_CFLAGS = -hfp0
@@ -42,4 +43,6 @@ MODULECMD = /opt/modules/$(MODULE_VERSION)/bin/modulecmd sh
 
 ENSURE_GASNET_COMPATIBLE_COMPILER = eval `$(MODULECMD) swap PrgEnv-cray PrgEnv-gnu` &&
 
-include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_TARGET_PLATFORM)
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
+
+

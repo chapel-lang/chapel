@@ -15,14 +15,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: include Makefile.pathscale
+# PrgEnv settings for Cray X series (XC, XE, XK, XT)
 
-# put XE cross-compilation pathscale-specific settings here
+# This file is not used for Cray CS machines
 
-XE_GEN_CFLAGS = -OPT:Olimit=0
+#
+# tools.
+#
 
-# Set flag for lax or IEEE floating point
-NO_IEEE_FLOAT_GEN_CFLAGS = -ffast-math
-IEEE_FLOAT_GEN_CFLAGS = --fno-fast-math
+CC = cc
+CXX = CC
 
-include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe
+RANLIB = ranlib
+
+
+#
+# flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+
+COMP_CFLAGS = $(CFLAGS) $(CRAYPE_COMP_CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS)
+RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+GEN_CFLAGS += $(CFLAGS) $(CRAYPE_GEN_CFLAGS)
+GEN_LFLAGS += $(LFLAGS)
+GEN_STATIC_FLAG = -static
+GEN_DYNAMIC_FLAG = -dynamic
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -shared
+
+endif
+
+
+
