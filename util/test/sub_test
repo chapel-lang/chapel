@@ -1264,7 +1264,7 @@ for testname in testsrc:
                     sys.stdout.write(
                         '[Warning: Could not find chpldoc, skipping test '
                         '{0}/{1}]\n'.format(localdir, test_filename))
-                    continue
+                    break
 
             if valgrindcomp:
                 cmd = valgrindcomp
