@@ -1,4 +1,4 @@
-Module: docConstants
+Module: docConstants.doc
    enum Color { Red, Yellow }
       first constant doc 
 

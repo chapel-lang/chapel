@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "docs.h"
+
 #include <cerrno>
 #include <fstream>
 #include <iostream>
@@ -27,6 +29,7 @@
 
 #include "AstPrintDocs.h"
 #include "AstToText.h"
+#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -35,8 +38,6 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
-
-#include "docs.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -240,7 +241,12 @@ void createDocsFileFolders(std::string filename) {
     dirCutoff += total;
     std::string shorter = filename.substr(dirCutoff+1);
     std::string otherHalf = filename.substr(0, dirCutoff);
-    mkdir(otherHalf.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+
+    // Create `otherHalf` iff it is non-empty and does not already exist.
+    if (otherHalf.length() > 0 && !existsAndDir(otherHalf.c_str())) {
+      makeDir(otherHalf.c_str());
+    }
+
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
@@ -252,11 +258,19 @@ void createDocsFileFolders(std::string filename) {
  */
 static void makeDir(const char* dirpath) {
   static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
-  mkdir(dirpath, dirPerms);
-  if (errno != 0 && errno != EEXIST) {
+  int result = mkdir(dirpath, dirPerms);
+  if (result != 0 && errno != 0 && errno != EEXIST) {
     USR_FATAL(astr("Failed to create directory: ", dirpath,
                    " due to: ", strerror(errno)));
   }
+}
+
+
+/* Returns true if dirpath exists on file system and is a directory. */
+static bool existsAndDir(const char* dirpath) {
+  struct stat sb;
+  return stat(dirpath, &sb) == 0 &&
+    S_ISDIR(sb.st_mode);
 }
 
 
@@ -292,8 +306,9 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
 
-  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && ",
-                              "export VIRTUAL_ENV=", venvDir);
+  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && "
+                              "export VIRTUAL_ENV=", venvDir, " && "
+                              "export CHPLDOC_AUTHOR='", fDocsAuthor, "'");
 
   // Run:
   //   $envVars &&

@@ -21,4 +21,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap04.playground"
 
 perf_args="-performance-description ffast-math -performance-configs default:v,ffast-math:v -sync-dir-suffix ffast-math"
 perf_args="${perf_args} -numtrials 5 -startdate 03/01/15"
-aCWD/nightly -cron -compopts "--ccflags -ffast-math" ${perf_args}
+$CWD/nightly -cron -compopts "--ccflags -ffast-math" ${perf_args}

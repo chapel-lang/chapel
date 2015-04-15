@@ -33,15 +33,6 @@ dlmalloc/
   See also: the comments in dlmalloc/src/dlmalloc.c
 
 
-dygraphs/
-  Summary: Dan Vanderkam's JavaScript charting library, which we use
-           to display our performance data.
-
-  License: MIT (see top of dygraphs/dygraph-combined.js file)
-
-  Website: http://dygraphs.com
-
-
 gasnet/
   Summary: the Berkeley GASNet library for one-sided communication
            which we use as a communication layer to implement Chapel's

@@ -1,6 +1,4 @@
-// Testing divceilpos() and divfloorpos() from UtilMath (a standard module)
-
-use UtilMath;
+// Testing divceilpos() and divfloorpos()
 
 var testcount = 0, errcount = 0;
 
@@ -25,7 +23,7 @@ proc test(type T, m: T, n: T) {
 }
 
 // produce a bunch of numbers for use in testing
-iter nombres() {
+iter numbers() {
   yield 1; yield 2;  yield 3;  yield 4;
   yield 5;  yield 7;  yield 11;
   yield 64;  yield 1023;
@@ -42,9 +40,9 @@ proc tests(type TT) {
   test(TT, mm, 1);
 // divceilpos() and divfloorpos() do not handle 0
 //test(TT, 0:TT, mm);
-  for d in nombres() do
+  for d in numbers() do
     test(TT, mm, d:TT);
-  for d in nombres() do
+  for d in numbers() do
     test(TT, d:TT, mm);
   writeln();
 }

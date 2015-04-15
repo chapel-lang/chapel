@@ -1220,16 +1220,12 @@ enum iokind {
 
 // chpldoc TODO -- these don't render right
 /* A synonym for :enum:`iokind.dynamic`; see :type:`iokind` */
-pragma "no doc"
 param iodynamic = iokind.dynamic;
 /* A synonym for :enum:`iokind.native`; see :type:`iokind` */
-pragma "no doc"
 param ionative = iokind.native;
 /* A synonym for :enum:`iokind.big`; see :type:`iokind` */
-pragma "no doc"
 param iobig = iokind.big;
 /* A synonym for :enum:`iokind.little`; see :type:`iokind` */
-pragma "no doc"
 param iolittle = iokind.little;
 
 /*
