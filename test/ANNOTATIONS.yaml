@@ -217,7 +217,8 @@ miniMD:
     - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
   01/30/15:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
-
+  03/17/15:
+    -  Avoid shallow record copies in miniMD (#1643)
 
 nbody:
   03/17/14:

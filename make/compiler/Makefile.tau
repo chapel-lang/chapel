@@ -20,8 +20,10 @@
 #
 
 #
-# settings for gnu-compatible platforms
+# settings for Tau compiler
 #
+
+#TODO - include Makefile.gnu ?
 
 #
 # Tools
@@ -31,7 +33,7 @@
 # compiler parameters such as compiler-based instrumentation from TAU_OPTIONS
 # setenv TAU_MAKEFILE /usr/local/packages/tau/x86_64/lib/Makefile.tau-papi-pthread-pdt
 # setenv TAU_OPTIONS '-optCompInst -optQuiet'  
-CXX = tau_cc.sh 
+CC = tau_cc.sh 
 CXX = tau_cxx.sh 
 # for instance or hardcode these names as:
 #CXX = tau_cc.sh -tau_options='-optCompInst -optVerbose' -tau_makefile=/usr/local/packages/tau/i386_linux/lib/Makefile.tau-papi-pthread-pdt

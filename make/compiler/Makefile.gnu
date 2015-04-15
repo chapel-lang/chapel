@@ -68,7 +68,7 @@ endif
 
 # Set flag for lax or IEEE floating point
 NO_IEEE_FLOAT_GEN_CFLAGS = -ffast-math
-IEEE_FLOAT_GEN_CFLAGS =
+IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC

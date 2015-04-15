@@ -15,9 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO: include Makefile.gnu
+
 # put Cray PE cross-compilation gnu-specific settings here
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_TARGET_PLATFORM)
 
 RUNTIME_CFLAGS += -std=c99
 GEN_CFLAGS += -std=c99
+
+# Set flag for lax or IEEE floating point
+NO_IEEE_FLOAT_GEN_CFLAGS = -ffast-math
+IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
+
+

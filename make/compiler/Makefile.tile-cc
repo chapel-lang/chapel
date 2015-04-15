@@ -20,6 +20,8 @@
 # settings for Tilera tile-cc
 #
 
+# TODO - include Makefile.gnu
+
 #
 # Tools
 #
