@@ -9,7 +9,8 @@ proc make(i:int) {
 
 proc myfunction() {
 
-  make(1).verify();
+  var x = make(1);
+  x.verify();
 }
 
 myfunction();

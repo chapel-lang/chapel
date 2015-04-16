@@ -2,7 +2,8 @@ use myrecord;
 
 proc foo(ref rec: R) {
   rec.verify();
-  rec.x += 1;
+  rec.increment();
+  rec.verify();
 }
 
 proc myfunction() {
