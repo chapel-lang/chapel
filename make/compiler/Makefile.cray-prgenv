@@ -46,7 +46,4 @@ GEN_DYNAMIC_FLAG = -dynamic
 LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 
-endif
-
-
 
