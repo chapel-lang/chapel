@@ -21,12 +21,10 @@
 
 #include "AstDumpToNode.h"
 #include "IpeModule.h"
-#include "IpeVars.h"
+#include "IpeEnv.h"
 #include "ipeDriver.h"
-#include "misc.h"
-#include "symbol.h"
 
-IpeScopeModule::IpeScopeModule(IpeModule* module) : IpeScope(gRootScope)
+IpeScopeModule::IpeScopeModule(IpeModule* module) : IpeScope(NULL)
 {
   mModule = module;
 }
@@ -46,32 +44,75 @@ const char* IpeScopeModule::type() const
   return "Module";
 }
 
+bool IpeScopeModule::isScopeModule() const
+{
+  return true;
+}
+
 const char* IpeScopeModule::name() const
 {
   return (mModule != 0) ? mModule->name() : "dummy-name";
 }
 
-void IpeScopeModule::describeHeader(int offset) const
+int IpeScopeModule::locationSet(ArgSymbol* arg) const
 {
+  AstDumpToNode logger(stdout, 3);
 
+  printf("   IpeScopeModule::locationSet(ArgSymbol*)  unsupported\n");
+  printf("   ");
+  arg->accept(&logger);
+  printf("\n\n");
+
+  INT_ASSERT(false);
+
+  return 0;
 }
 
-void IpeScopeModule::extend(Symbol* sym, IpeValue defaultValue, IpeVars* vars)
+int IpeScopeModule::locationSet(VarSymbol* var) const
 {
-  if (VarSymbol* var = toVarSymbol(sym))
+  int   delta  = 8;             // Currently, everything is 8 bytes
+  int   offset = 0;
+
+  if (var == NULL)
   {
-    IpeVars::bind(var, defaultValue, vars);
+    AstDumpToNode logger(stdout, 3);
+
+    printf("   IpeScopeModule::locationSet(VarSymbol*)  unsupported\n");
+    printf("   ");
+    var->accept(&logger);
+    printf("\n\n");
+
+    INT_ASSERT(false);
   }
 
-  IpeScope::symbolPush(sym);
+  else if (var->depth() == -1 && var->offset() == -1)
+  {
+    offset = IpeEnv::reserveSpace(var);
+    var->locationSet(0, offset);
+  }
+
+  else if (var->type == gIpeTypeProcedure)
+  {
+    offset = var->offset();
+  }
+
+  else
+  {
+    AstDumpToNode logger(stdout, 3);
+
+    printf("   IpeScopeModule::locationSet(VarSymbol*)  unsupported\n");
+    printf("   ");
+    var->accept(&logger);
+    printf("\n\n");
+
+    INT_ASSERT(false);
+  }
+
+  return offset + delta;
 }
 
-void IpeScopeModule::envPush()
+int IpeScopeModule::frameSize() const
 {
-
+  return 0;
 }
 
-void IpeScopeModule::envPop()
-{
-
-}
