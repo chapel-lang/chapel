@@ -794,6 +794,16 @@ const char* stdModNameToFilename(const char* modName) {
   return fullfilename;
 }
 
+const char* filenameToModulename(const char* filename) {
+  const char* moduleName = astr(filename);
+  const char* firstSlash = strrchr(moduleName, '/');
+
+  if (firstSlash) {
+    moduleName = firstSlash + 1;
+  }
+
+  return asubstr(moduleName, strrchr(moduleName, '.'));
+}
 
 static void helpPrintPath(Vec<const char*> path) {
   forv_Vec(const char*, dirname, path) {
