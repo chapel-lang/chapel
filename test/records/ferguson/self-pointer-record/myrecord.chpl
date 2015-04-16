@@ -1,5 +1,11 @@
 use SysBasic;
 
+/* This record does something probably not allowed in the language:
+   it uses the C interop mechanisms to store in one field a pointer
+   to another field. That pointer will break every time the record
+   is bit-copied. This test exists just so that we can see cases in
+   which records are bit-copied.
+ */
 config const debug = false;
 
 record R {
@@ -95,3 +101,5 @@ proc =(ref lhs: R, rhs: R) {
     printf("leaving assign %p = %p\n", lhs.ptr_to_x, rhs.ptr_to_x);
 }
 
+proc verify() {
+}
