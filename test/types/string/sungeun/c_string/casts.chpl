@@ -44,13 +44,6 @@ writeln(strc:complex(128));
 writeln(strE:E);
 writeln(strB:bool);
 
-writeln(n:c_string);
-writeln(r:c_string);
-writeln(i:c_string);
-writeln(c:c_string);
-writeln(e:c_string);
-writeln(b:c_string);
-
 writeln(n:string);
 writeln(r:string);
 writeln(i:string);
