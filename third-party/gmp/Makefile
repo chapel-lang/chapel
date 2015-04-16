@@ -91,10 +91,10 @@ gmp-build:
 
 $(GMP_H_FILE): $(GMP_BUILD_SUBDIR)
 ifeq (yes, $(GMP_SPECULATIVE_CRAY_X_PGI))
-	@echo 'Speculative build of gmp squashed due to PGI target compiler on Cray X*.'
+	$(info Speculative build of gmp squashed due to PGI target compiler on Cray X*.)
 else
 ifeq (yes, $(GMP_CRAY_X_PGI))
-	@echo 'Forced gmp build with PGI on Cray X* fails some Chapel tests.'
+	$(warning Forced gmp build with PGI on Cray X* fails some Chapel tests.)
 endif
 	@if [[ ! -e $(GMP_UNPACKED_DIR) ]]; then \
 	  $(MAKE) $(GMP_UNPACKED_DIR) ; \
