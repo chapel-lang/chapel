@@ -140,7 +140,6 @@ class EnumType : public Type {
 
 private:
   virtual std::string docsDirective();
-  std::string docsConstantList();
 };
 
 

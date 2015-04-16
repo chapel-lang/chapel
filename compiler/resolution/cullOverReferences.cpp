@@ -86,10 +86,8 @@ refNecessary(SymExpr* se,
 }
 
 
-//
-// removes references that are not necessary
-//
-void cullOverReferences() {
+static void callGetterForValueReturn()
+{
   //
   // change call of reference function to value function
   //
@@ -140,7 +138,11 @@ void cullOverReferences() {
     }
   }
   freeDefUseMaps(defMap, useMap);
+}
 
+
+static void removeRefsToWrappedTypes()
+{
   //
   // remove references to array wrapper records, domain wrapper
   // records, and iterator records; otherwise we can end up returning
@@ -189,6 +191,80 @@ void cullOverReferences() {
         call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
     }
   }
+}
+
+
+// Look for and replace the pattern:
+//  ('move' ref_tmp ('addr of' var1))
+//  ('move' var2 ('deref' ref_tmp))
+// with
+//  ('move' var2 var1)
+//
+static void removeRefDerefPairs()
+{
+  // Walk all "addr of" primitives.
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (! call->isPrimitive(PRIM_ADDR_OF))
+      continue;
+
+    // Ignore calls that are not in the tree.
+    if (! call->parentExpr)
+      continue;
+
+    // Get the statement-level expression containing this primitive.
+    CallExpr* addrOfStmt = toCallExpr(call->getStmtExpr());
+    INT_ASSERT(addrOfStmt);
+    INT_ASSERT(addrOfStmt->isPrimitive(PRIM_MOVE));
+
+    // Get the next statement.
+    if (CallExpr* derefStmt = toCallExpr(addrOfStmt->next))
+    {
+      // Make sure it is a move
+      if (! derefStmt->isPrimitive(PRIM_MOVE))
+        continue;
+      
+      // See if it contains a deref
+      if (CallExpr* deref = toCallExpr(derefStmt->get(2)))
+      {
+        // Make sure it is a deref primitive
+        if (! deref->isPrimitive(PRIM_DEREF))
+          continue;
+
+        // See if its arg is the LHS of the addrOfStmt
+        SymExpr* derefArg = toSymExpr(deref->get(1));
+        INT_ASSERT(derefArg);
+        SymExpr* refTmp = toSymExpr(addrOfStmt->get(1));
+        INT_ASSERT(refTmp);
+        if (derefArg->var == refTmp->var)
+        {
+          // Bingo.  Let's do the transformation.
+
+          // Actually, we leave the deref in place in case there are other uses
+          // of the refTmp.  But we replace the deref call with
+          // the (non-ref) operand of the 'addr of' primitive.
+
+          SymExpr* addrOfArg = toSymExpr(call->get(1));
+          // We expect the argument of the "addr of" primitive to be a SymExpr.
+          INT_ASSERT(addrOfArg);
+
+          SET_LINENO(derefStmt);
+          deref->replace(new SymExpr(addrOfArg->var));
+        }
+      }
+    }
+  }
+}
+
+
+//
+// Replace getter calls with setter calls where the return type is only read.
+// Also convert some references to values, to get required semantics.
+//
+void cullOverReferences() {
+  callGetterForValueReturn();
+  removeRefsToWrappedTypes();
+  removeRefDerefPairs();
 }
 
 

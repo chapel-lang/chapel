@@ -33,6 +33,19 @@
 use FFTW;
 
 //
+// print out the error values?  Note that values may differ between
+// platforms (so turn off for testing).
+//
+config const printErrors = true;
+
+//
+// If we don't print out error values, we'll print a success/failure
+// message.  This is the epsilon value against which success should
+// be measured.
+//
+config const epsilon = 10e-13;
+
+//
 // Perform the tests and then cleanup.
 //
 proc main() {
@@ -44,12 +57,10 @@ proc main() {
 // A helper function that invokes the test for each rank.
 //
 proc testAllDims() {
-  writeln("1D");
-  runtest(1, "arr1d.dat");
-  writeln("2D");
-  runtest(2, "arr2d.dat");
-  writeln("3D");
-  runtest(3, "arr3d.dat");
+  for param d in 1..3 {
+    writeln(d, "D");
+    runtest(d, "arr"+d+"d.dat");
+  }
 }
 
 //
@@ -336,5 +347,12 @@ proc runtest(param ndim : int, fn : string) {
 //
 proc printcmp(x, y) {
   var err = max reduce abs(x-y);
-  writeln(err);
+  if (printErrors) then
+    writeln(err);
+  else {
+    if err < epsilon then
+      writeln("SUCCESS: error below threshold");
+    else
+      writeln("FAILURE: error (", err, ") exceeds epsilon (", epsilon, ")");
+  }
 }

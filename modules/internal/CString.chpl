@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
-
 // C strings
 // extern type c_string; is a built-in primitive type
 //
@@ -61,9 +59,25 @@ module CString {
   //  return string_from_c_string_copy(cstrc, true, len);
   //}
 
+  // We can't use the catch-all initCopy or autoCopy because of the
+  // transformation of c_strings into string for generic parameters
+  pragma "init copy fn"
+  inline proc chpl__initCopy(x: c_string) : c_string {
+    return x;
+  }
+  pragma "init copy fn"
+  inline proc chpl__initCopy(x: c_string_copy) : c_string_copy {
+    return x;
+  }
+
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: c_string) {
+  inline proc chpl__autoCopy(x: c_string) : c_string {
+    return x;
+  }
+  pragma "donor fn"
+  pragma "auto copy fn"
+  inline proc chpl__autoCopy(x: c_string_copy) : c_string_copy {
     return x;
   }
 

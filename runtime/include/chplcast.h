@@ -76,23 +76,23 @@ c_string_copy real_to_c_string_copy(_real64 x, chpl_bool isImag);
 // statically-allocated ones.  The easiest approach is probably to call these
 // (and other type##_to_c_string functions) from module code.
 // TODO: Can we use the pattern above, to reduce the number of interfaces required?
-static ___always_inline
+static inline
 c_string chpl_bool_to_c_string(chpl_bool x) {
   return x ? "true" : "false";
 }
-static ___always_inline
+static inline
 c_string chpl_bool8_to_c_string(chpl_bool8 x) {
   return x ? "true" : "false";
 }
-static ___always_inline
+static inline
 c_string chpl_bool16_to_c_string(chpl_bool16 x) {
   return x ? "true" : "false";
 }
-static ___always_inline
+static inline
 c_string chpl_bool32_to_c_string(chpl_bool32 x) {
   return x ? "true" : "false";
 }
-static ___always_inline
+static inline
 c_string chpl_bool64_to_c_string(chpl_bool64 x) {
   return x ? "true" : "false";
 }
@@ -103,7 +103,7 @@ c_string chpl_bool64_to_c_string(chpl_bool64 x) {
 // underlying chpl_string, so the chpl_string must last longer than the
 // returned c_string or the caller must make a copy of the result.  The caller
 // should not free the returned string.
-static ___always_inline
+static inline
 c_string chpl_string_to_c_string(chpl_string s, int lineno, c_string filename) {
   c_string ret;
   c_string_from_string(&ret, &s, lineno, filename);
@@ -113,7 +113,7 @@ c_string chpl_string_to_c_string(chpl_string s, int lineno, c_string filename) {
 // This routine returns a chpl_string containing a verbatim copy of the
 // passed-in C string.  The (chpl_)string destructor will take care of
 // deallocating that memory.
-static ___always_inline
+static inline
 chpl_string c_string_to_chpl_string(c_string s, int lineno, c_string filename) {
   chpl_string ret;
   string_from_c_string(&ret, s, 0, -1, lineno, filename);

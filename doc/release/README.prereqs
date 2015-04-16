@@ -10,7 +10,7 @@ In slightly more detail the following are prerequisites and assumptions
 about your environment for using Chapel:
 
 * You are using an environment that supports standard UNIX commands
-  such as: cd, mkdir, rm, echo, bc
+  such as: cd, mkdir, rm, echo
 
 * You have the Bourne shell available at /bin/sh, the C-shell
   available at /bin/csh, 'env' available at /usr/bin/env, and that
@@ -26,11 +26,11 @@ We have used the following commands to set up newly installed system images.
 Note that our test system works much better with tcsh installed.
 
 CentOS 6.5, 6.6, 7.0:
-sudo yum install gcc gcc-c++ bc perl python tcsh bash make gawk
+sudo yum install gcc gcc-c++ perl python tcsh bash make gawk
 
 SLES 11 SP3:
-sudo zypper install gcc gcc-c++ bc perl python tcsh bash make gawk
+sudo zypper install gcc gcc-c++ perl python tcsh bash make gawk
 
 Debian 7.8, Ubuntu 12.04, 14.04, 14.10:
-sudo apt-get install gcc g++ bc perl python tcsh bash make mawk
+sudo apt-get install gcc g++ perl python tcsh bash make mawk
 

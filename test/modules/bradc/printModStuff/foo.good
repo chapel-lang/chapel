@@ -20,11 +20,10 @@ Parsing module files:
   subdir2/bap.chpl
   subdir4/subdir/bax.chpl
   ./bah.chpl
-  $CHPL_HOME/modules/standard/startInitCommDiags.chpl
   $CHPL_HOME/modules/standard/Assert.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/Math.chpl
-  $CHPL_HOME/modules/standard/stopInitCommDiags.chpl
+  $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
   $CHPL_HOME/modules/standard/Sys.chpl
   $CHPL_HOME/modules/dists/DSIUtil.chpl
@@ -33,7 +32,6 @@ Parsing module files:
   $CHPL_HOME/modules/standard/IO.chpl
   $CHPL_HOME/modules/standard/Sort.chpl
   $CHPL_HOME/modules/standard/Search.chpl
-  $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/Error.chpl
   $CHPL_HOME/modules/standard/Regexp.chpl
 In bar

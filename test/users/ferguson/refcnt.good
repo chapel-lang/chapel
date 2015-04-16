@@ -7,6 +7,8 @@ Starting test_one {count = 1}
 In R.routine {count = 1}
 In test_two {count = 1}
 Done test_one {count = 1}
+In ~R() 1
+Destroying a RefCount
 After scope
 Before scope (copy initialization)
 Initializing a RefCount
@@ -18,6 +20,9 @@ Starting test_one {count = 2}
 In R.routine {count = 2}
 In test_two {count = 2}
 Done test_one {count = 2}
+In ~R() 2
+In ~R() 1
+Destroying a RefCount
 After scope (copy initialization)
 Before scope (copy initialization 2)
 Initializing a RefCount
@@ -26,6 +31,9 @@ Starting test_one {count = 2}
 In R.routine {count = 2}
 In test_two {count = 2}
 Done test_one {count = 2}
+In ~R() 2
+In ~R() 1
+Destroying a RefCount
 After scope (copy initialization 2)
 Before scope (setting global)
 Initializing a RefCount
@@ -36,6 +44,7 @@ Starting R assign {count = 1}{count = 1}
 Destroying a RefCount
 Done R assign {count = 2}
 Done test_one {count = 2}
+In ~R() 2
 After scope (setting global)
 Before scope (begin)
 Initializing a RefCount
@@ -45,18 +54,9 @@ In R.routine {count = 2}
 In test_two {count = 2}
 Done test_one {count = 2}
 In ~R() 2
+In ~R() 1
+Destroying a RefCount
 After scope (begin)
 Finishing
-In ~R() 1
-Destroying a RefCount
-In ~R() 2
-In ~R() 1
-Destroying a RefCount
-In ~R() 2
-In ~R() 1
-Destroying a RefCount
-In ~R() 2
-In ~R() 1
-Destroying a RefCount
 In ~R() 1
 Destroying a RefCount

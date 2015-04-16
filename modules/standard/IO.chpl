@@ -690,8 +690,10 @@ String and Bytes Conversions
  (note that ``%.17/a+/``, which would mean to match 17 characters,
  is not supported).
 
-``%/ * /``
- (without spaces) next argument contains the regular expression to match
+``%/*/``
+ next argument contains the regular expression to match
+
+.. (comment) the above started a nested comment, so here we end it */
 
 General Conversions
 +++++++++++++++++++
@@ -1150,11 +1152,6 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-// chpldoc TODO --
-// above we have``%/ * /`` because we couldn't put /*/ in a comment
-// that needs a fix...
-
-
 use SysBasic;
 use Error;
 
@@ -1223,16 +1220,12 @@ enum iokind {
 
 // chpldoc TODO -- these don't render right
 /* A synonym for :enum:`iokind.dynamic`; see :type:`iokind` */
-pragma "no doc"
 param iodynamic = iokind.dynamic;
 /* A synonym for :enum:`iokind.native`; see :type:`iokind` */
-pragma "no doc"
 param ionative = iokind.native;
 /* A synonym for :enum:`iokind.big`; see :type:`iokind` */
-pragma "no doc"
 param iobig = iokind.big;
 /* A synonym for :enum:`iokind.little`; see :type:`iokind` */
-pragma "no doc"
 param iolittle = iokind.little;
 
 /*
@@ -3506,8 +3499,8 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     // handle string
     return qio_channel_print_string(false, _channel_internal, x.c_str(), x.length:ssize_t);
   } else if isEnumType(t) {
-    var s = x:c_string;
-    return qio_channel_print_literal(false, _channel_internal, s, s.length:ssize_t);
+    var s = x:string;
+    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
   }

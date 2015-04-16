@@ -52,6 +52,8 @@ public:
 
   virtual void    prettyPrint(std::ostream* o);
 
+  /* Returns true if the given expressions is contained by this one. */
+  bool            contains(Expr const * const expr) const;
   bool            isModuleDefinition();
 
   void            insertBefore(Expr* new_ast);
@@ -66,6 +68,7 @@ public:
 
   bool            isStmtExpr()                                       const;
   Expr*           getStmtExpr();
+  BlockStmt*      getScopeBlock();
 
   Symbol*         parentSymbol;
   Expr*           parentExpr;
@@ -220,6 +223,18 @@ class NamedExpr : public Expr {
 };
 
 
+// Returns true if 'this' properly contains the given expr, false otherwise.
+inline bool
+Expr::contains(Expr const * const expr) const
+{
+  Expr const * parent = expr;
+  while ((parent = parent->parentExpr))
+    if (parent == this)
+      return true;
+  return false;
+}
+
+
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().
 // Exception: 'n' is also live if isRootModule(n).
@@ -275,6 +290,35 @@ static inline bool needsCapture(FnSymbol* taskFn) {
   return taskFn->hasFlag(FLAG_BEGIN) ||
          taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
          taskFn->hasFlag(FLAG_NON_BLOCKING);
+}
+
+
+// Returns true if this statement (expression) causes a change in flow.
+// When inserting cleanup code, it must be placed ahead of such flow
+// statements, or it will be skipped (which means it's in the wrong place).
+// TODO: This predicate could be turned into a method on exprs.
+inline static bool isFlowStmt(Expr* stmt)
+{
+  // A goto is definitely a jump.
+  if (isGotoStmt(stmt))
+    return true;
+
+  // A return primitive works like a jump. (Nothing should appear after it.)
+  if (CallExpr* call = toCallExpr(stmt))
+  {
+    if (call->isPrimitive(PRIM_RETURN))
+      return true;
+
+    // _downEndCount is treated like a flow statement because we do not want to
+    // insert autoDestroys after the task says "I'm done."  This can result in
+    // false-positive memory allocation errors because the waiting (parent
+    // task) can then proceed to test that the subtask has not leaked before
+    // the subtask release locally-(dynamically-)allocated memory.
+    if (FnSymbol* fn = call->isResolved())
+      if (!strcmp(fn->name, "_downEndCount"))
+        return true;
+  }
+  return false;
 }
 
 

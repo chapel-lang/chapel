@@ -476,7 +476,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
   while (stmt && !found)
   {
     std::vector<SymExpr*> symExprs;
-    collectSymExprsSTL(stmt, symExprs);
+    collectSymExprs(stmt, symExprs);
     for_vector(SymExpr, se, symExprs) {
       if (se->var == currDefSym) {
         INT_ASSERT(se->parentExpr);
@@ -570,10 +570,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   }
 
   Vec<Symbol*> symSet;
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   Vec<SymExpr*> symExprs;
   collect_asts(rootModule, asts);
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (def->parentSymbol) {
         if (isLcnSymbol(def->sym)) {
@@ -684,7 +684,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             // CForLoop and then the block structure is smashed flat, we lose
             // the ability to distinguish these two cases.
             BlockStmt* incr = cfl->incrBlockGet();
-            incr->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+            incr->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
           }
           // Other cases may need to be added here.
           else
@@ -692,7 +692,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             // A "normal" block.
             BlockStmt* block = toBlockStmt(innermostBlock);
             INT_ASSERT(block);
-            block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+            block->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
           }
         }
       }
@@ -1222,7 +1222,7 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
       // Now we can remove the dummy locale arg from the on_fn
       DefExpr* localeArg = toDefExpr(fn->formals.get(1));
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(fn->body, symExprs);
+      collectSymExprs(fn->body, symExprs);
       for_vector(SymExpr, sym, symExprs)
       {
         if (sym->var->defPoint == localeArg)
