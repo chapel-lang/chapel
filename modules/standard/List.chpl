@@ -141,7 +141,6 @@ record list {
   /*
     Delete every node in the list.
    */
-  // TODO: call from a destructor?
   proc destroy() {
     var current = first;
     while (current != nil) {
@@ -149,6 +148,9 @@ record list {
       delete current;
       current = next;
     }
+    first = nil;
+    last = nil;
+    length = 0;
   }
 
   pragma "no doc"
@@ -162,6 +164,36 @@ record list {
       f.write(e);
     }
   }
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(rhs:list) {
+  var result: rhs.type;
+
+  // Can't do this because _getIterator() calls autoCopy on the list to put a
+  // copy of it into the iterator class.  Heh.
+  //  for e in rhs do
+  //    result.append(e);
+  // So ... the body of these() is inlined here:
+  var current = rhs.first;
+  while (current != nil) {
+    result.append(current.data);
+    current = current.next;
+  }
+
+  return result;
+}
+
+// TODO: Remove the dependence of tuple construction on the initcopy function,
+// and then remove this override.
+pragma "init copy fn"
+proc chpl__initCopy(rhs:list) {
+  return chpl__autoCopy(rhs);
+}
+
+proc =(ref a:list, b:list) {
+  a.destroy();
+  a.concat(b);
 }
 
 /*

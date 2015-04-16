@@ -278,6 +278,11 @@ buildDefaultWrapper(FnSymbol* fn,
       // into the wrapper formal as well.
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
+      // This clause appears to be a greasy hack related to record-wrapped
+      // types.
+      // I'm disabling the whole bloody mess; any required autocopies that are
+      // missed because of this should be added to the default constructor.
+//      if (0 && specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
       if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))

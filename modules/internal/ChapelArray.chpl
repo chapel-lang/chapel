@@ -166,7 +166,7 @@ module ChapelArray {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
     else {
-      if !noRefCount && false {
+      if !noRefCount {
         // We are creating a new _distribution, which contains a new reference to this
         // distribution representation (value), so we have to increment the reference
         // count.
@@ -602,6 +602,8 @@ module ChapelArray {
     var _value;
     var _valueType;
   
+    // Never, ever create a distribution directly.
+    // Always call _newDistribution() to obtain  one.
     proc _distribution(_value, _valueType) { }
   
     inline proc _value {
@@ -612,6 +614,9 @@ module ChapelArray {
       }
     }
   
+    // Destruction of a distribution causes its ref count to be decremented by 1.
+    // If the count reaches zero, then the contained implementation (_value) is
+    // destroyed.
     proc ~_distribution() {
      if !noRefCount {
       if !_isPrivatized(_valueType) {
