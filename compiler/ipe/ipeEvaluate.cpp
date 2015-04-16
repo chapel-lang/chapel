@@ -47,14 +47,14 @@ IpeValue evaluateExpr(Expr* expr, IpeEnv* env)
 
   else if (DefExpr*     sel = toDefExpr(expr))
   {
-    IpeDefExpr* sel2 = dynamic_cast<IpeDefExpr*>(sel);
+    IpeDefExpr* sel2 = (IpeDefExpr*) sel;
 
     retval = evaluateDefExpr(sel2, env);
   }
 
   else if (CallExpr*    sel = toCallExpr(expr))
   {
-    IpeCallExpr* sel2 = dynamic_cast<IpeCallExpr*>(sel);
+    IpeCallExpr* sel2 = (IpeCallExpr*) sel;
 
     INT_ASSERT(sel2);
 

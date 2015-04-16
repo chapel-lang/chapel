@@ -60,7 +60,7 @@ IpeModule* IpeScope::useGet(int index) const
 {
   IpeModule* retval = NULL;
 
-  if (index >= 0 && index < mUsedModules.size())
+  if (index >= 0 && index < (int) mUsedModules.size())
     retval = mUsedModules[index];
 
   return retval;
@@ -80,7 +80,7 @@ LcnSymbol* IpeScope::varGet(int index) const
 {
   LcnSymbol* retval = NULL;
 
-  if (index >= 0 && index < mVariables.size())
+  if (index >= 0 && index < (int) mVariables.size())
     retval = mVariables[index];
 
   return retval;

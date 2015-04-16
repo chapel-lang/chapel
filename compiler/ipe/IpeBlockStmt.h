@@ -37,7 +37,7 @@ public:
 
   void                     varAdd(LcnSymbol* variable);
 
-  void                     describe(int offset)                     const;
+  void                     describe(int offset);
 
 private:
                            IpeBlockStmt();

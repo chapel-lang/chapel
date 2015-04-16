@@ -22,6 +22,7 @@
 
 #include "IpeEnv.h"
 #include "IpeValue.h"
+#include "ipe.h"
 #include "ipeDriver.h"
 
 #include "stmt.h"

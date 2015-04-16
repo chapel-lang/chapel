@@ -87,8 +87,7 @@ int IpeScopeBlock::locationSet(VarSymbol* var) const
 
   else
   {
-    IpeEnv env((IpeScopeBlock*) this);
-    int    offset = mParent->frameSize();
+    int offset = mParent->frameSize();
 
     for (size_t i = 0; i < mVariables.size() && retval == -1; i++)
     {

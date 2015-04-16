@@ -75,7 +75,7 @@ int locationExpr(Expr* expr, IpeEnv* env)
 
   else if (BlockStmt* stmt = toBlockStmt(expr))
   {
-    IpeBlockStmt* ipeStmt  = dynamic_cast<IpeBlockStmt*> (stmt);
+    IpeBlockStmt* ipeStmt  = (IpeBlockStmt*) stmt;
     int           maxFrame = 0;
     IpeEnv        env(ipeStmt->scopeGet());
 

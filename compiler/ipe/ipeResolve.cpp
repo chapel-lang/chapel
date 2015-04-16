@@ -178,8 +178,12 @@ static IpeDefExpr* resolveDefVar(DefExpr* defExpr, IpeEnv* env)
     {
       initExpr = resolveExpr(defExpr->init, env);
 
-      if (IpeCallExpr* callExpr = dynamic_cast<IpeCallExpr*>(initExpr))
-        initType = callExpr->typeGet();
+      if (CallExpr* callExpr = toCallExpr(initExpr))
+      {
+        IpeCallExpr* ipeCall = (IpeCallExpr*) callExpr;
+
+        initType = ipeCall->typeGet();
+      }
       else
         initType = initExpr->typeInfo();
 

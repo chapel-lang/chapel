@@ -53,7 +53,7 @@ void IpeBlockStmt::varAdd(LcnSymbol* variable)
   mScope->varAdd(variable);
 }
 
-void IpeBlockStmt::describe(int offset) const
+void IpeBlockStmt::describe(int offset)
 {
   AstDumpToNode logger(stdout, offset + 3);
   char          pad[32] = { '\0' };
@@ -76,7 +76,7 @@ void IpeBlockStmt::describe(int offset) const
   printf("\n");
 
   printf("%s   ", pad);
-  ((IpeBlockStmt*) this)->accept(&logger);
+  accept(&logger);
   printf("\n");
 
   printf("%s>\n", pad);
