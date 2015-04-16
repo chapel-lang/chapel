@@ -73,7 +73,6 @@ all: gmp
 
 clean: FORCE
 	rm -rf $(GMP_BUILD_SUBDIR)
-	rm -rf $(GMP_INSTALL_SUBDIR)
 
 cleanall: FORCE
 	rm -rf build
