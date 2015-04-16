@@ -96,9 +96,7 @@ else
 ifeq (yes, $(GMP_CRAY_X_PGI))
 	$(warning Forced gmp build with PGI on Cray X* fails some Chapel tests.)
 endif
-	@if [[ ! -e $(GMP_UNPACKED_DIR) ]]; then \
-	  $(MAKE) $(GMP_UNPACKED_DIR) ; \
-	fi
+	$(MAKE) $(GMP_UNPACKED_DIR)
 	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS) $(CHPL_GMP_CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CXXFLAGS) $(CHPL_GMP_CXXFLAGS)' $(CHPL_GMP_ABI_ARG) --prefix=$(GMP_INSTALL_DIR) $(CHPL_GMP_CFG_OPTIONS)
 	cd $(GMP_BUILD_DIR) && $(MAKE)
 ifeq ($(GMP_CROSS_COMPILED),no)
