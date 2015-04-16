@@ -805,6 +805,28 @@ const char* filenameToModulename(const char* filename) {
   return asubstr(moduleName, strrchr(moduleName, '.'));
 }
 
+//
+// Return a fully qualified path name for the internal file with the specified baseName
+//
+
+const char* pathNameForInternalFile(const char* baseName) {
+  const char* fileName = astr(baseName, ".chpl");
+
+  return searchPath(intModPath, fileName, NULL, true);
+}
+
+//
+// Return a fully qualified path name for the standard file with the specified baseName
+// Generate a warning if there is a user file that might define the same module
+//
+
+const char* pathNameForStandardFile(const char* baseName) {
+  const char* fileName     = astr(baseName, ".chpl");
+  const char* userFileName = searchPath(usrModPath, fileName, NULL, false);
+
+  return searchPath(stdModPath, fileName, userFileName, false);
+}
+
 static void helpPrintPath(Vec<const char*> path) {
   forv_Vec(const char*, dirname, path) {
     fprintf(stderr, "  %s\n", cleanFilename(dirname));

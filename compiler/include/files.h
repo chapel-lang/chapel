@@ -90,6 +90,9 @@ const char* stdModNameToFilename(const char* modName);
 
 const char* filenameToModulename(const char* filename);
 
+const char* pathNameForInternalFile(const char* baseName);
+const char* pathNameForStandardFile(const char* baseName);
+
 void printModuleSearchPath(void);
 
 const char* getIntermediateDirName();
