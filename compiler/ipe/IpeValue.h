@@ -22,14 +22,21 @@
 
 class IpeModule;
 class IpeProcedure;
+class Type;
+class VarSymbol;
 
 class IpeValue
 {
 public:
                 IpeValue();
                 IpeValue(bool          value);
+                IpeValue(long          value);
+                IpeValue(double        value);
+                IpeValue(const char*   value);
+                IpeValue(Type*         value);
                 IpeValue(IpeModule*    value);
                 IpeValue(IpeProcedure* value);
+                IpeValue(IpeValue*     value);
 
   bool          boolGet()                              const;
   void          boolSet(bool value);
@@ -43,12 +50,13 @@ public:
   const char*   cstringGet()                           const;
   void          cstringSet(const char* value);
 
+  Type*         typeGet()                              const;
+
   IpeModule*    moduleGet()                            const;
 
   IpeProcedure* procedureGet()                         const;
 
   IpeValue*     refGet()                               const;
-  void          refSet(IpeValue* value);
 
 private:
 
@@ -58,6 +66,8 @@ private:
     double        rValue;
 
     const char*   sValue;
+
+    Type*         typePtr;
 
     IpeValue*     valuePtr;
     IpeModule*    modulePtr;

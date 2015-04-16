@@ -213,7 +213,7 @@ bool IpeMethod::isExactMatch(std::vector<Expr*>& actuals) const
 
       if (CallExpr* sel = toCallExpr(actuals[i]))
       {
-        IpeCallExpr* callExpr = dynamic_cast<IpeCallExpr*>(sel);
+        IpeCallExpr* callExpr = (IpeCallExpr*) sel;
 
         type = callExpr->typeGet();
       }

@@ -20,30 +20,71 @@
 #ifndef _IPE_MODULE_H_
 #define _IPE_MODULE_H_
 
-class IpeVars;
+#include "symbol.h"
+
+#include <cstddef>
+#include <vector>
+
+class Expr;
+class CallExpr;
+class DefExpr;
+class SymExpr;
+
+class IpeCallExpr;
+class IpeEnv;
+class IpeModuleRoot;
 class IpeScopeModule;
+class IpeValue;
+
+class LcnSymbol;
 class ModuleSymbol;
 
 class IpeModule
 {
 public:
+  const char*              name()                                             const;
+  IpeEnv*                  environment()                                      const;
+
+  void                     moduleAdd(IpeModule* module);
+  IpeModule*               moduleByName(const char* name)                     const;
+
+  void                     moduleResolve(IpeModuleRoot* rootModule);
+  void                     initialize();
+
+  IpeValue                 evaluate(Expr* expr)                               const;
+
+  static void              describeAllModules(int offset);
+
+protected:
+  enum State
+  {
+    kLoaded,
+
+    kResolving,
+    kResolved,
+
+    kInitializing,
+    kInitialized
+  };
+
                            IpeModule(ModuleSymbol* sym);
-                          ~IpeModule();
-
-  const char*              name()                                     const;
-
-  IpeScopeModule*          scope()                                    const;
-
-  void                     ensureInitialized(IpeVars* vars);
-
-  void                     describe(int offset)                       const;
-
-private:
                            IpeModule();
 
+                          ~IpeModule();
+
+  virtual const char*      moduleTypeAsString()                               const = 0;
+
+  const char*              stateAsString()                                    const;
+  bool                     isUseStmt(Expr* expr)                              const;
+
+  void                     ensureInitialized();
+
+  State                    mState;
   ModuleSymbol*            mModuleDecl;
-  IpeScopeModule*          mScope;
-  bool                     mInitialized;
+  IpeEnv*                  mEnv;
+
+private:
+  void                     describe(int offset)                               const;
 };
 
 #endif

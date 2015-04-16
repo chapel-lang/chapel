@@ -21,15 +21,8 @@
 #define _IPE_RESOLVE_H_
 
 class Expr;
-class IpeVars;
-class IpeProcedure;
-class IpeScope;
-class IpeScopeProcedure;
+class IpeEnv;
 
-Expr* ipeResolve            (Expr*         expr,      IpeScope*          scope, IpeVars* vars);
-
-void  ipeResolveFormalsTypes(IpeProcedure* procedure, IpeScopeProcedure* scope, IpeVars* vars);
-void  ipeResolveBody        (IpeProcedure* procedure, IpeScopeProcedure* scope, IpeVars* vars);
-void  ipeResolveReturnType  (IpeProcedure* procedure, IpeScopeProcedure* scope, IpeVars* vars);
+Expr* resolveExpr(Expr* expr, IpeEnv* env);
 
 #endif
