@@ -17,6 +17,10 @@ proc ref R.set_self_ptr() {
   ptr_to_x = c_ptrTo(x);
 }
 
+proc ref R.increment() {
+  x += 1;
+}
+
 // custom constructor setting self-pointer
 // This won't work as long as constructors
 // return the record (vs being methods on the record).

@@ -27,6 +27,14 @@ proc ref R.init(x) {
   trackAllocation(c, c.id);
 }
 
+proc ref R.increment() {
+  assert(x != 0);
+  assert(c != nil);
+  x += 1;
+  c.x += 1;
+}
+
+
 proc R.~R() {
   extern proc printf(fmt:c_string, arg:C);
   if debug {
