@@ -32,7 +32,7 @@ module StringCasts {
   //
   proc _cast(type t, x: integral) where t == string {
     //TODO: switch to using qio's writef somehow
-    extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy ;
+    extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy;
     extern proc strlen(const str: c_string_copy) : size_t;
 
     var csc = integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));

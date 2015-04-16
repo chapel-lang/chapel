@@ -1236,7 +1236,10 @@ static void hack_resolve_types(ArgSymbol* arg) {
               toVarSymbol(se->var)->immediate->const_kind == CONST_KIND_STRING) {
             // String literal default expressions for non-param
             // generic formals are converted to strings.
-            arg->defaultExpr->body.insertAtTail(new CallExpr("toString", arg->defaultExpr->body.tail->remove()));
+            arg->defaultExpr->body.insertAtTail(
+                new CallExpr("_cast",
+                             new SymExpr(dtString->symbol),
+                             arg->defaultExpr->body.tail->remove()));
           }
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
