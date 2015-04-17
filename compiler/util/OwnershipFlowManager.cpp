@@ -1105,9 +1105,13 @@ static bool isDestructorFormal(SymExpr* se)
 
 static bool isDestructorArg(SymExpr* se)
 {
+#if 0
+  // Cautiously disable the portion of this predicate that makes sure this
+  // it returns true only within a destructor or autodestroy function.
   if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
     if (parent->hasFlag(FLAG_DESTRUCTOR) ||
         parent->hasFlag(FLAG_AUTO_DESTROY_FN))
+#endif
       if (CallExpr* call = toCallExpr(se->parentExpr))
         if (FnSymbol* fn = call->isResolved())
           if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
