@@ -370,11 +370,11 @@ void IpeModule::describeAllModules(int offset)
     *tptr = '\0';
   }
 
-  printf("%sThere are %3lu modules. Global pool %8lu / %8lu\n",
+  printf("%sThere are %3d modules. Global pool %8d / %8d\n",
          pad,
-         sModules.size(),
-         IpeEnv::gMemoryTail,
-         IpeEnv::gMemorySize);
+         (int) sModules.size(),
+         (int) IpeEnv::gMemoryTail,
+         (int) IpeEnv::gMemorySize);
 
   for (size_t i = 0; i < sModules.size(); i++)
   {
