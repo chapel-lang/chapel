@@ -55,6 +55,7 @@ extern char *current_dir;
 // global variale to store Type Info
 llvm::DenseMap<const Type *, llvm::MDNode *> myTypeDescriptors;
 
+static
 std::string myGetTypeName(llvm::Type *ty) {
   std::string TypeName;
   llvm::raw_string_ostream TypeStream(TypeName);
@@ -66,6 +67,7 @@ std::string myGetTypeName(llvm::Type *ty) {
   return TypeName;
 }
 
+static
 llvm::MDNode *myGetType(const Type *type) {
   typedef llvm::DenseMap<const Type*, llvm::MDNode *>::const_iterator TypeNodeIter;
   TypeNodeIter i = myTypeDescriptors.find(type);
@@ -75,6 +77,8 @@ llvm::MDNode *myGetType(const Type *type) {
 }
 
 /////////////////////////////////////////////////
+#if 0
+static
 void printTypeInfo(Type *type, llvm::Type* ty)
 {
   //llvm::Type *ty = type->symbol->llvmType;
@@ -86,6 +90,7 @@ void printTypeInfo(Type *type, llvm::Type* ty)
   llvm::raw_os_ostream OS(std::cout);
   ty->print(OS); //print function in llvm::Type
 }
+#endif
 /////////////////////////////////////////////////
 
 void debug_data::create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags)
@@ -571,6 +576,10 @@ llvm::DIGlobalVariable debug_data::construct_global_variable(VarSymbol *gVarSym)
   ///////////////////////////////////////////////
   //else 
     //printf("For this unsolved GV: type-name = %s astTag = %i\n",gVarSym->type->symbol->name, gVarSym->type->astTag);
+  
+  // MPF: is this an error?
+  llvm::DIGlobalVariable ret;
+  return ret;
 }
 
 llvm::DIGlobalVariable debug_data::get_global_variable(VarSymbol *gVarSym)
@@ -583,9 +592,7 @@ llvm::DIGlobalVariable debug_data::get_global_variable(VarSymbol *gVarSym)
 
 llvm::DIVariable debug_data::construct_variable(VarSymbol *varSym)
 {
-  GenInfo *info = gGenInfo;
   const char *name = varSym->name;
-  const char *cname = varSym->cname;
      ///////////////////////////////////////////////
     //printf("construct_variable CALLED on %s!\n",cname);
     //////////////////////////////////////////////
@@ -616,6 +623,9 @@ llvm::DIVariable debug_data::construct_variable(VarSymbol *varSym)
   //else 
     //printf("For this unsolved LV: %s  type-name = %s astTag = %i\n",name,varSym->type->symbol->name, varSym->type->astTag);
 
+  // MPF: is this an error?
+  llvm::DIVariable ret;
+  return ret;
 }
 
 llvm::DIVariable debug_data::get_variable(VarSymbol *varSym)
@@ -628,9 +638,7 @@ llvm::DIVariable debug_data::get_variable(VarSymbol *varSym)
 
 llvm::DIVariable debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo)
 {
-  GenInfo *info = gGenInfo;
   const char *name = argSym->name;
-  const char *cname = argSym->cname;
     ////////////////////////////////////////////////
     //printf("construct_formal_arg CALLED on %s!\n",cname);
     //////////////////////////////////////////////
@@ -663,6 +671,9 @@ llvm::DIVariable debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned in
   //else 
     //printf("For this unsolved formal_arg: %s  type-name = %s astTag = %i\n",name,argSym->type->symbol->name, argSym->type->astTag);
 
+  // MPF: Is this an error?
+  llvm::DIVariable ret;
+  return ret;
 }
 
 llvm::DIVariable debug_data::get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo)

@@ -2066,7 +2066,7 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
-    printf("LLVM GENERATING FUNCTION\n");
+    //printf("LLVM GENERATING FUNCTION\n");
     if(debug_info) {
       printf("LLVM DEBUG_INFO BLOCK\n");
       llvm::DISubprogram dbgScope = debug_info->get_function(this);
