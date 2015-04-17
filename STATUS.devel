@@ -885,6 +885,12 @@ Ubuntu:
   64-bit version.  See the bug report here:
     https://bugs.launchpad.net/ubuntu/+source/eglibc/+bug/1309818
 
+OpenSUSE:
+- If the site-config package is installed, it sets a CONFIG_SITE environment
+  variable which causes some packages in third-party to store their
+  libraries in lib64 (vs lib) on 64-bit platforms. Unsetting CONFIG_SITE will
+  allow Chapel to build in that case.
+
 cygwin:
 - cygwin builds may demonstrate portability issues.
 - The qthreads tasking layer is not supported.
