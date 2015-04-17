@@ -136,7 +136,7 @@ IpeCallExpr* IpeProcedure::resolve(SymExpr*            procSymExpr,
 
     for (size_t i = 0; i < actuals.size(); i++)
     {
-      printf("   %ld: ", i);
+      printf("   %d: ", (int) i);
       actuals[i]->accept(&logger);
       printf("\n");
     }
@@ -180,9 +180,9 @@ void IpeProcedure::describe(int offset) const
   printf("%s#<IpeProcedure %s\n", pad, name());
 
   if (mMethods.size() == 1)
-    printf("%s  %3ld method\n",  pad, mMethods.size());
+    printf("%s  %3d method\n",  pad, (int) mMethods.size());
   else
-    printf("%s  %3ld methods\n", pad, mMethods.size());
+    printf("%s  %3d methods\n", pad, (int) mMethods.size());
 
   for (size_t i = 0; i < mMethods.size(); i++)
     mMethods[i]->describe(offset + 3);
