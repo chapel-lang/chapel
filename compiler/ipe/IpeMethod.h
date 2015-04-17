@@ -91,6 +91,8 @@ private:
   void                    writeln1(              IpeValue value, Type* type)         const;
   void                    writeln2(IpeValue msg, IpeValue value, Type* type)         const;
 
+  bool                    isQuit()                                                   const;
+
   State                   mState;
   IpeEnv*                 mEnvParent;
   IpeScope*               mScope;
