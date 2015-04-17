@@ -65,7 +65,7 @@ int IpeCallExpr::methodId() const
   return mMethodSel;
 }
 
-void IpeCallExpr::describe(int offset) const
+void IpeCallExpr::describe(int offset)
 {
   AstDumpToNode logger(stdout, offset + 3);
   char          pad[32] = { '\0' };
@@ -84,7 +84,7 @@ void IpeCallExpr::describe(int offset) const
 
   printf("%s   ", pad);
 
-  ((IpeCallExpr*) this)->accept(&logger);
+  accept(&logger);
   printf("\n");
 
   if (mType)
