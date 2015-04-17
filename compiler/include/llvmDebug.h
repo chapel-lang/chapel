@@ -25,7 +25,7 @@
 #if HAVE_LLVM_VER >= 36
 #define LLVM_DI_SUBROUTINE_TYPE llvm::DISubroutineType
 #else
-#define LLVM_DI_SUBROUTINE_TYPE llvm::DIType
+#define LLVM_DI_SUBROUTINE_TYPE llvm::DICompositeType
 #endif
 
 #endif

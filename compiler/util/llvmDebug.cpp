@@ -509,7 +509,9 @@ llvm::DISubprogram debug_data::construct_function(FnSymbol *function)
   ModuleSymbol* modSym = (ModuleSymbol*) function->defPoint->parentSymbol;
   const char *file_name = function->astloc.filename;
   int line_number = function->astloc.lineno;
-  llvm::Function* llFunc = getFunctionLLVM(function->cname); // why cname, not name?
+  // Get the function using the cname since that is how it is
+  // stored in the generated code. The name is just used within Chapel.
+  llvm::Function* llFunc = getFunctionLLVM(function->cname);
 
   llvm::DINameSpace module = get_module_scope(modSym);
   llvm::DIFile file = get_file(file_name);
