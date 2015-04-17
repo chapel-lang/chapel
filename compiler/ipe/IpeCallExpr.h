@@ -44,7 +44,7 @@ public:
   int                      procedureGeneration()                    const;
   int                      methodId()                               const;
 
-  void                     describe(int offset)                     const;
+  void                     describe(int offset);
 
 private:
                            IpeCallExpr();

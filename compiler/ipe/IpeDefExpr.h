@@ -39,7 +39,7 @@ public:
 
   FnSymbol*                fnSymbolGet()                            const;
 
-  void                     describe(int offset)                     const;
+  void                     describe(int offset);
 
 private:
                            IpeDefExpr();

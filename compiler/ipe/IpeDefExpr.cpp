@@ -48,7 +48,7 @@ FnSymbol* IpeDefExpr::fnSymbolGet() const
   return mFnSymbol;
 }
 
-void IpeDefExpr::describe(int offset) const
+void IpeDefExpr::describe(int offset)
 {
   AstDumpToNode logger(stdout, offset + 3);
   char          pad[32] = { '\0' };
@@ -66,7 +66,7 @@ void IpeDefExpr::describe(int offset) const
   printf("%s#<IpeDefExpr\n", pad);
 
   printf("%s   ", pad);
-  ((IpeDefExpr*) this)->accept(&logger);
+  accept(&logger);
   printf("\n");
 
   if (mFnSymbol)
