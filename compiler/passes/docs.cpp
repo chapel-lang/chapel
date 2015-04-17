@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 
+#include "docs.h"
+
+#include <cerrno>
 #include <fstream>
-#include <glob.h>
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -27,6 +29,7 @@
 
 #include "AstPrintDocs.h"
 #include "AstToText.h"
+#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -35,8 +38,6 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
-
-#include "docs.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -74,6 +75,10 @@ void docs(void) {
       docsSphinxDir = docsTempDir;
     }
 
+    // Make the intermediate dir and output dir.
+    makeDir(docsSphinxDir.c_str());
+    makeDir(docsOutputDir.c_str());
+
     // The location of intermediate rst files.
     std::string docsRstDir;
     if (fDocsTextOnly) {
@@ -83,12 +88,6 @@ void docs(void) {
       // For rst mode, the working location is somewhere inside the temp dir.
       docsRstDir = generateSphinxProject(docsSphinxDir);
     }
-
-    // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
-    mkdir(docsRstDir.c_str(), dirPerms);
-    mkdir(docsOutputDir.c_str(), dirPerms);
-
 
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
@@ -242,11 +241,38 @@ void createDocsFileFolders(std::string filename) {
     dirCutoff += total;
     std::string shorter = filename.substr(dirCutoff+1);
     std::string otherHalf = filename.substr(0, dirCutoff);
-    mkdir(otherHalf.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+
+    // Create `otherHalf` iff it is non-empty and does not already exist.
+    if (otherHalf.length() > 0 && !existsAndDir(otherHalf.c_str())) {
+      makeDir(otherHalf.c_str());
+    }
+
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
 }
+
+
+/* Create the directory (non-recursively). If an error occurs, exit and report
+ * error.
+ */
+static void makeDir(const char* dirpath) {
+  static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
+  int result = mkdir(dirpath, dirPerms);
+  if (result != 0 && errno != 0 && errno != EEXIST) {
+    USR_FATAL(astr("Failed to create directory: ", dirpath,
+                   " due to: ", strerror(errno)));
+  }
+}
+
+
+/* Returns true if dirpath exists on file system and is a directory. */
+static bool existsAndDir(const char* dirpath) {
+  struct stat sb;
+  return stat(dirpath, &sb) == 0 &&
+    S_ISDIR(sb.st_mode);
+}
+
 
 /* 
  * Create new sphinx project at given location and return path where .rst files
@@ -256,10 +282,6 @@ std::string generateSphinxProject(std::string dirpath) {
   // Create the output dir under the docs output dir.
   const char * sphinxDir = dirpath.c_str();
 
-  // Ensure output directory exists.
-  const char * mkdirCmd = astr("mkdir -p ", sphinxDir);
-  mysystem(mkdirCmd, "creating docs output dir");
-
   // Copy the sphinx template into the output dir.
   const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
   const char * cmd = astr("cp -r ", sphinxTemplate, " ", sphinxDir, "/");
@@ -267,31 +289,6 @@ std::string generateSphinxProject(std::string dirpath) {
 
   const char * moddir = astr(sphinxDir, "/source/modules");
   return std::string(moddir);
-}
-
-
-/* Returns the first path found matching '$venvDir/lib/python*\/site-packages' */
-static const char* getPythonPath(const char* venvDir) {
-  glob_t globResult;
-  const char* globPattern = astr(venvDir, "/lib/python*/site-packages");
-  glob(globPattern, 0, NULL, &globResult);
-  const size_t count = globResult.gl_pathc;
-
-  // No results found. Return "".
-
-  // FIXME: This should report error (chpldoc is not properly built/installed),
-  //        and stop processing...
-  //        (thomasvandoren, 2015-03-10)
-  char* result;
-  if (count == 0) {
-    result = (char*)"";
-  // At least one result found, so return first.
-  } else {
-    result = new char[strlen(globResult.gl_pathv[0])];
-    strcpy(result, globResult.gl_pathv[0]);
-  }
-  globfree(&globResult);
-  return result;
 }
 
 
@@ -308,11 +305,10 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
     CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
-  const char * pythonPath = getPythonPath(venvDir);
 
-  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && ",
-                              "export VIRTUAL_ENV=", venvDir, " && ",
-                              "export PYTHONPATH=", pythonPath);
+  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && "
+                              "export VIRTUAL_ENV=", venvDir, " && "
+                              "export CHPLDOC_AUTHOR='", fDocsAuthor, "'");
 
   // Run:
   //   $envVars &&

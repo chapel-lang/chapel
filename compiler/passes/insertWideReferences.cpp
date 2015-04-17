@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "astutil.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 #include "passes.h"
 #include "optimizations.h"
@@ -248,9 +249,9 @@ static void handleLocalBlocks() {
   }
 
   forv_Vec(BlockStmt, block, queue) {
-    Vec<CallExpr*> calls;
+    std::vector<CallExpr*> calls;
     collectCallExprs(block, calls);
-    forv_Vec(CallExpr, call, calls) {
+    for_vector(CallExpr, call, calls) {
       localizeCall(call);
       if (FnSymbol* fn = call->isResolved()) {
         SET_LINENO(fn);
@@ -509,7 +510,7 @@ static void widenClasses()
     {
       if (Type* wide = wideClassMap.get(def->sym->type)) {
         if (isVarSymbol(def->sym) ||
-            !def->parentSymbol->hasFlag(FLAG_EXTERN)) {
+            !def->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) {
           if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
             // Don't widen a ref's _val. We create a duplicate type so that
             // we can have references to both wide and narrow things.

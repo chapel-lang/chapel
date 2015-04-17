@@ -520,7 +520,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
 
       //Check each symExpr to see if its a use and or def and add to the appropriate lists
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(expr, symExprs);
+      collectSymExprs(expr, symExprs);
       for_vector(SymExpr, symExpr, symExprs) {
         if(symExpr->parentSymbol) {
           if(isLcnSymbol(symExpr->var)) {
@@ -635,7 +635,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
       for_vector(BasicBlock, block, *loop->getBlocks()) {
         for_vector(Expr, expr, block->exprs) {
           std::vector<SymExpr*> symExprs;
-          collectSymExprsSTL(expr, symExprs);
+          collectSymExprs(expr, symExprs);
           for_vector(SymExpr, symExpr2, symExprs) {
 
             //mark that we have seen the definition of the operand 
@@ -682,8 +682,8 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
   std::vector<CallExpr*> callsInLoop;
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
-      collectFnCallsSTL(expr, callsInLoop);
-      collectSymExprsSTL(expr, loopSymExprs);
+      collectFnCalls(expr, callsInLoop);
+      collectSymExprs(expr, loopSymExprs);
       if (DefExpr* defExpr = toDefExpr(expr)) {
         if (toVarSymbol(defExpr->sym)) {
           defsInLoop.insert(defExpr->sym);
@@ -1014,14 +1014,14 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
 }
 
 
-/*
+ /*
  * Collect all of the function symbols that belong to function calls 
  * and nested function calls that occur from baseAST. In other words
  * look through the baseAST and find all the function and nested function
  * calls and collect their fnsymbols. 
  */
-static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
-  AST_CHILDREN_CALL(ast, collectUsedFnSymbolsSTL, fnSymbols);
+static void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
+  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
   //if there is a function call, get the FnSymbol associated with it 
   //and look through that FnSymbol for other function calls. Do not 
   //look through an already visited FnSymbol, or you'll have an infinite
@@ -1030,9 +1030,7 @@ static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols
     if (FnSymbol* fnSymbol = call->isResolved()) {
       if(fnSymbols.count(fnSymbol) == 0) {
         fnSymbols.insert(fnSymbol);
-        for_alist(expr, fnSymbol->body->body) {
-          AST_CHILDREN_CALL(expr, collectUsedFnSymbolsSTL, fnSymbols);
-        }
+        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbols, fnSymbols);
       }
     }
   }
@@ -1046,7 +1044,7 @@ static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols
  */
 static bool containsSynchronizationVar(BaseAST* ast) {
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(ast, symExprs);
+  collectSymExprs(ast, symExprs);
   for_vector(SymExpr, symExpr, symExprs) {
 
     if(isLcnSymbol(symExpr->var)) {
@@ -1084,7 +1082,7 @@ static bool canPerformCodeMotion(Loop* loop) {
       //Check for nested function calls containing 
       //synchronization variables 
       std::set<FnSymbol*> fnSymbols;
-      collectUsedFnSymbolsSTL(expr, fnSymbols);
+      collectUsedFnSymbols(expr, fnSymbols);
       for_set(FnSymbol, fnSymbol2, fnSymbols) {
         if(containsSynchronizationVar(fnSymbol2)) {
           return false;

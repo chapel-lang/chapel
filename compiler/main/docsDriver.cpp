@@ -19,8 +19,11 @@
 
 #include "docsDriver.h"
 
+#include "commonFlags.h"
+#include "driver.h"
+
 bool fDocs = false;
-bool fDocsPrintHelp = false;
+char fDocsAuthor[256] = "";
 bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
@@ -68,17 +71,36 @@ Record components:
 
 ArgumentDescription docs_arg_desc[] = {
  {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
- {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
- {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
+
+ // TODO: This option is disabled for now (since source based ordering was
+ //       introduced). The code to support it is still around, and the plan is
+ //       to bring it back someday soon. (thomasvandoren, 2015-03-11)
+ //
+ // {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
+
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
- {"text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
  {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+ {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
+ {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
+ {"text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
 
  // TODO: Whether or not to support this flag is an open discussion. Currently,
  //       it is not supported, so the flag is always true.
  //       (thomasvandoren, 2015-03-08)
  //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
 
- {"help", 'h', NULL, "Help (show this list)", "F", &fDocsPrintHelp, NULL, NULL},
- {0}
+ {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
+ DRIVER_ARG_HELP,
+ DRIVER_ARG_HELP_ENV,
+ DRIVER_ARG_HELP_SETTINGS,
+ DRIVER_ARG_VERSION,
+ DRIVER_ARG_COPYRIGHT,
+ DRIVER_ARG_LICENSE,
+
+ {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
+ DRIVER_ARG_DEVELOPER,
+ DRIVER_ARG_DEBUGGERS,
+ DRIVER_ARG_PRINT_CHPL_HOME,
+
+ DRIVER_ARG_LAST
 };

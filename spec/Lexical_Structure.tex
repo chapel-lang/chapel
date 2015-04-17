@@ -5,7 +5,7 @@
 This section describes the lexical components of Chapel programs.
 The purpose of lexical analysis is
 to separate the raw input stream into a sequence of tokens suitable
-for input to the parser.  
+for input to the parser.
 
 \section{Comments}
 \label{Comments}
@@ -265,7 +265,8 @@ binary-digit: one of
   `0' `1'
 \end{syntax}
 
-All integer literals have type \chpl{int}.
+Integer literals in the range 0 to max(\chpl{int}), ~\rsec{Signed_and_Unsigned_Integral_Types},
+have type \chpl{int} and the remaining literals have type \chpl{uint}.
 
 \begin{rationale}
 Why are there no suffixes on integral literals?  Suffixes, like those
@@ -287,6 +288,7 @@ exponent-part:
 sign: one of
   + $ $ $ $ -
 \end{syntax}
+
 \begin{rationale}
 Why can't a real literal end with '.'?  There is a lexical ambiguity
 between real literals ending in '.' and the range operator '..' that
@@ -294,15 +296,18 @@ makes it difficult to parse.  For example, we want to
 parse \chpl{1..10} as a range from 1 to 10 without concern
 that \chpl{1.} is a real literal.
 \end{rationale}
+
 The type of a real literal is \chpl{real}.  Explicit conversions are
 necessary to change the size of the literal.
 
 Imaginary literals are designated by the following syntax:
+
 \begin{syntax}
 imaginary-literal:
   real-literal `i'
   integer-literal `i'
 \end{syntax}
+
 The type of an imaginary literal is \chpl{imag}.  Explicit conversions
 are necessary to change the size of the literal.
 

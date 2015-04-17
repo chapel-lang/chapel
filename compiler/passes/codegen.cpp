@@ -24,6 +24,7 @@
 #include "codegen.h"
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
@@ -775,9 +776,9 @@ static void codegen_header() {
       local.set_add(formal->cname);
     }
 
-    Vec<DefExpr*> defs;
+    std::vector<DefExpr*> defs;
     collectDefExprs(fn->body, defs);
-    forv_Vec(DefExpr, def, defs) {
+    for_vector(DefExpr, def, defs) {
       legalizeName(def->sym);
       // give temps cnames
       if (def->sym->hasFlag(FLAG_TEMP)) {
@@ -818,6 +819,8 @@ static void codegen_header() {
     //include generated extern C header file
     if (externC && gAllExternCode.filename != NULL) {
       fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
+      // If we wanted to, here is where we would re-enable
+      // the memory warning macros.
     }
 #endif
   }

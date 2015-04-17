@@ -145,11 +145,11 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 
 static void
 findOuterVars(FnSymbol* fn, SymbolMap& uses) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
 
   collect_asts(fn, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
@@ -234,7 +234,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap& vars) {
 void replaceVarUses(Expr* topAst, SymbolMap& vars) {
   if (vars.n == 0) return;
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(topAst, symExprs);
+  collectSymExprs(topAst, symExprs);
   form_Map(SymbolMapElem, e, vars) {
     Symbol* oldSym = e->key;
     if (e->value != markPruned) {
@@ -296,7 +296,7 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
 // functions to pass in values or references from the context which
 // are used in the body of the block.
 //
-// As a special case, the target locale is prepended to the arguments passed 
+// As a special case, the target locale is prepended to the arguments passed
 // to the "on" function.
 //
 void createTaskFunctions(void) {
@@ -436,7 +436,7 @@ void createTaskFunctions(void) {
           // Join barrier (acquire) is needed for a blocking on, and it
           // will make sure that writes in the on statement are available
           // to the caller. Nonblocking on or begin don't block so it
-          // doesn't make sense to acquire barrier after running them. 
+          // doesn't make sense to acquire barrier after running them.
           // coforall, cobegin, and sync blocks do this in waitEndCount.
           if( needsMemFence && isBlockingOn )
             block->insertBefore(new CallExpr("chpl_rmem_consist_acquire"));
@@ -472,7 +472,7 @@ void createTaskFunctions(void) {
           if( isBlockingOn )
             fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
         }
-        
+
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 
@@ -485,7 +485,9 @@ void createTaskFunctions(void) {
 
           markOuterVarsWithIntents(block->byrefVars, uses);
           pruneThisArg(call->parentSymbol, uses);
-          block->byrefVars->remove();
+
+          if (block->byrefVars != NULL)
+            block->byrefVars->remove();
 
           addVarsToActuals(call, uses);
           addVarsToFormals(fn, uses);

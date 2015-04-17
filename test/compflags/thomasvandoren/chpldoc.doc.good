@@ -1,0 +1,19 @@
+Usage: chpldoc [flags] [source files]
+
+Documentation Options:
+  -o, --output-dir <dirname>          Sets the documentation directory to
+                                      <dirname>
+      --save-sphinx <directory>       Save generated Sphinx project in
+                                      directory
+      --author <author>               Documentation author string.
+      --comment-style <indicator>     Only includes comments that start with
+                                      <indicator>
+      --text-only                     Generate text only documentation
+
+Information Options:
+  -h, --help                          Help (show this list)
+      --help-env                      Environment variable help
+      --help-settings                 Current flag settings
+      --version                       Show version
+      --copyright                     Show copyright
+      --license                       Show license

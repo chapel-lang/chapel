@@ -1243,8 +1243,12 @@ namespace {
 
         for(Function::use_iterator UI = F->use_begin(), UE = F->use_end();
                 UI!=UE; ) {
+#if HAVE_LLVM_VER >= 35
           Use &U = *UI;
-          User *Old = U.getUser(); //UI->getUser(); //*UI; //UI->getUser();
+          User *Old = U.getUser();
+#else
+          User *Old = *UI;
+#endif
           ++UI;
           CallSite CS(Old);
           if (CS.getInstruction()) {

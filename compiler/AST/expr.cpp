@@ -282,32 +282,30 @@ void Expr::prettyPrint(std::ostream *o) {
 }
 
 Expr* Expr::remove() {
-  if (this != NULL) {
-    if (list) {
-      if (next)
-        next->prev = prev;
-      else
-        list->tail = prev;
+  if (list) {
+    if (next)
+      next->prev = prev;
+    else
+      list->tail = prev;
 
-      if (prev)
-        prev->next = next;
-      else
-        list->head = next;
+    if (prev)
+      prev->next = next;
+    else
+      list->head = next;
 
-      list->length--;
+    list->length--;
 
-      next = NULL;
-      prev = NULL;
-      list = NULL;
-    } else {
-      callReplaceChild(this, NULL);
-    }
+    next = NULL;
+    prev = NULL;
+    list = NULL;
+  } else {
+    callReplaceChild(this, NULL);
+  }
 
-    if (parentSymbol) {
-      remove_help(this, 'r');
-    } else {
-      trace_remove(this, 'R');
-    }
+  if (parentSymbol) {
+    remove_help(this, 'r');
+  } else {
+    trace_remove(this, 'R');
   }
 
   return this;
@@ -476,17 +474,9 @@ GenRet SymExpr::codegen() {
   } else {
 #ifdef HAVE_LLVM
     if(isVarSymbol(var)) {
-      VarSymbol* varSym = toVarSymbol(var);
-      ret = varSym->codegen();
-      if( varSym->hasFlag(FLAG_CONST) ) {
-        ret.baseTypeConstant = 1;
-      }
+      ret = toVarSymbol(var)->codegen();
     } else if(isArgSymbol(var)) {
-      ArgSymbol* argSym = toArgSymbol(var);
-      ret = info->lvt->getValue(argSym->cname);
-      if( (argSym->intent & INTENT_FLAG_CONST) != 0 ) {
-        ret.baseTypeConstant = 1;
-      }
+      ret = info->lvt->getValue(var->cname);
     } else if(isTypeSymbol(var)) {
       ret.type = toTypeSymbol(var)->codegen().type;
     } else if(isFnSymbol(var) ){
@@ -949,14 +939,15 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
 
 static
 llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
-                                Type* valType = NULL)
+                                Type* valType = NULL,
+                                bool isConst = false)
 {
   if( ptr.chplType && !valType ) {
     if( ptr.isLVPtr ) valType = ptr.chplType;
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, ptr.baseTypeConstant);
+  return codegenLoadLLVM(ptr.val, valType, isConst);
 }
 
 #endif

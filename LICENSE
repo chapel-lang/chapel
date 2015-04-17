@@ -27,9 +27,21 @@ The Chapel implementation is composed of two categories of code:
      vim              vim-based syntax coloring                    VIM
 
    third-party/
-     chpldoc-venv     python packages supporting chpldoc           see third-party/README
+     chpldoc-venv    python packages supporting chpldoc
+       Sphinx         Python documentation generator               BSD
+       sphinxcontrib-chapeldomain
+                      The Chapel language domain for Sphinx        Apache v2.0
+       sphinx_rtd_theme
+                      ReadTheDocs.org theme for Sphinx             MIT
+       Jinja2         A template engine written in Python          BSD
+       MarkupSafe     XML/HTML/XHTML Markup safe string impl.      BSD
+       Pygments       A syntax highlighting package                BSD
+       docutils       Python Documentation Utilities               public domain
+                                                                   Python
+                                                                   BSD
+                                                                   GPL 3
+
      dlmalloc         alternative memory allocator option          public domain
-     dygraphs         Javascript graph generator and display       MIT
      gasnet           portable communication library               BSD-like
      gmp              optional multi-precision math library        L-GPL
      hwloc            portable NUMA compute node utilities         new BSD
@@ -71,9 +83,8 @@ The Chapel implementation is composed of two categories of code:
      vim              only used if a user modifies their vim environment
 
    third-party/
-     chpldoc-venv     only used when running 'chpldoc'/'chpl --docs'
+     chpldoc-venv     only used when running 'chpldoc'
      dlmalloc         only used when CHPL_MEM is 'dlmalloc'
-     dygraphs         only used to make and display performance graphs
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              where possible, used by default or when CHPL_GMP is 'gmp'
      hwloc            used by default on most platforms, or when CHPL_HWLOC is
