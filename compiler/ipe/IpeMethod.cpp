@@ -347,7 +347,12 @@ IpeValue IpeMethod::externFunctionInvoke(IpeEnv* env) const
 {
   IpeValue retval;
 
-  if (isWriteln() == true)
+  if      (isQuit()    == true)
+  {
+    clean_exit(0);
+  }
+
+  else if (isWriteln() == true)
   {
     if (mFnDecl->formals.length == 1)
     {
@@ -368,6 +373,7 @@ IpeValue IpeMethod::externFunctionInvoke(IpeEnv* env) const
       writeln2(env->fetch(formal1), env->fetch(formal2), formal2->type);
     }
   }
+
   else
   {
     AstDumpToNode logger(stdout, 3);
@@ -378,6 +384,19 @@ IpeValue IpeMethod::externFunctionInvoke(IpeEnv* env) const
     printf("\n\n");
 
     INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+bool IpeMethod::isQuit() const
+{
+  bool retval = false;
+
+  if (strcmp(mFnDecl->name, "quit") == 0)
+  {
+    if (ModuleSymbol* mod = mFnDecl->getModule())
+      retval = (strcmp(mod->name, "ChapelBase") == 0) ? true : false;
   }
 
   return retval;
