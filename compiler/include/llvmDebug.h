@@ -58,6 +58,13 @@ class debug_data
   llvm::DISubprogram construct_function(FnSymbol *function);
   llvm::DISubprogram get_function(FnSymbol *function);
 
+  llvm::DIGlobalVariable construct_global_variable(VarSymbol *gVarSym);
+  llvm::DIGlobalVariable get_global_variable(VarSymbol *gVarSym);
+  llvm::DIVariable construct_variable(VarSymbol *varSym);
+  llvm::DIVariable get_variable(VarSymbol *varSym);
+  llvm::DIVariable construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
+  llvm::DIVariable get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
+
  private:
   llvm::DIBuilder dibuilder;
   bool optimized;

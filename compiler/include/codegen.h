@@ -101,7 +101,7 @@ struct GenInfo {
   std::string moduleName;
   llvm::LLVMContext llvmContext;
   clang::ASTContext *Ctx;
-  LLVM_TARGET_DATA *targetData;
+  LLVM_TARGET_DATA *targetData; //used in llvmDebug.cpp: construct_type
   clang::CodeGen::CodeGenModule *cgBuilder;
   CCodeGenAction *cgAction;
 

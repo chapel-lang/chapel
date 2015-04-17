@@ -89,8 +89,8 @@ class LayeredValueTable
       }
     };
    
-    typedef llvm::StringMap<Storage> map_type;
-    typedef std::list<map_type> layers_type;
+    typedef llvm::StringMap<Storage> map_type;//just map, key is string, value is Storage
+    typedef std::list<map_type> layers_type;// each element of the list is a map
     typedef layers_type::iterator layer_iterator;
     typedef map_type::iterator value_iterator;
     

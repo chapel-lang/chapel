@@ -265,6 +265,11 @@ VarSymbol::VarSymbol(const char *init_name,
   immediate(NULL),
   doc(NULL),
   isField(false)
+#ifdef HAVE_LLVM
+  ,
+  llvmDIGlobalVariable(NULL),
+  llvmDIVariable(NULL)
+#endif
 {
   gVarSymbols.add(this);
 }
@@ -598,7 +603,7 @@ GenRet VarSymbol::codegen() {
 
   if( outfile ) {
     if (immediate) {
-      ret.isLVPtr = GEN_VAL;
+      ret.isLVPtr = GEN_VAL; //genret.h  GEN_VAL=0, read-only
       if (immediate->const_kind == CONST_KIND_STRING) {
         ret.c += '"';
         ret.c += immediate->v_string;
@@ -864,8 +869,13 @@ void VarSymbol::codegenGlobalDef() {
                                  : llvm::GlobalVariable::InternalLinkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
-
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
+
+      //------------------added by Hui Zhang---------------------------//
+      if(debug_info){
+	debug_info->get_global_variable(this);
+      }
+      //---------------------------------------------------------------//
     }
 #endif
   }
@@ -914,10 +924,17 @@ void VarSymbol::codegenDef() {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               codegenImmediateLLVM(immediate)));
       }
-
+//      //-------------added by Hui Zhang-------------------//
+//      if(debug_info){
+//	debug_info->get_global_variable(this);
+//      }
+      //---------------------------------------------------//
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
     llvm::Type *varType = type->codegen().type;
+    //////////////////////////////////////////////
+    //printf("Creating variable: %s\n",cname);
+    /////////////////////////////////////////////
     llvm::Value *varAlloca = createTempVarLLVM(varType, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
@@ -931,6 +948,11 @@ void VarSymbol::codegenDef() {
         }
       }
     }
+    //-------------added by Hui Zhang-------------------------//
+    if(debug_info){
+      debug_info->get_variable(this);
+    }
+    //--------------------------------------------------------//
 #endif
   }
 }
@@ -958,6 +980,10 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   defaultExpr(NULL),
   variableExpr(NULL),
   instantiatedFrom(NULL)
+#ifdef HAVE_LLVM
+  ,
+  llvmDIFormal(NULL)
+#endif
 {
   if (intentsResolved) {
     if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
@@ -1425,7 +1451,7 @@ GenRet TypeSymbol::codegen() {
       // code generated, so code generate it now. This can get called
       // when adding types partway through code generation.
       codegenDef();
-      // codegenMetadata(); TODO -- enable TBAA generation in the future.
+       codegenMetadata(); //TODO -- enable TBAA generation in the future.
     }
     ret.type = llvmType;
 #endif
@@ -2049,6 +2075,7 @@ void FnSymbol::codegenDef() {
     }
 
     llvm::Function::arg_iterator ai = func->arg_begin();
+    unsigned int ArgNo = 1; //start from 1 to cooperate with createLocalVariable
     for_formals(arg, this) {
       if (arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
         continue; // do not print locale argument for on blocks
@@ -2063,8 +2090,13 @@ void FnSymbol::codegenDef() {
 
         info->lvt->addValue(arg->cname, tempVar.val,
                             tempVar.isLVPtr, !is_signed(type));
+	// Added by Hui: debug info for formal arguments
+	if(debug_info){
+	  debug_info->get_formal_arg(arg, ArgNo);
+	}
       }
       ++ai;
+      ArgNo++;
     }
 
 #endif
