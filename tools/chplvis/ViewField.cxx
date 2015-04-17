@@ -127,8 +127,8 @@ void ViewField::processData()
         //  Task event
         tp = dynamic_cast<E_task *>(ev);
 	fflush(stdout);
-	if (++theLocales[tp->localId()].numTasks > maxTasks)
-	  maxTasks = theLocales[tp->localId()].numTasks;
+	if (++theLocales[tp->nodeId()].numTasks > maxTasks)
+	  maxTasks = theLocales[tp->nodeId()].numTasks;
         break;
       case Ev_comm:
         //  Comm event

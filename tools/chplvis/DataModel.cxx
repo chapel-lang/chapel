@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 void DataModel::newList()
 {
@@ -81,10 +82,11 @@ int DataModel::LoadData(const char * filename)
   int fnum;
   double seq;
 
-  if (sscanf(configline, "ChplVdebug: nodes %d, id %d, seq %lf",
-	     &nlocales, &fnum, &seq) != 3) {
-    fprintf (stderr, "LoadData: incorrect data on first line of %s.\n",
-	     filename);
+  int ssres = sscanf(configline, "ChplVdebug: nodes %d id %d seq %lf",
+		      &nlocales, &fnum, &seq);
+  if (ssres  != 3) {
+    fprintf (stderr, "\n  LoadData: incorrect data on first line of %s. (%d)\n",
+	     filename, ssres);
     fclose(data);
     return 0;
   }
@@ -96,6 +98,9 @@ int DataModel::LoadData(const char * filename)
   // Set the number of locales.
   numLocales = nlocales;
 
+  // Debug
+  std::list<Event *>::iterator itr;
+    
   for (int i = 0; i < nlocales; i++) {
     snprintf (fname, namesize+15, "%.*s%d", namesize, filename, i);
     if (!LoadFile(fname, i, seq)) {
@@ -103,10 +108,32 @@ int DataModel::LoadData(const char * filename)
       numLocales = -1;
       return 0;
     }
+    // Debug
+    /*
+    printf ("\nAfter file %s\n", fname);
+    itr = theEvents.begin();
+    while (itr != theEvents.end()) {
+      (*itr)->print();
+      itr++;
+    }
+    printf ("---------------\n");
+    */
   }
 
   printf (" done.\n");
+  // Process data ... producing a tag/resume index list
+
+  /*
+  // Debug
   printf ("list has %ld items\n", (long)theEvents.size());
+  itr = theEvents.begin();
+  while (itr != theEvents.end()) {
+    (*itr)->print();
+    itr++;
+  }
+
+  // End debug
+  */
 
   return 1;
 }
@@ -133,10 +160,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     return 0;
   }
 
-  // First line is the information line ... 
+  // User/System time variables 
+  long u_sec, u_usec, s_sec, s_usec;
 
-  if (sscanf(line, "ChplVdebug: nodes %d, id %d, seq %lf",
-	     &floc, &findex, &fseq) != 3) {
+  if (sscanf(line, "ChplVdebug: nodes %d id %d seq %lf ru %ld.%ld %ld.%ld",
+	     &floc, &findex, &fseq, &u_sec, &u_usec, &s_sec, &s_usec) != 7) {
     fprintf (stderr, "LoadData: incorrect data on first line of %s.\n",
 	     filename);
     fclose(data);
@@ -152,8 +180,18 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     return 0;
   }
 
-  // Now read the rest of the file
+  // Create a start event with starting user/sys times.
   std::list<Event *>::iterator itr = theEvents.begin();
+  
+  // Now read the rest of the file
+  Event *newEvent = new E_start(u_sec, u_usec, s_sec, s_usec, findex);
+  if (itr == theEvents.end()) {
+    theEvents.push_front(newEvent);
+  } else {
+    // Move past existing start events
+    while ((*itr)->Ekind() == Ev_start) { itr++; }
+    theEvents.insert(itr,newEvent);
+  }
 
   while ( fgets(line, 1024, data) == line ) {
     // Common Data
@@ -180,7 +218,13 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
     // fork
     int fid;
-    
+
+    // Tags
+    int tagId;
+    long nameOffset;  // Character offset for the tag name
+    char pause;
+    int slen;
+
     // Process the line
     linedata = strchr(line, ':');
     if (linedata ) {
@@ -192,9 +236,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
       continue;
     }
 
-    Event *newEvent = NULL;
-    
-    //printf("%c", line[0]);
+    newEvent = NULL;
+
     switch (line[0]) {
 
       case 0:  // Bug in output???
@@ -203,14 +246,14 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
       case 't':  // new task line
 	//  task: s.u nodeID task_list_locale begin/nb lineno filename
-	if (sscanf(&linedata[nextCh], "%d %d %9s %d %511s",
-		   &nid, &ntll, nbstr, &nlineno, nfilename) != 5) {
+	if (sscanf (&linedata[nextCh], "%d %d %9s %d %511s",
+		    &nid, &ntll, nbstr, &nlineno, nfilename) != 5) {
 	  fprintf (stderr, "Bad task line: %s\n", filename);
 	  fprintf (stderr, "nid = %d, ntll = %d, nbstr = '%s', nlineno = %d"
 		   " nfilename = '%s'\n", nid, ntll, nbstr, nlineno, nfilename);
 	  nErrs++;
 	} else {
-	  newEvent = new E_task(sec, usec, ntll);
+	  newEvent = new E_task (sec, usec, ntll);
 	}
 	break;
 
@@ -224,9 +267,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
       case 'p':  // regular put
 	// All comm data: 
 	// s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len lineno filename
-	if (sscanf(&linedata[nextCh], "%d %d 0x%lx 0x%lx %d %d %d %d %511s",
-		   &nid, &rnid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
-		   &nlineno, nfilename) != 9) {
+	if (sscanf (&linedata[nextCh], "%d %d 0x%lx 0x%lx %d %d %d %d %511s",
+		    &nid, &rnid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
+		    &nlineno, nfilename) != 9) {
 	  fprintf (stderr, "Bad comm line: %s\n", filename);
 	  nErrs++;
 	} else {
@@ -234,15 +277,15 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		   line[0] == 'p' ? 0 :
 		   line[3] == 'g' ? 1 : 0);
 	  if (isGet)
-	    newEvent = new E_comm(sec, usec, rnid, nid);
+	    newEvent = new E_comm (sec, usec, rnid, nid);
 	  else
-	    newEvent = new E_comm(sec, usec, nid, rnid);
+	    newEvent = new E_comm (sec, usec, nid, rnid);
 	}
 	break;
 
       case 'f':  // All the forks:
 	// s.u nodeID otherNode subloc fid arg arg_size
-	if (sscanf(&linedata[nextCh], "%d %d %d", 
+	if (sscanf (&linedata[nextCh], "%d %d %d", 
 		    &nid, &rnid, &fid) != 3) {
 	  fprintf (stderr, "Bad fork line: %s\n", filename);
 	  nErrs++;
@@ -251,41 +294,97 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	}
 	break;
 
-      case 'm':  // Tag in the data
-	nextCh++;
-	newEvent = new E_tag(sec,&linedata[nextCh]);
+      case 'R':  // resume generating data
+	if (sscanf (&linedata[nextCh], "%ld.%ld %d %d",
+		    &s_sec, &s_usec, &nid, &tagId) != 4 ) {
+	  fprintf (stderr, "Bad 'End' line: %s\n", filename);
+	  nErrs++;
+	} else {
+	  newEvent = new E_resume(sec, usec, nid, sec, s_usec, tagId);
+	}
 	break;
+
+      case 'T':  // Tag in the data
+	slen = strlen(line)-1;
+	if (line[slen] == '\n') line[slen] = 0;
+	if (sscanf (&linedata[nextCh], "%ld.%ld %d %d %c %ln",
+			   &s_sec, &s_usec, &nid, &tagId, &pause, &nameOffset) != 5 ) {
+	  fprintf (stderr, "Bad 'Tag' line: %s\n", filename);
+	} else {
+	  nextCh += nameOffset;
+	  newEvent = new E_tag(sec, usec, nid, s_sec, s_usec, tagId, &linedata[nextCh]);
+	}
+	break;
+
+      case 'E':  // end of the file
+	if (sscanf (&linedata[nextCh], "%ld.%ld %d", &s_sec, &s_usec, &nid) != 3 ) {
+	  fprintf (stderr, "Bad 'End' line: %s\n", filename);
+	  nErrs++;
+	} else {
+	  newEvent = new E_end(sec, usec, nid, s_sec, s_usec);
+	}
+	   
+	break;
+
+
       
       default:
 	/* Do nothing */ ;
 	//printf ("d");
     }
-    //  Add the newEvent to the list
+    //  Add the newEvent to the list, group Starts, Tags, Resumes and Ends together.
     if (newEvent) {
       if (theEvents.empty()) {
-	theEvents.push_front(newEvent);
+	theEvents.push_front (newEvent);
+      } else if (itr == theEvents.end()) {
+	theEvents.insert(itr, newEvent);
       } else {
-	if (itr == theEvents.end()) {
-	  theEvents.insert(itr, newEvent);
-	} else {
+	if (newEvent->Ekind() <= Ev_end) {
+	  // Group together
 	  while (itr != theEvents.end()
-		 && (*itr)->Ekind() != Ev_tag 
-	         && **itr < *newEvent)
+		 && (*itr)->Ekind() != newEvent->Ekind())
 	    itr++;
-	  if (itr != theEvents.end() && (*itr)->Ekind() == Ev_tag) {
-	    if (newEvent->Ekind() != Ev_tag) {
-	      theEvents.insert(itr, newEvent);
+	  if (itr == theEvents.end() || (*itr)->Ekind() != newEvent->Ekind()) {
+	    fprintf (stderr, "Internal error, event mismatch. file '%s'\n", filename); \
+	    printf ("newEvent: "); newEvent->print();
+	    if (itr != theEvents.end()) {
+		printf ("itr: "); (*itr)->print();
 	    } else {
-	      if (**itr == *newEvent) {
-		itr++;  // Move past the tag.
-	      } else {
-		fprintf (stderr, "Data Error: tag missmatch. %ld vs %ld\n",
-			 (*itr)->tsec(), newEvent->tsec());
-	      }
+	      printf ("At end of list\n");
 	    }
 	  } else {
-	    theEvents.insert(itr, newEvent);
+	    // More complicated ... move past proper kinds ...
+	    if (newEvent->Ekind() == Ev_start || newEvent->Ekind() == Ev_end) {
+	      // Just find the end of the group
+	      while (itr != theEvents.end() && (*itr)->Ekind() == newEvent->Ekind())
+		itr++;
+	    } else {
+	      // Need to move past them only if they have the same tag!
+	      if (newEvent->Ekind() == Ev_tag) {
+		// Work with tags
+		E_tag *tp = (E_tag *)newEvent;
+		while (itr != theEvents.end()
+		       && (*itr)->Ekind() == Ev_tag
+		       && ((E_tag *)(*itr))->tagNo() == tp->tagNo())
+		  itr++;
+	      } else {
+		// Work with resumes
+		E_resume *rp = (E_resume *)newEvent;
+		while (itr != theEvents.end()
+		       && (*itr)->Ekind() == Ev_resume
+		       && ((E_resume *)(*itr))->tagId() == rp->tagId())
+		  itr++;
+	      }
+	    }
+	    theEvents.insert (itr, newEvent);
 	  }
+	} else {
+	  // Insert by time
+	  while (itr != theEvents.end() &&
+		 (*itr)->Ekind() > Ev_end &&
+		 **itr < *newEvent)
+	    itr++;
+	  theEvents.insert (itr, newEvent);
 	}
       }
     }

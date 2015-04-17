@@ -30,6 +30,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <sys/resource.h>
+
 int32_t chpl_nodeID = -1;
 int32_t chpl_numNodes = -1;
 
@@ -128,7 +130,7 @@ size_t chpl_comm_getenvMaxHeapSize(void)
 
 // Visual Debug support
 
-int chpl_dprintf(int fd, const char * format, ...)
+int chpl_dprintf (int fd, const char * format, ...)
 {
   char buffer[2048];
   va_list ap;
@@ -139,7 +141,7 @@ int chpl_dprintf(int fd, const char * format, ...)
   retval = vsnprintf (buffer, 2048, format, ap);
   va_end(ap);
   if (retval > 0) {
-    wrv = write(fd, buffer,retval);
+    wrv = write (fd, buffer,retval);
     if (wrv < 0) return -1;
     return retval;
   }
@@ -153,7 +155,7 @@ static int chpl_make_vdebug_file (const char *rootname, int namelen) {
     chpl_vdebug_fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC|O_APPEND, 0666);
     if (chpl_vdebug_fd < 0) {
       fprintf (stderr, "Visual Debug failed to open %s: %s\n",
-               fname, strerror(errno));
+               fname, strerror (errno));
       chpl_vdebug = 0;
       chpl_vdebug_fd = -1;
       return -1;
@@ -161,47 +163,113 @@ static int chpl_make_vdebug_file (const char *rootname, int namelen) {
     return 0;
 }
 
-void chpl_vdebug_start(const char *fileroot, double now) {
+void chpl_vdebug_start (const char *fileroot, double now) {
+  const char * rootname;
+  int  namelen;
+  int  temp;
+  struct rusage ru;
+
   chpl_vdebug = 0;
-  if (chpl_vdebug_fd == -1) {
 
-    // Initial call, open file and write initialization information
-    const char * rootname;
-    int  namelen;
-    int  temp;
-
-    // Get the root of the file name.
-    rootname = (fileroot == NULL || fileroot[0] == 0) ? ".Vdebug" : fileroot; 
-    namelen = strlen(rootname)+3;
-    temp =  chpl_numNodes;
-    while (temp > 1) { 
-      namelen ++;
-      temp /= 2;
-    }
-
-    // In case of an error, just return
-    if (chpl_make_vdebug_file(rootname, namelen) < 0)
-      return;
-
-    // Write initial information to the file
-    chpl_dprintf (chpl_vdebug_fd, "ChplVdebug: nodes %d, id %d, seq %.3lf\n",
-             chpl_numNodes, chpl_nodeID, now);
+  // Close any open files.
+  if (chpl_vdebug_fd >= 0)
+    chpl_vdebug_stop ();
+    
+  // Initial call, open file and write initialization information
+  
+  // Get the root of the file name.
+  rootname = (fileroot == NULL || fileroot[0] == 0) ? ".Vdebug" : fileroot; 
+  namelen = strlen (rootname)+3;
+  temp =  chpl_numNodes;
+  while (temp > 1) { 
+    namelen ++;
+    temp /= 2;
   }
-
+  
+  // In case of an error, just return
+  if (chpl_make_vdebug_file (rootname, namelen) < 0)
+    return;
+  
+  // Write initial information to the file, including resource time
+  if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+    ru.ru_utime.tv_sec = 0;
+    ru.ru_utime.tv_usec = 0;
+    ru.ru_stime.tv_sec = 0;
+    ru.ru_stime.tv_usec = 0;
+  }
+  chpl_dprintf (chpl_vdebug_fd,
+		"ChplVdebug: nodes %d id %d seq %.3lf ru %ld.%ld %ld.%ld \n",
+		chpl_numNodes, chpl_nodeID, now,
+		(long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+		(long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec  );
   chpl_vdebug = 1;
 }
 
-void chpl_vdebug_stop(void) {
+void chpl_vdebug_stop (void) {
+  struct rusage ru;  
+  if (chpl_vdebug_fd >= 0) {
+    if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+      ru.ru_utime.tv_sec = 0;
+      ru.ru_utime.tv_usec = 0;
+      ru.ru_stime.tv_sec = 0;
+      ru.ru_stime.tv_usec = 0;
+    }
+    // Generate the End record
+    chpl_dprintf (chpl_vdebug_fd, "End: %ld.%ld %ld.%ld %d\n",
+		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
+		  chpl_nodeID);
+    close (chpl_vdebug_fd);
+  }
   chpl_vdebug = 0;
 }
 
-void chpl_vdebug_tag(const char *str)
+static int do_tag;
+void chpl_vdebug_starttag(void)
 {
-  static int tag_no = 0;  // A unique tag number for sorting tags ...
+  // Don't record the messages for the tag
+  chpl_vdebug = 0;
+  do_tag = 1;
+}
 
-  if (chpl_vdebug) {
-    chpl_dprintf (chpl_vdebug_fd, "mark-tag: %d.0 %s\n", ++tag_no, str);
-  }  
+static int tag_no = 0;  // A unique tag number for sorting tags ...
+void chpl_vdebug_tag (const char *str, int pause)
+{
+  struct rusage ru;
+
+  if (chpl_vdebug || do_tag) {
+    if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+      ru.ru_utime.tv_sec = 0;
+      ru.ru_utime.tv_usec = 0;
+      ru.ru_stime.tv_sec = 0;
+      ru.ru_stime.tv_usec = 0;
+    }
+    chpl_dprintf (chpl_vdebug_fd, "Tag: %ld.%ld %ld.%ld %d %d %c %s\n",
+		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
+		  chpl_nodeID, ++tag_no, (pause ? 'p' : 't'), str);
+
+    // Stop collection of data for a pause
+    chpl_vdebug = !pause;
+    do_tag = 0;
+  }
+}
+
+void chpl_vdebug_resume (void) {
+  struct rusage ru;
+  if (chpl_vdebug_fd >=0 && chpl_vdebug == 0) {
+    if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+      ru.ru_utime.tv_sec = 0;
+      ru.ru_utime.tv_usec = 0;
+      ru.ru_stime.tv_sec = 0;
+      ru.ru_stime.tv_usec = 0;
+    }
+    chpl_dprintf (chpl_vdebug_fd, "Resume: %ld.%ld %ld.%ld %d %d\n",
+		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
+		  chpl_nodeID, tag_no);
+    chpl_vdebug = 1;
+  }
 }
 
 // End Visual Debug Support
