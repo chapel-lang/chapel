@@ -124,7 +124,7 @@ module ChapelArray {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
     else {
-      if !noRefCount && false {
+      if !noRefCount {
         // We are creating a new _array, which contains a new reference to this
         // array representation (value), so we have to increment the reference
         // count.
@@ -138,7 +138,7 @@ module ChapelArray {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
     else {
-      if !noRefCount && false {
+      if !noRefCount {
         // We are creating a new _domain, which contains a new reference to this
         // domain representation (value), so we have to increment the reference
         // count.
@@ -152,7 +152,7 @@ module ChapelArray {
     if _isPrivatized(value) then
       return new _domain(value.pid, value);
     else {
-      if !noRefCount && false {
+      if !noRefCount {
         // We are creating a new _domain record, which contains a new reference to this
         // domain representation (value), so we have to increment the reference
         // count.
@@ -180,7 +180,7 @@ module ChapelArray {
     if _isPrivatized(value) then
       return new _distribution(value.pid, value);
     else {
-      if !noRefCount && false {
+      if !noRefCount {
         // We are creating a new _distribution, which contains a new reference to this
         // distribution representation (value), so we have to increment the reference
         // count.

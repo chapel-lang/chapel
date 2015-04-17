@@ -1054,6 +1054,8 @@ static bool isRetVarInReturn(SymExpr* se)
       // What else could it be?
       if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
         if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+            // Treat RTT init fns like constructors:
+            fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
             fn->hasFlag(FLAG_AUTO_COPY_FN) ||
             fn->hasFlag(FLAG_INIT_COPY_FN))
         return true;
@@ -1074,7 +1076,9 @@ static bool isRetVarCopyInConstructor(SymExpr* se)
         if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) // and the
           if (fn->hasFlag(FLAG_CONSTRUCTOR) ||             // containing
               fn->hasFlag(FLAG_AUTO_COPY_FN) ||            // function 
-              fn->hasFlag(FLAG_INIT_COPY_FN)) // is a constructor
+              fn->hasFlag(FLAG_INIT_COPY_FN) || // is a constructor
+              !strcmp(fn->name, "chpl__ensureDomainExpr"))
+            // TODO: Can the above be generalized to all functions?
             if (SymExpr* lhse = toSymExpr(call->get(1))) // whose LHS
               if (lhse->var == fn->getReturnSymbol()) // is the RVV.
                 return true;
