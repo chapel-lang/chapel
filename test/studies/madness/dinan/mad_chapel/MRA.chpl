@@ -544,8 +544,10 @@ class Function {
                 sum     += normf(box)**2;
                 ncoeffs += 1;
             }
-            if ncoeffs != 0 then
-	        writef("   level ##   #boxes=####  norm=%0.2e\n",
+            if ncoeffs != 0 then 
+              // MPPF: Should we always require % for ### formats to avoid having
+              // to escape all #'s?
+	        writef("   level ##   %#boxes=####  norm=%0.2er\n",
 		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
@@ -557,7 +559,7 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-	        writef("   level ##   #boxes=####  norm=%0.2e\n",
+	        writef("   level ##   %#boxes=####  norm=%0.2er\n",
 		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
@@ -573,11 +575,9 @@ class Function {
 	    // This truncation may lead to a loss of precision in the error calculation.
             // var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-	    // HEY mppf: Why doesn't this work:
-	    //            writef(" -- %.2r :  F_numeric()=%0.8r  f_analytic()=%0.8r err=%0.8r %s\n",
-            writef(" -- #.##:  F_numeric()= #.########  f_analytic()= #.######## err= #.########%s\n",
-		   i/npt:real, truncate(Fval), truncate(fval), 
-		   truncate(Fval-fval), 
+	    // HEY mppf: Why doesn't %.2r work below???:
+            writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr err=% .8dr%s\n",
+		   i/npt:real, truncate(Fval), truncate(fval), truncate(Fval-fval), 
 		   if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }
