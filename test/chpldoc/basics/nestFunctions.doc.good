@@ -1,0 +1,4 @@
+Module: nestFunctions.doc
+   proc outer()
+      This the comment for the outer function 
+

@@ -34,7 +34,7 @@ Starting Graph Generation in parallel
 max number of outgoing edges 12
 number of disconnected vertices 2
 
-Kernel 2: (get = 10, get_nb = 0, put = 7, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 0, fork_fast = 0, fork_nb = 6) (get = 38, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 8, fork_fast = 0, fork_nb = 0) (get = 38, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 4, fork_fast = 0, fork_nb = 0) (get = 38, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 4, fork_fast = 0, fork_nb = 0)
+Kernel 2: (get = 10, get_nb = 0, put = 7, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 0, fork_fast = 0, fork_nb = 6) (get = 44, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 8, fork_fast = 0, fork_nb = 0) (get = 40, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 4, fork_fast = 0, fork_nb = 0) (get = 40, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 4, fork_fast = 0, fork_nb = 0)
 Kernel 3: (get = 3670, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1464, fork_fast = 0, fork_nb = 48) (get = 158, get_nb = 0, put = 598, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 25, fork_fast = 0, fork_nb = 0) (get = 158, get_nb = 0, put = 378, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 16, fork_fast = 0, fork_nb = 0) (get = 158, get_nb = 0, put = 488, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 16, fork_fast = 0, fork_nb = 0)
 
 

@@ -24,9 +24,11 @@
 #include "symbol.h"
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "bb.h"
 #include "build.h"
 #include "codegen.h"
+#include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
@@ -353,17 +355,9 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << "var ";
   }
 
-  *file << this->name;
-
-  if (this->defPoint->exprType != NULL) {
-    *file << ": ";
-    this->defPoint->exprType->prettyPrint(file);
-  }
-
-  if (this->defPoint->init != NULL) {
-    *file << " = ";
-    this->defPoint->init->prettyPrint(file);
-  }
+  AstToText info;
+  info.appendVarDef(this);
+  *file << info.text();
 
   *file << std::endl;
 
@@ -1296,7 +1290,7 @@ void TypeSymbol::codegenMetadata() {
   llvm::LLVMContext& ctx = info->module->getContext();
   // Create the TBAA root node if necessary.
   if( ! info->tbaaRootNode ) {
-    llvm::Value* Ops[1];
+    LLVM_METADATA_OPERAND_TYPE* Ops[1];
     Ops[0] = llvm::MDString::get(ctx, "Chapel types");
     info->tbaaRootNode = llvm::MDNode::get(ctx, Ops);
   }
@@ -1350,16 +1344,17 @@ void TypeSymbol::codegenMetadata() {
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     // Now create tbaa metadata, one for const and one for not.
     {
-      llvm::Value* Ops[2];
+      LLVM_METADATA_OPERAND_TYPE* Ops[2];
       Ops[0] = llvm::MDString::get(ctx, cname);
       Ops[1] = parent;
       llvmTbaaNode = llvm::MDNode::get(ctx, Ops);
     }
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(ctx, cname);
       Ops[1] = constParent;
-      Ops[2] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1));
       llvmConstTbaaNode = llvm::MDNode::get(ctx, Ops);
     }
   }
@@ -1375,8 +1370,8 @@ void TypeSymbol::codegenMetadata() {
 
   if( ct ) {
     // Now create the tbaa.struct metadata nodes.
-    llvm::SmallVector<llvm::Value*, 16> Ops;
-    llvm::SmallVector<llvm::Value*, 16> ConstOps;
+    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE*, 16> Ops;
+    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE*, 16> ConstOps;
 
     const char* struct_name = ct->classStructName(true);
     llvm::Type* struct_type_ty = info->lvt->getType(struct_name);
@@ -1396,11 +1391,11 @@ void TypeSymbol::codegenMetadata() {
         unsigned gep = ct->getMemberGEP(field->cname);
         llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
         llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
-        Ops.push_back(off);
-        Ops.push_back(sz);
+        Ops.push_back(llvm_constant_as_metadata(off));
+        Ops.push_back(llvm_constant_as_metadata(sz));
         Ops.push_back(field->type->symbol->llvmTbaaNode);
-        ConstOps.push_back(off);
-        ConstOps.push_back(sz);
+        ConstOps.push_back(llvm_constant_as_metadata(off));
+        ConstOps.push_back(llvm_constant_as_metadata(sz));
         ConstOps.push_back(field->type->symbol->llvmConstTbaaNode);
         llvmTbaaStructNode = llvm::MDNode::get(ctx, Ops);
         llvmConstTbaaStructNode = llvm::MDNode::get(ctx, ConstOps);
@@ -2057,10 +2052,10 @@ void FnSymbol::codegenDef() {
   }
 
   {
-    Vec<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
     collect_top_asts(body, asts);
 
-    forv_Vec(BaseAST, ast, asts) {
+    for_vector(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!toTypeSymbol(def->sym)) {
           if (fGenIDS && isVarSymbol(def->sym))
@@ -2080,7 +2075,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
     if( developer ) {
-      if(llvm::verifyFunction(*func, llvm::PrintMessageAction)){
+      bool problems;
+#if HAVE_LLVM_VER >= 35
+      problems = llvm::verifyFunction(*func, &llvm::errs());
+#else
+      problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
+#endif
+      if( problems ) {
         INT_FATAL("LLVM function verification failed");
       }
     }
@@ -2397,11 +2398,11 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs);
   *file << this->docsDirective();
 
-  // Print inline/export. Externs do not get a prefix, since the user doesn't
+  // Print export. Externs do not get a prefix, since the user doesn't
   // care whether it's an extern or not (they just want to use the function).
-  if (this->hasFlag(FLAG_INLINE)) {
-    *file << "inline ";
-  } else if (this->hasFlag(FLAG_EXPORT)) {
+  // Inlines don't get a prefix for symmetry in modules like Math.chpl and
+  // due to the argument that it's of negligible value in most cases.
+  if (this->hasFlag(FLAG_EXPORT)) {
     *file << "export ";
   }
 
@@ -2413,10 +2414,9 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   // Print name and arguments.
-  AstToText *info = new AstToText();
-  info->appendNameAndFormals(this);
-  *file << info->text();
-  delete info;
+  AstToText info;
+  info.appendNameAndFormals(this);
+  *file << info.text();
 
   // Print return intent, if one exists.
   switch (this->retTag) {
@@ -2847,7 +2847,7 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
 }
 
 void ModuleSymbol::addDefaultUses() {
-  if (modTag != MOD_INTERNAL && hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
+  if (modTag != MOD_INTERNAL) {
     UnresolvedSymExpr* modRef = 0;
 
     SET_LINENO(this);

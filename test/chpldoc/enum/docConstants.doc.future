@@ -1,0 +1,14 @@
+bug: chpldoc incorrectly documents enum constants
+
+chpldoc grabs the incorrect comment for an enum when the first constant is
+documented. For example:
+
+  /* enum documentation */
+  enum Color {
+    /* first constant doc */
+    Red,
+    Yellow
+  };
+
+chpldoc will incorrectly use "first constant doc" as the documentation for
+Color enum.

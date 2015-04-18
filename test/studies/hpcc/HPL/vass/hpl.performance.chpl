@@ -3,7 +3,6 @@
 // and Timing routines
 //
 use Norm, Random, Time;
-use /*utils,*/ UtilMath;
 
 //
 // Use the user module for computing HPCC problem sizes

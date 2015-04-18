@@ -26,8 +26,10 @@
 
 #include "arg.h"
 #include "chpl.h"
+#include "commonFlags.h"
 #include "config.h"
 #include "countTokens.h"
+#include "docsDriver.h"
 #include "files.h"
 #include "ipe.h"
 #include "log.h"
@@ -86,12 +88,9 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
-static bool rungdb = false;
-static bool runlldb = false;
 bool fLibraryCompile = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
-bool developer = false;
 bool fVerify = false;
 bool ignore_errors = false;
 bool ignore_errors_for_pass = false;
@@ -177,13 +176,6 @@ bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
-bool fDocs = false;
-bool fDocsAlphabetize = false;
-char fDocsCommentLabel[256] = "";
-char fDocsFolder[256] = "";
-bool fDocsTextOnly = false;
-char fDocsSphinxDir[256] = "";
-bool fDocsIncludeExterns = true;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -206,13 +198,6 @@ bool preserveInlinedLineNumbers = false;
 const char* compileCommand = NULL;
 char compileVersion[64];
 
-static bool printCopyright = false;
-static bool printHelp = false;
-static bool printEnvHelp = false;
-static bool printSettingsHelp = false;
-static bool printLicense = false;
-static bool printVersion = false;
-static bool printChplHome = false;
 
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
@@ -324,20 +309,6 @@ static void setupChplHome(const char* argv0) {
     free(guess);
 
   parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
-}
-
-static void setCommentLabel(const ArgumentState* arg_state, const char* label) {
-  assert(label != NULL);
-  size_t len = strlen(label);
-  if (len != 0) {
-    if (len > sizeof(fDocsCommentLabel)) {
-      USR_FATAL("the label is too large!");
-    }else if (label[0] != '/' || label[1] != '*') {
-      USR_FATAL("comment label should start with /*");
-    } else {
-      strcpy(fDocsCommentLabel, label);
-    }
-  }
 }
 
 
@@ -464,15 +435,26 @@ static void setChapelDebug(const ArgumentState* state, const char* arg_unused) {
   printCppLineno = true;
 }
 
-static void setDevelSettings(const ArgumentState* state, const char* arg_unused) {
-  // have to handle both cases since this will be called with --devel
-  // and --no-devel
-  if (developer) {
-    ccwarnings = true;
+
+// In order to handle accumulating ccflags arguments, the argument
+// processing calls this function. This function appends the flags
+// to the ccflags variable, so that multiple --ccflags arguments
+// all end up together in the ccflags variable (and will end up
+// being passed to the backend C compiler).
+static void setCCFlags(const ArgumentState* state, const char* arg) {
+  // Append arg to the end of ccflags.
+  int curlen = strlen(ccflags);
+  int space = sizeof(ccflags) - curlen - 1 - 1; // room for ' ' and \0
+  int arglen = strlen(arg);
+  if( arglen <= space ) {
+    // add a space if there are already arguments here
+    if( curlen != 0 ) ccflags[curlen++] = ' ';
+    memcpy(&ccflags[curlen], arg, arglen);
   } else {
-    ccwarnings = false;
+    USR_FATAL("ccflags argument too long");
   }
 }
+
 
 static void handleLibrary(const ArgumentState* state, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
@@ -583,7 +565,7 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoInline = false;
   fNoInlineIterators = false;
   fNoOptimizeLoopIterators = false;
-  //fNoVectorize = false;
+  fNoVectorize = false;
   fNoLiveAnalysis = false;
   fNoRemoteValueForwarding = false;
   fNoRemoveCopyCalls = false;
@@ -631,10 +613,6 @@ static void setCacheEnable(const ArgumentState* state, const char* unused) {
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
 
-
-static void setHelpTrue(const ArgumentState* state, const char* unused) {
-  printHelp = true;
-}
 
 static void setHtmlUser(const ArgumentState* state, const char* unused) {
   fdump_html = true;
@@ -744,7 +722,7 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
- {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
+ {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
  {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
@@ -761,15 +739,6 @@ static ArgumentDescription arg_desc[] = {
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
 
- {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
- {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fDocs, "CHPL_DOC", NULL },
- {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
- {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, setCommentLabel},
- {"docs-dir", ' ', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
- // {"docs-externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL}, // Commented out because we aren't sure we want it yet.
- {"docs-text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
- {"docs-save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},  // "CHPL_SAVE_SPHINX_DIR", NULL
-
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', NULL, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", NULL},
@@ -779,7 +748,7 @@ static ArgumentDescription arg_desc[] = {
 // Support for extern { c-code-here } blocks could be toggled with this
 // flag, but instead we just leave it on if the compiler can do it.
 // {"extern-c", ' ', NULL, "Enable [disable] extern C block support", "f", &externC, "CHPL_EXTERN_C", NULL},
- {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
+ DRIVER_ARG_DEVELOPER,
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
@@ -794,12 +763,12 @@ static ArgumentDescription arg_desc[] = {
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
- {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL, NULL},
- {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL, NULL},
- {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
- {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
- {"license", ' ', NULL, "Show license", "F", &printLicense, NULL, NULL},
- {"version", ' ', NULL, "Show version", "F", &printVersion, NULL, NULL},
+ DRIVER_ARG_COPYRIGHT,
+ DRIVER_ARG_HELP,
+ DRIVER_ARG_HELP_ENV,
+ DRIVER_ARG_HELP_SETTINGS,
+ DRIVER_ARG_LICENSE,
+ DRIVER_ARG_VERSION,
 
  {"", ' ', NULL, "Developer Flags -- Debug Output", NULL, NULL, NULL, NULL},
  {"cc-warnings", ' ', NULL, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
@@ -837,8 +806,7 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-codegen", ' ', NULL, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
- {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"lldb", ' ', NULL, "Run compiler in lldb", "F", &runlldb, NULL, NULL},
+ DRIVER_ARG_DEBUGGERS,
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
@@ -853,8 +821,8 @@ static ArgumentDescription arg_desc[] = {
  {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
 
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
- {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome,   NULL,                   NULL},
- {0}
+ DRIVER_ARG_PRINT_CHPL_HOME,
+ DRIVER_ARG_LAST
 };
 
 
@@ -863,7 +831,7 @@ static ArgumentState sArgState = {
   0,
   "program",
   "path",
-  arg_desc
+  NULL
 };
 
 
@@ -889,32 +857,32 @@ static void printStuff(const char* argv0) {
   bool shouldExit       = false;
   bool printedSomething = false;
 
-  if (printVersion) {
+  if (fPrintVersion) {
     fprintf(stdout, "%s Version %s\n", sArgState.program_name, compileVersion);
 
-    printCopyright   = true;
+    fPrintCopyright  = true;
     printedSomething = true;
     shouldExit       = true;
   }
 
-  if (printLicense) {
+  if (fPrintLicense) {
     fprintf(stdout,
 #include "LICENSE"
             );
 
-    printCopyright   = false;
+    fPrintCopyright  = false;
     shouldExit       = true;
     printedSomething = true;
   }
 
-  if (printCopyright) {
+  if (fPrintCopyright) {
     fprintf(stdout,
 #include "COPYRIGHT"
             );
 
     printedSomething = true;
   }
-  if( printChplHome ) {
+  if( fPrintChplHome ) {
     char* guess = findProgramPath(argv0);
 
     printf("%s\t%s\n", CHPL_HOME, guess);
@@ -924,10 +892,10 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+  if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
 
-    usage(&sArgState, (!printHelp), printEnvHelp, printSettingsHelp);
+    usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
 
     shouldExit       = true;
     printedSomething = true;
@@ -955,26 +923,31 @@ int main(int argc, char* argv[]) {
 
     init_args(&sArgState, argv[0]);
 
+    fDocs   = (strcmp(sArgState.program_name, "chpldoc")  == 0) ? true : false;
     fUseIPE = (strcmp(sArgState.program_name, "chpl-ipe") == 0) ? true : false;
+
+    // Initialize the arguments for argument state. If chpldoc, use the docs
+    // specific arguments. Otherwise, use the regular arguments.
+    if (fDocs) {
+      init_arg_desc(&sArgState, docs_arg_desc);
+    } else {
+      init_arg_desc(&sArgState, arg_desc);
+    }
 
     initFlags();
     initRootModule();
     initPrimitive();
     initPrimitiveTypes();
 
-    if (fUseIPE == false) {
-      DefExpr* objectClass = defineObjectClass();
+    DefExpr* objectClass = defineObjectClass();
 
-      initChplProgram(objectClass);
-    }
+    initChplProgram(objectClass);
 
     setupOrderedGlobals(argv[0]);
 
     process_args(&sArgState, argc, argv);
 
-    if (fUseIPE == false) {
-      initCompilerGlobals(); // must follow argument parsing
-    }
+    initCompilerGlobals(); // must follow argument parsing
 
     setupDependentVars();
     setupModulePaths();
@@ -985,18 +958,15 @@ int main(int argc, char* argv[]) {
   if (fUseIPE == false)
     printStuff(argv[0]);
 
-  if (rungdb)
+  if (fRungdb)
     runCompilerInGDB(argc, argv);
 
-  if (runlldb)
+  if (fRunlldb)
     runCompilerInLLDB(argc, argv);
 
   addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
   if (fUseIPE == false) {
-    if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)
-      fDocs = true;
-
     runPasses(tracker, fDocs);
   } else {
     ipeRun();

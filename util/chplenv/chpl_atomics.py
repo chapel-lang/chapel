@@ -40,6 +40,8 @@ def get(flag='target'):
                 atomics_val = 'intrinsics'
             elif compiler_val == 'clang':
                 atomics_val = 'intrinsics'
+            elif compiler_val == 'clang-included':
+                atomics_val = 'intrinsics'
 
             # we can't use intrinsics, fall back to locks
             if not atomics_val:

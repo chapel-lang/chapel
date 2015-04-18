@@ -75,10 +75,8 @@ void parse() {
   standardModule        = parseMod("ChapelStandard",       MOD_INTERNAL);
   INT_ASSERT(standardModule);
 
-  if (fUseIPE == false) {
-    printModuleInitModule = parseMod("PrintModuleInitOrder", MOD_INTERNAL);
-    INT_ASSERT(printModuleInitModule);
-  }
+  printModuleInitModule = parseMod("PrintModuleInitOrder", MOD_INTERNAL);
+  INT_ASSERT(printModuleInitModule);
 
   parseDependentModules(MOD_INTERNAL);
 
@@ -101,14 +99,12 @@ void parse() {
     printModuleSearchPath();
   }
 
-  if (fUseIPE == false) {
-    int         filenum       = 0;
-    const char* inputFilename = 0;
+  int         filenum       = 0;
+  const char* inputFilename = 0;
 
-    while ((inputFilename = nthFilename(filenum++))) {
-      if (isChplSource(inputFilename)) {
-        parseFile(inputFilename, MOD_USER, true);
-      }
+  while ((inputFilename = nthFilename(filenum++))) {
+    if (isChplSource(inputFilename)) {
+      parseFile(inputFilename, MOD_USER, true);
     }
   }
 
@@ -192,7 +188,7 @@ static void gatherWellKnownTypes() {
   // When compiling for minimal modules, we don't require any specific
   // well-known types to be defined.
   //
-  if (fMinimalModules == false && fUseIPE == false) {
+  if (fMinimalModules == false) {
     // Make sure all well-known types are defined.
     for (int i = 0; i < nEntries; ++i) {
       WellKnownType& wkt = sWellKnownTypes[i];

@@ -263,7 +263,8 @@ def strip_series(csvFile, numseries):
 class GraphStuff:
     def __init__(self, _name, _testdir, _perfdir, _outdir, _startdate, _enddate,
                  _reduce, _display_bounds, _alttitle, _annotation_file):
-        self.numGraphs = 0;
+        self.numGraphs = 0
+        self.config_name = _name
         self.testdir = _testdir
         self.perfdir = _perfdir
         self.outdir = _outdir
@@ -310,12 +311,14 @@ class GraphStuff:
         except IOError:
             sys.stderr.write('ERROR: Could not open file: %s\n'%(self.gfname))
 
-        if annotate:
+        if annotate and self.annotation_file:
             try:
                 self.all_annotations = annotate.load(self.annotation_file)
             except IOError:
                 sys.stderr.write('ERROR: Could not open file: %s\n'%(self.annotation_file))
                 raise
+        else:
+            self.all_annotations = None
 
         self.gfile.write('// AUTOMATICALLY GENERATED GRAPH DESCRIPTION\n')
         self.gfile.write('document.title = "%s";\n'%(self.title))
@@ -372,11 +375,11 @@ class GraphStuff:
             series = ginfo.graphkeys[0]
 
         # generate the annotations for this graph
-        if series and annotate and not numericX:
+        if series and annotate and self.all_annotations and not numericX:
             ginfo.annotations = annotate.get(
                 self.all_annotations, ginfo.name, series,
                 parse_date(ginfo.startdate, '%Y-%m-%d'),
-                parse_date(ginfo.enddate,'%Y-%m-%d'))
+                parse_date(ginfo.enddate,'%Y-%m-%d'), self.config_name)
 
         self.gfile.write('{\n')
         if ginfo.title != '':
@@ -934,15 +937,14 @@ def main():
     else:
         multiConf = []
 
+    annotation_file = None
     if annotate:
-        if options.annotation_file != None:
+        if options.annotation_file is not None:
             annotation_file = options.annotation_file
-        elif 'CHPL_HOME' in os.environ:
-            annotation_file = os.environ['CHPL_HOME'] + '/test/ANNOTATIONS.yaml'
         else:
-            annotation_file = 'ANNOTATIONS.yaml'
-    else:
-        annotation_file = None
+            af = os.path.join(options.testdir, 'ANNOTATIONS.yaml')
+            if os.path.exists(af):
+                annotation_file = af
 
     # This allows the graph webpage to have an alternate title. The default is
     # Chapel Performance Graphs, which is not always appropriate 
@@ -1020,7 +1022,7 @@ def main():
 
     # Copy the index.html and support css and js files
     auxdir = os.path.dirname(os.path.realpath(__file__))+'/perf'
-    copiedAllFiles = True 
+    copiedAllFiles = True
     try:
         shutil.copy(auxdir+'/index.html', outdir)
     except IOError:
@@ -1037,23 +1039,12 @@ def main():
         sys.stderr.write('WARNING: Could not copy perfgraph.js\n')
         copiedAllFiles = False
 
-    # TODO point these to the right location
-    dygraphDir = os.path.join(
-        os.environ.get('CHPL_HOME', ''),
-        'third-party',
-        'dygraphs')
-    try:
-        shutil.copy(os.path.join(dygraphDir, 'dygraph-combined.js'), outdir)
-    except IOError:
-        sys.stderr.write('WARNING: Could not copy dygraph-combined.js\n')
-        copiedAllFiles = False
-
     graphInfo.finish()
-    
+
     sys.stdout.write('Read %d graph files in %d suites\n'%(numGraphfiles, numSuites))
-   
-    if copiedAllFiles: 
-        with open(outdir + "/SUCCESS", 'w') as f: 
+
+    if copiedAllFiles:
+        with open(outdir + "/SUCCESS", 'w') as f:
             # do nothing, we just want to create the file so we know that no
             # errors that we currently detect occurred and all the requires
             # files were copied over. This is used to see if we should sync the

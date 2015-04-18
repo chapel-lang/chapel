@@ -1,0 +1,12 @@
+feature request: support creating domains with new keyword
+
+Support something like:
+
+  var D = new domain(int);
+  var A = [new domain(string)] string;
+
+Which would be equivalent to:
+
+  var D: domain(int);
+  var DA: domain(string),
+    A: [DA] string;

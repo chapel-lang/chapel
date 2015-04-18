@@ -25,6 +25,7 @@
 
 #include "AstPrintDocs.h"
 
+#include "docsDriver.h"
 #include "symbol.h"
 #include "type.h"
 
@@ -68,6 +69,13 @@ void AstPrintDocs::exitAggrType(AggregateType* node) {
   // TODO: Does it make sense to print inheritance here?
   //       (thomasvandoren, 2015-02-22)
   this->tabs--;
+}
+
+
+bool AstPrintDocs::enterEnumType(EnumType* node)
+{
+  node->printDocs(this->file, this->tabs);
+  return false;
 }
 
 

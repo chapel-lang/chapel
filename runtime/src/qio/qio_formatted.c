@@ -382,8 +382,8 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
       // Figure out how many bytes are available.
       err = _peek_until_len(ch, maxlen, &peek_amt);
       num = peek_amt;
-      // Ignore EOF errors.
-      if( err && qio_err_to_int(err) == EEOF ) err = 0;
+      // Ignore EOF errors as long as we read something.
+      if( err && qio_err_to_int(err) == EEOF && num > 0 ) err = 0;
       break;
     default:
       if( str_style >= 0 ) {
@@ -763,7 +763,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   int64_t lastwspos = 0;
 
   if( skipws && len > 0 ) {
-    int nbytes;
+    int nbytes = 0;
     int32_t wchr;
     size_t min_nonspace = len;
     size_t max_nonspace = 0;
@@ -1410,7 +1410,7 @@ qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string
   ssize_t ilen;
   ssize_t q;
   int32_t chr;
-  int clen;
+  int clen = 0;
   char* ret;
   int tmplen;
   qio_truncate_info_t ti;
@@ -2134,6 +2134,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
+  if( style->showpoint ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
 
   // We might not have room...
@@ -2176,6 +2177,12 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   // now output the digits.
   qio_memcpy(dst + i, tmp+tmp_skip, tmp_len);
   i += tmp_len;
+
+  // Now output a period if we're doing showpoint.
+  if( style->showpoint ) {
+    dst[i] = '.';
+    i++;
+  }
 
   // Now if we're left justified we might need padding.
   if( style->leftjustify && width < style->min_width_columns) {
@@ -2622,7 +2629,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
   int got;
   int base;
   qioerr err;
-  double num;
+  double num = 0;
   qio_style_t* style;
   bool needs_i;
 
@@ -3545,13 +3552,18 @@ qioerr qio_conv_parse(c_string fmt,
   i = start;
 
   // do we have a ####.#### conversion to match?
+  if( fmt[i] == '%' && fmt[i+1] == '{' && fmt[i+2] == '#' ) {
+    // handle %{####} conversions
+    in_group = 1;
+    i++; // pass %
+    i++; // pass {
+  }
   if( fmt[i] == '#' ) {
     size_t num_before, num_after, period;
     num_before = 0;
     num_after = 0;
     period = 0;
     
-
     // how many ### do we have before a . ?
     for( ; fmt[i] == '#'; i++ ) num_before++;
 
@@ -3559,6 +3571,14 @@ qioerr qio_conv_parse(c_string fmt,
       i++; // pass '.'
       period = 1;
       for( ; fmt[i] == '#'; i++ ) num_after++;
+    }
+
+    if( in_group ) {
+      if( fmt[i] != '}' ) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "Bad %{###.###} format group");
+      } else {
+        i++; // pass }
+      }
     }
 
     spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;

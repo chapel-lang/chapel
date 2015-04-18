@@ -48,11 +48,11 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 //
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
 
   collect_asts(fn, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
@@ -101,10 +101,11 @@ passByRef(Symbol* sym) {
     return false;
   }
 
-  Type* type = sym->type;
-
-  if (isRecordWrappedType(type)) {
-    // These values *are* constant. E.g. an _array-typed symbol
+  if (sym->hasFlag(FLAG_DISTRIBUTION) ||
+      sym->hasFlag(FLAG_DOMAIN) ||
+      sym->hasFlag(FLAG_ARRAY)
+  ) {
+    // These values *are* constant. E.g the symbol with FLAG_ARRAY
     // stores a pointer to the corresponding array descriptor.  Since
     // each Chapel variable corresponds to a single Chapel array
     // throughout the variable's lifetime, the descriptor object stays
@@ -112,6 +113,8 @@ passByRef(Symbol* sym) {
     // object *can* change, however.
     return false;
   }
+
+  Type* type = sym->type;
 
   if (sym->hasFlag(FLAG_ARG_THIS))
    if (passableByVal(type)) // NB this-in-taskfns-in-ctors.chpl
@@ -198,7 +201,7 @@ static void
 replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   if (vars->n == 0) return;
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(fn->body, symExprs);
+  collectSymExprs(fn->body, symExprs);
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       ArgSymbol* arg = toArgSymbol(e->value);
@@ -280,10 +283,10 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   do {
     change = false;
     forv_Vec(FnSymbol, fn, nestedFunctions) {
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
       collect_top_asts(fn, asts);
       SymbolMap* uses = args_map.get(fn);
-      forv_Vec(BaseAST, ast, asts) {
+      for_vector(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isResolved()) {
             if (FnSymbol* fcall = call->findFnSymbol()) {

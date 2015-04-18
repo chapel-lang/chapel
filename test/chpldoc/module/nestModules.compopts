@@ -1,3 +1,0 @@
-# dead code elim, has dead module elimination which gets rid of
-# the empty modules in this test making the chpldoc empty
---no-dead-code-elimination

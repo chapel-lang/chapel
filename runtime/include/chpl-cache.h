@@ -47,13 +47,13 @@ void chpl_cache_exit(void);
 void chpl_cache_fence(int acquire, int release, int ln, c_string fn);
 
 // "acquire" barrier or fence -> discard pre-fetched GET values
-static ___always_inline
+static inline
 void chpl_cache_acquire(int ln, c_string fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(1, 0, ln, fn);
 }
 // "release" barrier or fence -> complete pending PUTs
-static ___always_inline
+static inline
 void chpl_cache_release(int ln, c_string fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(0, 1, ln, fn);

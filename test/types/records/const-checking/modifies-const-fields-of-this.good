@@ -1,0 +1,8 @@
+modifies-const-fields-of-this.chpl:49: In function 'main':
+modifies-const-fields-of-this.chpl:51: error: illegal call to helpConstruct() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed
+modifies-const-fields-of-this.chpl:16: In constructor 'CyclicRecord':
+modifies-const-fields-of-this.chpl:18: error: illegal call to helpConstruct() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed
+modifies-const-fields-of-this.chpl:49: In function 'main':
+modifies-const-fields-of-this.chpl:55: error: illegal call to helpConstruct() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed
+modifies-const-fields-of-this.chpl:37: In constructor 'CyclicClass':
+modifies-const-fields-of-this.chpl:39: error: illegal call to helpConstruct() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed
