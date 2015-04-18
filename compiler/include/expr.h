@@ -46,6 +46,7 @@ public:
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
 
   virtual Expr*   getFirstExpr()                                       = 0;
+  virtual Expr*   getFirstChild()                                      = 0;
   virtual Expr*   getNextExpr(Expr* expr);
 
   virtual bool    isNoInitExpr()                                     const;
@@ -101,6 +102,7 @@ public:
   virtual GenRet  codegen();
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
 
   const char*     name()                               const;
 
@@ -128,6 +130,7 @@ class SymExpr : public Expr {
   virtual void    prettyPrint(std::ostream* o);
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
 };
 
 
@@ -147,6 +150,7 @@ class UnresolvedSymExpr : public Expr {
   virtual void    prettyPrint(std::ostream *o);
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
 };
 
 
@@ -186,6 +190,7 @@ class CallExpr : public Expr {
   virtual Type*   typeInfo();
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
   virtual Expr*   getNextExpr(Expr* expr);
 
   void            insertAtHead(BaseAST* ast);
@@ -220,6 +225,7 @@ class NamedExpr : public Expr {
   virtual void    prettyPrint(std::ostream* o);
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
 };
 
 

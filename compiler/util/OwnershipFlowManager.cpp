@@ -868,6 +868,53 @@ OwnershipFlowManager::forwardFlowOwnership()
 }
 
 
+// Move forward through expressions following the given stmt, until we
+// encounter one that would cause a new basic block to be spawned.
+// TODO: This is selfish code.  It ought to be a service provided by the
+// BasicBlock module, but is currently not.  Any significant change to
+// BasicBlock::buildBasicBlocks should be reflected here.
+static Expr* getLastExprInBB(Expr* stmt)
+{
+  Expr* curr = stmt;
+  while (curr)
+  {
+    Expr* next = curr->getFirstChild();
+    if (! next)
+      next = curr->next;
+    while (! next)
+    {
+      // Because we are enumerating nodes in preorder, we already enumerated
+      // the parent, so we skip right to its first child.
+      curr = curr->parentExpr;
+      if (curr == stmt->parentExpr)
+      {
+        // We ran out of candidates without finding a valid successor, so just
+        // return the original statment.
+        return stmt;
+      }
+      next = curr->next;
+    }
+
+    // Break on any statement that alters flow in any way.
+    if (isLoopStmt(next))
+      break;
+    if (isCondStmt(next))
+      break;
+    if (isGotoStmt(next))
+      break;
+    if (DefExpr* def = toDefExpr(next))
+      if (isLabelSymbol(def->sym))
+        break;
+
+    curr = next;
+  }
+  // We always expect a valid expression to be returned.
+  // This is also an assert that the caller did not pass in stmt == NULL.
+  INT_ASSERT(curr);
+  return curr;
+}
+
+
 // Conversion of an iterator into an "advance" function does unnatural
 // things to scopes.  If a yield appears within a loop, on the first
 // execution the advance function passes through all initializations up to
@@ -907,14 +954,20 @@ static void insertAutoDestroyAfterStmt(SymExpr* se)
   Symbol* sym = se->var;
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
   if (autoDestroy == NULL)
-    // This type does not have a destructor, so we don't have a add an
+    // This type does not have a destructor, so we don't have to add an
     // autoDestroy call for it.
     return;
 
   Expr* stmt = se->getStmtExpr();
-  SET_LINENO(stmt);
+  // Actually, at least code involving runtime types creates references to
+  // members of temporary variables, so we are not able to see the last use
+  // (since we do not track references).  As a workaround, we march forward to
+  // the end of the current basic block and use that as the insertion point.
+  Expr* lastStmtInBB = getLastExprInBB(stmt);
+
+  SET_LINENO(sym->defPoint);
   CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
-  stmt->insertAfter(autoDestroyCall);
+  lastStmtInBB->insertAfter(autoDestroyCall);
   insertReferenceTemps(autoDestroyCall);
 }
 

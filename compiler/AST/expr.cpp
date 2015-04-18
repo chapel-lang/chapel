@@ -465,6 +465,10 @@ Expr* SymExpr::getFirstExpr() {
   return this;
 }
 
+Expr* SymExpr::getFirstChild() {
+  return NULL;
+}
+
 void SymExpr::verify() {
   Expr::verify();
 
@@ -564,6 +568,10 @@ Expr* UnresolvedSymExpr::getFirstExpr() {
   return this;
 }
 
+Expr* UnresolvedSymExpr::getFirstChild() {
+  return NULL;
+}
+
 void
 UnresolvedSymExpr::verify() {
   Expr::verify();
@@ -644,6 +652,10 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
 
 Expr* DefExpr::getFirstExpr() {
   return this;
+}
+
+Expr* DefExpr::getFirstChild() {
+  return NULL;
 }
 
 void DefExpr::verify() {
@@ -3491,6 +3503,16 @@ Expr* CallExpr::getFirstExpr() {
   return retval;
 }
 
+Expr* CallExpr::getFirstChild() {
+  if (baseExpr)
+    return baseExpr;
+
+  if (argList.head)
+    return argList.head;
+
+  return NULL;
+}
+
 Expr* CallExpr::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
@@ -5644,6 +5666,10 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
 
 Expr* NamedExpr::getFirstExpr() {
   return (actual != NULL) ? actual->getFirstExpr() : this;
+}
+
+Expr* NamedExpr::getFirstChild() {
+  return (actual != NULL) ? actual : NULL ;
 }
 
 void NamedExpr::verify() {
