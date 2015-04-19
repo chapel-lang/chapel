@@ -24,8 +24,12 @@ class  IpeVars;
 class  IpeScope;
 class  PrimitiveType;
 
+extern PrimitiveType* gIpeTypeType;
+
 extern PrimitiveType* gIpeTypeModule;
+
 extern PrimitiveType* gIpeTypeProcedure;
+extern PrimitiveType* gIpeTypeMethod;
 
 extern IpeScope*      gRootScope;
 extern IpeVars*       gRootVars;

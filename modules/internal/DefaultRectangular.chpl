@@ -66,7 +66,7 @@ module DefaultRectangular {
   }
   
   //
-  // Replicated copies are set up in initOnLocales() during locale
+  // Replicated copies are set up in chpl_initOnLocales() during locale
   // model initialization
   //
   pragma "private" var defaultDist = new dmap(new DefaultDist());

@@ -125,4 +125,6 @@ module ChapelBase
   extern proc writeln(format : c_string, x : bool) : void;
   extern proc writeln(format : c_string, x : int)  : void;
   extern proc writeln(format : c_string, x : real) : void;
+
+  extern proc quit()                               : void;
 }

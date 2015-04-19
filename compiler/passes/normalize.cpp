@@ -1073,7 +1073,7 @@ static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt)
       }
     }
 
-    if (!varLocation) {
+    if (varLocation == NULL && init != NULL) {
       varLocation = init->remove();
     }
 
