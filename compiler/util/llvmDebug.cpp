@@ -253,8 +253,7 @@ llvm::DIType debug_data::construct_type(Type *type)
                          defLine,
                          0, // RuntimeLang
                          layout->getTypeSizeInBits(ty),
-                         8*layout->getABITypeAlignment(ty),
-                         name);
+                         8*layout->getABITypeAlignment(ty));
 	 // N is added to the map (early) so that element search below can find it,
 	 // so as to avoid infinite recursion for structs that contain pointers to
 	 // their own type.
@@ -565,23 +564,28 @@ llvm::DIGlobalVariable debug_data::construct_global_variable(VarSymbol *gVarSym)
   llvm::DIType gVarSym_type = get_type(gVarSym->type); // type is member of Symbol
 
   GenRet got = info->lvt->getValue(cname); //?use cname since get_function uses it?
-  llvm::Value *llVal = NULL;
-  if( got.val ) 
-    llVal = got.val;  
-  else {
-   // llvm::Value *llVal = NULL;
-    //printf("Couldn't find the llvm::Value of name=%s cname=%s !\n",name,cname);
+
+
+#if HAVE_LLVM_VER >= 36
+  llvm::Constant *llVal = NULL;
+  if( got.val ) {
+    llVal = llvm::cast<llvm::Constant>(got.val);
   }
-  llvm::Constant *llConst = llvm::cast<llvm::Constant>(llVal);
+#else
+  llvm::Value *llVal = NULL;
+  llVal = got.val;  
+#endif
 
   if(gVarSym_type)
   return this->dibuilder.createGlobalVariable(
+#if HAVE_LLVM_VER >= 36
       file,
+#endif
       name, /* name */
       cname, /* linkage name */
       file, line_number, gVarSym_type, 
       !gVarSym->hasFlag(FLAG_EXPORT), /* is local to unit */
-      llConst); /* must be llvm::Constant since LLVM 3.6 */
+      llVal); /* must be llvm::Constant since LLVM 3.6 */
   ///////////////////////////////////////////////
   //else 
     //printf("For this unsolved GV: type-name = %s astTag = %i\n",gVarSym->type->symbol->name, gVarSym->type->astTag);
