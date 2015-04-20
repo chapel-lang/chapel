@@ -430,6 +430,7 @@ C         Chapel       Meaning
 %.3f      %.3dr        real number in decimal with 3 digits after ``.``
 %e        %er          real number always in exponential
 %.3e      %.3er        real number in exponential with 3 digits after ``.``
+%s        %s           a string without any quoting
 ========  ===========  ==========================================
 
 Note that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions
