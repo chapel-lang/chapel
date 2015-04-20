@@ -415,6 +415,27 @@ Syntax in Detail" section below.
 In this file, we use "integral" to refer to the Chapel types int or uint and
 "floating-point" to refer to real, imaginary, or complex, of any bit width.
 
+Formatted I/O for C Programmers
++++++++++++++++++++++++++++++++
+
+========  ===========  ==========================================
+C         Chapel       Meaning
+========  ===========  ==========================================
+%i        %i           an integer in decimal
+%d        %i           an integer in decimal
+%x        %xu          an unsigned number in hexadecimal
+%g        %r           real number in exponential or decimal if compact
+%.2g      %2.r         real number with 2 significant digits
+%f        %dr          real number always in decimal
+%.3f      %.3dr        real number in decimal with 3 digits after ``.``
+%e        %er          real number always in exponential
+%.3e      %.3er        real number in exponential with 3 digits after ``.``
+========  ===========  ==========================================
+
+Note that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions
+and ``%i`` for numeric conversions; so these are also equivalent to
+``%i`` ``%d`` or ``%g`` in C.
+
 Generic Numeric Conversions
 +++++++++++++++++++++++++++
 
@@ -563,9 +584,11 @@ Real Conversions
  (width and precision are ignored when reading numbers in readf)
 
 ``%er``
- a real number in exponential notation, e.g. ``10.2e-23``
+ a real number in exponential notation, e.g. ``8.2e-23``
 ``%Er``
- like %er but with the 'e' in uppercase, e.g. ``10.2E-23``
+ like %er but with the 'e' in uppercase, e.g. ``8.2E-23``
+``%.4er``
+ exponential notiation with 4 digits after the period, e.g. ``8.2000e-23``
 
 ``%xer``
  hexadecimal number using p to mark exponent e.g. ``6c.3f7p-2a``
@@ -861,7 +884,7 @@ Going through each section for text conversions:
 [optional . then precision]
    When printing floating point values, the precision is used to control
    the number of decimal digits to print.  For ``%r`` conversions, it
-   specifies the number of significant digits to print; for ``%dr``
+   specifies the number of significant digits to print; for ``%dr`` or ``%er``
    conversions, it specifies the number of digits following the decimal point.
    It can also be ``*``, which means to read the precision from an integral
    argument before the converted value.
