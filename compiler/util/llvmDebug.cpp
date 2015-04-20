@@ -285,7 +285,7 @@ llvm::DIType debug_data::construct_type(Type *type)
 		      EltTys.push_back(mty);
 		    }
 		    // set struct elements
-#if HAVE_LLVM_VER >= 35
+#if HAVE_LLVM_VER >= 36
 		    StructDescriptor.replaceElements(this->dibuilder.getOrCreateArray(EltTys));
 #else
 		    StructDescriptor.setTypeArray(this->dibuilder.getOrCreateArray(EltTys));
