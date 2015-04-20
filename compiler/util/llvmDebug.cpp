@@ -245,21 +245,20 @@ llvm::DIType debug_data::construct_type(Type *type)
 		llvm::StructType* struct_type = llvm::cast<llvm::StructType>(st);
 		//printf("struct_name = %s, ST->isOpaque = %i\n",struct_name, struct_type->isOpaque());
 		if(!struct_type->isOpaque()){
-		    N = this->dibuilder.createStructType(
-			get_module_scope(defModule),
-			name,
-			get_file(defFile),
-			defLine,
-			layout->getTypeSizeInBits(ty),
-			8*layout->getABITypeAlignment(ty),
-			0,
-			derivedFrom,
-			llvm::DIArray(NULL)); //filled in later
+                  N = this->dibuilder.createForwardDecl(
+                         llvm::dwarf::DW_TAG_structure_type, 
+                         name,
+   			 get_module_scope(defModule),
+			 get_file(defFile),
+                         defLine,
+                         0, // RuntimeLang
+                         layout->getTypeSizeInBits(ty),
+                         8*layout->getABITypeAlignment(ty),
+                         name);
 	 // N is added to the map (early) so that element search below can find it,
 	 // so as to avoid infinite recursion for structs that contain pointers to
 	 // their own type.
 		    myTypeDescriptors[type] = N;
-		    llvm::DICompositeType StructDescriptor(N);
 
 		    slayout = layout->getStructLayout(struct_type); //This is the problem !!!
 		    for_fields(field, this_class) {
@@ -285,11 +284,17 @@ llvm::DIType debug_data::construct_type(Type *type)
 		      EltTys.push_back(mty);
 		    }
 		    // set struct elements
-#if HAVE_LLVM_VER >= 36
-		    StructDescriptor.replaceElements(this->dibuilder.getOrCreateArray(EltTys));
-#else
-		    StructDescriptor.setTypeArray(this->dibuilder.getOrCreateArray(EltTys));
-#endif
+
+		    N = this->dibuilder.createStructType(
+			get_module_scope(defModule),
+			name,
+			get_file(defFile),
+			defLine,
+			layout->getTypeSizeInBits(ty),
+			8*layout->getABITypeAlignment(ty),
+			0, // RuntimeLang
+			derivedFrom,
+			this->dibuilder.getOrCreateArray(EltTys));
 		    return llvm::DIType(N);
 		}//end of if(!Opaque)
 	    }// end of if(st)
@@ -394,7 +399,7 @@ llvm::DIType debug_data::construct_type(Type *type)
 
     AggregateType *this_class = (AggregateType *)type;
     // Subscripts are "ranges" for each dimention of the array
-    llvm::SmallVector<llvm::Value*, 4> Subscripts;
+    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *, 4> Subscripts;
 //	TypeSymbol* fts = field->type->symbol;
 //	printf("the field->name = %s, field-type-name = %s\n",field->name, fts->name);
     int Asize = this_class->fields.length;
@@ -567,14 +572,16 @@ llvm::DIGlobalVariable debug_data::construct_global_variable(VarSymbol *gVarSym)
    // llvm::Value *llVal = NULL;
     //printf("Couldn't find the llvm::Value of name=%s cname=%s !\n",name,cname);
   }
+  llvm::Constant *llConst = llvm::cast<llvm::Constant>(llVal);
 
   if(gVarSym_type)
   return this->dibuilder.createGlobalVariable(
+      file,
       name, /* name */
       cname, /* linkage name */
       file, line_number, gVarSym_type, 
       !gVarSym->hasFlag(FLAG_EXPORT), /* is local to unit */
-      llVal); /* llvm::Value */
+      llConst); /* must be llvm::Constant since LLVM 3.6 */
   ///////////////////////////////////////////////
   //else 
     //printf("For this unsolved GV: type-name = %s astTag = %i\n",gVarSym->type->symbol->name, gVarSym->type->astTag);
