@@ -1,6 +1,6 @@
 var s: string;
 
-s = '###.###';
+s = '###########.###';
 
 var c = (1.0, 1.0):complex;
 var x: imag = 1.0i;

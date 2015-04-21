@@ -67,9 +67,9 @@ const WorkSpace = {0:int(64)..#nn},
 var totalTime: Timer;
 
 writeln(" NAS Parallel Benchmarks 2.4 -- EP Benchmark");
-writeln(" Number of random numbers generated:  ", format("%15ld",2:int(64)**(m+1)));
-writeln(" Number of locales:                   ", format("%15d",numLocales));
-writeln(" Number of tasks per locale:          ", format("%15d",dataParTasksPerLocale));
+writeln(" Number of random numbers generated:  ", format("%15i",2:int(64)**(m+1)));
+writeln(" Number of locales:                   ", format("%15i",numLocales));
+writeln(" Number of tasks per locale:          ", format("%15i",dataParTasksPerLocale));
 
 /* Call the random number generator functions and initialize
    the x-array to reduce the effects of paging on the timers.
@@ -136,27 +136,27 @@ writeln("EP Benchmark Results:");
 if printTimings then writeln("CPU Time = ", tm);
 writeln("N = 2^", m);
 writeln("No. Gaussian Pairs = ", gc);
-//writeln("Sums = ", format("%25.15e",total_sx), ", ", format("%25.15e",total_sy));
-writeln("Sums = ", format("%25.12e",total_sx), ", ", format("%25.12e",total_sy));
+//writeln("Sums = ", format("%25.15er",total_sx), ", ", format("%25.15er",total_sy));
+writeln("Sums = ", format("%25.12er",total_sx), ", ", format("%25.12er",total_sy));
 writeln("Counts:");
 for i in 1..nq do {
-	writeln (format("%3d",i)," ",format("%13ld",total_q[i]:int(64)));
+	writeln (format("%3i",i)," ",format("%13i",total_q[i]:int(64)));
 }
 writeln();
 
 //print_results()
 writeln(" EP Benchmark Completed.");
 writeln(" Class           =                        ", probClass);
-writeln(" Size            = ", format("%24ld", 2:int(64)**(m+1) ));  
-writeln(" Iterations      = ", format("%24d", 0));
+writeln(" Size            = ", format("%24i", 2:int(64)**(m+1) ));  
+writeln(" Iterations      = ", format("%24i", 0));
 if printTimings then 
-writeln(" Time in seconds = ", format("%24g", tm));
-writeln(" Total tasks     = ", format("%24d", numLocales*dataParTasksPerLocale));
-writeln("    # Locales    = ", format("%24d", numLocales));
-writeln("    Tasks/Locale = ", format("%24d", dataParTasksPerLocale));
+writeln(" Time in seconds = ", format("%24r", tm));
+writeln(" Total tasks     = ", format("%24i", numLocales*dataParTasksPerLocale));
+writeln("    # Locales    = ", format("%24i", numLocales));
+writeln("    Tasks/Locale = ", format("%24i", dataParTasksPerLocale));
 if printTimings then  {
-writeln(" Mop/s total     = ", format("%24g", Mops));
-writeln(" Mop/s/process   = ", format("%24g", Mops/numLocales));
+writeln(" Mop/s total     = ", format("%24r", Mops));
+writeln(" Mop/s/process   = ", format("%24r", Mops/numLocales));
 }
 writeln(" Operation type  = Random numbers generated");
 writeln(" Verification    = ", if verified then

@@ -110,7 +110,7 @@ config var verbleaderiter = wdverb;
 config var explainDsiSliceOnRankChange = wdverb;
 
 proc _wdadr(o:object):string
-  return format("0x%x", __primitive("object2int", o));
+  return format("0x%xu", __primitive("object2int", o));
 
 
 proc WrapperDist.toString() {

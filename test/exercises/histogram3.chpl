@@ -88,9 +88,9 @@ proc outputHistogram(Y: [] int) {
   writeln(" Raw Data");
   for j in 1..numBuckets {
     writeln("  ",
-            format("%0.2f", (j-1)*(1.0/numBuckets)),
+            format("%0.2dr", (j-1)*(1.0/numBuckets)),
             " - ",
-            format("%0.2f", j*(1.0/numBuckets)),
+            format("%0.2dr", j*(1.0/numBuckets)),
             ": ",
             Y(j));
   }

@@ -15,4 +15,4 @@ writeln(format(s,y));
 writeln(format(s,z));
 writeln(format(s,n));
 writeln(format("####",n));
-writeln(format("##.##",c));
+writeln(format("###########.##",c));

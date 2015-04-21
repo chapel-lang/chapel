@@ -77,7 +77,7 @@ proc initCoordinates(XYZ) {
 
   if debugInit then
     for (x,y,z) in zip(XYZ) do
-      writeln(format("%.6f",x), " ", format("%.6f",y), " ", format("%.6f",z));
+      writeln(format("%.6dr",x), " ", format("%.6dr",y), " ", format("%.6dr",z));
 }
 
 

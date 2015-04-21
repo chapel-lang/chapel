@@ -255,7 +255,7 @@ proc main() {
       deprint("[[ p, e, q ]]", p, e, q);
     }
     if showProgress then
-      writeln("time = ", format("%e", time), ", dt=", format("%e", deltatime),
+      writeln("time = ", format("%er", time), ", dt=", format("%er", deltatime),
               if doTiming then ", elapsed = " + (getCurrentTime()-iterTime) 
                           else "");
   }
@@ -272,7 +272,7 @@ proc main() {
   if printCoords {
     var outfile = open("coords.out", iomode.cw);
     var writer = outfile.writer();
-    var fmtstr = if debug then "%1.9e" else "%1.4e";
+    var fmtstr = if debug then "%1.9er" else "%1.4er";
     for i in Nodes {
       writer.writeln(format(fmtstr, xyz[i][X]), " ", 
                      format(fmtstr, xyz[i][Y]), " ", 
@@ -1527,20 +1527,20 @@ iter elemToNodesTuple(e) {
 proc deprint(title:string, x:[?D] real, y:[D]real, z:[D]real) {
   writeln(title);
   for i in D {
-    writeln(format("%3d", i), ": ", 
-            format("%3.4e", x[i]), " ", 
-            format("%3.4e", y[i]), " ", 
-            format("%3.4e", z[i]));
+    writeln(format("%3i", i), ": ", 
+            format("%3.4er", x[i]), " ", 
+            format("%3.4er", y[i]), " ", 
+            format("%3.4er", z[i]));
   }
 }
 
 proc deprint(title:string, xyz:[?D] 3*real) {
   writeln(title);
   for i in D {
-    writeln(format("%3d", i), ": ", 
-            format("%3.4e", xyz[i][X]), " ", 
-            format("%3.4e", xyz[i][Y]), " ", 
-            format("%3.4e", xyz[i][Z]));
+    writeln(format("%3i", i), ": ", 
+            format("%3.4er", xyz[i][X]), " ", 
+            format("%3.4er", xyz[i][Y]), " ", 
+            format("%3.4er", xyz[i][Z]));
   }
 }
 

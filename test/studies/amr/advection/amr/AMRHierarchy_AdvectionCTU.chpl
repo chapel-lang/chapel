@@ -26,8 +26,8 @@ proc AMRHierarchy.advance_AdvectionCTU(
   //---- Safety check ----
   assert(time < time_requested,
          "error: AMRHierarchy.advance_AdvectionCTU\n" +
-         "AMRHierarchy.time = " + format("%8.4E",time) + ", while time_requested = " +
-         format("%8.4E",time_requested));
+         "AMRHierarchy.time = " + format("%8.4Er",time) + ", while time_requested = " +
+         format("%8.4Er",time_requested));
   
   
   //---- Set dt_target ----

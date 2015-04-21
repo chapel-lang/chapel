@@ -244,8 +244,8 @@ proc main() {
   if (printTimings) then
     writeln("total   time = ", end - start);
 
-  writeln("   P size=", psize, " digits (", format("%f", psize:real/d), ")\n",
-          "   Q size=", qsize, " digits (", format("%f", qsize:real/d), ")");
+  writeln("   P size=", psize, " digits (", format("%dr", psize:real/d), ")\n",
+          "   Q size=", qsize, " digits (", format("%dr", qsize:real/d), ")");
 
   /* output Pi and timing statistics */
   if (_out&1)  {

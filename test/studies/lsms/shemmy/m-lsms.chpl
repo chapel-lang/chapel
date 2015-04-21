@@ -122,8 +122,8 @@ proc checkExpected(itr: int, atoms: [?AtomDom] AtomMatrix) {
 		for param e in 1..nExtent {
 			if abs(atom[e] - expected) > tolerance then pass = false;
 		}
-		if debug then writeln( format("%11.9g",atom[1]), " ~=~ ", 
-							   format("%11.9g",expected)); 
+		if debug then writeln( format("%11.9r",atom[1]), " ~=~ ", 
+							   format("%11.9r",expected)); 
 		return pass;
 	}
 

@@ -119,7 +119,7 @@ proc writeTimeFile(
 {
 
   //==== Formatting parameters ====
-  var efmt:  string = "%26.16E",
+  var efmt:  string = "%26.16Er",
       ifmt:  string = "%5i";
 
   //==== Write time file ====
@@ -150,7 +150,7 @@ proc GridVariable.writeData (
 {
 
   //==== Formatting parameters ====
-  var efmt:  string = "%26.16E",
+  var efmt:  string = "%26.16Er",
       ifmt:  string = "%5i",
       sfmt:  string = "%20s",
       linelabel: string;

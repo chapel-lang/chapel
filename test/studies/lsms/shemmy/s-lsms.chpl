@@ -118,9 +118,9 @@ proc checkExpected(itr: int, atoms: [GridDom] AtomMatrix) {
 		for param e in 1..nExtent {
 			if abs(atoms[i][e] - expectedValues[i]) > tolerance then pass = false;
 		}
-		if debug { writeln("itr ", format("%4d",itr), " @ ", i, ": ", 
-				           format("%12.9g",atoms[i][1]), " ~=~ ", 
-						   format("%12.9g",expectedValues[i])); }
+		if debug { writeln("itr ", format("%4i",itr), " @ ", i, ": ", 
+				           format("%12.9r",atoms[i][1]), " ~=~ ", 
+						   format("%12.9r",expectedValues[i])); }
 		if !pass {
 			writeln("Computed values do not match expected values: itr = ", itr, 
 					" @ ", i, ": ", atoms[i][1], " != ", expectedValues[i]);

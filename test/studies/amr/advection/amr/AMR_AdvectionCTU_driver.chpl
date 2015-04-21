@@ -175,7 +175,7 @@ proc main {
   hierarchy.clawOutput(frame_number);
   write("done.\n");
   
-  writeln("Current time of AMRHierarchy: " + format("%8.4E",hierarchy.time));
+  writeln("Current time of AMRHierarchy: " + format("%8.4Er",hierarchy.time));
 
   
   //---- Subsequent outputs ----

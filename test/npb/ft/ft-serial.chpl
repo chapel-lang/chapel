@@ -98,8 +98,8 @@ var
   Twiddle : [DXYZ] real;
 
 writeln(" NAS Parallel Benchmarks 2.4  -- FT Benchmark");
-writeln(" Size       : ", format("%15ld", nx*ny*nz));
-writeln(" Iterations : ", format("%15d", niter));
+writeln(" Size       : ", format("%15i", nx*ny*nz));
+writeln(" Iterations : ", format("%15i", niter));
 
 proc compute_initial_conditions(X1) {
   for (i,j,k) in DXYZ { // serial to ensure proper repeatable results
@@ -398,10 +398,10 @@ var tm = totalTime.elapsed();
 writeln();
 writeln(" FT Benchmark Completed.");
 writeln(" Class           =                        ", problem_class);
-writeln(" Size            = ", format("%24ld", nx*ny*nz));
-writeln(" Iterations      = ", format("%24d", niter));
+writeln(" Size            = ", format("%24i", nx*ny*nz));
+writeln(" Iterations      = ", format("%24i", niter));
 if timers_enabled then {
-  writeln(" Time in seconds = ", format("%24g", tm));
+  writeln(" Time in seconds = ", format("%24r", tm));
  }
 writeln(" Operation type  =           floating point");
 writeln(" Verification    = ", if verified then
