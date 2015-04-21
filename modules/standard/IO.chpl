@@ -6208,6 +6208,7 @@ proc readf(fmt:string):bool {
   :arg error: optional argument to capture an error code. If this argument
              is not provided and an error is encountered, this function
              will halt with an error message.
+  :returns: the resulting string
 
  */
 proc format(fmt:string, args ...?k, out error:syserr) {
