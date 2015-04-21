@@ -582,6 +582,10 @@ list.next = new Node(2);
 \begin{chapelpost}
 writeln(list.data);
 writeln(list.next.data);
+proc Node.~Node() {
+  if next != nil then delete next;
+}
+delete list;
 \end{chapelpost}
 \begin{chapeloutput}
 1
