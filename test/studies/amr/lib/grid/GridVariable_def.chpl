@@ -118,18 +118,14 @@ proc writeTimeFile(
   outfile: channel)
 {
 
-  //==== Formatting parameters ====
-  var efmt:  string = "%26.16E",
-      ifmt:  string = "%5i";
-
   //==== Write time file ====
-  outfile.writeln( format(efmt, time),      "    time");
-  outfile.writeln( format(ifmt, meqn),      "                 meqn");
-  outfile.writeln( format(ifmt, ngrids),    "                 ngrids");
-  outfile.writeln( format(ifmt, naux),      "                 naux");
-  outfile.writeln( format(ifmt, dimension), "                 ndim");
-  outfile.writeln("");
-  outfile.writeln("");
+  outfile.writef( "%26.16Er    time\n", time);
+  outfile.writef( "%5i                 meqn\n", meqn);
+  outfile.writef( "%5i                 ngrids\n", ngrids);
+  outfile.writef( "%5i                 naux\n", naux);
+  outfile.writef( "%5i                 ndim\n", dimension);
+  outfile.writef("");
+  outfile.writef("");
 
 }
 // /|""""""""""""""""""""""""""""""/|
@@ -150,14 +146,11 @@ proc GridVariable.writeData (
 {
 
   //==== Formatting parameters ====
-  var efmt:  string = "%26.16E",
-      ifmt:  string = "%5i",
-      sfmt:  string = "%20s",
-      linelabel: string;
+  var linelabel: string;
 
   //==== Header ====
-  outfile.writeln( format(ifmt, grid_number), "                 grid_number");
-  outfile.writeln( format(ifmt, AMR_level),   "                 AMR_level");
+  outfile.writef( "%5i                 grid_number\n", grid_number);
+  outfile.writef( "%5i                 AMR_level\n", AMR_level);
 
 
   //==== Write n_cells ====
@@ -166,9 +159,9 @@ proc GridVariable.writeData (
       when 1 do linelabel = "                 mx";
       when 2 do linelabel = "                 my";
       when 3 do linelabel = "                 mz";
-      otherwise linelabel = "                 mx(" + format("%1i",d) + ")";
+      otherwise linelabel = "                 mx(" + d + ")";
     }
-    outfile.writeln( format(ifmt, grid.n_cells(d)),  linelabel);
+    outfile.writef( "%5i%s\n", grid.n_cells(d),  linelabel);
   }
 
 
@@ -178,9 +171,9 @@ proc GridVariable.writeData (
       when 1 do linelabel = "    xlow";
       when 2 do linelabel = "    ylow";
       when 3 do linelabel = "    zlow";
-      otherwise linelabel = "    xlow(" + format("%1i",d) + ")";
+      otherwise linelabel = "    xlow(" + d + ")";
     }
-    outfile.writeln( format(efmt, grid.x_low(d)),  linelabel);
+    outfile.writef( "%26.16Er%s\n", grid.x_low(d),  linelabel);
   }
 
 
@@ -190,9 +183,9 @@ proc GridVariable.writeData (
       when 1 do linelabel = "    dx";
       when 2 do linelabel = "    dy";
       when 3 do linelabel = "    dz";
-      otherwise linelabel = "    dx(" + format("%1i",d) + ")";
+      otherwise linelabel = "    dx(" + d + ")";
     }
-    outfile.writeln( format(efmt, grid.dx(d)),  linelabel);
+    outfile.writef( "%26.16Er%s\n", grid.dx(d),  linelabel);
   }
   outfile.writeln("");
 
@@ -200,7 +193,7 @@ proc GridVariable.writeData (
   //===> Write array values ===>
   if dimension == 1 then {
     for cell in grid.cells do
-      outfile.writeln(format(efmt, value(cell)));
+      outfile.writef( "%26.16Er\n", value(cell));
   }
   else {
     //------------------------------------------------------------
@@ -222,9 +215,9 @@ proc GridVariable.writeData (
       [d in dimensions with (ref cell)] // could also be 'for param d'
         cell(d) = cell_transposed(1 + dimension - d);
       if abs(value(cell)) > 1.0e-99 then
-        outfile.writeln(format(efmt, value(cell)));
+        outfile.writef("%26.16Er\n", value(cell));
       else
-        outfile.writeln(format(efmt, 0.0));
+        outfile.writef("%26.16Er\n", 0.0);
 
       //===> Newlines at the end of each dimension ===>
       //--------------------------------------------------------------
