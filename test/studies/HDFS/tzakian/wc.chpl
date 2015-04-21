@@ -24,19 +24,19 @@ proc wordCount((s, block)) {
   var state = OUT; // start out of a word
   var startWhite = 0; // did we start with whitespace?
   var endWhite   = 0; // end with whitespace?
-  var sss = s.substring(1);
+  var sss = s[1];
 
   // We finished the last blocks word
   if (sss == " " || sss == "\n")
     then startWhite = 1;
 
   // We've ended the word and/or line
-  sss = s.substring(s.length);
+  sss = s[s.length];
   if (sss == " " || sss == "\n")
     then endWhite = 1;
 
   for incr in 1..#s.length { 
-  var ss = s.substring(incr);
+  var ss = s[incr];
 
     if (ss == "\n")
       then nl += 1;
@@ -139,7 +139,7 @@ proc myMapFn((s, block)) {
       base = end;
     } else base = end; 
 
-    var ss = s.substring(start..end);
+    var ss = s[start..end];
 
     var (beerName, ignore) = findFieldValue(ss, "beer/name: ", 1); 
 
@@ -180,7 +180,7 @@ proc mapFn(s: string) {
     var recordLength = (j - i + 1);
     // ==== Split what you read in, so now we have ss = review in question
     // Include the final field delimiter
-    var ss = s.substring(i..j);
+    var ss = s[i..j];
     //writeln("Found record with start " + i + ", end " + (j - 1) + ", length " + recordLength + ": ");
 
     // Deserialize structured record from text
