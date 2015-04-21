@@ -6198,7 +6198,18 @@ proc readf(fmt:string):bool {
 }
 
 
-/* Return a new string consisting of a formatted result */
+/*
+
+  Return a new string consisting of values formatted according to a
+  format string.  See :ref:`about-io-formatted-io`.
+
+  :arg fmt: the format string
+  :arg args: the arguments to format
+  :arg error: optional argument to capture an error code. If this argument
+             is not provided and an error is encountered, this function
+             will halt with an error message.
+
+ */
 proc format(fmt:string, args ...?k, out error:syserr) {
   // Open a memory buffer to store the result
   var f = openmem();
@@ -6225,6 +6236,9 @@ proc format(fmt:string, args ...?k, out error:syserr) {
   var cstrcopy = __primitive("cast", c_string_copy, buf);
   return toString(cstrcopy);
 }
+
+// documented in the error= version
+pragma "no doc"
 proc format(fmt:string, args ...?k) {
   var err:syserr = ENOERR;
   var ret = format(fmt, (...args), error=err);
