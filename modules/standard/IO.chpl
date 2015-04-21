@@ -418,24 +418,32 @@ In this file, we use "integral" to refer to the Chapel types int or uint and
 Formatted I/O for C Programmers
 +++++++++++++++++++++++++++++++
 
+This table is designed to help C programmers understand the equivalent
+Chapel format specifiers.
+
 ========  ===========  ==========================================
 C         Chapel       Meaning
 ========  ===========  ==========================================
 %i        %i           an integer in decimal
 %d        %i           an integer in decimal
-%x        %xu          an unsigned number in hexadecimal
-%g        %r           real number in exponential or decimal if compact
-%.2g      %2.r         real number with 2 significant digits
+%u        %u           an unsigned integer in decimal
+%x        %xu          an unsigned integer in hexadecimal
+%g        %r           real number in exponential or decimal (if compact)
+%7.2g     %7.2r        real, 2 significant digits, padded to 7 columns
 %f        %dr          real number always in decimal
-%.3f      %.3dr        real number in decimal with 3 digits after ``.``
+%7.3f     %7.3dr       real, 3 digits after ``.``, padded to 7 columns
 %e        %er          real number always in exponential
-%.3e      %.3er        real number in exponential with 3 digits after ``.``
+%7.3e     %7.3er       real, 3 digits after ``.``, padded to 7 columns
 %s        %s           a string without any quoting
 ========  ===========  ==========================================
 
-Note that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions
-and ``%i`` for numeric conversions; so these are also equivalent to
-``%i`` ``%d`` or ``%g`` in C.
+Unlike in C, a value of the wrong type will be cast appropriately - so for
+example printing 2 (an ``int``)  with ``%.2dr`` will result in ``2.00``.  Note
+that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions and ``%i``
+for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
+``%g`` in C. Also note that Chapel format strings includes many capabilities
+not available with C formatted I/O routines - including quoted strings,
+binary numbers, complex numbers, and raw binary I/O.
 
 Generic Numeric Conversions
 +++++++++++++++++++++++++++
