@@ -988,7 +988,9 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
   if( err ) goto rewind;
 
   // write the string itself
-  err = qio_channel_write_amt(false, ch, ptr, len);
+  if (len > 0) {
+    err = qio_channel_write_amt(false, ch, ptr, len);
+  }
   if( err ) goto rewind;
 
   // write the terminator if necessary.
