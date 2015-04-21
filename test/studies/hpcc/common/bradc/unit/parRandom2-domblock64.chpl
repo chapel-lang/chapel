@@ -22,8 +22,8 @@ for b in B do
 
 for (i,a,b) in zip(ProblemSpace,A,B) {
   if (a != b) then
-    writef("mismatch at %######: %i != %i", i, a, b);
+    writef("mismatch at %######: %r != %r", i, a, b);
   else
-    writef("%###### = %i\n", a);
+    writef("%###### = %r\n", i, a);
 }
 
