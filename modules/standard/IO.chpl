@@ -2646,11 +2646,12 @@ record ioChar {
   }
 }
 
-//TODO strings: make it return a string...
-// The caller has responsibility for freeing the returned string.
 pragma "no doc"
-inline proc _cast(type t, x: ioChar) where t == c_string_copy {
-  return qio_encode_to_string(x.ch);
+inline proc _cast(type t, x: ioChar) where t == string {
+  var csc: c_string_copy =  qio_encode_to_string(x.ch);
+  var len = csc.length;
+  // The caller has responsibility for freeing the returned string.
+  return new string(csc:c_ptr(uint(8)), len, len, owned=true);
 }
 
 
