@@ -4648,7 +4648,6 @@ class ChannelReader : Reader {
   // TODO -- we should probably have separate c_ptr ddata and ref versions
   proc readBytes(x, len:ssize_t) {
     if ! err {
-      if here != this.home then halt("bad remote channel.readBytes");
       err = qio_channel_read_amt(false, _channel_internal, x, len);
     }
   }
@@ -6200,7 +6199,7 @@ proc readf(fmt:string):bool {
 
 
 /* Return a new string consisting of a formatted result */
-proc format2(fmt:string, args ...?k, out error:syserr) {
+proc format(fmt:string, args ...?k, out error:syserr) {
   // Open a memory buffer to store the result
   var f = openmem();
 
@@ -6226,10 +6225,10 @@ proc format2(fmt:string, args ...?k, out error:syserr) {
   var cstrcopy = __primitive("cast", c_string_copy, buf);
   return toString(cstrcopy);
 }
-proc format2(fmt:string, args ...?k) {
+proc format(fmt:string, args ...?k) {
   var err:syserr = ENOERR;
-  var ret = format2(fmt, (...args), error=err);
-  if err then ioerror(err, "in format2");
+  var ret = format(fmt, (...args), error=err);
+  if err then ioerror(err, "in format");
   return ret;
 }
 
