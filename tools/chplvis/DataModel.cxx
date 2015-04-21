@@ -122,7 +122,8 @@ int DataModel::LoadData(const char * filename)
 
   printf (" done.\n");
   // Process data ... producing a tag/resume index list
-
+ 
+  
   /*
   // Debug
   printf ("list has %ld items\n", (long)theEvents.size());
@@ -277,20 +278,20 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		   line[0] == 'p' ? 0 :
 		   line[3] == 'g' ? 1 : 0);
 	  if (isGet)
-	    newEvent = new E_comm (sec, usec, rnid, nid);
+	    newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen);
 	  else
-	    newEvent = new E_comm (sec, usec, nid, rnid);
+	    newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen);
 	}
 	break;
 
       case 'f':  // All the forks:
 	// s.u nodeID otherNode subloc fid arg arg_size
-	if (sscanf (&linedata[nextCh], "%d %d %d", 
-		    &nid, &rnid, &fid) != 3) {
+	if (sscanf (&linedata[nextCh], "%d %d %d %*d %d", 
+		    &nid, &rnid, &fid, &dlen) != 4) {
 	  fprintf (stderr, "Bad fork line: %s\n", filename);
 	  nErrs++;
 	} else {
-	  newEvent = new E_fork(sec, usec, nid, rnid, line[1] == '_');
+	  newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_');
 	}
 	break;
 

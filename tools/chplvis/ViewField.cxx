@@ -24,9 +24,9 @@
 
 // Local utility functions
 
-Fl_Color heatColor ( int val, int max ) {
+Fl_Color heatColor ( double val, double max ) {
   if (val == 0) return FL_WHITE;
-  return fl_rgb_color( 255*((0.0+val)/max), 255 * ((0.0+max-val)/max), 0);
+  return fl_rgb_color( 255*((val)/max), 255 * ((max-val)/max), 0);
 }
 
 //  ViewField Constructors
@@ -38,12 +38,17 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   // printf ("ViewField init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
   numlocales = 0;
   theLocales = NULL;
-  numGets = NULL;
+  comms = NULL;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
   maxTasks = 1;
   maxComms = 1;
+  maxCpu = 0.000001;
+  maxDatasize = 1;
+  showtasks = true;
+  showcomms = true;
+  
 };
 
 ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *label)
@@ -52,12 +57,16 @@ ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *
   // printf ("ViewField init with boxtype. h=%d, w=%d\n",bh,bw);
   numlocales = 0;
   theLocales = NULL;
-  numGets = NULL;
+  comms = NULL;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
   maxTasks = 1;
   maxComms = 1;
+  maxCpu = 0.000001;
+  maxDatasize = 1;
+  showtasks = true;
+  showcomms = true;
 };
 
 
@@ -71,15 +80,15 @@ void ViewField::allocArrays()
   //printf ("allocArrays\n");
   // Dealloc anything current
   if (theLocales != NULL)  delete [] theLocales;
-  if (numGets != NULL) {
-    for (ix = 0; ix < getSize; ix++)  delete [] numGets[ix];
-    delete [] numGets;
+  if (comms != NULL) {
+    for (ix = 0; ix < getSize; ix++)  delete [] comms[ix];
+    delete [] comms;
   }
 
   // Alloc new space
   theLocales = new localeInfo [numlocales];
-  numGets = new  int* [numlocales];
-  if (theLocales == NULL || numGets == NULL) {
+  comms = new  commInfo* [numlocales];
+  if (theLocales == NULL || comms == NULL) {
     fprintf (stderr, "chplvis: out of memory.\n");
     exit(1);
   }
@@ -87,17 +96,22 @@ void ViewField::allocArrays()
     theLocales[ix].numTasks = 0;
   getSize = numlocales;
   for (ix = 0; ix < getSize; ix++) {
-    numGets[ix] = new int[numlocales];
-    if (numGets[ix] == NULL) {
+    comms[ix] = new commInfo[numlocales];
+    if (comms[ix] == NULL) {
       fprintf (stderr, "chplvis: out of memory.\n");
       exit(1);
     }
-    for (ix2 = 0; ix2 < numlocales; ix2++)
-      numGets[ix][ix2] = 0;
+    for (ix2 = 0; ix2 < numlocales; ix2++) {
+      comms[ix][ix2].numGets = 0;
+      comms[ix][ix2].commSize = 0;
+    }
   }
 
-  for (ix = 0; ix < numlocales; ix++)
+  for (ix = 0; ix < numlocales; ix++) {
     theLocales[ix].numTasks = 0;
+    theLocales[ix].refCpu = 0;
+    theLocales[ix].Cpu = 0;
+  }
 }
 
 
@@ -110,47 +124,81 @@ void ViewField::processData()
   // Initialize ... in case data has changed.
   for (ix1 = 0; ix1 < numlocales; ix1++) {
     theLocales[ix1].numTasks = 0;
-    for (ix2 = 0; ix2 < numlocales; ix2++) 
-      numGets[ix1][ix2] = 0;
+    for (ix2 = 0; ix2 < numlocales; ix2++)  {
+      comms[ix1][ix2].numGets = 0;
+      comms[ix1][ix2].commSize = 0;
+    }
+      
   }
   maxTasks = 1;
   maxComms = 1;
+  maxCpu = 0.0000001;
+  maxDatasize = 1;
 
   Event *ev;
 
   for ( ev = VisData.getFirstEvent(); ev != NULL; ev = VisData.getNextEvent() ) {
-    E_task *tp;
-    E_comm *cp;
-    E_fork *fp;
+    E_task  *tp;
+    E_comm  *cp;
+    E_fork  *fp;
+    E_start *sp;
+    E_end   *ep;
     switch (ev->Ekind()) {
       case Ev_task:
         //  Task event
-        tp = dynamic_cast<E_task *>(ev);
-	fflush(stdout);
+        tp = (E_task *)ev;
 	if (++theLocales[tp->nodeId()].numTasks > maxTasks)
 	  maxTasks = theLocales[tp->nodeId()].numTasks;
         break;
+
       case Ev_comm:
         //  Comm event
-        cp = dynamic_cast<E_comm *>(ev);
-	if (++(numGets[cp->srcId()][cp->dstId()]) > maxComms)
-	  maxComms = numGets[cp->srcId()][cp->dstId()];
+        cp = (E_comm *)ev;
+	if (++(comms[cp->srcId()][cp->dstId()].numGets) > maxComms)
+	  maxComms = comms[cp->srcId()][cp->dstId()].numGets;
+	comms[cp->srcId()][cp->dstId()].commSize += cp->totalLen();
+	if (comms[cp->srcId()][cp->dstId()].commSize > maxDatasize)
+	  maxDatasize = comms[cp->srcId()][cp->dstId()].commSize;
         break;
+
       case Ev_fork:
-        fp = dynamic_cast<E_fork *>(ev);
-        if (++(numGets[fp->srcId()][fp->dstId()]) > maxComms)
-	  maxComms = numGets[fp->srcId()][fp->dstId()];
+        fp = (E_fork *)ev;
+        if (++(comms[fp->srcId()][fp->dstId()].numGets) > maxComms)
+	  maxComms = comms[fp->srcId()][fp->dstId()].numGets;
+	comms[fp->srcId()][fp->dstId()].commSize += fp->argSize();
+	if (comms[fp->srcId()][fp->dstId()].commSize > maxDatasize)
+	  maxDatasize = comms[fp->srcId()][fp->dstId()].commSize;
 	if (!fp->fast()) {
 	  if (++theLocales[fp->dstId()].numTasks > maxTasks)
 	    maxTasks = theLocales[fp->dstId()].numTasks;
 	}
 	break;
+
+      case Ev_start:
+	sp = (E_start *)ev;
+	theLocales[sp->nodeId()].refCpu = sp->cpu_time();
+        break;
+
+      case Ev_end:
+	ep = (E_end *)ev;
+	theLocales[ep->nodeId()].Cpu = ep->cpu_time()
+	  - theLocales[ep->nodeId()].refCpu;
+	if (maxCpu < theLocales[ep->nodeId()].Cpu)
+	  maxCpu = theLocales[ep->nodeId()].Cpu;
+	break;
+
+      case Ev_resume:
+	// Ignore here ...
+        break;
+
       case Ev_tag:
-	printf ("Should be processing a tag.\n");
+	// printf ("Should be processing a tag.\n");
+	// Add the 
 	break;
     }
   }
-  Info->setMaxes(maxTasks, maxComms);
+
+  Info->setMaxes(maxTasks, maxComms, maxDatasize, maxCpu);
   //printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
 }
 
@@ -231,7 +279,7 @@ void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
 
 void ViewField::draw()
 {
-  // printf ("ViewField draw, numlocales is %d\n", numlocales);
+  //printf ("ViewField draw, numlocales is %d\n", numlocales);
 
   cx = x() + w()/2;
   cy = y() + h()/2;
@@ -242,15 +290,29 @@ void ViewField::draw()
 
   int ix;
   for (ix = 0; ix < numlocales; ix++) {
-    drawLocale(ix, heatColor(theLocales[ix].numTasks, maxTasks));
+    if (showtasks) {
+      drawLocale(ix, heatColor(theLocales[ix].numTasks, maxTasks));
+      Info->showTasks();
+    } else {
+      drawLocale(ix, heatColor(theLocales[ix].Cpu, maxCpu));
+      Info->showCpu();
+    }
   }
 
   int iy;
   for (ix = 0; ix < numlocales-1; ix++) {
     for (iy = ix + 1; iy < numlocales; iy++)
-      drawCommLine(ix, heatColor(numGets[ix][iy],maxComms),
-		   iy, heatColor(numGets[iy][ix],maxComms));
+      if (showcomms) {
+	drawCommLine(ix, heatColor(comms[ix][iy].numGets,maxComms),
+		     iy, heatColor(comms[iy][ix].numGets,maxComms));
+	Info->showComms();
+      } else {
+	drawCommLine(ix, heatColor(comms[ix][iy].commSize,maxDatasize),
+		     iy, heatColor(comms[iy][ix].commSize,maxDatasize));
+	Info->showSize();
+      }
   }
+  Info->draw();
 }
 
 int ViewField::handle(int event)

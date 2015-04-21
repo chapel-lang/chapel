@@ -60,3 +60,4 @@ install: chplvis
 chplvis.o: chplvis.h ViewField.h DataModel.h Event.h
 ViewField.o: ViewField.h DataModel.h Event.h
 DataModel.o: DataModel.h Event.h
+InfoBar.o: InfoBar.h ViewField.h

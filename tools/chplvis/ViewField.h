@@ -35,10 +35,17 @@ struct localeInfo {
   int w;
   int h;
   int numTasks;
+  double Cpu;
+  double refCpu; // 
   // Fl_Color heat;
 };
 
-Fl_Color heatColor ( int val, int max );
+struct commInfo {
+  int numGets;
+  long commSize;
+};
+
+Fl_Color heatColor ( double val, double max );
 
 static const double twopi = 6.28318530717958647688;
 static const double pi = 3.14159265358979323844;
@@ -55,10 +62,15 @@ class ViewField : public Fl_Box {
 
     localeInfo *theLocales;
     int getSize; // need this to deallocate after changing numlocales
-    int **numGets;
+    commInfo **comms;
 
+    bool showtasks;
     int maxTasks;
+    double maxCpu;
+
+    bool showcomms;
     int maxComms;
+    long maxDatasize; 
 
     // Methods
 
@@ -73,7 +85,6 @@ class ViewField : public Fl_Box {
 
   //  Virtual methods to override
   void draw(void);
-
   int handle(int event);
 
   // Processing routines
@@ -96,6 +107,12 @@ class ViewField : public Fl_Box {
 
   // Draw a comm line between loc1 and loc2, color changing in the middle
   void drawCommLine(int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
+
+  // What to show!
+  void showTasks(void) { showtasks = true; }
+  void showCpu(void) { showtasks = false; }
+  void showComms(void) { showcomms = true; }
+  void showDsize(void) { showcomms = false; }
 
 };
 

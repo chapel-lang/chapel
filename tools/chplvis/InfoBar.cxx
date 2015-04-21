@@ -51,10 +51,16 @@ void InfoBar::draw(void)
   // Messages on max counts
   char mesg[150];
   if (maxTasks > 0) {
-    snprintf (mesg, 150, "maxTasks: %d", maxTasks);
-    fl_draw(mesg, x()+170, y()+5, 120, h()-10, FL_ALIGN_CENTER, NULL, 0);
-    snprintf (mesg, 150, "maxComms: %d", maxComms);
-    fl_draw(mesg, x()+320, y()+5, 120, h()-10, FL_ALIGN_CENTER, NULL, 0);
+    if (showtasks)
+      snprintf (mesg, 150, "maxTasks: %d", maxTasks);
+    else
+      snprintf (mesg, 150, "maxCPU: %f", maxCpu);
+    fl_draw(mesg, x()+180, y()+5, 120, h()-10, FL_ALIGN_LEFT, NULL, 0);
+    if (showcomms)
+      snprintf (mesg, 150, "maxComms: %d", maxComms);
+    else
+      snprintf (mesg, 150, "maxData: %ld", maxSize);
+    fl_draw(mesg, x()+330, y()+5, 120, h()-10, FL_ALIGN_LEFT, NULL, 0);
   }
 }
 

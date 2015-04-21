@@ -59,6 +59,7 @@ class  E_start : public Event {
 
     double cpu_time()  { return sec+s_sec + (usec+s_usec)/1000000; }
     double user_time() { return sec+usec/1000000; }
+    double sys_time() { return s_sec+s_usec/1000000; }
     virtual int Ekind() {return Ev_start;}
 
     virtual void print() { printf ("Start: id %d user %ld.%06ld sys %ld.%06ld\n",
@@ -84,37 +85,46 @@ class E_comm : public Event {
 
    private:
      int  dstid;
+     int  elemsize, datalen;
 
    public:
-     E_comm (long esec, long eusec, int esrcid, int edstid)
-       : Event(esec,eusec,esrcid), dstid(edstid) {};
+     E_comm (long esec, long eusec, int esrcid, int edstid, int elSize,
+	     int dLen) : Event(esec, eusec, esrcid), dstid(edstid),
+                         elemsize(elSize), datalen(dLen) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
+     int elemSize() { return elemsize; }
+     int dataLen() { return datalen; }
+     int totalLen() { return elemsize * datalen; }
 
      virtual int Ekind() {return Ev_comm;}
-     virtual void print() { printf ("Comm: id %d time %ld.%06ld to %d\n",
-				    nodeid, sec, usec, dstid); }
+     virtual void print() { 
+       printf ("Comm: id %d time %ld.%06ld to %d size %d\n",
+	       nodeid, sec, usec, dstid, elemsize * datalen); }
 };
 
 class E_fork : public Event {
 
    private:
      int  dstid;
+     int  argsize;
      bool isFast;
 
    public:
-     E_fork (long esec, long eusec, int esrcid, int edstid, bool fast)
-       : Event(esec,eusec, esrcid), dstid(edstid), isFast(fast) {};
+       E_fork (long esec, long eusec, int esrcid, int edstid, int argsize,
+	       bool fast) : Event(esec,eusec, esrcid), dstid(edstid),
+                            argsize(argsize), isFast(fast) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
      bool fast() { return isFast; }
+     int argSize() { return argsize; }
 
      virtual int Ekind() {return Ev_fork;}
      virtual void print() {
-       printf ("Fork%s: id %d time %ld.%06ld to %d\n", (isFast ? "(fast)" : ""),
-	       nodeid, sec, usec, dstid);
+       printf ("Fork%s: id %d time %ld.%06ld to %d datasize %d\n",
+	       (isFast ? "(fast)" : ""), nodeid, sec, usec, dstid, argsize);
      }
 };
 

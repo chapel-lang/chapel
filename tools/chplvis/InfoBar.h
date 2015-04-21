@@ -28,18 +28,36 @@ class InfoBar : public Fl_Box {
  private:
   int maxTasks;
   int maxComms;
+  long maxSize;
+  double maxCpu;
+  bool showtasks;
+  bool showcomms;
 
  public:
 
   InfoBar (int x, int y, int w, int h, const char *label = 0)
-    : Fl_Box(x,y,w,h) { maxTasks = 0; maxComms = 0; };
+    : Fl_Box(x,y,w,h) {
+    maxTasks = 0;
+    maxComms = 0;
+    maxSize = 0;
+    maxCpu = 0;
+    showtasks = true;
+    showcomms = true;
+   };
    
   void draw(void);
 
-  void setMaxes(int tasks, int comms) {
+  void setMaxes(int tasks, int comms, long size, double cpu) {
     maxTasks = tasks;
     maxComms = comms;
+    maxSize = size;
+    maxCpu = cpu;
   }
+
+  void showTasks() { showtasks = true; }
+  void showCpu() { showtasks = false; }
+  void showComms() { showcomms = true; }
+  void showSize() { showcomms = false; }
 
 };
 

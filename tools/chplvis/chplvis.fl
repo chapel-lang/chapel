@@ -42,7 +42,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {15 44 500 555} type Double resizable size_range {500 550 0 0} visible
+    xywh {326 525 500 555} type Double resizable size_range {500 550 0 0} visible
   } {
     Fl_Menu_Bar {} {open
       xywh {0 0 500 20} color 55
@@ -71,12 +71,41 @@ if (selfile) {
         }
       }
       Submenu {} {
-        label Layout open selected
+        label Layout open
         xywh {0 0 70 21}
       } {
         MenuItem {} {
-          label Oval
+          label Ellipse selected
           tooltip {Only choice at this time} xywh {0 0 34 21}
+        }
+      }
+      Submenu {} {
+        label Data open
+        xywh {0 0 70 21}
+      } {
+        MenuItem {} {
+          label {Show Tasks}
+          callback {DbgView->showTasks();
+MainWindow->redraw();}
+          xywh {0 0 36 21}
+        }
+        MenuItem {} {
+          label {Show CPU}
+          callback {DbgView->showCpu();
+MainWindow->redraw();}
+          xywh {0 0 36 21}
+        }
+        MenuItem {} {
+          label {Show Communication Count}
+          callback {DbgView->showComms();
+MainWindow->redraw();}
+          xywh {0 0 36 21}
+        }
+        MenuItem {} {
+          label {Show Communation Size}
+          callback {DbgView->showDsize();
+MainWindow->redraw();}
+          xywh {0 0 36 21}
         }
       }
       MenuItem {} {
