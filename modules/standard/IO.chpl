@@ -4402,6 +4402,10 @@ proc channel.close() {
 }
 
 // TODO -- we should probably have separate c_ptr ddata and ref versions
+// but this function for it to become user-facing. Right now, errors
+// in the type of the argument will only be caught by a type mismatch
+// in the call to qio_channel_read_amt. 
+pragma "no doc"
 proc channel.readBytes(x, len:ssize_t, out error:syserr) {
   error = ENOERR;
   if here != this.home then halt("bad remote channel.readBytes");
@@ -6198,20 +6202,8 @@ proc readf(fmt:string):bool {
 }
 
 
-/*
-
-  Return a new string consisting of values formatted according to a
-  format string.  See :ref:`about-io-formatted-io`.
-
-  :arg fmt: the format string
-  :arg args: the arguments to format
-  :arg error: optional argument to capture an error code. If this argument
-             is not provided and an error is encountered, this function
-             will halt with an error message.
-  :returns: the resulting string
-
- */
-proc format(fmt:string, args ...?k, out error:syserr) {
+pragma "no doc" // internal helper routine
+inline proc _do_format(fmt:string, args ...?k, out error:syserr):string {
   // Open a memory buffer to store the result
   var f = openmem();
 
@@ -6238,12 +6230,56 @@ proc format(fmt:string, args ...?k, out error:syserr) {
   return toString(cstrcopy);
 }
 
+/*
+
+  Return a new string consisting of values formatted according to a
+  format string.  See :ref:`about-io-formatted-io`.
+
+  :arg fmt: the format string
+  :arg args: the arguments to format
+  :arg error: optional argument to capture an error code. If this argument
+             is not provided and an error is encountered, this function
+             will halt with an error message.
+  :returns: the resulting string
+
+ */
+proc format(fmt:string, args ...?k, out error:syserr):string {
+  return _do_format(fmt, (...args), error);
+}
+
 // documented in the error= version
 pragma "no doc"
-proc format(fmt:string, args ...?k) {
+proc format(fmt:string, args ...?k):string {
   var err:syserr = ENOERR;
-  var ret = format(fmt, (...args), error=err);
+  var ret = _do_format(fmt, (...args), error=err);
   if err then ioerror(err, "in format");
+  return ret;
+}
+
+/*
+
+  Return a new string consisting of values formatted according to a
+  format string.  See :ref:`about-io-formatted-io`.
+
+  :arg this: the format string
+  :arg args: the arguments to format
+  :arg error: optional argument to capture an error code. If this argument
+             is not provided and an error is encountered, this function
+             will halt with an error message.
+  :returns: the resulting string
+
+ */
+
+proc string.format(args ...?k, out error:syserr):string {
+  return _do_format(this, (...args), error);
+}
+
+// documented in the error= version
+pragma "no doc"
+proc string.format(args ...?k):string {
+  var err:syserr = ENOERR;
+  var ret = _do_format(this, (...args), error=err);
+  if err then ioerror(err, "in string.format");
   return ret;
 }
 

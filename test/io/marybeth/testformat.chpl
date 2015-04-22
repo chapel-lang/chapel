@@ -16,3 +16,13 @@ writeln(format(s,z));
 writeln(format(s,n));
 writeln(format("####",n));
 writeln(format("###########.##",c));
+
+// try the method version
+writeln(s.format(i));
+writeln(s.format(x));
+writeln(s.format(y));
+writeln(s.format(z));
+writeln(s.format(n));
+writeln("####".format(n));
+writeln("###########.##".format(c));
+
