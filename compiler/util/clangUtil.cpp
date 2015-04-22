@@ -341,7 +341,7 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
           numString[numString.length() - 1] = '\0';
         }
 
-        ret = new_RealSymbol("real", strtod(numString.c_str(), NULL), size);
+        ret = new_RealSymbol(numString.c_str(), size);
       }
       break;
     }
