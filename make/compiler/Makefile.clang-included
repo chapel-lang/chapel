@@ -15,4 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifneq (,$(findstring cray-prgenv,$(CHPL_ORIG_TARGET_COMPILER)))
+  #if we're clang-included for a cray-prgenv-* build, 
+  #grab some extra library paths.
+  ifndef CHPL_MAKE_SETTINGS_PRGENV_COMPOPTS
+    export CHPL_MAKE_SETTINGS_PRGENV_COMPOPTS = $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments compile)
+  endif
+  ifndef CHPL_MAKE_SETTINGS_PRGENV_LINKOPTS
+    export CHPL_MAKE_SETTINGS_PRGENV_LINKOPTS = $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments link)
+  endif
+
+  CHPL_MAKE_BASE_CFLAGS += $(CHPL_MAKE_SETTINGS_PRGENV_COMPOPTS)
+  CHPL_MAKE_THIRD_PARTY_LINK_ARGS += $(CHPL_MAKE_SETTINGS_PRGENV_LINKOPTS)
+endif
+
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.clang
+
+

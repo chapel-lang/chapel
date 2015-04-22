@@ -280,8 +280,13 @@ def get(location, map_to_compiler=False, get_lcd=False):
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(location)
     platform_val = chpl_platform.get(location)
-
+    isprgenv = False
     if compiler_val.startswith('cray-prgenv'):
+      isprgenv = True
+    if os.environ.get('CHPL_ORIG_TARGET_COMPILER','').startswith('cray-prgenv'):
+      isprgenv = True
+
+    if isprgenv:
         if arch and (arch != 'none' or arch != 'unknown'):
             stderr.write("Warning: Setting the processor type through "
                          "environment variables is not supported for "

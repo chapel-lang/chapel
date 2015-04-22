@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+
+THIS_DIR=`dirname "$0"`
+CHPL_HOME="$THIS_DIR/../../"
+
+COMMANDS=`cc -craype-verbose 2>/dev/null`
+
+COMPILE=0
+LINK=0
+case $1 in
+  compile)
+    COMPILE=1
+    ;;
+  link)
+    LINK=1
+    ;;
+  *)
+    echo "Usage: script [compile|link]"
+    ;;
+esac
+
+if [ $? -eq 0 ]; then
+
+  for arg in $COMMANDS
+  do
+    if [[ $arg == -I* ]]
+    then
+      if [[ $COMPILE == 1 ]]; then
+        echo $arg
+      fi
+    elif [[ $arg == -D* ]]
+    then
+      if [[ $COMPILE == 1 ]]; then
+        echo $arg
+      fi
+    elif [[ $arg == -W* ]]
+    then
+      if [[ $arg == -Wl,--as-needed,* ]]
+      then
+        : # don't echo these aren't found.
+      else
+        if [[ $LINK == 1 ]]; then
+          echo $arg
+        fi
+      fi
+    elif [[ $arg == -L* ]]
+    then
+      if [[ $LINK == 1 ]]; then
+        echo $arg
+      fi
+    elif [[ $arg == -l* ]]
+    then
+      if [[ $LINK == 1 ]]; then
+        echo $arg
+      fi
+    fi
+  done
+
+fi

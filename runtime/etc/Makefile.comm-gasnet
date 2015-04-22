@@ -44,12 +44,14 @@ endif
 # current PrgEnv.
 #
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xc cray-xk))
-CC = cc $(CHPL_GASNET_CFLAGS)
-LD = cc $(CHPL_GASNET_LFLAGS)
+# Just don't set CC and LD - they'll be set by our compiler/Makefile....
 else
-CC = $(GASNET_CC) $(CHPL_GASNET_CFLAGS)
-LD = $(GASNET_LD) $(CHPL_GASNET_LFLAGS)
+CC = $(GASNET_CC)
+LD = $(GASNET_LD)
 endif
+
+CHPL_MAKE_BASE_CFLAGS += $(CHPL_GASNET_CFLAGS)
+CHPL_MAKE_THIRD_PARTY_LINK_ARGS += $(CHPL_GASNET_LFLAGS)
 
 LIBS += $(GASNET_LIBS)
 endif
