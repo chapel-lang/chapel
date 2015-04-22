@@ -57,9 +57,9 @@ class  E_start : public Event {
     E_start (long u_sec, long u_usec, long s_sec, long s_usec, int nid)
       : Event(u_sec, u_usec, nid), s_sec(s_sec), s_usec(s_usec) {};
 
-    double cpu_time()  { return sec+s_sec + (usec+s_usec)/1000000; }
-    double user_time() { return sec+usec/1000000; }
-    double sys_time() { return s_sec+s_usec/1000000; }
+    double cpu_time()  { return sec+s_sec + ((double)usec+s_usec)/1000000; }
+    double user_time() { return sec+(double)usec/1000000; }
+    double sys_time() { return s_sec+(double)s_usec/1000000; }
     virtual int Ekind() {return Ev_start;}
 
     virtual void print() { printf ("Start: id %d user %ld.%06ld sys %ld.%06ld\n",
@@ -145,8 +145,9 @@ class E_tag : public Event {
      int tagNo() { return tag_num; }
      std::string tagName() { return tag_name; }
 
-     double cpu_time()  { return sec+s_sec + (usec+s_usec)/1000000; }
-     double user_time() { return sec+usec/1000000; }
+     double cpu_time()  { return sec+s_sec + ((double)usec+s_usec)/1000000; }
+     double user_time() { return sec+(double)usec/1000000; }
+     double sys_time() { return s_sec+(double)s_usec/1000000; }
 	 
      virtual int Ekind() {return Ev_tag;}
      virtual void print() {
@@ -166,8 +167,9 @@ class E_resume : public Event {
     E_resume (long u_sec, long u_usec, int nodeid, long s_sec, long s_usec, int tagid)
       : Event(u_sec, u_usec, nodeid), s_sec(s_sec), s_usec(s_usec), tagid(tagid) {};
 
-    double cpu_time()  { return sec+s_sec + (usec+s_usec)/1000000; }
-    double user_time() { return sec+usec/1000000; }
+    double cpu_time()  { return sec+s_sec + ((double)usec+s_usec)/1000000; }
+    double user_time() { return sec+(double)usec/1000000; }
+    double sys_time() { return s_sec+(double)s_usec/1000000; }
     int tagId() { return tagid; }
     virtual int Ekind() { return Ev_resume; }
     virtual void print() { printf ("Resume: id %d user %ld.%06ld sys %ld.%06ld tagNo %d\n",
@@ -183,8 +185,9 @@ class E_end : public Event {
     E_end (long u_sec, long u_usec, int nodeid, long s_sec, long s_usec)
       : Event(u_sec, u_usec, nodeid), s_sec(s_sec), s_usec(s_usec) {};
 
-    double cpu_time()  { return sec+s_sec + (usec+s_usec)/1000000; }
-    double user_time() { return sec+usec/1000000; }
+    double cpu_time()  { return sec+s_sec + ((double)usec+s_usec)/1000000; }
+    double user_time() { return sec+(double)usec/1000000; }
+    double sys_time() { return s_sec+(double)s_usec/1000000; }
     virtual int Ekind() { return Ev_end; }
     virtual void print() { printf ("End: id %d user %ld.%06ld sys %ld.%06ld\n",
 				   nodeid, sec, usec, s_sec, s_usec); }

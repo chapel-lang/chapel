@@ -24,6 +24,7 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
+#include <FL/Fl_Double_Window.H>
 
 #include "DataModel.h"
 
@@ -35,8 +36,12 @@ struct localeInfo {
   int w;
   int h;
   int numTasks;
+  double userCpu;
+  double sysCpu;
   double Cpu;
-  double refCpu; // 
+  double refUserCpu; 
+  double refSysCpu;
+  Fl_Double_Window *win;
   // Fl_Color heat;
 };
 

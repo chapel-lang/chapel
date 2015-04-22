@@ -226,6 +226,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     char pause;
     int slen;
 
+    int cvt;
+
     // Process the line
     linedata = strchr(line, ':');
     if (linedata ) {
@@ -286,9 +288,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
       case 'f':  // All the forks:
 	// s.u nodeID otherNode subloc fid arg arg_size
-	if (sscanf (&linedata[nextCh], "%d %d %d %*d %d", 
-		    &nid, &rnid, &fid, &dlen) != 4) {
-	  fprintf (stderr, "Bad fork line: %s\n", filename);
+	if ((cvt = sscanf (&linedata[nextCh], "%d %d %d %*d 0x%*x %d", 
+			   &nid, &rnid, &fid, &dlen)) != 4) {
+	  fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, filename);
 	  nErrs++;
 	} else {
 	  newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_');

@@ -198,7 +198,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     ru.ru_stime.tv_usec = 0;
   }
   chpl_dprintf (chpl_vdebug_fd,
-		"ChplVdebug: nodes %d id %d seq %.3lf ru %ld.%ld %ld.%ld \n",
+		"ChplVdebug: nodes %d id %d seq %.3lf ru %ld.%06ld %ld.%06ld \n",
 		chpl_numNodes, chpl_nodeID, now,
 		(long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		(long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec  );
@@ -215,7 +215,7 @@ void chpl_vdebug_stop (void) {
       ru.ru_stime.tv_usec = 0;
     }
     // Generate the End record
-    chpl_dprintf (chpl_vdebug_fd, "End: %ld.%ld %ld.%ld %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "End: %ld.%06ld %ld.%06ld %d\n",
 		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
 		  chpl_nodeID);
@@ -244,7 +244,7 @@ void chpl_vdebug_tag (const char *str, int pause)
       ru.ru_stime.tv_sec = 0;
       ru.ru_stime.tv_usec = 0;
     }
-    chpl_dprintf (chpl_vdebug_fd, "Tag: %ld.%ld %ld.%ld %d %d %c %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "Tag: %ld.%06ld %ld.%06ld %d %d %c %s\n",
 		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
 		  chpl_nodeID, ++tag_no, (pause ? 'p' : 't'), str);
@@ -264,7 +264,7 @@ void chpl_vdebug_resume (void) {
       ru.ru_stime.tv_sec = 0;
       ru.ru_stime.tv_usec = 0;
     }
-    chpl_dprintf (chpl_vdebug_fd, "Resume: %ld.%ld %ld.%ld %d %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "Resume: %ld.%06ld %ld.%06ld %d %d\n",
 		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
 		  chpl_nodeID, tag_no);

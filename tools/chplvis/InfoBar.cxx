@@ -45,7 +45,7 @@ void InfoBar::draw(void)
   }
   fl_color(FL_BLACK);
   fl_line_style(FL_SOLID,1,NULL);
-  fl_draw("Min", x()+10, y()+5, 15, h()-10, FL_ALIGN_CENTER, NULL, 0);
+  fl_draw("1", x()+10, y()+5, 15, h()-10, FL_ALIGN_CENTER, NULL, 0);
   fl_draw("Max", x()+140, y()+5, 15, h()-10, FL_ALIGN_CENTER, NULL, 0);
 
   // Messages on max counts

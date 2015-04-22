@@ -79,7 +79,14 @@ void ViewField::allocArrays()
 
   //printf ("allocArrays\n");
   // Dealloc anything current
-  if (theLocales != NULL)  delete [] theLocales;
+  if (theLocales != NULL) {
+    for (ix = 0; ix < getSize; ix++)
+      if (theLocales[ix].win != NULL) {
+	delete theLocales[ix].win;
+	//printf ("deleting win for %d\n", ix);
+      }
+    delete [] theLocales;
+  }
   if (comms != NULL) {
     for (ix = 0; ix < getSize; ix++)  delete [] comms[ix];
     delete [] comms;
@@ -109,8 +116,12 @@ void ViewField::allocArrays()
 
   for (ix = 0; ix < numlocales; ix++) {
     theLocales[ix].numTasks = 0;
-    theLocales[ix].refCpu = 0;
+    theLocales[ix].refUserCpu = 0;
+    theLocales[ix].refSysCpu = 0;
     theLocales[ix].Cpu = 0;
+    theLocales[ix].userCpu = 0;
+    theLocales[ix].sysCpu = 0;
+    theLocales[ix].win = NULL;
   }
 }
 
@@ -176,13 +187,18 @@ void ViewField::processData()
 
       case Ev_start:
 	sp = (E_start *)ev;
-	theLocales[sp->nodeId()].refCpu = sp->cpu_time();
+	theLocales[sp->nodeId()].refUserCpu = sp->user_time();
+	theLocales[sp->nodeId()].refSysCpu = sp->sys_time();
         break;
 
       case Ev_end:
 	ep = (E_end *)ev;
-	theLocales[ep->nodeId()].Cpu = ep->cpu_time()
-	  - theLocales[ep->nodeId()].refCpu;
+	theLocales[ep->nodeId()].userCpu = ep->user_time()
+	  - theLocales[ep->nodeId()].refUserCpu;
+	theLocales[ep->nodeId()].sysCpu = ep->sys_time()
+	  - theLocales[ep->nodeId()].refSysCpu;
+	theLocales[ep->nodeId()].Cpu = 	theLocales[ep->nodeId()].userCpu 
+	  + theLocales[ep->nodeId()].sysCpu;  
 	if (maxCpu < theLocales[ep->nodeId()].Cpu)
 	  maxCpu = theLocales[ep->nodeId()].Cpu;
 	break;
@@ -292,26 +308,45 @@ void ViewField::draw()
   for (ix = 0; ix < numlocales; ix++) {
     if (showtasks) {
       drawLocale(ix, heatColor(theLocales[ix].numTasks, maxTasks));
-      Info->showTasks();
     } else {
       drawLocale(ix, heatColor(theLocales[ix].Cpu, maxCpu));
-      Info->showCpu();
     }
   }
 
   int iy;
   for (ix = 0; ix < numlocales-1; ix++) {
-    for (iy = ix + 1; iy < numlocales; iy++)
+    for (iy = ix + 1; iy < numlocales; iy++) {
+      int  com2ix, com2iy, comMax; 
       if (showcomms) {
-	drawCommLine(ix, heatColor(comms[ix][iy].numGets,maxComms),
-		     iy, heatColor(comms[iy][ix].numGets,maxComms));
-	Info->showComms();
+	com2ix = comms[ix][iy].numGets;
+	com2iy = comms[iy][ix].numGets;
+	comMax = maxComms;
       } else {
-	drawCommLine(ix, heatColor(comms[ix][iy].commSize,maxDatasize),
-		     iy, heatColor(comms[iy][ix].commSize,maxDatasize));
-	Info->showSize();
+	com2ix = comms[ix][iy].commSize;
+	com2iy = comms[iy][ix].commSize;
+	comMax = maxDatasize;
       }
+      if (com2ix || com2iy) {
+	// Draw a line ... gray if no communication
+        if (!com2ix || !com2iy) {
+	  drawCommLine(ix, com2ix ? heatColor(com2ix, comMax) : FL_GRAY,
+		       iy, com2iy ? heatColor(com2iy, comMax) : FL_GRAY);
+	} else {
+	  drawCommLine(ix, heatColor(com2ix, comMax),
+		       iy, heatColor(com2iy, comMax));
+	}
+      }
+    }
   }
+  // Set up the info widget correctly
+  if (showcomms)
+    Info->showComms();
+  else 
+    Info->showSize();
+  if (showtasks)
+      Info->showTasks();
+  else
+      Info->showCpu();
   Info->draw();
 }
 
@@ -334,7 +369,12 @@ int ViewField::handle(int event)
 	localeInfo *loc = &theLocales[ix];
 	if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
 	     y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
-	  printf ("release inside locale %d.\n", ix);
+	  if (theLocales[ix].win == NULL) {
+	    // Create the window
+	    theLocales[ix].win = make_locale_window(ix, &theLocales[ix]);
+	  }
+	  theLocales[ix].win->show();
+	  return 1;
 	}
       }
     }
@@ -343,38 +383,3 @@ int ViewField::handle(int event)
   return Fl_Box::handle(event);
 }
 
-
-
-
-#if 0
-
-    
-    // printf ("Params: x %d, y %d, w %d, h %d\n", x(), y(), w(), h());
-    
-    fl_color(FL_BLUE);
-    
-    fl_line(x()+30,y()+30,x()+w()-30,y()+h()-30);
-    
-    fl_color(FL_RED);
-    fl_rectf( x(), y(), 30, 30);     
-    fl_color(FL_BLACK);      
-    fl_rect( x(), y(), 30, 30);     
-    
-    //fl_draw_box (FL_UP_FRAME, x(), y(), 30, 30, FL_BLUE);
-
-    fl_color(FL_GRAY);
-    fl_rectf(cx-15, cy-15, 30, 30);
-    fl_color(FL_BLACK);
-    fl_rect(cx-15, cy-15, 30, 30);
-    
-    
-    //fl_draw_box (FL_UP_FRAME, cx-15, cy-15, 30, 30, FL_GREEN);
-    
-    fl_color(FL_BLUE);
-    fl_rectf(x()+w()-30, y()+h()-30, 30, 30);
-    fl_color(FL_BLACK);
-    fl_rect(x()+w()-30, y()+h()-30, 30, 30);
-    
-    //fl_draw_box (FL_UP_FRAME, x()+w()-30, y()+h()-30, 30, 30, FL_BLUE);
-
-#endif

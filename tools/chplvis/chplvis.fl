@@ -26,6 +26,9 @@ comment {/*
 decl {\#include <FL/Fl_File_Chooser.H>} {private local
 } 
 
+decl {\#include <FL/Fl_Multiline_Output.H>} {public local
+} 
+
 decl {\#include "ViewField.h"} {public global
 } 
 
@@ -38,11 +41,45 @@ decl {\#include "InfoBar.h"} {public local
 decl {DataModel VisData;} {public local
 } 
 
+Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
+} {
+  Fl_Window {} {open
+    xywh {1100 48 180 120} type Double color 7 resizable size_range {180 120 0 0} visible
+  } {
+    Fl_Box Locale_Title {
+      label {Locale }
+      private xywh {0 0 180 25}
+    }
+    Fl_Output cpuInfo {
+      label { } selected
+      xywh {0 25 180 95} labeltype NO_LABEL resizable
+      class Fl_Multiline_Output
+    }
+  }
+  code {//  Write the data to the window
+const int msgsize = 1024;
+char mesg[msgsize];
+snprintf (mesg, msgsize, "Locale %d", locnum);
+Locale_Title->copy_label(mesg);
+
+// Create the text
+snprintf (mesg, msgsize, "Number of Tasks: %d\\n"
+                         "CPU:\\n"
+                         "      User %lf\\n"
+                         "      Sys %lf\\n"
+                         "      Total %lf\\n",
+                         locInfo->numTasks,
+                         locInfo->userCpu,
+                         locInfo->sysCpu,
+                         locInfo->Cpu);
+cpuInfo->value(mesg);} {}
+} 
+
 Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {326 525 500 555} type Double resizable size_range {500 550 0 0} visible
+    xywh {1361 45 500 555} type Double resizable size_range {500 550 0 0} visible
   } {
     Fl_Menu_Bar {} {open
       xywh {0 0 500 20} color 55
@@ -75,7 +112,7 @@ if (selfile) {
         xywh {0 0 70 21}
       } {
         MenuItem {} {
-          label Ellipse selected
+          label Ellipse
           tooltip {Only choice at this time} xywh {0 0 34 21}
         }
       }
