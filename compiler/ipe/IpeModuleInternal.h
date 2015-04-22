@@ -17,29 +17,40 @@
  * limitations under the License.
  */
 
-#ifndef _VISIBILE_SYMBOLS_H_
-#define _VISIBILE_SYMBOLS_H_
+#ifndef _IPE_MODULE_INTERNAL_H_
+#define _IPE_MODULE_INTERNAL_H_
+
+#include "IpeModule.h"
+#include "symbol.h"
 
 #include <vector>
 
-class Symbol;
+class IpeModuleRoot;
+class DefExpr;
 
-class VisibleSymbols
+class IpeModuleInternal : public IpeModule
 {
+  //
+  // The Class interface
+  //
 public:
-                         VisibleSymbols();
-                        ~VisibleSymbols();
-
-  int                    count()                                      const;
-
-  void                   pushBack(Symbol* symbol, int distance);
-
-  Symbol*                symbol  (int index)                          const;
-  int                    distance(int index)                          const;
+  static bool              loadAndInitialize(IpeModuleRoot* rootModule);
 
 private:
-  std::vector<Symbol*>   mSymbols;
-  std::vector<int>       mDistances;
+  static bool              loadFile(IpeModuleRoot* rootModule, const char* baseName);
+
+  //
+  // The Instance interface
+  //
+protected:
+  virtual const char*      moduleTypeAsString()                         const;
+
+private:
+                           IpeModuleInternal(ModuleSymbol* sym);
+                           IpeModuleInternal();
+
+                          ~IpeModuleInternal();
+
 };
 
 #endif

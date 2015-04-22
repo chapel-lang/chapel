@@ -17,46 +17,12 @@
  * limitations under the License.
  */
 
-#include "VisibleSymbols.h"
+#ifndef _IPE_LOCATION_H_
+#define _IPE_LOCATION_H_
 
-VisibleSymbols::VisibleSymbols()
-{
+class Expr;
+class IpeEnv;
 
-}
+int locationExpr(Expr* expr, IpeEnv* env);
 
-VisibleSymbols::~VisibleSymbols()
-{
-
-}
-
-int VisibleSymbols::count() const
-{
-  return mSymbols.size();
-}
-
-void VisibleSymbols::pushBack(Symbol* symbol, int distance)
-{
-  mSymbols.push_back(symbol);
-  mDistances.push_back(distance);
-}
-
-Symbol* VisibleSymbols::symbol(int index) const
-{
-  Symbol* retval = 0;
-
-  if (index >= 0 && index < count())
-    retval = mSymbols[index];
-
-  return retval;
-}
-
-int VisibleSymbols::distance(int index) const
-{
-  int retval = -1;
-
-  if (index >= 0 && index < count())
-    retval = mDistances[index];
-
-  return retval;
-}
-
+#endif
