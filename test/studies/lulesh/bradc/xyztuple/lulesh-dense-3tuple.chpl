@@ -275,9 +275,6 @@ proc main() {
     var fmtstrnum = if debug then "%1.9er" else "%1.4er";
     var fmtstr = fmtstrnum + " " + fmtstrnum + " " + fmtstrnum + "\n";
     for i in Nodes {
-      //
-      // TODO: Why doesn't this one work?
-      //
       writer.writef(fmtstr, xyz[i][X], xyz[i][Y], xyz[i][Z]);
     }
     writer.close();
@@ -1536,7 +1533,7 @@ proc deprint(title:string, x:[?D] real, y:[D]real, z:[D]real) {
 proc deprint(title:string, xyz:[?D] 3*real) {
   writeln(title);
   for i in D {
-    writef("%3n %3.4er %3.4er %3.4er\n", i, xyz[i][1], xyz[i][2], xyz[i][3]);
+    writef("%3n %3.4er %3.4er %3.4er\n", i, xyz[i][X], xyz[i][Y], xyz[i][Z]);
   }
 }
 
