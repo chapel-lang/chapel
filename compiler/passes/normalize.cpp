@@ -910,7 +910,7 @@ static void insert_call_temps(CallExpr* call)
 
 // Not so fast! Since AMM destroys initialized variables (including temps) when
 // they exit the scope in which they are declared, temps which are to read in
-// an outer scope must be declared in an outer scope.  Any easy fix is to
+// an outer scope must be declared in an outer scope.  An easy fix is to
 // declare the temp in the same scope as the variable into which the temp is
 // eventually copied.
   // Just fix the failing case for now.  Add others as needed.

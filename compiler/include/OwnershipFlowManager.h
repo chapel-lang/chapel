@@ -466,6 +466,19 @@ inline static bool isConsumed(SymExpr* se)
 }
 
 
+inline static bool resultIsOwned(CallExpr* call)
+{
+  if (call->isResolved())
+    return true;
+  else
+  {
+    // This call must be a primitive.
+    // Guilty until proven innocent.
+    return false;
+  }
+}
+
+
 #if 0
 inline static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
 {
