@@ -17,12 +17,13 @@
  * limitations under the License.
  */
 
-#include "scopeResolve.h"
+#include "externCResolve.h"
 
 #include "astutil.h"
 #include "build.h"
 #include "codegen.h"
 #include "expr.h"
+#include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"

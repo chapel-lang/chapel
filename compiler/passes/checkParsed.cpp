@@ -24,6 +24,7 @@
 #include "stmt.h"
 #include "expr.h"
 #include "astutil.h"
+#include "stlUtil.h"
 
 
 static void checkNamedArguments(CallExpr* call);
@@ -139,13 +140,13 @@ checkFunction(FnSymbol* fn) {
   if (fn->retTag == RET_PARAM && fn->retExprType != NULL)
     USR_WARN(fn, "providing an explicit return type on a 'param' function currently leads to incorrect results; as a workaround, remove the return type specification in function '%s'", fn->name);
 
-  Vec<CallExpr*> calls;
+  std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->isIterator();
   bool notInAFunction = !isIterator && (fn->getModule()->initFn == fn);
   int numVoidReturns = 0, numNonVoidReturns = 0, numYields = 0;
 
-  forv_Vec(CallExpr, call, calls) {
+  for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
       if (notInAFunction)
         USR_FATAL_CONT(call, "return statement is not in a function or iterator");

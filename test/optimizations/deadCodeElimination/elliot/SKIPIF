@@ -1,2 +1,3 @@
 # dead mod elim does not run with baseline, so skip these tests
 COMPOPTS <= baseline
+COMPOPTS <= --no-inline

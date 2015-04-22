@@ -14,32 +14,31 @@ extern proc chpl_task_yield();
 
     - (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
-config const numMeetings : int = 6000000;  // number of meetings to take place
-config const numChameneos1 : int(32) = 3;  // size of population 1
-config const numChameneos2 : int(32) = 10; // size of population 2
+config const numMeetings = 6000000;  // number of meetings to take place
+config const numChameneos1 = 3;  // size of population 1
+config const numChameneos2 = 10; // size of population 2
+param numColors = 3;
 enum Color {blue=0, red=1, yellow=2};
 enum Digit {zero, one, two, three, four,
             five, six, seven, eight, nine};
-config const verbose = false;
-// if verbose is true, prints out non-det output, otherwise prints det output
-config param CHAMENEOS_IDX_MASK = 0xFF: uint(32);
+config param CHAMENEOS_IDX_MASK = 0xFF;
 config param MEET_COUNT_SHIFT = 8;
 config const numSpins = 7;
 //  numSpins doesn't seem to affect too much, but I got more lower #s with 8
 
 class MeetingPlace {
-  var state : atomic uint(32);
+  var state : atomic int;
 
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc MeetingPlace() {
-    state.write((numMeetings << MEET_COUNT_SHIFT) : uint(32));
+    state.write(numMeetings << MEET_COUNT_SHIFT);
   }
 
   /* reset must be called after meet,
      to reset numMeetings for a subsequent call of meet */
   proc reset() {
-    state.write((numMeetings << MEET_COUNT_SHIFT) : uint(32));
+    state.write(numMeetings << MEET_COUNT_SHIFT);
   }
 }
 
@@ -76,7 +75,7 @@ inline proc getComplement(myColor : Color, otherColor : Color) {
 }
 
 class Chameneos {
-  var id: int(32);
+  var id: int;
   var color : Color;
   var meetings : int;
   var meetingsWithSelf : int;
@@ -87,16 +86,14 @@ class Chameneos {
      use this color and its own to compute the color both will have after the
      meeting has ended, setting both of their colors to this value. */
   proc start(population : [] Chameneos, meetingPlace: MeetingPlace) {
-    var stateTemp : uint(32);
-    var peer_idx : uint(32);
-    var xchg : uint(32);
+    var stateTemp, peer_idx, xchg : int;
 
     stateTemp = meetingPlace.state.read(memory_order_acquire);
 
     while (true) {
       peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
       if (peer_idx) {
-        xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT):uint(32);
+        xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT);
       } else if (stateTemp) {
         xchg = stateTemp | id;
       } else {
@@ -121,7 +118,7 @@ class Chameneos {
 
   /* Given the id of its peer, finds and updates the data of its peer and
      itself */
-  proc runMeeting (population : [] Chameneos, peer_idx : uint(32)) {
+  proc runMeeting (population : [] Chameneos, peer_idx) {
     var peer : Chameneos;
     var newColor : Color;
     var is_same : int;
@@ -164,7 +161,7 @@ class Chameneos {
 /* printColorChanges prints the result of getComplement for all possible
    pairs of colors */
 proc printColorChanges() {
-  const colors : [1..3] Color = (Color.blue, Color.red, Color.yellow);
+  const colors : [1..numColors] Color = (Color.blue, Color.red, Color.yellow);
   for color1 in colors {
     for color2 in colors {
       writeln(color1, " + ", color2, " -> ", getComplement(color1, color2));
@@ -176,11 +173,11 @@ proc printColorChanges() {
 /* populate takes an parameter of type int, size, and returns a population of
    chameneos of that size. if population size is set to 10, will use preset
    array of colors  */
-proc populate (size : int(32)) {
+proc populate (size) {
   const colorsDefault10  = (Color.blue, Color.red, Color.yellow, Color.red,
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
-  const D : domain(1, int(32)) = {1..size};
+  const D : domain(1, int) = {1..size};
   var population : [D] Chameneos;
 
   if (size == 10) {
@@ -189,7 +186,7 @@ proc populate (size : int(32)) {
     }
   } else {
     for i in D {
-      population(i) = new Chameneos(i, ((i-1) % 3):Color);
+      population(i) = new Chameneos(i, ((i-1) % numColors):Color);
     }
   }
   return population;
@@ -211,29 +208,6 @@ proc run(population : [] Chameneos, meetingPlace : MeetingPlace) {
   }
 
   meetingPlace.reset();
-}
-
-proc runQuiet(population : [] Chameneos, meetingPlace : MeetingPlace) {
-  coforall i in population {
-    i.start(population, meetingPlace);
-  }
-  meetingPlace.reset();
-
-  const totalMeetings = + reduce population.meetings;
-  const totalMeetingsWithSelf = + reduce population.meetingsWithSelf;
-  if (totalMeetings == numMeetings*2) {
-    writeln("total meetings PASS");
-  } else {
-    writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2);
-  }
-
-  if (totalMeetingsWithSelf == 0) {
-    writeln("total meetings with self PASS");
-  } else {
-    writeln("total meetings with self actual = ", totalMeetingsWithSelf, ", total meetings with self expected = 0");
-  }
-
-  writeln();
 }
 
 proc printInfo(population : [] Chameneos) {
@@ -266,16 +240,11 @@ proc main() {
     const population1 = populate(numChameneos1);
     const population2 = populate(numChameneos2);
 
-    if (verbose) {
-      run(population1, forest);
-      printInfo(population1);
+    run(population1, forest);
+    printInfo(population1);
 
-      run(population2, forest);
-      printInfo(population2);
-    } else {
-      runQuiet(population1, forest);
-      runQuiet(population2, forest);
-    }
+    run(population2, forest);
+    printInfo(population2);
   }
 }
 

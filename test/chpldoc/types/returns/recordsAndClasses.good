@@ -1,9 +1,0 @@
-Module: recordsAndClasses
-   Record: thingy
-   proc takesAThingy(): thingy
-      This method returns a record 
-
-   Class: whatchamacallit
-   proc takesAWhatchamacallit(): whatchamacallit
-      This method returns a whatchamacallit 
-

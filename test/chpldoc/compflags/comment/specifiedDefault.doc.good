@@ -1,0 +1,4 @@
+Module: specifiedDefault.doc
+   proc found()
+      This comment should be seen 
+

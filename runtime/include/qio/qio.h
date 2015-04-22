@@ -875,7 +875,7 @@ qioerr _qio_channel_flush_unlocked(qio_channel_t* ch);
 // because the data will already be in the buffer.
 // The actual error in flushing, if there was one,
 // will be returned in a qio_channel_flush
-static ___always_inline
+static inline
 qioerr _qio_channel_post_cached_write(qio_channel_t* restrict ch)
 {
   qioerr err = 0;
@@ -899,7 +899,7 @@ qioerr _qio_channel_post_cached_write(qio_channel_t* restrict ch)
 // Returns an error code.
 //
 // On a read, returns EEOF and *amt_read=some amount for EOF.
-static ___always_inline
+static inline
 qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len, ssize_t* restrict amt_read)
 {
   qioerr err;
@@ -932,7 +932,7 @@ qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* 
 
 // returns a character >= 0 or negative for an error code.
 // This function exists for performance reasons.
-static ___always_inline
+static inline
 int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
 {
   int32_t ret;
@@ -976,7 +976,7 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
 }
 
 // This function exists for performance reasons.
-static ___always_inline
+static inline
 qioerr qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, uint8_t byte) {
   qioerr err;
 
@@ -1053,7 +1053,7 @@ int64_t qio_channel_str_style(qio_channel_t* ch)
 
 int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element);
  
-static ___always_inline
+static inline
 qioerr qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len, ssize_t* restrict amt_written )
 {
   qioerr err;
@@ -1085,7 +1085,7 @@ qioerr qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const
 }
 
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len) {
   qioerr err;
 
@@ -1115,7 +1115,7 @@ qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, vo
   return err;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len) {
   qioerr err;
 
@@ -1420,7 +1420,7 @@ qioerr qio_channel_commit(const int threadsafe, qio_channel_t* ch)
 qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
 void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t v, int8_t nbits) {
   qioerr err = 0;
   qio_bitbuffer_t part_one_bits;
@@ -1514,7 +1514,7 @@ qioerr qio_channel_flush_bits(const int threadsafe, qio_channel_t* restrict ch);
 qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits);
 void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits);
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits) {
   qioerr err = 0;
   qio_bitbuffer_t part_two_bits;

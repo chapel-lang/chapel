@@ -1,0 +1,2 @@
+--output-dir fake-docs-root/deep/dir/docs  # failToCreateDir.no-dir.doc.good
+--output-dir /docs  # failToCreateDir.no-perm.doc.good

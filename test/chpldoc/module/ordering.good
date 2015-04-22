@@ -1,6 +1,0 @@
-Module: ordering
-   proc second()
-      This is a proc... 
-
-   config var first: string
-      This config var should be awesome. 

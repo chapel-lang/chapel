@@ -282,32 +282,30 @@ void Expr::prettyPrint(std::ostream *o) {
 }
 
 Expr* Expr::remove() {
-  if (this != NULL) {
-    if (list) {
-      if (next)
-        next->prev = prev;
-      else
-        list->tail = prev;
+  if (list) {
+    if (next)
+      next->prev = prev;
+    else
+      list->tail = prev;
 
-      if (prev)
-        prev->next = next;
-      else
-        list->head = next;
+    if (prev)
+      prev->next = next;
+    else
+      list->head = next;
 
-      list->length--;
+    list->length--;
 
-      next = NULL;
-      prev = NULL;
-      list = NULL;
-    } else {
-      callReplaceChild(this, NULL);
-    }
+    next = NULL;
+    prev = NULL;
+    list = NULL;
+  } else {
+    callReplaceChild(this, NULL);
+  }
 
-    if (parentSymbol) {
-      remove_help(this, 'r');
-    } else {
-      trace_remove(this, 'R');
-    }
+  if (parentSymbol) {
+    remove_help(this, 'r');
+  } else {
+    trace_remove(this, 'R');
   }
 
   return this;
