@@ -1082,7 +1082,7 @@ rebuildIterator(IteratorInfo* ii,
     // handled in iterator records.  Calls to the these() method on arrays and
     // domains returns a "nude" version of the corresponding array or domain,
     // that is therefore (because it is a class object) not reference counted.
-    // In place where they should be reference counted, they should be passed
+    // In places where they should be reference counted, they should be passed
     // around with their record wrapping.  In places where their persistence is
     // guaranteed, they could be passed around by reference, but other iterator
     // code presently depends upon them being passed by value (the immediately
@@ -1094,7 +1094,7 @@ rebuildIterator(IteratorInfo* ii,
         isArrayImplType(localValue->type) ||
         isDistImplType(localValue->type))
     {
-      Symbol* tmp = newTemp("RWT_ir", localValue->type);
+      VarSymbol* tmp = newTemp("RWT_ir", localValue->type);
       fn->insertAtTail(new DefExpr(tmp));
       FnSymbol* autoCopyFn = autoCopyMap.get(localValue->type);
       // We will fail here if an array or dom implementation fails to provide
@@ -1114,6 +1114,34 @@ rebuildIterator(IteratorInfo* ii,
   fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
   fn->addFlag(FLAG_INLINE);
+}
+
+
+static void
+rebuildIteratorAutoDestroy(IteratorInfo* ii)
+{
+  // TODO: Do we need this cast?
+  AggregateType* irt = toAggregateType(ii->irecord);
+  FnSymbol* adFn = autoDestroyMap.get(irt);
+  ArgSymbol* ir = adFn->getFormal(1);
+  BlockStmt* block = new BlockStmt();
+
+  for_fields(field, irt)
+  {
+    if (isDomImplType(field->type) ||
+        isArrayImplType(field->type) ||
+        isDistImplType(field->type))
+    {
+      VarSymbol* tmp = newTemp("ref_RWT_ir", field->type->refType);
+      block->insertAtTail(new DefExpr(tmp));
+      CallExpr* getMbrCall = new CallExpr(PRIM_GET_MEMBER, ir, field);
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, getMbrCall));
+      FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+      block->insertAtTail(new CallExpr(autoDestroyFn, tmp));
+    }
+  }
+
+  adFn->insertAtHead(block);
 }
 
 
@@ -1420,6 +1448,7 @@ void lowerIterator(FnSymbol* fn) {
     buildIncr(ii, singleLoop);
   }
   rebuildIterator(ii, local2rfield, locals);
+  rebuildIteratorAutoDestroy(ii);
   rebuildGetIterator(ii);
   rebuildFreeIterator(ii);
 }
