@@ -772,9 +772,10 @@ slurm 'Expired credential' problem after executable termination (2015-04-13)
 [Error: Timed out executing program release/examples/primers/randomNumbers] (xc.aries.pgi.slurm: 2015-04-16)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/stream] (xc.ugni.intel.slurm: 2015-04-16)
 
-timeout on 24-25 example tests
-------------------------------
+sporadic timeout on tests that normally complete quickly
+--------------------------------------------------------
 (xc.aries.pgi.aprun, xc.ugni.intel.aprun, xc.aries.cray.aprun: 2015-04-21)
+(perf.xc.no-local.gnu, perf.xc.local.cray, xc.aries.intel.slurm, xc.aries.pgi.slurm, perf.xc.local.pgi: 2015-04-22)
 
 
 ===================
@@ -946,7 +947,7 @@ sporadic execution timeout
 --------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-12..)
 [Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD    (compopts: 1)]              (2015-??-??..2015-03-17)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (execopts: *)] (2015-03-22, 2015-03-25, 2015-03-31, 2015-04-04..2015-04-07, 2015-04-09, 2015-04-11..2015-04-15, 2015-04-19)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (execopts: *)] (2015-03-22, 2015-03-25, 2015-03-31, 2015-04-04..2015-04-07, 2015-04-09, 2015-04-11..2015-04-15, 2015-04-19, 2015-04-22)
 
 
 ==================================
@@ -957,8 +958,8 @@ Reviewed 2015-04-20
 
 === sporadic failures below ===
 
-sporadic chameneos-redux-cas output mismatch (lydia)
-----------------------------------------------------
+sporadic output mismatch (lydia)
+--------------------------------
 [Error matching performance keys for studies/parboil/SAD/sadSerial]                               (????-??-??..2015-03-26, 2015-04-02..)
 
 
@@ -978,6 +979,7 @@ cause is unknown (2015-03-20..)
 cause is unknown
 ----------------
 [Error matching performance keys for release/examples/benchmarks/hpcc/ptrans] (2015-03-20..2015-03-24)
+[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-printf] (2015-04-22)
 
 
 ================================
@@ -1154,11 +1156,12 @@ A package needed for chpldoc is not installed (2015-03-12, Thomas)
 sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
 [Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28,
-                                                                                                         2015-01-31..2015-02-18, 2015-02-20..2015-02-22, 2015-02-24,
-                                                                                                         2015-03-01..2015-03-05, 2015-03-11..2015-03-14,
-                                                                                                         2015-03-17..2015-03-18, 2015-03-22..2015-03-26,
-                                                                                                         2015-03-28..2105-04-01, 2015-04-04..2015-04-08,
-                                                                                                         2015-04-10..2015-04-13, 2015-04-15..2015-04-19)
+                         2015-01-31..2015-02-18, 2015-02-20..2015-02-22,
+                         2015-02-24, 2015-03-01..2015-03-05,
+                         2015-03-11..2015-03-14, 2015-03-17..2015-03-18,
+                         2015-03-22..2015-03-26, 2015-03-28..2015-04-01,
+                         2015-04-04..2015-04-08, 2015-04-10..2015-04-13,
+                         2015-04-15..2015-04-19, 2015-04-21..)
 
 
 ================================
