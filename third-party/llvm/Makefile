@@ -6,7 +6,7 @@ CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 # decide whether to do a debug or no-debug build
-ifdef CHPL_DEVELOPER
+ifdef CHPL_LLVM_DEVELOPER
 CHPL_LLVM_DEBUG = --enable-debug-runtime --enable-debug-symbols
 else
 CHPL_LLVM_DEBUG = 
