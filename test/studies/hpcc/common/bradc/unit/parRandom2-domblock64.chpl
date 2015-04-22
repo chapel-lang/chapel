@@ -13,7 +13,7 @@ var randStr1 = new RandomStream(314159265);
 var randStr2 = new RandomStream(314159265);
 
 forall (i,r) in zip(A.domain, randStr1) {
-  writeln("Doing iteration %##### on locale %i\n", i, here.id);
+  writeln("Doing iteration ##### on locale %i\n", i, here.id);
   A(i) = r;
 }
 
@@ -22,7 +22,7 @@ for b in B do
 
 for (i,a,b) in zip(ProblemSpace,A,B) {
   if (a != b) then
-    writef("mismatch at %######: %r != %r", i, a, b);
+    writef("mismatch at #####: %r != %r", i, a, b);
   else
     writef("%###### = %r\n", i, a);
 }
