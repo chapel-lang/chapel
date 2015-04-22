@@ -22,6 +22,7 @@
 module ChapelLocale {
 
   use LocaleModel;
+  use AutoPtr;
 
   //
   // Node and sublocale types and special sublocale values.
@@ -180,6 +181,7 @@ module ChapelLocale {
   // module.
   //
   var origRootLocale : locale = nil;
+  var origRootLocaleWrapper = new auto_ptr(origRootLocale);
 
   class AbstractRootLocale : locale {
     // These functions are used to establish values for Locales[] and
@@ -309,6 +311,7 @@ module ChapelLocale {
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
     (origRootLocale:RootLocale).init();
+    origRootLocaleWrapper.ptr = origRootLocale;
   }
 
   // This function sets up a private copy of rootLocale by replicating
