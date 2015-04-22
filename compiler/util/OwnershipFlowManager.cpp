@@ -1129,8 +1129,7 @@ static bool isRetVarCopyInConstructor(SymExpr* se)
         if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) // and the
           if (fn->hasFlag(FLAG_CONSTRUCTOR) ||             // containing
               fn->hasFlag(FLAG_AUTO_COPY_FN) ||            // function 
-              fn->hasFlag(FLAG_INIT_COPY_FN) || // is a constructor
-              !strcmp(fn->name, "chpl__ensureDomainExpr"))
+              fn->hasFlag(FLAG_INIT_COPY_FN)) // is a constructor.
             // TODO: Can the above be generalized to all functions?
             if (SymExpr* lhse = toSymExpr(call->get(1))) // whose LHS
               if (lhse->var == fn->getReturnSymbol()) // is the RVV.
@@ -1288,6 +1287,17 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
 
     if (isConsumed(se))
     {
+      // When there is a return-value variable, it is assumed to be assigned
+      // elsewhere and owned (see the clause for seIsRVV && rvvIsOwned under
+      // (bitwiseCopyAr(se) == 1) above).  Therefore, it is not necessary to
+      // add an autocopy here.
+      // TODO: Ultimately, there will be no RVV, so this special case can be
+      // removed.
+      if (seIsRVV)
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (call->isPrimitive(PRIM_RETURN))
+            continue;
+
       // If the live bit is set for this symbol, we can leave it as a move and
       // transfer ownership.  Otherwise, we need to insert an autoCopy.
       size_t index = symbolIndex[sym];
