@@ -1116,7 +1116,7 @@ rebuildIterator(IteratorInfo* ii,
   fn->addFlag(FLAG_INLINE);
 }
 
-
+#if 0
 static void
 rebuildIteratorAutoDestroy(IteratorInfo* ii)
 {
@@ -1143,6 +1143,7 @@ rebuildIteratorAutoDestroy(IteratorInfo* ii)
 
   adFn->insertAtHead(block);
 }
+#endif
 
 
 // Fills in the body of the getIterator function.
@@ -1448,7 +1449,7 @@ void lowerIterator(FnSymbol* fn) {
     buildIncr(ii, singleLoop);
   }
   rebuildIterator(ii, local2rfield, locals);
-  rebuildIteratorAutoDestroy(ii);
+//  rebuildIteratorAutoDestroy(ii);
   rebuildGetIterator(ii);
   rebuildFreeIterator(ii);
 }
