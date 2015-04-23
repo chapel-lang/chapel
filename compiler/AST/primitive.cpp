@@ -614,6 +614,9 @@ initPrimitive() {
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
 
+  prim_def(PRIM_CALL_RESOLVES, "call resolves", returnInfoBool);
+  prim_def(PRIM_METHOD_CALL_RESOLVES, "method call resolves", returnInfoBool);
+
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
 
