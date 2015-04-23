@@ -23,7 +23,7 @@ Updating Chapel bundle
 [1]: https://github.com/chapel-lang/chapel-tmbundle
 [2]: https://github.com/github/linguist
 [4]: https://github-lightshow.herokuapp.com/
-[5]: https://github-lightshow.herokuapp.com/?utf8=%E2%9C%93&scope=from-url&grammar_url=https%3A%2F%2Fgithub.com%2Fthomasvandoren%2Fchapel-tmbundle%2Fblob%2Fmaster%2FSyntaxes%2FChapel.tmLanguage&grammar_text=&code_source=from-url&code_url=https%3A%2F%2Fgithub.com%2Fchapel-lang%2Fchapel%2Fblob%2Fmaster%2Ftest%2Frelease%2Fexamples%2Fbenchmarks%2Flulesh%2Flulesh.chpl&code=
+[5]: https://github-lightshow.herokuapp.com/?utf8=%E2%9C%93&scope=from-url&grammar_url=https%3A%2F%2Fgithub.com%2Fchapel-lang%2Fchapel-tmbundle%2Fblob%2Fmaster%2FSyntaxes%2FChapel.tmLanguage&grammar_text=&code_source=from-url&code_url=https%3A%2F%2Fgithub.com%2Fchapel-lang%2Fchapel%2Fblob%2Fmaster%2Ftest%2Frelease%2Fexamples%2Fbenchmarks%2Flulesh%2Flulesh.chpl&code=
 
 If you can figure out how to use the [Textmate bundle editor][3], please update
 these instructions accordingly.
