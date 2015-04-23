@@ -17,9 +17,36 @@
  * limitations under the License.
  */
 
-#ifndef _IPE_INLINE_PRIMITIVES_H_
-#define _IPE_INLINE_PRIMITIVES_H_
+#ifndef _IPE_MODULE_STANDARD_H_
+#define _IPE_MODULE_STANDARD_H_
 
-void ipeInlinePrimitives();
+#include "IpeModule.h"
+
+class IpeModuleRoot;
+
+class IpeModuleStandard : public IpeModule
+{
+  //
+  // The Class interface
+  //
+public:
+  static bool              loadAndInitialize(IpeModuleRoot* rootModule);
+
+private:
+  static bool              loadFile(IpeModuleRoot* rootModule, const char* baseName);
+
+
+  //
+  // The Instance interface
+  //
+protected:
+  virtual const char*      moduleTypeAsString()                         const;
+
+private:
+                           IpeModuleStandard(ModuleSymbol* sym);
+                           IpeModuleStandard();
+
+                          ~IpeModuleStandard();
+};
 
 #endif
