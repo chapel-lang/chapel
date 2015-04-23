@@ -362,7 +362,7 @@ sporadic execution timeout
 --------------------------
 [Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (..2015-02-21, 2015-03-27, 2015-04-11)]
 [Error: Timed out executing program performance/bharshbarg/arr-forall] (2015-03-20, 2015-03-29..2015-04-02, 2015-04-04..)]
-[Error: Timed out executing program studies/shootout/fannkuch-redux/sungeun/fannkuch-redux (execopts: 2)] (2015-03-28..2015-04-02, 2015-04-03..2015-04-19)]
+[Error: Timed out executing program studies/shootout/fannkuch-redux/sungeun/fannkuch-redux (execopts: 2)] (2015-03-28..2015-04-02, 2015-04-03..2015-04-19, 2015-04-22..)
 
 
 sporadic invalid reads/writes
@@ -765,6 +765,7 @@ Reviewed 2015-04-20
 [Error matching program output for release/examples/primers/procedures] (xc.ugni.intel.aprun 2015-04-15)
 [Error matching program output for release/examples/primers/sparse] (xc.ugni.-qthreads.gnu.aprun 2015-04-16)
 [Error matching program output for release/examples/benchmarks/hpcc/variants/stream-promoted] (xc.ugni.gnu.aprun: 2015-04-17)
+[Error matching program output for release/examples/programs/quicksort] (xc.mpi.cray.aprun, 2015-04-23)
 
 slurm 'Expired credential' problem after executable termination (2015-04-13)
 ----------------------------------------------------------------------------
