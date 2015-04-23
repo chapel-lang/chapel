@@ -103,6 +103,7 @@ int fConditionalDynamicDispatchLimit = 0;
 bool fUseNoinit = true;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
+bool fNoRemoveWrapRecords = false;
 bool fNoScalarReplacement = false;
 bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
@@ -560,6 +561,7 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fieeefloat = false;
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
+  fNoRemoveWrapRecords = false;
   fNoFastFollowers = false;
   fNoloopInvariantCodeMotion= false;
   fNoInline = false;
@@ -591,6 +593,7 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   fBaseline = true;
   fNoCopyPropagation = true;
   fNoDeadCodeElimination = true;
+  fNoRemoveWrapRecords = true;
   fNoFastFollowers = true;
   fNoloopInvariantCodeMotion = true;
   fNoInline = true;
@@ -685,6 +688,7 @@ static ArgumentDescription arg_desc[] = {
  {"conditional-dynamic-dispatch-limit", ' ', "<limit>", "Set limit on # of inline conditionals used for dynamic dispatch", "I", &fConditionalDynamicDispatchLimit, "CHPL_CONDITIONAL_DYNAMIC_DISPATCH_LIMIT", NULL},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
+ {"remove-wrap-records", ' ', NULL, "Enable [disable] wrap record removal", "n", &fNoRemoveWrapRecords, "CHPL_REMOVE_WRAP_RECORDS", NULL},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
