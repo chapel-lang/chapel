@@ -17,32 +17,31 @@
  * limitations under the License.
  */
 
-#ifndef _IPE_SCOPE_EXPR_H_
-#define _IPE_SCOPE_EXPR_H_
+#ifndef _IPE_SCOPE_BLOCK_H_
+#define _IPE_SCOPE_BLOCK_H_
 
 #include "IpeScope.h"
 
-class IpeScopeExpr : public IpeScope
+class IpeModule;
+
+class IpeScopeBlock : public IpeScope
 {
 public:
-                           IpeScopeExpr(IpeScope* parent);
-  virtual                 ~IpeScopeExpr();
+                           IpeScopeBlock(IpeScope* parent);
+  virtual                 ~IpeScopeBlock();
 
+  virtual const char*      type()                                     const;
   virtual const char*      name()                                     const;
 
-  virtual void             extend(Symbol*  sym,
-                                  IpeValue defaultValue,
-                                  IpeVars* vars);
+  virtual int              locationSet(ArgSymbol* arg)                const;
+  virtual int              locationSet(VarSymbol* var)                const;
 
-  virtual void             envPush();
-  virtual void             envPop();
+  virtual int              frameSize()                                const;
 
-protected:
-  virtual const char*      type()                                     const;
-  virtual void             describeHeader(int offset)                 const;
+  virtual bool             isScopeBlockStmt()                         const;
 
 private:
-                           IpeScopeExpr();
+                           IpeScopeBlock();
 };
 
 #endif
