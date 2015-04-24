@@ -107,6 +107,7 @@ void checkPrimitives()
      case PRIM_UNKNOWN:
      case PRIM_NOOP:
      case PRIM_MOVE:
+     case PRIM_REF_TO_STRING:
      case PRIM_RETURN:
      case PRIM_YIELD:
      case PRIM_UNARY_MINUS:
