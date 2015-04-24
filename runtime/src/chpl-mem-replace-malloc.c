@@ -32,6 +32,8 @@
 #undef realloc
 #undef free
 
+// This file always declares this function at least.
+void chpl_mem_replace_malloc_if_needed(void);
 
 #ifndef CHPL_USING_CSTDLIB_MALLOC
 // Don't declare anything unless we're not using C allocator.
@@ -47,18 +49,10 @@
 #include <malloc.h> // for memalign
 #endif
 
-// TODO
-#undef USE_GLIBC_MALLOC_HOOKS
-#undef CHPL_WRAP_MALLOC
 #define CHPL_REPLACE_MALLOC 1
-
 
 #ifdef USE_GLIBC_MALLOC_HOOKS
 #define TRACK_SYSTEM_ALLOCATION
-#endif
-#ifdef CHPL_WRAP_MALLOC
-#define TRACK_SYSTEM_ALLOCATION
-#define TRACK_SYSTEM_ALLOCATION_NOARG
 #endif
 #ifdef CHPL_REPLACE_MALLOC
 #define TRACK_SYSTEM_ALLOCATION
@@ -94,7 +88,7 @@ static void track_system_allocated_arg(
 #endif
 
 #ifdef TRACK_SYSTEM_ALLOCATION_NOARG
-// This version is for --wrap malloc replacements
+// This version is for linker malloc replacements
 static void track_system_allocated(
   void* ptr,
   size_t len,
@@ -122,164 +116,6 @@ static int is_system_allocated(void* ptr_in)
     if( start <= ptr && ptr < end ) return 1;
   }
   return 0;
-}
-
-#endif
-
-// declare symbol version of calloc/malloc/realloc in case
-// we want pointers to them or we want to use linker scripts/weak symbols
-
-// If we use weak symbols/linker scripts, for glibc we would need to define:
-//  malloc, free, cfree, calloc, realloc,
-//  memalign, posix_memalign, aligned_alloc,
-//  malloc_usable_size.
-// we could use ld's --wrap argument to achieve it.
-
-// we always create symbols for calloc/malloc/realloc so that
-// we could use a linker script or malloc hook.
-#ifdef CHPL_WRAP_MALLOC
-void* __real_calloc(size_t n, size_t size);
-void* __wrap_calloc(size_t n, size_t size);
-
-void* __real_malloc(size_t size);
-void* __wrap_malloc(size_t size);
-
-void* __real_memalign(size_t alignment, size_t size);
-void* __wrap_memalign(size_t alignment, size_t size);
-
-void* __real_realloc(void* ptr, size_t size);
-void* __wrap_realloc(void* ptr, size_t size);
-
-void __real_free(void* ptr);
-void __wrap_free(void* ptr);
-
-int __real_posix_memalign(void **memptr, size_t alignment, size_t size);
-int __wrap_posix_memalign(void **memptr, size_t alignment, size_t size);
-
-void* __real_valloc(size_t size);
-void* __wrap_valloc(size_t size);
-
-void* __real_pvalloc(size_t size);
-void* __wrap_pvalloc(size_t size);
-
-
-void* __wrap_calloc(size_t n, size_t size)
-{
-  void* ret;
-  if( !chpl_mem_inited() ) {
-    ret = __real_calloc(n, size);
-    printf("in early __wrap_calloc %p = system calloc(%#x)\n",
-           ret, (int) (n*size));
-    track_system_allocated(ret, n*size, __real_malloc);
-    return ret;
-  }
-  printf("in __wrap_calloc\n");
-  ret = chpl_calloc(n, size);
-  printf("%p = chpl_calloc(%#x)\n", ret, (int) (n*size));
-  return ret;
-}
-
-void* __wrap_malloc(size_t size)
-{
-  void* ret;
-  if( !chpl_mem_inited() ) {
-    ret = __real_malloc(size);
-    printf("in early __wrap_malloc %p = system malloc(%#x)\n", ret, (int) size);
-    track_system_allocated(ret, size, __real_malloc);
-    return ret;
-  }
-  printf("in __wrap_malloc\n");
-  ret = chpl_malloc(size);
-  printf("%p = chpl_malloc(%#x)\n", ret, (int) size);
-  return ret;
-}
-
-void* __wrap_memalign(size_t alignment, size_t size)
-{
-  if( !chpl_mem_inited() ) {
-    void* ret = __real_memalign(alignment, size);
-    printf("in early __wrap_memalign %p = system memalign(%#x)\n",
-           ret, (int) size);
-    track_system_allocated(ret, size, __real_malloc);
-    return ret;
-  }
-  printf("in __wrap_memalign\n");
-  return chpl_memalign(alignment, size);
-}
-
-void* __wrap_realloc(void* ptr, size_t size)
-{
-  if( !chpl_mem_inited() ) {
-    void* ret = __real_realloc(ptr, size);
-    printf("in early __wrap_realloc %p = system realloc(%#x)\n",
-           ret, (int) size);
-    track_system_allocated(ret, size, __real_malloc);
-    return ret;
-  }
-  printf("in __wrap_realloc\n");
-  return chpl_realloc(ptr, size);
-}
-
-void __wrap_free(void* ptr)
-{
-  if( ! ptr ) return;
-  printf("in __wrap_free(%p)\n", ptr);
-  // check to see if we're freeing a pointer that was allocated
-  // before the our allocator came up.
-  if( !chpl_mem_inited() || is_system_allocated(ptr) ) {
-    printf("calling system free\n");
-    __real_free(ptr);
-    return;
-  }
-
-  printf("calling chpl_free\n");
-  chpl_free(ptr);
-}
-
-int __wrap_posix_memalign(void **memptr, size_t alignment, size_t size)
-{
-  int ret;
-  if( !chpl_mem_inited() ) {
-    *memptr = NULL;
-    ret = __real_posix_memalign(memptr, alignment, size);
-    printf("in early __wrap_posix_memalign %p = system posix_memalign(%#x)\n",
-           *memptr, (int) size);
-    track_system_allocated(*memptr, size, __real_malloc);
-    return ret;
-  }
-  printf("in __wrap_posix_memalign\n");
-  ret = chpl_posix_memalign(memptr, alignment, size);
-  printf("%p = chpl_posix_memalign(%#x, %#x) returned %i\n",
-         *memptr, (int) alignment, (int) size, ret);
-  return ret;
-}
-
-void* __wrap_valloc(size_t size)
-{
-  void* ret;
-  if( !chpl_mem_inited() ) {
-    ret = __real_valloc(size);
-    printf("in early __wrap_valloc %p = system valloc(%#x)\n", ret, (int) size);
-    track_system_allocated(ret, size, __real_malloc);
-    return ret;
-  }
-  printf("in __wrap_valloc\n");
-  ret = chpl_valloc(size);
-  printf("%p = chpl_valloc(%#x)\n", ret, (int) size);
-  return ret;
-}
-
-void* __wrap_pvalloc(size_t size)
-{
-  if( !chpl_mem_inited() ) {
-    void* ret = __real_pvalloc(size);
-    printf("in early __wrap_pvalloc %p = system pvalloc(%#x)\n",
-           ret, (int) size);
-    track_system_allocated(ret, size, __real_malloc);
-    return ret;
-  }
-  printf("in __wrap_pvalloc\n");
-  return chpl_pvalloc(size);
 }
 
 #endif
@@ -494,7 +330,6 @@ void chpl_free_hook(void* ptr, const void* arg) {
 #endif
 
 
-void chpl_mem_replace_malloc_if_needed(void);
 
 void chpl_mem_replace_malloc_if_needed(void) {
 #ifdef CHPL_USING_CSTDLIB_MALLOC
