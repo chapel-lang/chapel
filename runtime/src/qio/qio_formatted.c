@@ -3464,7 +3464,7 @@ static const char* lower_hex_num = "0123456789abcdef";
 static const char* upper_hex_num = "0123456789ABCDEF";
 static const char* hex_num = "0123456789ABCDEFabcdef";
 static const char* pound_conv = "#.";*/
-static const char* lit_chars = "#% \f\n\r\t\v";
+static const char* lit_chars = "% \f\n\r\t\v";
 static const char* regexp_flag_chars = "imsU";
 
 static inline int istype(char x, const char* allow)
@@ -3485,13 +3485,7 @@ void qio_conv_destroy(qio_conv_t* spec)
 
 void qio_conv_init(qio_conv_t* spec_out)
 {
-  spec_out->preArg1 = QIO_CONV_UNK;
-  spec_out->preArg2 = QIO_CONV_UNK;
-  spec_out->preArg3 = QIO_CONV_UNK;
-  spec_out->argType = QIO_CONV_UNK;
-  spec_out->literal_is_whitespace = 0;
-  spec_out->literal_length = 0;
-  spec_out->literal = NULL;
+  memset(spec_out, 0, sizeof(qio_conv_t));
 }
 
 int _qio_regexp_flags_then_rcurly(const char* ptr, int * len);
@@ -3554,12 +3548,12 @@ qioerr qio_conv_parse(c_string fmt,
   // do we have a ####.#### conversion to match?
   if( fmt[i] == '%' && fmt[i+1] == '{' && fmt[i+2] == '#' ) {
     // handle %{####} conversions
+    size_t num_before, num_after, period;
+
     in_group = 1;
     i++; // pass %
     i++; // pass {
-  }
-  if( fmt[i] == '#' ) {
-    size_t num_before, num_after, period;
+
     num_before = 0;
     num_after = 0;
     period = 0;
@@ -3581,13 +3575,13 @@ qioerr qio_conv_parse(c_string fmt,
       }
     }
 
-    spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
+    spec_out->argType = QIO_CONV_ARG_TYPE_REAL;
 
     style_out->base = 10;
     style_out->pad_char = ' ';
     style_out->precision = num_after;
     style_out->min_width_columns = num_before + period + num_after;
-    style_out->realfmt = 1; // %f
+    style_out->realfmt = 1; // like Chapel %dr or C %f
     if( period && num_after == 0 ) {
       // ie ##.
       style_out->showpoint = 1;
