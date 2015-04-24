@@ -2713,7 +2713,9 @@ record ioLiteral {
 
 pragma "no doc"
 inline proc _cast(type t, x: ioLiteral) where t == string {
-  return x.val;
+  var len = x.val.length;
+  // need to copy the string out of the literal
+  return new string(x.val:c_ptr(uint(8)), len, len, owned=false);
 }
 
 /*

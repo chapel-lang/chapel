@@ -1,4 +1,6 @@
 /*
+    // use reinitString directly if that is not the case
+    // buff must be local
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -146,16 +148,14 @@ module String {
       }
       // We only need to copy when the buffer is local
       // TODO: reinitString does more checks then we actually need but is still
-      // correct. Is it worht just doing the proper copy here?
+      // correct. Is it worth just doing the proper copy here?
       this.reinitString(localBuff, sLen, sLen+1, needToCopy=sRemote);
     }
 
-    // Assumes owned == the need to copy the buffer in
-    // use reinitString directly if that is not the case
-    // buff must be local
-    proc string(buff: bufferType, length: int, size: int, owned: bool = true) {
+    proc string(buff: bufferType, length: int, size: int,
+                owned: bool = true, needToCopy: bool = true) {
       this.owned = owned;
-      this.reinitString(buff, length, size, owned);
+      this.reinitString(buff, length, size, needToCopy);
     }
 
     proc ref ~string() {
@@ -276,7 +276,7 @@ module String {
           //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       }
 
-      var r2 = r[1:r.idxType..#this.len];
+      var r2 = r[1:r.idxType..#(this.len:r.idxType)];
       if r2.size <= 0 {
         halt("tring to slice a string with a range of size 0");
         //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
@@ -665,18 +665,16 @@ module String {
       if a.locale.id != chpl_nodeID {
         localA = a; // assignment makes it local
       } else {
-        localA = new string(owned=false);
-        localA.reinitString(a.buff, a.len,
-                            a._size, needToCopy=false);
+        localA = new string(a.buff, a.len, a._size,
+                            owned = false, needToCopy=false);
       }
 
       var localB: string;
       if b.locale.id != chpl_nodeID {
         localB = b; // assignment makes it local
       } else {
-        localB = new string(owned=false);
-        localB.reinitString(b.buff, b.len,
-                            b._size, needToCopy=false);
+        localB = new string(b.buff, b.len, b._size,
+                            owned = false, needToCopy=false);
       }
 
       return doEq(localA, localB);
@@ -700,18 +698,16 @@ module String {
       if a.locale.id != chpl_nodeID {
         localA = a; // assignment makes it local
       } else {
-        localA = new string(owned=false);
-        localA.reinitString(a.buff, a.len,
-                            a._size, needToCopy=false);
+        localA = new string(a.buff, a.len, a._size,
+                            owned = false, needToCopy=false);
       }
 
       var localB: string;
       if b.locale.id != chpl_nodeID {
         localB = b; // assignment makes it local
       } else {
-        localB = new string(owned=false);
-        localB.reinitString(b.buff, b.len,
-                            b._size, needToCopy=false);
+        localB = new string(b.buff, b.len, b._size,
+                            owned = false, needToCopy=false);
       }
 
       return doLt(localA, localB);
@@ -731,18 +727,16 @@ module String {
       if a.locale.id != chpl_nodeID {
         localA = a; // assignment makes it local
       } else {
-        localA = new string(owned=false);
-        localA.reinitString(a.buff, a.len,
-                            a._size, needToCopy=false);
+        localA = new string(a.buff, a.len, a._size,
+                            owned = false, needToCopy=false);
       }
 
       var localB: string;
       if b.locale.id != chpl_nodeID {
         localB = b; // assignment makes it local
       } else {
-        localB = new string(owned=false);
-        localB.reinitString(b.buff, b.len,
-                            b._size, needToCopy=false);
+        localB = new string(b.buff, b.len, b._size,
+                            owned = false, needToCopy=false);
       }
 
       return doGt(localA, localB);
