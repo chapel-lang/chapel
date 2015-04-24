@@ -1,1 +1,1 @@
-test.h test.c
+test.h test.c -lchplmalloc
