@@ -11,7 +11,9 @@ config const printPerf = false;
 type elemType = uint(8);
 
 const totalMem = here.physicalMemory(unit = MemUnits.Bytes);
-const n = (totalMem / numBytes(elemType)) / memFraction;
+const target = (totalMem / numBytes(elemType)) / memFraction;
+// set a maximum problem size
+const n = min(target, 8 * 1e9) : int;
 
 const space = 1..n;
 var data : [space] elemType;

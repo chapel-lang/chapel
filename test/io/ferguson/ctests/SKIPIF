@@ -1,4 +1,8 @@
+# PGI - doesn't have atomics intrinsics
 CHPL_TARGET_COMPILER==cray-prgenv-pgi
-CHPL_TARGET_COMPILER==cray-prgenv-cray
 CHPL_TARGET_COMPILER==pgi
+# cray-prgenv-cray: extra warnings
+CHPL_TARGET_COMPILER==cray-prgenv-cray
+# I don't believe this one still exists...
 CHPL_TARGET_COMPILER==cray
+CHPL_ATOMICS!=intrinsics

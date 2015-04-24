@@ -18,6 +18,8 @@
  */
 
 /* cstdlib memory function implementation */
+#ifndef _chpl_mem_impl_H_
+#define _chpl_mem_impl_H_
 
 // Uses the built-in malloc, calloc, realloc and free.
 #undef malloc
@@ -63,3 +65,4 @@ static inline void chpl_free(void* ptr) {
 #define CHPL_USING_CSTDLIB_MALLOC 1
 
 
+#endif

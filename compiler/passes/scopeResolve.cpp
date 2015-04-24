@@ -17,17 +17,20 @@
  * limitations under the License.
  */
 
+//
 // scopeResolve.cpp
 //
 
 #include "scopeResolve.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "build.h"
+#include "clangUtil.h"
 #include "expr.h"
+#include "externCResolve.h"
 #include "LoopStmt.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -73,18 +76,26 @@ static SymbolTable symbolTable;
 // have been resolved.
 //
 static std::map<BlockStmt*,Vec<ModuleSymbol*>*> moduleUsesCache;
-static bool enableModuleUsesCache = false;
+static bool                                     enableModuleUsesCache = false;
 
 //
 // The aliasFieldSet is a set of names of fields for which arrays may
 // be passed in by named argument as aliases, as in new C(A=>GA) (see
 // test/arrays/deitz/test_array_alias_field.chpl).
 //
-static Vec<const char*> aliasFieldSet;
+static Vec<const char*>                         aliasFieldSet;
+
+
+
+
+static void     addToSymbolTable(Vec<DefExpr*>& defs); // deprecated.
+static void     addToSymbolTable(std::vector<DefExpr*>& defs); // use this one in new code.
+
+static void     processImportExprs();
 
 static void     addClassToHierarchy(AggregateType* ct);
 
-static void addRecordDefaultConstruction();
+static void     addRecordDefaultConstruction();
 
 static void     resolveGotoLabels();
 static void     resolveUnresolvedSymExprs();
@@ -99,7 +110,6 @@ static Symbol*  lookup(BaseAST* scope, const char* name);
 static BaseAST* getScope(BaseAST* ast);
 
 void scopeResolve() {
-
   //
   // add all program asts to the symbol table
   //
@@ -215,12 +225,12 @@ void scopeResolve() {
 ************************************* | ************************************/
 static void addOneToSymbolTable(DefExpr* def);
 
-void addToSymbolTable(std::vector<DefExpr*>& defs) {
+static void addToSymbolTable(std::vector<DefExpr*>& defs) {
   for_vector(DefExpr, def, defs)
     addOneToSymbolTable(def);
 }
 
-void addToSymbolTable(Vec<DefExpr*>& defs) {
+static void addToSymbolTable(Vec<DefExpr*>& defs) {
   forv_Vec(DefExpr, def, defs)
     addOneToSymbolTable(def);
 }
@@ -275,7 +285,7 @@ static void addOneToSymbolTable(DefExpr* def)
 static ModuleSymbol* getUsedModule(Expr* expr);
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
 
-void processImportExprs() {
+static void processImportExprs() {
   // handle "use mod;" where mod is a module
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_USE)) {
@@ -391,6 +401,9 @@ static void addClassToHierarchy(AggregateType* ct) {
   return addClassToHierarchy(ct, &localSeen);
 }
 
+static AggregateType* discoverParentAndCheck(Expr*          storesName,
+                                             AggregateType* child);
+
 static void addClassToHierarchy(AggregateType*       ct,
                                 Vec<AggregateType*>* localSeen) {
   static Vec<AggregateType*> globalSeen; // classes already in hierarchy
@@ -454,7 +467,7 @@ static void addClassToHierarchy(AggregateType*       ct,
   }
 }
 
-AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child) {
+static AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child) {
   UnresolvedSymExpr* se  = toUnresolvedSymExpr(storesName);
 
   INT_ASSERT(se);
@@ -613,6 +626,7 @@ static void build_type_constructor(AggregateType* ct) {
 
       if (!strcmp(field->name, "_promotionType") ||
           field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR)) {
+
         fn->insertAtTail(
           new BlockStmt(
             new CallExpr(PRIM_SET_MEMBER, fn->_this, 
@@ -773,7 +787,7 @@ static void build_constructor(AggregateType* ct) {
     SET_LINENO(tmp);
     if (VarSymbol* field = toVarSymbol(tmp)) {
       // Filter inherited fields and other special cases.
-      // "outer" is used internally to supply a pointer to 
+      // "outer" is used internally to supply a pointer to
       // the outer parent of a nested class.
       if (!field->hasFlag(FLAG_SUPER_CLASS) &&
           !field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR) &&
@@ -800,7 +814,7 @@ static void build_constructor(AggregateType* ct) {
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).
-    meme = new ArgSymbol(INTENT_BLANK, 
+    meme = new ArgSymbol(INTENT_BLANK,
                          "meme",
                          ct,
                          NULL,
@@ -840,7 +854,7 @@ static void build_constructor(AggregateType* ct) {
 
           fieldNamesSet.set_add(superArg->sym->name);
 
-          // Inserting each successive ancestor argument at the head in 
+          // Inserting each successive ancestor argument at the head in
           // reverse-lexcial order results in all of the arguments appearing
           // in lexical order, starting with those in the most ancient class
           // and ending with those in the most-derived class.
@@ -849,7 +863,7 @@ static void build_constructor(AggregateType* ct) {
         }
 
         // Create a temp variable and add it to the actual argument list
-        // in the superclass constructor call.  This temp will hold 
+        // in the superclass constructor call.  This temp will hold
         // the pointer to the parent subobject.
         VarSymbol* tmp = newTemp();
 
@@ -893,11 +907,19 @@ static void build_constructor(AggregateType* ct) {
     if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
 
-    Expr* exprType = field->defPoint->exprType->remove();
-    Expr* init     = field->defPoint->init->remove();
+    Expr* exprType = field->defPoint->exprType;
+    Expr* init     = field->defPoint->init;
 
-    bool hadType = exprType;
-    bool hadInit = init;
+    bool  hadType  = exprType;
+    bool  hadInit  = init;
+
+    if (exprType != NULL) {
+      exprType->remove();
+    }
+
+    if (init != NULL) {
+      init->remove();
+    }
 
     if (init) {
       if (!field->isType() && !exprType) {
@@ -918,8 +940,8 @@ static void build_constructor(AggregateType* ct) {
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
       }
 
-    } else if (hadType && 
-               !field->isType() && 
+    } else if (hadType &&
+               !field->isType() &&
                !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }

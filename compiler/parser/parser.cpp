@@ -71,18 +71,6 @@ static void addModuleToDoneList(ModuleSymbol* module) {
   modDoneSet.set_add(uniqueName);
 }
 
-
-static const char* filenameToModulename(const char* filename) {
-  const char* moduleName = astr(filename);
-  const char* firstSlash = strrchr(moduleName, '/');
-
-  if (firstSlash) {
-    moduleName = firstSlash + 1;
-  }
-
-  return asubstr(moduleName, strrchr(moduleName, '.'));
-}
-
 static bool
 containsOnlyModules(BlockStmt* block, const char* filename) {
   int           moduleDefs     =     0;

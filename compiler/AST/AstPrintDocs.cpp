@@ -25,6 +25,7 @@
 
 #include "AstPrintDocs.h"
 
+#include "docsDriver.h"
 #include "symbol.h"
 #include "type.h"
 

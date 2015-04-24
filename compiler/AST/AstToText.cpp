@@ -1168,20 +1168,36 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
 void AstToText::appendExpr(DefExpr* expr, bool printingType)
 {
-  mText += '?';
+  if (printingType)
+    {
 
-  if (VarSymbol* var = toVarSymbol(expr->sym))
-  {
-    if (strncmp(var->name, "chpl__query", 11) != 0)
-      mText += var->name;
-  }
+    mText += '?';
 
+    // This section initially was ensuring the sym field referred to
+    // a VarSymbol in this case.  However, since we were only accessing the
+    // name field - which is present for all Symbols - this check was not
+    // necessary.  Should something go wrong with this section, perhaps
+    // first check if expr->sym is a VarSymbol as was initially expected?
+    const char* name = expr->sym->name;
+    if (strncmp(name, "chpl__query", 11) != 0)
+      mText += name;
+
+    }
   else
-  {
-    // NOAKES 2015/02/05  Debugging support.
-    // Might become ASSERT in the future
-    mText += " appendExpr.DefExpr.00";
-  }
+    {
+      mText += expr->sym->name;
+      if (expr->exprType) {
+        mText += ": ";
+        appendExpr(expr->exprType, true);
+      }
+      if (expr->init) {
+        mText += " = ";
+        if (SymExpr* sym = toSymExpr(expr->init))
+          appendExpr(sym, false, true);
+        else
+          appendExpr(expr->init, false);
+      }
+    }
 }
 
 void AstToText::appendExpr(NamedExpr* expr, bool printingType)
@@ -1372,3 +1388,34 @@ bool AstToText::isMtArg(CallExpr* expr, bool expectThis) const
   return retval;
 }
 
+void AstToText::appendEnumDecl(EnumType* et) {
+  mText += et->symbol->name;
+
+  appendEnumConstants(et);
+}
+
+void AstToText::appendEnumConstants(EnumType* et) {
+  if (et->constants.length > 0) {
+    bool first = true;
+    mText += " { ";
+
+    for_alist(constant, et->constants) {
+      DefExpr* de = toDefExpr(constant);
+      // We expect all members in constants alist to be DefExprs.
+      INT_ASSERT(de);
+      if (!first) {
+        mText += ", ";
+      } else {
+        first = false;
+      }
+      appendExpr(de, false);
+    }
+    mText += " }";
+  } else {
+    mText += "";
+  }
+}
+
+void AstToText::appendVarDef(VarSymbol* var) {
+  appendExpr(var->defPoint, false);
+}

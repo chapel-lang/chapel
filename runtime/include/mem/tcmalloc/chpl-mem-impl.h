@@ -18,6 +18,9 @@
  */
 
 /* tcmalloc memory function implementation */
+#ifndef _chpl_mem_impl_H_
+#define _chpl_mem_impl_H_
+
 
 #include "tcmalloc.h"
 
@@ -41,3 +44,4 @@ static inline void chpl_free(void* ptr) {
   tc_free(ptr);
 }
 
+#endif
