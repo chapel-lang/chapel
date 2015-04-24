@@ -166,7 +166,7 @@ void* __wrap_pvalloc(size_t size);
 void* __wrap_calloc(size_t n, size_t size)
 {
   void* ret;
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     ret = __real_calloc(n, size);
     printf("in early __wrap_calloc %p = system calloc(%#x)\n",
            ret, (int) (n*size));
@@ -182,7 +182,7 @@ void* __wrap_calloc(size_t n, size_t size)
 void* __wrap_malloc(size_t size)
 {
   void* ret;
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     ret = __real_malloc(size);
     printf("in early __wrap_malloc %p = system malloc(%#x)\n", ret, (int) size);
     track_system_allocated(ret, size, __real_malloc);
@@ -196,7 +196,7 @@ void* __wrap_malloc(size_t size)
 
 void* __wrap_memalign(size_t alignment, size_t size)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = __real_memalign(alignment, size);
     printf("in early __wrap_memalign %p = system memalign(%#x)\n",
            ret, (int) size);
@@ -209,7 +209,7 @@ void* __wrap_memalign(size_t alignment, size_t size)
 
 void* __wrap_realloc(void* ptr, size_t size)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = __real_realloc(ptr, size);
     printf("in early __wrap_realloc %p = system realloc(%#x)\n",
            ret, (int) size);
@@ -226,7 +226,7 @@ void __wrap_free(void* ptr)
   printf("in __wrap_free(%p)\n", ptr);
   // check to see if we're freeing a pointer that was allocated
   // before the our allocator came up.
-  if( chpl_mem_inited() || is_system_allocated(ptr) ) {
+  if( !chpl_mem_inited() || is_system_allocated(ptr) ) {
     printf("calling system free\n");
     __real_free(ptr);
     return;
@@ -239,7 +239,7 @@ void __wrap_free(void* ptr)
 int __wrap_posix_memalign(void **memptr, size_t alignment, size_t size)
 {
   int ret;
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     *memptr = NULL;
     ret = __real_posix_memalign(memptr, alignment, size);
     printf("in early __wrap_posix_memalign %p = system posix_memalign(%#x)\n",
@@ -257,7 +257,7 @@ int __wrap_posix_memalign(void **memptr, size_t alignment, size_t size)
 void* __wrap_valloc(size_t size)
 {
   void* ret;
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     ret = __real_valloc(size);
     printf("in early __wrap_valloc %p = system valloc(%#x)\n", ret, (int) size);
     track_system_allocated(ret, size, __real_malloc);
@@ -271,7 +271,7 @@ void* __wrap_valloc(size_t size)
 
 void* __wrap_pvalloc(size_t size)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = __real_pvalloc(size);
     printf("in early __wrap_pvalloc %p = system pvalloc(%#x)\n",
            ret, (int) size);
@@ -311,7 +311,7 @@ void* pvalloc(size_t size);
 void* calloc(size_t n, size_t size)
 {
   void* ret;
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     ret = __libc_calloc(n, size);
     printf("in early calloc %p = system calloc(%#x)\n",
            ret, (int) (n*size));
@@ -327,7 +327,7 @@ void* calloc(size_t n, size_t size)
 void* malloc(size_t size)
 {
   void* ret;
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     ret = __libc_malloc(size);
     printf("in early malloc %p = system malloc(%#x)\n", ret, (int) size);
     track_system_allocated(ret, size, __libc_malloc);
@@ -341,7 +341,7 @@ void* malloc(size_t size)
 
 void* memalign(size_t alignment, size_t size)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = __libc_memalign(alignment, size);
     printf("in early memalign %p = system memalign(%#x)\n",
            ret, (int) size);
@@ -354,7 +354,7 @@ void* memalign(size_t alignment, size_t size)
 
 void* realloc(void* ptr, size_t size)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = __libc_realloc(ptr, size);
     printf("in early realloc %p = system realloc(%#x)\n",
            ret, (int) size);
@@ -371,7 +371,7 @@ void free(void* ptr)
   printf("in free(%p)\n", ptr);
   // check to see if we're freeing a pointer that was allocated
   // before the our allocator came up.
-  if( chpl_mem_inited() || is_system_allocated(ptr) ) {
+  if( !chpl_mem_inited() || is_system_allocated(ptr) ) {
     printf("calling system free\n");
     __libc_free(ptr);
     return;
@@ -384,7 +384,7 @@ void free(void* ptr)
 int posix_memalign(void **memptr, size_t alignment, size_t size)
 {
   int ret;
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     *memptr = NULL;
     ret = chpl_posix_memalign_check_valid(alignment);
     if( ret ) return ret;
@@ -405,7 +405,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size)
 void* valloc(size_t size)
 {
   void* ret;
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     ret = __libc_valloc(size);
     printf("in early valloc %p = system valloc(%#x)\n", ret, (int) size);
     track_system_allocated(ret, size, __libc_malloc);
@@ -419,7 +419,7 @@ void* valloc(size_t size)
 
 void* pvalloc(size_t size)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = __libc_pvalloc(size);
     printf("in early pvalloc %p = system pvalloc(%#x)\n",
            ret, (int) size);
@@ -444,7 +444,7 @@ static void   (*original_free)    (void *, const void *);
 static
 void* chpl_malloc_hook(size_t size, const void* arg)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = original_malloc(size, arg);
     track_system_allocated_arg(ret, size, original_malloc, arg);
     return ret;
@@ -456,7 +456,7 @@ void* chpl_malloc_hook(size_t size, const void* arg)
 static
 void* chpl_memalign_hook(size_t alignment, size_t size, const void* arg)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = original_memalign(alignment, size, arg);
     track_system_allocated_arg(ret, size, original_malloc, arg);
     return ret;
@@ -468,7 +468,7 @@ void* chpl_memalign_hook(size_t alignment, size_t size, const void* arg)
 static
 void* chpl_realloc_hook(void* ptr, size_t size, const void* arg)
 {
-  if( chpl_mem_inited() ) {
+  if( !chpl_mem_inited() ) {
     void* ret = original_realloc(ptr, size, arg);
     track_system_allocated_arg(ret, size, original_malloc, arg);
     return ret;
@@ -480,7 +480,7 @@ void* chpl_realloc_hook(void* ptr, size_t size, const void* arg)
 static
 void chpl_free_hook(void* ptr, const void* arg) {
   if( ! ptr ) return;
-  if( chpl_mem_inited() || is_system_allocated(ptr) ) {
+  if( !chpl_mem_inited() || is_system_allocated(ptr) ) {
     original_free(ptr, arg);
     return;
   }
