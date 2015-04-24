@@ -1,4 +1,6 @@
+#undef _POSIX_C_SOURCE
 #define _BSD_SOURCE
+#define _GNU_SOURCE
 
 #include <stdlib.h>
 #include <stdio.h>

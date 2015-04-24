@@ -33,60 +33,22 @@
 #include "error.h"
 
 
-// Some compilers support 'warn_unused_result' or 'acts like malloc'
-// we put these on our memory layer implementations
-#ifdef __GNUC__
-
-#if __GNUC_PREREQ (3,4)
-#define CHPL_ATTRIBUTE_WARN_UNUSED_RESULT __attribute__ ((__warn_unused_result__))
-#else
-#define CHPL_ATTRIBUTE_WARN_UNUSED_RESULT
-#endif
-
-#if __GNUC_PREREQ (2,96)
-#define CHPL_ATTRIBUTE_MALLOC __attribute_malloc__
-#else
-#define CHPL_ATTRIBUTE_MALLOC
-#endif
-
-#else
-#define CHPL_ATTRIBUTE_WARN_UNUSED_RESULT
-#define CHPL_ATTRIBUTE_MALLOC
-#endif
-
-
-static inline void* chpl_calloc(size_t n, size_t size)
-  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-static inline void* chpl_malloc(size_t size)
-  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-static inline void* chpl_memalign(size_t boundary, size_t size)
-  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-static inline void* chpl_realloc(void* ptr, size_t size)
-  CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
+static inline void* chpl_calloc(size_t n, size_t size);
+static inline void* chpl_malloc(size_t size);
+static inline void* chpl_memalign(size_t boundary, size_t size);
+static inline void* chpl_realloc(void* ptr, size_t size);
 static inline void chpl_free(void* ptr);
-
 // returns 0 if valid, EINVAL otherwise
 int chpl_posix_memalign_check_valid(size_t alignment);
-
 int chpl_posix_memalign(void** ptr, size_t alignment, size_t size);
-void* chpl_valloc(size_t size)
-  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-void* chpl_pvalloc(size_t size)
-  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+void* chpl_valloc(size_t size);
+void* chpl_pvalloc(size_t size);
 
 // runtime/include/mem/*/chpl-mem-impl.h defines
 // chpl_calloc, chpl_malloc, chpl_realloc, chpl_free
 // with the same signatures as the standard functions
 // and no additional error checking.
 #include "chpl-mem-impl.h"
-
-// This function sets up malloc hooks (if possible or useful)
-void chpl_mem_replace_malloc_if_needed_heap_inited(void);
-
 
 void chpl_mem_init(void);
 void chpl_mem_exit(void);

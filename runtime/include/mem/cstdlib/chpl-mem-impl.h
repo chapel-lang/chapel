@@ -46,9 +46,13 @@ static inline void* chpl_malloc(size_t size) {
 static inline void* chpl_memalign(size_t boundary, size_t size) {
 #ifdef __GLIBC__
   return memalign(boundary, size);
+#else
+  void* ret = NULL;
+  int rc;
+  rc = posix_memalign(&ret, boundary, size);
+  if( rc == 0 ) return ret;
+  else return NULL;
 #endif
-  assert(0 && "chpl_memalign only works for CHPL_MEM!=cstdlib or with glibc");
-  return NULL;
 }
 
 static inline void* chpl_realloc(void* ptr, size_t size) {

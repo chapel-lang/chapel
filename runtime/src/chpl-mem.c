@@ -32,11 +32,6 @@ static int heapInitialized = 0;
 void chpl_mem_init(void) {
   chpl_mem_layerInit();
   heapInitialized = 1;
-
-  // replace malloc calls with hooks
-  // we have to do that AFTER the mem layer heap
-  // is initialized.
-  chpl_mem_replace_malloc_if_needed_heap_inited();
 }
 
 
