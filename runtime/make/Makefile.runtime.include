@@ -97,15 +97,4 @@ endif
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 RUNTIME_CXXFLAGS += $(RUNTIME_DEFS)
 
-ifneq ($(CHPL_MAKE_MEM),cstdlib)
-#REPLACE_MALLOC_CFLAGS = -DCHPL_WRAP_MALLOC=1
-#REPLACE_MALLOC_LFLAGS = -Wl,--wrap,calloc -Wl,--wrap,malloc -Wl,--wrap,memalign -Wl,--wrap,realloc -Wl,--wrap,free
-#REPLACE_MALLOC_LFLAGS += -Wl,--wrap,valloc -Wl,--wrap,pvalloc -Wl,--wrap,posix_memalign
-REPLACE_MALLOC_CFLAGS = -DCHPL_REPLACE_MALLOC=1
-endif
-
-RUNTIME_CFLAGS += $(REPLACE_MALLOC_CFLAGS)
-RUNTIME_CXXFLAGS += $(REPLACE_MALLOC_CFLAGS)
-
-RUNTIME_LFLAGS += $(REPLACE_MALLOC_LFLAGS)
 
