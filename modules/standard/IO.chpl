@@ -3381,40 +3381,21 @@ pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
-pragma "no doc"
-const _trues: 1*c_string  = ("true",);
-pragma "no doc"
-const _falses: 1*c_string = ("false",);
-pragma "no doc"
-const _i = "i";
-
 // Read routines for all primitive types.
 pragma "no doc"
 proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
-    var num = _trues.size;
     var err:syserr = ENOERR;
-    var got:bool;
+    var got:bool = false;
 
-    err = EFORMAT;
-
-    for i in 1..num {
-      err = qio_channel_scan_literal(false, _channel_internal, _trues(i), (_trues(i).length):ssize_t, 1);
-      if !err {
-        got = true;
-        break;
-      } else if err == EEOF {
-        break;
-      }
-      err = qio_channel_scan_literal(false, _channel_internal, _falses(i), (_falses(i).length):ssize_t, 1);
-      if !err {
-        got = false;
-        break;
-      } else if err == EEOF {
-        break;
-      }
+    err = qio_channel_scan_literal(false, _channel_internal, "true", "true".length:ssize_t, 0);
+    if !err {
+      got = true;
+    } else if err == EFORMAT {
+      // try reading false instead.
+      err = qio_channel_scan_literal(false, _channel_internal, "false", "false".length:ssize_t, 0);
+      // got is already false, so we don't need to set it.
     }
-
     if !err then x = got;
     return err;
   } else if isIntegralType(t) {
@@ -3425,21 +3406,6 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     return qio_channel_scan_float(false, _channel_internal, x, numBytes(t));
   } else if isImagType(t) {
     return qio_channel_scan_imag(false, _channel_internal, x, numBytes(t));
-    /*
-    var err = qio_channel_mark(false, _channel_internal);
-    if err then return err;
-
-    err = qio_channel_scan_float(false, _channel_internal, x, numBytes(t));
-    if !err {
-      err = qio_channel_scan_literal(false, _channel_internal, _i, 1, false);
-    }
-    if !err {
-      qio_channel_commit_unlocked(_channel_internal);
-    } else {
-      qio_channel_revert_unlocked(_channel_internal);
-    }
-    return err;
-    */
   } else if isComplexType(t)  {
     // handle complex types
     var re:x.re.type;
@@ -3462,7 +3428,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     for i in chpl_enumerate(t) {
       var str = i:c_string;
       var slen:ssize_t = str.length:ssize_t;
-      err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, str, slen, 0);
       // Do not free str, because enum literals are C string literals
       if !err {
         x = i;
@@ -3480,9 +3446,9 @@ pragma "no doc"
 proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, _trues(1), _trues(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, "true", "true".length:ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, _falses(1), _falses(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, "false", "false".length:ssize_t);
     }
   } else if isIntegralType(t) {
     // handles int types
@@ -3493,19 +3459,6 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     return qio_channel_print_float(false, _channel_internal, x, numBytes(t));
   } else if isImagType(t) {
     return qio_channel_print_imag(false, _channel_internal, x, numBytes(t));
-    /*var err = qio_channel_mark(false, _channel_internal);
-    if err then return err;
-
-    err = qio_channel_print_float(false, _channel_internal, x, numBytes(t));
-    if err == 0 {
-      err = qio_channel_print_literal(false, _channel_internal, _i, 1);
-    }
-    if err == 0 {
-      qio_channel_commit_unlocked(_channel_internal);
-    } else {
-      qio_channel_revert_unlocked(_channel_internal);
-    }
-    return err;*/
   } else if isComplexType(t)  {
     // handle complex types
     var re = x.re;
