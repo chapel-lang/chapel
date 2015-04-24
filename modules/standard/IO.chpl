@@ -448,17 +448,16 @@ binary numbers, complex numbers, and raw binary I/O.
 Generic Numeric Conversions
 +++++++++++++++++++++++++++
 
-``##.###``
+``%{##.###}``
   decimal number padded on the left with spaces to 2 digits before
-  the point, rounded to 3 after. Works with real, imaginary,
-  or complex arguments. Also works with integral arguments, but the
-  decimal point is not printed.
+  the point, rounded to 3 after. Works with integral, real, imaginary,
+  or complex arguments.
 
   In all cases, the output is padded on the left to the total length
   of the conversion specifier (6 in this example).  The output
   can be longer, when needed to accomodate the number.
 
-``##``
+``%{##}``
   integral value padded out to 2 digits. Also works with real, imaginary
   or complex numbers by rounding them to integers. Numbers with more
   digits will take up more space instead of being truncated.
@@ -469,13 +468,13 @@ For example:
 
 .. code-block:: chapel
 
-  writef("|#####|\n", 2.0i);
+  writef("|${#####}|\n", 2.0i);
        // outputs:
-       // |   2i|
+       //   |   2i|
 
-  writef("|#####.#|\n", 2.0i);
+  writef("|%{#####.#}|\n", 2.0i);
        // outputs:
-       // |   2.0i|
+       //   |   2.0i|
 
 Complex arguments are printed in the format a + bi, where each of a and b is
 rounded individually as if printed under that conversion on its own. Then, the
@@ -483,13 +482,13 @@ formatted complex number is padded to the requested size. For example:
 
 .. code-block:: chapel
 
-  writef("|#########|\n", 1.0+2.0i);
+  writef("|%{#########}|\n", 1.0+2.0i);
        // outputs:
-       // |   1 + 2i|
+       //   |   1 + 2i|
 
-  writef("|#########.#|\n", 1.0+2.0i);
+  writef("|%{#########.#}|\n", 1.0+2.0i);
        // outputs:
-       // | 1.0 + 2.0i|
+       //   | 1.0 + 2.0i|
 
 See :ref:`about-io-formatted-pound-details` for more details
 on this conversion type.
@@ -800,30 +799,20 @@ too small:
 
 .. code-block:: chapel
 
-  writef("n:###.###\n", 1.2349);
+  writef("n:%{###.###}\n", 1.2349);
        // outputs:
        // n:  1.235
 
 This syntax also works for numbers without a decimal point by rounding them
 appropriately.
 
-A # specifier must start with a '#'. For example, if we start with a '.'
-it will interpret the . as a literal, as in:
+A # specifier must start with a ``.``. 
 
 .. code-block:: chapel
 
-  writef(".###\n", 0.777);
+  writef("%{.##}\n", 0.777);
        // outputs:
-       // .  1
-
-A # specifier extends to include the '.' and then the fractional '#'
-when they follow the first group of '#' immediately. For example:
-
-.. code-block:: chapel
-
-  writef("(#.##.#.)\n", 1.2, 3);
-       // outputs:
-       // (1.20. 3)
+       //  0.77
 
 % Specifiers
 ++++++++++++
@@ -833,8 +822,6 @@ rules.
 
 ``%%``
  means a literal ``%``
-``%#``
- means a literal ``#``
 ``\n``
  means a literal newline
 ``\\``
@@ -5185,8 +5172,10 @@ proc channel._format_reader(
               // didn't really read whitespace.
               error = EFORMAT;
             }
+            if _format_debug then stdout.writeln("AFTER WHITESPACE err is ", error:int);
           } else {
             error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length:ssize_t, false);
+            if _format_debug then stdout.writeln("AFTER LITERAL err is ", error:int);
           }
         } else {
           // when printing we don't care if it's just whitespace.
@@ -5792,6 +5781,10 @@ proc channel.writef(fmt:c_string, out error:syserr):bool {
    :arg error: optional argument to capture an error code. If this argument
                is not provided and an error is encountered, this function
                will halt with an error message.
+   :returns: true if all arguments were read according to the format string,
+             false on EOF. If the format did not match the input, returns
+             false with error=EFORMAT or halts if no error argument was
+             provided.
  */
 
 proc channel.readf(fmt:string, ref args ...?k, out error:syserr):bool {
@@ -6011,7 +6004,9 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
                          conv, gotConv, style, r,
                          true);
         }
+      }
 
+      if ! error {
         if cur < len {
           // Mismatched number of arguments!
           error = qio_format_error_too_few_args();
@@ -6141,7 +6136,6 @@ proc channel.readf(fmt:c_string, ref args ...?k) {
   this.readf(fmt, (...args), error=e);
   if !e then return true;
   else if e == EEOF then return false;
-  else if e == EFORMAT then return false;
   else {
     this._ch_ioerror(e, "in channel.readf(fmt:string, ...)");
     return false;
