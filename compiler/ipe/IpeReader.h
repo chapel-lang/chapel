@@ -17,9 +17,29 @@
  * limitations under the License.
  */
 
-#ifndef _IPE_CHECK_RETURN_H_
-#define _IPE_CHECK_RETURN_H_
+#ifndef _IPE_READER_H_
+#define _IPE_READER_H_
 
-void ipeCheckReturn();
+#include "bison-chapel.h"
+#include "flex-chapel.h"
+#include "parser.h"
+
+class Expr;
+
+class IpeReader
+{
+public:
+  Expr*                           readStmt();
+
+protected:
+                                  IpeReader();
+  virtual                        ~IpeReader();
+
+  ParserContext                   mContext;
+
+private:
+  YYLTYPE                         mYYlloc;
+  yypstate*                       mParser;
+};
 
 #endif

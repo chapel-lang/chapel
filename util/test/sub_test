@@ -347,15 +347,21 @@ def which(program):
 # print (compopts: XX, execopts: XX) for later decoding of failed tests
 def printTestVariation(compoptsnum, compoptslist,
                        execoptsnum=0, execoptslist=[] ):
-    if ( (compoptsnum==0 or len(compoptslist) == 1) and
-         (execoptsnum==0 or len(execoptslist) == 1) ):
+    printCompOpts = True
+    printExecOpts = True
+    if compoptsnum==0 or len(compoptslist) <= 1:
+        printCompOpts = False
+    if execoptsnum==0 or len(execoptslist) <= 1:
+        printExecOpts = False
+
+    if (not printCompOpts) and (not printExecOpts):
         return;
 
     sys.stdout.write(' (')
-    if compoptsnum != 0 and len(compoptslist) > 1:
+    if printCompOpts:
         sys.stdout.write('compopts: %d'%(compoptsnum))
-    if execoptsnum != 0 and len(execoptslist) > 1:
-        if compoptsnum != 0:
+    if printExecOpts:
+        if printCompOpts:
             sys.stdout.write(', ')
         sys.stdout.write('execopts: %d'%(execoptsnum))
     sys.stdout.write(')')
@@ -1264,7 +1270,7 @@ for testname in testsrc:
                     sys.stdout.write(
                         '[Warning: Could not find chpldoc, skipping test '
                         '{0}/{1}]\n'.format(localdir, test_filename))
-                    continue
+                    break
 
             if valgrindcomp:
                 cmd = valgrindcomp

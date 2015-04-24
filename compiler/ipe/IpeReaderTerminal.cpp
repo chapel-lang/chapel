@@ -17,46 +17,14 @@
  * limitations under the License.
  */
 
-#include "IpeScopeExpr.h"
+#include "IpeReaderTerminal.h"
 
-#include "IpeValue.h"
-
-IpeScopeExpr::IpeScopeExpr(IpeScope* scope) : IpeScope(scope)
+IpeReaderTerminal::IpeReaderTerminal()
 {
 
 }
 
-IpeScopeExpr::~IpeScopeExpr()
-{
-
-}
-
-const char* IpeScopeExpr::type() const
-{
-  return "Expr";
-}
-
-const char* IpeScopeExpr::name() const
-{
-  return "";
-}
-
-void IpeScopeExpr::describeHeader(int offset) const
-{
-
-}
-
-void IpeScopeExpr::extend(Symbol* sym, IpeValue defaultValue, IpeVars* vars)
-{
-  IpeScope::symbolPush(sym);
-}
-
-void IpeScopeExpr::envPush()
-{
-
-}
-
-void IpeScopeExpr::envPop()
+IpeReaderTerminal::~IpeReaderTerminal()
 {
 
 }
