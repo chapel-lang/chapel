@@ -7,23 +7,36 @@ proc testio(fmts: [] string, values: [])
   for fmt in fmts {
     for v in values {
       if noisy then writeln("Testing ",fmt," ",typeToString(v.type)," ",v);
-      for try in 1..2 {
-        // We do it twice, once with extra whitespace after the written data.
+      for try in 1..2 { // TODO -- set to 4
+        // We do it 4x:
+        // try 1 is the simple way
+        // try 2 puts after the data (in the file, not the format string)
+        // try 3 adds a space at the start of the format string
+        // try 4 adds a space at the end of the format string
+        
+        var writextra = false;
+        var usefmt = fmt;
+        if try == 2 then writextra = true;
+        if try == 3 then usefmt = " " + fmt;
+        if try == 4 then usefmt = fmt + " ";
+        if noisy then writeln("Testing try ",try, " with fmt '", usefmt, "'");
+
         var x = v;
         var f = opentmp();
         {
           var ch = f.writer();
           if noisy then writeln("Writing ", x:string);
-          ch.writef(fmt, x);
-          if try > 1 then ch.write("  \t\n");
+          ch.writef(usefmt, x);
+          if writextra then ch.write("  \t\n");
           ch.close();
         }
+
         {
           var ch = f.reader();
           var y:x.type;
           var z:x.type;
           if noisy then writeln("Reading element");
-          var got = ch.readf(fmt, y);
+          var got = ch.readf(usefmt, y);
           if noisy then writeln("Read ", y:string);
           assert( got );
           assert( y == x );
@@ -31,7 +44,7 @@ proc testio(fmts: [] string, values: [])
           if try == 1 {
             // Try reading another item -- should get EOF
             if noisy then writeln("Reading another - should get EOF");
-            got = ch.readf(fmt, z);
+            got = ch.readf(usefmt, z);
             if noisy then writeln("Read ", z:string);
             assert( !got );
           }
@@ -58,7 +71,8 @@ proc main() {
           "%@bi","%@10bi", "%@010bi", "%@-10bi", "%@+bi", "%@ bi",
           "%oi","%10oi", "%010oi", "%-10oi", "%+oi", "% oi",
           "%@oi","%@10oi", "%@010oi", "%@-10oi", "%@+oi", "%@ oi",
-          "###############",
+          "%{###############}",
+          "%{###############.#}",
           "%|n", "%<n", "%>n",
           "%|t", "%<t", "%>t" ];
  
@@ -73,7 +87,7 @@ proc main() {
           "%@bi","%@10bi", "%@010bi", "%@-10bi", "%@+bi", "%@ bi",
           "%oi","%10oi", "%010oi", "%-10oi", "%+oi", "% oi",
           "%@oi","%@10oi", "%@010oi", "%@-10oi", "%@+oi", "%@ oi",
-          "###############",
+          "%{###############.#}",
           "%|n", "%<n", "%>n",
           "%|t", "%<t", "%>t" ];
   
@@ -119,7 +133,7 @@ proc main() {
           "%xEr",
           "%XEr",
           "%dr", "%10dr", "%010dr", "%-10dr", "%+dr", "% dr",
-          "######.######",
+          "%{######.######}",
           "%|n", "%<n", "%>n",
           "%|t", "%<t", "%>t"];
 
@@ -139,7 +153,7 @@ proc main() {
           "%xEm",
           "%XEm",
           "%dm", "%10dm", "%010dm", "%-10dm", "%+dm", "% dm",
-          "######.######",
+          "%{######.######}",
           "%|n", "%<n", "%>n",
           "%|t", "%<t", "%>t"];
   testio(fformats, [0.002:imag(32), -0.002:imag(32)]);
@@ -182,7 +196,7 @@ proc main() {
 
   testio(["%s", "%10s", "%-10s"], ["a", "test"]);
 
-  testio(["%'S", "%'S"," %10'S", "%-10'S",
+  testio(["%'S", "%'S", "%10'S", "%-10'S",
           "%\"S", "%10\"S", "%-10\"S",
           "%|0S", "%|1S", "%|2S", "%|4S", "%|8S", "%|vS"],
          ["", "a", "test", " ' ", " \" "]);
