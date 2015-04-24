@@ -383,6 +383,7 @@ initPrimitive() {
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
   prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
+  prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirst);
