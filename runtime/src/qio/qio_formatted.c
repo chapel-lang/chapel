@@ -1510,7 +1510,8 @@ typedef struct number_reading_state_s {
   char positive_char; // normally '+'
   char negative_char; // normally '-'
 
-  char allow_real;
+  char allow_real; // allow any real thing, infinity, etc.
+  char allow_point; // just allow e.g. 123.254
   char point_char; // normally '.'; set to -1 if no radix point allowed
   char exponent_char; // use if base <= 10; normally 'e'
   char other_exponent_char; // use if base > 10; normally 'p' or '@'
@@ -1581,6 +1582,7 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
   } else {
     s->gotbase = s->usebase = s->base;
   }
+  if( s->allow_real ) s->allow_point = 1;
 
   mark_offset = qio_channel_offset_unlocked(ch);
 
@@ -1696,7 +1698,7 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
   while( 1 ) {
     //printf("In read digit, chr is %c\n", chr);
     if( qio_err_to_int(err) == EEOF ) ACCEPT;
-    if( s->allow_real && chr == s->point_char && s->point == -1 ) {
+    if( s->allow_point && chr == s->point_char && s->point == -1 ) {
       NEXT_CHR_OR_EOF;
       s->end = s->point = qio_channel_offset_unlocked(ch);
       // Continue to read digits.
@@ -1774,6 +1776,10 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
   st.allow_base = style->prefix_base;
   st.allow_pos_sign = style->showplus == 1;
   st.allow_neg_sign = issigned;
+  if(style->showpoint || style->precision > 0) {
+    st.allow_point = 1;
+    st.point_char = tolower(style->point_char);
+  }
   st.positive_char = tolower(style->positive_char);
   st.negative_char = tolower(style->negative_char);
 
@@ -1811,9 +1817,18 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
     err = qio_mkerror_errno();
     goto error;
   }
+  if( st.allow_point ) {
+    // pass . or .00000
+    if( *end == '.' ) end++;
+    while( *end == '0' ) end++;
+  }
   if( end - buf != st.end - start ) {
     // some kind of format error.
-    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "malformed integer");
+    if( st.allow_point ) {
+      QIO_GET_CONSTANT_ERROR(err, ERANGE, "malformed integer with fraction");
+    } else {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "malformed integer");
+    }
     goto error;
   }
 
@@ -2109,9 +2124,11 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   int tmp_len=0;
   int tmp_skip=0;
   char b=0;
-  int i;
+  int i,j;
   int width;
   int ret_width;
+  int show_point = 0; // 1 to show a . afterwards
+  int num_zeros_after = 0; // how many 0s to print afterwards?
 
   // Optimize conversions for supported bases
   if( base == 2 )
@@ -2134,8 +2151,14 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
-  if( style->showpoint ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
+  if( style->showpoint || style->precision > 0 ) {
+    show_point = 1;
+    // and any number of requested digits
+    if( style->precision > 0 ) num_zeros_after += style->precision;
+
+    width += show_point + num_zeros_after;
+  }
 
   // We might not have room...
   ret_width = width;
@@ -2179,8 +2202,13 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   i += tmp_len;
 
   // Now output a period if we're doing showpoint.
-  if( style->showpoint ) {
+  if( show_point ) {
     dst[i] = '.';
+    i++;
+  }
+
+  for( j = 0; j < num_zeros_after; j++ ) {
+    dst[i] = '0';
     i++;
   }
 
@@ -3546,7 +3574,8 @@ qioerr qio_conv_parse(c_string fmt,
   i = start;
 
   // do we have a ####.#### conversion to match?
-  if( fmt[i] == '%' && fmt[i+1] == '{' && fmt[i+2] == '#' ) {
+  if( fmt[i] == '%' && fmt[i+1] == '{' && 
+      (fmt[i+2] == '#' || (fmt[i+2] == '.' && fmt[i+3] == '#') ) ) {
     // handle %{####} conversions
     size_t num_before, num_after, period;
 
@@ -3575,7 +3604,7 @@ qioerr qio_conv_parse(c_string fmt,
       }
     }
 
-    spec_out->argType = QIO_CONV_ARG_TYPE_REAL;
+    spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
 
     style_out->base = 10;
     style_out->pad_char = ' ';
@@ -3608,15 +3637,6 @@ qioerr qio_conv_parse(c_string fmt,
       spec_out->literal = (int8_t*) "%";
       goto done;  
     }
-    if( fmt[i] == '#' ) {
-      i++; // pass #
-      spec_out->argType = QIO_CONV_ARG_TYPE_NONE_LITERAL;
-      spec_out->literal_is_whitespace = 0;
-      spec_out->literal_length = 1;
-      spec_out->literal = (int8_t*) "#";
-      goto done;  
-    }
-
 
     // Are we working with binary?
     if( fmt[i] == '<' || fmt[i] == '|' || fmt[i] == '>' ) {
