@@ -556,7 +556,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode!=0);
   fprintf(makefile.fptr, "COMP_GEN_OPT = %i\n", optimizeCCode!=0);
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode!=0);
-  fprintf(makefile.fptr, "COMP_GEN_IEEE_FLOAT = %i\n", fieeefloat!=0);
+  fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n", ffloatOpt);
   
   fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS =");
 

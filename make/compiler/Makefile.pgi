@@ -46,8 +46,8 @@ RUNTIME_CFLAGS = $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 
 # Set flag for lax or IEEE floating point
+FAST_FLOAT_GEN_CFLAGS = -Knoieee
 IEEE_FLOAT_GEN_CFLAGS = -Kieee
-NO_IEEE_FLOAT_GEN_CFLAGS = -Knoieee
 
 # NOTE: These are only support for Linux
 GEN_STATIC_FLAG = -Bstatic

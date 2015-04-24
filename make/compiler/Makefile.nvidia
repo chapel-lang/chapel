@@ -26,5 +26,5 @@ COMP_GEN_LFLAGS +=-L$(CUDA_LIB_PATH) -lcudart
 RUNTIME_CUDA_CFLAGS = $(DEVICEEMU) -arch sm_13 --compiler-options -fno-strict-aliasing -DUNIX -O3 -DENABLE_GPU
 
 #TODO : add --gpu-architecture and/or --gpu-code based on CHPL_TARGET_ARCH
-#TODO : device NO_IEEE float with --use_fast_math perhaps
+#TODO : device FAST_IEEE_FLOAT float with --use_fast_math perhaps
 
