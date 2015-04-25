@@ -789,7 +789,137 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
 }
 
 
+#if HILDE_MM
+// Returns true if the basic block is one that ends a region over which any
+// local variable may remain alive (as explained below); false otherwise.
+// Local variables alive at that point must be moved into the iterator class
+// structure, because when the iterator is reworked as an "advance" function
+// they cannot remain live across that boundary.
+// Specifically, in an iterator that contains a yield inside the
+// loop, we have basically:
+//   zip1();
+//   for ( ; ; ) {
+//     zip2();
+//     yield ;
+//     zip3();
+//   }
+//   zip4();
+// A variable live at the end of zip1() has to be put in the iterator class
+// (IC) because after the transformation into an "advance" routine, on
+// invocations after the first (more > 1), control can transfer directly from
+// the start of advance() to zip3() (immediately after the yield).  Then, flow
+// will return to the top of the loop.  Now the liveness of the variable on
+// entry to the loop is ambiguous: Live if zip1() was executed and not live if
+// the other path was taken.  Moving the variable into the IC takes care of
+// this problem.  The same argument applies to a variable live at the end of
+// zip2(), zip3 or zip4().  Variables live at the end of zip4() are also live
+// at the end of the advance function.  They have already been captured by
+// capturing the arguments and function-scope variables.  The cases that remain
+// are:
+//  zip1() -- Identifiable by being followed by the top of a loop.
+//  zip2() -- Identifiable by being followed by a yield.
+//  zip3() -- Identifiable by being followed by the bottom of a loop.
+static bool isLocalLivenessBarrier(BasicBlock* bb)
+{
+  // We use the basic block structure to infer cases 1 and 3.
+  // We simply look for a yield statement to determine case 2.
 
+  // The implementation is slightly pessimistic, because we don't check to
+  // ensure that any given loop contains a yield, we just assume that it does.
+  // For some iterators -- specifically those that contain loops that do not
+  // contain yields -- we will end up putting too many expressions into the
+  // IC.  That can be corrected if necessary, by adding the check.
+
+  // We use the presence of a back-edge to infer the bounds of a loop.  This
+  // test ought to be immune to the details of the loop structure.  (We rely on
+  // BB analysis giving the right answer.)  We also assume that basic block
+  // indices are assigned such that a back edge out of the current block is one
+  // whose target ID is equal to or less than that this block.  Likewise, a
+  // back edge into this block is one whose source ID is greater than or equal
+  // to that of the current block.
+
+  // Case 2: The current block ends in a yield statement.
+  //  We expect BB analysis to be smart enough to end a block when it sees a
+  //  yield, so we expect to find the yield at the end of any given block.
+  size_t n = bb->exprs.size();
+  if (n > 0)
+  {
+    CallExpr* call = toCallExpr(bb->exprs.back());
+    if (call && call->isPrimitive(PRIM_YIELD))
+      return true;
+  }
+  
+  // Case 3: The current block is at the end of a loop.
+  //  If the OUT set of this block has any back edges in it, then it lies at
+  //  the end of a loop.
+  for_vector(BasicBlock, succ1, bb->outs)
+  {
+    if (succ1->id <= bb->id)
+      return true;
+  }
+
+  // Case 1: The current block is followed by the start of a loop.
+  //  If the successor of thie current block has one or more back edges in it
+  //  IN set then it is the start of a loop.
+  for_vector(BasicBlock, succ, bb->outs)
+  {
+    for_vector(BasicBlock, pred, succ->ins)
+    {
+      if (pred->id >= succ->id)
+        return true;
+    }
+  }
+  // Note that this code also captures Case 3, since the successor of the
+  // bottom of a loop will be the top of a loop.  But that might just be a bit
+  // too clever.
+
+  return false;
+}
+
+// Collect local variables that are live at the point of any yield.
+static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop)
+{
+  Vec<Symbol*> locals;
+  Map<Symbol*,int> localMap;
+  Vec<SymExpr*> useSet;
+  Vec<SymExpr*> defSet;
+  std::vector<BitVec*> OUT;
+
+  liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
+
+  for (size_t block = 0; block < fn->basicBlocks->size(); ++block)
+  {
+    BasicBlock* bb = (*fn->basicBlocks)[block];
+
+    if (isLocalLivenessBarrier(bb))
+    {
+      // Basic block analysis has already computed the set of symbols that are
+      // live at the end of this block.  Sooo, we just use it.
+      for (int j = 0; j < locals.n; j++)
+      {
+        if (OUT[block]->get(j))
+          syms.add_exclusive(locals.v[j]);
+      }
+    }
+  }
+
+  // C_FOR_LOOP needs to ensure the for-loop init variables are also
+  // converted to fields.  The test/incr fields are handled correctly
+  // as a result of being inserted in to the body of the loop
+  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    Vec<SymExpr*> symExprs;
+    CForLoop*     cforLoop = toCForLoop(singleLoop);
+
+    collectSymExprs(cforLoop->initBlockGet(), symExprs);
+
+    forv_Vec(SymExpr, se, symExprs) {
+      if (useSet.set_in(se)) {
+        syms.add_exclusive(se->var);
+      }
+    }
+  }
+}
+#else
 // Collect local variables that are live at the point of any yield.
 static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop)
 {
@@ -862,7 +992,7 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
     }
   }
 }
-
+#endif
 
 static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
                            Vec<Symbol*>& yldSymSet)
