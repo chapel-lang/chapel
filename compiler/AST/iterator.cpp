@@ -1022,56 +1022,79 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
 
       Vec<SymExpr*>* defs = defMap.get(sym);
-      if (defs == NULL || defs->n != 1) {
-        INT_FATAL(sym, "Expected sym to have exactly one definition");
-      }
-
-      // Do we need to consider PRIM_ASSIGN as well?
-      CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-
-      if (SymExpr* se = toSymExpr(move->get(2)))
+      if (defs && defs->n == 1) 
       {
-        // The symbol is defined through a bitwise (pointer) copy.
-        INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
-        if (se->var->defPoint->parentSymbol == fn) {
-          syms.add_exclusive(se->var);
+        // Do we need to consider PRIM_ASSIGN as well?
+        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
+        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+
+        if (SymExpr* se = toSymExpr(move->get(2)))
+        {
+          // The symbol is defined through a bitwise (pointer) copy.
+          INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
+          if (se->var->defPoint->parentSymbol == fn) {
+            syms.add_exclusive(se->var);
+          }
         }
-      }
-      else if (CallExpr* call = toCallExpr(move->get(2)))
-      {
-        // The RHS is a function call.
-        if (FnSymbol* fn = call->isResolved()) {
-          for_actuals(actual, call) {
-            SymExpr* se = toSymExpr(actual);
-            if (se->var->defPoint->parentSymbol == fn) {
-              syms.add_exclusive(se->var);
+        else if (CallExpr* call = toCallExpr(move->get(2)))
+        {
+          // The RHS is a function call.
+          if (FnSymbol* fn = call->isResolved()) {
+            for_actuals(actual, call) {
+              SymExpr* se = toSymExpr(actual);
+              if (se->var->defPoint->parentSymbol == fn) {
+                syms.add_exclusive(se->var);
+              }
+            }
+          }
+          else
+          {
+            // The RHS is not a function call: it must be a primitive instead.
+
+            if (call->isPrimitive(PRIM_ADDR_OF) ||
+                call->isPrimitive(PRIM_GET_MEMBER) ||
+                // If we are reading a reference out of a field, I'm not sure we
+                // capture the right rhs below.  (The actual target of the ref lies
+                // outside the struct that contains the ref.)
+                call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+              SymExpr* rhs = toSymExpr(call->get(1));
+              syms.add_exclusive(rhs->var);
+            }
+            else
+            {
+              INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
             }
           }
         }
         else
         {
-          // The RHS is not a function call: it must be a primitive instead.
-
-          if (call->isPrimitive(PRIM_ADDR_OF) ||
-              call->isPrimitive(PRIM_GET_MEMBER) ||
-              // If we are reading a reference out of a field, I'm not sure we
-              // capture the right rhs below.  (The actual target of the ref lies
-              // outside the struct that contains the ref.)
-              call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-            SymExpr* rhs = toSymExpr(call->get(1));
-            syms.add_exclusive(rhs->var);
-          }
-          else
-          {
-            INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
-          }
+          // What else could it be?
+          INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
         }
       }
       else
       {
-        // What else could it be?
-        INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
+        // defs.n was not exactly 1.
+        // Assume that this ref is a local passed with the equivalent of "out"
+        // intent.
+        // TODO: How does this happen?  Shouldn't a ref variable always have an
+        // lvalue that it refers to?
+        // In expandIteratorInline(), apparently when the iterator body is
+        // expanded inline, ref variables get converted into ref arguments --
+        // which is probably part of the reason this fixup is necessary.
+
+        // I don't know what about the recent AMM work exposed this problem,
+        // but we can work around it by inserting an lvalue at each use and
+        // fixing up the ref variable to point to it.
+        for_uses(use, useMap, sym)
+        {
+          Expr* stmt = use->getStmtExpr();
+          SET_LINENO(stmt);
+          VarSymbol* tmp = newTemp(sym->type->getValType());
+          stmt->insertBefore(new DefExpr(tmp));
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, sym,
+                                          new CallExpr(PRIM_ADDR_OF, tmp)));
+        }
       }
     }
   }
