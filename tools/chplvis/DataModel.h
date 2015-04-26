@@ -64,9 +64,12 @@ class DataModel {
 	    return *curEvent;
           }
 
+  int NumTags () { return numTags; }
+
  private:
 
   int numLocales;
+  int numTags;
 
   std::list<Event*> theEvents;
   std::list<Event*>::iterator curEvent;

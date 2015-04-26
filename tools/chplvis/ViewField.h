@@ -26,6 +26,8 @@
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Double_Window.H>
 
+#include <string>
+
 #include "DataModel.h"
 
 // extern Fl_Double_Window *MainWin;
@@ -50,6 +52,12 @@ struct commInfo {
   long commSize;
 };
 
+struct tagInfo {
+  int tagNo;
+  std::string tagName;
+  
+};
+
 Fl_Color heatColor ( double val, double max );
 
 static const double twopi = 6.28318530717958647688;
@@ -68,6 +76,8 @@ class ViewField : public Fl_Box {
     localeInfo *theLocales;
     int getSize; // need this to deallocate after changing numlocales
     commInfo **comms;
+
+    tagInfo *tags;
 
     bool showtasks;
     int maxTasks;

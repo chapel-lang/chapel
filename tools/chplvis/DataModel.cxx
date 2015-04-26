@@ -315,7 +315,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  fprintf (stderr, "Bad 'Tag' line: %s\n", filename);
 	} else {
 	  nextCh += nameOffset;
-	  newEvent = new E_tag(sec, usec, nid, s_sec, s_usec, tagId, &linedata[nextCh]);
+	  newEvent = new E_tag(sec, usec, nid, s_sec, s_usec, tagId, pause=='p',
+			       &linedata[nextCh]);
+	  if (tagId >= numTags)
+	    numTags = tagId+1;
 	}
 	break;
 

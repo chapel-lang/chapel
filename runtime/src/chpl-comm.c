@@ -247,7 +247,7 @@ void chpl_vdebug_tag (const char *str, int pause)
     chpl_dprintf (chpl_vdebug_fd, "Tag: %ld.%06ld %ld.%06ld %d %d %c %s\n",
 		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
-		  chpl_nodeID, ++tag_no, (pause ? 'p' : 't'), str);
+		  chpl_nodeID, tag_no++, (pause ? 'p' : 't'), str);
 
     // Stop collection of data for a pause
     chpl_vdebug = !pause;
@@ -267,7 +267,7 @@ void chpl_vdebug_resume (void) {
     chpl_dprintf (chpl_vdebug_fd, "Resume: %ld.%06ld %ld.%06ld %d %d\n",
 		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
-		  chpl_nodeID, tag_no);
+		  chpl_nodeID, tag_no-1);
     chpl_vdebug = 1;
   }
 }

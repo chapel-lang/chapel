@@ -39,6 +39,7 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   numlocales = 0;
   theLocales = NULL;
   comms = NULL;
+  tags = NULL;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
@@ -58,6 +59,7 @@ ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *
   numlocales = 0;
   theLocales = NULL;
   comms = NULL;
+  tags = NULL;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
@@ -91,8 +93,12 @@ void ViewField::allocArrays()
     for (ix = 0; ix < getSize; ix++)  delete [] comms[ix];
     delete [] comms;
   }
-
-  // Alloc new space
+  if (tags != NULL) {
+    delete [] tags;
+    tags = NULL;
+  }
+  
+  // Alloc new space ... except for tags, done in process data.
   theLocales = new localeInfo [numlocales];
   comms = new  commInfo* [numlocales];
   if (theLocales == NULL || comms == NULL) {
@@ -139,21 +145,27 @@ void ViewField::processData()
       comms[ix1][ix2].numGets = 0;
       comms[ix1][ix2].commSize = 0;
     }
-      
   }
   maxTasks = 1;
   maxComms = 1;
   maxCpu = 0.0000001;
   maxDatasize = 1;
 
+  tags = new tagInfo [VisData.NumTags()];
+
+  // Debug
+  printf ("Number of tags is %d\n", VisData.NumTags());
+
   Event *ev;
 
   for ( ev = VisData.getFirstEvent(); ev != NULL; ev = VisData.getNextEvent() ) {
-    E_task  *tp;
-    E_comm  *cp;
-    E_fork  *fp;
-    E_start *sp;
-    E_end   *ep;
+    E_task   *tp;
+    E_comm   *cp;
+    E_fork   *fp;
+    E_start  *sp;
+    E_end    *ep;
+    E_tag    *gp;
+    E_resume *rp;
     switch (ev->Ekind()) {
       case Ev_task:
         //  Task event
@@ -193,23 +205,40 @@ void ViewField::processData()
 
       case Ev_end:
 	ep = (E_end *)ev;
-	theLocales[ep->nodeId()].userCpu = ep->user_time()
+	theLocales[ep->nodeId()].userCpu += ep->user_time()
 	  - theLocales[ep->nodeId()].refUserCpu;
-	theLocales[ep->nodeId()].sysCpu = ep->sys_time()
+	theLocales[ep->nodeId()].sysCpu += ep->sys_time()
 	  - theLocales[ep->nodeId()].refSysCpu;
-	theLocales[ep->nodeId()].Cpu = 	theLocales[ep->nodeId()].userCpu 
+	theLocales[ep->nodeId()].Cpu =	theLocales[ep->nodeId()].userCpu 
 	  + theLocales[ep->nodeId()].sysCpu;  
 	if (maxCpu < theLocales[ep->nodeId()].Cpu)
 	  maxCpu = theLocales[ep->nodeId()].Cpu;
+	// printf ("end: node = %d cpu = %f\n",  ep->nodeId(), 
+	//	theLocales[ep->nodeId()].Cpu);
 	break;
 
       case Ev_resume:
-	// Ignore here ...
-        break;
-
+	// Reset the ref time?
+	rp = (E_resume *)ev;
+ 	theLocales[rp->nodeId()].refUserCpu = rp->user_time();
+	theLocales[rp->nodeId()].refSysCpu = rp->sys_time();
+	break;
+	 
       case Ev_tag:
-	// printf ("Should be processing a tag.\n");
-	// Add the 
+	// Checking out the tag ...
+	gp = (E_tag *)ev;
+	if (gp->isPause()) {
+	  // Need to update times so that resume can reset ref times
+	  theLocales[gp->nodeId()].userCpu += gp->user_time()
+	    - theLocales[gp->nodeId()].refUserCpu;
+	  theLocales[gp->nodeId()].sysCpu += gp->sys_time()
+	    - theLocales[gp->nodeId()].refSysCpu;
+	  theLocales[gp->nodeId()].Cpu = theLocales[gp->nodeId()].userCpu 
+	    + theLocales[gp->nodeId()].sysCpu;
+	  //printf ("tag: node = %d cpu = %f\n",  gp->nodeId(), 
+	  //         theLocales[gp->nodeId()].Cpu);
+
+	}
 	break;
     }
   }

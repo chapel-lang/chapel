@@ -134,12 +134,13 @@ class E_tag : public Event {
      int tag_num;
      std::string tag_name;
      long s_sec, s_usec;
+     bool ispause;
 
    public:
      E_tag (long u_sec, long u_usec, int nodeid, long s_sec, long s_usec,
-	    long tagno, char *tag)
+	    long tagno, bool pause, char *tag)
        : Event(u_sec, u_usec, nodeid), tag_num(tagno), tag_name(tag),
-       s_sec(s_sec), s_usec(s_usec)
+       s_sec(s_sec), s_usec(s_usec), ispause(pause)
        { }
 
      int tagNo() { return tag_num; }
@@ -148,6 +149,7 @@ class E_tag : public Event {
      double cpu_time()  { return sec+s_sec + ((double)usec+s_usec)/1000000; }
      double user_time() { return sec+(double)usec/1000000; }
      double sys_time() { return s_sec+(double)s_usec/1000000; }
+     bool isPause() { return ispause; }
 	 
      virtual int Ekind() {return Ev_tag;}
      virtual void print() {
