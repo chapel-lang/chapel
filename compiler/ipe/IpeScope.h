@@ -55,14 +55,6 @@ public:
   int                      varCount()                                         const;
   LcnSymbol*               varGet(int index)                                  const;
 
-  bool                     isDefinedLocally(const char* name)                 const;
-
-  LcnSymbol*               findVariable(UnresolvedSymExpr* expr,
-                                        bool               localOnly = false) const;
-
-  LcnSymbol*               findVariable(const char*        name,
-                                        bool               localOnly = false) const;
-
 protected:
                            IpeScope(IpeScope* parent);
 

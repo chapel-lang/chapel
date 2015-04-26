@@ -17,37 +17,39 @@
  * limitations under the License.
  */
 
-#include "IpeBlockStmt.h"
+#include "IpeSequence.h"
 
 #include "AstDumpToNode.h"
-#include "IpeEnv.h"
-#include "IpeScopeBlock.h"
-#include "ipeResolve.h"
-#include "misc.h"
 
-IpeBlockStmt::IpeBlockStmt(const std::vector<Expr*>& stmts,
-                           IpeEnv*                   env)
-  : IpeSequence(stmts, BLOCK_NORMAL)
+IpeSequence::IpeSequence(const std::vector<Expr*>& stmts) : BlockStmt(NULL, BLOCK_SCOPELESS)
 {
-  mEnv = env;
+  for (size_t i = 0; i < stmts.size(); i++)
+    insertAtTail(stmts[i]);
 }
 
-IpeBlockStmt::~IpeBlockStmt()
+IpeSequence::IpeSequence(const std::vector<Expr*>& stmts,
+                         BlockTag                  tag) : BlockStmt(NULL, tag)
+{
+  for (size_t i = 0; i < stmts.size(); i++)
+    insertAtTail(stmts[i]);
+}
+
+IpeSequence::IpeSequence(BlockTag tag) : BlockStmt(NULL, tag)
 {
 
 }
 
-IpeEnv* IpeBlockStmt::envGet() const
+IpeSequence::~IpeSequence()
 {
-  return mEnv;
+
 }
 
-bool IpeBlockStmt::isScopeless() const
+bool IpeSequence::isScopeless() const
 {
-  return false;
+  return true;
 }
 
-void IpeBlockStmt::describe(int offset)
+void IpeSequence::describe(int offset)
 {
   AstDumpToNode logger(stdout, offset + 3);
   char          pad[32] = { '\0' };
@@ -62,29 +64,26 @@ void IpeBlockStmt::describe(int offset)
     *tptr = '\0';
   }
 
-  printf("%s#<IpeBlockStmt\n", pad);
+  printf("%s#<IpeSequence\n", pad);
 
-  mEnv->describe(offset + 3);
-  printf("\n");
+  for (int i = 1; i <= body.length; i++)
+  {
+    Expr* expr = body.get(i);
 
-  printf("%s   ", pad);
-  accept(&logger);
-  printf("\n");
+    if (isBlockStmt(expr) == true)
+    {
+      IpeSequence* seq = (IpeSequence*) expr;
+
+      seq->describe(offset + 3);
+    }
+    else
+    {
+      printf("%s   ", pad);
+      expr->accept(&logger);
+      printf("\n");
+    }
+  }
+
 
   printf("%s>\n", pad);
 }
-
-#if 0
-IpeScopeBlock* IpeBlockStmt::scopeGet() const
-{
-  return mScope;
-}
-
-void IpeBlockStmt::varAdd(LcnSymbol* variable)
-{
-  INT_ASSERT(variable);
-
-  mScope->varAdd(variable);
-}
-#endif
-
