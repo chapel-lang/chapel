@@ -17,26 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef _IPE_MODULE_STANDARD_H_
-#define _IPE_MODULE_STANDARD_H_
+#ifndef _IPE_UTILS_H_
+#define _IPE_UTILS_H_
 
-#include "IpeModule.h"
+class Expr;
 
-class ModuleSymbol;
-
-class IpeModuleStandard : public IpeModule
-{
-public:
-                           IpeModuleStandard(IpeModule*    parent,
-                                             ModuleSymbol* modSym);
-
-  virtual                 ~IpeModuleStandard();
-
-protected:
-  virtual const char*      moduleTypeAsString()                         const;
-
-private:
-                           IpeModuleStandard();
-};
+bool isUseStmt(Expr* expr);
 
 #endif

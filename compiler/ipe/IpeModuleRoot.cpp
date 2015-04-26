@@ -17,18 +17,25 @@
  * limitations under the License.
  */
 
-
 #include "IpeModuleRoot.h"
 
 #include "IpeEnv.h"
+#include "IpeModuleInternal.h"
+#include "IpeModuleStandard.h"
+#include "IpeReaderFile.h"
+#include "IpeScope.h"
+#include "IpeScopeModule.h"
 #include "IpeValue.h"
+
 #include "ipe.h"
 #include "ipeDriver.h"
-
-#include "stmt.h"
-#include "stringutil.h"
+#include "ipeEvaluate.h"
 
 #include "AstDumpToNode.h"
+#include "files.h"
+#include "parser.h"
+#include "stmt.h"
+#include "stringutil.h"
 
 IpeModuleRoot* IpeModuleRoot::sRootModule = NULL;
 int            IpeModuleRoot::sHighWater  =    0;
@@ -73,7 +80,36 @@ ModuleSymbol* IpeModuleRoot::createDeclaration()
   return retval;
 }
 
-IpeModuleRoot::IpeModuleRoot(ModuleSymbol* modSym) : IpeModule(modSym)
+IpeModule* IpeModuleRoot::create(ModuleSymbol* sym)
+{
+  IpeModule* retval = NULL;
+
+  switch (sym->modTag)
+  {
+    case MOD_INTERNAL:
+      retval = new IpeModuleInternal(sRootModule, sym);
+      break;
+
+    case MOD_STANDARD:
+      retval = new IpeModuleStandard(sRootModule, sym);
+      break;
+
+    case MOD_USER:
+      retval = NULL;
+      INT_ASSERT(false);
+      break;
+  }
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+IpeModuleRoot::IpeModuleRoot(ModuleSymbol* modSym) : IpeModule(NULL, modSym)
 {
 
 }
@@ -90,7 +126,8 @@ const char* IpeModuleRoot::moduleTypeAsString() const
 
 void IpeModuleRoot::init()
 {
-  moduleResolve(this);
+  mState = kResolved;
+
   initialize();
 
   for (int i = 1; i <= sHighWater; i++)
@@ -99,7 +136,7 @@ void IpeModuleRoot::init()
 
     INT_ASSERT(expr);
 
-    if      (mEnv->isDefinedLocally(expr->sym->name) == true)
+    if      (mEnv->findLocal(expr->sym->name) != NULL)
     {
       printf("   Attempt to redefine identifier %s\n", expr->sym->name);
       INT_ASSERT(false);
@@ -144,4 +181,112 @@ void IpeModuleRoot::init()
   }
 
   moduleAdd(this);
+}
+
+bool IpeModuleRoot::loadSystemModules()
+{
+  bool retval = false;
+
+  if      (loadFile(MOD_INTERNAL, "ChapelBase")     == false)
+    retval = false;
+
+  else if (loadFile(MOD_INTERNAL, "ChapelStandard") == false)
+    retval = false;
+
+  else if (loadFile(MOD_STANDARD, "ChapelRepl")     == false)
+    retval = false;
+
+  else
+    retval =  true;
+
+  return retval;
+}
+
+#include "AstDumpToNode.h"
+
+bool IpeModuleRoot::loadFile(ModTag moduleType, const char* fileName)
+{
+  bool retval = false;
+
+  currentModuleType = moduleType;
+
+  if (const char* pathName = pathNameForFile(moduleType, fileName))
+  {
+    std::vector<DefExpr*> defs = IpeReaderFile::readModules(pathName, moduleType);
+
+    for (size_t i = 0; i < defs.size(); i++)
+      evaluate(defs[i], mEnv);
+
+    retval = true;
+  }
+  else
+    printf("IpeModuleRoot::loadFile   failed to find path for %s\n", fileName);
+
+  return retval;
+}
+
+const char* IpeModuleRoot::pathNameForFile(ModTag moduleType, const char* fileName)
+{
+  const char* retval = NULL;
+
+  switch (moduleType)
+  {
+    case MOD_INTERNAL:
+      retval = pathNameForInternalFile(fileName);
+      break;
+
+    case MOD_STANDARD:
+      retval = pathNameForStandardFile(fileName);
+      break;
+
+    case MOD_USER:
+      retval = NULL;
+      INT_ASSERT(false);
+      break;
+  }
+
+  return retval;
+}
+
+void IpeModuleRoot::describeAllModules(int offset) const
+{
+  char      pad[32]    = { '\0' };
+
+  IpeScope* scope      = mEnv->scopeGet();
+  int       numModules = 0;
+
+  if (offset < 32)
+  {
+    char* tptr = pad;
+
+    for (int i = 0; i < offset; i++)
+      *tptr++ = ' ';
+
+    *tptr = '\0';
+  }
+
+  for (int i = 0; i < scope->varCount(); i++)
+  {
+    if (scope->varGet(i)->type == gIpeTypeModule)
+      numModules = numModules + 1;
+  }
+
+  printf("%sThere are %3d modules.\n", pad, numModules);
+
+  for (int i = 0, count = 0; i < scope->varCount(); i++)
+  {
+    LcnSymbol* var = scope->varGet(i);
+
+    if (var->type == gIpeTypeModule)
+    {
+      IpeModule* module = (IpeModule*) mEnv->fetchPtr(var);
+
+      if (count > 0)
+        printf("\n");
+
+      module->describe(offset + 3);
+
+      count = count + 1;
+    }
+  }
 }

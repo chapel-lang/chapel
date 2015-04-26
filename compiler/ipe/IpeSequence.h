@@ -17,26 +17,35 @@
  * limitations under the License.
  */
 
-#ifndef _IPE_MODULE_STANDARD_H_
-#define _IPE_MODULE_STANDARD_H_
+#ifndef _IPE_SEQUENCE_H_
+#define _IPE_SEQUENCE_H_
 
-#include "IpeModule.h"
+#include "stmt.h"
 
-class ModuleSymbol;
+#include <vector>
 
-class IpeModuleStandard : public IpeModule
+class Expr;
+
+class IpeSequence : public BlockStmt
 {
 public:
-                           IpeModuleStandard(IpeModule*    parent,
-                                             ModuleSymbol* modSym);
+                           IpeSequence(const std::vector<Expr*>& stmts);
 
-  virtual                 ~IpeModuleStandard();
+                           IpeSequence(const std::vector<Expr*>& stmts,
+                                       BlockTag                  tag);
+
+  virtual                 ~IpeSequence();
+
+  virtual bool             isScopeless()                             const;
+
+  virtual void             describe(int offset);
 
 protected:
-  virtual const char*      moduleTypeAsString()                         const;
+                           IpeSequence(BlockTag tag);
 
 private:
-                           IpeModuleStandard();
+                           IpeSequence();
+
 };
 
 #endif

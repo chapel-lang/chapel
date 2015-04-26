@@ -21,17 +21,77 @@
 
 #include "AstDumpToNode.h"
 #include "expr.h"
+#include "IpeEnv.h"
+
+IpeEnv* sFooEnv = NULL;
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+#include "IpeValue.h"
+
+#include "ipeDriver.h"
+#include "ipeResolve.h"
+
+IpeValue evaluate(Expr* untypedExpr, IpeEnv* env)
+{
+  AstDumpToNode logger(stdout, 3);
+  Expr*         exprRes = NULL;
+  IpeValue      retval;
+
+  if (gDebugLevelResolve > 0 || gDebugLevelEvaluate > 0)
+  {
+    printf("\n\n\n\nevaluate\n");
+
+    printf("   untyped expr\n");
+    printf("   ");
+    untypedExpr->accept(&logger);
+    printf("\n\n");
+
+    printf("   env\n");
+    env->describe(3);
+    printf("\n\n");
+  }
+
+  exprRes = resolveExpr(untypedExpr, env);
+
+  if (gDebugLevelResolve > 0 || gDebugLevelEvaluate > 0)
+  {
+    printf("   resolved expr\n");
+    printf("   ");
+    exprRes->accept(&logger);
+    printf("\n\n");
+  }
+
+  if (exprRes != NULL)
+    retval = evaluateExpr(exprRes, env);
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 #include "IpeDefExpr.h"
 #include "IpeCallExpr.h"
-#include "IpeEnv.h"
 #include "IpeMethod.h"
 #include "IpeProcedure.h"
-#include "IpeValue.h"
 #include "ipeDriver.h"
 #include "misc.h"
 #include "stmt.h"
 #include "WhileDoStmt.h"
 
+static bool     isImmediate   (Expr*      expr);
+static bool     isImmediate   (VarSymbol* var);
+static IpeValue immediateValue(VarSymbol* var);
+
+static IpeValue evaluateImmediate  (Expr*        expr);
 static IpeValue evaluateDefExpr    (IpeDefExpr*  expr, IpeEnv* env);
 static IpeValue evaluateCondStmt   (CondStmt*    expr, IpeEnv* env);
 static IpeValue evaluateWhileDoStmt(WhileDoStmt* expr, IpeEnv* env);
@@ -40,10 +100,44 @@ static IpeValue evaluateCallExpr   (IpeCallExpr* expr, IpeEnv* env);
 
 IpeValue evaluateExpr(Expr* expr, IpeEnv* env)
 {
+  static int sCount = 0;
+  int        count  = sCount;
+  bool       debug  = (count >= 9) ? true : false;
+
+  sCount = sCount + 1;
+
   IpeValue retval;
 
-  if      (SymExpr*     sel = toSymExpr(expr))
-    retval = env->valueForVariable(toLcnSymbol(sel->var));
+#if 0
+  if (debug == true)
+  {
+    AstDumpToNode logger(stdout, 3);
+
+    printf("\n\n\n\n\n\n\n\n\n");
+    printf("   evaluateExpr(Expr*, IpeEnv*)        %6d Enter\n", count);
+
+    printf("   Expr\n");
+    printf("   ");
+    expr->accept(&logger);
+    printf("\n\n");
+
+    printf("   Env before\n");
+    env->describe(3);
+    printf("\n\n");
+  }
+#endif
+
+  if (isImmediate(expr) == true)
+    retval = evaluateImmediate(expr);
+
+  else if (SymExpr*     sel = toSymExpr(expr))
+  {
+    LcnSymbol* sym = toLcnSymbol(sel->var);
+
+    INT_ASSERT(sym);
+
+    retval = env->fetch(sym);
+  }
 
   else if (DefExpr*     sel = toDefExpr(expr))
   {
@@ -82,6 +176,79 @@ IpeValue evaluateExpr(Expr* expr, IpeEnv* env)
     INT_ASSERT(false);
   }
 
+#if 0
+  if (debug == true)
+  {
+    printf("   evaluateExpr(Expr*, IpeEnv*)        %6d\n", count);
+    printf("   Env after\n");
+    env->describe(3);
+    printf("\n\n");
+  }
+#else
+  (void) debug;
+#endif
+
+  return retval;
+}
+
+static bool isImmediate(Expr* expr)
+{
+  bool retval = false;
+
+  if (SymExpr* symExpr = toSymExpr(expr))
+  {
+    if (VarSymbol* var = toVarSymbol(symExpr->var))
+      retval = var->isImmediate();
+  }
+
+  return retval;
+}
+
+static bool isImmediate(VarSymbol* var)
+{
+  return var->isImmediate();
+}
+
+static IpeValue evaluateImmediate(Expr* expr)
+{
+  IpeValue retval;
+
+  if (SymExpr* symExpr = toSymExpr(expr))
+  {
+    if (VarSymbol* var = toVarSymbol(symExpr->var))
+      retval = immediateValue(var);
+  }
+
+  return retval;
+}
+
+static IpeValue immediateValue(VarSymbol* var)
+{
+  INT_ASSERT(var->isImmediate());
+
+  Immediate* imm    = var->immediate;
+  Type*      type   = var->type;
+  IpeValue   retval;
+
+  INT_ASSERT(type);
+  INT_ASSERT(type->symbol);
+  INT_ASSERT(type->symbol->name);
+
+  if      (strcmp(type->symbol->name, "bool")     == 0)
+    retval.boolSet(imm->v_bool);
+
+  else if (strcmp(type->symbol->name, "int")      == 0)
+    retval.integerSet(imm->v_int64);
+
+  else if (strcmp(type->symbol->name, "real")     == 0)
+    retval.realSet(imm->v_float64);
+
+  else if (strcmp(type->symbol->name, "c_string") == 0)
+    retval.cstringSet(imm->v_string);
+
+  else
+    INT_ASSERT(false);
+
   return retval;
 }
 
@@ -89,36 +256,72 @@ static IpeValue evaluateDefExpr(IpeDefExpr* defExpr, IpeEnv* env)
 {
   IpeValue retval;
 
-  if      (FnSymbol*  fn  = defExpr->fnSymbolGet())
+  if      (defExpr->moduleSymbolGet() != NULL)
+  {
+
+  }
+
+  else if (FnSymbol*  fnSym = defExpr->fnSymbolGet())
   {
     VarSymbol*    var       = toVarSymbol(defExpr->sym);
 
     INT_ASSERT(var);
     INT_ASSERT(var->type == gIpeTypeProcedure);
 
-    IpeProcedure* procedure = (IpeProcedure*) IpeEnv::fetchPtr(var);
-    IpeMethod*    method    = new IpeMethod(fn, env);
+    IpeProcedure* procedure = (IpeProcedure*) env->fetchPtr(var);
+    IpeMethod*    method    = new IpeMethod(fnSym, env);
 
     procedure->methodAdd(method);
   }
 
-  else if (VarSymbol* var = toVarSymbol(defExpr->sym))
+  else if (VarSymbol* var   = toVarSymbol(defExpr->sym))
   {
-    INT_ASSERT(var->offset() >= 0);
+    IpeValue value;
 
-    if (defExpr->init == 0)
+#if 0
+  AstDumpToNode logger(stdout, 3);
+
+  printf("\n\n\n\n\n\n\n\n\n");
+  printf("   evaluateDefExpr\n");
+  printf("   defExpr\n");
+  printf("   ");
+  defExpr->accept(&logger);
+  printf("\n");
+  printf("   env\n");
+  env->describe(3);
+  printf("\n");
+#endif
+
+    if (defExpr->init == NULL)
     {
       VarSymbol* defaultValue = toVarSymbol(var->type->defaultValue);
 
-      INT_ASSERT(defaultValue);
-
-      env->valueStore(var, env->valueForVariable(defaultValue));
+      if (isImmediate(defaultValue) == true)
+        value = immediateValue(defaultValue);
+      else
+        value = env->fetch(defaultValue);
     }
 
     else
+      value = evaluateExpr(defExpr->init, env);
+
+    if (var->offset() < 0)
     {
-      env->valueStore(var, evaluateExpr(defExpr->init, env));
+      INT_ASSERT(env->depth() == 0);
+      env->allocate(var, value);
     }
+    else
+    {
+      env->store(var, value);
+    }
+
+#if 0
+  printf("   env after\n");
+  env->describe(3);
+  printf("\n");
+#endif
+
+
   }
 
   else
@@ -164,8 +367,8 @@ static IpeValue evaluateWhileDoStmt(WhileDoStmt* whileDoStmt, IpeEnv* env)
 
     if (proceed == true)
     {
-      for_alist(expr, whileDoStmt->body)
-        evaluateExpr(expr, env);
+      for (int i = 1; i <= whileDoStmt->body.length; i++)
+        evaluateExpr(whileDoStmt->body.get(i), env);
     }
   }
 
@@ -203,7 +406,7 @@ static IpeValue evaluateCallExpr(IpeCallExpr* callExpr, IpeEnv* env)
   return retval;
 }
 
-static IpeValue evaluateCall  (IpeCallExpr* callExpr, IpeEnv* env)
+static IpeValue evaluateCall(IpeCallExpr* callExpr, IpeEnv* env)
 {
   SymExpr* symExpr = toSymExpr(callExpr->baseExpr);
   IpeValue retval;
@@ -214,12 +417,16 @@ static IpeValue evaluateCall  (IpeCallExpr* callExpr, IpeEnv* env)
   {
     INT_ASSERT(var->type == gIpeTypeProcedure);
 
-    IpeProcedure* ipeProcedure = (IpeProcedure*) IpeEnv::fetchPtr(var);
+    IpeProcedure* ipeProcedure = (IpeProcedure*) env->fetchPtr(var);
+
+    INT_ASSERT(ipeProcedure);
 
     if (ipeProcedure->isValid(callExpr->procedureGeneration()) == true)
     {
       int        methodId  = callExpr->methodId();
       IpeMethod* ipeMethod = ipeProcedure->methodGet(methodId);
+
+      INT_ASSERT(ipeMethod);
 
       retval = ipeMethod->apply(callExpr, env);
     }
