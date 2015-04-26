@@ -228,6 +228,12 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
   } else {
     DefExpr*      def = toDefExpr(stmt);
+
+    // TODO: This code does not belong here.  It should moved back into
+    // deadCodeElimination.  Basic block analysis is more fundamental than dead
+    // code identification, so it is an architectural error to mix the two.
+    // Note that the "mark" variable being passed around can also be removed.
+    // *** begin block to be removed.
     std::vector<BaseAST*> asts;
 
     collect_asts(stmt, asts);
@@ -251,6 +257,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
         }
       }
     }
+    // *** end block to be removed
 
     if (def && toLabelSymbol(def->sym)) {
       // If a label appears in the middle of a block,
@@ -278,6 +285,20 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       labelMaps.put(label, basicBlock);
     } else {
       append(stmt, mark);
+
+      // For the sake of live variable analysis, a yield ends one block and
+      // begins another.  For now, we just thread one block into the next.  
+      // We could get fancier and thread the block containing the yield to the
+      // end of the function and the start of the function to the block
+      // following the yield, but just putting in a block break is good enough
+      // for now.
+      if (CallExpr* call = toCallExpr(stmt))
+        if (call->isPrimitive(PRIM_YIELD))
+        {
+          BasicBlock* curr = basicBlock;
+          restart(fn);
+          thread(curr, basicBlock);
+        }
     }
   }
 }
