@@ -1,6 +1,6 @@
 config const sourceText = "<a><ii>end</ii><none /></a>";
-const AllIndices: domain(1, uint) = {1..(sourceText.length)};
-const AllPairs: domain(2, uint) = {1..(sourceText.length), 1..(sourceText.length)};
+const AllIndices: domain(1) = {1..(sourceText.length)};
+const AllPairs: domain(2) = {1..(sourceText.length), 1..(sourceText.length)};
 var StartIndices: sparse subdomain(AllIndices);
 var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;

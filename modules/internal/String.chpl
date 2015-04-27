@@ -789,7 +789,7 @@ module String {
     return __primitive("cast", t, cs);
   }
 
-  // Cast from bufferType to string
+  // Cast from c_string to string
   // TODO: I don't like this, but cant get rid of it without doing something
   //       with making dtString the type for literals I think...
   inline proc _cast(type t, cs: c_string) where t == string {

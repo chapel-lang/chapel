@@ -42,10 +42,10 @@ iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory
   for i in 0..wordexp_num(glb) -1 {
     tx = wordexp_index(glb, i);
     if recursive && chpl_isdir(tx) == 1 {
-      const pth = toString(tx) + "/";
+      const pth = tx:string + "/";
       for fl in my_wordexp(pattern, recursive, flags, pth) do
         yield fl;
-    } else yield toString(tx);
+    } else yield tx:string;
   }
 
   wordfree(glb);
@@ -95,10 +95,10 @@ iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:st
   for i in 0..glob_num(glb) - 1 {
     tx = glob_index(glb, i);
     if recursive && chpl_isdir(tx) == 1 {
-      const pth = toString(tx) + "/";
+      const pth = tx:string + "/";
       for fl in my_glob(pattern, recursive, flags, pth) do
         yield fl;
-    } else yield toString(tx);
+    } else yield tx:string;
   }
 
   globfree(glb);
