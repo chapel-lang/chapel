@@ -5,11 +5,13 @@ then
 
 echo Updating RE2
 cd re2
-hg pull -u
+git pull
 else
 
 echo Checkout RE2
-hg clone https://re2.googlecode.com/hg re2
+git clone https://github.com/google/re2 re2
+git checkout 1deddeb2fe8674852fc425f03727e4ab0903357b
+git checkout -b chapel-branch
 echo Applying Patches
 cd re2
 patch -p1 < ../hg_diff_g.patch
