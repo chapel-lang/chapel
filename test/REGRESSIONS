@@ -180,10 +180,6 @@ Inherits 'general'
 Reviewed 2015-04-20
 ===================
 
-Seg fault
----------
-[Error matching compiler output for ipe/powerOfTwo] (2015-04-19, noakes)
-
 Seg fault since first run (2014-12-07)
 --------------------------------------
 [Error matching compiler output for users/vass/type-tests.isSubtype]
@@ -214,6 +210,12 @@ darwin
 Inherits 'general'
 Reviewed 2015-04-20
 ===================
+
+=== sporadic failures below ===
+
+Bus failure (not test specific?)
+--------------------------------
+[Error matching .bad file for users/vass/crash1callDestructorsMain] (2015-04-25)
 
 
 ===================
@@ -362,7 +364,7 @@ sporadic execution timeout
 --------------------------
 [Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (..2015-02-21, 2015-03-27, 2015-04-11)]
 [Error: Timed out executing program performance/bharshbarg/arr-forall] (2015-03-20, 2015-03-29..2015-04-02, 2015-04-04..)]
-[Error: Timed out executing program studies/shootout/fannkuch-redux/sungeun/fannkuch-redux (execopts: 2)] (2015-03-28..2015-04-02, 2015-04-03..2015-04-19, 2015-04-22..)
+[Error: Timed out executing program studies/shootout/fannkuch-redux/sungeun/fannkuch-redux (execopts: 2)] (2015-03-28..2015-04-02, 2015-04-03..2015-04-19, 2015-04-22..2015-04-23, 2015-04-25..)
 
 
 sporadic invalid reads/writes
@@ -438,7 +440,7 @@ sporadic memory leaks
 sporadic failures even after Sung quieted it down (gbt/diten)
 (gasnet.fifo, gasnet-fast, gasnet-everything)
 -------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] gasnet.fifo (2015-03-24, 2015-03-31, 2015-04-04)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] gasnet.fifo (2015-03-24, 2015-03-31, 2015-04-04, 2015-04-26..)
 
 sporadic execution timeout
 (gasnet.fifo, gasnet-fast)
@@ -489,7 +491,7 @@ Reviewed 2015-04-20
 sporadic execution timeouts
 ---------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (2015-03-01, 2015-04-02, 2015-04-20)
-[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (2015-03-24, 2015-03-28, 2015-04-08)
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (2015-03-24, 2015-03-28, 2015-04-08, 2015-04-24)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (2015-04-15)
 
 segfault
@@ -528,9 +530,9 @@ Reviewed 2015-04-20
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (xc-wb.prgenv-pgi   2015-03-29, 2015-04-12, 2015-04-16..2015-04-22)
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (xc-wb.prgenv-pgi   2015-03-29, 2015-04-12, 2015-04-16..2015-04-22, 2015-04-26)
                                                                            (xc-wb.prgenv-gnu   2015-03-24, 2015-03-29, 2015-04-02, 2015-04-07, 2015-04-14)
-                                                                           (xc-wb.prgenv-intel 2015-03-24, 2015-03-31, 2015-04-02, 2015-04-07..2015-04-09, 2015-04-14, 2015-04-23..)
+                                                                           (xc-wb.prgenv-intel 2015-03-24, 2015-03-31, 2015-04-02, 2015-04-07..2015-04-09, 2015-04-14, 2015-04-23..2015-04-25)
 
 
 =======================
@@ -743,7 +745,7 @@ Reviewed 2015-04-20
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 2015-04-26)
                                                                                                           (xe.ugni.intel:          2015-03-30, 2015-04-24)
                                                                                                           (xe.ugni-qthreads.intel: ?? .. 2015-03-22)
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 5)] (xe.mpi.pgi:  2015-03-19)
@@ -754,6 +756,9 @@ xc.*
 Inherits 'x?.*'
 Reviewed 2015-04-20
 ===================
+
+knc configuration fails to build gasnet since 2015-04-25
+
 
 === sporadic failures below ===
 
@@ -808,11 +813,12 @@ Reviewed 2015-04-20
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra          (compopts: 1)]              (xe.ugni-qthreads.gnu 2015-03-24)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra          (compopts: 1)]              (xe.ugni-qthreads.gnu 2015-03-24, 2015-04-26)
                                                                                                              (xe.ugni.intel        2015-03-24, 2015-03-30, 2015-04-01 .. 2015-04-02, 2015-04-24)
                                                                                                              (xe.ugni.gnu          2015-03-24, 2015-03-30, 2015-04-24)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)] (xe.ugni.intel 2015-04-24)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)] (xe.ugni.intel 2015-04-24, 2015-04-27)
                 (xe.ugni.gnu   2015-04-24)
+                (xe.ugni-qthreads.gnu 2015-04-25)
 
 
 ==========================================
@@ -1163,7 +1169,8 @@ sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
                          2015-03-11..2015-03-14, 2015-03-17..2015-03-18,
                          2015-03-22..2015-03-26, 2015-03-28..2015-04-01,
                          2015-04-04..2015-04-08, 2015-04-10..2015-04-13,
-                         2015-04-15..2015-04-19, 2015-04-21..2015-04-22)
+                         2015-04-15..2015-04-19, 2015-04-21..2015-04-22
+                         2015-04-24, 2015-04-26..)
 
 
 ================================
