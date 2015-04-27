@@ -363,8 +363,8 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
     ofm.forwardFlowOwnership();
   }
 
-  if (fVerify)
-    ofm.checkForwardOwnership();
+  //if (fVerify)
+  //  ofm.checkForwardOwnership();
 
 #if 0
   // We need our own equation for backward flow.

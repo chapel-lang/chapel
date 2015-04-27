@@ -10,8 +10,8 @@ get_string(ca);
 var cb: c_string;
 modify_string(cb, ca);
 
-a = toString(ca);
-b= toString(cb);
+a = ca:string;
+b = cb:string;
 writeln("a is: ", a);
 writeln("b is: ", b);
 

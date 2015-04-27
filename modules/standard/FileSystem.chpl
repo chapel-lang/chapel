@@ -498,8 +498,9 @@ proc locale.cwd(out error: syserr): string {
     if (error != ENOERR) {
       ret = "";
     } else {
-      // This version of toString steals its operand.  No need to free.
-      ret = toString(tmp);
+      var tmp_len = tmp.length;
+      ret = new string(tmp:c_ptr(uint(8)), tmp_len, tmp_len,
+                       owned=true, needToCopy=false);
     }
   }
   return ret;
@@ -711,7 +712,7 @@ module chpl_glob_c_interface {
 iter glob(pattern: string = "*"): string {
   var glb : chpl_glob_c_interface.glob_t;
 
-  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern.c_str(), 0, glb);
   // TODO: Handle error cases better
   if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
@@ -758,7 +759,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   var glb : chpl_glob_c_interface.glob_t;
 
-  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern.c_str(), 0, glb);
   // TODO: Handle error cases better
   if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
@@ -783,7 +784,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
     compilerError("glob() iterator can only be zipped with 1D iterators");
   var r = followThis(1);
 
-  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern.c_str(), 0, glb);
   // TODO: Handle error cases better
   if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
@@ -959,12 +960,12 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
   var dir: DIRptr;
   var ent: direntptr;
-  dir = opendir(path:c_string);
+  dir = opendir(path.c_str());
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = ent.d_name();
-      if (hidden || filename.substring(1) != '.') {
+      const filename = ent.d_name():string;
+      if (hidden || filename[1] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 

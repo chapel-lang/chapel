@@ -63,12 +63,12 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
 
   var dir: DIRptr;
   var ent: direntptr;
-  dir = opendir(path:c_string);
+  dir = opendir(path.c_str());
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
       const filename = ent.d_name();
-      if (hidden || filename.substring(1) != '.') {
+      if (hidden || filename[1] != '.') {
         if (filename != "." && filename != "..") {
           //
           // use FileSystem;  // Doesn't work, see comment below

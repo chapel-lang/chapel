@@ -617,7 +617,7 @@ module GMP {
       var ret:string;
       on this {
         var tmp = chpl_gmp_mpz_get_str(base.safeCast(c_int), this.mpz);
-        ret = toString(tmp);
+        ret = tmp:string;
       }
       return ret;
     }

@@ -4287,6 +4287,18 @@ GenRet CallExpr::codegen() {
       ret = codegenAddrOf(get(1));
       break;
     }
+    case PRIM_REF_TO_STRING:
+    {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        GenRet wide = get(1);
+        ret = codegenCallExpr("chpl_wideRefToString",
+                              codegenRnode(wide), codegenRaddr(wide));
+      } else {
+        ret = codegenCallExpr("chpl_refToString", get(1));
+      }
+      break;
+    }
     case PRIM_RETURN:
     {
       if (typeInfo() == dtVoid) {
