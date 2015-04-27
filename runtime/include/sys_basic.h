@@ -59,15 +59,20 @@
 #endif
 
 //
-// The following breaks #include of "glob.h" with the Cray CCE
+// Setting _FILE_OFFSET_BITS breaks #include of "glob.h" with the Cray CCE
 // compiler and also complicates things for the #inclusion of dirent.h
 // with most PrgEnv-* options on Crays, as seen in chpldirent.h.
-// As I understand it, Michael added this in order to permit the
-// support of files larger than 4GB.
-//
-//#ifndef _FILE_OFFSET_BITS
-//#define _FILE_OFFSET_BITS 64
-//#endif
+// This #defines allows programs to work with files > 4GB and fixes
+// a problem on Ubuntu 14.04 32-bit.
+// So, we set _FILE_OFFSET_BITS only for 32-bit platforms.
+// GCC defines __SIZEOF_POINTER__ and _FILE_OFFSET_BITS is part of a unix
+// standard.
+#if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 4)
+#ifndef _FILE_OFFSET_BITS
+#define _FILE_OFFSET_BITS 64
+#endif
+#endif
+
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #define __STDC_CONSTANT_MACROS
