@@ -789,7 +789,137 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
 }
 
 
+#if HILDE_MM
+// Returns true if the basic block is one that ends a region over which any
+// local variable may remain alive (as explained below); false otherwise.
+// Local variables alive at that point must be moved into the iterator class
+// structure, because when the iterator is reworked as an "advance" function
+// they cannot remain live across that boundary.
+// Specifically, in an iterator that contains a yield inside the
+// loop, we have basically:
+//   zip1();
+//   for ( ; ; ) {
+//     zip2();
+//     yield ;
+//     zip3();
+//   }
+//   zip4();
+// A variable live at the end of zip1() has to be put in the iterator class
+// (IC) because after the transformation into an "advance" routine, on
+// invocations after the first (more > 1), control can transfer directly from
+// the start of advance() to zip3() (immediately after the yield).  Then, flow
+// will return to the top of the loop.  Now the liveness of the variable on
+// entry to the loop is ambiguous: Live if zip1() was executed and not live if
+// the other path was taken.  Moving the variable into the IC takes care of
+// this problem.  The same argument applies to a variable live at the end of
+// zip2(), zip3 or zip4().  Variables live at the end of zip4() are also live
+// at the end of the advance function.  They have already been captured by
+// capturing the arguments and function-scope variables.  The cases that remain
+// are:
+//  zip1() -- Identifiable by being followed by the top of a loop.
+//  zip2() -- Identifiable by being followed by a yield.
+//  zip3() -- Identifiable by being followed by the bottom of a loop.
+static bool isLocalLivenessBarrier(BasicBlock* bb)
+{
+  // We use the basic block structure to infer cases 1 and 3.
+  // We simply look for a yield statement to determine case 2.
 
+  // The implementation is slightly pessimistic, because we don't check to
+  // ensure that any given loop contains a yield, we just assume that it does.
+  // For some iterators -- specifically those that contain loops that do not
+  // contain yields -- we will end up putting too many expressions into the
+  // IC.  That can be corrected if necessary, by adding the check.
+
+  // We use the presence of a back-edge to infer the bounds of a loop.  This
+  // test ought to be immune to the details of the loop structure.  (We rely on
+  // BB analysis giving the right answer.)  We also assume that basic block
+  // indices are assigned such that a back edge out of the current block is one
+  // whose target ID is equal to or less than that this block.  Likewise, a
+  // back edge into this block is one whose source ID is greater than or equal
+  // to that of the current block.
+
+  // Case 2: The current block ends in a yield statement.
+  //  We expect BB analysis to be smart enough to end a block when it sees a
+  //  yield, so we expect to find the yield at the end of any given block.
+  size_t n = bb->exprs.size();
+  if (n > 0)
+  {
+    CallExpr* call = toCallExpr(bb->exprs.back());
+    if (call && call->isPrimitive(PRIM_YIELD))
+      return true;
+  }
+  
+  // Case 3: The current block is at the end of a loop.
+  //  If the OUT set of this block has any back edges in it, then it lies at
+  //  the end of a loop.
+  for_vector(BasicBlock, succ1, bb->outs)
+  {
+    if (succ1->id <= bb->id)
+      return true;
+  }
+
+  // Case 1: The current block is followed by the start of a loop.
+  //  If the successor of thie current block has one or more back edges in it
+  //  IN set then it is the start of a loop.
+  for_vector(BasicBlock, succ, bb->outs)
+  {
+    for_vector(BasicBlock, pred, succ->ins)
+    {
+      if (pred->id >= succ->id)
+        return true;
+    }
+  }
+  // Note that this code also captures Case 3, since the successor of the
+  // bottom of a loop will be the top of a loop.  But that might just be a bit
+  // too clever.
+
+  return false;
+}
+
+// Collect local variables that are live at the point of any yield.
+static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop)
+{
+  Vec<Symbol*> locals;
+  Map<Symbol*,int> localMap;
+  Vec<SymExpr*> useSet;
+  Vec<SymExpr*> defSet;
+  std::vector<BitVec*> OUT;
+
+  liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
+
+  for (size_t block = 0; block < fn->basicBlocks->size(); ++block)
+  {
+    BasicBlock* bb = (*fn->basicBlocks)[block];
+
+    if (isLocalLivenessBarrier(bb))
+    {
+      // Basic block analysis has already computed the set of symbols that are
+      // live at the end of this block.  Sooo, we just use it.
+      for (int j = 0; j < locals.n; j++)
+      {
+        if (OUT[block]->get(j))
+          syms.add_exclusive(locals.v[j]);
+      }
+    }
+  }
+
+  // C_FOR_LOOP needs to ensure the for-loop init variables are also
+  // converted to fields.  The test/incr fields are handled correctly
+  // as a result of being inserted in to the body of the loop
+  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    Vec<SymExpr*> symExprs;
+    CForLoop*     cforLoop = toCForLoop(singleLoop);
+
+    collectSymExprs(cforLoop->initBlockGet(), symExprs);
+
+    forv_Vec(SymExpr, se, symExprs) {
+      if (useSet.set_in(se)) {
+        syms.add_exclusive(se->var);
+      }
+    }
+  }
+}
+#else
 // Collect local variables that are live at the point of any yield.
 static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop)
 {
@@ -862,7 +992,7 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
     }
   }
 }
-
+#endif
 
 static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
                            Vec<Symbol*>& yldSymSet)
@@ -892,56 +1022,79 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
 
       Vec<SymExpr*>* defs = defMap.get(sym);
-      if (defs == NULL || defs->n != 1) {
-        INT_FATAL(sym, "Expected sym to have exactly one definition");
-      }
-
-      // Do we need to consider PRIM_ASSIGN as well?
-      CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-
-      if (SymExpr* se = toSymExpr(move->get(2)))
+      if (defs && defs->n == 1) 
       {
-        // The symbol is defined through a bitwise (pointer) copy.
-        INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
-        if (se->var->defPoint->parentSymbol == fn) {
-          syms.add_exclusive(se->var);
+        // Do we need to consider PRIM_ASSIGN as well?
+        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
+        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+
+        if (SymExpr* se = toSymExpr(move->get(2)))
+        {
+          // The symbol is defined through a bitwise (pointer) copy.
+          INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
+          if (se->var->defPoint->parentSymbol == fn) {
+            syms.add_exclusive(se->var);
+          }
         }
-      }
-      else if (CallExpr* call = toCallExpr(move->get(2)))
-      {
-        // The RHS is a function call.
-        if (FnSymbol* fn = call->isResolved()) {
-          for_actuals(actual, call) {
-            SymExpr* se = toSymExpr(actual);
-            if (se->var->defPoint->parentSymbol == fn) {
-              syms.add_exclusive(se->var);
+        else if (CallExpr* call = toCallExpr(move->get(2)))
+        {
+          // The RHS is a function call.
+          if (FnSymbol* fn = call->isResolved()) {
+            for_actuals(actual, call) {
+              SymExpr* se = toSymExpr(actual);
+              if (se->var->defPoint->parentSymbol == fn) {
+                syms.add_exclusive(se->var);
+              }
+            }
+          }
+          else
+          {
+            // The RHS is not a function call: it must be a primitive instead.
+
+            if (call->isPrimitive(PRIM_ADDR_OF) ||
+                call->isPrimitive(PRIM_GET_MEMBER) ||
+                // If we are reading a reference out of a field, I'm not sure we
+                // capture the right rhs below.  (The actual target of the ref lies
+                // outside the struct that contains the ref.)
+                call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+              SymExpr* rhs = toSymExpr(call->get(1));
+              syms.add_exclusive(rhs->var);
+            }
+            else
+            {
+              INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
             }
           }
         }
         else
         {
-          // The RHS is not a function call: it must be a primitive instead.
-
-          if (call->isPrimitive(PRIM_ADDR_OF) ||
-              call->isPrimitive(PRIM_GET_MEMBER) ||
-              // If we are reading a reference out of a field, I'm not sure we
-              // capture the right rhs below.  (The actual target of the ref lies
-              // outside the struct that contains the ref.)
-              call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-            SymExpr* rhs = toSymExpr(call->get(1));
-            syms.add_exclusive(rhs->var);
-          }
-          else
-          {
-            INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
-          }
+          // What else could it be?
+          INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
         }
       }
       else
       {
-        // What else could it be?
-        INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
+        // defs.n was not exactly 1.
+        // Assume that this ref is a local passed with the equivalent of "out"
+        // intent.
+        // TODO: How does this happen?  Shouldn't a ref variable always have an
+        // lvalue that it refers to?
+        // In expandIteratorInline(), apparently when the iterator body is
+        // expanded inline, ref variables get converted into ref arguments --
+        // which is probably part of the reason this fixup is necessary.
+
+        // I don't know what about the recent AMM work exposed this problem,
+        // but we can work around it by inserting an lvalue at each use and
+        // fixing up the ref variable to point to it.
+        for_uses(use, useMap, sym)
+        {
+          Expr* stmt = use->getStmtExpr();
+          SET_LINENO(stmt);
+          VarSymbol* tmp = newTemp(sym->type->getValType());
+          stmt->insertBefore(new DefExpr(tmp));
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, sym,
+                                          new CallExpr(PRIM_ADDR_OF, tmp)));
+        }
       }
     }
   }
@@ -1082,7 +1235,7 @@ rebuildIterator(IteratorInfo* ii,
     // handled in iterator records.  Calls to the these() method on arrays and
     // domains returns a "nude" version of the corresponding array or domain,
     // that is therefore (because it is a class object) not reference counted.
-    // In place where they should be reference counted, they should be passed
+    // In places where they should be reference counted, they should be passed
     // around with their record wrapping.  In places where their persistence is
     // guaranteed, they could be passed around by reference, but other iterator
     // code presently depends upon them being passed by value (the immediately
@@ -1094,7 +1247,7 @@ rebuildIterator(IteratorInfo* ii,
         isArrayImplType(localValue->type) ||
         isDistImplType(localValue->type))
     {
-      Symbol* tmp = newTemp("RWT_ir", localValue->type);
+      VarSymbol* tmp = newTemp("RWT_ir", localValue->type);
       fn->insertAtTail(new DefExpr(tmp));
       FnSymbol* autoCopyFn = autoCopyMap.get(localValue->type);
       // We will fail here if an array or dom implementation fails to provide
@@ -1115,6 +1268,35 @@ rebuildIterator(IteratorInfo* ii,
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
   fn->addFlag(FLAG_INLINE);
 }
+
+#if 0
+static void
+rebuildIteratorAutoDestroy(IteratorInfo* ii)
+{
+  // TODO: Do we need this cast?
+  AggregateType* irt = toAggregateType(ii->irecord);
+  FnSymbol* adFn = autoDestroyMap.get(irt);
+  ArgSymbol* ir = adFn->getFormal(1);
+  BlockStmt* block = new BlockStmt();
+
+  for_fields(field, irt)
+  {
+    if (isDomImplType(field->type) ||
+        isArrayImplType(field->type) ||
+        isDistImplType(field->type))
+    {
+      VarSymbol* tmp = newTemp("ref_RWT_ir", field->type->refType);
+      block->insertAtTail(new DefExpr(tmp));
+      CallExpr* getMbrCall = new CallExpr(PRIM_GET_MEMBER, ir, field);
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, getMbrCall));
+      FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+      block->insertAtTail(new CallExpr(autoDestroyFn, tmp));
+    }
+  }
+
+  adFn->insertAtHead(block);
+}
+#endif
 
 
 // Fills in the body of the getIterator function.
@@ -1420,6 +1602,7 @@ void lowerIterator(FnSymbol* fn) {
     buildIncr(ii, singleLoop);
   }
   rebuildIterator(ii, local2rfield, locals);
+//  rebuildIteratorAutoDestroy(ii);
   rebuildGetIterator(ii);
   rebuildFreeIterator(ii);
 }

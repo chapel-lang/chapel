@@ -454,6 +454,40 @@ inline static bool isConsumed(SymExpr* se)
         break;
 
        case PRIM_SET_MEMBER:
+        if (call->get(3) == se)
+        {
+          // Very special code to handle the case of field assignment within a
+          // default constructor wrapper.  In this context, the field
+          // assignment is necessary, so that fields initialized earlier in the
+          // constructor can be used to provide default initializers for later
+          // fields.  (We are talking about field-initializers: those are
+          // initializer expressions that appear in field declarations in a
+          // record or class declaration.)  However, if the initializer
+          // expression is an owned value, it looks as though ownership is
+          // transferred to the field in the constructor wrapper.  In the
+          // constructor proper, however, the argument used to initialize that
+          // field is considered unowned.  Ownership is not transferred through
+          // the constructor argument.
+          // What happens is that ownership of the initializer expression is
+          // effectively lost.  That results in a memory leak.
+          // To prevent that, only in the context of a default constructor
+          // wrapper, we treat field initialization as if it does *not* consume
+          // its argument.  As a result, an autoDestroy call will be inserted
+          // if necessary in the default constructor wrapper.  If the field is
+          // a reference-counted type, for example, calling the default
+          // constructor wrapper (and letting it run to completion) should only
+          // increment the reference count by 1 as a net amount.
+          if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
+            if (parent->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
+                parent->hasFlag(FLAG_WRAPPER))
+              // This is the very special case.
+              return false;
+
+          // This is the normal case.
+          return true;
+        }
+        break;
+
        case PRIM_ARRAY_SET_FIRST:
         if (call->get(3) == se)
           return true;
@@ -463,6 +497,19 @@ inline static bool isConsumed(SymExpr* se)
   }
 
   return false;
+}
+
+
+inline static bool resultIsOwned(CallExpr* call)
+{
+  if (call->isResolved())
+    return true;
+  else
+  {
+    // This call must be a primitive.
+    // Guilty until proven innocent.
+    return false;
+  }
 }
 
 

@@ -278,22 +278,20 @@ buildDefaultWrapper(FnSymbol* fn,
       // into the wrapper formal as well.
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
+
+      // Copy temp into the field, if necessary.
       if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
+        // Select only formals carrying values.
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
+          // See if the name of the formal matches a field name.
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
+            // I think this test ensures that the field is an immediate child
+            // of _this.
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
             {
-              Symbol* copyTemp = newTemp("wrap_arg");
-              wrapper->insertAtTail(new DefExpr(copyTemp));
-              // TODO AMM: Insertion of this autocopy can probably be left to
-              // ownership flow analysis.  Since the LHS is a structure member,
-              // the copy is required, but only if the RHS object is not owned.
-              wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(field->name), copyTemp));
-              copy_map.put(formal, copyTemp);
-              call->argList.tail->replace(new SymExpr(copyTemp));
+                             new_StringSymbol(field->name), temp));
             }
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
