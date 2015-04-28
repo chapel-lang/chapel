@@ -1419,6 +1419,12 @@ OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
     Expr* lastStmt = exprs.back();
     if (GotoStmt* gotoStmt = toGotoStmt(lastStmt))
     {
+      // The scope must contain the goto statement.
+      // The negative case occurs when the scope block ends in the middle of a
+      // basic block.
+      if (! scope->contains(gotoStmt))
+        continue;
+
       SymExpr* label = toSymExpr(gotoStmt->label);
       INT_ASSERT(label);
       DefExpr* target = toDefExpr(label->var->defPoint);
