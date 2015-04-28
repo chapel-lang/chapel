@@ -18,6 +18,8 @@ about your environment for using Chapel:
 
 * You have access to gmake or a GNU-compatible version of make.
 
+* You have the patch command installed
+
 * You have access to standard C and C++ compilers. We test our code
   using a range of compilers on a nightly basis; these include relatively
   recent versions of gcc/g++, clang, and compilers from Cray, Intel, and PGI.
