@@ -1881,6 +1881,7 @@ echo " " |& $tee -a $logfile
 
 # Output grep to a temp file, don't want to infinite loop
 set futuremarker = "^Future"
+set suppressmarker = "^Suppress"
 set errormarker = "^\[Error"
 set warningmarker = "^\[Warning"
 if ($performance == 0 && $gengraphs) then
@@ -1902,6 +1903,7 @@ if ($clean_only == 0) then
     endif
     grep "$errormarker" $logfile.summary
 
+    grep "$suppressmarker" $logfile |& $tee -a $logfile.summary
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
     grep "$warningmarker" $logfile |& $tee -a $logfile.summary
 
