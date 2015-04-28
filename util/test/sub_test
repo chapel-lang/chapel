@@ -243,9 +243,8 @@ def PerfTFile(test_filename, sfx):
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # sys.stdout.write('Opening: %s\n'%(f))
-    myfile = open(f, 'r')
-    mylines = myfile.readlines()
-    myfile.close()
+    with open(f, 'r') as myfile:
+      mylines = myfile.readlines()
     mylist=list()
     for line in mylines:
         line = line.rstrip()
@@ -1034,16 +1033,14 @@ for testname in testsrc:
                 break
 
         elif (suffix=='.suppressif' and (os.access(f, os.R_OK))):
-            testskipiffile=True
-            skiptest=runSkipIf(f)
+            suppresstest=runSkipIf(f)
             try:
-                skipme=False
-                if skiptest.strip() != "False":
-                    skipme = skiptest.strip() == "True" or int(skiptest) == 1
-                if skipme:
-                    suppressfile = open('./'+test_filename+'.suppressif', 'r')
-                    suppressline = suppressfile.readline().strip();
-                    suppressfile.close()
+                suppressme=False
+                if suppresstest.strip() != "False":
+                    suppressme = suppresstest.strip() == "True" or int(suppresstest) == 1
+                if suppressme:
+                    with open('./'+test_filename+'.suppressif', 'r') as suppressfile:
+                        suppressline = suppressfile.readline().strip();
                     if suppressline.startswith("#"):
                       suppressline = suppressline.replace("#","");
                     else:
@@ -1084,9 +1081,8 @@ for testname in testsrc:
             numlocales=ReadIntegerValue(f, localdir)
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
-            futurefile = open('./'+test_filename+futureSuffix, 'r')
-            futuretest='Future ('+futurefile.readline().strip()+') '
-            futurefile.close()
+            with open('./'+test_filename+futureSuffix, 'r') as futurefile:
+                futuretest='Future ('+futurefile.readline().strip()+') '
 
         elif (suffix=='.noexec' and os.access(f, os.R_OK)):
             noexecfile=True
