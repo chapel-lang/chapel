@@ -1471,6 +1471,25 @@ OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
 }
 
 
+// Heuristic for determining which alias to use when autodestroying an alias clique.
+static Symbol*
+getBestAlias(const SymbolVector& aliasList)
+{
+  size_t n = aliasList.size();
+
+  // Look for and return the last named (non-temp) variable in the list.
+  while (n--)
+  {
+    Symbol* alias = aliasList[n];
+    if (! alias->hasFlag(FLAG_TEMP))
+      return alias;
+  }
+
+  // If they are all temps, just return the last one on the list.
+  return aliasList.back();
+}
+
+
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
 void 
@@ -1486,14 +1505,15 @@ OwnershipFlowManager::insertAutoDestroy(BitVec* to_cons)
 
       // Remove this symbol and all its aliases from the cons set.
       SymbolVector* aliasList = aliases.at(sym);
-      Symbol* last = aliasList->operator[](aliasList->size() - 1);
+      Symbol* best = getBestAlias(*aliasList);
       resetAliasList(to_cons, *aliasList, symbolIndex);
 
-      // Use the last symbol in the alias list.
+      // Use the last named symbol in the alias list (or just the last one if
+      // they are all unnamed).
       // This is a workaround because we do not track aliases in this
       // implementation.
       // See Note #1.
-      insertAutoDestroyAtScopeExit(last);
+      insertAutoDestroyAtScopeExit(best);
     }
   }
 }
