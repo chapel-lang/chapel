@@ -1040,7 +1040,7 @@ for testname in testsrc:
                     suppressme = suppresstest.strip() == "True" or int(suppresstest) == 1
                 if suppressme:
                     with open('./'+test_filename+'.suppressif', 'r') as suppressfile:
-                        suppressline = suppressfile.readline().strip();
+                        suppressline = suppressfile.readline().strip()
                     if suppressline.startswith("#"):
                       suppressline = suppressline.replace("#","");
                     else:
