@@ -108,6 +108,7 @@
 # .ifuture: Future test
 # .noexec: Do not execute this test
 # .skipif: Skip this test if certain environment conditions hold true
+# .suppressif: Suppress this test if certain environment conditions hold true
 # .timeout: Test timeout (overrides TIMEOUT)
 # .perftimeout: Performance test timeout
 # .killtimeout: Kill timeout (overrides KILLTIMEOUT)
@@ -1031,6 +1032,26 @@ for testname in testsrc:
                 do_not_test=True
             if do_not_test:
                 break
+
+        elif (suffix=='.suppressif' and (os.access(f, os.R_OK))):
+            testskipiffile=True
+            skiptest=runSkipIf(f)
+            try:
+                skipme=False
+                if skiptest.strip() != "False":
+                    skipme = skiptest.strip() == "True" or int(skiptest) == 1
+                if skipme:
+                    suppressfile = open('./'+test_filename+'.suppressif', 'r')
+                    suppressline = suppressfile.readline().strip();
+                    suppressfile.close()
+                    if suppressline.startswith("#"):
+                      suppressline = suppressline.replace("#","");
+                    else:
+                      suppressline = ""
+                    suppressline = suppressline.strip()
+                    futuretest='Suppress (' + suppressline + ') '
+            except ValueError:
+                sys.stdout.write('[Error processing .suppressif file %s/%s]\n'%(localdir,f))
 
         elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
             timeout=ReadIntegerValue(f, localdir)
