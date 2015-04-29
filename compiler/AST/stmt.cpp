@@ -306,6 +306,17 @@ BlockStmt::getFirstExpr() {
 }
 
 Expr*
+BlockStmt::getFirstChild() {
+  if (blockInfo)
+    return blockInfo;
+
+  if (body.head)
+    return body.head;
+
+  return NULL;
+}
+
+Expr*
 BlockStmt::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
@@ -800,6 +811,11 @@ CondStmt::getFirstExpr() {
 }
 
 Expr*
+CondStmt::getFirstChild() {
+  return (condExpr != 0) ? condExpr : NULL ;
+}
+
+Expr*
 CondStmt::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
@@ -1023,6 +1039,10 @@ Expr* GotoStmt::getFirstExpr() {
   return (label != 0) ? label->getFirstExpr() : this;
 }
 
+Expr* GotoStmt::getFirstChild() {
+  return (label != 0) ? label : NULL;
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -1070,5 +1090,9 @@ void ExternBlockStmt::accept(AstVisitor* visitor) {
 
 Expr* ExternBlockStmt::getFirstExpr() {
   INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
+  return NULL;
+}
+
+Expr* ExternBlockStmt::getFirstChild() {
   return NULL;
 }

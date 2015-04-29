@@ -15,6 +15,7 @@ Initializing Modules:
     ChapelRange
     LocaleModel
      ChapelLocale
+      AutoPtr
      DefaultRectangular
       DSIUtil
       ChapelArray

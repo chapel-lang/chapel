@@ -868,6 +868,53 @@ OwnershipFlowManager::forwardFlowOwnership()
 }
 
 
+// Move forward through expressions following the given stmt, until we
+// encounter one that would cause a new basic block to be spawned.
+// TODO: This is selfish code.  It ought to be a service provided by the
+// BasicBlock module, but is currently not.  Any significant change to
+// BasicBlock::buildBasicBlocks should be reflected here.
+static Expr* getLastExprInBB(Expr* stmt)
+{
+  Expr* curr = stmt;
+  while (curr)
+  {
+    Expr* next = curr->getFirstChild();
+    if (! next)
+      next = curr->next;
+    while (! next)
+    {
+      // Because we are enumerating nodes in preorder, we already enumerated
+      // the parent, so we skip right to its first child.
+      curr = curr->parentExpr;
+      if (curr == stmt->parentExpr)
+      {
+        // We ran out of candidates without finding a valid successor, so just
+        // return the original statment.
+        return stmt;
+      }
+      next = curr->next;
+    }
+
+    // Break on any statement that alters flow in any way.
+    if (isLoopStmt(next))
+      break;
+    if (isCondStmt(next))
+      break;
+    if (isGotoStmt(next))
+      break;
+    if (DefExpr* def = toDefExpr(next))
+      if (isLabelSymbol(def->sym))
+        break;
+
+    curr = next;
+  }
+  // We always expect a valid expression to be returned.
+  // This is also an assert that the caller did not pass in stmt == NULL.
+  INT_ASSERT(curr);
+  return curr;
+}
+
+
 // Conversion of an iterator into an "advance" function does unnatural
 // things to scopes.  If a yield appears within a loop, on the first
 // execution the advance function passes through all initializations up to
@@ -907,14 +954,20 @@ static void insertAutoDestroyAfterStmt(SymExpr* se)
   Symbol* sym = se->var;
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
   if (autoDestroy == NULL)
-    // This type does not have a destructor, so we don't have a add an
+    // This type does not have a destructor, so we don't have to add an
     // autoDestroy call for it.
     return;
 
   Expr* stmt = se->getStmtExpr();
-  SET_LINENO(stmt);
+  // Actually, at least code involving runtime types creates references to
+  // members of temporary variables, so we are not able to see the last use
+  // (since we do not track references).  As a workaround, we march forward to
+  // the end of the current basic block and use that as the insertion point.
+  Expr* lastStmtInBB = getLastExprInBB(stmt);
+
+  SET_LINENO(sym->defPoint);
   CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
-  stmt->insertAfter(autoDestroyCall);
+  lastStmtInBB->insertAfter(autoDestroyCall);
   insertReferenceTemps(autoDestroyCall);
 }
 
@@ -1054,6 +1107,8 @@ static bool isRetVarInReturn(SymExpr* se)
       // What else could it be?
       if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
         if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+            // Treat RTT init fns like constructors:
+            fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
             fn->hasFlag(FLAG_AUTO_COPY_FN) ||
             fn->hasFlag(FLAG_INIT_COPY_FN))
         return true;
@@ -1074,7 +1129,8 @@ static bool isRetVarCopyInConstructor(SymExpr* se)
         if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) // and the
           if (fn->hasFlag(FLAG_CONSTRUCTOR) ||             // containing
               fn->hasFlag(FLAG_AUTO_COPY_FN) ||            // function 
-              fn->hasFlag(FLAG_INIT_COPY_FN)) // is a constructor
+              fn->hasFlag(FLAG_INIT_COPY_FN)) // is a constructor.
+            // TODO: Can the above be generalized to all functions?
             if (SymExpr* lhse = toSymExpr(call->get(1))) // whose LHS
               if (lhse->var == fn->getReturnSymbol()) // is the RVV.
                 return true;
@@ -1101,8 +1157,13 @@ static bool isDestructorFormal(SymExpr* se)
 
 static bool isDestructorArg(SymExpr* se)
 {
+#if 0
+  // Cautiously disable the portion of this predicate that makes sure this
+  // it returns true only within a destructor or autodestroy function.
   if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
-    if (parent->hasFlag(FLAG_DESTRUCTOR))
+    if (parent->hasFlag(FLAG_DESTRUCTOR) ||
+        parent->hasFlag(FLAG_AUTO_DESTROY_FN))
+#endif
       if (CallExpr* call = toCallExpr(se->parentExpr))
         if (FnSymbol* fn = call->isResolved())
           if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
@@ -1216,6 +1277,41 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
       continue;
     }
 
+    // I apologize for this slightly special case.
+    // The main AMM routine deals with the ownership of symbols, so the code
+    // appearing above in the bitwiseCopyArg(se) == 1 clause only triggers when
+    // the RHS is a symbol.
+    // If the RHS is a call to a function, no autocopy is needed because calls
+    // are uniformly treated as returning an owned value.  If the thing being
+    // copied into the RVV is owned, we don't need to insert an autoCopy.
+    // But that still leaves the case where a CallExpr on the RHS returns
+    // something that is unowned.  That special case is handle here.
+    if (seIsRVV)
+    {
+      CallExpr* call = toCallExpr(se->parentExpr);
+      INT_ASSERT(call);
+      if (call->isPrimitive(PRIM_MOVE))
+      {
+        if (CallExpr* rhs = toCallExpr(call->get(2)))
+        {
+          if (! resultIsOwned(rhs))
+          {
+            Expr* stmt = rhs->getStmtExpr();
+            SET_LINENO(stmt);
+
+            VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
+            stmt->insertBefore(new DefExpr(callTmp));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
+            SymExpr* rhse = new SymExpr(callTmp);
+            call->insertAtTail(rhse);
+
+            insertAutoCopy(rhse);
+          }
+        }
+      }
+      continue;
+    }
+
     // We assume that this case is handled by the above.
     if (bitwiseCopyArg(se) == 2)
       continue;
@@ -1226,6 +1322,17 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
 
     if (isConsumed(se))
     {
+      // When there is a return-value variable, it is assumed to be assigned
+      // elsewhere and owned (see the clause for seIsRVV && rvvIsOwned under
+      // (bitwiseCopyAr(se) == 1) above).  Therefore, it is not necessary to
+      // add an autocopy here.
+      // TODO: Ultimately, there will be no RVV, so this special case can be
+      // removed.
+      if (seIsRVV)
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (call->isPrimitive(PRIM_RETURN))
+            continue;
+
       // If the live bit is set for this symbol, we can leave it as a move and
       // transfer ownership.  Otherwise, we need to insert an autoCopy.
       size_t index = symbolIndex[sym];
@@ -1312,6 +1419,12 @@ OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
     Expr* lastStmt = exprs.back();
     if (GotoStmt* gotoStmt = toGotoStmt(lastStmt))
     {
+      // The scope must contain the goto statement.
+      // The negative case occurs when the scope block ends in the middle of a
+      // basic block.
+      if (! scope->contains(gotoStmt))
+        continue;
+
       SymExpr* label = toSymExpr(gotoStmt->label);
       INT_ASSERT(label);
       DefExpr* target = toDefExpr(label->var->defPoint);

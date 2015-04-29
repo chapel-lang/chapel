@@ -40,6 +40,14 @@ module foo {
     var ret = new Zed(1);
     return ret;
   }
+
+  // This part of the test does not work, because we can't declare explicit
+  // return types on functions where the return type performs memory
+  // management.  This is because normalize.cpp breaks AMM rules
+  // by inserting an uninitialized return-value variable that then updated
+  // through assignment :-O.  Fixing that is slightly beyond the scope of the
+  // AMM rework, because it involves reworking all of the return type inference
+  // and checking machinery.
   proc gob() : Zed {
     writeln("in gob()");
     var ret = new Zed(1);

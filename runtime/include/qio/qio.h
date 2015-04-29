@@ -1119,6 +1119,12 @@ static inline
 qioerr qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len) {
   qioerr err;
 
+  // Quick exit if the number of bytes to be written is zero.
+  // ptr is not necessarily valid in that case (e.g. if taken from a chapel
+  // string object), so we want to avoid the memcpy below.
+  if (len == 0 || ptr == NULL)
+    return 0; // Success, trivially.
+
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) {

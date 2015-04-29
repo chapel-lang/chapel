@@ -260,6 +260,11 @@ while current {
 }
 
 //
+// Give back the memory allocated by the node list.
+//
+delete head;
+
+//
 // For more information about Locales, refer to the Locales chapter of
 // the language spec.
 //

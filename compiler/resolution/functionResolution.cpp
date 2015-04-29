@@ -8231,9 +8231,7 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
           VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
-          FnSymbol* autoCopy = autoCopyMap.get(tmp->type);
-          INT_ASSERT(autoCopy);
-          call->replace(new CallExpr(autoCopy, tmp));
+          call->replace(new SymExpr(tmp));
         } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           //
           // This is probably related to a comment that used to handle
