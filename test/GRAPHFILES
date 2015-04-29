@@ -141,6 +141,7 @@ performance/sungeun/init.graph
 distributions/robust/associative/performance/array_iter.graph
 distributions/robust/associative/performance/domain_iter.graph
 domains/bradc/domEqualityPerf.graph
+performance/thomasvandoren/matrix-multiply.graph
 # suite: Dynamic iterators
 functions/iterators/angeles/dynamic.graph
 functions/iterators/angeles/distAdaptativeWSv1.graph
@@ -192,6 +193,7 @@ reductions/diten/testSerialReductions.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
+studies/rbc/tvandoren/RBC.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph
