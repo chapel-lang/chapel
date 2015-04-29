@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:, Time:, Time:, Time:, Time:
+files: Jacobi2D-Serial-C.dat, Jacobi2D-NaiveParallel-OMP_dyn.dat, Jacobi2D-NaiveParallel-OMP_static.dat, Jacobi2D-NaiveParallel-Chapel_dyn.dat, Jacobi2D-NaiveParallel-Chapel_static.dat, Jacobi2D-NaiveParallelSpaceTiled-OMP.dat
+graphkeys: Baseline Serial C, Naive Parallel C/OpenMP (dynamic), Naive Parallel C/OpenMP (static), Naive Parallel Chapel (dynamic), Naive Parallel Chapel (static), Space Tiled C/OpenMP (dynamic)
+ylabel: Time (seconds)
+graphtitle: Performance of Various Jacobi2D Implementations

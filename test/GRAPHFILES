@@ -194,5 +194,6 @@ studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
+studies/colostate/Jacobi2D.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
