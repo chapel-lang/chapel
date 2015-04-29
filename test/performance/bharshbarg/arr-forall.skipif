@@ -1,0 +1,3 @@
+# This performance test simply runs too long for valgrind
+# Not worth customizing the problem size
++CHPL_TEST_VGRND_EXE == on
