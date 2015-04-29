@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#include "chpltypes.h" // for chpl_bool
-#include "chpl-tasks-prvdata.h" // for chpl_task_prvData_t
+#include "chpltypes.h"
+#include "chpl-tasks-prvdata.h"
 
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);
@@ -269,8 +269,8 @@ volatile int chpl_qthread_done_initializing;
 #endif
 
 typedef struct {
-  c_sublocid_t requestedSubloc;  // requested sublocal for task
-  chpl_task_prvData_t prvdata;
+    c_sublocid_t requestedSubloc;  // requested sublocal for task
+    chpl_task_prvData_t prvdata;
 } chpl_task_prvDataImpl_t;
 
 // Define PRV_DATA_IMPL_VAL to set up a chpl_task_prvData_t.
@@ -337,12 +337,12 @@ static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
 #endif
 static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
 {
-  chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-  if (data) {
-      return &data->chpl_data.prvdata;
-  }
-  assert(data);
-  return NULL;
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+    if (data) {
+        return &data->chpl_data.prvdata;
+    }
+    assert(data);
+    return NULL;
 }
 
 #ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL

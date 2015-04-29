@@ -72,7 +72,7 @@ const terms   = (d/DIGITS_PER_ITER): c_long,
 
 record fac_t {
   var num_facs: c_long;
-  var sdom: domain(1, idxType=c_long);
+  var sdom: domain(1);
   var fac, pow: [sdom] c_ulong;
 };
 
