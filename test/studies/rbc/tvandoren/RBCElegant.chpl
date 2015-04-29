@@ -72,13 +72,13 @@ proc main() {
   var gridCapitalNextPeriod: int,
     valueHighSoFar, valueProvisional, consumption, capitalChoice: real;
 
-  // Intermediate array, to be reused in dotProduct() call inside loop.
+  // Intermediate array, to be reused in matMultiply() call inside loop.
   var mTransitionTranspose: [1..5, 1..5] real;
   transpose(mTransitionTranspose, mTransition);
 
   while (maxDifference > tolerance) {
     // expectedValueFunction = mValueFunction * transpose(mTransition)
-    dotProduct(expectedValueFunction, mValueFunction, mTransitionTranspose);
+    matMultiply(expectedValueFunction, mValueFunction, mTransitionTranspose);
 
     for nProductivity in 1..nGridProductivity {
 
@@ -147,7 +147,7 @@ proc transpose(ref outputMatrix: [?D] real, ref inputMatrix: [?E] real)
 
 // Calculate dot product (matrix multiplication) of A and B and store result in
 // C. Specifically, it does C = A * B.
-proc dotProduct(ref C: [?DC] real, ref A: [?DA] real, ref B: [?DB] real)
+proc matMultiply(ref C: [?DC] real, ref A: [?DA] real, ref B: [?DB] real)
   where DC.rank == 2 && DA.rank == 2 && DB.rank == 2
 {
   // If not running with --fast (e.g. boundsChecking == true), ensure the array

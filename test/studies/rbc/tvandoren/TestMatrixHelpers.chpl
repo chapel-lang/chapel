@@ -20,16 +20,16 @@ writeln(B);
 writeln();
 
 var C: [1..2, 1..2] real;
-dotProduct(C, A, B);
+matMultiply(C, A, B);
 
-writeln("dotProduct(C, A, B)");
+writeln("matMultiply(C, A, B)");
 writeln(C);
 writeln();
 
 var D: [1..3, 1..3] real;
-dotProduct(D, B, A);
+matMultiply(D, B, A);
 
-writeln("dotProduct(D, B, A)");
+writeln("matMultiply(D, B, A)");
 writeln(D);
 writeln();
 
@@ -51,8 +51,8 @@ writeln(F);
 writeln();
 
 var G: [1..4, 1..3] real;
-dotProduct(G, E, F);
+matMultiply(G, E, F);
 
-writeln("dotProduct(G, E, F)");
+writeln("matMultiply(G, E, F)");
 writeln(G);
 writeln();
