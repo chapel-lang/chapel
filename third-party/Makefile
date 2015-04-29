@@ -71,11 +71,9 @@ $(GASNET_INSTALL_DIR):
 try-gmp: FORCE
 ifeq ($(wildcard $(GMP_BUILD_DIR)),)
 	@echo "Speculatively attempting to build gmp"
-	-@$(MAKE) gmp
-else
-ifeq ($(wildcard $(GMP_H_FILE)),)
+	-@$(MAKE) GMP_SPECULATIVE=yes gmp
+else ifeq ($(wildcard $(GMP_H_FILE)),)
 	$(info Speculative build of gmp squashed due to previous failures.)
-endif
 endif
 
 gmp: $(GMP_H_FILE)

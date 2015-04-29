@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,11 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
+
+#include "clangUtil.h"
+
 #include <inttypes.h>
-  
+
 #include <cctype>
 #include <cstring>
 #include <cstdio>
@@ -71,7 +74,7 @@ using namespace llvm;
 
 // TODO - add functionality to clang so that we don't
 // have to have what are basically copies of
-// ModuleBuilder.cpp 
+// ModuleBuilder.cpp
 // ( and BackendUtil.cpp but we used PassManagerBuilder::addGlobalExtension)
 //
 // This one is not normally included by clang clients
@@ -832,11 +835,25 @@ void runClang(const char* just_parse_filename) {
   compileline += " COMP_GEN_OPT=" + (optimizeCCode?one:zero);
   compileline += " COMP_GEN_SPECIALIZE=" + (specializeCCode?one:zero);
   compileline += " COMP_GEN_IEEE_FLOAT=" + (fieeefloat?one:zero);
-  std::string readargsfrom = compileline + (just_parse_filename?"":" --llvm") +
-                              " --llvm-install-dir"
-                              " --clang-sysroot-arguments"
-                              " --cflags"
-                              " --includes-and-defines";
+  std::string readargsfrom;
+
+  if( just_parse_filename ) {
+    // We're handling an extern block and not using the LLVM backend.
+    // Don't change CHPL_TARGET_COMPILER or ask for any compiler-specific
+    // C flags. Just get the neccesary includes and defines.
+    readargsfrom = compileline + " --llvm-install-dir"
+                                 " --clang-sysroot-arguments"
+                                 " --includes-and-defines";
+  } else {
+    // We're parsing extern blocks AND any parts of the runtime
+    // in order to prepare for an --llvm compilation.
+    // Use compiler-specific flags for clang-included.
+    readargsfrom = compileline + " --llvm"
+                                 " --llvm-install-dir"
+                                 " --clang-sysroot-arguments"
+                                 " --cflags"
+                                 " --includes-and-defines";
+  }
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
@@ -971,6 +988,11 @@ void saveExternBlock(ModuleSymbol* module, const char* extern_code)
   if( ! gAllExternCode.filename ) {
     openCFile(&gAllExternCode, "extern-code", "c");
     INT_ASSERT(gAllExternCode.fptr);
+
+    // Allow code in extern block to use malloc/calloc/realloc/free
+    // Note though that e.g. strdup or other library routines that
+    // allocate memory might still be an issue...
+    fprintf(gAllExternCode.fptr, "#include \"chpl-mem-no-warning-macros.h\"\n");
   }
 
   if( ! module->extern_info ) {

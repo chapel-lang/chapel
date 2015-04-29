@@ -21,11 +21,12 @@
 #define _IPE_EVALUATE_H_
 
 class Expr;
+class IpeEnv;
 class IpeValue;
-class IpeVars;
-class Symbol;
 
-IpeValue ipeEvaluate(Expr*   expr, IpeVars* vars);
-IpeValue ipeEvaluate(Symbol* expr, IpeVars* vars);
+
+IpeValue evaluate    (Expr* untypedExpr,     IpeEnv* env);
+
+IpeValue evaluateExpr(Expr* streamlinedExpr, IpeEnv* env);
 
 #endif

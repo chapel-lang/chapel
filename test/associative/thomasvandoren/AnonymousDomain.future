@@ -1,0 +1,7 @@
+feature request: support anonymous associative domain creation
+
+Enable user to write:
+
+    var myMap: [domain(string)] string;
+    if ! myMap.domain.member("xyz") then
+      myMap["xyz"] = "123";

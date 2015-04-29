@@ -21,9 +21,11 @@
 
 #include "type.h"
 
+#include "AstToText.h"
 #include "astutil.h"
 #include "build.h"
 #include "codegen.h"
+#include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
@@ -507,8 +509,9 @@ void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs);
   *file << this->docsDirective();
   *file << "enum ";
-  *file << this->symbol->name;
-  *file << this->docsConstantList();
+  AstToText info;
+  info.appendEnumDecl(this);
+  *file << info.text();
   *file << std::endl;
 
   // In rst mode, ensure there is an empty line between the enum signature and
@@ -535,36 +538,6 @@ std::string EnumType::docsDirective() {
     return "";
   } else {
     return ".. enum:: ";
-  }
-}
-
-
-std::string EnumType::docsConstantList() {
-  if (this->constants.length == 0) {
-    return "";
-  } else {
-    std::vector<std::string> constNames;
-
-    for_alist(constant, this->constants) {
-      if (DefExpr* de = toDefExpr(constant)) {
-        constNames.push_back(de->sym->name);
-      } else {
-        INT_FATAL(constant, "Expected DefExpr for all members in constants alist.");
-      }
-    }
-
-    if (constNames.empty()) {
-      return "";
-    }
-
-    // If there are constants, join them in a single comma delimited string
-    // inside curly brackets.
-    std::string constList = " { " + constNames.front();
-    for (unsigned int i = 1; i < constNames.size(); i++) {
-      constList += ", " + constNames.at(i);
-    }
-    constList += " }";
-    return constList;
   }
 }
 
