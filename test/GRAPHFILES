@@ -141,6 +141,7 @@ performance/sungeun/init.graph
 distributions/robust/associative/performance/array_iter.graph
 distributions/robust/associative/performance/domain_iter.graph
 domains/bradc/domEqualityPerf.graph
+performance/thomasvandoren/matrix-multiply.graph
 # suite: Dynamic iterators
 functions/iterators/angeles/dynamic.graph
 functions/iterators/angeles/distAdaptativeWSv1.graph
