@@ -409,8 +409,30 @@ c_string chpl_nodeName(void) {
     uname(&utsinfo);
     namelen = strlen(utsinfo.nodename)+1;
     namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
-                                 CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
+                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, NULL);
     strcpy(namespace, utsinfo.nodename);
   }
   return namespace;
+}
+
+
+chpl_bool chpl_env_getBool(const char* evs, chpl_bool dflt) {
+  char evName[100];
+  const char* evVal;
+
+  if (snprintf(evName, sizeof(evName), "CHPL_RT_%s", evs) >= sizeof(evName))
+    chpl_internal_error("environment variable name buffer too small");
+
+  evVal = getenv(evName);
+  if (evVal == NULL)
+    return dflt;
+  if (strchr("0fFnN", evVal[0]) != NULL)
+    return false;
+  if (strchr("1tTyY", evVal[0]) != NULL)
+    return true;
+
+  chpl_msg(1,
+           "warning: unknown setting for %s; should be T or F, assuming %c\n",
+           evName, (dflt ? 'T' : 'F'));
+  return dflt;
 }

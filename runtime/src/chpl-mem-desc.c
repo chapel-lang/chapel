@@ -34,16 +34,29 @@
 
 
 //
-// Define the description strings for the memory descriptors.
+// Define the description strings and track indicators for the memory
+// descriptors.
 //
-#define CHPL_MEMDESC_DESC(md_name, md_desc)  md_desc
-static const char* rt_memDescs[] = {
-  CHPL_MD_ALL_MEMDESCS(CHPL_MEMDESC_DESC)
+#define CHPL_MEMDESC_MACRO(_enum, _str, _track)  { _str, _track }
+static struct {
+  const char* string;
+  chpl_bool track;
+} rt_md[] = {
+  CHPL_MD_ALL_MEMDESCS(CHPL_MEMDESC_MACRO)
 };
+
+#undef CHPL_MEMDESC_MACRO
+
 
 const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
   if (mdi < CHPL_RT_MD_NUM)
-    return rt_memDescs[mdi];
-  else
-    return chpl_mem_descs[mdi-CHPL_RT_MD_NUM];
+    return rt_md[mdi].string;
+  return chpl_mem_descs[mdi-CHPL_RT_MD_NUM];
+}
+
+
+chpl_bool chpl_mem_descTrack(chpl_mem_descInt_t mdi) {
+  if (mdi < CHPL_RT_MD_NUM)
+    return rt_md[mdi].track;
+  return true;
 }

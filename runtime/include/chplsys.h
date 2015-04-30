@@ -36,4 +36,9 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only);
 //
 c_string chpl_nodeName(void);
 
+//
+// Returns the value of a CHPL_RT_* environment variable, with default.
+//
+chpl_bool chpl_env_getBool(const char*, chpl_bool);
+
 #endif
