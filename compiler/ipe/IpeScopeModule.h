@@ -27,7 +27,8 @@ class IpeModule;
 class IpeScopeModule : public IpeScope
 {
 public:
-                           IpeScopeModule(IpeModule* module);
+                           IpeScopeModule(IpeModule* parent,
+                                          IpeModule* module);
   virtual                 ~IpeScopeModule();
 
   virtual const char*      type()                                     const;

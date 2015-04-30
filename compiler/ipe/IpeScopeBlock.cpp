@@ -73,6 +73,8 @@ int IpeScopeBlock::locationSet(VarSymbol* var) const
 {
   int retval = -1;
 
+  INT_ASSERT(false);
+
   if (var == NULL || var->depth() >= 0 || var->offset() >= 0)
   {
     AstDumpToNode logger(stdout, 3);

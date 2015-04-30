@@ -441,6 +441,15 @@
 # is not updated, it will fail forever with "Syntax Error" and never
 # pass.
 #
+# .suppressif files work like a combination of .skipif and .future.
+# The .suppressif file is meant to indicate that a test fails in
+# some configurations for reasons outside of the control of the Chapel
+# compiler.
+# The first line of a .suppressif should be a comment (starting with #)
+# describing the issue. The rest of the file should indicate the
+# configuration in which the error is to be suppressed. A .bad
+# file can be provided.
+#
 # If the test-writer wants to redirect standard input from a file,
 # they may do so by supplying a .stdin file with the same base
 # name as the test itself (e.g., if mytest.stdin exists, it will
@@ -1872,6 +1881,7 @@ echo " " |& $tee -a $logfile
 
 # Output grep to a temp file, don't want to infinite loop
 set futuremarker = "^Future"
+set suppressmarker = "^Suppress"
 set errormarker = "^\[Error"
 set warningmarker = "^\[Warning"
 if ($performance == 0 && $gengraphs) then
@@ -1893,6 +1903,7 @@ if ($clean_only == 0) then
     endif
     grep "$errormarker" $logfile.summary
 
+    grep "$suppressmarker" $logfile |& $tee -a $logfile.summary
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
     grep "$warningmarker" $logfile |& $tee -a $logfile.summary
 

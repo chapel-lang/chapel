@@ -54,7 +54,7 @@ The Chapel implementation is composed of two categories of code:
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
 
    For a more complete introduction to these packages and their
-   licensing terms, refer to etc/README, third-party/README, and the
+   licensing terms, refer to etc/README.md, third-party/README, and the
    README and license files in the subdirectories listed above.
 
    Note that most of these packages are not used by Chapel unless specifically
