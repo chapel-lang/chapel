@@ -9,3 +9,10 @@
 # whereas we are running valgrind 3.8.1.
 types/atomic/ferguson/atomictest
 types/atomic/sungeun/atomic_vars
+# These tests fail with invalid reads/writes in dl_ routines,
+# which are probably from a bug in glibc.
+# The fail only sporadically, so we suppress them
+# here instead of in a .suppressif file. See jira issue 7.
+reductions/bradc/manual/promote
+performance/sungeun/dgemm
+studies/sudoku/dinan/sudoku
