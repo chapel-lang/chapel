@@ -200,11 +200,11 @@ module LocaleModel {
       maxTaskPar = 0;
     }
 
-    // The init() function must use initOnLocales() to iterate (in
+    // The init() function must use chpl_initOnLocales() to iterate (in
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
     proc init() {
-      forall locIdx in initOnLocales() {
+      forall locIdx in chpl_initOnLocales() {
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
         numCores += node.numCores;

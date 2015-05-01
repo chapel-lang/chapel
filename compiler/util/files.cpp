@@ -50,7 +50,6 @@ char               saveCDir[FILENAME_MAX + 1]           = "";
 
 char               ccflags[256]                         = "";
 char               ldflags[256]                         = "";
-bool               ccwarnings                           = false;
 
 int                numLibFlags                          = 0;
 const char**       libFlag                              = NULL;
@@ -553,24 +552,14 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
 
-  fprintf(makefile.fptr, "COMP_GEN_CFLAGS =");
-  if (ccwarnings) {
-    fprintf(makefile.fptr, " $(WARN_GEN_CFLAGS)");
-  }
-  if (debugCCode) {
-    fprintf(makefile.fptr, " $(DEBUG_CFLAGS)");
-  }
-  if (optimizeCCode) {
-    fprintf(makefile.fptr, " $(OPT_CFLAGS)");
-  }
-  if (specializeCCode) {
-    fprintf(makefile.fptr, " $(SPECIALIZE_CFLAGS)");
-  }
-  if (fieeefloat) {
-    fprintf(makefile.fptr, " $(IEEE_FLOAT_GEN_CFLAGS)");
-  } else {
-    fprintf(makefile.fptr, " $(NO_IEEE_FLOAT_GEN_CFLAGS)");
-  }
+  fprintf(makefile.fptr, "COMP_GEN_WARN = %i\n", ccwarnings!=0);
+  fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode!=0);
+  fprintf(makefile.fptr, "COMP_GEN_OPT = %i\n", optimizeCCode!=0);
+  fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode!=0);
+  fprintf(makefile.fptr, "COMP_GEN_IEEE_FLOAT = %i\n", fieeefloat!=0);
+  
+  fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS =");
+
   if (fLibraryCompile && (fLinkStyle==LS_DYNAMIC))
     fprintf(makefile.fptr, " $(SHARED_LIB_CFLAGS)");
   forv_Vec(const char*, dirName, incDirs) {
@@ -805,6 +794,38 @@ const char* stdModNameToFilename(const char* modName) {
   return fullfilename;
 }
 
+const char* filenameToModulename(const char* filename) {
+  const char* moduleName = astr(filename);
+  const char* firstSlash = strrchr(moduleName, '/');
+
+  if (firstSlash) {
+    moduleName = firstSlash + 1;
+  }
+
+  return asubstr(moduleName, strrchr(moduleName, '.'));
+}
+
+//
+// Return a fully qualified path name for the internal file with the specified baseName
+//
+
+const char* pathNameForInternalFile(const char* baseName) {
+  const char* fileName = astr(baseName, ".chpl");
+
+  return searchPath(intModPath, fileName, NULL, true);
+}
+
+//
+// Return a fully qualified path name for the standard file with the specified baseName
+// Generate a warning if there is a user file that might define the same module
+//
+
+const char* pathNameForStandardFile(const char* baseName) {
+  const char* fileName     = astr(baseName, ".chpl");
+  const char* userFileName = searchPath(usrModPath, fileName, NULL, false);
+
+  return searchPath(stdModPath, fileName, userFileName, false);
+}
 
 static void helpPrintPath(Vec<const char*> path) {
   forv_Vec(const char*, dirname, path) {

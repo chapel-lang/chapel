@@ -1,0 +1,3 @@
+# intel compiler bug jira 34
+CHPL_TARGET_COMPILER==intel
+CHPL_TARGET_COMPILER==cray-prgenv-intel

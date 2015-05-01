@@ -10,7 +10,7 @@
 #     - example annotation 3
 #   mm/dd/yy:
 #     - text: example annotation 4
-#       host: [hostname1, hostname2]
+#       config: [config1, config2]
 #
 #
 # where 'group' is the base name of the .graph file that attached set
@@ -18,9 +18,10 @@
 # annotations are added to to every single graph.
 #
 # When the long form of an annotation is used (where 'text:' and
-# 'host:' are specified), the annotation is only added to the graphs
-# if the current hostname is in the host list.  Note that in this
-# form, the 'host:' line does not (cannot) have a leading '-' sign.
+# 'config:' are specified), the annotation is only added to the graphs
+# if the current configuration is in the configuration list. Note
+# that in this form, the 'config:' line does not (cannot) have a
+# leading '-' sign.
 #
 # Groups are listed in case insensitive alphabetical order
 #
@@ -59,11 +60,20 @@ all:
     - move chpl_getLocaleID into the modules
   02/12/15:
     - text: zombie process on chap04 was causing noise
-      host: chap04
+      config: chap04
 
 AllCompTime:
   11/09/14:
     - disable the task table by default
+
+arrayPerformance-1d:
+  03/19/15:
+    - text: memory related, qthreads memory pool bug fix
+      config: chap03
+
+arr-forall:
+  03/24/15:
+    - with CCE, bug fix to avoid vectorizing when not valid
 
 assign.1024:
   01/21/15:
@@ -208,7 +218,8 @@ miniMD:
     - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
   01/30/15:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
-
+  03/17/15:
+    -  Avoid shallow record copies in miniMD (#1643)
 
 nbody:
   03/17/14:
@@ -259,10 +270,17 @@ STREAM_performance:
 stencil:
   07/21/14:
     - machine related (no commits on the day before)
+  03/24/15:
+    - with CCE, bug fix to avoid vectorizing when not valid
 
 testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
+
+thread-ring:
+  03/19/15:
+    - text: memory related, qthreads memory pool bug fix
+      config: chap03
 
 time_array_vs_ddata:
   05/31/14:
@@ -275,3 +293,7 @@ time_array_vs_tuple:
 time_iterate:
   11/13/13:
     - disabled optimizations based on no arithmetic flow (22290)
+
+time-write:
+  03/05/15:
+    - no strings with externs update

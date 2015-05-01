@@ -28,7 +28,7 @@
 // (these are for I/O buffers that don't belong on the Chapel sharable
 // heap anyway because they could be mmap'd - and then are only
 // sharable when everything is sharable)
-static ___always_inline void sys_free(void *ptr) { free(ptr); }
+static inline void sys_free(void *ptr) { free(ptr); }
 #endif
 
 #define malloc  dont_use_malloc_use_chpl_mem_allocMany_instead

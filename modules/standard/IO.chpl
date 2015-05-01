@@ -415,6 +415,36 @@ Syntax in Detail" section below.
 In this file, we use "integral" to refer to the Chapel types int or uint and
 "floating-point" to refer to real, imaginary, or complex, of any bit width.
 
+Formatted I/O for C Programmers
++++++++++++++++++++++++++++++++
+
+This table is designed to help C programmers understand the equivalent
+Chapel format specifiers.
+
+========  ===========  ==========================================
+C         Chapel       Meaning
+========  ===========  ==========================================
+%i        %i           an integer in decimal
+%d        %i           an integer in decimal
+%u        %u           an unsigned integer in decimal
+%x        %xu          an unsigned integer in hexadecimal
+%g        %r           real number in exponential or decimal (if compact)
+%7.2g     %7.2r        real, 2 significant digits, padded to 7 columns
+%f        %dr          real number always in decimal
+%7.3f     %7.3dr       real, 3 digits after ``.``, padded to 7 columns
+%e        %er          real number always in exponential
+%7.3e     %7.3er       real, 3 digits after ``.``, padded to 7 columns
+%s        %s           a string without any quoting
+========  ===========  ==========================================
+
+Unlike in C, a value of the wrong type will be cast appropriately - so for
+example printing 2 (an ``int``)  with ``%.2dr`` will result in ``2.00``.  Note
+that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions and ``%i``
+for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
+``%g`` in C. Also note that Chapel format strings includes many capabilities
+not available with C formatted I/O routines - including quoted strings,
+binary numbers, complex numbers, and raw binary I/O.
+
 Generic Numeric Conversions
 +++++++++++++++++++++++++++
 
@@ -563,9 +593,11 @@ Real Conversions
  (width and precision are ignored when reading numbers in readf)
 
 ``%er``
- a real number in exponential notation, e.g. ``10.2e-23``
+ a real number in exponential notation, e.g. ``8.2e-23``
 ``%Er``
- like %er but with the 'e' in uppercase, e.g. ``10.2E-23``
+ like %er but with the 'e' in uppercase, e.g. ``8.2E-23``
+``%.4er``
+ exponential notiation with 4 digits after the period, e.g. ``8.2000e-23``
 
 ``%xer``
  hexadecimal number using p to mark exponent e.g. ``6c.3f7p-2a``
@@ -690,8 +722,10 @@ String and Bytes Conversions
  (note that ``%.17/a+/``, which would mean to match 17 characters,
  is not supported).
 
-``%/ * /``
- (without spaces) next argument contains the regular expression to match
+``%/*/``
+ next argument contains the regular expression to match
+
+.. (comment) the above started a nested comment, so here we end it */
 
 General Conversions
 +++++++++++++++++++
@@ -859,7 +893,7 @@ Going through each section for text conversions:
 [optional . then precision]
    When printing floating point values, the precision is used to control
    the number of decimal digits to print.  For ``%r`` conversions, it
-   specifies the number of significant digits to print; for ``%dr``
+   specifies the number of significant digits to print; for ``%dr`` or ``%er``
    conversions, it specifies the number of digits following the decimal point.
    It can also be ``*``, which means to read the precision from an integral
    argument before the converted value.
@@ -1150,11 +1184,6 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-// chpldoc TODO --
-// above we have``%/ * /`` because we couldn't put /*/ in a comment
-// that needs a fix...
-
-
 use SysBasic;
 use Error;
 
@@ -1223,16 +1252,12 @@ enum iokind {
 
 // chpldoc TODO -- these don't render right
 /* A synonym for :enum:`iokind.dynamic`; see :type:`iokind` */
-pragma "no doc"
 param iodynamic = iokind.dynamic;
 /* A synonym for :enum:`iokind.native`; see :type:`iokind` */
-pragma "no doc"
 param ionative = iokind.native;
 /* A synonym for :enum:`iokind.big`; see :type:`iokind` */
-pragma "no doc"
 param iobig = iokind.big;
 /* A synonym for :enum:`iokind.little`; see :type:`iokind` */
-pragma "no doc"
 param iolittle = iokind.little;
 
 /*

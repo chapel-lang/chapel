@@ -19,6 +19,8 @@
 
 #include <string>
 
+#include "symbol.h"
+
 void createDocsFileFolders(std::string filename);
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs);
@@ -32,6 +34,10 @@ bool devOnlyFunction(FnSymbol *fn);
 bool devOnlyModule(ModuleSymbol *mod);
 
 bool isNotSubmodule(ModuleSymbol *mod);
+
+static void makeDir(const char* dirpath);
+
+static bool existsAndDir(const char* dirpath);
 
 static std::string generateSphinxProject(std::string dirpath);
 

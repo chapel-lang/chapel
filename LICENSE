@@ -42,7 +42,6 @@ The Chapel implementation is composed of two categories of code:
                                                                    GPL 3
 
      dlmalloc         alternative memory allocator option          public domain
-     dygraphs         Javascript graph generator and display       MIT
      gasnet           portable communication library               BSD-like
      gmp              optional multi-precision math library        L-GPL
      hwloc            portable NUMA compute node utilities         new BSD
@@ -55,7 +54,7 @@ The Chapel implementation is composed of two categories of code:
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
 
    For a more complete introduction to these packages and their
-   licensing terms, refer to etc/README, third-party/README, and the
+   licensing terms, refer to etc/README.md, third-party/README, and the
    README and license files in the subdirectories listed above.
 
    Note that most of these packages are not used by Chapel unless specifically
@@ -86,7 +85,6 @@ The Chapel implementation is composed of two categories of code:
    third-party/
      chpldoc-venv     only used when running 'chpldoc'
      dlmalloc         only used when CHPL_MEM is 'dlmalloc'
-     dygraphs         only used to make and display performance graphs
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              where possible, used by default or when CHPL_GMP is 'gmp'
      hwloc            used by default on most platforms, or when CHPL_HWLOC is

@@ -95,7 +95,6 @@ where tag == iterKind.leader
 {
   assert(chunkSize > 0); // caller's responsibility
 
-  use UtilMath;
   // # of tasks the range can fill. (fast) ceil so all work is represented
   const chunkTasks = divceilpos(c.length, chunkSize): int;
   

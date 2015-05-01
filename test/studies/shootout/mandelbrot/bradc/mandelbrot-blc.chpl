@@ -1,4 +1,3 @@
-use UtilMath;                      // get the int ceil function, divceilpos()
 use AdvancedIters;
 
 config const n = 200,              // the problem size

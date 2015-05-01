@@ -21,17 +21,13 @@
 
 #include "AstDumpToNode.h"
 #include "expr.h"
-#include "IpeScopeProcedure.h"
-#include "ipeResolve.h"
-#include "symbol.h"
+#include "IpeCallExpr.h"
+#include "IpeMethod.h"
 
-IpeProcedure::IpeProcedure(FnSymbol* fnSym, IpeScope* scope)
+IpeProcedure::IpeProcedure(const char* identifierName)
 {
-  mFnDecl    = fnSym;
-  mScope     = new IpeScopeProcedure(this, scope);
-  mVars      = NULL;
-  mState     = kUnresolved;
-  mFrameSize = 0;
+  mIdentifierName = identifierName;
+  mVersion        =              1;
 }
 
 IpeProcedure::~IpeProcedure()
@@ -41,85 +37,135 @@ IpeProcedure::~IpeProcedure()
 
 const char* IpeProcedure::name() const
 {
-  return mFnDecl->name;
+  return mIdentifierName;
 }
 
-IpeScopeProcedure* IpeProcedure::scope() const
+bool IpeProcedure::isValid(int generationId) const
 {
-  return mScope;
+  return (mVersion == generationId) ? true : false;
 }
 
-FnSymbol* IpeProcedure::fnSymbol() const
+int IpeProcedure::methodCount() const
 {
-  return mFnDecl;
+  return mMethods.size();
 }
 
-bool IpeProcedure::exactMatch(std::vector<Type*>& actualsTypes)
+void IpeProcedure::methodAdd(IpeMethod* method)
 {
-  bool retval = false;
+  mMethods.push_back(method);
+}
 
-  if (mState == kUnresolved)
+IpeMethod* IpeProcedure::methodGet(int index) const
+{
+  IpeMethod* retval = NULL;
+
+  if (index >= 0 && index < (int) mMethods.size())
+    retval = mMethods[index];
+
+  return retval;
+}
+
+IpeCallExpr* IpeProcedure::resolve(SymExpr*            procSymExpr,
+                                   std::vector<Expr*>& actuals) const
+{
+  IpeMethod*   matchMethod = NULL;
+  int          matchIndex  =    0;
+  int          matchCount  =    0;
+
+  IpeCallExpr* retval      =    0;
+
+  for (size_t i = 0; i < mMethods.size(); i++)
   {
-    ipeResolveFormalsTypes(this, mScope, mVars);
-
-    mState = kFormalsResolved;
+    mMethods[i]->resolveFormals();
+    mMethods[i]->resolveReturnType();
   }
 
-  if (mFnDecl->formals.length == (int) actualsTypes.size())
+  for (size_t i = 0; i < mMethods.size(); i++)
   {
-    bool match = true;
-
-    for (size_t i = 0; i < actualsTypes.size() && match == true; i++)
+    if (mMethods[i]->isExactMatch(actuals) == true)
     {
-      DefExpr*   expr = toDefExpr(mFnDecl->formals.get(i + 1));
-      INT_ASSERT(expr);
+      matchMethod = mMethods[i];
+      matchIndex  = i;
+      matchCount  = matchCount + 1;
+    }
+  }
 
-      ArgSymbol* arg  = toArgSymbol(expr->sym);
+  if (matchCount == 1)
+  {
+    SET_LINENO(procSymExpr);
 
-      INT_ASSERT(arg);
+    retval = new IpeCallExpr(procSymExpr->copy(), matchMethod->typeGet(), mVersion, matchIndex);
 
-      match = (actualsTypes[i] == arg->type) ? true : false;
+    for (size_t i = 0; i < actuals.size(); i++)
+    {
+      ArgSymbol* formal      = matchMethod->formalGet(i);
+      bool       formalIsRef = formal->intent & INTENT_REF;
+
+      Expr*      actual      = actuals[i];
+      bool       actualIsRef = isActualRef(actual);
+
+      Expr*      actualCopy  = actual;
+      Expr*      actualNew   = NULL;
+
+      if      (formalIsRef == false && actualIsRef == false)
+        actualNew = actualCopy;
+
+      else if (formalIsRef == false && actualIsRef ==  true)
+        INT_ASSERT(false);
+
+      else if (formalIsRef == true  && actualIsRef == false)
+        actualNew = new IpeCallExpr(PRIM_ADDR_OF, actualCopy);
+
+      else if (formalIsRef == true  && actualIsRef ==  true)
+        INT_ASSERT(false);
+
+      retval->argList.insertAtTail(actualNew);
+    }
+  }
+  else
+  {
+    AstDumpToNode logger(stdout, 6);
+
+    printf("   IpeProcedure::resolve(SymExpr*, actuals[])\n");
+    printf("   matchCount = %d\n", matchCount);
+    printf("\n\n");
+
+    printf("      ");
+    procSymExpr->accept(&logger);
+    printf("\n");
+
+    for (size_t i = 0; i < actuals.size(); i++)
+    {
+      printf("   %d: ", (int) i);
+      actuals[i]->accept(&logger);
+      printf("\n");
     }
 
-    retval = match;
+    INT_ASSERT(false);
   }
 
   return retval;
 }
 
-bool IpeProcedure::ensureBodyResolved()
+bool IpeProcedure::isActualRef(Expr* actual) const
 {
   bool retval = false;
 
-  if (mState != kResolved)
+  if (SymExpr* symExpr = toSymExpr(actual))
   {
-    INT_ASSERT(mState == kFormalsResolved);
-
-    ipeResolveBody      (this, mScope, mVars);
-    ipeResolveReturnType(this, mScope, mVars);
-
-    mState = kResolved;
-    retval = true;
+    if (ArgSymbol* arg = toArgSymbol(symExpr->var))
+    {
+      retval = (arg->intent & INTENT_REF) ? true : false;
+    }
   }
 
+
   return retval;
-}
-
-void IpeProcedure::frameSizeSet(int size)
-{
-  mFrameSize = size;
-}
-
-int IpeProcedure::frameSize() const
-{
-  return mFrameSize;
 }
 
 void IpeProcedure::describe(int offset) const
 {
-  AstDumpToNode logger(stdout, offset + 2);
-
-  char          pad[32] = { '\0' };
+  char pad[32] = { '\0' };
 
   if (offset < 32)
   {
@@ -132,15 +178,14 @@ void IpeProcedure::describe(int offset) const
   }
 
   printf("%s#<IpeProcedure %s\n", pad, name());
-  printf("%s  FrameSize: %3d\n",  pad, mFrameSize);
 
-  fputc('\n', stdout);
-  fputs(pad,  stdout);
-  fputs("  ", stdout);
+  if (mMethods.size() == 1)
+    printf("%s  %3d method\n",  pad, (int) mMethods.size());
+  else
+    printf("%s  %3d methods\n", pad, (int) mMethods.size());
 
-  mFnDecl->accept(&logger);
-
-  fputc('\n', stdout);
+  for (size_t i = 0; i < mMethods.size(); i++)
+    mMethods[i]->describe(offset + 3);
 
   printf("%s>\n", pad);
 }

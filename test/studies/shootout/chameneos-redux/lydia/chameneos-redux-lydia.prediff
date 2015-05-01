@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+testname=$1
+outfile=$2
+sed -e 's/^[0-9][0-9]*/nnn/' $outfile > $outfile.tmp
+mv $outfile.tmp $outfile

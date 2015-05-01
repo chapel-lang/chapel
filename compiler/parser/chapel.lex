@@ -45,6 +45,7 @@
 %{
 
 #include "bison-chapel.h"
+#include "docsDriver.h"
 #include "parser.h"
 
 #include <cstdio>
@@ -677,6 +678,10 @@ static int processBlockComment(yyscan_t scanner) {
   YYSTYPE*    yyLval       = yyget_lval(scanner);
   YYLTYPE*    yyLloc       = yyget_lloc(scanner);
 
+  int nestedStartLine = -1;
+  int startLine = chplLineno;
+  const char* startFilename = yyfilename;
+
   int         len          = strlen(fDocsCommentLabel);
   int         labelIndex   = (len >= 2) ? 2 : 0;
 
@@ -722,9 +727,17 @@ static int processBlockComment(yyscan_t scanner) {
 
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
+      // keep track of the start of the last nested comment
+      nestedStartLine = chplLineno;
     } else if (c == 0) {
       ParserContext context(scanner);
 
+      fprintf(stderr, "%s:%d: unterminated comment started here\n",
+              startFilename, startLine);
+      if( nestedStartLine >= 0 ) {
+        fprintf(stderr, "%s:%d: nested comment started here\n",
+                startFilename, nestedStartLine);
+      }
       yyerror(yyLloc, &context, "EOF in comment");
     }
   }

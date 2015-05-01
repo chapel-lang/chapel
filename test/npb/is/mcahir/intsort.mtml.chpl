@@ -63,9 +63,24 @@ const log2range = ClassRanges(probClass);
 const log2nkeys = ClassNkeys (probClass);
 var range:    int = 1 << log2range;	// left shift for power of 2 values
 var nkeys:    int = 1 << log2nkeys;
-var npes:     int = numLocales*(if dataParTasksPerLocale==0
-                                then here.maxTaskPar
-                                  else dataParTasksPerLocale);  // npes is the total number of tasks
+var tasksPerLocale = if dataParTasksPerLocale == 0 
+                     then here.maxTaskPar
+                     else dataParTasksPerLocale;
+var npes:     int = numLocales*tasksPerLocale;
+var log2npes: int = 0;
+while (1<<log2npes < npes) do {log2npes += 1; }
+if 2**log2npes > npes {
+  if DEBUG then writeln("Resizing npes to a power of 2");
+  log2npes -= 1;
+  npes = 2 ** log2npes;
+  if npes % numLocales != 0 {
+    writeln("Unable to resize number of tasks to a power of two.");
+    writeln("The nearest power of two below npes is not divisible by numLocales");
+    writeln("Provided number of tasks: ", numLocales * tasksPerLocale);
+    halt();
+  }
+  tasksPerLocale = npes / numLocales;
+}
 var nbuckets: int = if distType==ISDistType.block then npes else 4*npes;
 
 var keybuff_pe: real = 3*nkeys/npes;
@@ -83,20 +98,20 @@ const buffSpace:   domain(2)= {0..#nbuckets,0..#keybuffsz};
 // ... block a 2D space into horizontal slabs
 const MyLocaleView = {0..#numLocales, 1..1};
 const MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
-const bucketDom = bucketSpace dmapped Block(boundingBox=bucketSpace, targetLocales=MyLocales);
+const bucketDom = bucketSpace dmapped Block(boundingBox=bucketSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale);
 const buffDom = if distType==ISDistType.block
-  then buffSpace dmapped Block(boundingBox=buffSpace, targetLocales=MyLocales)
+  then buffSpace dmapped Block(boundingBox=buffSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale)
   else buffSpace dmapped BlockCyclic (startIdx=buffSpace.low,
-                                      blocksize=(dataParTasksPerLocale,
+                                      blocksize=(tasksPerLocale,
                                                  keybuffsz),
                                       targetLocales=MyLocales);
 
 // Map domains to locales
-const keyDom   = keySpace dmapped Block(boundingBox=keySpace);
+const keyDom   = keySpace dmapped Block(boundingBox=keySpace, dataParTasksPerLocale=tasksPerLocale);
 const countDom = if distType==ISDistType.block
-  then countSpace dmapped Block(boundingBox=countSpace)
+  then countSpace dmapped Block(boundingBox=countSpace, dataParTasksPerLocale=tasksPerLocale)
   else countSpace dmapped BlockCyclic(startIdx=countSpace.low,
-                                      blocksize=(dataParTasksPerLocale,1),
+                                      blocksize=(tasksPerLocale,1),
                                       targetLocales=MyLocales);
 
 // Now declare the main distributed arrays
@@ -116,8 +131,6 @@ var tsetup, tsort, tverif: Timer;
 var tloops: [1..5] Timer;
 
 // Compute log of the number of pes and num keys per pe
-var log2npes: int = 0;
-while (1<<log2npes < npes) do {log2npes += 1; }
 var nkeys_per_pe: int = nkeys >> log2npes;
 var log2nbuckets: int = 0;
 while (1<<log2nbuckets < nbuckets) do {log2nbuckets += 1; }
