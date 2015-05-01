@@ -118,14 +118,18 @@ proc writeTimeFile(
   outfile: channel)
 {
 
+  //==== Formatting parameters ====
+  var efmt:  string = "%26.16Er",
+      ifmt:  string = "%5i";
+
   //==== Write time file ====
-  outfile.writef( "%26.16Er    time\n", time);
-  outfile.writef( "%5i                 meqn\n", meqn);
-  outfile.writef( "%5i                 ngrids\n", ngrids);
-  outfile.writef( "%5i                 naux\n", naux);
-  outfile.writef( "%5i                 ndim\n", dimension);
-  outfile.writef("");
-  outfile.writef("");
+  outfile.writef(efmt+"    time\n", time);
+  outfile.writef(ifmt+"                 meqn\n", meqn);
+  outfile.writef(ifmt+"                 ngrids\n", ngrids);
+  outfile.writef(ifmt+"                 naux\n", naux);
+  outfile.writef(ifmt+"                 ndim\n", dimension);
+  outfile.writef("\n");
+  outfile.writef("\n");
 
 }
 // /|""""""""""""""""""""""""""""""/|
@@ -146,46 +150,48 @@ proc GridVariable.writeData (
 {
 
   //==== Formatting parameters ====
-  var linelabel: string;
+  var efmt:  string = "%26.16Er",
+      ifmt:  string = "%5i",
+      linelabel: string;
 
   //==== Header ====
-  outfile.writef( "%5i                 grid_number\n", grid_number);
-  outfile.writef( "%5i                 AMR_level\n", AMR_level);
+  outfile.writef(ifmt+"                 grid_number\n", grid_number);
+  outfile.writef(ifmt+"                 AMR_level\n", AMR_level);
 
 
   //==== Write n_cells ====
   for d in dimensions do {
     select d {
-      when 1 do linelabel = "                 mx";
-      when 2 do linelabel = "                 my";
-      when 3 do linelabel = "                 mz";
-      otherwise linelabel = "                 mx(" + d + ")";
+      when 1 do linelabel = "                 mx\n";
+      when 2 do linelabel = "                 my\n";
+      when 3 do linelabel = "                 mz\n";
+      otherwise linelabel = "                 mx(" + format("%1i",d) + ")\n";
     }
-    outfile.writef( "%5i%s\n", grid.n_cells(d),  linelabel);
+    outfile.writef(ifmt+linelabel, grid.n_cells(d));
   }
 
 
   //==== Write x_low ====
   for d in dimensions do {
     select d {
-      when 1 do linelabel = "    xlow";
-      when 2 do linelabel = "    ylow";
-      when 3 do linelabel = "    zlow";
-      otherwise linelabel = "    xlow(" + d + ")";
+      when 1 do linelabel = "    xlow\n";
+      when 2 do linelabel = "    ylow\n";
+      when 3 do linelabel = "    zlow\n";
+      otherwise linelabel = "    xlow(" + format("%1i",d) + ")\n";
     }
-    outfile.writef( "%26.16Er%s\n", grid.x_low(d),  linelabel);
+    outfile.writef(efmt+linelabel, grid.x_low(d));
   }
 
 
   //==== Write dx ====
   for d in dimensions do {
     select d {
-      when 1 do linelabel = "    dx";
-      when 2 do linelabel = "    dy";
-      when 3 do linelabel = "    dz";
-      otherwise linelabel = "    dx(" + d + ")";
+      when 1 do linelabel = "    dx\n";
+      when 2 do linelabel = "    dy\n";
+      when 3 do linelabel = "    dz\n";
+      otherwise linelabel = "    dx(" + format("%1i",d) + ")\n";
     }
-    outfile.writef( "%26.16Er%s\n", grid.dx(d),  linelabel);
+    outfile.writef(efmt+linelabel, grid.dx(d));
   }
   outfile.writeln("");
 
@@ -193,7 +199,7 @@ proc GridVariable.writeData (
   //===> Write array values ===>
   if dimension == 1 then {
     for cell in grid.cells do
-      outfile.writef( "%26.16Er\n", value(cell));
+      outfile.writef(efmt+"\n", value(cell));
   }
   else {
     //------------------------------------------------------------
@@ -215,9 +221,9 @@ proc GridVariable.writeData (
       [d in dimensions with (ref cell)] // could also be 'for param d'
         cell(d) = cell_transposed(1 + dimension - d);
       if abs(value(cell)) > 1.0e-99 then
-        outfile.writef("%26.16Er\n", value(cell));
+        outfile.writef(efmt+"\n", value(cell));
       else
-        outfile.writef("%26.16Er\n", 0.0);
+        outfile.writef(efmt+"\n", 0.0);
 
       //===> Newlines at the end of each dimension ===>
       //--------------------------------------------------------------
