@@ -26,6 +26,7 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 #include "chplcgfns.h"
+#include "chplsys.h"
 #include "config.h"
 #include "error.h"
 
@@ -76,6 +77,9 @@ static int hashSizes[NUM_HASH_SIZE_INDICES] = { 1543, 3079, 6151, 12289, 24593, 
 static int hashSizeIndex = 0;
 static int hashSize = 0;
 
+static chpl_bool track_all_mds = false;
+#define DO_TRACK_MD(md) (chpl_mem_descTrack(md) || track_all_mds)
+
 static memTableEntry** memTable = NULL;
 
 static _Bool memStats = false;
@@ -98,6 +102,8 @@ static chpl_sync_aux_t memTrack_sync;
 
 void chpl_setMemFlags(void) {
   chpl_bool local_memTrack = false;
+
+  track_all_mds = chpl_env_getBool("MEMTRACK_ALL_MDS", false);
 
   //
   // Get the values of the memTracking config consts from the module.
@@ -527,7 +533,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, c_string filename) {
   if (number * size > memThreshold) {
-    if (chpl_memTrack) {
+    if (chpl_memTrack && DO_TRACK_MD(description)) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(memAlloc, number, size, description, lineno, filename);
       chpl_sync_unlock(&memTrack_sync);
@@ -590,7 +596,7 @@ void chpl_track_realloc_post(void* moreMemAlloc,
                          chpl_mem_descInt_t description,
                          int32_t lineno, c_string filename) {
   if (size > memThreshold) {
-    if (chpl_memTrack) {
+    if (chpl_memTrack && DO_TRACK_MD(description)) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(moreMemAlloc, 1, size, description, lineno, filename);
       chpl_sync_unlock(&memTrack_sync);
