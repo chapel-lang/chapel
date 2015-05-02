@@ -19,6 +19,7 @@
 
 #include "chplrt.h"
 
+#include "chpl-env.h"
 #include "chplmemtrack.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
@@ -26,6 +27,7 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 #include "chplcgfns.h"
+#include "chplsys.h"
 #include "config.h"
 #include "error.h"
 
@@ -94,6 +96,22 @@ static size_t totalFreed = 0;     /* total memory freed */
 static size_t totalEntries = 0;     /* number of entries in hash table */
 
 static chpl_sync_aux_t memTrack_sync;
+
+
+static inline chpl_bool do_track_md(chpl_mem_descInt_t description) {
+  static chpl_bool track_all_mds;
+  static volatile chpl_bool track_all_mds_set = false;
+
+  //
+  // This init is parallel-safe because all will store identical values.
+  //
+  if (!track_all_mds_set) {
+    track_all_mds = chpl_get_rt_env_bool("MEMTRACK_ALL_MDS", false);
+    track_all_mds_set = true;
+  }
+
+  return chpl_mem_descTrack(description) || track_all_mds;
+}
 
 
 void chpl_setMemFlags(void) {
@@ -493,7 +511,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, c_string filename) {
   if (number * size > memThreshold) {
-    if (chpl_memTrack) {
+    if (chpl_memTrack && do_track_md(description)) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(memAlloc, number, size, description, lineno, filename);
       chpl_sync_unlock(&memTrack_sync);
@@ -556,7 +574,7 @@ void chpl_track_realloc_post(void* moreMemAlloc,
                          chpl_mem_descInt_t description,
                          int32_t lineno, c_string filename) {
   if (size > memThreshold) {
-    if (chpl_memTrack) {
+    if (chpl_memTrack && do_track_md(description)) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(moreMemAlloc, 1, size, description, lineno, filename);
       chpl_sync_unlock(&memTrack_sync);

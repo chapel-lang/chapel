@@ -17,49 +17,42 @@
  * limitations under the License.
  */
 
-//
-// Shared code for different mem implementations in mem-*/chpl_*_mem.c
-//
 #include "chplrt.h"
 
-#include "chpl-mem-desc.h"
+#include "chpl-env.h"
 #include "chpltypes.h"
 #include "error.h"
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
-#include <limits.h>
 
 
-//
-// Define the description strings and track indicators for the memory
-// descriptors.
-//
-#define CHPL_MEMDESC_MACRO(_enum, _str, _track)  { _str, _track }
+const char* chpl_get_rt_env(const char* evs, const char* dflt) {
+  char evName[100];
+  const char* evVal;
 
-struct md_desc_type {
-  const char* string;
-  chpl_bool track;
-};
+  if (snprintf(evName, sizeof(evName), "CHPL_RT_%s", evs) >= sizeof(evName))
+    chpl_internal_error("environment variable name buffer too small");
 
-static struct md_desc_type rt_md[] = {
-  CHPL_MD_ALL_MEMDESCS(CHPL_MEMDESC_MACRO)
-};
-
-#undef CHPL_MEMDESC_MACRO
-
-
-const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
-  if (mdi < CHPL_RT_MD_NUM)
-    return rt_md[mdi].string;
-  return chpl_mem_descs[mdi-CHPL_RT_MD_NUM];
+  evVal = getenv(evName);
+  if (evVal == NULL)
+    return dflt;
+  return evVal;
 }
 
 
-chpl_bool chpl_mem_descTrack(chpl_mem_descInt_t mdi) {
-  if (mdi < CHPL_RT_MD_NUM)
-    return rt_md[mdi].track;
-  return true;
+chpl_bool chpl_get_rt_env_bool(const char* evs, chpl_bool dflt) {
+  const char* evVal = chpl_get_rt_env(evs, NULL);
+
+  if (evVal == NULL)
+    return dflt;
+  if (strchr("0fFnN", evVal[0]) != NULL)
+    return false;
+  if (strchr("1tTyY", evVal[0]) != NULL)
+    return true;
+
+  chpl_msg(1,
+           "warning: unknown CHPL_RT_%s value; should be T or F, assuming %c\n",
+           evs, (dflt ? 'T' : 'F'));
+  return dflt;
 }
