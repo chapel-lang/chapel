@@ -527,7 +527,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, c_string filename) {
   if (number * size > memThreshold) {
-    if (chpl_memTrack) {
+    if (chpl_memTrack && chpl_mem_descTrack(description)) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(memAlloc, number, size, description, lineno, filename);
       chpl_sync_unlock(&memTrack_sync);
@@ -590,7 +590,7 @@ void chpl_track_realloc_post(void* moreMemAlloc,
                          chpl_mem_descInt_t description,
                          int32_t lineno, c_string filename) {
   if (size > memThreshold) {
-    if (chpl_memTrack) {
+    if (chpl_memTrack && chpl_mem_descTrack(description)) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(moreMemAlloc, 1, size, description, lineno, filename);
       chpl_sync_unlock(&memTrack_sync);

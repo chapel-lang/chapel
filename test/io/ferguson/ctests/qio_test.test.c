@@ -215,6 +215,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   err = qio_channel_create(&reading, f, ch_hints, 1, 0, start, ch_end, NULL);
   assert(!err);
 
+  //printf("A at offset %i \n", (int) qio_channel_offset_unlocked(reading));
   // Read stuff from the file.
   for( offset = start; offset < end; offset += usesz ) {
     usesz = chunksz;
@@ -227,8 +228,10 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
       amt_read = fread(got_chunk, 1, usesz, readfp);
     } else {
       int errcode;
+      //printf("A0 at offset %i reading %i bytes\n", (int) qio_channel_offset_unlocked(reading), (int) usesz);
       err = qio_channel_read(threadsafe, reading, got_chunk, usesz, &amt_read);
       errcode = qio_err_to_int(err);
+      //printf("A1 at offset %i errcode is %i\n", (int) qio_channel_offset_unlocked(reading), errcode);
       assert( errcode == EEOF || errcode == 0);
     }
     assert(amt_read == usesz);
@@ -238,6 +241,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
       assert(got_chunk[k] == chunk[k]);
     }
   }
+  //printf("B at offset %i \n", (int) qio_channel_offset_unlocked(reading));
 
   if( readfp ) {
     amt_read = fread(got_chunk, 1, 1, readfp);
@@ -255,8 +259,13 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
       assert( !err );
     }
 
+    //printf("C at offset %i \n", (int) qio_channel_offset_unlocked(reading));
     err = qio_channel_read(threadsafe, reading, got_chunk, 1, &amt_read);
-    assert( qio_err_to_int(err) == EEOF );
+    if( qio_err_to_int(err) != EEOF ) {
+      printf("HERE read something at offset %i \n", (int) qio_channel_offset_unlocked(reading));
+      printf("read %x\n", (int) got_chunk[0]);
+      assert( qio_err_to_int(err) == EEOF );
+    }
   }
 
   qio_channel_release(reading);
@@ -376,6 +385,15 @@ int main(int argc, char** argv)
 
   // use smaller qbytes_iobuf_size for testing
   qbytes_iobuf_size = 4*1024;
+
+  //check_channel(threadsafe=0, type=2, start=0, len=16384, chunksz=1, file_hints=default_type default, ch_hints=always_buffered default, unbounded=0, reopen=1)
+  check_channel(0, 2, 0, 16384, 1, 0, QIO_CH_ALWAYS_BUFFERED, 0, 1);
+
+  //check_channel(threadsafe=0, type=1, start=0, len=16384, chunksz=1, file_hints=default_type default, ch_hints=always_unbuffered default, unbounded=1, reopen=1)
+  check_channel(0, 1, 0, 16384, 1, 0, QIO_CH_ALWAYS_UNBUFFERED, 1, 1);
+  check_channel(0, 1, 0, 16384, 1, 0, QIO_CH_ALWAYS_UNBUFFERED, 1, 0);
+  check_channel(0, 1, 0, 16384, 1, 0, QIO_CH_ALWAYS_UNBUFFERED, 0, 0);
+
 
   check_paths();
 
