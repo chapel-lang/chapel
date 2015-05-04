@@ -80,9 +80,11 @@ MODULES_TO_DOCUMENT = \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
+CHPLDOC_OPTS :=
+
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
+	$(CHPLDOC) $(CHPLDOC_OPTS) $(MODULES_TO_DOCUMENT)
 
 clean-documentation:
 	rm -rf ./docs
