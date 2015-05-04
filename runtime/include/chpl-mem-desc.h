@@ -83,7 +83,7 @@
 
 
 //
-// Define the numeration constants for the memory descriptors.
+// Define the enumeration constants for the memory descriptors.
 //
 #define CHPL_MEMDESC_MACRO(_enum, _str, _track)  CHPL_RT_MD_ ## _enum
 typedef enum {
