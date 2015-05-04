@@ -20,9 +20,9 @@ for b in B do
 
 for (i,a,b) in zip(ProblemSpace,A,B) {
   if (a != b) then
-    writeln("mismatch at #", format("#####", i), ": ", a, " != ", b);
+    writef("mismatch at %######: %r != %r", i, a, b);
   else
-    writeln("#", format("#####", i), " = ", a);
+    writef("%###### = %r\n", i, a);
 }
 
 delete randStr1;
