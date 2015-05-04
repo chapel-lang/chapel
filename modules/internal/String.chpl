@@ -32,12 +32,6 @@
  *   worth reconsidering (also taking into consideration the runtime
  *   functions that back this).
  *
- * - Not all operations support interaction with the bufferType, e.g.,
- *   relational operations.  I chose to implement the ones I thought
- *   were commonly used like concatenation and assignment.  When this
- *   becomes the default, the compiler should automatically coerce the
- *   rest.
- *
  * - It is assumed the bufferType is a local-only type, so we never
  *   make a remote copy of one passed in by the user, though remote
  *   copies are made of internal bufferType variables.
@@ -49,8 +43,10 @@ module BaseStringType {
   use SysCTypes;
 
   type bufferType = c_ptr(uint(8));
-  param bufferTypeString = "c_ptr(uint(8))":c_string;
+  param bufferTypeString: c_string = "c_ptr(uint(8))";
   param min_alloc_size: int = 16;
+  // Growth factor to use when extending the buffer for appends
+  config param chpl_stringGrowthFactor = 1.5;
 
   extern type chpl_mem_descInt_t;
 
@@ -82,8 +78,6 @@ module BaseStringType {
   extern const CHPL_RT_MD_STRING_COPY_REMOTE: chpl_mem_descInt_t;
   extern const CHPL_RT_MD_STRING_COPY_DATA: chpl_mem_descInt_t;
 
-  // TODO: maybe remove this one, mostly used as a helper for me to make sure I
-  // get the signature right.
   inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                    src_addr: bufferType, len: size_t) {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len);
@@ -99,7 +93,7 @@ module BaseStringType {
   extern proc memmove(destination: c_ptr, const source: c_ptr, num: size_t);
 
   // pointer arithmetic used for strings
-  inline proc +(a: c_ptr, b: int(?w)) return __primitive("+", a, b);
+  inline proc +(a: c_ptr, b: integral) return __primitive("+", a, b);
 
   config param debugStrings = false;
 }
@@ -127,6 +121,7 @@ module String {
     // This causes us to get padded out to a word boundary :(
     // TODO: change to const when const checking for auto/initCopy is fixed
     var owned: bool = true;
+
 
     proc string(s: string, owned: bool = true) {
       this.owned = owned;
@@ -322,6 +317,7 @@ module String {
       return this.len == 0; // this should be enough of a check
     }
 
+    //TODO: What is this for? nothing uses it...
     proc writeThis(f: Writer) {
       compilerWarning("not implemented: writeThis");
       /*
@@ -338,7 +334,8 @@ module String {
     }
 
     // TODO: could use a multi-pattern search or some variant when there are
-    // multiple needles
+    // multiple needles. Probably wouldnt be worth the overhead for small
+    // needles though
     proc startsWith(needles: string ...) : bool {
       for needle in needles {
         if needle.isEmptyString() then return true;
@@ -419,6 +416,7 @@ module String {
    * original string without copying it.  I think I might be able to
    * do it by putting some sort of flag in the string record that is
    * used by initCopy().
+   * TODO: Check if ^ is still true w/ the new AMM
    */
   pragma "init copy fn"
   proc chpl__initCopy(s: string) {
@@ -610,9 +608,7 @@ module String {
     return _concat_helper(s, cs, stringFirst=false);
   }
 
-  //
   // Concatenation with other types is done by casting to string
-  //
   inline proc concatHelp(s: string, x:?t) where t != string {
     var cs = x:string;
     const ret = s + cs;
@@ -631,6 +627,33 @@ module String {
   inline proc +(x: enumerated, s: string) return concatHelp(x, s);
   inline proc +(s: string, x: bool) return concatHelp(s, x);
   inline proc +(x: bool, s: string) return concatHelp(x, s);
+
+  //
+  // Append
+  //
+  proc +=(ref lhs: string, rhs: string) : void {
+    //TODO: check for overflow
+    on lhs {
+      const rhsLen = rhs.len;
+      const new_length = lhs.len+rhsLen;
+      if lhs._size < (new_length) {
+        var new_size = max(new_length+1, (lhs.len * chpl_stringGrowthFactor):int);
+        lhs.buff = chpl_mem_realloc(lhs.buff, (new_size).safeCast(size_t),
+                                    CHPL_RT_MD_STRING_COPY_DATA):c_ptr(uint(8));
+        lhs._size = new_size;
+      }
+      const hereId = chpl_nodeID;
+      const rhsRemote = rhs.locale.id != hereId;
+      if rhsRemote {
+        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale.id,
+                            rhs.buff, rhsLen.safeCast(size_t));
+      } else {
+        memmove(lhs.buff+lhs.len, rhs.buff, rhsLen.safeCast(size_t));
+      }
+      lhs.len = lhs.len+rhsLen;
+      lhs.buff[new_length] = 0;
+    }
+  }
 
   //
   // Relational operators
@@ -755,15 +778,6 @@ module String {
   }
   inline proc >=(a: string, b: string) : bool {
     return !(a < b);
-  }
-
-  //
-  // writef
-  //
-  proc writef(foo) {
-    var f = openmem();
-
-    f.close();
   }
 
   //
