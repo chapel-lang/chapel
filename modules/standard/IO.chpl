@@ -3666,7 +3666,8 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
   } else if isEnumType(t) {
     var i:enum_mintype(t);
     var err:syserr = ENOERR;
-    err = qio_channel_read_int(false, byteorder, _channel_internal, i, numBytes(i.type), isIntType(i.type));
+    // call the integer version
+    err = _read_binary_internal(_channel_internal, byteorder, i);
     x = i:t;
     return err;
   } else {
@@ -3731,7 +3732,8 @@ inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x.c_str(), x.length: ssize_t);
   } else if isEnumType(t) {
     var i:enum_mintype(t) = x:enum_mintype(t);
-    return qio_channel_write_int(false, byteorder, _channel_internal, i, numBytes(i.type), isIntType(i.type));
+    // call the integer version
+    return _write_binary_internal(_channel_internal, byteorder, i);
   } else {
     compilerError("Unknown primitive type in write_binary_internal ", typeToString(t));
   }
