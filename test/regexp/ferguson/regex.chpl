@@ -14,7 +14,7 @@ writeln("Search 1");
 
   writeln(match);
 
-  writeln(str.substring(match));
+  writeln(str[match]);
 }
 
 writeln("Search 2");
@@ -28,7 +28,7 @@ writeln("Search 2");
   writeln(match);
   writeln(cap);
 
-  writeln(str.substring(match));
+  writeln(str[match]);
 }
 
 writeln("Search 3");
@@ -42,7 +42,7 @@ writeln("Search 3");
   writeln(match);
   writeln(cap);
 
-  writeln(str.substring(match));
+  writeln(str[match]);
 }
 
 writeln("Search 4");
@@ -56,7 +56,7 @@ writeln("Search 4");
   writeln(match);
   writeln(cap);
 
-  writeln(str.substring(match));
+  writeln(str[match]);
 }
 
 writeln("Search 5");
@@ -70,7 +70,7 @@ writeln("Search 5");
   writeln(match);
   writeln(cap);
 
-  writeln(str.substring(match));
+  writeln(str[match]);
 }
 
 writeln("Match 1");
@@ -82,7 +82,7 @@ writeln("Match 1");
 
   writeln(match);
 
-  writeln(str.substring(match));
+  writeln(str[match]);
 }
 
 writeln("Match 2");
@@ -96,7 +96,7 @@ writeln("Match 2");
   writeln(match);
   writeln(cap);
 
-  writeln(str.substring(match));
+  writeln(str[match]);
 }
 
 writeln("Match 3");
@@ -110,7 +110,7 @@ writeln("Match 3");
   writeln(match);
   writeln(cap);
 
-  writeln(str.substring(match));
+  writeln(str[match]);
 }
 
 writeln("Split 1");
@@ -167,7 +167,7 @@ writeln("Matches 1");
   var re = compile("\\w+");
   var str = "Words, words, word.";
   for s in re.matches(str, 0) {
-    writeln(str.substring(s[1]));
+    writeln(str[s[1]]);
   }
 }
 writeln("Matches 2");
@@ -175,9 +175,9 @@ writeln("Matches 2");
   var re = compile("(w)(\\w+)");
   var str = "Words, words, word.";
   for s in re.matches(str, 2) {
-    writeln(str.substring(s[1]));
-    writeln(str.substring(s[2]));
-    writeln(str.substring(s[3]));
+    writeln(str[s[1]]);
+    writeln(str[s[2]]);
+    writeln(str[s[3]]);
   }
 }
 
