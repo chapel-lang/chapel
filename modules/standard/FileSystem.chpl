@@ -455,9 +455,11 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
     return;
   }
 
+  {
   var srcPath = realPath(src);
 
   copyTreeHelper(error, srcPath, dest, copySymbolically);
+  }
 }
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
