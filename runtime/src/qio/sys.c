@@ -752,7 +752,7 @@ err_t sys_read(int fd, void* buf, size_t count, ssize_t* num_read_out)
 
   STARTING_SLOW_SYSCALL;
   got = read(fd, buf, count);
-  if( got != -1 ) {
+  if( got >= 0 ) {
     *num_read_out = got;
     if( got == 0 && count != 0 ) err_out = EEOF;
     else err_out = 0;
@@ -772,7 +772,7 @@ err_t sys_write(int fd, const void* buf, size_t count, ssize_t* num_written_out)
 
   STARTING_SLOW_SYSCALL;
   got = write(fd, buf, count);
-  if( got != -1 ) {
+  if( got >= 0 ) {
     *num_written_out = got;
     err_out = 0;
   } else {
@@ -791,10 +791,12 @@ err_t sys_pread(int fd, void* buf, size_t count, off_t offset, ssize_t* num_read
 
   STARTING_SLOW_SYSCALL;
   got = pread(fd, buf, count, offset);
+  //printf("pread returned %lx and errno is %i\n", (long) got, errno);
   #ifdef __CYGWIN__
-  if( got == -1 && errno == ENODATA ) got = 0;
+  if( got < 0 && errno == ENODATA ) got = 0;
   #endif
-  if( got != -1 ) {
+  if( got >= 0 ) {
+    assert(got <= count); // can't read more than requested!
     *num_read_out = got;
     if( got == 0 && count != 0 ) err_out = EEOF;
     else err_out = 0;
@@ -814,7 +816,8 @@ err_t sys_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t* n
 
   STARTING_SLOW_SYSCALL;
   got = pwrite(fd, buf, count, offset);
-  if( got != -1 ) {
+  if( got >= 0 ) {
+    assert(got <= count); // can't read more than requested!
     *num_written_out = got;
     err_out = 0;
   } else {
