@@ -1714,22 +1714,70 @@ pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string_copy, path_in:c_string):syserr;
 
-pragma "no doc"
-extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
-pragma "no doc"
-pragma "no prototype" // FIXME
-extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t, issigned:c_int):syserr;
+// we don't use qio_channel_read_int/write_int since the code there is pretty
+// much a dispatch based on type and that fits better in Chapel. Doing it
+// this way also happens to avoid an Intel compiler bug.
 
 pragma "no doc"
-extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
+extern proc qio_channel_read_int8(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:int(8)):syserr;
 pragma "no doc"
-pragma "no prototype" // FIXME
-extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
+extern proc qio_channel_write_int8(threadsafe:c_int, ch:qio_channel_ptr_t, x:int(8)):syserr;
 
 pragma "no doc"
-extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):syserr;
+extern proc qio_channel_read_uint8(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:uint(8)):syserr;
 pragma "no doc"
-extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):syserr;
+extern proc qio_channel_write_uint8(threadsafe:c_int, ch:qio_channel_ptr_t, x:uint(8)):syserr;
+
+
+pragma "no doc"
+extern proc qio_channel_read_int16(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:int(16)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_int16(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:int(16)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_uint16(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:uint(16)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_uint16(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:uint(16)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_int32(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:int(32)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_int32(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:int(32)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_uint32(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:uint(32)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_uint32(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:uint(32)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_int64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:int(64)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_int64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:int(64)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_uint64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:uint(64)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_uint64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:uint(64)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_float32(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:real(32)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_float32(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:real(32)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_float32(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:imag(32)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_float32(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:imag(32)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_float64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:real(64)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_float64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:real(64)):syserr;
+
+pragma "no doc"
+extern proc qio_channel_read_float64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:imag(64)):syserr;
+pragma "no doc"
+extern proc qio_channel_write_float64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:imag(64)):syserr;
 
 pragma "no doc"
 extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
@@ -3552,6 +3600,7 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
     }
   } else if isIntegralType(t) {
     if numBytes(t) == 1 {
+      // this is an optimization, since read_byte returns in a register
       var got:int(32);
       got = qio_channel_read_byte(false, _channel_internal);
       if got >= 0 {
@@ -3560,19 +3609,48 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
       } else {
         return (-got):syserr;
       }
+    } else if t == int(16) {
+      return qio_channel_read_int16(false, byteorder, _channel_internal, x);
+    } else if t == uint(16) {
+      return qio_channel_read_uint16(false, byteorder, _channel_internal, x);
+    } else if t == int(32) {
+      return qio_channel_read_int32(false, byteorder, _channel_internal, x);
+    } else if t == uint(32) {
+      return qio_channel_read_uint32(false, byteorder, _channel_internal, x);
+    } else if t == int(64) {
+      return qio_channel_read_int64(false, byteorder, _channel_internal, x);
+    } else if t == uint(64) {
+      return qio_channel_read_uint64(false, byteorder, _channel_internal, x);
     } else {
-      // handles int types
-      return qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(t), isIntType(t));
+      compilerError("Unknown int type in _read_binary_internal ", typeToString(t));
     }
   } else if isFloatType(t) {
     // handles real, imag
-    return qio_channel_read_float(false, byteorder, _channel_internal, x, numBytes(t));
+    if t == real(32) || t == imag(32) {
+      return qio_channel_read_float32(false, byteorder, _channel_internal, x);
+    } else if t == real(64) || t == imag(64) {
+      return qio_channel_read_float64(false, byteorder, _channel_internal, x);
+    } else {
+      compilerError("Unknown float type in _read_binary_internal ", typeToString(t));
+    }
   } else if isComplexType(t)  {
     // handle complex types
     var re:x.re.type;
     var im:x.im.type;
     var err:syserr = ENOERR;
-    err = qio_channel_read_complex(false, byteorder, _channel_internal, re, im, numBytes(x.re.type));
+    if re.type == real(32) {
+      err = qio_channel_read_float32(false, byteorder, _channel_internal, re);
+      if ! err {
+        err = qio_channel_read_float32(false, byteorder, _channel_internal, im);
+      }
+    } else if re.type == real(64) {
+      err = qio_channel_read_float64(false, byteorder, _channel_internal, re);
+      if ! err {
+        err = qio_channel_read_float64(false, byteorder, _channel_internal, im);
+      }
+    } else {
+      compilerError("Unknown complex type in _read_binary_internal ", typeToString(t));
+    }
     x = (re, im):t; // cast tuple to complex to get complex num.
     return err;
   } else if (t == c_string) || (t == string) {
@@ -3605,18 +3683,48 @@ inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param by
   } else if isIntegralType(t) {
     if numBytes(t) == 1 {
       return qio_channel_write_byte(false, _channel_internal, x:uint(8));
+    } else if t == int(16) {
+      return qio_channel_write_int16(false, byteorder, _channel_internal, x);
+    } else if t == uint(16) {
+      return qio_channel_write_uint16(false, byteorder, _channel_internal, x);
+    } else if t == int(32) {
+      return qio_channel_write_int32(false, byteorder, _channel_internal, x);
+    } else if t == uint(32) {
+      return qio_channel_write_uint32(false, byteorder, _channel_internal, x);
+    } else if t == int(64) {
+      return qio_channel_write_int64(false, byteorder, _channel_internal, x);
+    } else if t == uint(64) {
+      return qio_channel_write_uint64(false, byteorder, _channel_internal, x);
     } else {
-      // handles int types
-      return qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(t), isIntType(t));
+      compilerError("Unknown int type in _write_binary_internal ", typeToString(t));
     }
   } else if isFloatType(t) {
-    // handles real, imag
-    return qio_channel_write_float(false, byteorder, _channel_internal, x, numBytes(t));
+    if t == real(32) || t == imag(32) {
+      return qio_channel_write_float32(false, byteorder, _channel_internal, x);
+    } else if t == real(64) || t == imag(64) {
+      return qio_channel_write_float64(false, byteorder, _channel_internal, x);
+    } else {
+      compilerError("Unknown float type in _write_binary_internal ", typeToString(t));
+    }
   } else if isComplexType(t)  {
     // handle complex types
     var re = x.re;
     var im = x.im;
-    return qio_channel_write_complex(false, byteorder, _channel_internal, re, im, numBytes(x.re.type));
+    var err:syserr = ENOERR;
+    if re.type == real(32) {
+      err = qio_channel_write_float32(false, byteorder, _channel_internal, re);
+      if ! err {
+        err = qio_channel_write_float32(false, byteorder, _channel_internal, im);
+      }
+    } else if re.type == real(64) {
+      err = qio_channel_write_float64(false, byteorder, _channel_internal, re);
+      if ! err {
+        err = qio_channel_write_float64(false, byteorder, _channel_internal, im);
+      }
+    } else {
+      compilerError("Unknown complex type in _write_binary_internal ", typeToString(t));
+    }
+    return err;
   } else if t == c_string {
     return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length: ssize_t);
   } else if t == string {
@@ -5379,185 +5487,197 @@ proc channel._conv_sethandler(
 }
 
 pragma "no doc"
-proc channel._write_signed(width:uint(32), t:int, i:int)
+proc channel._write_signed(width:uint(32), t:int, i:int):syserr
 {
-  var error:syserr;
+  var err:syserr;
   var byteorder = qio_channel_byteorder(_channel_internal);
   select width {
     when 1 {
       var x = t:int(8);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_write_int8(false, _channel_internal, x);
     } when 2 {
       var x = t:int(16);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_write_int16(false, byteorder, _channel_internal, x);
     } when 4 {
       var x = t:int(32);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_write_int32(false, byteorder, _channel_internal, x);
     } when 8 {
       var x = t:int(64);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
-    } otherwise error = qio_format_error_arg_mismatch(i);
+      err = qio_channel_write_int64(false, byteorder, _channel_internal, x);
+    } otherwise err = qio_format_error_arg_mismatch(i);
   }
-  return error;
+  return err;
 }
 
 pragma "no doc"
-proc channel._read_signed(width:uint(32), out t:int, i:int)
+proc channel._read_signed(width:uint(32), out t:int, i:int):syserr
 {
-  var error:syserr;
+  var err:syserr;
   var byteorder = qio_channel_byteorder(_channel_internal);
   select width {
     when 1 {
       var x:int(8);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_read_int8(false, _channel_internal, x);
       t = x;
     } when 2 {
       var x:int(16);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_read_int16(false, byteorder, _channel_internal, x);
       t = x;
     } when 4 {
       var x:int(32);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_read_int32(false, byteorder, _channel_internal, x);
       t = x;
     } when 8 {
       var x:int(64);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_read_int64(false, byteorder, _channel_internal, x);
       t = x;
-    } otherwise error = qio_format_error_arg_mismatch(i);
+    } otherwise err = qio_format_error_arg_mismatch(i);
   }
-  return error;
+  return err;
 }
 
 pragma "no doc"
 proc channel._write_unsigned(width:uint(32), t:uint, i:int)
 {
-  var error:syserr;
+  var err:syserr;
   var byteorder = qio_channel_byteorder(_channel_internal);
   select width {
     when 1 {
       var x = t:uint(8);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_write_uint8(false, _channel_internal, x);
     } when 2 {
       var x = t:uint(16);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_write_uint16(false, byteorder, _channel_internal, x);
     } when 4 {
       var x = t:uint(32);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_write_uint32(false, byteorder, _channel_internal, x);
     } when 8 {
       var x = t:uint(64);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
-    } otherwise error = qio_format_error_arg_mismatch(i);
+      err = qio_channel_write_uint64(false, byteorder, _channel_internal, x);
+    } otherwise err = qio_format_error_arg_mismatch(i);
   }
-  return error;
+  return err;
 }
 pragma "no doc"
 proc channel._read_unsigned(width:uint(32), out t:uint, i:int)
 {
-  var error:syserr;
+  var err:syserr;
   var byteorder = qio_channel_byteorder(_channel_internal);
   select width {
     when 1 {
       var x:uint(8);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_read_uint8(false, _channel_internal, x);
       t = x;
     } when 2 {
       var x:uint(16);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_read_uint16(false, byteorder, _channel_internal, x);
       t = x;
     } when 4 {
       var x:uint(32);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_read_uint32(false, byteorder, _channel_internal, x);
       t = x;
     } when 8 {
       var x:uint(64);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
+      err = qio_channel_read_uint64(false, byteorder, _channel_internal, x);
       t = x;
-    } otherwise error = qio_format_error_arg_mismatch(i);
+    } otherwise err = qio_format_error_arg_mismatch(i);
   }
-  return error;
+  return err;
 }
 
 
 pragma "no doc"
 proc channel._write_real(width:uint(32), t:real, i:int)
 {
-  var error:syserr;
+  var err:syserr;
   var byteorder = qio_channel_byteorder(_channel_internal);
   select width {
     when 4 {
       var x = t:real(32);
-      error = qio_channel_write_float(false, byteorder, _channel_internal, x, numBytes(x.type));
+      err = qio_channel_write_float32(false, byteorder, _channel_internal, x);
     } when 8 {
       var x = t:real(64);
-      error = qio_channel_write_float(false, byteorder, _channel_internal, x, numBytes(x.type));
-    } otherwise error = qio_format_error_arg_mismatch(i);
+      err = qio_channel_write_float64(false, byteorder, _channel_internal, x);
+    } otherwise err = qio_format_error_arg_mismatch(i);
   }
-  return error;
+  return err;
 }
 pragma "no doc"
 proc channel._read_real(width:uint(32), out t:real, i:int)
 {
-  var error:syserr;
+  var err:syserr;
   var byteorder = qio_channel_byteorder(_channel_internal);
   select width {
     when 4 {
       var x:real(32);
-      error = qio_channel_read_float(false, byteorder, _channel_internal, x, numBytes(x.type));
+      err = qio_channel_read_float32(false, byteorder, _channel_internal, x);
       t = x;
     } when 8 {
       var x:real(64);
-      error = qio_channel_read_float(false, byteorder, _channel_internal, x, numBytes(x.type));
+      err = qio_channel_read_float64(false, byteorder, _channel_internal, x);
       t = x;
-    } otherwise error = qio_format_error_arg_mismatch(i);
+    } otherwise err = qio_format_error_arg_mismatch(i);
   }
-  return error;
+  return err;
 }
 
 
 pragma "no doc"
 proc channel._write_complex(width:uint(32), t:complex, i:int)
 {
-  var error:syserr;
+  var err:syserr = ENOERR;
   var byteorder = qio_channel_byteorder(_channel_internal);
   select width {
     when 8 {
       var x = t:complex(64);
       var re = x.re;
       var im = x.im;
-      error = qio_channel_write_complex(false,byteorder,_channel_internal,re,im, numBytes(re.type));
+      err = qio_channel_write_float32(false, byteorder, _channel_internal, re);
+      if ! err {
+        err = qio_channel_write_float32(false, byteorder, _channel_internal, im);
+      }
     } when 16 {
       var x = t:complex(128);
       var re = x.re;
       var im = x.im;
-      error = qio_channel_write_complex(false,byteorder,_channel_internal,re,im, numBytes(re.type));
-    } otherwise error = qio_format_error_arg_mismatch(i);
+      err = qio_channel_write_float64(false, byteorder, _channel_internal, re);
+      if ! err {
+        err = qio_channel_write_float64(false, byteorder, _channel_internal, im);
+      }
+    } otherwise err = qio_format_error_arg_mismatch(i);
   }
-  return error;
+  return err;
 }
 
 pragma "no doc"
 proc channel._read_complex(width:uint(32), out t:complex, i:int)
 {
-  var error:syserr;
+  var err:syserr = ENOERR;
   var byteorder = qio_channel_byteorder(_channel_internal);
   select width {
     when 8 {
       var x:complex(64);
       var re:x.re.type;
       var im:x.im.type;
-      error = qio_channel_read_complex(false,byteorder,_channel_internal,re,im, numBytes(re.type));
+      err = qio_channel_read_float32(false, byteorder, _channel_internal, re);
+      if ! err {
+        err = qio_channel_read_float32(false, byteorder, _channel_internal, im);
+      }
       x = (re, im):complex(64); // tuple to complex
       t = x;
     } when 16 {
       var x:complex(128);
       var re:x.re.type;
       var im:x.im.type;
-      error = qio_channel_read_complex(false,byteorder,_channel_internal,re,im, numBytes(re.type));
+      err = qio_channel_read_float64(false, byteorder, _channel_internal, re);
+      if ! err {
+        err = qio_channel_read_float64(false, byteorder, _channel_internal, im);
+      }
       x = (re, im):complex(128); // tuple to complex
       t = x;
-    } otherwise error = qio_format_error_arg_mismatch(i);
+    } otherwise err = qio_format_error_arg_mismatch(i);
   }
-  return error;
+  return err;
 }
 
 
