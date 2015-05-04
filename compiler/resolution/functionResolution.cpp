@@ -2787,10 +2787,6 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
 
     if (varActual->hasFlag(FLAG_TYPE_VARIABLE))
       formal->addFlag(FLAG_TYPE_VARIABLE);
-    else if (varActual->type->symbol->hasFlag(FLAG_SYNC) ||
-             varActual->type->symbol->hasFlag(FLAG_SINGLE))
-      // this will do nothing e.g. for temps or sync formals
-      varActual->removeFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 
   // Even if some formals are (now) types, if 'taskFn' remained generic,
