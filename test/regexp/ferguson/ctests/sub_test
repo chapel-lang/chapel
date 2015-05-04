@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+echo "[Starting subtest - $(date)]"
 
 # These C tests don't conform to -Wall
 unset CHPL_DEVELOPER
@@ -56,23 +58,18 @@ else
   exit
 fi
 
-if [ "$PLAT" = "darwin" ]
-then
-  # Don't use --static with because it doesn't work on Mac OS X
-  OPTS=
-else
-  OPTS="-static"
-fi
+DEPS="$OPTS -Wall -DCHPL_RT_UNIT_TEST $DEFS $RE2INCLS"
+LDEPS="$RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/qio_error.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2LIB -lpthread"
 
-DEPS="$OPTS -Wall -DCHPL_RT_UNIT_TEST $DEFS $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2INCLS $RE2LIB -lpthread"
-
-T1="$CXX $DEPS -g regexp_test.cc -o regexp_test"
-T2="$CXX $DEPS -g regexp_channel_test.cc -o regexp_channel_test"
+T1="$CXX $DEPS -g regexp_test.cc -o regexp_test $LDEPS"
+T2="$CXX $DEPS -g regexp_channel_test.cc -o regexp_channel_test $LDEPS"
 
 
 dotest() {
   EXE=$1
   COMPLINE=$2
+  start=$(date '+%s')
+  echo "[test: $DIR/$EXE]"
   echo "[Executing compiler $COMPLINE]"
   $COMPLINE
   RETVAL=$?
@@ -96,9 +93,13 @@ dotest() {
   else
     echo "[Error matching compiler output for $DIR/$EXE]"
   fi
+  end=$(date '+%s')
+  elapsed=$(($end - $start))
+  echo "[Elapsed time to compile and execute all versions of \"$DIR/$EXE\" - ${elapsed}.0 seconds]"
 }
 
 
 dotest regexp_test "$T1"
 dotest regexp_channel_test "$T2"
 
+echo "[Finished subtest \"$DIR\" - $(date)]"

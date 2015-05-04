@@ -83,9 +83,9 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
     BitVec* out = new BitVec(defs.n);
     for (int i = bb->exprs.size()-1; i >= 0; i--) {
       Expr* expr = bb->exprs[i];
-      Vec<SymExpr*> symExprs;
+      std::vector<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
-      forv_Vec(SymExpr, se, symExprs) {
+      for_vector(SymExpr, se, symExprs) {
         if (defSet.set_in(se)) {
           if (!bbDefSet.set_in(se->var)) {
             gen->set(defMap.get(se));
@@ -165,9 +165,9 @@ buildDefUseChains(FnSymbol* fn,
     BasicBlock* bb = (*fn->basicBlocks)[i];
     BitVec* in = IN[i];
     for_vector(Expr, expr, bb->exprs) {
-      Vec<SymExpr*> symExprs;
+      std::vector<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
-      forv_Vec(SymExpr, se, symExprs) {
+      for_vector(SymExpr, se, symExprs) {
         if (useSet.set_in(se)) {
           UD[se] = new Vec<SymExpr*>();
           for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
@@ -180,12 +180,12 @@ buildDefUseChains(FnSymbol* fn,
           }
         }
       }
-      forv_Vec(SymExpr, se, symExprs) {
-        if (defSet.set_in(se)) {
-          for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
-            if (defs.v[j]->var != se->var)
+      for_vector(SymExpr, se1, symExprs) {
+        if (defSet.set_in(se1)) {
+          for (int j = defsIndexMap.get(se1->var); j < defs.n; j++) {
+            if (defs.v[j]->var != se1->var)
               break;
-            if (defs.v[j] == se)
+            if (defs.v[j] == se1)
               in->set(j);
             else
               in->unset(j);

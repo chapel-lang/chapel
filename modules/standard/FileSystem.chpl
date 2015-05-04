@@ -20,18 +20,65 @@
 /* A file utilities library
 
    The FileSystem module focuses on file and directory properties and
-   operations.  It does not cover every interaction involving a file---
-   for instance, path-specific operations live in the :mod:`Path` module, while
+   operations.  It does not cover every interaction involving a file--- for
+   instance, path-specific operations live in the :mod:`Path` module, while
    routines for opening, writing to, or reading from a file live in the
    :mod:`IO` module.  Rather, it covers cases where the user would prefer a file
-   or directory to be handled wholesale and/or with minimal interaction.  For example,
-   this module contains a file :proc:`copy` routine, as well as operations like :proc:`chmod`,
-   :proc:`mkdir`, and :proc:`remove`.  Also included are
-   operations relating to the current process's file system state, such as :proc:`~locale.umask` or
-   :proc:`~locale.chdir`, which are performed on a specified locale.  The module
-   also contains iterators for traversing the file system, such as 
-   :iter:`glob`, :iter:`listdir`, :iter:`walkdirs`, and :iter:`findfiles`.
+   or directory to be handled wholesale and/or with minimal interaction.  For
+   example, this module contains :ref:`file-manip` and functions for determining
+   the :ref:`file-status`.  Also included are operations relating to the current
+   process's file system state, which are performed on a specified locale
+   (:ref:`locale-state`).  The module also contains iterators for traversing the
+   file system (:ref:`filerator`).
 
+   .. _file-manip:
+
+   File/Directory Manipulations
+   ----------------------------
+   :proc:`copy`
+   :proc:`copyFile`
+   :proc:`copyTree`
+   :proc:`mkdir`
+   :proc:`remove`
+   :proc:`symlink`
+   :proc:`chmod`
+   :proc:`chown`
+   :proc:`copyMode`
+   :proc:`rename`
+
+   .. _file-status:
+
+   File/Directory Properties
+   -------------------------
+   :proc:`getGID`
+   :proc:`getMode`
+   :proc:`getUID`
+   :proc:`exists`
+   :proc:`isDir`
+   :proc:`isFile`
+   :proc:`isLink`
+   :proc:`isMount`
+   :proc:`sameFile`
+
+   .. _locale-state:
+
+   Locale State Functionality
+   --------------------------
+   :proc:`locale.chdir`
+   :proc:`locale.cwd`
+   :proc:`locale.umask`
+
+   .. _filerator:
+
+   File System Traversal Iterators
+   -------------------------------
+   :iter:`glob`
+   :iter:`listdir`
+   :iter:`walkdirs`
+   :iter:`findfiles`
+
+   Constant and Function Definitions
+   ---------------------------------
  */
 module FileSystem {
 
@@ -46,7 +93,7 @@ use Error, Path;
    <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_.
    They are intended for use when dealing with the permissions of files or
    directories, such as with :proc:`chmod`, :proc:`getMode`, :proc:`mkdir`,
-   or :proc:`umask`
+   or :proc:`~locale.umask`
 
    S_IRUSR refers to the user's read permission
 */
@@ -110,7 +157,7 @@ proc locale.chdir(out error: syserr, name: string) {
 }
 
 /* Change the current working directory of the locale in question to the
-   specified name.
+   specified path `name`.
 
    Will halt with an error message if one is detected.
 
@@ -138,7 +185,7 @@ proc chmod(out error: syserr, name: string, mode: int) {
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
 
 /* Set the permissions of the file or directory specified by the argument
-   ``name`` to that indicated by the argument ``mode``.
+   `name` to that indicated by the argument `mode`.
 
    Will halt with an error message if one is detected
 
@@ -165,7 +212,7 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
 }
 
 /* Change one or both of the owner and group id of the named file or directory
-   to the specified values.  If ``uid`` or ``gid`` are -1, the value in question
+   to the specified values.  If `uid` or `gid` are -1, the value in question
    will remain unchanged.
 
    Halts with an error message if one occurred.
@@ -228,9 +275,9 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
   }
 }
 
-/* Copies the contents and permissions of the file indicated by ``src`` into
-   the file or directory ``dest``.  If ``dest`` is a directory, will halt with
-   an error message.  If ``metadata`` is set to ``true``, will also copy the
+/* Copies the contents and permissions of the file indicated by `src` into
+   the file or directory `dest`.  If `dest` is a directory, will halt with
+   an error message.  If `metadata` is set to `true`, will also copy the
    metadata (uid, gid, time of last access and time of modification) of the
    file to be copied.
 
@@ -248,7 +295,7 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
               exist
    :type dest: string
    :arg metadata: This argument indicates whether to copy metadata associated
-                  with the source file.  It is set to ``false`` by default.
+                  with the source file.  It is set to `false` by default.
    :type metadata: bool
 */
 proc copy(src: string, dest: string, metadata: bool = false) {
@@ -326,11 +373,11 @@ proc copyFile(out error: syserr, src: string, dest: string) {
   }
 }
 
-/* Copies the contents of the file indicated by ``src`` into the file indicated
-   by ``dest``, replacing ``dest``'s contents if it already exists (and is a
-   different file than ``src``, i.e. not a symbolic link to ``src``).
+/* Copies the contents of the file indicated by `src` into the file indicated
+   by `dest`, replacing `dest`'s contents if it already exists (and is a
+   different file than `src`, i.e. not a symbolic link to `src`).
 
-   If ``dest`` is not writable, or ``src`` and ``dest`` refer to the same file,
+   If `dest` is not writable, or `src` and `dest` refer to the same file,
    this function will halt with an error message.  Does not copy metadata.  May
    halt with other error messages.
 
@@ -357,8 +404,8 @@ proc copyMode(out error: syserr, src: string, dest: string) {
   chmod(error, dest, srcMode);
 }
 
-/* Copies the permissions of the file indicated by ``src`` to the file indicated
-   by ``dest``, leaving contents, owner and group unaffected.
+/* Copies the permissions of the file indicated by `src` to the file indicated
+   by `dest`, leaving contents, owner and group unaffected.
 
    Will halt with an error message if one is detected.
 
@@ -413,10 +460,10 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
   copyTreeHelper(error, srcPath, dest, copySymbolically);
 }
 
-/* Will recursively copy the tree which lives under ``src`` into ``dst``,
-   including all contents, permissions, and metadata.  ``dst`` must not
+/* Will recursively copy the tree which lives under `src` into `dst`,
+   including all contents, permissions, and metadata.  `dst` must not
    previously exist, this function assumes it can create it and any missing
-   parent directories. If ``copySymbolically`` is ``true``, symlinks will be
+   parent directories. If `copySymbolically` is `true`, symlinks will be
    copied as symlinks, otherwise their contents and metadata will be copied
    instead.
 
@@ -425,12 +472,12 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
    :arg src: The root of the source tree to be copied.
    :type src: string
    :arg dest: The root of the destination directory under which the contents of
-              ``src`` are to be copied (must not exist prior to this function
+              `src` are to be copied (must not exist prior to this function
               call).
    :type dest: string
    :arg copySymbolically: This argument is used to indicate how to handle
                           symlinks in the source directory.  It is set to
-                          ``false`` by default
+                          `false` by default
    :type copySymbolically: bool
 */
 proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
@@ -465,7 +512,7 @@ proc locale.cwd(out error: syserr): string {
    .. warning::
 
       Another task on this locale can change the current working directory from
-      underneath this task, so use caution when making use of this function in
+      underneath this task, so use caution when making use of this method in
       a parallel environment.
 
    :return: The current working directory for the locale in question.
@@ -487,7 +534,7 @@ proc exists(out error: syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Determines if the file or directory indicated by ``name`` exists and returns
+/* Determines if the file or directory indicated by `name` exists and returns
    the result of this check.
 
    Will halt with an error message if one was detected.
@@ -495,8 +542,8 @@ proc exists(out error: syserr, name: string): bool {
    :arg name: The file or directory whose existence is in question.
    :type name: string
 
-   :return: ``true`` if the provided argument corresponds to an existing file or
-            directory, ``false`` otherwise.  Also returns ``false`` for broken
+   :return: `true` if the provided argument corresponds to an existing file or
+            directory, `false` otherwise.  Also returns `false` for broken
             symbolic links.
    :rtype: bool
 */
@@ -508,17 +555,26 @@ proc exists(name: string): bool {
 }
 
 
-/* iter findfiles(startdir = ".", recursive=false, hidden=false)
+/* Finds files from a given start directory and yields their names,
+   similar to simple invocations of the command-line `find` utility.
+   May be invoked in serial or non-zippered parallel contexts.
 
-   findfiles() is a simple find-like utility implemented using the
-   above routines
+   :arg startdir: The root directory from which to start the search 
+                  (defaults to ``"."``)
+   :type startdir: string
 
-     * startdir: where to start when looking for files
-     * recursive: tells whether or not to descend recursively
-     * hidden: tells whether or not to yield hidden
+   :arg recursive: Indicates whether or not to descend recursively into 
+                   subdirectories (defaults to `false`)
+   :type recursive: bool
+
+   :arg hidden: Indicates whether or not to descend into hidden subdirectories and yield hidden files (defaults to `false`)
+   :type hidden: bool
+
+   :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
-iter findfiles(startdir = ".", recursive=false, hidden=false) {
+iter findfiles(startdir: string = ".", recursive: bool = false, 
+               hidden: bool = false): string {
   if (recursive) then
     for subdir in walkdirs(startdir, hidden=hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
@@ -529,7 +585,9 @@ iter findfiles(startdir = ".", recursive=false, hidden=false) {
 }
 
 pragma "no doc"
-iter findfiles(startdir = ".", recursive=false, hidden=false, param tag: iterKind) where tag == iterKind.standalone {
+iter findfiles(startdir: string = ".", recursive: bool = false, 
+               hidden: bool = false, param tag: iterKind): string 
+       where tag == iterKind.standalone {
   if (recursive) then
     forall subdir in walkdirs(startdir, hidden=hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
@@ -550,7 +608,7 @@ proc getGID(out error: syserr, name: string): int {
 }
 
 /* Obtains and returns the group id associated with the file or directory
-   specified by ``name``.
+   specified by `name`.
 
    Will halt with an error message if one is detected
 
@@ -577,7 +635,7 @@ proc getMode(out error: syserr, name: string): int {
 }
 
 /* Obtains and returns the current permissions of the file or directory
-   specified by ``name``.
+   specified by `name`.
 
    Will halt with an error message if one is detected
 
@@ -606,7 +664,7 @@ proc getUID(out error: syserr, name: string): int {
 }
 
 /* Obtains and returns the user id associated with the file or directory
-   specified by ``name``.
+   specified by `name`.
 
    Will halt with an error message if one is detected.
 
@@ -642,15 +700,15 @@ module chpl_glob_c_interface {
 }
 
 
-/* iter glob(pattern="*")
+/* Yields filenames that match a given `glob` pattern.  May be invoked
+   in serial or parallel contexts (zippered or non-).
 
-   glob() gives glob() capabilities and is implemented using C's glob()
+   :arg pattern: The glob pattern to match against (defaults to ``"*"``)
+   :type pattern: string
 
-     * pattern: the glob pattern to match against
-
-   By default, it will list all files/directories in the current directory
+   :yield: The matching filenames as strings
 */
-iter glob(pattern="*") {
+iter glob(pattern: string = "*"): string {
   var glb : chpl_glob_c_interface.glob_t;
 
   const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
@@ -671,7 +729,7 @@ iter glob(pattern="*") {
 
 
 pragma "no doc"
-iter glob(pattern:string="*", param tag: iterKind) 
+iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   var glb : chpl_glob_c_interface.glob_t;
 
@@ -696,7 +754,7 @@ iter glob(pattern:string="*", param tag: iterKind)
 // the state at the end of the call).
 //
 pragma "no doc"
-iter glob(pattern:string="*", param tag: iterKind) 
+iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   var glb : chpl_glob_c_interface.glob_t;
 
@@ -718,7 +776,7 @@ iter glob(pattern:string="*", param tag: iterKind)
 }
 
 pragma "no doc"
-iter glob(pattern:string="*", followThis, param tag: iterKind) 
+iter glob(pattern: string = "*", followThis, param tag: iterKind): string 
        where tag == iterKind.follower {
   var glb : chpl_glob_c_interface.glob_t;
   if (followThis.size != 1) then
@@ -751,7 +809,7 @@ proc isDir(out error:syserr, name:string):bool {
   return ret != 0;
 }
 
-/* Determine if the provided path ``name`` corresponds to a directory and return
+/* Determine if the provided path `name` corresponds to a directory and return
    the result
 
    Will halt with an error message if one is detected, including if the path
@@ -760,7 +818,7 @@ proc isDir(out error:syserr, name:string):bool {
    :arg name: A path that could refer to a directory.
    :type name: string
 
-   :return: ``true`` if the path is a directory, ``false`` if it is not
+   :return: `true` if the path is a directory, `false` if it is not
    :rtype: bool
 */
 proc isDir(name:string):bool {
@@ -779,7 +837,7 @@ proc isFile(out error:syserr, name:string):bool {
   return ret != 0;
 }
 
-/* Determine if the provided path ``name`` corresponds to a file and return
+/* Determine if the provided path `name` corresponds to a file and return
    the result
 
    Will halt with an error message if one is detected, including if the path
@@ -788,7 +846,7 @@ proc isFile(out error:syserr, name:string):bool {
    :arg name: A path that could refer to a file.
    :type name: string
 
-   :return: ``true`` if the path is a file, ``false`` if it is not
+   :return: `true` if the path is a file, `false` if it is not
    :rtype: bool
 */
 proc isFile(name:string):bool {
@@ -807,8 +865,8 @@ proc isLink(out error:syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Determine if the provided path ``name`` corresponds to a link and return the
-   result.  If symbolic links are not supported, will return ``false``.
+/* Determine if the provided path `name` corresponds to a link and return the
+   result.  If symbolic links are not supported, will return `false`.
 
    Will halt with an error message if one is detected, including if the path
    does not refer to a valid file or directory
@@ -816,7 +874,7 @@ proc isLink(out error:syserr, name: string): bool {
    :arg name: A path that could refer to a symbolic link.
    :type name: string
 
-   :return: ``true`` if the path is a symbolic link, ``false`` if it is not or
+   :return: `true` if the path is a symbolic link, `false` if it is not or
             if symbolic links are not supported.
    :rtype: bool
 */
@@ -841,7 +899,7 @@ proc isMount(out error:syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Determine if the provided path ``name`` corresponds to a mount point and
+/* Determine if the provided path `name` corresponds to a mount point and
    return the result.
 
    Will halt with an error message if one is detected, including if the path
@@ -850,7 +908,7 @@ proc isMount(out error:syserr, name: string): bool {
    :arg name: A path that could refer to a mount point.
    :type name: string
 
-   :return: ``true`` if the path is a mount point, ``false`` if it is not.
+   :return: `true` if the path is a mount point, `false` if it is not.
    :rtype: bool
 */
 proc isMount(name: string): bool {
@@ -861,23 +919,32 @@ proc isMount(name: string): bool {
 }
 
 
-/* iter listdir(path: string, hidden=false, dirs=true, files=true, 
-                listlinks=true): string
-  
-    listdir() lists the contents of a directory, similar to 'ls'
-      * path: the directory whose contents should be listed
-      * hidden: should hidden files/directories be listed?
-      * dirs: should dirs be listed?
-      * files: should files be listed?
-      * listlinks: should symbolic links be listed?
-  
-   By default this routine lists all files and directories in the
-   current directory, including symbolic links, as long as they don't
-   start with '.'
-*/
+/* Lists the contents of a directory.  May be invoked in serial
+   contexts only.
 
-iter listdir(path: string, hidden=false, dirs=true, files=true, 
-             listlinks=true): string {
+   :arg path: The directory whose contents should be listed 
+              (defaults to ``"."``)
+   :type path: string
+
+   :arg hidden: Indicates whether hidden files/directory should be listed 
+                (defaults to `false`)
+   :type hidden: bool
+
+   :arg dirs: Indicates whether directories should be listed 
+              (defaults to `true`)
+   :type dirs: bool
+
+   :arg files: Indicates whether files should be listed (defaults to `true`)
+   :type files: bool
+
+   :arg listlinks: Indicates whether symbolic links should be listed 
+                   (defaults to `true`)
+   :type listlinks: bool
+
+   :yield: The names of the specified directory's contents, as strings
+*/
+iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true, 
+              files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
@@ -927,20 +994,20 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
   error = chpl_fs_mkdir(name.c_str(), mode, parents);
 }
 
-/* Attempt to create a directory with the given path, ``name``.  If ``parents``
-   is ``true``, will attempt to create any directory in the path that did not
+/* Attempt to create a directory with the given path, `name`.  If `parents`
+   is `true`, will attempt to create any directory in the path that did not
    previously exist.
 
    Will halt with an error message if one is detected
 
    .. warning::
 
-      In the case where ``parents`` is ``true``, there is a potential security
+      In the case where `parents` is `true`, there is a potential security
       vulnerability.  Checking whether parent directories exist and creating
       them are separate events.  This is called a Time of Check, Time of Use
       vulnerability (TOCTOU), and in the case of files or directories that did
       not previously exist, there is no known guard against it.  So even if
-      ``parents == true`` and a parent directory didn't exist before this
+      `parents == true` and a parent directory didn't exist before this
       function was called but does exist afterward, it's not necessarily true
       that this function created that parent. Some other concurrent operation
       could have done so, either intentionally or unintentionally, maliciously
@@ -949,10 +1016,10 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
 
    :arg name: The name of the directory to be created, fully specified.
    :arg mode: The permissions desired for the directory to create.  Takes the
-              current :proc:`umask` into account.  See description of
+              current :proc:`~locale.umask` into account.  See description of
               :const:`S_IRUSR`, for instance, for potential values.
    :arg parents: Indicates whether parent directories should be created.  If
-                 set to ``false``, any nonexistent parent will cause an error
+                 set to `false`, any nonexistent parent will cause an error
                  to occur.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
@@ -968,7 +1035,7 @@ proc rename(out error: syserr, oldname, newname: string) {
   error = chpl_fs_rename(oldname.c_str(), newname.c_str());
 }
 
-/* Renames the file specified by ``oldname`` to ``newname``.  The file is not
+/* Renames the file specified by `oldname` to `newname`.  The file is not
    opened during this operation.
 
    Will halt with an error message if one is detected
@@ -991,7 +1058,7 @@ proc remove(out error: syserr, name: string) {
   error = chpl_fs_remove(name.c_str());
 }
 
-/* Removes the file or directory specified by ``name``
+/* Removes the file or directory specified by `name`
 
    Will halt with an error message if one is detected
 
@@ -1025,8 +1092,8 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
    :arg file2: The second path to be compared.
    :type file2: string
 
-   :return: ``true`` if the two paths refer to the same file or directory,
-            ``false`` otherwise.
+   :return: `true` if the two paths refer to the same file or directory,
+            `false` otherwise.
    :rtype: bool
 */
 proc sameFile(file1: string, file2: string): bool {
@@ -1077,7 +1144,7 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
    :arg file2: The second file to be compared.
    :type file2: file
 
-   :return: ``true`` if the two records refer to the same file, ``false``
+   :return: `true` if the two records refer to the same file, `false`
             otherwise.
    :rtype: bool
 */
@@ -1095,7 +1162,7 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
   error = chpl_fs_symlink(oldName.c_str(), newName.c_str());
 }
 
-/* Create a symbolic link pointing to ``oldName`` with the path ``newName``.
+/* Create a symbolic link pointing to `oldName` with the path `newName`.
 
    Will halt with an error message if one is detected
 
@@ -1110,9 +1177,15 @@ proc symlink(oldName: string, newName: string) {
   if err != ENOERR then ioerror(err, "in symlink " + oldName, newName);
 }
 
-/* Sets the file creation mask of the current process to ``mask``, and returns
-   the previous value of the file creation mask.  See description of
-   :const:`S_IRUSR`, for instance, for potential values.
+/* Sets the file creation mask of the current locale to `mask`, and returns
+   the previous value of the file creation mask for that locale.  See
+   description of :const:`S_IRUSR`, for instance, for potential values.
+
+   .. warning::
+
+      This is not safe within a parallel context.  A umask call in one task
+      will affect the umask of all tasks for that locale.
+
 
    :arg mask: The file creation mask to use now.
    :type mask: int
@@ -1132,30 +1205,38 @@ proc locale.umask(mask: int): int {
 }
 
 
-/* iter walkdirs(path: string=".", topdown=true, depth=max(int), 
-                 hidden=false, followlinks=false, sort=false): string
-  
-   walkdirs() recursively walks a directory structure, yielding
-   directory names.  The strings that are generated will be rooted
-   from 'path'.
+/* Recursively walk a directory structure, yielding directory names.
+   May be invoked in serial or non-zippered parallel contexts.  
 
-     * path: the directory to start from
-     * topdown: indicates whether to yield the directories using a
-       preorder (vs. postorder) traversal
-     * depth: indicates the maximal depth of recursion to use
-     * hidden: indicates whether to enter hidden directories
-     * followlinks: indicates whether to follow symbolic links or not
-     * sort: indicates whether to consider subdirectories in sorted
-       order or not
-  
-   by default, walkdirs() will start in the current directory, process
-   directories in preorder; recursively traverse subdirectories; and
-   neither follow dotfile directories nor symbolic links.  It will not
-   sort the directories by default.
+   .. note:: 
+            The current parallel version is not very adaptive/dynamic
+            in its application of parallelism to the list of
+            subdirectories at any given level of the traversal, and
+            could be improved in this regard.
+
+   :arg path: The directory from which to start the walk (defaults to ``"."``)
+   :type path: string
+
+   :arg topdown: Indicates whether to yield a directory before or after descending into its children (defaults to `true`)
+   :type topdown: bool
+
+   :arg depth: Indicates the maximum recursion depth to use (defaults to `max(int)`)
+   :type depth: int
+
+   :arg hidden: Indicates whether to descend into hidden directories (defaults to `false`)
+   :type hidden: bool
+
+   :arg followlinks: Indicates whether to follow symbolic links (defaults to `false`)
+   :type followlinks: bool
+
+   :arg sort: Indicates whether or not to consider subdirectories in sorted order (defaults to `false`).  Note that requesting sorting has no effect in parallel invocations.
+   :type sort: bool
+
+   :yield: The directory names encountered, relative to `path`, as strings
 */
-
-iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
-              followlinks=false, sort=false): string {
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+              hidden: bool = false, followlinks: bool = false, 
+              sort: bool = false): string {
 
   if (topdown) then
     yield path;
@@ -1184,8 +1265,9 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
 // Here's a parallel version
 //
 pragma "no doc"
-iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
-              followlinks=false, sort=false, param tag: iterKind): string 
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int), 
+              hidden: bool = false, followlinks: bool = false, 
+              sort: bool = false, param tag: iterKind): string 
        where tag == iterKind.standalone {
 
   if (sort) then

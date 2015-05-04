@@ -21,7 +21,7 @@
 
    The Path module focuses on manipulation of the path to a file or directory.
    Also provided are constant values representing common idioms that may vary
-   across operating systems (though rarely in the modern era), such general
+   across operating systems (though rarely in the modern era), such as general
    references to a parent directory or the current directory.
 
    .. note::
@@ -53,7 +53,7 @@ proc realPath(out error: syserr, name: string): string {
   return toString(res);
 }
 
-/* Given a path ``name``, attempts to determine the canonical path referenced.
+/* Given a path `name`, attempts to determine the canonical path referenced.
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links.  Returns the result
 

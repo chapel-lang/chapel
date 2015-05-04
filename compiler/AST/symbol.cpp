@@ -24,9 +24,11 @@
 #include "symbol.h"
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "bb.h"
 #include "build.h"
 #include "codegen.h"
+#include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
@@ -353,17 +355,9 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << "var ";
   }
 
-  *file << this->name;
-
-  if (this->defPoint->exprType != NULL) {
-    *file << ": ";
-    this->defPoint->exprType->prettyPrint(file);
-  }
-
-  if (this->defPoint->init != NULL) {
-    *file << " = ";
-    this->defPoint->init->prettyPrint(file);
-  }
+  AstToText info;
+  info.appendVarDef(this);
+  *file << info.text();
 
   *file << std::endl;
 
@@ -2058,10 +2052,10 @@ void FnSymbol::codegenDef() {
   }
 
   {
-    Vec<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
     collect_top_asts(body, asts);
 
-    forv_Vec(BaseAST, ast, asts) {
+    for_vector(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!toTypeSymbol(def->sym)) {
           if (fGenIDS && isVarSymbol(def->sym))
@@ -2404,11 +2398,11 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs);
   *file << this->docsDirective();
 
-  // Print inline/export. Externs do not get a prefix, since the user doesn't
+  // Print export. Externs do not get a prefix, since the user doesn't
   // care whether it's an extern or not (they just want to use the function).
-  if (this->hasFlag(FLAG_INLINE)) {
-    *file << "inline ";
-  } else if (this->hasFlag(FLAG_EXPORT)) {
+  // Inlines don't get a prefix for symmetry in modules like Math.chpl and
+  // due to the argument that it's of negligible value in most cases.
+  if (this->hasFlag(FLAG_EXPORT)) {
     *file << "export ";
   }
 
@@ -2420,10 +2414,9 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   // Print name and arguments.
-  AstToText *info = new AstToText();
-  info->appendNameAndFormals(this);
-  *file << info->text();
-  delete info;
+  AstToText info;
+  info.appendNameAndFormals(this);
+  *file << info.text();
 
   // Print return intent, if one exists.
   switch (this->retTag) {
@@ -2854,7 +2847,7 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
 }
 
 void ModuleSymbol::addDefaultUses() {
-  if (modTag != MOD_INTERNAL && hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
+  if (modTag != MOD_INTERNAL) {
     UnresolvedSymExpr* modRef = 0;
 
     SET_LINENO(this);

@@ -1,0 +1,5 @@
+Module: empty.doc
+   proc noComment()
+   proc noBody()
+   proc noBodyButArgs(num: int, bleah: bool)
+   proc noCommentButArgs(num: real, fleas: bool)

@@ -10,9 +10,10 @@ Chapel itself.  Current subdirectories include:
 chpldoc-venv/
 
   Summary: Directory where several python packages are downloaded and installed
-           when running 'make chpldoc-venv' in the third-party directory. See
-           requirements.txt and virtualenv.txt files for a complete list of
-           packages that are installed.
+           when running 'make chpldoc-venv' in the third-party directory, or
+           when running 'make chpldoc' in $CHPL_HOME. See requirements.txt and
+           virtualenv.txt files for a complete list of packages that are
+           installed.
 
   License: Varies, see chpldoc-venv/README.md
 
@@ -32,15 +33,6 @@ dlmalloc/
   See also: the comments in dlmalloc/src/dlmalloc.c
 
 
-dygraphs/
-  Summary: Dan Vanderkam's JavaScript charting library, which we use
-           to display our performance data.
-
-  License: MIT (see top of dygraphs/dygraph-combined.js file)
-
-  Website: http://dygraphs.com
-
-
 gasnet/
   Summary: the Berkeley GASNet library for one-sided communication
            which we use as a communication layer to implement Chapel's
@@ -57,7 +49,7 @@ gasnet/
 gmp/
   Summary: the GNU Multiple Precision Arithmetic Library
 
-  License: L-GPL (see gmp/gmp-*/COPYING and gmp/gmp-*/COPYING.LIB)
+  License: L-GPL (see gmp/gmp-*/COPYING and gmp/gmp-*/COPYING.LESSERv3)
 
   Website: http://gmplib.org
 

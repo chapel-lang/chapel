@@ -1,0 +1,7 @@
+bug: casting int to c_string makes it a real
+
+For example:
+
+    const n: 5,
+      s: c_string;
+    writeln(s);  // prints 5.0

@@ -923,6 +923,11 @@ of \chpl{C}.
 The value \chpl{nil} can be implicitly converted to any class type.
 These conversions do not change the value.
 
+
+%TODO: Move memory management explanation up, closer to class constructors.
+% Perhaps make the memory management part of the introduction, and then let the
+% description of destructors appear naturally at the same indentation level as
+% constructors.
 \section{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
 \label{Class_Delete}
@@ -967,7 +972,7 @@ delete c;        // Deletes that object.
 \begin{chapelpost}
 \end{chapelpost}
 \begin{chapelexecopts}
---memLeaks
+--memLeaksByType
 \end{chapelexecopts}
 \begin{chapeloutput}
 
@@ -992,3 +997,36 @@ a region-based memory management scheme similar to that used in the Titanium
 language.  Support of \chpl{delete} will likely continue even as these optional
 features become supported.
 \end{openissue}
+
+
+\subsection{Class Destructor}
+\label{Class_Destructor}
+\index{classes!destructor}
+\index{destructor!classes}
+
+A class author may specify additional actions to be performed before a class object is
+reclaimed, by defining a class destructor.  A class destructor is a method that has the
+same name as the class prefixed by a tilde.  A class destructor takes no arguments (aside from
+the implicit \chpl{this} argument).  If defined, the destructor is called each time
+a \chpl{delete} statement is invoked with a valid instance of that class type.  The
+destructor is not called if the argument of \chpl{delete} evaluates to \chpl{nil}.
+
+\begin{chapelexample}{classDestructor.chpl}
+\begin{chapel}
+class C {
+  var i,j,k: int;
+  proc ~C() { writeln("Bye, bye."); }
+}
+
+var c : C = nil;
+delete c;        // Does nothing: c is nil.
+
+c = new C();     // Creates a new object.
+delete c;        // Deletes that object: Writes out "Bye, bye." 
+                 // and reclaims the memory that was held by c.
+\end{chapel}
+\begin{chapeloutput}
+Bye, bye.
+Bye, bye.
+\end{chapeloutput}
+\end{chapelexample}

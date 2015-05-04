@@ -44,7 +44,7 @@ while (delta > epsilon) {
   }
 }
 
-printMemTable(1000);
+printMemAllocs(1000);
 
 writeln("Jacobi computation complete.");
 writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
