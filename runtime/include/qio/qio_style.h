@@ -149,8 +149,12 @@ typedef struct qio_style_s {
   // floating point options
   uint8_t showpoint; // integer floating point values include a decimal point
                      // with some level of precision (maybe just . or maybe .00000 for %g)
+                     // this setting has no impact on numbers printed with an exponent
+                     // this setting does impact integers printed with %n
   uint8_t showpointzero;  // integer floating point values get a .0
                           // if they would otherwise have be printed without a .0
+                          // this setting has no impact on numbers printed with an exponent.
+                          // this setting does not impact integers printed with %n
 
   int32_t precision; // for floating point, number after decimal point.
                      // or number of significant digits in realfmt 2.
