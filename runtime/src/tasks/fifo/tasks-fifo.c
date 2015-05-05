@@ -314,6 +314,8 @@ void chpl_sync_initAux(chpl_sync_aux_t *s) {
 }
 
 static void chpl_thread_condvar_destroy(chpl_thread_condvar_t* cv) {
+  if(pthread_cond_broadcast((pthread_cond_t*) cv))
+    chpl_internal_error("pthread_cond_broadcast() failed, cv was uninitialized");
   if (pthread_cond_destroy((pthread_cond_t*) cv))
     chpl_internal_error("pthread_cond_destroy() failed");
 }
