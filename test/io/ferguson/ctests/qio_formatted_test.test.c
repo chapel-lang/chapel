@@ -471,16 +471,16 @@ void test_printscan_float(void)
                         "0.0000", // %f, showpoint, precision 4
                         "6.1250e-300", // %e, showpoint, precision 4
                        };
-  const char* large[] = { // writing 1.7976931348623157e+308
-                        "1.79769e+308", // default style
+  const char* large[] = { // writing 1.7206679531457315e+308
+                        "1.72067e+308", // default style
                         "179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000", // %f precision 3
-                        "1.798e+308", // %e precision 3
-                        "+1.79769e+308", // showpoint, showplus
-                        "0x1.fffffffffffffp+1023", // hex
+                        "1.721e+308", // %e precision 3
+                        "+1.72067e+308", // showpoint, showplus
+                        "0x1.ea100001+1023", // hex
                         "0X2.000P+1023", // hex, uppercase, showpoint, prec 3
                         "1.798e+308", // %g, 4 significant digits
                         "179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.0000", // %f, showpoint, precision 4
-                        "1.7977e+308", // %e, showpoint, precision 4
+                        "1.7207e+308", // %e, showpoint, precision 4
                        };
   const char* small[] = { // writing 2.2250738585072014e-308
                         "2.22507e-308", // default style
@@ -501,7 +501,7 @@ void test_printscan_float(void)
                    posnan,
                    negnan,
                    1.125e+300, 6.125e-300,
-                   1.7976931348623157e+308, 2.2250738585072014e-308 };
+                   1.7206679531457315e+308, 2.2250738585072014e-308 };
 
   const char** expect_arr[] = { zero, one, plusinf, minusinf, nan, nnan,
                                 x,y,large,small, NULL };
@@ -592,9 +592,14 @@ void test_printscan_float(void)
       err = qio_channel_read(true, reading, got, sizeof(got), &amt_read);
       assert(qio_err_to_int(err) == EEOF);
 
-      //printf("Got    '%s'\n", got);
+      if( 0 != strcmp(got, expect) ) {
+        fprintf(stderr, "match failed for i=%i j=%i\n", i, j);
+        fprintf(stderr, "Got    '%s'\n", got);
+        fprintf(stderr, "Expect '%s'\n", expect);
 
-      assert( 0 == strcmp(got, expect) );
+        assert( 0 == strcmp(got, expect) );
+
+      }
 
       qio_channel_release(reading);
       reading = NULL;
