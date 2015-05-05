@@ -637,23 +637,25 @@ module String {
     //TODO: check for overflow
     on lhs {
       const rhsLen = rhs.len;
-      const new_length = lhs.len+rhsLen;
-      if lhs._size < (new_length) {
-        var new_size = max(new_length+1, (lhs.len * chpl_stringGrowthFactor):int);
-        lhs.buff = chpl_mem_realloc(lhs.buff, (new_size).safeCast(size_t),
-                                    CHPL_RT_MD_STRING_COPY_DATA):c_ptr(uint(8));
-        lhs._size = new_size;
+      if rhsLen != 0 { // if rhs is empty, nothing to do
+        const new_length = lhs.len+rhsLen;
+        if lhs._size <= new_length {
+          var new_size = max(new_length+1, (lhs.len * chpl_stringGrowthFactor):int);
+          lhs.buff = chpl_mem_realloc(lhs.buff, (new_size).safeCast(size_t),
+                                      CHPL_RT_MD_STR_COPY_DATA):c_ptr(uint(8));
+          lhs._size = new_size;
+        }
+        const hereId = chpl_nodeID;
+        const rhsRemote = rhs.locale.id != hereId;
+        if rhsRemote {
+          chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale.id,
+                               rhs.buff, rhsLen.safeCast(size_t));
+        } else {
+          memmove(lhs.buff+lhs.len, rhs.buff, rhsLen.safeCast(size_t));
+        }
+        lhs.len = new_length;
+        lhs.buff[new_length] = 0;
       }
-      const hereId = chpl_nodeID;
-      const rhsRemote = rhs.locale.id != hereId;
-      if rhsRemote {
-        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale.id,
-                            rhs.buff, rhsLen.safeCast(size_t));
-      } else {
-        memmove(lhs.buff+lhs.len, rhs.buff, rhsLen.safeCast(size_t));
-      }
-      lhs.len = lhs.len+rhsLen;
-      lhs.buff[new_length] = 0;
     }
   }
 
