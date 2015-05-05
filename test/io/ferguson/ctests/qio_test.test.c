@@ -2,13 +2,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-// TODO (12/05/14): This test makes use of lseek and then
-// reads through the file, using bytes read as an indicator
-// of position.  On Cygwin, you can't depend on that
-// indicator being accurate, so the test fails. We should
-// rewrite this test to be more portable and look for
-// similar assumptions in our qio code.
-
 int verbose = 0;
 
 unsigned char data_at(int64_t offset)
@@ -195,7 +188,12 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     int syserr;
     syserr = sys_fstat(f->fd, &stats);
     assert(!syserr);
-    assert(stats.st_size == end);
+    if( stats.st_size != end ) {
+      printf("File is the wrong length. Length is %i but expected %i\n",
+             (int) stats.st_size, (int) end);
+      printf("File path is %s\n", filename);
+      assert(stats.st_size == end);
+    }
   }
 
   // That was fun. Now start at the beginning of the file
@@ -385,15 +383,6 @@ int main(int argc, char** argv)
 
   // use smaller qbytes_iobuf_size for testing
   qbytes_iobuf_size = 4*1024;
-
-  //check_channel(threadsafe=0, type=2, start=0, len=16384, chunksz=1, file_hints=default_type default, ch_hints=always_buffered default, unbounded=0, reopen=1)
-  check_channel(0, 2, 0, 16384, 1, 0, QIO_CH_ALWAYS_BUFFERED, 0, 1);
-
-  //check_channel(threadsafe=0, type=1, start=0, len=16384, chunksz=1, file_hints=default_type default, ch_hints=always_unbuffered default, unbounded=1, reopen=1)
-  check_channel(0, 1, 0, 16384, 1, 0, QIO_CH_ALWAYS_UNBUFFERED, 1, 1);
-  check_channel(0, 1, 0, 16384, 1, 0, QIO_CH_ALWAYS_UNBUFFERED, 1, 0);
-  check_channel(0, 1, 0, 16384, 1, 0, QIO_CH_ALWAYS_UNBUFFERED, 0, 0);
-
 
   check_paths();
 
