@@ -1758,9 +1758,12 @@ qioerr qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const ch
 qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
 {
   qioerr err = 0;
+  qioerr flush_or_truncate_error = 0;
+  qioerr destroy_buffer_error = 0;
   qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
   qio_chtype_t type = (qio_chtype_t) (ch->hints & QIO_CHTYPEMASK);
   struct stat stats;
+  int destroyed_buffer = 0;
 
   if( type == QIO_CHTYPE_CLOSED ) return 0;
   if( ! ch->file ) return 0;
@@ -1772,6 +1775,7 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
     // next to the declaration of qio_file->max_initial_position.
     if( (method == QIO_METHOD_MMAP || method == QIO_METHOD_MEMORY) &&
         (ch->flags & QIO_FDFLAG_WRITEABLE) ) {
+
       err = qio_lock(&ch->file->lock);
       if( !err ) {
         int64_t max_space_made = ch->av_end;
@@ -1780,6 +1784,17 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
         if( max_written > ch->end_pos ) max_written = ch->end_pos;
 
         if( method == QIO_METHOD_MMAP ) {
+          // We're going to truncate the file.
+
+          // Destroy the buffer now so that we munmap
+          // before we truncate the file. That is required
+          // for Windows/Cygwin but probably a good idea elsewhere too.
+          if( qbuffer_is_initialized(&ch->buf) ) {
+            // Destroy the buffer.
+            destroy_buffer_error = qbuffer_destroy(&ch->buf);
+            destroyed_buffer = 1;
+          }
+
           stats.st_size = 0;
           // We got the lock. Update the space in the file.
           err = qio_int_to_err(sys_fstat(ch->file->fd, &stats));
@@ -1788,9 +1803,6 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
               stats.st_size == max_space_made &&
               ch->file->max_initial_position == ch->start_pos ) {
             // Truncate the file.
-            // NOTE -- this does not work with Cygwin
-            // because (presuambly) Windows does not like to
-            // truncate a file while it is still mapped.
             err = qio_int_to_err(sys_ftruncate(ch->file->fd, max_written ));
           }
         } else {
@@ -1808,12 +1820,15 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
     }
   }
 
+  // Make a note of any error from flush/truncate so we don't forget it
+  flush_or_truncate_error = err;
+
   // set end_pos to the current position.
   ch->end_pos = qio_channel_offset_unlocked(ch);
 
-  if( qbuffer_is_initialized(&ch->buf) ) {
+  if( !destroyed_buffer && qbuffer_is_initialized(&ch->buf) ) {
     // Destroy the buffer.
-    err = qbuffer_destroy(&ch->buf);
+    destroy_buffer_error = qbuffer_destroy(&ch->buf);
   }
 
   ch->hints |= QIO_CHTYPE_CLOSED; // set to invalid type so funcs return EINVAL
@@ -1821,6 +1836,8 @@ qioerr _qio_channel_final_flush_unlocked(qio_channel_t* ch)
   qio_file_release(ch->file);
   ch->file = NULL;
 
+  if( flush_or_truncate_error ) return flush_or_truncate_error;
+  if( destroy_buffer_error ) return destroy_buffer_error;
   return err;
 }
 
@@ -1832,7 +1849,7 @@ void _qio_channel_destroy(qio_channel_t* ch)
 
   err = _qio_channel_final_flush_unlocked(ch);
   if( err ) {
-    fprintf(stderr, "qio_channel_final_flush returned fatal error %i", qio_err_to_int(err));
+    fprintf(stderr, "qio_channel_final_flush returned fatal error %i\n", qio_err_to_int(err));
     assert( !err );
     abort();
   }
