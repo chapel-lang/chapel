@@ -868,7 +868,7 @@ err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
   }
   //printf("after ReadFile returning num_read = %i and error = %i\n", (int) got, (int) error);
   *num_read = got;
-  assert(got <= count); // can't read more than requested!
+  assert(got < 0 || (size_t) got <= count); // can't read more than requested!
   return error;
 #else
   ssize_t got;
@@ -912,7 +912,7 @@ err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *nu
     error = get_errcode_from_winerr(win_error);
   }
 
-  assert(got <= count); // can't write more than requested!
+  assert(got < 0 || (size_t) got <= count); // can't read more than requested!
   *num_written = got;
   return error;
 #else
@@ -1108,12 +1108,12 @@ err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_off
   for( i = 0; i < iovcnt; i++ ) {
     got = 0;
     err_out = do_pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total, &got);
-    if( got != -1 ) {
+    if( got >= 0 ) {
       got_total += got;
     } else {
       break;
     }
-    if( got != iov[i].iov_len ) {
+    if( (size_t) got != iov[i].iov_len ) {
       break;
     }
   }
@@ -1181,12 +1181,12 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
   for( i = 0; i < iovcnt; i++ ) {
     got = 0;
     err_out = do_pwrite(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total, &got);
-    if( got != -1 ) {
+    if( got >= 0 ) {
       got_total += got;
     } else {
       break;
     }
-    if( got != iov[i].iov_len ) {
+    if( (size_t) got != iov[i].iov_len ) {
       break;
     }
   }
