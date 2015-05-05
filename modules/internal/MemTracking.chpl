@@ -25,8 +25,8 @@ module MemTracking
   config const
     memTrack: bool = false,
     memStats: bool = false,
+    memLeaksByType: bool = false,
     memLeaks: bool = false,
-    memLeaksTable: bool = false,
     memMax: uint = 0,
     memThreshold: uint = 0,
     memLog: c_ptr(uint(8)) = nil;
@@ -60,16 +60,16 @@ module MemTracking
   export
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
+                                         ref ret_memLeaksByType: bool,
                                          ref ret_memLeaks: bool,
-                                         ref ret_memLeaksTable: bool,
                                          ref ret_memMax: size_t,
                                          ref ret_memThreshold: size_t,
                                          ref ret_memLog: c_ptr(uint(8)),
                                          ref ret_memLeaksLog: c_ptr(uint(8))) {
     ret_memTrack = memTrack;
     ret_memStats = memStats;
+    ret_memLeaksByType = memLeaksByType;
     ret_memLeaks = memLeaks;
-    ret_memLeaksTable = memLeaksTable;
     ret_memMax = cMemMax;
     ret_memThreshold = cMemThreshold;
 

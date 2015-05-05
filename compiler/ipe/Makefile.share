@@ -33,6 +33,7 @@ IPE_SRCS =                           \
                                      \
            IpeProcedure.cpp          \
            IpeMethod.cpp             \
+           IpeSequence.cpp           \
            IpeBlockStmt.cpp          \
            IpeCallExpr.cpp           \
            IpeDefExpr.cpp            \
@@ -42,8 +43,8 @@ IPE_SRCS =                           \
            IpeReaderTerminal.cpp     \
                                      \
            ipeResolve.cpp            \
-           ipeLocation.cpp           \
-           ipeEvaluate.cpp
+           ipeEvaluate.cpp           \
+           ipeUtils.cpp
 
 
 SVN_SRCS = $(IPE_SRCS)

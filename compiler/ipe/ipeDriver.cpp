@@ -19,9 +19,6 @@
 
 #include "ipe.h"
 
-#include "AstDumpToNode.h"
-#include "expr.h"
-#include "files.h"
 #include "IpeEnv.h"
 #include "IpeModule.h"
 #include "IpeModuleRoot.h"
@@ -30,6 +27,12 @@
 #include "IpeReaderFile.h"
 #include "IpeReaderTerminal.h"
 #include "IpeValue.h"
+
+#include "ipeEvaluate.h"
+
+#include "AstDumpToNode.h"
+#include "expr.h"
+#include "files.h"
 #include "type.h"
 
 PrimitiveType*        gIpeTypeType        = NULL;
@@ -43,7 +46,8 @@ int                   gDebugLevelCalls    =    0;
 int                   gDebugLevelVars     =    0;
 
 static PrimitiveType* createType(const char* name);
-static void           readEvalPrintLoop(IpeModule* module);
+static void           commandLineScripts(IpeModule* moduleRepl);
+static void           readEvalPrintLoop (IpeModule* moduleRepl);
 
 void ipeRun()
 {
@@ -80,47 +84,51 @@ void ipeRun()
     INT_ASSERT(false);
   }
 
-  if (IpeModuleInternal::loadAndInitialize(rootModule)  == false)
+  if (rootModule->loadSystemModules() == false)
   {
-    printf("Failed to load the internal modules\n");
-    INT_ASSERT(false);
-  }
-
-  if (IpeModuleStandard::loadAndInitialize(rootModule)  == false)
-  {
-    printf("Failed to load the standard modules\n");
+    printf("Failed to load the system modules\n");
     INT_ASSERT(false);
   }
 
 #if 0
   printf("\n\n\n\n");
-  printf("After module loading\n");
-  IpeModule::describeAllModules(0);
+  printf("After loading system modules\n");
+  rootModule->describeAllModules(0);
   printf("\n\n\n\n");
 #endif
 
   replModule = rootModule->moduleByName("ChapelRepl");
-  replModule->moduleResolve(rootModule);
-  replModule->initialize();
+  replModule->moduleEvaluate();
 
 #if 0
   printf("\n\n\n\n");
-  printf("After REPL initialize\n");
-  IpeModule::describeAllModules(0);
+  printf("After REPL moduleEvaluate\n");
+  rootModule->describeAllModules(0);
   printf("\n\n\n\n");
 #endif
 
-  readEvalPrintLoop(replModule);
+  commandLineScripts(replModule);
+
+#if 1
+  printf("\n\nAfter command line script\n");
+  printf("\n\n");
+  rootModule->describeAllModules(0);
+  printf("\n\n\n\n");
+#endif
 
 #if 0
+  readEvalPrintLoop(replModule);
+#else
+  (void) readEvalPrintLoop;
+#endif
+
   if (replModule != NULL)
     delete replModule;
 
   if (rootModule != NULL)
     delete rootModule;
 
-  IpeModule::modulesDeallocate();
-
+#if 0
   // NOAKES 2015/02/23 These will seg-fault for some reason
   cleanAst();
   destroyAst();
@@ -146,68 +154,53 @@ static PrimitiveType* createType(const char* name)
 *                                                                           *
 ************************************* | ************************************/
 
-static void readEvalPrintLoop(IpeModule* moduleRepl)
+static void commandLineScripts(IpeModule* moduleRepl)
 {
   astlocMarker  markAstLoc(0, "<repl>");
-  AstDumpToNode logger(stdout, 3);
+  int           filenum       = 0;
+  const char*   inputFilename = 0;
+
+  while ((inputFilename = nthFilename(filenum++)))
+  {
+    if (isChplSource(inputFilename))
+    {
+      IpeReaderFile reader;
+
+      if (reader.open(inputFilename) == true)
+      {
+        while (Expr* expr = reader.readStmt())
+        {
+          evaluate(expr, moduleRepl->environment());
+
+          if (gDebugLevelResolve > 2 || gDebugLevelEvaluate > 2)
+            printf("\n\n\n\n\n\n\n\n");
+        }
+
+        reader.close();
+      }
+    }
+  }
+}
+
+static void readEvalPrintLoop(IpeModule* moduleRepl)
+{
+  astlocMarker      markAstLoc(0, "<repl>");
+  IpeReaderTerminal reader;
+  int               cmdCount = 1;
 
   printf("\n\n\n");
   printf("IPE 0.1\n");
   printf("\n");
 
+  printf("%2d > ", cmdCount);
+
+  while (Expr* expr = reader.readStmt())
   {
-    int         filenum       = 0;
-    const char* inputFilename = 0;
+    IpeValue value = evaluate(expr, moduleRepl->environment());
 
-    int count = 0;
+    (void) value;
 
-    while ((inputFilename = nthFilename(filenum++)))
-    {
-      if (isChplSource(inputFilename))
-      {
-        IpeReaderFile reader;
-
-        if (reader.open(inputFilename) == true)
-        {
-          while (Expr* expr = reader.readStmt())
-          {
-            IpeValue value = moduleRepl->evaluate(expr);
-
-            (void) value;
-
-            if (gDebugLevelResolve > 2 || gDebugLevelEvaluate > 2)
-              printf("\n\n\n\n\n\n\n\n");
-
-            count = count + 1;
-          }
-
-          reader.close();
-        }
-      }
-    }
-  }
-
-#if 0
-  printf("\n\nAfter command line script\n");
-  printf("\n\n");
-  IpeModule::describeAllModules(0);
-  printf("\n\n\n\n");
-#endif
-
-  {
-    int               cmdCount = 1;
-    IpeReaderTerminal reader;
-
+    cmdCount = cmdCount + 1;
     printf("%2d > ", cmdCount);
-
-    while (Expr* expr = reader.readStmt())
-    {
-      IpeValue value   = moduleRepl->evaluate(expr);
-
-      (void) value;
-
-      cmdCount = cmdCount + 1;
-      printf("%2d > ", cmdCount);
-    }
   }
 }

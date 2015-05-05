@@ -1,0 +1,2 @@
+# cray compiler bug jira 39, should be resolved when 8.4 is released
+CHPL_TARGET_COMPILER==cray-prgenv-cray

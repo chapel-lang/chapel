@@ -28,14 +28,23 @@ IpeDefExpr::IpeDefExpr(LcnSymbol* sym,
                        Expr*      initExpr,
                        Expr*      typeExpr) : DefExpr(sym, initExpr, typeExpr)
 {
-  mFnSymbol = NULL;
+  mFnSymbol     = NULL;
+  mModuleSymbol = NULL;
 }
 
 
 IpeDefExpr::IpeDefExpr(LcnSymbol* sym,
                        FnSymbol*  fnSymbol) : DefExpr(sym, NULL, NULL)
 {
-  mFnSymbol = fnSymbol;
+  mFnSymbol     = fnSymbol;
+  mModuleSymbol = NULL;
+}
+
+IpeDefExpr::IpeDefExpr(LcnSymbol*     sym,
+                       ModuleSymbol*  moduleSymbol) : DefExpr(sym, NULL, NULL)
+{
+  mFnSymbol     = NULL;
+  mModuleSymbol = moduleSymbol;
 }
 
 IpeDefExpr::~IpeDefExpr()
@@ -46,6 +55,11 @@ IpeDefExpr::~IpeDefExpr()
 FnSymbol* IpeDefExpr::fnSymbolGet() const
 {
   return mFnSymbol;
+}
+
+ModuleSymbol* IpeDefExpr::moduleSymbolGet() const
+{
+  return mModuleSymbol;
 }
 
 void IpeDefExpr::describe(int offset)
@@ -75,6 +89,15 @@ void IpeDefExpr::describe(int offset)
     printf("%s   Function:\n", pad);
     printf("%s   ", pad);
     mFnSymbol->accept(&logger);
+    printf("\n");
+  }
+
+  if (mModuleSymbol)
+  {
+    printf("\n");
+    printf("%s   Module:\n", pad);
+    printf("%s   ", pad);
+    mModuleSymbol->accept(&logger);
     printf("\n");
   }
 

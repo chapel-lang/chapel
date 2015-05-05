@@ -1,0 +1,2 @@
+ParallelOnly.chpl:13: error: unresolved call 'myIter()'
+ParallelOnly.chpl:3: note: candidates are: myIter(param tag: iterKind)
