@@ -651,7 +651,8 @@ module String {
         memmove(lhs.buff+lhs.len, rhs.buff, rhsLen.safeCast(size_t));
       }
       lhs.len = lhs.len+rhsLen;
-      lhs.buff[new_length] = 0;
+      if (lhs._size > 0) then
+        lhs.buff[new_length] = 0;
     }
   }
 
