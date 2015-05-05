@@ -105,6 +105,8 @@ high priority (sources of noise)
 
 o sporadic timeout on tests that normally complete quickly (xc.*): elliot/gbt/anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-2
+
   Specific tests aren't listed (which is not very helpful).  Is this
   the stream* case?  If anyone knows which tests are affected, please
   collapse any other stories below into this one as appropriate...
@@ -112,6 +114,8 @@ o sporadic timeout on tests that normally complete quickly (xc.*): elliot/gbt/an
 
 o sporadic dropped output (prgenv-cray): anyone but poor gbt who's
   spent enough time on this
+
+  https://chapel.atlassian.net/browse/CHAPEL-3
 
   For the past several months, we've seen fairly consistent dropping
   of I/O in testing but so infrequently and across so many tests that
@@ -126,6 +130,8 @@ o sporadic dropped output (prgenv-cray): anyone but poor gbt who's
 
 o SSCA2_main times out sporadically (xe.ugni*, perf.xc.*): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-4
+
   Seems like we probably need to dial down the problem size in some fashion?
 
   - release/examples/benchmarks/ssca2/SSCA2_main
@@ -133,10 +139,14 @@ o SSCA2_main times out sporadically (xe.ugni*, perf.xc.*): anyone
 
 o miniMD timeouts (perf.xc.16.mpi.gnu, perf.xc.16.ugni.gnu): anyone/ben
 
+  https://chapel.atlassian.net/browse/CHAPEL-5
+
   What would it take to solidify this test's execution time?
 
 
 o ra times out sporadically (xe.ugni*): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-6
 
   Is this surprising?  Is it the same stream* timeout issue indicated
   above?
@@ -145,6 +155,8 @@ o ra times out sporadically (xe.ugni*): anyone
 
 
 o sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-7
 
   Under valgrind testing, these tests fail with some regularity due to
   invalid reads/writes in routines starting with dl_*.  Why?
@@ -156,6 +168,8 @@ o sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
 
 o types/string/StringImpl/memLeaks/* (gasnet*, gasnet.fifo): kyleb, hilde?
 
+  https://chapel.atlassian.net/browse/CHAPEL-8
+
   These tests get sporadic failures of various flavors under gasnet.
   Sung tried to quiet them down at some point, but apparently didn't
   succeed.  Are the problems these tests are hitting related to other
@@ -165,6 +179,8 @@ o types/string/StringImpl/memLeaks/* (gasnet*, gasnet.fifo): kyleb, hilde?
 
 
 o sporadic valgrind timeouts (valgrind): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-9
 
   These tests regularly cause noise in valgrind testing.  What can be
   done to improve that?  Are they just long-running?
@@ -176,6 +192,8 @@ o sporadic valgrind timeouts (valgrind): anyone
 
 o sporadic invalid reads/writes (valgrind): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-10
+
   These tests started sporadically getting invalid reads/writes on
   4/11.  Did something change on 4/10 to cause this? (see also
   'invalid reads/writes' below)
@@ -186,6 +204,8 @@ o sporadic invalid reads/writes (valgrind): anyone
 
 o pivotal story 91235766 (gasnet-fast): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-12
+
   This test is effectively in a "keep it in REGRESSIONS until someone
   determines that it shouldn't be" limbo which doesn't seem very
   useful.  What can we do to remove it?
@@ -194,6 +214,8 @@ o pivotal story 91235766 (gasnet-fast): anyone
 
 
 o bulkcomm execution timeouts (gasnet.fifo): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-13
 
   These tests seem to time out very regularly.  What can be done to
   stop that?  Do the tests themselves run too long, or are they
@@ -205,10 +227,14 @@ o bulkcomm execution timeouts (gasnet.fifo): anyone
 
 o execflags/bradc/gdbddash/gdbSetConfig (xc-wb.*): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-14
+
   Why oh why does this test time out so frequently on the xc-wb testing?
 
 
 o sporadic x? HW execution timeouts (xe.ugni*): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-15
 
   Is this a fairly recently seen failure?  Any occurrences before 3/22?
 
@@ -217,10 +243,14 @@ o sporadic x? HW execution timeouts (xe.ugni*): anyone
 
 o lulesh timeouts (xe.mpi.pgi, perf.xc.local.cray): anyone/bradc
 
+  https://chapel.atlassian.net/browse/CHAPEL-16
+
   What would it take to make this stop timing out?
 
 
 o sporadic [chpl_launchcmd] "output file from job does not exist..." errors (xc.*): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-17
 
   We seem to have been seeing this in the 03/25 onward timeframe, if not before
 
@@ -229,6 +259,8 @@ o sporadic [chpl_launchcmd] "output file from job does not exist..." errors (xc.
 
 o sporadic slurm 'expired credential' problem (xc.*): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-18
+
   We seem to have gotten a few of these 4/13 and 4/16.  What's up?
 
   - see REGRESSIONS
@@ -236,14 +268,18 @@ o sporadic slurm 'expired credential' problem (xc.*): anyone
 
 o sporadic pgi failures (perf.xc.local.pgi): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-19
+
   Why are these failing regularly on PGI?  Note possible relation to
-  'These started timing out consistently on 2/18'
+  'These started timing out consistently on 2/18' CHAPEL-20
 
   - studies/shootout/nbody/bradc/nbody-blc-slice
   - release/examples/benchmarks/hpcc/ptrans
 
 
 o cygwin noise (cygwin*): 
+
+  https://chapel.atlassian.net/browse/CHAPEL-21
 
   These tests bounce between error matching output and timing out.  Help?
 
@@ -252,6 +288,8 @@ o cygwin noise (cygwin*):
 
 
 o Colorado state tests noisy (or failing) on Cygwin (cygwin32): ben
+
+  https://chapel.atlassian.net/browse/CHAPEL-22
 
   Some of these are noisy, others simply fail
 
@@ -263,7 +301,9 @@ o Colorado state tests noisy (or failing) on Cygwin (cygwin32): ben
 high priority (failing in one or more configurations)
 -----------------------------------------------------
 
-o regep issues (valgrind, linux32, cygwin*, cygwin64): mppf/anyone
+o regexp issues (valgrind, linux32, cygwin*, cygwin64): mppf/anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-23
 
   - regexp/ferguson/rechan
     io/tzakian/recordReader/test
@@ -287,6 +327,8 @@ high priority (open too long)
 
 o studies/glob/test_glob (baseline): bradc
 
+  https://chapel.atlassian.net/browse/CHAPEL-24
+
   Failing since ???.  The claim was that the AMM improvements would
   fix this test, but who wants to wait for that?  This test exercises
   prototype routines that have since been matured and put into
@@ -295,6 +337,8 @@ o studies/glob/test_glob (baseline): bradc
 
 o io/vass/time-write (perf.xc.no-local.gnu): vass
 
+  https://chapel.atlassian.net/browse/CHAPEL-25
+
   Failing since first run?  Why?  Race in using printf()?
 
   - io/vass/time-write
@@ -302,10 +346,14 @@ o io/vass/time-write (perf.xc.no-local.gnu): vass
 
 o multilocale/deitz/needMultiLocales/test_remote_file_read (gasnet-fast): mppf
 
+  https://chapel.atlassian.net/browse/CHAPEL-26
+
   This test has been failing with a segfault since 2/22.
 
 
 o memory/bradc/allocBig (linux32): kyleb
+
+  https://chapel.atlassian.net/browse/CHAPEL-27
 
   Chapel string passed to extern routine.  Didn't get fixed with the
   rest of the fixes that went in with/after that patch?  Has been
@@ -314,15 +362,21 @@ o memory/bradc/allocBig (linux32): kyleb
 
 o modules/standard/BitOps/rotl (xc-wb.prgenv-cray): kyleb
 
+  https://chapel.atlassian.net/browse/CHAPEL-28
+
   Error matching program output since 2015-03-10.
 
 
 o fftw.h not found since  3/19 (xc.llvm): thomas
 
+  https://chapel.atlassian.net/browse/CHAPEL-29
+
   - release/examples/primers/FFTWlib
 
 
 o new errors on 2015-03-28 (valgrind): vass
+
+  https://chapel.atlassian.net/browse/CHAPEL-30
 
   What happened on that night to make these tests start failing and
   continue to fail ever since?
@@ -333,7 +387,9 @@ o new errors on 2015-03-28 (valgrind): vass
   - studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple
 
 
-o chpldoc missing package (linux32): thomas
+o chpldoc missing package (cygwin32): thomas
+
+  https://chapel.atlassian.net/browse/CHAPEL-31
 
   And has been since 4/7.
 
@@ -341,6 +397,8 @@ o chpldoc missing package (linux32): thomas
 
 
 o ipe/powerOfTwo (valgrind, *32): noakes
+
+  https://chapel.atlassian.net/browse/CHAPEL-32
 
   This test has been failing with a segfault on 32-bit systems since
   4/19; valgrind will probably point out the cause.
@@ -350,6 +408,8 @@ high priority (worrisome)
 -------------------------
 
 o invalid reads/writes (valgrind): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-11
 
   These are marked as being not manually reproducible, but they've
   failed so regularly since 4/11, how can that be?  Did something
@@ -369,12 +429,16 @@ high priority (potential portability issues)
 
 o I/O test assertions fail (intel): mppf
 
+  https://chapel.atlassian.net/browse/CHAPEL-33
+
   This test fails on intel which seems worrisome.
 
   - io/ferguson/writef_readf
 
 
 o binary files differ (intel): mppf
+
+  https://chapel.atlassian.net/browse/CHAPEL-34
 
   This test reports that its binary files differs on intel which
   seems worrisome.
@@ -383,6 +447,8 @@ o binary files differ (intel): mppf
 
 
 o factorization failed (intel): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-35
 
   This test seems to have started failing on 03/12 -- why?  How did we
   miss it?
@@ -393,6 +459,8 @@ high priority (CCE quiettude)
 
 o compilation timeouts (xe*cray): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-36
+
   The Cray compiler is notoriously slow.  What can be done?
   - release/examples/benchmarks/lulesh/lulesh
   - release/examples/benchmarks/miniMD/miniMD
@@ -401,10 +469,14 @@ o compilation timeouts (xe*cray): anyone
 
 o text file busy with path mandelbrot (xc-wb.prgenv-cray): thomas
 
+  https://chapel.atlassian.net/browse/CHAPEL-37
+
   - exercises/Mandelbrot/mandelbrot
 
 
 o invalid option "openmp" on the command line (xc-wb.prgenv-cray): ben/thomas
+
+  https://chapel.atlassian.net/browse/CHAPEL-38
 
   - studies/colostate/OMP-Jacobi-1D-Naive-Parallel
   - studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling
@@ -414,16 +486,22 @@ o invalid option "openmp" on the command line (xc-wb.prgenv-cray): ben/thomas
 
 o types/enum/ferguson/enum_mintype_test (prgenv-cray): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-39
+
   This test gets a "value outside int rage" at C compilation time.
   What should we do about this?
 
 
 o error differs but within acceptable margin (xc-wb.prgenv-cray): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-40
+
   - studies/hpcc/FFT/marybeth/fft
 
 
 o consistent execution timeout (xc-wb.prgenv-cray): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-41
 
   What changed on 2015-02-15 to make this start timing out?  Why only
   here?
@@ -433,12 +511,16 @@ o consistent execution timeout (xc-wb.prgenv-cray): anyone
 
 o when building 'chpl' with CCE, weird stuff happens (xc-wb.host.prgenv-cray): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-42
+
   Proposed approach was to build compiler with CCE and run with
   valgrind to see if we're doing something bad under CCE.  bradc has
   notes but never had time to follow through.
 
 
 o studies/hpcc/FFT/marybeth/fft (prgenv-cray): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-43
 
   Error differs, but within an acceptable margin; should squash
   printing of the error for correctness testing?
@@ -448,6 +530,8 @@ medium priority (worrisome)
 ---------------------------
 
 o conditional jump in re2 (valgrind): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-44
 
   The following tests get a "conditional jump depends on uninitialized
   value" -- should we patch re2 to fix something?
@@ -461,6 +545,8 @@ medium priority (clutter)
 
 o memory/sungeun/refCount/domainMaps (*32): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-45
+
   Reports a different amount of memory leaked on 32-bit platforms.  Is
   this because something of pointer size is being leaked?  Can we
   quiet this somehow without losing whatever value it has?
@@ -468,10 +554,14 @@ o memory/sungeun/refCount/domainMaps (*32): anyone
 
 o users/vass/type-tests.isSubType (*32): anyone/vass
 
+  https://chapel.atlassian.net/browse/CHAPEL-46
+
   Consistently segfaulting since first run, according to REGRESSIONS.
 
 
 o domains/sungeun/assoc/parSafeMember (pgi): anyone (ben?)
+
+  https://chapel.atlassian.net/browse/CHAPEL-47
 
   This test has a tendency to time out under PGI.  Note that PGI
   doesn't support native atomics, so that may be the cause.  Could the
@@ -483,6 +573,8 @@ o domains/sungeun/assoc/parSafeMember (pgi): anyone (ben?)
 
 o negative floating point 0.0 issue (pgi): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-48
+
   Something about -0.0i doesn't make PGI happy
 
   - types/complex/bradc/negateimaginary3
@@ -492,12 +584,16 @@ o negative floating point 0.0 issue (pgi): anyone
 
 o QIO assertion errors (cygwin): mppf
 
+  https://chapel.atlassian.net/browse/CHAPEL-49
+
   The following test gets QIO assertion errors.  Should it?
 
   - io/ferguson/ctests/qio_formatted_test (compopts: 1)
 
 
 o -0.0 not supported on PGI? (pgi): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-50
 
   Are they within their rights with C or is this a portability issue or ...?
   Should we suppress?  Is there a flag/fix?
@@ -509,10 +605,14 @@ o -0.0 not supported on PGI? (pgi): anyone
 
 o unclear how KNCs interact with the file system (xc.knc): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-51
+
   - release/examples/primers/fileIO
 
 
 o OOB array access for non 2**k core count (perf.xc.*): ben
+
+  https://chapel.atlassian.net/browse/CHAPEL-52
 
   I remember strategizing about this one at the perf meeting, but not the
   conclusion.  Also times out when it's not failing...
@@ -521,6 +621,8 @@ o OOB array access for non 2**k core count (perf.xc.*): ben
 
 
 o These started timing out consistently on 2/18 (perf.xc.no-local.gnu): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-20
 
   Why would that be?
 
@@ -532,10 +634,14 @@ o These started timing out consistently on 2/18 (perf.xc.no-local.gnu): anyone
 
 o "got == expect[i]" assertion error (cygwin32): mppf
 
+  https://chapel.atlassian.net/browse/CHAPEL-53
+
   - io/ferguson/ctests/qio_bits_test
 
 
 o consistent execution timeout / assertion error (cygwin32, cygwin64): mppf
+
+  https://chapel.atlassian.net/browse/CHAPEL-54
 
   - io/ferguson/ctests/qio_test
 
@@ -545,6 +651,8 @@ medium priority (noisy)
 
 o sporadic execution timeouts (gasnet.fifo): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-55
+
   This test has timed out a few times recently -- why is that?  What
   should be done with it?
 
@@ -552,6 +660,8 @@ o sporadic execution timeouts (gasnet.fifo): anyone
 
 
 o sadSerial times out sporadically (perf.xc.local.intel): lydia
+
+  https://chapel.atlassian.net/browse/CHAPEL-56
 
   - studies/parboil/SAD/sadSerial
 
@@ -561,6 +671,8 @@ low priority (annoying, but should get better in the future)
 ------------------------------------------------------------
 
 o fasta-lines (perf.bradc-lnx, perf.chap03, perf.chapel-shootout): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-57
 
   This fails due to insane memory usage due to strings.  Can anything
   be done to improve this situation until strings get better?  Would
@@ -573,6 +685,8 @@ low priority (portability issue, significant level of effort required)
 
 o release/examples/benchmarks/shootout/pidigits (llvm): anyone/thomas/mppf
 
+  https://chapel.atlassian.net/browse/CHAPEL-58
+
   This fails due to the use of macros in gmp.h.  Thomas had a
   potential plan for dealing with it, which I forget offhnad.
 
@@ -583,6 +697,8 @@ low priority (so infrequent as to be potentially not our issue)
 
 o SIGBUS at execution time (xc.knc): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-59
+
   I think we've seen this just once?
 
   - release/examples/benchmarks/lulesh/lulesh
@@ -590,12 +706,16 @@ o SIGBUS at execution time (xc.knc): anyone
 
 o timed out once? (perf.xc.*): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-60
+
   Was this a one-off?
 
   - functions/iterators/angeles/distAdaptativeWSv2
 
 
 o timed out once (perf.xc.local.cray): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-61
 
   Was this a one-off?
 

@@ -48,6 +48,9 @@ bool IpeScope::isScopeModule() const
 
 void IpeScope::useAdd(IpeModule* use)
 {
+  for (size_t i = 0; i < mUsedModules.size(); i++)
+    INT_ASSERT(mUsedModules[i] != use);
+
   mUsedModules.push_back(use);
 }
 
@@ -68,6 +71,9 @@ IpeModule* IpeScope::useGet(int index) const
 
 void IpeScope::varAdd(LcnSymbol* variable)
 {
+  for (size_t i = 0; i < mVariables.size(); i++)
+    INT_ASSERT(mVariables[i] != variable);
+
   mVariables.push_back(variable);
 }
 
@@ -86,19 +92,22 @@ LcnSymbol* IpeScope::varGet(int index) const
   return retval;
 }
 
+#if 0
 bool IpeScope::isDefinedLocally(const char* name) const
 {
-  return (findVariable(name, true) != NULL) ? true : false;
+  return (findVariableFoo(name, true) != NULL) ? true : false;
 }
 
-LcnSymbol* IpeScope::findVariable(UnresolvedSymExpr* expr, bool localOnly) const
+LcnSymbol* IpeScope::findVariableFoo(UnresolvedSymExpr* expr, bool localOnly) const
 {
-  return findVariable(expr->unresolved, localOnly);
+  return findVariableFoo(expr->unresolved, localOnly);
 }
 
-LcnSymbol* IpeScope::findVariable(const char* identifier, bool localOnly) const
+LcnSymbol* IpeScope::findVariableFoo(const char* identifier, bool localOnly) const
 {
   LcnSymbol* retval = NULL;
+
+  INT_ASSERT(identifier);
 
   for (size_t i = 0; i < mVariables.size() && retval == NULL; i++)
     retval = (mVariables[i]->name == identifier) ? mVariables[i] : NULL;
@@ -110,7 +119,7 @@ LcnSymbol* IpeScope::findVariable(const char* identifier, bool localOnly) const
 
     for (size_t i = 0; i < mUsedModules.size(); i++)
     {
-      if (LcnSymbol* var = mUsedModules[i]->environment()->findVariable(identifier, false))
+      if (LcnSymbol* var = mUsedModules[i]->environment()->findVariable(identifier))
         usedMatches.push_back(var);
     }
 
@@ -126,10 +135,11 @@ LcnSymbol* IpeScope::findVariable(const char* identifier, bool localOnly) const
 
   // Possibly recurse to the parent
   if (retval == NULL && localOnly == false && mParent != NULL)
-    retval = mParent->findVariable(identifier, false);
+    retval = mParent->findVariableFoo(identifier, false);
 
   return retval;
 }
+#endif
 
 bool IpeScope::hasParent() const
 {
@@ -138,6 +148,6 @@ bool IpeScope::hasParent() const
 
 void IpeScope::parentSummarize(char* pad) const
 {
-  printf("%s   Parent: %-12s %s\n", pad, mParent->type(), mParent->name());
+  printf("%s  Parent: %-12s %s\n", pad, mParent->type(), mParent->name());
 }
 

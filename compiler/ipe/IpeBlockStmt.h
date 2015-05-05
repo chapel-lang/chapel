@@ -20,29 +20,30 @@
 #ifndef _IPE_BLOCK_STMT_H_
 #define _IPE_BLOCK_STMT_H_
 
-#include "stmt.h"
+#include "IpeSequence.h"
 
+#include <vector>
+
+class Expr;
 class IpeEnv;
-class IpeScopeBlock;
-class LcnSymbol;
 
-class IpeBlockStmt : public BlockStmt
+class IpeBlockStmt : public IpeSequence
 {
 public:
-                           IpeBlockStmt(BlockStmt* stmt,
-                                        IpeEnv*    parent);
+                           IpeBlockStmt(const std::vector<Expr*>& stmts,
+                                        IpeEnv*                   env);
+
   virtual                 ~IpeBlockStmt();
 
-  IpeScopeBlock*           scopeGet()                               const;
+  virtual bool             isScopeless()                            const;
+  virtual void             describe(int offset);
 
-  void                     varAdd(LcnSymbol* variable);
-
-  void                     describe(int offset);
+  IpeEnv*                  envGet()                                 const;
 
 private:
                            IpeBlockStmt();
 
-  IpeScopeBlock*           mScope;
+  IpeEnv*                  mEnv;
 };
 
 #endif

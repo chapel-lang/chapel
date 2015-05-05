@@ -79,8 +79,8 @@ module BaseStringType {
   pragma "insert line file info"
   extern proc chpl_mem_free(ptr: c_ptr): void;
 
-  extern const CHPL_RT_MD_STRING_COPY_REMOTE: chpl_mem_descInt_t;
-  extern const CHPL_RT_MD_STRING_COPY_DATA: chpl_mem_descInt_t;
+  extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
+  extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
 
   // TODO: maybe remove this one, mostly used as a helper for me to make sure I
   // get the signature right.
@@ -90,7 +90,7 @@ module BaseStringType {
   }
 
   proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
-      const dest = chpl_mem_alloc((len+1).safeCast(size_t), CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
+      const dest = chpl_mem_alloc((len+1).safeCast(size_t), CHPL_RT_MD_STR_COPY_REMOTE): bufferType;
       chpl_string_comm_get(dest, src_loc_id, src_addr, len.safeCast(size_t));
       dest[len] = 0;
       return dest;
@@ -183,7 +183,7 @@ module String {
               on this do chpl_mem_free(this.buff);
             // allocate a new buffer
             this.buff = chpl_mem_alloc((s_len+1).safeCast(size_t),
-                                       CHPL_RT_MD_STRING_COPY_DATA):bufferType;
+                                       CHPL_RT_MD_STR_COPY_DATA):bufferType;
             this.buff[s_len] = 0;
             this._size = s_len+1;
           }
@@ -244,7 +244,7 @@ module String {
       ret._size = min_alloc_size;
       ret.len = 1;
       ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
-                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+                                CHPL_RT_MD_STR_COPY_DATA): bufferType;
 
       var remoteThis = this.locale.id != chpl_nodeID;
       if remoteThis {
@@ -283,7 +283,7 @@ module String {
       }
       ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
       ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
-                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+                                CHPL_RT_MD_STR_COPY_DATA): bufferType;
 
       var thisBuff: bufferType;
       var remoteThis = this.locale.id != chpl_nodeID;
@@ -397,7 +397,7 @@ module String {
 
     if !s.isEmptyString() {
       ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
-                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+                                CHPL_RT_MD_STR_COPY_DATA): bufferType;
       memmove(ret.buff, s.buff, s.len.safeCast(size_t));
       ret.len = s.len;
       ret.owned = true; // I now own my data.
@@ -432,7 +432,7 @@ module String {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
         ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
-                                  CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
         memmove(ret.buff, s.buff, s.len.safeCast(size_t));
         ret.buff[s.len] = 0;
       } else {
@@ -522,7 +522,7 @@ module String {
     ret.len = s0len + s1len;
     ret._size = ret.len+1;
     ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
-                              CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+                              CHPL_RT_MD_STR_COPY_DATA): bufferType;
 
     const hereId = chpl_nodeID;
     const s0remote = s0.locale.id != hereId;
@@ -563,7 +563,7 @@ module String {
     ret.len = slen + cs.length;
     ret._size = ret.len+1;
     ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
-                              CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+                              CHPL_RT_MD_STR_COPY_DATA): bufferType;
     const sremote = s.locale.id != hereId;
     var sbuff = if sremote
                   then copyRemoteBuffer(s.locale.id, s.buff, slen)

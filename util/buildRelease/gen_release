@@ -110,7 +110,7 @@ if ($no_clone == 0) {
        "README.files",
        "STATUS",
        "compiler/passes/reservedSymbolNames",
-       "etc/README",
+       "etc/README.md",
        "util/README",
        "util/build_configs.py",
        "util/printchplenv",

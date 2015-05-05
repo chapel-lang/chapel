@@ -130,7 +130,7 @@ void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t le
   }
   if( ! haslen ) len = strlen(str);
 
-  s = (char*)chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_COPY_DATA,
+  s = (char*)chpl_mem_alloc(len+1, CHPL_RT_MD_STR_COPY_DATA,
                               lineno, filename);
   chpl_memcpy(s, str, len);
   s[len] = '\0';
@@ -161,7 +161,7 @@ void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int 
   }
   if( ! haslen ) len = strlen(str);
 
-  s = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_COPY_DATA, lineno, filename);
+  s = chpl_mem_alloc(len+1, CHPL_RT_MD_STR_COPY_DATA, lineno, filename);
   chpl_memcpy(s, str, len);
   s[len] = '\0';
 
@@ -210,7 +210,7 @@ c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
       // allocated string of zero length still occupies memory (one byte for
       // the NUL, at least), so that leaves us with a dilemma.  Which is it?
       strlen(dest) == 0)
-    ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
+    ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STR_MOVE_DATA, lineno, filename);
   else
     // reuse the buffer
     // The cast is necessary so we can write into the buffer (which is declared
@@ -235,7 +235,7 @@ c_string_copy remoteStringCopy(c_nodeid_t src_locale,
                                int32_t lineno, c_string filename) {
   char* ret;
   if (src_addr == NULL) return NULL;
-  ret = chpl_mem_alloc(src_len+1, CHPL_RT_MD_STRING_COPY_REMOTE,
+  ret = chpl_mem_alloc(src_len+1, CHPL_RT_MD_STR_COPY_REMOTE,
                        lineno, filename);
   chpl_gen_comm_get((void*)ret, src_locale, (void*)src_addr, sizeof(char),
                     CHPL_TYPE_uint8_t, src_len+1, lineno, filename);

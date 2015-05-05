@@ -1,6 +1,6 @@
 extern_string_generic.chpl:1: error: extern procedure has arguments of type string
-extern_string_generic.chpl:2: note: when instantiated from here
 extern_string_generic.chpl:3: note: when instantiated from here
 extern_string_generic.chpl:4: note: when instantiated from here
 extern_string_generic.chpl:5: note: when instantiated from here
+extern_string_generic.chpl:6: note: when instantiated from here
 extern_string_generic.chpl:1: note: use c_string instead
