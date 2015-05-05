@@ -371,6 +371,23 @@ void test_printscan_int(void)
 #undef NSTYLES
 }
 
+// Sortof like (0==strcmp(got,expect)), but if expect has '*'
+// then they match any character.
+// returns 1 if OK match, 0 if not.
+int float_result_ok(const char* got, const char* expect)
+{
+  int i;
+  i = 0;
+  for( i = 0; got[i] && expect[i]; i++ ) {
+    if( got[i] == expect[i] || expect[i] == '*' ) {
+      // ok
+    } else return 1;
+  }
+  // make sure they both got to '\0' at end of string.
+  if( got[i] != expect[i] ) return 0;
+  return 1;
+}
+
 void test_printscan_float(void)
 {
   qioerr err;
@@ -403,6 +420,30 @@ void test_printscan_float(void)
                         "1", // %g, 4 significant digits
                         "1.0000", // %f, showpoint, precision 4
                         "1.0000e+00", // %e, showpoint, precision 4
+                       };
+
+  const char* pos[] = { // writing 11.25
+                        "11.25", // default style
+                        "11.250", // %f precision 3
+                        "1.125+01", // %e precision 3
+                        "+11.25", // showpoint, showplus
+                        "0x1p+0", // hex
+                        "0X1.000P+0", // hex, uppercase, showpoint, prec 3
+                        "11.25", // %g, 4 significant digits
+                        "11.25", // %f, showpoint, precision 4
+                        "1.125e+01", // %e, showpoint, precision 4
+                       };
+
+  const char* neg[] = { // writing -11.25
+                        "-11.25", // default style
+                        "-11.250", // %f precision 3
+                        "-1.125+01", // %e precision 3
+                        "-11.25", // showpoint, showplus
+                        "-0x1p+0", // hex
+                        "-0X1.000P+0", // hex, uppercase, showpoint, prec 3
+                        "-11.25", // %g, 4 significant digits
+                        "-11.2500", // %f, showpoint, precision 4
+                        "-1.1250e+00", // %e, showpoint, precision 4
                        };
 
   const char* plusinf[] = { // writing +infinity
@@ -451,13 +492,18 @@ void test_printscan_float(void)
                        };
   const char* x[] = { // writing 1.125e+300
                         "1.125e+300", // default style
-                        "1124999999999999984717009863215819639889402246251651042717325796981054812448928754462634938945285169790751774504176833459124149130131831874871128930639759966162906545922666490056516990646142904182469580674455306426256469801266735686696548991733655898546719119989659797590624855449025294035374384873472.000", // %f precision 3
+                        "1124999999999999984717009863215819639889402******************************************************************************************************************************************************************************************************************************************************************.000", // %f precision 3
+                        // Note that the Cygwin result
+                     // 1124999999999999984717009863215819639889402000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000000
+                        // and the Linux/Mac OS X result
+                     // 1124999999999999984717009863215819639889402246251651042717325796981054812448928754462634938945285169790751774504176833459124149130131831874871128930639759966162906545922666490056516990646142904182469580674455306426256469801266735686696548991733655898546719119989659797590624855449025294035374384873472.000
+                        // are actually the same (double) number
                         "1.125e+300", // %e precision 3
                         "+1.12500e+300", // showpoint, showplus
                         "0x1.ae0c41900844fp+996", // hex
                         "0X1.AE1P+996", // hex, uppercase, showpoint, prec 3
                         "1.125e+300", // %g, 4 significant digits
-                        "1124999999999999984717009863215819639889402246251651042717325796981054812448928754462634938945285169790751774504176833459124149130131831874871128930639759966162906545922666490056516990646142904182469580674455306426256469801266735686696548991733655898546719119989659797590624855449025294035374384873472.0000", // %f, showpoint, precision 4
+                        "1124999999999999984717009863215819639889402******************************************************************************************************************************************************************************************************************************************************************.0000", // %f, showpoint, precision 4
                         "1.1250e+300", // %e, showpoint, precision 4
                        };
   const char* y[] = { // writing 6.125e-300,
@@ -473,13 +519,18 @@ void test_printscan_float(void)
                        };
   const char* large[] = { // writing 1.7206679531457315e+308
                         "1.72067e+308", // default style
-                        "172066795314573154345745968194509558286066410995909100775616533636325924454368801282172479282703763495131121854551604368189828377600559568197898797683089581352692291163003339166097827106946755086868842980633031878406821667478584291249430295495272835661018598744016150896290408946067667584552736715085306658816.000", // %f precision 3
+                        "1720667953145731543457459681945095582860664**************************************************************************************************************************************************************************************************************************************************************************.000", // %f precision 3
+                        // Note that the Cygwin result
+                      // 172066795314573154345745968194509558286066400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000
+                        // and the Linux/Mac OS X result
+                      // 172066795314573154345745968194509558286066410995909100775616533636325924454368801282172479282703763495131121854551604368189828377600559568197898797683089581352692291163003339166097827106946755086868842980633031878406821667478584291249430295495272835661018598744016150896290408946067667584552736715085306658816.000
+                        // are actually the same (double) number.
                         "1.721e+308", // %e precision 3
                         "+1.72067e+308", // showpoint, showplus
                         "0x1.ea100001p+1023", // hex
                         "0X1.EA1P+1023", // hex, uppercase, showpoint, prec 3
                         "1.721e+308", // %g, 4 significant digits
-                        "172066795314573154345745968194509558286066410995909100775616533636325924454368801282172479282703763495131121854551604368189828377600559568197898797683089581352692291163003339166097827106946755086868842980633031878406821667478584291249430295495272835661018598744016150896290408946067667584552736715085306658816.0000", // %f, showpoint, precision 4
+                        "1720667953145731543457459681945095582860664**************************************************************************************************************************************************************************************************************************************************************************.0000", // %f, showpoint, precision 4
                         "1.7207e+308", // %e, showpoint, precision 4
                        };
   const char* small[] = { // writing 2.2250738585072014e-308
@@ -496,14 +547,15 @@ void test_printscan_float(void)
   double mynan = NAN; // 0.0*(1.0/0.0);
   double posnan = copysign(mynan, 1.0);
   double negnan = copysign(mynan, -1.0);
-  double nums[] = {0.0, 1.0,
+  double nums[] = {0.0, 1.0, 11.25,  -11.25,
                    1.0/0.0 /*+inf*/, -1.0/0.0 /*-inf*/,
                    posnan,
                    negnan,
                    1.125e+300, 6.125e-300,
                    1.7206679531457315e+308, 2.2250738585072014e-308 };
 
-  const char** expect_arr[] = { zero, one, plusinf, minusinf, nan, nnan,
+  const char** expect_arr[] = { zero, one, pos, neg,
+                                plusinf, minusinf, nan, nnan,
                                 x,y,large,small, NULL };
   char got[500];
   char sep[4] = {0,0,0,0};
@@ -592,13 +644,12 @@ void test_printscan_float(void)
       err = qio_channel_read(true, reading, got, sizeof(got), &amt_read);
       assert(qio_err_to_int(err) == EEOF);
 
-      if( 0 != strcmp(got, expect) ) {
+      if( !float_result_ok(got, expect) ) {
         fprintf(stderr, "match failed for i=%i j=%i\n", i, j);
         fprintf(stderr, "Got    '%s'\n", got);
         fprintf(stderr, "Expect '%s'\n", expect);
 
-        assert( 0 == strcmp(got, expect) );
-
+        assert( float_result_ok(got, expect) );
       }
 
       qio_channel_release(reading);
@@ -607,7 +658,7 @@ void test_printscan_float(void)
 
       // Try scanning our number.
       // Create a "read from file" channel.
-      if( i < 7 ) {
+      {
         err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
         assert(!err);
 
@@ -615,8 +666,21 @@ void test_printscan_float(void)
         err = qio_channel_scan_float(true, reading, &got_num, 8);
         assert(!err);
 
-        //printf("Got    '%s'         %e\n", got, got_num);
-        //assert( got_num == num );
+        if( !isfinite(num) ||
+            (0.001 <= fabs(num) && fabs(num) <= 1000 ) ) {
+          // Verify that the read number matches only if all of
+          // our styles would print it correctly.
+          //printf("Got    '%s'         %e\n", got, got_num);
+          int ok = 0;
+          if( got_num == num ) ok = 1;
+          if( isnan(got_num) && isnan(num) ) ok = 1;
+          if( ! ok ) {
+            fprintf(stderr, "num is %g\n", num);
+            fprintf(stderr, "num is %a\n", num);
+            fprintf(stderr, "read   %a\n", got_num);
+            assert( got_num == num );
+          }
+        }
 
         qio_channel_release(reading);
         reading = NULL;
