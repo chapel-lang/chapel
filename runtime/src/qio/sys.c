@@ -1340,7 +1340,7 @@ err_t sys_accept(fd_t sockfd, sys_sockaddr_t* addr_out, fd_t* fd_out)
 
   got = accept(sockfd, (struct sockaddr*) & addr_out->addr, &addr_len);
   if( got != -1 ) {
-    if( addr_len > sizeof(sys_sockaddr_storage_t) ) {
+    if( addr_len > (socklen_t) sizeof(sys_sockaddr_storage_t) ) {
       fprintf(stderr, "Warning: address truncated in sys_accept\n");
     }
     addr_out->len = addr_len;
