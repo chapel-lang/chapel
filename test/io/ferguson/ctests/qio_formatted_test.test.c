@@ -402,7 +402,7 @@ void test_printscan_float(void)
                         "0.0", // default style
                         "0.000", // %f precision 3
                         "0.000e+00", // %e precision 3
-                        "+0.00000", // showpoint, showplus
+                        "+0.", // showpoint, showplus
                         "0x0p+0", // hex
                         "0X0.000P+0", // hex, uppercase, showpoint, prec 3
                         "0", // %g, 4 significant digits
@@ -414,7 +414,7 @@ void test_printscan_float(void)
                         "1.0", // default style
                         "1.000", // %f precision 3
                         "1.000e+00", // %e precision 3
-                        "+1.00000", // showpoint, showplus
+                        "+1.", // showpoint, showplus
                         "0x1p+0", // hex
                         "0X1.000P+0", // hex, uppercase, showpoint, prec 3
                         "1", // %g, 4 significant digits
@@ -430,7 +430,7 @@ void test_printscan_float(void)
                         "0x1p+0", // hex
                         "0X1.000P+0", // hex, uppercase, showpoint, prec 3
                         "11.25", // %g, 4 significant digits
-                        "11.25", // %f, showpoint, precision 4
+                        "11.2500", // %f, showpoint, precision 4
                         "1.125e+01", // %e, showpoint, precision 4
                        };
 
@@ -499,7 +499,7 @@ void test_printscan_float(void)
                      // 1124999999999999984717009863215819639889402246251651042717325796981054812448928754462634938945285169790751774504176833459124149130131831874871128930639759966162906545922666490056516990646142904182469580674455306426256469801266735686696548991733655898546719119989659797590624855449025294035374384873472.000
                         // are actually the same (double) number
                         "1.125e+300", // %e precision 3
-                        "+1.12500e+300", // showpoint, showplus
+                        "+1.125e+300", // showpoint, showplus
                         "0x1.ae0c41900844fp+996", // hex
                         "0X1.AE1P+996", // hex, uppercase, showpoint, prec 3
                         "1.125e+300", // %g, 4 significant digits
@@ -510,7 +510,7 @@ void test_printscan_float(void)
                         "6.125e-300", // default style
                         "0.000", // %f precision 3
                         "6.125e-300", // %e precision 3
-                        "+6.12500e-300", // showpoint, showplus
+                        "+6.125e-300", // showpoint, showplus
                         "0x1.0685051469a5p-994", // hex
                         "0X1.068P-994", // hex, uppercase, showpoint, prec 3
                         "6.125e-300", // %g, 4 significant digits
@@ -674,10 +674,13 @@ void test_printscan_float(void)
           int ok = 0;
           if( got_num == num ) ok = 1;
           if( isnan(got_num) && isnan(num) ) ok = 1;
+          if( isinf(got_num) && isinf(num) ) ok = 1;
           if( ! ok ) {
             fprintf(stderr, "num is %g\n", num);
             fprintf(stderr, "num is %a\n", num);
             fprintf(stderr, "read   %a\n", got_num);
+            fprintf(stderr, "got    is %s\n", got);
+            fprintf(stderr, "expect is %s\n", expect);
             assert( got_num == num );
           }
         }
