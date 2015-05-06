@@ -7,7 +7,7 @@ proc testio(fmts: [] string, values: [])
   for fmt in fmts {
     for v in values {
       if noisy then writeln("Testing ",fmt," ",typeToString(v.type)," ",v);
-      for try in 1..2 { // TODO -- set to 4
+      for try in 1..4 {
         // We do it 4x:
         // try 1 is the simple way
         // try 2 puts after the data (in the file, not the format string)
@@ -58,6 +58,7 @@ proc testio(fmts: [] string, values: [])
 }
 
 proc main() {
+
   var smallintformats = 
          ["%t", "%jt", "%ht", "%n",
           "%r", "%10r", "%010r", "%-10r", "%+r", "% r",
@@ -191,7 +192,7 @@ proc main() {
   testio(["%|16z", "%<16z", "%>16z"], [997.89+200.124i, -997.89-200.124i]);
 
 
-  testio(["%c"], [32, 42]);
+  testio(["%c"], [33, 42]);
   testio(["%c"], ["x", "a"]);
 
   testio(["%s", "%10s", "%-10s"], ["a", "test"]);
@@ -199,7 +200,13 @@ proc main() {
   testio(["%'S", "%'S", "%10'S", "%-10'S",
           "%\"S", "%10\"S", "%-10\"S",
           "%|0S", "%|1S", "%|2S", "%|4S", "%|8S", "%|vS"],
+         ["", "a", "test"]);
+
+  // test that these ones handle space in strings correctly
+  testio(["%'S", "%10'S", "%-10'S",
+          "%\"S", "%10\"S", "%-10\"S"],
          ["", "a", "test", " ' ", " \" "]);
+
 
   testio(["%|4s"], ["test"]);
 

@@ -809,6 +809,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
 
     // ignore EOF when looking for whitespace.
     if( qio_err_to_int(err) == EEOF ) err = 0;
+    // ignore EILSEQ (illegal unicode sequence) when
+    // looking for whitespace (that just means it wasn't whitespace)
+    if( qio_err_to_int(err) == EILSEQ ) err = 0;
 
     qio_channel_revert_unlocked(ch);
 
@@ -837,8 +840,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     }
   }
 
-  if( skipws && !err ) {
+  if( skipws && !err && len > 0 ) {
     // skip whitespace after the pattern.
+    // but only bother if there was a pattern at all...
     err = qio_channel_mark(false, ch);
     if( err ) goto revert;
 
@@ -851,6 +855,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
 
     // ignore EOF when looking for whitespace.
     if( qio_err_to_int(err) == EEOF ) err = 0;
+    // ignore EILSEQ (illegal unicode sequence) when
+    // looking for whitespace (that just means it wasn't whitespace)
+    if( qio_err_to_int(err) == EILSEQ ) err = 0;
 
     qio_channel_revert_unlocked(ch);
 
