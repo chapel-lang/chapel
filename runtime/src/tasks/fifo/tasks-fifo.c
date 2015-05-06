@@ -321,9 +321,11 @@ static void chpl_thread_condvar_destroy(chpl_thread_condvar_t* cv) {
 }
 
 void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
+  chpl_thread_mutexLock(&s->lock);
   chpl_thread_condvar_destroy(&s->signal_full);
   chpl_thread_condvar_destroy(&s->signal_empty);
-  //chpl_thread_mutexDestroy(&s->lock);
+  chpl_thread_mutexUnlock(&s->lock);
+  chpl_thread_mutexDestroy(&s->lock);
 }
 
 // Tasks
