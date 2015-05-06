@@ -125,6 +125,13 @@ CFLAGS += $(PROFILE_CFLAGS)
 LDFLAGS += $(PROFILE_LFLAGS)
 endif
 
+# These variables are for C flags that are really coming from the C compiler
+# itself or from or 3rd-party configurations.
+# They might be set it make/compiler Makefiles or in third-party Makefiles
+# for example.
+CHPL_MAKE_BASE_CFLAGS =
+CHPL_MAKE_THIRD_PARTY_LINK_ARGS =
+
 #
 # Third-party package stuff
 #
