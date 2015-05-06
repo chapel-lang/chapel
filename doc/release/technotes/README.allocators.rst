@@ -19,6 +19,11 @@ allocators can create interoperability challenges:
 
 This file describes two strategies for overcoming these challenges.
 
+Note that both of these strategies will only allow C code to use the allocator
+that the Chapel runtime is providing. In particular, while a Chapel program
+might be able to allocate memory on a hardware provided memory region, these
+methods will only work with system memory.
+
 --------------------------------------------
 Calling Chapel Allocation Functions Directly
 --------------------------------------------
@@ -76,10 +81,10 @@ functions with the Chapel allocator. It works by defining malloc, free, etc
 because these are normally defined as weak symbols in the GNU C library.  This
 feature should be considered a demonstration. It is highly platform-specific
 and will not work on all platforms! For this reason, we recommend instead
-calling the Chapel versions of the alloction routines (such as chpl_malloc) if
+calling the Chapel versions of the allocation routines (such as chpl_malloc) if
 allocation interoperability is required.
 
-The following commad will compile a Chapel program while replacing the C
+The following command will compile a Chapel program while replacing the C
 allocation functions:
 
 .. code-block:: sh
@@ -99,6 +104,8 @@ allocation functions:
     }
   }
 
+  // SysBasic provides c_calloc and c_free to call the Chapel allocator
+  // directly for C interoperability purposes
   use SysBasic;
 
   // Allocate using the system allocator (malloc)
@@ -106,7 +113,9 @@ allocation functions:
 
   writeln(x.deref());
 
-  // Free using the Chapel allocator
+  // Free using the Chapel allocator - c_free calls the Chapel free function
+  // directly. It's named c_free because it's meant to be used for C
+  // interoperability purposes.
   // This will generally cause a core dump unless:
   //   * you have configured Chapel to use the system allocator, or
   //   * you link this program with -lchplmalloc
