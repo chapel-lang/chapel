@@ -3323,8 +3323,9 @@ void resolveNormalCall(CallExpr* call) {
 
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 2);
-    if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
-      outerCompilerWarningMap.put(fn, str);
+    if (callStack.n >= 2)
+      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+        outerCompilerWarningMap.put(fn, str);
   }
 
   if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
