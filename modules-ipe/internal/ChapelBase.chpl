@@ -22,8 +22,6 @@
 
 module ChapelBase
 {
-  use ChapelRoot;
-
   //
   // Assignment operators
   //
@@ -86,7 +84,7 @@ module ChapelBase
 
   proc abs(a : int) : int
   {
-    var retval : int = a;
+    var retval : int  = a;
 
     if (a < 0) then
       retval = 0 - a;

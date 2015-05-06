@@ -13,21 +13,21 @@ proc main() {
   serial do do_local_domain();
   var m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling do_local_array():");
   m1 = memoryUsed();
   serial do do_local_array();
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling do_array() with global:");
   m1 = memoryUsed();
   serial do do_array(A);
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling do_array() with local:");
   m1 = memoryUsed();
@@ -38,14 +38,14 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling sync begin do_array() with global:");
   m1 = memoryUsed();
   serial do sync begin do_array(A);
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling sync begin do_array() with local:");
   m1 = memoryUsed();
@@ -56,14 +56,14 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling do_tuple() with global:");
   m1 = memoryUsed();
   serial do do_tuple((A, D));
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling do_tuple() with local:");
   m1 = memoryUsed();
@@ -74,7 +74,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 }
 
 proc do_local_domain() {
