@@ -520,15 +520,21 @@ VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
 VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
 
 // Creates a new real literal with the given value and bit-width.
-// n is used for the cname of the new symbol,
-// but only if the value has not already been cached.
-VarSymbol *new_RealSymbol(const char *n, long double b,
+// n should be a string argument containing a Chapel decimal or hexidecimal
+// floating point literal. It will be copied and the floating point
+// value will be computed. The resulting symbol will have a cname
+// equal to a fixed-up n, or to an n previously passed to this
+// function that has the same value.
+VarSymbol *new_RealSymbol(const char *n,
                           IF1_float_type size=FLOAT_SIZE_64);
 
 // Creates a new imaginary literal with the given value and bit-width.
-// n is used for the cname of the new symbol,
-// but only if the value has not already been cached.
-VarSymbol *new_ImagSymbol(const char *n, long double b,
+// n should be a string argument containing a Chapel decimal or hexidecimal
+// floating point literal. It will be copied and the floating point
+// value will be computed. The resulting symbol will have a cname
+// equal to a fixed-up n, or to an n previously passed to this
+// function that has the same value.
+VarSymbol *new_ImagSymbol(const char *n,
                           IF1_float_type size=FLOAT_SIZE_64);
 
 // Creates a new complex literal with the given value and bit-width.

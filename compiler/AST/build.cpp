@@ -270,14 +270,14 @@ Expr* buildIntLiteral(const char* pch) {
 
 
 Expr* buildRealLiteral(const char* pch) {
-  return new SymExpr(new_RealSymbol(pch, strtod(pch, NULL)));
+  return new SymExpr(new_RealSymbol(pch));
 }
 
 
 Expr* buildImagLiteral(const char* pch) {
   char* str = strdup(pch);
   str[strlen(pch)-1] = '\0';
-  SymExpr* se = new SymExpr(new_ImagSymbol(str, strtod(str, NULL)));
+  SymExpr* se = new SymExpr(new_ImagSymbol(str));
   free(str);
   return se;
 }
