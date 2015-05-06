@@ -24,3 +24,17 @@ void setupError(const char *filename, int lineno, int tag) {
     __coverity_panic__();
   }
 }
+
+//==============================
+// runtime
+//
+
+// chpl_error() ends execution
+void chpl_error(const char* message, int32_t lineno, c_string filename) {
+  __coverity_panic__();
+}
+
+// chpl_internal_error() ends execution
+void chpl_internal_error(const char* message) {
+  __coverity_panic__();
+}
