@@ -564,8 +564,8 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-                writeln("   level ", format("##", n), "   #boxes=",
-                        format("####", ncoeffs), "  norm=", format("%0.2er", truncate(sqrt(sum))));
+	        writef("   level ##   %#boxes=####  norm=%0.2er\n",
+		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -576,8 +576,8 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-                writeln("   level ", format("##", n), "   #boxes=",
-                        format("####", ncoeffs), "  norm=", format("%0.2er", truncate(sqrt(sum))));
+	        writef("   level ##   %#boxes=####  norm=%0.2er\n",
+		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -590,12 +590,9 @@ class Function {
     proc evalNPT(npt) {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            //writeln(" -- ", format("%0.2dr", i/npt:real), ":  F_numeric()=", format("% 0.5er", Fval),
-            //        "  f_analytic()=", format("% 0.5er", fval), " err=", format("% 0.5er", Fval-fval),
-            //        if abs(Fval-fval) > thresh then "  > thresh" else "");
-            writeln(" -- ", format("%0.2dr", i/npt:real), ":  F_numeric()=", format("% 0.8dr", truncate(Fval)),
-                    "  f_analytic()=", format("% 0.8dr", truncate(fval)),
-                    if abs(Fval-fval) > thresh then " err > thresh" else "");
+            writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr%s\n",
+		   i/npt:real, truncate(Fval), truncate(fval), 
+		   if abs(Fval-fval) > thresh then " err > thresh" else "");
         }
     }
 }

@@ -64,7 +64,7 @@ proc main() {
 
 	for itr in 0..#nIterations {
 		if itr % reportFrequency == 0 && reportFrequency <= nIterations {
-			writeln("step ", format("####", itr), "...");
+			writef("step ####...\n", itr);
 		}
 		
 		//each atom adds up extent values from neighbors (members of its liz sphere)
@@ -118,9 +118,8 @@ proc checkExpected(itr: int, atoms: [GridDom] AtomMatrix) {
 		for param e in 1..nExtent {
 			if abs(atoms[i][e] - expectedValues[i]) > tolerance then pass = false;
 		}
-		if debug { writeln("itr ", format("%4i",itr), " @ ", i, ": ", 
-				           format("%12.9r",atoms[i][1]), " ~=~ ", 
-						   format("%12.9r",expectedValues[i])); }
+                if debug { writef("itr %4n @ %t: %12.9r ~=~ %12.9r\n",
+                                  itr, i, atoms[i][1], expectedValues[i]); }
 		if !pass {
 			writeln("Computed values do not match expected values: itr = ", itr, 
 					" @ ", i, ": ", atoms[i][1], " != ", expectedValues[i]);

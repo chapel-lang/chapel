@@ -80,7 +80,7 @@ proc main() {
 
 	for itr in 0..#nIterations {
 		if itr % reportFrequency == 0 && reportFrequency <= nIterations {
-			writeln("step ", format("####", itr));
+			writef("step ####\n", itr);
 		}
 		//load data into caches
 		forall cache in caches {
@@ -122,8 +122,9 @@ proc checkExpected(itr: int, atoms: [?AtomDom] AtomMatrix) {
 		for param e in 1..nExtent {
 			if abs(atom[e] - expected) > tolerance then pass = false;
 		}
-		if debug then writeln( format("%11.9r",atom[1]), " ~=~ ", 
-							   format("%11.9r",expected)); 
+		if debug then writef( "%11.9r ~=~ %11.9r\n", 
+                                      atom[1], expected);
+
 		return pass;
 	}
 
@@ -164,8 +165,8 @@ proc circularDistance(a, b, size: int) {
 proc compactWriteArray(arr: [?D], fmtStr = "#") where D.rank == 3 {
 	for j in D.dim[2] {
 		for i in D.dim[1] {
-			write([a in arr[i,j,..]] format(fmtStr, a));
-			if i < D.dim[1].high then write("   ");
+                  for a in arr[i,j,..] do writef(fmtStr, a);
+                  if i < D.dim[1].high then write("   ");
 		}
 		writeln();
 	}

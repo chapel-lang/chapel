@@ -83,8 +83,8 @@ case $COMPILER in
         log_info "Loading module: ${module_name}"
         module load ${module_name}
 
-        # Use cce version 8.3.0 for consistency.
-        module swap cce cce/8.3.0
+        # Use cce version 8.3.9 for consistency.
+        module swap cce cce/8.3.9
 
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
