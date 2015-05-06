@@ -6377,30 +6377,11 @@ inline proc _do_format(fmt:string, args ...?k, out error:syserr):string {
   return toString(cstrcopy);
 }
 
-/*
 
-  Return a new string consisting of values formatted according to a
-  format string.  See :ref:`about-io-formatted-io`.
-
-  :arg fmt: the format string
-  :arg args: the arguments to format
-  :arg error: optional argument to capture an error code. If this argument
-             is not provided and an error is encountered, this function
-             will halt with an error message.
-  :returns: the resulting string
-
- */
-proc format(fmt:string, args ...?k, out error:syserr):string {
-  return _do_format(fmt, (...args), error);
-}
-
-// documented in the error= version
+// This function is no longer available.
 pragma "no doc"
 proc format(fmt:string, args ...?k):string {
-  var err:syserr = ENOERR;
-  var ret = _do_format(fmt, (...args), error=err);
-  if err then ioerror(err, "in format");
-  return ret;
+  compilerError("use string.format(args ...) not format(fmt, args ...)");
 }
 
 /*
