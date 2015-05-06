@@ -19,15 +19,9 @@
 
 #include "IpeModuleInternal.h"
 
-#include "AstDumpToNode.h"
-#include "expr.h"
-#include "files.h"
-#include "IpeModuleRoot.h"
-#include "IpeReaderFile.h"
-#include "stmt.h"
-#include "stringutil.h"
-
-IpeModuleInternal::IpeModuleInternal(ModuleSymbol* sym) : IpeModule(sym)
+IpeModuleInternal::IpeModuleInternal(IpeModule*    parent,
+                                     ModuleSymbol* modSym)
+  : IpeModule(parent, modSym)
 {
 
 }
@@ -41,46 +35,3 @@ const char* IpeModuleInternal::moduleTypeAsString() const
 {
   return "Internal";
 }
-
-bool IpeModuleInternal::loadAndInitialize(IpeModuleRoot* rootModule)
-{
-  bool retval = false;;
-
-  if      (loadFile(rootModule, "ChapelBase")     == false)
-    retval = false;
-
-  else if (loadFile(rootModule, "ChapelStandard") == false)
-    retval = false;
-
-  else
-    retval =  true;
-
-  return retval;
-}
-
-bool IpeModuleInternal::loadFile(IpeModuleRoot* rootModule, const char* baseName)
-{
-  bool retval = false;
-
-  if (const char* pathName = pathNameForInternalFile(baseName))
-  {
-    std::vector<DefExpr*> defs = IpeReaderFile::readModules(pathName, MOD_INTERNAL);
-
-    for (size_t i = 0; i < defs.size(); i++)
-    {
-      DefExpr*      expr   = defs[i];
-      ModuleSymbol* modSym = toModuleSymbol(expr->sym);
-
-      INT_ASSERT(modSym);
-
-      rootModule->moduleAdd(new IpeModuleInternal(modSym));
-    }
-
-    retval = true;
-  }
-  else
-    printf("IpeModuleInternal::loadFile   failed to find path for %s\n", baseName);
-
-  return retval;
-}
-

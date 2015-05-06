@@ -16,7 +16,7 @@
 # limitations under the License.
 
 # Suppress warning about variables used before defined
-CRAYPE_GEN_CFLAGS = -hnomessage=7212 -hipa2
+CRAYPE_GEN_CFLAGS = -hnomessage=7212
 
 NO_IEEE_FLOAT_GEN_CFLAGS = -hfp1
 IEEE_FLOAT_GEN_CFLAGS = -hfp0

@@ -22,22 +22,27 @@
 
 #include "expr.h"
 
-class FnSymbol;
 class LcnSymbol;
+class FnSymbol;
+class ModuleSymbol;
 
 class IpeDefExpr : public DefExpr
 {
 public:
-                           IpeDefExpr(LcnSymbol* sym,
-                                      Expr*      initExpr,
-                                      Expr*      typeExpr);
+                           IpeDefExpr(LcnSymbol*    sym,
+                                      Expr*         initExpr,
+                                      Expr*         typeExpr);
 
-                           IpeDefExpr(LcnSymbol* sym,
-                                      FnSymbol*  fnSymbol);
+                           IpeDefExpr(LcnSymbol*    sym,
+                                      FnSymbol*     fnSymbol);
+
+                           IpeDefExpr(LcnSymbol*    sym,
+                                      ModuleSymbol* moduleSymbol);
 
   virtual                 ~IpeDefExpr();
 
   FnSymbol*                fnSymbolGet()                            const;
+  ModuleSymbol*            moduleSymbolGet()                        const;
 
   void                     describe(int offset);
 
@@ -45,6 +50,7 @@ private:
                            IpeDefExpr();
 
   FnSymbol*                mFnSymbol;
+  ModuleSymbol*            mModuleSymbol;
 };
 
 #endif

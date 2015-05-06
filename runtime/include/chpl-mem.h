@@ -125,6 +125,16 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
   return memcpy(dest, src, num);
 }
 
+// Query the allocator to ask for a good size to allocate that is at least
+// minSize. One example where this is useful is to grow a vector while
+// minimizing memory wasted by overallocation.
+//
+// If an allocator does not have the ability to get this information, minSize
+// will be returned.
+static inline size_t chpl_mem_goodAllocSize(size_t minSize) {
+  return chpl_goodAllocSize(minSize);
+}
+
 // free a c_string_copy, no error checking.
 // The argument type is explicitly c_string_copy, since only an "owned" string
 // should be freed.

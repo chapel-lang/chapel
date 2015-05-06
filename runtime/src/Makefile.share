@@ -28,6 +28,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-bitops.c \
 	chpl-cache.c \
 	chpl-comm.c \
+	chpl-env.c \
 	chpl-init.c \
 	chplexit.c \
 	chpl-file-utils.c \
