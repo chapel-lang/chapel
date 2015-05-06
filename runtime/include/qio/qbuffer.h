@@ -152,7 +152,6 @@ void qbytes_free_null(qbytes_t* b);
 // unmap the data
 void qbytes_free_munmap(qbytes_t* b);
 // free the data
-void qbytes_free_sys_free(qbytes_t* b);
 void qbytes_free_qio_free(qbytes_t* b);
 
 void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_free_t free_function);
@@ -462,6 +461,7 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
 #define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
 #define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
+#define qio_valloc(size) chpl_valloc(size)
 #define qio_free(ptr) chpl_mem_free(ptr, __LINE__, __FILE__)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 
@@ -479,8 +479,8 @@ typedef chpl_bool qio_bool;
 #define qio_malloc(size) malloc(size)
 #define qio_calloc(nmemb, size) calloc(nmemb,size)
 #define qio_realloc(ptr, size) realloc(ptr, size)
+#define qio_valloc(size) valloc(size)
 #define qio_free(ptr) free(ptr)
-#define sys_free(ptr) free(ptr)
 #define qio_strdup(ptr) strdup(ptr)
 #define qio_memcpy(dest, src, num) memcpy(dest, src, num)
 
