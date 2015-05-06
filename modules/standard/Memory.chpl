@@ -33,28 +33,29 @@
     the fly and/or producing any of several kinds of memory-related
     reports, described below.
 
-  ``memLeaksTable``: :type:`bool`:
-    Enable memory tracking and produce detailed information about
-    leaked memory by invoking :proc:`printMemTable` implicitly when
-    when the program terminates normally.
-
   ``memLeaks``: :type:`bool`:
+    Enable memory tracking and produce detailed information about
+    leaked memory by invoking :proc:`printMemAllocs` implicitly when
+    the program terminates normally.
+
+  ``memLeaksByType``: :type:`bool`:
     Enable memory tracking and produce summary information about
-    leaked memory by invoking :proc:`printMemLeaksTable` implicitly
+    leaked memory by invoking :proc:`printMemAllocsByType` implicitly
     when the program terminates normally.
 
   ``memLeaksLog``: :type:`c_string`:
-    Enable memory tracking and produce a report to the named file when
+    Enable memory tracking and append a report to the named file when
     the program terminates normally.
     The report contains the compilation command used to build the
     program, the execution command used to run it, the summary
-    allocation statistics produced by :proc:`printMemStat`, and the
+    allocation statistics produced by :proc:`printMemAllocStats`, and the
     summary information about leaked memory produced by
-    :proc:`printMemLeaksTable`.
+    :proc:`printMemAllocsByType`.
+    
 
   ``memStats``: :type:`bool`:
     Enable memory tracking and produce summary memory statistics by
-    invoking :proc:`printMemStat` implicitly at normal program
+    invoking :proc:`printMemAllocStats` implicitly at normal program
     termination.
 
   ``memMax``: :type:`uint`:
@@ -77,6 +78,9 @@
     ``stdout`` associated with the process (not the Chapel channel
     with the same name).  Setting this config variable to a file path
     causes the reporting to be written to that named file instead.
+    In multilocale executions each top-level locale produces output
+    to its own file, with a dot ('.') and the locale ID appended to
+    this path.
  */
 module Memory {
 
@@ -155,11 +159,19 @@ proc memoryUsed() {
     Defaults to 0.
   :type thresh: int
 */
-proc printMemTable(thresh=0) {
+proc printMemAllocs(thresh=0) {
   pragma "insert line file info" 
-  extern proc chpl_printMemTable(thresh);
+  extern proc chpl_printMemAllocs(thresh);
 
-  chpl_printMemTable(thresh);
+  chpl_printMemAllocs(thresh);
+}
+
+pragma "no doc"
+proc printMemTable(thresh=0) {
+  warning('printMemTable() is deprecated ' +
+          'and will be removed in Chapel 1.13; ' +
+          'please use printMemAllocs() instead.');
+  printMemAllocs(thresh);
 }
 
 /*
@@ -171,9 +183,19 @@ proc printMemTable(thresh=0) {
   describe what it would store there) and the total number of
   allocations and bytes allocated for that type.
 */
+proc printMemAllocsByType() {
+  pragma "insert line file info" 
+  extern proc chpl_printMemAllocsByType();
+
+  chpl_printMemAllocsByType();
+}
+
+pragma "no doc"
 proc printMemLeaksTable() {
-  extern proc chpl_printLeakedMemTable();
-  chpl_printLeakedMemTable();
+  warning('printMemLeaksTable() is deprecated ' +
+          'and will be removed in Chapel 1.13.' +
+          'Please use printMemAllocsByType() instead.');
+  printMemAllocsByType();
 }
 
 /*
@@ -183,11 +205,19 @@ proc printMemLeaksTable() {
   point during execution (the high-water mark), and the sum of the
   sizes of all allocation and deallocation requests.
 */
-proc printMemStat() {
+proc printMemAllocStats() {
   pragma "insert line file info"
-  extern proc chpl_printMemStat();
+  extern proc chpl_printMemAllocStats();
 
-  chpl_printMemStat();
+  chpl_printMemAllocStats();
+}
+
+pragma "no doc"
+proc printMemStat() {
+  warning('printMemStat() is deprecated ' +
+          'and will be removed in Chapel 1.13.' +
+          'please use printMemAllocStats() instead.');
+  printMemAllocStats();
 }
 
 /*

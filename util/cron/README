@@ -26,3 +26,20 @@ Currently unused - in part because there were always holes and there
 wasn't a good diffing system as with the normal nightly runs. So
 sifting through logs to see what was changing required a lot of
 human effort. We keep it around in hopes of resurrecting it.
+
+
+
+Testing changes to these scripts
+--------------------------------
+
+export CHPL_NIGHTLY_LOGDIR=$PWD/chapel-test-logs
+export CHPL_NIGHTLY_CRON_LOGDIR=$PWD/chapel-test-logs
+export CHPL_NIGHTLY_CRON_RECIPIENT=$USER@cray.com
+export CHPL_NIGHTLY_TEST_CONFIG_NAME=$USER.test
+
+# Run the script, if appropriate
+./util/cron/test-linux32.bash
+
+# or run nightly directly
+./util/cron/nightly -cron -hellos
+

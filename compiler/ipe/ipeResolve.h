@@ -20,9 +20,12 @@
 #ifndef _IPE_RESOLVE_H_
 #define _IPE_RESOLVE_H_
 
+class BlockStmt;
 class Expr;
 class IpeEnv;
+class IpeSequence;
 
-Expr* resolveExpr(Expr* expr, IpeEnv* env);
+Expr*        resolveExpr (Expr*      expr, IpeEnv* env);
+IpeSequence* blockResolve(BlockStmt* stmt, IpeEnv* env);
 
 #endif

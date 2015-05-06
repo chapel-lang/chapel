@@ -108,6 +108,7 @@
 # .ifuture: Future test
 # .noexec: Do not execute this test
 # .skipif: Skip this test if certain environment conditions hold true
+# .suppressif: Suppress this test if certain environment conditions hold true
 # .timeout: Test timeout (overrides TIMEOUT)
 # .perftimeout: Performance test timeout
 # .killtimeout: Kill timeout (overrides KILLTIMEOUT)
@@ -242,9 +243,8 @@ def PerfTFile(test_filename, sfx):
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # sys.stdout.write('Opening: %s\n'%(f))
-    myfile = open(f, 'r')
-    mylines = myfile.readlines()
-    myfile.close()
+    with open(f, 'r') as myfile:
+      mylines = myfile.readlines()
     mylist=list()
     for line in mylines:
         line = line.rstrip()
@@ -1032,6 +1032,24 @@ for testname in testsrc:
             if do_not_test:
                 break
 
+        elif (suffix=='.suppressif' and (os.access(f, os.R_OK))):
+            suppresstest=runSkipIf(f)
+            try:
+                suppressme=False
+                if suppresstest.strip() != "False":
+                    suppressme = suppresstest.strip() == "True" or int(suppresstest) == 1
+                if suppressme:
+                    with open('./'+test_filename+'.suppressif', 'r') as suppressfile:
+                        suppressline = suppressfile.readline().strip()
+                    if suppressline.startswith("#"):
+                      suppressline = suppressline.replace("#","");
+                    else:
+                      suppressline = ""
+                    suppressline = suppressline.strip()
+                    futuretest='Suppress (' + suppressline + ') '
+            except ValueError:
+                sys.stdout.write('[Error processing .suppressif file %s/%s]\n'%(localdir,f))
+
         elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
             timeout=ReadIntegerValue(f, localdir)
             sys.stdout.write('[Overriding default timeout with %d]\n'%(timeout))
@@ -1063,9 +1081,8 @@ for testname in testsrc:
             numlocales=ReadIntegerValue(f, localdir)
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
-            futurefile = open('./'+test_filename+futureSuffix, 'r')
-            futuretest='Future ('+futurefile.readline().strip()+') '
-            futurefile.close()
+            with open('./'+test_filename+futureSuffix, 'r') as futurefile:
+                futuretest='Future ('+futurefile.readline().strip()+') '
 
         elif (suffix=='.noexec' and os.access(f, os.R_OK)):
             noexecfile=True

@@ -21,36 +21,22 @@
 #define _IPE_MODULE_INTERNAL_H_
 
 #include "IpeModule.h"
-#include "symbol.h"
 
-#include <vector>
-
-class IpeModuleRoot;
-class DefExpr;
+class ModuleSymbol;
 
 class IpeModuleInternal : public IpeModule
 {
-  //
-  // The Class interface
-  //
 public:
-  static bool              loadAndInitialize(IpeModuleRoot* rootModule);
+                           IpeModuleInternal(IpeModule*    parent,
+                                             ModuleSymbol* modSym);
 
-private:
-  static bool              loadFile(IpeModuleRoot* rootModule, const char* baseName);
+  virtual                 ~IpeModuleInternal();
 
-  //
-  // The Instance interface
-  //
 protected:
   virtual const char*      moduleTypeAsString()                         const;
 
 private:
-                           IpeModuleInternal(ModuleSymbol* sym);
                            IpeModuleInternal();
-
-                          ~IpeModuleInternal();
-
 };
 
 #endif

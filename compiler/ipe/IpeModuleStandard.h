@@ -22,31 +22,21 @@
 
 #include "IpeModule.h"
 
-class IpeModuleRoot;
+class ModuleSymbol;
 
 class IpeModuleStandard : public IpeModule
 {
-  //
-  // The Class interface
-  //
 public:
-  static bool              loadAndInitialize(IpeModuleRoot* rootModule);
+                           IpeModuleStandard(IpeModule*    parent,
+                                             ModuleSymbol* modSym);
 
-private:
-  static bool              loadFile(IpeModuleRoot* rootModule, const char* baseName);
+  virtual                 ~IpeModuleStandard();
 
-
-  //
-  // The Instance interface
-  //
 protected:
   virtual const char*      moduleTypeAsString()                         const;
 
 private:
-                           IpeModuleStandard(ModuleSymbol* sym);
                            IpeModuleStandard();
-
-                          ~IpeModuleStandard();
 };
 
 #endif

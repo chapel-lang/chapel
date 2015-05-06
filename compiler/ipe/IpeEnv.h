@@ -40,42 +40,29 @@ class IpeEnv
   // Class interface
   //
 public:
-  static char*             gMemoryData;
-  static size_t            gMemoryTail;
-  static size_t            gMemorySize;
-
   static bool              globalsAllocate(size_t initialSize);
   static void              globalsDeallocate();
 
-  static int               reserveSpace(VarSymbol* var);
-
-
-
-
-  static int               allocateValue(bool  value);
-  static int               allocateValue(long  value);
-  static int               allocateValue(void* value);
-
-  static bool              fetchBool   (LcnSymbol* sym);
-  static long              fetchInteger(LcnSymbol* sym);
-  static double            fetchReal   (LcnSymbol* sym);
-  static void*             fetchPtr    (LcnSymbol* sym);
-
-  static void              storeBool   (LcnSymbol* sym, IpeValue value);
-  static void              storeInteger(LcnSymbol* sym, IpeValue value);
-  static void              storeReal   (LcnSymbol* sym, IpeValue value);
-
-  static IpeValue          addrOfFoo(VarSymbol* sym);
-  static IpeValue          fetchFoo (LcnSymbol* sym);
-  static void              storeFoo (LcnSymbol* sym, IpeValue value);
-
+private:
+  static char*             sStoreData;
+  static int               sStoreTail;
+  static int               sStoreSize;
 
   //
   // Instance interface
   //
 public:
-                           IpeEnv(IpeScope* scope);
-                           IpeEnv(IpeScope* scope, void* data);
+                           IpeEnv(IpeEnv*   parent,
+                                  IpeScope* scope);
+
+                           IpeEnv(IpeEnv*   parent,
+                                  IpeScope* scope,
+                                  int       frameSize);
+
+                           IpeEnv(IpeEnv*   parent,
+                                  IpeScope* scope,
+                                  int       frameSize,
+                                  void*     frameData);
 
                           ~IpeEnv();
 
@@ -83,9 +70,54 @@ public:
 
   bool                     isEnvForBlockStmt()                                const;
   bool                     isEnvForModule()                                   const;
-  bool                     isDefinedLocally(const char* name)                 const;
 
   int                      frameSize()                                        const;
+  int                      depth()                                            const;
+
+  void                     argAdd(ArgSymbol* arg)                             const;
+
+  void                     varAdd(VarSymbol* var)                             const;
+  int                      varCount()                                         const;
+  LcnSymbol*               varGet(int index)                                  const;
+
+  void                     useAdd(IpeModule* use);
+  int                      useCount()                                         const;
+  IpeModule*               useGet(int index)                                  const;
+
+  LcnSymbol*               findLocal(const char* name)                        const;
+  LcnSymbol*               findVariable(const char* name)                     const;
+
+  IpeValue                 fetch           (LcnSymbol* sym)                   const;
+  void*                    fetchPtr        (LcnSymbol* sym)                   const;
+
+  int                      allocateValue(void* value);
+  void                     extend          (LcnSymbol* sym, IpeValue value);
+  void                     allocate        (LcnSymbol* sym, IpeValue value);
+
+  void                     store           (LcnSymbol* sym, IpeValue value)   const;
+
+  IpeValue                 addrOf          (LcnSymbol* sym)                   const;
+
+  void                     initializeUsedModules()                            const;
+
+  void                     describe(int offset)                               const;
+
+private:
+                           IpeEnv();
+
+  LcnSymbol*               findVariable(const char* name, bool localOnly)     const;
+
+  bool                     fetchBool   (LcnSymbol* sym)                       const;
+  long                     fetchInteger(LcnSymbol* sym)                       const;
+  double                   fetchReal   (LcnSymbol* sym)                       const;
+
+  void                     describe(const char* pad,
+                                    int         index,
+                                    LcnSymbol*  var)                          const;
+
+
+#if 0
+  void                     assign          (ArgSymbol* sym, IpeValue value);
 
   int                      locationSet(ArgSymbol* arg)                        const;
   int                      locationSet(VarSymbol* var)                        const;
@@ -93,45 +125,36 @@ public:
 
   void                     allocateSpace(VarSymbol* var)                      const;
 
-  void                     varAdd(VarSymbol* var)                             const;
-  void                     argAdd(ArgSymbol* arg)                             const;
-
-  LcnSymbol*               findLocal(const char* name)                        const;
-
-  LcnSymbol*               findVariable(UnresolvedSymExpr* expr,
-                                        bool               localOnly = false) const;
-
-  LcnSymbol*               findVariable(const char*        name,
-                                        bool               localOnly = false) const;
-
-  void                     useAdd(IpeModule* use);
-  void                     initializeUsedModules()                            const;
-
-  IpeValue                 addrOf(VarSymbol* sym)                             const;
-
-  IpeValue                 fetch (LcnSymbol* sym)                             const;
-
-  void                     assign(ArgSymbol* sym, IpeValue value);
-  void                     assign(VarSymbol* sym, IpeValue value);
 
   IpeValue                 valueForVariable(LcnSymbol* lcn)                   const;
   IpeValue                 valueFetch      (LcnSymbol* sym)                   const;
-  void                     valueStore      (LcnSymbol* sym, IpeValue value)   const;
 
-  void                     describe(int offset)                               const;
+  void                     assign          (VarSymbol* sym, IpeValue value);
 
-private:
-                           IpeEnv();
+  int                      reserveSpace(VarSymbol* var);
+
+  int                      allocateValue(bool  value);
+  int                      allocateValue(long  value);
+
+  void                     storeBool   (LcnSymbol* sym, IpeValue value);
+  void                     storeInteger(LcnSymbol* sym, IpeValue value);
+  void                     storeReal   (LcnSymbol* sym, IpeValue value);
+
+  IpeValue                 fetchFoo (LcnSymbol* sym)                          const;
+  void                     storeFoo (LcnSymbol* sym, IpeValue value);
+  IpeValue                 addrOfFoo(VarSymbol* sym)                          const;
 
   void                     assign(LcnSymbol* sym, IpeValue value);
-
-  void                     describe(const char* pad,
-                                    int         index,
-                                    LcnSymbol*  var)                          const;
+#endif
 
   IpeEnv*                  mParent;
+  int                      mDepth;
+
   IpeScope*                mScope;
-  void*                    mData;
+
+  char*                    mFrameData;
+  int                      mFrameTail;
+  int                      mFrameSize;
 };
 
 #endif

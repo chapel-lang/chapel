@@ -39,7 +39,7 @@ proc main() {
   }
   var m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_literal():");
   m1 = memoryUsed();
@@ -48,7 +48,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_literal() with assignment:");
   m1 = memoryUsed();
@@ -57,7 +57,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   const A = return_literal();
 
@@ -68,7 +68,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_alias():");
   m1 = memoryUsed();
@@ -77,7 +77,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_alias() with assignment:");
   m1 = memoryUsed();
@@ -86,7 +86,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling create_slice():");
   m1 = memoryUsed();
@@ -95,7 +95,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_slice():");
   m1 = memoryUsed();
@@ -104,7 +104,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_slice() with assignment:");
   m1 = memoryUsed();
@@ -113,7 +113,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling create_reindex():");
   m1 = memoryUsed();
@@ -122,7 +122,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_reindex():");
   m1 = memoryUsed();
@@ -131,7 +131,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_reindex() with assignment:");
   m1 = memoryUsed();
@@ -140,6 +140,6 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
 }

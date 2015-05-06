@@ -33,14 +33,18 @@
 
 #include "ipeDriver.h"
 #include "ipeResolve.h"
-#include "ipeLocation.h"
 #include "ipeEvaluate.h"
+#include "ipeUtils.h"
 
 #include "stmt.h"
 #include "symbol.h"
 #include "WhileDoStmt.h"
 
 #include <cstdio>
+
+
+extern IpeEnv* sFooEnv;
+
 
 IpeMethod::IpeMethod(FnSymbol* sym, IpeEnv* parentEnv)
 {
@@ -158,14 +162,14 @@ bool IpeMethod::resolveFormals()
       ArgSymbol*         formal    = toArgSymbol(defExpr->sym);
       BlockStmt*         blockStmt = formal->typeExpr;
       UnresolvedSymExpr* unres     = toUnresolvedSymExpr(blockStmt->body.get(1));
-      LcnSymbol*         typeVar   = mEnvParent->findVariable(unres);
+      LcnSymbol*         typeVar   = mEnvParent->findVariable(unres->unresolved);
 
       INT_ASSERT(formal->type           == dtUnknown);
       INT_ASSERT(blockStmt              != NULL);
       INT_ASSERT(blockStmt->body.length == 1);
 
       if (typeVar != 0)
-        formal->type = (Type*) IpeEnv::fetchPtr(typeVar);
+        formal->type = (Type*) mEnvParent->fetchPtr(typeVar);
       else
         mState       = kUnresolvable;
     }
@@ -184,14 +188,14 @@ bool IpeMethod::resolveReturnType()
   {
     BlockStmt*         blockStmt = mFnDecl->retExprType;
     UnresolvedSymExpr* unres     = toUnresolvedSymExpr(blockStmt->body.get(1));
-    LcnSymbol*         typeVar   = mEnvParent->findVariable(unres);
+    LcnSymbol*         typeVar   = mEnvParent->findVariable(unres->unresolved);
 
     INT_ASSERT(mFnDecl->retType       == dtUnknown);
     INT_ASSERT(blockStmt              != NULL);
     INT_ASSERT(blockStmt->body.length == 1);
 
-    mFnDecl->retType = (typeVar != 0) ? (Type*) IpeEnv::fetchPtr(typeVar) : NULL;
-    mState           = (typeVar != 0) ? kResolvedReturnType               : kUnresolvable;
+    mFnDecl->retType = (typeVar != 0) ? (Type*) mEnvParent->fetchPtr(typeVar) : NULL;
+    mState           = (typeVar != 0) ? kResolvedReturnType                   : kUnresolvable;
   }
 
   return (mState != kResolvedReturnType) ? true : false;
@@ -241,10 +245,33 @@ IpeValue IpeMethod::apply(IpeCallExpr* callingExpr, IpeEnv* callingEnv)
 {
   IpeValue retval;
 
-  if (prepareBody() == true)
+#if 0
+  static int sCount = 0;
+  int        count  = sCount;
+
+  sCount = sCount + 1;
+
+  printf("\n\n\n\n\n");
+  printf("   IpeMethod::apply          00100 %5d\n", count);
+
+  printf("   Method:\n");
+  describe(3, true);
+  printf("\n");
+
+  printf("   callingExpr:\n");
+  callingExpr->describe(3);
+  printf("\n");
+
+  printf("   callingEnv:\n");
+  callingEnv->describe(3);
+  printf("\n");
+  printf("\n\n\n");
+#endif
+
+  if (resolveBody() == true)
   {
     void*  frame = (mFrameSize > 0) ? malloc(mFrameSize) : NULL;
-    IpeEnv newEnv(mScope, frame);
+    IpeEnv newEnv(mEnvParent, mScope, mFrameSize, frame);
 
     if (frame)
       memset(frame, 0, mFrameSize);
@@ -252,13 +279,14 @@ IpeValue IpeMethod::apply(IpeCallExpr* callingExpr, IpeEnv* callingEnv)
     // Evaluate the actuals in the calling environment
     for (int i = 1; i <= callingExpr->numActuals(); i++)
     {
+      Expr*      actual     = callingExpr->get(i);
+      IpeValue   value      = evaluateExpr(actual, callingEnv);
+
       Expr*      formalExpr = mFnDecl->formals.get(i);
       DefExpr*   formalDef  = toDefExpr(formalExpr);
       ArgSymbol* formal     = toArgSymbol(formalDef->sym);
-      Expr*      actual     = callingExpr->get(i);
-      IpeValue   value      = ::evaluateExpr(actual, callingEnv);
 
-      newEnv.assign(formal, value);
+      newEnv.store(formal, value);
     }
 
     if (isExternFunction(mFnDecl) == true)
@@ -268,7 +296,23 @@ IpeValue IpeMethod::apply(IpeCallExpr* callingExpr, IpeEnv* callingEnv)
 
     else
     {
-      retval = ::evaluateExpr(mBody, &newEnv);
+#if 0
+      printf("   IpeMethod::apply          00700 %5d\n", count);
+
+      printf("      Resolved Body\n");
+      mBody->describe(6);
+      printf("\n");
+
+      printf("      New Env\n");
+      newEnv.describe(6);
+      printf("\n");
+#endif
+
+      retval = evaluateExpr(mBody, &newEnv);
+
+#if 0
+      printf("   IpeMethod::apply          00750 %5d\n", count);
+#endif
     }
 
     mInvokeCount = mInvokeCount + 1;
@@ -286,23 +330,112 @@ IpeValue IpeMethod::apply(IpeCallExpr* callingExpr, IpeEnv* callingEnv)
   return retval;
 }
 
-bool IpeMethod::prepareBody()
+bool IpeMethod::resolveBody()
 {
   if (mState == kResolvedReturnType)
   {
-    resolveBody();
+    int             offset = 0;
+    int             delta  = 8;           // NOAKES  Size of every type is currently 8
+    IpeScopeMethod* scope  = new IpeScopeMethod(this, mEnvParent->scopeGet());
+    IpeEnv          env(mEnvParent, scope);
 
-    mFrameSize = assignLocations();
-    mState     = kResolved;
+    for_alist(formalExpr, mFnDecl->formals)
+    {
+      DefExpr*   defExpr = toDefExpr(formalExpr);
+      ArgSymbol* formal  = toArgSymbol(defExpr->sym);
+
+      formal->locationSet(env.depth(), offset);
+      offset = offset + delta;
+
+      env.argAdd(formal);
+    }
+
+    mScope     = scope;
+    mBody      = blockResolve(mFnDecl->body, &env);
+
+    INT_ASSERT(mScope);
+    INT_ASSERT(mBody);
+
+    if (bodyIsSimple(mBody) == false)
+    {
+      printf("   About to fail\n");
+      mBody->describe(3);
+      printf("\n\n");
+
+      INT_ASSERT(false);
+    }
+
+    else
+    {
+      for (int i = 1; i <= mBody->body.length; i++)
+      {
+        Expr* expr = mBody->body.get(i);
+
+        if      (DefExpr* defExpr = toDefExpr(expr))
+        {
+          VarSymbol* var = toVarSymbol(defExpr->sym);
+
+          INT_ASSERT(var);
+
+          var->locationSet(env.depth(), offset);
+
+          offset = offset + delta;
+        }
+      }
+
+      mFrameSize = offset;
+    }
+
+    mState = kResolved;
   }
 
   return (mState == kResolved) ? true : false;
 }
 
+bool IpeMethod::bodyIsSimple(IpeSequence* stmt) const
+{
+  bool retval = true;
+
+  for (int i = 1; i <= stmt->body.length && retval == true; i++)
+  {
+    Expr* expr = stmt->body.get(i);
+
+    if      (DefExpr* defExpr = toDefExpr(expr))
+    {
+      retval = isVarSymbol(defExpr->sym);
+    }
+
+    else if (isUseStmt(expr)   == true)
+    {
+      retval = false;
+    }
+
+    else if (WhileDoStmt* whileDoStmt = toWhileDoStmt(expr))
+    {
+      for (int i = 1; i <= whileDoStmt->body.length && retval == true; i++)
+      {
+        Expr* expr = whileDoStmt->body.get(i);
+
+        retval = (isDefExpr(expr) == true) ? false : true;
+      }
+    }
+
+    else if (isBlockStmt(expr) == true)
+    {
+      IpeSequence* seq = (IpeSequence*) expr;
+
+      retval = seq->isScopeless();
+    }
+  }
+
+  return retval;
+}
+
+#if 0
 void IpeMethod::resolveBody()
 {
   IpeScopeMethod* scope = new IpeScopeMethod(this, mEnvParent->scopeGet());
-  IpeEnv          env(scope);
+  IpeEnv          env(mEnvParent, scope);
 
   for_alist(formalExpr, mFnDecl->formals)
   {
@@ -315,9 +448,12 @@ void IpeMethod::resolveBody()
   mScope = scope;
   mBody  = resolveExpr(mFnDecl->body, &env);
 }
+#endif
 
+#if 0
 int IpeMethod::assignLocations() const
 {
+#if 0
   int    delta = 8;           // NOAKES  Size of every type is currently 8
   IpeEnv env(mScope);
 
@@ -330,7 +466,15 @@ int IpeMethod::assignLocations() const
   }
 
   return delta * mFnDecl->formals.length + locationExpr(mBody, &env);
+#else
+
+  INT_ASSERT(false);
+
+  return 0;
+
+#endif
 }
+#endif
 
 /************************************ | *************************************
 *                                                                           *
@@ -496,7 +640,8 @@ void IpeMethod::describe(int offset, bool fullP) const
     if (mEnvParent)
     {
       printf("\n");
-      mEnvParent->describe(offset + 2);
+      printf("%s  EnvParent:\n", pad);
+      mEnvParent->describe(offset + 5);
     }
     else
     {
@@ -512,10 +657,28 @@ void IpeMethod::describe(int offset, bool fullP) const
     if (mBody != NULL)
     {
       printf("\n");
-      printf("%s  Body:\n", pad);
-      printf("%s     ", pad);
-      mBody->accept(&logger);
-      printf("\n");
+      printf("%s  Resolved Body:\n", pad);
+
+      if      (isWhileStmt(mBody) == true)
+      {
+        printf("%s     ", pad);
+        mBody->accept(&logger);
+        printf("\n");
+      }
+
+      else if (isBlockStmt(mBody) == true)
+      {
+        IpeSequence* seq = (IpeSequence*) mBody;
+
+        seq->describe(offset + 5);
+      }
+
+      else
+      {
+        printf("%s     ", pad);
+        mBody->accept(&logger);
+        printf("\n");
+      }
     }
 
     printf("%s>\n", pad);
