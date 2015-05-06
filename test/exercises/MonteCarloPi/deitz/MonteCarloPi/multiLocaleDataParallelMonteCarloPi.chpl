@@ -55,4 +55,4 @@ delete rs;
 //
 // Output the approximation of PI.
 //
-writeln("Approximation of PI   = ", format("#.#######", count * 4.0 / n));
+writef("Approximation of PI   = #.#######\n", count * 4.0 / n);

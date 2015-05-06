@@ -22,7 +22,7 @@ var D = {1..n} dmapped Block({1..n});
 var count = + reduce [(x,y) in zip(rs.iterate(D), rs.iterate(D))]
                        (x**2 + y**2) <= 1.0;
 
-writeln("Approximation of pi   = ", format("#.#######", count * 4.0 / n));
+writef("Approximation of pi   = #.#######\n", count * 4.0 / n);
 
 delete rs;
 

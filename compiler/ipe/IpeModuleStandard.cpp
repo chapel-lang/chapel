@@ -19,13 +19,9 @@
 
 #include "IpeModuleStandard.h"
 
-#include "AstDumpToNode.h"
-#include "expr.h"
-#include "files.h"
-#include "IpeModuleRoot.h"
-#include "IpeReaderFile.h"
-
-IpeModuleStandard::IpeModuleStandard(ModuleSymbol* sym) : IpeModule(sym)
+IpeModuleStandard::IpeModuleStandard(IpeModule*    parent,
+                                     ModuleSymbol* modSym)
+  : IpeModule(parent, modSym)
 {
 
 }
@@ -38,43 +34,3 @@ const char* IpeModuleStandard::moduleTypeAsString() const
 {
   return "Standard";
 }
-
-bool IpeModuleStandard::loadAndInitialize(IpeModuleRoot* rootModule)
-{
-  bool retval = false;;
-
-  if      (loadFile(rootModule, "ChapelRepl")     == false)
-    retval = false;
-
-  else
-    retval =  true;
-
-  return retval;
-}
-
-bool IpeModuleStandard::loadFile(IpeModuleRoot* rootModule, const char* baseName)
-{
-  bool retval = false;
-
-  if (const char* pathName = pathNameForStandardFile(baseName))
-  {
-    std::vector<DefExpr*> defs = IpeReaderFile::readModules(pathName, MOD_STANDARD);
-
-    for (size_t i = 0; i < defs.size(); i++)
-    {
-      DefExpr*      expr   = defs[i];
-      ModuleSymbol* modSym = toModuleSymbol(expr->sym);
-
-      INT_ASSERT(modSym);
-
-      rootModule->moduleAdd(new IpeModuleStandard(modSym));
-    }
-
-    retval = true;
-  }
-  else
-    printf("IpeModuleStandard::loadFile   failed to find path for %s\n", baseName);
-
-  return retval;
-}
-

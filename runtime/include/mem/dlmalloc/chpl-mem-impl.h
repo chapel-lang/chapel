@@ -42,4 +42,10 @@ static inline void chpl_free(void* ptr) {
   mspace_free(chpl_dlmalloc_heap, ptr);
 }
 
+// DLMalloc doesn't give us a function to figure this out before allocating, so
+// we just return minSize.
+static inline size_t chpl_goodAllocSize(size_t minSize) {
+  return minSize;
+}
+
 #endif
