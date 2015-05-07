@@ -2224,6 +2224,8 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 }
 
 
+// Inserts the given ast ahead of the _downEndCount call at the end of this
+// function, if present.  Otherwise, inserts it ahead of the return.
 void
 FnSymbol::insertBeforeDownEndCount(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());
@@ -2233,9 +2235,16 @@ FnSymbol::insertBeforeDownEndCount(Expr* ast) {
   while (isBlockStmt(prev))
     prev = toBlockStmt(prev)->body.last();
   CallExpr* last = toCallExpr(prev);
-  if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
-    INT_FATAL(last, "Expected call to _downEndCount");
-  last->insertBefore(ast);
+  if (last && last->isResolved() &&
+      ! strcmp(last->isResolved()->name, "_downEndCount"))
+  {
+    last->insertBefore(ast);
+  }
+  else
+  {
+    // No _downEndCount() call, so insert the ast before the return.
+    ret->insertBefore(ast);
+  }
 }
 
 

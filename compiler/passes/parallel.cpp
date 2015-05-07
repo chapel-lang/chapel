@@ -189,6 +189,12 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 /// given task function and \p false thereafter.
 /// \ret Returns the result of calling autoCopy on the given arg, if necessary;
 /// otherwise, just returns 
+/// TODO: The autocopy/autodestroy pairs are necessary on coforalls, but
+/// probably not cobegins.  We need to split that flag to handle the two cases
+/// separately.
+/// TODO: This routine is only necessary because the parallel pass is run after
+/// insertAutoCopyAutoDestroy().  Try moving that pass after parallel and
+/// removing this code.
 static Symbol* insertAutoCopyDestroyForTaskArg
   (Expr* arg, ///< The actual argument being passed.
    CallExpr* fcall, ///< The call that invokes the task function.
@@ -201,17 +207,14 @@ static Symbol* insertAutoCopyDestroyForTaskArg
   // This applies only to arguments being passed to asynchronous task functions.
   // No need to increment+decrement the reference counters for
   // cobegins/coforalls.
-#if HILDE_MM
-  // The following comment is not true, because it assumes that reference counting
+  // The above comment is not true, because it assumes that reference counting
   // is the only way in which user memory management can be done.  In the
   // single-owner model, a verbatim copy is obligatory.  Otherwise, the
   // original may disappear before control ever reaches the task function.
-  // So, sorry.  We have to do this for all task functions, not merely
-  // asynchronous begins.
-#else
-  if (fn->hasFlag(FLAG_BEGIN))
+  // So, sorry.  We have to do this for cobegins and coforalls, not merely
+  // begins.
+  if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
   {
-#endif
     Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
@@ -285,7 +288,8 @@ static Symbol* insertAutoCopyDestroyForTaskArg
 
         if (firstCall)
         {
-          // Insert a call to the autoDestroy function ahead of the return.
+          // Insert a call to the autoDestroy function ahead of the return (or
+          // _downEndCount() call, if present).
           // (But only once per function for each affected argument.)
           Symbol* formal = actual_to_formal(arg);
           CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
@@ -293,9 +297,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
           insertReferenceTemps(autoDestroyCall);
         }
       }
-#if !HILDE_MM
     }
-#endif
   }
   return var;
 }
