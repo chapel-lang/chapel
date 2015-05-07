@@ -181,7 +181,11 @@ module ChapelLocale {
   // module.
   //
   var origRootLocale : locale = nil;
-  var origRootLocaleWrapper = new auto_ptr(origRootLocale);
+// origRootLocale is shared too much, and used after this module is destroyed,
+// so releasing its memory with an autopointer turns out to be premature.
+// Until someone has the time to analyze the lifetime of origRootLocale, we are
+// obliged to leak it. :(
+//  var origRootLocaleWrapper = new auto_ptr(origRootLocale);
 
   class AbstractRootLocale : locale {
     // These functions are used to establish values for Locales[] and
@@ -306,7 +310,7 @@ module ChapelLocale {
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
     (origRootLocale:RootLocale).init();
-    origRootLocaleWrapper.ptr = origRootLocale;
+    //    origRootLocaleWrapper.ptr = origRootLocale;
   }
 
   // This function sets up a private copy of rootLocale by replicating
