@@ -2570,15 +2570,15 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
   }
 
   // Try printing it directly into the buffer.
-  if( VOID_PTR_DIFF(ch->cached_end,ch->cached_cur) > max ) {
+  if( qio_space_in_ptr_diff(max, ch->cached_end,ch->cached_cur) ) {
     // Print it all directly into the buffer.
-    got = _ltoa(ch->cached_cur, VOID_PTR_DIFF(ch->cached_end,ch->cached_cur), 
+    got = _ltoa(ch->cached_cur, qio_ptr_diff(ch->cached_end,ch->cached_cur), 
                 num, isneg, base, style);
     if( got < 0 ) {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown base or bad width");
       goto error;
-    } else if( got < VOID_PTR_DIFF(ch->cached_end,ch->cached_cur) ) {
-      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);
+    } else if( got < qio_ptr_diff(ch->cached_end,ch->cached_cur) ) {
+      ch->cached_cur = qio_ptr_add(ch->cached_cur, got);
       err = _qio_channel_post_cached_write(ch);
       // OK!
       goto error;
@@ -2673,14 +2673,15 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
   if( err ) goto error;
 
   // Try printing it directly into the buffer.
-  got = _ftoa(ch->cached_cur, VOID_PTR_DIFF(ch->cached_end, ch->cached_cur),
+  got = _ftoa(ch->cached_cur, qio_ptr_diff(ch->cached_end, ch->cached_cur),
               num, base, needs_i, style, &extra);
   if( got < 0 ) {
     if( got == -1 ) err = QIO_ENOMEM;
     else QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
     goto error;
-  } else if( got + extra < VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);
+  } else if( qio_space_in_ptr_diff(got + extra,
+                                   ch->cached_end, ch->cached_cur) ) {
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, got);
     err = _qio_channel_post_cached_write(ch);
     // OK!
     goto error;
@@ -3327,7 +3328,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
 
     // Fast path: an entire multi-byte sequence
     // is stored in the buffers.
-    if( MB_LEN_MAX <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+    if( qio_space_in_ptr_diff(MB_LEN_MAX, ch->cached_end, ch->cached_cur) ) {
       got = mbrtowc(&tmp_chr, ch->cached_cur, MB_LEN_MAX, &ps);
       if( got == 0 ) {
         *chr = 0;
@@ -3341,7 +3342,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
       } else {
         *chr = tmp_chr;
         err = 0;
-        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,got);
+        ch->cached_cur = qio_ptr_add(ch->cached_cur,got);
       }
     } else {
       // Slow path: we might need to read 1 byte at a time.

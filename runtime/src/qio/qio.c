@@ -1504,7 +1504,7 @@ qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
         // Put the mmap data into the buffer.
         err = qbuffer_append(&ch->buf, ch->file->mmap, start, uselen);
       }
-      expect_end = VOID_PTR_ADD(ch->file->mmap->data, uselen + start);
+      expect_end = qio_ptr_add(ch->file->mmap->data, uselen + start);
     }
   }
 
@@ -1573,8 +1573,8 @@ qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hi
         // (not possible to free the file until the channel is released,
         //  so this is OK, even without reference count increasing the
         //  bytes in the file...).
-        ch->cached_cur = VOID_PTR_ADD(file->mmap->data, start);
-        ch->cached_end = VOID_PTR_ADD(ch->cached_cur, uselen);
+        ch->cached_cur = qio_ptr_add(file->mmap->data, start);
+        ch->cached_end = qio_ptr_add(ch->cached_cur, uselen);
         ch->cached_start = ch->cached_cur;
         ch->cached_start_pos = start;
         ch->av_end = start + uselen;
@@ -2370,7 +2370,7 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
 
   if( ch->cached_end ) {
     cur_pos_cached = ch->cached_start_pos +
-                       VOID_PTR_DIFF(ch->cached_cur, ch->cached_start);
+                       qio_ptr_diff(ch->cached_cur, ch->cached_start);
     cur_pos_buf = _right_mark_start(ch);
 
     // We cannot go backwards with cached...
@@ -2414,10 +2414,10 @@ void _qio_buffered_setup_cached(qio_channel_t* ch)
 
     if( len > av_bytes ) len = av_bytes;
 
-    ch->cached_cur = VOID_PTR_ADD(bytes->data, skip);
+    ch->cached_cur = qio_ptr_add(bytes->data, skip);
     ch->cached_start = ch->cached_cur;
     ch->cached_start_pos = start.offset;
-    ch->cached_end = VOID_PTR_ADD(bytes->data, skip + len);
+    ch->cached_end = qio_ptr_add(bytes->data, skip + len);
     //printf("setup has len=%li\n", (long int) len);
   }
   //printf("setup cached start %lx %p %p\n", (long) ch->cached_start_pos, ch->cached_cur, ch->cached_end);
@@ -2699,7 +2699,7 @@ qioerr _qio_unbuffered_write(qio_channel_t* ch, const void* ptr, ssize_t len_in,
   if( method == QIO_METHOD_MMAP &&
       ch->file->mmap && _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // Copy the data to the mmap.
-    qio_memcpy( VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), ptr, len);
+    qio_memcpy( qio_ptr_add(ch->file->mmap->data,_right_mark_start(ch)), ptr, len);
     _add_right_mark_start(ch, len);
   } else {
     while( len > 0 ) {
@@ -2752,7 +2752,7 @@ qioerr _qio_unbuffered_write(qio_channel_t* ch, const void* ptr, ssize_t len_in,
         *amt_written = num_written + len_in - len;
         return err;
       }
-      ptr = VOID_PTR_ADD(ptr, num_written);
+      ptr = qio_ptr_add((void*) ptr, num_written);
       len -= num_written;
       _add_right_mark_start(ch, num_written);
     }
@@ -2790,7 +2790,7 @@ qioerr _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_
       _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // As long as we're using an I/O method that seeks on every read,
     // copy the data out of the mmap.
-    qio_memcpy( ptr, VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), len);
+    qio_memcpy( ptr, qio_ptr_add(ch->file->mmap->data,_right_mark_start(ch)), len);
     _add_right_mark_start(ch, len);
   } else {
     while( len > 0 ) {
@@ -2841,7 +2841,7 @@ qioerr _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_
         *amt_read = num_read + len_in - len;
         return err;
       }
-      ptr = VOID_PTR_ADD(ptr, num_read);
+      ptr = qio_ptr_add(ptr, num_read);
       len -= num_read;
       _add_right_mark_start(ch, num_read);
     }
@@ -3100,7 +3100,7 @@ qioerr _qio_channel_put_bytes_unlocked(qio_channel_t* ch, qbytes_t* bytes, int64
     err = qbuffer_copyin(& ch->buf,
                          _right_mark_start_iter( ch ),
                          qbuffer_end(&ch->buf),
-                         VOID_PTR_ADD(bytes->data, use_skip), copylen);
+                         qio_ptr_add(bytes->data, use_skip), copylen);
     if( err ) goto error;
 
     use_skip += copylen;
@@ -3469,8 +3469,8 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
   if( nbytes < 0 ) nbytes = 0;
 
   // Fast path: all data is available in the cached area.
-  if( nbytes <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, nbytes);
+  if( qio_space_in_ptr_diff(nbytes, ch->cached_end, ch->cached_cur) ) {
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, nbytes);
     return 0;
   }
 
@@ -3512,9 +3512,9 @@ void qio_channel_revert_unlocked(qio_channel_t* restrict ch)
   // Is that within the cached area?
   if( ch->cached_start && target >= ch->cached_start_pos ) {
     // OK, great, just move the cached pointer.
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_start, target - ch->cached_start_pos);
+    ch->cached_cur = qio_ptr_add(ch->cached_start, target - ch->cached_start_pos);
     // We should not be past the end!
-    assert( VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) >= 0 );
+    assert( qio_ptr_diff(ch->cached_end, ch->cached_cur) >= 0 );
 
     // OK to change mark stack value because it remains
     // within the currently cached region.
@@ -3617,12 +3617,13 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   tmp_live = part_two;
 
   // How many bytes to write?
-  to_copy = sizeof(qio_bitbuffer_t) - VOID_PTR_ALIGN(ch->cached_cur, sizeof(qio_bitbuffer_t));
+  to_copy = sizeof(qio_bitbuffer_t) -
+                qio_ptr_align(ch->cached_cur, sizeof(qio_bitbuffer_t));
   
   //printf("WRITE BITS REALIGNALIGNED WRITING %llx %i\n", (long long int) part_one_bits, (int) (8*to_copy));
   // memcpy will work because part_one_bits is big endian now.
   qio_memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
-  ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
+  ch->cached_cur = qio_ptr_add(ch->cached_cur, to_copy);
 
   // Remove junk from the top of tmp_bits, so only bottom tmp_live bits are set.
   if( 0 < tmp_live && tmp_live < (int) (8*sizeof(qio_bitbuffer_t)) ) {
@@ -3654,7 +3655,7 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
     part_one_bits_be = qio_bitbuffer_tobe(part_one_bits); // big endian now.
     // We have 8-byte alignment
     *(qio_bitbuffer_t*)ch->cached_cur = part_one_bits_be;
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, sizeof(qio_bitbuffer_t));
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, sizeof(qio_bitbuffer_t));
 
     // tmp_bits stays what it is.
     tmp_live = tmp_live - 8*to_copy;
@@ -3825,7 +3826,7 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
 
   buf = 0;
   qio_memcpy(&buf, ch->cached_cur, to_copy);
-  ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
+  ch->cached_cur = qio_ptr_add(ch->cached_cur, to_copy);
 
   // now we've set the top several bytes of buf.
   buf = qio_bitbuffer_unbe(buf);
@@ -3847,7 +3848,8 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   // We've got < 1 byte in tmp currently,
   // and to get to alignment we'll need to read
   // <= 7 bytes, so that will fit into 8 bytes.
-  to_copy = sizeof(qio_bitbuffer_t) - VOID_PTR_ALIGN(ch->cached_cur, sizeof(qio_bitbuffer_t));
+  to_copy = sizeof(qio_bitbuffer_t) -
+              qio_ptr_align(ch->cached_cur, sizeof(qio_bitbuffer_t));
   if( to_copy == sizeof(qio_bitbuffer_t) ) to_copy = 0;
 
   buf = 0;
