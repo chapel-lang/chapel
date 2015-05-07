@@ -30,7 +30,9 @@ void setupError(const char *filename, int lineno, int tag) {
 //
 
 // chpl_error() ends execution
-void chpl_error(const char* message, int32_t lineno, c_string filename) {
+// Note: this signature doesn't match the real one precisely, but it's
+//       close enough.
+void chpl_error(const char* message, int lineno, const char* filename) {
   __coverity_panic__();
 }
 
