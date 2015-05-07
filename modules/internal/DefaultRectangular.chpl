@@ -69,6 +69,7 @@ module DefaultRectangular {
   // Replicated copies are set up in chpl_initOnLocales() during locale
   // model initialization
   //
+  pragma "no auto destroy"
   pragma "private" var defaultDist = new dmap(new DefaultDist());
   inline proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil then defaultDist = new dmap(new DefaultDist());
