@@ -370,7 +370,7 @@ static void* pthread_func(void* arg) {
 
   // add us to the list of threads
   tlp = (thread_list_p) chpl_mem_alloc(sizeof(struct thread_list),
-                                       CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
+                                       CHPL_RT_MD_THREAD_LIST_DESC, 0, 0);
 
   tlp->thread = pthread_self();
   tlp->next   = NULL;

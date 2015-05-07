@@ -589,9 +589,6 @@ class Function {
     proc evalNPT(npt) {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
-            //        "  f_analytic()=", format("% 0.5e", fval), " err=", format("% 0.5e", Fval-fval),
-            //        if abs(Fval-fval) > thresh then "  > thresh" else "");
             writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr err=% .8dr%s\n",
 		   i/npt:real, Fval, fval, Fval-fval, 
 		   if abs(Fval-fval) > thresh then "  > thresh" else "");
