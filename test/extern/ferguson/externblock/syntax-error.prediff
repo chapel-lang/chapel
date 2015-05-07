@@ -4,5 +4,5 @@ OUTFILE=$2
 
 TMPFILE="$outfile.prediff.tmp"
 mv $OUTFILE $TMPFILE
-sed 's/>:[0-9]\+:/>:#:/g' $TMPFILE > $OUTFILE
+sed -E 's/>:[0-9]+:/>:#:/g' $TMPFILE > $OUTFILE
 rm $TMPFILE
