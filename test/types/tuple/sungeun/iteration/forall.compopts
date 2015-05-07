@@ -1,0 +1,2 @@
+# Iterator inlining does not work correctly with foralls (FIXME).
+--no-inline-iterators
