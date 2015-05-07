@@ -1,0 +1,8 @@
+semantic: Should we be able to return a sync variable?
+
+The change to destroy sync variables when they leave scope makes returning
+syncs problematic, especially since copying syncs is not recommended.  Should
+it be possible to return a sync which would otherwise be cleaned up?
+
+When resolving this future, please remove the skipif and test with
+TASKS=qthreads
