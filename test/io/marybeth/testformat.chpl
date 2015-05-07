@@ -9,11 +9,11 @@ var y = 999.9993;
 var z = 899.9999;
 var c = (1.0, 1.0):complex;
 
-writeln(s.format(s,i));
-writeln(s.format(s,x));
-writeln(s.format(s,y));
-writeln(s.format(s,z));
-writeln(s.format(s,n));
+writeln(s.format(i));
+writeln(s.format(x));
+writeln(s.format(y));
+writeln(s.format(z));
+writeln(s.format(n));
 writeln("%{####}".format(n));
 writeln("%{###########.##}".format(c));
 
