@@ -254,12 +254,14 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 }
 
 
+// Adds a mapping from id->getName() to a variable or CDecl to info->lvt
 static
-VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
+void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 {
   GenInfo* info = gGenInfo;
   Preprocessor &preproc = info->Clang->getPreprocessor();
-  VarSymbol* ret = NULL;
+  VarSymbol* varRet = NULL;
+  NamedDecl* cdeclRet = NULL;
 
   const bool debugPrint = false;
 
@@ -267,8 +269,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
   //Handling only simple string or integer defines
   if(macro->getNumArgs() > 0) {
-    if( debugPrint) printf("macro function!\n");
-    return ret; // TODO -- handle macro functions.
+    if( debugPrint) {
+      printf("the macro takes arguments\n");
+    }
+    return; // TODO -- handle macro functions.
   }
 
   // Check that we have a single token surrounded by any
@@ -305,20 +309,48 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       ntokens - left_parens - right_parens == 1 ) {
     // OK!
   } else {
-    if( debugPrint) printf("too complicated or empty!\n");
-    return ret; // we don't handle complicated expressions like A+B
+    if( debugPrint) {
+      printf("the following macro is too complicated or empty:\n");
+    }
+    return; // we don't handle complicated expressions like A+B
   }
 
 
   switch(tok.getKind()) {
     case tok::numeric_constant: {
       std::string numString;
+      int hex;
+      int isfloat;
       if( negate ) numString.append("-");
       numString.append(tok.getLiteralData(), tok.getLength());
 
       if( debugPrint) printf("num = %s\n", numString.c_str());
 
-      if(numString.find('.') == std::string::npos) {
+      hex = 0;
+      if( numString[0] == '0' && (numString[1] == 'x' || numString[1] == 'X'))
+      {
+        hex = 1;
+      }
+
+      isfloat = 0;
+      if(numString.find('.') != std::string::npos) {
+        isfloat = 1;
+      }
+      // also check for exponent since e.g. 1e10 is a float.
+      if( hex ) {
+        // C99 hex floats use p for exponent
+        if(numString.find('p') != std::string::npos ||
+           numString.find('P') != std::string::npos) {
+          isfloat = 1;
+        }
+      } else {
+        if(numString.find('e') != std::string::npos ||
+           numString.find('E') != std::string::npos) {
+          isfloat = 1;
+        }
+      }
+
+      if( !isfloat ) {
         IF1_int_type size = INT_SIZE_32;
 
         if(tolower(numString[numString.length() - 1]) == 'l') {
@@ -328,10 +360,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
         if(tolower(numString[numString.length() - 1]) == 'u') {
           numString[numString.length() - 1] = '\0';
-          ret = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
+          varRet = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
         }
         else {
-          ret = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
+          varRet = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
         }
       }
       else {
@@ -341,14 +373,14 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
           numString[numString.length() - 1] = '\0';
         }
 
-        ret = new_RealSymbol("real", strtod(numString.c_str(), NULL), size);
+        varRet = new_RealSymbol("real", strtod(numString.c_str(), NULL), size);
       }
       break;
     }
     case tok::string_literal: {
       std::string body = std::string(tok.getLiteralData(), tok.getLength());
       if( debugPrint) printf("str = %s\n", body.c_str());
-      ret = new_StringSymbol(body.c_str());
+      varRet = new_StringSymbol(body.c_str());
       break;
     }
     case tok::identifier: {
@@ -357,26 +389,31 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       if( debugPrint) {
         printf("id = %s\n", idName.c_str());
       }
-      VarSymbol* var = info->lvt->getVarSymbol(idName);
-      if( var ) {
-        // We've already got something here...
-        ret = var;
-      } else {
+
+      // Handle the case where the macro refers to something we've
+      // already parsed in C
+      varRet = info->lvt->getVarSymbol(idName);
+      if( !varRet ) {
+        cdeclRet = info->lvt->getCDecl(idName);
+      }
+      if( !varRet && !cdeclRet ) {
         // Check to see if it's another macro.
         MacroInfo* otherMacro = preproc.getMacroInfo(tokId);
         if( otherMacro && otherMacro != macro ) {
-          ret = handleMacro(tokId, otherMacro);
-        } else {
-          // It must be referring to a variable.
-          // FUTURE TODO - create an extern VarSymbol for
-          //   Chapel to that variable..
-          // The simple code below doesn't quite manage.
-          //ret = new VarSymbol(astr(idName.c_str()), dtUnknown);
-          //ret->addFlag(FLAG_EXTERN);
-          // We need to handle macros that wrap functions
-          // that are defined after the macros if we want
-          // GMP to work...
+          // Handle the other macro to add it to the LVT under the new name
+          // The recursive call will add it to the LVT
+          if( debugPrint) printf("other macro\n");
+          handleMacro(tokId, otherMacro);
+          // Get whatever was added in the recursive call
+          // so that we can add it under the new name.
+          varRet = info->lvt->getVarSymbol(idName);
+          cdeclRet = info->lvt->getCDecl(idName);
         }
+      }
+      if( debugPrint && varRet ) printf("found var %s\n", varRet->cname);
+      if( debugPrint && cdeclRet ) {
+        std::string s = cdeclRet->getName();
+        printf("found cdecl %s\n", s.c_str());
       }
       break;
     }
@@ -384,10 +421,19 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       break;
   }
 
-  if( ret ) {
-    info->lvt->addGlobalVarSymbol(id->getName(), ret);
+  if( debugPrint ) {
+    std::string s = id->getName();
+    const char* kind = NULL;
+    if( varRet ) kind = "var";
+    if( cdeclRet ) kind = "cdecl";
+    if( kind ) printf("%s: adding an %s to the lvt\n", s.c_str(), kind);
   }
-  return ret;
+  if( varRet ) {
+    info->lvt->addGlobalVarSymbol(id->getName(), varRet);
+  }
+  if( cdeclRet ) {
+    info->lvt->addGlobalCDecl(id->getName(), cdeclRet);
+  }
 }
 
 
@@ -946,6 +992,9 @@ void runClang(const char* just_parse_filename) {
     // Now initialize a code generator...
     // this will enable us to ask for addresses of static (inline) functions
     // and cause them to be emitted eventually.
+    // CCodeGenAction is defined above. It traverses the C AST
+    // and does the code generation.
+    //printf("running CCodeGenAction\n");
     info->cgAction = new CCodeGenAction();
     if (!info->Clang->ExecuteAction(*info->cgAction)) {
       if (just_parse_filename) {
@@ -1210,6 +1259,13 @@ void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
   store.u.cdecl = cdecl;
   (layers.back())[cdecl->getName()] = store;
 }
+
+void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl) {
+  Storage store;
+  store.u.cdecl = cdecl;
+  (layers.back())[name] = store;
+}
+
 
 void LayeredValueTable::addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var)
 {
