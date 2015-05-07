@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 
   // Now try overwriting the original data with
   // descending bytes using sys_pwrite.
-  
+
   for( i = 0; i < 256; i++ ) {
     byte = 255 - i;
     got_num = 0;

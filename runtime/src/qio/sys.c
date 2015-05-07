@@ -109,16 +109,8 @@ size_t sys_page_size(void)
   static long pagesize = -1;
   err_t err;
 
-  /* This is erroneous and leads to errors in mmap calls
-#ifdef __CYGWIN__
-  // see note in runtime/include/cygwin/chplsys.h
-  return 4096;
-#endif
-  */
-
   // Handle already computed page size.
   if( pagesize > 0 ) return pagesize;
-
 
 #ifdef _SC_PAGESIZE
   err = sys_sysconf(_SC_PAGESIZE, &pagesize);
@@ -748,7 +740,6 @@ err_t sys_mmap(void* addr, size_t length, int prot, int flags, fd_t fd, off_t of
 {
   void* got;
   err_t err_out;
-  //printf("sys_mmap calling mmap(%p, %i, %i, %i, %i, %i)\n", addr, (int) length, prot, flags, fd, (int) offset);
   got = mmap(addr, length, prot, flags, fd, offset);
   if( got != MAP_FAILED ) {
     err_out = 0;
@@ -758,7 +749,6 @@ err_t sys_mmap(void* addr, size_t length, int prot, int flags, fd_t fd, off_t of
     *ret_out = NULL;
   }
 
-  //printf("sys_mmap is returning ptr %p err %i\n", got, err_out);
   return err_out;
 }
 
@@ -847,7 +837,6 @@ err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
   overlapped.Offset = offset;
   overlapped.OffsetHigh = offset >> (8*sizeof(DWORD));
 
-  //printf("Calling ReadFile %i %i\n", (int) overlapped.Offset, (int) overlapped.OffsetHigh);
   win_did_read = ReadFile(handle, buf, win_to_read, &win_num_read, &overlapped);
   if( win_did_read ) {
     got = win_num_read;
@@ -855,18 +844,17 @@ err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
   } else {
     got = -1;
     win_error = GetLastError();
-    //if( win_error == ERROR_HANDLE_EOF ) error = ENODATA;
-    //else
-      error = get_errcode_from_winerr(win_error);
+    // Cygwin turns ERROR_HANDLE_EOF into ENODATA
+    // but if it stopped doing that we could check for it here:
+    //if( win_error == ERROR_HANDLE_EOF ) error = ENODATA; else
+    error = get_errcode_from_winerr(win_error);
   }
 
-  //printf("after ReadFile got is %i error is %i win_error is %i\n", (int) got, (int) error, (int) win_error);
   if( got == -1 && error == ENODATA ) {
     // this is how cygwin reports EOF
     got = 0;
     error = 0;
   }
-  //printf("after ReadFile returning num_read = %i and error = %i\n", (int) got, (int) error);
   *num_read = got;
   assert(got < 0 || (size_t) got <= count); // can't read more than requested!
   return error;

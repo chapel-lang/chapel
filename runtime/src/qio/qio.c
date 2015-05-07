@@ -254,7 +254,6 @@ qioerr qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
   qioerr err;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
-    //printf("NEGATIVE COUNT\n");
     QIO_RETURN_CONSTANT_ERROR(EINVAL, "negative count");
   }
 
@@ -283,7 +282,6 @@ qioerr qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
 error:
   MAYBE_STACK_FREE(iov, iov_onstack);
 
-  //printf("fread returning %i\n", (int) total_read);
   *num_read = total_read;
   DONE_SLOW_SYSCALL;
 
@@ -2145,8 +2143,6 @@ qioerr _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
   err = qio_int_to_err(sys_fstat(ch->file->fd, &stats));
   if( err ) return err;
 
-  //printf("in _buffered_get_mmap, eof is %i, map_start is %i, len is %i\n", stats.st_size, (int) map_start, (int) len);
-
   // do not exceed end_pos.
   if( ch->end_pos < INT64_MAX ) {
     if( map_start + len > ch->end_pos ) {
@@ -2187,7 +2183,6 @@ qioerr _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
   // If we're not going to get all the requested data, return EEOF.
   if( len < amt ) eof = 1;
 
-  //printf("in _buffered_get_mmap, len is %i eof is %i\n", (int) len, eof);
   if( len > 0 ) {
     // OK, now mmap
     prot = PROT_READ;
@@ -2265,20 +2260,16 @@ qioerr _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
     num_read = 0;
     switch (method) {
       case QIO_METHOD_READWRITE:
-        //printf("readatleast readv\n");
         err = qio_readv(ch->file, &ch->buf, read_start, read_end, &num_read);
         break;
       case QIO_METHOD_PREADPWRITE:
-        //printf("readatleast preadv\n");
         err = qio_preadv(ch->file, &ch->buf, read_start, read_end, read_start.offset, &num_read);
         break;
       case QIO_METHOD_FREADFWRITE:
-        //printf("readatleast freadv\n");
         err = qio_freadv(ch->file->fp, &ch->buf, read_start, read_end, &num_read);
         break;
       case QIO_METHOD_MMAP:
       case QIO_METHOD_MEMORY:
-        //printf("readatleast mmap/memory\n");
         // should've been handled outside this method!
         QIO_GET_CONSTANT_ERROR(err, EINVAL, "internal error");
         break;
@@ -2568,16 +2559,12 @@ qioerr _qio_channel_require_unlocked(qio_channel_t* ch, int64_t amt, int writing
   // Otherwise, we need some data.
   n_needed = amt - n_available;
 
-  //printf("require unlocked 1\n");
   if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_MMAP ) {
-    //printf("require unlocked mmap\n");
     err = _buffered_get_mmap(ch, n_needed, writing);
   } else if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_MEMORY ) {
-    //printf("require unlocked memory\n");
     err = _buffered_get_memory(ch, n_needed, writing);
   } else {
     if( ch->flags & QIO_FDFLAG_READABLE ) {
-      //printf("require unlocked buffered_read_atleast\n");
       // we're reading the data. So read some data!
       err = _buffered_read_atleast(ch, n_needed);
     } else {
@@ -2596,8 +2583,6 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   int64_t gotlen = 0;
   qioerr err;
   int eof;
-
-  //printf("buffered read A\n");
 
   // handle channel position beyond end.
   if( _right_mark_start(ch) > ch->end_pos ) return QIO_EEOF;

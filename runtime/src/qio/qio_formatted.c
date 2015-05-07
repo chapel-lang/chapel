@@ -32,9 +32,6 @@
 #include <langinfo.h>
 #endif
 
-// we use frexp
-#include <math.h>
-
 // 0 means not set
 // 1 means use faster, hard-coded UTF-8 decode/encoder
 // -1 means use C multibyte functions (e.g. mbtowc)
