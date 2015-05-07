@@ -2235,13 +2235,16 @@ FnSymbol::insertBeforeDownEndCount(Expr* ast) {
   while (isBlockStmt(prev))
     prev = toBlockStmt(prev)->body.last();
   CallExpr* last = toCallExpr(prev);
-  if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
+  if (last && last->isResolved() &&
+      ! strcmp(last->isResolved()->name, "_downEndCount"))
+  {
+    last->insertBefore(ast);
+  }
+  else
   {
     // No _downEndCount() call, so insert the ast before the return.
     ret->insertBefore(ast);
   }
-  else
-    last->insertBefore(ast);
 }
 
 
