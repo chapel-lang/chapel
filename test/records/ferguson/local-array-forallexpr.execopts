@@ -1,0 +1,3 @@
+# This test also exhibits a ref count being allowed to go to zero
+# when run with parallel tasks
+--dataParTasksPerLocale=1

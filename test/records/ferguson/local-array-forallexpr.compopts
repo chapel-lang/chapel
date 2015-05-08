@@ -1,0 +1,2 @@
+# This test does not work when iterator inlining is enabled
+--no-inline-iterators
