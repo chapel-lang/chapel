@@ -545,7 +545,7 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then 
-	        writef("   level ##   %#boxes=####  norm=%0.2er\n",
+	        writef("   level %{##}   #boxes=%{####}  norm=%0.2er\n",
 		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
@@ -557,7 +557,7 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-	        writef("   level ##   %#boxes=####  norm=%0.2er\n",
+	        writef("   level %{##}   #boxes=%{####}  norm=%0.2er\n",
 		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
