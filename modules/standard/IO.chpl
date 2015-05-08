@@ -792,10 +792,14 @@ Format strings in Chapel consist of:
 # Specifiers
 ++++++++++++
 
-Simply display how many digits to use when printing a floating-point number by
-using the # sign to stand for digits. The fractional portion of the number will
-be rounded appropriately and extra space will be made if the integer portion is
-too small:
+A # specifiers must be enclosed in %{} syntax, for example ``%{#}`` is the
+shortest one, and ``%{#.#}`` is a more typical one. The integer portion of the
+number will be padded out to match the number of ``#``s before the decimal
+point, and the number of ``#``s after the decimal point indicate how many
+digits to print after the decimal point. In other words, display how many
+digits to use when printing a floating-point number by using the # sign to
+stand for digits. The fractional portion of the number will be rounded
+appropriately and extra space will be made if the integer portion is too small:
 
 .. code-block:: chapel
 
@@ -806,7 +810,7 @@ too small:
 This syntax also works for numbers without a decimal point by rounding them
 appropriately.
 
-A # specifier must start with a ``.``. 
+A # specifier must start with a ``.``.
 
 .. code-block:: chapel
 
@@ -831,6 +835,7 @@ rules.
  odd specifiers can be interpreted unambiguously. Some of the more complex
  features require the use of the ``%{}`` syntax, but it's always 
  acceptable to use curly braces to make the format string clearer.
+ Curly braces are required for # conversion specifiers.
 
 In general, a ``%`` specifier consists of either text or binary conversions:
 
@@ -3438,12 +3443,12 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     var err:syserr = ENOERR;
     var got:bool = false;
 
-    err = qio_channel_scan_literal(false, _channel_internal, "true", "true".length:ssize_t, 0);
+    err = qio_channel_scan_literal(false, _channel_internal, "true", "true".length:ssize_t, 1);
     if !err {
       got = true;
     } else if err == EFORMAT {
       // try reading false instead.
-      err = qio_channel_scan_literal(false, _channel_internal, "false", "false".length:ssize_t, 0);
+      err = qio_channel_scan_literal(false, _channel_internal, "false", "false".length:ssize_t, 1);
       // got is already false, so we don't need to set it.
     }
     if !err then x = got;
@@ -3478,7 +3483,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     for i in chpl_enumerate(t) {
       var str = i:c_string;
       var slen:ssize_t = str.length:ssize_t;
-      err = qio_channel_scan_literal(false, _channel_internal, str, slen, 0);
+      err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
       // Do not free str, because enum literals are C string literals
       if !err {
         x = i;
@@ -4476,9 +4481,9 @@ proc channel.close() {
 }
 
 // TODO -- we should probably have separate c_ptr ddata and ref versions
-// but this function for it to become user-facing. Right now, errors
+// in this function for it to become user-facing. Right now, errors
 // in the type of the argument will only be caught by a type mismatch
-// in the call to qio_channel_read_amt. 
+// in the call to qio_channel_read_amt.
 pragma "no doc"
 proc channel.readBytes(x, len:ssize_t, out error:syserr) {
   error = ENOERR;
