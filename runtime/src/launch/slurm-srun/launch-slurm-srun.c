@@ -299,7 +299,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     }
 
     // add the srun command and the (possibly wrapped) binary name.
-    fprintf(slurmFile, "srun %s %s ",
+    fprintf(slurmFile, "srun --kill-on-bad-exit %s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
     // add any arguments passed to the launcher to the binary 
