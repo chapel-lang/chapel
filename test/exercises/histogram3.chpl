@@ -26,8 +26,8 @@ var X, X2: [1..numNumbers] real, // arrays of random numbers
 
 // output startup message
 writeln("Running Histogram Example");
-writeln(" Number of Random Numbers = ", format("########", numNumbers));
-writeln(" Number of Buckets        = ", format("########", numBuckets));
+writef(" Number of Random Numbers = ########\n", numNumbers);
+writef(" Number of Buckets        = ########\n", numBuckets);
 writeln();
 
 // fill arrays with random numbers (using standard Random module)
@@ -87,11 +87,6 @@ proc outputHistogram(Y: [] int) {
     writeln(" Each 'X' can represent up to ", rowSize, " numbers.");
   writeln(" Raw Data");
   for j in 1..numBuckets {
-    writeln("  ",
-            format("%0.2f", (j-1)*(1.0/numBuckets)),
-            " - ",
-            format("%0.2f", j*(1.0/numBuckets)),
-            ": ",
-            Y(j));
+    writef("  %0.2dr - %0.2dr: %n\n", (j-1)*(1.0/numBuckets), j*(1.0/numBuckets), Y(j));
   }
 }
