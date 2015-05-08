@@ -1,0 +1,2 @@
+# Here is another test where ref counts are allowed to dip to zero when run in parallel.
+--dataParTasksPerLocale=1
