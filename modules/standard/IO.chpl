@@ -792,10 +792,10 @@ Format strings in Chapel consist of:
 # Specifiers
 ++++++++++++
 
-All # specifiers must be enclosed in %{} syntax, for example ``%{#}`` is the
+All # specifiers must be enclosed in ``%{}`` syntax, for example ``%{#}`` is the
 shortest one, and ``%{#.#}`` is a more typical one. The integer portion of the
-number will be padded out to match the number of ``#``s before the decimal
-point, and the number of ``#``s after the decimal point indicate how many
+number will be padded out to match the number of ``#`` s before the decimal
+point, and the number of ``#`` s after the decimal point indicate how many
 digits to print after the decimal point. In other words, display how many
 digits to use when printing a floating-point number by using the # symbol to
 stand for digits. The fractional portion of the number will be rounded
