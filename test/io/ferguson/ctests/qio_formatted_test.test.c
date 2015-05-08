@@ -824,6 +824,10 @@ void write_65k_test()
 	int buflen = 65535;
         int64_t out_len = 0;
 
+        // skip this test for very small buf sizes on 32-bit platforms
+        // because we might run out of memory.
+        if( qbytes_iobuf_size < 8 && sizeof(void*) < 8 ) return;
+
         err = qio_file_open_tmp(&f, 0, NULL);
         assert(!err);
 
@@ -1490,7 +1494,7 @@ void test_quoted_string_maxlength(void)
 
 int main(int argc, char** argv)
 {
-  int sizes[] = {qbytes_iobuf_size, 1, 2, 0};
+  int sizes[] = {qbytes_iobuf_size, 64, 1, 2, 0};
 
   setlocale(LC_CTYPE,"");
 
