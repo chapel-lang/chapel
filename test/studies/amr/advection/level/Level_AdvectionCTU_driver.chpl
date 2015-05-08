@@ -45,7 +45,7 @@ proc main {
   var dim_in: int;
   phys_file.readln(dim_in);
   assert(dim_in == dimension, 
-         "error: dimension of physics.txt must equal " + format("%i",dimension));
+         "error: dimension of physics.txt must equal " + "%i".format(dimension));
   phys_file.readln((...velocity));
   phys_file.close();
   //<=== Advection velocity <===

@@ -1,10 +1,3 @@
 #!/bin/sh
 
 sed '/^$/d' $2 > $2.tmp && mv $2.tmp $2
-if grep -q '^starting try $' $2; then
-  echo $0: found incorrect output, saving the executables
-  echo + cd $PWD
-  set -x
-  mv time-write time-write.SAVED
-  mv time-write_real time-write.SAVED_real
-fi
