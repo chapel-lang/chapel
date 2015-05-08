@@ -792,12 +792,12 @@ Format strings in Chapel consist of:
 # Specifiers
 ++++++++++++
 
-A # specifiers must be enclosed in %{} syntax, for example ``%{#}`` is the
+All # specifiers must be enclosed in %{} syntax, for example ``%{#}`` is the
 shortest one, and ``%{#.#}`` is a more typical one. The integer portion of the
 number will be padded out to match the number of ``#``s before the decimal
 point, and the number of ``#``s after the decimal point indicate how many
 digits to print after the decimal point. In other words, display how many
-digits to use when printing a floating-point number by using the # sign to
+digits to use when printing a floating-point number by using the # symbol to
 stand for digits. The fractional portion of the number will be rounded
 appropriately and extra space will be made if the integer portion is too small:
 
@@ -810,13 +810,13 @@ appropriately and extra space will be made if the integer portion is too small:
 This syntax also works for numbers without a decimal point by rounding them
 appropriately.
 
-A # specifier must start with a ``.``.
+A # specifier may start with a ``.``.
 
 .. code-block:: chapel
 
   writef("%{.##}\n", 0.777);
        // outputs:
-       //  0.77
+       //  0.78
 
 % Specifiers
 ++++++++++++
@@ -5192,11 +5192,11 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr, r
       var cur = qio_channel_offset_unlocked(_channel_internal);
       qio_channel_advance(false, _channel_internal, before_match - cur);
       // EFORMAT means the pattern did not match.
-      if _format_debug then stdout.writeln("HERE AQZ");
+      if _format_debug then stdout.writeln("DEBUG AQZ");
     }
   } else {
     error = qio_format_error_bad_regexp();;
-    if _format_debug then stdout.writeln("HERE AZB");
+    if _format_debug then stdout.writeln("DEBUG AZB");
   }
 }
 
@@ -5251,7 +5251,7 @@ proc channel._format_reader(
             var offsetA = qio_channel_offset_unlocked(_channel_internal);
             error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, 0, true);
             if _format_debug {
-             if error then stdout.writeln("HERE XZOB");
+             if error then stdout.writeln("DEBUG XZOB");
             }
             var offsetB = qio_channel_offset_unlocked(_channel_internal);
             if (!error) && offsetA == offsetB {
@@ -5272,7 +5272,7 @@ proc channel._format_reader(
           // It's not so clear what to do when printing
           // a regexp. So we just don't handle it.
           error = qio_format_error_write_regexp();
-          if _format_debug then stdout.writeln("HERE AZA");
+          if _format_debug then stdout.writeln("DEBUG AZA");
         } else {
           // allocate regexp info if needed
           if r == nil then r = new _channel_regexp_info();
@@ -5303,7 +5303,7 @@ proc channel._format_reader(
             }
           } else {
             error = qio_format_error_bad_regexp();
-            if _format_debug then stdout.writeln("HERE AZB");
+            if _format_debug then stdout.writeln("DEBUG AZB");
             //if dieOnError then assert(!error, errstr);
           }
         }
@@ -5366,56 +5366,56 @@ proc channel._conv_sethandler(
       var (t,ok) = _toIntegral(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZE");
+        if _format_debug then stdout.writeln("DEBUG AZE");
       } else style.min_width_columns = t:uint(32);
     }
     when QIO_CONV_SET_MAX_WIDTH_COLS {
       var (t,ok) = _toIntegral(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZF");
+        if _format_debug then stdout.writeln("DEBUG AZF");
       } else style.max_width_columns = t:uint(32);
     }
     when QIO_CONV_SET_MAX_WIDTH_CHARS {
       var (t,ok) = _toIntegral(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZG");
+        if _format_debug then stdout.writeln("DEBUG AZG");
       } else style.max_width_characters = t:uint(32);
     }
     when QIO_CONV_SET_MAX_WIDTH_BYTES {
       var (t,ok) = _toIntegral(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZGX");
+        if _format_debug then stdout.writeln("DEBUG AZGX");
       } else style.max_width_bytes = t:uint(32);
     }
     when QIO_CONV_SET_PRECISION {
       var (t,ok) = _toIntegral(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZH");
+        if _format_debug then stdout.writeln("DEBUG AZH");
       } else style.precision = t:int(32);
     }
     when QIO_CONV_SET_STRINGSTART {
       var (t,ok) = _toChar(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZH");
+        if _format_debug then stdout.writeln("DEBUG AZH");
       } else style.string_start = t:style_char_t;
     }
     when QIO_CONV_SET_STRINGEND {
       var (t,ok) = _toChar(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZH");
+        if _format_debug then stdout.writeln("DEBUG AZH");
       } else style.string_end = t:style_char_t;
     }
     when QIO_CONV_SET_STRINGSTARTEND {
       var (t,ok) = _toChar(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZH");
+        if _format_debug then stdout.writeln("DEBUG AZH");
       } else {
         style.string_start = t:style_char_t;
         style.string_end = t:style_char_t;
@@ -5425,7 +5425,7 @@ proc channel._conv_sethandler(
       var (t,ok) = _toIntegral(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZH");
+        if _format_debug then stdout.writeln("DEBUG AZH");
       } else {
         style.str_style = t:int(64);
       }
@@ -5434,7 +5434,7 @@ proc channel._conv_sethandler(
       var (t,ok) = _toChar(argi);
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
-        if _format_debug then stdout.writeln("HERE AZH");
+        if _format_debug then stdout.writeln("DEBUG AZH");
       } else {
         style.str_style = stringStyleTerminated(t:uint(8));
       }
@@ -5445,7 +5445,7 @@ proc channel._conv_sethandler(
     when QIO_CONV_UNK {
       // Too many arguments.
       error = qio_format_error_too_many_args();
-      if _format_debug then stdout.writeln("HERE AZK");
+      if _format_debug then stdout.writeln("DEBUG AZK");
     } otherwise {
       return true;
     }
@@ -5715,7 +5715,7 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
             var (t,ok) = _toSigned(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
-              if _format_debug then stdout.writeln("HERE AZK");
+              if _format_debug then stdout.writeln("DEBUG AZK");
             } else {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
                 error = _write_signed(style.max_width_bytes, t, i);
@@ -5726,7 +5726,7 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
             var (t,ok) = _toUnsigned(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
-              if _format_debug then stdout.writeln("HERE AZK");
+              if _format_debug then stdout.writeln("DEBUG AZK");
             } else {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
                 error = _write_unsigned(style.max_width_bytes, t, i);
@@ -5737,7 +5737,7 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
             var (t,ok) = _toReal(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
-              if _format_debug then stdout.writeln("HERE AZK");
+              if _format_debug then stdout.writeln("DEBUG AZK");
             } else {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
                 error = _write_real(style.max_width_bytes, t, i);
@@ -5748,7 +5748,7 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
             var (t,ok) = _toImag(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
-              if _format_debug then stdout.writeln("HERE AZK");
+              if _format_debug then stdout.writeln("DEBUG AZK");
             } else {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG then
                 error = _write_real(style.max_width_bytes, t:real, i);
@@ -5759,7 +5759,7 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
             var (t,ok) = _toComplex(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
-              if _format_debug then stdout.writeln("HERE AZK");
+              if _format_debug then stdout.writeln("DEBUG AZK");
             } else {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
                 error = _write_complex(style.max_width_bytes, t, i);
@@ -5769,25 +5769,25 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
             var (t,ok) = _toNumeric(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
-              if _format_debug then stdout.writeln("HERE AZO11");
+              if _format_debug then stdout.writeln("DEBUG AZO11");
             } else error = _write_one_internal(_channel_internal, iokind.dynamic, t);
           } when QIO_CONV_ARG_TYPE_CHAR {
             var (t,ok) = _toChar(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
-              if _format_debug then stdout.writeln("HERE AZN");
+              if _format_debug then stdout.writeln("DEBUG AZN");
             } else error = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t));
           } when QIO_CONV_ARG_TYPE_STRING {
             var (t,ok) = _toString(args(i));
             if ! ok {
               error = qio_format_error_arg_mismatch(i);
-              if _format_debug then stdout.writeln("HERE AZO");
+              if _format_debug then stdout.writeln("DEBUG AZO");
             } else error = _write_one_internal(_channel_internal, iokind.dynamic, t);
           } when QIO_CONV_ARG_TYPE_REGEXP {
             // It's not so clear what to do when printing
             // a regexp. So we just don't handle it.
             error = qio_format_error_write_regexp();
-            if _format_debug then stdout.writeln("HERE AZP");
+            if _format_debug then stdout.writeln("DEBUG AZP");
           } when QIO_CONV_ARG_TYPE_REPR {
             error = _write_one_internal(_channel_internal, iokind.dynamic, args(i));
           } otherwise {
@@ -5809,7 +5809,7 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
       if cur < len {
         // Mismatched number of arguments!
         error = qio_format_error_too_few_args();
-        if _format_debug then stdout.writeln("HERE AZR");
+        if _format_debug then stdout.writeln("DEBUG AZR");
       }
     }
 
@@ -5851,7 +5851,7 @@ proc channel.writef(fmt:c_string, out error:syserr):bool {
     if ! error {
       if gotConv {
         error = qio_format_error_too_few_args();
-        if _format_debug then stdout.writeln("HERE AZZs");
+        if _format_debug then stdout.writeln("DEBUG AZZs");
       }
     }
 
@@ -5859,7 +5859,7 @@ proc channel.writef(fmt:c_string, out error:syserr):bool {
       if cur < len {
         // Mismatched number of arguments!
         error = qio_format_error_too_few_args();
-        if _format_debug then stdout.writeln("HERE AZS");
+        if _format_debug then stdout.writeln("DEBUG AZS");
       }
     }
 
@@ -5928,7 +5928,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
             // We need to handle the next ncaptures arguments.
             if i + r.ncaptures - 1 > k {
               error = qio_format_error_too_few_args();
-              if _format_debug then stdout.writeln("HERE AXA");
+              if _format_debug then stdout.writeln("DEBUG AXA");
             }
             for z in 0..#r.ncaptures {
               if i+z <= argType.size {
@@ -5950,7 +5950,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               var (t,ok) = _toSigned(args(i));
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXB");
+                if _format_debug then stdout.writeln("DEBUG AXB");
               } else {
                 var ti:int;
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
@@ -5964,7 +5964,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               var (t,ok) = _toUnsigned(args(i));
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXB");
+                if _format_debug then stdout.writeln("DEBUG AXB");
               } else {
                 var ti:uint;
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
@@ -5977,7 +5977,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               var (t,ok) = _toReal(args(i));
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXB");
+                if _format_debug then stdout.writeln("DEBUG AXB");
               } else {
                 var ti:real;
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
@@ -5990,7 +5990,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               var (t,ok) = _toImag(args(i));
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXB1");
+                if _format_debug then stdout.writeln("DEBUG AXB1");
               } else {
                 var ti:imag;
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG {
@@ -6005,7 +6005,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               var (t,ok) = _toComplex(args(i));
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXB");
+                if _format_debug then stdout.writeln("DEBUG AXB");
               } else {
                 var ti:complex;
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
@@ -6018,7 +6018,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               var (t,ok) = _toNumeric(args(i));
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXB1");
+                if _format_debug then stdout.writeln("DEBUG AXB1");
               } else {
                 var ti = t;
                 error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
@@ -6029,14 +6029,14 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               var chr = new ioChar(t);
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXE");
+                if _format_debug then stdout.writeln("DEBUG AXE");
               } else error = _read_one_internal(_channel_internal, iokind.dynamic, chr);
               if ! error then _setIfChar(args(i),chr.ch);
             } when QIO_CONV_ARG_TYPE_STRING {
               var (t,ok) = _toString(args(i));
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXF");
+                if _format_debug then stdout.writeln("DEBUG AXF");
               }
               else error = _read_one_internal(_channel_internal, iokind.dynamic, t);
               if ! error then error = _setIfPrimitive(args(i),t,i);
@@ -6044,7 +6044,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               var (t,ok) = _toRegexp(args(i));
               if ! ok {
                 error = qio_format_error_arg_mismatch(i);
-                if _format_debug then stdout.writeln("HERE AXG");
+                if _format_debug then stdout.writeln("DEBUG AXG");
               }
               // match it here.
               if r == nil then r = new _channel_regexp_info();
@@ -6058,7 +6058,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
               // We need to handle the next ncaptures arguments.
               if i + r.ncaptures - 1 > k {
                 error = qio_format_error_too_few_args();
-                if _format_debug then stdout.writeln("HERE AXH");
+                if _format_debug then stdout.writeln("DEBUG AXH");
               }
               for z in 0..#r.ncaptures {
                 if i+z <= argType.size {
@@ -6070,13 +6070,13 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
                 error = qio_format_error_bad_regexp();
-                if _format_debug then stdout.writeln("HERE AXI");
+                if _format_debug then stdout.writeln("DEBUG AXI");
               } else {
                 _match_regexp_if_needed(cur, len, error, style, r);
                 // Set args(i) to the catpure at capturei.
                 if r.capturei >= r.ncaptures {
                   error = qio_format_error_bad_regexp();
-                  if _format_debug then stdout.writeln("HERE AXJ");
+                  if _format_debug then stdout.writeln("DEBUG AXJ");
                 } else {
                   // We have a string in captures[capturei] and
                   // we need to set args(i) to that.
@@ -6108,7 +6108,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
         if cur < len {
           // Mismatched number of arguments!
           error = qio_format_error_too_few_args();
-          if _format_debug then stdout.writeln("HERE AXL");
+          if _format_debug then stdout.writeln("DEBUG AXL");
         }
       }
 
@@ -6156,19 +6156,19 @@ proc channel.readf(fmt:c_string, out error:syserr):bool {
 
     error = qio_channel_mark(false, _channel_internal);
     if !error {
-      if _format_debug then stdout.writeln("HERE BBBB");
+      if _format_debug then stdout.writeln("DEBUG BBBB");
       _format_reader(fmt, cur, len, error,
                      conv, gotConv, style, r,
                      true);
       if gotConv {
         error = qio_format_error_too_few_args();
-        if _format_debug then stdout.writeln("HERE ABZOO");
+        if _format_debug then stdout.writeln("DEBUG ABZOO");
       }
     }
     if !error {
       if cur < len {
         error = qio_format_error_too_few_args();
-        if _format_debug then stdout.writeln("HERE AXM");
+        if _format_debug then stdout.writeln("DEBUG AXM");
       }
     }
     if ! error {
