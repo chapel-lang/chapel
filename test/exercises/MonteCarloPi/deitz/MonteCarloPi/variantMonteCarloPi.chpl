@@ -23,7 +23,7 @@ const pi = 3.14159265358979323846;
 //
 // Output simulation setup.
 //
-writef("Epsilon             = #.#################\n", epsilon);
+writef("Epsilon             = %{#.#################}\n", epsilon);
 writeln("Random number seed  = ", seed);
 
 //
@@ -51,5 +51,5 @@ delete rs;
 //
 // Output the approximation of PI.
 //
-writef("Approximation of PI = #.###############\n", count * 4.0 / n);
+writef("Approximation of PI = %{#.###############}\n", count * 4.0 / n);
 writeln("Number of points    = ", count);
