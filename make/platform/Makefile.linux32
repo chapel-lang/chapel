@@ -18,7 +18,7 @@
 # Makefile.linux32
 
 ifndef CHPL_LSB_RELEASE
-  export CHPL_LSB_RELEASE = $(shell lsb_release -s -i -r)
+  export CHPL_LSB_RELEASE = $(shell lsb_release -s -i -r 2>/dev/null)
   # e.g. Ubuntu 14.04
 endif
 
