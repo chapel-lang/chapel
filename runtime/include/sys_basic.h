@@ -65,8 +65,9 @@
 // Michael added this in order to permit the support of files larger than 4GB
 // on 32-bit platforms.
 // Note that it's necessary to set this flag for Ubuntu 14.04 32-bit to get a
-// working preadv/pwritev, so we set that in a Makefile. One possible
-// would be to set it here for 32-bit platforms only.
+// working preadv/pwritev, so we set that in a Makefile. One possibility
+// would be to set it here for 32-bit platforms only (e.g. using
+// __SIZEOF_POINTER__ == 4 which would work in GCC).
 //
 //#ifndef _FILE_OFFSET_BITS
 //#define _FILE_OFFSET_BITS 64
