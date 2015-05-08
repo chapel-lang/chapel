@@ -356,6 +356,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     
     // request exclusive access
     len += sprintf(iCom+len, "--exclusive ");
+
+    // kill the job if any program instance halts with non-zero exit status
+    len += sprintf(iCom+len, "--kill-on-bad-exit ");
     
     // Set the walltime if it was specified 
     if (walltime) {
