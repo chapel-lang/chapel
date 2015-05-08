@@ -1830,9 +1830,9 @@ pragma "no doc"
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
 pragma "no doc"
-extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):syserr;
+extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipwsbefore:c_int):syserr;
 pragma "no doc"
-extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipws:c_int):syserr;
+extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipwsbefore:c_int):syserr;
 pragma "no doc"
 extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
 pragma "no doc"
@@ -2846,7 +2846,7 @@ record ioLiteral {
   /* The value of the literal */
   var val: c_string;
   /* Should read operations using this literal ignore and consume
-     whitespace before and after the literal?
+     whitespace before the literal?
    */
   var ignoreWhiteSpace: bool = true;
   proc writeThis(f: Writer) {
@@ -5249,7 +5249,7 @@ proc channel._format_reader(
             if _format_debug then stdout.writeln("WHITESPACE");
             // Other space.
             var offsetA = qio_channel_offset_unlocked(_channel_internal);
-            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, 0, true);
+            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, 0, 1);
             if _format_debug {
              if error then stdout.writeln("DEBUG XZOB");
             }
@@ -5257,10 +5257,11 @@ proc channel._format_reader(
             if (!error) && offsetA == offsetB {
               // didn't really read whitespace.
               error = EFORMAT;
+              if _format_debug then stdout.writeln("DEBUG YYZ");
             }
             if _format_debug then stdout.writeln("AFTER WHITESPACE err is ", error:int);
           } else {
-            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length:ssize_t, false);
+            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length:ssize_t, 0);
             if _format_debug then stdout.writeln("AFTER LITERAL err is ", error:int);
           }
         } else {

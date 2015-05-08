@@ -754,7 +754,7 @@ unlock:
   return err;
 }
 
-qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws)
+qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore)
 {
   qioerr err;
   int32_t wchr = -1;
@@ -762,7 +762,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   ssize_t nread = 0;
   int64_t lastwspos = 0;
 
-  if( skipws && len > 0 ) {
+  if( skipwsbefore && len > 0 ) {
     int nbytes = 0;
     int32_t wchr;
     size_t min_nonspace = len;
@@ -783,8 +783,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       nread = 0;
       len = 0;
     } else {
-      nread = min_nonspace;
-      len = max_nonspace + 1;
+      nread = 0;
+      if( skipwsbefore ) nread = min_nonspace;
+      //if( skipwsafter ) len = max_nonspace + 1;
     }
   }
 
@@ -796,7 +797,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
 
-  if( skipws ) {
+  if( skipwsbefore ) {
     err = qio_channel_mark(false, ch);
     if( err ) goto revert;
 
@@ -840,7 +841,8 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     }
   }
 
-  if( skipws && !err && len > 0 ) {
+  /*
+  if( skipwsafter && !err && len > 0 ) {
     // skip whitespace after the pattern.
     // but only bother if there was a pattern at all...
     err = qio_channel_mark(false, ch);
@@ -867,7 +869,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       // back to lastwspos. 
       qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch));
     }
-  }
+  }*/
 
 revert:
   if( err ) {
@@ -886,9 +888,9 @@ unlock:
   return err;
 }
 
-qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipws)
+qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipwsbefore)
 {
-  return qio_channel_scan_literal(threadsafe, ch, (const char*) match, len, skipws);
+  return qio_channel_scan_literal(threadsafe, ch, (const char*) match, len, skipwsbefore);
 }
 
 
