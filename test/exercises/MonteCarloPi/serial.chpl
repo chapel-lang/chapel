@@ -42,7 +42,7 @@ for i in 1..n do
 //
 // Output the approximation of pi.
 //
-writef("Approximation of pi = #.#######\n", count * 4.0 / n);
+writef("Approximation of pi = %{#.#######}\n", count * 4.0 / n);
 
 //
 // Delete the Random Stream object.
