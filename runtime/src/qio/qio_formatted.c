@@ -2206,6 +2206,17 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 // in *skip, returns the number of bytes at the front of buf that
 // should be skipped in the final output. Such bytes are counted
 // in the return value. (this happens with 0x in %a conversions)
+//
+// num is the number to be converted
+// buf and buf_sz are the output buffer
+// base is the numeric base (10 or 16 only)
+// realfmt is style->realfmt; 0->%g, 1->%f, 2->%e
+// precision is the number of digits after . for %f or %e or
+//   the number of significant digits
+// uppercase indicates hex digits or exponent character should be uppercase
+// prefix_base means add 0x for base=16 conversions
+// skip is described above and indicates some buffer space used that does
+//  not encode output.
 static
 int _ftoa_core(char* buf, size_t buf_sz, double num,
                int base, int realfmt,
