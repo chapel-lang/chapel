@@ -1,1 +1,1 @@
---doMemLeaksTest=false --memLeaksTable
+--doMemLeaksTest=false --memLeaks

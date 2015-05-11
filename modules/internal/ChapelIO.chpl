@@ -579,37 +579,7 @@ module ChapelIO {
     delete sc;
   }
   
-  // C can't handle overloaded declarations, so just don't prototype this one.
-  pragma "no prototype"
-  extern proc chpl_format(fmt: c_string, x): c_string_copy;
-  
-  proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
-    if fmt.substring(1) == "#" {
-      var fmt2 = _getoutputformat(fmt);
-      if isImagType(t) then
-        return (chpl_format(fmt2, _i2r(x))+"i");
-      else
-        return chpl_format(fmt2, x:real);
-    } else 
-        return chpl_format(fmt, x);
-  }
-  
-  proc format(fmt: c_string, x:?t) where isComplexType(t) {
-    if fmt.substring(1) == "#" {
-      var fmt2 = _getoutputformat(fmt);
-      return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");
-    } else 
-      return chpl_format(fmt, x);
-  }
-  
-  proc format(fmt: c_string, x: ?t) {
-    return chpl_format(fmt, x);
-  }
-  
-  proc format(fmt: string, x: ?t) {
-    return format(fmt.c_str(), x);
-  }
-  
+ 
   proc _getoutputformat(s: c_string):c_string {
     var sn = s.length;
     var afterdot = false;
