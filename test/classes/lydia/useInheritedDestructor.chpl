@@ -18,3 +18,4 @@ class B: A {
 
 var instantiated: B = new B();
 writeln(instantiated);
+delete instantiated;
