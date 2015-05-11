@@ -61,7 +61,7 @@ module BaseStringType {
   extern var chpl_nodeID: chpl_nodeID_t;
 
   // TODO: hook into chpl_here_alloc and friends somehow
-  // The runtime exits on errors for these
+  // The runtime exits on errors for these, no need to check for nil on return
   pragma "insert line file info"
   extern proc chpl_mem_alloc(size: size_t,
                              description: chpl_mem_descInt_t): c_void_ptr;
@@ -224,7 +224,7 @@ module String {
 
     // Steals ownership of string.buff. This is unsafe and you probably don't
     // want to use it. I'd like to figure out how to get rid of it entirely.
-    proc _steal_buffer() : bufferType {
+    proc _steal_buffer() /*: bufferType*/ {
       const ret = this.buff;
       this.buff = nil;
       this.len = 0;
@@ -232,13 +232,15 @@ module String {
       return ret;
     }
 
-    iter these() : string {
+    // TODO: cant explicitly state return type right now due to a bug in the
+    // compiler. Uncomment this funciton and others when possible.
+    iter these() /*: string*/ {
       for i in 1..this.len {
         yield this[i];
       }
     }
 
-    proc this(i: int) : string {
+    proc this(i: int) /*: string*/ {
       var ret: string;
       if i == 0 || i > this.len then halt("index out of bounds of string");
 
@@ -259,7 +261,7 @@ module String {
     }
 
     // TODO: I wasn't very good about caching variables locally in this one.
-    proc this(r: range(?)) : string {
+    proc this(r: range(?)) /*: string*/ {
       var ret: string;
       if this.isEmptyString() then return ret;
 
@@ -703,7 +705,7 @@ module String {
   //
   // Append
   //
-  proc +=(ref lhs: string, rhs: string) : void {
+  proc +=(ref lhs: string, rhs: string) /*: void*/ {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 
@@ -909,11 +911,11 @@ module String {
   // Developer Extras
   //
 
-  proc chpldev_refToString(ref arg) : string {
+  proc chpldev_refToString(ref arg) /*: string*/ {
     // print out the address of class references as well
-    proc chpldev_classToString(x: object) : string
+    proc chpldev_classToString(x: object) /*: string*/
       return " (class = " + __primitive("ref to string", x) + ")";
-    proc chpldev_classToString(x) : string return "";
+    proc chpldev_classToString(x) /*: string*/ return "";
 
     return __primitive("ref to string", arg) + chpldev_classToString(arg);
   }
