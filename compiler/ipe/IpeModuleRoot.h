@@ -21,6 +21,9 @@
 #define _IPE_MODULE_ROOT_H_
 
 #include "IpeModule.h"
+#include "symbol.h"
+
+#include <vector>
 
 class ModuleSymbol;
 
@@ -32,6 +35,7 @@ class IpeModuleRoot : public IpeModule
 public:
   static void              setHighWaterMark(int value);
   static IpeModuleRoot*    allocate();
+  static IpeModule*        create(ModuleSymbol* sym);
 
 private:
   static ModuleSymbol*     createDeclaration();
@@ -39,19 +43,33 @@ private:
   static IpeModuleRoot*    sRootModule;
   static int               sHighWater;
 
+
+
+
   //
   // The Instance interface
   //
+public:
+  bool                     loadSystemModules();
+
+  virtual                 ~IpeModuleRoot();
+
+  void                     describeAllModules(int offset)               const;
+
 protected:
   virtual const char*      moduleTypeAsString()                         const;
 
 private:
-                           IpeModuleRoot(ModuleSymbol* sym);
+                           IpeModuleRoot(ModuleSymbol* modSym);
                            IpeModuleRoot();
 
-  virtual                 ~IpeModuleRoot();
-
   void                     init();
+
+  bool                     loadFile(ModTag      moduleType,
+                                    const char* fileName);
+
+  const char*              pathNameForFile(ModTag      moduleType,
+                                           const char* fileName);
 };
 
 #endif

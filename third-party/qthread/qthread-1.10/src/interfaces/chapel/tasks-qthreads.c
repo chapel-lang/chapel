@@ -126,12 +126,12 @@ pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
 chpl_qthread_tls_t chpl_qthread_process_tls = {
-  PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
-  NULL, 0, NULL, 0 };
+    PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
+    NULL, 0, NULL, 0 };
 
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-  PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
-  NULL, 0, NULL, 0 };
+    PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
+    NULL, 0, NULL, 0 };
  
  //
  

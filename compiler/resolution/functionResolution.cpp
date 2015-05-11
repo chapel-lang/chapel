@@ -1444,9 +1444,10 @@ computeGenericSubs(SymbolMap &subs,
           // declarations with non-typed initializing expressions and
           // non-param formals with string literal default expressions
           // (see fix_def_expr() and hack_resolve_types() in
-          // normalize.cpp).
-          if ((formal->type == dtAny) && (!formal->hasFlag(FLAG_PARAM)) &&
-              (type == dtStringC) &&
+          // normalize.cpp). This conversion is not performed for extern
+          // functions.
+          if ((!fn->hasFlag(FLAG_EXTERN)) && (formal->type == dtAny) &&
+              (!formal->hasFlag(FLAG_PARAM)) && (type == dtStringC) &&
               (alignedActuals.v[i]->type == dtStringC) &&
               (alignedActuals.v[i]->isImmediate()))
             subs.put(formal, dtString->symbol);
@@ -3322,8 +3323,9 @@ void resolveNormalCall(CallExpr* call) {
 
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 2);
-    if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
-      outerCompilerWarningMap.put(fn, str);
+    if (callStack.n >= 2)
+      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+        outerCompilerWarningMap.put(fn, str);
   }
 
   if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {

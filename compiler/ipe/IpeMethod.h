@@ -26,6 +26,7 @@ class IpeCallExpr;
 class IpeEnv;
 class IpeScope;
 class IpeScopeMethod;
+class IpeSequence;
 class IpeValue;
 
 class Expr;
@@ -80,9 +81,8 @@ private:
 
   const char*             stateAsString()                                            const;
 
-  bool                    prepareBody();
-  void                    resolveBody();
-  int                     assignLocations()                                          const;
+  bool                    resolveBody();
+  bool                    bodyIsSimple(IpeSequence* body)                            const;
 
   bool                    isExternFunction(FnSymbol* fn)                             const;
   IpeValue                externFunctionInvoke(IpeEnv* env)                          const;
@@ -99,7 +99,7 @@ private:
   int                     mFrameSize;
 
   FnSymbol*               mFnDecl;
-  Expr*                   mBody;
+  IpeSequence*            mBody;
 
   int                     mInvokeCount;
 };

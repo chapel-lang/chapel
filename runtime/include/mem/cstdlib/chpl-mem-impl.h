@@ -24,6 +24,9 @@
 // Uses the built-in malloc, calloc, realloc and free.
 
 #include <stdlib.h>
+#if defined(__APPLE__)
+#include <malloc/malloc.h>
+#endif
 
 #undef malloc
 #undef calloc
@@ -45,6 +48,16 @@ static inline void* chpl_realloc(void* ptr, size_t size) {
 
 static inline void chpl_free(void* ptr) {
   free(ptr);
+}
+
+// malloc_good_size is OSX specifc unfortunately. On other platforms just
+// return minSize.
+static inline size_t chpl_goodAllocSize(size_t minSize) {
+#if defined(__APPLE__)
+  return malloc_good_size(minSize);
+#else
+  return minSize;
+#endif
 }
 
 // Now that we've defined our functions, turn the warnings back on.
