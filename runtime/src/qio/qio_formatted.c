@@ -2346,6 +2346,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
   if( style->prefix_base && base == 16 && !isnan(num) && !isinf(num) ) {
     showbase = 1;
   }
+  // NOTE: only base 10 or 16 are currently supported.
 
   precision = style->precision;
 
@@ -2388,7 +2389,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
       // so there's no need for . or .0 at the end of integers.
       // This could change ...
     } else {
-      // maybe it was an integer than needs a .0 ?
+      // maybe it was an integer that needs a .0 ?
       int needspoint;
       int i;
 

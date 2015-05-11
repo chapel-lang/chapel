@@ -15,7 +15,7 @@ extern "C" {
   #include "stdchplrt.h"
 #endif
   #include "qio_regexp.h"
-  #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff
+  #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
   #include "qio.h" // for channel operations
   #undef printf
 }
