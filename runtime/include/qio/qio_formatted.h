@@ -741,10 +741,11 @@ qioerr qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict c
 
 qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen);
 
+// reads match exactly - skipping whitespace before it if skipwsbefore is set.
 // returns 0 if it matched, or EFORMAT if it did not.
-qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws);
+qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore);
 // Chapel needs another name for the same routine.
-qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, /* const char* */ void* match, ssize_t len, int skipws);
+qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, /* const char* */ void* match, ssize_t len, int skipwsbefore);
 
 typedef struct qio_truncate_info_ {
   ssize_t max_columns;

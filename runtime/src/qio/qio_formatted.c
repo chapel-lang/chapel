@@ -754,7 +754,7 @@ unlock:
   return err;
 }
 
-qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws)
+qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore)
 {
   qioerr err;
   int32_t wchr = -1;
@@ -762,7 +762,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   ssize_t nread = 0;
   int64_t lastwspos = 0;
 
-  if( skipws && len > 0 ) {
+  if( skipwsbefore && len > 0 ) {
     int nbytes = 0;
     int32_t wchr;
     size_t min_nonspace = len;
@@ -783,8 +783,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       nread = 0;
       len = 0;
     } else {
-      nread = min_nonspace;
-      len = max_nonspace + 1;
+      nread = 0;
+      if( skipwsbefore ) nread = min_nonspace;
+      //if( skipwsafter ) len = max_nonspace + 1;
     }
   }
 
@@ -796,7 +797,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
 
-  if( skipws ) {
+  if( skipwsbefore ) {
     err = qio_channel_mark(false, ch);
     if( err ) goto revert;
 
@@ -809,6 +810,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
 
     // ignore EOF when looking for whitespace.
     if( qio_err_to_int(err) == EEOF ) err = 0;
+    // ignore EILSEQ (illegal unicode sequence) when
+    // looking for whitespace (that just means it wasn't whitespace)
+    if( qio_err_to_int(err) == EILSEQ ) err = 0;
 
     qio_channel_revert_unlocked(ch);
 
@@ -837,8 +841,10 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     }
   }
 
-  if( skipws && !err ) {
+  /*
+  if( skipwsafter && !err && len > 0 ) {
     // skip whitespace after the pattern.
+    // but only bother if there was a pattern at all...
     err = qio_channel_mark(false, ch);
     if( err ) goto revert;
 
@@ -851,6 +857,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
 
     // ignore EOF when looking for whitespace.
     if( qio_err_to_int(err) == EEOF ) err = 0;
+    // ignore EILSEQ (illegal unicode sequence) when
+    // looking for whitespace (that just means it wasn't whitespace)
+    if( qio_err_to_int(err) == EILSEQ ) err = 0;
 
     qio_channel_revert_unlocked(ch);
 
@@ -860,7 +869,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       // back to lastwspos. 
       qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch));
     }
-  }
+  }*/
 
 revert:
   if( err ) {
@@ -879,9 +888,9 @@ unlock:
   return err;
 }
 
-qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipws)
+qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipwsbefore)
 {
-  return qio_channel_scan_literal(threadsafe, ch, (const char*) match, len, skipws);
+  return qio_channel_scan_literal(threadsafe, ch, (const char*) match, len, skipwsbefore);
 }
 
 
@@ -1510,7 +1519,8 @@ typedef struct number_reading_state_s {
   char positive_char; // normally '+'
   char negative_char; // normally '-'
 
-  char allow_real;
+  char allow_real; // allow any real thing, infinity, etc.
+  char allow_point; // just allow e.g. 123.254
   char point_char; // normally '.'; set to -1 if no radix point allowed
   char exponent_char; // use if base <= 10; normally 'e'
   char other_exponent_char; // use if base > 10; normally 'p' or '@'
@@ -1581,6 +1591,7 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
   } else {
     s->gotbase = s->usebase = s->base;
   }
+  if( s->allow_real ) s->allow_point = 1;
 
   mark_offset = qio_channel_offset_unlocked(ch);
 
@@ -1696,7 +1707,7 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
   while( 1 ) {
     //printf("In read digit, chr is %c\n", chr);
     if( qio_err_to_int(err) == EEOF ) ACCEPT;
-    if( s->allow_real && chr == s->point_char && s->point == -1 ) {
+    if( s->allow_point && chr == s->point_char && s->point == -1 ) {
       NEXT_CHR_OR_EOF;
       s->end = s->point = qio_channel_offset_unlocked(ch);
       // Continue to read digits.
@@ -1774,6 +1785,10 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
   st.allow_base = style->prefix_base;
   st.allow_pos_sign = style->showplus == 1;
   st.allow_neg_sign = issigned;
+  if(style->showpoint || style->precision > 0) {
+    st.allow_point = 1;
+    st.point_char = tolower(style->point_char);
+  }
   st.positive_char = tolower(style->positive_char);
   st.negative_char = tolower(style->negative_char);
 
@@ -1811,9 +1826,18 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
     err = qio_mkerror_errno();
     goto error;
   }
+  if( st.allow_point ) {
+    // pass . or .00000
+    if( *end == '.' ) end++;
+    while( *end == '0' ) end++;
+  }
   if( end - buf != st.end - start ) {
     // some kind of format error.
-    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "malformed integer");
+    if( st.allow_point ) {
+      QIO_GET_CONSTANT_ERROR(err, ERANGE, "malformed integer with fraction");
+    } else {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "malformed integer");
+    }
     goto error;
   }
 
@@ -2109,9 +2133,11 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   int tmp_len=0;
   int tmp_skip=0;
   char b=0;
-  int i;
+  int i,j;
   int width;
   int ret_width;
+  int show_point = 0; // 1 to show a . afterwards
+  int num_zeros_after = 0; // how many 0s to print afterwards?
 
   // Optimize conversions for supported bases
   if( base == 2 )
@@ -2134,10 +2160,17 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
-  // intentionally doesn't handle showpointzero since showpointzero is
-  // used to distinguish between floating point and integer values.
-  if( style->showpoint ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
+  if( style->showpoint || style->precision > 0 ) {
+    // intentionally doesn't handle showpointzero since showpointzero is
+    // used to distinguish between floating point and integer values.
+
+    show_point = 1;
+    // and any number of requested digits
+    if( style->precision > 0 ) num_zeros_after += style->precision;
+
+    width += show_point + num_zeros_after;
+  }
 
   // We might not have room...
   ret_width = width;
@@ -2181,8 +2214,13 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   i += tmp_len;
 
   // Now output a period if we're doing showpoint.
-  if( style->showpoint ) {
+  if( show_point ) {
     dst[i] = '.';
+    i++;
+  }
+
+  for( j = 0; j < num_zeros_after; j++ ) {
+    dst[i] = '0';
     i++;
   }
 
@@ -3496,7 +3534,7 @@ static const char* lower_hex_num = "0123456789abcdef";
 static const char* upper_hex_num = "0123456789ABCDEF";
 static const char* hex_num = "0123456789ABCDEFabcdef";
 static const char* pound_conv = "#.";*/
-static const char* lit_chars = "#% \f\n\r\t\v";
+static const char* lit_chars = "% \f\n\r\t\v";
 static const char* regexp_flag_chars = "imsU";
 
 static inline int istype(char x, const char* allow)
@@ -3517,13 +3555,7 @@ void qio_conv_destroy(qio_conv_t* spec)
 
 void qio_conv_init(qio_conv_t* spec_out)
 {
-  spec_out->preArg1 = QIO_CONV_UNK;
-  spec_out->preArg2 = QIO_CONV_UNK;
-  spec_out->preArg3 = QIO_CONV_UNK;
-  spec_out->argType = QIO_CONV_UNK;
-  spec_out->literal_is_whitespace = 0;
-  spec_out->literal_length = 0;
-  spec_out->literal = NULL;
+  memset(spec_out, 0, sizeof(qio_conv_t));
 }
 
 int _qio_regexp_flags_then_rcurly(const char* ptr, int * len);
@@ -3584,14 +3616,15 @@ qioerr qio_conv_parse(c_string fmt,
   i = start;
 
   // do we have a ####.#### conversion to match?
-  if( fmt[i] == '%' && fmt[i+1] == '{' && fmt[i+2] == '#' ) {
+  if( fmt[i] == '%' && fmt[i+1] == '{' && 
+      (fmt[i+2] == '#' || (fmt[i+2] == '.' && fmt[i+3] == '#') ) ) {
     // handle %{####} conversions
+    size_t num_before, num_after, period;
+
     in_group = 1;
     i++; // pass %
     i++; // pass {
-  }
-  if( fmt[i] == '#' ) {
-    size_t num_before, num_after, period;
+
     num_before = 0;
     num_after = 0;
     period = 0;
@@ -3619,7 +3652,7 @@ qioerr qio_conv_parse(c_string fmt,
     style_out->pad_char = ' ';
     style_out->precision = num_after;
     style_out->min_width_columns = num_before + period + num_after;
-    style_out->realfmt = 1; // %f
+    style_out->realfmt = 1; // like Chapel %dr or C %f
     if( period && num_after == 0 ) {
       // ie ##.
       style_out->showpoint = 1;
@@ -3646,15 +3679,6 @@ qioerr qio_conv_parse(c_string fmt,
       spec_out->literal = (int8_t*) "%";
       goto done;  
     }
-    if( fmt[i] == '#' ) {
-      i++; // pass #
-      spec_out->argType = QIO_CONV_ARG_TYPE_NONE_LITERAL;
-      spec_out->literal_is_whitespace = 0;
-      spec_out->literal_length = 1;
-      spec_out->literal = (int8_t*) "#";
-      goto done;  
-    }
-
 
     // Are we working with binary?
     if( fmt[i] == '<' || fmt[i] == '|' || fmt[i] == '>' ) {

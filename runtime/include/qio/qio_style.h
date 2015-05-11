@@ -146,18 +146,36 @@ typedef struct qio_style_s {
   uint8_t uppercase; // numeric stuff is uppercase
   uint8_t leftjustify; // 1 == left, 0 == right
 
-  // floating point options
-  uint8_t showpoint; // integer floating point values include a decimal point
-                     // with some level of precision (maybe just . or maybe .00000 for %g)
-                     // this setting has no impact on numbers printed with an exponent
-                     // this setting does impact integers printed with %n
-  uint8_t showpointzero;  // integer floating point values get a .0
-                          // if they would otherwise have be printed without a .0
-                          // this setting has no impact on numbers printed with an exponent.
-                          // this setting does not impact integers printed with %n
+  // more numeric options that make the most sense for floating point but
+  // also apply to integers. Thes only apply to printing (not reading).
+  uint8_t showpoint; // floating point values with no fractional portion
+                     // will get a decimal point
+                     // with some level of precision (maybe just . or maybe
+                     // .00000 for %g). This applies also to integers.
+                     // when reading, this number has no impact on floating
+                     // point values, but for integers it causes any \.0*
+                     // to be consumed after the number.
 
+  uint8_t showpointzero;  // floating point values with no fractional portion
+                          // get a .0 if they would otherwise have be printed
+                          // without a .0
+                          // Since this setting exists to distinguish
+                          // printed floating point values from printed
+                          // integers, it does not apply to integers. You could
+                          // use precision = 1 for that.
+                          // Also, it has no impact on numbers printed with
+                          // an exponent for the same reason.
+
+  // numeric printing and scanning choice
   int32_t precision; // for floating point, number after decimal point.
                      // or number of significant digits in realfmt 2.
+                     // for integers, this is always the number
+                     // of .000 zeros to print
+                     // when reading, this number has no impact on floating
+                     // point values, but for integers it causes any \.0*
+                     // to be consumed after the number when precision > 0.
+
+  // realfmt does not apply to integers.
   uint8_t realfmt; //0 -> print with %g; 1 -> print with %f; 2 -> print with %e
 
   // Other data type choices
