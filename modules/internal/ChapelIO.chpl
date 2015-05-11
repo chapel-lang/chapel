@@ -571,6 +571,21 @@ module ChapelIO {
     delete sc;
   }
   
+ 
+  proc _getoutputformat(s: c_string):c_string {
+    var sn = s.length;
+    var afterdot = false;
+    var dplaces = 0;
+    for i in 1..sn {
+      var ss = s.substring(i);
+      if ((ss == '#') & afterdot) then dplaces += 1;
+      if (ss == '.') then afterdot=true;
+      chpl_free_c_string_copy(ss);
+    }
+    // FIX ME: leak c_string due to concatenation
+    return("%" + sn + "." + dplaces + "f");
+  }
+  
   //
   // When this flag is used during compilation, calls to chpl__testPar
   // will output a message to indicate that a portion of the code has been

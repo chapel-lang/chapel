@@ -42,44 +42,44 @@
 //
 
 #define CHPL_MD_ALL_MEMDESCS(m)                                               \
-  m(UNKNOWN = 0,          "unknown",                                   true), \
-  m(EXECUTION_COMMAND,    "chapel execution command buffer",           true), \
-  m(ARRAY_ELEMENTS,       "array elements",                            true), \
-  m(SET_WIDE_STRING,      "set wide string",                           true), \
-  m(GET_WIDE_STRING,      "get wide string",                           true), \
-  m(COMMAND_BUFFER,       "command buffer",                            true), \
-  m(COMM_XMIT_RCV_BUF,    "comm layer transmit/receive buffer",        true), \
-  m(COMM_FRK_SND_INFO,    "comm layer sent remote fork info",          true), \
-  m(COMM_FRK_SND_ARG,     "comm layer sent remote fork arg",           true), \
-  m(COMM_FRK_RCV_INFO,    "comm layer received remote fork info",      true), \
-  m(COMM_FRK_RCV_ARG,     "comm layer received remote fork arg",       true), \
-  m(COMM_FRK_DONE_FLAG,   "comm layer remote fork done flag(s)",       true), \
-  m(COMM_PER_LOC_INFO,    "comm layer per-locale information",         true), \
-  m(COMM_PRV_OBJ_ARRAY,   "comm layer private objects array",          true), \
-  m(COMM_PRV_BCAST_DATA,  "comm layer private broadcast data",         true), \
-  m(GLOM_STRINGS_DATA,    "glom strings data",                         true), \
-  m(STR_COPY_DATA,        "string copy data",                          true), \
-  m(STR_COPY_REMOTE,      "remote string copy",                        true), \
-  m(STR_CONCAT_DATA,      "string concat data",                        true), \
-  m(STR_MOVE_DATA,        "string move data",                          true), \
-  m(STR_SELECT_DATA,      "string select data",                        true), \
-  m(CFG_ARG_COPY_DATA,    "config arg copy data",                      true), \
-  m(CF_TABLE_DATA,        "config table data",                         true), \
-  m(LOCALE_NAME_BUF,      "locale name buffer",                        true), \
-  m(TASK_DESC,            "task descriptor",                           true), \
-  m(TASK_DESC_LINK,       "task descriptor link",                      true), \
-  m(TASK_STACK,           "task stack",                                true), \
-  m(MUTEX,                "mutex",                                     true), \
-  m(LOCK_REPORT_DATA,     "lock report data",                          true), \
-  m(TASK_POOL_DESC,       "task pool descriptor",                      true), \
-  m(TASK_LIST_DESC,       "task list descriptor",                      true), \
-  m(THREAD_PRV_DATA,      "thread private data",                       true), \
-  m(THREAD_LIST_DESC,     "thread list descriptor",                    true), \
-  m(IO_BUFFER,            "io buffer or bytes",                        true), \
-  m(OS_LAYER_TMP_DATA,    "OS layer temporary data",                   true), \
-  m(GMP,                  "gmp data",                                  true), \
-  m(GETS_PUTS_STRIDES,    "put_strd/get_strd array of strides",        true), \
-  m(NUM,                  "*** this must be the last entry ***",       true)
+  m(UNKNOWN = 0,          "unknown",                                  true ), \
+  m(EXECUTION_COMMAND,    "chapel execution command buffer",          true ), \
+  m(ARRAY_ELEMENTS,       "array elements",                           true ), \
+  m(SET_WIDE_STRING,      "set wide string",                          true ), \
+  m(GET_WIDE_STRING,      "get wide string",                          true ), \
+  m(COMMAND_BUFFER,       "command buffer",                           true ), \
+  m(COMM_XMIT_RCV_BUF,    "comm layer transmit/receive buffer",       false), \
+  m(COMM_FRK_SND_INFO,    "comm layer sent remote fork info",         false), \
+  m(COMM_FRK_SND_ARG,     "comm layer sent remote fork arg",          false), \
+  m(COMM_FRK_RCV_INFO,    "comm layer received remote fork info",     false), \
+  m(COMM_FRK_RCV_ARG,     "comm layer received remote fork arg",      false), \
+  m(COMM_FRK_DONE_FLAG,   "comm layer remote fork done flag(s)",      false), \
+  m(COMM_PER_LOC_INFO,    "comm layer per-locale information",        false), \
+  m(COMM_PRV_OBJ_ARRAY,   "comm layer private objects array",         false), \
+  m(COMM_PRV_BCAST_DATA,  "comm layer private broadcast data",        false), \
+  m(GLOM_STRINGS_DATA,    "glom strings data",                        true ), \
+  m(STR_COPY_DATA,        "string copy data",                         true ), \
+  m(STR_COPY_REMOTE,      "remote string copy",                       true ), \
+  m(STR_CONCAT_DATA,      "string concat data",                       true ), \
+  m(STR_MOVE_DATA,        "string move data",                         true ), \
+  m(STR_SELECT_DATA,      "string select data",                       true ), \
+  m(CFG_ARG_COPY_DATA,    "config arg copy data",                     true ), \
+  m(CF_TABLE_DATA,        "config table data",                        true ), \
+  m(LOCALE_NAME_BUF,      "locale name buffer",                       true ), \
+  m(TASK_DESC,            "task descriptor",                          false), \
+  m(TASK_DESC_LINK,       "task descriptor link",                     false), \
+  m(TASK_STACK,           "task stack",                               false), \
+  m(MUTEX,                "mutex",                                    false), \
+  m(LOCK_REPORT_DATA,     "lock report data",                         false), \
+  m(TASK_POOL_DESC,       "task pool descriptor",                     false), \
+  m(TASK_LIST_DESC,       "task list descriptor",                     false), \
+  m(THREAD_PRV_DATA,      "thread private data",                      false), \
+  m(THREAD_LIST_DESC,     "thread list descriptor",                   false), \
+  m(IO_BUFFER,            "io buffer or bytes",                       true ), \
+  m(OS_LAYER_TMP_DATA,    "OS layer temporary data",                  true ), \
+  m(GMP,                  "gmp data",                                 true ), \
+  m(GETS_PUTS_STRIDES,    "put_strd/get_strd array of strides",       true ), \
+  m(NUM,                  "*** this must be the last entry ***",      true )
 
 
 //
@@ -111,4 +111,3 @@ const char* chpl_mem_descString(chpl_mem_descInt_t mdi);
 chpl_bool chpl_mem_descTrack(chpl_mem_descInt_t mdi);
 
 #endif
-
