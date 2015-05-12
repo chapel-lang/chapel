@@ -2516,7 +2516,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
     // Now we put e.g. 0x if we're going to.
     if( showbase ) {
       dst[got++] = '0';
-      if( base == 16 ) dst[got++] = 'x';
+      if( base == 16 ) dst[got++] = style->uppercase?'X':'x';
       else return -2; //unspported floating point base.
     }
 
