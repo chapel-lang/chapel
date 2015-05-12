@@ -381,7 +381,7 @@ int float_result_ok(const char* got, const char* expect)
   for( i = 0; got[i] && expect[i]; i++ ) {
     if( got[i] == expect[i] || expect[i] == '*' ) {
       // ok
-    } else return 1;
+    } else return 0;
   }
   // make sure they both got to '\0' at end of string.
   if( got[i] != expect[i] ) return 0;
@@ -425,25 +425,25 @@ void test_printscan_float(void)
   const char* pos[] = { // writing 11.25
                         "11.25", // default style
                         "11.250", // %f precision 3
-                        "1.125+01", // %e precision 3
+                        "1.125e+01", // %e precision 3
                         "+11.25", // showpoint, showplus
-                        "0x1p+0", // hex
-                        "0X1.000P+0", // hex, uppercase, showpoint, prec 3
+                        "0x1.68p+3", // hex
+                        "0X1.680P+3", // hex, uppercase, showpoint, prec 3
                         "11.25", // %g, 4 significant digits
                         "11.2500", // %f, showpoint, precision 4
-                        "1.125e+01", // %e, showpoint, precision 4
+                        "1.1250e+01", // %e, showpoint, precision 4
                        };
 
   const char* neg[] = { // writing -11.25
                         "-11.25", // default style
                         "-11.250", // %f precision 3
-                        "-1.125+01", // %e precision 3
+                        "-1.125e+01", // %e precision 3
                         "-11.25", // showpoint, showplus
-                        "-0x1p+0", // hex
-                        "-0X1.000P+0", // hex, uppercase, showpoint, prec 3
+                        "-0x1.68p+3", // hex
+                        "-0X1.680P+3", // hex, uppercase, showpoint, prec 3
                         "-11.25", // %g, 4 significant digits
                         "-11.2500", // %f, showpoint, precision 4
-                        "-1.1250e+00", // %e, showpoint, precision 4
+                        "-1.1250e+01", // %e, showpoint, precision 4
                        };
 
   const char* plusinf[] = { // writing +infinity
@@ -533,16 +533,16 @@ void test_printscan_float(void)
                         "1720667953145731543457459681945095582860664**************************************************************************************************************************************************************************************************************************************************************************.0000", // %f, showpoint, precision 4
                         "1.7207e+308", // %e, showpoint, precision 4
                        };
-  const char* small[] = { // writing 2.2250738585072014e-308
-                        "2.22507e-308", // default style
+  const char* small[] = { // writing 4.2594736637394926356874e-308
+                        "4.25947e-308", // default style
                         "0.000", // %f precision 3
-                        "2.225e-308", // %e precision 3
-                        "+2.22507e-308", // showpoint, showplus
-                        "0x1p-1022", // hex
-                        "0X1.000P-1022", // hex, uppercase, showpoint, prec 3
-                        "2.225e-308", // %g, 4 significant digits
+                        "4.259e-308", // %e precision 3
+                        "+4.25947e-308", // showpoint, showplus
+                        "0x1.ea100001p-1022", // hex
+                        "0X1.EA1P-1022", // hex, uppercase, showpoint, prec 3
+                        "4.259e-308", // %g, 4 significant digits
                         "0.0000", // %f, showpoint, precision 4
-                        "2.2251e-308", // %e, showpoint, precision 4
+                        "4.2595e-308", // %e, showpoint, precision 4
                        };
   double mynan = NAN; // 0.0*(1.0/0.0);
   double posnan = copysign(mynan, 1.0);
@@ -552,7 +552,7 @@ void test_printscan_float(void)
                    posnan,
                    negnan,
                    1.125e+300, 6.125e-300,
-                   1.7206679531457315e+308, 2.2250738585072014e-308 };
+                   1.7206679531457315e+308, 4.2594736637394926356874e-308 };
 
   const char** expect_arr[] = { zero, one, pos, neg,
                                 plusinf, minusinf, nan, nnan,
