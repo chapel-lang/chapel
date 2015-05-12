@@ -317,8 +317,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  nextCh += nameOffset;
 	  newEvent = new E_tag(sec, usec, nid, s_sec, s_usec, tagId, pause=='p',
 			       &linedata[nextCh]);
-	  if (tagId >= numTags)
-	    numTags = tagId+1;
+	  if (tagId > numTags)
+	    numTags = tagId;
 	}
 	break;
 
@@ -360,6 +360,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	    }
 	  } else {
 	    // More complicated ... move past proper kinds ...
+	    E_tag *tp = NULL;
 	    if (newEvent->Ekind() == Ev_start || newEvent->Ekind() == Ev_end) {
 	      // Just find the end of the group
 	      while (itr != theEvents.end() && (*itr)->Ekind() == newEvent->Ekind())
@@ -368,7 +369,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	      // Need to move past them only if they have the same tag!
 	      if (newEvent->Ekind() == Ev_tag) {
 		// Work with tags
-		E_tag *tp = (E_tag *)newEvent;
+		tp = (E_tag *)newEvent;
 		while (itr != theEvents.end()
 		       && (*itr)->Ekind() == Ev_tag
 		       && ((E_tag *)(*itr))->tagNo() == tp->tagNo())
@@ -382,7 +383,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		  itr++;
 	      }
 	    }
-	    theEvents.insert (itr, newEvent);
+	    std::list<Event*>::iterator newElem = theEvents.insert (itr, newEvent);
+	    if (tp != NULL && tp->nodeId() == 0) {
+	      tagVec[tp->tagNo()-1] = newElem;
+	    }
 	  }
 	} else {
 	  // Insert by time

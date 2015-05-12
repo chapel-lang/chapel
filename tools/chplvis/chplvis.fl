@@ -44,14 +44,14 @@ decl {DataModel VisData;} {public local
 Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
 } {
   Fl_Window {} {open
-    xywh {1100 48 180 120} type Double color 7 resizable size_range {180 120 0 0} visible
+    xywh {1163 48 180 120} type Double color 7 resizable size_range {180 120 0 0} visible
   } {
     Fl_Box Locale_Title {
       label {Locale }
       private xywh {0 0 180 25}
     }
     Fl_Output cpuInfo {
-      label { } selected
+      label { }
       xywh {0 25 180 95} labeltype NO_LABEL resizable
       class Fl_Multiline_Output
     }
@@ -109,7 +109,7 @@ if (selfile) {
       }
       Submenu {} {
         label Layout open
-        xywh {0 0 70 21}
+        xywh {0 0 70 21} hide deactivate
       } {
         MenuItem {} {
           label Ellipse
@@ -145,9 +145,20 @@ MainWindow->redraw();}
           xywh {0 0 36 21}
         }
       }
+      Submenu TagsMenu {
+        label Tags open
+        xywh {0 0 62 20}
+      } {
+        MenuItem {} {
+          label {Show All}
+          callback {DbgView->showAllData();
+MainWindow->redraw();}
+          xywh {0 0 31 20}
+        }
+      }
       MenuItem {} {
         label Help
-        xywh {0 0 34 21} deactivate
+        xywh {0 0 34 21} hide deactivate
       }
     }
     Fl_Box Info {
@@ -167,6 +178,8 @@ MainWindow->redraw();}
     if (DbgView) {
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->processData();
+      DbgView->makeTagsMenu();
     }
-}} {}
+}} {selected
+  }
 } 

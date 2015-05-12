@@ -22,6 +22,7 @@
 
 #include "Event.h"
 #include <list>
+#include <vector>
 
 class DataModel {
 
@@ -50,29 +51,41 @@ class DataModel {
 
   int NumEvents () { return theEvents.size(); }
 
-  Event * getFirstEvent() {
-            curEvent = theEvents.begin();
-	    if (curEvent == theEvents.end())
-	      return NULL;
-	    return *curEvent;
-          }
-
-  Event * getNextEvent() {
-            curEvent++;
-	    if (curEvent == theEvents.end())
-	      return NULL;
-	    return *curEvent;
-          }
+  Event * getFirstEvent()
+      {
+	curEvent = theEvents.begin();
+	if (curEvent == theEvents.end())
+	  return NULL;
+	return *curEvent;
+      }
+  
+  Event * getNextEvent()
+      {
+	curEvent++;
+	if (curEvent == theEvents.end())
+	  return NULL;
+	return *curEvent;
+      }
 
   int NumTags () { return numTags; }
+
+  Event * getTagNo(int n)
+      {
+        if (n < 1 || n > numTags) 
+	  return NULL;
+        curEvent = tagVec[n-1];
+        return *curEvent;
+      }
 
  private:
 
   int numLocales;
   int numTags;
 
+  typedef std::list<Event*>::iterator evItr;
   std::list<Event*> theEvents;
   std::list<Event*>::iterator curEvent;
+  std::vector<evItr> tagVec;
 
 };
 

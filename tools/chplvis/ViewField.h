@@ -55,7 +55,6 @@ struct commInfo {
 struct tagInfo {
   int tagNo;
   std::string tagName;
-  
 };
 
 Fl_Color heatColor ( double val, double max );
@@ -91,6 +90,8 @@ class ViewField : public Fl_Box {
 
     void allocArrays();
 
+    void selTag(Fl_Widget *, void *);
+
   public:
 
   ViewField (int bx, int by, int bw, int bh, const char *label = 0);
@@ -105,6 +106,10 @@ class ViewField : public Fl_Box {
   // Processing routines
 
   void processData();
+
+  void makeTagsMenu(void);
+
+  void processTag(int n);
 
   void setNumLocales(int n)
     { 
@@ -128,6 +133,8 @@ class ViewField : public Fl_Box {
   void showCpu(void) { showtasks = false; }
   void showComms(void) { showcomms = true; }
   void showDsize(void) { showcomms = false; }
+
+  void showAllData(void) { printf ("showAllData called\n"); }
 
 };
 

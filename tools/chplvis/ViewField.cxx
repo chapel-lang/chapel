@@ -151,10 +151,14 @@ void ViewField::processData()
   maxCpu = 0.0000001;
   maxDatasize = 1;
 
-  tags = new tagInfo [VisData.NumTags()];
-
-  // Debug
-  printf ("Number of tags is %d\n", VisData.NumTags());
+  if (tags == NULL) {
+    tags = new tagInfo [VisData.NumTags()];
+    int ix;
+    for (ix = 0; ix < VisData.NumTags(); ix++) {
+      tags[ix].tagNo = -1;
+      tags[ix].tagName = "";
+    }
+  }
 
   Event *ev;
 
@@ -227,6 +231,11 @@ void ViewField::processData()
       case Ev_tag:
 	// Checking out the tag ...
 	gp = (E_tag *)ev;
+        int tgNo = gp->tagNo();
+        if (tags[tgNo-1].tagNo < 0) {
+	  tags[tgNo-1].tagNo = tgNo;
+	  tags[tgNo-1].tagName = gp->tagName();
+	}
 	if (gp->isPause()) {
 	  // Need to update times so that resume can reset ref times
 	  theLocales[gp->nodeId()].userCpu += gp->user_time()
@@ -245,6 +254,26 @@ void ViewField::processData()
 
   Info->setMaxes(maxTasks, maxComms, maxDatasize, maxCpu);
   //printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
+}
+
+void ViewField::makeTagsMenu(void)
+{
+  printf("Make tags menu\n");
+  if (VisData.NumTags() <= 1) 
+    TagsMenu->hide();
+  else {
+    // Build the menu
+    TagsMenu->show();
+  }
+}
+
+void ViewField::selTag(Fl_Widget *, void *)
+{
+}
+
+void ViewField::processTag(int n)
+{
+  
 }
 
 
@@ -270,6 +299,7 @@ void ViewField::drawLocale ( int ix, Fl_Color col)
 	      loc->w-6, loc->h-6, FL_ALIGN_CENTER, NULL, 0);
     }
 }
+
 
 void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
 {
