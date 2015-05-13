@@ -29,6 +29,7 @@
 #include "stmt.h"
 #include "symbol.h"
 
+#include <set>
 
 #ifndef HILDE_MM
 // Clear autoDestroy flags on variables that get assigned to the return value of
@@ -759,29 +760,67 @@ fixupDestructors() {
 }
 
 
+static void addAutoDestroyCallsForModule(ModuleSymbol* mod, FnSymbol* fn,
+                                         std::set<ModuleSymbol*>& visited)
+{
+// Termination
+  if (visited.count(mod) > 0)
+    return;
+  visited.insert(mod);
+
+// Recursion
+  // Visit my parent.
+  if (ModuleSymbol* parent = mod->defPoint->getModule())
+    if (parent != theProgram && parent != rootModule)
+      addAutoDestroyCallsForModule(parent, fn, visited);
+
+  // Visit my explicit dependencies.
+  forv_Vec(ModuleSymbol, usedMod, mod->modUseList)
+    addAutoDestroyCallsForModule(usedMod, fn, visited);
+
+// Real work
+  for_alist(expr, mod->block->body)
+  {
+    if (DefExpr* def = toDefExpr(expr))
+      if (VarSymbol* var = toVarSymbol(def->sym))
+      {
+        if (var->hasFlag(FLAG_NO_AUTO_DESTROY))
+          continue;
+
+        if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type))
+        {
+          // Skip destructors for class types (only nude RWT types at this point).
+          if (AggregateType* at = toAggregateType(var->type))
+            if (isClass(at))
+              continue;
+
+          SET_LINENO(var);
+          fn->insertAtHead(new CallExpr(autoDestroy, var));
+        }
+      }
+  }
+}
+
+
 static void insertGlobalAutoDestroyCalls() {
   // --ipe does not build chpl_gen_main
   if (chpl_gen_main == NULL)
     return;
 
-  const char* name = "chpl__autoDestroyGlobals";
   SET_LINENO(baseModule);
+
+  const char* name = "chpl__autoDestroyGlobals";
   FnSymbol* fn = new FnSymbol(name);
+
+  // TODO: Would like to use unordered_set (C++11) instead, when it is available.
+  std::set<ModuleSymbol*> visited;
+  addAutoDestroyCallsForModule(mainModule, fn, visited);
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   fn->retType = dtVoid;
+
   chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
   chpl_gen_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
-  forv_Vec(DefExpr, def, gDefExprs) {
-    if (isModuleSymbol(def->parentSymbol))
-      if (def->parentSymbol != rootModule)
-        if (VarSymbol* var = toVarSymbol(def->sym))
-          if (!var->isParameter() && !var->isType())
-            if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
-              if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
-                SET_LINENO(var);
-                fn->insertAtTail(new CallExpr(autoDestroy, var));
-              }
-  }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
