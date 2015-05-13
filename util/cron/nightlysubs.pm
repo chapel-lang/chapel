@@ -117,7 +117,11 @@ sub endMailHeader {
 }
 
 sub endMailChplenv {
-    my $chplenv = `$chplhomedir/util/printchplenv --debug`;
+    my $ch = $chplhomedir;
+    if (exists($ENV{"CHPL_HOME"})) {
+        $ch = $ENV{"CHPL_HOME"};
+    }
+    my $chplenv = `$ch/util/printchplenv --debug`;
 
     my $mystr = 
         "===============================================================\n" .

@@ -24,12 +24,15 @@ class  IpeVars;
 class  IpeScope;
 class  PrimitiveType;
 
+extern PrimitiveType* gIpeTypeType;
+
 extern PrimitiveType* gIpeTypeModule;
+
 extern PrimitiveType* gIpeTypeProcedure;
+extern PrimitiveType* gIpeTypeMethod;
 
-extern IpeVars*       gGlobalVars;
-extern IpeScope*      gGlobalScope;
-
+extern IpeScope*      gRootScope;
+extern IpeVars*       gRootVars;
 
 extern int            gDebugLevelResolve;
 extern int            gDebugLevelEvaluate;

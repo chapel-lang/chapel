@@ -48,13 +48,32 @@ sub mysystem {
   close(CMD) or die "Can't close pipe: $!";
 }
 
+# Make reasonable defaults for environment settings
+$ENV{"COMP_GEN_WARN"} = 0;
+$ENV{"COMP_GEN_DEBUG"} = 0;
+$ENV{"COMP_GEN_OPT"} = 0;
+$ENV{"COMP_GEN_SPECIALIZE"} = 0;
+$ENV{"COMP_GEN_IEEE_FLOAT"} = 1;
+
 for my $arg (@ARGV) {
-  if( $arg eq "--home" ) {
-      print $chpl_home_dir . "\n";
+  if( $arg eq "--llvm" ) {
+    $ENV{"CHPL_TARGET_COMPILER"}="clang-included";
+
+    # get the name of main.o and check that it exits.
+    $maino=`$make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino`;
+    chomp $maino;
+    if( ! -e $maino ) {
+      print STDERR "Missing clang-included runtime build for chpl --llvm\n";
+      exit 1;
+    }
+  } elsif( $arg eq "--home" ) {
+    print $chpl_home_dir . "\n";
   } elsif( $arg eq "--make" ) {
-      print $make . "\n";
+    print $make . "\n";
   } elsif( $arg eq "--compile" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline");
+  } elsif( $arg eq "--cflags" ) {
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcflags");
   } elsif ( $arg eq "--includes-and-defines" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines");
   } elsif( $arg eq "--libraries" ) {
@@ -63,10 +82,37 @@ for my $arg (@ARGV) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino");
   } elsif( $arg eq "--llvm-install-dir" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall");
+  } elsif( $arg eq "--clang-sysroot-arguments" ) {
+    $llvminstall=`$make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall`;
+    chomp $llvminstall;
+    open(ARGS, "<", "$llvminstall/configured-clang-sysroot-arguments") or die "Could not open $llvminstall/configured-clang-sysroot-arguments: $!";
+    while(<ARGS>) {
+      chomp;
+      print " $_";
+    }
+    print "\n";
+    close(ARGS);
   } elsif( $arg =~ /[^-=][^=]*=[^=]+/ ) {
     ($key, $val) = split('=', $arg, 2);
     $ENV{$key} = $val;
   } else {
-    print "Unknown argument; try --compile or --libraries or --includes-and-defines\n";
+    print "Unknown argument $arg\n";
+    print "Usage: compileline [VAR=VALUE...] [options...]\n";
+    print "[VAR=VALUE] sets any environment variable\n";
+    print "[options] include\n";
+    print " --llvm specify that the rest of the arguments are for a compile\n";
+    print "        working with the LLVM backend. This argument causes\n";
+    print "        this script to set CHPL_TARGET_COMPILER=clang-included\n";
+    print " --home  print out CHPL_HOME\n";
+    print " --make  print out the make command\n";
+    print " --compile  print out the command to compile a file including\n";
+    print "            Chapel runtime headers\n";
+    print " --includes-and-defines print out any -D and -I options to\n";
+    print "                        include the Chapel runtime\n";
+    print " --libraries print out any -L and -l options to\n";
+    print "             link with the Chapel runtime\n";
+    print " --main.o print out the path to the main.o file\n";
+    print " --clang-sysroot-arguments print out any saved clang arguments\n";
+    print "                           that specify the system root\n";
   }
 }

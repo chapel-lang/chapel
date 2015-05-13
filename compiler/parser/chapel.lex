@@ -45,6 +45,7 @@
 %{
 
 #include "bison-chapel.h"
+#include "docsDriver.h"
 #include "parser.h"
 
 #include <cstdio>
@@ -312,6 +313,7 @@ static int  processIdentifier(yyscan_t scanner) {
 
 static int processToken(yyscan_t scanner, int t) {
   YYSTYPE* yyLval = yyget_lval(scanner);
+  size_t   remain = sizeof(captureString) - 1;
 
   countToken(yyget_text(scanner));
 
@@ -319,11 +321,15 @@ static int processToken(yyscan_t scanner, int t) {
 
   if (captureTokens) {
     if (t == TASSIGN ||
-        t == TDOTDOTDOT)
-      strncat(captureString, " ", sizeof(captureString));
+        t == TDOTDOTDOT) {
+      strncat(captureString, " ",                 remain);
+      remain = remain - 1;
+    }
 
-    if (t != TLCBR)
-      strncat(captureString, yyget_text(scanner), sizeof(captureString));
+    if (t != TLCBR) {
+      strncat(captureString, yyget_text(scanner), remain);
+      remain = remain - strlen(yyget_text(scanner));
+    }
 
     if (t == TCOMMA  ||
         t == TPARAM  ||
@@ -336,8 +342,10 @@ static int processToken(yyscan_t scanner, int t) {
         t == TREF    ||
         t == TCOLON  ||
         t == TASSIGN ||
-        t == TRSBR)
-      strncat(captureString, " ", sizeof(captureString));
+        t == TRSBR) {
+      strncat(captureString, " ",                 remain);
+      remain = remain - 1;
+    }
   }
 
   // If the stack has a value then we must be in externmode.
@@ -366,9 +374,16 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
   countToken(astr(q, yyLval->pch, q));
 
   if (captureTokens) {
-    strncat(captureString, yyText, sizeof(captureString));
-    strncat(captureString, yyLval->pch, sizeof(captureString));
-    strncat(captureString, yyText, sizeof(captureString));
+    size_t remain = sizeof(captureString) - 1;
+
+    strncat(captureString, yyText,      remain);
+    remain = remain - strlen(yyText);
+
+    strncat(captureString, yyLval->pch, remain);
+    remain = remain - strlen(yyLval->pch);
+
+    strncat(captureString, yyText,      remain);
+    remain = remain - strlen(yyText);
   }
 
   return STRINGLITERAL;
@@ -434,7 +449,7 @@ static int processExtern(yyscan_t scanner) {
   countToken(yyText);
 
   if (captureTokens) {
-    strncat(captureString, yyText, sizeof(captureString));
+    strncat(captureString, yyText, sizeof(captureString) - 1);
   }
 
   // Push a state to record that "extern" has been seen
@@ -460,7 +475,7 @@ static int processExternCode(yyscan_t scanner) {
   countToken(astr(yyLval->pch));
 
   if (captureTokens) {
-    strncat(captureString, yyLval->pch, sizeof(captureString));
+    strncat(captureString, yyLval->pch, sizeof(captureString) - 1);
   }
 
   return EXTERNCODE;
@@ -663,6 +678,10 @@ static int processBlockComment(yyscan_t scanner) {
   YYSTYPE*    yyLval       = yyget_lval(scanner);
   YYLTYPE*    yyLloc       = yyget_lloc(scanner);
 
+  int nestedStartLine = -1;
+  int startLine = chplLineno;
+  const char* startFilename = yyfilename;
+
   int         len          = strlen(fDocsCommentLabel);
   int         labelIndex   = (len >= 2) ? 2 : 0;
 
@@ -708,9 +727,17 @@ static int processBlockComment(yyscan_t scanner) {
 
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
+      // keep track of the start of the last nested comment
+      nestedStartLine = chplLineno;
     } else if (c == 0) {
       ParserContext context(scanner);
 
+      fprintf(stderr, "%s:%d: unterminated comment started here\n",
+              startFilename, startLine);
+      if( nestedStartLine >= 0 ) {
+        fprintf(stderr, "%s:%d: nested comment started here\n",
+                startFilename, nestedStartLine);
+      }
       yyerror(yyLloc, &context, "EOF in comment");
     }
   }
@@ -747,6 +774,9 @@ static int processBlockComment(yyscan_t scanner) {
     }
 
     yyLval->pch = astr(wholeComment.c_str());
+
+  } else {
+    yyLval->pch = NULL;
   }
 
   countMultiLineComment(stringBuffer);

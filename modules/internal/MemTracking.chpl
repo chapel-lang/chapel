@@ -24,8 +24,8 @@ module MemTracking
   config const
     memTrack: bool = false,
     memStats: bool = false,
+    memLeaksByType: bool = false,
     memLeaks: bool = false,
-    memLeaksTable: bool = false,
     memMax: uint = 0,
     memThreshold: uint = 0,
     memLog: c_string = "";
@@ -35,8 +35,8 @@ module MemTracking
     memLeaksLog: c_string = "";
 
   // Safely cast to size_t instances of memMax and memThreshold.
-  const cMemMax = safe_cast(size_t, memMax),
-    cMemThreshold = safe_cast(size_t, memThreshold);
+  const cMemMax = memMax.safeCast(size_t),
+    cMemThreshold = memThreshold.safeCast(size_t);
 
   // Globally accessible copy of the corresponding c_string consts
   use NewString;
@@ -58,16 +58,16 @@ module MemTracking
   export
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
+                                         ref ret_memLeaksByType: bool,
                                          ref ret_memLeaks: bool,
-                                         ref ret_memLeaksTable: bool,
                                          ref ret_memMax: size_t,
                                          ref ret_memThreshold: size_t,
                                          ref ret_memLog: c_string,
                                          ref ret_memLeaksLog: c_string) {
     ret_memTrack = memTrack;
     ret_memStats = memStats;
+    ret_memLeaksByType = memLeaksByType;
     ret_memLeaks = memLeaks;
-    ret_memLeaksTable = memLeaksTable;
     ret_memMax = cMemMax;
     ret_memThreshold = cMemThreshold;
 

@@ -20,70 +20,50 @@
 #ifndef _IPE_SCOPE_H_
 #define _IPE_SCOPE_H_
 
-#include "IpeValue.h"
-
-class Symbol;
+class ArgSymbol;
 class IpeModule;
-class IpeVars;
+class LcnSymbol;
 class UnresolvedSymExpr;
 class VarSymbol;
-class VisibleSymbols;
 
 #include <vector>
 
 class IpeScope
 {
 public:
-  //
-  // Class interface
-  //
-
-  static IpeScope*         rootAllocate();
-  static IpeScope*         rootScope;
-
-  //
-  // Instance interface
-  //
-
-public:
   virtual                 ~IpeScope();
 
-  virtual void             envPush();
-  virtual void             envPop();
+  virtual const char*      type()                                             const = 0;
+  virtual const char*      name()                                             const = 0;
 
-  virtual void             extend(Symbol*  sym,
-                                  IpeValue defaultValue,
-                                  IpeVars* vars)                            = 0;
+  virtual int              locationSet(ArgSymbol* arg)                        const = 0;
+  virtual int              locationSet(VarSymbol* var)                        const = 0;
+
+  virtual int              frameSize()                                        const = 0;
+
+  virtual bool             isScopeBlockStmt()                                 const;
+  virtual bool             isScopeModule()                                    const;
+
+  bool                     hasParent()                                        const;
+  void                     parentSummarize(char* pad)                         const;
 
   void                     useAdd(IpeModule* use);
+  int                      useCount()                                         const;
+  IpeModule*               useGet(int index)                                  const;
 
-  VisibleSymbols           visibleSymbols(UnresolvedSymExpr* expr)    const;
-  VisibleSymbols           visibleSymbols(Symbol*            sym)     const;
-  VisibleSymbols           visibleSymbols(const char*        name)    const;
-
-  void                     describe(int  offset     = 0,
-                                    bool recursiveP = false)          const;
+  void                     varAdd(LcnSymbol* variable);
+  int                      varCount()                                         const;
+  LcnSymbol*               varGet(int index)                                  const;
 
 protected:
                            IpeScope(IpeScope* parent);
 
-  virtual const char*      type()                                     const = 0;
-  virtual const char*      name()                                     const = 0;
-  virtual void             describeHeader(int offset)                 const = 0;
-
-  void                     symbolPush(Symbol* sym);
+  IpeScope*                mParent;
+  std::vector<LcnSymbol*>  mVariables;
+  std::vector<IpeModule*>  mUsedModules;
 
 private:
                            IpeScope();
-
-  void                     findSymbols(const char*     name,
-                                       int             distance,
-                                       VisibleSymbols& symbols)       const;
-
-  IpeScope*                mParent;
-
-  std::vector<Symbol*>     mSymbols;
-  std::vector<IpeModule*>  mUsedModules;
 };
 
 #endif

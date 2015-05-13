@@ -115,6 +115,17 @@ class AbstractJob(object):
         :returns: command to run in qsub with changedir call
         """
         full_test_command = ['cd', '$PBS_O_WORKDIR', '&&']
+
+        # If the first argument of the test command is a file (it should
+        # always be the executable), then add a "test -f ./execname" call
+        # before running the command. This works around some potential nfs
+        # configuration issues that can happen when running from lustre
+        # mounted over nfs.
+        if os.path.exists(self.test_command[0]):
+            logging.debug('Adding "test -f {0}" to launcher command.'.format(
+                self.test_command[0]))
+            full_test_command += ['test', '-f', self.test_command[0], '&&']
+
         full_test_command.extend(self.test_command)
         return full_test_command
 
@@ -286,8 +297,8 @@ class AbstractJob(object):
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
                     exec_start_time = time.time()
-                status = job_status(job_id, output_file)
                 time.sleep(.5)
+                status = job_status(job_id, output_file)
 
             exec_time = time.time() - exec_start_time
             # Note that this time isn't very accurate as we don't get the exact

@@ -22,17 +22,59 @@
 
 class IpeModule;
 class IpeProcedure;
+class Type;
+class VarSymbol;
 
-union IpeValue
+class IpeValue
 {
-  long          iValue;
-  double        rValue;
+public:
+                IpeValue();
+                IpeValue(bool          value);
+                IpeValue(long          value);
+                IpeValue(double        value);
+                IpeValue(const char*   value);
+                IpeValue(Type*         value);
+                IpeValue(IpeModule*    value);
+                IpeValue(IpeProcedure* value);
+                IpeValue(IpeValue*     value);
 
-  const char*   sValue;
+  bool          boolGet()                              const;
+  void          boolSet(bool value);
 
-  IpeValue*     valuePtr;
-  IpeModule*    modulePtr;
-  IpeProcedure* procedurePtr;
+  long          integerGet()                           const;
+  void          integerSet(long value);
+
+  double        realGet()                              const;
+  void          realSet(double value);
+
+  const char*   cstringGet()                           const;
+  void          cstringSet(const char* value);
+
+  Type*         typeGet()                              const;
+
+  IpeModule*    moduleGet()                            const;
+
+  IpeProcedure* procedureGet()                         const;
+
+  IpeValue*     refGet()                               const;
+
+private:
+
+  union ipeValue
+  {
+    long          iValue;
+    double        rValue;
+
+    const char*   sValue;
+
+    Type*         typePtr;
+
+    IpeValue*     valuePtr;
+    IpeModule*    modulePtr;
+    IpeProcedure* procedurePtr;
+  };
+
+  ipeValue    mValue;
 };
 
 #endif

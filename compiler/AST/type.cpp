@@ -21,9 +21,11 @@
 
 #include "type.h"
 
+#include "AstToText.h"
 #include "astutil.h"
 #include "build.h"
 #include "codegen.h"
+#include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
@@ -145,13 +147,51 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
   return 1;
 }
 
+
+void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
+  // Only print extern types.
+  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << "type ";
+  *file << this->symbol->name;
+  *file << std::endl;
+
+  // For .rst mode, put a line break after the .. data:: directive and
+  // its description text.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->symbol->doc != NULL) {
+    this->printDocsDescription(this->symbol->doc, file, tabs + 1);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+std::string PrimitiveType::docsDirective() {
+  if (!fDocsTextOnly) {
+    return ".. type:: ";
+  } else {
+    return "";
+  }
+}
+
+
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
 }
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL)
+  constants(), integerType(NULL),
+  doc(NULL)
 {
   gEnumTypes.add(this);
   constants.parent = this;
@@ -459,6 +499,48 @@ void EnumType::accept(AstVisitor* visitor) {
     visitor->exitEnumType(this);
   }
 }
+
+
+void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << "enum ";
+  AstToText info;
+  info.appendEnumDecl(this);
+  *file << info.text();
+  *file << std::endl;
+
+  // In rst mode, ensure there is an empty line between the enum signature and
+  // its description or the next directive.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+
+    // In rst mode, ensure there is an empty line between the enum description
+    // and the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+std::string EnumType::docsDirective() {
+  if (fDocsTextOnly) {
+    return "";
+  } else {
+    return ".. enum:: ";
+  }
+}
+
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
@@ -1216,7 +1298,7 @@ std::string AggregateType::docsSuperClass() {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
         superClassNames.push_back(use->unresolved);
       } else {
-        INT_FATAL(expr, "Expected UnresolvedSymExpr for all member of inherits alist.");
+        INT_FATAL(expr, "Expected UnresolvedSymExpr for all members of inherits alist.");
       }
     }
 
@@ -1361,13 +1443,6 @@ void initPrimitiveTypes() {
 
   gTryToken->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTryToken));
-
-  //
-  // IPE tries to run without the rest of the types
-  //
-  if (fUseIPE == true) {
-    return;
-  }
 
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
@@ -1565,7 +1640,6 @@ void initChplProgram(DefExpr* objectDef) {
   theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
 
-  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
   base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));

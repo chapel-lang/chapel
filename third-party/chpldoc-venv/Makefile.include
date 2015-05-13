@@ -1,9 +1,14 @@
-CHPLDOC_VENV_DIR=$(THIRD_PARTY_DIR)/chpldoc-venv
+# Virtualenv is sensitive to ../../ in the path. Specifically, they are
+# recorded all the way down to the hash bangs in scripts. Removing them here
+# avoids any potential issues when paths are compared (e.g. some things
+# consider a/b/../../a/b/ equal to a/b/, while string matching does not).
+CHPLDOC_VENV_DIR=$(shell cd $(THIRD_PARTY_DIR)/chpldoc-venv && pwd)
+
 CHPLDOC_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_TARGET_PLATFORM)
 CHPLDOC_VENV_INSTALL_SUBDIR=install/$(CHPLDOC_VENV_UNIQUE_SUBDIR)
 CHPLDOC_VENV_INSTALL_DIR=$(CHPLDOC_VENV_DIR)/$(CHPLDOC_VENV_INSTALL_SUBDIR)
 CHPLDOC_VENV_VIRTUALENV=$(CHPLDOC_VENV_INSTALL_SUBDIR)/virtualenv
-CHPLDOC_VENV_VIRTUALENV_NAME=chpdoc-virtualenv
+CHPLDOC_VENV_VIRTUALENV_NAME=chpldoc-virtualenv
 CHPLDOC_VENV_VIRTUALENV_SUBDIR=$(CHPLDOC_VENV_INSTALL_SUBDIR)/$(CHPLDOC_VENV_VIRTUALENV_NAME)
 CHPLDOC_VENV_VIRTUALENV_DIR=$(CHPLDOC_VENV_DIR)/$(CHPLDOC_VENV_VIRTUALENV_SUBDIR)
 CHPLDOC_VENV_VIRTUALENV_BIN=$(CHPLDOC_VENV_VIRTUALENV_DIR)/bin

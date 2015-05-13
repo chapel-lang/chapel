@@ -33,6 +33,9 @@ public:
   LabelSymbol*           continueLabelGet()                           const;
   void                   continueLabelSet(LabelSymbol* sym);
 
+  bool                   isOrderIndependent()                         const;
+  void                   orderIndependentSet(bool b);
+
   static LoopStmt*       findEnclosingLoop(Expr* expr);
 
 protected:
@@ -41,6 +44,9 @@ protected:
 
   LabelSymbol*           mBreakLabel;
   LabelSymbol*           mContinueLabel;
+  bool                   mOrderIndependent;
+  void                   codegenOrderIndependence();
+
 
 private:
                          LoopStmt();

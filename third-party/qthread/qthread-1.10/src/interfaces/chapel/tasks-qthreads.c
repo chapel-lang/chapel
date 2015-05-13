@@ -126,12 +126,12 @@ pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
 chpl_qthread_tls_t chpl_qthread_process_tls = {
-  PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
-  NULL, 0, NULL, 0 };
+    PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
+    NULL, 0, NULL, 0 };
 
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-  PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
-  NULL, 0, NULL, 0 };
+    PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
+    NULL, 0, NULL, 0 };
  
  //
  
@@ -504,8 +504,18 @@ static void setupCallStacks(int32_t hwpar) {
     // If the user compiled with no stack checks (either explicitly or
     // implicitly) turn off qthread guard pages. TODO there should also be a
     // chpl level env var backing this at runtime (can be the same var.)
+    // Also turn off guard pages if the heap page size isn't the same as
+    // the system page size, because when that's the case we can reliably
+    // make the guard pages un-referenceable.  (This typically arises when
+    // the heap is on hugepages, as is often the case on Cray systems.)
+    //
+    // Note that we won't override an explicit setting of QT_GUARD_PAGES
+    // in the former case, but we do in the latter case.
     if (CHPL_STACK_CHECKS == 0) {
         chpl_qt_setenv("GUARD_PAGES", "false", 0);
+    }
+    else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
+        chpl_qt_setenv("GUARD_PAGES", "false", 1);
     }
 
     // Precedence (high-to-low):

@@ -27,22 +27,21 @@ class IpeModule;
 class IpeScopeModule : public IpeScope
 {
 public:
-                           IpeScopeModule(IpeModule* module);
+                           IpeScopeModule(IpeModule* parent,
+                                          IpeModule* module);
   virtual                 ~IpeScopeModule();
 
-  virtual void             extend(Symbol*  sym,
-                                  IpeValue defaultValue,
-                                  IpeVars* vars);
-
-  virtual void             envPush();
-  virtual void             envPop();
-
-  IpeModule*               module()                                   const;
-
-protected:
   virtual const char*      type()                                     const;
   virtual const char*      name()                                     const;
-  virtual void             describeHeader(int offset)                 const;
+
+  virtual int              locationSet(ArgSymbol* arg)                const;
+  virtual int              locationSet(VarSymbol* var)                const;
+
+  virtual int              frameSize()                                const;
+
+  virtual bool             isScopeModule()                            const;
+
+  IpeModule*               module()                                   const;
 
 private:
                            IpeScopeModule();

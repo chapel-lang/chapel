@@ -39,6 +39,7 @@ static void checkConstLoops();
 static int isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs);
 static void checkReturnPaths(FnSymbol* fn);
 static void checkNoRecordDeletes();
+static void checkExternProcs();
 
 
 static void
@@ -78,6 +79,7 @@ checkResolved() {
   }
   checkNoRecordDeletes();
   checkConstLoops();
+  checkExternProcs();
 }
 
 
@@ -273,6 +275,32 @@ checkNoRecordDeletes()
       //  is a record.
       if (isRecord(call->get(1)->typeInfo()->getValType()))
         USR_FATAL_CONT(call, "delete not allowed on records");
+    }
+  }
+}
+
+
+static void checkExternProcs() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->hasFlag(FLAG_EXTERN))
+      continue;
+
+    for_formals(formal, fn) {
+      if (formal->typeInfo() == dtString) {
+        if (fn->instantiatedFrom == NULL) {
+          USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
+                             "type string, use c_string instead");
+        } else {
+          // This is a generic instantiation of an extern proc that is using
+          // string, so we want to report the call sites causing this
+          USR_FATAL_CONT(fn, "extern procedure has arguments of type string");
+          forv_Vec(CallExpr, call, *fn->calledBy) {
+            USR_PRINT(call, "when instantiated from here");
+          }
+          USR_PRINT(fn, "use c_string instead");
+        }
+        break;
+      }
     }
   }
 }

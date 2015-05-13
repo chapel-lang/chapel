@@ -19,41 +19,193 @@
 
 #include "IpeModule.h"
 
-#include "AstDumpToNode.h"
+#include "IpeBlockStmt.h"
+#include "IpeEnv.h"
+#include "IpeMethod.h"
+#include "IpeProcedure.h"
 #include "IpeScopeModule.h"
-#include "ipeEvaluate.h"
-#include "symbol.h"
+#include "IpeValue.h"
 
-IpeModule::IpeModule(ModuleSymbol* sym)
+#include "ipeDriver.h"
+#include "ipeResolve.h"
+#include "ipeEvaluate.h"
+#include "ipeUtils.h"
+
+#include "AstDumpToNode.h"
+#include "expr.h"
+#include "stmt.h"
+#include "stringutil.h"
+
+IpeModule::IpeModule(IpeModule*    parent,
+                     ModuleSymbol* modSym)
 {
-  mModuleDecl  = sym;
-  mScope       = new IpeScopeModule(this);
-  mInitialized = false;
+  IpeScopeModule* scope     = new IpeScopeModule(parent, this);
+  IpeEnv*         parentEnv = (parent != NULL) ? parent->environment() : NULL;
+
+  mState        = kLoaded;
+
+  mEnv          = new IpeEnv(parentEnv, scope);
+
+  mModSym       = modSym;
+  mBodyResolved = NULL;
 }
 
 IpeModule::~IpeModule()
 {
+  if (mEnv          != NULL)
+    delete mEnv;
 
+  if (mBodyResolved != NULL)
+    delete mBodyResolved;
 }
 
 const char* IpeModule::name() const
 {
-  return mModuleDecl->name;
+  return mModSym->name;
 }
 
-IpeScopeModule* IpeModule::scope() const
+IpeScopeModule* IpeModule::scopeGet() const
 {
-  return mScope;
+  IpeScopeModule* retval = NULL;
+
+  if (mEnv != NULL)
+    retval = (IpeScopeModule*) mEnv->scopeGet();
+
+  return retval;
 }
 
-void IpeModule::ensureInitialized(IpeVars* vars)
+IpeEnv* IpeModule::environment() const
 {
-  if (mInitialized == false)
+  return mEnv;
+}
+
+const char* IpeModule::stateAsString() const
+{
+  const char* retval = NULL;
+
+  switch (mState)
   {
-    mInitialized = true;
-    ipeEvaluate(mModuleDecl, vars);
+    case kLoaded:
+      retval = "Loaded";
+      break;
+
+    case kResolving:
+      retval = "Resolving";
+      break;
+
+    case kResolved:
+      retval = "Resolved";
+      break;
+
+    case kInitializing:
+      retval = "Initializing";
+      break;
+
+    case kInitialized:
+      retval = "Initialized";
+      break;
+  }
+
+  return retval;
+}
+
+IpeModule* IpeModule::moduleByName(const char* name) const
+{
+  const char* identifier = astr(name);
+  LcnSymbol*  varSym     = mEnv->findVariable(identifier);
+
+  INT_ASSERT(varSym);
+  INT_ASSERT(varSym->type == gIpeTypeModule);
+
+  return (IpeModule*) mEnv->fetchPtr(varSym);
+}
+
+void IpeModule::moduleAdd(IpeModule* module)
+{
+  if (mEnv->findVariable(module->name()) != NULL)
+  {
+    printf("IpeModule::moduleAdd  Unable to add module %s to module %s; already defined\n",
+           module->name(),
+           name());
+  }
+  else
+  {
+    int        offset = mEnv->allocateValue(module);
+    VarSymbol* var    = new VarSymbol(module->name(), gIpeTypeModule);
+
+    var->addFlag(FLAG_CONST);
+    var->locationSet(0, offset);
+
+    mEnv->varAdd(var);
   }
 }
+
+void IpeModule::ensureInitialized()
+{
+  if (mState != kInitialized)
+  {
+    INT_ASSERT(false);
+  }
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+void IpeModule::moduleEvaluate()
+{
+  moduleResolve();
+  initialize();
+}
+
+void IpeModule::moduleResolve()
+{
+  if (mState == kLoaded)
+  {
+    BlockStmt*   untypedExpr = mModSym->block;
+    Expr*        typedExpr   = NULL;
+    IpeSequence* seq         = NULL;
+
+    mState        = kResolving;
+
+    typedExpr     = blockResolve(untypedExpr, mEnv);
+    seq           = (IpeSequence*) typedExpr;
+
+    INT_ASSERT(isBlockStmt(typedExpr));
+    INT_ASSERT(seq->isScopeless() == true);
+
+    mBodyResolved = seq;
+
+    mState        = kResolved;
+  }
+}
+
+// This is a placeholder
+void IpeModule::initialize()
+{
+  if      (mState == kLoaded       || mState == kResolving)
+    INT_ASSERT(false);
+
+  else if (mState == kInitializing || mState == kInitialized)
+    ;
+
+  else
+  {
+    mState = kInitializing;
+
+    mEnv->initializeUsedModules();
+
+    mState = kInitialized;
+  }
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 void IpeModule::describe(int offset) const
 {
@@ -70,10 +222,14 @@ void IpeModule::describe(int offset) const
   }
 
   printf("%s#<IpeModule %s\n", pad, name());
-  printf("%s   Initialized: %s\n", pad, mInitialized ? " true" : "false");
+  printf("%s  State: %s\n", pad, stateAsString());
+  printf("%s  Type:  %s\n", pad, moduleTypeAsString());
 
-  if (mScope)
-    mScope->describe(offset + 3, false);
+  if (mEnv)
+  {
+    printf("\n");
+    mEnv->describe(offset + 2);
+  }
 
   printf("%s>\n", pad);
 }

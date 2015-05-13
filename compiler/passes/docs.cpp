@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#include "docs.h"
+
+#include <cerrno>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -26,6 +29,7 @@
 
 #include "AstPrintDocs.h"
 #include "AstToText.h"
+#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -34,8 +38,6 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
-
-#include "docs.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -73,6 +75,10 @@ void docs(void) {
       docsSphinxDir = docsTempDir;
     }
 
+    // Make the intermediate dir and output dir.
+    makeDir(docsSphinxDir.c_str());
+    makeDir(docsOutputDir.c_str());
+
     // The location of intermediate rst files.
     std::string docsRstDir;
     if (fDocsTextOnly) {
@@ -82,11 +88,6 @@ void docs(void) {
       // For rst mode, the working location is somewhere inside the temp dir.
       docsRstDir = generateSphinxProject(docsSphinxDir);
     }
-
-    // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    mkdir(docsRstDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
-    mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
-
 
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
@@ -240,11 +241,38 @@ void createDocsFileFolders(std::string filename) {
     dirCutoff += total;
     std::string shorter = filename.substr(dirCutoff+1);
     std::string otherHalf = filename.substr(0, dirCutoff);
-    mkdir(otherHalf.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+
+    // Create `otherHalf` iff it is non-empty and does not already exist.
+    if (otherHalf.length() > 0 && !existsAndDir(otherHalf.c_str())) {
+      makeDir(otherHalf.c_str());
+    }
+
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
 }
+
+
+/* Create the directory (non-recursively). If an error occurs, exit and report
+ * error.
+ */
+static void makeDir(const char* dirpath) {
+  static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
+  int result = mkdir(dirpath, dirPerms);
+  if (result != 0 && errno != 0 && errno != EEXIST) {
+    USR_FATAL(astr("Failed to create directory: ", dirpath,
+                   " due to: ", strerror(errno)));
+  }
+}
+
+
+/* Returns true if dirpath exists on file system and is a directory. */
+static bool existsAndDir(const char* dirpath) {
+  struct stat sb;
+  return stat(dirpath, &sb) == 0 &&
+    S_ISDIR(sb.st_mode);
+}
+
 
 /* 
  * Create new sphinx project at given location and return path where .rst files
@@ -253,10 +281,6 @@ void createDocsFileFolders(std::string filename) {
 std::string generateSphinxProject(std::string dirpath) {
   // Create the output dir under the docs output dir.
   const char * sphinxDir = dirpath.c_str();
-
-  // Ensure output directory exists.
-  const char * mkdirCmd = astr("mkdir -p ", sphinxDir);
-  mysystem(mkdirCmd, "creating docs output dir");
 
   // Copy the sphinx template into the output dir.
   const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
@@ -267,25 +291,31 @@ std::string generateSphinxProject(std::string dirpath) {
   return std::string(moddir);
 }
 
+
 /*
  * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
  * outputDir for generated html files.
  */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
-  // The virtualenv active and sphinx-build scripts are in:
-  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/
-  const char * venvBinDir = astr(
+  // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
+  // based on the install path in the third-party/chpldoc-venv/ dir.
+
+  const char * venvDir = astr(
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
-    CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/");
-  const char * activate = astr(venvBinDir, "activate");
-  const char * sphinxBuild = astr(venvBinDir, "sphinx-build");
+    CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
+  const char * venvBinDir = astr(venvDir, "/bin");
+  const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
+
+  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && "
+                              "export VIRTUAL_ENV=", venvDir, " && "
+                              "export CHPLDOC_AUTHOR='", fDocsAuthor, "'");
 
   // Run:
-  //   . $activate &&
+  //   $envVars &&
   //     sphinx-build -b html
   //     -d $sphinxDir/build/doctrees -W
   //     $sphinxDir/source $outputDir
-  const char * cmdPrefix = astr(". ", activate, " && ");
+  const char * cmdPrefix = astr(envVars, " && ");
   const char * cmd = astr(
     cmdPrefix,
     sphinxBuild, " -b html -d ",

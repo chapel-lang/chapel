@@ -17,18 +17,35 @@
 
 IPE_SRCS =                           \
            ipeDriver.cpp             \
-           ipeResolve.cpp            \
-           ipeEvaluate.cpp           \
                                      \
+           IpeValue.cpp              \
+                                     \
+           IpeEnv.cpp                \
            IpeScope.cpp              \
            IpeScopeModule.cpp        \
-           IpeScopeProcedure.cpp     \
-           VisibleSymbols.cpp        \
-                                     \
-           IpeVars.cpp               \
+           IpeScopeMethod.cpp        \
+           IpeScopeBlock.cpp         \
                                      \
            IpeModule.cpp             \
-           IpeProcedure.cpp
+           IpeModuleRoot.cpp         \
+           IpeModuleInternal.cpp     \
+           IpeModuleStandard.cpp     \
+                                     \
+           IpeProcedure.cpp          \
+           IpeMethod.cpp             \
+           IpeSequence.cpp           \
+           IpeBlockStmt.cpp          \
+           IpeCallExpr.cpp           \
+           IpeDefExpr.cpp            \
+                                     \
+           IpeReader.cpp             \
+           IpeReaderFile.cpp         \
+           IpeReaderTerminal.cpp     \
+                                     \
+           ipeResolve.cpp            \
+           ipeEvaluate.cpp           \
+           ipeUtils.cpp
+
 
 SVN_SRCS = $(IPE_SRCS)
 SRCS     = $(SVN_SRCS)

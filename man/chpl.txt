@@ -19,43 +19,43 @@ DESCRIPTION
 SOURCE FILES
   Chapel currently recognizes four source file types: .chpl, .c, .h and .o.
 
-  foo.chpl      Chapel sources are compiled by the Chapel compiler into C intermediate code,
-                which is then passed to the target compiler to be compiled into
-                object code.
+  foo.chpl      Chapel sources are compiled by the Chapel compiler into C
+                intermediate code, which is then passed to the target compiler
+                to be compiled into object code.
 
   foo.c         C source files are passed directly to the target C compiler.
 
   foo.h         C header files are included in the generated C code.
 
-  foo.o         Object files are passed directly to the target linker. 
+  foo.o         Object files are passed directly to the target linker.
 
 OPTIONS
 
   Module Processing Options
 
-  --[no-]count-tokens    Prints the total number of static lexical tokens in 
+  --[no-]count-tokens    Prints the total number of static lexical tokens in
                     the Chapel code files named on the command line.
 
   --main-module <module>   For programs that supply multiple possible entry
                      points (main() functions or module initializers that
-                     can serve as an entry point), this option can be used 
-                     to specify which module should serve as the starting 
+                     can serve as an entry point), this option can be used
+                     to specify which module should serve as the starting
                      point for program execution.
 
-  -M, --module-dir <directory>   Add the specified directory to the module search 
-                    path. See the description of $CHPL_MODULE_PATH in the 
-                    ENVIRONMENT section of this man page for more details.
+  -M, --module-dir <directory>   Add the specified directory to the module
+                    search path. See the description of $CHPL_MODULE_PATH in
+                    the ENVIRONMENT section of this man page for more details.
 
   --[no-]print-code-size    Prints out the size of the Chapel code files named
-                    on the command line in great detail: For each code file, 
-                    first the code is echoed back to the screen, prefixing 
-                    each line with the number of lexical tokens it contains, 
+                    on the command line in great detail: For each code file,
+                    first the code is echoed back to the screen, prefixing
+                    each line with the number of lexical tokens it contains,
                     or *C* if the line only contains comments, or *B* if the
                     line is blank. Next, the total number of tokens for the
-                    file is printed. Then the number of lines is 
-                    displayed, broken down into code lines, comment-only 
-                    lines, and blank lines. Then the maximum and average 
-                    number of tokens per line is displayed. Finally, a 
+                    file is printed. Then the number of lines is
+                    displayed, broken down into code lines, comment-only
+                    lines, and blank lines. Then the maximum and average
+                    number of tokens per line is displayed. Finally, a
                     histogram of the number of tokens per line is shown.
                     After this information is printed for each file, a
                     grand total of the number of tokens across all the
@@ -64,9 +64,9 @@ OPTIONS
   --print-module-files   Prints the Chapel module source files parsed by
                     the Chapel compiler.
 
-  --[no-]print-search-dirs   Print the module search path used to resolve module 'use'
-                    statements. See the description of $CHPL_MODULE_PATH
-                    in the ENVIRONMENT section of this man page for more 
+  --[no-]print-search-dirs   Print the module search path used to resolve module
+                    'use' statements. See the description of $CHPL_MODULE_PATH
+                    in the ENVIRONMENT section of this man page for more
                     details.
 
   Parallelism Control Options
@@ -105,7 +105,7 @@ OPTIONS
   --fast            Turns off all runtime checks using --no-checks, turns
                     on --no-ieee-float, -O and --specialize, and enables all
                     compiler optimizations in the rest of this section.
- 
+
   --[no-]fast-followers   Enable [disable] the fast follower
                     optimization in which fast implementations of
                     followers will be invoked for specific leaders.
@@ -117,8 +117,10 @@ OPTIONS
   --[no-]loop-invariant-code-motion   Enable [disable] the optimization that
                     moves loop invariant code from loop runs into the loop's
                     "pre-header." By default invariant code is moved. This is
-                    currently a rather conservative pass in the sense that 
+                    currently a rather conservative pass in the sense that
                     it may not identify all code that is truly invariant.
+
+  --[no-]ignore-local-classes   Disable [enable] local classes
 
   --[no-]inline     Enable [disable] function inlining.
 
@@ -134,6 +136,11 @@ OPTIONS
   --[no-]optimize-loop-iterators   Enable [disable] optimizations to
                     aggressively optimize iterators that are defined in terms
                     of a single loop. By default this is enabled.
+
+  --[no-]vectorize                Enable [disable] generating vectorization
+                    hints for target compiler. If enabled, hints will always be
+                    generated, but the effects will vary based on the target
+                    compiler.
 
   --[no-]optimize-on-clauses   Enable [disable] optimization of on
                                clauses in which qualifying on
@@ -166,16 +173,15 @@ OPTIONS
                            scalar replacement. The default value is 8.
 
   --[no-]tuple-copy-opt   Enable [disable] the tuple copy optimization
-                          in which whole tuple copies of homogenous
+                          in which whole tuple copies of homogeneous
                           tuples are replaced with explicit assignment
                           of each tuple component.
 
   --tuple-copy-limit  Limit on the size of tuples considered for the
                       tuple copy optimization. The default value is 8.
 
-  --[no-]use-noinit               Enable [disable] ability to skip default
-                                  initialization through the keyword
-                                  noinit
+  --[no-]use-noinit   Enable [disable] ability to skip default initialization
+                      through the keyword noinit
 
   Run-time Semantic Check Options
 
@@ -198,7 +204,7 @@ OPTIONS
   --[no-]stack-checks   Enable [disable] run-time checking for stack
                     overflow.
 
-  --[no-]cast-checks   Enable [disable] run-time checks in safe_cast calls for
+  --[no-]cast-checks   Enable [disable] run-time checks in safeCast calls for
                     casts that wouldn't preserve the logical value being cast.
 
   C Code Generation Options
@@ -229,7 +235,7 @@ OPTIONS
                     additional munging in order to implement Chapel
                     semantics in C, or for other reasons.
 
-  --savec <dir>      Saves the compiler-generated C code in the specified 
+  --savec <dir>      Saves the compiler-generated C code in the specified
                     directory, creating the directory if it does not already
                     exist. This option may overwrite existing files in the
                     directory.
@@ -245,23 +251,23 @@ OPTIONS
                     flag. This flag also turns on the --cpp-lines option
                     unless compiling as a developer (for example, via --devel).
 
-  --dynamic  Use dynamic linking when generating the final binary.  If 
+  --dynamic  Use dynamic linking when generating the final binary.  If
              neither --dynamic or --static are specified, use the
              backend compiler's default.
 
-  -I, --hdr-search-path <dir>   Add dir to the back-end C compiler's search 
+  -I, --hdr-search-path <dir>   Add dir to the back-end C compiler's search
                      path for header files.
 
   --ldflags <flags>  Add the specified flags to the C compiler link line
                      when linking the generated code.
 
-  -l, --lib-linkage <library>   Specify a C library to link in on the C 
+  -l, --lib-linkage <library>   Specify a C library to link in on the C
                      compiler command line.
 
   -L, --lib-search-path <dir>   Specify a C library search path on the C
                      compiler command line.
 
-  --make <make utility>   Specify the gmake-compatible utility that should be 
+  --make <make utility>   Specify the gmake-compatible utility that should be
                     used when compiling the generated code.
 
   -O, --[no-]optimize  Causes the generated C code to be compiled with
@@ -280,7 +286,7 @@ OPTIONS
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
 
-  --static  Use static linking when generating the final binary.  If 
+  --static  Use static linking when generating the final binary.  If
              neither --static or --dynamic are specified, use the
              backend compiler's default.
 
@@ -289,7 +295,7 @@ OPTIONS
   --[no-]llvm       Use LLVM as the code generation target rather than C. See
                     $CHPL_HOME/doc/technotes/README.llvm for details.
 
-  --[no-]llvm-wide-opt   Enable [disable] LLVM wide pointer communication 
+  --[no-]llvm-wide-opt   Enable [disable] LLVM wide pointer communication
                     optimizations.
                     This option requires --llvm and packed wide pointers.
                     Packed wide pointers are enabled by setting
@@ -299,33 +305,9 @@ OPTIONS
                     for example, they might be able to hoist a 'get' out of a
                     loop. See $CHPL_HOME/doc/technotes/README.llvm for details.
 
-  Documentation Options
-
-  --[no-]docs       Create [Don't create] documents based on comments
-                    preceding symbol declarations. See
-                    $CHPL_HOME/doc/technotes/README.chpldoc for more
-                    information.
-
-  --[no-]docs-alphabetical  [Don't] Alphabetize the documentation within
-                    each lexical scope rather than using the declaration
-                    order within the code.
-
-  --docs-comment-style <string>  Specify the opening comment character
-                    sequence used to distinguish a documentation comment
-                    from a normal one (defaults to '/*' if unspecified).
-
-  --docs-dir <dirname>  Specify the directory name into which documentation
-                    should be saved (defaults to 'docs' if unspecified).
-
-  --docs-text-only  Specify that documents should use a text output file
-                    format rather than HTML.
-
-  --docs-save-sphinx <directory>  Save generated Sphinx project in
-                                  directory.
-
   Compilation Trace Options
 
-  --[no-]print-commands  Prints the system commands that the compiler 
+  --[no-]print-commands  Prints the system commands that the compiler
                     executes in order to compile the Chapel program.
 
   --[no-]print-passes    Prints the compiler passes during compilation and the
@@ -339,9 +321,9 @@ OPTIONS
                     order.
 
   --print-passes-file <filename>   Saves the compiler passes and the amount of
-                    wall clock time required for the pass to <filename>. An 
+                    wall clock time required for the pass to <filename>. An
                     error is displayed if the file cannot be opened but no
-                    recovery attempt is made. 
+                    recovery attempt is made.
 
   Miscellaneous Options
 
@@ -352,8 +334,8 @@ OPTIONS
                      questions to the Chapel team.
 
   --explain-call <call>[:<module>][:<line>]   Helps explain the function
-                     resolution process for the named function by printing 
-                     out the visible and candidate functions. Specifying 
+                     resolution process for the named function by printing
+                     out the visible and candidate functions. Specifying
                      a module name and/or line number can focus the
                      explanation to those calls within a specific module
                      or at a particular line number.
@@ -423,7 +405,7 @@ OPTIONS
   --copyright     Print the compiler's copyright information.
 
   -h, --help      Print a list of the command line options, indicating
-                  the arguments that they expect and a brief summary of their 
+                  the arguments that they expect and a brief summary of their
                   purpose.
 
   --help-env      Print the command line option help message, listing
@@ -441,9 +423,9 @@ OPTIONS
 ENVIRONMENT VARIABLES FOR OPTIONS
 
   Most compiler command-line options have an environment variable that can
-  be used to specify a default value. Use the --help-env option to list the 
-  environment variable equivalent for each option. Command-line options 
-  will always override environment variable settings in the event of a 
+  be used to specify a default value. Use the --help-env option to list the
+  environment variable equivalent for each option. Command-line options
+  will always override environment variable settings in the event of a
   conflict.
 
   If the environment variable equivalent is set to empty, it is considered
@@ -467,7 +449,7 @@ ENVIRONMENT VARIABLES FOR OPTIONS
 
 ENVIRONMENT
 
-  See $CHPL_HOME/doc/README.chplenv for detailed information about 
+  See $CHPL_HOME/doc/README.chplenv for detailed information about
   general environment variable settings, legal values, and default
   settings. Run $CHPL_HOME/util/printchplenv to view your current
   settings (as explicitly set and inferred). Some of the most
@@ -488,7 +470,7 @@ ENVIRONMENT
 
   CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
                       to build the generated C code for a Chapel program
-                      and the Chapel runtime (defaults to a best guess 
+                      and the Chapel runtime (defaults to a best guess
                       based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
                       and $CHPL_HOST_COMPILER).
 
@@ -555,7 +537,7 @@ ENVIRONMENT
                       code and throws extra warning flags when
                       compiling the generated C code.
 
-  CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be 
+  CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be
                       added to the module search path. The module search path
                       is used to satisfy module 'use' statements. In the current
                       implementation, the compiler tries to locate unresolved
@@ -563,17 +545,17 @@ ENVIRONMENT
                       that of the module. For example, if the user program
                       contains 'use foo' and the .chpl files listed by the
                       programmer on the compiler's command line do not define
-                      a module named 'foo', the compiler will search for files 
+                      a module named 'foo', the compiler will search for files
                       named 'foo.chpl' in the module search path.
 
                       The complete path that will be searched can be displayed
                       using the --print-search-dirs flag and is composed of
                       (1) the directories containing the .chpl files that were
-                      specified on the compiler command-line (in left-to-right 
-                      order), (2) all directories specified by -M flags (in 
+                      specified on the compiler command-line (in left-to-right
+                      order), (2) all directories specified by -M flags (in
                       left-to-right order), (3) all directories specified by the
                       $CHPL_MODULE_PATH environment variable, (4) the
-                      compiler's standard module search path. 
+                      compiler's standard module search path.
 
 
 BUGS

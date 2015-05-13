@@ -66,6 +66,7 @@ memleaks.graph
 studies/jacobi/jacobi.graph
 performance/elliot/no-op.graph
 performance/bharshbarg/forall-dom-range.graph
+performance/bharshbarg/arr-forall.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
@@ -102,8 +103,6 @@ studies/shootout/chameneos-redux/hannah/chameneos-redux-all.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
-# suite: SSCA2
-studies/ssca2/memory/SSCA2_mem.graph
 # suite: Parboil benchmarks
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
@@ -126,6 +125,7 @@ arrays/diten/time_iterate.graph
 arrays/diten/time_array_vs_tuple.graph
 arrays/diten/time_array_vs_ddata.graph
 performance/bharshbarg/forall-dom-range.graph
+performance/bharshbarg/arr-forall.graph
 arrays/lydia/time_access.graph
 performance/bradc/parOpEquals.graph
 performance/sungeun/copy_to_local.graph
@@ -139,6 +139,7 @@ performance/sungeun/init.graph
 distributions/robust/associative/performance/array_iter.graph
 distributions/robust/associative/performance/domain_iter.graph
 domains/bradc/domEqualityPerf.graph
+performance/thomasvandoren/matrix-multiply.graph
 # suite: Dynamic iterators
 functions/iterators/angeles/dynamic.graph
 functions/iterators/angeles/distAdaptativeWSv1.graph
@@ -190,10 +191,10 @@ reductions/diten/testSerialReductions.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
-# suite: Colorado State University 
-studies/colostate/Jacobi-1D.graph
-studies/colostate/Jacobi-2D.graph
+studies/rbc/tvandoren/RBC.graph
+# suite: Colorado State University
+studies/colostate/Jacobi1D.graph
+studies/colostate/Jacobi2D.graph
 studies/colostate/cfd-mini.graph
-studies/colostate/jacobi-unroll.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph

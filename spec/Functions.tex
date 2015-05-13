@@ -85,9 +85,13 @@ A \sntx{call-expression} is resolved to a particular function
 according to the algorithm for function resolution described
 in~\rsec{Function_Resolution}.
 
-Functions can be called using either parentheses or brackets.  The
-only difference in the call has to do with promotion and is discussed
-in~\rsec{Promotion}.
+Functions can be called using either parentheses or brackets.
+
+\begin{rationale}
+This provides an opportunity to blur the distinction between
+an array access and a function call and thereby exploit a
+possible space/time tradeoff.
+\end{rationale}
 
 Functions that are defined without parentheses must be called without
 parentheses as defined by scope resolution.  Functions without
@@ -884,7 +888,7 @@ writeln((numBits(at.type), numBits(bt.type)));
 argument \chpl{x} and returns \chpl{int(32)} if the number of bits used to
 represent \chpl{x} is less than or equal to 32, otherwise it
 returns \chpl{int(64)}.  \chpl{numBits} is a param
-procedure defined in the Types module~(\rsec{Types_standard_module}).
+procedure defined in the standard Types module.
 \end{chapelexample}
 
 

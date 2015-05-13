@@ -32,6 +32,8 @@
 #include "clangSupport.h"
 #endif
 
+void cleanupExternC();
+
 #include "files.h"
 #include "genret.h"
 

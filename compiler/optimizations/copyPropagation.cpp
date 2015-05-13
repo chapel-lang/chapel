@@ -817,7 +817,7 @@ localCopyPropagationCore(BasicBlock*          bb,
 
     std::vector<SymExpr*> symExprs;
 
-    collectSymExprsSTL(expr, symExprs);
+    collectSymExprs(expr, symExprs);
 
     propagateCopies(symExprs, available, refs);
 
@@ -921,14 +921,13 @@ static void computeKillSets(FnSymbol* fn,
     BasicBlock* bb2 = (*fn->basicBlocks)[i];
 
     // Collect up the set of symbols killed in this block in killSet.
-    // You were here!!!
     std::set<Symbol*> killSet;
     for_vector(Expr, expr, bb2->exprs)
     {
-      Vec<SymExpr*> symExprs;
+      std::vector<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
 
-      forv_Vec(SymExpr, se, symExprs)
+      for_vector(SymExpr, se, symExprs)
       {
         // Invalidate a symbol if it is redefined.
         if (isDef(se))
@@ -1220,7 +1219,12 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         }
         if (!stillAlive) {
           var->defPoint->remove();
-          defMap.get(var)->v[0]->getStmtExpr()->remove();
+          Vec<SymExpr*>* defs = defMap.get(var);
+          if (defs == NULL) {
+            INT_FATAL(var, "Expected var to be defined");
+          }
+          // Remove the first definition from the AST.
+          defs->v[0]->getStmtExpr()->remove();
         }
       } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                  rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
@@ -1309,14 +1313,14 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 
 
 size_t singleAssignmentRefPropagation(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   collect_asts(fn, asts);
 
   Vec<Symbol*> refSet;
   Vec<Symbol*> refVec;
   Vec<SymExpr*> symExprs;
   // Walk the asts in this function, and build lists of reference variables and sym exprs.
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
       if (isReferenceType(var->type)) {
         refVec.add(var);

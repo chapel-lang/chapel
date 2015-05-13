@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+"""Only run test if 'chpldoc' program is available."""
+
+from distutils.spawn import find_executable
+import re
+import socket
+
+# FIXME: (Un)skip this test in nightly chapel testing environment -- the python
+#        setup there is _very_ wonky. (thomasvandoren, 2015-03-10)
+hostname = socket.gethostname()
+pattern = re.compile(r'^chap\d\d')
+if pattern.match(hostname) is not None:
+    print(True)
+else:
+    print(not bool(find_executable('chpldoc')))

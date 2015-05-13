@@ -52,6 +52,12 @@
 #define _POSIX_C_SOURCE 200112L
 #endif
 
+#ifndef _DEFAULT_SOURCE
+// Quiets warnings about _BSD_SOURCE being deprecated in glbic >= 2.20
+// This define enables everything _BSD_SOURCE does (and more) with glibc >= 2.19
+#define _DEFAULT_SOURCE
+#endif
+
 //
 // The following breaks #include of "glob.h" with the Cray CCE
 // compiler and also complicates things for the #inclusion of dirent.h
@@ -62,12 +68,6 @@
 //#ifndef _FILE_OFFSET_BITS
 //#define _FILE_OFFSET_BITS 64
 //#endif
-
-#ifdef __GNUC__
-#define ___always_inline inline __attribute__((__always_inline__))
-#else
-#define ___always_inline inline
-#endif
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #define __STDC_CONSTANT_MACROS

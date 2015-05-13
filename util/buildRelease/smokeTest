@@ -114,3 +114,8 @@ fi
 # parallel execution, but call `make check` without it.
 make -j${num_procs} $chpl_make_args && \
     make $chpl_make_args check
+
+# Build chpldoc and make sure the chpldoc primer runs. Build chpldoc with
+# parallel execution, but call `make check-chpldoc` without it.
+make -j${num_procs} $chpl_make_args chpldoc && \
+    make $chpl_make_args check-chpldoc

@@ -83,8 +83,8 @@ case $COMPILER in
         log_info "Loading module: ${module_name}"
         module load ${module_name}
 
-        # Use cce version 8.3.0 for consistency.
-        module swap cce cce/8.3.0
+        # Use cce version 8.3.9 for consistency.
+        module swap cce cce/8.3.9
 
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
@@ -127,6 +127,11 @@ my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
 if [ "${my_arch}" = "none" ] ; then
     log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
     module load craype-shanghai
+fi
+
+if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
+    log_info "Loading fftw module."
+    module load fftw
 fi
 
 log_info "Current loaded modules:"

@@ -26,8 +26,8 @@ Built-in config vars:
       dataParMinGranularity: int(64)
                    memTrack: bool
                    memStats: bool
+             memLeaksByType: bool
                    memLeaks: bool
-              memLeaksTable: bool
                      memMax: uint(64)
                memThreshold: uint(64)
                      memLog: c_string

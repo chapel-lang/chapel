@@ -20,13 +20,13 @@
 #ifndef _IPE_EVALUATE_H_
 #define _IPE_EVALUATE_H_
 
-#include "IpeValue.h"
-
 class Expr;
-class IpeVars;
-class Symbol;
+class IpeEnv;
+class IpeValue;
 
-IpeValue ipeEvaluate(Expr*   expr, IpeVars* vars);
-IpeValue ipeEvaluate(Symbol* expr, IpeVars* vars);
+
+IpeValue evaluate    (Expr* untypedExpr,     IpeEnv* env);
+
+IpeValue evaluateExpr(Expr* streamlinedExpr, IpeEnv* env);
 
 #endif

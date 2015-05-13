@@ -208,17 +208,18 @@ ForLoop::~ForLoop()
 ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
-  SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  ForLoop*   retval    = new ForLoop();
+  SymbolMap* map            = (mapRef != 0) ? mapRef : &localMap;
+  ForLoop*   retval         = new ForLoop();
 
-  retval->astloc         = astloc;
-  retval->blockTag       = blockTag;
+  retval->astloc            = astloc;
+  retval->blockTag          = blockTag;
 
-  retval->mBreakLabel    = mBreakLabel;
-  retval->mContinueLabel = mContinueLabel;
+  retval->mBreakLabel       = mBreakLabel;
+  retval->mContinueLabel    = mContinueLabel;
+  retval->mOrderIndependent = mOrderIndependent;
 
-  retval->mIndex         = mIndex->copy(map, true),
-  retval->mIterator      = mIterator->copy(map, true);
+  retval->mIndex            = mIndex->copy(map, true),
+  retval->mIterator         = mIterator->copy(map, true);
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));

@@ -1,0 +1,15 @@
+Module: methods.doc
+   Class: fullOfMethods
+      proc commentless()
+      proc hasComment()
+         This is just a normal method with a comment.  I shouldn't
+         need to test various other forms of methods, because those
+         are tested elsewhere 
+
+   Record: fullOfMethodsToo
+      proc commentless()
+      proc hasComment()
+         This is just a normal method with a comment.  I shouldn't
+         need to test various other forms of methods, because those
+         are tested elsewhere 
+

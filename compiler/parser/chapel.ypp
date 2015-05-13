@@ -214,6 +214,7 @@
   void yyerror(YYLTYPE*       ignored,
                ParserContext* context,
                const char*    str) {
+    // TODO -- should this begin with error:
     if (!chplParseString) {
       const char* yyText = yyget_text(context->scanner);
 
@@ -698,6 +699,8 @@ enum_ls:
       $1->sym->type = $$;
       $$->constants.insertAtTail($1);
       $$->defaultValue = $1->sym;
+      $$->doc = context->latestComment;
+      context->latestComment = NULL;
     }
 | enum_ls TCOMMA
     {

@@ -9,6 +9,6 @@ config var filename = "";
 var freedInt = chpl_mem_allocMany(1000, numBytes(int(64)), 0, linenum, filename.c_str());
 var unfreedFloat = chpl_mem_allocMany(1000, numBytes(real(64)), 0, linenum, filename.c_str());
 
-printMemTable(2000);
+printMemAllocs(2000);
 chpl_mem_free(freedInt, linenum, filename.c_str());
-printMemTable(2000);
+printMemAllocs(2000);

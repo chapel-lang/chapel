@@ -1,6 +1,0 @@
-## The basic case goes here
-fftw3.h -I$FFTW_DIR/include -L$FFTW_DIR/lib -lfftw3
-#testFFTW.good
-## Multithreaded support
-fftw3.h -susethread=true -I$FFTW_DIR/include -L$FFTW_DIR/lib -lfftw3 -lfftw3_threads -lpthread
-#testFFTW.good

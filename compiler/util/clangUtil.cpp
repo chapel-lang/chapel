@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,11 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
+
+#include "clangUtil.h"
+
 #include <inttypes.h>
-  
+
 #include <cctype>
 #include <cstring>
 #include <cstdio>
@@ -71,7 +74,7 @@ using namespace llvm;
 
 // TODO - add functionality to clang so that we don't
 // have to have what are basically copies of
-// ModuleBuilder.cpp 
+// ModuleBuilder.cpp
 // ( and BackendUtil.cpp but we used PassManagerBuilder::addGlobalExtension)
 //
 // This one is not normally included by clang clients
@@ -176,26 +179,28 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     llvm::LLVMContext& cx = info->module->getContext();
     // Create the TBAA root node
     {
-      llvm::Value* Ops[1];
+      LLVM_METADATA_OPERAND_TYPE* Ops[1];
       Ops[0] = llvm::MDString::get(cx, "Chapel types");
       info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
     }
     // Create type for ftable
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(cx, "Chapel ftable");
       Ops[1] = info->tbaaRootNode;
       // and mark it as constant
-      Ops[2] = ConstantInt::get(llvm::Type::getInt64Ty(cx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
 
       info->tbaaFtableNode = llvm::MDNode::get(cx, Ops);
     }
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(cx, "Chapel vmtable");
       Ops[1] = info->tbaaRootNode;
       // and mark it as constant
-      Ops[2] = ConstantInt::get(llvm::Type::getInt64Ty(cx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
 
       info->tbaaVmtableNode = llvm::MDNode::get(cx, Ops);
     }
@@ -368,6 +373,9 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
           // The simple code below doesn't quite manage.
           //ret = new VarSymbol(astr(idName.c_str()), dtUnknown);
           //ret->addFlag(FLAG_EXTERN);
+          // We need to handle macros that wrap functions
+          // that are defined after the macros if we want
+          // GMP to work...
         }
       }
       break;
@@ -564,18 +572,28 @@ class CCodeGenConsumer : public ASTConsumer {
      }
 };
 
+
+#if HAVE_LLVM_VER >= 36
+#define CREATE_AST_CONSUMER_RETURN_TYPE std::unique_ptr<ASTConsumer>
+#else
+#define CREATE_AST_CONSUMER_RETURN_TYPE ASTConsumer*
+#endif
+
 class CCodeGenAction : public ASTFrontendAction {
  public:
   CCodeGenAction() { }
  protected:
-  virtual ASTConsumer *CreateASTConsumer(CompilerInstance &CI,
-                                                 StringRef InFile);
+  virtual CREATE_AST_CONSUMER_RETURN_TYPE CreateASTConsumer(
+      CompilerInstance &CI, StringRef InFile);
 };
 
-ASTConsumer *
-CCodeGenAction::CreateASTConsumer(CompilerInstance &CI,
-                                  StringRef InFile) {
+CREATE_AST_CONSUMER_RETURN_TYPE CCodeGenAction::CreateASTConsumer(
+    CompilerInstance &CI, StringRef InFile) {
+#if HAVE_LLVM_VER >= 36
+  return std::unique_ptr<ASTConsumer>(new CCodeGenConsumer());
+#else
   return new CCodeGenConsumer();
+#endif
 };
 
 static void cleanupClang(GenInfo* info)
@@ -637,9 +655,25 @@ void setupClang(GenInfo* info, std::string mainFile)
     info->codegenOptions.OptimizationLevel = 3;
   }
 
-
   {
     // Make sure we include clang's internal header dir
+#if HAVE_LLVM_VER >= 34
+    SmallString<128> P;
+    P = clangexe;
+    // Remove /clang from foo/bin/clang
+    P = sys::path::parent_path(P);
+    // Remove /bin   from foo/bin
+    P = sys::path::parent_path(P);
+
+    if( ! P.equals("") ) {
+      // Get foo/lib/clang/<version>/
+      sys::path::append(P, "lib");
+      sys::path::append(P, "clang");
+      sys::path::append(P, CLANG_VERSION_STRING);
+    }
+    CI->getHeaderSearchOpts().ResourceDir = P.str();
+    sys::path::append(P, "include");
+#else
     sys::Path P(clangexe);
     if (!P.isEmpty()) {
       P.eraseComponent();  // Remove /clang from foo/bin/clang
@@ -653,6 +687,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     CI->getHeaderSearchOpts().ResourceDir = P.str();
     sys::Path P2(P);
     P.appendComponent("include");
+#endif
 #if HAVE_LLVM_VER >= 33
     CI->getHeaderSearchOpts().AddPath(
         P.str(), frontend::System,false, false);
@@ -701,7 +736,13 @@ void finishCodegenLLVM() {
 
   // Verify the LLVM module.
   if( developer ) {
-    if(verifyModule(*info->module,PrintMessageAction)){
+    bool problems;
+#if HAVE_LLVM_VER >= 35
+    problems = verifyModule(*info->module, &errs());
+#else
+    problems = verifyModule(*info->module, PrintMessageAction);
+#endif
+    if(problems) {
       INT_FATAL("LLVM module verification failed");
     }
   }
@@ -718,7 +759,14 @@ void prepareCodegenLLVM()
   // Set up the optimizer pipeline.
   // Start with registering info about how the
   // target lays out data structures.
+#if HAVE_LLVM_VER >= 36
+  // We already set the data layout in setupClangContext
+  fpm->add(new DataLayoutPass());
+#elif HAVE_LLVM_VER >= 35
+  fpm->add(new DataLayoutPass(info->module));
+#else
   fpm->add(new DataLayout(info->module));
+#endif
 
   if( fFastFlag ) {
     PMBuilder.OptLevel = 2;
@@ -780,36 +828,50 @@ void runClang(const char* just_parse_filename) {
              so that we could automatically set CHPL_HOME. */
   std::string home(CHPL_HOME);
   std::string compileline = home + "/util/config/compileline";
-  if( debugCCode ) compileline += " DEBUG=1";
-  if( optimizeCCode ) compileline += " OPTIMIZE=1";
-  std::string readargsfrom = compileline +
-                              " --llvm-install-dir --includes-and-defines";
+  std::string one = "1";
+  std::string zero = "0";
+  compileline += " COMP_GEN_WARN=" + (ccwarnings?one:zero);
+  compileline += " COMP_GEN_DEBUG=" + (debugCCode?one:zero);
+  compileline += " COMP_GEN_OPT=" + (optimizeCCode?one:zero);
+  compileline += " COMP_GEN_SPECIALIZE=" + (specializeCCode?one:zero);
+  compileline += " COMP_GEN_IEEE_FLOAT=" + (fieeefloat?one:zero);
+  std::string readargsfrom;
+
+  if( just_parse_filename ) {
+    // We're handling an extern block and not using the LLVM backend.
+    // Don't change CHPL_TARGET_COMPILER or ask for any compiler-specific
+    // C flags. Just get the neccesary includes and defines.
+    readargsfrom = compileline + " --llvm-install-dir"
+                                 " --clang-sysroot-arguments"
+                                 " --includes-and-defines";
+  } else {
+    // We're parsing extern blocks AND any parts of the runtime
+    // in order to prepare for an --llvm compilation.
+    // Use compiler-specific flags for clang-included.
+    readargsfrom = compileline + " --llvm"
+                                 " --llvm-install-dir"
+                                 " --clang-sysroot-arguments"
+                                 " --cflags"
+                                 " --includes-and-defines";
+  }
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
   std::vector<std::string> clangOtherArgs;
   std::string clangInstallDir;
 
-  // Add cflags,etc that used to be put into the Makefile
-  // (see codegen_makefile in files.cpp)
-  if (ccwarnings) {
-    // Could add warning arguments here. to clangCCArgs
-  }
+  // Gather information from readargsfrom into clangArgs.
+  readArgsFromCommand(readargsfrom.c_str(), args);
+  if( args.size() < 1 ) USR_FATAL("Could not find runtime dependencies for --llvm build");
 
-  if (debugCCode) {
-    clangCCArgs.push_back("-g");
-  }
+  clangInstallDir = args[0];
 
-  if (optimizeCCode) {
-    clangCCArgs.push_back("-O3");
+  // Note that these CC arguments will be saved in info->clangCCArgs
+  // and will be used when compiling C files as well.
+  for( size_t i = 1; i < args.size(); ++i ) {
+    clangCCArgs.push_back(args[i]);
   }
-
-  if (fieeefloat) {
-    // believe clang is always ieee float
-  } else {
-    clangCCArgs.push_back("-ffast-math");
-  }
-
+ 
   forv_Vec(const char*, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
@@ -822,13 +884,6 @@ void runClang(const char* just_parse_filename) {
   // libFlag and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
-
-  // Gather information from readargsfrom into clangArgs.
-  readArgsFromCommand(readargsfrom.c_str(), args);
-  clangInstallDir = args[0];
-  for( size_t i = 1; i < args.size(); ++i ) {
-    clangOtherArgs.push_back(args[i]);
-  }
 
   // Always include sys_basic because it might change the
   // behaviour of macros!
@@ -933,6 +988,11 @@ void saveExternBlock(ModuleSymbol* module, const char* extern_code)
   if( ! gAllExternCode.filename ) {
     openCFile(&gAllExternCode, "extern-code", "c");
     INT_ASSERT(gAllExternCode.fptr);
+
+    // Allow code in extern block to use malloc/calloc/realloc/free
+    // Note though that e.g. strdup or other library routines that
+    // allocate memory might still be an issue...
+    fprintf(gAllExternCode.fptr, "#include \"chpl-mem-no-warning-macros.h\"\n");
   }
 
   if( ! module->extern_info ) {
@@ -1420,13 +1480,21 @@ void setupForGlobalToWide(void) {
   }
   ginfo->builder->CreateRet(ret);
 
-  llvm::verifyFunction(*fn);
+#if HAVE_LLVM_VERS >= 35
+  llvm::verifyFunction(*fn, &errs());
+#endif
 
   info->preservingFn = fn;
 }
 
 
 void makeBinaryLLVM(void) {
+#if HAVE_LLVM_VER >= 36
+  std::error_code errorInfo;
+#else
+  std::string errorInfo;
+#endif
+
   GenInfo* info = gGenInfo;
 
   std::string moduleFilename = genIntermediateFilename("chpl__module.bc");
@@ -1434,21 +1502,27 @@ void makeBinaryLLVM(void) {
 
   if( saveCDir[0] != '\0' ) {
     // Save the generated LLVM before optimization.
-    std::string errorInfo;
-    OwningPtr<tool_output_file> output (
-        new tool_output_file(preOptFilename.c_str(),
+    tool_output_file output (preOptFilename.c_str(),
                              errorInfo,
-                             raw_fd_ostream::F_Binary));
-    WriteBitcodeToFile(info->module, output->os());
-    output->keep();
-    output->os().flush();
+#if HAVE_LLVM_VER >= 34
+                             sys::fs::F_None
+#else
+                             raw_fd_ostream::F_Binary
+#endif
+                             );
+    WriteBitcodeToFile(info->module, output.os());
+    output.keep();
+    output.os().flush();
   }
 
-  std::string errorInfo;
-  OwningPtr<tool_output_file> output (
-      new tool_output_file(moduleFilename.c_str(),
+  tool_output_file output (moduleFilename.c_str(),
                            errorInfo,
-                           raw_fd_ostream::F_Binary));
+#if HAVE_LLVM_VER >= 34
+                             sys::fs::F_None
+#else
+                             raw_fd_ostream::F_Binary
+#endif
+                           );
  
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -1461,18 +1535,26 @@ void makeBinaryLLVM(void) {
 
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
-                    info->module, Backend_EmitBC, &output->os());
-  output->keep();
-  output->os().flush();
+#if HAVE_LLVM_VER >= 35
+                    info->Ctx->getTargetInfo().getTargetDescription(),
+#endif
+                    info->module, Backend_EmitBC, &output.os());
+  output.keep();
+  output.os().flush();
 
 
   std::string options = "";
 
   std::string home(CHPL_HOME);
   std::string compileline = info->compileline;
-  compileline += " --llvm-install-dir --main.o --libraries";
+  compileline += " --llvm"
+                 " --llvm-install-dir"
+                 " --main.o"
+                 " --clang-sysroot-arguments"
+                 " --libraries";
   std::vector<std::string> args;
   readArgsFromCommand(compileline.c_str(), args);
+  INT_ASSERT(args.size() >= 1);
 
   std::string clangInstall = args[0];
   std::string maino = args[1];

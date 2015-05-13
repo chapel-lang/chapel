@@ -20,9 +20,11 @@
 #include "build.h"
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "baseAST.h"
 #include "config.h"
 #include "expr.h"
+#include "files.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -38,21 +40,21 @@ checkControlFlow(Expr* expr, const char* context) {
   Vec<const char*> labelSet; // all labels in expr argument
   Vec<BaseAST*> loopSet;     // all asts in a loop in expr argument
   Vec<BaseAST*> innerFnSet;  // all asts in a function in expr argument
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   collect_asts(expr, asts);
 
   //
   // compute labelSet and loopSet
   //
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (LabelSymbol* ls = toLabelSymbol(def->sym))
         labelSet.set_add(ls->name);
       else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (!innerFnSet.set_in(fn)) {
-          Vec<BaseAST*> innerAsts;
+          std::vector<BaseAST*> innerAsts;
           collect_asts(fn, innerAsts);
-          forv_Vec(BaseAST, ast, innerAsts) {
+          for_vector(BaseAST, ast, innerAsts) {
             innerFnSet.set_add(ast);
           }
         }
@@ -62,9 +64,9 @@ checkControlFlow(Expr* expr, const char* context) {
         if (block->userLabel != NULL) {
           labelSet.set_add(block->userLabel);
         }
-        Vec<BaseAST*> loopAsts;
+        std::vector<BaseAST*> loopAsts;
         collect_asts(block, loopAsts);
-        forv_Vec(BaseAST, ast, loopAsts) {
+        for_vector(BaseAST, ast, loopAsts) {
           loopSet.set_add(ast);
         }
       }
@@ -74,18 +76,17 @@ checkControlFlow(Expr* expr, const char* context) {
   //
   // check for illegal control flow
   //
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
+  for_vector(BaseAST, ast1, asts) {
+    if (CallExpr* call = toCallExpr(ast1)) {
       if (innerFnSet.set_in(call))
         continue; // yield or return is in nested function/iterator
       if (call->isPrimitive(PRIM_RETURN)) {
         USR_FATAL_CONT(call, "return is not allowed in %s", context);
       } else if (call->isPrimitive(PRIM_YIELD)) {
-        if (!strcmp(context, "begin statement") ||
-            !strcmp(context, "yield statement"))
+        if (!strcmp(context, "begin statement"))
           USR_FATAL_CONT(call, "yield is not allowed in %s", context);
       }
-    } else if (GotoStmt* gs = toGotoStmt(ast)) {
+    } else if (GotoStmt* gs = toGotoStmt(ast1)) {
       if (labelSet.set_in(gs->getName()))
         continue; // break or continue target is in scope
       if (toSymExpr(gs->label) && toSymExpr(gs->label)->var == gNil && loopSet.set_in(gs))
@@ -162,16 +163,33 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   return stmt;
 }
 
-static Expr* convertStringLiteral(Expr *e) {
-  if (SymExpr* s = toSymExpr(e)) {
-    VarSymbol *v = toVarSymbol(s->var);
-    INT_ASSERT(v);
-    if (v->immediate &&
-        v->immediate->const_kind==CONST_KIND_STRING) {
-      return new CallExpr("toString", s);
+
+//
+// A helper function that's useful in a few places in this file to
+// conditionally convert an Expr to a 'const char*' in the event that
+// it's an immediate string.
+//
+static const char* toImmediateString(Expr* expr) {
+  if (SymExpr* se = toSymExpr(expr)) {
+    if (VarSymbol* var = toVarSymbol(se->var)) {
+      if (var->isImmediate()) {
+        Immediate* imm = var->immediate;
+        if (imm->const_kind == CONST_KIND_STRING) {
+          return imm->v_string;
+        }
+      }
     }
   }
-  return e;
+  return NULL;
+}
+
+
+static Expr* convertStringLiteral(Expr *e) {
+  if (toImmediateString(e) != NULL) {
+    return new CallExpr("toString", e);
+  } else {
+    return e;
+  }
 }
 
 static void convertStringLiteralArgList(CallExpr* call) {
@@ -378,11 +396,58 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
   }
 }
 
+//
+// Given a string literal argument from a 'use' statement, process
+// that argument.  We assume it's either a "-llib" flag,
+// or a source filename like "foo.h", "foo.c", "foo.o", etc.  
+//
+// - For the former, pass to addLibInfo(), the same function that
+//   handles command line -l flags.
+//
+// - Otherwise, assume it's the latter and pass it to our source file
+//   handler (which itself handles cases it doesn't recognize).
+//
+static void processStringInUseStmt(const char* str) {
+  if (strncmp(str, "-l", 2) == 0) {
+    addLibInfo(str);
+  } else {
+    addSourceFile(str);
+  }
+}
 
-BlockStmt* buildUseStmt(CallExpr* modules) {
+
+//
+// Build a 'use' statement
+//
+BlockStmt* buildUseStmt(CallExpr* args) {
   BlockStmt* list = NULL;
-  for_actuals(expr, modules)
-    list = buildUseList(expr->remove(), list);
+
+  //
+  // Iterate over the expressions being 'use'd, processing them
+  //
+  for_actuals(expr, args) {
+    Expr* useArg = expr->remove();
+
+    //
+    // if this is a string argument to 'use', process it
+    //
+    if (const char* str = toImmediateString(useArg)) {
+      processStringInUseStmt(str);
+    } else {
+      //
+      // Otherwise, handle it in the traditional way
+      //
+      list = buildUseList(useArg, list);
+    }
+  }
+
+  //
+  // If all of them are consumed, replace the use statement by a no-op
+  //
+  if (list == NULL) {
+    list = buildChapelStmt(new CallExpr(PRIM_NOOP));
+  }
+  
   return list;
 }
 
@@ -493,22 +558,23 @@ ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filena
 }
 
 
+
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
   if (exprs->argList.length == 0)
     INT_FATAL("primitive has no name");
   Expr* expr = exprs->get(1);
   expr->remove();
-  SymExpr* symExpr = toSymExpr(expr);
-  if (!symExpr)
-    INT_FATAL(expr, "primitive has no name");
-  VarSymbol* var = toVarSymbol(symExpr->var);
-  if (!var || !var->immediate || var->immediate->const_kind != CONST_KIND_STRING)
+  if (const char* primname = toImmediateString(expr)) {
+    if (PrimitiveOp* prim = primitives_map.get(primname)) {
+      return new CallExpr(prim, exprs);
+    } else {
+      INT_FATAL(expr, "primitive not found '%s'", primname);
+    }
+  } else {
     INT_FATAL(expr, "primitive with non-literal string name");
-  PrimitiveOp* prim = primitives_map.get(var->immediate->v_string);
-  if (!prim)
-    INT_FATAL(expr, "primitive not found '%s'", var->immediate->v_string);
-  return new CallExpr(prim, exprs);
+  }
+  return NULL;
 }
 
 
@@ -2102,7 +2168,13 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
       if (!de->init) {
         Symbol* vs = de->sym;
         PrimitiveType* pt = new PrimitiveType(NULL);
-        DefExpr* newde = new DefExpr(new TypeSymbol(vs->name, pt));
+
+        TypeSymbol* ts = new TypeSymbol(vs->name, pt);
+        if (VarSymbol* theVs = toVarSymbol(vs)) {
+          ts->doc = theVs->doc;
+        }
+        DefExpr* newde = new DefExpr(ts);
+
         de->replace(newde);
         de = newde;
       }

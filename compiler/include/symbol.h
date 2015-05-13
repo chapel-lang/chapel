@@ -299,6 +299,8 @@ class TypeSymbol : public Symbol {
   // This function is used to code generate the LLVM TBAA metadata
   // after all of the types have been defined.
   void codegenMetadata();
+
+  const char* doc;
 };
 
 /******************************** | *********************************
@@ -482,8 +484,6 @@ private:
 
   // Used when documenting submodules.
   std::string          moduleNamePrefix;
-;
-
 };
 
 /******************************** | *********************************

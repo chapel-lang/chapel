@@ -497,11 +497,9 @@ typedef bool qio_bool;
 { \
   /* check for integer overflow or negative count */ \
   if( count >= 0 && \
-      (size_t) count <= (SIZE_MAX / sizeof(type)) ) { \
+      (uint64_t) count <= (SIZE_MAX / sizeof(type)) ) { \
     /* check that count is positive and small enough to go on the stack */ \
-    if( (ssize_t) count >= 0 && \
-        (ssize_t) count <= SSIZE_MAX && \
-        (size_t) count <= (sizeof(onstack)/sizeof(type)) ) { \
+    if( (size_t) count <= (sizeof(onstack)/sizeof(type)) ) { \
       ptr = onstack; \
     } else { \
       ptr = (type*) qio_malloc(count*sizeof(type)); \
@@ -521,9 +519,38 @@ typedef bool qio_bool;
   } \
 }
 
-#define VOID_PTR_DIFF(a,b) (((intptr_t) (a)) - ((intptr_t) (b)))
-#define VOID_PTR_ADD(ptr,amt) ((void*)(((char*) (ptr)) + (amt)))
-#define VOID_PTR_ALIGN(ptr,align) (((uintptr_t)ptr) & (align - 1))
+/* Returns the difference between two pointers,
+   but returns 0 if either pointer is NULL.
+ */
+static inline intptr_t qio_ptr_diff(void* a, void* b)
+{
+  if( a == NULL || b == NULL ) return 0;
+  return ((intptr_t)a) - ((intptr_t)b);
+}
+
+/* Returns 1 if there is space for nbytes between cur and end
+   (cur might represent a current buffer position and end might
+    represent the boundary.)
+   Takes into account the possibility that cur or end might be NULL;
+   returns 0 if either is NULL and nbytes > 0.
+    */
+static inline int qio_space_in_ptr_diff(intptr_t nbytes, void* end, void* cur)
+{
+  return nbytes <= qio_ptr_diff(end,cur);
+}
+
+static inline void* qio_ptr_add(void* ptr, intptr_t amt)
+{
+  return ((void*)(((char*) (ptr)) + (amt)));
+}
+
+/* Returns the number of bytes between ptr and its alignment.
+   align must be a power of 2.
+ */
+static inline uintptr_t qio_ptr_align(void* ptr, uintptr_t align)
+{
+ return (((uintptr_t)ptr) & (align - 1));
+}
 
 #ifdef __cplusplus
 } // end extern "C"

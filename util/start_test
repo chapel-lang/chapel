@@ -441,6 +441,15 @@
 # is not updated, it will fail forever with "Syntax Error" and never
 # pass.
 #
+# .suppressif files work like a combination of .skipif and .future.
+# The .suppressif file is meant to indicate that a test fails in
+# some configurations for reasons outside of the control of the Chapel
+# compiler.
+# The first line of a .suppressif should be a comment (starting with #)
+# describing the issue. The rest of the file should indicate the
+# configuration in which the error is to be suppressed. A .bad
+# file can be provided.
+#
 # If the test-writer wants to redirect standard input from a file,
 # they may do so by supplying a .stdin file with the same base
 # name as the test itself (e.g., if mytest.stdin exists, it will
@@ -715,7 +724,6 @@ set perflabel = ""
 set perfkeys  = ""
 set compperformance = 0
 set compperformancedescription = ""
-set numtrials = 1
 set oldgraphs = 0
 set gengraphs = 0
 set graphsdisprange = 1
@@ -885,7 +893,7 @@ while ( $#argv > 0 )
     case --num-trials:
     case -num-trials:
         shift
-        set numtrials = $argv[1]
+        setenv CHPL_TEST_NUM_TRIALS $argv[1]
         shift
         breaksw
     case --perflabel:
@@ -1183,8 +1191,11 @@ else
     echo \[compiler performance tests: OFF\] |& tee -a $logfile
 endif
 
-echo \[number of trials: "$numtrials"\] |& $tee -a $logfile
-setenv CHPL_TEST_NUM_TRIALS "$numtrials"
+if (! $?CHPL_TEST_NUM_TRIALS) then
+    setenv CHPL_TEST_NUM_TRIALS "1"
+endif
+
+echo \[number of trials: "$CHPL_TEST_NUM_TRIALS"\] |& $tee -a $logfile
 
 if ($gengraphs) then
     echo \[performance graph generation: ON\] |& $tee -a $logfile
@@ -1715,13 +1726,18 @@ foreach testType ($testTypes)
                     if (-e $skipfilen) then
                         if (-x $skipfilen) then
                             set pruneif = `$skipfilen`
+                            if ( $pruneif == "1" || $pruneif == "True" ) then
+                                set pruneif = "1"
+                            else
+                                set pruneif = "0"
+                            endif
                         else
                             set pruneif = `$utildir/test/testEnv $skipfilen`
                         endif
                     endif
                     cd ..
                 end
-                if ( $pruneif == "1" || $pruneif == "True" ) then
+                if ( $pruneif == "1" ) then
                     echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
                     continue
                 endif
@@ -1865,6 +1881,7 @@ echo " " |& $tee -a $logfile
 
 # Output grep to a temp file, don't want to infinite loop
 set futuremarker = "^Future"
+set suppressmarker = "^Suppress"
 set errormarker = "^\[Error"
 set warningmarker = "^\[Warning"
 if ($performance == 0 && $gengraphs) then
@@ -1886,6 +1903,7 @@ if ($clean_only == 0) then
     endif
     grep "$errormarker" $logfile.summary
 
+    grep "$suppressmarker" $logfile |& $tee -a $logfile.summary
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
     grep "$warningmarker" $logfile |& $tee -a $logfile.summary
 

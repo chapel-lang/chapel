@@ -66,7 +66,7 @@ module DefaultRectangular {
   }
   
   //
-  // Replicated copies are set up in initOnLocales() during locale
+  // Replicated copies are set up in chpl_initOnLocales() during locale
   // model initialization
   //
   pragma "private" var defaultDist = new dmap(new DefaultDist());
@@ -108,11 +108,14 @@ module DefaultRectangular {
         compilerError("index type mismatch in domain assignment");
       ranges = x;
     }
-  
+
     iter these_help(param d: int) {
-      if d == rank - 1 {
+      if d == rank {
         for i in ranges(d) do
-          for j in ranges(rank) do
+          yield i;
+      } else if d == rank - 1 {
+        for i in ranges(d) do
+          for j in these_help(rank) do
             yield (i, j);
       } else {
         for i in ranges(d) do
@@ -122,9 +125,12 @@ module DefaultRectangular {
     }
   
     iter these_help(param d: int, block) {
-      if d == block.size - 1 {
+      if d == block.size {
         for i in block(d) do
-          for j in block(block.size) do
+          yield i;
+      } else if d == block.size - 1 {
+        for i in block(d) do
+          for j in these_help(block.size, block) do
             yield (i, j);
       } else {
         for i in block(d) do
@@ -132,7 +138,7 @@ module DefaultRectangular {
             yield (i, (...j));
       }
     }
-  
+
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
@@ -143,6 +149,91 @@ module DefaultRectangular {
       } else {
         for i in these_help(1) do
           yield i;
+      }
+    }
+
+    iter these(param tag: iterKind,
+               tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity,
+               offset=createTuple(rank, idxType, 0:idxType))
+      where tag == iterKind.standalone && !localeModelHasSublocales {
+      if debugDefaultDist {
+        writeln("*** In domain standalone code:");
+      }
+      const numTasks = if tasksPerLocale == 0 then here.maxTaskPar
+                       else tasksPerLocale;
+      if debugDefaultDist {
+        writeln("    numTasks=", numTasks, " (", ignoreRunning,
+                "), minIndicesPerTask=", minIndicesPerTask);
+      }
+      const (numChunks, parDim) = if __primitive("task_get_serial") then
+                                  (1, -1) else
+                                  _computeChunkStuff(numTasks,
+                                                     ignoreRunning,
+                                                     minIndicesPerTask,
+                                                     ranges);
+      if debugDefaultDist {
+        writeln("    numChunks=", numChunks, " parDim=", parDim,
+                " ranges(", parDim, ").length=", ranges(parDim).length);
+      }
+
+      if debugDataPar {
+        writeln("### numTasksPerLoc = ", numTasks, "\n" +
+                "### ignoreRunning = ", ignoreRunning, "\n" +
+                "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+                "### nranges = ", ranges);
+      }
+
+      if numChunks <= 1 {
+        for i in these_help(1) {
+          yield i;
+        }
+      } else {
+        var locBlock: rank*range(idxType);
+        for param i in 1..rank {
+          locBlock(i) = offset(i)..#(ranges(i).length);
+        }
+        if debugDefaultDist {
+          writeln("*** DI: locBlock = ", locBlock);
+        }
+        coforall chunk in 0..#numChunks {
+          var followMe: rank*range(idxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                        numChunks, chunk,
+                                        locBlock(parDim).high,
+                                        locBlock(parDim).low,
+                                        locBlock(parDim).low);
+          followMe(parDim) = lo..hi;
+          if debugDefaultDist {
+            writeln("*** DI[", chunk, "]: followMe = ", followMe);
+          }
+          var block: rank*range(idxType=idxType, stridable=stridable);
+          if stridable {
+            type strType = chpl__signedType(idxType);
+            for param i in 1..rank {
+              const rStride = ranges(i).stride:strType;
+              if ranges(i).stride > 0 {
+                const low = ranges(i).alignedLow + followMe(i).low*rStride,
+                      high = ranges(i).alignedLow + followMe(i).high*rStride,
+                      stride = rStride:idxType;
+                block(i) = low..high by stride;
+              } else {
+                const low = ranges(i).alignedHigh + followMe(i).high*rStride,
+                      high = ranges(i).alignedHigh + followMe(i).low*rStride,
+                      stride = rStride:idxType;
+                block(i) = low..high by stride;
+              }
+            }
+          } else {
+            for  param i in 1..rank do
+              block(i) = ranges(i).low+followMe(i).low:idxType..ranges(i).low+followMe(i).high:idxType;
+          }
+          for i in these_help(1, block) {
+            yield i;
+          }
+        }
       }
     }
 
@@ -534,7 +625,9 @@ module DefaultRectangular {
     var str: rank*chpl__signedType(idxType);
     var origin: idxType;
     var factoredOffs: idxType;
+    pragma "local field"
     var data : _ddata(eltType);
+    pragma "local field"
     var shiftedData : _ddata(eltType);
     var noinit_data: bool = false;
     //var numelm: int = -1; // for correctness checking
@@ -626,7 +719,21 @@ module DefaultRectangular {
           yield dsiAccess(i);
       }
     }
-  
+
+    iter these(param tag: iterKind,
+               tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity)
+      ref where tag == iterKind.standalone && !localeModelHasSublocales {
+      if debugDefaultDist {
+        writeln("*** In array standalone code");
+      }
+      for i in dom.these(tag, tasksPerLocale,
+                         ignoreRunning, minIndicesPerTask) {
+        yield dsiAccess(i);
+      }
+    }
+ 
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -764,7 +871,11 @@ module DefaultRectangular {
     }
   
     proc dsiReindex(d: DefaultRectangularDom) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
+      var alias : DefaultRectangularArr(eltType=eltType, rank=d.rank,
+                                        idxType=d.idxType,
+                                        stridable=d.stridable);
+      on this {
+      alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
                                            dom=d, noinit_data=true,
@@ -777,6 +888,7 @@ module DefaultRectangular {
       alias.origin = origin:d.idxType;
       alias.computeFactoredOffs();
       alias.initShiftedData();
+      }
       return alias;
     }
     
@@ -800,32 +912,41 @@ module DefaultRectangular {
     }
   
     proc dsiSlice(d: DefaultRectangularDom) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
-                                           idxType=idxType,
-                                           stridable=d.stridable,
-                                           dom=d, noinit_data=true);
-      alias.data = data;
-      //alias.numelm = numelm;
-      alias.blk = blk;
-      alias.str = str;
-      alias.origin = origin;
-      for param i in 1..rank {
-        alias.off(i) = d.dsiDim(i).low;
-        // NOTE: Not bothering to check to see if the abs(..) expression
-        //  can fit into idxType
-        if str(i) > 0 {
-          alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i):idxType;
-        } else {
-          alias.origin -= blk(i) * (d.dsiDim(i).low - off(i)) / abs(str(i)):idxType;
+      var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
+                                        idxType=idxType,
+                                        stridable=d.stridable);
+      on this {
+        alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
+                                             idxType=idxType,
+                                             stridable=d.stridable,
+                                             dom=d, noinit_data=true);
+        alias.data = data;
+        //alias.numelm = numelm;
+        alias.blk = blk;
+        alias.str = str;
+        alias.origin = origin;
+        for param i in 1..rank {
+          alias.off(i) = d.dsiDim(i).low;
+          // NOTE: Not bothering to check to see if the abs(..) expression
+          //  can fit into idxType
+          if str(i) > 0 {
+            alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i):idxType;
+          } else {
+            alias.origin -= blk(i) * (d.dsiDim(i).low - off(i)) / abs(str(i)):idxType;
+          }
         }
+        alias.computeFactoredOffs();
+        alias.initShiftedData();
       }
-      alias.computeFactoredOffs();
-      alias.initShiftedData();
       return alias;
     }
   
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
+      var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
+                                        idxType=idxType,
+                                        stridable=newStridable);
+      on this {
+      alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                            idxType=idxType,
                                            stridable=newStridable,
                                            dom=d, noinit_data=true);
@@ -846,11 +967,13 @@ module DefaultRectangular {
       }
       alias.computeFactoredOffs();
       alias.initShiftedData();
+      }
       return alias;
     }
   
     proc dsiReallocate(d: domain) {
       if (d._value.type == dom.type) {
+        on this {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
@@ -872,6 +995,7 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
         delete copy;
+        }
       } else {
         halt("illegal reallocation");
       }
@@ -1040,6 +1164,9 @@ module DefaultRectangular {
       Blo(i) = Bdims(i).first;
   
     const len = dom.dsiNumIndices:int(32);
+
+    if len == 0 then return;
+
     if debugBulkTransfer {
       pragma "no prototype"
       extern proc sizeof(type x): int;

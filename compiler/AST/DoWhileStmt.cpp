@@ -111,6 +111,8 @@ GenRet DoWhileStmt::codegen()
 
   if (outfile)
   {
+    codegenOrderIndependence();
+
     info->cStatements.push_back("do ");
 
     if (this != getFunction()->body)

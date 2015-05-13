@@ -20,16 +20,12 @@
 #ifndef _IPE_RESOLVE_H_
 #define _IPE_RESOLVE_H_
 
+class BlockStmt;
 class Expr;
-class IpeVars;
-class IpeProcedure;
-class IpeScope;
-class IpeScopeProcedure;
+class IpeEnv;
+class IpeSequence;
 
-Expr* ipeResolve            (Expr*         expr,      IpeScope*          scope, IpeVars* vars);
-
-void  ipeResolveFormalsTypes(IpeProcedure* procedure, IpeScopeProcedure* scope, IpeVars* vars);
-void  ipeResolveBody        (IpeProcedure* procedure, IpeScopeProcedure* scope, IpeVars* vars);
-void  ipeResolveReturnType  (IpeProcedure* procedure, IpeScopeProcedure* scope, IpeVars* vars);
+Expr*        resolveExpr (Expr*      expr, IpeEnv* env);
+IpeSequence* blockResolve(BlockStmt* stmt, IpeEnv* env);
 
 #endif
