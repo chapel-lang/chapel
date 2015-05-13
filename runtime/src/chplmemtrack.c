@@ -42,14 +42,15 @@
 //
 // This is in the modules, in MemTracking.chpl.
 //
-extern void chpl_memTracking_returnConfigVals(chpl_bool*,
-                                              chpl_bool*,
-                                              chpl_bool*,
-                                              chpl_bool*,
-                                              size_t*,
-                                              size_t*,
-                                              c_string*,
-                                              c_string*);
+extern void chpl_memTracking_returnConfigVals(chpl_bool* memTrack,
+                                              chpl_bool* memStats,
+                                              chpl_bool* memLeaksByType,
+                                              c_string* dumpMemLeaks,
+                                              chpl_bool* memLeaks,
+                                              size_t* memMax,
+                                              size_t* memThreshold,
+                                              c_string* memLog,
+                                              c_string* memLeaksLog);
 
 chpl_bool chpl_memTrack = false;
 
@@ -80,6 +81,7 @@ static memTableEntry** memTable = NULL;
 
 static _Bool memStats = false;
 static _Bool memLeaksByType = false;
+static c_string dumpMemLeaks = false;
 static _Bool memLeaks = false;
 static size_t memMax = 0;
 static size_t memThreshold = 0;
@@ -117,6 +119,7 @@ void chpl_setMemFlags(void) {
   chpl_memTracking_returnConfigVals(&local_memTrack,
                                     &memStats,
                                     &memLeaksByType,
+                                    &dumpMemLeaks,
                                     &memLeaks,
                                     &memMax,
                                     &memThreshold,
@@ -126,6 +129,7 @@ void chpl_setMemFlags(void) {
   if (local_memTrack
       || memStats
       || memLeaksByType
+      || dumpMemLeaks
       || memLeaks
       || memMax > 0
       || memLeaksLog != NULL) {
@@ -329,6 +333,43 @@ static int memTableEntryCmp(const void* p1, const void* p2) {
 }
 
 
+static chpl_mem_descInt_t
+find_desc(const char* descString)
+{
+  for (chpl_mem_descInt_t i = 0; i < chpl_mem_numDescs; ++i)
+    if (! strcmp(descString, chpl_mem_descString(i)))
+      return i;
+  return -1;
+}
+
+
+void chpl_dumpMemAllocs(const char* descString,
+                       int32_t lineno, c_string filename)
+{
+  chpl_mem_descInt_t description;
+  memTableEntry* me;
+
+  if (!chpl_memTrack) {
+    chpl_warning("invalid call to printMemAllocsByType(); rerun with "
+                 "--memTrack",
+                 lineno, filename);
+    return;
+  }
+
+  description = find_desc(descString);
+
+  for (chpl_mem_descInt_t i = 0; i < hashSize; i++)
+    for (me = memTable[i]; me != NULL; me = me->nextInBucket)
+      if (description == -1 ||
+          me->description == description)
+      {        
+        printf("%" FORMAT_c_nodeid_t ": %s:%" PRId32
+               ": allocate %zuB of %s at %p\n",
+               chpl_nodeID, (me->filename ? me->filename : "--"), me->lineno,
+               me->number*me->size, chpl_mem_descString(description), me->memAlloc);
+      }
+}
+
 static void printMemAllocsByType(_Bool forLeaks,
                                  int32_t lineno, c_string filename) {
   size_t* table;
@@ -504,6 +545,10 @@ void chpl_reportMemInfo() {
   if (memLeaksByType) {
     fprintf(memLogFile, "\n");
     printMemAllocsByType(true /* forLeaks */, 0, 0);
+  }
+  if (dumpMemLeaks[0]) {
+    fprintf(memLogFile, "\n");
+    chpl_dumpMemAllocs(dumpMemLeaks, 0, 0);
   }
   if (memLeaks) {
     fprintf(memLogFile, "\n");
