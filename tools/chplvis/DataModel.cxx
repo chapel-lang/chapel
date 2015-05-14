@@ -121,8 +121,6 @@ int DataModel::LoadData(const char * filename)
   }
 
   printf (" done.\n");
-  // Process data ... producing a tag/resume index list
- 
   
   /*
   // Debug
@@ -183,6 +181,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
   // Create a start event with starting user/sys times.
   std::list<Event *>::iterator itr = theEvents.begin();
+
+  // Other initializations
+  numTags = 0;
   
   // Now read the rest of the file
   Event *newEvent = new E_start(u_sec, u_usec, s_sec, s_usec, findex);
@@ -317,8 +318,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  nextCh += nameOffset;
 	  newEvent = new E_tag(sec, usec, nid, s_sec, s_usec, tagId, pause=='p',
 			       &linedata[nextCh]);
-	  if (tagId > numTags)
-	    numTags = tagId;
+	  if (tagId >= numTags)
+	    numTags = tagId+1;
 	}
 	break;
 

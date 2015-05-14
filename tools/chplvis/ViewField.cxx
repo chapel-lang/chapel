@@ -40,6 +40,8 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   theLocales = NULL;
   comms = NULL;
   tags = NULL;
+  tagsSize = 0;
+  tagMenu = -1;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
@@ -60,6 +62,8 @@ ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *
   theLocales = NULL;
   comms = NULL;
   tags = NULL;
+  tagsSize = 0;
+  tagMenu = -1;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
@@ -136,7 +140,8 @@ void ViewField::allocArrays()
 	delete [] tags[ix].tagName;
     delete [] tags;
   }
-  tags = new tagInfo [VisData.NumTags()];
+  tagsSize = VisData.NumTags();
+  tags = new tagInfo [tagsSize];
   for (ix = 0; ix < VisData.NumTags(); ix++) {
     tags[ix].tagNo = -1;
     tags[ix].tagName = NULL;
@@ -235,11 +240,12 @@ void ViewField::processData()
 	// Checking out the tag ...
 	gp = (E_tag *)ev;
         int tgNo = gp->tagNo();
-        if (tags[tgNo-1].tagNo < 0) {
-	  tags[tgNo-1].tagNo = tgNo;
-	  printf("processing tag '%s'\n", gp->tagName().c_str());
-	  tags[tgNo-1].tagName = new char [gp->tagName().length()+1];
-	  strcpy(tags[tgNo-1].tagName, gp->tagName().c_str());
+        if (tags[tgNo].tagNo < 0) {
+	  tags[tgNo].tagNo = tgNo;
+	  // printf("processing tag '%s'\n", gp->tagName().c_str());
+	  tags[tgNo].tagName = new char [gp->tagName().length()+6];
+	  strcpy(tags[tgNo].tagName, "Tags/");
+	  strcat(tags[tgNo].tagName, gp->tagName().c_str());
 	}
 	if (gp->isPause()) {
 	  // Need to update times so that resume can reset ref times
@@ -266,24 +272,37 @@ void ViewField::processData()
 
 static void selTag(Fl_Widget *w, void *p)
 {
-  printf ("selTag called\n");
+  int ix = (int) p;
+  printf ("selTag called, %d\n", ix);
 }
 
 void ViewField::makeTagsMenu(void)
 {
-  if (VisData.NumTags() < 1) {
-    printf("Hide tags menu\n");
-    //TagsMenu->hide();
-  } else {
+  // Remove the old one if it exists
+  if (tagMenu > 0) {
+    MainMenuBar->remove(tagMenu);
+    tagMenu = -1;
+  }
+  if (VisData.NumTags() >= 1) {
+
+    //printf("Make tags menu, %d tags\n", VisData.NumTags());
+
     // Build the menu
-    //TagsMenu->show();
-    printf("Make tags menu, %d tags\n", VisData.NumTags());
+
+    tagMenu = MainMenuBar->add("Tags", 0, 0, 0, FL_SUBMENU);
+    if (tagMenu < 1) {
+      printf ("Menu problem!\n");
+      return;
+    }
+    MainMenuBar->add("Tags/All", 0, selTag, (void *)-2);
+    MainMenuBar->add("Tags/Start", 0, selTag, (void *)-1);
+
     int ix;
     for (ix = 0; ix < VisData.NumTags(); ix++) {
-      printf ("Tag[%d] is '%s'\n", ix, tags[ix].tagName);
-      //TagsMenu->add(tags[ix].tagName, 0, selTag, (void *)&tags[ix], 0);
+      // printf ("Tag[%d] is '%s'\n", ix, tags[ix].tagName);
+      MainMenuBar->add(tags[ix].tagName, 0, selTag, (void *)ix, 0);
     }
-    //MainWindow->redraw();
+    MainMenuBar->redraw();
   }
 }
 
