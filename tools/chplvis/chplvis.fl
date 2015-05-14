@@ -29,7 +29,7 @@ decl {\#include <FL/Fl_File_Chooser.H>} {private local
 decl {\#include <FL/Fl_Multiline_Output.H>} {public local
 } 
 
-decl {\#include <FL/Fl_Sys_Menu_Bar.H>} {selected public local
+decl {\#include <FL/Fl_Sys_Menu_Bar.H>} {public local
 } 
 
 decl {\#include "ViewField.h"} {public global
@@ -47,7 +47,7 @@ decl {DataModel VisData;} {public local
 Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
 } {
   Fl_Window {} {open
-    xywh {1158 31 180 120} type Double color 7 resizable size_range {180 120 0 0} visible
+    xywh {1158 44 180 120} type Double color 7 resizable size_range {180 120 0 0} visible
   } {
     Fl_Box Locale_Title {
       label {Locale }
@@ -82,9 +82,9 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1357 33 500 555} type Double resizable size_range {500 550 0 0} visible
+    xywh {1357 44 500 555} type Double color 7 resizable size_range {500 550 0 0} visible
   } {
-    Fl_Menu_Bar MainMenuBar {open
+    Fl_Menu_Bar MainMenuBar {open selected
       xywh {0 0 500 20} color 55
       class Fl_Sys_Menu_Bar
     } {
