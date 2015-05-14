@@ -35,6 +35,19 @@ module MemTracking
   config const
     memLeaksLog: c_ptr(uint(8)) = nil;
 
+  /* Causes the contents of the memory tracking array to be dumped at the end
+     of the program.
+     Entries remaining in the memory tracking array represent leaked memory,
+     because they are tracked allocations with no corresponding free.
+
+     The dump is performed only if the --dumpMemLeaks option is present and has
+     a string argument.
+       --dumpMemLeaks="" causes all memory records to be printed.
+       --dumpMemLeaks="<alloc-type-string>" causes only those descriptors
+         matching the given <alloc-type-string> to be printed.
+     For example, --dumpMemLeaks="string copy data" causes only string copy
+     data leaks to be printed.
+  */
   pragma "no auto destroy"
   config const
     dumpMemLeaks: c_ptr(uint(8)) = nil;

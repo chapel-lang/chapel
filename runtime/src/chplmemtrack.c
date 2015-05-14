@@ -546,7 +546,7 @@ void chpl_reportMemInfo() {
     fprintf(memLogFile, "\n");
     printMemAllocsByType(true /* forLeaks */, 0, 0);
   }
-  if (dumpMemLeaks[0]) {
+  if (dumpMemLeaks) {
     fprintf(memLogFile, "\n");
     chpl_dumpMemAllocs(dumpMemLeaks, 0, 0);
   }
