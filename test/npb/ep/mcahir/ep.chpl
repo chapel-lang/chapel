@@ -150,7 +150,7 @@ writef(" Iterations      = %24i\n", 0);
 if printTimings then 
   writef(" Time in seconds = %24r\n", tm);
 writef(" Total tasks     = %24i\n", numLocales*dataParTasksPerLocale);
-writef("    %# Locales    = %24i\n", numLocales);
+writef("    # Locales    = %24i\n", numLocales);
 writef("    Tasks/Locale = %24i\n", dataParTasksPerLocale);
 if printTimings {
   writef(" Mop/s total     = %24r\n", Mops);
