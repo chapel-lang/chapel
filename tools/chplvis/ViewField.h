@@ -54,7 +54,7 @@ struct commInfo {
 
 struct tagInfo {
   int tagNo;
-  std::string tagName;
+  char *tagName;
 };
 
 Fl_Color heatColor ( double val, double max );
@@ -77,6 +77,8 @@ class ViewField : public Fl_Box {
     commInfo **comms;
 
     tagInfo *tags;
+    int tagsSize;
+    int tagMenu;
 
     bool showtasks;
     int maxTasks;
@@ -89,8 +91,6 @@ class ViewField : public Fl_Box {
     // Methods
 
     void allocArrays();
-
-    void selTag(Fl_Widget *, void *);
 
   public:
 

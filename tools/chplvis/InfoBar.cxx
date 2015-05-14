@@ -23,7 +23,7 @@
 
 #include <FL/fl_draw.H>
 
-static const int CR_Left = 20;
+static const int CR_Left = 25;
 
 void InfoBar::draw(void)
 {
@@ -47,7 +47,7 @@ void InfoBar::draw(void)
   }
   fl_color(FL_BLACK);
   fl_line_style(FL_SOLID,1,NULL);
-  fl_draw("1", x()+CR_Left-15, y()+5, 15, h()-10, FL_ALIGN_CENTER, NULL, 0);
+  fl_draw("1", x()+CR_Left-20, y()+5, 15, h()-10, FL_ALIGN_CENTER, NULL, 0);
   fl_draw("Max", x()+CR_Left+100, y()+5, 15, h()-10, FL_ALIGN_CENTER, NULL, 0);
 
   // Messages on max counts
@@ -57,7 +57,7 @@ void InfoBar::draw(void)
       snprintf (mesg, 150, "maxTasks: %d", maxTasks);
     else
       snprintf (mesg, 150, "maxCPU: %f", maxCpu);
-    fl_draw(mesg, x()+CR_Left+130, y()+5, 120, h()-10, FL_ALIGN_LEFT, NULL, 0);
+    fl_draw(mesg, x()+CR_Left+135, y()+5, 120, h()-10, FL_ALIGN_LEFT, NULL, 0);
     if (showcomms)
       snprintf (mesg, 150, "maxComms: %d", maxComms);
     else

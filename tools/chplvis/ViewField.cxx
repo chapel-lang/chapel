@@ -129,6 +129,18 @@ void ViewField::allocArrays()
     theLocales[ix].sysCpu = 0;
     theLocales[ix].win = NULL;
   }
+
+  if (tags != NULL) {
+    for (ix = 0; ix < tagsSize; ix++)
+      if (tags[ix].tagName != NULL)
+	delete [] tags[ix].tagName;
+    delete [] tags;
+  }
+  tags = new tagInfo [VisData.NumTags()];
+  for (ix = 0; ix < VisData.NumTags(); ix++) {
+    tags[ix].tagNo = -1;
+    tags[ix].tagName = NULL;
+  }
 }
 
 
@@ -150,15 +162,6 @@ void ViewField::processData()
   maxComms = 1;
   maxCpu = 0.0000001;
   maxDatasize = 1;
-
-  if (tags == NULL) {
-    tags = new tagInfo [VisData.NumTags()];
-    int ix;
-    for (ix = 0; ix < VisData.NumTags(); ix++) {
-      tags[ix].tagNo = -1;
-      tags[ix].tagName = "";
-    }
-  }
 
   Event *ev;
 
@@ -234,7 +237,9 @@ void ViewField::processData()
         int tgNo = gp->tagNo();
         if (tags[tgNo-1].tagNo < 0) {
 	  tags[tgNo-1].tagNo = tgNo;
-	  tags[tgNo-1].tagName = gp->tagName();
+	  printf("processing tag '%s'\n", gp->tagName().c_str());
+	  tags[tgNo-1].tagName = new char [gp->tagName().length()+1];
+	  strcpy(tags[tgNo-1].tagName, gp->tagName().c_str());
 	}
 	if (gp->isPause()) {
 	  // Need to update times so that resume can reset ref times
@@ -254,22 +259,34 @@ void ViewField::processData()
 
   Info->setMaxes(maxTasks, maxComms, maxDatasize, maxCpu);
   //printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
+
+  makeTagsMenu();
+
+ }
+
+static void selTag(Fl_Widget *w, void *p)
+{
+  printf ("selTag called\n");
 }
 
 void ViewField::makeTagsMenu(void)
 {
-  printf("Make tags menu\n");
-  if (VisData.NumTags() <= 1) 
-    TagsMenu->hide();
-  else {
+  if (VisData.NumTags() < 1) {
+    printf("Hide tags menu\n");
+    //TagsMenu->hide();
+  } else {
     // Build the menu
-    TagsMenu->show();
+    //TagsMenu->show();
+    printf("Make tags menu, %d tags\n", VisData.NumTags());
+    int ix;
+    for (ix = 0; ix < VisData.NumTags(); ix++) {
+      printf ("Tag[%d] is '%s'\n", ix, tags[ix].tagName);
+      //TagsMenu->add(tags[ix].tagName, 0, selTag, (void *)&tags[ix], 0);
+    }
+    //MainWindow->redraw();
   }
 }
 
-void ViewField::selTag(Fl_Widget *, void *)
-{
-}
 
 void ViewField::processTag(int n)
 {
