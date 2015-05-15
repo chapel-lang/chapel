@@ -880,7 +880,7 @@ void runClang(const char* just_parse_filename) {
   compileline += " COMP_GEN_DEBUG=" + (debugCCode?one:zero);
   compileline += " COMP_GEN_OPT=" + (optimizeCCode?one:zero);
   compileline += " COMP_GEN_SPECIALIZE=" + (specializeCCode?one:zero);
-  compileline += " COMP_GEN_IEEE_FLOAT=" + (fieeefloat?one:zero);
+  compileline += " COMP_GEN_FLOAT_OPT=" + ffloatOpt;
   std::string readargsfrom;
 
   if( just_parse_filename ) {
