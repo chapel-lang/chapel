@@ -1,0 +1,1 @@
+testformat-error.chpl:1: error: use string.format(args ...) not format(fmt, args ...)

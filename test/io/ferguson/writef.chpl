@@ -1,15 +1,15 @@
 writeln("Part 1");
 
-writef("HELOOLO \n##.###\n bla \n##\n", 1.1234, 5.1);
+writef("HELOOLO \n%{##.###}\n bla \n%{##}\n", 1.1234, 5.1);
 writef("HELLO");
 writef("HELLO\n");
-writef("#\n", 5);
+writef("%{#}\n", 5);
 
 
 writef("\n\n");
 
 writef("%%\n");
-writef("%#\n");
+writef("#\n");
 
 writeln("Part 2");
 writef("%xi\n", 17);

@@ -115,10 +115,10 @@ proc main() {
                          5.15138902046611451e-05 * solar_mass
                          );
   offset_momentum(NBODIES, bodies);
-  writef("#.#########\n", energy(NBODIES, bodies));
+  writef("%{#.#########}\n", energy(NBODIES, bodies));
   for 1..n {
     advance(NBODIES, bodies, 0.01);
   }
-  writef("#.#########\n", energy(NBODIES, bodies));
+  writef("%{#.#########}\n", energy(NBODIES, bodies));
   for body in bodies do delete body;
 }
