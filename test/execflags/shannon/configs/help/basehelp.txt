@@ -32,5 +32,6 @@ Built-in config vars:
                memThreshold: uint(64)
                      memLog: c_ptr(uint(8))
                 memLeaksLog: c_ptr(uint(8))
+             memLeaksByDesc: c_ptr(uint(8)) 
                  numLocales: int(64)
 
