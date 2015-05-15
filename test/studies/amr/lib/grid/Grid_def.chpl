@@ -156,7 +156,7 @@ class Grid {
   proc sanityChecks () {
     var d_string: string;
     for d in dimensions do {
-      d_string = format("%i", d);
+      d_string = "%i".format(d);
 
       assert(x_low(d) < x_high(d),
 	     "error: Grid: x_low(" + d_string + ") must be strictly less than x_high(" + d_string + ").");
@@ -286,7 +286,7 @@ proc readGrid(file_name: string) {
   var dim_in: int;
   input_file.readln(dim_in);
   assert(dim_in == dimension, 
-         "error: dimension of space.txt must equal " + format("%i",dimension));
+         "error: dimension of space.txt must equal " + "%i".format(dimension));
   input_file.readln(); // empty line
 
   var x_low, x_high:                 dimension*real;

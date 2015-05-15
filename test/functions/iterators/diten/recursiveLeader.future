@@ -1,0 +1,8 @@
+feature request: recursive leader iterators
+
+This test mirrors functions/iterators/bradc/recursiveStandalone.chpl
+
+Using a for loop in the leader iterator instead of forall and
+explicitly passing tag to the recursive invocation allows this test
+to pass.  It would be nice to be able to use a forall loop and have
+something like that transformation apply automatically.

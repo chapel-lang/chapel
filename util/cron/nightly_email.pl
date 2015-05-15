@@ -80,17 +80,20 @@ if ($status == 0) {
 # send mail
 #
 $futuremarker = "^Future";
+$suppressmarker = "^Suppress";
 
 $newfailures = "???";
 if ($status == 0) {
-    $newfailures = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
-    $newresolved = `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
+    $newfailures = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker" | wc -l`; chomp($newfailures);
+    $newresolved = `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker" | wc -l`; chomp($newresolved);
     $newpassingfutures = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success" | wc -l`; chomp($newpassingfutures);
     $passingfutures = `grep "$futuremarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingfutures);
+    $newpassingsuppress = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success" | wc -l`; chomp($newpassingsuppresss);
+    $passingsuppresss = `grep "$suppressmarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingsuppresss);
     $newfailures += 0;
 }
 
-if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0) {
+if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
     $recipient = $nochangerecipient;
 } else {
@@ -110,28 +113,36 @@ print MAIL endMailHeader();
 
 if ($status == 0) {
     print MAIL "--- New Errors -------------------------------\n";
-    print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+    print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
     print MAIL "\n";
 
     print MAIL "--- Resolved Errors --------------------------\n";
-    print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+    print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
     print MAIL "\n";
     
     print MAIL "--- New Passing Future tests------------------\n";
     print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-    print MAIL "\n";    
+    print MAIL "\n";
 
     print MAIL "--- Passing Future tests ---------------------\n";
     print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-    print MAIL "\n";    
+    print MAIL "\n";
+
+    print MAIL "--- New Passing Suppress tests------------------\n";
+    print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+    print MAIL "\n";
+
+    print MAIL "--- Passing Suppress tests ---------------------\n";
+    print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+    print MAIL "\n";
 
     print MAIL "--- Unresolved Errors ------------------------\n";
-    print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
+    print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
     print MAIL "\n";
 
     print MAIL "--- New Failing Future tests -----------------\n";
     print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
-    print MAIL "\n";    
+    print MAIL "\n";
 
     print MAIL "--- Unresolved Future tests ------------------\n";
     print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;

@@ -15,7 +15,7 @@ proc main() {
     if i % 10 == 0 then
       writeln("\t:",i);
   }
-  printMemLeaksTable();
+  printMemAllocsByType();
 }
 
 
