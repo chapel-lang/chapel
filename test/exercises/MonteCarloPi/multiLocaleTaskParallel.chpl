@@ -79,4 +79,4 @@ coforall loc in Locales {
 const count = + reduce counts;
 
 
-writef("Approximation of pi = #.#######\n", count * 4.0 / n);
+writef("Approximation of pi = %{#.#######}\n", count * 4.0 / n);

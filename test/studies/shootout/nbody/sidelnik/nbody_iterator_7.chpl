@@ -97,11 +97,11 @@ proc main() {
   bodies(4) = new Planet(p4,v4, 5.15138902046611451e-05 * solar_mass);
   
   offset_momentum(bodies);
-  writef("#.#########\n", energy(bodies));
+  writef("%{#.#########}\n", energy(bodies));
   for 1..n {
     advance(bodies, 0.01);
   }
-  writef("#.#########\n", energy(bodies));
+  writef("%{#.#########}\n", energy(bodies));
   
   for body in bodies do delete body;
 }
