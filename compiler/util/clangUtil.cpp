@@ -994,7 +994,6 @@ void runClang(const char* just_parse_filename) {
     // and cause them to be emitted eventually.
     // CCodeGenAction is defined above. It traverses the C AST
     // and does the code generation.
-    //printf("running CCodeGenAction\n");
     info->cgAction = new CCodeGenAction();
     if (!info->Clang->ExecuteAction(*info->cgAction)) {
       if (just_parse_filename) {
