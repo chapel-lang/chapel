@@ -588,6 +588,10 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
 }
 
 static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
+  // It would be nicer if arg.cpp could handle
+  // 3-value variables like this (set to false, set to true, not set)
+  // But if this is the only such case, having a set function is an OK plan.
+
   // ffloatOpt defaults to 0 -> backend default
   if( fieeefloat ) {
     // IEEE strict
@@ -701,7 +705,7 @@ static ArgumentDescription arg_desc[] = {
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
- {"ieee-float", ' ', NULL, "Generate code strictly conforms to IEEE floating point semantics", "N", &fieeefloat, "CHPL_IEEE_FLOAT", setFloatOptFlag},
+ {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", setFloatOptFlag},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
  {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, NULL, NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
