@@ -141,10 +141,10 @@ proc main () {
   tsetup.start();
 
   writef ("NAS Parallel Benchmarks 2.4 -- IS Benchmark\n" );
-  writef (" Size:                       #########  (class %t)\n", nkeys, probClass);
-  writef (" Iterations:                 #########\n",maxIterations);
-  writef (" Number of locales:          #########\n",numLocales);
-  writef (" Number of tasks per locale: #########\n",dataParTasksPerLocale);
+  writef (" Size:                       %{#########}  (class %t)\n", nkeys, probClass);
+  writef (" Iterations:                 %{#########}\n",maxIterations);
+  writef (" Number of locales:          %{#########}\n",numLocales);
+  writef (" Number of tasks per locale: %{#########}\n",dataParTasksPerLocale);
   writef (" \n");
 
 
@@ -192,12 +192,12 @@ proc main () {
 
   writef("\n\n IS Benchmark Completed\n");
   writef(" Class           =                         %t\n",probClass);
-  writef(" Size            = #########################\n",nkeys);
-  writef(" Iterations      = #########################\n",maxIterations);
+  writef(" Size            = %{#########################}\n",nkeys);
+  writef(" Iterations      = %{#########################}\n",maxIterations);
   if (printTime) {
-      writef(" Time in seconds = ######################.##\n",
+      writef(" Time in seconds = %{######################.##}\n",
         tsort.elapsed(TimeUnits.seconds));
-      writef(" Mop/s total     = ######################.##\n",
+      writef(" Mop/s total     = %{######################.##}\n",
         (maxIterations*nkeys)/tsort.elapsed(TimeUnits.seconds)/1000000 );
   }
   writeln(" Operation type  = ","              keys ranked");

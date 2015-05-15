@@ -165,7 +165,7 @@ proc GridVariable.writeData (
       when 1 do linelabel = "                 mx\n";
       when 2 do linelabel = "                 my\n";
       when 3 do linelabel = "                 mz\n";
-      otherwise linelabel = "                 mx(" + format("%1i",d) + ")\n";
+      otherwise linelabel = "                 mx(" + "%1i".format(d) + ")\n";
     }
     outfile.writef(ifmt+linelabel, grid.n_cells(d));
   }
@@ -177,7 +177,7 @@ proc GridVariable.writeData (
       when 1 do linelabel = "    xlow\n";
       when 2 do linelabel = "    ylow\n";
       when 3 do linelabel = "    zlow\n";
-      otherwise linelabel = "    xlow(" + format("%1i",d) + ")\n";
+      otherwise linelabel = "    xlow(" + "%1i".format(d) + ")\n";
     }
     outfile.writef(efmt+linelabel, grid.x_low(d));
   }
@@ -189,7 +189,7 @@ proc GridVariable.writeData (
       when 1 do linelabel = "    dx\n";
       when 2 do linelabel = "    dy\n";
       when 3 do linelabel = "    dz\n";
-      otherwise linelabel = "    dx(" + format("%1i",d) + ")\n";
+      otherwise linelabel = "    dx(" + "%1i".format(d) + ")\n";
     }
     outfile.writef(efmt+linelabel, grid.dx(d));
   }
@@ -269,7 +269,7 @@ proc GridVariable.clawOutput(
 {
 
   //==== Names of output files ====
-  var frame_string:  string = format("%04i", frame_number),
+  var frame_string:  string = "%04i".format(frame_number),
       time_filename: string = "_output/fort.t" + frame_string,
       data_filename: string = "_output/fort.q" + frame_string;
 

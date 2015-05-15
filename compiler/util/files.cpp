@@ -603,14 +603,6 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
 
-  // MPF - we want to allow the runtime to make use of debug/optimize
-  // information
-  if (debugCCode) {
-    fprintf(makefile.fptr, "DEBUG = 1\n");
-  }
-  if (optimizeCCode) {
-    fprintf(makefile.fptr, "OPTIMIZE = 1\n");
-  }
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "\n");
 

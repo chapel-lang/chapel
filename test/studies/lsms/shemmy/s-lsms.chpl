@@ -64,7 +64,7 @@ proc main() {
 
 	for itr in 0..#nIterations {
 		if itr % reportFrequency == 0 && reportFrequency <= nIterations {
-			writef("step ####...\n", itr);
+			writef("step %{####}...\n", itr);
 		}
 		
 		//each atom adds up extent values from neighbors (members of its liz sphere)
