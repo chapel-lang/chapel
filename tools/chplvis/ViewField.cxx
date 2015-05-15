@@ -243,9 +243,9 @@ void ViewField::processData()
         if (tags[tgNo].tagNo < 0) {
 	  tags[tgNo].tagNo = tgNo;
 	  // printf("processing tag '%s'\n", gp->tagName().c_str());
-	  tags[tgNo].tagName = new char [gp->tagName().length()+6];
-	  strcpy(tags[tgNo].tagName, "Tags/");
-	  strcat(tags[tgNo].tagName, gp->tagName().c_str());
+	  tags[tgNo].tagName = new char [gp->tagName().length()+25];
+	  snprintf (tags[tgNo].tagName, gp->tagName().length()+25,
+		    "Tags/Tag %d (%s)", tgNo, gp->tagName().c_str());
 	}
 	if (gp->isPause()) {
 	  // Need to update times so that resume can reset ref times
@@ -273,7 +273,13 @@ void ViewField::processData()
 static void selTag(Fl_Widget *w, void *p)
 {
   long ix = (long) p;
-  printf ("selTag called, %ld\n", ix);
+  struct tagInfo *ptr = (struct tagInfo *)p;
+  if (ix == -2) 
+    printf ("selTag called on All\n");
+  else if (ix == -1)
+    printf ("selTag called on Start\n");
+  else
+    printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
 }
 
 void ViewField::makeTagsMenu(void)
@@ -285,7 +291,7 @@ void ViewField::makeTagsMenu(void)
   }
   if (VisData.NumTags() >= 1) {
 
-    //printf("Make tags menu, %d tags\n", VisData.NumTags());
+    // printf("Make tags menu, %d tags\n", VisData.NumTags());
 
     // Build the menu
 
