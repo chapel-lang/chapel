@@ -272,8 +272,8 @@ void ViewField::processData()
 
 static void selTag(Fl_Widget *w, void *p)
 {
-  int ix = (int) p;
-  printf ("selTag called, %d\n", ix);
+  long ix = (long) p;
+  printf ("selTag called, %ld\n", ix);
 }
 
 void ViewField::makeTagsMenu(void)
@@ -297,10 +297,10 @@ void ViewField::makeTagsMenu(void)
     MainMenuBar->add("Tags/All", 0, selTag, (void *)-2);
     MainMenuBar->add("Tags/Start", 0, selTag, (void *)-1);
 
-    int ix;
+    long ix;
     for (ix = 0; ix < VisData.NumTags(); ix++) {
       // printf ("Tag[%d] is '%s'\n", ix, tags[ix].tagName);
-      MainMenuBar->add(tags[ix].tagName, 0, selTag, (void *)ix, 0);
+      MainMenuBar->add(tags[ix].tagName, 0, selTag, (void *)&tags[ix], 0);
     }
     MainMenuBar->redraw();
   }
