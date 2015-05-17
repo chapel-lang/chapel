@@ -232,7 +232,11 @@ static bool returnsPreExistingRecord(FnSymbol* fn)
     return false;
   if (!isRecord(fn->retType))
     return false;
-  return true;
+  // This problem seems to occur only when returning a RWT.
+  if (isRecordWrappedType(fn->retType))
+    return true;
+
+  return false;
 }
 
 
