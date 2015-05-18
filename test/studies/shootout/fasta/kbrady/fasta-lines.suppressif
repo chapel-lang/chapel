@@ -1,0 +1,37 @@
+#!/usr/bin/env perl
+
+# fasta-lines allocates ~5.9 GB of memory (and only frees a few MB). It
+# probably requires a machine with around 6-7GB to run. I'm assuming nobody has
+# a machine with that much ram so I'm using 8GB as the cutoff. We should be
+# able to remove this once strings as records are in.
+
+$memRequiredInGB = 8;
+$memInGB = $memRequiredInGB;
+
+if ($ENV{CHPL_TEST_PERF} eq "on") {
+    $memfile = "/proc/meminfo";
+    if (-r $memfile) {
+      open MEMFILE, "$memfile" or die "can't open $memfile $!";
+      my @memLines = <MEMFILE>;
+      close (MEMFILE);
+
+      foreach my $line (@memLines) {
+        if ($line =~ m/MemTotal: (\s*)(\S*)/) {
+          $memInKB = "$2";
+          $memInGB = $memInKB / (1024 * 1024);
+        }
+      }
+    } else {
+        $platform = `$ENV{CHPL_HOME}/util/chplenv/chpl_platform.py --target`; chomp($platform);
+        if ($platform eq "darwin") {
+            $memInBytes = `sysctl -n hw.memsize`; chomp($memInBytes);
+            $memInGB = $memInBytes / (1024 * 1024 * 1024);
+        }
+    }
+}
+
+if ($memInGB < $memRequiredInGB) {
+    print("True\n");
+} else {
+    print("False\n");
+}

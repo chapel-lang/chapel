@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:121: error: unable to resolve return type of function '_toLeader'
+recursiveLeader.chpl:7: In iterator 'myiter':
+recursiveLeader.chpl:11: error: called recursively at this point

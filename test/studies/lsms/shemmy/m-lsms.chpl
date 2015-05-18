@@ -80,7 +80,7 @@ proc main() {
 
 	for itr in 0..#nIterations {
 		if itr % reportFrequency == 0 && reportFrequency <= nIterations {
-			writef("step ####\n", itr);
+			writef("step %{####}\n", itr);
 		}
 		//load data into caches
 		forall cache in caches {
@@ -162,7 +162,7 @@ proc circularDistance(a, b, size: int) {
 	}
 }
 
-proc compactWriteArray(arr: [?D], fmtStr = "#") where D.rank == 3 {
+proc compactWriteArray(arr: [?D], fmtStr = "%{#}") where D.rank == 3 {
 	for j in D.dim[2] {
 		for i in D.dim[1] {
                   for a in arr[i,j,..] do writef(fmtStr, a);
