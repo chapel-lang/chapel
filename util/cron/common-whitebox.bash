@@ -77,22 +77,27 @@ case $COMP_TYPE in
         ;;
 esac
 
-# Load compiler module.
+# load compiler versions from $CHPL_INTERNAL_REPO/build/compiler_versions.bash
+# This should set define the load_compiler function and CHPL_GCC_VERSION.
+source $CHPL_INTERNAL_REPO/build/compiler_versions.bash
+
+# Always load the right version of GCC since we use it sometimes
+# to e.g. build the Chapel compiler with COMP_TYPE=TARGET
+if [ "${COMPILER}" != "gnu" ] ; then
+    module load gcc/${CHPL_GCC_VERSION}
+fi
+
+# Then load the selected compiler
+load_compiler ${COMPILER}
+
+# Do minor fixups
 case $COMPILER in
     cray)
-        log_info "Loading module: ${module_name}"
-        module load ${module_name}
-
-        # Use cce version 8.3.9 for consistency.
-        module swap cce cce/8.3.9
-
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
         module swap craype-network-aries craype-target-local_host
         ;;
     intel|gnu|pgi)
-        log_info "Loading module: ${module_name}"
-        module load ${module_name}
         ;;
     *)
         log_error "Unknown COMPILER value: ${COMPILER}. Exiting."
