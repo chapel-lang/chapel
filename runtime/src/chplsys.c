@@ -56,13 +56,17 @@ size_t chpl_getSysPageSize(void) {
   static size_t pageSize = 0;
 
   if (pageSize == 0) {
+    long int ps;
 #if defined _SC_PAGESIZE
-    pageSize = (size_t) sysconf(_SC_PAGESIZE);
+    ps = sysconf(_SC_PAGESIZE);
 #elif defined _SC_PAGE_SIZE
-    pageSize = (size_t) sysconf(_SC_PAGE_SIZE);
+    ps = sysconf(_SC_PAGE_SIZE);
 #else
     chpl_internal_error("cannot determine page size");
 #endif
+    if (ps < 0L)
+      chpl_internal_error("system page size must not be negative");
+    pageSize = (size_t) ps;
   }
 
   return pageSize;
