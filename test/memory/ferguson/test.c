@@ -1,7 +1,11 @@
-#undef _POSIX_C_SOURCE
+/*#undef _POSIX_C_SOURCE
+//#ifndef _BSD_SOURCE
 #define _BSD_SOURCE
+//#endif
+//#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
-
+//#endif
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
