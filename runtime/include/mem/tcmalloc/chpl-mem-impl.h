@@ -33,6 +33,10 @@ static inline void* chpl_malloc(size_t size) {
   return tc_malloc(size);
 }
 
+static inline void* chpl_memalign(size_t boundary, size_t size) {
+  return tc_memalign(boundary, size);
+}
+
 static inline void* chpl_realloc(void* ptr, size_t size) {
   return tc_realloc(ptr, size);
 }
