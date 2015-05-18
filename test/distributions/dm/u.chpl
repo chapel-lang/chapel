@@ -12,7 +12,7 @@ var no_pfx = false;
 // to preserve coarse ordering ("phases") when sorting the output
 proc nextphase() {
   phase += 1;
-  pfx = if no_pfx then "" else format("####", phase) + "  ";
+  pfx = if no_pfx then "" else "%{####}".format(phase) + "  ";
   traceDimensionalDistPrefix = pfx;
 }
 

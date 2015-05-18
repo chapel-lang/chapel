@@ -19,9 +19,9 @@ Return domain map:
 Create domain:
 	1216 bytes leaked
 Create domain and array:
-	2536 bytes leaked
+	2408 bytes leaked
 total:
-	8662 bytes leaked
+	8470 bytes leaked
 Cyclic Dist
 ===========
 Copy of domain map:
@@ -29,11 +29,11 @@ Copy of domain map:
 Return domain map:
 	1424 bytes leaked
 Create domain:
-	1472 bytes leaked
+	1216 bytes leaked
 Create domain and array:
 	2424 bytes leaked
 total:
-	7670 bytes leaked
+	7414 bytes leaked
 Block-Cyclic Dist
 =================
 Copy of domain map:
@@ -55,6 +55,6 @@ Return domain map:
 Create domain:
 	2184 bytes leaked
 Create domain and array:
-	4024 bytes leaked
+	3512 bytes leaked
 total:
-	8014 bytes leaked
+	7502 bytes leaked

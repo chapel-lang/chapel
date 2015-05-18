@@ -109,14 +109,14 @@ void ipeRun()
 
   commandLineScripts(replModule);
 
-#if 1
+#if 0
   printf("\n\nAfter command line script\n");
   printf("\n\n");
   rootModule->describeAllModules(0);
   printf("\n\n\n\n");
 #endif
 
-#if 0
+#if 1
   readEvalPrintLoop(replModule);
 #else
   (void) readEvalPrintLoop;
