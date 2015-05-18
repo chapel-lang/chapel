@@ -64,8 +64,8 @@ size_t chpl_getSysPageSize(void) {
 #else
     chpl_internal_error("cannot determine page size");
 #endif
-    if (ps < 0L)
-      chpl_internal_error("system page size must not be negative");
+    if (ps <= 0L)
+      chpl_internal_error("system page size must be positive");
     pageSize = (size_t) ps;
   }
 
