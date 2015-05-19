@@ -1708,8 +1708,8 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
     //printf("In read digit, chr is %c\n", chr);
     if( qio_err_to_int(err) == EEOF ) ACCEPT;
     if( s->allow_point && chr == s->point_char && s->point == -1 ) {
-      NEXT_CHR_OR_EOF;
       s->end = s->point = qio_channel_offset_unlocked(ch);
+      NEXT_CHR_OR_EOF;
       // Continue to read digits.
     } else if( s->allow_real && 
                ( (s->usebase <= 10 && chr == s->exponent_char) ||
@@ -1750,6 +1750,7 @@ done:
   }
 error:
   qio_channel_revert_unlocked(ch);
+
   return err;
 }
 
