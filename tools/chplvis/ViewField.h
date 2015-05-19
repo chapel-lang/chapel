@@ -105,11 +105,9 @@ class ViewField : public Fl_Box {
 
   // Processing routines
 
-  void processData();
+  void processData(int tagNum);
 
   void makeTagsMenu(void);
-
-  void processTag(int n);
 
   void setNumLocales(int n)
     { 

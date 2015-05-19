@@ -71,9 +71,16 @@ class DataModel {
 
   Event * getTagNo(int n)
       {
-        if (n < 1 || n > numTags) 
-	  return NULL;
-        curEvent = tagVec[n-1];
+	printf ("getTagNo %d: ", n);
+        curEvent = theEvents.begin();
+        // sequential search ... ugg
+	while (curEvent != theEvents.end()
+	       && (((*curEvent)->Ekind() != Ev_tag)
+		   || ((E_tag *)(*curEvent))->tagNo() != n)) {
+	  curEvent++;
+	  printf (".");
+	}
+	printf ("\n");
         return *curEvent;
       }
 
@@ -85,7 +92,6 @@ class DataModel {
   typedef std::list<Event*>::iterator evItr;
   std::list<Event*> theEvents;
   std::list<Event*>::iterator curEvent;
-  std::vector<evItr> tagVec;
 
 };
 

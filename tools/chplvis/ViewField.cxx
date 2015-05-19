@@ -151,13 +151,25 @@ void ViewField::allocArrays()
 
 // Public Methods 
 
-void ViewField::processData()
+//  tagNo:  -3 => new open
+//          -2 => All: start to finish
+//          -1 => Start to first tag (tag 0)
+//          0 and greater => start at tagNo to next tag.
+
+void ViewField::processData(int tagNum)
 {
   int ix1, ix2;  // For processing the arrays
+
+  printf ("ViewField::processData(%d)\n", tagNum);
 
   // Initialize ... in case data has changed.
   for (ix1 = 0; ix1 < numlocales; ix1++) {
     theLocales[ix1].numTasks = 0;
+    theLocales[ix1].userCpu = 0;
+    theLocales[ix1].sysCpu = 0;
+    theLocales[ix1].Cpu = 0;
+    theLocales[ix1].refUserCpu = 0;
+    theLocales[ix1].refSysCpu = 0;
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
       comms[ix1][ix2].numGets = 0;
       comms[ix1][ix2].commSize = 0;
@@ -169,15 +181,32 @@ void ViewField::processData()
   maxDatasize = 1;
 
   Event *ev;
+  int stopTag;
 
-  for ( ev = VisData.getFirstEvent(); ev != NULL; ev = VisData.getNextEvent() ) {
-    E_task   *tp;
-    E_comm   *cp;
-    E_fork   *fp;
-    E_start  *sp;
-    E_end    *ep;
-    E_tag    *gp;
-    E_resume *rp;
+  // Select first event to use:
+  if (tagNum < 0) {
+    ev = VisData.getFirstEvent();
+    stopTag = (tagNum == -1 ? 0 : -1 );
+  } else {
+    ev = VisData.getTagNo(tagNum);
+    stopTag = tagNum + 1;
+  }
+
+  while ( ev != NULL ) {
+
+    E_task   *tp = NULL;
+    E_comm   *cp = NULL;
+    E_fork   *fp = NULL;
+    E_start  *sp = NULL;
+    E_end    *ep = NULL;
+    E_tag    *gp = NULL;
+    E_resume *rp = NULL;
+
+    bool stopProcessing = false;
+
+    // debug:
+    // ev->print();
+    
     switch (ev->Ekind()) {
       case Ev_task:
         //  Task event
@@ -240,33 +269,47 @@ void ViewField::processData()
 	// Checking out the tag ...
 	gp = (E_tag *)ev;
         int tgNo = gp->tagNo();
-        if (tags[tgNo].tagNo < 0) {
+        if (tagNum == -3 && tags[tgNo].tagNo < 0) {
 	  tags[tgNo].tagNo = tgNo;
 	  // printf("processing tag '%s'\n", gp->tagName().c_str());
 	  tags[tgNo].tagName = new char [gp->tagName().length()+25];
 	  snprintf (tags[tgNo].tagName, gp->tagName().length()+25,
 		    "Tags/Tag %d (%s)", tgNo, gp->tagName().c_str());
 	}
-	if (gp->isPause()) {
-	  // Need to update times so that resume can reset ref times
+	if (tagNum == tgNo) {
+	  theLocales[gp->nodeId()].refUserCpu = gp->user_time();
+	  theLocales[gp->nodeId()].refSysCpu = gp->sys_time();
+	} else if (gp->isPause() || tgNo == stopTag ) {
+	  // Need to update times for correctness, either for tag->tag or resume
 	  theLocales[gp->nodeId()].userCpu += gp->user_time()
 	    - theLocales[gp->nodeId()].refUserCpu;
 	  theLocales[gp->nodeId()].sysCpu += gp->sys_time()
 	    - theLocales[gp->nodeId()].refSysCpu;
 	  theLocales[gp->nodeId()].Cpu = theLocales[gp->nodeId()].userCpu 
 	    + theLocales[gp->nodeId()].sysCpu;
-	  //printf ("tag: node = %d cpu = %f\n",  gp->nodeId(), 
-	  //         theLocales[gp->nodeId()].Cpu);
-
+	  if (maxCpu < theLocales[gp->nodeId()].Cpu)
+	    maxCpu = theLocales[gp->nodeId()].Cpu;
 	}
+	printf ("tag: node = %d user = %f, sys = %f, cpu = %f\n",  gp->nodeId(), 	        theLocales[gp->nodeId()].userCpu,
+		theLocales[gp->nodeId()].sysCpu,
+		theLocales[gp->nodeId()].Cpu);
+	// Stop here?
+	stopProcessing = (gp->nodeId() == numlocales-1) &&
+                         tgNo == stopTag;
 	break;
     }
+
+    if (stopProcessing)
+      ev = NULL;
+    else 
+      ev = VisData.getNextEvent();
+
   }
 
   Info->setMaxes(maxTasks, maxComms, maxDatasize, maxCpu);
   //printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
 
-  makeTagsMenu();
+  if (tagNum == -3)  makeTagsMenu();
 
  }
 
@@ -274,12 +317,18 @@ static void selTag(Fl_Widget *w, void *p)
 {
   long ix = (long) p;
   struct tagInfo *ptr = (struct tagInfo *)p;
-  if (ix == -2) 
+  if (ix == -2) {
     printf ("selTag called on All\n");
-  else if (ix == -1)
+    DbgView->processData(-2);
+  } else if (ix == -1) {
     printf ("selTag called on Start\n");
-  else
+    DbgView->processData(-1);
+  } else {
     printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
+    DbgView->processData(ptr->tagNo);
+  }
+  DbgView->redraw();
+  Info->redraw();
 }
 
 void ViewField::makeTagsMenu(void)
@@ -313,10 +362,6 @@ void ViewField::makeTagsMenu(void)
 }
 
 
-void ViewField::processTag(int n)
-{
-  
-}
 
 
 void ViewField::drawLocale ( int ix, Fl_Color col)
@@ -464,6 +509,7 @@ int ViewField::handle(int event)
     break;
   case FL_RELEASE:
     //printf ("Release at (%d,%d)\n", x, y);
+    // Click on a locale?
     if (numlocales > 0) {
       for (ix = 0; ix < numlocales; ix++) {
 	// See if release is inside a locale
@@ -479,6 +525,8 @@ int ViewField::handle(int event)
 	}
       }
     }
+    // Click on a comm link?
+    
     break;
   }
   return Fl_Box::handle(event);
