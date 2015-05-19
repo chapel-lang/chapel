@@ -102,7 +102,7 @@ if (selfile) {
    DbgView->setNumLocales(VisData.NumLocales());
    DbgView->processData(-3);
    MainWindow->redraw();
-}}
+}} selected
           xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
@@ -168,6 +168,11 @@ MainWindow->redraw();}
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->processData(-3); // -3 is new open
     }
-}} {selected
-  }
+} else {
+   // look for .Vdebug/.Vdebug-0
+   if (VisData.LoadData(".Vdebug/.Vdebug-0")) {
+      DbgView->setNumLocales(VisData.NumLocales());
+      DbgView->processData(-3); // -3 is new open
+   }
+}} {}
 } 

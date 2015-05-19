@@ -160,7 +160,7 @@ void ViewField::processData(int tagNum)
 {
   int ix1, ix2;  // For processing the arrays
 
-  printf ("ViewField::processData(%d)\n", tagNum);
+  // printf ("ViewField::processData(%d)\n", tagNum);
 
   // Initialize ... in case data has changed.
   for (ix1 = 0; ix1 < numlocales; ix1++) {
@@ -290,9 +290,12 @@ void ViewField::processData(int tagNum)
 	  if (maxCpu < theLocales[gp->nodeId()].Cpu)
 	    maxCpu = theLocales[gp->nodeId()].Cpu;
 	}
-	printf ("tag: node = %d user = %f, sys = %f, cpu = %f\n",  gp->nodeId(), 	        theLocales[gp->nodeId()].userCpu,
-		theLocales[gp->nodeId()].sysCpu,
-		theLocales[gp->nodeId()].Cpu);
+
+	//printf ("tag: node = %d user = %f, sys = %f, cpu = %f\n",  gp->nodeId(),
+ 	//        theLocales[gp->nodeId()].userCpu,
+	//	theLocales[gp->nodeId()].sysCpu,
+	//	theLocales[gp->nodeId()].Cpu);
+
 	// Stop here?
 	stopProcessing = (gp->nodeId() == numlocales-1) &&
                          tgNo == stopTag;
@@ -318,13 +321,13 @@ static void selTag(Fl_Widget *w, void *p)
   long ix = (long) p;
   struct tagInfo *ptr = (struct tagInfo *)p;
   if (ix == -2) {
-    printf ("selTag called on All\n");
+    // printf ("selTag called on All\n");
     DbgView->processData(-2);
   } else if (ix == -1) {
-    printf ("selTag called on Start\n");
+    // printf ("selTag called on Start\n");
     DbgView->processData(-1);
   } else {
-    printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
+    // printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
     DbgView->processData(ptr->tagNo);
   }
   DbgView->redraw();
