@@ -1041,11 +1041,14 @@ for testname in testsrc:
                 if suppressme:
                     with open('./'+test_filename+'.suppressif', 'r') as suppressfile:
                         suppressline = suppressfile.readline().strip()
-                    if suppressline.startswith("#"):
-                      suppressline = suppressline.replace("#","");
-                    else:
-                      suppressline = ""
-                    suppressline = suppressline.strip()
+                        if suppressline.startswith("#!"):
+                            # read the next line to skip e.g. #!/bin/bash
+                            suppressline = suppressfile.readline().strip()
+                        if suppressline.startswith("#"):
+                          suppressline = suppressline.replace("#","");
+                        else:
+                          suppressline = ""
+                        suppressline = suppressline.strip()
                     futuretest='Suppress (' + suppressline + ') '
             except ValueError:
                 sys.stdout.write('[Error processing .suppressif file %s/%s]\n'%(localdir,f))
@@ -1959,10 +1962,10 @@ for testname in testsrc:
                     if not exectimeout:
                         if status == 0:
                             os.unlink(execlog)
-                            sys.stdout.write('[Success')
+                            sys.stdout.write('%s[Success '%(futuretest))
                         else:
-                            sys.stdout.write('[Error')
-                        sys.stdout.write(' matching performance keys for %s/%s'%
+                            sys.stdout.write('%s[Error '%(futuretest))
+                        sys.stdout.write('matching performance keys for %s/%s'%
                                         (localdir, test_filename))
                         if status!=0:
                             printTestVariation(compoptsnum, compoptslist,
