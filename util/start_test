@@ -1885,14 +1885,20 @@ set suppressmarker = "^Suppress"
 set errormarker = "^\[Error"
 set warningmarker = "^\[Warning"
 if ($performance == 0 && $gengraphs) then
-    set successmarker = "^\[Success generating"
+    set successmarker = "\[Success generating"
 else
     if ($?CHPL_COMPONLY) then
-        set successmarker = "^\[Success compiling"
+        set successmarker = "\[Success compiling"
     else
-        set successmarker = "^\[Success matching"
+        set successmarker = "\[Success matching"
     endif
 endif
+
+set passingSuppresionsMarker = "$suppressmarker.*$successmarker"
+set passingFuturesMarker = "$futuremarker.*$successmarker"
+
+set successmarker = "^$successmarker"
+
 set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
@@ -1917,8 +1923,12 @@ if ($clean_only == 0) then
     set futures = `grep -c "$futuremarker" $logfile.summary`
     set warnings = `grep -c "$warningmarker" $logfile.summary`
 
+    set passingsuppress = `grep -c "$passingSuppresionsMarker" $logfile.summary`
+    set passingfutures = `grep -c "$passingFuturesMarker" $logfile.summary`
+
     if ($skipstdinredirs != 0) echo \[Skipped $skipstdinredirs tests with .stdin input\]
     echo "[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures | #Warnings = $warnings ]" |& $tee -a $logfile.summary
+    echo "[Summary: #Passing Suppressions = $passingsuppress | #Passing Futures = $passingfutures ]" |& $tee -a $logfile.summary
 else
     echo \[Summary: CLEAN ONLY\] |& $tee $logfile.summary
 endif
