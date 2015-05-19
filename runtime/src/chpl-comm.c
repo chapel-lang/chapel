@@ -45,6 +45,7 @@ int chpl_verbose_mem;
 #include <stdarg.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
@@ -148,25 +149,54 @@ int chpl_dprintf (int fd, const char * format, ...)
   return -1;
 }
 
-static int chpl_make_vdebug_file (const char *rootname, int namelen) {
-    char fname[namelen];
+static int chpl_make_vdebug_file (const char *rootname) {
+    // Calculate size of full file name
+    int namelen = 2 * strlen(rootname) + 5; 
+    int  temp;
+    temp =  chpl_numNodes;
+    while (temp > 1) {
+      namelen++;
+      temp /= 2;
+    }
     
-    snprintf (fname, namelen, "%s-%d", rootname, chpl_nodeID);
+    char fname[namelen];
+    struct stat sb;
+
+    chpl_vdebug = 0;
+    chpl_vdebug_fd = -1;
+
+    // Make sure the directory is made.
+    if (stat(rootname, &sb) < 0) {
+      if (errno == ENOENT) {
+	if (mkdir(rootname,0777) < 0 && (errno != EEXIST)) {
+	  fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
+	  return -1;
+	}
+      } else {
+	fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
+	return -1;
+      }
+    } else {
+      if ((sb.st_mode & S_IFMT) != S_IFDIR) {
+	fprintf (stderr, "%s: not a directory.\n", rootname);
+	return -1;
+      }
+    }
+    
+    snprintf (fname, namelen, "%s/%s-%d", rootname, rootname, chpl_nodeID);
     chpl_vdebug_fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC|O_APPEND, 0666);
     if (chpl_vdebug_fd < 0) {
       fprintf (stderr, "Visual Debug failed to open %s: %s\n",
                fname, strerror (errno));
-      chpl_vdebug = 0;
       chpl_vdebug_fd = -1;
       return -1;
     }
+    chpl_vdebug = 1;
     return 0;
 }
 
 void chpl_vdebug_start (const char *fileroot, double now) {
   const char * rootname;
-  int  namelen;
-  int  temp;
   struct rusage ru;
 
   chpl_vdebug = 0;
@@ -179,15 +209,9 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   
   // Get the root of the file name.
   rootname = (fileroot == NULL || fileroot[0] == 0) ? ".Vdebug" : fileroot; 
-  namelen = strlen (rootname)+3;
-  temp =  chpl_numNodes;
-  while (temp > 1) { 
-    namelen ++;
-    temp /= 2;
-  }
   
   // In case of an error, just return
-  if (chpl_make_vdebug_file (rootname, namelen) < 0)
+  if (chpl_make_vdebug_file (rootname) < 0)
     return;
   
   // Write initial information to the file, including resource time
