@@ -817,6 +817,10 @@ makeHeapAllocations() {
           if (formal == arg)
             se = toSymExpr(actual);
         }
+        INT_ASSERT(se);
+        // Previous passes mean that we should always get a formal SymExpr
+        // to match the ArgSymbol.  And that formal should have the
+        // ref flag, since we obtained it through the refVec.
         INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
         if (!refSet.set_in(se->var)) {
           refSet.set_add(se->var);
