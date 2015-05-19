@@ -16,4 +16,4 @@ if [ "${tasks}" == "qthreads" ] ; then
     export CHPL_QTHREAD_MORE_CFG_OPTIONS=--enable-valgrind
 fi
 
-nightly_args="-valgrind -suppress Suppressions/valgrind.suppress -parnodefile $CWD/../../test/Nodes/valgrind-localhost"
+nightly_args="-valgrind -parnodefile $CWD/../../test/Nodes/valgrind-localhost"

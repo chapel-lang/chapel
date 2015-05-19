@@ -6396,21 +6396,20 @@ resolveFns(FnSymbol* fn) {
           !ct->symbol->hasFlag(FLAG_REF)) {
         VarSymbol* tmp = newTemp(ct);
         CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
-        fn->insertAtHead(call);
+
+        // In case resolveCall drops other stuff into the tree ahead of the
+        // call, we wrap everything in a block for safe removal.
+        BlockStmt* block = new BlockStmt();
+        block->insertAtHead(call);
+
+        fn->insertAtHead(block);
         fn->insertAtHead(new DefExpr(tmp));
         resolveCall(call);
 
         resolveFns(call->isResolved());
         ct->destructor = call->isResolved();
-        // Ensure that resolveFns() above did not insert anything
-        // prior to 'call' and 'tmp->defPoint'. If it did, we'd need
-        // to remove those things too. For that, we could march+remove
-        // from fn->body->body.head until call->next, exclusively,
-        // or put 'call' and 'tmp->defPoint' in their own BlockStmt
-        // and remove that one here.
-        INT_ASSERT(call->prev == tmp->defPoint);
-        INT_ASSERT(tmp->defPoint == fn->body->body.head);
-        call->remove();
+
+        block->remove();
         tmp->defPoint->remove();
       }
     }
