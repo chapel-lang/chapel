@@ -6071,6 +6071,8 @@ new_Expr(const char* format, va_list vl) {
       i += n-1;
       if (!strcmp(str, "TYPE")) {
         INT_ASSERT(stack.size() > 0);
+        // You've reached here because you didn't provide "{ TYPE ..." for a
+        // block type statement.
         BlockStmt* block = toBlockStmt(stack.top());
         INT_ASSERT(block);
         block->blockTag = BLOCK_TYPE;
@@ -6111,6 +6113,7 @@ new_Expr(const char* format, va_list vl) {
       stack.pop();
       INT_ASSERT(expr);
       INT_ASSERT(stack.size() > 0);
+      // If you failed the previous assert, there was nothing before the ','
       CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
@@ -6119,6 +6122,8 @@ new_Expr(const char* format, va_list vl) {
       stack.pop();
       INT_ASSERT(expr);
       INT_ASSERT(stack.size() > 0);
+      // If you failed the previous assert, this closing parentheses is
+      // unmatched
       CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
@@ -6129,6 +6134,7 @@ new_Expr(const char* format, va_list vl) {
       stack.pop();
       INT_ASSERT(expr);
       INT_ASSERT(stack.size() > 0);
+      // If you failed the previous assert, there was nothing before the ';'
       BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
@@ -6137,6 +6143,8 @@ new_Expr(const char* format, va_list vl) {
       stack.pop();
       INT_ASSERT(expr);
       INT_ASSERT(stack.size() > 0);
+      // If you failed the previous assert, this closing curly bracket is
+      // unmatched
       BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
