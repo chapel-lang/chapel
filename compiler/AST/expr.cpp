@@ -6070,6 +6070,7 @@ new_Expr(const char* format, va_list vl) {
       const char* str = asubstr(&format[i], &format[i+n]);
       i += n-1;
       if (!strcmp(str, "TYPE")) {
+        INT_ASSERT(stack.size() > 0);
         BlockStmt* block = toBlockStmt(stack.top());
         INT_ASSERT(block);
         block->blockTag = BLOCK_TYPE;
@@ -6109,6 +6110,7 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.top();
       stack.pop();
       INT_ASSERT(expr);
+      INT_ASSERT(stack.size() > 0);
       CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
@@ -6116,6 +6118,7 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.top();
       stack.pop();
       INT_ASSERT(expr);
+      INT_ASSERT(stack.size() > 0);
       CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
@@ -6125,6 +6128,7 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.top();
       stack.pop();
       INT_ASSERT(expr);
+      INT_ASSERT(stack.size() > 0);
       BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
@@ -6132,6 +6136,7 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.top();
       stack.pop();
       INT_ASSERT(expr);
+      INT_ASSERT(stack.size() > 0);
       BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
