@@ -12,5 +12,5 @@ inline proc writeMe(s) {
 use unitTest;
 proc main() {
   doIt(string_impl);
-  if totalMemLeaked > 0 then printMemLeaksTable();
+  if totalMemLeaked > 0 then printMemAllocsByType();
 }

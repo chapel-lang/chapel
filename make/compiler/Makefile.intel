@@ -51,9 +51,10 @@ PROFILE_LFLAGS = -pg
 
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170
-RUNTIME_CFLAGS = -std=c99 $(CFLAGS) -wr181,188
+
+RUNTIME_CFLAGS = -std=gnu99 $(CFLAGS) -wr181,188
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
-GEN_CFLAGS = -std=c99 -fp-model strict -wr592
+GEN_CFLAGS = -std=gnu99 -wr592
 # NOTE: These are only supported for Linux
 GEN_STATIC_FLAG = -static-intel -static-libgcc -static
 GEN_DYNAMIC_FLAG = -Bdynamic
@@ -74,6 +75,10 @@ SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
 endif
 endif
 endif
+
+# Set flag for lax or IEEE floating point
+FAST_FLOAT_GEN_CFLAGS = -fp-model fast
+IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 
 #
 # Warnings squashed for flex-/bison-generated code

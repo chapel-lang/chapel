@@ -136,6 +136,8 @@ stderr.writef("tries  %i\n", tries);
 
 for t in 1..tries {
   stderr.writef("starting try %i\n", t);
+  stderr.flush();
+
   addTime(tDummy);
 
   cf_trial(n);   addTime(tcf);
@@ -147,6 +149,9 @@ for t in 1..tries {
 
   nb_trial();     addTime(tnb);
   sto_trial();   addTime(tsto);
+
+  // flush any buffered newlines
+  stdout.flush();
 }
 
 stderr.writef("done tries\n");

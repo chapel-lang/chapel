@@ -56,13 +56,17 @@ size_t chpl_getSysPageSize(void) {
   static size_t pageSize = 0;
 
   if (pageSize == 0) {
+    long int ps;
 #if defined _SC_PAGESIZE
-    pageSize = (size_t) sysconf(_SC_PAGESIZE);
+    ps = sysconf(_SC_PAGESIZE);
 #elif defined _SC_PAGE_SIZE
-    pageSize = (size_t) sysconf(_SC_PAGE_SIZE);
+    ps = sysconf(_SC_PAGE_SIZE);
 #else
     chpl_internal_error("cannot determine page size");
 #endif
+    if (ps <= 0L)
+      chpl_internal_error("system page size must be positive");
+    pageSize = (size_t) ps;
   }
 
   return pageSize;
@@ -409,7 +413,7 @@ c_string chpl_nodeName(void) {
     uname(&utsinfo);
     namelen = strlen(utsinfo.nodename)+1;
     namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
-                                 CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
+                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, NULL);
     strcpy(namespace, utsinfo.nodename);
   }
   return namespace;

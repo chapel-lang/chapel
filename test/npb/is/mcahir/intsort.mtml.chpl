@@ -140,12 +140,12 @@ proc main () {
 
   tsetup.start();
 
-  writeln ("NAS Parallel Benchmarks 2.4 -- IS Benchmark" );
-  writeln (" Size:                       ", format("#########",nkeys),"  (class ",probClass,")");
-  writeln (" Iterations:                 ", format("#########",maxIterations));
-  writeln (" Number of locales:          ", format("#########",numLocales));
-  writeln (" Number of tasks per locale: ", format("#########",dataParTasksPerLocale));
-  writeln (" ");
+  writef ("NAS Parallel Benchmarks 2.4 -- IS Benchmark\n" );
+  writef (" Size:                       %{#########}  (class %t)\n", nkeys, probClass);
+  writef (" Iterations:                 %{#########}\n",maxIterations);
+  writef (" Number of locales:          %{#########}\n",numLocales);
+  writef (" Number of tasks per locale: %{#########}\n",dataParTasksPerLocale);
+  writef (" \n");
 
 
   // initialize key values
@@ -190,15 +190,15 @@ proc main () {
 
   // Now complete output
 
-  writeln("\n\n IS Benchmark Completed");
-  writeln(" Class           = ","                        ",probClass);
-  writeln(" Size            = ", format("#########################",nkeys));
-  writeln(" Iterations      = ", format("#########################",maxIterations));
+  writef("\n\n IS Benchmark Completed\n");
+  writef(" Class           =                         %t\n",probClass);
+  writef(" Size            = %{#########################}\n",nkeys);
+  writef(" Iterations      = %{#########################}\n",maxIterations);
   if (printTime) {
-      writeln(" Time in seconds = ", format("######################.##",
-        tsort.elapsed(TimeUnits.seconds)) );
-      writeln(" Mop/s total     = ", format("######################.##",
-        (maxIterations*nkeys)/tsort.elapsed(TimeUnits.seconds)/1000000 ) );
+      writef(" Time in seconds = %{######################.##}\n",
+        tsort.elapsed(TimeUnits.seconds));
+      writef(" Mop/s total     = %{######################.##}\n",
+        (maxIterations*nkeys)/tsort.elapsed(TimeUnits.seconds)/1000000 );
   }
   writeln(" Operation type  = ","              keys ranked");
   if (passedVerifications ==  (maxIterations*5+1) ) then
