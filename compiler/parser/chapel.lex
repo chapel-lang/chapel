@@ -96,7 +96,17 @@ exponent         [Ee][\+\-]?{digit}+
 floatLiteral1    {digit}*"."{digit}+({exponent})?
 floatLiteral2    {digit}+"."{exponent}
 floatLiteral3    {digit}+{exponent}
-floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
+
+/* hex float literals, have decimal exponents indicating the power of 2 */
+hexDecExponent   [Pp][\+\-]?{digit}+
+floatLiteral4    0[xX]{hexDigit}*"."{hexDigit}+({hexDecExponent})?
+floatLiteral5    0[xX]{hexDigit}+"."{hexDecExponent}
+floatLiteral6    0[xX]{hexDigit}+{hexDecExponent}
+
+decFloatLiteral  {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
+hexFloatLiteral  {floatLiteral4}|{floatLiteral5}|{floatLiteral6}
+
+floatLiteral     {decFloatLiteral}|{hexFloatLiteral}
 
 %s               externmode
 

@@ -63,7 +63,7 @@ static void track_system_allocated(
   system_allocated_head = cur;
 }
 
-static int is_system_allocated(void* ptr_in)
+static int is_system_allocated(void* ptr_in, size_t *len_out)
 {
   unsigned char* ptr = (unsigned char*) ptr_in;
   struct system_allocated_ptr* cur;
@@ -72,7 +72,10 @@ static int is_system_allocated(void* ptr_in)
        cur = cur->next ) {
     unsigned char* start = cur->ptr;
     unsigned char* end = start + cur->len;
-    if( start <= ptr && ptr < end ) return 1;
+    if( start <= ptr && ptr < end ) {
+      if( len_out ) *len_out = cur->len;
+      return 1;
+    }
   }
   return 0;
 }
@@ -166,14 +169,43 @@ void* realloc(void* ptr, size_t size)
   if( !chpl_mem_inited() ) {
     void* ret = __libc_realloc(ptr, size);
     if( DEBUG_REPLACE_MALLOC ) 
-      printf("in early realloc %p = system realloc(%#x)\n", ret, (int) size);
+      printf("in early realloc %p = system realloc(%p,%#x)\n",
+             ret, ptr, (int) size);
     track_system_allocated(ret, size, __libc_malloc);
     return ret;
-  }
-  if( DEBUG_REPLACE_MALLOC ) 
-    printf("in realloc\n");
+  } else {
+    void* ret = NULL;
+    size_t allocated_len = 0;
+    size_t copy_size;
 
-  return chpl_realloc(ptr, size);
+    if( DEBUG_REPLACE_MALLOC )
+      printf("in realloc(%p,%#x)\n", ptr, (int) size);
+
+    // check to see if we're realloc'ing a pointer that was allocated
+    // before the our allocator came up.
+    if( is_system_allocated(ptr, &allocated_len) ) {
+      if( DEBUG_REPLACE_MALLOC ) {
+        printf("in realloc, ptr %p was system allocated to size %#x\n",
+               ptr, (int) allocated_len);
+      }
+
+      // allocate some new memory on the Chapel heap
+      ret = chpl_malloc(size);
+
+      // copy the minimum of allocated_len and size
+      // to handle realloc expanding or shrinking the allocation
+      copy_size = allocated_len;
+      if( size < copy_size ) copy_size = size;
+
+      memcpy(ret, ptr, copy_size);
+
+      // free the old pointer from the system heap.
+      __libc_free(ptr);
+      return ret;
+    } else {
+      return chpl_realloc(ptr, size);
+    }
+  }
 }
 
 void free(void* ptr)
@@ -183,7 +215,7 @@ void free(void* ptr)
     printf("in free(%p)\n", ptr);
   // check to see if we're freeing a pointer that was allocated
   // before the our allocator came up.
-  if( !chpl_mem_inited() || is_system_allocated(ptr) ) {
+  if( !chpl_mem_inited() || is_system_allocated(ptr, NULL) ) {
     if( DEBUG_REPLACE_MALLOC ) 
       printf("calling system free\n");
     __libc_free(ptr);
