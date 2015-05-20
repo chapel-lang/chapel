@@ -6070,9 +6070,9 @@ new_Expr(const char* format, va_list vl) {
       const char* str = asubstr(&format[i], &format[i+n]);
       i += n-1;
       if (!strcmp(str, "TYPE")) {
-        INT_ASSERT(stack.size() > 0);
-        // You've reached here because you didn't provide "{ TYPE ..." for a
-        // block type statement.
+        if (stack.size() == 0) {
+          INT_FATAL("You neglected to provide a \"{ TYPE ...\" for a block type statement.");
+        } // Accessing the stack would result in unspecified behavior
         BlockStmt* block = toBlockStmt(stack.top());
         INT_ASSERT(block);
         block->blockTag = BLOCK_TYPE;
@@ -6112,8 +6112,9 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.top();
       stack.pop();
       INT_ASSERT(expr);
-      INT_ASSERT(stack.size() > 0);
-      // If you failed the previous assert, there was nothing before the ','
+      if (stack.size() == 0) {
+        INT_FATAL("There was nothing before the \',\'");
+      } // Accessing the stack would result in unspecified behavior
       CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
@@ -6121,9 +6122,9 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.top();
       stack.pop();
       INT_ASSERT(expr);
-      INT_ASSERT(stack.size() > 0);
-      // If you failed the previous assert, this closing parentheses is
-      // unmatched
+      if (stack.size() == 0) {
+        INT_FATAL("This closing parentheses is unmatched");
+      } // Accessing the stack would result in unspecified behavior
       CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
@@ -6133,8 +6134,9 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.top();
       stack.pop();
       INT_ASSERT(expr);
-      INT_ASSERT(stack.size() > 0);
-      // If you failed the previous assert, there was nothing before the ';'
+      if (stack.size() == 0) {
+        INT_FATAL("There was nothing before the \';\'");
+      } // Accessing the stack would result in unspecified behavior
       BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
@@ -6142,9 +6144,9 @@ new_Expr(const char* format, va_list vl) {
       Expr* expr = stack.top();
       stack.pop();
       INT_ASSERT(expr);
-      INT_ASSERT(stack.size() > 0);
-      // If you failed the previous assert, this closing curly bracket is
-      // unmatched
+      if (stack.size() == 0) {
+        INT_FATAL("This closing curly bracket is unmatched");
+      } // Accessing the stack would result in unspecified behavior
       BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
