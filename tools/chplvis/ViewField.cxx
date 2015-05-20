@@ -254,7 +254,7 @@ void ViewField::processData(int tagNum)
 	  + theLocales[ep->nodeId()].sysCpu;  
 	if (maxCpu < theLocales[ep->nodeId()].Cpu)
 	  maxCpu = theLocales[ep->nodeId()].Cpu;
-	// printf ("end: node = %d cpu = %f\n",  ep->nodeId(), 
+	//printf ("end: node = %d cpu = %f\n",  ep->nodeId(), 
 	//	theLocales[ep->nodeId()].Cpu);
 	break;
 
@@ -277,9 +277,11 @@ void ViewField::processData(int tagNum)
 		    "Tags/Tag %d (%s)", tgNo, gp->tagName().c_str());
 	}
 	if (tagNum == tgNo) {
+	  //printf ("Tag: setting ref times\n");
 	  theLocales[gp->nodeId()].refUserCpu = gp->user_time();
 	  theLocales[gp->nodeId()].refSysCpu = gp->sys_time();
 	} else if (gp->isPause() || tgNo == stopTag ) {
+	  //printf ("Tag: updating user/sys/cpu times.\n");
 	  // Need to update times for correctness, either for tag->tag or resume
 	  theLocales[gp->nodeId()].userCpu += gp->user_time()
 	    - theLocales[gp->nodeId()].refUserCpu;
@@ -306,6 +308,7 @@ void ViewField::processData(int tagNum)
       ev = NULL;
     else 
       ev = VisData.getNextEvent();
+    //if (ev == NULL) printf ("ev is NULL.\n");
 
   }
 

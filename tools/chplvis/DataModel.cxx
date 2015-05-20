@@ -385,7 +385,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		  itr++;
 	      }
 	    }
-	    //std::list<Event*>::iterator newElem = theEvents.insert (itr, newEvent);
+	    /*std::list<Event*>::iterator newElem = */ theEvents.insert (itr, newEvent);
 	    //	    if (tp != NULL && tp->nodeId() == 0) {
 	    //	      tagVec[tp->tagNo()-1] = newElem;
 	    //	    }
