@@ -32,6 +32,9 @@ decl {\#include <FL/Fl_Multiline_Output.H>} {public local
 decl {\#include <FL/Fl_Sys_Menu_Bar.H>} {public local
 } 
 
+decl {\#include <FL/fl_ask.H>} {private local
+} 
+
 decl {\#include "ViewField.h"} {public global
 } 
 
@@ -98,11 +101,13 @@ Function {} {open
 
 if (selfile) {
    // User didn't cancel
-   VisData.LoadData(selfile);
+   if (!VisData.LoadData(selfile)) {
+      return;
+   }
    DbgView->setNumLocales(VisData.NumLocales());
    DbgView->processData(-3);
    MainWindow->redraw();
-}}
+}} selected
           xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
@@ -150,7 +155,7 @@ MainWindow->redraw();}
         }
       }
     }
-    Fl_Box Info {selected
+    Fl_Box Info {
       xywh {0 20 500 70} box FLAT_BOX color 7
       class InfoBar
     }
@@ -160,8 +165,9 @@ MainWindow->redraw();}
     }
   }
   code {if (argc > 1 && argv[1][1] != '-') {
-    if (!VisData.LoadData(argv[1]))
+    if (!VisData.LoadData(argv[1])) {
        exit(1);
+    }
     argc--;
     argv++;
     if (DbgView) {
@@ -170,7 +176,8 @@ MainWindow->redraw();}
     }
 } else {
    // look for .Vdebug/.Vdebug-0
-   if (VisData.LoadData(".Vdebug/.Vdebug-0")) {
+   if (access(".Vdebug/.Vdebug-0", R_OK) == 0 &&
+       VisData.LoadData(".Vdebug/.Vdebug-0")) {
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->processData(-3); // -3 is new open
    }
