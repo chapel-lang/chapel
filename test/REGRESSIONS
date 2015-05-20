@@ -177,18 +177,14 @@ Reviewed 2015-04-27
 ===================
 *32
 Inherits 'general'
-Reviewed 2015-04-27
+Reviewed 2015-05-12
 ===================
-
-different amounts of memory leaked on 32-bit platforms (2014-11-12, first run)
-------------------------------------------------------------------------------
-[Error matching program output for memory/sungeun/refCount/domainMaps]
 
 
 ===================
 linux32
 Inherits '*32'
-Reviewed 2015-04-29
+Reviewed 2015-05-19
 ===================
 
 
@@ -306,80 +302,19 @@ Reviewed 2015-04-27
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-04-27
+Reviewed 2015-05-15
 ===================
 
-new errors on 2015-04-30
-------------------------
-[Error matching program output for distributions/robust/arithmetic/basics/test_domain_iteration1]
-[Error matching program output for studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-iter]
-[Error matching program output for types/range/hilde/alignedWhenAssigned]
-
-
-new errors on 2015-04-29 (lydia)
---------------------------------
-[Error matching program output for arrays/bradc/localSlices/nonlocalslice]
-[Error matching program output for arrays/deitz/part2/test_array_float1]
-[Error matching program output for arrays/deitz/part2/test_array_init1]
-[Error matching program output for arrays/deitz/part2/test_array_init3]
-[Error matching program output for arrays/deitz/part2/test_array_integer_2d]
-[Error matching program output for arrays/deitz/part2/test_array_of_class1]
-[Error matching program output for arrays/deitz/part4/test_anon_domain2]
-[Error matching program output for arrays/deitz/part5/test_promote_constructor]
-[Error matching program output for arrays/deitz/part7/test_index_domain2]
-[Error matching program output for arrays/deitz/part7/test_index_domain]
-[Error matching program output for classes/dinan/default_initializer]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias1]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias2]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_expand]
-[Error matching program output for domains/deitz/test_domain_promote1]
-[Error matching program output for exercises/boundedBuffer2]
-[Error matching program output for functions/deitz/test_promote_generic]
-[Error matching program output for modules/standard/Random/diten/test_2D_fillRandom_complex]
-[Error matching program output for parallel/begin/deitz/test_global_for_begin]
-[Error matching program output for performance/bradc/parOpEquals]
-[Error matching program output for reductions/bradc/manual/promote]
-[Error matching program output for reductions/thomasvandoren/test/TestSorted]
-[Error matching program output for release/examples/benchmarks/shootout/fannkuchredux]
-[Error matching program output for release/examples/programs/quicksort]
-[Error matching program output for release/examples/spec/Arrays/adecl-literal]
-[Error matching program output for release/examples/spec/Arrays/reindexing]
-[Error matching program output for studies/beer/bradc/beer-promoted-explicit]
-[Error matching program output for studies/beer/bradc/beer-promoted-init]
-[Error matching program output for studies/hpcc/FFT/bradc/butterfly2]
-[Error matching program output for studies/hpcc/common/bradc/unit/multipleDomains2]
-[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce3]
-[Error matching program output for trivial/bradc/formatoutput]
-[Error matching program output for users/shetag/inlineArrInitInClass]
-
-new errors on 2015-03-28 (vass)
--------------------------------
-[Error matching program output for performance/sungeun/assign_across_locales]
-
-*** THESE 3 SHOULD BE FIXED ***
-[Error: Timed out executing program studies/amr/diffusion/grid/Grid_DiffusionBE_driver]
-[Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver]
-[Error: Timed out executing program studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
-
-invalid reads/writes, not manually reproducible (2015-04-11..)
-------------------------------------------------------------
-[Error matching program output for arrays/bradc/reindex/reindex]
-[Error matching program output for domains/bradc/subdomain]
-[Error matching program output for spec/marybeth/for]
-[Error matching program output for spec/marybeth/select]
-[Error matching program output for users/ferguson/forall_expr]
+new errors in QIO tests (2015-05-12, michael)
+---------------------------------------------
+[Error matching program output for io/ferguson/ctests/qio_formatted_test]
+[Error: Timed out executing program io/ferguson/ctests/qio_bits_test]
 
 === sporadic failures below ===
 
-sporadic invalid write in dl_lookup_symbol->do_lookup_x, read in dl_name_match_p
---------------------------------------------------------------------------------
-[Error matching program output for reductions/bradc/manual/promote] (2015-04-11..2015-04-18)
-
-sporadic invalid reads/writes
------------------------------
-[Error matching program output for exercises/boundedBuffer2] (2015-04-11..2015-04-15, 2015-04-17..2015-04-18)
-[Error matching program output for trivial/bradc/formatoutput] (2015-04-11..2015-04-18)
+sporadic execution timeout (michael)
+------------------------------------
+[Error: Timed out executing program io/ferguson/ctests/qio_test.valgrind] (2015-05-12..2015-05-14, 2015-05-19)
 
 
 ****************************************************************************
@@ -390,12 +325,8 @@ sporadic invalid reads/writes
 ===================
 llvm
 Inherits 'general'
-Reviewed 2015-04-27
+Reviewed 2015-05-19
 ===================
-
-relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
-----------------------------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/shootout/pidigits]
 
 
 ===================
@@ -424,6 +355,8 @@ Inherits 'general'
 Reviewed 2015-04-27
 ===================
 
+*** TODO: Is the following fixed for no-local now? (it is for gasnet.fifo and gasnet-fast) ***
+
 reduced memoryUsed() values (2015-05-07, gbt)
 ---------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
@@ -449,6 +382,10 @@ Inherits 'no-local'
 Reviewed 2015-04-27
 ===================
 
+new test fails (2015-05-18, mppf)
+---------------------------------
+[Error matching compiler output for memory/ferguson/test1]
+
 === sporadic failures below ===
 
 sporadic memory leaks
@@ -457,12 +394,12 @@ sporadic memory leaks
 [Error matching program output for types/string/StringImpl/memLeaks/substring] (last seen with gasnet.fast on 2015-04-19..2015-04-20)
 
 
-sporadic failures even after Sung quieted it down (gbt/diten)
-(gasnet.fifo, gasnet-fast, gasnet-everything)
--------------------------------------------------------------
+sporadic failures even after Sung quieted it down (gbt)
+-------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] 
-  (gasnet.fifo: 2015-03-24, 2015-03-31, 2015-04-04..2015-04-05, 2015-04-12, 2015-04-26..2015-04-27, 2015-04-30, 2015-05-02, 2015-05-03..2015-05-05)
+  (gasnet.fifo: 2015-03-24, 2015-03-31, 2015-04-04..2015-04-05, 2015-04-12, 2015-04-26..2015-04-27, 2015-04-30, 2015-05-02, 2015-05-03..2015-05-05, 2015-05-14)
   (gasnet-fast: 2015-04-30, ..2015-05-03)
+  (gasnet-everything: 2015-05-11)
 
 
 ===================
@@ -471,6 +408,11 @@ Inherits 'gasnet*'
 Reviewed 2015-04-27
 ===================
 
+=== sporadic failures below ===
+
+sporadic recursive failure in AMUDP_SPMDShutdown
+------------------------------------------------
+[Error matching program output for extern/bradc/extern_string_test-remote] (2015-05-01)
 
 ===================
 gasnet-fast
@@ -537,7 +479,7 @@ Reviewed 2015-04-27
 ===================
 xc-wb.*
 Inherits 'general'
-Reviewed 2015-04-27
+Reviewed 2015-05-27
 ===================
 
 
@@ -572,19 +514,15 @@ Reviewed 2015-04-27
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2015-04-27
+Reviewed 2015-05-17
 ===================
 
 
 ================================
 xc-wb.intel
 Inherits 'xc-wb.*' and '*intel*'
-Reviewed 2015-04-27
+Reviewed 2015-05-17
 ================================
-
-factorization failed for non-positive semi-definite matrix (2015-03-12.., not attributed)
----------------------------------------------------------------------------------------
-[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
 
 
 ================================
@@ -615,18 +553,19 @@ sporadic dropping/mangling of output
 [Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] (2014-12-25..2015-01-08)
 [Error matching program output for classes/deitz/test_dynamic_dispatch2] (2015-04-07)
 [Error matching program output for distributions/dm/t5a] (2015-01-23)
-[Error matching program output for distributions/deitz/exBlockExample/block2D] (2015-01-21..2015-01-29)
+[Error matching program output for distributions/deitz/exBlockExample/block2D] (2015-01-21..2015-01-29, 2015-05-03..2015-05-04, 2015-05-12..2015-05-17)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (2014-10-24)
 [Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)] (2014-11-13)
 [Error matching program output for functions/diten/refIntents] (2014-09-30)
 [Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (2014-10-07)
 [Error matching program output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember] (2014-12-16)
 [Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014-10-10)
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (
-???: 2014-10-03, 2015-03-04
-xc.mpi.cray.slurm: 2015-03-01, 2015-05-07..
-xc-wb.prgenv-cray: 2015-03-26
-xc.none.cray.aprun: 2015-04-13)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
+  (???: 2014-10-03, 2015-03-04
+   xc.mpi.cray.slurm: 2015-03-01, 2015-05-07
+   xc-wb.prgenv-cray: 2015-03-26
+   xc.none.cray.aprun: 2015-04-13
+   xe.mpi.cray: 2015-05-09)
 [Error matching program output for release/examples/primers/arrays] (2014-10-03)
 [Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky] (2015-01-14)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
@@ -647,26 +586,23 @@ Also includes: xe-wb.prgenv-cray (not tested after 2015-03-05)
 Reviewed 2015-04-27
 ======================================
 
-:46: error: Text file busy in open with path "mandelbrot" -- Thomas owns
-------------------------------------------------------------------------
-[Error matching program output for exercises/Mandelbrot/mandelbrot] (2015-04-02..2015-04-05)
+seg fault (2015-05-03, ???)
+---------------------------
+[Error matching program output for distributions/robust/arithmetic/kernels/hpl]
 
-value is outside of the int range in C compilation (2015-03-??)
----------------------------------------------------------------
-[Error matching compiler output for types/enum/ferguson/enum_mintype_test]
+negative reference count (2015-05-04, ???)
+------------------------------------------
+[Error matching program output for studies/graph500/kristyn/Graph500_1D_onV/main]
+[Error matching program output for studies/graph500/v3/main]
 
-*** THIS SHOULD BE FIXED ***
-unknown base or bad width in channel.writef(fmt:string, ...) (2015-03-10, kbrady)
----------------------------------------------------------------------------------
-[Error matching program output for modules/standard/BitOps/rotl]
+stable execution timeout (2015-05-04, ???)
+------------------------------------------
+[Error: Timed out executing program studies/lulesh/bradc/lulesh-dense]
+
 
 Execution timeout (2015-03-04, vass - won't fix or skipif or suppress)
 ----------------------------------------------------------------------
 [Error: Timed out executing program parallel/forall/vass/ri-3-stress (compopts: 1)]
-
-Execution timeout (2015-02-15 ..)
----------------------------------
-[Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)]
 
 
 ============================
@@ -700,6 +636,10 @@ xc-wb.pgi
 Inherits 'xc-wb.*' and '*pgi*'
 Reviewed 2015-04-27
 ==============================
+
+floating point tolerance issue -- should now be fixed (2015-05-17, elliot)
+--------------------------------------------------------------------------
+[Error matching program output for types/file/fileIO2]
 
 
 ==============================
@@ -751,12 +691,18 @@ Reviewed 2015-04-27
 [Error matching program output for release/examples/programs/quicksort] (xc.mpi.cray.aprun, 2015-04-23)
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 5)] (xc.mpi.pgi.aprun, 2015-05-02)
 [Error matching program output for release/examples/primers/genericClasses] (xc.ugni.intel.aprun, 2015-05-02)
+[Error matching program output for release/examples/benchmarks/shootout/nbody] (xc.ugni.intel.aprun, 2015-05-11)
 
-slurm 'Expired credential' problem after executable termination (2015-04-13)
-----------------------------------------------------------------------------
+
+slurmstepd 'Expired credential' problem after termination (2015-04-13)
+----------------------------------------------------------------------
 [Error matching program output for release/examples/primers/genericClasses] (xc.aries.cray.slurm: 2015-04-13)
 [Error: Timed out executing program release/examples/primers/randomNumbers] (xc.aries.pgi.slurm: 2015-04-16)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/stream] (xc.ugni.intel.slurm: 2015-04-16)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (perf.xc.16.ugni.gnu: 2015-05-11)
+[Error: Timed out executing program statements/lydia/moduleVersusFunction] (perf.xc.local.pgi: 2015-05-11)
+[Error: Timed out executing program studies/shootout/fannkuch-redux/bradc/fannkuch-redux-blc-int8] (2015-05-11)
+
 
 sporadic timeout on tests that normally complete quickly
 --------------------------------------------------------
@@ -778,6 +724,17 @@ sporadic compilation timeouts - perhaps test-independent
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (xe.mpi.cray: 2015-03-25, xe.mpi.cray: 2015-03-27, xe.gemini.cray: 2015-04-24)
 
 ===================
+xe.none.cray
+Inherits 'xe.*'
+Reviewed 2015-05-02
+===================
+
+sporadic incorrect diff
+-----------------------
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)] (2015-05-02, 2015-05-08)
+
+
+===================
 xe.ugni*.*
 Inherits 'xe.*'
 Reviewed 2015-04-27
@@ -787,16 +744,31 @@ Reviewed 2015-04-27
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra          (compopts: 1)]              (xe.ugni-qthreads.gnu 2015-03-24, 2015-04-26)
-                                                                                                             (xe.ugni.intel        2015-03-24, 2015-03-30, 2015-04-01 .. 2015-04-02, 2015-04-24, 2015-05-03)
-                                                                                                             (xe.ugni.gnu          2015-03-24..2015-04-01, 2015-04-24, 2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 2015-05-05..2015-05-06)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 2015-04-26, 2015-05-02, 2015-05-05..2015-05-06)
-                                                                                                          (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 2015-05-03..2015-05-04, 2015-05-06..)
-                                                                                                          (xe.ugni-qthreads.intel: ?? .. 2015-03-22)
-                                                                                                          (xe.ugni-qthreads.gnu: 2015-05-05)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)] (xe.ugni.intel 2015-04-24, 2015-04-27, 2015-04-29..?, 2015-05-05..2015-05-06)
-                (xe.ugni.gnu   2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06)
-                (xe.ugni-qthreads.gnu 2015-04-25, 2015-05-02)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)]
+  (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26)
+  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18)
+  (xe.ugni.intel          2015-03-24, 2015-03-30, 2015-04-01..2015-04-02, 
+                          2015-04-24, 2015-05-03, 2015-05-13)
+  (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
+                          2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
+                          2015-05-05..2015-05-06, 2015-05-10,
+                          2015-05-14..2015-05-16)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
+  (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
+                           2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
+                           2015-05-11, 2015-05-17)
+  (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 
+                           2015-05-03..2015-05-04, 2015-05-06..??, 
+                           2015-05-13..2015-05-17)
+  (xe.ugni-qthreads.intel: ??..2015-03-22)
+  (xe.ugni-qthreads.gnu:   2015-05-05, 2015-05-17)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
+  (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
+                          2015-05-05..2015-05-06, 2015-05-18)
+  (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
+                          2015-05-18)
+  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18)
+  (xe.ugni-qthreads.intel 2015-05-09)
 
 
 ==========================================
@@ -804,10 +776,6 @@ xc.knc
 Inherits 'xc.*'
 Reviewed 2015-04-27
 ==========================================
-
-Unclear how KNCs interact with the file system on Crays (since first run)
--------------------------------------------------------------------------
-[Error matching program output for release/examples/primers/fileIO]
 
 === sporadic failures below ===
 
@@ -901,15 +869,15 @@ Reviewed 2015-04-27
 ===============================
 perf.xc.16.ugni.gnu
 Inherits 'perf.xc.no-local.gnu'
-Reviewed 2015-04-27
+Reviewed 2015-05-13
 ===============================
 
 === sporadic failures below ===
 
-sporadic execution timeout
---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-12..)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (execopts: *)] (2015-03-22, 2015-03-25, 2015-03-31, 2015-04-04..2015-04-07, 2015-04-09, 2015-04-11..2015-04-15, 2015-04-19, 2015-04-22)
+sporadic seg fault: (had been a timeout due to teardown probs) (gbt)
+--------------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/stream-ep] (2015-05-09..2015-05-10, 2015-05-13..)
+[Error matching performance keys for release/examples/benchmarks/ssca2/SSCA2_main (execopts: 2)] (2015-05-09..2015-05-10, 2015-05-13)
 
 
 ==================================
@@ -931,8 +899,8 @@ Inherits 'perf.xc.*'
 Reviewed 2015-04-27
 ========================================
 
-seg fault (2015-05-01) (???)
-----------------------------
+seg fault (2015-05-01) (diten)
+------------------------------
 [Error matching performance keys for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
 [Error matching performance keys for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
 
@@ -951,16 +919,9 @@ cause is unknown
 ================================
 perf.xc.local.pgi
 Inherits 'perf.xc.*' and '*pgi*'
-Reviewed 2015-04-27
+Reviewed 2015-05-12
 ================================
 
-
-=== sporadic failures below ===
-
-cause is unknown
-----------------
-[Error: Timed out executing program studies/shootout/nbody/bradc/nbody-blc-slice] (2015-03-25, 2015-04-05, 2015-04-10)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans] (2015-04-16)
 
 ****************************************************************************
 *                          Secondary platforms                             *
@@ -977,17 +938,8 @@ Reviewed 2015-04-27
 ===================
 cygwin*
 Inherits 'general'
-Reviewed 2015-04-27
+Reviewed 2015-05-18
 ===================
-
-check_channel assertion failure
--------------------------------
-[Error matching program output for regexp/ferguson/ctests/regexp_channel_test]
-
-QIO strcmp(got, expect) assertion error
----------------------------------------
-[Error matching program output for io/ferguson/ctests/qio_formatted_test]
-
 
 === sporadic failures below ===
 
@@ -995,165 +947,36 @@ sporadic internal error
 -----------------------
 [Error matching program output for reductions/diten/testSerialReductions] (2015-05-01)
 
-sporadic pthread_cond_init failed
----------------------------------
-[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (cygwin64:      2015-02-25..2015-03-04, 2015-03-07, 2015-03-11, 2015-03-29; 2015-04-05)
-                                                                                                                           cygwin32:      2015-03-12)
-[Error matching program output for reductions/diten/testSerialReductions (compopts: 1)] (cygwin64: 2015-03-06, 2015-03-13..2015-04-14)
-
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (cygwin64:..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06, 2015-04-07..)
-                                                                                                                                          2015-03-10, 2015-03-12..2015-03-28, 2015-03-30..2015-04-04,
-                                                                                                                                          2015-04-07..
-                                                                                                                            cygwin32: ... 2015-03-11, 2015-03-13..2015-03-20, 2015-03-22..)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
+(cygwin64:..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06, 
+               2015-03-10, 2015-03-12..2015-03-28, 2015-03-30..2015-04-04, 
+               2015-04-07..2015-05-04, 2015-05-07..2015-05-14, 2015-05-17)
+ cygwin32: ... 2015-03-11, 2015-03-13..2015-03-20, 2015-03-22..)
 
 ===========================
 cygwin32
 Inherits 'cygwin*' and '*32'
-Reviewed 2015-04-27
+Reviewed 2015-05-19
 ===========================
-
-Seg fault since first run (2014-12-07)
---------------------------------------
-[Error matching compiler output for users/vass/type-tests.isSubtype]
-
-"got == expect[i]" assertion error
-----------------------------------
-[Error matching program output for io/ferguson/ctests/qio_bits_test]
-
-Generated output "FAILED": First run 2014-04-30 (ben)
------------------------------------------------------
-[Error matching program output for studies/colostate/Jacobi1D-DiamondByHand-OMP_dyn]
-[Error matching program output for studies/colostate/Jacobi1D-DiamondByHand-OMP_static]
-[Error matching program output for studies/colostate/Jacobi1D-NaiveParallel-OMP_static]
-[Error matching program output for studies/colostate/Jacobi2D-DiamondByHandParam-OMP_dyn]
-[Error matching program output for studies/colostate/Jacobi2D-DiamondByHandParam-OMP_static]
-[Error matching program output for studies/colostate/Jacobi2D-NaiveParallel-OMP_dyn]
-[Error matching program output for studies/colostate/Jacobi2D-NaiveParallel-OMP_static]
-[Error matching program output for studies/colostate/Jacobi2D-NaiveParallelSpaceTiled-OMP]
-
-Consistent execution timouts
-----------------------------
-[Error: Timed out executing program io/ferguson/ctests/qio_test]
-
-A package needed for chpldoc is not installed (2015-03-12, Thomas)
-------------------------------------------------------------------
-[Warning: Could not find chpldoc, skipping test chpldoc/basics/disconnectedComment.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/basics/empty.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/basics/fullyCommented.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/basics/hello.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/basics/longerComments.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/basics/nestFunctions.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/basics/parenthesesLess.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/basics/sparselyCommented.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/classes/basic.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/classes/fieldInheritance.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/classes/fields.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/classes/inheritance.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/classes/methodOutsideClassDef.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/classes/methods.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/classes/multipleInheritance.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/classes/paramFields.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/compflags/comment/basic.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/compflags/comment/incorrectLabel.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/compflags/comment/incorrectLabel2.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/compflags/comment/loseComments.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/compflags/comment/specifiedDefault.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/compflags/folder/oneWord.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/compflags/folder/withHyphen.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/compflags/folder/withUnderscore.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/enum.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/globals/constants.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/globals/enums.doc] (2015-04-09)
-[Warning: Could not find chpldoc, skipping test chpldoc/globals/globalOrdering.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/globals/paramVars.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/globals/typeVars.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/globals/variables.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/intents.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/iterators.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/linkage-spec/exportTest.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/linkage-spec/externTest.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/linkage-spec/inlineTest.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/config.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/defaultModule.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/module.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/nestModules.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/nestWithFns.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/ordering.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/sameName.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/sameName2.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/module/surroundingModule.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/multifile.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/nodoc/noDocPlease.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/arguments/arrays.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/arguments/domains.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/arguments/enums.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/arguments/explicitImplicit.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/arguments/methodCall.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/arguments/queried.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/arguments/recordsAndClasses.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/arguments/tuples.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/config/basic.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/arrays.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/basic.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/complexes.doc] (2015-04-09)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/domains.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/enums.doc] (2015-04-09)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/imags.doc] (2015-04-09)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/reals.doc] (2015-04-09)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/recordsAndClasses.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/tuples.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/typevar.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/fields/usesTypeVar.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/returns/arrays.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/returns/basic.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/returns/domains.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/returns/enums.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/returns/recordsAndClasses.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/types/returns/tuples.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test chpldoc/variableArguments.doc] (2015-04-07)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc.doc] (2015-03-12)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/copyright.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/license.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/version.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/z_copy_help.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/z_copy_license.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/z_copy_version.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/z_copyright_help_license_version.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/z_help_license.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/z_help_version.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc/z_license_version.doc] (2015-04-08)
-[Warning: Could not find chpldoc, skipping test release/examples/primers/chpldoc.doc] (2015-03-12)
-
-=== sporadic failures below ===
-
-sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
-------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28,
-                         2015-01-31..2015-02-18, 2015-02-20..2015-02-22,
-                         2015-02-24, 2015-03-01..2015-03-05,
-                         2015-03-11..2015-03-14, 2015-03-17..2015-03-18,
-                         2015-03-22..2015-03-26, 2015-03-28..2015-04-01,
-                         2015-04-04..2015-04-08, 2015-04-10..2015-04-13,
-                         2015-04-15..2015-04-19, 2015-04-21..2015-04-22
-                         2015-04-24, 2015-04-26..)
 
 
 ================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
-Reviewed 2015-04-27
+Reviewed 2015-05-18
 ================================
 
-QIO qio_err_to_int() == EEOF assertion error
---------------------------------------------
-[Error matching program output for io/ferguson/ctests/qio_test]
+=== sporadic failures below ===
 
-Compiler errors in runtime/src/qio/sys.c  signed vs unsigned
-------------------------------------------------------------
-[Error matching program output for regexp/ferguson/ctests/regexp_channel_test]
+sporadic child_copy: data read copy failed
+------------------------------------------
+[Error matching program output for studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (2015-05-11)
 
+sporadic pthread_cond_init() failure
+------------------------------------
+[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (2015-05-05..2015-05-06, 2015-05-15..2015-05-16, 2015-05-18..)
 
 ****************************************************************************
 *                          Distribution testing                            *
