@@ -1039,16 +1039,14 @@ for testname in testsrc:
                 if suppresstest.strip() != "False":
                     suppressme = suppresstest.strip() == "True" or int(suppresstest) == 1
                 if suppressme:
+                    suppressline = ""
                     with open('./'+test_filename+'.suppressif', 'r') as suppressfile:
-                        suppressline = suppressfile.readline().strip()
-                        if suppressline.startswith("#!"):
-                            # read the next line to skip e.g. #!/bin/bash
-                            suppressline = suppressfile.readline().strip()
-                        if suppressline.startswith("#"):
-                          suppressline = suppressline.replace("#","");
-                        else:
-                          suppressline = ""
-                        suppressline = suppressline.strip()
+                        for line in suppressfile:
+                            line = line.strip()
+                            if (line.startswith("#") and
+                                not line.startswith("#!")):
+                                suppressline = line.replace('#','').strip()
+                                break
                     futuretest='Suppress (' + suppressline + ') '
             except ValueError:
                 sys.stdout.write('[Error processing .suppressif file %s/%s]\n'%(localdir,f))
