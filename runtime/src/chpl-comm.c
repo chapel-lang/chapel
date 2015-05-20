@@ -150,16 +150,7 @@ int chpl_dprintf (int fd, const char * format, ...)
 }
 
 static int chpl_make_vdebug_file (const char *rootname) {
-    // Calculate size of full file name
-    int namelen = 2 * strlen(rootname) + 5; 
-    int  temp;
-    temp =  chpl_numNodes;
-    while (temp > 1) {
-      namelen++;
-      temp /= 2;
-    }
-    
-    char fname[namelen];
+    char fname[2048]; // fixed size ..
     struct stat sb;
 
     chpl_vdebug = 0;
@@ -183,7 +174,7 @@ static int chpl_make_vdebug_file (const char *rootname) {
       }
     }
     
-    snprintf (fname, namelen, "%s/%s-%d", rootname, rootname, chpl_nodeID);
+    snprintf (fname, 2048, "%s/%s-%d", rootname, rootname, chpl_nodeID);
     chpl_vdebug_fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC|O_APPEND, 0666);
     if (chpl_vdebug_fd < 0) {
       fprintf (stderr, "Visual Debug failed to open %s: %s\n",

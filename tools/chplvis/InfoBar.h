@@ -36,7 +36,11 @@ class InfoBar : public Fl_Box {
  public:
 
   InfoBar (int x, int y, int w, int h, const char *label = 0)
+#ifdef __APPLE__    
+    : Fl_Box(x,0,w,h+20) {
+#else
     : Fl_Box(x,y,w,h) {
+#endif
     maxTasks = 0;
     maxComms = 0;
     maxSize = 0;

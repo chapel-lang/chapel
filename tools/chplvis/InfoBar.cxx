@@ -22,12 +22,17 @@
 #include "ViewField.h"  // To get access to heatColor
 
 #include <FL/fl_draw.H>
+#include <FL/x.H>
 
 static const int CR_Left = 25;
 
 void InfoBar::draw(void)
 {
   Fl_Box::draw();
+
+#ifdef __APPLE__
+  printf ("InfoBar draw: fl_mac_os_version is %d.\n", fl_mac_os_version);
+#endif
 
   fl_color(FL_BLACK);
   fl_line_style(FL_SOLID, 2, NULL);
