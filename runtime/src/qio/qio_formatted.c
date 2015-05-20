@@ -988,7 +988,9 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
   if( err ) goto rewind;
 
   // write the string itself
-  err = qio_channel_write_amt(false, ch, ptr, len);
+  if (len > 0) {
+    err = qio_channel_write_amt(false, ch, ptr, len);
+  }
   if( err ) goto rewind;
 
   // write the terminator if necessary.
@@ -1177,6 +1179,13 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
   ti.max_chars = SSIZE_MAX;
   ti.max_bytes = SSIZE_MAX;
   ti.ret_bytes = -1;
+
+  if( !ptr || len == 0 ) {
+    // hilde sez: Having a distinguished value for empty strings is
+    // undesirable.
+    ptr = "";
+    len = 0;
+  }
 
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
