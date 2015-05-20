@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# too much memory in fasta-lines
 
 # fasta-lines allocates ~5.9 GB of memory (and only frees a few MB). It
 # probably requires a machine with around 6-7GB to run. I'm assuming nobody has
