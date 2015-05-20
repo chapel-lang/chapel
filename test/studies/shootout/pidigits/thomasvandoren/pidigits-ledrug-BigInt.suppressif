@@ -1,14 +1,10 @@
-#!/usr/bin/env perl
+#!/usr/bin/env bash
 
-# there is an apparent CCE bug that causes this test to crash when compiled
-# with --fast. Jira issue 64.
+# Believed to be CCE bugs (related to -hipa), see JIRA issue 64
 
-if ($ENV{CHPL_TEST_PERF} eq "on") {
-  if ($ENV{CHPL_TARGET_COMPILER} eq "cray-prgenv-cray") {
-    print("True\n");
-  } else {
-    print("False\n");
-  }
-} else {
-  print("False\n");
-}
+if [ "$CHPL_TEST_PERF" = "on" ] && [ "$CHPL_TARGET_COMPILER" = "cray-prgenv-cray" ]
+then
+  echo "True"
+else
+  echo "False"
+fi
