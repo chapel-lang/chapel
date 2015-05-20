@@ -968,11 +968,6 @@ Reviewed 2015-05-19
 
 === sporadic failures below ===
 
-sporadic internal error
------------------------
-[Error matching program output for reductions/diten/testSerialReductions]
-  (2015-05-01)
-
 sporadic execution timeout
 --------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
@@ -980,6 +975,7 @@ sporadic execution timeout
                 2015-03-10, 2015-03-12..2015-03-28, 2015-03-30..2015-04-04, 
                 2015-04-07..2015-05-04, 2015-05-07..2015-05-14, 2015-05-17)
  cygwin32: ..., 2015-03-11, 2015-03-13..2015-03-20, 2015-03-22..)
+
 
 ===========================
 cygwin32
@@ -996,6 +992,11 @@ Reviewed 2015-05-19
 
 === sporadic failures below ===
 
+sporadic internal error
+-----------------------
+[Error matching program output for reductions/diten/testSerialReductions]
+  (2015-03-06, 2015-03-13..2015-04-14, 2015-05-01)
+
 sporadic child_copy: data read copy failed
 ------------------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky]
@@ -1004,7 +1005,8 @@ sporadic child_copy: data read copy failed
 sporadic pthread_cond_init() failure
 ------------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
-  (2015-05-05..2015-05-06, 2015-05-15..2015-05-16, 2015-05-18..)
+  (2015-02-25..2015-03-04, 2015-03-07, 2015-03-11, 2015-03-29, 2015-04-05, 
+   2015-05-05..2015-05-06, 2015-05-15..2015-05-16, 2015-05-18..)
 
 
 ****************************************************************************
