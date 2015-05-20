@@ -520,7 +520,7 @@ VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
 VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
 
 // Creates a new real literal with the given value and bit-width.
-// n should be a string argument containing a Chapel decimal or hexidecimal
+// n should be a string argument containing a Chapel decimal or hexadecimal
 // floating point literal. It will be copied and the floating point
 // value will be computed. The resulting symbol will have a cname
 // equal to a fixed-up n, or to an n previously passed to this
