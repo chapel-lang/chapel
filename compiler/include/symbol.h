@@ -529,7 +529,7 @@ VarSymbol *new_RealSymbol(const char *n,
                           IF1_float_type size=FLOAT_SIZE_64);
 
 // Creates a new imaginary literal with the given value and bit-width.
-// n should be a string argument containing a Chapel decimal or hexidecimal
+// n should be a string argument containing a Chapel decimal or hexadecimal
 // floating point literal. It will be copied and the floating point
 // value will be computed. The resulting symbol will have a cname
 // equal to a fixed-up n, or to an n previously passed to this
