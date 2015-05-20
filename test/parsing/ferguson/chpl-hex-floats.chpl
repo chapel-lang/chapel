@@ -1,7 +1,7 @@
 
 var half : real = 0x1p-1; // 0.5
 var four : real = 0x1p2; // 4.0
-var _128 : real = 0x1p7; // 128.0
+var r128 : real = 0x1p7; // 128.0
 
 var one_and_half : real = 0x1.8; // 1.5 no exponent OK
 var half2 : real = 0x.8; // 0.5 no exponent OK
@@ -17,8 +17,8 @@ writeln(half);
 assert(half == 0.5);
 writeln(four);
 assert(four == 4.0);
-writeln(_128);
-assert(_128 == 128.0);
+writeln(r128);
+assert(r128 == 128.0);
 writeln(one_and_half);
 assert(one_and_half == 1.5);
 writeln(half2);
