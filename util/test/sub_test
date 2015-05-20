@@ -1717,16 +1717,19 @@ for testname in testsrc:
                     output = p.communicate()[0]
                     status = p.returncode
 
-                    launcherTimeout = False
-                    if re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None:
-                        launcherTimeout = True
-                    if re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None:
-                        launcherTimeout = True
-
-                    if launcherTimeout:
+                    launcherError = ''
+                    if re.search('slurmstepd: Munge decode failed: Expired credential', output, re.IGNORECASE) != None:
+                        launcherError = 'Jira 18 -- Expired slurm credential for'
+                    elif re.search('output file from job .* does not exist', output, re.IGNORECASE) != None:
+                        launcherError = 'Jira 17 -- Missing output file for'
+                    elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
+                          re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                         exectimeout = True
-                        sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
-                                        (futuretest, localdir, test_filename))
+                        launcherError = 'Timed out executing program'
+
+                    if launcherError != '':
+                        sys.stdout.write('%s[Error: %s %s/%s'%
+                                        (futuretest, launcherError, localdir, test_filename))
                         printTestVariation(compoptsnum, compoptslist,
                                            execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
