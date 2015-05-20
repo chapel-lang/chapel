@@ -49,7 +49,7 @@ module MemTracking
   */
   pragma "no auto destroy"
   config const
-    memLeaksByDesc: c_ptr(uint(8)) = nil;
+    memLeaksByDesc: c_string = "";
 
   // Safely cast to size_t instances of memMax and memThreshold.
   const cMemMax = memMax.safeCast(size_t),
@@ -76,7 +76,7 @@ module MemTracking
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
                                          ref ret_memLeaksByType: bool,
-                                         ref ret_memLeaksByDesc: c_ptr(uint(8)),
+                                         ref ret_memLeaksByDesc: c_string,
                                          ref ret_memLeaks: bool,
                                          ref ret_memMax: size_t,
                                          ref ret_memThreshold: size_t,

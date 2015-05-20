@@ -38,7 +38,7 @@ void chpl_setMemFlags(void);
 uint64_t chpl_memoryUsed(int32_t lineno, c_string filename);
 void chpl_printMemAllocStats(int32_t lineno, c_string filename);
 void chpl_printMemAllocsByType(int32_t lineno, c_string filename);
-void chpl_printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
+void chpl_printMemAllocs(int64_t threshold,
                          int32_t lineno, c_string filename);
 void chpl_printMemAllocsByDesc(const char* descString, int64_t threshold,
                                int32_t lineno, c_string filename);
