@@ -34,6 +34,23 @@ module MemTracking
   config const
     memLeaksLog: c_string = "";
 
+  /* Causes the contents of the memory tracking array to be printed at the end
+     of the program.
+     Entries remaining in the memory tracking array represent leaked memory,
+     because they are tracked allocations with no corresponding free.
+
+     The dump is performed only if the --memLeaksByDesc option is present and has
+     a string argument.  
+       --memLeaksByDesc="" causes all memory records to be printed.  Same as --memLeaks.
+       --memLeaksByDesc="<alloc-type-string>" causes only those memory records
+         matching the given <alloc-type-string> to be printed.
+     For example, --memLeaksByDesc="string copy data" causes only string copy
+     data leaks to be printed.
+  */
+  pragma "no auto destroy"
+  config const
+    memLeaksByDesc: c_ptr(uint(8)) = nil;
+
   // Safely cast to size_t instances of memMax and memThreshold.
   const cMemMax = memMax.safeCast(size_t),
     cMemThreshold = memThreshold.safeCast(size_t);
@@ -59,6 +76,7 @@ module MemTracking
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
                                          ref ret_memLeaksByType: bool,
+                                         ref ret_memLeaksByDesc: c_ptr(uint(8)),
                                          ref ret_memLeaks: bool,
                                          ref ret_memMax: size_t,
                                          ref ret_memThreshold: size_t,
@@ -67,6 +85,7 @@ module MemTracking
     ret_memTrack = memTrack;
     ret_memStats = memStats;
     ret_memLeaksByType = memLeaksByType;
+    ret_memLeaksByDesc = memLeaksByDesc;
     ret_memLeaks = memLeaks;
     ret_memMax = cMemMax;
     ret_memThreshold = cMemThreshold;
