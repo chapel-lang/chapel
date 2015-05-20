@@ -8,24 +8,27 @@ proc foo(type t, u: t, v: t, name) {
 
   if done then // wait until all prior invocations have finished
   writeln("1: going to sleep ... ");
-  begin {
-    writeln("2: initial value is ", s.readXX(), " of type ", name);
-    write  ("2: value is now ", s.readFE());
-    writeln(" and it is ", if s.isFull then "full" else "empty");
-    done = true;
-    write  ("2: value has changed to ", s.readFF());
-    writeln(" and it is ", if s.isFull then "full" else "empty");
+
+  sync {
+    begin {
+      writeln("2: initial value is ", s.readXX(), " of type ", name);
+      write  ("2: value is now ", s.readFE());
+      writeln(" and it is ", if s.isFull then "full" else "empty");
+      done = true;
+      write  ("2: value has changed to ", s.readFF());
+      writeln(" and it is ", if s.isFull then "full" else "empty");
+      sleep(1);
+      writeln("2: after sleeping, value is still ", s.readXX());
+      s.reset();
+      writeln("2: value has been reset to ", s.readFE());
+      done = true;
+    }
     sleep(1);
-    writeln("2: after sleeping, value is still ", s.readXX());
-    s.reset();
-    writeln("2: value has been reset to ", s.readFE());
-    done = true;
+    writeln("1: woke up. writing ", u);
+    s = u;
+    if done then s = v;
+    s = u;
   }
-  sleep(1);
-  writeln("1: woke up. writing ", u);
-  s = u;
-  if done then s = v;
-  s = u;
 }
 
 foo(bool, true, false, "bool");
