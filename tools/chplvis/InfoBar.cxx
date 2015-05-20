@@ -35,9 +35,9 @@ static const int Y_OFF = 0;
 void InfoBar::draw(void)
 {
   // dimensions and locations
-  int y_center = y() + (h()-Y_OFF) / 2 + Y_OFF;  // Center line of infobar
+  int y_center = y() + (h()-Y_OFF) / 2;  // Center line of infobar
   int cr_h = (h()-Y_OFF) / 2;               // Height of color reference
-  int cr_y = y() + Y_OFF + cr_h / 2;        // Y of color reference
+  int cr_y = y() + cr_h / 2;        // Y of color reference
 
   Fl_Box::draw();
 
