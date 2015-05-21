@@ -34,6 +34,7 @@ ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) TMPBINNAME=$(TMPBINNAME) BINNAME=$(BINNAME) TMPDIRNAME=$(TMPDIRNAME)
 endif
 ifneq ($(TMPBINNAME),$(BINNAME))
+	rm -f $(BINNAME)
 	cp -p $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
 endif
