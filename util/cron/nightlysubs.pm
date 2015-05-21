@@ -48,24 +48,30 @@ sub mysystem {
 }
 
 sub numsuccesses {
-  $mystr = $_[0];
-  $mystr =~ s/.* #Successes = //;
-  $mystr =~ s/(\]| \|).*//;
-  $mystr;
+  my $mystr = shift;
+  my $ret = 0;
+  if( $mystr =~ /#Successes = (\d+)/ ) {
+    $ret = $1;
+  }
+  return $ret;
 }
 
 sub numfailures {
-  $mystr = $_[0];
-  $mystr =~ s/.* #Failures = //;
-  $mystr =~ s/(\]| \|).*//;
-  $mystr;
+  my $mystr = shift;
+  my $ret = 0;
+  if( $mystr =~ /#Failures = (\d+)/ ) {
+    $ret = $1;
+  }
+  return $ret;
 }
 
 sub numfutures {
-  $mystr = $_[0];
-  $mystr =~ s/.* #Futures = //;
-  $mystr =~ s/(\]| \|).*//;
-  $mystr;
+  my $mystr = shift;
+  my $ret = 0;
+  if( $mystr =~ /#Futures = (\d+)/ ) {
+    $ret = $1;
+  }
+  return $ret;
 }
 
 sub delta {
