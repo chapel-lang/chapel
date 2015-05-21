@@ -52,7 +52,7 @@ static gasnet_seginfo_t* seginfo_table = NULL;
 
 // Gasnet AM handler arguments are only 32 bits, so here we have
 // functions to get the 2 arguments for a 64-bit pointer,
-// and a function to reconstitute the poiter from the 2 arguments.
+// and a function to reconstitute the pointer from the 2 arguments.
 static inline
 gasnet_handlerarg_t get_arg_from_ptr0(void* addr)
 {
@@ -136,14 +136,15 @@ typedef struct {
 //
 // Initialize one of the above.
 //
-#define INIT_DONE_OBJ(done, _target) do {                               \
-    atomic_init_uint_least32_t(&done.count, 0);                         \
-    done.target = _target;                                              \
-    done.flag = 0;                                                      \
-  } while (0)
+static inline
+void init_done_obj(done_t* done, int target) {
+  atomic_init_uint_least32_t(&done->count, 0);
+  done->target = target;
+  done->flag = 0;
+}
 
 static inline
-void do_wait_done(done_t* done)
+void wait_done_obj(done_t* done)
 {
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
   GASNET_BLOCKUNTIL(done->flag);
@@ -154,8 +155,6 @@ void do_wait_done(done_t* done)
   }
 #endif
 }
-
-#define WAIT_DONE_OBJ(done) do_wait_done(&done)
 
 typedef struct {
   int           caller;
@@ -739,7 +738,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     for (node = 0; node < chpl_numNodes; node++) {
       if (node != chpl_nodeID) {
         pbp->ack = &done[node];
-        INIT_DONE_OBJ(done[node], 1);
+        init_done_obj(&done[node], 1);
         GASNET_Safe(gasnet_AMRequestMedium0(node, PRIV_BCAST, pbp, payloadSize));
       }
     }
@@ -752,7 +751,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     numOffsets = (size+maxsize)/maxsize;
     for (node = 0; node < chpl_numNodes; node++) {
       if (node != chpl_nodeID)
-        INIT_DONE_OBJ(done[node], numOffsets);
+        init_done_obj(&done[node], numOffsets);
     }
     for (offset = 0; offset < size; offset += maxsize) {
       int thissize = size - offset;
@@ -931,7 +930,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
         addr_chunk = ((char*) addr) + start;
         raddr_chunk = ((char*) raddr) + start;
 
-        INIT_DONE_OBJ(done, 1);
+        init_done_obj(&done, 1);
 
         // Send an AM over to ask for a them to copy the data
         // passed in the active message (addr_chunk) to raddr_chunk.
@@ -942,7 +941,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                                             get_arg_from_ptr1(raddr_chunk)));
 
         // Wait for the PUT to complete.
-        WAIT_DONE_OBJ(done);
+        wait_done_obj(&done);
       }
     }
   }
@@ -1015,12 +1014,17 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
           buf_sz = max_chunk;
         }
 
-        local_buf = chpl_mem_alloc(buf_sz, CHPL_RT_MD_COMM_XMIT_RECV_BUF, 0, 0);
+        local_buf = chpl_mem_alloc(buf_sz, CHPL_RT_MD_COMM_XMIT_RCV_BUF, 0, 0);
+#ifdef GASNET_SEGMENT_EVERYTHING
+        // local_buf is definately in our segment
+#else
+        assert(chpl_comm_is_in_segment(chpl_nodeID, local_buf, buf_sz));
+#endif
       }
 
       // do a PUT on the remote locale back to here.
       // But do it in chunks of size gasnet_AMMaxLongReply()
-      // since we use A
+      // since we use gasnet_AMReplyLong to do the PUT.
       for(start = 0; start < size; start += max_chunk) {
         size_t this_size;
         void* addr_chunk;
@@ -1034,7 +1038,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
         addr_chunk = ((char*) addr) + start;
 
-        INIT_DONE_OBJ(done, 1);
+        init_done_obj(&done, 1);
 
         info.tgt = local_buf?local_buf:addr_chunk;
         info.src = ((char*) raddr) + start;
@@ -1045,7 +1049,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                                             &info, sizeof(info)));
 
         // Wait for the PUT to complete.
-        WAIT_DONE_OBJ(done);
+        wait_done_obj(&done);
 
         // Now copy from local_buf back to addr if necessary.
         if( local_buf ) {
@@ -1215,7 +1219,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
     info->fid = fid;
     info->arg_size = arg_size;
 
-    INIT_DONE_OBJ(done, 1);
+    init_done_obj(&done, 1);
 
     if (passArg) {
       if (arg_size)
@@ -1226,7 +1230,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
       GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_LARGE, info, info_size));
     }
 
-    WAIT_DONE_OBJ(done);
+    wait_done_obj(&done);
     chpl_mem_free(info, 0, 0);
   }
 }
@@ -1318,14 +1322,14 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
       info->fid = fid;
       info->arg_size = arg_size;
 
-      INIT_DONE_OBJ(done, 1);
+      init_done_obj(&done, 1);
 
       if (arg_size)
         chpl_memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_FAST, info, info_size));
       // NOTE: We still have to wait for the handler to complete
 
-      WAIT_DONE_OBJ(done);
+      wait_done_obj(&done);
 
     } else {
       // Call the normal chpl_comm_fork()
