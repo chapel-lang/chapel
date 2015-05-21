@@ -44,6 +44,7 @@
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <inttypes.h>
 #include <iostream>
@@ -2573,7 +2574,7 @@ void ModuleSymbol::codegenDef() {
   info->cStatements.clear();
   info->cLocalDecls.clear();
 
-  Vec<FnSymbol*> fns;
+  std::vector<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
@@ -2583,13 +2584,13 @@ void ModuleSymbol::codegenDef() {
             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
 
-        fns.add(fn);
+        fns.push_back(fn);
       }
   }
 
-  qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
+  std::sort(fns.begin(), fns.end(), compareLineno);
 
-  forv_Vec(FnSymbol, fn, fns) {
+  for_vector(FnSymbol, fn, fns) {
     fn->codegenDef();
   }
 
