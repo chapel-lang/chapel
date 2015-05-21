@@ -29,18 +29,22 @@
 #include <stdlib.h>
 
 
-///// These entry points support debugging.
-
 // Memory tracking activated?
 extern chpl_bool chpl_memTrack;
 
+///// These entry points support the memory tracking functions provided by
+//    MemTracking.chpl, and may also be called directly from user code (or from
+//    a debugger).
+
 void chpl_setMemFlags(void);
+void chpl_reportMemInfo(void);
+
 uint64_t chpl_memoryUsed(int32_t lineno, c_string filename);
 void chpl_printMemAllocStats(int32_t lineno, c_string filename);
 void chpl_printMemAllocsByType(int32_t lineno, c_string filename);
-void chpl_printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
+void chpl_printMemAllocs(int64_t threshold,
                          int32_t lineno, c_string filename);
-void chpl_printMemAllocsByDesc(const char* descString, int64_t threshold,
+void chpl_printMemAllocsByDesc(c_string descString, int64_t threshold,
                                int32_t lineno, c_string filename);
 void chpl_startVerboseMem(void);
 void chpl_stopVerboseMem(void);
@@ -48,8 +52,8 @@ void chpl_startVerboseMemHere(void);
 void chpl_stopVerboseMemHere(void);
 
 
-///// These entry points are the essential memory tracking interface.
-void chpl_reportMemInfo(void);
+///// These entry points are the essential memory tracking interface, called
+//    at memory allocation and deallocation points.
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, c_string filename);
