@@ -1,0 +1,3 @@
+# The most interesting error message occurs with CHPL_TASKS=fifo.
+# Please run with qthreads when this error is resolved
+CHPL_TASKS != fifo

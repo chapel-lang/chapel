@@ -24,8 +24,8 @@ var X: [1..numNumbers] real, // array of random numbers
 
 // output startup message
 writeln("Running Histogram Example");
-writef(" Number of Random Numbers = ########\n", numNumbers);
-writef(" Number of Buckets        = ########\n", numBuckets);
+writef(" Number of Random Numbers = %{########}\n", numNumbers);
+writef(" Number of Buckets        = %{########}\n", numBuckets);
 writeln();
 
 // fill array with random numbers (using standard Random module)

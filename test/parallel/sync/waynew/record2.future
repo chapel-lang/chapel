@@ -1,0 +1,8 @@
+bug: Incorrect task intent for record
+
+The default task intent for the record c should be const ref.  It is currently
+not.
+
+Also, the begin statement modifies a field of c.  When the default task intent
+is const ref, an error message should occur regarding the attempt to modify
+a field of a const instance.

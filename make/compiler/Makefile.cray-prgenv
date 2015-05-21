@@ -15,12 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# Settings for the Cray XE series
-#
+# PrgEnv settings for Cray X series (XC, XE, XK, XT)
+
+# This file is not used for Cray CS machines
 
 #
-# tools
+# tools.
 #
 
 CC = cc
@@ -37,7 +37,7 @@ DEBUG_CFLAGS = -g
 OPT_CFLAGS = -O3
 
 COMP_CFLAGS = $(CFLAGS) $(CRAYPE_COMP_CFLAGS)
-RUNTIME_CFLAGS = $(CFLAGS)
+RUNTIME_CFLAGS += $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS += $(CFLAGS) $(CRAYPE_GEN_CFLAGS)
 GEN_LFLAGS += $(LFLAGS)
@@ -46,3 +46,7 @@ GEN_DYNAMIC_FLAG = -dynamic
 LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 
+# Don't throw e.g. -march with a PrgEnv compiler since the PrgEnv environment
+# will take care of that Since we want to be able to get other flags from e.g.
+# Makefile.intel, here we replace SPECIALIZE_CFLAGS with nothing.
+SPECIALIZE_CFLAGS =
