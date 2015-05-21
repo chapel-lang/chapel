@@ -41,7 +41,7 @@ ensureSummaryExists($prevsummary);
 # sort output
 #
 
-if ($status == 0) {
+if ($status == 0 or $status == 2) {
     `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | LC_ALL=C sort > $sortedsummary`;
 
     $oldsummary = `grep Summary: $prevsummary`; chomp($oldsummary);
