@@ -410,6 +410,14 @@ proc CyclicDom.setup() {
   }
 }
 
+proc CyclicDom.~CyclicDom() {
+  coforall localeIdx in dist.targetLocDom {
+    if locDoms(localeIdx) != nil then
+      on locDoms(localeIdx) do
+        delete locDoms(localeIdx);
+  }
+}
+
 proc CyclicDom.dsiBuildArray(type eltType) {
   var arr = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
@@ -785,6 +793,14 @@ proc CyclicArr.setup() {
     }
   }
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
+}
+
+proc CyclicArr.~CyclicArr() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
 }
 
 proc CyclicArr.dsiSupportsPrivatization() param return true;
