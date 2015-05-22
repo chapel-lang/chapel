@@ -779,6 +779,13 @@ proc BlockDom.setup() {
   }
 }
 
+proc BlockDom.~BlockDom() {
+  coforall localeIdx in dist.targetLocDom do {
+    on locDoms(localeIdx) do
+      delete locDoms(localeIdx);
+  }
+}
+
 proc BlockDom.dsiMember(i) {
   return whole.member(i);
 }
@@ -872,6 +879,14 @@ proc BlockArr.setup() {
   }
 
   if doRADOpt && disableBlockLazyRAD then setupRADOpt();
+}
+
+proc BlockArr.~BlockArr() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
 }
 
 inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
