@@ -517,10 +517,11 @@ proc BlockCyclicDom.setup() {
     enumerateBlocks();
 }
 
-proc BlockCyclicDom.~BlockCyclocDom() {
+proc BlockCyclicDom.~BlockCyclicDom() {
   coforall localeIdx in dist.targetLocDom do
-    on dist.targetLocales(localeIdx) do
-      delete locDoms(localeIdx);
+    if locDoms(localeIdx) != nil then
+      on locDoms(localeIdx) do
+        delete locDoms(localeIdx);
 }
 
 proc BlockCyclicDom.enumerateBlocks() {
@@ -710,7 +711,7 @@ proc BlockCyclicArr.setup() {
 
 proc BlockCyclicArr.~BlockCyclicArr() {
   coforall localeIdx in dom.dist.targetLocDom {
-    on dom.dist.targetLocales(localeIdx) {
+    on locArr(localeIdx) {
       delete locArr(localeIdx);
     }
   }

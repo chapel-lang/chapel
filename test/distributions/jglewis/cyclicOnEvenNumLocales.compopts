@@ -1,0 +1,2 @@
+# Another victim of the iterator inlining bug.
+--no-inline-iterators

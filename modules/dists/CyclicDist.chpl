@@ -411,10 +411,11 @@ proc CyclicDom.setup() {
 }
 
 proc CyclicDom.~CyclicDom() {
-    coforall localeIdx in dist.targetLocDom {
-      on dist.targetLocs(localeIdx) do
+  coforall localeIdx in dist.targetLocDom {
+    if locDoms(localeIdx) != nil then
+      on locDoms(localeIdx) do
         delete locDoms(localeIdx);
-    }
+  }
 }
 
 proc CyclicDom.dsiBuildArray(type eltType) {
@@ -796,7 +797,7 @@ proc CyclicArr.setup() {
 
 proc CyclicArr.~CyclicArr() {
   coforall localeIdx in dom.dist.targetLocDom {
-    on dom.dist.targetLocs(localeIdx) {
+    on locArr(localeIdx) {
       delete locArr(localeIdx);
     }
   }
