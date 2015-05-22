@@ -313,7 +313,20 @@ void chpl_sync_initAux(chpl_sync_aux_t *s) {
   chpl_thread_condvar_init(&s->signal_empty);
 }
 
-void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
+static void chpl_thread_condvar_destroy(chpl_thread_condvar_t* cv) {
+  if(pthread_cond_broadcast((pthread_cond_t*) cv))
+    chpl_internal_error("pthread_cond_broadcast() failed, cv was uninitialized");
+  if (pthread_cond_destroy((pthread_cond_t*) cv))
+    chpl_internal_error("pthread_cond_destroy() failed");
+}
+
+void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
+  chpl_thread_mutexLock(&s->lock);
+  chpl_thread_condvar_destroy(&s->signal_full);
+  chpl_thread_condvar_destroy(&s->signal_empty);
+  chpl_thread_mutexUnlock(&s->lock);
+  chpl_thread_mutexDestroy(&s->lock);
+}
 
 // Tasks
 
@@ -346,11 +359,11 @@ void chpl_task_init(void) {
     thread_private_data_t* tp;
 
     tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
-                                                 CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                                 CHPL_RT_MD_THREAD_PRV_DATA,
                                                  0, 0);
 
     tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
-                                             CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                             CHPL_RT_MD_TASK_POOL_DESC,
                                              0, 0);
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
@@ -443,11 +456,11 @@ static void comm_task_wrapper(void* arg) {
   thread_private_data_t* tp;
 
   tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
-                                               CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                               CHPL_RT_MD_THREAD_PRV_DATA,
                                                0, 0);
 
   tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
-                                           CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                           CHPL_RT_MD_TASK_POOL_DESC,
                                            0, 0);
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = comm_task_fn;
@@ -487,7 +500,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
     chpl_task_list_p ltask;
 
     ltask = (chpl_task_list_p) chpl_mem_alloc(sizeof(struct chpl_task_list),
-                                              CHPL_RT_MD_TASK_LIST_DESCRIPTOR,
+                                              CHPL_RT_MD_TASK_LIST_DESC,
                                               0, 0);
     ltask->filename = filename;
     ltask->lineno   = lineno;
@@ -775,7 +788,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 
   pmtwd = (movedTaskWrapperDesc_t*)
           chpl_mem_alloc(sizeof(*pmtwd),
-                         CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                         CHPL_RT_MD_THREAD_PRV_DATA,
                          0, 0);
   *pmtwd = (movedTaskWrapperDesc_t)
            { fp, a, canCountRunningTasks,
@@ -1147,7 +1160,7 @@ thread_begin(void* ptask_void) {
   thread_private_data_t *tp;
 
   tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
-                                               CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                               CHPL_RT_MD_THREAD_PRV_DATA,
                                                0, 0);
   tp->ptask    = ptask;
   tp->lockRprt = NULL;
@@ -1424,7 +1437,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
                                     chpl_task_list_p ltask) {
   task_pool_p ptask =
     (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
-                                        CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                        CHPL_RT_MD_TASK_POOL_DESC,
                                         0, 0);
   ptask->id           = get_next_task_id();
   ptask->fun          = fp;

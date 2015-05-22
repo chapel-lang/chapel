@@ -233,7 +233,7 @@ static void fork_wrapper(fork_t *f) {
 
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
-                                          CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
+                                          CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
   chpl_memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
@@ -242,7 +242,7 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void fork_large_wrapper(fork_t* f) {
   void* arg = chpl_mem_allocMany(1, f->arg_size,
-                                 CHPL_RT_MD_COMM_FORK_RECV_LARGE_ARG, 0, 0);
+                                 CHPL_RT_MD_COMM_FRK_RCV_ARG, 0, 0);
 
   // A note on strict aliasing:
   // We used to say something like *(void**)f->arg,
@@ -268,7 +268,7 @@ static void fork_large_wrapper(fork_t* f) {
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
-                                          CHPL_RT_MD_COMM_FORK_RECV_LARGE_INFO,
+                                          CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f,
@@ -288,7 +288,7 @@ static void AM_fork_nb(gasnet_token_t  token,
                         void           *buf,
                         size_t          nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
-                                          CHPL_RT_MD_COMM_FORK_RECV_NB_INFO,
+                                          CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f,
@@ -298,7 +298,7 @@ static void AM_fork_nb(gasnet_token_t  token,
 
 static void fork_nb_large_wrapper(fork_t* f) {
   void* arg = chpl_mem_allocMany(1, f->arg_size,
-                                 CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_ARG, 0, 0);
+                                 CHPL_RT_MD_COMM_FRK_RCV_ARG, 0, 0);
 
   // See "A note on strict aliasing" in fork_large_wrapper
   void* f_arg;
@@ -320,7 +320,7 @@ static void fork_nb_large_wrapper(fork_t* f) {
 
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
-                                          CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_INFO,
+                                          CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
@@ -729,10 +729,10 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
 
   // This can use the system allocator because it involves internode communication.
   done = (done_t*) chpl_mem_allocManyZero(chpl_numNodes, sizeof(*done),
-                                          CHPL_RT_MD_COMM_FORK_DONE_FLAG,
+                                          CHPL_RT_MD_COMM_FRK_DONE_FLAG,
                                           0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
-    priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
+    priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
     chpl_memcpy(pbp->data, chpl_private_broadcast_table[id], size);
     pbp->id = id;
     pbp->size = size;
@@ -747,7 +747,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   } else {
     int maxpayloadsize = gasnet_AMMaxMedium();
     int maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
-    priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
+    priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
     pblp->id = id;
     numOffsets = (size+maxsize)/maxsize;
     for (node = 0; node < chpl_numNodes; node++) {
@@ -1207,7 +1207,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
     // and since nothing in info actually ends up in the task we
     // start (arg does but can be copied as a pointer)
     info = (fork_t*)chpl_mem_allocMany(1, info_size,
-                                       CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
+                                       CHPL_RT_MD_COMM_FRK_SND_INFO, 0, 0);
     info->caller = chpl_nodeID;
     info->subloc = subloc;
     info->ack = &done;
@@ -1245,7 +1245,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
   } else {
     info_size = sizeof(fork_t) + sizeof(void*);
   }
-  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FRK_SND_INFO, 0, 0);
   info->caller = chpl_nodeID;
   info->subloc = subloc;
   info->ack = info; // pass address to free after get in large case
@@ -1259,7 +1259,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
     // If the arg bundle is too large to fit in fork_t (i.e. passArg == false), 
     // Copy the args into auxilliary memory and pass a pointer to this instead.
     argCopy = chpl_mem_allocMany(1, arg_size,
-                                 CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
+                                 CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
     chpl_memcpy(argCopy, arg, arg_size);
     *(void**)(&(info->arg)) = argCopy;
   }

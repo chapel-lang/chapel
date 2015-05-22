@@ -7,9 +7,9 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 # decide whether to do a debug or no-debug build
 ifdef CHPL_LLVM_DEVELOPER
-CHPL_LLVM_DEBUG = --enable-debug-runtime --enable-debug-symbols
+CHPL_LLVM_DEBUG = --enable-debug-runtime --enable-debug-symbols --enable-assertions
 else
-CHPL_LLVM_DEBUG = 
+CHPL_LLVM_DEBUG = --disable-assertions --enable-optimized
 endif
 
 LLVM_FILE := $(LLVM_INSTALL_DIR)/include/llvm/PassSupport.h
@@ -29,6 +29,9 @@ clobber: FORCE
 
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.
+# Note that the configured-clang-sysroot-arguments could possibly be added
+# to LLVM as configure options (--with-clang-resource-dir,
+# --with-c-include-dirs, --with-default-sysroot)
 $(LLVM_FILE):
 	if [ ! -d llvm ]; then ./unpack-llvm.sh; fi
 	mkdir -p $(LLVM_BUILD_DIR)
