@@ -134,10 +134,10 @@ void chpl_setMemFlags(void) {
   if (local_memTrack
       || memStats
       || memLeaksByType
-      || strcmp(memLeaksByDesc, "")
+      || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
       || memLeaks
       || memMax > 0
-      || strcmp(memLeaksLog, "") != 0) {
+      || (memLeaksLog && strcmp(memLeaksLog, ""))) {
     chpl_memTrack = true;
   }
 
@@ -549,7 +549,7 @@ void chpl_reportMemInfo() {
     fprintf(memLogFile, "\n");
     printMemAllocsByType(true /* forLeaks */, 0, 0);
   }
-  if (strcmp(memLeaksByDesc, "")) {
+  if (memLeaksByDesc && strcmp(memLeaksByDesc, "")) {
     fprintf(memLogFile, "\n");
     chpl_printMemAllocsByDesc(memLeaksByDesc, memThreshold, 0, 0);
   }
