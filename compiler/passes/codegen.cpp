@@ -37,10 +37,11 @@
 
 #include <inttypes.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <cstdio>
-
+#include <vector>
 
 // Global so that we don't have to pass around
 // to all of the codegen() routines
@@ -617,7 +618,7 @@ static void codegen_header() {
   GenInfo* info = gGenInfo;
   Vec<const char*> cnames;
   Vec<TypeSymbol*> types;
-  Vec<FnSymbol*> functions;
+  std::vector<FnSymbol*> functions;
   Vec<VarSymbol*> globals;
 
   // reserved symbol names that require renaming to compile
@@ -651,9 +652,9 @@ static void codegen_header() {
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     legalizeName(fn);
-    functions.add(fn);
+    functions.push_back(fn);
   }
-  qsort(functions.v, functions.n, sizeof(functions.v[0]), compareSymbol);
+  std::sort(functions.begin(), functions.end(), compareSymbol);
 
 
   //
@@ -742,7 +743,7 @@ static void codegen_header() {
   // mangle function names if they clash with types, enum constants,
   // global variables, or other functions
   //
-  forv_Vec(FnSymbol, fn, functions) {
+  for_vector(FnSymbol, fn, functions) {
     if (fn->isRenameable())
       fn->cname = uniquifyName(fn->cname, &cnames);
   }
@@ -892,17 +893,17 @@ static void codegen_header() {
 
 
   genComment("Function Prototypes");
-  forv_Vec(FnSymbol, fnSymbol, functions) {
+  for_vector(FnSymbol, fnSymbol, functions) {
     fnSymbol->codegenPrototype();
   }
     
   genComment("Function Pointer Table");
-  forv_Vec(FnSymbol, fn, functions) {
-    if (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
-        fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
-        fn->hasFlag(FLAG_ON_BLOCK)) {
-    ftableVec.add(fn);
-    ftableMap.put(fn, ftableVec.n-1);
+  for_vector(FnSymbol, fn2, functions) {
+    if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
+        fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+        fn2->hasFlag(FLAG_ON_BLOCK)) {
+    ftableVec.add(fn2);
+    ftableMap.put(fn2, ftableVec.n-1);
     }
   }
 
