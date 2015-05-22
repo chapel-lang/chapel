@@ -448,11 +448,12 @@ void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
 void ViewField::draw()
 {
   //printf ("ViewField draw, numlocales is %d\n", numlocales);
+  //printf ("draw: x,y = %d,%d, h,w = %d,%d\n", x(), y(), w(), h());
 
   cx = x() + w()/2;
   cy = y() + h()/2;
-  rx = cx * 0.70;
-  ry = cy * 0.70;
+  rx = 0.85 * w() / 2;
+  ry = 0.85 * h() / 2;
 
   Fl_Box::draw();
 
