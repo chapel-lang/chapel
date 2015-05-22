@@ -103,7 +103,7 @@ Guidance for REGRESSIONS week
 high priority (sources of noise)
 --------------------------------
 
-o sporadic timeout on tests that normally complete quickly (xc.*): elliot/gbt/anyone
+* sporadic timeout on tests that normally complete quickly (xc.*): elliot/gbt/anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-2
 
@@ -144,7 +144,7 @@ o miniMD timeouts (perf.xc.16.mpi.gnu, perf.xc.16.ugni.gnu): anyone/ben
   What would it take to solidify this test's execution time?
 
 
-o ra times out sporadically (xe.ugni*): anyone
+* ra times out sporadically (xe.ugni*): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-6
 
@@ -241,7 +241,7 @@ o sporadic x? HW execution timeouts (xe.ugni*): anyone
   - release/examples/benchmarks/hpcc/variants/ra-cleanloop
 
 
-o lulesh timeouts (xe.mpi.pgi, perf.xc.local.cray): anyone/bradc
+* lulesh timeouts (xe.mpi.pgi, perf.xc.local.cray): anyone/bradc
 
   https://chapel.atlassian.net/browse/CHAPEL-16
 
@@ -573,7 +573,7 @@ medium priority (clutter)
   CHPL_TARGET_COMPILER in the sources?
 
 
-o negative floating point 0.0 issue (pgi): anyone
+* negative floating point 0.0 issue (pgi): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-48
 
@@ -593,7 +593,7 @@ o negative floating point 0.0 issue (pgi): anyone
   - io/ferguson/ctests/qio_formatted_test (compopts: 1)
 
 
-o -0.0 not supported on PGI? (pgi): anyone
+* -0.0 not supported on PGI? (pgi): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-50
 
@@ -661,7 +661,7 @@ medium priority (noisy)
   - studies/madness/aniruddha/madchap/test_mul
 
 
-o sadSerial times out sporadically (perf.xc.local.intel): lydia
+* sadSerial times out sporadically (perf.xc.local.intel): lydia
 
   https://chapel.atlassian.net/browse/CHAPEL-56
 
@@ -672,7 +672,7 @@ o sadSerial times out sporadically (perf.xc.local.intel): lydia
 low priority (annoying, but should get better in the future)
 ------------------------------------------------------------
 
-o fasta-lines (perf.bradc-lnx, perf.chap03, perf.chapel-shootout): anyone
+* fasta-lines (perf.bradc-lnx, perf.chap03, perf.chapel-shootout): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-57
 
