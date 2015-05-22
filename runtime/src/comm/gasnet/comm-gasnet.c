@@ -304,9 +304,6 @@ static void fork_nb_large_wrapper(fork_t* f) {
   void* f_arg;
   chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
-  // MPF - should internal to the GASNet comms layer communication
-  // like this be counted in e.g. chpl_comm_commDiagnostics.get ?
-  // If not, we probably want to make e.g. do_remote_get.
   chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
@@ -392,7 +389,7 @@ static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
 
 // Put from arg->src (which is local to the AM handler) back to
 // arg->dst (which is local to the caller of this AM).
-// nbytes must be < gasnet_AMMaxLongReply.
+// nbytes is < gasnet_AMMaxLongReply here (see chpl_comm_get).
 static void AM_reply_put(gasnet_token_t token, void* buf, size_t nbytes) {
   xfer_info_t* x = buf;
 
