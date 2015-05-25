@@ -32,6 +32,33 @@ static const int Y_OFF = 10;
 static const int Y_OFF = 0;
 #endif
 
+// XXX should new and delete here?
+void InfoBar::setFileName(const char *name) {
+    const char *sl;
+    char *dash;
+    sl = strrchr(name,'/');
+    if (sl == NULL)
+      sl = name;
+    else
+      sl++;
+    if (fileName != NULL) free(fileName);
+    fileName = strdup(sl);
+    dash = strchr(fileName,'-');
+    if (dash != NULL) *dash = 0;
+  }
+  
+void InfoBar::setTagName(const char *name) {
+    const char *sl;
+    if (tagName != NULL) free(tagName);
+    sl = strchr(name, '/');
+    if (sl == NULL)
+      sl = name;
+    else
+      sl++;
+    tagName = strdup(sl);
+  }
+
+
 void InfoBar::draw(void)
 {
   // dimensions and locations
@@ -80,6 +107,17 @@ void InfoBar::draw(void)
   }
 
   // Messages about file names / tags and so forth
+
+  if (fileName != NULL) {
+    snprintf (mesg, 150, "file: %s", fileName);
+    fl_draw(mesg, x()+5, y_center-20, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+  }
+
+  if (tagName != NULL) {
+    snprintf (mesg, 150, "tag: %s", tagName);
+    fl_draw(mesg, x()+5, y_center, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+  }
+
 }
 
 

@@ -326,12 +326,15 @@ static void selTag(Fl_Widget *w, void *p)
   if (ix == -2) {
     // printf ("selTag called on All\n");
     DbgView->processData(-2);
+    Info->setTagName("All");
   } else if (ix == -1) {
     // printf ("selTag called on Start\n");
     DbgView->processData(-1);
+    Info->setTagName("Start");
   } else {
     // printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
     DbgView->processData(ptr->tagNo);
+    Info->setTagName(ptr->tagName);
   }
   DbgView->redraw();
   Info->redraw();

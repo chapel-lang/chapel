@@ -22,6 +22,7 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
+#include <string.h>
 
 class InfoBar : public Fl_Box {
 
@@ -33,22 +34,28 @@ class InfoBar : public Fl_Box {
   bool showtasks;
   bool showcomms;
 
+  char *fileName;
+  char *tagName;
+
  public:
 
-  InfoBar (int x, int y, int w, int h, const char *label = 0)
+  InfoBar (int x, int y, int w, int h/*, const char *label = 0*/)
 #ifdef __APPLE__    
     : Fl_Box(x,0,w,h+20) {
 #else
     : Fl_Box(x,y,w,h) {
 #endif
+      printf ("InfoBar constructor...\n");
     maxTasks = 0;
     maxComms = 0;
     maxSize = 0;
     maxCpu = 0;
     showtasks = true;
     showcomms = true;
+    fileName = NULL;
+    tagName = NULL;
    };
-   
+
   void draw(void);
 
   void setMaxes(int tasks, int comms, long size, double cpu) {
@@ -57,6 +64,9 @@ class InfoBar : public Fl_Box {
     maxSize = size;
     maxCpu = cpu;
   }
+
+  void setFileName(const char *name);
+  void setTagName(const char *name);
 
   void showTasks() { showtasks = true; }
   void showCpu() { showtasks = false; }
