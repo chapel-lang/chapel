@@ -88,7 +88,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {2997 51 500 590} type Double color 7 resizable size_range {500 590 0 0} visible
+    xywh {1126 51 500 590} type Double color 7 resizable size_range {500 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 500 20} color 55
@@ -110,8 +110,9 @@ if (selfile) {
    DbgView->setNumLocales(VisData.NumLocales());
    DbgView->processData(-3);
    Info->setFileName(selfile);
+   Info->clearTagName();
    MainWindow->redraw();
-}}
+}} selected
           xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
@@ -186,6 +187,5 @@ MainWindow->redraw();}
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->processData(-3); // -3 is new open
    }
-}} {selected
-  }
+}} {}
 } 

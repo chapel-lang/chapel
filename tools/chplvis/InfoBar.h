@@ -45,7 +45,6 @@ class InfoBar : public Fl_Box {
 #else
     : Fl_Box(x,y,w,h) {
 #endif
-      printf ("InfoBar constructor...\n");
     maxTasks = 0;
     maxComms = 0;
     maxSize = 0;
@@ -67,6 +66,7 @@ class InfoBar : public Fl_Box {
 
   void setFileName(const char *name);
   void setTagName(const char *name);
+  void clearTagName() { if (tagName != NULL) free(tagName); tagName = NULL; }
 
   void showTasks() { showtasks = true; }
   void showCpu() { showtasks = false; }

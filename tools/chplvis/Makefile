@@ -57,7 +57,7 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
-chplvis.o: chplvis.h ViewField.h DataModel.h Event.h
+chplvis.o: chplvis.h ViewField.h DataModel.h Event.h Infobar.h
 ViewField.o: ViewField.h DataModel.h Event.h
 DataModel.o: DataModel.h Event.h
 InfoBar.o: InfoBar.h ViewField.h
