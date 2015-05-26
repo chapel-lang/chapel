@@ -42,10 +42,9 @@ $COV_BUILD_PREFIX/cov-build --dir cov-int make
 # Create compressed tarball.
 tar --create --bzip2 --verbose --file chapel.tar.bz2 cov-int
 
-echo Note: omitting "'--form email=$COV_SCAN_EMAIL'"
-
 curl --verbose --silent \
     --form token="${COV_SCAN_TOKEN}" \
+    --form email="${COV_SCAN_EMAIL}" \
     --form file=@chapel.tar.bz2 \
     --form version="${version}" \
     --form description="${description}" \

@@ -50,6 +50,13 @@
 # arbitrary commands (see sub_test below).
 #
 #
+# EXIT CODE
+#
+# start_test will return with exit code 0 if there were no failures
+# and return with code 2 if the test system ran correctly but
+# some tests failed. Any other code means that there was an
+# error running the test system.
+#
 # COMMAND-LINE OPTIONS
 #
 # The '-h' option lists the options that the script accepts and the
@@ -1068,7 +1075,7 @@ while ( $#argv > 0 )
         echo "          -junit-xml-file <file>  (implies -junit-xml)"
         echo "          -junit-remove-prefix <prefix>"
         echo "          -h, -help"
-        exit 0
+        exit 1
         breaksw
     default:
         if ( -d "$argv[1]" && -x "$argv[1]") then
@@ -1901,6 +1908,8 @@ set successmarker = "^$successmarker"
 
 set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
 
+set failures = 0
+
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
     grep "$errormarker" $logfile |& $tee -a $logfile.summary >/dev/null
@@ -1960,5 +1969,11 @@ cat $logfile.summary >> $logfile
 echo ''
 echo
 
-exit 0
+if ($failures == 0) then
+  # return 0 if there were no failed tests
+  exit 0
+else
+  # return 2 if there were some failures
+  exit 2
+endif
 
