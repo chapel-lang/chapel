@@ -784,6 +784,9 @@ proc BlockDom.~BlockDom() {
     on locDoms(localeIdx) do
       delete locDoms(localeIdx);
   }
+  var cnt = dist.decRefCount();
+  if cnt==0 then
+    delete dist;
 }
 
 proc BlockDom.dsiMember(i) {

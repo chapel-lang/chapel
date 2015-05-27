@@ -518,10 +518,16 @@ proc BlockCyclicDom.setup() {
 }
 
 proc BlockCyclicDom.~BlockCyclicDom() {
+  // Free the locDoms array.
   coforall localeIdx in dist.targetLocDom do
     if locDoms(localeIdx) != nil then
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
+
+  // Release our reference to the distribution.
+  var cnt = dist.decRefCount();
+  if cnt == 0 then
+    delete dist;
 }
 
 proc BlockCyclicDom.enumerateBlocks() {
