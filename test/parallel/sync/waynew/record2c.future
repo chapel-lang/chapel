@@ -1,0 +1,5 @@
+bug: Missing warning for modifying a record passed to a task by const ref
+
+The begin statement in this program modifies a field of c.  When the task
+intent is const ref, an error message should occur regarding the attempt to
+modify a field of a const instance.

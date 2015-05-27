@@ -152,7 +152,8 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
 bool fIgnoreLocalClasses = false;
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
-bool fieeefloat = true;
+bool fieeefloat = false;
+int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
 char fExplainCall[256] = "";
 int explainCallID = -1;
@@ -558,7 +559,9 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   // Enable all compiler optimizations, disable all runtime checks
   //
   fBaseline = false;
-  fieeefloat = false;
+  // don't set fieeefloat since it can change program behavior.
+  // instead, we rely on the backend C compiler to choose
+  // an appropriate level of optimization.
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
   fNoRemoveWrapRecords = false;
@@ -584,6 +587,21 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
+}
+
+static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
+  // It would be nicer if arg.cpp could handle
+  // 3-value variables like this (set to false, set to true, not set)
+  // But if this is the only such case, having a set function is an OK plan.
+
+  // ffloatOpt defaults to 0 -> backend default
+  if( fieeefloat ) {
+    // IEEE strict
+    ffloatOpt = -1;
+  } else {
+    // lax IEEE, optimize
+    ffloatOpt = 1;
+  }
 }
 
 static void setBaselineFlag(const ArgumentState* state, const char* unused) {
@@ -690,7 +708,7 @@ static ArgumentDescription arg_desc[] = {
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
- {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
+ {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", setFloatOptFlag},
  {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, NULL, NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},

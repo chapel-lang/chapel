@@ -1,6 +1,12 @@
 #include "qio.h"
 #include <assert.h>
 
+#ifdef CHPL_VALGRIND_TEST
+int valgrind = 1;
+#else
+int valgrind = 0;
+#endif
+
 int verbose = 0;
 
 void check_bits(int offset, int padding)
@@ -294,13 +300,13 @@ void check_write_read_pat(int width, int num, int pat, qio_chtype_t type, qio_hi
 int main(int argc, char** argv)
 {
   int offset, padding;
-  int width, logn;
+  int width, logn, maxlogn;
   qio_chtype_t type;
   qio_hint_t hints[] = {QIO_METHOD_DEFAULT, QIO_METHOD_READWRITE, QIO_METHOD_PREADPWRITE, QIO_METHOD_FREADFWRITE, QIO_METHOD_MEMORY, QIO_METHOD_MMAP, QIO_METHOD_MMAP|QIO_HINT_PARALLEL, QIO_METHOD_PREADPWRITE | QIO_HINT_NOFAST};
   int nhints = sizeof(hints)/sizeof(qio_hint_t);
   int file_hint, ch_hint;
 
-  if( argc == 1 ) {
+  {
     //for( file_hint = 0; file_hint < nhints; file_hint++ ) {
     //  check_write_read_pat(1, 262144, 0, 0, file_hint, file_hint, 0);
     //}
@@ -317,7 +323,10 @@ int main(int argc, char** argv)
       }
     }
 
-    for( logn = 0; logn < 19; logn+=9 ) {
+    maxlogn = 19;
+    if( valgrind ) maxlogn = 10;
+
+    for( logn = 0; logn < maxlogn; logn+=9 ) {
       for( width = 1; width <= 64; width++ ) {
         for( file_hint = 0; file_hint < nhints; file_hint++ ) {
           ch_hint = file_hint;
@@ -329,7 +338,8 @@ int main(int argc, char** argv)
     }
   }
 
-  if( argc > 1 ) {
+  // Do extra testing that showed a bug at one point...
+  if( !valgrind ) {
 
     int i;
     int n = 256*1024*1024;

@@ -110,6 +110,11 @@ void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
     chpl_internal_error("pthread_mutex_unlock() failed");
 }
 
+void chpl_thread_mutexDestroy(chpl_thread_mutex_p mutex) {
+  int result = pthread_mutex_destroy((pthread_mutex_t*) mutex);
+  if (result)
+    chpl_internal_error("pthread_mutex_destroy() failed");
+}
 
 // Thread management
 

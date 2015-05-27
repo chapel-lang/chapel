@@ -57,9 +57,7 @@ static void cullAutoDestroyFlags()
       // for internally reference-counted types. (sandboxing)
       TypeSymbol* ts = ret->type->symbol;
       if (ts->hasFlag(FLAG_ARRAY) ||
-          ts->hasFlag(FLAG_DOMAIN) ||
-          ts->hasFlag(FLAG_SYNC) ||
-          ts->hasFlag(FLAG_SINGLE)) {
+          ts->hasFlag(FLAG_DOMAIN))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
       }
       // Do we need to add other record-wrapped types here?  Testing will tell.
@@ -688,8 +686,8 @@ fixupDestructors() {
         if (field->type->destructor) {
           AggregateType* fct = toAggregateType(field->type);
           INT_ASSERT(fct);
-          if (!isClass(fct) || isSyncType(fct)) {
-            bool useRefType = !isRefCountedType(fct) && !isSyncType(fct);
+          if (!isClass(fct)) {
+            bool useRefType = !isRefCountedType(fct);
             VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
@@ -698,35 +696,7 @@ fixupDestructors() {
             if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY))
               fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
             else
-              fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp)); 
-
-            // WORKAROUND:
-            // This is a temporary bug fix that results in leaked memory
-            //  for sync and single vars in user defined records.
-            //
-            // We can only free a sync or single field that is part of a
-            //  reference counted type because they are currently
-            //  implemented as classes and thus can be copied as references.
-            //  i.e.,
-            //    isArrayClass(ct) || isDomainClass(ct) || isDistClass(ct)
-            // We'll also will allow syncs that are declared in the standard
-            //  and internal modules to be freed, assuming this will be okay.
-            //  Since the reference counted types are declared within the
-            //  standard and internal modules, we don't need to to the above
-            //  check unless the assumptions proves incorrect.
-            //
-            // The problem is related to that of records with classes 
-            //  described in insertFormalTemps() in functionResolution.cpp.
-            //  Specifically, we do not call constructors for records,
-            //  so if a record has sync or single fields, the memory
-            //  for the fields is not allocated and the pointer to the
-            //  field is copied in the autocopy.  The corresponding
-            //  autodestroys may delete the data twice.
-            //
-            if (isSyncType(fct) &&
-                ((ct->getModule()->modTag==MOD_INTERNAL) ||
-                 (ct->getModule()->modTag==MOD_STANDARD)))
-              fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);

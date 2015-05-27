@@ -1373,11 +1373,11 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 
 #define INIT_PRIM_REAL( name, width)                                            \
   dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width);    \
-  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", FLOAT_SIZE_ ## width)
 
 #define INIT_PRIM_IMAG( name, width)                                            \
   dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width);    \
-  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", FLOAT_SIZE_ ## width)
 
 #define INIT_PRIM_COMPLEX( name, width)                                                   \
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width);       \
@@ -1427,7 +1427,7 @@ void initPrimitiveTypes() {
 
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
-  dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", 0.0, FLOAT_SIZE_64);
+  dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
   dtStringC->defaultValue              = new_StringSymbol("");
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];

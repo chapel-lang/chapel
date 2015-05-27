@@ -42,6 +42,7 @@
 #include <cstring>
 #include <inttypes.h>
 #include <ostream>
+#include <stack>
 
 class FnSymbol;
 
@@ -6015,7 +6016,7 @@ new_Expr(const char* format, ...) {
 
 Expr*
 new_Expr(const char* format, va_list vl) {
-  Vec<Expr*> stack;
+  std::stack<Expr*> stack;
 
   for (int i = 0; format[i] != '\0'; i++) {
     if (isIdentifierChar(format[i])) {
@@ -6025,11 +6026,14 @@ new_Expr(const char* format, va_list vl) {
       const char* str = asubstr(&format[i], &format[i+n]);
       i += n-1;
       if (!strcmp(str, "TYPE")) {
-        BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+        if (stack.size() == 0) {
+          INT_FATAL("You neglected to provide a \"{ TYPE ...\" for a block type statement.");
+        } // Accessing the stack would result in unspecified behavior
+        BlockStmt* block = toBlockStmt(stack.top());
         INT_ASSERT(block);
         block->blockTag = BLOCK_TYPE;
       } else {
-        stack.add(new UnresolvedSymExpr(str));
+        stack.push(new UnresolvedSymExpr(str));
       }
     } else if (format[i] == '\'') {
       int n = 1;
@@ -6040,54 +6044,71 @@ new_Expr(const char* format, va_list vl) {
       if (format[i+1] == '(') {
         PrimitiveOp* prim = primitives_map.get(str);
         INT_ASSERT(prim);
-        stack.add(new CallExpr(prim));
+        stack.push(new CallExpr(prim));
         i++;
       } else {
-        stack.add(new SymExpr(new_StringSymbol(str)));
+        stack.push(new SymExpr(new_StringSymbol(str)));
       }
     } else if (format[i] == '%') {
       i++;
       if (format[i] == 'S')
-        stack.add(new SymExpr(va_arg(vl, Symbol*)));
+        stack.push(new SymExpr(va_arg(vl, Symbol*)));
       else if (format[i] == 'E')
-        stack.add(va_arg(vl, Expr*));
+        stack.push(va_arg(vl, Expr*));
       else
         INT_FATAL("unknown format specifier in new_Expr");
     } else if (format[i] == '(') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      stack.add(new CallExpr(expr));
+      stack.push(new CallExpr(expr));
       if (format[i+1] == ')') // handle empty calls
         i++;
     } else if (format[i] == ',') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      CallExpr* call = toCallExpr(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("There was nothing before the \',\'");
+      } // Accessing the stack would result in unspecified behavior
+      CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
     } else if (format[i] == ')') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      CallExpr* call = toCallExpr(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("This closing parentheses is unmatched");
+      } // Accessing the stack would result in unspecified behavior
+      CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
     } else if (format[i] == '{') {
-      stack.add(new BlockStmt());
+      stack.push(new BlockStmt());
     } else if (format[i] == ';') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("There was nothing before the \';\'");
+      } // Accessing the stack would result in unspecified behavior
+      BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
     } else if (format[i] == '}') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("This closing curly bracket is unmatched");
+      } // Accessing the stack would result in unspecified behavior
+      BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
     }
   }
 
-  INT_ASSERT(stack.n == 1);
-  return stack.v[0];
+  INT_ASSERT(stack.size() == 1);
+  return stack.top();
 }

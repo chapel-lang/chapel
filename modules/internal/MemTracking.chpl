@@ -57,10 +57,9 @@ module MemTracking
     cMemThreshold = memThreshold.safeCast(size_t);
 
   // Globally accessible copy of the corresponding c_string consts
-  //const s_memLog: string = memLog;
-  //const s_memLeaksLog: string = memLeaksLog;
   const s_memLog: string;
   const s_memLeaksLog: string;
+  const s_memLeaksByDesc: string;
 
   //
   // This communicates the settings of the various memory tracking
@@ -94,6 +93,11 @@ module MemTracking
 
     if (here.id != 0) {
       // These c_strings are going to be leaked
+      if s_memLeaksByDesc.len != 0 then
+        ret_memLeaksByDesc = copyRemoteBuffer(s_memLeaksByDesc.locale.id,
+                                      s_memLeaksByDesc.buff,
+                                      s_memLeaksByDesc.len);
+      else ret_memLeaksByDesc = nil;
       if s_memLog.len != 0 then
         ret_memLog = copyRemoteBuffer(s_memLog.locale.id,
                                       s_memLog.buff,
@@ -105,6 +109,7 @@ module MemTracking
                                            s_memLeaksLog.len);
       else ret_memLeaksLog = nil;
     } else {
+      ret_memLeaksByDesc = memLeaksByDesc;
       ret_memLog = memLog;
       ret_memLeaksLog = memLeaksLog;
     }
