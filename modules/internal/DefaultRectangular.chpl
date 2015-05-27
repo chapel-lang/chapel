@@ -1040,16 +1040,36 @@ module DefaultRectangular {
   proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
-    proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
+    proc writeSpaces(dim:int) {
+      for i in 1..dim {
+        f <~> new ioLiteral(" ");
+      }
+    }
+
+    proc recursiveArrayWriter(in idx: rank*idxType, dim=1) {
       var binary = f.binary();
+      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+      var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
       type strType = chpl__signedType(idxType);
       var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
+
+      if isjson || ischpl {
+        if dim != rank {
+          f <~> new ioLiteral("[\n");
+          writeSpaces(dim); // space for the next dimension
+        } else f <~> new ioLiteral("[");
+      }
+
       if dim == rank {
         var first = true;
         if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
         for j in dom.ranges(dim) by makeStridePositive {
           if first then first = false;
-          else if ! binary then f <~> new ioLiteral(" ");
+          else if isspace then f <~> new ioLiteral(" ");
+          else if isjson || ischpl then f <~> new ioLiteral(", ");
           idx(dim) = j;
           f <~> dsiAccess(idx);
         }
@@ -1057,12 +1077,29 @@ module DefaultRectangular {
         for j in dom.ranges(dim) by makeStridePositive {
           var lastIdx =  dom.ranges(dim).last;
           idx(dim) = j;
-          recursiveArrayWriter(idx, dim=dim+1,
-                               last=(last || dim == 1) && (j == lastIdx));
+          recursiveArrayWriter(idx, dim=dim+1);
+
+          // last=(last || dim == 1) && (j == lastIdx)
+          if isspace {
+            if j != lastIdx || dim != 1 then f <~> new ioLiteral("\n");
+          } else if isjson || ischpl {
+            if j != lastIdx {
+              f <~> new ioLiteral(",\n");
+              writeSpaces(dim);
+            }
+          }
         }
       }
-      if !last && dim != 1 && ! binary then
-        f <~> new ioNewline();
+
+      if isjson || ischpl {
+        if dim != rank {
+          f <~> new ioLiteral("\n");
+          writeSpaces(dim-1); // space for this dimension
+          f <~> new ioLiteral("]");
+        }
+        else f <~> new ioLiteral("]");
+      }
+
     }
     const zeroTup: rank*idxType;
     recursiveArrayWriter(zeroTup);
