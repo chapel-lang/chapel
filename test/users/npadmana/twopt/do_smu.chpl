@@ -21,6 +21,9 @@ config const smax2=smax**2;
 config const nmubins=5;
 config const nsbins=5;
 
+// Global variables
+var gtime1 : Timer;
+
 proc main() {
   if isTest then testPairs(); else doPairs();
 }
@@ -124,7 +127,7 @@ proc writeHist(fn : string, hh : UniformBins) {
   ff.close();
 }
 
-proc splitOn(pp : []WeightedParticle3D, splitDim : int, rr : []real) : int {
+proc splitOn(pp : []WeightedParticle3D, scr : []WeightedParticle3D, splitDim : int, rr : []real) : int {
   var npart, lnpart : int;
   var lo = pp.domain.low;
   var hi = pp.domain.high;
@@ -133,21 +136,21 @@ proc splitOn(pp : []WeightedParticle3D, splitDim : int, rr : []real) : int {
   for ipp in pp {
     if (ipp.x[splitDim] < rr[splitDim]) then lnpart+=1;
   }
-  var part : [pp.domain] WeightedParticle3D;
+//  var part : [pp.domain] WeightedParticle3D;
   var li, ri : int;
   li = lo; ri = (lo+lnpart);
   for ipp in pp {
     if (ipp.x[splitDim] < rr[splitDim]) {
-      part[li] = ipp;
+      scr[li] = ipp;
       li+=1;
     } else {
-      part[ri] = ipp;
+      scr[ri] = ipp;
       ri+=1;
     }
   }
   assert(li==(lo+lnpart), "splitOn : li != lo+npart");
   assert(ri==(hi+1), "splitOn : ri != hi+1");
-  pp = part;
+  pp = scr;
 
   return lnpart;
 }
@@ -172,7 +175,8 @@ class KDNode {
 }
 
 
-proc BuildTree(pp : []WeightedParticle3D, id : int) : KDNode{
+proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) : KDNode{
+  gtime1.start();
   var me = new KDNode();
   var dom = pp.domain;
   me.lo = dom.low;
@@ -201,7 +205,9 @@ proc BuildTree(pp : []WeightedParticle3D, id : int) : KDNode{
   }
 
   // Continue to split
+  gtime1.stop();
   if (me.npart <= minpart) then return me; // Don't split further.
+  gtime1.start();
 
   // Find dimension to split on
   dx = pmax - pmin; 
@@ -211,11 +217,12 @@ proc BuildTree(pp : []WeightedParticle3D, id : int) : KDNode{
   }
 
   // Split
-  var lnpart = splitOn(pp, splitDim, me.xcen);
+  var lnpart = splitOn(pp, scr,splitDim, me.xcen);
   var ldom = {me.lo..(me.lo+lnpart-1)};
   var rdom = {(me.lo+lnpart)..me.hi};
-  me.left = BuildTree(pp[ldom],2*id+1);
-  me.right = BuildTree(pp[rdom],2*id+2);
+  gtime1.stop();
+  me.left = BuildTree(pp[ldom],scr[ldom],2*id+1);
+  me.right = BuildTree(pp[rdom],scr[rdom],2*id+2);
   return me;
 }
 
@@ -267,7 +274,10 @@ proc testPairs() {
   readFile("test.dat",pp1);
 
   // Build the tree
-  var root1 = BuildTree(pp1,0);
+  var Dscr : domain(1); 
+  var scr : [Dscr] WeightedParticle3D;
+  Dscr = pp1.domain;
+  var root1 = BuildTree(pp1,scr,0);
 
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
@@ -308,11 +318,18 @@ proc doPairs() {
   writef("Time to read : %r \n", tt.elapsed());
 
   // Build the tree
-  tt.clear(); tt.start();
-  var root1 = BuildTree(pp1,0);
-  var root2 = BuildTree(pp2,0);
+  var Dscr : domain(1); 
+  var scr : [Dscr] WeightedParticle3D;
+  tt.clear(); tt.start(); gtime1.clear();
+  Dscr = pp1.domain;
+  var root1 = BuildTree(pp1,scr,0);
+  Dscr = pp2.domain;
+  var root2 = BuildTree(pp2,scr,0);
   tt.stop();
   writef("Time to build trees : %r \n", tt.elapsed());
+  writef("Time in splitOn : %r \n", gtime1.elapsed());
+  
+
 
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
