@@ -274,9 +274,7 @@ proc testPairs() {
   readFile("test.dat",pp1);
 
   // Build the tree
-  var Dscr : domain(1); 
-  var scr : [Dscr] WeightedParticle3D;
-  Dscr = pp1.domain;
+  var scr : [0.. #nlines] WeightedParticle3D;
   var root1 = BuildTree(pp1,scr,0);
 
   // Set up the histogram
@@ -306,11 +304,11 @@ proc doPairs() {
 
   // Read in the file
   tt.clear(); tt.start();
-  var nlines = countLines(fn1);
-  var pp1 : [0.. #nlines] WeightedParticle3D;
+  var nlines1 = countLines(fn1);
+  var pp1 : [0.. #nlines1] WeightedParticle3D;
   readFile(fn1,pp1);
-  nlines = countLines(fn2);
-  var pp2 : [0.. #nlines] WeightedParticle3D;
+  var nlines2 = countLines(fn2);
+  var pp2 : [0.. #nlines2] WeightedParticle3D;
   readFile(fn1,pp2);
   tt.stop();
   writef("Read in %i lines from file %s \n", pp1.size, fn1);
@@ -318,13 +316,11 @@ proc doPairs() {
   writef("Time to read : %r \n", tt.elapsed());
 
   // Build the tree
-  var Dscr : domain(1); 
-  var scr : [Dscr] WeightedParticle3D;
   tt.clear(); tt.start(); gtime1.clear();
-  Dscr = pp1.domain;
-  var root1 = BuildTree(pp1,scr,0);
-  Dscr = pp2.domain;
-  var root2 = BuildTree(pp2,scr,0);
+  var scr1 : [0.. #nlines1] WeightedParticle3D;
+  var root1 = BuildTree(pp1,scr1,0);
+  var scr2 : [0.. #nlines2] WeightedParticle3D;
+  var root2 = BuildTree(pp2,scr2,0);
   tt.stop();
   writef("Time to build trees : %r \n", tt.elapsed());
   writef("Time in splitOn : %r \n", gtime1.elapsed());
