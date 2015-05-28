@@ -170,6 +170,9 @@ void ViewField::processData(int tagNum)
     theLocales[ix1].Cpu = 0;
     theLocales[ix1].refUserCpu = 0;
     theLocales[ix1].refSysCpu = 0;
+    if (theLocales[ix1].win != NULL) {
+      theLocales[ix1].win->hide();
+    }
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
       comms[ix1][ix2].numGets = 0;
       comms[ix1][ix2].commSize = 0;
@@ -371,8 +374,6 @@ void ViewField::makeTagsMenu(void)
 }
 
 
-
-
 void ViewField::drawLocale ( int ix, Fl_Color col)
 {
   //printf ("drawLocale %d\n", ix);
@@ -529,6 +530,8 @@ int ViewField::handle(int event)
 	  if (theLocales[ix].win == NULL) {
 	    // Create the window
 	    theLocales[ix].win = make_locale_window(ix, &theLocales[ix]);
+	  } else {
+	    theLocales[ix].win->updateWin();
 	  }
 	  theLocales[ix].win->show();
 	  return 1;

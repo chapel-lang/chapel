@@ -47,13 +47,23 @@ decl {\#include "DataModel.h"} {public global
 decl {\#include "InfoBar.h"} {public local
 } 
 
+decl {\#include "LocaleWin.h"} {public global
+} 
+
 decl {DataModel VisData;} {public local
+} 
+
+Function {mainWinCallback(Fl_Widget *)} {open return_type void
+} {
+  code {exit(1);} {selected
+  }
 } 
 
 Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
 } {
   Fl_Window {} {open
-    xywh {1158 44 180 120} type Double color 7 resizable size_range {180 120 0 0} visible
+    xywh {925 51 180 120} type Double color 7 resizable
+    class LocaleWin size_range {180 120 0 0} visible
   } {
     Fl_Box Locale_Title {
       label {Locale }
@@ -65,23 +75,8 @@ Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
       class Fl_Multiline_Output
     }
   }
-  code {//  Write the data to the window
-const int msgsize = 1024;
-char mesg[msgsize];
-snprintf (mesg, msgsize, "Locale %d", locnum);
-Locale_Title->copy_label(mesg);
-
-// Create the text
-snprintf (mesg, msgsize, "Number of Tasks: %d\\n"
-                         "CPU:\\n"
-                         "      User %lf\\n"
-                         "      Sys %lf\\n"
-                         "      Total %lf\\n",
-                         locInfo->numTasks,
-                         locInfo->userCpu,
-                         locInfo->sysCpu,
-                         locInfo->Cpu);
-cpuInfo->value(mesg);} {}
+  code {w->setMembers(Locale_Title,cpuInfo,locInfo,locnum);
+w->updateWin();} {}
 } 
 
 Function {} {open
@@ -112,7 +107,7 @@ if (selfile) {
    Info->setFileName(selfile);
    Info->clearTagName();
    MainWindow->redraw();
-}} selected
+}}
           xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
@@ -187,5 +182,6 @@ MainWindow->redraw();}
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->processData(-3); // -3 is new open
    }
-}} {}
+}
+MainWindow->callback(mainWinCallback);} {}
 } 

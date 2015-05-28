@@ -24,13 +24,11 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
-#include <FL/Fl_Double_Window.H>
+#include "LocaleWin.h"
 
 #include <string>
 
 #include "DataModel.h"
-
-// extern Fl_Double_Window *MainWin;
 
 struct localeInfo {
   int x;
@@ -43,7 +41,7 @@ struct localeInfo {
   double Cpu;
   double refUserCpu; 
   double refSysCpu;
-  Fl_Double_Window *win;
+  LocaleWin *win;
   // Fl_Color heat;
 };
 

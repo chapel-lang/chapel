@@ -33,8 +33,8 @@ CHPL_HOST_PLATFORM= $(shell printenv CHPL_HOST_PLATFORM)
 .cxx.o:
 	$(CXX) -c $(CXXFLAGS) $<
 
-SRCS= ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx
-HFILES= ViewField.h DataModel.h Event.h InfoBar.h
+SRCS= ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx
+HFILES= ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -57,7 +57,8 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
-chplvis.o: chplvis.h ViewField.h DataModel.h Event.h Infobar.h
+chplvis.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h
 ViewField.o: ViewField.h DataModel.h Event.h
 DataModel.o: DataModel.h Event.h
 InfoBar.o: InfoBar.h ViewField.h
+LocaleWin.o: LocaleWin.h
