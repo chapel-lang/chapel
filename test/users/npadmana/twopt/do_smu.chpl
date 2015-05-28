@@ -4,6 +4,7 @@ use Time;
 
 // Use the test/twopt code
 config const isTest=false;
+config const doBrute=false;
 
 config const fn1 = "test.dat";
 config const fn2 = "test.dat";
@@ -338,11 +339,13 @@ proc doPairs() {
   writef("Time to SOA : %r \n", tt.elapsed());
 
   // Brute force paircounts
-  tt.clear(); tt.start();
-  smuAccumulate(hh, soa1,soa2, soa1.Dpart, soa2.Dpart, 1.0);
-  tt.stop();
-  writef("Time to brute force paircount : %r \n", tt.elapsed());
-  writeHist("%s.brute".format(pairfn),hh);
+  if doBrute {
+    tt.clear(); tt.start();
+    smuAccumulate(hh, soa1,soa2, soa1.Dpart, soa2.Dpart, 1.0);
+    tt.stop();
+    writef("Time to brute force paircount : %r \n", tt.elapsed());
+    writeHist("%s.brute".format(pairfn),hh);
+  }
 
    // Do the paircounts with a tree
   hh.reset();
