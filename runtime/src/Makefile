@@ -39,6 +39,7 @@ ifneq ($(MAKE_LAUNCHER),1)
 TARGETS = \
 	$(COMMON_OBJS) \
 	$(MAIN_OBJS) \
+        $(RUNTIME_MALLOC_OBJS) \
 
 SUBDIRS = \
 	comm \

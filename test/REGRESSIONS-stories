@@ -103,7 +103,7 @@ Guidance for REGRESSIONS week
 high priority (sources of noise)
 --------------------------------
 
-o sporadic timeout on tests that normally complete quickly (xc.*): elliot/gbt/anyone
+* sporadic timeout on tests that normally complete quickly (xc.*): elliot/gbt/anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-2
 
@@ -144,7 +144,7 @@ o miniMD timeouts (perf.xc.16.mpi.gnu, perf.xc.16.ugni.gnu): anyone/ben
   What would it take to solidify this test's execution time?
 
 
-o ra times out sporadically (xe.ugni*): anyone
+* ra times out sporadically (xe.ugni*): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-6
 
@@ -154,7 +154,7 @@ o ra times out sporadically (xe.ugni*): anyone
   - release/examples/benchmarks/hpcc/ra
 
 
-o sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
+* sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-7
 
@@ -178,7 +178,7 @@ o types/string/StringImpl/memLeaks/* (gasnet*, gasnet.fifo): kyleb, hilde?
   string development branch?
 
 
-o sporadic valgrind timeouts (valgrind): anyone
+* sporadic valgrind timeouts (valgrind): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-9
 
@@ -190,7 +190,7 @@ o sporadic valgrind timeouts (valgrind): anyone
   - studies/shootout/fannkuch-redux/sungeun/fannkuch-redux
 
 
-o sporadic invalid reads/writes (valgrind): anyone
+* sporadic invalid reads/writes (valgrind): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-10
 
@@ -202,7 +202,7 @@ o sporadic invalid reads/writes (valgrind): anyone
   - trivial/bradc/formatoutput
 
 
-o pivotal story 91235766 (gasnet-fast): anyone
+* pivotal story 91235766 (gasnet-fast): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-12
 
@@ -225,7 +225,7 @@ o bulkcomm execution timeouts (gasnet.fifo): anyone
   - optimizations/bulkcomm/alberto/Block/2dDRtoBDTest
 
 
-o execflags/bradc/gdbddash/gdbSetConfig (xc-wb.*): anyone
+* execflags/bradc/gdbddash/gdbSetConfig (xc-wb.*): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-14
 
@@ -241,7 +241,7 @@ o sporadic x? HW execution timeouts (xe.ugni*): anyone
   - release/examples/benchmarks/hpcc/variants/ra-cleanloop
 
 
-o lulesh timeouts (xe.mpi.pgi, perf.xc.local.cray): anyone/bradc
+* lulesh timeouts (xe.mpi.pgi, perf.xc.local.cray): anyone/bradc
 
   https://chapel.atlassian.net/browse/CHAPEL-16
 
@@ -266,7 +266,7 @@ o sporadic slurm 'expired credential' problem (xc.*): anyone
   - see REGRESSIONS
 
 
-o sporadic pgi failures (perf.xc.local.pgi): anyone
+* sporadic pgi failures (perf.xc.local.pgi): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-19
 
@@ -287,7 +287,7 @@ o cygwin noise (cygwin*):
   - reductions/diten/testSerialReductions
 
 
-o Colorado state tests noisy (or failing) on Cygwin (cygwin32): ben
+* Colorado state tests noisy (or failing) on Cygwin (cygwin32): ben
 
   https://chapel.atlassian.net/browse/CHAPEL-22
 
@@ -301,23 +301,25 @@ o Colorado state tests noisy (or failing) on Cygwin (cygwin32): ben
 high priority (failing in one or more configurations)
 -----------------------------------------------------
 
-o regexp issues (valgrind, linux32, cygwin*, cygwin64): mppf/anyone
+* regexp issues (valgrind, linux32, cygwin*, cygwin64): mppf/anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-23
 
-  - regexp/ferguson/rechan
+  * regexp/ferguson/rechan
     io/tzakian/recordReader/test
 
       These two Have gotten valgrind errors since enabled
 
-  - regexp/ferguson/ctests/regexp_channel_test (linux32, cygwin*, cygwin64): mppf
+  * regexp/ferguson/ctests/regexp_channel_test (linux32): mppf
+
+  * regexp/ferguson/ctests/regexp_channel_test (cygwin*, cygwin64): mppf
 
       Fails in various ways on various platforms.  Not sure what to
       make of the fact that it's listed in cygwin* and cygwin64 with
       different failure modes.  Did someone mistakenly refactor a
       cygwin32 failure mode upwards?
 
-  - regexp/ferguson/ctests/regexp_test
+  * regexp/ferguson/ctests/regexp_test
 
       Times out on linux32
 
@@ -335,7 +337,7 @@ o studies/glob/test_glob (baseline): bradc
   FileSystem.  Can the test be revamped to use the official routines?
 
 
-o io/vass/time-write (perf.xc.no-local.gnu): vass
+* io/vass/time-write (perf.xc.no-local.gnu): vass
 
   https://chapel.atlassian.net/browse/CHAPEL-25
 
@@ -351,7 +353,7 @@ o multilocale/deitz/needMultiLocales/test_remote_file_read (gasnet-fast): mppf
   This test has been failing with a segfault since 2/22.
 
 
-o memory/bradc/allocBig (linux32): kyleb
+* memory/bradc/allocBig (linux32): kyleb
 
   https://chapel.atlassian.net/browse/CHAPEL-27
 
@@ -360,21 +362,21 @@ o memory/bradc/allocBig (linux32): kyleb
   failing since 3/5.
 
 
-o modules/standard/BitOps/rotl (xc-wb.prgenv-cray): kyleb
+* modules/standard/BitOps/rotl (xc-wb.prgenv-cray): kyleb
 
   https://chapel.atlassian.net/browse/CHAPEL-28
 
   Error matching program output since 2015-03-10.
 
 
-o fftw.h not found since  3/19 (xc.llvm): thomas
+* fftw.h not found since  3/19 (xc.llvm): thomas
 
   https://chapel.atlassian.net/browse/CHAPEL-29
 
   - release/examples/primers/FFTWlib
 
 
-o new errors on 2015-03-28 (valgrind): vass
+* new errors on 2015-03-28 (valgrind): vass
 
   https://chapel.atlassian.net/browse/CHAPEL-30
 
@@ -387,7 +389,7 @@ o new errors on 2015-03-28 (valgrind): vass
   - studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple
 
 
-o chpldoc missing package (cygwin32): thomas
+* chpldoc missing package (cygwin32): thomas
 
   https://chapel.atlassian.net/browse/CHAPEL-31
 
@@ -396,7 +398,7 @@ o chpldoc missing package (cygwin32): thomas
   - chpldoc*
 
 
-o ipe/powerOfTwo (valgrind, *32): noakes
+* ipe/powerOfTwo (valgrind, *32): noakes
 
   https://chapel.atlassian.net/browse/CHAPEL-32
 
@@ -407,7 +409,7 @@ o ipe/powerOfTwo (valgrind, *32): noakes
 high priority (worrisome)
 -------------------------
 
-o invalid reads/writes (valgrind): anyone
+* invalid reads/writes (valgrind): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-11
 
@@ -427,7 +429,7 @@ o invalid reads/writes (valgrind): anyone
 high priority (potential portability issues)
 --------------------------------------------
 
-o I/O test assertions fail (intel): mppf
+* I/O test assertions fail (intel): mppf
 
   https://chapel.atlassian.net/browse/CHAPEL-33
 
@@ -436,7 +438,7 @@ o I/O test assertions fail (intel): mppf
   - io/ferguson/writef_readf
 
 
-o binary files differ (intel): mppf
+* binary files differ (intel): mppf
 
   https://chapel.atlassian.net/browse/CHAPEL-34
 
@@ -446,7 +448,7 @@ o binary files differ (intel): mppf
   - io/ferguson/writefbinary
 
 
-o factorization failed (intel): anyone
+* factorization failed (intel): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-35
 
@@ -457,7 +459,7 @@ o factorization failed (intel): anyone
 high priority (CCE quiettude)
 -----------------------------
 
-o compilation timeouts (xe*cray): anyone
+* compilation timeouts (xe*cray): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-36
 
@@ -467,14 +469,14 @@ o compilation timeouts (xe*cray): anyone
   - release/examples/benchmarks/ssca2/SSCA2_main
 
 
-o text file busy with path mandelbrot (xc-wb.prgenv-cray): thomas
+* text file busy with path mandelbrot (xc-wb.prgenv-cray): thomas
 
   https://chapel.atlassian.net/browse/CHAPEL-37
 
   - exercises/Mandelbrot/mandelbrot
 
 
-o invalid option "openmp" on the command line (xc-wb.prgenv-cray): ben/thomas
+* invalid option "openmp" on the command line (xc-wb.prgenv-cray): ben/thomas
 
   https://chapel.atlassian.net/browse/CHAPEL-38
 
@@ -484,7 +486,7 @@ o invalid option "openmp" on the command line (xc-wb.prgenv-cray): ben/thomas
   - studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling
 
 
-o types/enum/ferguson/enum_mintype_test (prgenv-cray): anyone
+* types/enum/ferguson/enum_mintype_test (prgenv-cray): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-39
 
@@ -492,14 +494,14 @@ o types/enum/ferguson/enum_mintype_test (prgenv-cray): anyone
   What should we do about this?
 
 
-o error differs but within acceptable margin (xc-wb.prgenv-cray): anyone
+* error differs but within acceptable margin (xc-wb.prgenv-cray): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-40
 
   - studies/hpcc/FFT/marybeth/fft
 
 
-o consistent execution timeout (xc-wb.prgenv-cray): anyone
+* consistent execution timeout (xc-wb.prgenv-cray): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-41
 
@@ -518,7 +520,7 @@ o when building 'chpl' with CCE, weird stuff happens (xc-wb.host.prgenv-cray): a
   notes but never had time to follow through.
 
 
-o studies/hpcc/FFT/marybeth/fft (prgenv-cray): anyone
+* studies/hpcc/FFT/marybeth/fft (prgenv-cray): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-43
 
@@ -529,7 +531,7 @@ o studies/hpcc/FFT/marybeth/fft (prgenv-cray): anyone
 medium priority (worrisome)
 ---------------------------
 
-o conditional jump in re2 (valgrind): anyone
+* conditional jump in re2 (valgrind): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-44
 
@@ -543,7 +545,7 @@ o conditional jump in re2 (valgrind): anyone
 medium priority (clutter)
 -------------------------
 
-o memory/sungeun/refCount/domainMaps (*32): anyone
+* memory/sungeun/refCount/domainMaps (*32): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-45
 
@@ -552,14 +554,14 @@ o memory/sungeun/refCount/domainMaps (*32): anyone
   quiet this somehow without losing whatever value it has?
 
 
-o users/vass/type-tests.isSubType (*32): anyone/vass
+* users/vass/type-tests.isSubType (*32): anyone/vass
 
   https://chapel.atlassian.net/browse/CHAPEL-46
 
   Consistently segfaulting since first run, according to REGRESSIONS.
 
 
-o domains/sungeun/assoc/parSafeMember (pgi): anyone (ben?)
+* domains/sungeun/assoc/parSafeMember (pgi): anyone (ben?)
 
   https://chapel.atlassian.net/browse/CHAPEL-47
 
@@ -571,7 +573,7 @@ o domains/sungeun/assoc/parSafeMember (pgi): anyone (ben?)
   CHPL_TARGET_COMPILER in the sources?
 
 
-o negative floating point 0.0 issue (pgi): anyone
+* negative floating point 0.0 issue (pgi): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-48
 
@@ -582,7 +584,7 @@ o negative floating point 0.0 issue (pgi): anyone
   - types/file/bradc/scalar/floatcomplexexceptions
 
 
-o QIO assertion errors (cygwin): mppf
+* QIO assertion errors (cygwin): mppf
 
   https://chapel.atlassian.net/browse/CHAPEL-49
 
@@ -591,7 +593,7 @@ o QIO assertion errors (cygwin): mppf
   - io/ferguson/ctests/qio_formatted_test (compopts: 1)
 
 
-o -0.0 not supported on PGI? (pgi): anyone
+* -0.0 not supported on PGI? (pgi): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-50
 
@@ -603,14 +605,14 @@ o -0.0 not supported on PGI? (pgi): anyone
   - types/file/bradc/scalar/floatcomplexexceptions
 
 
-o unclear how KNCs interact with the file system (xc.knc): anyone
+* unclear how KNCs interact with the file system (xc.knc): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-51
 
   - release/examples/primers/fileIO
 
 
-o OOB array access for non 2**k core count (perf.xc.*): ben
+* OOB array access for non 2**k core count (perf.xc.*): ben
 
   https://chapel.atlassian.net/browse/CHAPEL-52
 
@@ -620,7 +622,7 @@ o OOB array access for non 2**k core count (perf.xc.*): ben
   - npb/is/mcahir/intsort.mtml
 
 
-o These started timing out consistently on 2/18 (perf.xc.no-local.gnu): anyone
+* These started timing out consistently on 2/18 (perf.xc.no-local.gnu): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-20
 
@@ -632,14 +634,14 @@ o These started timing out consistently on 2/18 (perf.xc.no-local.gnu): anyone
   - studies/ssca2/memory/SSCA2_mem (see also 'SSCA2_main times out sporadically'?)
 
 
-o "got == expect[i]" assertion error (cygwin32): mppf
+* "got == expect[i]" assertion error (cygwin32): mppf
 
   https://chapel.atlassian.net/browse/CHAPEL-53
 
   - io/ferguson/ctests/qio_bits_test
 
 
-o consistent execution timeout / assertion error (cygwin32, cygwin64): mppf
+* consistent execution timeout / assertion error (cygwin32, cygwin64): mppf
 
   https://chapel.atlassian.net/browse/CHAPEL-54
 
@@ -649,7 +651,7 @@ o consistent execution timeout / assertion error (cygwin32, cygwin64): mppf
 medium priority (noisy)
 -----------------------
 
-o sporadic execution timeouts (gasnet.fifo): anyone
+* sporadic execution timeouts (gasnet.fifo): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-55
 
@@ -659,7 +661,7 @@ o sporadic execution timeouts (gasnet.fifo): anyone
   - studies/madness/aniruddha/madchap/test_mul
 
 
-o sadSerial times out sporadically (perf.xc.local.intel): lydia
+* sadSerial times out sporadically (perf.xc.local.intel): lydia
 
   https://chapel.atlassian.net/browse/CHAPEL-56
 
@@ -670,7 +672,7 @@ o sadSerial times out sporadically (perf.xc.local.intel): lydia
 low priority (annoying, but should get better in the future)
 ------------------------------------------------------------
 
-o fasta-lines (perf.bradc-lnx, perf.chap03, perf.chapel-shootout): anyone
+* fasta-lines (perf.bradc-lnx, perf.chap03, perf.chapel-shootout): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-57
 
@@ -683,7 +685,7 @@ o fasta-lines (perf.bradc-lnx, perf.chap03, perf.chapel-shootout): anyone
 low priority (portability issue, significant level of effort required)
 ----------------------------------------------------------------------
 
-o release/examples/benchmarks/shootout/pidigits (llvm): anyone/thomas/mppf
+* release/examples/benchmarks/shootout/pidigits (llvm): anyone/thomas/mppf
 
   https://chapel.atlassian.net/browse/CHAPEL-58
 
@@ -704,7 +706,7 @@ o SIGBUS at execution time (xc.knc): anyone
   - release/examples/benchmarks/lulesh/lulesh
 
 
-o timed out once? (perf.xc.*): anyone
+* timed out once? (perf.xc.*): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-60
 

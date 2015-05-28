@@ -82,8 +82,8 @@ proc test_one(x:R, setglobal:bool) {
 }
 
 writeln("Before scope (begin)");
+var flag:sync bool;
 sync {
-  var flag:sync bool;
   proc call_test_one() {
     // This R exists only within the scope of this function.  It has to be
     // captured by a begin so its lifetime is extended to the end of the task

@@ -6,16 +6,17 @@ include $(THIRD_PARTY_DIR)/llvm/Makefile.share
 # and LLVM #includes are in $(LLVM_INCLUDE_DIR)/llvm
 LLVM_CLANG_CODEGEN_INCLUDE_DIR=$(LLVM_DIR)/$(LLVM_SUBDIR)/tools/clang/lib/CodeGen/
 LLVM_LIB_DIR=$(LLVM_INSTALL_DIR)/lib
+LLVM_CONFIG=$(LLVM_INSTALL_DIR)/bin/llvm-config
 # Use this version for LLVM 3.6
-LLVM_LLVM_LIBS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets)
+LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets)
 # Use this version for LLVM 3.4 and 3.3
 #LLVM_LLVM_LIBS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --ldflags --libs bitreader bitwriter ipo instrumentation option objcarcopts all-targets)
 
 LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
 
 # LLVM preprocessor flags (ie -Dbla and -Ibla) 
-LLVM_CXXFLAGS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --cxxflags | sed 's/ -O[0-4s] / /') -DHAVE_LLVM
-LLVM_CFLAGS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --cflags | sed 's/ -O[0-4s] / /') -DHAVE_LLVM
+LLVM_CXXFLAGS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cxxflags | sed 's/ -O[0-4s] / /' | sed 's/ -DNDEBUG / /') -DHAVE_LLVM
+LLVM_CFLAGS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cflags | sed 's/ -O[0-4s] / /' | sed 's/ -DNDEBUG / /') -DHAVE_LLVM
 LLVM_INCLUDES=-I$(LLVM_INCLUDE_DIR) -I$(LLVM_CLANG_CODEGEN_INCLUDE_DIR)
 LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS)
 
