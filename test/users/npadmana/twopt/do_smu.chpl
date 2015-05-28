@@ -243,24 +243,24 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : SOA_WeightedParticle3D, node1, no
 
   // If one node is a leaf 
   if (node1.isLeaf()) {
-    begin TreeAccumulate(hh, p1, p2, node1, node2.left);
-    begin TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left);
+    TreeAccumulate(hh, p1, p2, node1, node2.right);
     return;
   }
   if (node2.isLeaf()) {
-    begin TreeAccumulate(hh, p1, p2, node1.left, node2);
-    begin TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left, node2);
+    TreeAccumulate(hh, p1, p2, node1.right, node2);
     return;
   }
 
   // Split the larger case;
   if (node1.npart > node2.npart) {
-    begin TreeAccumulate(hh, p1, p2, node1.left, node2);
-    begin TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left, node2);
+    TreeAccumulate(hh, p1, p2, node1.right, node2);
     return;
   } else {
-    begin TreeAccumulate(hh, p1, p2, node1, node2.left);
-    begin TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left);
+    TreeAccumulate(hh, p1, p2, node1, node2.right);
     return;
   }
 
