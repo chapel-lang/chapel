@@ -416,6 +416,9 @@ proc CyclicDom.~CyclicDom() {
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
   }
+  var cnt = dist.decRefCount();
+  if cnt==0 then
+    delete dist;
 }
 
 proc CyclicDom.dsiBuildArray(type eltType) {
@@ -796,10 +799,19 @@ proc CyclicArr.setup() {
 }
 
 proc CyclicArr.~CyclicArr() {
+  // Delete the locArr elements
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       delete locArr(localeIdx);
     }
+  }
+
+  // Release my reference to the distributed domain.
+  on dom {
+    local dom.remove_arr(this);
+    var cnt = dom.destroyDom();
+    if cnt == 0 then
+      delete dom;
   }
 }
 

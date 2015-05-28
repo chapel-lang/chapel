@@ -32,7 +32,7 @@ module ChapelDistribution {
     // will use explicit processor atomics, even when network
     // atomics are available
     var _distCnt: atomic_refcnt; // distribution reference count
-    var _doms: list(BaseDom);   // domains declared over this domain
+    var _doms: list(BaseDom);   // domains declared over this distribution
     var _domsLock: atomicflag;  //   and lock for concurrent access
   
     pragma "dont disable remote value forwarding"
@@ -145,18 +145,9 @@ module ChapelDistribution {
     proc destroyDom(): int {
       compilerAssert(!noRefCount);
       var cnt = decRefCount();
-      if cnt == 0 && dsiLinksDistribution() {
-          var dist = dsiMyDist();
-          on dist {
-            local dist.remove_dom(this);
-            var cnt = dist.destroyDist();
-            if cnt == 0 then
-              delete dist;
-          }
-      }
       return cnt;
     }
-  
+
     inline proc remove_arr(x) {
       on this {
         _lock_arrs();
@@ -321,15 +312,6 @@ module ChapelDistribution {
         } else {
           dsiDestroyData();
         }
-      }
-      if cnt == 0 {
-          var dom = dsiGetBaseDom();
-          on dom {
-            local dom.remove_arr(this);
-            var cnt = dom.destroyDom();
-            if cnt == 0 then
-              delete dom;
-          }
       }
       return cnt;
     }

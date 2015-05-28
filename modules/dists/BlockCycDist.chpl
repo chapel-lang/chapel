@@ -518,10 +518,16 @@ proc BlockCyclicDom.setup() {
 }
 
 proc BlockCyclicDom.~BlockCyclicDom() {
+  // Free the locDoms array.
   coforall localeIdx in dist.targetLocDom do
     if locDoms(localeIdx) != nil then
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
+
+  // Release our reference to the distribution.
+  var cnt = dist.decRefCount();
+  if cnt == 0 then
+    delete dist;
 }
 
 proc BlockCyclicDom.enumerateBlocks() {
@@ -710,10 +716,19 @@ proc BlockCyclicArr.setup() {
 }
 
 proc BlockCyclicArr.~BlockCyclicArr() {
+  // Delete the locArr elements.
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       delete locArr(localeIdx);
     }
+  }
+
+  // Release my reference to the distributed domain.
+  on dom {
+    local dom.remove_arr(this);
+    var cnt = dom.destroyDom();
+    if cnt == 0 then
+      delete dom;
   }
 }
 
