@@ -214,8 +214,8 @@ module ChapelTuple {
     var c: complex(64) = noinit;
     // There is no point allowing this to default initialize, we're just going
     // to overwrite it anyways
-    c.re = x(1):real(32);
-    c.im = x(2):real(32);
+    extern proc buildComplex64(re: real(32), im: real(32)): complex(64);
+    c = buildComplex64(x(1):real(32), x(2):real(32));
     return c;
   }
   
@@ -223,8 +223,8 @@ module ChapelTuple {
     var c: complex(128) = noinit;
     // There is no point allowing this to default initialize, we're just going
     // to overwrite it anyways
-    c.re = x(1):real(64);
-    c.im = x(2):real(64);
+    extern proc buildComplex128(re: real(64), im: real(64)): complex(128);
+    c = buildComplex128(x(1):real(64), x(2):real(64));
     return c;
   }
   

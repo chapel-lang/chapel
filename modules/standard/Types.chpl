@@ -374,8 +374,13 @@ pragma "no doc"
 inline proc _defaultOf(type t): t where (isComplexType(t)) {
   var ret:t = noinit;
   param floatwidth = numBits(t)/2;
-  ret.re = 0.0:real(floatwidth);
-  ret.im = 0.0:real(floatwidth);
+  if floatwidth == 64 {
+    extern proc buildComplex128(re: real(64), im: real(64)): complex(128);
+    ret = buildComplex128(0.0, 0.0);
+  } else {
+    extern proc buildComplex64(re: real(32), im: real(32)): complex(64);
+    ret = buildComplex64(0.0:real(32), 0.0:real(32));
+  }
   return ret;
 }
 
@@ -560,10 +565,8 @@ proc min(type t) where isFloatType(t)        return __primitive( "_min", t);
 
 pragma "no doc"
 proc min(type t) where isComplexType(t) {
-  var x: t;
-  x.re = min(x.re.type);
-  x.im = min(x.im.type);
-  return x;
+  param floatwidth = numBits(t) / 2;
+  return (min(real(floatwidth)), min(real(floatwidth))): t;
 }
 
 // joint documentation, for user convenience
@@ -600,10 +603,8 @@ proc max(type t) where isFloatType(t)        return __primitive( "_max", t);
 
 pragma "no doc"
 proc max(type t) where isComplexType(t) {
-  var x: t;
-  x.re = max(x.re.type);
-  x.im = max(x.im.type);
-  return x;
+  param floatwidth = numBits(t) / 2;
+  return (max(real(floatwidth)), max(real(floatwidth))): t;
 }
 
 pragma "no doc"

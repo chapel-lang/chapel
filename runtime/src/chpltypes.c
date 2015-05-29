@@ -34,6 +34,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <complex.h>
+
+_complex128 buildComplex128(_real64 re, _real64 im) {
+  return re + im*_Complex_I;
+}
+
+_complex64 buildComplex64(_real32 re, _real32 im) {
+  return re + im*_Complex_I;
+}
 
 int64_t real2int( _real64 f) {
   // need to use a union here rather than a pointer cast to avoid gcc

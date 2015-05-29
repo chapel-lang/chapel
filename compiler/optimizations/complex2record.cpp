@@ -55,6 +55,7 @@ buildComplexRecord(const char* name, Type* real) {
 void
 complex2record() {
   SET_LINENO(rootModule);
+  return;
   AggregateType* complex64 = buildComplexRecord("_complex64", dtReal[FLOAT_SIZE_32]);
   AggregateType* complex128 = buildComplexRecord("_complex128", dtReal[FLOAT_SIZE_64]);
 

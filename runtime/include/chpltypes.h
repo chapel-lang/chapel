@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stddef.h> // for ptrdiff_t
 #include <sys/time.h> // for struct timeval
+#include <complex.h>
 
 // C types usable from Chapel.
 typedef char c_char;
@@ -200,9 +201,9 @@ typedef float               _real32;
 typedef double              _real64;
 typedef float               _imag32;
 typedef double              _imag64;
-typedef struct __complex64 { _real32 re; _real32 im; } _complex64;
-typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
-typedef int64_t              _symbol;
+typedef float complex       _complex64;
+typedef double complex      _complex128;
+typedef int64_t             _symbol;
 
 // macros for Chapel min/max -> C stdint.h or values.h min/max
 #define MIN_INT8            INT8_MIN
@@ -238,6 +239,9 @@ typedef struct chpl_main_argument_s {
   const char **argv;
   int32_t return_value;
 } chpl_main_argument;
+
+_complex128 buildComplex128(_real64 re, _real64 im);
+_complex64 buildComplex64(_real32 re, _real32 im);
 
 /* This should be moved somewhere else, but where is the question */
 const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);

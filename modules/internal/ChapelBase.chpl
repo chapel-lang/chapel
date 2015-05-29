@@ -232,7 +232,6 @@ module ChapelBase {
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
   { __primitive("=", a, b); }
-
   // Because resolution prefers user-defined versions to ones marked as "compiler
   // generated", it is desirable to add that flag to this default version.
   // In that way, a user-supplied version of assignment will override this one.
@@ -325,7 +324,7 @@ module ChapelBase {
   inline proc -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", typeToString(a.type)); }
   inline proc -(a: real(?w)) return __primitive("u-", a);
   inline proc -(a: imag(?w)) return __primitive("u-", a);
-  inline proc -(a: complex(?w)) return (-a.re, -a.im):complex(w);
+  inline proc -(a: complex(?w)) return __primitive("u-", a);
   
   inline proc +(param a: int(?w)) param return a;
   inline proc +(param a: uint(?w)) param return a;
@@ -345,7 +344,7 @@ module ChapelBase {
   inline proc +(a: uint(?w), b: uint(w)) return __primitive("+", a, b);
   inline proc +(a: real(?w), b: real(w)) return __primitive("+", a, b);
   inline proc +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
-  inline proc +(a: complex(?w), b: complex(w)) return (a.re+b.re, a.im+b.im):complex(w);
+  inline proc +(a: complex(?w), b: complex(w)) return __primitive("+", a, b);
 
   inline proc +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex(w*2);
   inline proc +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex(w*2);
@@ -358,8 +357,8 @@ module ChapelBase {
   inline proc -(a: uint(?w), b: uint(w)) return __primitive("-", a, b);
   inline proc -(a: real(?w), b: real(w)) return __primitive("-", a, b);
   inline proc -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
-  inline proc -(a: complex(?w), b: complex(w)) return (a.re-b.re, a.im-b.im):complex(w);
-  
+  inline proc -(a: complex(?w), b: complex(w)) return __primitive("-", a, b);
+
   inline proc -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex(w*2);
   inline proc -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex(w*2);
   inline proc -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex(w*2);
@@ -383,7 +382,7 @@ module ChapelBase {
   inline proc *(a: uint(?w), b: uint(w)) return __primitive("*", a, b);
   inline proc *(a: real(?w), b: real(w)) return __primitive("*", a, b);
   inline proc *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
-  inline proc *(a: complex(?w), b: complex(w)) return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex(w);
+  inline proc *(a: complex(?w), b: complex(w)) return __primitive("*", a, b);
   
   inline proc *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
   inline proc *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
@@ -396,9 +395,7 @@ module ChapelBase {
   inline proc /(a: uint(?w), b: uint(w)) return __primitive("/", a, b);
   inline proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
   inline proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
-  inline proc /(a: complex(?w), b: complex(w))
-    return let d = b.re*b.re+b.im*b.im in
-    ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex(w);
+  inline proc /(a: complex(?w), b: complex(w)) return __primitive("/", a, b);
   
   inline proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
   inline proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
@@ -458,6 +455,15 @@ module ChapelBase {
   inline proc **(a: int(?w), b: int(w)) return _intExpHelp(a, b);
   inline proc **(a: uint(?w), b: uint(w)) return _intExpHelp(a, b);
   inline proc **(a: real(?w), b: real(w)) return __primitive("**", a, b);
+  inline proc **(a: complex(?w), b: complex(w)) {
+    if a.type == complex(128) {
+      extern proc cpow(x: complex(128), y: complex(128)): complex(128);
+      return cpow(a, b);
+    } else {
+      extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
+      return cpowf(a, b);
+    }
+  }
 
   proc **(param a: int(?w), param b: int(w)) param return __primitive("**", a, b);
   proc **(param a: uint(?w), param b: uint(w)) param return __primitive("**", a, b);
@@ -634,8 +640,24 @@ module ChapelBase {
   //
   //  bug?  in setters, parameterize real argument over complex bit width
   //
-  inline proc ref chpl_anycomplex.re ref return __primitive("complex_get_real", this);
-  inline proc ref chpl_anycomplex.im ref return __primitive("complex_get_imag", this);
+  inline proc ref chpl_anycomplex.re {
+    if this.type == complex(128) {
+      extern proc creal(x:complex(128)): real(64);
+      return creal(this);
+    } else {
+      extern proc crealf(x:complex(64)): real(32);
+      return crealf(this);
+    }
+  }
+  inline proc ref chpl_anycomplex.im {
+    if this.type == complex(128) {
+      extern proc cimag(x:complex(128)): real(64);
+      return cimag(this);
+    } else {
+      extern proc cimagf(x:complex(64)): real(32);
+      return cimagf(this);
+    }
+  }
   
   //
   // helper functions
