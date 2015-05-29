@@ -55,8 +55,7 @@ decl {DataModel VisData;} {public local
 
 Function {mainWinCallback(Fl_Widget *)} {open return_type void
 } {
-  code {exit(1);} {selected
-  }
+  code {exit(1);} {}
 } 
 
 Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
@@ -181,7 +180,9 @@ MainWindow->redraw();}
        VisData.LoadData(".Vdebug/.Vdebug-0")) {
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->processData(-3); // -3 is new open
+      Info->setFileName(".Vdebug (default)");
    }
 }
-MainWindow->callback(mainWinCallback);} {}
+MainWindow->callback(mainWinCallback);} {selected
+  }
 } 

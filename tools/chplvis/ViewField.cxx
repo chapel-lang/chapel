@@ -507,12 +507,51 @@ void ViewField::draw()
   Info->draw();
 }
 
+// Checks to see if click is on a comm link.
+// Returns:  0 if not:  1 if closer to loc1, 2 if closer to loc2.
+static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
+  float slope;
+  float newy;
+  float ydiff;
+  int ylen = loc2->y - loc1->y;
+  int xlen = loc2->x - loc1->x;
+
+
+  if (xlen == 0) {
+    // Vertically above each other
+    int xdiff = abs(loc2->x - x);
+    // printf ("Vertically above each other. xdiff = %d\n", xdiff);
+    if (xdiff <= 3) {
+      if (abs(loc2->y - y) > abs(loc1->y - y))
+	return 1;
+      else
+	return 2;
+    }
+  } else {
+    slope =  (float)(ylen) / (float)(xlen);
+    newy  = (float)loc2->y - slope * (loc2->x - x);
+    ydiff = abs(y - newy);
+    // printf ("slope: %f ydiff = %f\n", slope, ydiff);
+    if (ydiff < 3) {
+      // assumed on the line
+      if (abs(loc2->x - x) < abs(xlen)/2)
+	  return 2;
+      else
+          return 1;  
+    }
+  }
+
+  return 0;
+}
+
 int ViewField::handle(int event)
 {
   int ix;
 
   int x = Fl::event_x();
   int y = Fl::event_y();
+
+  int i, j; // search for the comm link clicked
   
   switch (event) {
   case FL_PUSH:
@@ -533,12 +572,33 @@ int ViewField::handle(int event)
 	  } else {
 	    theLocales[ix].win->updateWin();
 	  }
-	  theLocales[ix].win->show();
+	  if (theLocales[ix].win->visible()) 
+	    theLocales[ix].win->hide();
+          else
+	    theLocales[ix].win->show();
 	  return 1;
 	}
       }
     }
+
     // Click on a comm link?
+    for (i = 0; i < numlocales; i++) {
+      localeInfo *loci, *locj;
+      loci = &theLocales[i];
+      for (j = i+1; j < numlocales; j++) {
+	locj = &theLocales[j];
+	// printf ("link: %d->%d -- ", i, j);
+	if (comms[i][j].numGets != 0
+	    || comms[i][j].numGets != 0) {
+	  int OnComm = isOnCommLink(x,y,loci,locj);
+	  if (OnComm) {
+	    printf ("Link %d -> %d, nearer locale %d\n", i, j,
+		    (OnComm > 1 ? j : i ));
+	    return 1;
+	  }
+	}
+      }
+    }
     
     break;
   }
