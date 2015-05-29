@@ -27,7 +27,11 @@ config const nsbins=5;
 var gtime1 : Timer;
 
 proc main() {
-  testPairs();
+  if isTest {
+    testPairs();
+  } else {
+    doPairs();
+  }
 }
 
 
@@ -281,4 +285,38 @@ proc testPairs() {
 
 }
     
+
+proc doPairs() {
+  var tt : Timer;
+
+  // Read in the file
+  tt.clear(); tt.start();
+  var pp1 = readFile(fn1);
+  var pp2 = readFile(fn2);
+  tt.stop();
+  writef("Read in %i lines from file %s \n", pp1.npart, fn1);
+  writef("Read in %i lines from file %s \n", pp2.npart, fn2);
+  writef("Time to read : %r \n", tt.elapsed());
+
+  // Build the tree
+  tt.clear(); tt.start(); gtime1.clear();
+  var root1 = BuildTree(pp1, 0, pp1.npart-1, 0);
+  var root2 = BuildTree(pp2, 0, pp2.npart-1, 0);
+  tt.stop();
+  writef("Time to build trees : %r \n", tt.elapsed());
+  //writef("Time in splitOn : %r \n", gtime1.elapsed());
+  
+
+
+  // Set up the histogram
+  var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
+
+  // Do the paircounts with a tree
+  hh.reset();
+  tt.clear(); tt.start();
+  sync TreeAccumulate(hh, pp1,pp2, root1, root2);
+  tt.stop();
+  writef("Time to tree paircount : %r \n", tt.elapsed());
+  //writeHist("%s.tree".format(pairfn),hh);
+}
 
