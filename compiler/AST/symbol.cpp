@@ -44,6 +44,7 @@
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <inttypes.h>
 #include <iostream>
@@ -2573,14 +2574,7 @@ static int compareLineno(const void* v1, const void* v2) {
   FnSymbol* fn1 = *(FnSymbol* const *)v1;
   FnSymbol* fn2 = *(FnSymbol* const *)v2;
 
-  if (fn1->linenum() > fn2->linenum())
-    return 1;
-
-  else if (fn1->linenum() < fn2->linenum())
-    return -1;
-
-  else
-    return 0;
+  return fn1->linenum() < fn2->linenum();
 }
 
 
@@ -2593,7 +2587,7 @@ void ModuleSymbol::codegenDef() {
   info->cStatements.clear();
   info->cLocalDecls.clear();
 
-  Vec<FnSymbol*> fns;
+  std::vector<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
@@ -2603,13 +2597,13 @@ void ModuleSymbol::codegenDef() {
             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
 
-        fns.add(fn);
+        fns.push_back(fn);
       }
   }
 
-  qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
+  std::sort(fns.begin(), fns.end(), compareLineno);
 
-  forv_Vec(FnSymbol, fn, fns) {
+  for_vector(FnSymbol, fn, fns) {
     fn->codegenDef();
   }
 
