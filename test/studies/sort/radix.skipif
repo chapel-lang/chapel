@@ -1,3 +1,0 @@
-# This test takes an ungodly amount of time on cygwin due to freeing syncs
-CHPL_HOST_PLATFORM == cygwin64
-CHPL_HOST_PLATFORM == cygwin32
