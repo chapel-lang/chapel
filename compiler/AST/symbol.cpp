@@ -2217,12 +2217,32 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 }
 
 
+// Return the last, outermost Expr within 'ast' that is not a local block.
+static Expr* descendIntoLocalBlocks(Expr* ast) {
+  while (ast) {
+    if (BlockStmt* block = toBlockStmt(ast))
+      if (CallExpr* bInfo = block->blockInfoGet())
+        if (bInfo->isPrimitive(PRIM_BLOCK_LOCAL)) {
+          // descend into 'block'
+          ast = block->body.last();
+          continue;
+        }
+    // not a local block
+    break;
+  }
+  return ast;
+}
+
 void
-FnSymbol::insertBeforeDownEndCount(Expr* ast) {
+FnSymbol::insertBeforeDownEndCount(Expr* ast,
+                                   bool descendLocalBlocks)
+{
   CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
   CallExpr* last = toCallExpr(ret->prev);
+  if (!last && descendLocalBlocks)
+    last = toCallExpr(descendIntoLocalBlocks(ret->prev));
   if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
     INT_FATAL(last, "Expected call to _downEndCount");
   last->insertBefore(ast);
