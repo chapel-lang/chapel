@@ -172,8 +172,9 @@ sporadic race condition in task intents (vass -- don't remove until fixed)
 https://chapel.atlassian.net/browse/CHAPEL-63
 --------------------------------------------------------------------------
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
-  (verify: 2015-05-13)
-  (fast:   2015-05-20)
+  (verify:   2015-05-13)
+  (fast:     2015-05-20)
+  (baseline: 2015-05-25, 2015-05-27..)
 
 
 
@@ -186,6 +187,12 @@ linux64
 Inherits 'general'
 Reviewed 2015-05-20
 ===================
+
+=== sporadic failures below ===
+
+sporadic segfault (one-off?)
+----------------------------
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory] (2015-05-26)
 
 
 ===================
@@ -200,10 +207,6 @@ linux32
 Inherits '*32'
 Reviewed 2015-05-20
 ===================
-
-new test fails (2015-05-22, hilde)
-----------------------------------
-[Error matching program output for memory/hilde/memLeaksByDesc]
 
 
 ===================
@@ -309,12 +312,8 @@ Reviewed 2015-05-20
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-05-19
+Reviewed 2015-05-23
 ===================
-
-.bad mismatch due to freeing of syncs change (2015-05-21, lydia)
-----------------------------------------------------------------
-[Error matching .bad file for parallel/sync/diten/returnSync]
 
 execution timeout due to lack of --fast (2015-05-21, diten)
 -----------------------------------------------------------
@@ -360,6 +359,10 @@ Inherits 'general'
 Reviewed 2015-05-20
 ===================
 
+final memstat counts differ (2015-05-23, hilde)
+-----------------------------------------------
+[Error matching program output for memory/shannon/printFinalMemStat]
+
 
 =================================
 no-local.linux32
@@ -382,7 +385,8 @@ https://chapel.atlassian.net/browse/CHAPEL-8
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] 
   (gasnet.fifo:       2015-03-24, 2015-03-31, 2015-04-04..2015-04-05,
                       2015-04-12, 2015-04-26..2015-04-27, 2015-04-30, 
-                      2015-05-02, 2015-05-03..2015-05-05, 2015-05-14)
+                      2015-05-02, 2015-05-03..2015-05-05, 2015-05-14,
+                      2015-05-25w)
   (gasnet-fast:       2015-04-30, ..2015-05-03)
   (gasnet-everything: 2015-05-11)
 
@@ -405,40 +409,15 @@ sporadic recursive failure in AMUDP_SPMDShutdown
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2015-05-20
+Reviewed 2015-05-24
 ===================
-
-Segfault (2015-02-22, michael)
-https://chapel.atlassian.net/browse/CHAPEL-26
----------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
 
 
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2015-05-20
+Reviewed 2015-05-23
 ===============================
-
-errors due to new memory tracking feature (2015-05-22, hilde)
--------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/fft]
-[Error matching program output for release/examples/benchmarks/hpcc/hpl]
-[Error matching program output for release/examples/benchmarks/hpcc/ptrans]
-[Error matching program output for release/examples/benchmarks/hpcc/ra-atomics]
-[Error matching program output for release/examples/benchmarks/hpcc/stream-ep]
-[Error matching program output for release/examples/benchmarks/hpcc/stream]
-[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop]
-[Error matching program output for release/examples/benchmarks/hpcc/variants/stream-promoted]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
-[Error matching program output for release/examples/hello2-module]
-[Error matching program output for release/examples/hello3-datapar]
-[Error matching program output for release/examples/hello4-datapar-dist]
-[Error matching program output for release/examples/hello6-taskpar-dist]
-[Error matching program output for release/examples/hello]
-[Error matching program output for release/examples/primers/distributions]
-[Error matching program output for release/examples/primers/locales]
 
 
 =============================
@@ -484,6 +463,14 @@ Inherits 'general'
 Reviewed 2015-05-19
 ===================
 
+=== sporadic failures below ===
+
+sporadic compilation timeouts
+-----------------------------
+[Error: Timed out compilation for trivial/deitz/test_if_expr2]
+  (xc-wb.prgenv-gnu: 2015-05-25)
+[Error: Timed out compilation for trivial/diten/infix2postfix]
+  (xc-wb.prgenv-cray: 2015-05-25)
 
 =======================
 *gnu*
@@ -633,9 +620,6 @@ Inherits 'general'
 Reviewed 2015-05-19
 ===================
 
-library version mismatch (2015-05-22, ???)
-------------------------------------------
-* all *
 
 ==============================
 xc-wb.pgi
@@ -643,6 +627,9 @@ Inherits 'xc-wb.*' and '*pgi*'
 Reviewed 2015-05-19
 ==============================
 
+all tests fail with internal error (2015-05-24, ben)
+----------------------------------------------------
+*all*
 
 ==============================
 xc-wb.prgenv-pgi
@@ -702,14 +689,20 @@ https://chapel.atlassian.net/browse/CHAPEL-17
   (xc.none.gnu.aprun: 2015-05-06)
 [Error matching program output for release/examples/primers/procedures]
   (xc.ugni.intel.aprun 2015-04-15)
+  (xc.aries.intel.aprun 2015-05-24)
 [Error matching program output for release/examples/primers/sparse]
   (xc.ugni.-qthreads.gnu.aprun 2015-04-16)
 [Error matching program output for release/examples/programs/quicksort]
   (xc.mpi.cray.aprun, 2015-04-23)
+  (xc.ugni-qthreads.intel.aprun, 2015-05-26)
 [Error matching program output for release/examples/primers/genericClasses]
   (xc.ugni.intel.aprun: 2015-05-02)
 [Error matching program output for release/examples/benchmarks/shootout/nbody]
   (xc.ugni.intel.aprun: 2015-05-11)
+[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop]
+  (xc.none.cray.aprun: 2015-05-23)
+[Error matching program output for release/examples/benchmarks/hpcc/ptrans]
+  (xc.aries.pgi.aprun: 2015-05-26)
 
 sporadic slurmstepd 'Expired credential' problem after termination
 ------------------------------------------------------------------
@@ -749,20 +742,22 @@ Reviewed 2015-05-20
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)]
-  (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26, 2015-05-20)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra]
+  (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26, 2015-05-20, 2015-05-23,
+                          2015-05-26)
   (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18)
   (xe.ugni.intel          2015-03-24, 2015-03-30, 2015-04-01..2015-04-02, 
-                          2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22..)
+                          2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22)
   (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
                           2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
                           2015-05-05..2015-05-06, 2015-05-10,
-                          2015-05-14..2015-05-16)
+                          2015-05-14..2015-05-16, 2015-05-23..2015-05-24)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
   (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
                            2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
-                           2015-05-11, 2015-05-17, 2015-05-21..2015-05-22)
-  (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 
+                           2015-05-11, 2015-05-17, 2015-05-21..2015-05-22,
+                           2015-05-26)
+  (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 2015-05-26..)
                            2015-05-03..2015-05-04, 2015-05-06..??, 
                            2015-05-13..2015-05-17)
   (xe.ugni-qthreads.intel: ??..2015-03-22)
@@ -771,9 +766,10 @@ sporadic execution timeouts
   (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
                           2015-05-05..2015-05-06, 2015-05-18, 2015-05-21)
   (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
-                          2015-05-18)
+                          2015-05-18, 2015-05-24..2015-05-25)
   (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18)
-  (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21)
+  (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21, 
+                          2015-05-23..2015-05-24, 2015-05-26)
 
 
 ==========================================
@@ -822,6 +818,12 @@ perf.xc.*
 Inherits 'perf*' and 'x?.*'
 Reviewed 2015-05-20
 ===========================
+
+=== sporadic failures below ===
+
+sporadic mixing up of output: stdout/stderr merging race? (vass)
+----------------------------------------------------------------
+[Error matching performance keys for io/vass/time-write] (2015-05-23)
 
 
 ================================
@@ -893,6 +895,11 @@ perf.xc.local.cray
 Inherits 'perf.xc.*'
 Reviewed 2015-05-20
 ====================
+
+config attempted to be looked up with empty module name (2015-05-23, lydia)
+---------------------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/hpl]
+
 
 === sporadic failures below ===
 
