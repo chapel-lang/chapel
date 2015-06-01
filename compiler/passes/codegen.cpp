@@ -361,6 +361,38 @@ compareSymbol(const void* v1, const void* v2) {
   return result;
 }
 
+static int
+compareSymbol2(void* v1, void* v2) {
+  Symbol* s1 = (Symbol*)v1;
+  Symbol* s2 = (Symbol*)v2;
+  ModuleSymbol* m1 = s1->getModule();
+  ModuleSymbol* m2 = s2->getModule();
+  if (m1 != m2) {
+    if (m1->modTag < m2->modTag)
+      return 1;
+    if (m1->modTag > m2->modTag)
+      return 0;
+    int result = strcmp(m1->cname, m2->cname);
+    if (result == -1) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  if (s1->linenum() != s2->linenum())
+    return s1->linenum() < s2->linenum();
+
+  int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
+  if (!result)
+    result = strcmp(s1->cname, s2->cname);
+
+  if (result == -1) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
 
 //
 // given a name and up to two sets of names, return a name that is in
@@ -654,7 +686,7 @@ static void codegen_header() {
     legalizeName(fn);
     functions.push_back(fn);
   }
-  std::sort(functions.begin(), functions.end(), compareSymbol);
+  std::sort(functions.begin(), functions.end(), compareSymbol2);
 
 
   //
