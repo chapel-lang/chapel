@@ -530,6 +530,15 @@ module DefaultAssociative {
   
     proc dsiGetBaseDom() return dom;
   
+    proc ~DefaultAssociativeArr() {
+      on dom {
+        local dom.remove_arr(this);
+        var cnt = dom.destroyDom();
+        if cnt == 0 then
+          delete dom;
+      }
+    }
+
     proc clearEntry(idx: idxType, haveLock = false) {
       const initval: eltType;
       dsiAccess(idx, haveLock) = initval;

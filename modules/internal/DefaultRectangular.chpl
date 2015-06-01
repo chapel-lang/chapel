@@ -668,6 +668,15 @@ proc chpl__autoDestroy(x: DefaultDist) {
     //var numelm: int = -1; // for correctness checking
   
     // end class definition here, then defined secondary methods below
+
+    proc ~DefaultRectangularArr() {
+      on dom {
+        local dom.remove_arr(this);
+        var cnt = dom.destroyDom();
+        if cnt == 0 then
+          delete dom;
+      }
+    }
   
     proc dsiDisplayRepresentation() {
       writeln("off=", off);
