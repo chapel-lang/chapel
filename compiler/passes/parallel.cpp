@@ -762,7 +762,7 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                isModuleSymbol(def->parentSymbol) &&
                def->parentSymbol != rootModule &&
                isVarSymbol(def->sym) &&
-               !def->sym->hasFlag(FLAG_PRIVATE) &&
+               !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
                !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
           (is_bool_type(def->sym->type) ||
