@@ -46,5 +46,21 @@ module Histogram {
 
   } // UniformBins
 
+  proc writeHist(fn : string, hh : UniformBins) {
+    var ff = openwriter(fn);
+    // Dump out values
+    for xx in hh.bins(1) do ff.writef("%12.4dr",xx); 
+    ff.writeln();
+    for xx in hh.bins(2) do ff.writef("%12.4dr",xx); 
+    ff.writeln("\n##");
+    for ii in hh.Dhist.dim(1) {
+      for jj in hh.Dhist.dim(2) {
+        ff.writef("%20.14er ",hh[(ii,jj)]);
+      }
+      ff.writeln();
+    }
+    ff.close();
+  }
+
 
 } // End module Histogram
