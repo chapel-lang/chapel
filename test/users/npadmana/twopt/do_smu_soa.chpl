@@ -9,12 +9,14 @@ config const fn1 = "test.dat";
 config const fn2 = "test.dat";
 config const pairfn = "test-DD.dat";
 
-//Tree parameters
-param NDIM  = 3;
+// Dimension constanst
+param NDIM=3;
 param NEXT=2; // w, r2
 param NTOT=NDIM+NEXT;
-param W=NDIM;
-param R2=NDIM+1;
+const W=NDIM;
+const R2=NDIM+1;
+
+// Tree parameters
 config const minpart=500;
 
 // Histogram parameters
@@ -42,7 +44,7 @@ class Particle3D {
   var arr : [Darr] real;
 
   var _tmp : [Dpart] real;
-  var _n1, _n2,_ndx : [Dpart] int;
+  var _n1, _ndx : [Dpart] int;
 
   proc Particle3D(npart1 : int) {
     npart = npart1;
