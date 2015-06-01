@@ -281,9 +281,11 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       else if (autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED) &&
                autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
       {
-        // If so, autoCopy/autoDestroy have no side effects
-        // (see markPODtypes and FLAG_HAS_USER_DESTRUCTOR),
-        // so we do not need to insert them, and do not need
+        // Check whether autoCopy/autoDestroy have no side effects.
+        // Ideally we would use FLAG_HAS_USER_DESTRUCTOR and
+        // extend markPODtypes() to compute FLAG_HAS_USER_COPY_CONSTRUCTOR.
+        //
+        // If no side effects, we do not need to insert them, and do not need
         // the USR_FATAL_CONT in the "else" case.
       }
       else if (fn->hasFlag(FLAG_ON) && arg == fcall->get(1))
