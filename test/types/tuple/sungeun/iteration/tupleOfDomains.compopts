@@ -1,0 +1,2 @@
+# Another case that passes only with --no-inline-iterators.
+--no-inline-iterators
