@@ -44,7 +44,6 @@
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
 
-#include <algorithm>
 #include <cstdlib>
 #include <inttypes.h>
 #include <iostream>
@@ -2217,12 +2216,32 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 }
 
 
+// Return the last, outermost Expr within 'ast' that is not a local block.
+static Expr* descendIntoLocalBlocks(Expr* ast) {
+  while (ast) {
+    if (BlockStmt* block = toBlockStmt(ast))
+      if (CallExpr* bInfo = block->blockInfoGet())
+        if (bInfo->isPrimitive(PRIM_BLOCK_LOCAL)) {
+          // descend into 'block'
+          ast = block->body.last();
+          continue;
+        }
+    // not a local block
+    break;
+  }
+  return ast;
+}
+
 void
-FnSymbol::insertBeforeDownEndCount(Expr* ast) {
+FnSymbol::insertBeforeDownEndCount(Expr* ast,
+                                   bool descendLocalBlocks)
+{
   CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
   CallExpr* last = toCallExpr(ret->prev);
+  if (!last && descendLocalBlocks)
+    last = toCallExpr(descendIntoLocalBlocks(ret->prev));
   if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
     INT_FATAL(last, "Expected call to _downEndCount");
   last->insertBefore(ast);
@@ -2574,7 +2593,7 @@ void ModuleSymbol::codegenDef() {
   info->cStatements.clear();
   info->cLocalDecls.clear();
 
-  std::vector<FnSymbol*> fns;
+  Vec<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
@@ -2584,13 +2603,13 @@ void ModuleSymbol::codegenDef() {
             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
 
-        fns.push_back(fn);
+        fns.add(fn);
       }
   }
 
-  std::sort(fns.begin(), fns.end(), compareLineno);
+  qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
 
-  for_vector(FnSymbol, fn, fns) {
+  forv_Vec(FnSymbol, fn, fns) {
     fn->codegenDef();
   }
 

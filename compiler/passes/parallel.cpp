@@ -169,9 +169,11 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 
 /// Optionally autoCopies an argument being inserted into an argument bundle.
 ///
-/// This routine optionally inserts an autoCopy ahead of each invocation of a
-/// task function that begins asynchronous execution (currently just "begin" and
-/// "nonblocking on" functions).  
+/// This routine inserts an autoCopy of a record being passed into
+/// a task function, so the shadow record is properly constructed.
+/// For internal reference-counted types, we need this only for begins;
+/// for the other task functions we optimize away refcnt increment/decrement.
+///
 /// If such an autoCopy call is inserted, a matching autoDestroy call is placed
 /// at the end of the tasking routine before the call to _downEndCount.  Since a
 /// tasking function may be called from several call sites, the task function is
@@ -196,16 +198,24 @@ static Symbol* insertAutoCopyDestroyForTaskArg
 {
   SymExpr* s = toSymExpr(arg);
   Symbol* var = s->var;
+  Type* baseType = arg->getValType();
 
-  // This applies only to arguments being passed to asynchronous task functions.
-  // No need to increment+decrement the reference counters for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN))
+  // for reference-counted types in a 'begin'
+  bool needForRefCnt = false;
+  // for records passed by value to any task function
+  bool needForRecord = false;
+
+  if (isRefCountedType(baseType))
+    needForRefCnt = fn->hasFlag(FLAG_BEGIN);
+  else if (isRecord(baseType)) // important: !isRefCountedType(baseType)
+    needForRecord =  arg->typeInfo() == baseType;
+
+  if (needForRefCnt || needForRecord)
   {
-    Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
 
-    if (isRefCountedType(baseType))
+    if (needForRefCnt)
     {
       // TODO: Can we consolidate these two clauses?
       // Does arg->typeInfo() != baseType mean that arg is passed by ref?
@@ -255,14 +265,56 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         insertReferenceTemps(autoDestroyCall);
       }
     }
-    else if (isRecord(baseType))
+    else
     {
-      // Do this only if the record is passed by value.
-      if (arg->typeInfo() == baseType)
+      INT_ASSERT(needForRecord);
+      // This gotta be a task function, possibly for an 'on'.
+      // Otherwise why are we here?
+      INT_ASSERT(isTaskFun(fn));
+
+      // TODO: Find out why _RuntimeTypeInfo records do not have autoCopy
+      // functions, so we can get rid of this special test.
+      if (autoCopyFn == NULL)
       {
-        // TODO: Find out why _RuntimeTypeInfo records do not have autoCopy
-        // functions, so we can get rid of this special test.
-        if (autoCopyFn == NULL) return var;
+        // nothing to do
+      }
+      else if (autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED) &&
+               autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
+      {
+        // Check whether autoCopy/autoDestroy have no side effects.
+        // Ideally we would use FLAG_HAS_USER_DESTRUCTOR and
+        // extend markPODtypes() to compute FLAG_HAS_USER_COPY_CONSTRUCTOR.
+        //
+        // If no side effects, we do not need to insert them, and do not need
+        // the USR_FATAL_CONT in the "else" case.
+      }
+      else if (fn->hasFlag(FLAG_ON) && arg == fcall->get(1))
+      {
+        // Also we do not want to generate the USR_FATAL_CONT
+        // when passing dummy_locale_arg: chpl_localeID_t,
+        // which is a record that is passed to any on_fn.
+        //
+        // TODO: annotate chpl_localeID_t's autocopy/destroy
+        // with FLAG_COMPILER_GENERATED to avoid this special case?
+      }
+      else
+      {
+        // Beware of record destructors with 'on', e.g.:
+        //   proc ~R.R() { on ... { ... this ... } }
+        //
+        // There, currently 'this' will be autoCopy-ed into the on_fn,
+        // then autoDestroy-ed there. That will call the destructor,
+        // autoDestroy-ing, etc. -- resulting in an infinite loop.
+        //
+        // The bug is that we pass records by value, whereas it should be
+        // by const ref - in which case there will be no construction or
+        // destruction, so no infinite loop.
+        //
+        if (fcall->parentSymbol->hasEitherFlag(FLAG_AUTO_COPY_FN,
+                                               FLAG_AUTO_DESTROY_FN))
+          USR_FATAL_CONT(fn, "record constructors or destructors"
+                         " with task constructs or 'on' clauses"
+                         " are currently not implemented");
 
         // Insert a call to the autoCopy function ahead of the call.
         VarSymbol* valTmp = newTemp(baseType);
@@ -278,7 +330,11 @@ static Symbol* insertAutoCopyDestroyForTaskArg
           // (But only once per function for each affected argument.)
           Symbol* formal = actual_to_formal(arg);
           CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
-          fn->insertBeforeDownEndCount(autoDestroyCall);
+          // Sometimes there is _downEndCount, sometimes there isn't.
+          if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_NON_BLOCKING))
+            fn->insertBeforeReturn(autoDestroyCall);
+          else
+            fn->insertBeforeDownEndCount(autoDestroyCall, true);
           insertReferenceTemps(autoDestroyCall);
         }
       }
@@ -762,7 +818,7 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                isModuleSymbol(def->parentSymbol) &&
                def->parentSymbol != rootModule &&
                isVarSymbol(def->sym) &&
-               !def->sym->hasFlag(FLAG_PRIVATE) &&
+               !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
                !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
           (is_bool_type(def->sym->type) ||
