@@ -2,6 +2,13 @@
 #include <assert.h>
 #include <stdio.h>
 
+
+#ifdef CHPL_VALGRIND_TEST
+int valgrind = 1;
+#else
+int valgrind = 0;
+#endif
+
 int verbose = 0;
 
 unsigned char data_at(int64_t offset)
@@ -294,8 +301,9 @@ void check_channels(void)
   int nhints = sizeof(hints)/sizeof(qio_hint_t);
   int file_hint, ch_hint;
 
-  check_channel(false, 1, 0, 16384, 1, 0, 17, 1, 1);
-  check_channel(false, 3, 0, 16384, 1, QIO_METHOD_DEFAULT, QIO_METHOD_DEFAULT, 0, 1);
+  if( valgrind ) nlens = 4;
+  if( valgrind ) nchunkszs = 4;
+
   for( file_hint = 0; file_hint < nhints; file_hint++ ) {
     for( ch_hint = 0; ch_hint < nhints; ch_hint++ ) {
       for( i = 0; i < nlens; i++ ) {
@@ -314,6 +322,9 @@ void check_channels(void)
         }
       }
     }
+    // only test default chanel hints with valgrind
+    // moving over file hints should still give us good coverage.
+    if( valgrind ) break;
   }
 
   return;

@@ -41,6 +41,13 @@ ensureSummaryExists($prevsummary);
 # sort output
 #
 
+# status 2 means tests passed and there were some failures.
+# that shouldn't change the format of the email, so we collapse
+# the cases here.
+if ($status == 2) {
+  $status = 0;
+}
+
 if ($status == 0) {
     `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | LC_ALL=C sort > $sortedsummary`;
 

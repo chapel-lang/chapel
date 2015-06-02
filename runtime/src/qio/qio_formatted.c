@@ -988,7 +988,9 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
   if( err ) goto rewind;
 
   // write the string itself
-  err = qio_channel_write_amt(false, ch, ptr, len);
+  if (len > 0) {
+    err = qio_channel_write_amt(false, ch, ptr, len);
+  }
   if( err ) goto rewind;
 
   // write the terminator if necessary.
@@ -1177,6 +1179,13 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
   ti.max_chars = SSIZE_MAX;
   ti.max_bytes = SSIZE_MAX;
   ti.ret_bytes = -1;
+
+  if( !ptr || len == 0 ) {
+    // hilde sez: Having a distinguished value for empty strings is
+    // undesirable.
+    ptr = "";
+    len = 0;
+  }
 
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
@@ -1708,8 +1717,8 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
     //printf("In read digit, chr is %c\n", chr);
     if( qio_err_to_int(err) == EEOF ) ACCEPT;
     if( s->allow_point && chr == s->point_char && s->point == -1 ) {
-      NEXT_CHR_OR_EOF;
       s->end = s->point = qio_channel_offset_unlocked(ch);
+      NEXT_CHR_OR_EOF;
       // Continue to read digits.
     } else if( s->allow_real && 
                ( (s->usebase <= 10 && chr == s->exponent_char) ||
@@ -1750,6 +1759,7 @@ done:
   }
 error:
   qio_channel_revert_unlocked(ch);
+
   return err;
 }
 

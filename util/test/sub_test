@@ -1697,6 +1697,7 @@ for testname in testsrc:
             #
             for count in xrange(numTrials):
                 exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
+                launcher_error = ''  # used to suppress output/timeout errors whose root cause is a launcher error
                 sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
                 if redirectin:
                     sys.stdout.write(' < %s'%(redirectin))
@@ -1718,16 +1719,18 @@ for testname in testsrc:
                     output = p.communicate()[0]
                     status = p.returncode
 
-                    launcherTimeout = False
-                    if re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None:
-                        launcherTimeout = True
-                    if re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None:
-                        launcherTimeout = True
-
-                    if launcherTimeout:
+                    if re.search('slurmstepd: Munge decode failed: Expired credential', output, re.IGNORECASE) != None:
+                        launcher_error = 'Jira 18 -- Expired slurm credential for'
+                    elif re.search('output file from job .* does not exist', output, re.IGNORECASE) != None:
+                        launcher_error = 'Jira 17 -- Missing output file for'
+                    elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
+                          re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                         exectimeout = True
-                        sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
-                                        (futuretest, localdir, test_filename))
+                        launcher_error = 'Timed out executing program'
+
+                    if launcher_error:
+                        sys.stdout.write('%s[Error: %s %s/%s'%
+                                        (futuretest, launcher_error, localdir, test_filename))
                         printTestVariation(compoptsnum, compoptslist,
                                            execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
@@ -1835,7 +1838,7 @@ for testname in testsrc:
                     execlogfile.write(pre_exec_output)
                     execlogfile.write(output)
 
-                if not exectimeout:
+                if not exectimeout and not launcher_error:
                     if systemPrediff:
                         sys.stdout.write('[Executing system-wide prediff]\n')
                         sys.stdout.flush()
@@ -1957,7 +1960,7 @@ for testname in testsrc:
                     sys.stdout.flush()
 
                     status = p.returncode
-                    if not exectimeout:
+                    if not exectimeout and not launcher_error:
                         if status == 0:
                             os.unlink(execlog)
                             sys.stdout.write('%s[Success '%(futuretest))
