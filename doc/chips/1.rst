@@ -46,7 +46,15 @@ using CHIPs:
 
 Chapel Improvement Proposals should be used to document the planned design for
 new features and to track their implementation progress.  Not all new features
-need to go through this process.
+need to go through this process. In particular, bug reports and feature
+requests should continue to be filed as .future files in Chapel's testing
+system. Likewise, not all discussion of a CHIP needs to be connected to the
+CHIP itself. The CHIP documents should record the results of discussions
+whenever high-level decisions about the design or implementation strategy have
+been made.
+
+When referring to a CHIP, you can use CHIP and the number (so this document is
+CHIP 1).
 
 The author or authors of a CHIP are expected to advocate for the idea and
 to update the CHIP the idea progresses.
@@ -64,6 +72,9 @@ viewed in a text editor and also converted into other formats including html
 for web pages. Since ReStructured Text is the same format used for chpldoc
 documentation strings, Chapel contributors will need to work with fewer
 formats.
+
+A CHIP should be at least a few paragraphs to have enough information content
+to be reasonable for this format.
 
 Title
 +++++
