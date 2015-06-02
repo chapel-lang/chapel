@@ -529,15 +529,28 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
     }
   } else {
     slope =  (float)(ylen) / (float)(xlen);
-    newy  = (float)loc2->y - slope * (loc2->x - x);
-    ydiff = abs(y - newy);
-    // printf ("slope: %f ydiff = %f\n", slope, ydiff);
-    if (ydiff < 3) {
-      // assumed on the line
-      if (abs(loc2->x - x) < abs(xlen)/2)
+    if (fabs(slope) < 2) {
+      newy  = (float)loc2->y - slope * (loc2->x - x);
+      ydiff = fabs(y - newy);
+      // printf ("slope: %f ydiff = %f\n", slope, ydiff);
+      if (ydiff < 3) {
+	// assumed on the line
+	if (abs(loc2->x - x) < abs(xlen)/2)
 	  return 2;
-      else
+	else
           return 1;  
+      }
+    } else {
+      float newx  = (float)loc2->x - (loc2->y - y)/slope;
+      float xdiff = fabs(x - newx);
+      // printf ("slope: %f xdiff = %f\n", slope, xdiff);
+      if (xdiff < 3) {
+	// assumed on the line
+	if (abs(loc2->y - y) < abs(ylen)/2)
+	  return 2;
+	else
+          return 1;  
+      }
     }
   }
 
@@ -589,7 +602,7 @@ int ViewField::handle(int event)
 	locj = &theLocales[j];
 	// printf ("link: %d->%d -- ", i, j);
 	if (comms[i][j].numGets != 0
-	    || comms[i][j].numGets != 0) {
+	    || comms[j][i].numGets != 0) {
 	  int OnComm = isOnCommLink(x,y,loci,locj);
 	  if (OnComm) {
 	    printf ("Link %d -> %d, nearer locale %d\n", i, j,
