@@ -319,7 +319,11 @@ err_t sys_posix_madvise(void* addr, size_t len, int advice)
 
 
 
-static const char* error_string_no_error = "no error";
+// Some systems use "No error" and some use "Success"
+// if you perror(0); others print an error. So
+// using "No error" is consistent with some systems
+// and makes the most sense to us.
+static const char* error_string_no_error = "No error";
 
 static
 const char* extended_errors[] = {
