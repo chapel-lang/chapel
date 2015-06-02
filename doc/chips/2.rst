@@ -256,17 +256,18 @@ the ``LessThanComparable`` interface.
   class Person {
     var firstName : string;
     var lastName : string;
-
-    proc ==(other: Person): bool {
-      return this.firstName == other.firstName
-             && this.lastName == other.lastName;
-    }
-    proc <(other: Person): bool {
-      return this.firstName < other.firstName ||
-             (this.firstName == other.firstName
-               && this.lastName < other.lastName);
-    }
   }
+
+  proc ==(a: Person, b: Person): bool {
+    return a.firstName == b.firstName
+           && a.lastName == b.lastName;
+  }
+  proc <(a: Person, b: Person): bool {
+    return a.firstName < b.firstName ||
+           (a.firstName == b.firstName
+             && a.lastName < b.lastName);
+  }
+
   Person implements EqualityComparable;
   Person implements LessThanComparable;
 
@@ -570,28 +571,29 @@ function-signature-statement:
   proc function–name [argument–list] [var–param–clause] [where–clause] ;
 
 function-declaration-statement:
-  proc function–name [argument–list] [var–param–clause] [where–clause] [checked] function–body
+  proc function–name [argument–list] [var–param–clause] [where–clause] function–body
 
 A function signature statement is a forward declaration of a function. It
 states the that the specified function will be provided later or in a separate
 compilation unit. All of the formal arguments in a function signature must have
 type annotations.
 
-A function declaration that begins with the keyword checked is always type
-checked at its point of definition, regardless of whether it is called by the
-main program. Also, if a function declaration includes at least one implements
-clause or type equality constraint in its where clause, then the function is
-type checked at its point of definition. The rules for functional visibility in
-generic functions (Section 22.2 of the Chapel Language Specification 0.796) do
-not apply to checked functions.
+If a function declaration includes at least one implements clause or type
+equality constraint in its where clause, then the function is type checked
+at its point of definition. The rules for functional visibility in generic
+functions (Section 22.2 of the Chapel Language Specification 0.796) do not
+apply to such functions.
 
+Open issue. Previous versions of this proposal also added a checked
+keyword to request type checking at the point of definition. Current
+versions of Chapel do not type check non-generic functions unless they are
+called. We would like to reconsider that design choice.
 
-Open issue. The use of the checked keyword is rather verbose, as we expect
-checked functions to be the common case. One alternative is to trigger separate
-type checking when all of the parameters of a function have a type annotation.
-However, we have not proposed that option here because it would not be
-backwards compatible, that is, some existing Chapel programs would become ill
-typed.
+One earlier idea was to trigger separate type checking when all of the
+parameters of a function have a type annotation.  However, we have not
+proposed that option here because it would not be backwards compatible,
+that is, some existing Chapel programs would become ill typed (e.g.
+proc(x:?t, y:t) ... ).
 
 
 The where–clause of a generic function may include type constraints on the type arguments of the function. The type constraints in the where clause of a function play an important role in the type checking of the function body. Functions and methods in the required interfaces are considered visible in the function body. Furthermore, the required type equalities as stated in the interfaces or directly in the where clause, as well as the congruence closure of those equalities, are assumed to be equal during the type checking of the function body. We discuss issues regarding type equality in detail in Section 5.2.
@@ -735,11 +737,11 @@ class C does not implement J.
   g(new C());
 
 Next, we discuss how type requirements in where clauses affect whether one
-function is more specific than another function. Suppose that two functions are
-equally specific using the normal rules. We then consider the type require-
-ments in the where clauses of each function; call them F1 and F2. If the type
-requirements of F1 can be satisfied inside the body of F2, but not vice-versa,
-then F2 is more specific than F1.
+function is more specific than another function. Suppose that two
+functions are equally specific using the normal rules. We then consider
+the type requirements in the where clauses of each function; call them F1
+and F2. If the type requirements of F1 can be satisfied inside the body of
+F2, but not vice-versa, then F2 is more specific than F1.
 
 Example
 +++++++
@@ -1073,11 +1075,19 @@ overloads of the same function.
 Open Questions
 --------------
 
-Should implements statements be required (= nominative typing) or inferred
-(= structural typing). If they are inferred, should we use a tag/behavior
-strategy like the one outline above in "Semantics Requirements"?
+Should implements statements be required (= nominal typing) or inferred (=
+structural typing). If they are inferred, should we use a tag/behavior
+strategy like the one outline above in "Semantics Requirements"? Should we
+default to nominal and opt-in to structural? Or vice versa?
 
-What syntax exactly should we use for associated types?
+What syntax should we use for implements clauses in where clauses? Should 
+we use 'require' or some other keyword different from 'where'?
+
+What is the final syntax for interfaces? Do we want 'self' to refer to the
+first type in an interface?
+
+How can functions with some unconstrained generic parameters and some
+constrained generic parameters be type checked?
 
 Implementation
 --------------
@@ -1100,4 +1110,10 @@ and plans for two passes:
 4. Finalize un-guarded generics
 5. Finalize models
 
+
+Decisions
+---------
+
+Several Chapel developers discussed this on June 2, 2015. There is broad
+agreement on the general direction but some issues need to be addressed.
 
