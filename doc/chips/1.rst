@@ -8,6 +8,11 @@ Author
   Michael Ferguson
 
 
+In order to better keep track of proposed improvements for the Chapel, I've
+created a concept of Chapel Improvement Proposals or CHIPs. This idea mimics
+Python Enhancement Proposals (PEPs) or D Improvement Proposals (DIPs) if you
+are familiar with those.
+
 Abstract
 --------
 
@@ -53,6 +58,12 @@ The key parts of a CHIP are:
  * a rationale explaining what problem the proposal is solving
  * any other sections needed to record the idea and the rational for any
    decisions
+
+Each CHIP should be written in ReStructured Text. That way, they can be easily
+viewed in a text editor and also converted into other formats including html
+for web pages. Since ReStructured Text is the same format used for chpldoc
+documentation strings, Chapel contributors will need to work with fewer
+formats.
 
 Title
 +++++
