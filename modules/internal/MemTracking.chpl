@@ -57,6 +57,7 @@ module MemTracking
 
   // Globally accessible copy of the corresponding c_string consts
   use NewString;
+  const s_memLeaksByDesc: string_rec = memLeaksByDesc;
   const s_memLog: string_rec = memLog;
   const s_memLeaksLog: string_rec = memLeaksLog;
 
@@ -85,13 +86,17 @@ module MemTracking
     ret_memTrack = memTrack;
     ret_memStats = memStats;
     ret_memLeaksByType = memLeaksByType;
-    ret_memLeaksByDesc = memLeaksByDesc;
     ret_memLeaks = memLeaks;
     ret_memMax = cMemMax;
     ret_memThreshold = cMemThreshold;
 
     if (here.id != 0) {
       // These c_strings are going to be leaked
+      if s_memLeaksByDesc.len != 0 then
+        ret_memLeaksByDesc = remoteStringCopy(s_memLeaksByDesc.home.id,
+                                      s_memLeaksByDesc.base,
+                                      s_memLeaksByDesc.len);
+      else ret_memLeaksByDesc = "";
       if s_memLog.len != 0 then
         ret_memLog = remoteStringCopy(s_memLog.home.id,
                                       s_memLog.base,
@@ -103,6 +108,7 @@ module MemTracking
                                            s_memLeaksLog.len);
       else ret_memLeaksLog = "";
     } else {
+      ret_memLeaksByDesc = memLeaksByDesc;
       ret_memLog = memLog;
       ret_memLeaksLog = memLeaksLog;
     }
