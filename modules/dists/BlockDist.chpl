@@ -1644,8 +1644,10 @@ proc BlockArr.doiBulkTransferToDR(Barg)
         slice.adjustBlkOffStrForNewDomain(d._value, slice);
         
         slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
-        
-        delete slice;
+        // TODO: Slicing does not update dom counts correctly, so for now we disable
+        // the delete to avoid memory corruption.  We need to return here and
+        // fix this to avoid leaking these slices.
+//        delete slice;
       }
     }
 }
@@ -1688,7 +1690,9 @@ proc BlockArr.doiBulkTransferFromDR(Barg)
         slice.adjustBlkOffStrForNewDomain(d._value, slice);
         
         A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
-        delete slice;
+// TODO: also re-enable this delete after domain reference counting in
+//        dsiSlice is corrected.
+//        delete slice;
       }
     }
 }

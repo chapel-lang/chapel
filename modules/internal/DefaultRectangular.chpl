@@ -813,7 +813,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
 
     inline proc initShiftedData() {
       if earlyShiftData && !stridable {
-        if dom.dsiNumIndices > 0 {
+//        if dom.dsiNumIndices > 0 { // This is not an optimization
           if isIntType(idxType) then
             shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
           else
@@ -821,7 +821,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
             shiftedData = _ddata_shift(eltType, data,
                                        origin:chpl__signedType(idxType)-
                                        factoredOffs:chpl__signedType(idxType));
-        }
+//        }
       }
     }
 
@@ -1035,10 +1035,12 @@ proc chpl__autoDestroy(x: DefaultDist) {
         // has not yet been updated (this is called from within the
         // = function for domains.
         if earlyShiftData && !d._value.stridable then
-          if d.numIndices > 0 then
+//          if d.numIndices > 0 then
             shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
-        delete copy;
+// This breaks some routines.  We will leak the copies for now, and
+// then fix this by turning down the screws on leaks in general.
+//        delete copy;
         }
       } else {
         halt("illegal reallocation");
@@ -1058,7 +1060,8 @@ proc chpl__autoDestroy(x: DefaultDist) {
       rad.factoredOffs = factoredOffs;
       rad.data = data;
       if earlyShiftData && !stridable then
-        if dom.dsiNumIndices > 0 then rad.shiftedData = shiftedData;
+//        if dom.dsiNumIndices > 0 then
+          rad.shiftedData = shiftedData;
       return rad;
     }
 
