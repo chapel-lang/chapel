@@ -15,6 +15,8 @@ param NEXT=2; // w, r2
 param NTOT=NDIM+NEXT;
 const W=NDIM;
 const R2=NDIM+1;
+const ParticleAttrib = 0.. #NTOT;
+const DimSpace = 0.. #NDIM;
 
 // Tree parameters
 config const minpart=500;
@@ -48,7 +50,7 @@ class Particle3D {
 
   proc Particle3D(npart1 : int) {
     npart = npart1;
-    Darr = {0.. #NTOT, 0.. #npart};
+    Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};
   }
 
@@ -84,7 +86,7 @@ proc readFile(fn : string) : Particle3D  {
   return pp;
 }
 
-proc splitOn(pp : Particle3D, idom : range, splitDim : int, xsplit : real) : int {
+proc splitOn(pp : Particle3D, idom : domain(1), splitDim : int, xsplit : real) : int {
   // Setup for a prefix scan
   forall ii in idom {
     if (pp.arr[splitDim,ii] < xsplit) {
@@ -108,7 +110,7 @@ proc splitOn(pp : Particle3D, idom : range, splitDim : int, xsplit : real) : int
     }
   }
 
-  for kk in 0.. #NTOT {
+  for kk in ParticleAttrib {
     forall ii in idom {
       pp._tmp[pp._ndx[ii]] = pp.arr[kk,ii];
     }
@@ -123,7 +125,7 @@ proc splitOn(pp : Particle3D, idom : range, splitDim : int, xsplit : real) : int
 class KDNode {
   var lo, hi,npart,id : int;
   var dom : domain(1);
-  var xcen : [0.. #NDIM]real;
+  var xcen : [DimSpace]real;
   var rcell : real;
   var left, right : KDNode;
 
@@ -169,15 +171,15 @@ proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : KDNode  {
   if (me.npart <= minpart) then return me; // Don't split further.
 
   // Find dimension to split on
-  var dx : [0.. #NDIM] real;
+  var dx : [DimSpace] real;
   dx = pmax - pmin; 
   var splitDim = 0;
-  for idim in 0.. #NDIM {
+  for idim in DimSpace {
     if (dx[idim] > dx[splitDim]) then splitDim=idim;
   }
 
   // Split
-  var lnpart = splitOn(pp, lo..hi,splitDim, me.xcen[splitDim]);
+  var lnpart = splitOn(pp,me.dom,splitDim, me.xcen[splitDim]);
   me.left  = BuildTree(pp, lo, lo+lnpart-1, 2*id+1);
   me.right = BuildTree(pp, lo+lnpart, hi,2*id+2);
   return me;
