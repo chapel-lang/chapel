@@ -150,8 +150,8 @@ proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : KDNode  {
   me.npart = (me.hi-me.lo)+1;
 
   //  work out xcen and vantage point radius
-  var pmin, pmax : [0.. #NDIM] real;
-  for idim in 0.. #NDIM {
+  var pmin, pmax : [DimSpace] real;
+  for idim in DimSpace {
     pmin[idim] = min reduce pp.arr[idim,lo..hi];
     pmax[idim] = max reduce pp.arr[idim,lo..hi];
   }
@@ -160,7 +160,7 @@ proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : KDNode  {
   var r1 : real;
   for ii in lo..hi {
     r1 = 0.0;
-    for idim in 0.. #NDIM {
+    for idim in DimSpace {
       r1 += (pp.arr[idim,ii]-me.xcen[idim])**2;
     }
     r1 = sqrt(r1);
@@ -226,7 +226,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 : KDNode
 
   
 
-
+// The basic pair counter
 proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scale : real) {
   forall ii in d1 { // Loop over first set of particles
    
