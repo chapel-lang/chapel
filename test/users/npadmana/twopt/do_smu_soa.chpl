@@ -1,4 +1,5 @@
 use Histogram;
+use Random;
 use Time;
 
 // Test flags
@@ -58,6 +59,40 @@ class Particle3D {
     return (arr[0,ii],arr[1,ii],arr[2,ii],arr[3,ii],arr[4,ii]);
   }
 
+
+  // Reorder all the arrays according to _ndx (we assume you have set this)
+  proc reorder(idom : domain(1)) {
+
+    for kk in ParticleAttrib {
+      forall ii in idom {
+        _tmp[_ndx[ii]] = arr[kk,ii];
+      }
+      forall ii in idom {
+        arr[kk,ii] = _tmp[ii];
+      }
+    }
+  }
+
+  // Shuffles the elements of the array... 
+  // Note that the random number generator cannot cover the space
+  // of all permutations, but that's fine for what we need.
+  proc shuffle() {
+    // Fill in _ndx
+    forall ii in Dpart {
+      _ndx[ii] = ii;
+    }
+
+    // Set the random number generator
+    var rng = new RandomStream(41);
+    var jj : int;
+    for ii in 0..(npart-2) {
+      jj = (rng.getNext()*(npart-ii)):int + ii;
+      _ndx[jj] <=> _ndx[ii];
+    }
+
+    reorder(Dpart);
+  }
+
   
 }
 
@@ -110,14 +145,7 @@ proc splitOn(pp : Particle3D, idom : domain(1), splitDim : int, xsplit : real) :
     }
   }
 
-  for kk in ParticleAttrib {
-    forall ii in idom {
-      pp._tmp[pp._ndx[ii]] = pp.arr[kk,ii];
-    }
-    forall ii in idom {
-      pp.arr[kk,ii] = pp._tmp[ii];
-    }
-  }
+  pp.reorder(idom);
 
   return lnpart;
 }
@@ -254,6 +282,8 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scal
 
 proc testPairs() {
   var pp = readFile("test.dat");
+  // Put in a shuffle
+  pp.shuffle();
 
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
@@ -301,6 +331,14 @@ proc doPairs() {
   writef("Read in %i lines from file %s \n", pp1.npart, fn1);
   writef("Read in %i lines from file %s \n", pp2.npart, fn2);
   writef("Time to read : %r \n", tt.elapsed());
+
+  // Shuffle the particles -- this is not used here, but will be usef for the multilocale version
+  tt.clear(); tt.start();
+  pp1.shuffle();
+  pp2.shuffle();
+  tt.stop();
+  writef("Time to shuffle : %r \n",tt.elapsed());
+
 
   // Build the tree
   tt.clear(); tt.start(); gtime1.clear();
