@@ -361,7 +361,7 @@ compareSymbol(const void* v1, const void* v2) {
   return result;
 }
 
-static int
+static bool
 compareSymbol2(void* v1, void* v2) {
   Symbol* s1 = (Symbol*)v1;
   Symbol* s2 = (Symbol*)v2;
@@ -372,12 +372,7 @@ compareSymbol2(void* v1, void* v2) {
       return 1;
     if (m1->modTag > m2->modTag)
       return 0;
-    int result = strcmp(m1->cname, m2->cname);
-    if (result == -1) {
-      return 1;
-    } else {
-      return 0;
-    }
+    return strcmp(m1->cname, m2->cname) < 0;
   }
 
   if (s1->linenum() != s2->linenum())
@@ -387,11 +382,7 @@ compareSymbol2(void* v1, void* v2) {
   if (!result)
     result = strcmp(s1->cname, s2->cname);
 
-  if (result == -1) {
-    return 1;
-  } else {
-    return 0;
-  }
+  return result < 0;
 }
 
 //
