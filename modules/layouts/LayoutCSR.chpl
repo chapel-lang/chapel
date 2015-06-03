@@ -352,6 +352,15 @@ class CSRArr: BaseArr {
 
   proc dsiGetBaseDom() return dom;
 
+  proc ~CSRArr() {
+    on dom {
+      local dom.remove_arr(this);
+      var cnt = dom.destroyDom();
+      if cnt == 0 then
+        delete dom;
+    }
+  }
+
   //  proc this(ind: idxType ... 1) ref where rank == 1
   //    return this(ind);
 

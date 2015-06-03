@@ -142,6 +142,13 @@ module DefaultOpaque {
     proc ~DefaultOpaqueArr() {
       // Something more may be needed here.
       delete anarray; anarray = nil;
+
+      on dom {
+        local dom.remove_arr(this);
+        var cnt = dom.destroyDom();
+        if cnt == 0 then
+          delete dom;
+      }
     }
   
     proc dsiGetBaseDom() return dom;

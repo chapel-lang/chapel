@@ -1177,7 +1177,8 @@ proc CyclicArr.doiBulkTransferToDR(Barg)
           writeln(" A[",(...r1),"] = B[",(...r2), "]");
       
         slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
-        delete slice;
+// TODO: Re-enable this after dom counts in dsiSlice are corrected.
+//        delete slice;
       }
     }
 }
@@ -1222,7 +1223,8 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
         slice.adjustBlkOffStrForNewDomain(d._value, slice);
       
         A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
-        delete slice;
+// TODO: Re-enable this after dom counts in dsiSlice are corrected.
+//        delete slice;
       }
     }
 }

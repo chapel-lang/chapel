@@ -1,1 +1,2 @@
--O
+# This test succeeds if either iterator inlining or regular inlining is turned off
+-O --no-inline-iterators

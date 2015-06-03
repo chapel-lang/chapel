@@ -136,6 +136,15 @@ proc chpl__autoDestroy(x: PrivateArr) {
   }
 }
 
+proc PrivateArr.~PrivateArr() {
+  on dom {
+    local dom.remove_arr(this);
+    var cnt = dom.destroyDom();
+    if cnt == 0 then
+      delete dom;
+  }
+}
+
 proc PrivateArr.dsiGetBaseDom() return dom;
 
 proc PrivateArr.dsiRequiresPrivatization() param return true;

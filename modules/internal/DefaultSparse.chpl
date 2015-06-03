@@ -271,6 +271,15 @@ module DefaultSparse {
 
     proc dsiGetBaseDom() return dom;
 
+    proc ~DefaultSparseArr() {
+      on dom {
+        local dom.remove_arr(this);
+        var cnt = dom.destroyDom();
+        if cnt == 0 then
+          delete dom;
+      }
+    }
+  
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box
       if boundsChecking then
