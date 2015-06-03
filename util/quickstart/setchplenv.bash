@@ -21,12 +21,12 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           echo "to $CHPL_HOST_PLATFORM"
 
           echo -n "Updating PATH to include "
-          export PATH="$MYPATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util
+          export PATH="$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util:"$MYPATH"
           echo "$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
           echo    "                     and ""$CHPL_HOME"/util
 
           echo -n "Updating MANPATH to include "
-          export MANPATH="$MYMANPATH":"$CHPL_HOME"/man
+          export MANPATH="$CHPL_HOME"/man:"$MYMANPATH"
           echo "$CHPL_HOME"/man
 
           echo "Setting CHPL_COMM to none"
@@ -43,6 +43,9 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
 
           echo "Setting CHPL_REGEXP to none"
           export CHPL_REGEXP=none
+
+          echo "Setting CHPL_LLVM to none"
+          export CHPL_LLVM=none
         fi
    else
       echo "Error: util/setchplenv must be sourced from within the chapel root directory"

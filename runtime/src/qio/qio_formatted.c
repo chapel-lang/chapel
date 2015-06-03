@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,7 @@
  */
 
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
@@ -382,8 +382,8 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
       // Figure out how many bytes are available.
       err = _peek_until_len(ch, maxlen, &peek_amt);
       num = peek_amt;
-      // Ignore EOF errors.
-      if( err && qio_err_to_int(err) == EEOF ) err = 0;
+      // Ignore EOF errors as long as we read something.
+      if( err && qio_err_to_int(err) == EEOF && num > 0 ) err = 0;
       break;
     default:
       if( str_style >= 0 ) {
@@ -754,7 +754,7 @@ unlock:
   return err;
 }
 
-qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws)
+qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore)
 {
   qioerr err;
   int32_t wchr = -1;
@@ -762,8 +762,8 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   ssize_t nread = 0;
   int64_t lastwspos = 0;
 
-  if( skipws && len > 0 ) {
-    int nbytes;
+  if( skipwsbefore && len > 0 ) {
+    int nbytes = 0;
     int32_t wchr;
     size_t min_nonspace = len;
     size_t max_nonspace = 0;
@@ -783,8 +783,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       nread = 0;
       len = 0;
     } else {
-      nread = min_nonspace;
-      len = max_nonspace + 1;
+      nread = 0;
+      if( skipwsbefore ) nread = min_nonspace;
+      //if( skipwsafter ) len = max_nonspace + 1;
     }
   }
 
@@ -796,7 +797,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
 
-  if( skipws ) {
+  if( skipwsbefore ) {
     err = qio_channel_mark(false, ch);
     if( err ) goto revert;
 
@@ -809,6 +810,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
 
     // ignore EOF when looking for whitespace.
     if( qio_err_to_int(err) == EEOF ) err = 0;
+    // ignore EILSEQ (illegal unicode sequence) when
+    // looking for whitespace (that just means it wasn't whitespace)
+    if( qio_err_to_int(err) == EILSEQ ) err = 0;
 
     qio_channel_revert_unlocked(ch);
 
@@ -837,8 +841,10 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     }
   }
 
-  if( skipws && !err ) {
+  /*
+  if( skipwsafter && !err && len > 0 ) {
     // skip whitespace after the pattern.
+    // but only bother if there was a pattern at all...
     err = qio_channel_mark(false, ch);
     if( err ) goto revert;
 
@@ -851,6 +857,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
 
     // ignore EOF when looking for whitespace.
     if( qio_err_to_int(err) == EEOF ) err = 0;
+    // ignore EILSEQ (illegal unicode sequence) when
+    // looking for whitespace (that just means it wasn't whitespace)
+    if( qio_err_to_int(err) == EILSEQ ) err = 0;
 
     qio_channel_revert_unlocked(ch);
 
@@ -860,7 +869,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       // back to lastwspos. 
       qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch));
     }
-  }
+  }*/
 
 revert:
   if( err ) {
@@ -879,9 +888,9 @@ unlock:
   return err;
 }
 
-qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipws)
+qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipwsbefore)
 {
-  return qio_channel_scan_literal(threadsafe, ch, (const char*) match, len, skipws);
+  return qio_channel_scan_literal(threadsafe, ch, (const char*) match, len, skipwsbefore);
 }
 
 
@@ -979,7 +988,9 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
   if( err ) goto rewind;
 
   // write the string itself
-  err = qio_channel_write_amt(false, ch, ptr, len);
+  if (len > 0) {
+    err = qio_channel_write_amt(false, ch, ptr, len);
+  }
   if( err ) goto rewind;
 
   // write the terminator if necessary.
@@ -1168,6 +1179,13 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
   ti.max_chars = SSIZE_MAX;
   ti.max_bytes = SSIZE_MAX;
   ti.ret_bytes = -1;
+
+  if( !ptr || len == 0 ) {
+    // hilde sez: Having a distinguished value for empty strings is
+    // undesirable.
+    ptr = "";
+    len = 0;
+  }
 
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
@@ -1383,18 +1401,22 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
     quoted_cols += elipses_size;
   }
 
-  ti->ret_columns = quoted_cols;
-  ti->ret_chars = quoted_chars;
-  ti->ret_bytes = quoted_bytes;
-  ti->ret_truncated_at_byte = i;
-  ti->ret_truncated = overfull;
+  if( ti ) {
+    ti->ret_columns = quoted_cols;
+    ti->ret_chars = quoted_chars;
+    ti->ret_bytes = quoted_bytes;
+    ti->ret_truncated_at_byte = i;
+    ti->ret_truncated = overfull;
+  }
   return 0;
 error:
-  ti->ret_columns = -1;
-  ti->ret_chars = -1;
-  ti->ret_bytes = -1;
-  ti->ret_truncated_at_byte = -1;
-  ti->ret_truncated = -1;
+  if( ti ) {
+    ti->ret_columns = -1;
+    ti->ret_chars = -1;
+    ti->ret_bytes = -1;
+    ti->ret_truncated_at_byte = -1;
+    ti->ret_truncated = -1;
+  }
   return err;
 }
 
@@ -1406,7 +1428,7 @@ qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string
   ssize_t ilen;
   ssize_t q;
   int32_t chr;
-  int clen;
+  int clen = 0;
   char* ret;
   int tmplen;
   qio_truncate_info_t ti;
@@ -1506,7 +1528,8 @@ typedef struct number_reading_state_s {
   char positive_char; // normally '+'
   char negative_char; // normally '-'
 
-  char allow_real;
+  char allow_real; // allow any real thing, infinity, etc.
+  char allow_point; // just allow e.g. 123.254
   char point_char; // normally '.'; set to -1 if no radix point allowed
   char exponent_char; // use if base <= 10; normally 'e'
   char other_exponent_char; // use if base > 10; normally 'p' or '@'
@@ -1577,6 +1600,7 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
   } else {
     s->gotbase = s->usebase = s->base;
   }
+  if( s->allow_real ) s->allow_point = 1;
 
   mark_offset = qio_channel_offset_unlocked(ch);
 
@@ -1692,9 +1716,9 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
   while( 1 ) {
     //printf("In read digit, chr is %c\n", chr);
     if( qio_err_to_int(err) == EEOF ) ACCEPT;
-    if( s->allow_real && chr == s->point_char && s->point == -1 ) {
-      NEXT_CHR_OR_EOF;
+    if( s->allow_point && chr == s->point_char && s->point == -1 ) {
       s->end = s->point = qio_channel_offset_unlocked(ch);
+      NEXT_CHR_OR_EOF;
       // Continue to read digits.
     } else if( s->allow_real && 
                ( (s->usebase <= 10 && chr == s->exponent_char) ||
@@ -1735,6 +1759,7 @@ done:
   }
 error:
   qio_channel_revert_unlocked(ch);
+
   return err;
 }
 
@@ -1750,7 +1775,7 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
   int64_t start;
   char* end;
   char* buf = NULL;
-  MAYBE_STACK_SPACE(char, buf_onstack);
+  char buf_onstack[MAX_ON_STACK];
   qioerr err;
   qio_style_t* style;
 
@@ -1770,6 +1795,10 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
   st.allow_base = style->prefix_base;
   st.allow_pos_sign = style->showplus == 1;
   st.allow_neg_sign = issigned;
+  if(style->showpoint || style->precision > 0) {
+    st.allow_point = 1;
+    st.point_char = tolower(style->point_char);
+  }
   st.positive_char = tolower(style->positive_char);
   st.negative_char = tolower(style->negative_char);
 
@@ -1807,9 +1836,18 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
     err = qio_mkerror_errno();
     goto error;
   }
+  if( st.allow_point ) {
+    // pass . or .00000
+    if( *end == '.' ) end++;
+    while( *end == '0' ) end++;
+  }
   if( end - buf != st.end - start ) {
     // some kind of format error.
-    QIO_GET_CONSTANT_ERROR(err, EFORMAT, "malformed integer");
+    if( st.allow_point ) {
+      QIO_GET_CONSTANT_ERROR(err, ERANGE, "malformed integer with fraction");
+    } else {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "malformed integer");
+    }
     goto error;
   }
 
@@ -1890,7 +1928,7 @@ qioerr qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restr
   int64_t start;
   char* end_conv;
   char* buf = NULL;
-  MAYBE_STACK_SPACE(char, buf_onstack);
+  char buf_onstack[MAX_ON_STACK];
   ssize_t i;
   ssize_t digits_start;
   ssize_t point;
@@ -2105,9 +2143,11 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   int tmp_len=0;
   int tmp_skip=0;
   char b=0;
-  int i;
+  int i,j;
   int width;
   int ret_width;
+  int show_point = 0; // 1 to show a . afterwards
+  int num_zeros_after = 0; // how many 0s to print afterwards?
 
   // Optimize conversions for supported bases
   if( base == 2 )
@@ -2131,6 +2171,16 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 
   if( style->showplus || isnegative ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
+  if( style->showpoint || style->precision > 0 ) {
+    // intentionally doesn't handle showpointzero since showpointzero is
+    // used to distinguish between floating point and integer values.
+
+    show_point = 1;
+    // and any number of requested digits
+    if( style->precision > 0 ) num_zeros_after += style->precision;
+
+    width += show_point + num_zeros_after;
+  }
 
   // We might not have room...
   ret_width = width;
@@ -2173,6 +2223,17 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   qio_memcpy(dst + i, tmp+tmp_skip, tmp_len);
   i += tmp_len;
 
+  // Now output a period if we're doing showpoint.
+  if( show_point ) {
+    dst[i] = '.';
+    i++;
+  }
+
+  for( j = 0; j < num_zeros_after; j++ ) {
+    dst[i] = '0';
+    i++;
+  }
+
   // Now if we're left justified we might need padding.
   if( style->leftjustify && width < style->min_width_columns) {
     // Put what we need to for getting to the min_width.
@@ -2187,24 +2248,133 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   return i;
 }
 
-// error codes:
+// Converts num to a string in buf, returns the number
+// of bytes that would be used if space permits (not including null)
+// or -1 on error
+// in *skip, returns the number of bytes at the front of buf that
+// should be skipped in the final output. Such bytes are counted
+// in the return value. (this happens with 0x in %a conversions)
+//
+// num is the number to be converted
+// buf and buf_sz are the output buffer
+// base is the numeric base (10 or 16 only)
+// realfmt is style->realfmt; 0->%g, 1->%f, 2->%e
+// precision is the number of digits after . for %f or %e or
+//   the number of significant digits
+// uppercase indicates hex digits or exponent character should be uppercase
+// prefix_base means add 0x for base=16 conversions
+// skip is described above and indicates some buffer space used that does
+//  not encode output.
+static
+int _ftoa_core(char* buf, size_t buf_sz, double num,
+               int base, int realfmt,
+               int precision, int uppercase,
+               int prefix_base,
+               int *skip)
+{
+  int got = 0;
+
+  // Do the numeric conversion and figure out how big the output
+  // is. This conversion must concern itself with precision but
+  // need not handle padding or various trailing . or .0 rules.
+  // That is handled in the caller.
+
+  *skip = 0;
+
+  if( base == 16 ) {
+    if( precision < 0 ) {
+      if( uppercase ) {
+        got = snprintf(buf, buf_sz, "%A", num);
+      } else {
+        got = snprintf(buf, buf_sz, "%a", num);
+      }
+    } else {
+      if( uppercase ) {
+        got = snprintf(buf, buf_sz, "%.*A", precision, num);
+      } else {
+        got = snprintf(buf, buf_sz, "%.*a", precision, num);
+      }
+    }
+    // The 0x isn't part of the conversion.
+    // We'll add 0x later if we want it.
+    if( !isnan(num) && !isinf(num) ) *skip = 2;
+  } else if( realfmt == 0 ) {
+    if( precision < 0 ) {
+      if( uppercase ) {
+        got = snprintf(buf, buf_sz, "%G", num);
+      } else {
+        got = snprintf(buf, buf_sz, "%g", num);
+      }
+    } else {
+      if( uppercase ) {
+        got = snprintf(buf, buf_sz, "%.*G", precision, num);
+      } else {
+        got = snprintf(buf, buf_sz, "%.*g", precision, num);
+      }
+    }
+  } else if( realfmt == 1 ) {
+    if( precision < 0 ) {
+      if( uppercase ) {
+        got = snprintf(buf, buf_sz, "%F", num);
+      } else {
+        got = snprintf(buf, buf_sz, "%f", num);
+      }
+    } else {
+      if( uppercase ) {
+        got = snprintf(buf, buf_sz, "%.*F", precision, num);
+      } else {
+        got = snprintf(buf, buf_sz, "%.*f", precision, num);
+      }
+    }
+  } else if( realfmt == 2 ) {
+    if( precision < 0 ) {
+      if( uppercase ) {
+        got = snprintf(buf, buf_sz, "%E", num);
+      } else {
+        got = snprintf(buf, buf_sz, "%e", num);
+      }
+    } else {
+      if( uppercase ) {
+        got = snprintf(buf, buf_sz, "%.*E", precision, num);
+      } else {
+        got = snprintf(buf, buf_sz, "%.*e", precision, num);
+      }
+    }
+  }
+
+  return got;
+}
+
+// Converts a double value into a string
+// returns:
+//   n a number of bytes that would be used for the conversion;
+//     the conversion was performed successfully if n <= size,
+//     not including the trailing null byte
 //  -1 for out of memory
 //  -2 for error in conversion
+// *extra_space_needed is, on output, an amount of extra temporary
+// space in the passed buffer which is necessary to achieve the conversion,
+// beyond the returned n.
+//
+// if conversion was not totally successful because we ran out of space,
+// the returned n value might overestimate the space required. It should
+// not underestimate it though.
 static
-int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, const qio_style_t* restrict style )
+int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, const qio_style_t* restrict style, int * extra_space_needed )
 {
-  int buf_sz = 32;
-  char* buf = NULL;
-  MAYBE_STACK_SPACE(char, buf_onstack);
-  int buf_len;
   int got=0;
   int width;
   int isnegative;
   int shownegative;
-  int ret_width;
-  int i,j;
+  int showbase;
+  int i;
   int precision;
-  int adjust_width;
+  int sign_base_width;
+  int left_pad_width;
+  int right_pad_width;
+  int number_width;
+  int skip;
+  char pad_char;
 
   if( signbit(num) ) {
     //num = - num;
@@ -2220,257 +2390,171 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
     shownegative = isnegative;
   }
 
+  showbase = 0;
+  if( style->prefix_base && base == 16 && !isnan(num) && !isinf(num) ) {
+    showbase = 1;
+  }
+  // NOTE: only base 10 or 16 are currently supported.
+
   precision = style->precision;
 
-  adjust_width = 0;
-  if( style->showplus || shownegative ) adjust_width++;
-  if( needs_i ) adjust_width++;
-  if( !style->prefix_base && base != 10 ) {
-    if( !isnan(num) && !isinf(num) ) adjust_width -= 2; // remove 0x
+  // How many bytes are we adding for the sign?
+  sign_base_width = 0;
+  if( style->showplus || shownegative ) sign_base_width++;
+  if( showbase ) sign_base_width+=2; // for 0x.
+
+  // Fill sign_base_width with spaces
+  // (useful for debugging and clarity).
+  if( sign_base_width < size ) {
+    for( i = 0; i < sign_base_width; i++ ) {
+      dst[i] = ' '; // put spaces to overwrite later
+    }
   }
 
-  while( 1 ) {
-    MAYBE_STACK_ALLOC(char, buf_sz, buf, buf_onstack);
-    if( ! buf ) {
-      return -1;
-    }
+  skip = 0;
+  got = _ftoa_core(&dst[sign_base_width],
+                   (size>sign_base_width)?(size-sign_base_width):0,
+                   num, base, style->realfmt,
+                   precision, style->uppercase, style->prefix_base,
+                   &skip);
 
-    //printf("Printing with base %i type %i precision %i upper %i showp %i\n",
-    //       style->base, style->realfmt, precision, style->uppercase, style->showpoint);
+  // got should include space for sign and base
+  got += sign_base_width;
+  // but skip space for sign and base
+  skip += sign_base_width;
 
-    // Figure out how big our output is...
-    if( style->base == 16 ) {
-      if( precision < 0 ) {
-        if( style->uppercase ) {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#A", num);
-          else
-            got = snprintf(buf, buf_sz, "%A", num);
-        } else {
-          if( style->showpoint ) 
-            got = snprintf(buf, buf_sz, "%#a", num);
-          else
-            got = snprintf(buf, buf_sz, "%a", num);
-        }
-      } else {
-        if( style->uppercase ) {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*A", precision, num);
-          else
-            got = snprintf(buf, buf_sz, "%.*A", precision, num);
-        } else {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*a", precision, num);
-          else
-            got = snprintf(buf, buf_sz, "%.*a", precision, num);
-        }
-      }
-    } else if( style->realfmt == 0 ) {
-      if( precision < 0 ) {
-        if( style->uppercase ) {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#G", num);
-          else
-            got = snprintf(buf, buf_sz, "%G", num);
-        } else {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#g", num);
-          else
-            got = snprintf(buf, buf_sz, "%g", num);
-        }
-      } else {
-        if( style->uppercase ) {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*G", precision, num);
-          else
-            got = snprintf(buf, buf_sz, "%.*G", precision, num);
-        } else {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*g", precision, num);
-          else
-            got = snprintf(buf, buf_sz, "%.*g", precision, num);
-        }
-      }
-    } else if( style->realfmt == 1 ) {
-      if( precision < 0 ) {
-        if( style->uppercase ) {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#F", num);
-          else
-            got = snprintf(buf, buf_sz, "%F", num);
-        } else {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#f", num);
-          else
-            got = snprintf(buf, buf_sz, "%f", num);
-        }
-      } else {
-        if( style->uppercase ) {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*F", precision, num);
-          else
-            got = snprintf(buf, buf_sz, "%.*F", precision, num);
-        } else {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*f", precision, num);
-          else
-            got = snprintf(buf, buf_sz, "%.*f", precision, num);
-        }
-      }
-    } else if( style->realfmt == 2 ) {
-      if( precision < 0 ) {
-        if( style->uppercase ) {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#E", num);
-          else
-            got = snprintf(buf, buf_sz, "%E", num);
-        } else {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#e", num);
-          else
-            got = snprintf(buf, buf_sz, "%e", num);
-        }
-      } else {
-        if( style->uppercase ) {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*E", precision, num);
-          else
-            got = snprintf(buf, buf_sz, "%.*E", precision, num);
-        } else {
-          if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*e", precision, num);
-          else
-            got = snprintf(buf, buf_sz, "%.*e", precision, num);
-        }
-      }
-    }
+  // We might use this many extra bytes that aren't represented
+  // in the output number of bytes, but are temporary space we
+  // need to achieve the conversion.
+  *extra_space_needed = skip;
 
-    if( style->showpointzero && style->base != 16 ) {
-      // .. but if it ended in just . we add a .0
-      if( got > 0 && buf[got-1] == '.' ) {
-        int period = got - 1;
-        got += 1;
-        if( got < buf_sz ) {
-          buf[period] = '.'; // (redundant)
-          buf[period+1] = '0';
-        }
-        // otherwise buf will be reallocated and we try again.
-      } else { // maybe it was an integer than needs a .0 ?
-        int needspoint;
-        int i;
+  if( got < 0 ) return -1;
 
-        needspoint = 1;
-        for( i = 0; i < got; i++ ) {
-          if( isdigit(buf[i]) ) {
+  // Handle adding . or .0 at the end of integers.
+  if( style->showpoint || style->showpointzero ) {
+    if( base == 16 ) {
+      // base 16 always generates with signed exponent,
+      // so there's no need for . or .0 at the end of integers.
+      // This could change ...
+    } else {
+      // maybe it was an integer that needs a .0 ?
+      int needspoint;
+      int i;
+
+      needspoint = 1;
+      if( got < size ) {
+        // If we have suceeded at putting the number in dst,
+        // go about figuring out if we need to add .0
+        // If not - we will assume we need it for the purpose
+        // of reserving temporary space.
+        for( i = skip; i < got; i++ ) {
+          if( '0' <= dst[i] && dst[i] <= '9' ) {
            // maybe still need decimal point!
           } else {
            // . e E inf etc. don't need decimal point.
            needspoint = 0;
           }
         }
+      }
 
-        if( needspoint ) {
-          int period = got; // '\0' at end of string.
-          got += 2;
-          if( got < buf_sz ) {
-            buf[period] = '.';
-            buf[period+1] = '0';
-          }
-          // otherwise, buf will be reallocated and we try again.
+      if( needspoint ) {
+        if( got < size ) dst[got] = '.';
+        got++;
+
+        if( style->showpointzero ) {
+          if( got < size ) dst[got] = '0';
+          got++;
         }
       }
     }
-
-    if( got < 0 ) {
-      MAYBE_STACK_FREE(buf, buf_onstack);
-      return -1;
-    }
-    if( got < buf_sz ) {
-      buf_len = got;
-      // OK! we printed it.
-      break;
-    } else {
-      // Get a bigger buffer.
-      MAYBE_STACK_FREE(buf, buf_onstack);
-      buf = NULL;
-      // We might not have room...
-      ret_width = got + adjust_width;
-      if( ret_width < style->min_width_columns ) ret_width = style->min_width_columns;
-      if( ret_width >= size ) return ret_width;
-      buf_sz = got + 1;
-    }
   }
 
-  // OK; now we have our number printed in buf.
-  width = got;
-
-  // We might not have room...
-  ret_width = got + adjust_width;
-  if( ret_width < style->min_width_columns ) ret_width = style->min_width_columns;
-  if( ret_width >= size ) {
-    MAYBE_STACK_FREE(buf, buf_onstack);
-    return ret_width;
-  }
-
-  //printf("Got '%s' from sprintf\n", buf);
-
-  i = 0;
-  j = 0;
-
-  width = got + adjust_width;
-
-  if( !style->prefix_base && base != 10 ) {
-    // Skip the first 2 characters of buf
-    j += 2;
-    buf_len -= 2;
-  }
-
-  if( !style->leftjustify && width < style->min_width_columns && style->pad_char != '0' ) {
-    // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width_columns - width; i++ ) {
-      dst[i] = style->pad_char;
-    }
-  }
-
-  if( style->showplus || shownegative ) {
-    char pluschar = (style->showplus==2)?style->pad_char:style->positive_char;
-    // put the '+' or '-' sign.
-    dst[i++] = isnegative?style->negative_char:pluschar;
-    width--;
-  }
-  // 0x is already there if we're putting it.
-
-  if( !style->leftjustify && width < style->min_width_columns && style->pad_char == '0' ) {
-    // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width_columns - width; i++ ) {
-      dst[i] = '0';
-    }
-  }
-
-  // now output the digits
-  qio_memcpy(dst + i, buf + j, buf_len);
-  i += buf_len;
-
+  // Handle adding an i after an imaginary number.
   if( needs_i ) {
-    // put the 'i' after an imaginary number.
-    dst[i++] = style->i_char;
-    width--;
+    if( got < size ) dst[got] = style->i_char;
+    got++;
   }
- 
-  // Now if we're left justified we might need padding.
+
+  // How many bytes are we writing from the number?
+  number_width = got - skip;
+
+  width = number_width + sign_base_width;
+
+  // How much left padding will we add?
+  left_pad_width = 0;
+  if( !style->leftjustify && width < style->min_width_columns ) {
+    left_pad_width = style->min_width_columns - width;
+  }
+
+  // How much right padding will we add?
+  right_pad_width = 0;
   if( style->leftjustify && width < style->min_width_columns) {
-    // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width_columns; i++ ) {
-      dst[i] = style->pad_char;
-    }
+    right_pad_width = style->min_width_columns - width;
   }
 
-  assert( i == ret_width );
-  dst[i] = '\0';
+  width = left_pad_width + sign_base_width + number_width + right_pad_width;
 
-  MAYBE_STACK_FREE(buf, buf_onstack);
+  if( width + skip < size ) {
+    // do the rest of the conversion.
 
-  return i;
+    // Move the number to its destination
+    // if it's not in the right place already.
+    if( sign_base_width + left_pad_width != skip ) {
+      memmove(&dst[sign_base_width + left_pad_width],
+              &dst[skip],
+              number_width);
+    }
+
+    pad_char = style->pad_char;
+
+    got = 0;
+    // space padding goes before the sign
+    if( left_pad_width > 0 && pad_char != '0' ) {
+      // Put what we need to for getting to the min_width.
+      for( i = 0; i < left_pad_width; i++ ) {
+        dst[got++] = pad_char;
+      }
+    }
+
+    // and then we put the sign
+    if( style->showplus || shownegative ) {
+      char pluschar = (style->showplus==2)?pad_char:style->positive_char;
+      // put the '+' or '-' sign.
+      dst[got++] = isnegative?style->negative_char:pluschar;
+    }
+
+    // Now we put e.g. 0x if we're going to.
+    if( showbase ) {
+      dst[got++] = '0';
+      if( base == 16 ) dst[got++] = style->uppercase?'X':'x';
+      else return -2; //unspported floating point base.
+    }
+
+    // 0 padding goes after the sign
+    if( left_pad_width > 0 && pad_char == '0' ) {
+      // Put what we need to for getting to the min_width.
+      for( i = 0; i < left_pad_width; i++ ) {
+        dst[got++] = pad_char;
+      }
+    }
+
+    // the number was already put here with the memmove call earlier.
+    got += number_width;
+
+    // Now put right padding.
+    // Now if we're left justified we might need padding.
+    if( right_pad_width > 0 ) {
+      // Put what we need to for getting to the min_width.
+      for( i = 0; i < right_pad_width; i++ ) {
+        dst[got++] = pad_char;
+      }
+    }
+
+    if( got < size ) dst[got] = '\0';
+    assert( got == width );
+  }
+
+  return width;
 }
 
 // TODO -- support max_width
@@ -2482,8 +2566,6 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
   int max = 70; // room enough for binary output. (1 '\0', 2 0b, 1 +-, 64 bits)
   int signed_len;
   int base;
-  char* tmp = NULL;
-  MAYBE_STACK_SPACE(char, tmp_onstack);
   int got;
   qioerr err;
   qio_style_t* style;
@@ -2548,15 +2630,15 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
   }
 
   // Try printing it directly into the buffer.
-  if( VOID_PTR_DIFF(ch->cached_end,ch->cached_cur) > max ) {
+  if( qio_space_in_ptr_diff(max, ch->cached_end,ch->cached_cur) ) {
     // Print it all directly into the buffer.
-    got = _ltoa(ch->cached_cur, VOID_PTR_DIFF(ch->cached_end,ch->cached_cur), 
+    got = _ltoa(ch->cached_cur, qio_ptr_diff(ch->cached_end,ch->cached_cur), 
                 num, isneg, base, style);
     if( got < 0 ) {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown base or bad width");
       goto error;
-    } else if( got < VOID_PTR_DIFF(ch->cached_end,ch->cached_cur) ) {
-      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);
+    } else if( got < qio_ptr_diff(ch->cached_end,ch->cached_cur) ) {
+      ch->cached_cur = qio_ptr_add(ch->cached_cur, got);
       err = _qio_channel_post_cached_write(ch);
       // OK!
       goto error;
@@ -2568,13 +2650,16 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
   }
  
   // We get here if there wasn't enough room in cached for _ltoa
-  while( 1 ) {
+  {
+    char* tmp = NULL;
+    char tmp_onstack[MAX_ON_STACK];
+
     // Store it in a tempory variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, tmp, tmp_onstack);
     if( ! tmp ) {
       err = QIO_ENOMEM;
-      goto error;
+      goto error_free;
     }
 
     // Print it all to tmp
@@ -2582,21 +2667,21 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
                 num, isneg, base, style);
     if( got < 0 ) {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown base or bad width");
-      goto error;
+      goto error_free;
     } else if( got < max ) {
       err = qio_channel_write_amt(false, ch, tmp, got);
-      goto error;
+      goto error_free;
     } else {
-      // Not enough room... try again. 
-      MAYBE_STACK_FREE(tmp, tmp_onstack);
-      tmp = NULL;
-      max = got + 1;
+      // the 2nd call to ltoa wants more space than the first.
+      assert(got < max);
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "internal error");
+      goto error_free;
     }
+error_free:
+    MAYBE_STACK_FREE(tmp, tmp_onstack);
   }
 
 error:
-  MAYBE_STACK_FREE(tmp, tmp_onstack);
-
   _qio_channel_set_error_unlocked(ch, err);
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -2612,15 +2697,14 @@ error:
 static
 qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, bool imag)
 {
-  int max = MAX_DOUBLE_DIGITS;
-  char* buf = NULL;
-  MAYBE_STACK_SPACE(char, buf_onstack);
+  int max = 0;
   int got;
   int base;
   qioerr err;
-  double num;
+  double num = 0;
   qio_style_t* style;
   bool needs_i;
+  int extra = 0;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -2649,63 +2733,66 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
   if( err ) goto error;
 
   // Try printing it directly into the buffer.
-  if( VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) > max ) {
-    // Print it all directly into the buffer.
-    got = _ftoa(ch->cached_cur, VOID_PTR_DIFF(ch->cached_end, ch->cached_cur), 
-                num, base, needs_i, style);
-    if( got < 0 ) {
-      if( got == -1 ) err = QIO_ENOMEM;
-      else QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
-      goto error;
-    } else if( got < VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
-      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);
-      err = _qio_channel_post_cached_write(ch);
-      // OK!
-      goto error;
-    } else {
-      // There was not enough room, but we can set the
-      // amount of room needed.
-      max = got + 1;
-    }
+  got = _ftoa(ch->cached_cur, qio_ptr_diff(ch->cached_end, ch->cached_cur),
+              num, base, needs_i, style, &extra);
+  if( got < 0 ) {
+    if( got == -1 ) err = QIO_ENOMEM;
+    else QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
+    goto error;
+  } else if( qio_space_in_ptr_diff(got + extra,
+                                   ch->cached_end, ch->cached_cur) ) {
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, got);
+    err = _qio_channel_post_cached_write(ch);
+    // OK!
+    goto error;
+  } else {
+    // There was not enough room, but we can set the
+    // amount of room needed.
+    max = got + extra + 1;
   }
  
+
   // We get here if there wasn't enough room in cached for _ftoa
-  while( 1 ) {
+  // In that case, write to a temporary buffer. Note that
+  // 'max' should be at this point the number of digits needed.
+  {
+    char* buf = NULL;
+    char buf_onstack[MAX_ON_STACK];
+
     // Store it in a tempory variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, buf, buf_onstack);
     if( ! buf ) {
       err = QIO_ENOMEM;
-      goto error;
+      goto error_free;
     }
 
     // Print it all to buf
-    got = _ftoa(buf, max, num, base, needs_i, style);
+    got = _ftoa(buf, max, num, base, needs_i, style, &extra);
     if( got < 0 ) {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
-      goto error;
-    } else if( got < max ) {
+      goto error_free;
+    } else if( got + extra < max ) {
       err = qio_channel_write_amt(false, ch, buf, got);
-      goto error;
+      goto error_free;
     } else {
-      // Not enough room... try again. 
-      MAYBE_STACK_FREE(buf, buf_onstack);
-      buf = NULL;
-      max = got + 1;
+      // the 2nd call to ftoa wants more space than the first.
+      assert(got + extra < max);
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "internal error");
+      goto error_free;
     }
+
+error_free:
+    MAYBE_STACK_FREE(buf, buf_onstack);
   }
 
-
 error:
-  MAYBE_STACK_FREE(buf, buf_onstack);
-
   _qio_channel_set_error_unlocked(ch, err);
   if( threadsafe ) {
     qio_unlock(&ch->lock);
   }
 
   return err;
-
 }
 
 qioerr qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len)
@@ -2963,12 +3050,12 @@ qioerr qio_channel_print_complex(const int threadsafe,
                                  const void* restrict im_ptr,
                                  size_t len)
 {
-  int re_max = MAX_DOUBLE_DIGITS;
-  int im_max = MAX_DOUBLE_DIGITS;
   char* re_buf = NULL;
   char* im_buf = NULL;
-  MAYBE_STACK_SPACE(char, re_buf_onstack);
-  MAYBE_STACK_SPACE(char, im_buf_onstack);
+  char re_buf_onstack[MAX_ON_STACK];
+  char im_buf_onstack[MAX_ON_STACK];
+  int re_max = sizeof(re_buf_onstack); // would be nice if > MAX_DOUBLE_DIGITS;
+  int im_max = sizeof(im_buf_onstack);
   double re_num = 0.0;
   double im_num = 0.0;
   int re_got, im_got;
@@ -2985,6 +3072,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
   int width;
   int base;
   bool imag_needs_i = false;
+  int extra = 0;
 
   // Read our numbers.
   err = 0;
@@ -3047,10 +3135,11 @@ qioerr qio_channel_print_complex(const int threadsafe,
   if( err ) goto unlock;
 
   // convert the number - written as two local loops
-  // in case MAYBE_STACK_ALLOC does e.g. alloca.
 
   // convert the real part
   while( 1 ) {
+    // This loop should only ever run twice, since ftoa should
+    // return the size needed the first time.
     MAYBE_STACK_ALLOC(char, re_max, re_buf, re_buf_onstack);
     if( ! re_buf ) {
       err = QIO_ENOMEM;
@@ -3058,17 +3147,17 @@ qioerr qio_channel_print_complex(const int threadsafe,
     }
 
     // Convert re_num8 into digits in re_buf
-    re_got = _ftoa(re_buf, re_max, re_num, base, false, style);
+    re_got = _ftoa(re_buf, re_max, re_num, base, false, style, &extra);
     if( re_got < 0 ) {
       QIO_GET_CONSTANT_ERROR(err, EFORMAT, "error in floating point to string conversion");
       goto rewind;
-    } else if( re_got < re_max ) {
+    } else if( re_got + extra  < re_max ) {
       break;
     } else {
       // Not enough room... try again. 
       MAYBE_STACK_FREE(re_buf, re_buf_onstack);
       re_buf = NULL;
-      re_max = re_got + 1;
+      re_max = re_got + extra + 1;
     }
   }
 
@@ -3078,6 +3167,8 @@ qioerr qio_channel_print_complex(const int threadsafe,
     imag_needs_i = true;
   }
   while( 1 ) {
+    // This loop should only ever run twice, since ftoa should
+    // return the size needed the first time.
     MAYBE_STACK_ALLOC(char, im_max, im_buf, im_buf_onstack);
     if( ! im_buf ) {
       err = QIO_ENOMEM;
@@ -3085,17 +3176,17 @@ qioerr qio_channel_print_complex(const int threadsafe,
     }
 
     // Convert im_num8 into digits in im_buf
-    im_got = _ftoa(im_buf, im_max, im_num, base, imag_needs_i, style);
+    im_got = _ftoa(im_buf, im_max, im_num, base, imag_needs_i, style, &extra);
     if( im_got < 0 ) {
       QIO_GET_CONSTANT_ERROR(err, EFORMAT, "error in floating point to string conversion");
       goto rewind;
-    } else if( im_got < im_max ) {
+    } else if( im_got + extra < im_max ) {
       break;
     } else {
       // Not enough room... try again. 
       MAYBE_STACK_FREE(im_buf, im_buf_onstack);
       im_buf = NULL;
-      im_max = im_got + 1;
+      im_max = im_got + extra + 1;
     }
   }
 
@@ -3297,7 +3388,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
 
     // Fast path: an entire multi-byte sequence
     // is stored in the buffers.
-    if( MB_LEN_MAX <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+    if( qio_space_in_ptr_diff(MB_LEN_MAX, ch->cached_end, ch->cached_cur) ) {
       got = mbrtowc(&tmp_chr, ch->cached_cur, MB_LEN_MAX, &ps);
       if( got == 0 ) {
         *chr = 0;
@@ -3311,7 +3402,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
       } else {
         *chr = tmp_chr;
         err = 0;
-        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,got);
+        ch->cached_cur = qio_ptr_add(ch->cached_cur,got);
       }
     } else {
       // Slow path: we might need to read 1 byte at a time.
@@ -3453,7 +3544,7 @@ static const char* lower_hex_num = "0123456789abcdef";
 static const char* upper_hex_num = "0123456789ABCDEF";
 static const char* hex_num = "0123456789ABCDEFabcdef";
 static const char* pound_conv = "#.";*/
-static const char* lit_chars = "#% \f\n\r\t\v";
+static const char* lit_chars = "% \f\n\r\t\v";
 static const char* regexp_flag_chars = "imsU";
 
 static inline int istype(char x, const char* allow)
@@ -3474,13 +3565,7 @@ void qio_conv_destroy(qio_conv_t* spec)
 
 void qio_conv_init(qio_conv_t* spec_out)
 {
-  spec_out->preArg1 = QIO_CONV_UNK;
-  spec_out->preArg2 = QIO_CONV_UNK;
-  spec_out->preArg3 = QIO_CONV_UNK;
-  spec_out->argType = QIO_CONV_UNK;
-  spec_out->literal_is_whitespace = 0;
-  spec_out->literal_length = 0;
-  spec_out->literal = NULL;
+  memset(spec_out, 0, sizeof(qio_conv_t));
 }
 
 int _qio_regexp_flags_then_rcurly(const char* ptr, int * len);
@@ -3541,13 +3626,19 @@ qioerr qio_conv_parse(c_string fmt,
   i = start;
 
   // do we have a ####.#### conversion to match?
-  if( fmt[i] == '#' ) {
+  if( fmt[i] == '%' && fmt[i+1] == '{' && 
+      (fmt[i+2] == '#' || (fmt[i+2] == '.' && fmt[i+3] == '#') ) ) {
+    // handle %{####} conversions
     size_t num_before, num_after, period;
+
+    in_group = 1;
+    i++; // pass %
+    i++; // pass {
+
     num_before = 0;
     num_after = 0;
     period = 0;
     
-
     // how many ### do we have before a . ?
     for( ; fmt[i] == '#'; i++ ) num_before++;
 
@@ -3557,13 +3648,21 @@ qioerr qio_conv_parse(c_string fmt,
       for( ; fmt[i] == '#'; i++ ) num_after++;
     }
 
+    if( in_group ) {
+      if( fmt[i] != '}' ) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "Bad %{###.###} format group");
+      } else {
+        i++; // pass }
+      }
+    }
+
     spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
 
     style_out->base = 10;
     style_out->pad_char = ' ';
     style_out->precision = num_after;
     style_out->min_width_columns = num_before + period + num_after;
-    style_out->realfmt = 1; // %f
+    style_out->realfmt = 1; // like Chapel %dr or C %f
     if( period && num_after == 0 ) {
       // ie ##.
       style_out->showpoint = 1;
@@ -3590,15 +3689,6 @@ qioerr qio_conv_parse(c_string fmt,
       spec_out->literal = (int8_t*) "%";
       goto done;  
     }
-    if( fmt[i] == '#' ) {
-      i++; // pass #
-      spec_out->argType = QIO_CONV_ARG_TYPE_NONE_LITERAL;
-      spec_out->literal_is_whitespace = 0;
-      spec_out->literal_length = 1;
-      spec_out->literal = (int8_t*) "#";
-      goto done;  
-    }
-
 
     // Are we working with binary?
     if( fmt[i] == '<' || fmt[i] == '|' || fmt[i] == '>' ) {

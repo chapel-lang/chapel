@@ -1,0 +1,2 @@
+filer.chpl:163: warning: sorting has no effect for parallel invocations of walkdirs()
+.

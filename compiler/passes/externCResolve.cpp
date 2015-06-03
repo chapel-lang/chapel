@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,12 +17,13 @@
  * limitations under the License.
  */
 
-#include "scopeResolve.h"
+#include "externCResolve.h"
 
 #include "astutil.h"
 #include "build.h"
 #include "codegen.h"
 #include "expr.h"
+#include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -264,12 +265,16 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
     
   //functions
   } else if (clang::FunctionDecl *fd = llvm::dyn_cast<clang::FunctionDecl>(cdecl)) { 
+#if HAVE_LLVM_VER >= 35
+    clang::QualType resultType = fd->getReturnType();
+#else
+    clang::QualType resultType = fd->getResultType();
+#endif
     FnSymbol* f = new FnSymbol(name);
     f->addFlag(FLAG_EXTERN);
     f->addFlag(FLAG_LOCAL_ARGS);
     f->addFlag(FLAG_FUNCTION_PROTOTYPE);
-    f->addFlag(FLAG_USER_NAMED);
-    Expr* chpl_type = convertToChplType(module, fd->getResultType().getTypePtr(), results);
+    Expr* chpl_type = convertToChplType(module, resultType.getTypePtr(), results);
     BlockStmt* result = buildFunctionDecl(
        f, RET_VALUE, chpl_type, NULL, NULL, NULL);
 

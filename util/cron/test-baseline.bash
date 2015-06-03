@@ -7,4 +7,4 @@ source $CWD/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="baseline"
 
-$CWD/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures
+$CWD/nightly -cron -baseline -suppress Suppressions/baseline.suppress

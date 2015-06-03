@@ -5,7 +5,7 @@
 This section describes the lexical components of Chapel programs.
 The purpose of lexical analysis is
 to separate the raw input stream into a sequence of tokens suitable
-for input to the parser.  
+for input to the parser.
 
 \section{Comments}
 \label{Comments}
@@ -265,7 +265,8 @@ binary-digit: one of
   `0' `1'
 \end{syntax}
 
-All integer literals have type \chpl{int}.
+Integer literals in the range 0 to max(\chpl{int}), ~\rsec{Signed_and_Unsigned_Integral_Types},
+have type \chpl{int} and the remaining literals have type \chpl{uint}.
 
 \begin{rationale}
 Why are there no suffixes on integral literals?  Suffixes, like those
@@ -279,14 +280,24 @@ Real literals are designated by the following syntax:
 real-literal:
   digits[OPT] . digits exponent-part[OPT]
   digits .[OPT] exponent-part
+  `0x' hexadecimal-digits[OPT] . digits p-exponent-part[OPT]
+  `0X' hexadecimal-digits[OPT] . digits p-exponent-part[OPT]
+  `0x' hexadecimal-digits .[OPT] p-exponent-part
+  `0X' hexadecimal-digits .[OPT] p-exponent-part
 
 exponent-part:
   `e' sign[OPT] digits
   `E' sign[OPT] digits
 
+p-exponent-part:
+  `p' sign[OPT] digits
+  `P' sign[OPT] digits
+
+
 sign: one of
   + $ $ $ $ -
 \end{syntax}
+
 \begin{rationale}
 Why can't a real literal end with '.'?  There is a lexical ambiguity
 between real literals ending in '.' and the range operator '..' that
@@ -294,15 +305,23 @@ makes it difficult to parse.  For example, we want to
 parse \chpl{1..10} as a range from 1 to 10 without concern
 that \chpl{1.} is a real literal.
 \end{rationale}
+
+Hexadecimal real literals are supported with a hexadecimal integer and
+fractional part. Because 'e' could be a hexadecimal character, the exponent for
+these literals is instead marked with 'p' or 'P'. The exponent value follows
+and is written in decimal.
+
 The type of a real literal is \chpl{real}.  Explicit conversions are
 necessary to change the size of the literal.
 
 Imaginary literals are designated by the following syntax:
+
 \begin{syntax}
 imaginary-literal:
   real-literal `i'
   integer-literal `i'
 \end{syntax}
+
 The type of an imaginary literal is \chpl{imag}.  Explicit conversions
 are necessary to change the size of the literal.
 

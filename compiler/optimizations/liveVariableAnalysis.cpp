@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -74,9 +74,9 @@ liveVariableAnalysis(FnSymbol* fn,
     BitVec* lvin = new BitVec(locals.n);
     BitVec* lvout = new BitVec(locals.n);
     for_vector(Expr, expr, bb->exprs) {
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
       collect_asts(expr, asts);
-      forv_Vec(BaseAST, ast, asts) {
+      for_vector(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {
             int id = localMap.get(se->var);
@@ -85,8 +85,8 @@ liveVariableAnalysis(FnSymbol* fn,
           }
         }
       }
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
+      for_vector(BaseAST, ast1, asts) {
+        if (SymExpr* se = toSymExpr(ast1)) {
           if (defSet.set_in(se)) {
             int id = localMap.get(se->var);
             if (!use->get(id))

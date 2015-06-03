@@ -1,0 +1,3 @@
+var thisNameProbablyWontConflictWithOthers: real;
+
+writeln(thisNameProbablyWontConflictWithOthers);

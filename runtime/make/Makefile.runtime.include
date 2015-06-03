@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -40,7 +40,7 @@ RUNTIME_DEFS += -DCHPL_COMM_DEBUG
 endif
 
 ifeq ($(OPTIMIZE),1)
-RUNTIME_DEFS += -DCHPL_OPTIMIZE
+RUNTIME_DEFS += -DCHPL_OPTIMIZE -DNDEBUG
 endif
 
 # For HDFS support (and backwards compatibility)
@@ -73,6 +73,19 @@ RUNTIME_INCLS += \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
 
+RUNTIME_CYGWIN=0
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cygwin32)
+  RUNTIME_CYGWIN=1
+endif
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cygwin64)
+  RUNTIME_CYGWIN=1
+endif
+
+# w32api is provided by cygwin32-w32api-runtime
+ifeq ($(RUNTIME_CYGWIN),1)
+  RUNTIME_INCLS += -I/usr/include/w32api
+endif
+
 # Add any further includes (e.g. third party tcmalloc dir) for memory
 MEM_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_MEM)
 ifneq ($(strip $(wildcard $(MEM_INCLUDE))),)
@@ -96,4 +109,5 @@ endif
 
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 RUNTIME_CXXFLAGS += $(RUNTIME_DEFS)
+
 

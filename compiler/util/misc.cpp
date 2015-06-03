@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,12 +24,12 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "parser.h"
 #include "resolution.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "version.h"
-#include "yy.h"
 
 #include <csignal>
 #include <fcntl.h>
@@ -85,7 +85,7 @@ const char* cleanFilename(const char* name) {
 }
 
 
-static const char* cleanFilename(BaseAST* ast) {
+const char* cleanFilename(BaseAST* ast) {
   const char* astFname = ast->fname();
   if (astFname)
     return cleanFilename(astFname);
@@ -188,7 +188,7 @@ printDevelErrorHeader(BaseAST* ast) {
             fprintf(stderr, "constructor '%s':\n", err_fn->name+11);
           } else {
             fprintf(stderr, "%s '%s':\n",
-                    (err_fn->hasFlag(FLAG_ITERATOR_FN) ? "iterator" : "function"),
+                    (err_fn->isIterator() ? "iterator" : "function"),
                     err_fn->name);
           }
         }

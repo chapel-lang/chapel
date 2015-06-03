@@ -2,12 +2,12 @@
 #include <assert.h>
 #include <stdio.h>
 
-// TODO (12/05/14): This test makes use of lseek and then
-// reads through the file, using bytes read as an indicator
-// of position.  On Cygwin, you can't depend on that
-// indicator being accurate, so the test fails. We should
-// rewrite this test to be more portable and look for
-// similar assumptions in our qio code.
+
+#ifdef CHPL_VALGRIND_TEST
+int valgrind = 1;
+#else
+int valgrind = 0;
+#endif
 
 int verbose = 0;
 
@@ -195,7 +195,12 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     int syserr;
     syserr = sys_fstat(f->fd, &stats);
     assert(!syserr);
-    assert(stats.st_size == end);
+    if( stats.st_size != end ) {
+      printf("File is the wrong length. Length is %i but expected %i\n",
+             (int) stats.st_size, (int) end);
+      printf("File path is %s\n", filename);
+      assert(stats.st_size == end);
+    }
   }
 
   // That was fun. Now start at the beginning of the file
@@ -256,7 +261,11 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     }
 
     err = qio_channel_read(threadsafe, reading, got_chunk, 1, &amt_read);
-    assert( qio_err_to_int(err) == EEOF );
+    if( qio_err_to_int(err) != EEOF ) {
+      printf("HERE read something at offset %i \n", (int) qio_channel_offset_unlocked(reading));
+      printf("read %x\n", (int) got_chunk[0]);
+      assert( qio_err_to_int(err) == EEOF );
+    }
   }
 
   qio_channel_release(reading);
@@ -292,8 +301,9 @@ void check_channels(void)
   int nhints = sizeof(hints)/sizeof(qio_hint_t);
   int file_hint, ch_hint;
 
-  check_channel(false, 1, 0, 16384, 1, 0, 17, 1, 1);
-  check_channel(false, 3, 0, 16384, 1, QIO_METHOD_DEFAULT, QIO_METHOD_DEFAULT, 0, 1);
+  if( valgrind ) nlens = 4;
+  if( valgrind ) nchunkszs = 4;
+
   for( file_hint = 0; file_hint < nhints; file_hint++ ) {
     for( ch_hint = 0; ch_hint < nhints; ch_hint++ ) {
       for( i = 0; i < nlens; i++ ) {
@@ -312,6 +322,9 @@ void check_channels(void)
         }
       }
     }
+    // only test default chanel hints with valgrind
+    // moving over file hints should still give us good coverage.
+    if( valgrind ) break;
   }
 
   return;

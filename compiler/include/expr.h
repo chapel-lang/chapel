@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,6 +58,10 @@ public:
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
 
+  void            insertBefore(const char* format, ...);
+  void            insertAfter(const char* format, ...);
+  void            replace(const char* format, ...);
+
   Expr*           remove();
 
   bool            isStmtExpr()                                       const;
@@ -76,14 +80,10 @@ private:
 
 
 class DefExpr : public Expr {
- public:
-  Symbol* sym;
-  Expr* init;
-  Expr* exprType;
-
-  DefExpr(Symbol* initSym = NULL,
-          BaseAST* initInit = NULL,
-          BaseAST* initExprType = NULL);
+public:
+                  DefExpr(Symbol*  initSym      = NULL,
+                          BaseAST* initInit     = NULL,
+                          BaseAST* initExprType = NULL);
 
   virtual void    verify();
 
@@ -93,11 +93,17 @@ class DefExpr : public Expr {
   virtual void    accept(AstVisitor* visitor);
 
   virtual Type*   typeInfo();
-  virtual void    prettyPrint(std::ostream *o);
+  virtual void    prettyPrint(std::ostream* o);
 
   virtual GenRet  codegen();
 
   virtual Expr*   getFirstExpr();
+
+  const char*     name()                               const;
+
+  Symbol*         sym;
+  Expr*           init;
+  Expr*           exprType;
 };
 
 

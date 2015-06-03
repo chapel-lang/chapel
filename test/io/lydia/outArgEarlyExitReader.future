@@ -1,0 +1,21 @@
+bug: Early exit from function with out arg that uses a file reader causes seg fault when not in developer mode
+
+This is a memory management bug that has been tracked into our callDestructors
+pass.  With CHPL_DEVELOPER=false or --no-devel thrown, if an out argument was
+assigned to before exiting the function then destructor calls for the channel
+and file were always inserted before the function returned, even though in the
+early exit case the channel and file in question were (to the user's
+perspective) not even in existence.  Thus, when they were destroyed, the program
+would segfault.
+
+This segfault does not occur with --devel, nor with only a channel writer,
+nor with returning a value via a return statement (instead of an out argument).
+However, with --devel a channel writer will fail with the same behavior.
+
+Since the behavior is attempting to free a structure that has not been allocated
+and the segfault does not always occur (though the additional free is always
+present), this future is only tested under valgrind.  When it starts to pass,
+please remove the skipif.
+
+Tom's AMM branch does not exhibit this behavior, so when that gets merged into
+trunk, this future should be resolved.

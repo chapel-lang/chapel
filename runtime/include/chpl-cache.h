@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -47,13 +47,13 @@ void chpl_cache_exit(void);
 void chpl_cache_fence(int acquire, int release, int ln, c_string fn);
 
 // "acquire" barrier or fence -> discard pre-fetched GET values
-static ___always_inline
+static inline
 void chpl_cache_acquire(int ln, c_string fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(1, 0, ln, fn);
 }
 // "release" barrier or fence -> complete pending PUTs
-static ___always_inline
+static inline
 void chpl_cache_release(int ln, c_string fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(0, 1, ln, fn);

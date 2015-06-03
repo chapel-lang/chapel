@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#include "chpltypes.h" // for chpl_bool
-#include "chpl-tasks-prvdata.h" // for chpl_task_prvData_t
+#include "chpltypes.h"
+#include "chpl-tasks-prvdata.h"
 
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);
@@ -93,6 +93,7 @@ typedef syncvar_t chpl_mutex_t;
 typedef struct {
     aligned_t lockers_in;
     aligned_t lockers_out;
+    uint_fast32_t uncontested_locks;
     int       is_full;
     syncvar_t signal_full;
     syncvar_t signal_empty;
@@ -268,8 +269,8 @@ volatile int chpl_qthread_done_initializing;
 #endif
 
 typedef struct {
-  c_sublocid_t requestedSubloc;  // requested sublocal for task
-  chpl_task_prvData_t prvdata;
+    c_sublocid_t requestedSubloc;  // requested sublocal for task
+    chpl_task_prvData_t prvdata;
 } chpl_task_prvDataImpl_t;
 
 // Define PRV_DATA_IMPL_VAL to set up a chpl_task_prvData_t.
@@ -297,8 +298,10 @@ typedef struct chpl_qthread_tls_s {
     size_t      task_lineno;
 } chpl_qthread_tls_t;
 
+extern pthread_t chpl_qthread_process_pthread;
 extern pthread_t chpl_qthread_comm_pthread;
 
+extern chpl_qthread_tls_t chpl_qthread_process_tls;
 extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
 
 #define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
@@ -307,14 +310,18 @@ void chpl_task_stdModulesInitialized(void);
 // Wrap qthread_get_tasklocal() and assert that it is always available.
 static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
 {
-    chpl_qthread_tls_t * tls;
+    chpl_qthread_tls_t* tls;
 
     if (chpl_qthread_done_initializing) {
         tls = (chpl_qthread_tls_t *)
               qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
-        if (tls == NULL &&
-            pthread_equal(pthread_self(), chpl_qthread_comm_pthread))
-          tls = &chpl_qthread_comm_task_tls;
+        if (tls == NULL) {
+            pthread_t me = pthread_self();
+            if (pthread_equal(me, chpl_qthread_comm_pthread))
+                tls = &chpl_qthread_comm_task_tls;
+            else if (pthread_equal(me, chpl_qthread_process_pthread))
+                tls = &chpl_qthread_process_tls;
+        }
         assert(tls);
     }
     else
@@ -330,12 +337,12 @@ static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
 #endif
 static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
 {
-  chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-  if (data) {
-      return &data->chpl_data.prvdata;
-  }
-  assert(data);
-  return NULL;
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+    if (data) {
+        return &data->chpl_data.prvdata;
+    }
+    assert(data);
+    return NULL;
 }
 
 #ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL

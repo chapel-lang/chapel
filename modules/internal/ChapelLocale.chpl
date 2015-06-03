@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -165,7 +165,7 @@ module ChapelLocale {
   // The rootLocale is private to each locale.  It cannot be
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
-  pragma "private" var rootLocale : locale = nil;
+  pragma "locale private" var rootLocale : locale = nil;
   config param replicateRootLocale = true;
 
   // The rootLocale needs to be initalized on all locales prior to
@@ -208,7 +208,7 @@ module ChapelLocale {
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
-    iter initOnLocales() {
+    iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
       for locIdx in (origRootLocale:RootLocale).getDefaultLocaleSpace() {
@@ -221,8 +221,8 @@ module ChapelLocale {
     // opportunity to initialize any global private variables we
     // either need (e.g., defaultDist) or can do at this point in
     // initialization (e.g., rootLocale).
-    iter initOnLocales(param tag: iterKind)
-      where tag==iterKind.leader {
+    iter chpl_initOnLocales(param tag: iterKind)
+      where tag==iterKind.standalone {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
       var flags: [1..#numLocales-1] localesSignal;
@@ -236,11 +236,6 @@ module ChapelLocale {
           chpl_rootLocaleInitPrivate(locIdx);
         }
       }
-    }
-
-    iter initOnLocales(param tag: iterKind, followThis)
-      where tag==iterKind.follower {
-      yield followThis;
     }
   }
 
@@ -303,7 +298,7 @@ module ChapelLocale {
   // the rootLocale.  It sets up the origRootLocale and also includes
   // set up of the each locale's LocaleModel via RootLocale:init().
   //
-  // The init() function must use the initOnLocales() iterator above
+  // The init() function must use the chpl_initOnLocales() iterator above
   // to iterate in parallel over the locales to set up the LocaleModel
   // object.
   proc chpl_init_rootLocale() {
@@ -358,9 +353,18 @@ module ChapelLocale {
 
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
 
+  pragma "insert line file info"
+  export
+  proc chpl_getLocaleID(ref localeID: chpl_localeID_t) {
+    localeID = here_id;
+  }
+
   // Return the locale ID of the current locale
   inline proc here_id {
-    return chpl_buildLocaleID(chpl_nodeID,chpl_task_getRequestedSubloc());
+     if localeModelHasSublocales then
+      return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
+    else
+      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
   }
   // Return the current locale
   inline proc here {

@@ -22,7 +22,6 @@ statement:
   continue-statement
   param-for-statement
   use-statement
-  type-select-statement
   empty-statement
   return-statement
   yield-statement
@@ -684,103 +683,6 @@ prints out
 \begin{chapelprintoutput}{}
 In M2's main.
 In M1's foo.
-\end{chapelprintoutput}
-\end{chapelexample}
-
-\section{The Type Select Statement}
-\label{The_Type_Select_Statement}
-\index{statements!type select}
-\index{type select statements}
-
-A type select statement has two uses.  It can be used to determine the
-type of a union, as discussed
-in~\rsec{The_Type_Select_Statement_and_Unions}.  In its more general
-form, it can be used to determine the types of one or more values
-using the same mechanisms used to disambiguate function definitions.
-It syntax is given by:
-\begin{syntax}
-type-select-statement:
-  `type' `select' expression-list { type-when-statements }
-
-type-when-statements:
-  type-when-statement
-  type-when-statement type-when-statements
-
-type-when-statement:
-  `when' type-list `do' statement
-  `when' type-list block-statement
-  `otherwise' statement
-
-expression-list:
-  expression
-  expression , expression-list
-
-type-list:
-  type-specifier
-  type-specifier , type-list
-\end{syntax}
-
-Let the expressions following the keyword \chpl{select} be called the 
-\emph{select expressions}.  The number of select expressions must be equal to the
-number of types following each of the \chpl{when} keywords.  Like the
-select statement, one of the statements associated with a \chpl{when}
-will be executed.  In this case, that statement is chosen by the
-function resolution mechanism.  The select expressions are the actual
-arguments, the types following the \chpl{when} keywords are the types
-of the formal arguments for different anonymous functions.  The
-function that would be selected by function resolution determines the
-statement that is executed.  If none of the functions are chosen, the
-the statement associated with the keyword \chpl{otherwise}, if it
-exists, will be selected.
-
-As with function resolution, this can result in an ambiguous
-situation.  Unlike with function resolution, in the event of an
-ambiguity, the first statement in the list of when statements is
-chosen.
-
-\begin{chapelexample}{typeselect.chpl}
-The following example shows how the type select statement can be used to perform
-a different action based on the static type of the operand.
-
-The program
-\begin{chapel}
-var x = 32, y = 15.5; 
-var z: int(8);
-var coord = (0.0,0.0);
-var yes: bool;
-
-writetype(x);
-writetype(y);
-writetype(z);
-writetype(coord);
-writetype(yes);
-writetype("no");
-writetype(here);
-
-proc writetype(x) {
-  type select x {
-    when int do writeln("Integer type");
-    when uint do writeln("Unsigned integer type");
-    when real do writeln("Real type");
-    when complex do writeln("Complex type");
-    when string do writeln("String type");
-    when bool do writeln("Boolean type");
-    when imag do writeln("Imag type");
-    when locale do writeln("Locale type");
-    when void do writeln("Void type");
-    otherwise writeln("Non-primitive type");
-  }
-}
-\end{chapel}
-produces the output
-\begin{chapelprintoutput}{}
-Integer type
-Real type
-Integer type
-Non-primitive type
-Boolean type
-String type
-Locale type
 \end{chapelprintoutput}
 \end{chapelexample}
 

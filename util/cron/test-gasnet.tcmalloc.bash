@@ -10,4 +10,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.tcmalloc"
 
 export GASNET_QUIET=Y
 
-$CWD/nightly -cron -multilocale -no-futures
+$CWD/nightly -cron -multilocale

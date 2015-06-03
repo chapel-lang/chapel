@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -299,27 +299,6 @@ void collectNaturalLoopForEdge(Loop* loop, BasicBlock* header, BasicBlock* tail)
   } 
 }
 
-/*
- * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
- * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1) 
- * and what this function gets out is the symbol that is the first field
- * instead of just the number 1. 
- */
-static Symbol* getSvecSymbol(CallExpr* call) {
-  INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
-             call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-             call->isPrimitive(PRIM_SET_SVEC_MEMBER));
-  
-  Type* type = call->get(1)->getValType();
-  AggregateType* tuple = toAggregateType(type);
-  SymExpr* fieldVal = toSymExpr(call->get(2));
-  VarSymbol* fieldSym = toVarSymbol(fieldVal->var);
-  int immediateVal = fieldSym->immediate->int_value();
-
-  INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
-  return tuple->getField(immediateVal);
-}
-
 // Returns rhs var if lhs aliases rhs
 //
 //
@@ -536,22 +515,22 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
               }
             }
           }
-        } 
+        }
       }
-    
+
       //Check each symExpr to see if its a use and or def and add to the appropriate lists
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(expr, symExprs);
+      collectSymExprs(expr, symExprs);
       for_vector(SymExpr, symExpr, symExprs) {
         if(symExpr->parentSymbol) {
-          if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+          if(isLcnSymbol(symExpr->var)) {
             localMap[symExpr] = block->id;
             int result = isDefAndOrUse(symExpr);
-            //Add defs 
+            //Add defs
             if(result & 1) {
               addDefOrUse(localDefMap, symExpr->var, symExpr);
             }
-            //add uses 
+            //add uses
             if(result & 2) {
               addDefOrUse(localUseMap, symExpr->var, symExpr);
             }
@@ -573,7 +552,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
         }
       }
     }
-  }   
+  }
 }
 
 
@@ -656,7 +635,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
       for_vector(BasicBlock, block, *loop->getBlocks()) {
         for_vector(Expr, expr, block->exprs) {
           std::vector<SymExpr*> symExprs;
-          collectSymExprsSTL(expr, symExprs);
+          collectSymExprs(expr, symExprs);
           for_vector(SymExpr, symExpr2, symExprs) {
 
             //mark that we have seen the definition of the operand 
@@ -696,13 +675,15 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
 static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     loop, symToVecSymExprMap& localDefMap, FnSymbol* fn) {
  
-  //collect all of the symExpr and defExpr in the loop 
+  // collect all of the symExprs, defExprs, and callExprs in the loop
   startTimer(collectSymExprAndDefTimer);
   std::vector<SymExpr*> loopSymExprs;
   std::set<Symbol*> defsInLoop;
+  std::vector<CallExpr*> callsInLoop;
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
-      collectSymExprsSTL(expr, loopSymExprs);
+      collectFnCalls(expr, callsInLoop);
+      collectSymExprs(expr, loopSymExprs);
       if (DefExpr* defExpr = toDefExpr(expr)) {
         if (toVarSymbol(defExpr->sym)) {
           defsInLoop.insert(defExpr->sym);
@@ -722,17 +703,17 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
   //as it seems unlikely that anybody would be willing to wait the 2+ hours it
   //takes for a program to actual compile. However, if compilation times become
   //unpredictable a compiler flag can be added. With less conservative analysis
-  //though, this threshold should be eliminated. 
+  //though, this threshold should be eliminated.
   int numAliases = 0;
-  //compute the map of aliases for each symbol 
+  //compute the map of aliases for each symbol
   startTimer(computeAliasTimer);
   std::map<Symbol*, std::set<Symbol*> > aliases;
 
   //Compute the aliases for the function's parameters. Any args passed by ref
-  //can potentially alias each other. 
+  //can potentially alias each other.
   for_alist(formal1, fn->formals) {
     for_alist(formal2, fn->formals) {
-      if(formal1 == formal2) 
+      if(formal1 == formal2)
         continue;
       if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
         if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
@@ -749,10 +730,10 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     //if there are too many aliases, just return. Since nothing has been added
     //to the list of invariants, nothing will be hoisted from the current fn
     if(numAliases > MAX_NUM_ALIASES) {
-#ifdef detailedTiming 
+#ifdef detailedTiming
        FILE* tooManyAliasesFile = fopen(astr(CHPL_HOME,"/LICMaliases.txt"), "a");
        fprintf(tooManyAliasesFile, "Skipping fn %s %d of module %s %d "
-           "because there were too many aliases\n", fn->name, fn->id, 
+           "because there were too many aliases\n", fn->name, fn->id,
            fn->getModule()->name, fn->getModule()->id);
 
        fclose(tooManyAliasesFile);
@@ -760,29 +741,29 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
       stopTimer(computeAliasTimer);
       return;
     }
- 
+
     for_vector(Expr, expr, block2->exprs) {
       if(CallExpr* call = toCallExpr(expr)) {
         Symbol* rhs = rhsAlias(call);
         if(rhs != NULL) {
           Symbol* lhs = NULL;
-          if(call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) 
+          if(call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             lhs = toSymExpr(call->get(1))->var;
           else
             lhs = toSymExpr(call->get(2))->var;
-        
+
           for_set(Symbol, rhsAlias, aliases[rhs]) {
             printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id,
               rhsAlias->name, rhsAlias->id));
-            
+
             aliases[rhsAlias].insert(lhs);
             aliases[lhs].insert(rhsAlias);
             numAliases += 2;
           }
-          printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id, rhs->name, 
+          printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id, rhs->name,
             rhs->id));
-          
-          aliases[rhs].insert(lhs); 
+
+          aliases[rhs].insert(lhs);
           aliases[lhs].insert(rhs);
           numAliases += 2;
         }
@@ -790,26 +771,26 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     }
   }
   stopTimer(computeAliasTimer);
-  
-  //calculate the actual defs of a symbol including the defs of 
-  //its aliases. If there are no defs or we have a constant, 
+
+  //calculate the actual defs of a symbol including the defs of
+  //its aliases. If there are no defs or we have a constant,
   //add it to the list of invariants
   startTimer(calculateActualDefsTimer);
-  std::set<SymExpr*> loopInvariantOperands;  
+  std::set<SymExpr*> loopInvariantOperands;
   std::set<SymExpr*> loopInvariantInstructions;
   std::map<SymExpr*, std::set<SymExpr*> > actualDefs;
   for_vector(SymExpr, symExpr, loopSymExprs) {
-  
+
     //skip already known invariants
     if(loopInvariantOperands.count(symExpr) == 1) {
       continue;
     }
-    
-    //mark all the const operands 
+
+    //mark all the const operands
     if(isConst(symExpr)) {
       loopInvariantOperands.insert(symExpr);
-    }    
-        
+    }
+
     //calculate defs of the aliases
     if(aliases.count(symExpr->var) == 1) {
       for_set(Symbol, symbol, aliases[symExpr->var]) {
@@ -818,22 +799,22 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
           for_vector(SymExpr, aliasSymExpr, *localDefMap[symbol]) {
             if(CallExpr* call = toCallExpr(aliasSymExpr->parentExpr)) {
               if(symExpr->var == rhsAlias(call)) {
-                //do nothing 
+                //do nothing
               }
               else if(aliases[symExpr->var].count(rhsAlias(call)) == 0) {
                 actualDefs[symExpr].insert(aliasSymExpr);
-              }  
+              }
             }
           }
         }
       }
-    }    
-   
+    }
+
     // We have to note that for records if a field is deffed then the record
     // itself is also deffed. This is handled in buildDefUseMaps for normal
     // variables but we have to handle when a variable aliases a record's field
     // and the alias is deffed.
-    if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+    if(isLcnSymbol(symExpr->var)) {
       // if the current variable is a record
       if(AggregateType* ct = toAggregateType(symExpr->var->type->symbol->type)) {
         if(isRecord(symExpr->var->type->symbol->type)) {
@@ -888,10 +869,22 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         }
       }
     }
-    // Where the variable is defined.
+    // Find where the variable is defined.
     Symbol* defScope = symExpr->var->defPoint->parentSymbol;
+    // if the variable is a module level (global) variable
     if (isModuleSymbol(defScope)) {
-      mightHaveBeenDeffedElseWhere = true;
+      // if there are any function calls inside the loop, assume that one of
+      // the functions may have changed the value of the global. Note that we
+      // don't have to worry about a different task updating the global since
+      // that would have to be protected with a sync or be atomic in which case
+      // no hoisting will occur in the function at all. Any defs to the global
+      // inside of this loop will be detected just like any other variable
+      // definitions.
+      // TODO this could be improved to check which functions modify the global
+      // and see if any of those functions are being called in this loop.
+      if (callsInLoop.size() != 0) {
+        mightHaveBeenDeffedElseWhere = true;
+      }
     }
     //if there were no defs of the symbol, it is invariant 
     if(actualDefs.count(symExpr) == 0 && !mightHaveBeenDeffedElseWhere) {
@@ -1010,7 +1003,7 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
   
   BitVec* bitExits = loop->getBitExits();
    
-  for(int i = 0; i < bitExits->size(); i++) {
+  for(size_t i = 0; i < bitExits->size(); i++) {
     if(bitExits->test(i)) {
       if(dominates(defBlock, i, dominators) == false) {
         return false;
@@ -1021,14 +1014,14 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
 }
 
 
-/*
+ /*
  * Collect all of the function symbols that belong to function calls 
  * and nested function calls that occur from baseAST. In other words
  * look through the baseAST and find all the function and nested function
  * calls and collect their fnsymbols. 
  */
-static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
-  AST_CHILDREN_CALL(ast, collectUsedFnSymbolsSTL, fnSymbols);
+static void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
+  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
   //if there is a function call, get the FnSymbol associated with it 
   //and look through that FnSymbol for other function calls. Do not 
   //look through an already visited FnSymbol, or you'll have an infinite
@@ -1037,9 +1030,7 @@ static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols
     if (FnSymbol* fnSymbol = call->isResolved()) {
       if(fnSymbols.count(fnSymbol) == 0) {
         fnSymbols.insert(fnSymbol);
-        for_alist(expr, fnSymbol->body->body) {
-          AST_CHILDREN_CALL(expr, collectUsedFnSymbolsSTL, fnSymbols);
-        }
+        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbols, fnSymbols);
       }
     }
   }
@@ -1047,16 +1038,16 @@ static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols
 
 
 /*
- * Collects the uses and defs of symbols the baseAST 
- * and checks for any synchronization variables such as 
- * atomics, syncs, and singles. 
+ * Collects the uses and defs of symbols the baseAST
+ * and checks for any synchronization variables such as
+ * atomics, syncs, and singles.
  */
 static bool containsSynchronizationVar(BaseAST* ast) {
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(ast, symExprs);
+  collectSymExprs(ast, symExprs);
   for_vector(SymExpr, symExpr, symExprs) {
-    
-    if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+
+    if(isLcnSymbol(symExpr->var)) {
       Type* symType = symExpr->var->type;
       Type* valType = symType->getValType();
       if (isSyncType(symType) || isAtomicType(symType) ||
@@ -1091,7 +1082,7 @@ static bool canPerformCodeMotion(Loop* loop) {
       //Check for nested function calls containing 
       //synchronization variables 
       std::set<FnSymbol*> fnSymbols;
-      collectUsedFnSymbolsSTL(expr, fnSymbols);
+      collectUsedFnSymbols(expr, fnSymbols);
       for_set(FnSymbol, fnSymbol2, fnSymbols) {
         if(containsSynchronizationVar(fnSymbol2)) {
           return false;

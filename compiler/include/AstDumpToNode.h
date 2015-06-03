@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,9 @@ class Type;
 
 class AstDumpToNode : public AstLogger
 {
+  //
+  // Static interface
+  //
 public:
   //
   // This is the User interface to the logger.
@@ -41,10 +44,29 @@ public:
   // are written.  The name of each file includes the name of the
   // Module, the number for the pass, and the name for the pass.
   //
-  static  void     view(const char* passName, int passNum);
+  static  void         view(const char*   passName,
+                            int           passNum);
 
-                   AstDumpToNode(FILE* fp);
+  static  void         view(const char*   passName,
+                            int           passNum,
+                            ModuleSymbol* module);
+
+  // These adjust the printing format. Could be per-instance.
+  static bool          compact;
+  static const char*   delimitEnter;
+  static const char*   delimitExit;
+  static bool          showNodeIDs;
+
+
+
+  //
+  // Instance interface
+  //
+public:
+                   AstDumpToNode(FILE* fp, int offset = 0);
   virtual         ~AstDumpToNode();
+
+  void             offsetSet(int offset);
 
   //
   // These functions are the "implementation" interface for the
@@ -118,7 +140,8 @@ private:
   void             ast_symbol(Symbol* sym, bool def);
 
   void             writeSymbol(Symbol* sym)                             const;
-  void             writeType  (Type*   type)                            const;
+  void             writeSymbolCompact(Symbol* sym)                      const;
+  int              writeType(Type* type, bool announce = true)          const;
 
   void             write(const char* text);
   void             write(bool spaceBefore, const char* text, bool spaceAfter);
@@ -136,6 +159,16 @@ private:
   void             logVisit(const char* fmt, ...);
 
   void             logWrite(const char* fmt, ...);
+
+  // enable compact mode
+  void             enterNode(BaseAST* node)                             const;
+  void             enterNodeSym(Symbol* node, const char* name = 0)     const;
+  void             exitNode(BaseAST* node, bool addNewline = false)     const;
+  void             writeField(const char* msg, int offset, BaseAST* field);
+  void             writeLongString(const char* msg, const char* arg)    const;
+  void             writeNodeID(BaseAST* node,
+                               bool     spaceBefore,
+                               bool     spaceAfter)                     const;
 
   const char*      mPath;
   FILE*            mFP;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,17 +19,17 @@
 
 #define _FILE_UTILS_C
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
 #include "chpl-file-utils.h"
-#include "qio.h"
 
 #include <stdio.h>
 #include <errno.h>
 #include <sys/param.h> // MAXPATHLEN
 #include <sys/stat.h>
+#include <utime.h> // Defines utimbuf and utime()
 
 
 qioerr chpl_fs_chdir(const char* name) {
@@ -53,6 +53,27 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   int exitStatus = chown(name, uid, gid);
   if (exitStatus)
     err = qio_mkerror_errno();
+  return err;
+}
+
+qioerr chpl_fs_copy_metadata(const char* source, const char* dest) {
+  qioerr err = 0;
+  struct stat oldTimes;
+  struct utimbuf times;
+  int exitStatus = stat(source, &oldTimes);
+  if (exitStatus == -1) {
+    // Hopefully an error will not occur (as we have checked that the
+    // file exists when we perform the other operations on it).  But just in
+    // case, check it here.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  times.actime = oldTimes.st_atime;  // The access time
+  times.modtime = oldTimes.st_mtime; // The modification time
+  exitStatus = utime(dest, &times);  // Set the times for dest.
+  if (exitStatus == -1) {
+    err = qio_mkerror_errno();
+  }
   return err;
 }
 
@@ -90,6 +111,24 @@ qioerr chpl_fs_exists(int* ret, const char* name) {
   return err;
 }
 
+qioerr chpl_fs_get_uid(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = buf.st_uid;
+  return 0;
+}
+
+qioerr chpl_fs_get_gid(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = buf.st_gid;
+  return 0;
+}
+
 qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag) {
   struct stat buf;
   int exitStatus = stat(name, &buf);
@@ -117,6 +156,98 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
     return qio_mkerror_errno();
   *ret = S_ISLNK(buf.st_mode);
   return 0;
+}
+
+qioerr chpl_fs_is_mount(int* ret, const char* name) {
+  qioerr err = 0;
+  struct stat nBuf, parentBuf;
+  int exitStatus = 0;
+  size_t nameLen = strlen(name);
+  char* parent = (char* ) chpl_mem_allocMany(nameLen + 4, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
+  char* safeNameCopy = (char* ) chpl_mem_allocMany(nameLen + 1, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
+  strncpy(safeNameCopy, name, nameLen + 1);
+  // Need to copy name so that we can use it in the case of links
+
+  err = chpl_fs_is_link(&exitStatus, name);
+  if (err) {
+    // The stat call in is_link returned an error, which we would encounter too,
+    // so return immediately.
+    chpl_mem_free(parent, 0, 0);
+    chpl_mem_free(safeNameCopy, 0, 0);
+    return err;
+  } else if (exitStatus) {
+    // We are dealing with a link.  Using /.. will refer to the parent of the
+    // linked location, rather than the parent of the link itself.  We need to
+    // perform some string token action.
+
+    // Lydia note (03/17/2015): when the Path library is more fleshed out, this
+    // operation could be done in module code and this function would instead
+    // take the name of the parent and child instead of creating the parent name
+    // itself.
+
+    char* curTok = strtok(safeNameCopy, "/");
+    char* nextTok = strtok(NULL, "/");
+    // We need the next token to determine if the path is longer than a single
+    // link name.
+    assert(curTok != NULL);
+    // curTok should never be null.  The only string which would return null is
+    // "/", but that directory is not a link, so won't be here in the first
+    // place.
+
+    if (nextTok != NULL) {
+      // name includes a path longer than just the current symlink.
+      // Thus, we should copy up to (but not including) the basename of the
+      // path.
+      strncpy(parent, curTok, strlen(curTok) + 1);
+      curTok = nextTok;
+      nextTok = strtok(NULL, "/");
+      while (nextTok != NULL) {
+        // While we haven't found the end of the path (in nextTok)
+        strncat(parent, "/", 1);
+        // Restore the lost path separator.
+        strncat(parent, curTok, strlen(curTok));
+        // Add the current token to the parent list
+        curTok = nextTok;
+        // And prepare to check if the next token is the last in the path
+        nextTok = strtok(NULL, "/");
+      }
+    } else {
+      // name was merely the current symlink rather than a longer path.
+      // That means its parent is "." or the current directory.
+      strncpy(parent, ".", 2);
+    }
+  } else {
+    // We are not referring to a link, so concatenating "/.." is fine.
+    strncpy(parent, name, nameLen + 1);
+    strncat(parent, "/..", 3);
+    // TODO: Using "/" is not necessarily portable, look into this
+  }
+
+  exitStatus = lstat(name, &nBuf);
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+    chpl_mem_free(parent, 0, 0);
+    chpl_mem_free(safeNameCopy, 0, 0);
+    return err;
+  }
+  exitStatus = lstat(parent, &parentBuf);
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+  } else {
+    if (nBuf.st_dev != parentBuf.st_dev) {
+      *ret = 1;
+    // Check if the st_dev matches that of its parent directory.
+    // If they don't match, it is a mount point.
+    } else {
+      err = chpl_fs_samefile_string(ret, name, parent);
+      // If the parent directory is the same as the current directory, we've
+      // reached the root.  If they don't, we know it isn't a mount point
+      // because we already know their st_dev matches.
+    }
+  }
+  chpl_mem_free(parent, 0, 0);
+  chpl_mem_free(safeNameCopy, 0, 0);
+  return err;
 }
 
 /* Creates a directory with the given name and settings if possible,
@@ -185,6 +316,33 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
   return err;
 }
 
+qioerr chpl_fs_realpath(const char* path, const char **shortened) {
+  qioerr err = 0;
+  *shortened = realpath(path, NULL);
+  if (*shortened == NULL) {
+    // If an error occurred, shortened will be NULL.  Otherwise, it will
+    // contain the cleaned up path.
+    err = qio_mkerror_errno();
+  }
+  return err;
+}
+
+qioerr chpl_fs_realpath_file(qio_file_t* path, const char **shortened) {
+  char *unshortened = NULL;
+  qioerr err = 0;
+  err = qio_file_path(path, (const char **)&unshortened);
+  // qio already had a way to get the path from the qio_file_t, so use it.
+
+  // check the error status here.
+  if (err) {
+    return err;
+  }
+  err = chpl_fs_realpath(unshortened, shortened);
+  // Since what is returned from qio_file_path is not necessarily the realpath,
+  // call realpath on it before returning.
+  return err;
+}
+
 /* Renames the file from oldname to newname, returning a qioerr if one
    occurred. */
 qioerr chpl_fs_rename(const char* oldname, const char* newname) {
@@ -203,4 +361,87 @@ qioerr chpl_fs_remove(const char* name) {
   if (exitStatus)
     err = qio_mkerror_errno();
   return err;
+}
+
+qioerr chpl_fs_samefile(int* ret, qio_file_t* file1, qio_file_t* file2) {
+  qioerr err = 0;
+  struct stat f1;
+  struct stat f2;
+
+  int exitStatus = fstat(file1->fd, &f1);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  exitStatus = fstat(file2->fd, &f2);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+  } else {
+    if (f1.st_dev == f2.st_dev && f1.st_ino == f2.st_ino) {
+      // The files had the same device and inode numbers.  Return true
+      *ret = 1;
+    } else {
+      // At least one of these was different.  Return false;
+      *ret = 0;
+    }
+  }
+
+  return err;
+}
+
+qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2) {
+  qioerr err = 0;
+  struct stat f1;
+  struct stat f2;
+
+  int exitStatus = stat(file1, &f1);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  exitStatus = stat(file2, &f2);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+  } else {
+    if (f1.st_dev == f2.st_dev && f1.st_ino == f2.st_ino) {
+      // The files had the same device and inode numbers.  Return true
+      *ret = 1;
+    } else {
+      // At least one of these was different.  Return false;
+      *ret = 0;
+    }
+  }
+  return err;
+}
+
+/* creates a symlink named linkName to the file orig */
+qioerr chpl_fs_symlink(const char* orig, const char* linkName) {
+  qioerr err = 0;
+  int exitStatus = symlink(orig, linkName);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+
+}
+
+mode_t chpl_fs_umask(mode_t mask) {
+  return umask(mask);
+}
+
+/* Returns the current permissions on a file specified by name */
+qioerr chpl_fs_viewmode(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = (int)(buf.st_mode&(S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX));
+  // Stylistic decision: while we have the capacity to make sure all we're
+  // getting are the permissions bits in module code, sending that extra
+  // information strikes me as unnecessary, since we don't intend to use it at
+  // the module level in other circumstances.
+  return 0;
 }

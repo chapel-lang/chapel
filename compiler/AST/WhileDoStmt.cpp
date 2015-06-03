@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,7 +39,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     retval = CForLoop::buildCForLoop(toCallExpr(cond), body);
   }
 
-  else
+  else if (fUseIPE == false)
   {
     VarSymbol*   condVar       = newTemp();
     CallExpr*    condTest      = new CallExpr("_cond_test", cond);
@@ -61,6 +61,13 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     retval->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
     retval->insertAtTail(loop);
     retval->insertAtTail(new DefExpr(breakLabel));
+  }
+
+  else
+  {
+    CallExpr* condTest = new CallExpr("_cond_test", cond);
+
+    retval = new WhileDoStmt(condTest, body);
   }
 
   return retval;
@@ -85,8 +92,14 @@ bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond)
 *                                                                           *
 ************************************* | ************************************/
 
-WhileDoStmt::WhileDoStmt(VarSymbol* var, BlockStmt* initBody) :
-  WhileStmt(var, initBody)
+WhileDoStmt::WhileDoStmt(Expr* cond, BlockStmt* body) :
+WhileStmt(cond, body)
+{
+
+}
+
+WhileDoStmt::WhileDoStmt(VarSymbol* var, BlockStmt* body) :
+  WhileStmt(var, body)
 {
 
 }
@@ -98,7 +111,9 @@ WhileDoStmt::~WhileDoStmt()
 
 WhileDoStmt* WhileDoStmt::copy(SymbolMap* map, bool internal)
 {
-  WhileDoStmt* retval = new WhileDoStmt(NULL, NULL);
+  Expr*        condExpr = 0;
+  BlockStmt*   body     = 0;
+  WhileDoStmt* retval   = new WhileDoStmt(condExpr, body);
 
   retval->copyShare(*this, map, internal);
 
@@ -120,6 +135,9 @@ GenRet WhileDoStmt::codegen()
 
   if (outfile)
   {
+
+    codegenOrderIndependence();
+
     std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 
     info->cStatements.push_back(hdr);

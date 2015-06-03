@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,7 @@
  */
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "build.h"
 #include "expr.h"
 #include "passes.h"
@@ -56,14 +57,13 @@ static void buildFieldAccessorFunctions(AggregateType* at);
 
 
 void buildDefaultFunctions() {
-  if (fUseIPE == false)
-    build_chpl_entry_points();
+  build_chpl_entry_points();
 
   SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   collect_asts(rootModule, asts);
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
       // Here we build default functions that are always generated (even when
       // the type symbol has FLAG_NO_DEFAULT_FUNCTIONS attached).
@@ -214,10 +214,11 @@ static FnSymbol* function_exists(const char* name,
 // These functions have the same binding strength as if they were user-defined.
 static void build_getter(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
+  const bool recordLike = ct->isRecord() || ct->isUnion();
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
-    Vec<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
     collect_asts(fn, asts);
-    forv_Vec(BaseAST, ast, asts) {
+    for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed(field->name) && call->numActuals() == 2) {
           if (call->get(1)->typeInfo() == dtMethodToken &&
@@ -233,6 +234,8 @@ static void build_getter(AggregateType* ct, Symbol *field) {
     fn->addFlag(FLAG_FIELD_ACCESSOR);
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);
+    else if (recordLike)
+      fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
     return;
   }
 
@@ -253,8 +256,11 @@ static void build_getter(AggregateType* ct, Symbol *field) {
 
   if (fieldIsConst)
     fn->addFlag(FLAG_REF_TO_CONST);
+  else if (recordLike)
+    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->addFlag(FLAG_METHOD);
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   _this->addFlag(FLAG_ARG_THIS);
@@ -302,7 +308,8 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   normalize(fn);
   ct->methods.add(fn);
   fn->addFlag(FLAG_METHOD);
-  fn->cname = astr("_", ct->symbol->cname, "_", fn->cname);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+  fn->cname = astr("chpl_get_", ct->symbol->cname, "_", fn->cname);
   fn->addFlag(FLAG_NO_PARENS);
   fn->_this = _this;
 }
@@ -349,7 +356,8 @@ static FnSymbol* chpl_gen_main_exists() {
 
         ModuleSymbol* fnMod = fn->getModule();
 
-        if ((module == NULL && fnMod->modTag == MOD_MAIN) ||
+        if ((module == NULL && 
+             fnMod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) ||
             fnMod == module) {
           if (!match) {
             match = fn;
@@ -386,8 +394,6 @@ static void build_chpl_entry_points() {
   if (fLibraryCompile) {
     if (chpl_user_main)
       INT_FATAL(chpl_user_main, "'main' found when compiling a library");
-    if (mainModules.n != 1)
-      INT_FATAL("expected one module when compiling a library");
   }
 
   if (!chpl_user_main) {
@@ -402,7 +408,7 @@ static void build_chpl_entry_points() {
       for_alist(expr, theProgram->block->body) {
         if (DefExpr* def = toDefExpr(expr)) {
           if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-            if (mod->modTag == MOD_MAIN) {
+            if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
               if (mainModule) {
                 USR_FATAL_CONT("a program with multiple user modules requires a main function");
                 USR_PRINT("alternatively, specify a main module with --main-module");
@@ -454,9 +460,7 @@ static void build_chpl_entry_points() {
   // parallelism, so no need for end counts (or atomic/sync types to
   // support them).
   //
-  // The initial version of --ipe also lacks parallelism
-  //
-  if (fMinimalModules == false && fUseIPE == false) {
+  if (fMinimalModules == false) {
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
   }
@@ -511,7 +515,7 @@ static void build_chpl_entry_points() {
   // In --minimal-modules compilation mode, we won't be waiting on an
   // endcount (see comment above)
   //
-  if (fMinimalModules == false && fUseIPE == false) {
+  if (fMinimalModules == false) {
     chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
   }
 
@@ -1142,7 +1146,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // We have no QIO when compiling with --minimal-modules, so no need
   // to build default R/W functions.
   //
-  if (fMinimalModules == true || fUseIPE == true) {
+  if (fMinimalModules == true) {
     return;
   }
 
@@ -1172,6 +1176,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->_this->addFlag(FLAG_ARG_THIS);
     ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
     fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    fn->addFlag(FLAG_METHOD);
     fn->insertFormalAtTail(fn->_this);
     fn->insertFormalAtTail(fileArg);
     fn->retType = dtVoid;
@@ -1185,6 +1190,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
     fn->addFlag(FLAG_METHOD);
+    fn->addFlag(FLAG_METHOD_PRIMARY);
     reset_ast_loc(def, ct->symbol);
     normalize(fn);
     ct->methods.add(fn);
@@ -1198,6 +1204,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->_this->addFlag(FLAG_ARG_THIS);
     ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtReader);
     fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    fn->addFlag(FLAG_METHOD);
     fn->insertFormalAtTail(fn->_this);
     fn->insertFormalAtTail(fileArg);
     fn->retType = dtVoid;
@@ -1212,6 +1219,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     ct->symbol->defPoint->insertBefore(def);
     // ? ct->methods.add(fn) ? in old code
     fn->addFlag(FLAG_METHOD);
+    fn->addFlag(FLAG_METHOD_PRIMARY);
     reset_ast_loc(def, ct->symbol);
     normalize(fn);
     ct->methods.add(fn);
@@ -1264,12 +1272,13 @@ void buildDefaultDestructor(AggregateType* ct) {
   fn->addFlag(FLAG_INLINE);
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->addFlag(FLAG_METHOD);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(fn->_this);
   fn->retType = dtVoid;
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
-  fn->addFlag(FLAG_METHOD);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
   ct->methods.add(fn);
 }

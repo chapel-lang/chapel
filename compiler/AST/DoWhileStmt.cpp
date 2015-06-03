@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -68,8 +68,14 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 *                                                                           *
 ************************************* | ************************************/
 
-DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* initBody) :
-  WhileStmt(var, initBody)
+DoWhileStmt::DoWhileStmt(Expr* expr, BlockStmt* body) :
+  WhileStmt(expr, body)
+{
+
+}
+
+DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* body) :
+  WhileStmt(var, body)
 {
 
 }
@@ -81,7 +87,9 @@ DoWhileStmt::~DoWhileStmt()
 
 DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
 {
-  DoWhileStmt* retval = new DoWhileStmt(NULL, NULL);
+  Expr*        cond   = NULL;
+  BlockStmt*   body   = NULL;
+  DoWhileStmt* retval = new DoWhileStmt(cond, body);
 
   retval->copyShare(*this, map, internal);
 
@@ -103,6 +111,8 @@ GenRet DoWhileStmt::codegen()
 
   if (outfile)
   {
+    codegenOrderIndependence();
+
     info->cStatements.push_back("do ");
 
     if (this != getFunction()->body)

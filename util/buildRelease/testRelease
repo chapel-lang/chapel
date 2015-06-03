@@ -1,8 +1,16 @@
 #!/usr/bin/env perl
 
+use File::Basename;
+use Cwd 'abs_path';
+
+$cwd = abs_path(dirname(__FILE__));
+$chplhomedir = abs_path("$cwd/../..");
+
+
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
+$replymail = "chapel-developers\@lists.sourceforge.net";
 
 $printusage = 1;
 $debug = 1;
@@ -38,6 +46,9 @@ chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
+    if ($debug == 1) {
+        $replymail = $debugemail;
+    }
 }
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
@@ -48,6 +59,7 @@ if ($cronrecipient ne "") {
     print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
     $failuremail = $cronrecipient;
     $allmail = $cronrecipient;
+    $replymail = $cronrecipient;
 }
 
 
@@ -85,12 +97,22 @@ if ($debug == 1) {
 
 
 #
-# set mail options
+# set mail options. Default to util/test/send_email.py, if available and
+# working. If not available or not working, default to 'mail'.
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
-    $mailer = "mail";
+    $chplsendemail = "$chplhomedir/util/test/send_email.py";
+    `$chplsendemail --help >/dev/null 2>&1`;
+    if ($? == 0) {
+        $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
+    } else {
+        print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
+        $mailer = "mail";
+    }
 }
+print "\$mailer = $mailer\n";
+
 
 $somethingfailed = 0;
 
@@ -123,7 +145,7 @@ $teststatus = mysystem("cd $tmpdir/chapel-test && ./testReleaseHelp `$chplhome/u
 #
 # send mail
 #
-if ($teststatus == 0) {
+if ($teststatus == 0 or $teststatus == 2) {
     $failures = `grep Error $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
     if ($failures == "0") {
         $shortstatus = "Passed";

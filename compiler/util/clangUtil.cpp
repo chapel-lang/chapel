@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,11 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
+
+#include "clangUtil.h"
+
 #include <inttypes.h>
-  
+
 #include <cctype>
 #include <cstring>
 #include <cstdio>
@@ -71,7 +74,7 @@ using namespace llvm;
 
 // TODO - add functionality to clang so that we don't
 // have to have what are basically copies of
-// ModuleBuilder.cpp 
+// ModuleBuilder.cpp
 // ( and BackendUtil.cpp but we used PassManagerBuilder::addGlobalExtension)
 //
 // This one is not normally included by clang clients
@@ -176,26 +179,28 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     llvm::LLVMContext& cx = info->module->getContext();
     // Create the TBAA root node
     {
-      llvm::Value* Ops[1];
+      LLVM_METADATA_OPERAND_TYPE* Ops[1];
       Ops[0] = llvm::MDString::get(cx, "Chapel types");
       info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
     }
     // Create type for ftable
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(cx, "Chapel ftable");
       Ops[1] = info->tbaaRootNode;
       // and mark it as constant
-      Ops[2] = ConstantInt::get(llvm::Type::getInt64Ty(cx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
 
       info->tbaaFtableNode = llvm::MDNode::get(cx, Ops);
     }
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(cx, "Chapel vmtable");
       Ops[1] = info->tbaaRootNode;
       // and mark it as constant
-      Ops[2] = ConstantInt::get(llvm::Type::getInt64Ty(cx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
 
       info->tbaaVmtableNode = llvm::MDNode::get(cx, Ops);
     }
@@ -249,12 +254,14 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 }
 
 
+// Adds a mapping from id->getName() to a variable or CDecl to info->lvt
 static
-VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
+void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 {
   GenInfo* info = gGenInfo;
   Preprocessor &preproc = info->Clang->getPreprocessor();
-  VarSymbol* ret = NULL;
+  VarSymbol* varRet = NULL;
+  NamedDecl* cdeclRet = NULL;
 
   const bool debugPrint = false;
 
@@ -262,8 +269,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
   //Handling only simple string or integer defines
   if(macro->getNumArgs() > 0) {
-    if( debugPrint) printf("macro function!\n");
-    return ret; // TODO -- handle macro functions.
+    if( debugPrint) {
+      printf("the macro takes arguments\n");
+    }
+    return; // TODO -- handle macro functions.
   }
 
   // Check that we have a single token surrounded by any
@@ -300,20 +309,48 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       ntokens - left_parens - right_parens == 1 ) {
     // OK!
   } else {
-    if( debugPrint) printf("too complicated or empty!\n");
-    return ret; // we don't handle complicated expressions like A+B
+    if( debugPrint) {
+      printf("the following macro is too complicated or empty:\n");
+    }
+    return; // we don't handle complicated expressions like A+B
   }
 
 
   switch(tok.getKind()) {
     case tok::numeric_constant: {
       std::string numString;
+      int hex;
+      int isfloat;
       if( negate ) numString.append("-");
       numString.append(tok.getLiteralData(), tok.getLength());
 
       if( debugPrint) printf("num = %s\n", numString.c_str());
 
-      if(numString.find('.') == std::string::npos) {
+      hex = 0;
+      if( numString[0] == '0' && (numString[1] == 'x' || numString[1] == 'X'))
+      {
+        hex = 1;
+      }
+
+      isfloat = 0;
+      if(numString.find('.') != std::string::npos) {
+        isfloat = 1;
+      }
+      // also check for exponent since e.g. 1e10 is a float.
+      if( hex ) {
+        // C99 hex floats use p for exponent
+        if(numString.find('p') != std::string::npos ||
+           numString.find('P') != std::string::npos) {
+          isfloat = 1;
+        }
+      } else {
+        if(numString.find('e') != std::string::npos ||
+           numString.find('E') != std::string::npos) {
+          isfloat = 1;
+        }
+      }
+
+      if( !isfloat ) {
         IF1_int_type size = INT_SIZE_32;
 
         if(tolower(numString[numString.length() - 1]) == 'l') {
@@ -323,10 +360,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
         if(tolower(numString[numString.length() - 1]) == 'u') {
           numString[numString.length() - 1] = '\0';
-          ret = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
+          varRet = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
         }
         else {
-          ret = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
+          varRet = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
         }
       }
       else {
@@ -336,14 +373,14 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
           numString[numString.length() - 1] = '\0';
         }
 
-        ret = new_RealSymbol("real", strtod(numString.c_str(), NULL), size);
+        varRet = new_RealSymbol(numString.c_str(), size);
       }
       break;
     }
     case tok::string_literal: {
       std::string body = std::string(tok.getLiteralData(), tok.getLength());
       if( debugPrint) printf("str = %s\n", body.c_str());
-      ret = new_StringSymbol(body.c_str());
+      varRet = new_StringSymbol(body.c_str());
       break;
     }
     case tok::identifier: {
@@ -352,23 +389,31 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       if( debugPrint) {
         printf("id = %s\n", idName.c_str());
       }
-      VarSymbol* var = info->lvt->getVarSymbol(idName);
-      if( var ) {
-        // We've already got something here...
-        ret = var;
-      } else {
+
+      // Handle the case where the macro refers to something we've
+      // already parsed in C
+      varRet = info->lvt->getVarSymbol(idName);
+      if( !varRet ) {
+        cdeclRet = info->lvt->getCDecl(idName);
+      }
+      if( !varRet && !cdeclRet ) {
         // Check to see if it's another macro.
         MacroInfo* otherMacro = preproc.getMacroInfo(tokId);
         if( otherMacro && otherMacro != macro ) {
-          ret = handleMacro(tokId, otherMacro);
-        } else {
-          // It must be referring to a variable.
-          // FUTURE TODO - create an extern VarSymbol for
-          //   Chapel to that variable..
-          // The simple code below doesn't quite manage.
-          //ret = new VarSymbol(astr(idName.c_str()), dtUnknown);
-          //ret->addFlag(FLAG_EXTERN);
+          // Handle the other macro to add it to the LVT under the new name
+          // The recursive call will add it to the LVT
+          if( debugPrint) printf("other macro\n");
+          handleMacro(tokId, otherMacro);
+          // Get whatever was added in the recursive call
+          // so that we can add it under the new name.
+          varRet = info->lvt->getVarSymbol(idName);
+          cdeclRet = info->lvt->getCDecl(idName);
         }
+      }
+      if( debugPrint && varRet ) printf("found var %s\n", varRet->cname);
+      if( debugPrint && cdeclRet ) {
+        std::string s = cdeclRet->getName();
+        printf("found cdecl %s\n", s.c_str());
       }
       break;
     }
@@ -376,10 +421,19 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       break;
   }
 
-  if( ret ) {
-    info->lvt->addGlobalVarSymbol(id->getName(), ret);
+  if( debugPrint ) {
+    std::string s = id->getName();
+    const char* kind = NULL;
+    if( varRet ) kind = "var";
+    if( cdeclRet ) kind = "cdecl";
+    if( kind ) printf("%s: adding an %s to the lvt\n", s.c_str(), kind);
   }
-  return ret;
+  if( varRet ) {
+    info->lvt->addGlobalVarSymbol(id->getName(), varRet);
+  }
+  if( cdeclRet ) {
+    info->lvt->addGlobalCDecl(id->getName(), cdeclRet);
+  }
 }
 
 
@@ -564,18 +618,28 @@ class CCodeGenConsumer : public ASTConsumer {
      }
 };
 
+
+#if HAVE_LLVM_VER >= 36
+#define CREATE_AST_CONSUMER_RETURN_TYPE std::unique_ptr<ASTConsumer>
+#else
+#define CREATE_AST_CONSUMER_RETURN_TYPE ASTConsumer*
+#endif
+
 class CCodeGenAction : public ASTFrontendAction {
  public:
   CCodeGenAction() { }
  protected:
-  virtual ASTConsumer *CreateASTConsumer(CompilerInstance &CI,
-                                                 StringRef InFile);
+  virtual CREATE_AST_CONSUMER_RETURN_TYPE CreateASTConsumer(
+      CompilerInstance &CI, StringRef InFile);
 };
 
-ASTConsumer *
-CCodeGenAction::CreateASTConsumer(CompilerInstance &CI,
-                                  StringRef InFile) {
+CREATE_AST_CONSUMER_RETURN_TYPE CCodeGenAction::CreateASTConsumer(
+    CompilerInstance &CI, StringRef InFile) {
+#if HAVE_LLVM_VER >= 36
+  return std::unique_ptr<ASTConsumer>(new CCodeGenConsumer());
+#else
   return new CCodeGenConsumer();
+#endif
 };
 
 static void cleanupClang(GenInfo* info)
@@ -637,9 +701,25 @@ void setupClang(GenInfo* info, std::string mainFile)
     info->codegenOptions.OptimizationLevel = 3;
   }
 
-
   {
     // Make sure we include clang's internal header dir
+#if HAVE_LLVM_VER >= 34
+    SmallString<128> P;
+    P = clangexe;
+    // Remove /clang from foo/bin/clang
+    P = sys::path::parent_path(P);
+    // Remove /bin   from foo/bin
+    P = sys::path::parent_path(P);
+
+    if( ! P.equals("") ) {
+      // Get foo/lib/clang/<version>/
+      sys::path::append(P, "lib");
+      sys::path::append(P, "clang");
+      sys::path::append(P, CLANG_VERSION_STRING);
+    }
+    CI->getHeaderSearchOpts().ResourceDir = P.str();
+    sys::path::append(P, "include");
+#else
     sys::Path P(clangexe);
     if (!P.isEmpty()) {
       P.eraseComponent();  // Remove /clang from foo/bin/clang
@@ -653,6 +733,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     CI->getHeaderSearchOpts().ResourceDir = P.str();
     sys::Path P2(P);
     P.appendComponent("include");
+#endif
 #if HAVE_LLVM_VER >= 33
     CI->getHeaderSearchOpts().AddPath(
         P.str(), frontend::System,false, false);
@@ -701,7 +782,13 @@ void finishCodegenLLVM() {
 
   // Verify the LLVM module.
   if( developer ) {
-    if(verifyModule(*info->module,PrintMessageAction)){
+    bool problems;
+#if HAVE_LLVM_VER >= 35
+    problems = verifyModule(*info->module, &errs());
+#else
+    problems = verifyModule(*info->module, PrintMessageAction);
+#endif
+    if(problems) {
       INT_FATAL("LLVM module verification failed");
     }
   }
@@ -718,7 +805,14 @@ void prepareCodegenLLVM()
   // Set up the optimizer pipeline.
   // Start with registering info about how the
   // target lays out data structures.
+#if HAVE_LLVM_VER >= 36
+  // We already set the data layout in setupClangContext
+  fpm->add(new DataLayoutPass());
+#elif HAVE_LLVM_VER >= 35
+  fpm->add(new DataLayoutPass(info->module));
+#else
   fpm->add(new DataLayout(info->module));
+#endif
 
   if( fFastFlag ) {
     PMBuilder.OptLevel = 2;
@@ -780,36 +874,49 @@ void runClang(const char* just_parse_filename) {
              so that we could automatically set CHPL_HOME. */
   std::string home(CHPL_HOME);
   std::string compileline = home + "/util/config/compileline";
-  if( debugCCode ) compileline += " DEBUG=1";
-  if( optimizeCCode ) compileline += " OPTIMIZE=1";
-  std::string readargsfrom = compileline +
-                              " --llvm-install-dir --includes-and-defines";
+  compileline += " COMP_GEN_WARN="; compileline += istr(ccwarnings);
+  compileline += " COMP_GEN_DEBUG="; compileline += istr(debugCCode);
+  compileline += " COMP_GEN_OPT="; compileline += istr(optimizeCCode);
+  compileline += " COMP_GEN_SPECIALIZE="; compileline += istr(specializeCCode);
+  compileline += " COMP_GEN_FLOAT_OPT="; compileline += istr(ffloatOpt);
+
+  std::string readargsfrom;
+
+  if( just_parse_filename ) {
+    // We're handling an extern block and not using the LLVM backend.
+    // Don't change CHPL_TARGET_COMPILER or ask for any compiler-specific
+    // C flags. Just get the neccesary includes and defines.
+    readargsfrom = compileline + " --llvm-install-dir"
+                                 " --clang-sysroot-arguments"
+                                 " --includes-and-defines";
+  } else {
+    // We're parsing extern blocks AND any parts of the runtime
+    // in order to prepare for an --llvm compilation.
+    // Use compiler-specific flags for clang-included.
+    readargsfrom = compileline + " --llvm"
+                                 " --llvm-install-dir"
+                                 " --clang-sysroot-arguments"
+                                 " --cflags"
+                                 " --includes-and-defines";
+  }
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
   std::vector<std::string> clangOtherArgs;
   std::string clangInstallDir;
 
-  // Add cflags,etc that used to be put into the Makefile
-  // (see codegen_makefile in files.cpp)
-  if (ccwarnings) {
-    // Could add warning arguments here. to clangCCArgs
-  }
+  // Gather information from readargsfrom into clangArgs.
+  readArgsFromCommand(readargsfrom.c_str(), args);
+  if( args.size() < 1 ) USR_FATAL("Could not find runtime dependencies for --llvm build");
 
-  if (debugCCode) {
-    clangCCArgs.push_back("-g");
-  }
+  clangInstallDir = args[0];
 
-  if (optimizeCCode) {
-    clangCCArgs.push_back("-O3");
+  // Note that these CC arguments will be saved in info->clangCCArgs
+  // and will be used when compiling C files as well.
+  for( size_t i = 1; i < args.size(); ++i ) {
+    clangCCArgs.push_back(args[i]);
   }
-
-  if (fieeefloat) {
-    // believe clang is always ieee float
-  } else {
-    clangCCArgs.push_back("-ffast-math");
-  }
-
+ 
   forv_Vec(const char*, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
@@ -822,13 +929,6 @@ void runClang(const char* just_parse_filename) {
   // libFlag and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
-
-  // Gather information from readargsfrom into clangArgs.
-  readArgsFromCommand(readargsfrom.c_str(), args);
-  clangInstallDir = args[0];
-  for( size_t i = 1; i < args.size(); ++i ) {
-    clangOtherArgs.push_back(args[i]);
-  }
 
   // Always include sys_basic because it might change the
   // behaviour of macros!
@@ -891,6 +991,8 @@ void runClang(const char* just_parse_filename) {
     // Now initialize a code generator...
     // this will enable us to ask for addresses of static (inline) functions
     // and cause them to be emitted eventually.
+    // CCodeGenAction is defined above. It traverses the C AST
+    // and does the code generation.
     info->cgAction = new CCodeGenAction();
     if (!info->Clang->ExecuteAction(*info->cgAction)) {
       if (just_parse_filename) {
@@ -933,6 +1035,11 @@ void saveExternBlock(ModuleSymbol* module, const char* extern_code)
   if( ! gAllExternCode.filename ) {
     openCFile(&gAllExternCode, "extern-code", "c");
     INT_ASSERT(gAllExternCode.fptr);
+
+    // Allow code in extern block to use malloc/calloc/realloc/free
+    // Note though that e.g. strdup or other library routines that
+    // allocate memory might still be an issue...
+    fprintf(gAllExternCode.fptr, "#include \"chpl-mem-no-warning-macros.h\"\n");
   }
 
   if( ! module->extern_info ) {
@@ -1150,6 +1257,13 @@ void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
   store.u.cdecl = cdecl;
   (layers.back())[cdecl->getName()] = store;
 }
+
+void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl) {
+  Storage store;
+  store.u.cdecl = cdecl;
+  (layers.back())[name] = store;
+}
+
 
 void LayeredValueTable::addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var)
 {
@@ -1420,13 +1534,21 @@ void setupForGlobalToWide(void) {
   }
   ginfo->builder->CreateRet(ret);
 
-  llvm::verifyFunction(*fn);
+#if HAVE_LLVM_VERS >= 35
+  llvm::verifyFunction(*fn, &errs());
+#endif
 
   info->preservingFn = fn;
 }
 
 
 void makeBinaryLLVM(void) {
+#if HAVE_LLVM_VER >= 36
+  std::error_code errorInfo;
+#else
+  std::string errorInfo;
+#endif
+
   GenInfo* info = gGenInfo;
 
   std::string moduleFilename = genIntermediateFilename("chpl__module.bc");
@@ -1434,21 +1556,27 @@ void makeBinaryLLVM(void) {
 
   if( saveCDir[0] != '\0' ) {
     // Save the generated LLVM before optimization.
-    std::string errorInfo;
-    OwningPtr<tool_output_file> output (
-        new tool_output_file(preOptFilename.c_str(),
+    tool_output_file output (preOptFilename.c_str(),
                              errorInfo,
-                             raw_fd_ostream::F_Binary));
-    WriteBitcodeToFile(info->module, output->os());
-    output->keep();
-    output->os().flush();
+#if HAVE_LLVM_VER >= 34
+                             sys::fs::F_None
+#else
+                             raw_fd_ostream::F_Binary
+#endif
+                             );
+    WriteBitcodeToFile(info->module, output.os());
+    output.keep();
+    output.os().flush();
   }
 
-  std::string errorInfo;
-  OwningPtr<tool_output_file> output (
-      new tool_output_file(moduleFilename.c_str(),
+  tool_output_file output (moduleFilename.c_str(),
                            errorInfo,
-                           raw_fd_ostream::F_Binary));
+#if HAVE_LLVM_VER >= 34
+                             sys::fs::F_None
+#else
+                             raw_fd_ostream::F_Binary
+#endif
+                           );
  
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -1461,18 +1589,26 @@ void makeBinaryLLVM(void) {
 
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
-                    info->module, Backend_EmitBC, &output->os());
-  output->keep();
-  output->os().flush();
+#if HAVE_LLVM_VER >= 35
+                    info->Ctx->getTargetInfo().getTargetDescription(),
+#endif
+                    info->module, Backend_EmitBC, &output.os());
+  output.keep();
+  output.os().flush();
 
 
   std::string options = "";
 
   std::string home(CHPL_HOME);
   std::string compileline = info->compileline;
-  compileline += " --llvm-install-dir --main.o --libraries";
+  compileline += " --llvm"
+                 " --llvm-install-dir"
+                 " --main.o"
+                 " --clang-sysroot-arguments"
+                 " --libraries";
   std::vector<std::string> args;
   readArgsFromCommand(compileline.c_str(), args);
+  INT_ASSERT(args.size() >= 1);
 
   std::string clangInstall = args[0];
   std::string maino = args[1];

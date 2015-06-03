@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -20,8 +20,9 @@
 # Warnings squashed for generated code
 # 592 : squelch use-before-def problems -- we'll rely on valgrind to catch them
 CRAYPE_GEN_CFLAGS = -wr592
+CRAYPE_COMP_CFLAGS =
 
-include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_TARGET_PLATFORM)
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.intel
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
 
-RUNTIME_CFLAGS += -std=gnu99 -wr188
-GEN_CFLAGS += -std=gnu99
+

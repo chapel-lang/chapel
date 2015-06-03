@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "WhileStmt.h"
+#include "AstDump.h"
+#include "AstDumpToNode.h"
 
 #include <inttypes.h>
 
@@ -43,7 +45,7 @@ list_sym(Symbol* sym, bool type = true) {
   if (VarSymbol* var = toVarSymbol(sym)) {
     if (var->immediate) {
       if (var->immediate->const_kind == NUM_KIND_INT) {
-        printf("%"PRId64" ", var->immediate->int_value());
+        printf("%" PRId64 " ", var->immediate->int_value());
         return;
       } else if (var->immediate->const_kind == CONST_KIND_STRING) {
         printf("\"%s\" ", var->immediate->v_string);
@@ -200,24 +202,52 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
 static bool aidIgnore(int id) { return id < 9; }
 
 static const char*
-aidError(const char* callerMsg, int id) {
+aidErrorMessage(const char* callerMsg, int id, const char* errorMsg) {
   const int tmpBuffSize = 256;
   static char tmpBuff[tmpBuffSize];
   snprintf(tmpBuff, tmpBuffSize, "<%s%s""the ID %d %s>",
-           callerMsg ? callerMsg : "", callerMsg ? ": " : "", id,
-           aidIgnore(id) ? " is small, use aid09(id) to examine it" :
-             "does not correspond to an AST node");
+           callerMsg ? callerMsg : "", callerMsg ? ": " : "",
+           id, errorMsg);
   return tmpBuff;
 }
-
-static void
-printAidError(const char* callerMsg, int id) {
-  printf("%s\n", aidError(callerMsg, id));
+static const char* aidNotFoundError(const char* callerMsg, int id) {
+  return aidErrorMessage(callerMsg, id, "does not correspond to an AST node");
+}
+static const char* aidIgnoreError(const char* callerMsg, int id) {
+  return aidErrorMessage(callerMsg, id,
+                         " is small, use aid09(id) to examine it");
 }
 
+// This version of aid*() does not exlude any id.
+BaseAST* aid09(int id) {
+  #define match_id(type)                        \
+    forv_Vec(type, a, g##type##s) {             \
+      if (a->id == id)                          \
+        return a;                               \
+    }
+  foreach_ast(match_id);
+  return NULL;
+}
+
+static BaseAST* aidWithError(int id, const char* callerMsg) {
+  if (aidIgnore(id)) {
+    printf("%s\n", aidIgnoreError(callerMsg, id));
+    return NULL;
+  } else {
+    BaseAST* result = aid09(id);
+    if (!result) printf("%s\n", aidNotFoundError(callerMsg, id));
+    return result;
+  }
+}
+
+BaseAST* aid(int id) {
+  return aidWithError(id, "aid");
+}
+
+
 void viewFlags(int id) {
-  BaseAST* ast = aid(id);
-  if (ast) viewFlags(ast); else printAidError("viewFlags", id);
+  if (BaseAST* ast = aidWithError(id, "viewFlags"))
+    viewFlags(ast);
 }
 
 
@@ -329,8 +359,8 @@ static void type_print_view(BaseAST* ast) {
 }
 
 void list_view(int id) {
-  BaseAST* ast = aid(id);
-  if (ast) list_view(ast); else printAidError("list_view", id);
+  if (BaseAST* ast = aidWithError(id, "list_view"))
+    list_view(ast);
 }
 
 void list_view(BaseAST* ast) {
@@ -378,8 +408,8 @@ void print_view_noline(BaseAST* ast) {
 }
 
 void nprint_view(int id) {
-  BaseAST* ast = aid(id);
-  if (ast) nprint_view(ast); else printAidError("nprint_view", id);
+  if (BaseAST* ast = aidWithError(id, "nprint_view"))
+    nprint_view(ast);
 }
 
 void nprint_view(BaseAST* ast) {
@@ -404,29 +434,9 @@ void nprint_view_noline(BaseAST* ast) {
 }
 
 
-// This version does not exlude any id.
-BaseAST* aid09(int id) {
-  #define match_id(type)                        \
-    forv_Vec(type, a, g##type##s) {             \
-      if (a->id == id)                          \
-        return a;                               \
-    }
-  foreach_ast(match_id);
-  return NULL;
-}
-
-BaseAST* aid(int id) {
-  if (aidIgnore(id)) {
-    printAidError("aid", id);
-    return NULL;
-  } else {
-    return aid09(id);
-  }
-}
-
-
 void iprint_view(int id) {
-  nprint_view(aid(id));
+  if (BaseAST* ast = aidWithError(id, "iprint_view"))
+    nprint_view(ast);
 }
 
 
@@ -435,6 +445,43 @@ void mark_view(BaseAST* ast, int id) {
   printf("\n\n");
   fflush(stdout);
 }
+
+
+// feel free to propose a better name
+void astDump_view(int id) {
+  if (BaseAST* ast = aidWithError(id, "astDump_view"))
+    astDump_view(ast);
+}
+
+void astDump_view(BaseAST* ast) {
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    AstDump logger(stdout);
+    ast->accept(&logger);
+  }
+  printf("\n\n");
+  fflush(stdout);
+}
+
+
+// feel free to propose a better name
+void astDumpToNode_view(int id) {
+  if (BaseAST* ast = aidWithError(id, "astDumpToNode_view"))
+    astDumpToNode_view(ast);
+}
+
+void astDumpToNode_view(BaseAST* ast) {
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    AstDumpToNode logger(stdout);
+    ast->accept(&logger);
+  }
+  printf("\n\n");
+  fflush(stdout);
+}
+
 
 static bool log_need_space;
 
@@ -490,6 +537,7 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
   log_need_space = true;
 }
 
+
 //
 // stringLoc, shortLoc, debugLoc: return "file:line", where 'file' is:
 //  - stringLoc: AST's fname()
@@ -503,13 +551,13 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
 static char locBuff[locBuffSize];
 
 const char* stringLoc(int id) {
-  BaseAST* ast = aid(id);
-  return ast ? stringLoc(ast) : aidError("stringLoc", id);
+  BaseAST* ast = aid09(id);
+  return ast ? stringLoc(ast) : aidNotFoundError("stringLoc", id);
 }
 
 const char* shortLoc(int id) {
-  BaseAST* ast = aid(id);
-  return ast ? shortLoc(ast) : aidError("shortLoc", id);
+  BaseAST* ast = aid09(id);
+  return ast ? shortLoc(ast) : aidNotFoundError("shortLoc", id);
 }
 
 const char* debugLoc(int id) {
@@ -536,6 +584,15 @@ const char* shortLoc(BaseAST* ast) {
 const char* debugLoc(BaseAST* ast) {
   return debugShortLoc ? shortLoc(ast) : stringLoc(ast);
 }
+
+// helper for printing IDs
+int debugID(int id) {
+  return id;
+}
+int debugID(BaseAST* ast) {
+  return ast ? ast->id : -1;
+}
+
 
 //
 // map_view: print the contents of a SymbolMap

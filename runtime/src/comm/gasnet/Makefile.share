@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,9 @@ endif
 # case we need to dampen some of our own settings in order to
 # compile GASnet without warnings.
 
-GASNET_RUNTIME_CFLAGS = $(RUNTIME_CFLAGS) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
+GASNET_RUNTIME_CFLAGS_ALL = $(RUNTIME_CFLAGS) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
+# Remove -Winline from Gasnet's provided flags
+GASNET_RUNTIME_CFLAGS = $(GASNET_RUNTIME_CFLAGS_ALL:-Winline=)
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xk cray-xc) )
 GASNET_RUNTIME_CFLAGS += -DGASNET_NEEDS_MAX_SEGSIZE
 endif

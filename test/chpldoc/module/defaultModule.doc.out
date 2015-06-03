@@ -1,4 +1,0 @@
-Module: defaultModule
-   proc foo()
-       This proc doesn't matter very much 
-

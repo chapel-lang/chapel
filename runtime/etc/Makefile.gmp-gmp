@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,6 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GEN_LFLAGS += -L$(GMP_LIB_DIR) -Wl,-rpath -Wl,$(GMP_LIB_DIR)
-LIBS += -lgmp
+GEN_LFLAGS += -L$(GMP_LIB_DIR) -Wl,-rpath,$(GMP_LIB_DIR)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
 
   BlockStmt*   outer      = new BlockStmt();
 
-  if (call && call->isNamed("by"))
+  if (call && call->isNamed("chpl_by"))
   {
     stride = call->get(2)->remove();
     call   = toCallExpr(call->get(1));
@@ -252,9 +252,6 @@ void ParamForLoop::accept(AstVisitor* visitor)
 {
   if (visitor->enterParamForLoop(this) == true)
   {
-    for_alist(next_ast, body)
-      next_ast->accept(visitor);
-
     if (indexExprGet() != 0)
       indexExprGet()->accept(visitor);
 
@@ -266,6 +263,9 @@ void ParamForLoop::accept(AstVisitor* visitor)
 
     if (strideExprGet() != 0)
       strideExprGet()->accept(visitor);
+
+    for_alist(next_ast, body)
+      next_ast->accept(visitor);
 
     if (modUses)
       modUses->accept(visitor);
@@ -318,14 +318,17 @@ Expr* ParamForLoop::getFirstExpr()
 {
   INT_ASSERT(mResolveInfo != 0);
 
-  return indexExprGet();
+  return mResolveInfo->getFirstExpr();
 }
 
 Expr* ParamForLoop::getNextExpr(Expr* expr)
 {
-  INT_ASSERT(expr == mResolveInfo);
+  Expr* retval = this;
 
-  return (body.head != 0) ? body.head->getFirstExpr() : this;
+  if (expr == mResolveInfo && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }
 
 CallExpr* ParamForLoop::foldForResolve()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -305,7 +305,23 @@ DECLARE_ATOMICS(uint_least8_t);
 DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
-DECLARE_ATOMICS(uintptr_t);
+
+// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t. From gbt:
+// The root of the problem is the fact the on netbsd <stdint.h> (indirectly via
+// <sys.stdint.h>) #defines uintptr_t as __uintptr_t.  (__uintptr_t is in turn
+// typedef'd as unsigned long, but that doesn't matter to us.)  The C standard
+// (6.3.10.1(1) for C99) says that the actual arguments in a macro invocation
+// are themselves macro-expanded before being substituted into the replacement
+// text, unless they are preceded by a # or ## token.  In our case, the "type"
+// formal argument of DECLARE_ATOMICS_BASE has a ## before it in the
+// replacement text, so uintptr_t is not macro-expanded and the concatenation
+// produces the expected atomic_uintptr_t typedef name.  But in the case of
+// DECLARE_ATOMICS there is neither a # or ## before "type" in the replacement
+// text, so the uintptr_t actual becomes __uintptr_t via macro expansion before
+// DECLARE_ATOMICS_BASE is invoked, and we get a syntax error on the resulting
+// atomic___uintptr_t because it's not a typedef type.
+DECLARE_ATOMICS_BASE(uintptr_t, uintptr_t);
+DECLARE_ATOMICS_FETCH_OPS(uintptr_t);
 
 DECLARE_REAL_ATOMICS(_real32);
 DECLARE_REAL_ATOMICS(_real64);

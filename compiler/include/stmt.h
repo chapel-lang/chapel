@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -89,6 +89,7 @@ public:
 
   virtual bool        isParamForLoop()                             const;
   virtual bool        isForLoop()                                  const;
+  virtual bool        isCoforallLoop()                             const;
   virtual bool        isCForLoop()                                 const;
 
   virtual void        checkConstLoops();
@@ -104,7 +105,12 @@ public:
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);
 
+  // I.E. Not a Loop or an OnStmt or ...
+  bool                isRealBlockStmt()                            const;
+
   bool                isScopeless()                                const;
+  bool                isBlockType(PrimitiveTag tag)                const;
+
   int                 length()                                     const;
 
   void                moduleUseAdd(ModuleSymbol* mod);

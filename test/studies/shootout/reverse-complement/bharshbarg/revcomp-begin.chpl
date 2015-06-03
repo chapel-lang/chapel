@@ -1,8 +1,8 @@
-extern proc memcpy(a:[], b, len);
+extern proc memcpy(a:[], b:c_string, len);
 
 proc string.toBytes() {
    var b : [1..this.length] uint(8);
-   memcpy(b, this, this.length);
+   memcpy(b, this.c_str(), this.length);
    return b;
 }
 

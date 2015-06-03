@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -32,12 +32,30 @@
 #include "chpl-tasks.h"
 #include "error.h"
 
+
+/* The names and arguments for these functions are part
+   of Chapel's user-facing interface because they are
+   documented in a README doc/release
+ */
+// start public interface
+static inline void* chpl_calloc(size_t n, size_t size);
+static inline void* chpl_malloc(size_t size);
+static inline void* chpl_memalign(size_t boundary, size_t size);
+static inline void* chpl_realloc(void* ptr, size_t size);
+static inline void chpl_free(void* ptr);
+int chpl_posix_memalign(void** ptr, size_t alignment, size_t size);
+void* chpl_valloc(size_t size);
+void* chpl_pvalloc(size_t size);
+// end public interface
+
+// returns 0 if valid, EINVAL otherwise
+int chpl_posix_memalign_check_valid(size_t alignment);
+
 // runtime/include/mem/*/chpl-mem-impl.h defines
 // chpl_calloc, chpl_malloc, chpl_realloc, chpl_free
 // with the same signatures as the standard functions
 // and no additional error checking.
 #include "chpl-mem-impl.h"
-
 
 void chpl_mem_init(void);
 void chpl_mem_exit(void);
@@ -45,7 +63,7 @@ void chpl_mem_exit(void);
 int chpl_mem_inited(void);
 
 
-static ___always_inline
+static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, c_string filename) {
@@ -57,13 +75,13 @@ void* chpl_mem_allocMany(size_t number, size_t size,
   return memAlloc;
 }
 
-static ___always_inline
+static inline
 void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description,
                      int32_t lineno, c_string filename) {
   return chpl_mem_allocMany(1, size, description, lineno, filename);
 }
 
-static ___always_inline
+static inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
                              int32_t lineno, c_string filename) {
@@ -75,13 +93,13 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
   return memAlloc;
 }
 
-static ___always_inline
+static inline
 void* chpl_mem_calloc(size_t size, chpl_mem_descInt_t description,
                       int32_t lineno, c_string filename) {
   return chpl_mem_allocManyZero(1, size, description, lineno, filename);
 }
 
-static ___always_inline
+static inline
 void* chpl_mem_realloc(void* memAlloc, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, c_string filename) {
@@ -100,24 +118,34 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
   return moreMemAlloc;
 }
 
-static ___always_inline
+static inline
 void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
   chpl_memhook_free_pre(memAlloc, lineno, filename);
   chpl_free(memAlloc);
 }
 
 // Provide a handle to instrument Chapel calls to memcpy.
-static ___always_inline
+static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src);
   return memcpy(dest, src, num);
 }
 
+// Query the allocator to ask for a good size to allocate that is at least
+// minSize. One example where this is useful is to grow a vector while
+// minimizing memory wasted by overallocation.
+//
+// If an allocator does not have the ability to get this information, minSize
+// will be returned.
+static inline size_t chpl_mem_goodAllocSize(size_t minSize) {
+  return chpl_goodAllocSize(minSize);
+}
+
 // free a c_string_copy, no error checking.
 // The argument type is explicitly c_string_copy, since only an "owned" string
 // should be freed.
-static ___always_inline
+static inline
 void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, c_string filename)  {
   assert(*s!=NULL);
   chpl_mem_free((void *) *s, lineno, filename);
@@ -128,7 +156,7 @@ void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, c_string filen
 // This function is needed only because NewString.chpl uses the c_string type.
 // c_strings are "unowned" so should not be freed, but NewString.chpl was written
 // before this distinction was made.
-static ___always_inline
+static inline
 void chpl_rt_free_c_string(c_string* s, int32_t lineno, c_string filename)
 {
   // As far as the C compiler is concerned c_string and c_string_copy are the

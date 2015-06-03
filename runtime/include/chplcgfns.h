@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,9 @@
 #ifndef _CHPL_GEN_INTERFACE_H_
 #define _CHPL_GEN_INTERFACE_H_
 
+#include <stddef.h>
 #include <stdlib.h>
+
 #include "chpltypes.h"
 
 /* This header file is for routines that are in the generated code */

@@ -1,1 +1,1 @@
---n_rows=92 --n_cols=92 --printStats=false
+--n_rows=92 --n_cols=92 --printPassFailOnly=true --printStats=false

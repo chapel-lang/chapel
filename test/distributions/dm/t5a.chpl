@@ -28,14 +28,10 @@ proc test(message, sel, dd1, dd2) {
       var B: [Ddm by (2,2)] int = [(i,j) in Dbase by (2,2)] i*100+j;
       hd("B: by (2,2)"); msgserial(B); tl();
 
-// NOTE: .good for this reflect the current bug in domain leader iterator.
-// C should have 2002, 2003, 2004.
-// See test/domains/vass/aligned-domain-forall.chpl
       const rc1 = 0..5 by 2, rc2 = 2..4;
       var C: [Ddm(rc1,rc2)] int = [(i,j) in Dbase(rc1,rc2)] i*1000+j;
       hd("C: slice", (rc1,rc2)); msgserial(C); tl();
 
-// NOTE: likewise, D should have 32, 35.
       const rd1 = 0..6 by 3, rd2 = 0..6 by 3 align 2;
       var D: [Ddm(rd1,rd2)] int = [(i,j) in Dbase(rd1,rd2)] i*10+j;
       hd("D: aligned ", (rd1,rd2)); msgserial(D); tl();

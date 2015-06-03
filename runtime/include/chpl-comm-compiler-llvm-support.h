@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,7 +35,7 @@
 // where sync_scope = loadOrStoreInst->getSynchScope()
 //       atomic_ordering = loadOrStoreInst->getOrdering()
 
-static ___always_inline
+static inline
 void chpl_gen_comm_get_ctl(void *dst_addr, wide_ptr_t src, int64_t n, int64_t ctl)
 {
   c_nodeid_t src_node = chpl_wide_ptr_get_node(src);
@@ -43,7 +43,7 @@ void chpl_gen_comm_get_ctl(void *dst_addr, wide_ptr_t src, int64_t n, int64_t ct
   chpl_gen_comm_get(dst_addr, src_node, src_addr, sizeof(uint8_t), CHPL_TYPE_uint8_t, n, -1, "");
 }
 
-static ___always_inline
+static inline
 void chpl_gen_comm_put_ctl(wide_ptr_t dst, void *src_addr, int64_t n, int64_t ctl)
 {
   c_nodeid_t dst_node = chpl_wide_ptr_get_node(dst);
@@ -55,7 +55,7 @@ void chpl_gen_comm_put_ctl(wide_ptr_t dst, void *src_addr, int64_t n, int64_t ct
 // are possibly remote. The Chapel compiler does not normally generate
 // such code, but it could appear during optimization. Note that the
 // dst and src regions could overlap.
-static ___always_inline
+static inline
 void chpl_gen_comm_getput(wide_ptr_t dst, wide_ptr_t src, int64_t n)
 {
   c_nodeid_t src_node = chpl_wide_ptr_get_node(src);
@@ -84,7 +84,7 @@ void chpl_gen_comm_getput(wide_ptr_t dst, wide_ptr_t src, int64_t n)
   }
 }
 
-static ___always_inline
+static inline
 void chpl_gen_comm_memset(wide_ptr_t dst, int8_t src, int64_t n)
 {
   c_nodeid_t dst_node = chpl_wide_ptr_get_node(dst);

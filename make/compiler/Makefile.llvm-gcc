@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,148 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# settings for LLVM-gcc based on Makefile.gnu
-# We set up link-time optimization here too.. using
-# hints from http://llvm.org/docs/GoldPlugin.html
-# For this to work, you'll have to set up your system linker 'ld'
-# to support -plugin
-# (run ld -version, look for GOLD; run ld -plugin -- you should
-#  get 'missing argument' not 'unknown option'. We also assume that
-#  your ranlib knows about plugins and that you've installed the LLVM
-#  Gold plugin in the appropriate place (e.g. /usr/local/lib/bfd-plugins).)
-#  
-#
-# Here is a log of what I had to do in order to get it all going
-# with llvm-2.8 and Fedora Core 13:
-#  download llvm-gcc binary release
-#
-#  cd /usr/local
-#  ln -s /usr/local/ llvm-gcc4.2-2.8-x86_64-linux
-#  tar xvjf /home/mppf/cloud-opt-fc13/llvm-gcc4.2-2.8-x86_64-linux.tar.bz2
-#  rm /etc/alternatives/ld
-#  ln -s /usr/local/bin/ld-new /etc/alternatives/ld
-#  ln -s /usr/local/lib/libLLVMgold.so /usr/local/libexec/gcc/x86_64-unknown-linux-gnu/4.2.1/libLLVMgold.so
-#  cd /usr/local/x86_64-unknown-linux-gnu/bin/
-#  mv ld ld.orig
-#  ln -s /usr/local/bin/ld-new ld
-#
-#  echo /usr/local/lib > /etc/ld.so.conf.d/local_lib.conf
-#  ldconfig
-#
-#   download&untar llvm, clang
-#
-#   mv clang-2.8 llvm-2.8/tools/clang
-#   mkdir llvm-build
-#   cd llvm-build
-#   ../llvm-2.8/configure --with-binutils-include=/home/mppf/cloud-opt-fc13/binutils-checkout/src/include --enable-pic
-#   make
-#     sudo make install
-#     sudo ldconfig
-
-#   Set up GNU Gold linker with plugin support
-#   (note -- binutils-2.20.1 does not have the right plugin API for llvm-2.8,
-#    so here we check out from source).
-#
-#   cvs -z 9 -d :pserver:anoncvs@sourceware.org:/cvs/src login
-#   {enter "anoncvs" as the password}
-#   cvs -z 9 -d :pserver:anoncvs@sourceware.org:/cvs/src co binutils
-#   mkdir binutils-checkout
-#   mv src binutils-checkout
-#   cp -R src src_build
-#   cd src_build
-#   ./configure --enable-gold --enable-plugins
-#   make
-#   sudo make install
-#   sudo ldconfig
-#   mkdir /usr/local/lib/bfd-plugins
-#   ln -s /usr/local/lib/libLLVMgold.so /usr/local/lib/bfd-plugins/LLVMgold.so
-#
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
 
 #
 # Tools
 #
-CXX = llvm-g++ -use-gold-plugin -flto
-CC = llvm-gcc -use-gold-plugin -flto
+CXX = llvm-g++
+CC = llvm-gcc
 
 RANLIB = ranlib
 
 
-#
-# General Flags
-#
-
-DEBUG_CFLAGS = -g
-OPT_CFLAGS = -O4
-PROFILE_CFLAGS = -pg
-PROFILE_LFLAGS = -pg
-
-ifdef CHPL_GCOV
-CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS += -fprofile-arcs
-endif
-
-
-#
-# Flags for compiler, runtime, and generated code
-#
-COMP_CFLAGS = $(CFLAGS)
-COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
-GEN_CFLAGS = -std=c99
-
-ifeq ($(CHPL_MAKE_PLATFORM), darwin)
-# build 64-bit binaries when on a 64-bit capable PowerPC
-ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
-RUNTIME_CFLAGS += $(ARCH)
-# the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
-GEN_LFLAGS += $(ARCH)
-endif
-
-#
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS = -std=gnu89
-
-#
-# Flags for turning on warnings for C++/C code
-#
-WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings
-# decl-after-stmt for non c99 compilers. See commit message 21665 
-WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
-
-#
-# compiler warnings settings
-#
-ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
-RUNTIME_CFLAGS += $(WARN_CFLAGS)
-RUNTIME_GEN_CFLAGS += -Wno-unused
-# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
-
-
-#
-# When compiling GASNet...
-#
-# -Wno-missing-prototypes must be used because
-# gasneti_linkconfig_idiotcheck isn't prototyped before it's used (boo)
-# and is static, so we can't prototype it for them (awwww).
-#
-# -Wno-strict-prototypes has to be used because most GASNet prototypes
-# aren't strict.
-#
-# -Wno-unused has to be used due to _dummy_checkalign variables in
-# -gasnet_atomicops.h
-#
-CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes
-ifndef CHPL_COMM_DEBUG
-CHPL_GASNET_MORE_CFLAGS += -Wno-unused
-endif
-endif
-ifdef CHPL_COMM_DEBUG
-CHPL_GASNET_MORE_CFLAGS += -O0
-CHPL_GASNET_MORE_GEN_CFLAGS += -Wno-uninitialized
-endif

@@ -1,0 +1,32 @@
+Output = 0.562731, Capital = 0.178198, Consumption = 0.384533
+
+Iteration = 1, Sup Diff = 0.0527416
+Iteration = 10, Sup Diff = 0.0326696
+Iteration = 20, Sup Diff = 0.0195048
+Iteration = 30, Sup Diff = 0.0116501
+Iteration = 40, Sup Diff = 0.0069612
+Iteration = 50, Sup Diff = 0.00416084
+Iteration = 60, Sup Diff = 0.00248772
+Iteration = 70, Sup Diff = 0.00148774
+Iteration = 80, Sup Diff = 0.000889905
+Iteration = 90, Sup Diff = 0.000532401
+Iteration = 100, Sup Diff = 0.000318568
+Iteration = 110, Sup Diff = 0.000190645
+Iteration = 120, Sup Diff = 0.000114103
+Iteration = 130, Sup Diff = 6.82991e-05
+Iteration = 140, Sup Diff = 4.08959e-05
+Iteration = 150, Sup Diff = 2.44972e-05
+Iteration = 160, Sup Diff = 1.46741e-05
+Iteration = 170, Sup Diff = 8.78992e-06
+Iteration = 180, Sup Diff = 5.26524e-06
+Iteration = 190, Sup Diff = 3.15392e-06
+Iteration = 200, Sup Diff = 1.88922e-06
+Iteration = 210, Sup Diff = 1.13166e-06
+Iteration = 220, Sup Diff = 6.77871e-07
+Iteration = 230, Sup Diff = 4.0605e-07
+Iteration = 240, Sup Diff = 2.43226e-07
+Iteration = 250, Sup Diff = 1.45694e-07
+Iteration = 258, Sup Diff = 9.66912e-08
+
+My check = 0.0990991
+

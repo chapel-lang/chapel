@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,7 +56,7 @@ typedef void ArgumentFunction(const ArgumentState* state, const char* arg);
 
 struct ArgumentState
 {
-  char**               file_argument;
+  const char**         file_argument;
   int                  nfile_arguments;
 
   const char*          program_name;
@@ -82,6 +82,8 @@ void usage(const ArgumentState* arg_state,
            bool                 printCurrentSettings);
 
 void init_args(ArgumentState* state, const char* argv0);
+
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc);
 
 void process_args(ArgumentState* state, int argc, char* argv[]);
 

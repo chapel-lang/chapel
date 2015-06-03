@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -315,7 +315,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     if (verbosity > 2) {
       fprintf(expectFile, "send \"aprun -q %s%d ",
               getNumLocalesStr(), 1 /* only run on one locale */);
-      fprintf(expectFile, "ls %s\\n\"\n", chpl_get_real_binary_name());
+      fprintf(expectFile, "ls %s %s\\n\"\n",
+          chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
       fprintf(expectFile, "expect {\n");
       fprintf(expectFile, "  \"failed: chdir\" {send_user "
               "\"error: %s must be launched from and/or stored on a "

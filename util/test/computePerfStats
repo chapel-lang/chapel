@@ -45,7 +45,7 @@ if ($argc >= 7) {
     $mon += 1;
     $year -= 100;
 
-    $perfdate = sprintf("%.2d/%.2d/%.2d ", $mon, $mday, $year);
+    $perfdate = sprintf("%.2d/%.2d/%.2d", $mon, $mday, $year);
     print "Using default date $perfdate\n";
 }
 

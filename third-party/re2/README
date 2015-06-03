@@ -6,15 +6,17 @@ Chapel can be built (by setting CHPL_REGEXP=re2) to include the RE2 library
 (see http://code.google.com/p/re2/).
 
 For more information on the current support for RE2 within Chapel,
-please refer to $CHPL_HOME/doc/technotes/README.regexp.  For more
-information about RE2 itself, please refer to the website above or to
-the README in the re2/ subdirectory of this directory.
+please refer to the Regexp module documentation available at
+ http://chapel.cray.com/docs/latest/modules/standard/Regexp.html
+For more information about RE2 itself, please refer to the website above
+or to the README in the re2/ subdirectory of this directory.
 
 We modify the RE2 library to allow regular expressions in the format
 string for Chapel's readf() for searching on QIO channels.
 
 Modified from revision:
-"re2: eliminate global c++ constructors" 94:401ab4168e8e
+"re2: incorporate Chromium fixes"
+git commit cc56ba02d9d2bdafa614ad5ebf564dde287625bb
 
 - added option for dotnl
 - moved NFA and OnePass searches to be implemeted with templates

@@ -1,3 +1,2 @@
 useFileSystemShadowsPath.chpl:5: In function 'foo':
-useFileSystemShadowsPath.chpl:8: error: unresolved call 'bar(chpl__fcf_type__MT__ref_file_chpl_string)'
-useFileSystemShadowsPath.chpl:1: note: candidates are: bar(path: string)
+useFileSystemShadowsPath.chpl:8: error: 'path' undeclared (first use this function)

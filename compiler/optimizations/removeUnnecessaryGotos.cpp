@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,7 @@
 void removeUnnecessaryGotos(FnSymbol* fn) {
   std::vector<BaseAST*> asts;
   std::set<BaseAST*> labels;
-  collect_asts_STL(fn, asts);
+  collect_asts(fn, asts);
   for_vector(BaseAST, ast, asts) {
     if (GotoStmt* gotoStmt = toGotoStmt(ast)) {
       DefExpr* def = toDefExpr(gotoStmt->next);

@@ -1,0 +1,10 @@
+Module: methodOutsideClassDef
+   proc Foo.externalMeth1()
+   proc Foo.externalMeth2()
+      This method has a comment attached to it 
+
+   Class: Foo
+      This class will declare a method inside itself, but will have a
+      method declared outside it as well 
+
+      proc internalMeth()

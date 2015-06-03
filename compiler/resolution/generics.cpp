@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -73,7 +73,7 @@ explainInstantiation(FnSymbol* fn) {
           len += sprintf(msg+len, "%s = ", arg->name);
         if (VarSymbol* vs = toVarSymbol(e->value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
-            len += sprintf(msg+len, "%"PRId64, vs->immediate->int_value());
+            len += sprintf(msg+len, "%" PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
             len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string);
           else

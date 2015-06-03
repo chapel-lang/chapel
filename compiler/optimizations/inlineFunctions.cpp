@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -116,7 +116,7 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
   }
 
   std::vector<CallExpr*> callExprs;
-  collectCallExprsSTL(fn, callExprs);
+  collectCallExprs(fn, callExprs);
 
   for_vector(CallExpr, call, callExprs) {
     if (!call->primitive) {
@@ -161,13 +161,13 @@ static CallExpr* findRefTempInit(SymExpr* se) {
 //
 static void
 inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemoveRefTempSet) {
-  Vec<CallExpr*> calls;
+  std::vector<CallExpr*> calls;
 
   inlinedSet.set_add(fn);
 
   collectFnCalls(fn, calls);
 
-  forv_Vec(CallExpr, call, calls) {
+  for_vector(CallExpr, call, calls) {
     if (call->parentSymbol) {
       FnSymbol* fn = call->isResolved();
       if (fn->hasFlag(FLAG_INLINE)) {

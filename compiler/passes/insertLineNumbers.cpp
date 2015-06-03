@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -112,7 +112,7 @@ insertLineNumber(CallExpr* call) {
              !strcmp(fn->name, "chpl__heapAllocateGlobals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
              !strcmp(fn->name, "chpl_gen_main") ||
-             ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
+             (mod->modTag == MOD_USER && 
               !fn->hasFlag(FLAG_COMPILER_GENERATED) && !fn->hasFlag(FLAG_INLINE)) ||
              (developer && strcmp(fn->name, "halt"))) {
     // hilde sez: This special casing is suspect.  Can't we key off a flag?
@@ -166,12 +166,18 @@ insertLineNumber(CallExpr* call) {
 
 static bool isClassMethodCall(CallExpr* call) {
   FnSymbol* fn = call->isResolved();
-  if (fn && fn->hasFlag(FLAG_METHOD) && fn->_this) {
+  if (fn && fn->isMethod() && fn->_this) {
     if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
       if (fn->numFormals() > 0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          return true;
+          // TODO: When strings are records, remove this protective if.
+          // isClassMethodCall is only used in insertNilChecks() and widened
+          // strings gain FLAG_WIDE_CLASS, but it doesn't make sense to check
+          // strings against nil.
+          if (strcmp(ct->symbol->name, "__wide_chpl_string")) {
+            return true;
+          }
         }
       }
     }

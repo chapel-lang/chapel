@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -24,3 +24,7 @@ CUDA_LIB_PATH = /users/deitz/work2/chapel/cuda/lib
 COMP_GEN_LFLAGS +=-L$(CUDA_LIB_PATH) -lcudart
 
 RUNTIME_CUDA_CFLAGS = $(DEVICEEMU) -arch sm_13 --compiler-options -fno-strict-aliasing -DUNIX -O3 -DENABLE_GPU
+
+#TODO : add --gpu-architecture and/or --gpu-code based on CHPL_TARGET_ARCH
+#TODO : device FAST_IEEE_FLOAT float with --use_fast_math perhaps
+

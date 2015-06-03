@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -16,7 +16,7 @@
 # limitations under the License.
 
 #
-# settings for gnu-compatible platforms
+# settings for IBM xlc compiler
 #
 
 #
@@ -54,6 +54,9 @@ LIB_DYNAMIC_FLAG = -qmkshrobj -X64
 # YYINCLUDED_STDLIB_H: was needed to avoid duplicate malloc/free errors
 # 1506-229: warns about empty files
 #
+
+# TODO: Set the target architecture for optimization (e.g. -qtune)
+# TODO: Set flag for lax or IEEE floating point (e.g. -qfloat)
 
 #
 # a hacky flag necessary currently due to our use of setenv in the runtime code

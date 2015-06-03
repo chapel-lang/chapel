@@ -1,6 +1,0 @@
-$CHPL_HOME/util/test/sub_test $1
-touch NOEXEC
-$CHPL_HOME/util/test/sub_test $1doc
-rm NOEXEC
-
-exit $?

@@ -1,0 +1,4 @@
+Hello 1
+Hello 2
+#line 1 "ab.chpl"
+Found OK line directives containing ab.chpl

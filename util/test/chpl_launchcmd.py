@@ -42,6 +42,13 @@ import tempfile
 import time
 import xml.etree.ElementTree
 
+# Add the chplenv dir to the python path.
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_arch
+
+
 __all__ = ('main')
 
 
@@ -108,6 +115,17 @@ class AbstractJob(object):
         :returns: command to run in qsub with changedir call
         """
         full_test_command = ['cd', '$PBS_O_WORKDIR', '&&']
+
+        # If the first argument of the test command is a file (it should
+        # always be the executable), then add a "test -f ./execname" call
+        # before running the command. This works around some potential nfs
+        # configuration issues that can happen when running from lustre
+        # mounted over nfs.
+        if os.path.exists(self.test_command[0]):
+            logging.debug('Adding "test -f {0}" to launcher command.'.format(
+                self.test_command[0]))
+            full_test_command += ['test', '-f', self.test_command[0], '&&']
+
         full_test_command.extend(self.test_command)
         return full_test_command
 
@@ -157,6 +175,15 @@ class AbstractJob(object):
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
+
+    @property
+    def knc(self):
+        """Returns True when testing KNC (Xeon Phi).
+
+        :rtype: bool
+        :returns: True when testing KNC
+        """
+        return chpl_arch.get('target') == 'knc'
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
@@ -213,9 +240,10 @@ class AbstractJob(object):
         """
         with _temp_dir() as working_dir:
             output_file = os.path.join(working_dir, 'test_output.log')
+            input_file = os.path.join(working_dir, 'test_input')
             testing_dir = os.getcwd()
 
-            job_id = self.submit_job(testing_dir, output_file)
+            job_id = self.submit_job(testing_dir, output_file, input_file)
             logging.info('Test has been queued (job id: {0}). Waiting for output...'.format(job_id))
 
             # TODO: The while condition here should look for jobs that become held,
@@ -269,8 +297,8 @@ class AbstractJob(object):
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
                     exec_start_time = time.time()
-                status = job_status(job_id, output_file)
                 time.sleep(.5)
+                status = job_status(job_id, output_file)
 
             exec_time = time.time() - exec_start_time
             # Note that this time isn't very accurate as we don't get the exact
@@ -291,6 +319,13 @@ class AbstractJob(object):
                 raise ValueError('[Error: output file from job (id: {0}) does not exist at: {1}]'.format(
                     job_id, output_file))
 
+            # try removing the file stdin was copied to, might not exist
+            logging.debug('removing stdin file.')
+            try:
+                os.unlink(input_file)
+            except OSError:
+                pass
+
             logging.debug('Reading output file.')
             with open(output_file, 'r') as fp:
                 output = fp.read()
@@ -298,7 +333,7 @@ class AbstractJob(object):
 
         return output
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Submit a new job using ``testing_dir`` as the working dir and
         ``output_file`` as the location for the output. Returns the job id on
         success. AbstractJob does not implement this method. It is the
@@ -534,7 +569,7 @@ class AbstractJob(object):
         parser = argparse.ArgumentParser(
             description=__doc__,
             formatter_class=OurFormatter)
-        parser.add_argument('-v', '--verbose', action='store_true',
+        parser.add_argument('--CHPL_LAUNCHCMD_DEBUG', action='store_true', dest='verbose',
                             default=('CHPL_LAUNCHCMD_DEBUG' in os.environ),
                             help=('Verbose output. Setting CHPL_LAUNCHCMD_DEBUG '
                                   'in environment also enables verbose output.'))
@@ -543,7 +578,7 @@ class AbstractJob(object):
         parser.add_argument('--n', help='Placeholder')
         parser.add_argument('--walltime', type=cls._cli_walltime,
                             help='Timeout as walltime for qsub.')
-        parser.add_argument('--hostlist',
+        parser.add_argument('--CHPL_LAUNCHCMD_HOSTLIST', dest='hostlist',
                             help=('Optional hostlist specification for reserving '
                                   'specific nodes. Can also be set with env var '
                                   'CHPL_LAUNCHCMD_HOSTLIST'))
@@ -552,7 +587,7 @@ class AbstractJob(object):
 
         # Allow hostlist to be set in environment variable CHPL_LAUNCHCMD_HOSTLIST.
         if args.hostlist is None:
-            args.hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST')
+            args.hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST') or None
 
         # It is bad form to use a two character argument with only a single
         # dash. Unfortunately, we support it. And unfortunately, python argparse
@@ -661,7 +696,7 @@ class MoabJob(AbstractJob):
             logging.error('XML output: {0}'.format(output))
             raise
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using qsub and return job id.
 
         :type testing_dir: str
@@ -697,6 +732,20 @@ class PbsProJob(AbstractJob):
         job_name = super_name[-15:]
         logging.info('PBSPro job name is: {0}'.format(job_name))
         return job_name
+
+    @property
+    def select_suffix(self):
+        """Returns suffix for select expression based instance attributes. For example,
+        if self.knc is True, returns `:accelerator_model=Xeon_Phi` so reservation will
+        target KNC nodes. Returns empty string when self.knc is False.
+
+        :rtype: str
+        :returns: select expression suffix, or empty string
+        """
+        if self.knc:
+            return ':accelerator_model=Xeon_Phi'
+        else:
+            return ''
 
     @classmethod
     def status(cls, job_id):
@@ -767,17 +816,23 @@ class PbsProJob(AbstractJob):
             select_stmt = select_pattern.format(self.hostlist)
         elif num_locales > 0:
             select_stmt = select_pattern.format(num_locales)
-            if self.num_cpus_resource is not None:
+
+            # Do not set ncpus for knc. If running on knc, cpus are not needed
+            # on the system. Someday support for heterogeneous applications may
+            # exist, in which case ncpus will need to be set. For now, assume
+            # program will be launched onto knc only.
+            if self.num_cpus_resource is not None and not self.knc:
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
 
         if select_stmt is not None:
+            select_stmt += self.select_suffix
             submit_command += ['-l', select_stmt]
 
         logging.debug('qsub command: {0}'.format(submit_command))
         return submit_command
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using qsub and return job id.
 
         :type testing_dir: str
@@ -860,7 +915,7 @@ class SlurmJob(AbstractJob):
         else:
             raise ValueError('Could not parse output from squeue: {0}'.format(stdout))
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using executable. Set CHPL_LAUNCHER_USE_SBATCH=true in
         environment to avoid using expect script. The executable will create a
         sbatch script and submit it. Parse and return the job id after job is
@@ -878,6 +933,15 @@ class SlurmJob(AbstractJob):
         env = os.environ.copy()
         env['CHPL_LAUNCHER_USE_SBATCH'] = 'true'
         env['CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME'] = output_file
+        with open(input_file, 'w') as fp:
+            fp.write(sys.stdin.read())
+        env['SLURM_STDINMODE'] = input_file
+
+        # We could use stdout buffering for other configurations too, but I
+        # don't think there's any need. Currently, single locale perf testing
+        # is the only config that has any tests that produce a lot of output
+        if os.getenv('CHPL_TEST_PERF') != None and self.num_locales <= 1:
+            env['CHPL_LAUNCHER_SLURM_BUFFER_STDOUT'] = 'true'
 
         cmd = self.test_command[:]
         # Add --nodelist into the command line

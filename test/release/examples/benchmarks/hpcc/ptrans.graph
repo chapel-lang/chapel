@@ -1,6 +1,6 @@
 perfkeys: Execution time =
 graphkeys: ptrans
 files: ptrans.5733.dat
-graphtitle: HPCC PTRANS Performance (numrows=5733)
+graphtitle: HPCC PTRANS Time (numrows=5733)
 ylabel: Time (seconds)
 graphname: ptrans

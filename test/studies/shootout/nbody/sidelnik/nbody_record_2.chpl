@@ -114,9 +114,9 @@ proc main() {
                          5.15138902046611451e-05 * solar_mass
                          );
   offset_momentum(NBODIES, bodies);
-  writeln(format("#.#########", energy(NBODIES, bodies)));
+  writef("%{#.#########}\n", energy(NBODIES, bodies));
   for 1..n {
     advance(NBODIES, bodies, 0.01);
   }
-  writeln(format("#.#########", energy(NBODIES, bodies)));
+  writef("%{#.#########}\n", energy(NBODIES, bodies));
 }

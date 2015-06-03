@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,13 +21,14 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include "config.h"
-#include "countTokens.h"
-#include "files.h"
-#include "parser.h"
 #include "passes.h"
 
-#include "yy.h"
+#include "bison-chapel.h"
+#include "config.h"
+#include "countTokens.h"
+#include "expr.h"
+#include "files.h"
+#include "parser.h"
 
 bool parsed = false;
 
@@ -66,18 +67,16 @@ void parse() {
   if (countTokens)
     countTokensInCmdLineFiles();
 
-  baseModule            = ParseMod("ChapelBase",           MOD_INTERNAL);
+  baseModule            = parseMod("ChapelBase",           MOD_INTERNAL);
   INT_ASSERT(baseModule);
 
   setIteratorTags();
 
-  standardModule        = ParseMod("ChapelStandard",       MOD_INTERNAL);
+  standardModule        = parseMod("ChapelStandard",       MOD_INTERNAL);
   INT_ASSERT(standardModule);
 
-  if (fUseIPE == false) {
-    printModuleInitModule = ParseMod("PrintModuleInitOrder", MOD_INTERNAL);
-    INT_ASSERT(printModuleInitModule);
-  }
+  printModuleInitModule = parseMod("PrintModuleInitOrder", MOD_INTERNAL);
+  INT_ASSERT(printModuleInitModule);
 
   parseDependentModules(MOD_INTERNAL);
 
@@ -100,14 +99,12 @@ void parse() {
     printModuleSearchPath();
   }
 
-  {
-    int         filenum       = 0;
-    const char* inputFilename = 0;
+  int         filenum       = 0;
+  const char* inputFilename = 0;
 
-    while ((inputFilename = nthFilename(filenum++))) {
-      if (isChplSource(inputFilename)) {
-        ParseFile(inputFilename, MOD_MAIN);
-      }
+  while ((inputFilename = nthFilename(filenum++))) {
+    if (isChplSource(inputFilename)) {
+      parseFile(inputFilename, MOD_USER, true);
     }
   }
 
@@ -130,7 +127,7 @@ static void countTokensInCmdLineFiles() {
 
   while ((inputFilename = nthFilename(filenum++))) {
     if (isChplSource(inputFilename)) {
-      ParseFile(inputFilename, MOD_MAIN);
+      parseFile(inputFilename, MOD_USER, true);
     }
   }
 
@@ -191,7 +188,7 @@ static void gatherWellKnownTypes() {
   // When compiling for minimal modules, we don't require any specific
   // well-known types to be defined.
   //
-  if (fMinimalModules == false && fUseIPE == false) {
+  if (fMinimalModules == false) {
     // Make sure all well-known types are defined.
     for (int i = 0; i < nEntries; ++i) {
       WellKnownType& wkt = sWellKnownTypes[i];

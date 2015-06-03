@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -75,7 +75,6 @@ RUNTIME_OBJS = \
 	$(AUXFS_HDFS_OBJS) \
 	$(AUXFS_CURL_OBJS)
 
-
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \
 	$(COMM_LAUNCHER_OBJS) \
@@ -85,6 +84,8 @@ RUNTIME_DIR = ../$(LIB_RT_DIR)
 RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a
 RUNTIME_DIR_TIMESTAMP = $(RUNTIME_DIR)/.timestamp
 
+RUNTIME_MALLOC_LIB = $(RUNTIME_DIR)/libchplmalloc.a
+
 LAUNCHER_DIR = ../$(LIB_LN_DIR)
 LAUNCHER_LIB = $(LAUNCHER_DIR)/libchpllaunch.a
 LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
@@ -92,6 +93,7 @@ LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
 RUNTIME_TARGETS = \
 	$(RUNTIME_LIB) \
 	$(RUNTIME_DIR)/main.o \
+	$(RUNTIME_MALLOC_LIB) \
 
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
 LAUNCHER_TARGETS = \
@@ -125,6 +127,12 @@ $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 
 $(RUNTIME_DIR)/main.o: src/$(RUNTIME_OBJDIR)/main.o
 	cp $< $@
+
+$(RUNTIME_MALLOC_LIB): $(RUNTIME_MALLOC_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	@rm -f $@
+	$(AR) -rc $@ $(RUNTIME_MALLOC_OBJS)
+	$(RANLIB) $@
+	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 
 
 #

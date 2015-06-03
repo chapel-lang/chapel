@@ -1,0 +1,635 @@
+GASNet's Git Workflow
+---------------------
+
+The purpose of this document is to describe how git is to be used for GASNet
+development, providing examples of the most common tasks.  This assumes you
+have a basic working knowledge of git and is not a full tutorial.  This is a
+companion to, but distinct from, the coding standards (in README) and
+development rules in README-devel.
+
+See also:
+ + README: includes GASNet's coding standards
+ + README-devel: rules developers are expected to follow when committing
+ + README-release: detailed release procedure
+
+
+A note on proprietary (NDA) information
+---------------------------------------
+
+A stern reminder that a "git clone" includes the entire history of everything
+that has ever existed in the public repo, and that this public repo is world
+readable.  So, you must NEVER "git push" anything to the public server (even to
+a private branch that might be merged) that you don't have the rights to
+publish.  A detailed "protocol" for dealing with proprietary data (especially
+that with an expiration date) will eventually be added to this document.
+
+
+Requirements
+------------
+
+This documentation was written using git-1.8 and git-flow.  Where known,
+alternatives required for git-1.7 are included, but no effort has been expended
+to back-port to older git releases.  If future versions of git break these
+instructions, we'll update this document appropriately.
+
+Since GASNet is hosted on BitBucket.org you will require an account there if
+you are going to push (upload) anything to the repository.  Contact us at
+upc-devel@lbl.gov to request Write permission for your BitBucket account.
+
+Example commands in this document will be written like
+    $ git ...
+consistent with the '$ ' prompt of a bash or other Bourne shell.  The examples
+should work with ANY standard (Bourne or csh family) command shell.
+
+
+Overview of git-flow
+--------------------
+
+The GASNet project is following the git-flow model.
+(See http://nvie.com/posts/a-successful-git-branching-model/)
+The basic ideas:
+
+ + A long-lived 'master' branch holds public releases, and should generally
+   have a tag for each commit.  If something is not worthy of a tag, then it
+   probably doesn't belong in 'master').
+   This is the default branch for most *users* to find stable versions.
+
+ + A long-lived 'develop' branch is used for continuous integration.
+   This is the branch *developers* should be working with.
+
+ + Transient "feature branches" (off of 'develop') are used for work on each
+   task, and are merged to 'develop' (and then deleted) only when the work is
+   completed/tested.  These branches may be published to a public server, but
+   often will exist only in the developer's local repository.
+
+ + Transient "release branches" (also off of 'develop') are used to move work
+   from the 'develop' branch to 'master'.  Ideally the only commits to a
+   release branch will be version number changes and related updates to
+   documentation.  However this is also the place to fix "issues" found while
+   testing the release.  When release preparation is complete, release branches
+   are merged to BOTH develop and master (and then deleted).
+
+ + Transient "hotfix branches" are for fixing urgent issues in the code on
+   'master'.  They work just like release branches except that they branch from
+   'master' instead of from 'develop'.
+
+ + All branch merges are done following a rebase (to keep linear history) but
+   with --no-ff to force a "true merge" which preserves a clear start and end
+   to the commits from each feature branch.
+
+The name "git-flow" refers to both the work-flow we have adopted AND to a set
+of extensions to git which provide automation of many of the steps required to
+follow the work-flow.  Use of the git-flow extensions is entirely optional.
+However, you will see in the remainder of this document there is much less to
+remember (and type) if you do use git-flow.  You can obtain git-flow from
+github at
+    https://github.com/nvie/gitflow/wiki
+
+To enable use the git-flow extensions, GASNet is using the branch names
+"master" and "develop" to match the git-flow defaults.  Similarly, the use of
+"feature/", "release/" and "hotfix/" are strongly recommended when naming
+branches of the corresponding types to match the git-flow defaults.
+   
+Git-flow is just a collection of wrappers around standard git operations, with
+no hidden state or "magic".  So, as long as the naming conventions for branches
+is applied consistently, one can freely move between git-flow and plain git
+commands to work on your repository.  In particular, a branch which is created
+with git-flow can safely be merged using plain git and vise versa.
+
+
+Setup
+-----
+
+To clone the GASNet repo use either of the following:
+    $ git clone https://USER@bitbucket.org/berkeleylab/gasnet
+or
+    $ git clone git@bitbucket.org:berkeleylab/gasnet.git
+The first option (https) will require your password for every push, while the
+second (ssh) requires that you upload an ssh public key to BitBucket.  See
+    https://confluence.atlassian.com/display/BITBUCKET/Set+up+SSH+for+Git
+for help with the key upload.  If you have a suitable key already, you can
+probably skip right to step #6.
+
+If you do not have a BitBucket account then you can still clone the repo, but
+will not be able to push your changes back.  See the section "Forking
+Development" for information on what you can do without Write access to the
+repo.
+
+As a developer, the first thing you probably want to do is:
+    $ git checkout develop
+If your git is too old (prior to 1.7) for that command to work, try this:
+    $ git checkout --track -b develop origin/develop
+BUT be warned that none of our git usage instructions have been tested
+with anything older than git-1.7.
+
+If you will be using the git-flow extensions you need to initialize git-flow.
+Since we use the defaults for branch names, this just takes two steps:
+    $ git flow init -d
+    $ git config gitflow.prefix.versiontag gasnet-
+Where the second ensures release tags of the form "gasnet-1.2.3".  This step
+only writes a few strings to .git/config, none of which impact use of the
+standard git commands.  If you are uncertain if you want to use git-flow it is
+fine to defer this initialization until the first time you use "git flow ...".
+
+If you've not been using git on this host before, you probably want to start
+with the following to configure your name and email before you push anything:
+    $ git config --global user.name "Jane Doe"
+    $ git config --global user.email "JDoe@lbl.gov"
+You can omit "--global" if you want this identity for ONLY the current repo.
+
+
+Tracking 'origin'
+-----------------
+
+Unless you have done something unusual, the 'develop' branch in your clone from
+BitBucket should automatically be tracking 'origin/develop' (and 'master' will
+track 'origin/master').  The most basic command for tracking updates is "git
+pull", BUT there are some risks that are associate with pull, as described in
+detail at https://coderwall.com/p/jiswdq
+
+To summarize: "git pull" will perform a merge which can generate undesired
+non-linear history while "git pull --rebase" will flatten the desirable merge
+commits which result from merging feature (or release) branches.
+
+The alternative that avoids the risks is a two-step process:
+    $ git fetch
+    $ git rebase -p [origin/develop develop]
+Where the arguments "origin/develop develop" are optional for git-1.8, but are
+required with git-1.7.
+
+This works like "git pull --rebase", but with the important addition of the
+'-p' ('--preserve-merges') option to the rebase step to preserve the desired
+branch structure.
+
+Of course, if your local 'develop' branch has no un-pushed commits, then both
+"git pull" and "git pull --rebase" are perfectly safe.
+
+
+General Development
+-------------------
+
+We want to start every development task on a *distinct* branch off of
+'develop'.  These branches are called "feature branches", but are to be used
+for bug fixes, documentation updates, and generally anything that is
+"non-trivial".
+
+When merging feature branches to develop, we want a (nearly) linear history,
+but want to be able to clearly see the start and end of the sequence of commits
+which correspond to any given feature branch.  So, we want a "true merge" with
+a commit which is a summary of the branch (bug fix, enhancement, etc.) which is
+being merged.  Therefore, we do NOT want a fast-forward but still require a
+rebase prior to merging to keep a linear history.  This gets clearer in the
+examples below.
+
+If one is using git-flow then the sequence for a feature branch "example" is:
+    [begin with an up-to-date 'develop']
+    $ git flow feature start example
+    [work on the branch until the task is done and tested]
+    $ git flow feature finish -r example
+    $ git push origin develop
+The '-r' option to the finish forces a rebase to ensure a (nearly) linear
+history if you have other commits/merges to 'develop' between the start and
+finish of this feature branch.
+
+If there is a merge conflict, resolve the conflict(s) and run "git commit" to
+complete the merge.  After that, there are two choices: you can simply reissue
+the "finish" which should pick up where it left off, OR you can complete the
+remaining step (branch deletion) using the non-git-flow steps, below.
+
+It is worth noting that if the feature branch contains exactly one commit, then
+git-flow will perform a fast-forward commit.  This is under the assumption that
+a single-commit branch is a "trivial" change, and is consistent with GASNet's
+desired practice.  HOWEVER, if you want to have a true merge you can use the
+non-git-flow steps below even if you used git-flow to create the branch.  If you
+only want the opportunity to edit the commit message, that can always be done
+using "git commit --amend" prior to the push.
+
+To get the same behavior with plain git (without git-flow):
+    [begin with an up-to-date 'develop']
+    $ git checkout -b feature/example develop
+    [work on the branch until the task is done and tested]
+    $ git rebase develop feature/example
+    $ git checkout develop
+    $ git merge [--log] --edit --no-ff feature/example
+    $ git branch -d feature/example
+    $ git push origin develop
+
+Some notes on the merge step:
+  --log  Optionally seeds the commit message with the summary (first line) of
+         each of the constituent commits. 
+  --edit Required so one can edit the commit message to write a description of
+         the work being merged.
+
+The --edit flag to "git merge ..." doesn't exist in git-1.7, but it can be
+simulated by using a two-step merge+commit:
+    $ git merge [--log] --no-commit --no-ff feature/example
+    $ git commit
+which invokes the editor at the commit step.
+
+So, what to do in case of a push failure above (race against a peer)?
+If your post-merge "git push origin develop" fails with
+  ! [rejected]        develop -> develop (non-fast-forward)
+then you should fetch and then rebase onto an up-to-date 'origin/develop':
+    $ git fetch
+    $ git rebase -p [origin/develop develop]
+    $ git push origin develop
+Where the rebase arguments "origin/develop develop" are optional for git-1.8,
+but are required with git-1.7.  As described earlier, the "-p" is vital to
+preserving the branch structure we are trying to achieve, and is the reason
+that we should not use the more common "git pull --rebase".
+
+One caveat here is that if you were to delay removing the feature branch until
+after the (failed) push, you must use "-D" instead of "-d"
+    $ git branch -D feature/example
+because the "rebase -p" results in git not realizing that your
+branch has been fully merged.  So, this is motivation to keep the push last.
+
+Note that the fetch+rebase-p approach will preserve the branch structure even
+if you have merged multiple feature branches to your local 'develop' since the
+last fetch or pull.  This is a good thing if you need to work disconnected for
+an extended period.
+
+
+Publishing Branches
+-------------------
+
+So far we've only worked with feature branches which are born, developed
+and eventually merged to 'develop' in your own clone of the GASNet repo,
+and thus live on a single machine.  For a project like GASNet in
+particular, it is seldom sufficient to develop and test on a single
+platform.  Additionally, collaboration is tough with the branch living in
+your own clone of the repo.  So, in this section we look at how to
+"publish" your feature branch by making it appear on BitBucket along with
+the standard 'develop' and 'master' branches.  This means others can
+collaborate with you on the work (perhaps just reviewing the work, but
+potentially contributing to it as well), and you can easily clone your
+feature branch to multiple machines where you can test.
+
+If you're looking only for the ability to clone your branch, git does have
+the ability (not described here) to use its ssh-based protocol to clone
+your repos without using a hosting service like BitBucket.  If you don't
+want to work "in the open", but want the convenience of a hosted git, then
+see the "Forking Development" section, below, for a more private
+alternative to "publishing" of your feature branches
+
+Publishing of a feature branch just means pushing it to the GASNet repo at
+BitBucket and telling your local repo to consider that to be the "upstream"
+for all push, pull and fetch operations.  Assuming your branch has been
+named "feature/pub-example" all it takes is one simple command:
+    $ git push -u origin feature/pub-example
+If using git-flow, you save just two characters:
+    $ git flow feature publish pub-example
+
+Note again that one can freely mix work with and without the git-flow
+extensions.  For instance the two commands above both work regardless of
+whether or not "git flow feature start" was used to create the branch (so
+long as one uses the "feature/" prefix consistently with plain git).
+
+As with work committed to 'develop', your work exists only in your local
+repository until you explicitly push it to BitBucket:
+    $ git push origin feature/pub-example
+Or, potentially just "git push" depending on your configuration.
+
+Regardless of whether one uses the git-flow or plain git steps to "finish"
+the feature branch, there is one additional step which is needed at the
+end to delete the branch on the BitBucket repo:
+    $ git push origin :feature/pub-example
+
++ Rebasing published branches
+
+A friendly reminder: it is considered rude to rewrite history in public.
+While we have configured the BitBucket repo to disallow rebases on the
+'develop' and 'master' branches, there is no such control on the branches
+you may choose to publish.  If you rebase or amend any commits that have
+been pushed to BitBucket there is no mechanism to stop you, and you *will*
+cause problems for any repo which has pulled the effected commits.  A very
+simple rule is that if you need to pass "--force" (or "-f") to a "git push"
+then you've done something "bad".
+
+For a long-lived feature branch it is almost certain that one will need to
+sync with 'develop' occasionally.  At a minimum one should sync up at least
+once near the end to test before the final merge to 'develop'.  The
+preferred work-flow for GASNet is a rebase-centric one, which would suggest
+that one would want to perform syncs against 'develop' using rebase.
+However, for a published branch a rebase would conflict with the
+prohibition against public rewrites of history.  There are at least three
+ways one can resolve this apparent conflict.
+
+1. Versioned branches:
+The simplest way to deal with rebasing of a long-lived published feature
+branch is to create (and publish) a new branch each time one wants to sync
+with 'develop'.  This means no disruption to anybody who has cloned the
+prior branches, but does require communicating with your collaborators to
+ensure a clean transition of development from one branch to the next.  When
+using this approach it is helpful to suffix the names of the new branches
+with either a sequence number or the date of the rebase.  Example:
+    $ git checkout -b feature/pub-example-2 feature/pub-example
+    $ git rebase develop
+    $ git push origin :feature/pub-example-2
+Of course you will want to delete all of these branches when the feature is
+finally merged into 'develop', if not sooner than that.
+
+2. Single branch:
+If the idea of periodically shifting work to a new branch each time you
+wish to rebase against 'develop' doesn't appeal to you, then you can keep a
+single branch and use merges (and possibly cherry-picks) to sync your
+feature branch with 'develop'.  This means your branch's history may become
+"ladder like", but all of that will go away in the final rebase when it is
+time to merge back to 'develop'.  For any commit from 'develop' that was
+applied to your branch without conflict (whether by merge or cherry-pick)
+git will be able to automatically skip the changes at rebase time.
+
+3. Fork instead of branch:
+If you are not looking to collaborate with others and really just want to
+push your work to a public repo to simplify testing across multiple
+platforms, then consider the next section "Forking Development" in which
+you push your work somewhere NOT public.  That way the entire "rewriting
+history in public" issue goes away and you can "push -f" if you wish.
+
+
+Forking Development
+-------------------
+
+The steps described above under "General Development" and "Publishing
+Branches" both assume you have Write access to the GASNet repo on BitBucket.
+The "Publishing Branches" section additionally assumes you want your
+work-in-progress visible to the entire world.  However, you can also create a
+"fork" of the GASNet repo under your own account on BitBucket.  This does not
+require Write access to the GASNet repo and additionally allows you (as the
+owner of the forked repo) to have full control over access permissions.
+
+The concept of a "fork" is simply a hosted (could be any provider, not
+necessarily BitBucket) clone of a repo (commonly called the "upstream" repo)
+that is not pushed to its upstream.
+
+In the case you are an "external" developer without Write access to the GASNet
+repo, you can still contribute your work back to GASNet's 'develop' branch via
+a "pull request" which uses all of git's considerable intelligence to merge
+your changes with those which may have been pushed since you forked.  The same
+is true if you are a developer with Write access who has just chosen to work
+in a private repo (though you can short-cut the pull request process
+considerably).  See more in "Pull Requests" below.
+
+To create a fork from a given branch there are three steps:
+   1. Create an empty git repository with your hosting provider, and
+      set access permissions as you wish.
+      For the purpose of this example you are USER@bitbucket.org and
+      have created a repo named 'my-example-fork'.
+   2. Using either a new or existing clone of the GASNet repo, checkout
+      the branch you want to fork from.
+      This should almost always be 'develop'.
+   3. From within this checkout push a copy to your empty repo.
+    $ git push git@bitbucket.org:USER/my-example-fork HEAD:master
+
+All you have done above is copy your HEAD (presumably the tip of GASNet's
+'develop') to your own repo.  This does not modify your clone of the GASNet
+repo in any way (not even settings in .git/config).
+
+At this point you can clone your new repo and work on it as a completely
+independent project.  However, if you wish to continue tracking GASNet's
+'develop' there are (at least) two ways you can do it.  One option is to add a
+branch to your existing clone of the GASNet repo, while the other is to clone
+your new repo and add a branch for tracking its upstream repo.  Since the
+first option begins in your existing clone (where you just ran "git push")
+we'll look at that first.
+
++ Option 1: Fork as tracking branch
+
+We need to create a "remote" to refer to the new repo, and a branch to track
+it:
+   [ still in your clone of the GASNet repo ]
+   1. Create a remote to name the new repo and fetch its meta data:
+    $ git remote add USER/example git@bitbucket.org:USER/my-example-fork
+    $ git fetch USER/example
+   2. Create a branch to track 'master' in the new remote:
+    $ git branch -t feature/example-fork USER/example/master
+   3. Ensure push without a refspec sends your updates to the right place:
+    $ git config remote.USER/example.push feature/example-fork:master
+The third step is unnecessary if you have push.default set to "upstream" in
+your git configuration.  However, that is a matter of preference and so the
+third step appears here for completeness.  If you do use this step and are
+tracking multiple branches from the same repository, then you should create a
+distinct "remote" for each or a "git push" will require a refspec argument to
+do the "right thing".
+
+Note that there is nothing special about the names "USER/example" (for the
+remote) or "feature/example-fork" (for the branch).  For instance, there is
+no requirement to have a '/' in either name.  The branch name was chosen to
+match the git-flow convention for feature branches.  This example would allow
+a developer to work on the fork exactly as they would any other feature, with
+the addition of having control over the access to the repo to which the branch
+will be pushed.
+
++ Option 2: GASNet as upstream
+
+The second option reverses the roles of the original and the fork, and may be
+more appropriate for an external developer because their work is 'master' in
+the forked repo.  This option starts with cloning the fork, and then adds a
+remote and branch for tracking the original repo:
+   [ starting in some location NOT in your clone of the GASNet repo ]
+    $ git clone git@bitbucket.org:USER/my-example-fork
+    $ cd my-example-fork
+    $ git remote add upstream https://bitbucket.org/berkeleylab/gasnet
+    $ git fetch upstream
+    $ git branch -t upstream upstream/develop
+
+Again there is nothing special about the name "upstream" which has been used
+for BOTH the remote and the branch, but their use is a common convention.  It
+is also worth noting that this example has used the anonymous https URL for
+the definition of the "upstream" remote.  This is appropriate for an external
+developer without Write access to the repo.
+
+Regardless of which of these two options you use, keep in mind that with the
+default settings "git fetch" will only fetch the repository corresponding to
+the current branch, while "git remote update" will fetch all remotes.
+
+
+Pull Requests
+-------------
+
++ Pulling your own work
+
+If you are a developer with Write access to the GASNet git repo and have forked
+to develop in private, then merging your fork back to 'develop' is as simple as
+merging any other branch.  If you followed the "Fork as tracking branch" steps
+above, then you already have your fork setup (and named) just like any other
+feature branch.  So, you merge it the same way too (see "General Development",
+above).  Using the same names as in "Fork as tracking branch":
+    $ git rebase develop feature/example-fork
+    $ git checkout develop
+    $ git merge [--log] --edit --no-ff feature/example-fork
+    $ git push origin develop
+If you are done with the fork, delete both the tracking branch and the remote:
+    $ git branch -d feature/example-fork
+    $ git remote rm USER/example
+
++ Preparing to generate a pull request
+
+If you are an external developer (one without Write access) who has forked
+GASNet, then when you are ready to contribute your work back to us the
+preferred mechanism is known as a "pull request".  Unlike sending patches
+(which contain all of the changes but no history), a pull request involves
+providing a GASNet developer with access to read your fork.  This allow the
+developer to incorporate not only your changes, but also your history (commit
+messages).  Before the pull request, you need to be sure of two things:
+   1. That your work meets the GASNet standards.
+      + README for GASNet's coding standards
+      + README-develop for rules concerning git commit messages, etc.
+   2. That your fork will merge cleanly.
+      It needs to be rebased onto the branch it was forked from.
+
+Since we use the git-flow model, we don't do three-way merges and only apply to
+'develop' those changes that *could* be fast-forwarded, though we do a "true
+merge" to allow a commit message for the merge.  If you followed the steps
+under "GASNet as upstream", above, then you already have an "upstream" branch
+to track what you forked from.  So, the steps to rebase are:
+    $ git checkout upstream
+    $ git pull
+    $ git rebase [-i] upstream master
+If you think you may need (or just want) to cleanup your history, then the '-i'
+option will cause an interactive rebase.
+
+Finally, you need to do whatever your hosting service requires to ensure the
+GASNet developers have access to clone your repository.
+
++ Generating a pull request
+
+Now it is time for the pull request.  If using BitBucket, then there is a GUI
+for this, and you will find documentation on their site.  If using another
+hosting service, or if you just don't like the GUI, then you just need to
+email the repo URL to us at upc-devel@lbl.gov with an explanation of the work
+you are contributing back.  Ideally you will have communicated and
+collaborated with us prior to the pull request and we'll already be familiar
+with the work.
+
++ Merging a pull request
+
+Let's assume now that you are the GASNet developer who has been chosen to
+merge the work of an external developer's pull request.  You have the choice
+between pulling into a feature branch or creating a temporary tracking
+branch for the contributed fork.  Unless you have high confidence that the
+contribution requires little or no testing, the tracking branch approach is
+recommended.  First follow the steps under "Fork as a tracking branch", though
+unless the contributor actually wants you pushing to their repo, you can skip
+the "git config remote.<name>.push ..." step.  Second, perform any/all
+appropriate testing using the tracking branch prior to merging it to
+'develop'.  Finally, you can merge as described under "Pulling you own work".
+
+When *not* using a tracking branch, the work required is actually not too
+different.  Instead of a "git merge ..." with the name of a branch, you will
+"git pull ..." into a short-lived feature branch and merge that to 'develop'.
+If using git-flow the steps are:
+    [ begin with an up-to-date 'develop' ]
+    $ git flow feature start pull-example
+    $ git pull URL [branch-if-not-the-default]
+    $ git rebase develop
+    [ carefully examine/test the resulting feature branch ]
+    $ git flow feature finish
+    $ git push origin develop
+
+Without git-flow the equivalent steps are:
+    [begin with an up-to-date 'develop']
+    $ git checkout -b feature/pull-example develop
+    $ git pull URL [branch-if-not-the-default]
+    $ git rebase develop
+    [ carefully examine/test the resulting feature branch ]
+    $ git checkout develop
+    $ git merge [--log] --edit --no-ff feature/pull-example
+    $ git branch -d feature/pull-example
+    $ git push origin develop
+
+
+Releases
+--------
+
+Even with Write access to the BitBucket repo, users don't have push rights to
+'master' by default.  If you need to produce releases, ask one of the
+repository Admins to grant you push access.
+
+For a release branch the steps using git-flow are much the same as for
+development.  For a hypothetical release of version 9.8.0:
+    [begin with an up-to-date 'develop' and 'master']
+    $ git flow release start 9.8.0
+    [prepare the release following the procedure in README-release]
+    $ git flow release finish -m "GASNet release 9.8.0" 9.8.0
+    $ git push --tags origin develop master
+
+When using plain git commands there is just a minor difference because we don't
+want to rebase onto 'develop' once the branch has started (because we
+explicitly branched to keep concurrent changes on 'develop' from entering the
+release).  We do still want a non-fast-forward commit.  The steps look like:
+    [begin with an up-to-date 'develop' AND 'master']
+    $ git checkout -b release/9.8.0 develop
+    [prepare the release following the procedure in README-release]
+    $ git checkout master
+    $ git merge --edit --no-ff release/9.8.0
+    $ git tag -a gasnet-9.8.0 -m "GASNet release 9.8.0" master
+    $ git checkout develop
+    $ git merge --edit --no-ff release/9.8.0
+    $ git branch -d release/9.8.0
+    $ git push --tags origin develop master
+If using git-1.7 there is no support for "merge --edit"; see the text
+regarding merging feature branches for the merge+commit alternative.
+
+It may happen that while testing the release one finds that some feature on
+'develop' is broken and must be excluded from the release.  In that case a "git
+revert" of the feature will be part of "[prepare the release...]".  However,
+this does not mean that the feature MUST be reverted on 'develop' as well.  If
+you *do* want it reverted on 'develop' then no extra actions are required
+(though you should consider how you will resume work on the feature).  If you
+want to retain the feature on 'develop' then you must take care to exclude the
+revert from what gets merged to 'develop'.  While this is possible to do with
+git-flow (by amending the merge commit prior to pushing), it is probably easier
+to handle this situation using plain git, by reversing to revert on the release
+branch between "checkout develop" and the merge that follows it.
+
+
+Aliases
+-------
+
+There are a few examples in this document which require some non-default
+options to git.  The following are some suggested git aliases to help
+reduce what one needs to remember (and type).  See "git help config" for
+information on creating git aliases.
+
++ "git pull-dev" and "git push-dev".
+Matched pair to simplify syncing with origin/develop (esp. the fetch+rebase-p):
+    pull-dev = !git fetch origin develop && git rebase -p origin/develop develop
+    push-dev = push origin develop
+
++ "git mg <commit>"
+To invoke merge with all of our desired options.
+For git-1.8:
+    mg = merge --log --edit --no-ff
+For git-1.7 (which lacks an --edit option to merge):
+    mg = !sh -c 'git merge --log --no-commit --no-ff "$@" && git commit' --
+
++ "git start <name>" and "git finish <name>"
+These are simple (thus less powerful) alternatives to the corresponding
+"git flow feature (start|finish)" commands:
+    start = !sh -c 'git checkout -b feature/$1 develop' --
+    finish = !sh -c 'git rebase develop feature/$1 && \
+                     git checkout develop && \
+                     git mg feature/$1 && \
+                     git branch -d feature/$1' --
+Note that "finish" requires "mg", defined above.
+
++ "git switch <name>"
+In the same spirit as start and finish, this is a short-cut for checking
+out a contentionally-named feature branch with less typing:
+    switch = !sh -c 'git checkout feature/$1' --
+
+
+Proprietary (NDA) information
+-----------------------------
+
+[TODO: describe a detailed protocol]
+
+At a VERY high-level:
++ Do NOT conduct NDA work using the BitBucket repository.
++ Work from a clone on a "controlled" machine.
++ Don't clone your repo containing NDA-covered to any "uncontrolled" machine.
++ Consider using "git archive" to move files w/o conveying any history or
+  deleted files.
++ Consider using "git archive" to import the final code (but no history or
+  deleted files) once it is allowable to do so.

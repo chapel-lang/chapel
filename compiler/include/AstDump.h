@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +43,8 @@ public:
   //
   static  void     view(const char* passName, int passNum);
 
+                   AstDump(FILE* fp);
+                  ~AstDump();
 
   //
   // These functions are the "implementation" interface for the
@@ -92,7 +94,6 @@ public:
 
 private:
                    AstDump();
-                  ~AstDump();
 
   bool             open(const ModuleSymbol* module, const char* passName, int passNum);
   bool             close();
@@ -116,6 +117,7 @@ private:
   FILE*            mFP;             // The FILE* to the log file if the file is open
   int              mIndent;         // The indentation level.  Increments for each BlockStmt
   bool             mNeedSpace;      // Control inter-token spaces
+  bool             mDontCloseFP;    // true if mFP is owned by the user
 };
 
 #endif

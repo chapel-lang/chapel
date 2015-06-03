@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -328,7 +328,7 @@ void installConfigVar(const char* varName, const char* value,
                       const char* moduleName) {
   unsigned hashValue;
   configVarType* configVar = (configVarType*) 
-    chpl_mem_allocMany(1, sizeof(configVarType), CHPL_RT_MD_CONFIG_TABLE_DATA, 0, 0);
+    chpl_mem_allocMany(1, sizeof(configVarType), CHPL_RT_MD_CF_TABLE_DATA, 0, 0);
 
   hashValue = hash(varName);
   configVar->nextInBucket = configVarTable[hashValue]; 
@@ -396,7 +396,7 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
   int retval = 0;
   int arglen = strlen(argv[argnum]+2)+1;
   char* argCopy = chpl_mem_allocMany(arglen, sizeof(char),
-                                     CHPL_RT_MD_CONFIG_ARG_COPY_DATA, argnum,
+                                     CHPL_RT_MD_CFG_ARG_COPY_DATA, argnum,
                                      "<command-line>");
   char* equalsSign;
   const char* moduleName;

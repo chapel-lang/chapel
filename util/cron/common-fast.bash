@@ -5,4 +5,4 @@
 
 unset CHPL_TARGET_ARCH
 
-nightly_args="-fast -no-futures -suppress Suppressions/fast.suppress"
+nightly_args="-fast -suppress Suppressions/fast.suppress"

@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+./skip_non_fifo_atomic_locks.py

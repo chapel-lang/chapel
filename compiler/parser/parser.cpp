@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,31 +19,35 @@
 
 #include "parser.h"
 
+#include "bison-chapel.h"
 #include "build.h"
 #include "countTokens.h"
 #include "files.h"
+#include "flex-chapel.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "yy.h"
-
-// This depends on yy.h
-#include "chapel.tab.h"
 
 #include <cstdlib>
 
-BlockStmt*  yyblock           = NULL;
-const char* yyfilename        = NULL;
-int         chplLineno        = 0;
-int         yystartlineno     = 0;
-ModTag      currentModuleType = MOD_INTERNAL;
+BlockStmt*              yyblock                       = NULL;
+const char*             yyfilename                    = NULL;
+int                     yystartlineno                 = 0;
 
+ModTag                  currentModuleType             = MOD_INTERNAL;
+
+int                     chplLineno                    = 0;
+bool                    chplParseString               = false;
+const char*             chplParseStringMsg            = NULL;
+
+bool                    currentFileNamedOnCommandLine = false;
+
+static bool             firstFile                     = true;
+static bool             handlingInternalModulesNow    = false;
 
 static Vec<const char*> modNameSet;
 static Vec<const char*> modNameList;
 static Vec<const char*> modDoneSet;
 static Vec<CallExpr*>   modReqdByInt;  // modules required by internal ones
-
-static bool handlingInternalModulesNow = false;
 
 void addModuleToParseList(const char* name, CallExpr* useExpr) {
   const char* modName = astr(name);
@@ -65,18 +69,6 @@ static void addModuleToDoneList(ModuleSymbol* module) {
   const char* uniqueName = astr(name);
 
   modDoneSet.set_add(uniqueName);
-}
-
-
-static const char* filenameToModulename(const char* filename) {
-  const char* moduleName = astr(filename);
-  const char* firstSlash = strrchr(moduleName, '/');
-
-  if (firstSlash) {
-    moduleName = firstSlash + 1;
-  }
-
-  return asubstr(moduleName, strrchr(moduleName, '.'));
 }
 
 static bool
@@ -129,101 +121,133 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
   return !hasUses && !hasOther && moduleDefs > 0;
 }
 
+ModuleSymbol* parseFile(const char* filename,
+                        ModTag      modType,
+                        bool        namedOnCommandLine) {
+  ModuleSymbol* retval = NULL;
 
-static bool firstFile = true;
+  if (FILE* fp = openInputFile(filename)) {
+    // State for the lexer
+    int             lexerStatus  = 100;
 
-ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
-  ModuleSymbol* newModule = NULL;
+    // State for the parser
+    yypstate*       parser       = yypstate_new();
+    int             parserStatus = YYPUSH_MORE;
+    YYLTYPE         yylloc;
+    ParserContext   context;
 
-  currentModuleType   = modType;
+    currentFileNamedOnCommandLine = namedOnCommandLine;
 
-  yyfilename          = filename;
-  yystartlineno       = 1;
+    currentModuleType             = modType;
 
-  yylloc.first_column = 0;
-  yylloc.last_column  = 0;
-  yylloc.first_line   = 1;
-  yylloc.last_line    = 1;
-  yylloc.comment      = NULL;
+    yyblock                       = NULL;
+    yyfilename                    = filename;
+    yystartlineno                 = 1;
 
-  chplLineno          = 1;
+    yylloc.first_line             = 1;
+    yylloc.first_column           = 0;
+    yylloc.last_line              = 1;
+    yylloc.last_column            = 0;
 
-  yyin                = openInputFile(filename);
+    chplLineno                    = 1;
 
-  if (printModuleFiles && (modType != MOD_INTERNAL || developer)) {
-    if (firstFile) {
-      fprintf(stderr, "Parsing module files:\n");
-      firstFile = false;
+    if (printModuleFiles && (modType != MOD_INTERNAL || developer)) {
+      if (firstFile) {
+        fprintf(stderr, "Parsing module files:\n");
+        firstFile = false;
+      }
+
+      fprintf(stderr, "  %s\n", cleanFilename(filename));
     }
 
-    fprintf(stderr, "  %s\n", cleanFilename(filename));
-  }
+    if (namedOnCommandLine) {
+      startCountingFileTokens(filename);
+    }
 
-  yyblock = NULL;
+    yylex_init(&context.scanner);
+    yyset_in(fp, context.scanner);
 
-  if (modType == MOD_MAIN) {
-    startCountingFileTokens(filename);
-  }
+    while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
+      YYSTYPE yylval;
 
-  yyparse();
+      lexerStatus = yylex(&yylval, &yylloc, context.scanner);
 
-  if (modType == MOD_MAIN) {
-    stopCountingFileTokens();
-  }
-
-  closeInputFile(yyin);
-
-  if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
-    const char* modulename = filenameToModulename(filename);
-
-    newModule      = buildModule(modulename, yyblock, yyfilename, NULL);
-
-    yylloc.comment = NULL;
-
-    theProgram->block->insertAtTail(new DefExpr(newModule));
-
-    addModuleToDoneList(newModule);
-
-  } else {
-    ModuleSymbol* moduleLast  = 0;
-    int           moduleCount = 0;
-
-    for_alist(stmt, yyblock->body) {
-      if (BlockStmt* block = toBlockStmt(stmt))
-        stmt = block->body.first();
-
-      if (DefExpr* defExpr = toDefExpr(stmt)) {
-        if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
-
-          theProgram->block->insertAtTail(defExpr->remove());
-
-          addModuleToDoneList(modSym);
-
-          moduleLast  = modSym;
-          moduleCount = moduleCount + 1;
-        }
+      if        (lexerStatus >= 0) {
+        parserStatus          = yypush_parse(parser, lexerStatus, &yylval, &yylloc, &context);
+      } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
+        context.latestComment = yylval.pch;
       }
     }
 
-    if (moduleCount == 1)
-      newModule = moduleLast;
+    if (namedOnCommandLine) {
+      stopCountingFileTokens(context.scanner);
+    }
+
+    // Cleanup after the paser
+    yypstate_delete(parser);
+
+    // Cleanup after the lexer
+    yylex_destroy(context.scanner);
+
+    closeInputFile(fp);
+
+    if (yyblock == NULL) {
+      INT_FATAL("yyblock should always be non-NULL after yyparse()");
+
+    } else if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
+      const char* modulename = filenameToModulename(filename);
+
+      retval = buildModule(modulename, yyblock, yyfilename, NULL);
+
+      theProgram->block->insertAtTail(new DefExpr(retval));
+
+      addModuleToDoneList(retval);
+
+    } else {
+      ModuleSymbol* moduleLast  = 0;
+      int           moduleCount = 0;
+
+      for_alist(stmt, yyblock->body) {
+        if (BlockStmt* block = toBlockStmt(stmt))
+          stmt = block->body.first();
+
+        if (DefExpr* defExpr = toDefExpr(stmt)) {
+          if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
+
+            theProgram->block->insertAtTail(defExpr->remove());
+
+            addModuleToDoneList(modSym);
+
+            moduleLast  = modSym;
+            moduleCount = moduleCount + 1;
+          }
+        }
+      }
+
+      if (moduleCount == 1)
+        retval = moduleLast;
+    }
+
+    yyfilename                    =  NULL;
+
+    yylloc.first_line             =    -1;
+    yylloc.first_column           =     0;
+    yylloc.last_line              =    -1;
+    yylloc.last_column            =     0;
+
+    yystartlineno                 =    -1;
+    chplLineno                    =    -1;
+
+    currentFileNamedOnCommandLine = false;
+
+  } else {
+    fprintf(stderr, "ParseFile: Unable to open \"%s\" for reading\n", filename);
   }
 
-  yyfilename          = NULL;
-
-  yylloc.first_column =    0;
-  yylloc.last_column  =    0;
-  yylloc.first_line   =   -1;
-  yylloc.last_line    =   -1;
-
-  yystartlineno       =   -1;
-  chplLineno          =   -1;
-
-  return newModule;
+  return retval;
 }
 
-
-ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
+ModuleSymbol* parseMod(const char* modname, ModTag modType) {
   bool          isInternal = (modType == MOD_INTERNAL) ? true : false;
   bool          isStandard = false;
   ModuleSymbol* retval     = NULL;
@@ -233,7 +257,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
       modType = MOD_STANDARD;
     }
 
-    retval = ParseFile(filename, modType);
+    retval = parseFile(filename, modType);
   }
 
   return retval;
@@ -243,7 +267,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
 void parseDependentModules(ModTag modtype) {
   forv_Vec(const char*, modName, modNameList) {
     if (!modDoneSet.set_in(modName)) {
-      if (ParseMod(modName, modtype)) {
+      if (parseMod(modName, modtype)) {
         modDoneSet.set_add(modName);
       }
     }
@@ -293,13 +317,20 @@ void parseDependentModules(ModTag modtype) {
         // if we haven't found the standard version of the module then we
         // need to parse it
         if (!foundInt) {
-          ModuleSymbol* mod = ParseFile(stdModNameToFilename(modName),
+          ModuleSymbol* mod = parseFile(stdModNameToFilename(modName),
                                         MOD_STANDARD);
 
           // if we also found a user module by the same name, we need to
           // rename the standard module and the use of it
           if (foundUsr) {
             SET_LINENO(oldModNameExpr);
+
+            if (mod == NULL) {
+              INT_FATAL("Trying to rename a standard module that's part of\n"
+                        "a file defining multiple\nmodules doesn't work yet;\n"
+                        "see test/modules/bradc/modNamedNewStringBreaks.future"
+                        " for details");
+            }
 
             mod->name = astr("chpl_", modName);
 
@@ -311,4 +342,57 @@ void parseDependentModules(ModTag modtype) {
       }
     } while (modReqdByInt.n != 0);
   }
+}
+
+BlockStmt* parseString(const char* string,
+                       const char* filename,
+                       const char* msg) {
+  // State for the lexer
+  YY_BUFFER_STATE handle            =    0;
+  int             lexerStatus       =  100;
+  YYLTYPE         yylloc;
+
+  // State for the parser
+  yypstate*       parser            = yypstate_new();
+  int             parserStatus      = YYPUSH_MORE;
+  ParserContext   context;
+
+  yylex_init(&(context.scanner));
+
+  handle              = yy_scan_string(string, context.scanner);
+
+  yyblock             = NULL;
+  yyfilename          = filename;
+
+  chplParseString     = true;
+  chplParseStringMsg  = msg;
+
+  yylloc.first_line   = 1;
+  yylloc.first_column = 0;
+
+  yylloc.last_line    = 1;
+  yylloc.last_column  = 0;
+
+  while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
+    YYSTYPE yylval;
+
+    lexerStatus  = yylex(&yylval, &yylloc, context.scanner);
+
+    if (lexerStatus >= 0)
+      parserStatus          = yypush_parse(parser, lexerStatus, &yylval, &yylloc, &context);
+    else if (lexerStatus == YYLEX_BLOCK_COMMENT)
+      context.latestComment = yylval.pch;
+  }
+
+  chplParseString    = false;
+  chplParseStringMsg = NULL;
+
+  // Cleanup after the paser
+  yypstate_delete(parser);
+
+  // Cleanup after the lexer
+  yy_delete_buffer(handle, context.scanner);
+  yylex_destroy(context.scanner);
+
+  return yyblock;
 }

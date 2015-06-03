@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,6 +37,13 @@ class SymExpr;
 class BasicBlock
 {
   //
+  // Typedefs
+  //
+ public:
+  typedef std::vector<BasicBlock*> BasicBlockVector;
+  typedef std::vector<BitVec*> BitVecVector;
+
+  //
   // Class methods/variables
   //
 public:
@@ -51,16 +58,16 @@ public:
                                                  Map<Symbol*,int>&     localMap);
 
   static void               backwardFlowAnalysis(FnSymbol*             fn,
-                                                 std::vector<BitVec*>& GEN,
-                                                 std::vector<BitVec*>& KILL,
-                                                 std::vector<BitVec*>& IN,
-                                                 std::vector<BitVec*>& OUT);
+                                                 BitVecVector& GEN,
+                                                 BitVecVector& KILL,
+                                                 BitVecVector& IN,
+                                                 BitVecVector& OUT);
 
   static void               forwardFlowAnalysis (FnSymbol*             fn,
-                                                 std::vector<BitVec*>& GEN,
-                                                 std::vector<BitVec*>& KILL,
-                                                 std::vector<BitVec*>& IN,
-                                                 std::vector<BitVec*>& OUT,
+                                                 BitVecVector& GEN,
+                                                 BitVecVector& KILL,
+                                                 BitVecVector& IN,
+                                                 BitVecVector& OUT,
                                                  bool                  intersect = true);
 
   static void               printLocalsVector(Vec<Symbol*>      locals,
@@ -69,10 +76,10 @@ public:
   static void               printDefsVector(std::vector<SymExpr*> defs,
                                             Map<SymExpr*, int>&   defMap);
 
-  static void               printLocalsVectorSets(std::vector<BitVec*>& sets,
+  static void               printLocalsVectorSets(BitVecVector& sets,
                                                   Vec<Symbol*>          locals);
 
-  static void               printBitVectorSets(std::vector<BitVec*>& sets);
+  static void               printBitVectorSets(BitVecVector& sets);
 
   static BasicBlock*        basicBlock;
 
@@ -80,7 +87,7 @@ public:
              BasicBlock*>   labelMaps;
 
   static Map<LabelSymbol*,
-             std::vector<BasicBlock*>*> gotoMaps;
+             BasicBlockVector*> gotoMaps;
 
 private:
   static void               buildBasicBlocks(FnSymbol* fn,
@@ -94,6 +101,7 @@ private:
 
   static BasicBlock*        steal();
 
+  static void               removeEmptyBlocks(FnSymbol* fn);
   static bool               verifyBasicBlocks(FnSymbol* fn);
 
   static int                nextID;
@@ -109,8 +117,8 @@ public:
   std::vector<Expr*>        exprs;
   std::vector<bool>         marks;
 
-  std::vector<BasicBlock*>  ins;
-  std::vector<BasicBlock*>  outs;
+  BasicBlockVector          ins;
+  BasicBlockVector          outs;
 
 private:
   bool                      isOK();

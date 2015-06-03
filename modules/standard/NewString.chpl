@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -89,7 +89,7 @@ module BaseStringType {
 
     if (s == _nullString) then return;
 
-    type select s {
+    select s.type {
       when c_string do chpl_rt_free_c_string(s);
       when c_string_copy do chpl_rt_free_c_string_copy(s);
       otherwise halt("operand of free_baseType must be c_string or c_string_copy.");

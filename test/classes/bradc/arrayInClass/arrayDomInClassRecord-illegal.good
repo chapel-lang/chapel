@@ -1,1 +1,2 @@
+arrayDomInClassRecord-illegal.chpl:32: In function 'baz':
 arrayDomInClassRecord-illegal.chpl:33: error: illegal lvalue in assignment

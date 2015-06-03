@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,8 @@
 # settings for Tilera tile-cc
 #
 
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
+
 #
 # Tools
 #
@@ -27,46 +29,5 @@ CXX = tile-c++
 CC = tile-cc
 
 RANLIB = ranlib
-
-
-#
-# General Flags
-#
-
-DEBUG_CFLAGS = -g
-OPT_CFLAGS = -O3
-
-#
-# Flags for compiler, runtime, and generated code
-#
-COMP_CFLAGS = $(CFLAGS)
-COMP_CFLAGS_NONCHPL =
-RUNTIME_CFLAGS = -std=gnu99 $(CFLAGS)
-#RUNTIME_CFLAGS = -std=gnu99 $(CFLAGS) -Wno-unused-function
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
-GEN_CFLAGS = -std=gnu99
-
-#
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS =
-#-std=gnu89
-
-#
-# Flags for turning on warnings for C++/C code
-#
-WARN_CXXFLAGS = -Wall -Werror
-WARN_CFLAGS = $(WARN_CXXFLAGS)
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused
-
-#
-# compiler warnings settings
-#
-ifeq ($(WARNINGS), 1)
-COMP_CFLAGS += $(WARN_CXXFLAGS)
-RUNTIME_CFLAGS += $(WARN_CFLAGS)
-RUNTIME_GEN_CFLAGS +=
-# GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
-endif
 
 

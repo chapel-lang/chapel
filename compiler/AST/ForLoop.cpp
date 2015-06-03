@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -78,7 +78,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
   if (CallExpr* call = toCallExpr(iteratorExpr))
   {
     // grab the stride if we have a strided range
-    if (call->isNamed("by"))
+    if (call->isNamed("chpl_by"))
     {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
@@ -208,17 +208,18 @@ ForLoop::~ForLoop()
 ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
-  SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  ForLoop*   retval    = new ForLoop();
+  SymbolMap* map            = (mapRef != 0) ? mapRef : &localMap;
+  ForLoop*   retval         = new ForLoop();
 
-  retval->astloc         = astloc;
-  retval->blockTag       = blockTag;
+  retval->astloc            = astloc;
+  retval->blockTag          = blockTag;
 
-  retval->mBreakLabel    = mBreakLabel;
-  retval->mContinueLabel = mContinueLabel;
+  retval->mBreakLabel       = mBreakLabel;
+  retval->mContinueLabel    = mContinueLabel;
+  retval->mOrderIndependent = mOrderIndependent;
 
-  retval->mIndex         = mIndex->copy(map, true),
-  retval->mIterator      = mIterator->copy(map, true);
+  retval->mIndex            = mIndex->copy(map, true),
+  retval->mIterator         = mIterator->copy(map, true);
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -254,6 +255,16 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
 bool ForLoop::isForLoop() const
 {
   return true;
+}
+
+// TODO (Elliot 03/03/15): coforall loops are currently represented
+// as ForLoops in the compiler. This is a start at distinguishing
+// them. Note that for coforall loops, this method and isForLoop
+// with both return true. Eventually CoforallLoop should become it's
+// own class that shares a common parent with ForLoop.
+bool ForLoop::isCoforallLoop() const
+{
+  return mIndex->var->hasFlag(FLAG_COFORALL_INDEX_VAR);
 }
 
 SymExpr* ForLoop::indexGet() const
@@ -339,6 +350,26 @@ void ForLoop::accept(AstVisitor* visitor)
 
     visitor->exitForLoop(this);
   }
+}
+
+void ForLoop::replaceChild(Expr* oldAst, Expr* newAst)
+{
+  if (oldAst == mIndex)
+  {
+    SymExpr* se = toSymExpr(newAst);
+    // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
+    INT_ASSERT(!newAst || se);
+    mIndex = se;
+  }
+  else if (oldAst == mIterator)
+  {
+    SymExpr* se = toSymExpr(newAst);
+    // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
+    INT_ASSERT(!newAst || se);
+    mIterator = se;
+  }
+  else
+    LoopStmt::replaceChild(oldAst, newAst);
 }
 
 Expr* ForLoop::getFirstExpr()

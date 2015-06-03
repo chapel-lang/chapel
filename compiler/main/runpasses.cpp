@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,11 +39,11 @@ struct PassInfo {
 // These entries should be kept in the same order as the entries in passlist.h.
 #define LOG_parse                              'p'
 #define LOG_checkParsed                        NUL
+#define LOG_docs                               NUL
 #define LOG_readExternC                        'c'
 #define LOG_cleanup                            'u'
 #define LOG_scopeResolve                       'S'
 #define LOG_flattenClasses                     'b'
-#define LOG_docs                               NUL
 #define LOG_normalize                          'N'
 #define LOG_checkNormalized                    NUL
 #define LOG_buildDefaultFunctions              'D'
@@ -90,6 +90,9 @@ static PassInfo sPassList[] = {
   // Chapel to AST
   RUN(parse),                   // parse files and create AST
   RUN(checkParsed),             // checks semantics of parsed AST
+  RUN(docs),                    // if fDocs is set, this will generate docs.
+                                // if the executable is named "chpldoc" then
+                                // the application will stop after this phase
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -101,9 +104,6 @@ static PassInfo sPassList[] = {
   RUN(cleanup),                 // post parsing transformations
   RUN(scopeResolve),            // resolve symbols by scope
   RUN(flattenClasses),          // denest nested classes
-  RUN(docs),                    // if fDocs is set, this will generate docs.
-                                // if the executable is named "chpldoc" then
-                                // the application will stop after this phase
 
   RUN(normalize),               // normalization transformations
   RUN(checkNormalized),         // check semantics of normalized AST

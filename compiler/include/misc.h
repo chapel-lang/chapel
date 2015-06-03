@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -56,6 +56,7 @@ bool forceWidePtrsForLocal();
 bool requireWideReferences();
 bool requireOutlinedOn();
 
+const char* cleanFilename(BaseAST*    ast);
 const char* cleanFilename(const char* name);
 
 void setupError(const char* filename, int lineno, int tag);

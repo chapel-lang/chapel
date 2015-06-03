@@ -1,9 +1,10 @@
-proc param foo() {
+proc param int.foo() {
   writeln("In foo() with (nonsensical) param this");
 }
 
-proc foo() {
+proc int.foo() {
   writeln("In foo() with non-param this");
 }
 
-foo();
+2.foo("hi");
+

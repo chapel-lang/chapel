@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -16,7 +16,7 @@
 # limitations under the License.
 
 #
-# settings for gnu-compatible platforms
+# settings for the Portland Group (pgi) compiler
 #
 
 #
@@ -44,12 +44,18 @@ COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL =
 RUNTIME_CFLAGS = $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+
+# Set flag for lax or IEEE floating point
+FAST_FLOAT_GEN_CFLAGS = -Knoieee
 IEEE_FLOAT_GEN_CFLAGS = -Kieee
+
 # NOTE: These are only support for Linux
 GEN_STATIC_FLAG = -Bstatic
 GEN_DYNAMIC_FLAG = -Bdynamic
 LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
+
+# TODO: set target architecture for optimization
 
 #
 # Flags for turning on warnings for C++/C code

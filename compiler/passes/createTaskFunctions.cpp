@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "astutil.h"
 #include "passes.h"
 #include "stmt.h"
+#include "stlUtil.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol* markPruned;
@@ -101,7 +102,7 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
 
 // We use modified versions of these in flattenFunctions.cpp:
 //  isOuterVar(), findOuterVars(), addVarsToFormals(),
-//  replaceVarUsesWithFormals(), addVarsToActuals()
+//  replaceVarUsesWithFormals() -> replaceVarUses(), addVarsToActuals()
 
 // Is 'sym' a non-const variable (including formals) defined outside of 'fn'?
 // This is a modification of isOuterVar() from flattenFunctions.cpp.
@@ -143,48 +144,55 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 }
 
 static void
-findOuterVars(FnSymbol* fn, SymbolMap* uses) {
-  Vec<BaseAST*> asts;
+findOuterVars(FnSymbol* fn, SymbolMap& uses) {
+  std::vector<BaseAST*> asts;
+
   collect_asts(fn, asts);
-  forv_Vec(BaseAST, ast, asts) {
+
+  for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
-      if (toVarSymbol(sym) || toArgSymbol(sym))
+
+      if (isLcnSymbol(sym)) {
         if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
-          uses->put(sym, markUnspecified);
+          uses.put(sym, markUnspecified);
+      }
     }
   }
 }
 
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-// If 'usePrune', only 'ref' intent is allowed, implemented it with markPrune.
-void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars, bool usePrune) {
+void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
-  ArgSymbol* tiMarker = NULL;
-  // the actuals alternate: tiMark arg, task-intent variable [, repeat]
+  Symbol* marker = NULL;
+
+  // Keep in sync with setupForallIntents() - the actuals alternate:
+  //  (tiMark arg | reduce opExpr), task-intent variable [, repeat]
   for_actuals(actual, byrefVars) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se); // comes as an UnresolvedSymExpr from the parser,
                     // should have been resolved in ScopeResolve
                     // or it is a SymExpr over a tiMark ArgSymbol
+                    //                 or over chpl__reduceGlob
     Symbol* var = se->var;
-    if (tiMarker) {
-      SymbolMapElem* elem = uses->get_record(var);
+    if (marker) {
+      SymbolMapElem* elem = uses.get_record(var);
       if (elem) {
-       if (usePrune) {
-        INT_ASSERT(tiMarker->intent == INTENT_REF); // checkForNonRefIntents()
-        elem->value = markPruned;
-       } else {
-        elem->value = tiMarker;
-       }
+        elem->value = marker;
+      } else {
+        if (isVarSymbol(marker)) {
+          // this is a globalOp created in setupOneReduceIntent()
+          INT_ASSERT(!strcmp(marker->name, "chpl__reduceGlob"));
+          USR_WARN(byrefVars, "the variable '%s' is given a reduce intent and not mentioned in the loop body - it will have the unit value after the loop", var->name);
+        }
       }
-      tiMarker = NULL;
+      marker = NULL;
     } else {
-      tiMarker =  toArgSymbol(var);
-      INT_ASSERT(tiMarker);
+      marker = var;
+      INT_ASSERT(marker);  // otherwise the alternation logic will not work
     }
   }
-  INT_ASSERT(!tiMarker);
+  INT_ASSERT(!marker);
 }
 
 // 'this' (the receiver) should *always* be passed by reference - because
@@ -192,34 +200,19 @@ void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars, bool usePrune) {
 // That includes the implicit 'this' in the constructor - see
 // the commit message for r21602. So we exclude those from consideration.
 // While there, we prune other things for forall intents.
-void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore) {
-  form_Map(SymbolMapElem, e, *uses) {
+void pruneThisArg(Symbol* parent, SymbolMap& uses) {
+  form_Map(SymbolMapElem, e, uses) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
-        if (sym->hasFlag(FLAG_ARG_THIS) ||
-            // If we do not prune MT, _toLeader(..., _mt...) does not get
-            // resolved. E.g. parallel/taskPar/figueroa/taskParallel.chpl
-            (pruneMore && (
-              sym->type == dtMethodToken ||
-              // Prune sync vars, which would be passed by reference anyway.
-              // TODO: We shouldn't need to do this. Currently we need it
-              // because sync variables do not get tupled/detupled properly
-              // when threading through the leader iterator for forall intents.
-              // See e.g. test/distributions/dm/s7.chpl
-              isSyncType(sym->type)      ||
-              // ... and some other things while we are at it. Less AST.
-              isAtomicType(sym->type)    ||
-              sym->type->symbol->hasFlag(FLAG_ARRAY))))
-        {
+        if (sym->hasFlag(FLAG_ARG_THIS))
           e->value = markPruned;
-        }
       }
   }
 }
 
 static void
-addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
-  form_Map(SymbolMapElem, e, *vars) {
+addVarsToFormals(FnSymbol* fn, SymbolMap& vars) {
+  form_Map(SymbolMapElem, e, vars) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
@@ -238,30 +231,25 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   }
 }
 
-static void
-replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
-  if (vars->n == 0) return;
-  Vec<BaseAST*> asts;
-  collect_asts(fn->body, asts);
-  form_Map(SymbolMapElem, e, *vars) {
-      Symbol* sym = e->key;
-      if (e->value != markPruned) {
-        SET_LINENO(sym);
-        ArgSymbol* arg = toArgSymbol(e->value);
-        forv_Vec(BaseAST, ast, asts) {
-          if (SymExpr* se = toSymExpr(ast)) {
-            if (se->var == sym) {
-              se->var = arg;
-            }
-          }
-        }
-      }
+void replaceVarUses(Expr* topAst, SymbolMap& vars) {
+  if (vars.n == 0) return;
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(topAst, symExprs);
+  form_Map(SymbolMapElem, e, vars) {
+    Symbol* oldSym = e->key;
+    if (e->value != markPruned) {
+      SET_LINENO(oldSym);
+      Symbol* newSym = e->value;
+      for_vector(SymExpr, se, symExprs)
+        if (se->var == oldSym)
+          se->var = newSym;
+    }
   }
 }
 
 static void
-addVarsToActuals(CallExpr* call, SymbolMap* vars) {
-  form_Map(SymbolMapElem, e, *vars) {
+addVarsToActuals(CallExpr* call, SymbolMap& vars) {
+  form_Map(SymbolMapElem, e, vars) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
@@ -308,7 +296,7 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
 // functions to pass in values or references from the context which
 // are used in the body of the block.
 //
-// As a special case, the target locale is prepended to the arguments passed 
+// As a special case, the target locale is prepended to the arguments passed
 // to the "on" function.
 //
 void createTaskFunctions(void) {
@@ -448,7 +436,7 @@ void createTaskFunctions(void) {
           // Join barrier (acquire) is needed for a blocking on, and it
           // will make sure that writes in the on statement are available
           // to the caller. Nonblocking on or begin don't block so it
-          // doesn't make sense to acquire barrier after running them. 
+          // doesn't make sense to acquire barrier after running them.
           // coforall, cobegin, and sync blocks do this in waitEndCount.
           if( needsMemFence && isBlockingOn )
             block->insertBefore(new CallExpr("chpl_rmem_consist_acquire"));
@@ -484,7 +472,7 @@ void createTaskFunctions(void) {
           if( isBlockingOn )
             fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
         }
-        
+
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 
@@ -492,16 +480,18 @@ void createTaskFunctions(void) {
           hasTaskIntentClause = true;
 
           // Convert referenced variables to explicit arguments.
-          SymbolMap* uses = new SymbolMap();
+          SymbolMap uses;
           findOuterVars(fn, uses);
 
-          pruneOuterVars(uses, block->byrefVars, false);
-          pruneThisArg(call->parentSymbol, uses, false);
-          block->byrefVars->remove();
+          markOuterVarsWithIntents(block->byrefVars, uses);
+          pruneThisArg(call->parentSymbol, uses);
+
+          if (block->byrefVars != NULL)
+            block->byrefVars->remove();
 
           addVarsToActuals(call, uses);
           addVarsToFormals(fn, uses);
-          replaceVarUsesWithFormals(fn, uses);
+          replaceVarUses(fn->body, uses);
         }
       } // if fn
     } // if blockInfo
