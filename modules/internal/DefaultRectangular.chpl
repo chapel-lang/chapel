@@ -1046,7 +1046,7 @@ module DefaultRectangular {
       }
     }
 
-    proc recursiveArrayWriter(in idx: rank*idxType, dim=1) {
+    proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1077,12 +1077,11 @@ module DefaultRectangular {
         for j in dom.ranges(dim) by makeStridePositive {
           var lastIdx =  dom.ranges(dim).last;
           idx(dim) = j;
-          recursiveArrayWriter(idx, dim=dim+1);
 
-          // last=(last || dim == 1) && (j == lastIdx)
-          if isspace {
-            if j != lastIdx || dim != 1 then f <~> new ioLiteral("\n");
-          } else if isjson || ischpl {
+          recursiveArrayWriter(idx, dim=dim+1,
+                               last=(last || dim == 1) && (j == lastIdx));
+
+          if isjson || ischpl {
             if j != lastIdx {
               f <~> new ioLiteral(",\n");
               writeSpaces(dim);
@@ -1091,7 +1090,11 @@ module DefaultRectangular {
         }
       }
 
-      if isjson || ischpl {
+      if isspace {
+        if !last && dim != 1 {
+          f <~> new ioLiteral("\n");
+        }
+      } else if isjson || ischpl {
         if dim != rank {
           f <~> new ioLiteral("\n");
           writeSpaces(dim-1); // space for this dimension
