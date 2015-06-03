@@ -1,11 +1,11 @@
 
 - main program:0 is suspended
-- reports.chpl:5
-- reports.chpl:5
-- reports.chpl:5 is active
-- reports.chpl:5 is active
-- reports.chpl:5 is pending
-- reports.chpl:5 is pending
+- reports.chpl:6 is active
+- reports.chpl:7 is active
+- reports.chpl:8
+- reports.chpl:8 is pending
+- reports.chpl:9
+- reports.chpl:9 is pending
 --------------------------------
 Known tasks:
 Pending tasks:
