@@ -166,6 +166,27 @@ general
 Reviewed 2015-05-20
 ===================
 
+new printchplenv output breaks static_dynamic test (2015-06-02, kyleb)
+(memleaks, xc-wb.gnu, xc-wb.intel, xc-wb.prgenv-intel, xc-wb.prgenv-cray, valgrind, xc-wb.prgenv-gnu)
+----------------------------------------------------------------------
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
+
+
+reports generate better, but mismatched, line numbers now (2016-06-02, vass)
+(gasnet.fifo, xc-wb.prgenv-cray, valgrind, 
+----------------------------------------------------------------------------
+[Error matching program output for parallel/cobegin/hilde/reports]
+[Error matching program output for parallel/cobegin/stonea/reports (execopts: 1)]
+[Error matching program output for parallel/cobegin/stonea/reports (execopts: 2)]
+[Error matching program output for parallel/cobegin/stonea/reports (execopts: 3)]
+[Error matching program output for parallel/cobegin/stonea/reports (execopts: 4)]
+
+
 === sporadic failures below ===
 
 sporadic race condition in task intents (vass -- don't remove until fixed)
@@ -174,8 +195,7 @@ https://chapel.atlassian.net/browse/CHAPEL-63
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
   (verify:   2015-05-13)
   (fast:     2015-05-20)
-  (baseline: 2015-05-25, 2015-05-27)
-
+  (baseline: 2015-05-25, 2015-05-27..)
 
 sporadic failure to build chpldoc due to python download timeout (mike, ben)
 ----------------------------------------------------------------------------
@@ -219,13 +239,6 @@ darwin
 Inherits 'general'
 Reviewed 2015-05-20
 ===================
-
-=== sporadic failures below ===
-
-Bus failure (not test specific?)
---------------------------------
-[Error matching .bad file for users/vass/crash1callDestructorsMain]
-  (2015-04-25)
 
 
 ===================
@@ -399,14 +412,6 @@ Reviewed 2015-05-20
 ===================
 
 
-=== sporadic failures below ===
-
-sporadic recursive failure in AMUDP_SPMDShutdown
-------------------------------------------------
-[Error matching program output for extern/bradc/extern_string_test-remote]
-  (2015-05-01)
-
-
 ===================
 gasnet-fast
 Inherits 'gasnet*'
@@ -435,7 +440,12 @@ https://chapel.atlassian.net/browse/CHAPEL-13
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
   (2015-03-24, 2015-03-28, 2015-04-08, 2015-04-24)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest]
-  (2015-04-15)
+  (2015-04-15, 2015-06-02)
+
+sporadic segfault (one-off)
+---------------------------
+[Error matching .bad file for parallel/forall/vass/memleaks2-BlockDist] (2015-06-02)
+
 
 
 =============================
@@ -466,13 +476,12 @@ Reviewed 2015-05-19
 
 === sporadic failures below ===
 
-sporadic compilation timeouts
------------------------------
+sporadic compilation timeouts (one-offs?)
+-----------------------------------------
 [Error: Timed out compilation for trivial/deitz/test_if_expr2]
   (xc-wb.prgenv-gnu: 2015-05-25)
 [Error: Timed out compilation for trivial/diten/infix2postfix]
   (xc-wb.prgenv-cray: 2015-05-25)
-
 
 =======================
 *gnu*
@@ -537,8 +546,8 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-sporadic dropping/mangling of output
-------------------------------------
+sporadic dropping of output
+---------------------------
 [Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass]
   (2015-01-12..2015-01-19)
 [Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith]
@@ -629,10 +638,9 @@ Inherits 'xc-wb.*' and '*pgi*'
 Reviewed 2015-05-19
 ==============================
 
-segfault in std::sort since we switched to it (2015-05-24, lydia)
------------------------------------------------------------------
+all tests fail with internal error (2015-05-24, lydia)
+------------------------------------------------------
 *all*
-
 
 ==============================
 xc-wb.prgenv-pgi
@@ -676,14 +684,14 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-sporadic execution timeouts
----------------------------
+sporadic execution timeouts (one-offs?)
+---------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
   (xc.aries.pgi.slurm: 2015-05-21)
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 1)]
-  (xc.ugni.gnu.aprun: 2015-05-28)
+  (xc.ugni.gnu.aprun: 2015-05-28
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 2)]
-  (xc.ugni.gnu.aprun: 2015-05-28)
+  (xc.ugni.gnu.aprun: 2015-05-28
 
 
 sporadic [chpl_launchcmd] ... [ERROR] Output file from job does not exist
@@ -699,7 +707,6 @@ https://chapel.atlassian.net/browse/CHAPEL-17
 [Error matching program output for release/examples/primers/procedures]
   (xc.ugni.intel.aprun 2015-04-15)
   (xc.aries.intel.aprun 2015-05-24)
-  (xc.ugni-qthreads.intel.aprun 2015-05-28)
 [Error matching program output for release/examples/primers/sparse]
   (xc.ugni.-qthreads.gnu.aprun 2015-04-16)
 [Error matching program output for release/examples/programs/quicksort]
@@ -761,8 +768,7 @@ sporadic execution timeouts
   (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
                           2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
                           2015-05-05..2015-05-06, 2015-05-10,
-                          2015-05-14..2015-05-16, 2015-05-23..2015-05-24,
-                          2015-05-28..)
+                          2015-05-14..2015-05-16, 2015-05-23..2015-05-24)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
   (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
                            2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
@@ -777,7 +783,7 @@ sporadic execution timeouts
   (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
                           2015-05-05..2015-05-06, 2015-05-18, 2015-05-21)
   (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
-                          2015-05-18, 2015-05-24..2015-05-25, 2015-05-28..)
+                          2015-05-18, 2015-05-24..2015-05-25)
   (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18)
   (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21, 
                           2015-05-23..2015-05-24, 2015-05-26)
@@ -906,14 +912,6 @@ config attempted to be looked up with empty module name (2015-05-23, lydia)
 [Error matching performance keys for release/examples/benchmarks/hpcc/hpl]
 
 
-=== sporadic failures below ===
-
-cause is unknown
-----------------
-[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-printf]
-  (2015-04-22)
-
-
 ================================
 perf.xc.local.pgi
 Inherits 'perf.xc.*' and '*pgi*'
@@ -941,8 +939,8 @@ Reviewed 2015-05-19
 
 === sporadic failures below ===
 
-sporadic execution timeout
---------------------------
+sporadic execution timeout (lydia)
+----------------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
 (cygwin64: ..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06, 
                 2015-03-10, 2015-03-12..2015-03-28, 2015-03-30..2015-04-04, 
@@ -957,6 +955,7 @@ Reviewed 2015-05-19
 ===========================
 
 errors/timeouts due to sync freeing? (2015-05-21, lydia)
+(currently squashed due to running examples only)
 --------------------------------------------------------
 [Error matching program output for parallel/forall/vass/ri-3-stress]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
@@ -966,7 +965,6 @@ errors/timeouts due to sync freeing? (2015-05-21, lydia)
 [Error: Timed out executing program studies/sort/radix]
 [Error: Timed out executing program users/jglewis/cholesky_version_1/test_cholesky]
 
-
 ================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
@@ -975,13 +973,8 @@ Reviewed 2015-05-19
 
 === sporadic failures below ===
 
-sporadic internal error
------------------------
-[Error matching program output for reductions/diten/testSerialReductions]
-  (2015-03-06, 2015-03-13..2015-04-14, 2015-05-01)
-
-sporadic child_copy: data read copy failed
-------------------------------------------
+sporadic child_copy: data read copy failed (one-off?)
+-----------------------------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky]
   (2015-05-11)
 
@@ -989,7 +982,12 @@ sporadic pthread_cond_init() failure
 ------------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
   (2015-02-25..2015-03-04, 2015-03-07, 2015-03-11, 2015-03-29, 2015-04-05, 
-   2015-05-05..2015-05-06, 2015-05-15..2015-05-16, 2015-05-18..)
+   2015-05-05..2015-05-06, 2015-05-15..2015-05-16, 2015-05-18..2015-06-01)
+
+sporadic execution timeout
+--------------------------
+[Error: Timed out executing program release/examples/primers/fileIO] (2015-06-02)
+
 
 
 ****************************************************************************
@@ -997,30 +995,45 @@ sporadic pthread_cond_init() failure
 ****************************************************************************
 
 ===================
-dist-block
+dist-*
 Inherits 'gasnet*'
+===================
+
+comm counts changed for the worse (2015-06-02, vass)
+(dist-replicated, dist-cyclic)
+----------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc_all]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assignAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assignSlice]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceSlice]
+
+
+===================
+dist-block
+Inherits 'dist-*'
 Reviewed 2015-05-20
 ===================
 
 === sporadic failures below ===
 
-sporadic segfault
------------------
+sporadic segfault (one-off?)
+----------------------------
 [Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
   (2015-05-14)
 
 
-
 ===================
 dist-cyclic
-Inherits 'gasnet*'
+Inherits 'dist-*'
 Reviewed 2015-05-20
 ===================
 
 
 ===================
 dist-replicated
-Inherits 'gasnet*'
+Inherits 'dist-*'
 Reviewed 2015-05-20
 ===================
 
