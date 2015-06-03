@@ -1,4 +1,5 @@
 /*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use BlockCycDist;
 

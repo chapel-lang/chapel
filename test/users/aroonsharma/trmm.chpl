@@ -1,4 +1,5 @@
 /*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use Time;
 use CommDiagnostics;
@@ -39,6 +40,12 @@ proc print_matrix(A: [], dim: int) {
         writeln();
     }
 }
+
+proc within_epsilon(a: real, b: real)
+{
+  return fabs(a-b) < 0.00001;
+}
+
 
 /* The process which runs the benchmark */
 proc kernel_trmm(dist, dim: int) {
@@ -100,7 +107,8 @@ proc kernel_trmm(dist, dim: int) {
 		
 		for ii in 1..dim {
 			for jj in 1..dim {
-				still_correct &&= (B[ii,jj] == BTest[ii,jj]);
+				still_correct &&=
+                                  within_epsilon(B[ii,jj], BTest[ii,jj]);
 			}
 		}
 		writeln("Is the calculation correct? ", still_correct);
@@ -129,5 +137,5 @@ proc main() {
     } else if dist == "B" {
         var user_dist = dom dmapped Block(boundingBox=dom);
         kernel_trmm(user_dist, Dim);  
-    } 
+    }
 }
