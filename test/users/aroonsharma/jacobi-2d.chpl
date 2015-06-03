@@ -120,7 +120,7 @@ proc dobench(mydist, mydom) {
 	if correct {
 		writeln("it is correct? ", still_correct);
 		writeln("Jacobi computation complete.");
-		writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
+		//writeln("Delta is ", delta, " (< epsilon = ", epsilon, ")");
 		writeln("# of iterations: ", iteration);
 	}
 

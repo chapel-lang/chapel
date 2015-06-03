@@ -1,4 +1,5 @@
 /*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use BlockCycDist;
 use Time;
@@ -207,9 +208,9 @@ proc main() {
         var user_dist = dom;
         /* Run the benchmark */
         kernel_2mm(alpha, beta, user_dist, size); 
-    } else if dist == "CM" {
+    /*} else if dist == "CM" {
 	    var user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
-	    kernel_2mm(alpha, beta, user_dist, size);   
+	    kernel_2mm(alpha, beta, user_dist, size);   */
     } else if dist == "C" {
         var user_dist = dom dmapped Cyclic(startIdx=dom.low);
         kernel_2mm(alpha, beta, user_dist, size);   
