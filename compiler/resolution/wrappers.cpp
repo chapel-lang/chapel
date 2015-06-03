@@ -154,6 +154,21 @@ insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
 //// default wrapper code
 ////
 
+static void
+zeroInitializeArrayFields(FnSymbol* wrapper)
+{
+  Symbol* _this = wrapper->_this;
+  AggregateType* at = toAggregateType(_this->type);
+  for_fields(field, at)
+  {
+    if (field->type->symbol->hasFlag(FLAG_ARRAY))
+    {
+      wrapper->insertAtTail(new CallExpr(PRIM_SET_MEMBER, _this,
+                                         new_StringSymbol(field->name), gNil));
+    }
+  }
+}
+
 
 static FnSymbol*
 buildDefaultWrapper(FnSymbol* fn,
@@ -191,6 +206,27 @@ buildDefaultWrapper(FnSymbol* fn,
     }
     // This call is required to establish the type of _this.
 //    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
+    // WORKAROUND: If an array appears as a field in a class or record and it
+    // has a forall initializer expression (see e.g. arrayInClassRecord), then
+    // the initializer expression will be converted into a forall loop that
+    // references the yet-to-be-initialized array field.  The forall loop is
+    // intended to copy array elements in the initializer expression into the
+    // array that is supposed to be already there (somehow initialized before
+    // it is initialized).
+    // The whole problem stems from the confusion of assignment with
+    // initialization.  Array assignment is element-by-element.  For array
+    // initialization, however, it would be legal to gin up a whole initialized
+    // array from scratch and then move it into the uninitialized array field
+    // by a pointer copy.
+    // The code that was here before basically zero-initialized the fields in
+    // the class or record, and then a special test on line 2389 of
+    // ChapelArray.chpl skips the assignment-to-the-array-that-aint-yet-there
+    // to avoid a crash.  
+    // As the new constructor story is implemented, propagation of the
+    // distinction between assignment and initialization ought to make it
+    // easier to do the right thing.  For now, the solution is to detect the
+    // failing case and zero-initialize the corresponding field(s).
+    zeroInitializeArrayFields(wrapper);
   }
   CallExpr* call = new CallExpr(fn);
   call->square = info->call->square;    // Copy square brackets call flag.
