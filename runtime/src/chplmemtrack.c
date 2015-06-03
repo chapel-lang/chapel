@@ -39,17 +39,23 @@
 #include <inttypes.h>
 
 
+static void
+printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
+               int32_t lineno, c_string filename);
+
+
 //
 // This is in the modules, in MemTracking.chpl.
 //
-extern void chpl_memTracking_returnConfigVals(chpl_bool*,
-                                              chpl_bool*,
-                                              chpl_bool*,
-                                              chpl_bool*,
-                                              size_t*,
-                                              size_t*,
-                                              c_string*,
-                                              c_string*);
+extern void chpl_memTracking_returnConfigVals(chpl_bool* memTrack,
+                                              chpl_bool* memStats,
+                                              chpl_bool* memLeaksByType,
+                                              c_string* memLeaksByDesc,
+                                              chpl_bool* memLeaks,
+                                              size_t* memMax,
+                                              size_t* memThreshold,
+                                              c_string* memLog,
+                                              c_string* memLeaksLog);
 
 chpl_bool chpl_memTrack = false;
 
@@ -80,6 +86,7 @@ static memTableEntry** memTable = NULL;
 
 static _Bool memStats = false;
 static _Bool memLeaksByType = false;
+static c_string memLeaksByDesc = "";
 static _Bool memLeaks = false;
 static size_t memMax = 0;
 static size_t memThreshold = 0;
@@ -117,6 +124,7 @@ void chpl_setMemFlags(void) {
   chpl_memTracking_returnConfigVals(&local_memTrack,
                                     &memStats,
                                     &memLeaksByType,
+                                    &memLeaksByDesc,
                                     &memLeaks,
                                     &memMax,
                                     &memThreshold,
@@ -126,9 +134,10 @@ void chpl_setMemFlags(void) {
   if (local_memTrack
       || memStats
       || memLeaksByType
+      || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
       || memLeaks
       || memMax > 0
-      || strcmp(memLeaksLog, "") != 0) {
+      || (memLeaksLog && strcmp(memLeaksLog, ""))) {
     chpl_memTrack = true;
   }
 
@@ -392,6 +401,28 @@ void chpl_printMemAllocsByType(int32_t lineno, c_string filename) {
 }
 
 
+static chpl_mem_descInt_t
+find_desc(const char* descString)
+{
+  const int numEntries = CHPL_RT_MD_NUM+chpl_mem_numDescs;
+  for (chpl_mem_descInt_t i = 0; i < numEntries; ++i)
+    if (! strcmp(descString, chpl_mem_descString(i)))
+      return i;
+  return -1;
+}
+
+
+// Print only those memTable entries that match the given descriptor string and
+// exceed the given threshold.
+// If no match is found, all entries (exceeding the given threshold) are printed.
+void chpl_printMemAllocsByDesc(const char* descString, int64_t threshold,
+                               int32_t lineno, c_string filename)
+{
+  chpl_mem_descInt_t description = find_desc(descString);
+  printMemAllocs(description, threshold, lineno, filename);
+}
+
+
 static int descCmp(const void* p1, const void* p2) {
   memTableEntry* m1 = *(memTableEntry**)p1;
   memTableEntry* m2 = *(memTableEntry**)p2;
@@ -405,7 +436,16 @@ static int descCmp(const void* p1, const void* p2) {
 }
 
 
+// If description is -1, print all entries; otherwise print only those with the
+// matching CHPL_RT_MD_ descriptor.
+// Print only those entries exceeding threshold.
 void chpl_printMemAllocs(int64_t threshold, int32_t lineno, c_string filename) {
+  printMemAllocs(-1, threshold, lineno, filename);
+}
+
+static void
+printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
+               int32_t lineno, c_string filename) {
   const int numberWidth   = 9;
   const int precision     = sizeof(uintptr_t) * 2;
   const int addressWidth  = precision+4;
@@ -429,13 +469,15 @@ void chpl_printMemAllocs(int64_t threshold, int32_t lineno, c_string filename) {
   for (i = 0; i < hashSize; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
-      if (chunk >= threshold) {
-        n += 1;
-        if (memEntry->filename) {
-          int filenameLength = strlen(memEntry->filename);
-          if (filenameLength > filenameWidth)
-            filenameWidth = filenameLength;
-        }
+      if (chunk < threshold)
+        continue;
+      if (description != -1 && memEntry->description != description)
+        continue;
+      n += 1;
+      if (memEntry->filename) {
+        int filenameLength = strlen(memEntry->filename);
+        if (filenameLength > filenameWidth)
+          filenameWidth = filenameLength;
       }
     }
   }
@@ -463,9 +505,11 @@ void chpl_printMemAllocs(int64_t threshold, int32_t lineno, c_string filename) {
   for (i = 0; i < hashSize; i++) {
     for (memEntry = memTable[i]; memEntry != NULL; memEntry = memEntry->nextInBucket) {
       size_t chunk = memEntry->number * memEntry->size;
-      if (chunk >= threshold) {
-        table[n++] = memEntry;
-      }
+      if (chunk < threshold)
+        continue;
+      if (description != -1 && memEntry->description != description)
+        continue;
+      table[n++] = memEntry;
     }
   }
   qsort(table, n, sizeof(memTableEntry*), descCmp);
@@ -505,9 +549,13 @@ void chpl_reportMemInfo() {
     fprintf(memLogFile, "\n");
     printMemAllocsByType(true /* forLeaks */, 0, 0);
   }
+  if (memLeaksByDesc && strcmp(memLeaksByDesc, "")) {
+    fprintf(memLogFile, "\n");
+    chpl_printMemAllocsByDesc(memLeaksByDesc, memThreshold, 0, 0);
+  }
   if (memLeaks) {
     fprintf(memLogFile, "\n");
-    chpl_printMemAllocs(0, 0, 0);
+    printMemAllocs(-1, memThreshold, 0, 0);
   }
   if (memLogFile && memLogFile != stdout)
     fclose(memLogFile);

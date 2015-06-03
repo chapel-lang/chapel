@@ -163,6 +163,8 @@ typedef struct qio_style_s {
                           // printed floating point values from printed
                           // integers, it does not apply to integers. You could
                           // use precision = 1 for that.
+                          // Also, it has no impact on numbers printed with
+                          // an exponent for the same reason.
 
   // numeric printing and scanning choice
   int32_t precision; // for floating point, number after decimal point.

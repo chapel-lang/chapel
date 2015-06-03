@@ -33,6 +33,7 @@ This directory contains the following documentation:
     README.tilera      :  Tilera
 
   technotes/                : technical notes about our implementation:
+    README.allocators.rst   :  using Chapel allocators from C
     README.atomics          :  information about using 'atomic' variables
     README.auxIO            :  information about Auxiliary I/O with Chapel
     README.chpl-ipe.rst     :  information about Interactive Chapel

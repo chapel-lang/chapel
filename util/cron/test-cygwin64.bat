@@ -8,7 +8,7 @@ IF "%WORKSPACE%"=="" GOTO ErrExit
 REM NOTE: This is pretty messy, but it is the only way I could figure out how to
 REM       get the correct environment setup and then invoke
 REM       nightly. (thomasvandoren, 2014-07-14)
-c:\cygwin64\bin\bash -exc "export PATH='/usr/local/bin:/usr/bin:/cygdrive/c/windows/system32:/cygdrive/c/windows:/cygdrive/c/windows/System32/Wbem:/cygdrive/c/windows/System32/WindowsPowerShell/v1.0:/cygdrive/c/Program Files/SysinternalsSuite:/usr/bin:/cygdrive/c/emacs-24.3/bin' ; export CHPL_HOME=$PWD ; export CHPL_UTIL_SMTP_HOST=relaya ; source $CHPL_HOME/util/cron/common.bash && export CHPL_NIGHTLY_TEST_CONFIG_NAME="cygwin64" && $CHPL_HOME/util/cron/nightly -cron"
+c:\cygwin64\bin\bash -exc "export PATH='/usr/local/bin:/usr/bin:/cygdrive/c/windows/system32:/cygdrive/c/windows:/cygdrive/c/windows/System32/Wbem:/cygdrive/c/windows/System32/WindowsPowerShell/v1.0:/cygdrive/c/Program Files/SysinternalsSuite:/usr/bin:/cygdrive/c/emacs-24.3/bin' ; export CHPL_HOME=$PWD ; export CHPL_UTIL_SMTP_HOST=relaya ; source $CHPL_HOME/util/cron/common.bash && export CHPL_NIGHTLY_TEST_CONFIG_NAME="cygwin64" && $CHPL_HOME/util/cron/nightly -cron -examples"
 GOTO End
 
 :ErrExit
