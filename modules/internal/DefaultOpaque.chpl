@@ -135,6 +135,10 @@ module DefaultOpaque {
                                             parSafeDom=parSafe, dom=dom.adomain);
   
     proc initialize() {
+      // In spite of what was promised, the domain owned by the above
+      // DefaultOpaqueDom is shared out in the call to new
+      // DefaultAssociativeArr() above, so we have to bump its ref count here.
+      dom.adomain.incRefCount();
       // We have to bump the reference count to move it away from zero.
       anarray.incRefCount();
     }
