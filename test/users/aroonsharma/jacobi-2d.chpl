@@ -9,7 +9,7 @@ use CommDiagnostics;
 config var n=16;
 config var epsilon = 0.1;
 config var verbose = false;
-config var dist='CM';
+config var dist='C';
 config var correct=false;
 config var messages=false;
 config var timeit=false;
