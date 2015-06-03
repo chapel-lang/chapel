@@ -1,4 +1,4 @@
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
 use BlockDist;
 use BlockCycDist;
 
@@ -7,7 +7,7 @@ use CommDiagnostics;
 
 config var n=16;
 config var iterations=2;
-config var dist='CM';
+config var dist='C';
 config var correct=false;
 config var messages=false;
 config var timeit=false;
@@ -18,10 +18,10 @@ var mydom = {1..n};
 if dist=='NONE' {
 	var mydist = mydom;
 	dobench(mydist, mydom);
-} else if dist=='CM' {
+/*} else if dist=='CM' {
 	var mydist = mydom dmapped CyclicZipOpt(startIdx=mydom.low);
 	//totalcomm2=volume;
-	dobench(mydist, mydom);	
+	dobench(mydist, mydom);	*/
 } else if dist=='C' {
 	var mydist = mydom dmapped Cyclic(startIdx=mydom.low);
 	dobench(mydist, mydom);	

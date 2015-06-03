@@ -1,4 +1,4 @@
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
 use BlockDist;
 use BlockCycDist;
 use Time;
@@ -23,7 +23,7 @@ config var printMatrices: bool = false;
 config var alpha: int = 1;
 config var beta: int = 1;
 config var size: int = 128;
-config var dist: string = "CM";
+config var dist: string = "C";
 
 /* Map the distribution according to user input. Currently not used */
 proc map_distribution(size:int): domain(2) {
@@ -31,8 +31,8 @@ proc map_distribution(size:int): domain(2) {
     var user_dist: domain(2);
     if dist == "NONE" {
     	user_dist = dom;
-    } else if dist == "CM" {
-    	user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
+    /*} else if dist == "CM" {
+    	user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);*/
     } else if dist == "C" {
     	user_dist = dom dmapped Cyclic(startIdx=dom.low);
     } else if dist == "B" {
