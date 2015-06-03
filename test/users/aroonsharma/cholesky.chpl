@@ -1,4 +1,5 @@
 /*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use Time;
 use CommDiagnostics;
@@ -85,9 +86,7 @@ proc kernel_cholesky(dist_square, n_dim: int) {
     for i in dist_square[1, 1..n_dim] {
         for j in dist_square[i, 1..i] {
             s = 0.0;
-            forall (a,b) in zip(C[i,1..j], C[j,1..j]) {
-                s += a * b;
-            }                
+            s += + reduce forall (a,b) in zip(C[i,1..j], C[j,1..j]) do a*b;
             if (i == j) {
                 C[i,j] = sqrt(A[i,i] - s);
             } else {
@@ -124,7 +123,7 @@ proc kernel_cholesky(dist_square, n_dim: int) {
 	    for i in 1..n_dim {
 	        for j in 1..i {
 	            sTest = 0.0;
-	            forall (a,b) in zip(Ctest[i,1..j], Ctest[j,1..j]) {
+	            for (a,b) in zip(Ctest[i,1..j], Ctest[j,1..j]) {
 	                sTest += a * b;
 	            }                
 	            if (i == j) {
