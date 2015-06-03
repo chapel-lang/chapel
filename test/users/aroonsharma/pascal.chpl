@@ -9,7 +9,7 @@ use CommDiagnostics;
 
 config var n1=999;
 config var n2=1002;
-config var dist='BCM';
+config var dist='BC';
 config var correct=false;
 config var messages=false;
 config var timeit=false;

@@ -23,7 +23,7 @@ config var M: int = 128;
 config var N: int = 128;
 
 config var printData: bool = false;
-config var dist: string = "CM";
+config var dist: string = "C";
 
 var alpha: int = 32412;
 var beta: int = 2123;
