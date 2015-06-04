@@ -167,7 +167,7 @@ Reviewed 2015-05-20
 ===================
 
 new printchplenv output breaks static_dynamic test (2015-06-02, kyleb)
-(memleaks, xc-wb.gnu, xc-wb.intel, xc-wb.prgenv-intel, xc-wb.prgenv-cray, valgrind, xc-wb.prgenv-gnu)
+(xc-wb.intel, xc-wb.prgenv-intel, xc-wb.prgenv-cray, xc-wb.prgenv-gnu)
 ----------------------------------------------------------------------
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
@@ -178,7 +178,7 @@ new printchplenv output breaks static_dynamic test (2015-06-02, kyleb)
 
 
 reports generate better, but mismatched, line numbers now (2016-06-02, vass)
-(gasnet.fifo, xc-wb.prgenv-cray, valgrind, 
+(xc-wb.prgenv-cray, valgrind)
 ----------------------------------------------------------------------------
 [Error matching program output for parallel/cobegin/hilde/reports]
 [Error matching program output for parallel/cobegin/stonea/reports (execopts: 1)]
@@ -376,6 +376,12 @@ no-local
 Inherits 'general'
 Reviewed 2015-05-20
 ===================
+
+=== sporadic failures below ===
+
+sporadic execution timeout
+--------------------------
+[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (2015-06-04..
 
 
 =================================
