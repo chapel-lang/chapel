@@ -6303,7 +6303,7 @@ proc readf(fmt:string):bool {
 
 
 pragma "no doc" // internal helper routine
-inline proc _do_format(fmt:string, args ...?k, out error:syserr):string {
+inline proc _do_format(fmt:c_string, args ...?k, out error:syserr):string {
   // Open a memory buffer to store the result
   var f = openmem();
 
@@ -6313,7 +6313,7 @@ inline proc _do_format(fmt:string, args ...?k, out error:syserr):string {
 
   var offset = w.offset();
 
-  var buf = c_calloc(int(8), offset+1);
+  var buf = c_calloc(uint(8), offset+1);
 
   // you might need a flush here if
   // close went away
@@ -6326,8 +6326,7 @@ inline proc _do_format(fmt:string, args ...?k, out error:syserr):string {
 
   f.close();
 
-  var cstrcopy = __primitive("cast", c_string_copy, buf);
-  return toString(cstrcopy);
+  return new string(buf, offset, offset+1, owned=true, needToCopy=false);
 }
 
 
@@ -6352,17 +6351,33 @@ proc format(fmt:string, args ...?k):string {
  */
 
 proc string.format(args ...?k, out error:syserr):string {
-  return _do_format(this, (...args), error);
+  return _do_format(this.c_str(), (...args), error);
 }
 
 // documented in the error= version
 pragma "no doc"
 proc string.format(args ...?k):string {
   var err:syserr = ENOERR;
+  var ret = _do_format(this.c_str(), (...args), error=err);
+  if err then ioerror(err, "in string.format");
+  return ret;
+}
+
+// documented in the string version
+proc c_string.format(args ...?k, out error:syserr):string {
+  return _do_format(this, (...args), error);
+}
+
+
+// documented in the error= string version
+pragma "no doc"
+proc c_string.format(args ...?k):string {
+  var err:syserr = ENOERR;
   var ret = _do_format(this, (...args), error=err);
   if err then ioerror(err, "in string.format");
   return ret;
 }
+
 
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
