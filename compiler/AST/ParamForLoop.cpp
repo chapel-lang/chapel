@@ -338,6 +338,18 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
   return retval;
 }
 
+
+/* This function copies the body of a param for loop while
+   adjusting it slightly - to stamp out each iteration.
+
+   * Inserts the body before the expression beforeHere
+   * i should be a loop variable index (used to label iterations)
+   * Assumes that map already contains the mapping redifining
+     the index variable.
+   * continueSym is the symbol for the loop's continue label.
+     This function will replace that with a new continue label
+     local to this iteration.
+*/
 static void copyBodyHelper(Expr* beforeHere, int64_t i,
                            SymbolMap* map, ParamForLoop* loop,
                            Symbol* continueSym)
