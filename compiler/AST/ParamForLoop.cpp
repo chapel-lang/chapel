@@ -22,6 +22,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "resolution.h"
+#include "stringutil.h"
 
 /************************************ | *************************************
 *                                                                           *
@@ -38,6 +39,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
   VarSymbol*   strideVar  = newParamVar();
 
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  LabelSymbol* continueLabel  = new LabelSymbol("_unused_continueLabel");
 
   CallExpr*    call       = toCallExpr(range);
   Expr*        low        = NULL;
@@ -81,9 +83,12 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
                                        lowVar,
                                        highVar,
                                        strideVar,
+                                       continueLabel,
                                        breakLabel,
                                        stmts));
 
+  // this continueLabel will be replaced by a per-iteration one.
+  outer->insertAtTail(new DefExpr(continueLabel));
   outer->insertAtTail(new DefExpr(breakLabel));
 
   return buildChapelStmt(outer);
@@ -113,9 +118,11 @@ ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
                            VarSymbol*   lowVar,
                            VarSymbol*   highVar,
                            VarSymbol*   strideVar,
+                           LabelSymbol* continueLabel,
                            LabelSymbol* breakLabel,
                            BlockStmt*   initBody) : LoopStmt(initBody)
 {
+  continueLabelSet(continueLabel);
   breakLabelSet(breakLabel);
 
   mResolveInfo = new CallExpr(PRIM_BLOCK_PARAM_LOOP,
@@ -331,6 +338,23 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
   return retval;
 }
 
+static void copyBodyHelper(Expr* beforeHere, int64_t i,
+                           SymbolMap* map, ParamForLoop* loop,
+                           Symbol* continueSym)
+{
+  // Replace the continue label with a per-iteration label
+  // that is at the end of that iteration.
+  LabelSymbol* continueLabel = new
+    LabelSymbol(astr("_continueLabel", istr(i)));
+  Expr* defContinueLabel = new DefExpr(continueLabel);
+
+  beforeHere->insertBefore(defContinueLabel);
+
+  map->put(continueSym, continueLabel);
+
+  defContinueLabel->insertBefore(loop->copyBody(map));
+}
+
 CallExpr* ParamForLoop::foldForResolve()
 {
   SymExpr*   idxExpr   = indexExprGet();
@@ -354,6 +378,7 @@ CallExpr* ParamForLoop::foldForResolve()
     USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
   Symbol*      idxSym  = idxExpr->var;
+  Symbol*      continueSym = continueLabelGet();
   Type*        idxType = indexType();
   IF1_int_type idxSize = (get_width(idxType) == 32) ? INT_SIZE_32 : INT_SIZE_64;
 
@@ -373,8 +398,7 @@ CallExpr* ParamForLoop::foldForResolve()
         SymbolMap map;
 
         map.put(idxSym, new_IntSymbol(i, idxSize));
-
-        noop->insertBefore(copyBody(&map));
+        copyBodyHelper(noop, i, &map, this, continueSym);
       }
     }
     else
@@ -385,7 +409,7 @@ CallExpr* ParamForLoop::foldForResolve()
 
         map.put(idxSym, new_IntSymbol(i, idxSize));
 
-        noop->insertBefore(copyBody(&map));
+        copyBodyHelper(noop, i, &map, this, continueSym);
       }
     }
   }
@@ -405,7 +429,7 @@ CallExpr* ParamForLoop::foldForResolve()
 
         map.put(idxSym, new_UIntSymbol(i, idxSize));
 
-        noop->insertBefore(copyBody(&map));
+        copyBodyHelper(noop, i, &map, this, continueSym);
       }
     }
     else
@@ -416,7 +440,7 @@ CallExpr* ParamForLoop::foldForResolve()
 
         map.put(idxSym, new_UIntSymbol(i, idxSize));
 
-        noop->insertBefore(copyBody(&map));
+        copyBodyHelper(noop, i, &map, this, continueSym);
       }
     }
   }
