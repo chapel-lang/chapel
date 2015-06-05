@@ -71,6 +71,28 @@
 #endif
 #endif
 
+#ifdef __CYGWIN__
+#undef HAS_PREADV
+#undef HAS_PWRITEV
+
+// PAGE_SIZE is declared in both Cygwin headers and Windows ones.
+// We don't really care who wins but want to get rid of the warning.
+#undef PAGE_SIZE
+
+
+#include <io.h> // _get_osfhandle
+//#include <ntddk.h>
+//#include <winternl.h>
+//#include <ntifs.h>
+#include <windows.h>
+#include <sys/cygwin.h> // for cygwin_internal
+
+#define REPLACE_CYGWIN_PREADWRITE 1
+
+#endif
+
+
+
 // Should be available in sys_xsi_strerror_r.c
 extern int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
 
@@ -297,6 +319,12 @@ err_t sys_posix_madvise(void* addr, size_t len, int advice)
 
 
 
+// Some systems use "No error" and some use "Success"
+// if you perror(0); others print an error. So
+// using "No error" is consistent with some systems
+// and makes the most sense to us.
+static const char* error_string_no_error = "No error";
+
 static
 const char* extended_errors[] = {
   "end of file",
@@ -324,9 +352,11 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
 
   err_out = 0;
 
-  if( EXTEND_ERROR_OFFSET <= error
-                          && error < EXTEND_ERROR_OFFSET+EXTEND_ERROR_NUM) {
-    errmsg = extended_errors[error - EXTEND_ERROR_OFFSET];
+  if( error == 0 ||
+      (EXTEND_ERROR_OFFSET <= error
+                           && error < EXTEND_ERROR_OFFSET+EXTEND_ERROR_NUM) ) {
+    if( error == 0 ) errmsg = error_string_no_error;
+    else errmsg = extended_errors[error - EXTEND_ERROR_OFFSET];
     buf_sz = strlen(errmsg) + 1;
     buf = (char*) qio_malloc(buf_sz + extra_space);
     if( ! buf ) return ENOMEM;
@@ -752,7 +782,7 @@ err_t sys_read(int fd, void* buf, size_t count, ssize_t* num_read_out)
 
   STARTING_SLOW_SYSCALL;
   got = read(fd, buf, count);
-  if( got != -1 ) {
+  if( got >= 0 ) {
     *num_read_out = got;
     if( got == 0 && count != 0 ) err_out = EEOF;
     else err_out = 0;
@@ -772,7 +802,7 @@ err_t sys_write(int fd, const void* buf, size_t count, ssize_t* num_written_out)
 
   STARTING_SLOW_SYSCALL;
   got = write(fd, buf, count);
-  if( got != -1 ) {
+  if( got >= 0 ) {
     *num_written_out = got;
     err_out = 0;
   } else {
@@ -784,23 +814,130 @@ err_t sys_write(int fd, const void* buf, size_t count, ssize_t* num_written_out)
   return err_out;
 }
 
+
+#ifdef __CYGWIN__
+static
+err_t get_errcode_from_winerr(DWORD win_error)
+{
+  uintptr_t res = cygwin_internal(CW_GET_ERRNO_FROM_WINERROR,
+                                  win_error,
+                                  EACCES);
+  return res;
+}
+#endif
+
+static inline
+err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
+{
+#ifdef REPLACE_CYGWIN_PREADWRITE
+  ssize_t got;
+  err_t error;
+  HANDLE handle = (HANDLE) _get_osfhandle(fd);
+  DWORD win_to_read;
+  DWORD win_num_read;
+  OVERLAPPED overlapped;
+  BOOL win_did_read;
+  DWORD win_error;
+
+  win_to_read = count;
+  win_num_read = 0;
+  memset(&overlapped, 0, sizeof(OVERLAPPED));
+  overlapped.Offset = offset;
+  overlapped.OffsetHigh = offset >> (8*sizeof(DWORD));
+
+  win_did_read = ReadFile(handle, buf, win_to_read, &win_num_read, &overlapped);
+  if( win_did_read ) {
+    got = win_num_read;
+    error = 0;
+  } else {
+    got = -1;
+    win_error = GetLastError();
+    // Cygwin turns ERROR_HANDLE_EOF into ENODATA
+    // but if it stopped doing that we could check for it here:
+    //if( win_error == ERROR_HANDLE_EOF ) error = ENODATA; else
+    error = get_errcode_from_winerr(win_error);
+  }
+
+  if( got == -1 && error == ENODATA ) {
+    // this is how cygwin reports EOF
+    got = 0;
+    error = 0;
+  }
+  *num_read = got;
+  assert(got < 0 || (size_t) got <= count); // can't read more than requested!
+  return error;
+#else
+  ssize_t got;
+  got = pread(fd, buf, count, offset);
+  if( got < 0 ) {
+    *num_read = 0;
+    return errno;
+  }
+  assert(got <= count); // can't read more than requested!
+  *num_read = got;
+  return 0;
+#endif
+}
+
+static inline
+err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *num_written)
+{
+#ifdef REPLACE_CYGWIN_PREADWRITE
+  ssize_t got;
+  err_t error;
+  HANDLE handle = (HANDLE) _get_osfhandle(fd);
+  DWORD win_to_write;
+  DWORD win_num_wrote;
+  OVERLAPPED overlapped;
+  BOOL win_did_write;
+  DWORD win_error;
+
+  win_to_write = count;
+  win_num_wrote = 0;
+  memset(&overlapped, 0, sizeof(OVERLAPPED));
+  overlapped.Offset = offset;
+  overlapped.OffsetHigh = offset >> (8*sizeof(DWORD));
+
+  win_did_write = WriteFile(handle, buf, win_to_write, &win_num_wrote, &overlapped);
+  if( win_did_write ) {
+    got = win_num_wrote;
+    error = 0;
+  } else {
+    got = -1;
+    win_error = GetLastError();
+    error = get_errcode_from_winerr(win_error);
+  }
+
+  assert(got < 0 || (size_t) got <= count); // can't read more than requested!
+  *num_written = got;
+  return error;
+#else
+  ssize_t got;
+  got = pwrite(fd, buf, count, offset);
+  if( got < 0 ) {
+    *num_written = 0;
+    return errno;
+  }
+  assert(got <= count); // can't write more than requested!
+  *num_written = got;
+  return 0;
+#endif
+}
+
 err_t sys_pread(int fd, void* buf, size_t count, off_t offset, ssize_t* num_read_out)
 {
   ssize_t got;
   err_t err_out;
 
   STARTING_SLOW_SYSCALL;
-  got = pread(fd, buf, count, offset);
-  #ifdef __CYGWIN__
-  if( got == -1 && errno == ENODATA ) got = 0;
-  #endif
+  got = 0;
+  err_out = do_pread(fd, buf, count, offset, &got);
   if( got != -1 ) {
     *num_read_out = got;
     if( got == 0 && count != 0 ) err_out = EEOF;
     else err_out = 0;
   } else {
     *num_read_out = 0;
-    err_out = errno;
   }
   DONE_SLOW_SYSCALL;
 
@@ -813,13 +950,13 @@ err_t sys_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t* n
   err_t err_out;
 
   STARTING_SLOW_SYSCALL;
-  got = pwrite(fd, buf, count, offset);
+  got = 0;
+  err_out = do_pwrite(fd, buf, count, offset, &got);
   if( got != -1 ) {
     *num_written_out = got;
     err_out = 0;
   } else {
     *num_written_out = 0;
-    err_out = errno;
   }
   DONE_SLOW_SYSCALL;
 
@@ -965,17 +1102,14 @@ err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_off
   err_out = 0;
   got_total = 0;
   for( i = 0; i < iovcnt; i++ ) {
-    got = pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total);
-    #ifdef __CYGWIN__
-    if( got == -1 && errno == ENODATA ) got = 0;
-    #endif
-    if( got != -1 ) {
+    got = 0;
+    err_out = do_pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total, &got);
+    if( got >= 0 ) {
       got_total += got;
     } else {
-      err_out = errno;
       break;
     }
-    if( got != iov[i].iov_len ) {
+    if( (size_t) got != iov[i].iov_len ) {
       break;
     }
   }
@@ -1041,14 +1175,14 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
   err_out = 0;
   got_total = 0;
   for( i = 0; i < iovcnt; i++ ) {
-    got = pwrite(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total);
-    if( got != -1 ) {
+    got = 0;
+    err_out = do_pwrite(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total, &got);
+    if( got >= 0 ) {
       got_total += got;
     } else {
-      err_out = errno;
       break;
     }
-    if( got != iov[i].iov_len ) {
+    if( (size_t) got != iov[i].iov_len ) {
       break;
     }
   }
@@ -1202,7 +1336,7 @@ err_t sys_accept(fd_t sockfd, sys_sockaddr_t* addr_out, fd_t* fd_out)
 
   got = accept(sockfd, (struct sockaddr*) & addr_out->addr, &addr_len);
   if( got != -1 ) {
-    if( addr_len > sizeof(sys_sockaddr_storage_t) ) {
+    if( addr_len > (socklen_t) sizeof(sys_sockaddr_storage_t) ) {
       fprintf(stderr, "Warning: address truncated in sys_accept\n");
     }
     addr_out->len = addr_len;

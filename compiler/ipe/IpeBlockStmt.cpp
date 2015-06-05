@@ -25,40 +25,32 @@
 #include "ipeResolve.h"
 #include "misc.h"
 
-IpeBlockStmt::IpeBlockStmt(BlockStmt* stmt, IpeEnv* parent)
-  : BlockStmt(NULL, stmt->blockTag)
+IpeBlockStmt::IpeBlockStmt(const std::vector<Expr*>& stmts,
+                           IpeEnv*                   env)
+  : IpeSequence(stmts, BLOCK_NORMAL)
 {
-  mScope = new IpeScopeBlock(parent->scopeGet());
+  mEnv = env;
 }
-
 
 IpeBlockStmt::~IpeBlockStmt()
 {
-  if (mScope != NULL)
-    delete mScope;
+
 }
 
-
-IpeScopeBlock* IpeBlockStmt::scopeGet() const
+IpeEnv* IpeBlockStmt::envGet() const
 {
-  INT_ASSERT(mScope);
-
-  return mScope;
+  return mEnv;
 }
 
-void IpeBlockStmt::varAdd(LcnSymbol* variable)
+bool IpeBlockStmt::isScopeless() const
 {
-  INT_ASSERT(variable);
-
-  mScope->varAdd(variable);
+  return false;
 }
 
 void IpeBlockStmt::describe(int offset)
 {
   AstDumpToNode logger(stdout, offset + 3);
   char          pad[32] = { '\0' };
-
-  IpeEnv        env(mScope);
 
   if (offset < 32)
   {
@@ -72,7 +64,7 @@ void IpeBlockStmt::describe(int offset)
 
   printf("%s#<IpeBlockStmt\n", pad);
 
-  env.describe(offset + 3);
+  mEnv->describe(offset + 3);
   printf("\n");
 
   printf("%s   ", pad);
@@ -81,3 +73,18 @@ void IpeBlockStmt::describe(int offset)
 
   printf("%s>\n", pad);
 }
+
+#if 0
+IpeScopeBlock* IpeBlockStmt::scopeGet() const
+{
+  return mScope;
+}
+
+void IpeBlockStmt::varAdd(LcnSymbol* variable)
+{
+  INT_ASSERT(variable);
+
+  mScope->varAdd(variable);
+}
+#endif
+

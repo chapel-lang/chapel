@@ -24,6 +24,9 @@ class Expr;
 class IpeEnv;
 class IpeValue;
 
-IpeValue evaluateExpr(Expr* expr, IpeEnv* env);
+
+IpeValue evaluate    (Expr* untypedExpr,     IpeEnv* env);
+
+IpeValue evaluateExpr(Expr* streamlinedExpr, IpeEnv* env);
 
 #endif

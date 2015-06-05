@@ -120,7 +120,7 @@ extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
 extern bool fHeterogeneous;
-extern bool fieeefloat;
+extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 
 extern bool llvmCodegen;

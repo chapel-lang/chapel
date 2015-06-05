@@ -108,6 +108,7 @@
 # .ifuture: Future test
 # .noexec: Do not execute this test
 # .skipif: Skip this test if certain environment conditions hold true
+# .suppressif: Suppress this test if certain environment conditions hold true
 # .timeout: Test timeout (overrides TIMEOUT)
 # .perftimeout: Performance test timeout
 # .killtimeout: Kill timeout (overrides KILLTIMEOUT)
@@ -242,9 +243,8 @@ def PerfTFile(test_filename, sfx):
 # read file with comments
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     # sys.stdout.write('Opening: %s\n'%(f))
-    myfile = open(f, 'r')
-    mylines = myfile.readlines()
-    myfile.close()
+    with open(f, 'r') as myfile:
+      mylines = myfile.readlines()
     mylist=list()
     for line in mylines:
         line = line.rstrip()
@@ -1032,6 +1032,25 @@ for testname in testsrc:
             if do_not_test:
                 break
 
+        elif (suffix=='.suppressif' and (os.access(f, os.R_OK))):
+            suppresstest=runSkipIf(f)
+            try:
+                suppressme=False
+                if suppresstest.strip() != "False":
+                    suppressme = suppresstest.strip() == "True" or int(suppresstest) == 1
+                if suppressme:
+                    suppressline = ""
+                    with open('./'+test_filename+'.suppressif', 'r') as suppressfile:
+                        for line in suppressfile:
+                            line = line.strip()
+                            if (line.startswith("#") and
+                                not line.startswith("#!")):
+                                suppressline = line.replace('#','').strip()
+                                break
+                    futuretest='Suppress (' + suppressline + ') '
+            except ValueError:
+                sys.stdout.write('[Error processing .suppressif file %s/%s]\n'%(localdir,f))
+
         elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
             timeout=ReadIntegerValue(f, localdir)
             sys.stdout.write('[Overriding default timeout with %d]\n'%(timeout))
@@ -1063,9 +1082,8 @@ for testname in testsrc:
             numlocales=ReadIntegerValue(f, localdir)
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
-            futurefile = open('./'+test_filename+futureSuffix, 'r')
-            futuretest='Future ('+futurefile.readline().strip()+') '
-            futurefile.close()
+            with open('./'+test_filename+futureSuffix, 'r') as futurefile:
+                futuretest='Future ('+futurefile.readline().strip()+') '
 
         elif (suffix=='.noexec' and os.access(f, os.R_OK)):
             noexecfile=True
@@ -1679,6 +1697,7 @@ for testname in testsrc:
             #
             for count in xrange(numTrials):
                 exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
+                launcher_error = ''  # used to suppress output/timeout errors whose root cause is a launcher error
                 sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
                 if redirectin:
                     sys.stdout.write(' < %s'%(redirectin))
@@ -1700,16 +1719,18 @@ for testname in testsrc:
                     output = p.communicate()[0]
                     status = p.returncode
 
-                    launcherTimeout = False
-                    if re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None:
-                        launcherTimeout = True
-                    if re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None:
-                        launcherTimeout = True
-
-                    if launcherTimeout:
+                    if re.search('slurmstepd: Munge decode failed: Expired credential', output, re.IGNORECASE) != None:
+                        launcher_error = 'Jira 18 -- Expired slurm credential for'
+                    elif re.search('output file from job .* does not exist', output, re.IGNORECASE) != None:
+                        launcher_error = 'Jira 17 -- Missing output file for'
+                    elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
+                          re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                         exectimeout = True
-                        sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
-                                        (futuretest, localdir, test_filename))
+                        launcher_error = 'Timed out executing program'
+
+                    if launcher_error:
+                        sys.stdout.write('%s[Error: %s %s/%s'%
+                                        (futuretest, launcher_error, localdir, test_filename))
                         printTestVariation(compoptsnum, compoptslist,
                                            execoptsnum, execoptslist);
                         sys.stdout.write(']\n')
@@ -1817,7 +1838,7 @@ for testname in testsrc:
                     execlogfile.write(pre_exec_output)
                     execlogfile.write(output)
 
-                if not exectimeout:
+                if not exectimeout and not launcher_error:
                     if systemPrediff:
                         sys.stdout.write('[Executing system-wide prediff]\n')
                         sys.stdout.flush()
@@ -1939,13 +1960,13 @@ for testname in testsrc:
                     sys.stdout.flush()
 
                     status = p.returncode
-                    if not exectimeout:
+                    if not exectimeout and not launcher_error:
                         if status == 0:
                             os.unlink(execlog)
-                            sys.stdout.write('[Success')
+                            sys.stdout.write('%s[Success '%(futuretest))
                         else:
-                            sys.stdout.write('[Error')
-                        sys.stdout.write(' matching performance keys for %s/%s'%
+                            sys.stdout.write('%s[Error '%(futuretest))
+                        sys.stdout.write('matching performance keys for %s/%s'%
                                         (localdir, test_filename))
                         if status!=0:
                             printTestVariation(compoptsnum, compoptslist,

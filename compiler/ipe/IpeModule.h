@@ -20,40 +20,32 @@
 #ifndef _IPE_MODULE_H_
 #define _IPE_MODULE_H_
 
-#include "symbol.h"
-
-#include <cstddef>
-#include <vector>
-
-class Expr;
-class CallExpr;
-class DefExpr;
-class SymExpr;
-
-class IpeCallExpr;
 class IpeEnv;
 class IpeModuleRoot;
 class IpeScopeModule;
-class IpeValue;
+class IpeSequence;
 
-class LcnSymbol;
+class Expr;
+class DefExpr;
 class ModuleSymbol;
 
 class IpeModule
 {
 public:
+  virtual                 ~IpeModule();
+
   const char*              name()                                             const;
   IpeEnv*                  environment()                                      const;
+  IpeScopeModule*          scopeGet()                                         const;
 
   void                     moduleAdd(IpeModule* module);
   IpeModule*               moduleByName(const char* name)                     const;
 
-  void                     moduleResolve(IpeModuleRoot* rootModule);
+  void                     moduleEvaluate();
+  void                     moduleResolve();
   void                     initialize();
 
-  IpeValue                 evaluate(Expr* expr)                               const;
-
-  static void              describeAllModules(int offset);
+  void                     describe(int offset)                               const;
 
 protected:
   enum State
@@ -67,24 +59,25 @@ protected:
     kInitialized
   };
 
-                           IpeModule(ModuleSymbol* sym);
-                           IpeModule();
-
-                          ~IpeModule();
+                           IpeModule(IpeModule*    parent,
+                                     ModuleSymbol* modSym);
 
   virtual const char*      moduleTypeAsString()                               const = 0;
 
   const char*              stateAsString()                                    const;
-  bool                     isUseStmt(Expr* expr)                              const;
 
   void                     ensureInitialized();
 
   State                    mState;
-  ModuleSymbol*            mModuleDecl;
+
   IpeEnv*                  mEnv;
 
+  ModuleSymbol*            mModSym;
+
+  IpeSequence*             mBodyResolved;
+
 private:
-  void                     describe(int offset)                               const;
+                           IpeModule();
 };
 
 #endif
