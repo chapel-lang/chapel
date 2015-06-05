@@ -1,0 +1,17 @@
+# Valgrind reports a read of uninitialized data in a zip2() routine.
+# The situation is explained in more detail in http://web/~hilde/notes/u04.txt
+# The problem is created because as part of iterator lowering, we use value
+# semantics to move values into an out of the fields in an iterator class.
+# (Iterator classes preserve the state of an iterator across yields.)
+# When the preserved value is a tuple, value semantics means copying the tuple out
+# of the tuple stored in the iterator class field-by-field, updating it and then
+# copying it back into the iterator class field-by-field.  If it happened that all
+# of the fields in said tuple were initially uninitialized, then even after
+# optimizing out trivial moves, some reading of uninitialized data remains.
+# In this particular case, the valgrind error is harmless.  By the end of the
+# first call to zip2(), the F6_indexOfInterest tuple is fully initialized and the
+# program runs correctly.
+# The insertion of extra autoCopy calls is considered to be a separate problem
+# Both would be cured by fully-initializing the iterator class when it is
+# created.  Then, only the inefficiencies associated with value semantics remain.
+CHPL_TEST_VGRND_EXE==on

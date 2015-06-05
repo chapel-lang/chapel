@@ -1,0 +1,11 @@
+# Forall array field initializer in a class or record fails with -valgrindexe
+# The valgrind output is correct because this test does in fact read an uninitialized value.
+# The failure arises because the forall expression to initialize an array field in a record
+# causes the creation of a whole array assignment that references the yet-to-be-initialized 
+# array on the left-hand side.
+# The long-term solution will end up creating a literal array initializer and then just
+# doing a pointer-copy to initialize the array field.  The whole-array assignment will not 
+# be used, so the problem with referring to a not-yet-initialized array will be avoided.
+# It is also possible that preventing iterators from capturing "this" values passed in
+# by reference in iterator records would solve the problem.
+CHPL_TEST_VGRND_EXE==on
