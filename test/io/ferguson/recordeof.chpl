@@ -1,46 +1,16 @@
-/* This example demonstrates how to use formatted I/O to
-   write and read a record stored as a tab-separated
-   fields, with one record per line.
- */
-
-/* MyRecord contains fields of various types in order to demonstrate
-   functionality.
- */
 record MyRecord {
   var i: int;
-//  var r: real;
-//  var s: string;
 }
 
 config const fileName = "test.txt";
 config const debug = true;
 
 // Open up a file to work with.
+// Note that fileName not exist or have no contents
 var f = open(fileName, iomode.cwr);
 
-// Now read the data. Way 2: provide a readWriteThis method.
-
-/* notes on readWriteThis (see the language spec):
-   - f is a Writer or a Reader
-   - the compiler will generate readWriteThis for you if you don't
-     provide one
-   - the I/O operator <~> is available to read or write (depending
-     on which situation we are being called in)
- */
 proc MyRecord.readWriteThis(f) {
   f <~> i;
-//  f <~> new ioLiteral("\t");
-//  f <~> r;
-//  f <~> new ioLiteral("\t");
-
-  // When doing the string I/O, we need to specify that we'd like
-  // the string to be single-quoted. Unfortunately, readf is
-  // not currently available on a Reader, so we have to rely
-  // on the caller setting the string formatting with the channel's
-  // style.
-  // In the future, we hope to allow readf in this situation. 
-//  f <~> s;
-
   f <~> new ioLiteral("\n");
 }
 
@@ -53,8 +23,7 @@ proc MyRecord.readWriteThis(f) {
   var i = 1;
 
   // read until we reach EOF
-  // (note: if you want to handle format errors or I/O errors,
-  //  you need to use error= versions of the I/O functions)
+  // this test should reach EOF before reading any records
   while( reader.read(rec) ) {
     writeln("read ", rec);
   }
