@@ -96,11 +96,11 @@ printcflags:
 
 printlibraries:
 	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
 printlinkline:
 	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
 
 printmaino:
