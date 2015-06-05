@@ -281,7 +281,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
     compiler_val = chpl_compiler.get(location)
     platform_val = chpl_platform.get(location)
 
-    isprgenv = compiler_is_prgenv(compiler_val)
+    isprgenv = utils.compiler_is_prgenv(compiler_val)
 
     if isprgenv:
         if arch and (arch != 'none' or arch != 'unknown'):
