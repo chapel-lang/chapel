@@ -463,10 +463,10 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     // A for loop has no termination condition, so it just runs all the indices
     // in the underlying iterator.
     SymExpr* iterator = forLoop->iteratorGet()->copy(&map);
-	VarSymbol* more = newTemp("_more_in_for", dtInt[INT_SIZE_DEFAULT]);
-	CallExpr* moreField = new CallExpr(PRIM_GET_MEMBER, iterator,
-									   new_StringSymbol("more"));
-	zip1body->insertAtTail(new CallExpr(PRIM_MOVE, more, moreField));
+    VarSymbol* more = newTemp("_more_in_for", dtInt[INT_SIZE_DEFAULT]);
+    CallExpr* moreField = new CallExpr(PRIM_GET_MEMBER, iterator,
+                                       new_StringSymbol("more"));
+    zip1body->insertAtTail(new CallExpr(PRIM_MOVE, more, moreField));
     zip1body->insertAtTail(new CondStmt(new SymExpr(more),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
@@ -560,10 +560,10 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
                                         ii->iclass->getField("more"), condTemp));
   } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
     SymExpr* iterator = forLoop->iteratorGet()->copy(&map);
-	VarSymbol* more = newTemp("_more_in_for", dtInt[INT_SIZE_DEFAULT]);
-	CallExpr* moreField = new CallExpr(PRIM_GET_MEMBER, iterator,
-									   new_StringSymbol("more"));
-	zip3body->insertAtTail(new CallExpr(PRIM_MOVE, more, moreField));
+    VarSymbol* more = newTemp("_more_in_for", dtInt[INT_SIZE_DEFAULT]);
+    CallExpr* moreField = new CallExpr(PRIM_GET_MEMBER, iterator,
+                                       new_StringSymbol("more"));
+    zip3body->insertAtTail(new CallExpr(PRIM_MOVE, more, moreField));
     zip3body->insertAtTail(new CondStmt(new SymExpr(more),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
