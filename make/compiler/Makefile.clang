@@ -100,11 +100,6 @@ GEN_CFLAGS += -maix64
 COMP_GEN_LFLAGS += -maix64
 endif
 
-#
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS = -std=gnu89
-
 
 #
 # Flags for turning on warnings for C++/C code
