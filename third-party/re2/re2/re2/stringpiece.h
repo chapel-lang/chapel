@@ -24,6 +24,7 @@
 #include <iosfwd>
 #include <string>
 
+
 namespace re2 {
 
 class StringPiece {
@@ -32,6 +33,15 @@ class StringPiece {
   int           length_;
 
  public:
+  // This for supporting other StringPiece-like things
+  // (e.g. match on a FILE*)
+  typedef const char* ptr_type;
+  typedef const char* ptr_rd_type;
+  static bool can_discard(long diff) { return false; }
+  static int discard_check_period() { return 0; }
+  void discard(bool match, ptr_type match_start, ptr_type match_end, ptr_type min_cap) const { }
+  static const char* null_ptr() { return NULL; }
+
   // We provide non-explicit singleton constructors so users can pass
   // in a "const char*" or a "string" wherever a "StringPiece" is
   // expected.
@@ -53,6 +63,9 @@ class StringPiece {
 
   void clear() { ptr_ = NULL; length_ = 0; }
   void set(const char* data, int len) { ptr_ = data; length_ = len; }
+  void set_ptr_end(const char* data, const char* end) {
+    set(data, end - data);
+  }
   void set(const char* str) {
     ptr_ = str;
     if (str != NULL)
@@ -112,6 +125,13 @@ class StringPiece {
             (memcmp(ptr_ + (length_-x.length_), x.ptr_, x.length_) == 0));
   }
 
+  // Find the position where c occurs (ie memchr)
+  // uses begin, end pointers
+  const char* find_c(const char* s, const char* end, int c) const
+  {
+    return reinterpret_cast<const char*>(memchr(s, c, end - s));
+  }
+
   // standard STL container boilerplate
   typedef char value_type;
   typedef const char* pointer;
@@ -125,6 +145,8 @@ class StringPiece {
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
   typedef std::reverse_iterator<iterator> reverse_iterator;
   iterator begin() const { return ptr_; }
+  // Also define begin_reading
+  iterator begin_reading() const { return ptr_; }
   iterator end() const { return ptr_ + length_; }
   const_reverse_iterator rbegin() const {
     return const_reverse_iterator(ptr_ + length_);
@@ -176,9 +198,17 @@ inline bool operator>=(const StringPiece& x, const StringPiece& y) {
   return !(x < y);
 }
 
+/*inline const char* re2_memrchr(const char* s, int c, size_t n)
+{
+  return reinterpret_cast<const char*>(memrchr(s, c, n));
+}
+*/
+
 }  // namespace re2
 
 // allow StringPiece to be logged
 extern std::ostream& operator<<(std::ostream& o, const re2::StringPiece& piece);
+
+#include "file_strings.h"
 
 #endif  // STRINGS_STRINGPIECE_H__

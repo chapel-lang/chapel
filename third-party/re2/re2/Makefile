@@ -49,6 +49,7 @@ INSTALL_HFILES=\
 	re2/set.h\
 	re2/stringpiece.h\
 	re2/variadic_function.h\
+	re2/file_strings.h\
 
 HFILES=\
 	util/atomicops.h\
@@ -81,6 +82,7 @@ HFILES=\
 	re2/unicode_groups.h\
 	re2/variadic_function.h\
 	re2/walker-inl.h\
+	re2/file_strings.h\
 
 OFILES=\
 	obj/util/hash.o\
@@ -91,6 +93,7 @@ OFILES=\
 	obj/re2/bitstate.o\
 	obj/re2/compile.o\
 	obj/re2/dfa.o\
+	obj/re2/file_strings.o\
 	obj/re2/filtered_re2.o\
 	obj/re2/mimics_pcre.o\
 	obj/re2/nfa.o\
@@ -249,6 +252,7 @@ install: obj/libre2.a obj/so/libre2.so
 	$(INSTALL_DATA) $(INSTALL_HFILES) $(DESTDIR)$(includedir)/re2
 	$(INSTALL) obj/libre2.a $(DESTDIR)$(libdir)/libre2.a
 	$(INSTALL) obj/so/libre2.so $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0
+	if [ -n "`command -v install_name_tool`" ]; then install_name_tool -id $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME).0.0; fi
 	ln -sf libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so.$(SONAME)
 	ln -sf libre2.so.$(SONAME).0.0 $(DESTDIR)$(libdir)/libre2.so
 	sed -e "s#@prefix@#${prefix}#" re2.pc >$(DESTDIR)$(libdir)/pkgconfig/re2.pc
@@ -293,3 +297,8 @@ log:
 
 x: x.cc obj/libre2.a
 	g++ -I. -o x x.cc obj/libre2.a
+
+install-static: obj/libre2.a
+	mkdir -p $(DESTDIR)$(includedir)/re2 $(DESTDIR)$(libdir)
+	$(INSTALL_DATA) $(INSTALL_HFILES) $(DESTDIR)$(includedir)/re2
+	$(INSTALL) obj/libre2.a $(DESTDIR)$(libdir)/libre2.a

@@ -175,7 +175,8 @@ void OnePass_Checks() {
                  kMaxCap_disagrees_with_kMaxOnePassCapture);
 }
 
-static bool Satisfy(uint32 cond, const StringPiece& context, const char* p) {
+template<typename StrPiece>
+static bool Satisfy(uint32 cond, const StrPiece& context, typename StrPiece::ptr_rd_type p) {
   uint32 satisfied = Prog::EmptyFlags(context, p);
   if (cond & kEmptyAllFlags & ~satisfied)
     return false;
@@ -184,8 +185,9 @@ static bool Satisfy(uint32 cond, const StringPiece& context, const char* p) {
 
 // Apply the capture bits in cond, saving p to the appropriate
 // locations in cap[].
-static void ApplyCaptures(uint32 cond, const char* p,
-                          const char** cap, int ncap) {
+template<typename ptr_rd_type, typename ptr_type>
+static void ApplyCaptures(uint32 cond, ptr_rd_type p,
+                          ptr_type* cap, int ncap) {
   for (int i = 2; i < ncap; i++)
     if (cond & (1 << kCapShift << i))
       cap[i] = p;
@@ -200,10 +202,14 @@ static inline OneState* IndexToNode(volatile uint8* nodes, int statesize,
     const_cast<uint8*>(nodes + statesize*nodeindex));
 }
 
-bool Prog::SearchOnePass(const StringPiece& text,
-                         const StringPiece& const_context,
+template<typename StrPiece>
+bool Prog::SearchOnePass(const StrPiece& text,
+                         const StrPiece& const_context,
                          Anchor anchor, MatchKind kind,
-                         StringPiece* match, int nmatch) {
+                         StrPiece* match, int nmatch) {
+  typedef typename StrPiece::ptr_type ptr_type;
+  typedef typename StrPiece::ptr_rd_type ptr_rd_type;
+
   if (anchor != kAnchored && kind != kFullMatch) {
     LOG(DFATAL) << "Cannot use SearchOnePass for unanchored matches.";
     return false;
@@ -215,16 +221,16 @@ bool Prog::SearchOnePass(const StringPiece& text,
   if (ncap < 2)
     ncap = 2;
 
-  const char* cap[kMaxCap];
+  ptr_type cap[kMaxCap];
   for (int i = 0; i < ncap; i++)
-    cap[i] = NULL;
+    cap[i] = StrPiece::null_ptr();
 
-  const char* matchcap[kMaxCap];
+  ptr_type matchcap[kMaxCap];
   for (int i = 0; i < ncap; i++)
-    matchcap[i] = NULL;
+    matchcap[i] = StrPiece::null_ptr();
 
-  StringPiece context = const_context;
-  if (context.begin() == NULL)
+  StrPiece context = const_context;
+  if (context.begin() == StrPiece::null_ptr())
     context = text;
   if (anchor_start() && context.begin() != text.begin())
     return false;
@@ -241,14 +247,14 @@ bool Prog::SearchOnePass(const StringPiece& text,
   volatile uint8* nodes = onepass_nodes_;
   volatile uint32 statesize = onepass_statesize_;
   uint8* bytemap = bytemap_;
-  const char* bp = text.begin();
-  const char* ep = text.end();
-  const char* p;
+  ptr_type bp = text.begin();
+  ptr_type ep = text.end();
+  ptr_rd_type p = text.begin_reading();
   bool matched = false;
   matchcap[0] = bp;
   cap[0] = bp;
   uint32 nextmatchcond = state->matchcond;
-  for (p = bp; p < ep; p++) {
+  for (; p < ep; p++) {
     int c = bytemap[*p & 0xFF];
     uint32 matchcond = nextmatchcond;
     uint32 cond = state->action[c];
@@ -285,7 +291,8 @@ bool Prog::SearchOnePass(const StringPiece& text,
     // (e.g., HTTPPartialMatchRE2) it slows the loop by
     // about 10%, but when it avoids work (e.g., DotMatchRE2),
     // it cuts the loop execution by about 45%.
-    if ((cond & kMatchWins) == 0 && (nextmatchcond & kEmptyAllFlags) == 0)
+    if ((cond & kMatchWins) == 0 && (nextmatchcond & kEmptyAllFlags) == 0 &&
+        text.can_discard(p-bp) )
       goto skipmatch;
 
     // Finally, the match conditions must be satisfied.
@@ -296,7 +303,6 @@ bool Prog::SearchOnePass(const StringPiece& text,
         ApplyCaptures(matchcond, p, matchcap, ncap);
       matchcap[1] = p;
       matched = true;
-
       // If we're in longest match mode, we have to keep
       // going and see if we find a longer match.
       // In first match mode, we can stop if the match
@@ -311,6 +317,29 @@ bool Prog::SearchOnePass(const StringPiece& text,
       goto done;
     if ((cond & kCapMask) && nmatch > 1)
       ApplyCaptures(cond, p, cap, ncap);
+
+    // Occasionally compute the minimum match position in
+    // and let e.g. a FILE* know that it can drop
+    // buffers from earlier portions.
+    if ( text.can_discard(p-bp) ) {
+      ptr_type min_start;
+      ptr_type min_end;
+      ptr_type min_cap;
+      // Optimization above might not set matched if there is a certain
+      // match at the next byte.
+      //bool match_or_nextmatch = matched |
+     //   ((cond & kMatchWins) == 0 && (nextmatchcond & kEmptyAllFlags) == 0);
+      min_start = cap[0];
+      if( cap[1] >= cap[0] ) min_end = cap[1];
+      else min_end = p;
+      min_cap = p;
+      for (int k = 2; k < 2*nmatch; k+=2 ) {
+        if ( cap[k] < min_cap ) min_cap = cap[k];
+      }
+      // Let e.g. a FILE* know of the minimum starting position.
+      text.discard(matched, min_start, min_end, min_cap);
+    }
+
   }
 
   // Look for match at end of input.
@@ -331,10 +360,23 @@ done:
   if (!matched)
     return false;
   for (int i = 0; i < nmatch; i++)
-    match[i].set(matchcap[2*i], matchcap[2*i+1] - matchcap[2*i]);
+    match[i].set_ptr_end(matchcap[2*i], matchcap[2*i+1]);
   return true;
 }
 
+template
+bool Prog::SearchOnePass<StringPiece>(
+                         const StringPiece& text,
+                         const StringPiece& const_context,
+                         Anchor anchor, MatchKind kind,
+                         StringPiece* match, int nmatch);
+
+template
+bool Prog::SearchOnePass<FilePiece>(
+                         const FilePiece& text,
+                         const FilePiece& const_context,
+                         Anchor anchor, MatchKind kind,
+                         FilePiece* match, int nmatch);
 
 // Analysis to determine whether a given regexp program is one-pass.
 

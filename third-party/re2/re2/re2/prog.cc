@@ -260,7 +260,8 @@ static bool IsMatch(Prog* prog, Prog::Inst* ip) {
   }
 }
 
-uint32 Prog::EmptyFlags(const StringPiece& text, const char* p) {
+template<typename StrPiece>
+uint32 Prog::EmptyFlags(const StrPiece& text, typename StrPiece::ptr_rd_type p) {
   int flags = 0;
 
   // ^ and \A
@@ -293,6 +294,12 @@ uint32 Prog::EmptyFlags(const StringPiece& text, const char* p) {
 
   return flags;
 }
+
+template
+uint32 Prog::EmptyFlags<StringPiece>(const StringPiece& text, const char* p);
+
+template
+uint32 Prog::EmptyFlags<FilePiece>(const FilePiece& text, FilePiece::ptr_rd_type p);
 
 void Prog::MarkByteRange(int lo, int hi) {
   DCHECK_GE(lo, 0);

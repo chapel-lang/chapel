@@ -189,6 +189,8 @@ void RE2::Init(const StringPiece& pattern, const Options& options) {
   named_groups_ = NULL;
   group_names_ = NULL;
   num_captures_ = -1;
+  min_match_length_ = 0;
+  max_match_length_ = -1;
 
   RegexpStatus status;
   entire_regexp_ = Regexp::Parse(
@@ -214,6 +216,8 @@ void RE2::Init(const StringPiece& pattern, const Options& options) {
     suffix_regexp_ = suffix;
   else
     suffix_regexp_ = entire_regexp_->Incref();
+
+  entire_regexp_->PossibleMatchLength(&min_match_length_, &max_match_length_);
 
   // Two thirds of the memory goes to the forward Prog,
   // one third to the reverse prog, because the forward
@@ -528,8 +532,9 @@ bool RE2::PossibleMatchRange(string* min, string* max, int maxlen) const {
 
 // Avoid possible locale nonsense in standard strcasecmp.
 // The string a is known to be all lowercase.
-static int ascii_strcasecmp(const char* a, const char* b, int len) {
-  const char *ae = a + len;
+template<typename ptr_type>
+static int ascii_strcasecmp(const char* a, ptr_type b, int len) {
+  const char* ae = a + len;
 
   for (; a < ae; a++, b++) {
     uint8 x = *a;
@@ -802,6 +807,142 @@ bool RE2::Match(const StringPiece& text,
   // Zero submatches that don't exist in the regexp.
   for (int i = ncap; i < nsubmatch; i++)
     submatch[i] = NULL;
+  return true;
+}
+
+bool RE2::MatchFile(FilePiece& text,
+                    const StringPiece& buffer,
+                    Anchor re_anchor,
+                    FilePiece* submatch,
+                    int nsubmatch) const {
+  if (!ok() || suffix_regexp_ == NULL) {
+    if (options_.log_errors())
+      LOG(ERROR) << "Invalid RE2: " << *error_;
+    return false;
+  }
+
+  FilePiece subtext = text;
+
+  // First, we can try an in-memory search with whatever is in the
+  // current buffer. To do that, we just call the other
+  // Match function... If we find a match, we will skip to
+  // the position of the match and continue searching with NFA
+  // or one-pass. If we don't find a match, we will skip
+  // to the first possible position that hasn't been ruled out yet.
+  StringPiece vec[1];
+  int nvec = 1;
+
+  if( nsubmatch == 0 ) nvec = 0;
+
+  int skip = 0;
+
+  if( FilePiece::allow_buffer_search() && re_anchor == UNANCHORED ) {
+    bool found = Match(buffer, 0, buffer.size(), re_anchor, vec, nvec);
+    if( found ) {
+      // If we found a match and that's all we wanted to know...
+      if( nsubmatch == 0 ) return true;
+      // Otherwise, we could be doing a greedy search
+      // that could continue past the end of that buffer.
+      // So advance to that position and then continue.
+      skip = vec[0].begin() - buffer.begin();
+      // we have some kind of match here!
+      re_anchor = ANCHOR_START;
+    } else {
+      // There was no match.
+      // Given the minimum and maximum match lengths...
+      // compute a skip.
+      if( max_match_length_ != -1 &&
+          buffer.size() > max_match_length_ ) {
+        skip = buffer.size() - max_match_length_ - 1;
+      }
+    }
+  }
+
+  if( skip < 0 ) skip = 0;
+  subtext.remove_prefix(skip);
+
+  // The rest of this doesn't use DFA search.
+  //
+  FilePiece match;
+  FilePiece* matchp = &match;
+  if (nsubmatch == 0)
+    matchp = NULL;
+
+  int ncap = 1 + NumberOfCapturingGroups();
+  if (ncap > nsubmatch)
+    ncap = nsubmatch;
+
+  // If the regexp is anchored explicitly, update re_anchor
+  // so that we can potentially fall into a faster case below.
+  if (prog_->anchor_start() && prog_->anchor_end())
+    re_anchor = ANCHOR_BOTH;
+  else if (prog_->anchor_start() && re_anchor != ANCHOR_BOTH)
+    re_anchor = ANCHOR_START;
+
+  // Check for the required prefix, if any.
+  int64_t prefixlen = 0;
+  if (!prefix_.empty()) {
+    prefixlen = prefix_.size();
+    if (prefixlen > subtext.size())
+      return false;
+    if (prefix_foldcase_) {
+      if (ascii_strcasecmp(&prefix_[0], subtext.begin_reading(), prefixlen) != 0)
+        return false;
+    } else {
+      if (re2_memcmp(&prefix_[0], subtext.begin_reading(), prefixlen) != 0)
+        return false;
+    }
+    subtext.remove_prefix(prefixlen);
+    // If there is a required prefix, the anchor must be at least ANCHOR_START.
+    if (re_anchor != ANCHOR_BOTH)
+      re_anchor = ANCHOR_START;
+  }
+
+  Prog::Anchor anchor = Prog::kUnanchored;
+  Prog::MatchKind kind = Prog::kFirstMatch;
+  if (options_.longest_match())
+    kind = Prog::kLongestMatch;
+
+  bool can_one_pass = (is_one_pass_ && ncap <= Prog::kMaxOnePassCapture);
+
+  switch (re_anchor) {
+    default:
+    case UNANCHORED:
+      break;
+    case ANCHOR_BOTH:
+    case ANCHOR_START:
+      if (re_anchor == ANCHOR_BOTH)
+        kind = Prog::kFullMatch;
+      anchor = Prog::kAnchored;
+  }
+
+  {
+    FilePiece subtext1 = subtext;
+    if (can_one_pass && anchor != Prog::kUnanchored) {
+      if (FLAGS_trace_re2)
+        LOG(INFO) << "Match " << trunc(pattern_)
+                  << " using OnePass.";
+      if (!prog_->SearchOnePass(subtext1, text, anchor, kind, submatch, ncap)) {
+        return false;
+      }
+    } else {
+      if (FLAGS_trace_re2)
+        LOG(INFO) << "Match " << trunc(pattern_)
+                  << " using NFA.";
+      if (!prog_->SearchNFA(subtext1, text, anchor, kind, submatch, ncap)) {
+        return false;
+      }
+    }
+  }
+
+  // Adjust overall match for required prefix that we stripped off.
+  if (prefixlen > 0 && nsubmatch > 0)
+    submatch[0].set_ptr_end(submatch[0].begin() - prefixlen,
+                            submatch[0].end());
+
+  // Zero submatches that don't exist in the regexp.
+  for (int i = ncap; i < nsubmatch; i++)
+    submatch[i].clear();
   return true;
 }
 

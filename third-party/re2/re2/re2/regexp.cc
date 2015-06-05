@@ -10,6 +10,9 @@
 #include "re2/stringpiece.h"
 #include "re2/walker-inl.h"
 
+#include <limits>
+#include <algorithm>
+
 namespace re2 {
 
 // Constructor.  Allocates vectors as appropriate for operator.
@@ -932,6 +935,205 @@ CharClass* CharClassBuilder::GetCharClass() {
   cc->nrunes_ = nrunes_;
   cc->folds_ascii_ = FoldsASCII();
   return cc;
+}
+
+// Walker for computing min/max match length.
+#define RINF (std::numeric_limits<uint32_t>::max())
+struct Range {
+  uint32_t min;
+  uint32_t max;
+  Range() : min(0), max(RINF) { }
+  Range(uint32_t a, uint32_t b) : min(a), max(b) { }
+};
+// saturating add and multiply
+static inline
+uint32_t radd(uint32_t x, uint32_t y)
+{
+  uint64_t sum;
+  sum = ((uint64_t) x) + ((uint64_t) y);
+  if( sum >= (uint64_t)RINF ) sum = RINF;
+  return (uint32_t) sum;
+}
+static inline
+uint32_t rmult(uint32_t x, int y)
+{
+  uint64_t prod;
+  prod = ((uint64_t) x) * ((uint64_t) y);
+  if( prod >= (uint64_t)RINF ) prod = RINF;
+  return (uint32_t) prod;
+}
+
+static inline
+Range concatRange(Range a, Range b)
+{
+  return Range(radd(a.min,b.min), radd(a.max,b.max));
+}
+static inline
+Range alternateRange(Range a, Range b)
+{
+  return Range(std::min(a.min,b.min), std::max(a.max,b.max));
+}
+// max == -1 means unbounded repeats
+static inline
+Range multiplyRange(Range a, int min, int max)
+{
+  if( max == -1 ) {
+    return Range(rmult(a.min, min), RINF);
+  } else {
+    return Range(rmult(a.min, min), rmult(a.max, max));
+  }
+}
+
+static inline
+Range runeRangeInt(Regexp* re, Rune r)
+{
+  //char str[10];
+  int len;
+  if( (re->parse_flags() & Regexp::Latin1) || r < Runeself ) {
+    len = 1;
+  } else {
+    // len = runetochar(str, &r); but that was causing linker errors.
+    // It's arguably better to inline in any case.
+    if( r <= 0x7F ) len = 1;
+    else if( r <= 0x7FF ) len = 2;
+    else if( r <= 0xFFFF ) len = 3;
+    else len = 4;
+  }
+  return Range(len, len);
+}
+static inline
+Range runeRange(Regexp* re, Rune r)
+{
+  if( (re->parse_flags() & Regexp::FoldCase) && 'a' <= r && r <= 'z' ) {
+    if ('a' <= r && r <= 'z') r += 'A' - 'a';
+    // Do it for both uppercase and lowercase.
+    return alternateRange(runeRangeInt(re, r), runeRangeInt(re, r + 'a' - 'A'));
+  } else {
+    return runeRangeInt(re, r);
+  }
+}
+
+
+class SizeWalker : public Regexp::Walker<Range> {
+ public:
+  SizeWalker() { }
+  Range PostVisit(Regexp* re, Range parent_arg, Range pre_arg,
+                  Range* child_args, int nchild_args);
+
+  Range ShortVisit(Regexp* re, Range a) {
+    Range ret;
+    return ret;
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(SizeWalker);
+};
+
+// Visits re after children are processed.
+// For childless regexps, all the work is done here.
+// For regexps with children, append any unary suffixes or ).
+Range SizeWalker::PostVisit(Regexp* re, Range parent_arg, Range pre_arg,
+                            Range* child_args, int nchild_args) {
+  switch (re->op()) {
+    case kRegexpNoMatch:
+      return Range(0,0);
+
+    case kRegexpEmptyMatch:
+      return Range(0,1);
+
+    case kRegexpLiteral:
+      return runeRange(re, re->rune());
+
+    case kRegexpLiteralString: {
+      Range ret(0,0);
+      for (int i = 0; i < re->nrunes(); i++)
+        ret = concatRange(ret, runeRange(re, re->runes()[i]));
+      return ret;
+    }
+
+    case kRegexpConcat: {
+      Range ret = child_args[0];
+      for (int i = 1; i < nchild_args; i++ )
+        ret = concatRange(ret, child_args[i]);
+      return ret;
+    }
+
+    case kRegexpAlternate: {
+      Range ret = child_args[0];
+      for (int i = 1; i < nchild_args; i++ )
+        ret = alternateRange(ret, child_args[i]);
+      return ret;
+    }
+
+    case kRegexpStar:
+      return Range(0, RINF);
+
+    case kRegexpPlus:
+      return multiplyRange(child_args[0], 1, -1);
+
+    case kRegexpQuest:
+      return Range(0, child_args[0].max);
+
+    case kRegexpRepeat:
+      return multiplyRange(child_args[0], re->min(), re->max());
+
+    case kRegexpAnyChar:
+      if( (re->parse_flags() & Regexp::Latin1) ) return Range(1,1);
+      else return Range(1,UTFmax);
+
+    case kRegexpAnyByte:
+      return Range(1,1);
+
+    case kRegexpBeginLine:
+      return Range(0,1);
+
+    case kRegexpEndLine:
+      return Range(0,1);
+
+    case kRegexpBeginText:
+      return Range(0,1);
+
+    case kRegexpEndText:
+      return Range(0,1);
+
+    case kRegexpWordBoundary:
+      return Range(0,1);
+
+    case kRegexpNoWordBoundary:
+      return Range(0,1);
+
+    case kRegexpCharClass: {
+      Range ret(1,1);
+      for (CharClass::iterator i = re->cc()->begin(); i != re->cc()->end(); ++i) {
+        ret = alternateRange(ret,
+                 alternateRange(runeRange(re, i->lo), runeRange(re, i->hi)));
+      }
+      return ret;
+    }
+
+    case kRegexpCapture:
+      // Just grouping.
+      return child_args[0];
+
+    case kRegexpHaveMatch:
+      return Range(0,0);
+  }
+
+  return Range();
+}
+
+void Regexp::PossibleMatchLength(int *min, int *max) {
+  SizeWalker w;
+  Range top;
+  Range r = w.WalkExponential(this, top, 10000);
+  if (w.stopped_early()) {
+    *min = 0;
+    *max = -1;
+  } else {
+    *min = r.min;
+    if( r.max >= (uint32_t) std::numeric_limits<int>::max() ) *max = -1;
+    else *max = r.max;
+  }
 }
 
 }  // namespace re2

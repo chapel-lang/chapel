@@ -229,7 +229,9 @@ class Prog {
 
   // Returns the set of kEmpty flags that are in effect at
   // position p within context.
-  static uint32 EmptyFlags(const StringPiece& context, const char* p);
+  //static uint32 EmptyFlags(const StringPiece& context, const char* p);
+  template<typename StrPiece>
+  static uint32 EmptyFlags(const StrPiece& text, typename StrPiece::ptr_rd_type p);
 
   // Returns whether byte c is a word character: ASCII only.
   // Used by the implementation of \b and \B.
@@ -260,9 +262,10 @@ class Prog {
   // match anything.  Either way, match[i] == NULL.
 
   // Search using NFA: can find submatches but kind of slow.
-  bool SearchNFA(const StringPiece& text, const StringPiece& context,
+  template<typename StrPiece>
+  bool SearchNFA(const StrPiece& text, const StrPiece& context,
                  Anchor anchor, MatchKind kind,
-                 StringPiece* match, int nmatch);
+                 StrPiece* match, int nmatch);
 
   // Search using DFA: much faster than NFA but only finds
   // end of match and can use a lot more memory.
@@ -291,9 +294,11 @@ class Prog {
   // but much faster than NFA (competitive with PCRE)
   // for those expressions.
   bool IsOnePass();
-  bool SearchOnePass(const StringPiece& text, const StringPiece& context,
+
+  template<typename StrPiece>
+  bool SearchOnePass(const StrPiece& text, const StrPiece& context,
                      Anchor anchor, MatchKind kind,
-                     StringPiece* match, int nmatch);
+                     StrPiece* match, int nmatch);
 
   // Bit-state backtracking.  Fast on small cases but uses memory
   // proportional to the product of the program size and the text size.

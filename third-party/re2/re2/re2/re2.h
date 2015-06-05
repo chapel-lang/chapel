@@ -303,6 +303,13 @@ class RE2 {
   // to know about prefix_ and prefix_foldcase_.
   re2::Regexp* Regexp() const { return entire_regexp_; }
 
+  // Return the size in bytes of the prefix
+  int prefix_length_bytes() const { return prefix_.size(); }
+  // Return the minimum number of matched bytes
+  int min_match_length_bytes() const { return min_match_length_; }
+  // Return the maximum number of matched bytes or -1 for unbounded
+  int max_match_length_bytes() const { return max_match_length_; }
+
   /***** The useful part: the matching interface *****/
 
   // Matches "text" against "pattern".  If pointer arguments are
@@ -485,6 +492,22 @@ class RE2 {
              Anchor anchor,
              StringPiece *match,
              int nmatch) const;
+
+  // Look for a match in something other than a string
+  // (e.g. a FILE*). This function requires a bunch of
+  // support custom to its use in special_strings.h;
+  // consumers of this interface need to update that file
+  // appropriately and link with a modified RE2.
+  //
+  // text is the StringPiece stand-in (e.g. a FILE*).
+  // buffer might be empty, (ie have .data() == NULL). If not,
+  // we assume it is a cached copy of some portion of text,
+  // but not necessarily all of text.
+  bool MatchFile(FilePiece& text,
+                 const StringPiece& buffer,
+                 Anchor anchor,
+                 FilePiece *match,
+                 int nmatch) const;
 
   // Check that the given rewrite string is suitable for use with this
   // regular expression.  It checks that:
@@ -745,6 +768,9 @@ class RE2 {
 
   // Map from capture indices to names
   mutable const map<int, string>* group_names_;
+
+  int           min_match_length_; // min possible match len
+  int           max_match_length_; // max possible match len, -1=unbounded
 
   //DISALLOW_COPY_AND_ASSIGN(RE2);
   RE2(const RE2&);

@@ -6,6 +6,9 @@
 		# re2::StringPiece*
 		_ZN3re211StringPiece*;
 		_ZNK3re211StringPiece*;
+		# re2::FilePiece*
+		_ZN3re211FilePiece*;
+		_ZNK3re211FilePiece*;
 		# operator<<(std::ostream&, re2::StringPiece const&)
 		_ZlsRSoRKN3re211StringPieceE;
 		# re2::FilteredRE2*
