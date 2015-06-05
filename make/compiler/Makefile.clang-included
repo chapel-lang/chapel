@@ -29,7 +29,7 @@ ifneq (, $(filter cray-prgenv-%,$(CHPL_ORIG_TARGET_COMPILER)))
 
   # add the gathered arguments to the compiler settings
   CHPL_MAKE_BASE_CFLAGS += $(CHPL_MAKE_SETTINGS_PRGENV_COMPOPTS)
-  CHPL_MAKE_THIRD_PARTY_LINK_ARGS += $(CHPL_MAKE_SETTINGS_PRGENV_LINKOPTS)
+  CHPL_MAKE_BASE_LFLAGS += $(CHPL_MAKE_SETTINGS_PRGENV_LINKOPTS)
 endif
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.clang
