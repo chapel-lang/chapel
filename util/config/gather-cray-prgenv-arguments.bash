@@ -21,8 +21,6 @@ esac
 
 COMMANDS=`cc -craype-verbose 2>/dev/null`
 
-if [ $? -eq 0 ]; then
-
   for arg in $COMMANDS
   do
     if [[ $arg == -I* && $COMPILE == 1 ]]
@@ -44,4 +42,3 @@ if [ $? -eq 0 ]; then
     fi
   done
 
-fi
