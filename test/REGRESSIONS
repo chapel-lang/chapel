@@ -166,26 +166,6 @@ general
 Reviewed 2015-05-20
 ===================
 
-new printchplenv output breaks static_dynamic test (2015-06-02, kyleb)
-(xc-wb.intel, xc-wb.prgenv-intel, xc-wb.prgenv-cray, xc-wb.prgenv-gnu)
-----------------------------------------------------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
-
-
-reports generate better, but mismatched, line numbers now (2016-06-02, vass)
-(xc-wb.prgenv-cray, valgrind)
-----------------------------------------------------------------------------
-[Error matching program output for parallel/cobegin/hilde/reports]
-[Error matching program output for parallel/cobegin/stonea/reports (execopts: 1)]
-[Error matching program output for parallel/cobegin/stonea/reports (execopts: 2)]
-[Error matching program output for parallel/cobegin/stonea/reports (execopts: 3)]
-[Error matching program output for parallel/cobegin/stonea/reports (execopts: 4)]
-
 
 === sporadic failures below ===
 
@@ -330,13 +310,8 @@ Reviewed 2015-05-20
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-05-23
+Reviewed 2015-06-04
 ===================
-
-execution timeout due to lack of --fast (2015-05-21, diten)
------------------------------------------------------------
-[Error: Timed out executing program studies/lulesh/bradc/lulesh-dense]
-
 
 
 ****************************************************************************
@@ -381,7 +356,7 @@ Reviewed 2015-05-20
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (2015-06-04..
+[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (2015-06-04)
 
 
 =================================
@@ -695,9 +670,9 @@ sporadic execution timeouts (one-offs?)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
   (xc.aries.pgi.slurm: 2015-05-21)
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 1)]
-  (xc.ugni.gnu.aprun: 2015-05-28
+  (xc.ugni.gnu.aprun: 2015-05-28)
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 2)]
-  (xc.ugni.gnu.aprun: 2015-05-28
+  (xc.ugni.gnu.aprun: 2015-05-28)
 
 
 sporadic [chpl_launchcmd] ... [ERROR] Output file from job does not exist
@@ -713,6 +688,7 @@ https://chapel.atlassian.net/browse/CHAPEL-17
 [Error matching program output for release/examples/primers/procedures]
   (xc.ugni.intel.aprun 2015-04-15)
   (xc.aries.intel.aprun 2015-05-24)
+  (xc.ugni-qthreads.intel 2015-05-28)
 [Error matching program output for release/examples/primers/sparse]
   (xc.ugni.-qthreads.gnu.aprun 2015-04-16)
 [Error matching program output for release/examples/programs/quicksort]
@@ -774,23 +750,24 @@ sporadic execution timeouts
   (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
                           2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
                           2015-05-05..2015-05-06, 2015-05-10,
-                          2015-05-14..2015-05-16, 2015-05-23..2015-05-24)
+                          2015-05-14..2015-05-16, 2015-05-23..2015-05-24,
+                          2015-05-28)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
   (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
                            2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
                            2015-05-11, 2015-05-17, 2015-05-21..2015-05-22,
-                           2015-05-26)
+                           2015-05-26, 2015-06-05..)
   (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 2015-05-26..)
                            2015-05-03..2015-05-04, 2015-05-06..??, 
-                           2015-05-13..2015-05-17)
+                           2015-05-13..2015-05-17, 2015-06-05..)
   (xe.ugni-qthreads.intel: ??..2015-03-22)
   (xe.ugni-qthreads.gnu:   2015-05-05, 2015-05-17, 2015-05-22)
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
   (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
                           2015-05-05..2015-05-06, 2015-05-18, 2015-05-21)
   (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
-                          2015-05-18, 2015-05-24..2015-05-25)
-  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18)
+                          2015-05-18, 2015-05-24..2015-05-25, 2015-05-28)
+  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18, 2015-06-05..)
   (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21, 
                           2015-05-23..2015-05-24, 2015-05-26)
 
@@ -913,9 +890,11 @@ Inherits 'perf.xc.*'
 Reviewed 2015-05-20
 ====================
 
-config attempted to be looked up with empty module name (2015-05-23, lydia)
----------------------------------------------------------------------------
-[Error matching performance keys for release/examples/benchmarks/hpcc/hpl]
+=== sporadic failures below ===
+
+sporadic 'config attempted to be looked up with empty module name' (lydia)
+--------------------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/hpl] (2015-05-23..2015-06-04)
 
 
 ================================
