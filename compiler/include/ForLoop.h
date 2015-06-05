@@ -22,6 +22,24 @@
 
 #include "LoopStmt.h"
 
+// A ForLoop represents the language construct:
+//  for <idx> in <iterator> do <body>
+// Its semantics are to let <idx> assume the value of each of the "indices"
+// yielded by the iterator and execute the body once for each of these.
+//
+// Structurally, a ForLoop implies that there must be an underlying iterator.
+// A reference to the underlying iterator is stored in the mIterator field.
+// If the ForLoop is built with an <iterator> expression that is not an
+// iterator, code must added to promote that index set to an iterator.  In the
+// current implementation, this promotion is performed by _getIterator in
+// ChapelIteratorSupport.chpl.
+//
+// If the <idx> symbol is NULL, that means that the value of each
+// yielded element is not used in the body of the loop: the ForLoop effectively
+// just "counts" the elements in the underlying iterator -- executing the body
+// of the loop once for each.  A reference to the index symbol is stored in the
+// mIndex field.
+//
 class ForLoop : public LoopStmt
 {
   //
