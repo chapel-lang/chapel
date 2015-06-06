@@ -248,8 +248,7 @@ module ChapelIO {
         readIt(args(i));
       }
   
-      if error() == EEOF {
-        clearError();
+      if error() {
         return false;
       } else {
         return true;
@@ -261,8 +260,7 @@ module ChapelIO {
       }
       var nl = new ioNewline();
       readIt(nl);
-      if error() == EEOF {
-        clearError();
+      if error() {
         return false;
       } else {
         return true;
@@ -271,8 +269,7 @@ module ChapelIO {
     proc readln():bool {
       var nl = new ioNewline();
       readIt(nl);
-      if error() == EEOF {
-        clearError();
+      if error()  {
         return false;
       } else {
         return true;

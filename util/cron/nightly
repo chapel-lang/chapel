@@ -529,7 +529,7 @@ if ($makestat != 0) {
 }
 
 print "Making modules\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", 1, 1);
 
 
 #

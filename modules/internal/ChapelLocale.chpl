@@ -166,7 +166,7 @@ module ChapelLocale {
   // The rootLocale is private to each locale.  It cannot be
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
-  pragma "private" var rootLocale : locale = nil;
+  pragma "locale private" var rootLocale : locale = nil;
   config param replicateRootLocale = true;
 
   // The rootLocale needs to be initalized on all locales prior to

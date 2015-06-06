@@ -1,0 +1,2 @@
+accessOfOutsideFunctionNoBleed2.chpl:16: In function 'main':
+accessOfOutsideFunctionNoBleed2.chpl:18: error: unresolved call 'b(3)'

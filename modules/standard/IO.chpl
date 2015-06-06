@@ -3759,9 +3759,30 @@ pragma "no doc"
 inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr {
   var reader = new ChannelReader(_channel_internal=_channel_internal);
   var err:syserr = ENOERR;
+  var save_style:iostyle;
+  var saved_style = false;
+
+  // Adjust the style to use Chapel strings in quotes
+  // unless the string style was already overridden
+  // (that way, writef("%j") will still use JSON-style strings)
+  if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
+    qio_channel_get_style(_channel_internal, save_style);
+    var mystyle = save_style;
+    mystyle.string_format = QIO_STRING_FORMAT_CHPL;
+    qio_channel_set_style(_channel_internal, mystyle);
+    saved_style = true;
+  }
+
   reader.read(x);
+
+  // Put the style back
+  if saved_style {
+    qio_channel_set_style(_channel_internal, save_style);
+  }
+
   err = reader.err;
   delete reader;
+
   return err;
 }
 
@@ -3769,9 +3790,30 @@ pragma "no doc"
 inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
   var writer = new ChannelWriter(_channel_internal=_channel_internal);
   var err:syserr = ENOERR;
+  var save_style:iostyle;
+  var saved_style = false;
+
+  // Adjust the style to use Chapel strings in quotes
+  // unless the string style was already overridden
+  // (that way, writef("%j") will still use JSON-style strings)
+  if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
+    qio_channel_get_style(_channel_internal, save_style);
+    var mystyle = save_style;
+    mystyle.string_format = QIO_STRING_FORMAT_CHPL;
+    qio_channel_set_style(_channel_internal, mystyle);
+    saved_style = true;
+  }
+
   writer.write(x);
+
+  // Put the style back
+  if saved_style {
+    qio_channel_set_style(_channel_internal, save_style);
+  }
+
   err = writer.err;
   delete writer;
+
   return err;
 }
 

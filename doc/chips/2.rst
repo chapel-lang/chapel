@@ -1,0 +1,1119 @@
+Constrained Generics
+====================
+
+Status
+  Draft
+
+Author
+  Michael Ferguson, Jeremy Siek
+
+
+Abstract
+--------
+
+Support constrained generics for Chapel in order to improve error messages and
+to enable Chapel developers to think about interfaces while doing API design.
+
+Rationale
+---------
+
+Chapel currently supports generic programming by providing generic functions,
+classes, and records. That is, Chapel allows the programmer to parameterize
+these entities with respect to one or more types.  Compared to other
+programming languages, Chapel's current design for generics most closely
+resembles that of templates in C++.  Like C++, Chapel does not provide explicit
+support for constrained generics, which negatively impacts its ease of
+programming and modularity.  The next three subsections describe three examples
+of the negative impacts.
+
+Impenetrable Error Messages
++++++++++++++++++++++++++++
+
+The most noticeable problem with the current design for generics in Chapel is
+that any misuse of a generic function results in an impenetrable error message
+from the compiler. For example, consider the following program that erroneously
+attempts to sort an array of objects of class ``C`` (which lacks a less-than
+operator).
+
+.. code-block:: chapel
+
+  use Sort;
+  class C { }
+  var A : [1..10] C;
+  QuickSort(A);
+
+The Chapel compiler emits the following error message:
+
+::
+
+  $CHPL_HOME/modules/standard/Sort.chpl:37: error: unresolved call '<(C, C)'
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:309: note: candidates are: <(param a: enumerated, param b: enumerated)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:1406: note:                 <(a: uint(64), b: int(64))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:1407: note:                 <(a: int(64), b: uint(64))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:1410: note:                 <(a: uint(64), param b: uint(64))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:1413: note:                 <(param a: uint(64), b: uint(64))
+  $CHPL_HOME/modules/internal/String.chpl:91: note:                 <(a: string, b: string)
+  $CHPL_HOME/modules/internal/String.chpl:398: note:                 <(a: c_string, b: c_string)
+  $CHPL_HOME/modules/internal/String.chpl:402: note:                 <(param a: c_string, param b: c_string)
+  $CHPL_HOME/modules/internal/ChapelTuple.chpl:549: note:                 <(a: _tuple, b: _tuple)
+  $CHPL_HOME/modules/standard/NewString.chpl:590: note:                 <(a: string_rec, b: string_rec)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:289: note:                 <(a: int(8), b: int(8))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:289: note:                 <(a: int(16), b: int(16))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:289: note:                 <(a: int(32), b: int(32))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:289: note:                 <(a: int(64), b: int(64))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:290: note:                 <(a: uint(8), b: uint(8))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:290: note:                 <(a: uint(16), b: uint(16))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:290: note:                 <(a: uint(32), b: uint(32))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:290: note:                 <(a: uint(64), b: uint(64))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:291: note:                 <(a: real(32), b: real(32))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:291: note:                 <(a: real(64), b: real(64))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:292: note:                 <(a: imag(32), b: imag(32))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:292: note:                 <(a: imag(64), b: imag(64))
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:307: note:                 <(param a, param b)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:307: note:                 <(param a, param b)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:307: note:                 <(param a, param b)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:307: note:                 <(param a, param b)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:308: note:                 <(param a, param b)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:308: note:                 <(param a, param b)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:308: note:                 <(param a, param b)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:308: note:                 <(param a, param b)
+
+The main problem with the error message is that it points to line 37 of
+``Sort.chpl`` as the origin of the problem, when in fact the problem is the use
+of array ``A`` in the call to ``QuickSort``. A secondary problem with the error
+message is that it exposes the internals of the ``QuickSort`` function to the
+user, reducing the modularity of the ``QuickSort`` function. In more complex
+library functions, the error may originate from within deeply nested auxiliary
+functions, resulting in exceedingly long and impenetrable error messages. (C++
+template libraries have become infamous for this problem [1].
+
+The Chapel compiler needs more information in order to determine whether the
+error is in the implementation of QuickSort or in the call to it.
+
+.. [1] R. Garcia, J. Järvi, A. Lumsdaine, J. G. Siek, and J. Willcock. An extended comparative study of language support for generic programming. Journal of Functional Programming, 17(2):145–205, March 2007.
+
+Reliability of Generic Libraries
+++++++++++++++++++++++++++++++++
+
+
+The current design for generics in Chapel also negatively impacts the
+reliability of generic libraries. Unlike normal functions, the body of a
+generic function is not type checked until it is used. This means that type
+errors can lie dormant inside generic functions, only to be discovered after
+they are distributed to users.
+
+C++ templates are similar in this respect and we've found several bugs that
+could have been caught if the body of a template were instead type checked at
+the point of definition. For many years the ``replace_copy`` function template
+in the Standard Template Library used a conditional expression to choose
+between two values of potentially different type [2]. Conditional expressions
+require that the type of one alternative be convertible to the other
+alternative, but this was not documented as a requirement of the
+``replace_copy`` template. The fix is to change the conditional expression into
+an ``if`` statement, thereby removing the need for convertibility.
+
+.. [2] J. G. Siek and A. Lumsdaine. A language for generic programming in the large. Science of Computer Programming, 76:423–465, September 2011.
+
+Over the years, there were likely many users who tried to use ``replace_copy``
+with types that were not convertible and received an impenetrable error message
+from the compiler. Such an error is doubly confusing because the user doesn't
+know whose fault it is. The user could be looking at a situation in which they
+misused the generic function, as was the previous case with ``QuickSort``, or
+it could be the fault of the generic function's author, as was the case with
+``replace_copy``.
+
+Hijacked Function Calls Inside Generics
++++++++++++++++++++++++++++++++++++++++
+
+
+Another problem with the current design for generics in Chapel concerns the
+visibility of other functions from inside generic functions.
+
+Suppose that a library developer creates the following module in which the
+generic function named ``print_hello_world`` makes a call to another auxiliary
+generic function named ``helper``.
+
+
+.. code-block:: chapel
+
+  module M1 {
+    proc helper(x) {
+      writeln("hello, world!");
+    }
+    proc print_hello_world(x) {
+      helper(x);
+    }
+  }
+
+Then suppose that an application programmer decides to use ``M1`` and writes
+the following code. It just so happens that somewhere in the application, there
+is another function named ``helper``.
+
+
+.. code-block:: chapel
+
+  proc helper(x : int) {
+    writeln("you've been hijacked!");
+  }
+  use M1;
+  proc main() {
+    M1.print_hello_world(1);
+  }
+
+With the current Chapel function visibility rules, the result of this program
+is:
+
+::
+
+  you've been hijacked!
+
+
+The above is a toy example, but this problem has come up in large C++
+applications that use the Boost template libraries.  The most troubling aspect
+of this problem is that there may be no immediate indication that something has
+gone wrong, and the programmer may only find out much later and after lots of
+debugging, that things are not as they seem.
+
+These problems are the same as problems encountered by the C++ community when
+working with templates. The strategy proposed for C++ with *concepts* can be
+applied to Chapel.
+
+Overview of Proposal for Constrained Generics
+---------------------------------------------
+
+The core language support for constrained generics requires additions and
+changes to four areas of the Chapel language. Here we give an overview of these
+areas before discussing each of them in more detail in the following sections.
+
+Interface definitions
+  provide a mechanism for grouping and naming requirements on types.
+
+Implements statements
+  establish that a type implements the requirements of a interface.
+
+Where clauses
+  will be extended to express constraints on generic functions and generic
+  types. The main kind of constraint is requiring a type parameter to
+  implement an interface.
+
+Instantiation
+  of generic functions, classes, and records changes to include checking that
+  the constraints in the where clause are satisfied.
+
+An important aspect of the proposed design is that it provides modular type
+checking. Most languages provide modular type checking for functions, which
+means that the body of a function is type checked independently of any call to
+the function, and the type checking of each call to a function only needs to
+refer to the function signature (the parameter and return types) and not the
+body of the function. However, the current design of Chapel does not provide
+modular type checking for functions and generics. Instead, the body is type
+checked at each call or point of instantiation. This is the root of the problem
+that results in the non-modular error messages (Section 1.1) and the decreased
+reliability of generics (Section 1.2). The proposed design enables the modular
+type checking of both function and generics, thereby solving these two
+problems.
+
+In addition, because *where* clauses introduce type-specific operations into
+scope, there is no need for special function visibility rules for constrained
+generics, thereby avoiding the function hijacking problem discussed in Section
+1.3.
+
+
+Example
++++++++
+
+
+Here we walk through a small but complete example that demonstrates the four
+changes to Chapel to support constrained generics. This example shows a version
+of ``QuickSort`` using constrained generics. To start, we define
+``EqualityComparable`` and ``LessThanComparable`` interfaces that will be used
+to constrain the element type of the array passed to ``QuickSort``.
+
+.. code-block:: chapel
+
+  interface EqualityComparable {
+    proc ==(x : self, y: self): bool;
+  }
+  interface LessThanComparable : EqualityComparable {
+    proc <(x : self, y: self): bool;
+  }
+
+The ``LessThanComparable`` interface extends the interface
+``EqualityComparable``. The ``EqualityComparable`` interface requires an
+implementing type to provide an equality operator and the
+``LessThanComparable`` interface requires an implementing type to also provide
+a less-than operator. The self type is a place holder for the implementing
+type. Note that procedure prototypes inside an interface do not have an
+implicit “this” parameter.
+
+
+A program asserts that a particular type implements an interface via an
+implements statement. For example, here is a ``Person`` class that implements
+the ``LessThanComparable`` interface.
+
+.. code-block:: chapel
+
+  class Person {
+    var firstName : string;
+    var lastName : string;
+  }
+
+  proc ==(a: Person, b: Person): bool {
+    return a.firstName == b.firstName
+           && a.lastName == b.lastName;
+  }
+  proc <(a: Person, b: Person): bool {
+    return a.firstName < b.firstName ||
+           (a.firstName == b.firstName
+             && a.lastName < b.lastName);
+  }
+
+  Person implements EqualityComparable;
+  Person implements LessThanComparable;
+
+
+The first implements statement is valid because the ``Person`` class provides
+an equality operator, and the second implements statement is valid because the
+``Person`` class provides a less-than operator and there is a prior implements
+statement that asserts that ``Person`` implements ``EqualityComparable``. A
+compiler diagnostic error message is printed if an implements statement is
+invalid.
+
+Next we turn our attention to the ``QuickSort`` function. To place a constraint
+on the element type of the array, we add to the where clause, requiring that
+the element type implement the ``LessThanComparable`` interface.
+
+.. code-block:: chapel
+
+  proc QuickSort(Data: [?Dom])
+  where Dom.rank == 1, Data.eltType implements LessThanComparable
+  {
+    ...
+    if (Data(mid) < Data(lo)) then Data(mid) <=> Data(lo);
+    ...
+  }
+
+When type constraints are added to the where clause of a procedure, such as in
+the implements clause above, the procedure is type checked at its point of
+definition. Any generic types, such as Data.eltType are considered by the type
+checker to be unique types, only equal to themselves (unless otherwise
+specified by type equality constraints). The body of the function may only make
+use of generic types in ways permitted by the constraints in the where clause.
+For example, in the above QuickSort, it would be an error to use any operator
+other than equality and less-than on the element type of the array.
+
+Last but not least, we consider a call to the QuickSort function.
+
+
+.. code-block:: chapel
+
+  var A: [1..1000] Person;
+  ...
+  QuickSort(A);
+
+At the point of the call, the Chapel implementation checks that the where
+clause is satisfied. In this case, it must check that the element type of the
+array, Person, has an implements statement for LessThanComparable, which it
+does.
+
+Interface Declarations
+----------------------
+
+Interface definitions provide a mechanism for grouping and naming requirements
+on types. The following shows two example interface definitions, with the
+second interface Monoid refining (inheriting from) the first interface
+Semigroup.
+
+.. code-block:: chapel
+
+  interface Semigroup(T) {
+    proc binary_op(T,T) : T;
+  }
+  interface Monoid(T) : Semigroup(T) {
+    proc identity_elt() : T;
+  }
+
+Inside a interface, the T type parameter is a place-holder for a concrete type
+that will implement the interface.  Function declarations in a interface (the
+def's) express requirements for certain function definitions. The refines
+clause provides a way of reusing interface definitions to define interfaces
+with more requirements. Note though that *refines* is not a subtype
+relationship since if I refines J and T1 implements I and T2 implements J, it
+is not necessarily the case that T1 is a subtype of T2.
+
+
+The syntax for interface definitions is listed below.
+
+interface–declaration–statement:
+  interface interface–name [( interface–formals )] [ : interface–inherit–list ] { interface–statement∗ }
+
+interface–name:
+  identifier
+
+interface–formals:
+  identifier
+  identifier, interface–formals
+
+interface–inherit–list:
+  implements–clause
+  implements–clause , interface–inherit–list
+
+interface–statement:
+  type identifier
+  type–constraint ;
+  function–signature–statement
+  function–declaration–statement
+
+implements–clause:
+  type–list implements interface–name
+
+type–constraint:
+  implements–clause
+  type–equality
+
+type–equality:
+  type–specifier == type–specifier
+
+where–clause:
+  where where–item–list
+
+where–item–list:
+  where–item
+  where–item , where–item–list
+
+where–item:
+  expression
+  type–constraint
+
+An interface definition consists of a name for the interface, an optional list
+of type parameters enclosed in parentheses that serve as place holders for the
+modeling types, a list of interfaces that the interface inherits from, and a
+body, which is a sequence of statements that express constraints on the
+implementing types. The type parameters are in scope for the body of the
+interface. The common case is for there to be only a single implementing type,
+so if the interface definition omits the list of type parameters, then the type
+name self is in scope for the body of the interface and is a place holder for
+the single implementing type.
+
+Example
++++++++
+
+The following Stack interface requires that the implementing type provide three
+methods, push, pop, and isEmpty, and requires that the implementing type
+specify a type to play the role of the itemType.
+
+.. code-block:: chapel
+
+  interface Stack {
+    type itemType;
+    proc self.push(x : itemType);
+    proc self.pop(): itemType;
+    proc self.isEmpty(): bool;
+  }
+
+
+
+The body of an interface consists of a list of constraints. In the following,
+we describe the various kinds of constraints.
+
+Function signatures
+  A function signature says that an implementation must provide a function with
+  the specified name and compatible parameter and return types. What we mean by
+  “compatible” is described in detail in Section 4.
+
+Example 2
++++++++++
+
+The following Vector interface demonstrates four different kinds of function
+signatures. The norm signature simply requires that the implementation provide
+a regular function definition for norm. The + operator can be provided by
+either a function definition or a method. The self.size signature requires a
+method, and the self.these signature requires an iterator method.
+
+.. code-block:: chapel
+
+  interface Vector {
+    type eltType;
+    proc norm(v : self): eltType;
+    proc +(u : self, v : self): self;
+    proc self.size(): int;
+    iter self.these(): eltType;
+  }
+
+Function definitions
+  A function definition statement in a interface provides a default
+  implementation. An implementation may provide an overriding definition of
+  the function, but if not, the definition provided by the interface will be
+  used.
+
+Example 3
++++++++++
+
+
+.. code-block:: chapel
+
+  interface LessThanComparable : EqualityComparable {
+    proc <(x : self, y: self): bool;
+    proc <=(x : self, y: self): bool
+      { return !(y < x); }
+    proc >(x : self, y: self): bool
+      { return y < x; }
+    proc >=(x : self, y: self): bool
+      { return !(x < y); }
+  }
+
+Associated types
+  Associated types are types that play an auxiliary role in the implementation
+  of a interface, such as the iterator of a container or the key type of a hash
+  table. The type statement adds the requirement for a type definition in any
+  implementation of the interface. The itemType in the above Stack interface
+  and the eltType in the Vector interface are examples of requiring an
+  associated type.
+
+
+Open issue. The use of the keyword type for specifying associated types inside
+interfaces may be confusing, as it has a different meaning than the use of type
+inside a class, which in that context specifies a type parameter. With that in
+mind, we may wish to find a different keyword for specifying associated types.
+
+
+Same-type constraints 
+  The == interface statement requires that the two type expressions refer to
+  the same type. The type equality may be assumed in the body of the interface.
+  When the interface is used in the where clause of a generic function, the
+  type equality may be assumed in the body. In any implementation of the
+  interface, the concrete versions of the type expressions must be the same
+  type. We provide an example of same-type constraints with the below example
+  for nested requirements.
+
+Nested requirements
+  Interfaces may be composed using implements statements. This composition is
+  similar to composing interfaces using inheritance, but there is one important
+  difference. Inheritance brings in the associated types from the base
+  interface whereas implements does not.
+
+.. code-block:: chapel
+
+  interface LinearTransformation(Mat) {
+    type Vec;
+    type eltType;
+    Vec implements VectorSpace;
+    Vec.eltType == eltType;
+    proc *(A : Mat, x : Vec): Vec;
+    proc *(alpha : eltType, A : Mat): Mat;
+  }
+
+Implements Statements
+---------------------
+
+Implementation statements establish that a type implements the requirements of
+an interface. 
+
+The syntax for implements statements is as follows.
+
+implements-statement:
+  type–list implements interface–name [where–clause] ;
+  type–list implements interface–name [where–clause] { statement* }
+
+The implements relation between a type and an interface is established by an
+implements statement. All the requirements of the interface must be satisfied
+at the point of the implements statement, either by definitions inside the
+implements statement, by constraints in the where clause of the implements
+statement, or by definitions in the lexical scope of the implements statement.
+The definitions do not have to be an exact match, but they must be coercible to
+the required function signature. An operator signature may be satisfied by
+either a regular function or a method definition. The process for finding
+function definitions is the same as for function name and overload resolution.
+Inherited interfaces and nested requirements must be satisfied by preceding
+implements statements. Requirements for associated types are satisfied by type
+alias statements inside the implements statement or in the class or record
+definition of the implementing type.
+
+An implementation may itself be generic, which is why there is an optional
+where clause. A common use of generic implementation statements is for adapter
+classes, that is, classes that are parameterized over a type of some interface,
+and use that interface to implement another interface. The rules for type
+checking a generic implements statement are the same as for generic functions,
+which we discuss in Section 5.
+
+Example
++++++++
+
+The following example shows some interfaces from abstract algebra and
+implements statements for integers.
+
+.. code-block:: chapel
+
+  interface Semigroup {
+    proc binary_op(x : self, y : self):self;
+  }
+  interface Monoid : Semigroup {
+    proc identity_elt(): self;
+   }
+  int implements Semigroup {
+    proc binary_op(x : int, y : int):int { return x + y; }
+  }
+  int implements Monoid {
+    proc identity_elt(x : int, y : int):int { return 0; }
+  }
+
+
+Of course, there are other ways in which an integer can implement the Monoid
+interface, such as using 1 for the identity element and multiplication for the
+binary operation. In the proposed design, it is possible to provide multiple
+implements statements for the same type and interface so long as the implements
+statements reside in separate modules.
+
+Functions and Where Clauses
++++++++++++++++++++++++++++
+
+function-signature-statement:
+  proc function–name [argument–list] [var–param–clause] [where–clause] ;
+
+function-declaration-statement:
+  proc function–name [argument–list] [var–param–clause] [where–clause] function–body
+
+A function signature statement is a forward declaration of a function. It
+states the that the specified function will be provided later or in a separate
+compilation unit. All of the formal arguments in a function signature must have
+type annotations.
+
+If a function declaration includes at least one implements clause or type
+equality constraint in its where clause, then the function is type checked
+at its point of definition. The rules for functional visibility in generic
+functions (Section 22.2 of the Chapel Language Specification 0.796) do not
+apply to such functions.
+
+Open issue. Previous versions of this proposal also added a checked
+keyword to request type checking at the point of definition. Current
+versions of Chapel do not type check non-generic functions unless they are
+called. We would like to reconsider that design choice.
+
+One earlier idea was to trigger separate type checking when all of the
+parameters of a function have a type annotation.  However, we have not
+proposed that option here because it would not be backwards compatible,
+that is, some existing Chapel programs would become ill typed (e.g.
+proc(x:?t, y:t) ... ).
+
+
+The where–clause of a generic function may include type constraints on the type arguments of the function. The type constraints in the where clause of a function play an important role in the type checking of the function body. Functions and methods in the required interfaces are considered visible in the function body. Furthermore, the required type equalities as stated in the interfaces or directly in the where clause, as well as the congruence closure of those equalities, are assumed to be equal during the type checking of the function body. We discuss issues regarding type equality in detail in Section 5.2.
+
+Example
++++++++
+
+In the following example, the function f is well-typed because S2 implements Stack, so thepopmethodonyhasreturntypeS2.itemType,S1 implements Stacksothepushmethodonx has return type S1.itemType, and we have required that S1.itemType equal S2.itemType.
+
+.. code-block:: chapel
+
+  interface Stack(X) {
+    type itemType;
+    proc X.push(x : itemType);
+    proc X.pop(): itemType;
+    proc X.isEmpty(): bool;
+  }
+  proc f(x: ?S1, y: ?S2)
+    where S1 implements Stack,
+          S2 implements Stack,
+          S1.itemType == S2.itemType
+  {
+    x.push(y.pop());
+  }
+
+
+In more detail, suppose the where clause includes a requirement of the form T1
+,. . .,Tm implements I, interface I has formal parameters X1 , . . . , Xm , and
+I contains the following function signature.
+
+::
+
+  proc N(x1 : A1, ..., xn : An):B;
+
+Then function N is visible in the function body, except that Ti is substituted for Xi throughout the signature, for i = 1 . . . m. The notation A[B1 . . . Bn/X1 . . . Xn] refers to the type A with all free occurrences of type variables X1 . . . Xn replaced by B1 . . . Bn , respectively. So using this notation, the function signature made visible in the function body can be written as
+
+::
+
+  proc N[T1 ...Tm/X1 ...Xm](x1 : A1[T1 ...Tm/X1 ...Xm],
+                            ...,
+                            xn : An[T1 ...Tm/X1 ...Xm]):B[T1 ...Tm/X1 ...Xm];
+
+Inside an interface I,a declaration of the form type Y; expresses the
+requirement for an associated type. That is, any type that implements I must
+also specify a type to play the role of Y. (Section 4 describes how this is
+done.) The associated type Y may be referred to in any of the following forms:
+
+  1. Y
+  2. X.Y (if X is the only formal parameter of interface I)
+  3. I(X).Y
+
+The first two forms are shorthand for the third form. It is an error to use the
+first or second form if it is ambiguous.
+
+Example
++++++++
+
+Continuing the above example, in the function f, the type requirement S1
+implements Stack causes the following methods to be visible:
+
+.. code-block:: chapel
+
+  proc S1.push(x : Stack(S1).itemType);
+  proc S1.pop(): Stack(S1).itemType;
+  proc S1.isEmpty(): bool;
+
+Similarly, the type requirement S1 implements Stack causes the following
+methods to be visible:
+
+.. code-block:: chapel
+
+  proc S2.push(x : Stack(S2).itemType);
+  proc S2.pop(): Stack(S2).itemType;
+  proc S2.isEmpty(): bool;
+
+The type equality S1.itemType == S2.itemType is shorthand for Stack(S1).itemType == Stack(S2).itemType
+
+It would be an error for the where clause or function body of f to refer to
+itemType without any qualification. For example, if the type equality were
+written as itemType == S2.itemType, it would be an error.
+
+As a short-hand for implements clauses in the where clause, an interface name
+may be used as the type for function parameter.
+
+type–specifier:
+  interface–name
+
+Example
++++++++
+
+Here is the example from above, but this time using interface names in the parameter types instead of implements in the where clause.
+
+.. code-block:: chapel
+
+  proc f(x: Stack, y: Stack)
+    where x.itemType == y.itemType
+  {
+     x.push(y.pop());
+  }
+
+
+Overload Resolution for Checked Generic Functions
+-------------------------------------------------
+
+Generic checked functions participate in overload resolution in a similar way
+as normal generic functions. The two main differences are that type
+requirements in where clauses can cause a generic functions to be removed from
+the set of candidate functions and the type requirements play a role in
+determining whether one function is more specific than another.
+
+To check whether a generic function is a candidate, first the type arguments
+for the query types are determined by pattern matching against the types of the
+arguments to the generic function. Then, the type arguments are substituted for
+the query types in the where clause. If the resulting type requirements are
+satisfied in the current scope, then the generic function is a candidate. The
+following rules specify when a type requirement is satisfied.
+
+1. An implements clause is satisfied if there exists a most specific implements
+   statement in the lexical scope of the point of instantiation.
+2. A type equality is satisfied if the two type specifiers are equal in the
+   lexical scope of the point of instantiation.
+
+Example
++++++++
+
+In the following, the call to g resolves to the first function named g because
+that is the only candidate function. The second g is not a candidate because
+class C does not implement J.
+
+.. code-block:: chapel
+
+  interface I(X) { }
+  interface J(X) { }
+
+  class C { }
+  C implements I;
+
+  proc g(x : ?t) where t implements I { return x; }
+  proc g(x : ?t) where t implements J { return x; }
+
+  g(new C());
+
+Next, we discuss how type requirements in where clauses affect whether one
+function is more specific than another function. Suppose that two
+functions are equally specific using the normal rules. We then consider
+the type requirements in the where clauses of each function; call them F1
+and F2. If the type requirements of F1 can be satisfied inside the body of
+F2, but not vice-versa, then F2 is more specific than F1.
+
+Example
++++++++
+
+In the following, the call to g resolves to the second function named g because
+both functions are candidates but the second is more specific. In particular,
+the type requirement of the first g, t implements I, is satisfied by the where
+clause of the second g, but the type requirement t implements J of the second g
+is not satisfied by the where clause of the first g.
+
+.. code-block:: chapel
+
+  interface I(X) { }
+  interface J(X) { }
+
+  class C { }
+  C implements I;
+  C implements J;
+
+  proc g(x : ?t) where t implements I { return x; }
+  proc g(x : ?t) where t implements I, t implements J { return x; }
+
+  g(new C());
+
+
+Type Equality
+-------------
+
+Type equality is a congruence relation, which means several things. First it means that type equality is an equivalence relation, so it is reflexive, transitive, and symmetric. Thus, for any types ρ, σ, τ we have
+
+  * τ = τ,
+  * σ=τ implies τ=σ, and
+  * ρ=σ and σ=τ implies ρ=τ.
+
+Example
++++++++
+
+The following function is well typed.
+
+.. code-block:: chapel
+
+  proc g(f : func(?T,?S), a : ?R):T where R == S, T == S {
+    return f(a);
+  }
+
+There are two things to check in the body of this function to determine whether
+it is well typed. First, for the call f(a) to be well typed, the argument a
+must have the same type as the parameter of function f. Thus, we need R equal
+to T. The type checker would use the following reasoning to prove this. The
+where clause gives us T == S, so by symmetry S == T. The where clause gives us
+R == S, so by transitivity, we have R == T, which is what we needed.
+
+The second thing that needs to be checked is that the thing returned has the
+same type as the declared return type, so in this case we need to check that S
+is equal to T. Again, we have T == S from the where clause, so by symmetry S ==
+T.
+
+
+
+The second aspect of type equality being a congruence is that it propagates in certain ways with respect to type constructors (that is, ways of constructing larger types out of smaller types). For example, if we know that S == T, then we can deduce that func(S,S) == func(T,T). Similarly, if we have a generic class such as
+
+.. code-block:: chapel
+
+  class C {
+    type X;
+  }
+
+then S == T implies C(S) == C(T).
+
+Example
++++++++
+
+The following function is well typed.
+
+.. code-block:: chapel
+
+  proc g(a : C(S), b : T): C(T) where S == T {
+    return a;
+  }
+
+The only thing that needs to be checked is the return type, that is, we need
+tocheck whether C(S) == C(T). But we know this is true using S == T and the
+fact that equality is a congruence.
+
+The propagation of equality can also go in the other direction. For example,
+C(S) == C(T) implies that S == T.
+
+Example
++++++++
+
+.. code-block:: chapel
+
+  proc g(a : S, b : T): T where C(S) == C(T) {
+    return a;
+  }
+
+For this function, we need to check whether S == T. The where clause gives us
+C(S) == C(T), so again by the fact that type equality is a congruence, we know
+S == T.
+
+The congruence also extends to associated types. For example, given the
+following interface
+
+.. code-block:: chapel
+
+  interface I {
+    type helper;
+    proc self.get_helper() : helper;
+  }
+
+then S == T implies I(S).helper == I(T).helper. However, for associated types,
+the propagation does not go in the reverse direction. The equality I(S).helper
+== I(T).helper does not imply that S == T.
+
+Example
++++++++
+
+The following function is *not* well typed.
+
+.. code-block:: chapel
+
+  proc f(a : ?S, b : ?T) : ?T
+    where S implements I, T implements I, I(S).helper == I(T).helper
+  {
+    return a;
+  }
+
+Just because I(S).helper == I(T).helper does not mean that S == T.
+
+
+Like type parameters, associated types are in general assumed to be different from one another.
+
+Example
++++++++
+
+The following program is *not* well typed.
+
+.. code-block:: chapel
+
+  proc f(s : ?S, t : ?T) where S implements I, T implements I {
+    var x : ?S.helper = t.get_helper();
+  }
+
+Query Types
+-----------
+
+We propose relaxing the restriction that a query type may only appear once in a
+function signature. Instead, a query type may appear any number of times. The
+query type resolves to the match for the first occurrence of the query type.
+
+Example
++++++++
+
+
+The following function and function call are well typed, assuming that
+real numbers implement LessThanComparable. The query type T resolves to real,
+and the second argument in the function call is coerced to real.
+
+.. code-block:: chapel
+
+  proc min(x : ?T, y : ?T): T where T implements LessThanComparable {
+    if y < x then
+      return y;
+    else
+      return x;
+  }
+  min(1.0, 2);
+
+The Any Type
+------------
+
+We propose to support dynamic dispatch and dynamic polymorphism for interfaces using the any type feature. There are three forms for specifying an any type. We start with the simplest.
+
+type–specifier:
+  any interface–name
+
+Any type T may be implicitly cast to the type any I, if T implements I. The methods and functions in interface I are available for use on objects of type any I.
+
+Example
++++++++
+
+.. code-block:: chapel
+
+  interface I {
+    proc self.f() { }
+  }
+  class C { }
+  C implements I;
+
+  var x : any I = new C();
+  x.f()
+
+
+The next any form adds more expressiveness by including a where clause that includes one or more constraints on the any type. The type specifier is a pattern that specifies what the any type looks like.
+
+type–specifier:
+  any type–specifier where where–item–list
+
+Example
++++++++
+
+Continuing from the previous example, we have an any type that implements two interfaces, I and J.
+
+.. code-block:: chapel
+
+  interface J {
+    proc self.g() { }
+  }
+  C implements J;
+
+  var y : any ?T where T implements I, T implements J = new C();
+  y.f();
+  y.g();
+
+The next example demonstrates the use of an any type with a slightly more complex type specifier, in this case a tuple.
+
+.. code-block:: chapel
+
+  var t : any (?T,?U) where T implements I, U implements J = (new C(), new C());
+  t(1).f();
+  t(2).g();
+
+
+
+Semantics Requirements
+----------------------
+
+The design for interfaces that we sketch here does not include explicit support
+for semantic requirements. For example, the Monoid interface naturally includes
+the requirement that the binary operator be associative, but we do not provide
+a way to express this as a interface statement. The main reason for this
+omission is that automatically checking semantic requirements is beyond the
+state of the art (and is undecidable in general). However, there are several
+ways to take semantic requirements into account with some help from the
+programmer.
+
+In the sketch given here, we intend for programmers to use comments to express
+semantic requirements and we expect programmers to manually check semantic
+requirements when writing an implementation statement.  Thus, the
+implementation statement is treated as a programmer assertion that the semantic
+requirements have been satisfied.
+
+In this design, implementation statements are mandatory, that is, they are the
+only way to establish that a type implements a interface.  An alternative
+design could allow the implementation relationship to be inferred when it is
+needed. However, that would introduce a challenge with respect to how the
+programmer could assert that the semantic requirements are satisfied. Ferguson
+proposes a solution based on symbolic *tags* which we will refer to as
+behaviors here.  Behaviors could be adapted to our design in the following way.
+First, we would add a statement for declaring new behaviors. For example, the
+following would declare a behavior that corresponds to the property of a type U
+having an associative addition operator.
+
+::
+  newbehavior associative_addition(?U);
+
+Second, we would add a new kind of requires statement for behaviors. The
+following shows an AdditiveSemigroup interface with the requirement for
+associative_addition.
+
+.. code-block:: chapel
+
+  interface AdditiveSemigroup(T) {
+    proc +(T,T) : T;
+    requires associative_addition(T);
+  }
+
+Lastly, we would add a new kind of statement for declaring that a type
+satisfies a behavior. The following assertion would establish that integer
+addition is associative.
+
+::
+  satisfies associative_addition(int);
+
+
+Fitting in with Existing Generics
+---------------------------------
+
+Chapel's existing generics are in some ways more macro-like: flexible, but not
+as type checked. The proposed constrained generics will not be able to do some
+of the same things. Therefore, we propose to keep both the existing generics and also the constrained generics.
+
+  * generic functions without a where clause will continue not to be type
+    checked until they are instantiated. That is important because calls inside
+    these generic functions are dependent on the type/param arguments of the
+    generic.
+  * generic functions containing an implements statement will be typed checked
+    before instantiation and whether or not they are ever instantiated. We can
+    also call such functions *checked generics*.
+
+  * I think it would be worth also making non-generic functions be type checked
+    if they are never called.  This will help prevent latent errors.
+    Programmers wishing to prototype can always comment out code that they do
+    not intend to call for the near term. However, the guarded generics
+    can be type checked early either way. (A Chapel user was recently
+    requesting for full type checking on chapel-users
+    "compiler and extern questions")
+
+
+Another issue is with compile-time folded conditionals, like this:
+
+.. code-block:: chapel
+
+  if type == bool {
+    ...
+  }
+
+In a checked generic function, such compile-time folding is OK provided that
+either:
+
+ 1) the conditional can be folded based on the type constraints in
+    the where clause
+ 2) both sides of the conditional can compile with the generic type
+    constraint.
+
+To make (2) a satisfying solution, the compiler might need to change
+its idea of the types of variables as it does the type checking, e.g. in
+the example
+
+.. code-block:: chapel
+
+  proc foo(x:?t) where t implements SomeInterface {
+    if t == bool {
+      var y:bool = x; // this should be OK since the compiler knows x:bool
+    }
+  }
+
+Note that in simple cases, such functions can be implemented as separate
+overloads of the same function.
+
+Open Questions
+--------------
+
+Should implements statements be required (= nominal typing) or inferred (=
+structural typing). If they are inferred, should we use a tag/behavior
+strategy like the one outline above in "Semantics Requirements"? Should we
+default to nominal and opt-in to structural? Or vice versa?
+
+What syntax should we use for implements clauses in where clauses? Should 
+we use 'require' or some other keyword different from 'where'?
+
+What is the final syntax for interfaces? Do we want 'self' to refer to the
+first type in an interface?
+
+How can functions with some unconstrained generic parameters and some
+constrained generic parameters be type checked?
+
+Implementation
+--------------
+
+NOTE: see Chris Wailes' documents Function Resolution States and Transitions and Proposed Function Resolution Chapel for previous implementation design work.
+
+Overall he listed these design principles:
+
+1. No non­generic function will ever be visited by instantiateGeneric.
+2. No guarded generic function will ever be visited by resolveFn.
+3. Guarded generic functions will only be instantiated during the second pass.
+   Non­guarded generic functions may be instantiated in the first pass if they
+   are called from a guarded generic.
+
+and plans for two passes:
+
+1. Type check guarded generics and resolve implements statements
+2. Resolve everything else and link generics
+3. Instantiate generics
+4. Finalize un-guarded generics
+5. Finalize models
+
+
+Decisions
+---------
+
+Several Chapel developers discussed this on June 2, 2015. There is broad
+agreement on the general direction but some issues need to be addressed.
+

@@ -2228,7 +2228,8 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 // Inserts the given ast ahead of the _downEndCount call at the end of this
 // function, if present.  Otherwise, inserts it ahead of the return.
 void
-FnSymbol::insertBeforeDownEndCount(Expr* ast) {
+FnSymbol::insertBeforeDownEndCount(Expr* ast)
+{
   CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
@@ -2570,18 +2571,11 @@ ModuleSymbol::copyInner(SymbolMap* map) {
 }
 
 
-static int compareLineno(const void* v1, const void* v2) {
-  FnSymbol* fn1 = *(FnSymbol* const *)v1;
-  FnSymbol* fn2 = *(FnSymbol* const *)v2;
+static int compareLineno(void* v1, void* v2) {
+  FnSymbol* fn1 = (FnSymbol*)v1;
+  FnSymbol* fn2 = (FnSymbol*)v2;
 
-  if (fn1->linenum() > fn2->linenum())
-    return 1;
-
-  else if (fn1->linenum() < fn2->linenum())
-    return -1;
-
-  else
-    return 0;
+  return fn1->linenum() < fn2->linenum();
 }
 
 
