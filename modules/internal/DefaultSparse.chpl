@@ -274,9 +274,11 @@ module DefaultSparse {
     proc ~DefaultSparseArr() {
       on dom {
         local dom.remove_arr(this);
-        var cnt = dom.destroyDom();
-        if cnt == 0 then
-          delete dom;
+        if ! noRefCount {
+          var cnt = dom.destroyDom();
+          if cnt == 0 then
+            delete dom;
+        }
       }
     }
   
