@@ -25,6 +25,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
 #include "LocaleWin.h"
+#include "CommWin.h"
 
 #include <string>
 
@@ -48,6 +49,7 @@ struct localeInfo {
 struct commInfo {
   int numGets;
   long commSize;
+  CommWin *win;
 };
 
 struct tagInfo {

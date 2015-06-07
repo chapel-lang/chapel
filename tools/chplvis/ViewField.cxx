@@ -26,7 +26,9 @@
 
 Fl_Color heatColor ( double val, double max ) {
   if (val == 0) return FL_WHITE;
-  return fl_rgb_color( 255*((val)/max), 255 * ((max-val)/max), 0);
+  if (max == 1) return fl_rgb_color(255,0,0);
+  if (val == 1) return fl_rgb_color(0,255,0);
+  return fl_rgb_color( 255*(val/max), 255 * ((max-val)/max), 0);
 }
 
 //  ViewField Constructors
@@ -94,7 +96,12 @@ void ViewField::allocArrays()
     delete [] theLocales;
   }
   if (comms != NULL) {
-    for (ix = 0; ix < getSize; ix++)  delete [] comms[ix];
+    for (ix = 0; ix < getSize; ix++)  { 
+      for (ix2 = 0; ix2 < getSize; ix2++) 
+	if (comms[ix][ix2].win != NULL)
+	  delete comms[ix][ix2].win;
+      delete [] comms[ix];
+    }
     delete [] comms;
   }
   if (tags != NULL) {
@@ -104,7 +111,7 @@ void ViewField::allocArrays()
   
   // Alloc new space ... except for tags, done in process data.
   theLocales = new localeInfo [numlocales];
-  comms = new  commInfo* [numlocales];
+  comms = new  struct commInfo* [numlocales];
   if (theLocales == NULL || comms == NULL) {
     fprintf (stderr, "chplvis: out of memory.\n");
     exit(1);
@@ -113,7 +120,7 @@ void ViewField::allocArrays()
     theLocales[ix].numTasks = 0;
   getSize = numlocales;
   for (ix = 0; ix < getSize; ix++) {
-    comms[ix] = new commInfo[numlocales];
+    comms[ix] = new struct commInfo[numlocales];
     if (comms[ix] == NULL) {
       fprintf (stderr, "chplvis: out of memory.\n");
       exit(1);
@@ -121,6 +128,7 @@ void ViewField::allocArrays()
     for (ix2 = 0; ix2 < numlocales; ix2++) {
       comms[ix][ix2].numGets = 0;
       comms[ix][ix2].commSize = 0;
+      comms[ix][ix2].win = NULL;
     }
   }
 
@@ -176,12 +184,14 @@ void ViewField::processData(int tagNum)
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
       comms[ix1][ix2].numGets = 0;
       comms[ix1][ix2].commSize = 0;
+      if (comms[ix1][ix2].win != NULL) 
+	comms[ix1][ix2].win->hide();
     }
   }
-  maxTasks = 1;
-  maxComms = 1;
+  maxTasks = 0;
+  maxComms = 0;
   maxCpu = 0.0000001;
-  maxDatasize = 1;
+  maxDatasize = 0;
 
   Event *ev;
   int stopTag;
@@ -475,8 +485,8 @@ void ViewField::draw()
     for (iy = ix + 1; iy < numlocales; iy++) {
       int  com2ix, com2iy, comMax; 
       if (showcomms) {
-	com2ix = comms[ix][iy].numGets;
-	com2iy = comms[iy][ix].numGets;
+	com2ix = comms[iy][ix].numGets;
+	com2iy = comms[ix][iy].numGets;
 	comMax = maxComms;
       } else {
 	com2ix = comms[ix][iy].commSize;
@@ -605,8 +615,20 @@ int ViewField::handle(int event)
 	    || comms[j][i].numGets != 0) {
 	  int OnComm = isOnCommLink(x,y,loci,locj);
 	  if (OnComm) {
-	    printf ("Link %d -> %d, nearer locale %d\n", i, j,
-		    (OnComm > 1 ? j : i ));
+	    // printf ("Link %d -> %d, nearer locale %d\n", i, j, (OnComm > 1 ? j : i ));
+	    if (OnComm == 1) {
+	      // j -> i, swap so both can use i->j
+	      int t = j; j = i; i = t;
+	    } 
+	    if (comms[i][j].win == NULL) {
+	      comms[i][j].win = make_comm_window(i,j,&comms[i][j]);
+	    } else {
+	      comms[i][j].win->updateWin();
+	    }
+	    if (comms[i][j].win->visible())
+	      comms[i][j].win->hide();
+	    else
+	      comms[i][j].win->show();
 	    return 1;
 	  }
 	}

@@ -50,10 +50,13 @@ decl {\#include "InfoBar.h"} {public local
 decl {\#include "LocaleWin.h"} {public global
 } 
 
+decl {\#include "CommWin.h"} {public local
+} 
+
 decl {DataModel VisData;} {public local
 } 
 
-Function {mainWinCallback(Fl_Widget *)} {open return_type void
+Function {mainWinCallback(Fl_Widget *)} {return_type void
 } {
   code {exit(1);} {}
 } 
@@ -61,7 +64,7 @@ Function {mainWinCallback(Fl_Widget *)} {open return_type void
 Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
 } {
   Fl_Window {} {open
-    xywh {925 51 180 120} type Double color 7 resizable
+    xywh {1037 56 180 120} type Double color 7 resizable
     class LocaleWin size_range {180 120 0 0} visible
   } {
     Fl_Box Locale_Title {
@@ -78,11 +81,32 @@ Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
 w->updateWin();} {}
 } 
 
+Function {make_comm_window(int fromLn, int toLn, struct commInfo *commData)} {open
+} {
+  Fl_Window {} {open
+    xywh {1039 205 180 120} type Double color 7 resizable
+    class CommWin visible
+  } {
+    Fl_Box Comm_Title {
+      label Comm
+      private xywh {0 0 180 25}
+    }
+    Fl_Output commInfo {
+      label { }
+      xywh {0 25 180 95} labeltype NO_LABEL resizable
+      class Fl_Multiline_Output
+    }
+  }
+  code {w->setMembers(Comm_Title, commInfo, commData, fromLn, toLn);
+w->updateWin();} {selected
+  }
+} 
+
 Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1126 51 500 590} type Double color 7 resizable size_range {500 590 0 0} visible
+    xywh {1278 56 500 590} type Double color 7 resizable size_range {500 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 500 20} color 55
@@ -183,6 +207,5 @@ MainWindow->redraw();}
       Info->setFileName(".Vdebug (default)");
    }
 }
-MainWindow->callback(mainWinCallback);} {selected
-  }
+MainWindow->callback(mainWinCallback);} {}
 } 

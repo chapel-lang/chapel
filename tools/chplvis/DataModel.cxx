@@ -151,6 +151,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
   int  nErrs = 0;
 
+  // Removing overhead ..
+  bool ignoreFork = index != 0;
+
   if (!data) return 0;
 
   // printf ("LoadFile %s\n", filename);
@@ -277,6 +280,13 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  fprintf (stderr, "Bad comm line: %s\n", filename);
 	  nErrs++;
 	} else {
+	  // Filter out modules/standard/VisualDebug.chpl (33 chars in length)
+	  int nfnLen = strlen(nfilename);
+	  if (nfnLen >= 33
+	      && (strcmp(&nfilename[nfnLen-33], "modules/standard/VisualDebug.chpl") == 0)) {
+	    // printf ("Found VisualDebug.chpl line\n");
+	    break;
+	  }
 	  isGet = (line[0] == 'g' ? 1 :
 		   line[0] == 'p' ? 0 :
 		   line[3] == 'g' ? 1 : 0);
@@ -288,6 +298,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	break;
 
       case 'f':  // All the forks:
+	if (ignoreFork) {
+	  ignoreFork = false;
+	  // printf ("Ignoring fork: %s\n", linedata);
+	  break;
+	}
 	// s.u nodeID otherNode subloc fid arg arg_size
 	if ((cvt = sscanf (&linedata[nextCh], "%d %d %d %*d 0x%*x %d", 
 			   &nid, &rnid, &fid, &dlen)) != 4) {
@@ -305,6 +320,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  nErrs++;
 	} else {
 	  newEvent = new E_resume(sec, usec, nid, sec, s_usec, tagId);
+	  if (nid != 0) ignoreFork = true;
 	}
 	break;
 
@@ -320,6 +336,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 			       &linedata[nextCh]);
 	  if (tagId >= numTags)
 	    numTags = tagId+1;
+	  if (nid != 0 && pause != 'p') ignoreFork = true;
 	}
 	break;
 
@@ -330,7 +347,6 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	} else {
 	  newEvent = new E_end(sec, usec, nid, s_sec, s_usec);
 	}
-	   
 	break;
 
 
