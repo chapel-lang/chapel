@@ -1,1 +1,2 @@
-../../common/probSize.chpl ../../common/bradc/BradsBlock1DPar.chpl
+# Yet another test that now fails due to iterator inlining.
+../../common/probSize.chpl ../../common/bradc/BradsBlock1DPar.chpl --no-inline-iterators

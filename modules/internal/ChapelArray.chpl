@@ -392,9 +392,8 @@ module ChapelArray {
     if (isArrayType(eltType)) {
       var ev: eltType;
       const refcount = ev.domain._value.destroyDom();
-      if !noRefCount then
-        if refcount == 0 then
-          delete ev.domain._value;
+      if refcount == 0 then
+        delete ev.domain._value;
       chpl_decRefCountsForDomainsInArrayEltTypes(ev.eltType);
     }
   }

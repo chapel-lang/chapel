@@ -671,9 +671,11 @@ proc chpl__autoDestroy(x: DefaultDist) {
     proc ~DefaultRectangularArr() {
       on dom {
         local dom.remove_arr(this);
-        var cnt = dom.destroyDom();
-        if cnt == 0 then
-          delete dom;
+        if ! noRefCount {
+          var cnt = dom.destroyDom();
+          if cnt == 0 then
+            delete dom;
+        }
       }
     }
   

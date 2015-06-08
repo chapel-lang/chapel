@@ -91,6 +91,7 @@ module ChapelDistribution {
     }
   
     inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
       if debugDistRefCount {
         extern proc printf(fmt: c_string, arg...);
         const cnt = _distCnt.read();
@@ -99,7 +100,6 @@ module ChapelDistribution {
         if cnt < 0 || cnt > 1000 then
             halt("_distCnt is bogus!");
       }
-      compilerAssert(!noRefCount);
       _distCnt.inc(cnt);
     }
 
@@ -144,8 +144,7 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc destroyDom(): int {
       compilerAssert(!noRefCount);
-      var cnt = decRefCount();
-      return cnt;
+      return decRefCount();
     }
 
     inline proc remove_arr(x) {
@@ -193,6 +192,7 @@ module ChapelDistribution {
     }
   
     inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
       if debugDomRefCount {
         extern proc printf(fmt: c_string, arg...);
         const cnt = _domCnt.read();
@@ -201,7 +201,6 @@ module ChapelDistribution {
         if cnt < 0 || cnt > 10000 then
           halt("_domCnt is bogus!");
       }
-      compilerAssert(!noRefCount);
       _domCnt.inc(cnt);
     }
 
@@ -370,6 +369,7 @@ module ChapelDistribution {
     }
   
     inline proc incRefCount(cnt=1) {
+      compilerAssert(!noRefCount);
       if debugArrRefCount {
         extern proc printf(fmt: c_string, arg...);
         const cnt = _arrCnt.read();
@@ -378,7 +378,6 @@ module ChapelDistribution {
         if cnt < 0 || cnt > 10000 then
           halt("_arrCnt is bogus!");
       }
-      compilerAssert(!noRefCount);
       _arrCnt.inc(cnt);
     }
 

@@ -784,9 +784,11 @@ proc BlockDom.~BlockDom() {
     on locDoms(localeIdx) do
       delete locDoms(localeIdx);
   }
-  var cnt = dist.decRefCount();
-  if cnt==0 then
-    delete dist;
+  if ! noRefCount {
+    var cnt = dist.decRefCount();
+    if cnt==0 then
+      delete dist;
+  }
 }
 
 proc BlockDom.dsiMember(i) {
@@ -895,9 +897,11 @@ proc BlockArr.~BlockArr() {
   // Release my reference to the distributed domain.
   on dom {
     local dom.remove_arr(this);
-    var cnt = dom.destroyDom();
-    if cnt == 0 then
-      delete dom;
+    if ! noRefCount {
+      var cnt = dom.destroyDom();
+      if cnt == 0 then
+        delete dom;
+    }
   }
 }
 
