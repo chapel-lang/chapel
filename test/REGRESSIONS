@@ -166,6 +166,10 @@ general
 Reviewed 2015-05-20
 ===================
 
+execution timeout for new test (2015-06-06, bradc)
+(perf.xc.local.cray, valgrind)
+--------------------------------------------------
+[Error: Timed out executing program users/npadmana/twopt/do_smu_soa]
 
 === sporadic failures below ===
 
@@ -744,7 +748,7 @@ sporadic execution timeouts
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ra]
   (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26, 2015-05-20, 2015-05-23,
                           2015-05-26)
-  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18)
+  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18, 2015-06-07)
   (xe.ugni.intel          2015-03-24, 2015-03-30, 2015-04-01..2015-04-02, 
                           2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22)
   (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
@@ -756,10 +760,10 @@ sporadic execution timeouts
   (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
                            2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
                            2015-05-11, 2015-05-17, 2015-05-21..2015-05-22,
-                           2015-05-26, 2015-06-05..)
+                           2015-05-26, 2015-06-05..2015-06-06)
   (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 2015-05-26..)
                            2015-05-03..2015-05-04, 2015-05-06..??, 
-                           2015-05-13..2015-05-17, 2015-06-05..)
+                           2015-05-13..2015-05-17, 2015-06-05)
   (xe.ugni-qthreads.intel: ??..2015-03-22)
   (xe.ugni-qthreads.gnu:   2015-05-05, 2015-05-17, 2015-05-22)
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
@@ -767,9 +771,10 @@ sporadic execution timeouts
                           2015-05-05..2015-05-06, 2015-05-18, 2015-05-21)
   (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
                           2015-05-18, 2015-05-24..2015-05-25, 2015-05-28)
-  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18, 2015-06-05..)
+  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18, 
+                          2015-06-05..2015-06-06
   (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21, 
-                          2015-05-23..2015-05-24, 2015-05-26)
+                          2015-05-23..2015-05-24, 2015-05-26, 2015-06-06)
 
 
 ==========================================
@@ -931,6 +936,10 @@ sporadic execution timeout (lydia)
                 2015-03-10, 2015-03-12..2015-03-28, 2015-03-30..2015-04-04, 
                 2015-04-07..2015-05-04, 2015-05-07..2015-05-14, 2015-05-17)
  cygwin32: ..., 2015-03-11, 2015-03-13..2015-03-20, 2015-03-22..)
+[Error: Timed out executing program release/examples/primers/fileIO]
+  (cygwin64: 2015-06-02, 2015-06-06)
+  (cygwin32: 2015-06-08..)
+
 
 
 ===========================
@@ -968,10 +977,6 @@ sporadic pthread_cond_init() failure
 [Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
   (2015-02-25..2015-03-04, 2015-03-07, 2015-03-11, 2015-03-29, 2015-04-05, 
    2015-05-05..2015-05-06, 2015-05-15..2015-05-16, 2015-05-18..2015-06-01)
-
-sporadic execution timeout
---------------------------
-[Error: Timed out executing program release/examples/primers/fileIO] (2015-06-02)
 
 
 
