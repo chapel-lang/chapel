@@ -1787,10 +1787,7 @@ static void lookup(BaseAST*       scope,
 
     if (symbols.n == 0) {
       if (scope->getModule()->block == scope) {
-        ModuleSymbol* mod = scope->getModule();
-        lookup(mod->block, name, symbols, alreadyVisited);
-
-        if (symbols.n == 0 && getScope(scope)) {
+        if (getScope(scope)) {
           lookup(getScope(scope), name, symbols, alreadyVisited);
         }
       } else {
