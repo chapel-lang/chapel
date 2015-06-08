@@ -260,7 +260,7 @@ yield            return processToken(yyscanner, TYIELD);
 
 \n               return processNewline(yyscanner);
 
-[ \t\r]          processWhitespace(yyscanner);
+[ \t\r\f]        processWhitespace(yyscanner);
 .                processInvalidToken(yyscanner);
 
 %%
