@@ -209,8 +209,10 @@ sub feed_nodes {
     @testdir_list = sort @testdir_list;
     print $nodeCount; print " worker(s) (@node_list)\n";
     print "timeout = $timeout\n" if $debug > 0;
-    print $#testdir_list+1; print " test(s) (@testdir_list)\n";
+    my $startCount = $#testdir_list + 1;
+    print $startCount; print " test(s) (@testdir_list)\n";
 
+    my $startSecs = time();
     while (($#testdir_list >= 0) &&       # while still have work to do
            ($nodeCount > 0)      &&       # not all nodes have failed
            !(-e "PARAHALT")) {
@@ -233,7 +235,17 @@ sub feed_nodes {
             }
             unlink $synchfile;
 
-            print "$node <- $testdir ($#testdir_list left)\n";
+            my $elapsedSecs = time() - $startSecs;
+            my $testsLeft = $#testdir_list + $nodeCount;
+            my $testsDone = $startCount - $testsLeft;
+            my $estSecsLeft = 1;
+            if ($testsDone > 0) {
+                $estSecsLeft = int($testsLeft * $elapsedSecs / $testsDone);
+            }
+            my ($endSec, $endMin, $endHour) = localtime(time() + $estSecsLeft);
+
+            print "$node <- $testdir ($#testdir_list left, ";
+            printf ("end ~%02d:%02d:%02d)\n", $endHour, $endMin, $endSec);
             $testdirname = $testdir;
             $testdirname =~ s/\//-/g;
             $logfile = "$logdir/$testdirname.$node.log";
