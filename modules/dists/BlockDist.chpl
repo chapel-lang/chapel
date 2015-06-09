@@ -41,6 +41,7 @@
 use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
+use SparseBlockDist;
 
 //
 // These flags are used to output debug information and run extra
@@ -163,6 +164,11 @@ class BlockDom: BaseRectangularDom {
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
+
+  proc dsiNewSpsSubDom(parentDomVal) {
+    return new SparseBlockDom(rank=rank, idxType=idxType, dist=dist, parentDom=parentDomVal, whole=whole);
+    writeln("Returning from dsiNewSpsSubdom");
+  }
 }
 
 //
@@ -355,7 +361,7 @@ proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -521,6 +527,7 @@ proc LocBlock.LocBlock(param rank: int,
     myChunk = {(...inds)};
   }
 }
+
 
 proc BlockDom.dsiMyDist() return dist;
 

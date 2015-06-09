@@ -581,8 +581,10 @@ Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
       if (arg == formal)
         return actual;
     }
+    INT_FATAL(call, "couldn't find arg");
+  } else {
+    INT_FATAL(call, "formal_to_actual invoked with unresolved call");
   }
-  INT_FATAL(call, "bad call to formal_to_actual");
   return NULL;
 }
 

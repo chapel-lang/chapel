@@ -183,6 +183,13 @@ module ChapelArray {
    where idxType == opaque
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
 
+  pragma "has runtime type"
+  proc chpl__buildSparseDomainRuntimeType(dom: domain) type {
+    compilerWarning("***"+typeToString(dom._value.type));
+    return _newDomain(dom._value.dsiNewSpsSubDom(dom));
+  }
+
+  //  pragma "has runtime type"
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) 
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));

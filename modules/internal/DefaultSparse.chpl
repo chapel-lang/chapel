@@ -127,6 +127,10 @@ module DefaultSparse {
       return parentDom.dim(d);
     }
 
+    proc dsiDims() {
+      return parentDom.dims();
+    }
+    
     // private
     proc find(ind) {
       //
@@ -224,11 +228,19 @@ module DefaultSparse {
     }
 
     proc dsiAdd(ind: rank*idxType) {
-      add_help(ind);
+      if (rank == 1) {
+        add_help(ind(1));
+      } else {
+        add_help(ind);
+      }
     }
-
+  
     proc dsiRemove(ind: rank*idxType) {
-      rem_help(ind);
+      if (rank == 1) {
+        rem_help(ind(1));
+      } else {
+        rem_help(ind);
+      }
     }
 
     proc dsiClear() {
@@ -259,8 +271,14 @@ module DefaultSparse {
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box
       if boundsChecking then
-        if !(dom.parentDom.member(ind)) then
+        if !(dom.parentDom.member(ind)) {
+          writeln("On locale ", here.id);
+          writeln("In dsiAccess, got index ", ind);
+          writeln("dom.parentDom = ", dom.parentDom);
+
           halt("array index out of bounds: ", ind);
+        }
+
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
@@ -370,18 +388,18 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseDom.dsiSerialWrite(f: Writer) {
+  proc DefaultSparseDom.dsiSerialWrite(f: Writer, printBrackets=true) {
     if (rank == 1) {
-      f.write("{");
+      if printBrackets then f.write("{");
       if (nnz >= 1) {
         f.write(indices(1));
         for i in 2..nnz {
           f.write(" ", indices(i));
         }
       }
-      f.write("}");
+      if printBrackets then f.write("}");
     } else {
-      f.writeln("{");
+      if printBrackets then f.writeln("{");
       if (nnz >= 1) {
         var prevInd = indices(1);
         f.write(" ", prevInd);
@@ -394,7 +412,7 @@ module DefaultSparse {
         }
         f.writeln();
       }
-      f.writeln("}");
+      if printBrackets then f.writeln("}");
     }
   }
 
