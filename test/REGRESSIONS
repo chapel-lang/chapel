@@ -676,7 +676,8 @@ sporadic execution timeouts (one-offs?)
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 1)]
   (xc.ugni.gnu.aprun: 2015-05-28)
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 2)]
-  (xc.ugni.gnu.aprun: 2015-05-28)
+  (xc.ugni.gnu.aprun:   2015-05-28)
+  (xc.ugni.intel.aprun: 2015-06-09..)
 
 
 sporadic [chpl_launchcmd] ... [ERROR] Output file from job does not exist
@@ -750,12 +751,13 @@ sporadic execution timeouts
                           2015-05-26)
   (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18, 2015-06-07)
   (xe.ugni.intel          2015-03-24, 2015-03-30, 2015-04-01..2015-04-02, 
-                          2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22)
+                          2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22,
+                          2015-06-09..)
   (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
                           2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
                           2015-05-05..2015-05-06, 2015-05-10,
                           2015-05-14..2015-05-16, 2015-05-23..2015-05-24,
-                          2015-05-28)
+                          2015-05-28, 2015-06-09..)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
   (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
                            2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
@@ -768,7 +770,8 @@ sporadic execution timeouts
   (xe.ugni-qthreads.gnu:   2015-05-05, 2015-05-17, 2015-05-22)
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
   (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
-                          2015-05-05..2015-05-06, 2015-05-18, 2015-05-21)
+                          2015-05-05..2015-05-06, 2015-05-18, 2015-05-21,
+                          2015-06-09..)
   (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
                           2015-05-18, 2015-05-24..2015-05-25, 2015-05-28)
   (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18, 
@@ -938,7 +941,7 @@ sporadic execution timeout (lydia)
  cygwin32: ..., 2015-03-11, 2015-03-13..2015-03-20, 2015-03-22..)
 [Error: Timed out executing program release/examples/primers/fileIO]
   (cygwin64: 2015-06-02, 2015-06-06)
-  (cygwin32: 2015-06-08..)
+  (cygwin32: 2015-06-08)
 
 
 
