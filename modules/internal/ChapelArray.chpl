@@ -35,7 +35,7 @@ module ChapelArray {
 
   pragma "privatized class"
   proc _isPrivatized(value) param
-    return !_local & ((_privatization & value.dsiSupportsPrivatization()) | value.dsiRequiresPrivatization());
+    return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
 
   proc _newPrivatizedClass(value) {
 
@@ -2568,5 +2568,5 @@ module ChapelArray {
     D = {1..i-1};
     return A;
   }
-  
+
 }
