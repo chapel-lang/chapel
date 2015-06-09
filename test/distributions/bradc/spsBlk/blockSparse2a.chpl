@@ -11,5 +11,18 @@ for i in 0..#n by 2 {
 
 writeln("MatElems = ", MatElems);
 
+var Dns: [Elems] int;
+
 forall i in MatElems do
-  writeln(i, " is on, ", here);
+  Dns[i] = here.id + 1;
+
+writeln("Dns is: ", Dns);
+
+/* TODO: Can't do I/O on sparse block arrays yet?
+var Sps: [MatElems] int;
+
+forall i in MatElems do
+  Sps[i] = here.id;
+
+writeln("Sps is: ", Sps);
+*/
