@@ -131,6 +131,7 @@ class Block : BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
   var pid: int = -1; // privatized object id (this should be factored out)
+
 }
 
 //
@@ -166,8 +167,8 @@ class BlockDom: BaseRectangularDom {
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc dsiNewSpsSubDom(parentDomVal) {
+    writeln("In Block.dsiNewSpsSubDom");
     return new SparseBlockDom(rank=rank, idxType=idxType, dist=dist, parentDom=parentDomVal, whole=whole);
-    writeln("Returning from dsiNewSpsSubdom");
   }
 }
 
@@ -341,6 +342,10 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
     dom.dsiDisplayRepresentation();
   }
   return dom;
+}
+
+proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  return dsiNewRectangularDom(rank, idxType, false);
 }
 
 //

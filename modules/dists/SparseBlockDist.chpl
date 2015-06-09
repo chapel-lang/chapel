@@ -147,11 +147,11 @@ class SparseBlockDom: BaseSparseDom {
     if locDoms(dist.targetLocDom.low) == nil {
       coforall localeIdx in dist.targetLocDom do {
 	on dist.targetLocales(localeIdx) do {
-          //          writeln("Setting up on ", here.id);
-          //          writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
+                    writeln("Setting up on ", here.id);
+                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
 	  locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
 						     dist.getChunk(whole, localeIdx));
-          //          writeln("Back on ", here.id);
+                    writeln("Back on ", here.id);
         }
       }
       //      writeln("Past coforall");
@@ -174,6 +174,10 @@ class SparseBlockDom: BaseSparseDom {
     on dist.dsiIndexToLocale(ind) {
       locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);      
     }
+  }
+
+  proc dsiAdd(ind: idxType) where this.rank == 1 {
+    dsiAdd((ind,));
   }
 
   //
