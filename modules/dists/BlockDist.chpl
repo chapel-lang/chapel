@@ -167,7 +167,7 @@ class BlockDom: BaseRectangularDom {
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc dsiNewSpsSubDom(parentDomVal) {
-    writeln("In Block.dsiNewSpsSubDom");
+    //    writeln("In Block.dsiNewSpsSubDom");
     return new SparseBlockDom(rank=rank, idxType=idxType, dist=dist, parentDom=parentDomVal, whole=whole);
   }
 }

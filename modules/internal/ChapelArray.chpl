@@ -185,7 +185,7 @@ module ChapelArray {
 
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(dom: domain) {
-    compilerWarning("***"+typeToString(dom._value.type));
+    //    compilerWarning("***"+typeToString(dom._value.type));
     return _newDomain(dom._value.dsiNewSpsSubDom(dom));
   }
 
