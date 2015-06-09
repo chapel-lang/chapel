@@ -1,2 +1,3 @@
 MatElems = { 0 2 4 6}
 Dns is: 1 0 2 0 3 0 4 0
+Sps is: [ 1 2 3 4]
