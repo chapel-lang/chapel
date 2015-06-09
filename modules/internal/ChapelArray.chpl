@@ -183,16 +183,19 @@ module ChapelArray {
    where idxType == opaque
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
 
-  pragma "has runtime type"
-  proc chpl__buildSparseDomainRuntimeType(dom: domain) type {
+  pragma "runtime type init fn"
+  proc chpl__buildSparseDomainRuntimeType(dom: domain) {
     compilerWarning("***"+typeToString(dom._value.type));
     return _newDomain(dom._value.dsiNewSpsSubDom(dom));
   }
 
+  /*
   //  pragma "has runtime type"
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) 
+    proc chpl__buildSparseDomainRuntimeType(dom: domain)  {
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
+  }
+  */
   
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where dom._value:BaseRectangularDom
@@ -209,7 +212,7 @@ module ChapelArray {
   
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where dom._value:BaseSparseDom
-    return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
+    return chpl__buildSparseDomainRuntimeType(dom._value.parentDom);
   
   proc chpl__convertValueToRuntimeType(dom: domain) type {
     compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
@@ -469,7 +472,7 @@ module ChapelArray {
       // sparse/bradc/CSR/sparse.chpl as an example
       //
       pragma "no auto destroy" var dom: domainType;
-      return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
+      return chpl__buildSparseDomainRuntimeType(dom._value.parentDom);
     } else {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);

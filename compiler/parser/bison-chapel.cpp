@@ -6726,7 +6726,7 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 1274 "chapel.ypp"
-    { (yyval.pexpr) = new CallExpr("chpl__buildSparseDomainRuntimeType", (yyvsp[(4) - (5)].pcallexpr)); }
+    { (yyval.pexpr) = new CallExpr("chpl__buildSparseDomainRuntimeType", /*buildDotExpr($4, "dist"),*/ (yyvsp[(4) - (5)].pcallexpr)); }
     break;
 
   case 302:

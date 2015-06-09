@@ -1271,7 +1271,7 @@ type_level_expr:
 | TSUBDOMAIN TLP opt_actual_ls TRP
     { $$ = new CallExpr("chpl__buildSubDomainType", $3); }
 | TSPARSE TSUBDOMAIN TLP opt_actual_ls TRP
-    { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", $4); }
+    { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", /*buildDotExpr($4, "dist"),*/ $4); }
 | TATOMIC expr
     { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
