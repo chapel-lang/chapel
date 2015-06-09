@@ -908,6 +908,7 @@ static void insert_call_temps(CallExpr* call)
   tmp->addFlag(FLAG_MAYBE_TYPE);
   call->replace(new SymExpr(tmp));
 
+#if 0 // Not needed any more?
 // Not so fast! Since AMM destroys initialized variables (including temps) when
 // they exit the scope in which they are declared, temps which are to read in
 // an outer scope must be declared in an outer scope.  An easy fix is to
@@ -925,6 +926,7 @@ static void insert_call_temps(CallExpr* call)
     se->var->defPoint->insertBefore(new DefExpr(tmp));
   }
   else
+#endif
     stmt->insertBefore(new DefExpr(tmp));
 
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
