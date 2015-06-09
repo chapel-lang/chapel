@@ -861,35 +861,6 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   return sum;
 }
 
-//
-// output array
-//
-proc SparseBlockArr.dsiSerialWrite(f: Writer) {
-  if dom.dsiNumIndices == 0 then return;
-  var i : rank*idxType;
-  for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim).low;
-  label next while true {
-    f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
-      f.write(" ");
-      i(rank) += dom.dsiDim(rank).stride:idxType;
-    } else {
-      for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
-          i(dim) += dom.dsiDim(dim).stride:idxType;
-          for dim2 in dim+1..rank {
-            f.writeln();
-            i(dim2) = dom.dsiDim(dim2).low;
-          }
-          continue next;
-        }
-      }
-      break;
-    }
-  }
-}
-
 proc SparseBlockArr.dsiSlice(d: SparseBlockDom) {
   var alias = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
   var thisid = this.locale.id;
@@ -1093,6 +1064,31 @@ proc SparseBlock.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 */
+
+//
+// output array
+//
+proc SparseBlockArr.dsiSerialWrite(f: Writer) {
+  if (rank == 1) {
+    f.write("[");
+    for locarr in locArr do {
+      //	on locdom do {
+      if (locarr.locDom.dsiNumIndices) {
+        f.write(" ");
+        locarr.dsiSerialWrite(f);
+      }
+      //	}
+    }
+    f.write("]");
+  } else {
+    compilerError("Can't write out multidimensional sparse distributed arrays yet");
+  }
+}
+
+proc LocSparseBlockArr.dsiSerialWrite(f: Writer) {
+  myElems._value.dsiSerialWrite(f);
+}
+
 
 proc SparseBlockDom.dsiSupportsPrivatization() param return false;
 
