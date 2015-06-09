@@ -188,7 +188,8 @@ class SparseBlockDom: BaseSparseDom {
       f.write("{");
       for locdom in locDoms do {
         //	on locdom do {
-	  if (locdom.dsiNumIndices > 1) {
+	  if (locdom.dsiNumIndices) {
+            f.write(" ");
 	    locdom.dsiSerialWrite(f);
           }
           //	}
