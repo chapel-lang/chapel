@@ -1,0 +1,8 @@
+bug: user overload of '|' operator on classes breaks internal modules
+
+For some reason when a user overload of '|' on classes exists, it
+breaks internal uses of '|' for param functions like isBoolType()
+by introducing another overload.  Explain call suggests that the
+breaking call is |(0,0) even though the calls in question ought
+to be generating |(false,false) calls, which is also surprising.
+I haven't been able to reproduce this in a simple test case yet.
