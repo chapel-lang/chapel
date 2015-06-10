@@ -768,6 +768,8 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   GenRet ret;
   GenInfo* info = gGenInfo;
   Type* wideRefType = NULL;
+  // what is the local reference type?
+  Type* refType = NULL;
 
   if( locale.chplType ) INT_ASSERT(locale.chplType == dtLocaleID->typeInfo());
 
@@ -777,7 +779,6 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
   if( raddr.chplType && !wideType ) {
     INT_ASSERT(raddr.isLVPtr != GEN_WIDE_PTR);
-    Type* refType;
     if( raddr.isLVPtr == GEN_VAL ) {
       // Then we should have a ref or a class.
       INT_ASSERT(raddr.chplType == dtNil ||
@@ -795,6 +796,8 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   }
 
   INT_ASSERT(wideRefType);
+  refType = wideRefType->getRefType();
+  INT_ASSERT(refType);
 
   locale = codegenValue(locale);
   if( widePointersStruct ) {
@@ -811,8 +814,16 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       info->cStatements.push_back(addrAssign);
     } else {
 #ifdef HAVE_LLVM
-      llvm::Value* adr = info->builder->CreateStructGEP(ret.val, WIDE_GEP_ADDR);
-      llvm::Value* loc = info->builder->CreateStructGEP(ret.val, WIDE_GEP_LOC);
+      llvm::Value* adr = info->builder->CreateStructGEP(
+#if HAVE_LLVM_VER >= 37
+          refType->codegen().type,
+#endif
+          ret.val, WIDE_GEP_ADDR);
+      llvm::Value* loc = info->builder->CreateStructGEP(
+#if HAVE_LLVM_VER >= 37
+          LOCALE_ID_TYPE->codegen().type,
+#endif
+          ret.val, WIDE_GEP_LOC);
 
       // cast address if needed. This is necessary for building a wide
       // NULL pointer since NULL is actually an i8*.
@@ -845,7 +856,12 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       // we are supposed to have since null has type void*.
       llvm::Value* locAddr = raddr.val;
       locAddr = info->builder->CreatePointerCast(locAddr, locAddrType);
+#if HAVE_LLVM_VER >= 37
+      ret.val = info->builder->CreateCall(fn, {locale.val, locAddr});
+#else
       ret.val = info->builder->CreateCall2(fn, locale.val, locAddr);
+#endif
+
 #endif
     } else {
       // Packed wide pointers.
@@ -1132,6 +1148,17 @@ static GenRet codegenWideThingField(GenRet ws, int field)
              field == WIDE_GEP_ADDR ||
              field == WIDE_GEP_SIZE );
 
+  if( field == WIDE_GEP_SIZE ) {
+    ret.chplType = SIZE_TYPE;
+  } else if( field == WIDE_GEP_LOC ) {
+    ret.chplType = LOCALE_ID_TYPE;
+  } else if( field == WIDE_GEP_ADDR ) {
+    // get the local reference type
+    // this will probably be overwritten by the caller,
+    // but it is used below in the LLVM code.
+    ret.chplType = getRefTypesForWideThing(ws, NULL);
+  }
+
   const char* fname = wide_fields[field];
 
   if( info->cfile ) {
@@ -1149,19 +1176,17 @@ static GenRet codegenWideThingField(GenRet ws, int field)
 #ifdef HAVE_LLVM
     if (ws.val->getType()->isPointerTy()){
       ret.isLVPtr = GEN_PTR;
-      ret.val = info->builder->CreateConstInBoundsGEP2_32(ws.val, 0, field);
+      ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                                              ret.chplType->codegen().type,
+#endif
+                                              ws.val, 0, field);
     } else {
       ret.isLVPtr = GEN_VAL;
       ret.val = info->builder->CreateExtractValue(ws.val, field);
     }
     assert(ret.val);
 #endif
-  }
-
-  if( field == WIDE_GEP_SIZE ) {
-    ret.chplType = SIZE_TYPE;
-  } else if( field == WIDE_GEP_LOC ) {
-    ret.chplType = LOCALE_ID_TYPE;
   }
 
   return ret;
@@ -1462,11 +1487,17 @@ GenRet codegenFieldPtr(
 
     AggregateType *cBaseType = toAggregateType(baseType);
 
+    // We need the LLVM type of the field we're getting
+    INT_ASSERT(ret.chplType);
+    GenRet retType = ret.chplType;
+
     if( isUnion(ct) && !special ) {
       // Get a pointer to the union data then cast it to the right type
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+          retType.type,
+#endif
           baseValue, 0, cBaseType->getMemberGEP("_u"));
-      GenRet retType = ret.chplType;
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1476,6 +1507,9 @@ GenRet codegenFieldPtr(
     } else {
       // Normally, we just use a GEP.
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+          retType.type,
+#endif
           baseValue, 0, cBaseType->getMemberGEP(c_field_name));
     }
 #endif

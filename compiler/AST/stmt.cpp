@@ -70,7 +70,10 @@ void codegenStmt(Expr* stmt) {
         scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
       } else {
         scope = info->builder->getCurrentDebugLocation().getScope(
-                                                      info->llvmContext);
+#if HAVE_LLVM_VER < 37
+                                                      info->llvmContext
+#endif
+                                                      );
       }
 
       info->builder->SetCurrentDebugLocation(

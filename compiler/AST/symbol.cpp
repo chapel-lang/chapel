@@ -744,7 +744,11 @@ GenRet VarSymbol::codegen() {
                   (name, info->builder->getInt8PtrTy()));
         globalValue->setConstant(true);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->builder->CreateConstInBoundsGEP2_32(constString, 0, 0)));
+              info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                info->builder->getInt8PtrTy(),
+#endif
+                constString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -906,7 +910,11 @@ void VarSymbol::codegenDef() {
           llvm::GlobalVariable *globalString =
             llvm::cast<llvm::GlobalVariable>(constString);
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP2_32(globalString, 0, 0)));
+                info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                  info->builder->getInt8PtrTy(),
+#endif
+                  globalString, 0, 0)));
         } else {
           llvm::GlobalVariable *globalString =
             new llvm::GlobalVariable(
@@ -919,7 +927,11 @@ void VarSymbol::codegenDef() {
           globalString->setInitializer(llvm::Constant::getNullValue(
                 llvm::IntegerType::getInt8Ty(info->module->getContext())));
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP1_32(globalString, 0)));
+                info->builder->CreateConstInBoundsGEP1_32(
+#if HAVE_LLVM_VER >= 37
+                  info->builder->getInt8PtrTy(),
+#endif
+                  globalString, 0)));
         }
       } else {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
@@ -2070,7 +2082,7 @@ void FnSymbol::codegenDef() {
     //printf("LLVM GENERATING FUNCTION\n");
     if(debug_info) {
       printf("LLVM DEBUG_INFO BLOCK\n");
-      llvm::DISubprogram dbgScope = debug_info->get_function(this);
+      LLVM_DISUBPROGRAM dbgScope = debug_info->get_function(this);
       info->builder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));
     }

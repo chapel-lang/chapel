@@ -479,7 +479,9 @@ void readMacrosClang(void) {
       i != preproc.macro_end();
       i++) {
 
-#if HAVE_LLVM_VER >= 33
+#if HAVE_LLVM_VER >= 37
+    handleMacro(i->first, i->second.getLatest()->getMacroInfo());
+#elif HAVE_LLVM_VER >= 33
     handleMacro(i->first, i->second->getMacroInfo());
 #else
     handleMacro(i->first, i->second);
@@ -606,7 +608,11 @@ class CCodeGenConsumer : public ASTConsumer {
        info->cgBuilder->EmitTentativeDefinition(D);
      }
 
-     virtual void HandleVTable(CXXRecordDecl *RD, bool DefinitionRequired) {
+     virtual void HandleVTable(CXXRecordDecl *RD
+#if HAVE_LLVM_VER < 37
+         , bool DefinitionRequired
+#endif
+         ) {
        if (info->Diags->hasErrorOccurred())
          return;
 
@@ -614,7 +620,11 @@ class CCodeGenConsumer : public ASTConsumer {
        if( info->parseOnly ) return;
        // End Custom to Chapel
 
-       info->cgBuilder->EmitVTable(RD, DefinitionRequired);
+       info->cgBuilder->EmitVTable(RD
+#if HAVE_LLVM_VER < 37
+           , DefinitionRequired
+#endif
+           );
      }
 };
 
@@ -798,14 +808,17 @@ void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
 
-  FunctionPassManager *fpm = new FunctionPassManager(info->module);
+  LEGACY_FUNCTION_PASS_MANAGER *fpm = new LEGACY_FUNCTION_PASS_MANAGER(info->module);
 
   PassManagerBuilder PMBuilder;
 
   // Set up the optimizer pipeline.
   // Start with registering info about how the
   // target lays out data structures.
-#if HAVE_LLVM_VER >= 36
+#if HAVE_LLVM_VER >= 37
+  // We already set the data layout in setupClangContext
+  // don't need to do anything else.
+#elif HAVE_LLVM_VER >= 36
   // We already set the data layout in setupClangContext
   fpm->add(new DataLayoutPass());
 #elif HAVE_LLVM_VER >= 35
@@ -1446,7 +1459,8 @@ bool isBuiltinExternCFunction(const char* cname)
 }
 
 static
-void addAggregateGlobalOps(const PassManagerBuilder &Builder, PassManagerBase &PM) {
+void addAggregateGlobalOps(const PassManagerBuilder &Builder,
+    LEGACY_PASS_MANAGER &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
     PM.add(createAggregateGlobalOpsOptPass(info->globalToWideInfo.globalSpace));
@@ -1454,7 +1468,8 @@ void addAggregateGlobalOps(const PassManagerBuilder &Builder, PassManagerBase &P
 }
 
 static
-void addGlobalToWide(const PassManagerBuilder &Builder, PassManagerBase &PM) {
+void addGlobalToWide(const PassManagerBuilder &Builder,
+    LEGACY_PASS_MANAGER &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
     PM.add(createGlobalToWide(&info->globalToWideInfo, info->targetLayout));
