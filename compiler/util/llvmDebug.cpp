@@ -104,11 +104,17 @@ void debug_data::create_compile_unit(const char *file, const char *directory, bo
   this->dibuilder.createCompileUnit(DW_LANG_chapel, file, directory, chapel_string, is_optimized, flags,0);
 }
 
-llvm::DIType debug_data::construct_type(Type *type)
+LLVM_DITYPE debug_data::construct_type(Type *type)
 {
   llvm::MDNode *N = myGetType(type);
-  if(N)
+  if(N) {
+#if HAVE_LLVM_VER >= 37
+    // TODO -- this should cast to DIType
+    return llvm::cast<llvm::MDType>(N);
+#else
     return llvm::DIType(N);//get the type directly from myTypeDescriptors if parsed before
+#endif
+  }
   GenInfo* info = gGenInfo;
   LLVM_TARGET_DATA * layout = info->targetData; //define LLVM_TARGET_DATA llvm::DataLayout
   llvm::Type* ty = type->symbol->llvmType;
@@ -424,11 +430,15 @@ llvm::DIType debug_data::construct_type(Type *type)
   }
 
   //return this->dibuilder.createUnspecifiedType(name);
-  llvm::DIType ret;
+  LLVM_DITYPE ret;
+#if HAVE_LLVM_VER >= 37
+  ret = NULL
+#endif
+
   return ret;
 }
 
-llvm::DIType debug_data::get_type(Type *type)
+LLVM_DITYPE debug_data::get_type(Type *type)
 {
   if( NULL == type->symbol->llvmDIType ) {
     type->symbol->llvmDIType = construct_type(type);
@@ -436,7 +446,7 @@ llvm::DIType debug_data::get_type(Type *type)
   return llvm::DIType(type->symbol->llvmDIType);
 }
 
-llvm::DIFile debug_data::construct_file(const char *fpath)
+LLVM_DIFILE debug_data::construct_file(const char *fpath)
 {
   // Create strings for the directory and file.
   const char* last_slash;
@@ -455,7 +465,7 @@ llvm::DIFile debug_data::construct_file(const char *fpath)
   return this->dibuilder.createFile(file, directory);
 }
 
-llvm::DIFile debug_data::get_file(const char *fpath)
+LLVM_DIFILE debug_data::get_file(const char *fpath)
 {
   // First, check to see if it's already a in our hashtable.
   if( this->filesByName.count(fpath) > 0 ) {
@@ -469,7 +479,7 @@ llvm::DIFile debug_data::get_file(const char *fpath)
   return dif;
 }
 
-llvm::DINameSpace debug_data::construct_module_scope(ModuleSymbol* modSym)
+LLVM_DINAMESPACE debug_data::construct_module_scope(ModuleSymbol* modSym)
 {
   const char* fname = modSym->fname();
   int line = modSym->linenum();
@@ -477,7 +487,7 @@ llvm::DINameSpace debug_data::construct_module_scope(ModuleSymbol* modSym)
   return this->dibuilder.createNameSpace(file, modSym->name, file, line);
 }
 
-llvm::DINameSpace debug_data::get_module_scope(ModuleSymbol* modSym)
+LLVM_DINAMESPACE debug_data::get_module_scope(ModuleSymbol* modSym)
 {
   if( NULL == modSym->llvmDINameSpace ) {
     modSym->llvmDINameSpace = construct_module_scope(modSym);
@@ -506,7 +516,7 @@ LLVM_DI_SUBROUTINE_TYPE debug_data::get_function_type(FnSymbol *function)
 #endif
 }
 
-llvm::DISubprogram debug_data::construct_function(FnSymbol *function)
+LLVM_DISUBPROGRAM debug_data::construct_function(FnSymbol *function)
 {
   const char *name = function->name;
   const char *cname = function->cname;
@@ -517,14 +527,14 @@ llvm::DISubprogram debug_data::construct_function(FnSymbol *function)
   // stored in the generated code. The name is just used within Chapel.
   llvm::Function* llFunc = getFunctionLLVM(function->cname);
 
-  llvm::DINameSpace module = get_module_scope(modSym);
-  llvm::DIFile file = get_file(file_name);
+  LLVM_DINAMESPACE module = get_module_scope(modSym);
+  LLVM_DIFILE file = get_file(file_name);
 
   LLVM_DI_SUBROUTINE_TYPE function_type = get_function_type(function);
 
   printf("CONSTRUCTING DEBUG DATA\n");
 
-  llvm::DISubprogram ret = this->dibuilder.createFunction(
+  LLVM_DISUBPROGRAM ret = this->dibuilder.createFunction(
       module, /* scope */
       name, /* name */
       cname, /* linkage name */
@@ -538,7 +548,7 @@ llvm::DISubprogram debug_data::construct_function(FnSymbol *function)
   return ret;
 }
 
-llvm::DISubprogram debug_data::get_function(FnSymbol *function)
+LLVM_DISUBPROGRAM debug_data::get_function(FnSymbol *function)
 {
   if( NULL == function->llvmDISubprogram ) {
     function->llvmDISubprogram = construct_function(function);
@@ -548,7 +558,7 @@ llvm::DISubprogram debug_data::get_function(FnSymbol *function)
 
 //-----------------Added Debug Functions by Hui ZHang---------------------------//
 
-llvm::DIGlobalVariable debug_data::construct_global_variable(VarSymbol *gVarSym)
+LLVM_DIGLOBALVARIABLE debug_data::construct_global_variable(VarSymbol *gVarSym)
 {
   GenInfo *info = gGenInfo; 
   const char *name = gVarSym->name;
@@ -591,11 +601,14 @@ llvm::DIGlobalVariable debug_data::construct_global_variable(VarSymbol *gVarSym)
     //printf("For this unsolved GV: type-name = %s astTag = %i\n",gVarSym->type->symbol->name, gVarSym->type->astTag);
   
   // MPF: is this an error?
-  llvm::DIGlobalVariable ret;
+  LLVM_DIGLOBALVARIABLE ret;
+#if HAVE_LLVM_VER >= 37
+  ret = NULL;
+#endif
   return ret;
 }
 
-llvm::DIGlobalVariable debug_data::get_global_variable(VarSymbol *gVarSym)
+LLVM_DIGLOBALVARIABLE debug_data::get_global_variable(VarSymbol *gVarSym)
 {
   if( NULL == gVarSym->llvmDIGlobalVariable ) {
     gVarSym->llvmDIGlobalVariable = construct_global_variable(gVarSym);
@@ -603,7 +616,7 @@ llvm::DIGlobalVariable debug_data::get_global_variable(VarSymbol *gVarSym)
   return llvm::DIGlobalVariable(gVarSym->llvmDIGlobalVariable);
 }
 
-llvm::DIVariable debug_data::construct_variable(VarSymbol *varSym)
+LLVM_DIVARIABLE debug_data::construct_variable(VarSymbol *varSym)
 {
   const char *name = varSym->name;
      ///////////////////////////////////////////////
@@ -637,7 +650,11 @@ llvm::DIVariable debug_data::construct_variable(VarSymbol *varSym)
     //printf("For this unsolved LV: %s  type-name = %s astTag = %i\n",name,varSym->type->symbol->name, varSym->type->astTag);
 
   // MPF: is this an error?
-  llvm::DIVariable ret;
+  LLVM_DIVARIABLE ret;
+#if HAVE_LLVM_VER >= 37
+  ret = NULL;
+#endif
+
   return ret;
 }
 
@@ -649,7 +666,7 @@ llvm::DIVariable debug_data::get_variable(VarSymbol *varSym)
   return llvm::DIVariable(varSym->llvmDIVariable);
 }
 
-llvm::DIVariable debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo)
+LLVM_DIVARIABLE debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo)
 {
   const char *name = argSym->name;
     ////////////////////////////////////////////////
@@ -684,12 +701,16 @@ llvm::DIVariable debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned in
   //else 
     //printf("For this unsolved formal_arg: %s  type-name = %s astTag = %i\n",name,argSym->type->symbol->name, argSym->type->astTag);
 
-  // MPF: Is this an error?
-  llvm::DIVariable ret;
+  // MPF: is this an error?
+  LLVM_DIVARIABLE ret;
+#if HAVE_LLVM_VER >= 37
+  ret = NULL;
+#endif
+
   return ret;
 }
 
-llvm::DIVariable debug_data::get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo)
+LLVM_DIVARIABLE debug_data::get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo)
 {
   if( NULL == argSym->llvmDIFormal ){
     argSym->llvmDIFormal = construct_formal_arg(argSym, ArgNo);
