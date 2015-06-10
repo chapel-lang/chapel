@@ -18,5 +18,5 @@ LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGe
 LLVM_CXXFLAGS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cxxflags | sed 's/ -O[0-4s] / /' | sed 's/ -DNDEBUG / /') -DHAVE_LLVM
 LLVM_CFLAGS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cflags | sed 's/ -O[0-4s] / /' | sed 's/ -DNDEBUG / /') -DHAVE_LLVM
 LLVM_INCLUDES=-I$(LLVM_INCLUDE_DIR) -I$(LLVM_CLANG_CODEGEN_INCLUDE_DIR)
-LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS) -lLLVMSupport -ldl
+LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS)
 
