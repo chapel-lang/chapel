@@ -908,25 +908,7 @@ static void insert_call_temps(CallExpr* call)
   tmp->addFlag(FLAG_MAYBE_TYPE);
   call->replace(new SymExpr(tmp));
 
-// Not so fast! Since AMM destroys initialized variables (including temps) when
-// they exit the scope in which they are declared, temps which are to read in
-// an outer scope must be declared in an outer scope.  An easy fix is to
-// declare the temp in the same scope as the variable into which the temp is
-// eventually copied.
-  // Just fix the failing case for now.  Add others as needed.
-
-  CallExpr* stmtAsCall = toCallExpr(stmt);
-  if (stmtAsCall && stmtAsCall->isPrimitive(PRIM_MOVE) &&
-      // TODO: Remove this restriction and see if everything still works.
-      parentCall && parentCall->isPrimitive(PRIM_ADDR_OF))
-  {
-    // Declare the temp in the same scope as the target variable.
-    SymExpr* se = toSymExpr(stmtAsCall->get(1));
-    se->var->defPoint->insertBefore(new DefExpr(tmp));
-  }
-  else
-    stmt->insertBefore(new DefExpr(tmp));
-
+  stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
 }
 
