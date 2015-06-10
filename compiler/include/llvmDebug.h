@@ -30,8 +30,43 @@
 #define LLVM_DISUBPROGRAM llvm::MDSubprogram*
 #define LLVM_DIGLOBALVARIABLE llvm::MDGlobalVariable*
 #define LLVM_DIVARIABLE llvm::MDVariable*
+#define LLVM_DITYPEARRAY llvm::MDTypeRefArray
+#define LLVM_DIARRAY llvm::DebugNodeArray
 
-#define LLVM_DI_SUBROUTINE_TYPE llvm::MDSubroutineType
+#define LLVM_DI_SUBROUTINE_TYPE llvm::MDSubroutineType*
+
+static inline LLVM_DITYPE toDITYPE(llvm::MDNode* N)
+{
+  // TODO -- this should cast to DIType
+  return llvm::cast_or_null<llvm::MDType>(N);
+}
+
+static inline LLVM_DINAMESPACE toDINAMESPACE(llvm::MDNode* N)
+{
+  // TODO -- this should cast to DINamespace
+  return llvm::cast_or_null<llvm::MDNamespace>(N);
+}
+
+static inline LLVM_DISUBPROGRAM toDISUBPROGRAM(llvm::MDNode* N)
+{
+  // TODO -- this should cast to DISubprogram
+  return llvm::cast_or_null<llvm::MDSubprogram>(N);
+}
+
+static inline LLVM_DIGLOBALVARIABLE toDIGLOBALVARIABLE(llvm::MDNode* N)
+{
+  // TODO -- this should cast to DIGlobalVariable
+  return llvm::cast_or_null<llvm::MDGlobalVariable>(N);
+}
+
+static inline LLVM_DIVARIABLE toDIVARIABLE(llvm::MDNode* N)
+{
+  // TODO -- this should cast to DIVariable
+  return llvm::cast_or_null<llvm::MDVariable>(N);
+}
+
+
+
 
 #else
 #define LLVM_DITYPE llvm::DIType
@@ -40,12 +75,40 @@
 #define LLVM_DISUBPROGRAM llvm::DISubprogram
 #define LLVM_DIGLOBALVARIABLE llvm::DIGlobalVariable
 #define LLVM_DIVARIABLE llvm::DIVariable
+#define LLVM_DITYPEARRAY llvm::DITypeArray
+#define LLVM_DIARRAY llvm::DIArray
 
 #if HAVE_LLVM_VER >= 36
 #define LLVM_DI_SUBROUTINE_TYPE llvm::DISubroutineType
 #else
 #define LLVM_DI_SUBROUTINE_TYPE llvm::DICompositeType
 #endif
+
+static inline LLVM_DITYPE toDITYPE(llvm::MDNode* N)
+{
+  return llvm::DIType(N);
+}
+
+static inline LLVM_DINAMESPACE toDINAMESPACE(llvm::MDNode* N)
+{
+  return llvm::DINameSpace(N);
+}
+
+static inline LLVM_DISUBPROGRAM toDISUBPROGRAM(llvm::MDNode* N)
+{
+  return llvm::DISubprogram(N);
+}
+
+static inline LLVM_DIGLOBALVARIABLE toDIGLOBALVARIABLE(llvm::MDNode* N)
+{
+  return llvm::DIGlobalVariable(N);
+}
+
+static inline LLVM_DIVARIABLE toDIVARIABLE(llvm::MDNode* N)
+{
+  return llvm::DIVariable(N);
+}
+
 
 
 #endif
