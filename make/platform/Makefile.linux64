@@ -17,3 +17,5 @@
 
 # Makefile.linux64
 # Special AR and RANLIB definitions for XMT used to be here.
+
+CXXFLAGS += -frtti
