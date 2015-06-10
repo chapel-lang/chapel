@@ -112,6 +112,9 @@ module ChapelDistribution {
                __primitive("cast", uint(64), this), cnt);
         if cnt < 0 || cnt > 1000 then
             halt("_distCnt is bogus!");
+        // Poison the distCount, so an attempt to move it away from zero a
+        // second time will fail
+        if cnt == 0 then _distCnt.dec();
       }
       return cnt;
     }
@@ -213,6 +216,9 @@ module ChapelDistribution {
                __primitive("cast", uint(64), this), cnt);
         if cnt < 0 || cnt > 10000 then
             halt("_domCnt is bogus!");
+        // Poison the domCount, so an attempt to move it away from zero a
+        // second time will fail
+        if cnt == 0 then _domCnt.dec();
       }
       return cnt;
     }
@@ -390,6 +396,9 @@ module ChapelDistribution {
                __primitive("cast", uint(64), this), cnt);
         if cnt < 0 || cnt > 10000 then
             halt("_arrCnt is bogus!");
+        // Poison the arrCount, so an attempt to move it away from zero a
+        // second time will fail
+        if cnt == 0 then _arrCnt.dec();
       }
       return cnt;
     }
