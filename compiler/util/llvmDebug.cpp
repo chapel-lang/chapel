@@ -484,7 +484,7 @@ LLVM_DI_SUBROUTINE_TYPE debug_data::get_function_type(FnSymbol *function)
     ret_arg_types.push_back(get_type(arg->type));
   } 
 #if HAVE_LLVM_VER >= 37
-  llvm::MDTypeRefArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
+  llvm::DITypeRefArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
   return this->dibuilder.createSubroutineType(file, ret_arg_arr);
 #elif HAVE_LLVM_VER >= 36
   llvm::DITypeArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);

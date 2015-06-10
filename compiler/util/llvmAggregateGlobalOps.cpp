@@ -71,6 +71,10 @@
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
+#if HAVE_LLVM_VER >= 37
+#include "llvm/IR/GetElementPtrTypeIterator.h"
+#endif
+
 #include <cstdio>
 #include <list>
 

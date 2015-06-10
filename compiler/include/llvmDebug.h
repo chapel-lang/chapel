@@ -24,45 +24,40 @@
 
 #if HAVE_LLVM_VER >= 37
 // This should be renamed to DI versions
-#define LLVM_DITYPE llvm::MDType*
-#define LLVM_DIFILE llvm::MDFile*
-#define LLVM_DINAMESPACE llvm::MDNamespace*
-#define LLVM_DISUBPROGRAM llvm::MDSubprogram*
-#define LLVM_DIGLOBALVARIABLE llvm::MDGlobalVariable*
-#define LLVM_DIVARIABLE llvm::MDVariable*
-#define LLVM_DITYPEARRAY llvm::MDTypeRefArray
+#define LLVM_DITYPE llvm::DIType*
+#define LLVM_DIFILE llvm::DIFile*
+#define LLVM_DINAMESPACE llvm::DINamespace*
+#define LLVM_DISUBPROGRAM llvm::DISubprogram*
+#define LLVM_DIGLOBALVARIABLE llvm::DIGlobalVariable*
+#define LLVM_DIVARIABLE llvm::DIVariable*
+#define LLVM_DITYPEARRAY llvm::DITypeRefArray
 #define LLVM_DIARRAY llvm::DebugNodeArray
 
-#define LLVM_DI_SUBROUTINE_TYPE llvm::MDSubroutineType*
+#define LLVM_DI_SUBROUTINE_TYPE llvm::DISubroutineType*
 
 static inline LLVM_DITYPE toDITYPE(llvm::MDNode* N)
 {
-  // TODO -- this should cast to DIType
-  return llvm::cast_or_null<llvm::MDType>(N);
+  return llvm::cast_or_null<llvm::DIType>(N);
 }
 
 static inline LLVM_DINAMESPACE toDINAMESPACE(llvm::MDNode* N)
 {
-  // TODO -- this should cast to DINamespace
-  return llvm::cast_or_null<llvm::MDNamespace>(N);
+  return llvm::cast_or_null<llvm::DINamespace>(N);
 }
 
 static inline LLVM_DISUBPROGRAM toDISUBPROGRAM(llvm::MDNode* N)
 {
-  // TODO -- this should cast to DISubprogram
-  return llvm::cast_or_null<llvm::MDSubprogram>(N);
+  return llvm::cast_or_null<llvm::DISubprogram>(N);
 }
 
 static inline LLVM_DIGLOBALVARIABLE toDIGLOBALVARIABLE(llvm::MDNode* N)
 {
-  // TODO -- this should cast to DIGlobalVariable
-  return llvm::cast_or_null<llvm::MDGlobalVariable>(N);
+  return llvm::cast_or_null<llvm::DIGlobalVariable>(N);
 }
 
 static inline LLVM_DIVARIABLE toDIVARIABLE(llvm::MDNode* N)
 {
-  // TODO -- this should cast to DIVariable
-  return llvm::cast_or_null<llvm::MDVariable>(N);
+  return llvm::cast_or_null<llvm::DIVariable>(N);
 }
 
 
