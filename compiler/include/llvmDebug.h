@@ -22,11 +22,34 @@
 //#define DW_LANG_chapel (llvm::dwarf::DW_LANG_lo_user+37)
 #define DW_LANG_chapel llvm::dwarf::DW_LANG_lo_user
 
+#if HAVE_LLVM_VER >= 37
+// This should be renamed to DI versions
+#define LLVM_DITYPE llvm::MDType*
+#define LLVM_DIFILE llvm::MDFile*
+#define LLVM_DINAMESPACE llvm::MDNamespace*
+#define LLVM_DISUBPROGRAM llvm::MDSubprogram*
+#define LLVM_DIGLOBALVARIABLE llvm::MDGlobalVariable*
+#define LLVM_DIVARIABLE llvm::MDVariable*
+
+#define LLVM_DI_SUBROUTINE_TYPE llvm::MDSubroutineType
+
+#else
+#define LLVM_DITYPE llvm::DIType
+#define LLVM_DIFILE llvm::DIFile
+#define LLVM_DINAMESPACE llvm::DINameSpace
+#define LLVM_DISUBPROGRAM llvm::DISubprogram
+#define LLVM_DIGLOBALVARIABLE llvm::DIGlobalVariable
+#define LLVM_DIVARIABLE llvm::DIVariable
+
 #if HAVE_LLVM_VER >= 36
 #define LLVM_DI_SUBROUTINE_TYPE llvm::DISubroutineType
 #else
 #define LLVM_DI_SUBROUTINE_TYPE llvm::DICompositeType
 #endif
+
+
+#endif
+
 
 #endif
 
@@ -45,31 +68,31 @@ class debug_data
   void finalize(){dibuilder.finalize();}
   void create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags);
 
-  llvm::DIType construct_type(Type *type);
-  llvm::DIType get_type(Type *type);
+  LLVM_DITYPE construct_type(Type *type);
+  LLVM_DITYPE get_type(Type *type);
 
-  llvm::DIFile construct_file(const char *file);
-  llvm::DIFile get_file(const char *file);
+  LLVM_DIFILE construct_file(const char *file);
+  LLVM_DIFILE get_file(const char *file);
 
-  llvm::DINameSpace construct_module_scope(ModuleSymbol* modSym);
-  llvm::DINameSpace get_module_scope(ModuleSymbol* modSym);
+  LLVM_DINAMESPACE construct_module_scope(ModuleSymbol* modSym);
+  LLVM_DINAMESPACE get_module_scope(ModuleSymbol* modSym);
 
   LLVM_DI_SUBROUTINE_TYPE get_function_type(FnSymbol *function);
-  llvm::DISubprogram construct_function(FnSymbol *function);
-  llvm::DISubprogram get_function(FnSymbol *function);
+  LLVM_DISUBPROGRAM construct_function(FnSymbol *function);
+  LLVM_DISUBPROGRAM get_function(FnSymbol *function);
 
-  llvm::DIGlobalVariable construct_global_variable(VarSymbol *gVarSym);
-  llvm::DIGlobalVariable get_global_variable(VarSymbol *gVarSym);
-  llvm::DIVariable construct_variable(VarSymbol *varSym);
-  llvm::DIVariable get_variable(VarSymbol *varSym);
-  llvm::DIVariable construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
-  llvm::DIVariable get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
+  LLVM_DIGLOBALVARIABLE construct_global_variable(VarSymbol *gVarSym);
+  LLVM_DIGLOBALVARIABLE get_global_variable(VarSymbol *gVarSym);
+  LLVM_DIVARIABLE construct_variable(VarSymbol *varSym);
+  LLVM_DIVARIABLE get_variable(VarSymbol *varSym);
+  LLVM_DIVARIABLE construct_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
+  LLVM_DIVARIABLE get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
 
  private:
   llvm::DIBuilder dibuilder;
   bool optimized;
   //std::vector<llvm::DIFile>files;
-  std::map<const char*,llvm::DIFile,lessAstr> filesByName;
+  std::map<const char*,LLVM_DIFILE,lessAstr> filesByName;
   //std::vector<llvm::DIType>types;
   //std::map<const char*,llvm::DIType,lessAstr> typesByName;
   //std::vector<llvm::DINameSpace>name_spaces;
