@@ -47,7 +47,9 @@ struct localeInfo {
 };
 
 struct commInfo {
+  int numComms;
   int numGets;
+  int numPuts;
   long commSize;
   CommWin *win;
 };

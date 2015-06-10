@@ -36,6 +36,9 @@ void CommWin::updateWin()
   title->copy_label(mesg);
   
   // Create the text
-  snprintf (mesg, msgsize, "Gets = %d\nTotal bytes = %ld\n", comm->numGets, comm->commSize);
+  snprintf (mesg, msgsize, "Total Comms = %d\nTotal bytes = %ld\n"
+	    "  Gets = %d\n  Puts = %d\n  Forks = %d\n",
+	    comm->numComms, comm->commSize, comm->numGets, comm->numPuts,
+	    comm->numComms - comm->numGets - comm->numPuts);
   info->value(mesg);
 }

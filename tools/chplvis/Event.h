@@ -86,17 +86,19 @@ class E_comm : public Event {
    private:
      int  dstid;
      int  elemsize, datalen;
+     bool isget;
 
    public:
      E_comm (long esec, long eusec, int esrcid, int edstid, int elSize,
-	     int dLen) : Event(esec, eusec, esrcid), dstid(edstid),
-                         elemsize(elSize), datalen(dLen) {};
+	     int dLen, bool get) : Event(esec, eusec, esrcid), dstid(edstid),
+                                   elemsize(elSize), datalen(dLen), isget(get) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
      int elemSize() { return elemsize; }
      int dataLen() { return datalen; }
      int totalLen() { return elemsize * datalen; }
+     bool isGet() { return isget; }
 
      virtual int Ekind() {return Ev_comm;}
      virtual void print() { 

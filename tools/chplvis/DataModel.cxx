@@ -145,14 +145,15 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   FILE *data = fopen(filename, "r");
   char line[1024];
 
-  int floc;
-  int findex;
+  int floc;        // Number of locales in the file
+  int findex;      // current locale's index
   double fseq;
 
   int  nErrs = 0;
 
   // Removing overhead ..
-  bool ignoreFork = index != 0;
+  int ignoreFork = 0;
+  int ignoreTask = 0;
 
   if (!data) return 0;
 
@@ -187,6 +188,14 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
   // Other initializations
   numTags = 0;
+
+  // Remove overhead ...
+  if (findex != 0) {
+    ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
+    ignoreTask = 3;
+    // printf ("%s: overhead fork %d, task %d\n", filename, ignoreFork, ignoreTask );
+  }
+
   
   // Now read the rest of the file
   Event *newEvent = new E_start(u_sec, u_usec, s_sec, s_usec, findex);
@@ -260,6 +269,14 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		   " nfilename = '%s'\n", nid, ntll, nbstr, nlineno, nfilename);
 	  nErrs++;
 	} else {
+	  int nfnLen = strlen(nfilename);
+	  //printf ("task line from %s\n", nfilename);
+	  if (ignoreTask && nfnLen >= 34
+	      && (strcmp(&nfilename[nfnLen-34], "localeModels/flat/LocaleModel.chpl") == 0)) {
+	    ignoreTask--;
+	    //printf ("Found VisualDebug task line\n");
+	    break;
+	  }
 	  newEvent = new E_task (sec, usec, ntll);
 	}
 	break;
@@ -284,31 +301,31 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  int nfnLen = strlen(nfilename);
 	  if (nfnLen >= 33
 	      && (strcmp(&nfilename[nfnLen-33], "modules/standard/VisualDebug.chpl") == 0)) {
-	    // printf ("Found VisualDebug.chpl line\n");
+	    //printf ("Found VisualDebug.chpl comm line\n");
 	    break;
 	  }
 	  isGet = (line[0] == 'g' ? 1 :
 		   line[0] == 'p' ? 0 :
 		   line[3] == 'g' ? 1 : 0);
 	  if (isGet)
-	    newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen);
+	    newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen, isGet);
 	  else
-	    newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen);
+	    newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet);
 	}
 	break;
 
       case 'f':  // All the forks:
-	if (ignoreFork) {
-	  ignoreFork = false;
-	  // printf ("Ignoring fork: %s\n", linedata);
-	  break;
-	}
 	// s.u nodeID otherNode subloc fid arg arg_size
 	if ((cvt = sscanf (&linedata[nextCh], "%d %d %d %*d 0x%*x %d", 
 			   &nid, &rnid, &fid, &dlen)) != 4) {
 	  fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, filename);
 	  nErrs++;
 	} else {
+	  if (ignoreFork && (rnid == nid*2+1 || rnid == nid*2+2)) {
+	    ignoreFork--;
+	    // printf ("Ignoring fork: %s\n", linedata);
+	    break;
+	  }
 	  newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_');
 	}
 	break;
@@ -320,7 +337,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  nErrs++;
 	} else {
 	  newEvent = new E_resume(sec, usec, nid, sec, s_usec, tagId);
-	  if (nid != 0) ignoreFork = true;
+	  if (findex != 0) {
+	    ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
+	    ignoreTask = 2;
+          }
 	}
 	break;
 
@@ -336,7 +356,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 			       &linedata[nextCh]);
 	  if (tagId >= numTags)
 	    numTags = tagId+1;
-	  if (nid != 0 && pause != 'p') ignoreFork = true;
+	  if (findex != 0) {
+	    ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
+	    ignoreTask = 2;
+          }
 	}
 	break;
 
@@ -418,6 +441,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   }
 
   if (nErrs) fprintf(stderr, "%d errors in data file '%s'.\n", nErrs, filename);
+
+  if (ignoreFork > 0 || ignoreTask > 0) {
+    fprintf (stderr, "%s: Error in data filters: ignoreFork = %d, ignoreTask = %d\n",
+	     filename, ignoreFork, ignoreTask);
+  }
   
   if ( !feof(data) ) return 0;
   

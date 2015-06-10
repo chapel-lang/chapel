@@ -27,8 +27,8 @@
 Fl_Color heatColor ( double val, double max ) {
   if (val == 0) return FL_WHITE;
   if (max == 1) return fl_rgb_color(255,0,0);
-  if (val == 1) return fl_rgb_color(0,255,0);
-  return fl_rgb_color( 255*(val/max), 255 * ((max-val)/max), 0);
+  if (val == 1) return fl_rgb_color(0,180,255);
+  return fl_rgb_color( 255*(val/max), 180 * ((max-val)/max), 255 * ((max-val)/max));
 }
 
 //  ViewField Constructors
@@ -126,7 +126,9 @@ void ViewField::allocArrays()
       exit(1);
     }
     for (ix2 = 0; ix2 < numlocales; ix2++) {
+      comms[ix][ix2].numComms = 0;
       comms[ix][ix2].numGets = 0;
+      comms[ix][ix2].numPuts = 0;
       comms[ix][ix2].commSize = 0;
       comms[ix][ix2].win = NULL;
     }
@@ -182,13 +184,16 @@ void ViewField::processData(int tagNum)
       theLocales[ix1].win->hide();
     }
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
+      comms[ix1][ix2].numComms = 0;
       comms[ix1][ix2].numGets = 0;
+      comms[ix1][ix2].numPuts = 0;
       comms[ix1][ix2].commSize = 0;
       if (comms[ix1][ix2].win != NULL) 
 	comms[ix1][ix2].win->hide();
     }
   }
-  maxTasks = 0;
+  theLocales[0].numTasks = 1;
+  maxTasks = 1;
   maxComms = 0;
   maxCpu = 0.0000001;
   maxDatasize = 0;
@@ -231,17 +236,21 @@ void ViewField::processData(int tagNum)
       case Ev_comm:
         //  Comm event
         cp = (E_comm *)ev;
-	if (++(comms[cp->srcId()][cp->dstId()].numGets) > maxComms)
-	  maxComms = comms[cp->srcId()][cp->dstId()].numGets;
+	if (++(comms[cp->srcId()][cp->dstId()].numComms) > maxComms)
+	  maxComms = comms[cp->srcId()][cp->dstId()].numComms;
 	comms[cp->srcId()][cp->dstId()].commSize += cp->totalLen();
 	if (comms[cp->srcId()][cp->dstId()].commSize > maxDatasize)
 	  maxDatasize = comms[cp->srcId()][cp->dstId()].commSize;
+	if (cp->isGet())
+	  comms[cp->srcId()][cp->dstId()].numGets++;
+	else
+	  comms[cp->srcId()][cp->dstId()].numPuts++;
         break;
 
       case Ev_fork:
         fp = (E_fork *)ev;
-        if (++(comms[fp->srcId()][fp->dstId()].numGets) > maxComms)
-	  maxComms = comms[fp->srcId()][fp->dstId()].numGets;
+        if (++(comms[fp->srcId()][fp->dstId()].numComms) > maxComms)
+	  maxComms = comms[fp->srcId()][fp->dstId()].numComms;
 	comms[fp->srcId()][fp->dstId()].commSize += fp->argSize();
 	if (comms[fp->srcId()][fp->dstId()].commSize > maxDatasize)
 	  maxDatasize = comms[fp->srcId()][fp->dstId()].commSize;
@@ -485,8 +494,8 @@ void ViewField::draw()
     for (iy = ix + 1; iy < numlocales; iy++) {
       int  com2ix, com2iy, comMax; 
       if (showcomms) {
-	com2ix = comms[iy][ix].numGets;
-	com2iy = comms[ix][iy].numGets;
+	com2ix = comms[iy][ix].numComms;
+	com2iy = comms[ix][iy].numComms;
 	comMax = maxComms;
       } else {
 	com2ix = comms[ix][iy].commSize;
@@ -611,8 +620,8 @@ int ViewField::handle(int event)
       for (j = i+1; j < numlocales; j++) {
 	locj = &theLocales[j];
 	// printf ("link: %d->%d -- ", i, j);
-	if (comms[i][j].numGets != 0
-	    || comms[j][i].numGets != 0) {
+	if (comms[i][j].numComms != 0
+	    || comms[j][i].numComms != 0) {
 	  int OnComm = isOnCommLink(x,y,loci,locj);
 	  if (OnComm) {
 	    // printf ("Link %d -> %d, nearer locale %d\n", i, j, (OnComm > 1 ? j : i ));

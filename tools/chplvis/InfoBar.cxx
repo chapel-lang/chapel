@@ -92,19 +92,25 @@ void InfoBar::draw(void)
   //  fl_draw("Max", x()+CR_Left+100, y()+5, 15, h()-10, FL_ALIGN_CENTER, NULL, 0);
 
   // Messages on max counts, next to the color reference
-  char mesg[150];
-  if (maxTasks > 0) {
-    if (showtasks)
+  char mesg[150] = "";
+  if (showtasks) {
+    if (maxTasks > 0)
       snprintf (mesg, 150, "max Tasks: %d", maxTasks);
-    else
+  } else {
+    if (maxCpu > 0)
       snprintf (mesg, 150, "max CPU: %f", maxCpu);
-    fl_draw(mesg, x()+CR_Left+105, y_center-20, 120, 20, FL_ALIGN_LEFT, NULL, 0);
-    if (showcomms)
-      snprintf (mesg, 150, "max Comms: %d", maxComms);
-    else
-      snprintf (mesg, 150, "max Data: %ld", maxSize);
-    fl_draw(mesg, x()+CR_Left+105, y_center, 120, 20, FL_ALIGN_LEFT, NULL, 0);
   }
+  fl_draw(mesg, x()+CR_Left+105, y_center-20, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+  mesg[0] = 0;
+  if (showcomms) {
+    if (maxComms > 0) 
+      snprintf (mesg, 150, "max Comms: %d", maxComms);
+  } else {
+    if (maxSize > 0)
+      snprintf (mesg, 150, "max Data: %ld", maxSize);
+  }
+  fl_draw(mesg, x()+CR_Left+105, y_center, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+
 
   // Messages about file names / tags and so forth
 
