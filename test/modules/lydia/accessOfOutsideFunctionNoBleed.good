@@ -1,0 +1,2 @@
+accessOfOutsideFunctionNoBleed.chpl:16: In function 'main':
+accessOfOutsideFunctionNoBleed.chpl:18: error: unresolved call 'a(0)'

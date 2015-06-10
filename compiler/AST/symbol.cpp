@@ -47,6 +47,7 @@
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <inttypes.h>
 #include <iostream>
@@ -2267,12 +2268,32 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 }
 
 
+// Return the last, outermost Expr within 'ast' that is not a local block.
+static Expr* descendIntoLocalBlocks(Expr* ast) {
+  while (ast) {
+    if (BlockStmt* block = toBlockStmt(ast))
+      if (CallExpr* bInfo = block->blockInfoGet())
+        if (bInfo->isPrimitive(PRIM_BLOCK_LOCAL)) {
+          // descend into 'block'
+          ast = block->body.last();
+          continue;
+        }
+    // not a local block
+    break;
+  }
+  return ast;
+}
+
 void
-FnSymbol::insertBeforeDownEndCount(Expr* ast) {
+FnSymbol::insertBeforeDownEndCount(Expr* ast,
+                                   bool descendLocalBlocks)
+{
   CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
   CallExpr* last = toCallExpr(ret->prev);
+  if (!last && descendLocalBlocks)
+    last = toCallExpr(descendIntoLocalBlocks(ret->prev));
   if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
     INT_FATAL(last, "Expected call to _downEndCount");
   last->insertBefore(ast);
@@ -2603,18 +2624,11 @@ ModuleSymbol::copyInner(SymbolMap* map) {
 }
 
 
-static int compareLineno(const void* v1, const void* v2) {
-  FnSymbol* fn1 = *(FnSymbol* const *)v1;
-  FnSymbol* fn2 = *(FnSymbol* const *)v2;
+static int compareLineno(void* v1, void* v2) {
+  FnSymbol* fn1 = (FnSymbol*)v1;
+  FnSymbol* fn2 = (FnSymbol*)v2;
 
-  if (fn1->linenum() > fn2->linenum())
-    return 1;
-
-  else if (fn1->linenum() < fn2->linenum())
-    return -1;
-
-  else
-    return 0;
+  return fn1->linenum() < fn2->linenum();
 }
 
 
@@ -2627,7 +2641,7 @@ void ModuleSymbol::codegenDef() {
   info->cStatements.clear();
   info->cLocalDecls.clear();
 
-  Vec<FnSymbol*> fns;
+  std::vector<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
@@ -2637,11 +2651,11 @@ void ModuleSymbol::codegenDef() {
             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
 
-        fns.add(fn);
+        fns.push_back(fn);
       }
   }
 
-  qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
+  std::sort(fns.begin(), fns.end(), compareLineno);
 
 #ifdef HAVE_LLVM
   if(debug_info && info->filename) {
@@ -2649,7 +2663,7 @@ void ModuleSymbol::codegenDef() {
   }
 #endif
 
-  forv_Vec(FnSymbol, fn, fns) {
+  for_vector(FnSymbol, fn, fns) {
     fn->codegenDef();
   }
 
@@ -3148,41 +3162,63 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   return s;
 }
 
-static VarSymbol* new_FloatSymbol(const char* n, long double b,
+static VarSymbol* new_FloatSymbol(const char* n,
                                   IF1_float_type size, IF1_num_kind kind,
                                   Type* type) {
   Immediate imm;
+  const char* normalized = NULL;
+
   switch (size) {
-  case FLOAT_SIZE_32  : imm.v_float32  = b; break;
-  case FLOAT_SIZE_64  : imm.v_float64  = b; break;
-  default:
-    INT_FATAL( "unknown FLOAT_SIZE");
+    case FLOAT_SIZE_32:
+      imm.v_float32  = strtof(n, NULL);
+      break;
+    case FLOAT_SIZE_64:
+      imm.v_float64  = strtod(n, NULL);
+      break;
+    default:
+      INT_FATAL( "unknown FLOAT_SIZE");
   }
   imm.const_kind = kind;
   imm.num_index = size;
+  
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s) {
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), type);
   rootModule->block->insertAtTail(new DefExpr(s));
-  if (!strchr(n, '.') && !strchr(n, 'e') && !(strchr(n, 'E'))) {
-    s->cname = astr(n, ".0");
+  
+  // Normalize the number for C99
+  if (!strchr(n, '.') && !strchr(n, 'e') && !strchr(n, 'E') &&
+      !strchr(n, 'p') && !strchr(n, 'P') ) {
+    // Add .0 for floating point literals without a decimal point
+    // or exponent.
+    normalized = astr(n, ".0");
+  } else if( n[0] == '0' && (n[1] == 'x' || n[1] == 'X') &&
+             !strchr(n, 'p') && !strchr(n, 'P') ) {
+    // Add p0 for hex floating point literals without an exponent
+    // since C99 requires it (because f needs to be a suffix for
+    // floating point numbers)
+    normalized = astr(n, "p0");
   } else {
-    s->cname = astr(n);
+    normalized = astr(n);
   }
+
+  // Use the normalized number when code-genning the literal
+  s->cname = normalized;
+
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }
 
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
-  return new_FloatSymbol(n, b, size, NUM_KIND_REAL, dtReal[size]);
+VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
+  return new_FloatSymbol(n, size, NUM_KIND_REAL, dtReal[size]);
 }
 
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
-  return new_FloatSymbol(n, b, size, NUM_KIND_IMAG, dtImag[size]);
+VarSymbol *new_ImagSymbol(const char *n, IF1_float_type size) {
+  return new_FloatSymbol(n, size, NUM_KIND_IMAG, dtImag[size]);
 }
 
 VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,

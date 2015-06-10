@@ -14,7 +14,7 @@ var phase2 = 0;
 proc nextphase() {
   phase += 1;
   phase2 = phase;
-  pfx = format("####", phase) + "  ";
+  pfx = "%{####}".format(phase) + "  ";
 }
 
 // heading/start new "phase"

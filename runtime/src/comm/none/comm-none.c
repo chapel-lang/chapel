@@ -500,7 +500,7 @@ void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
 
   info_size = sizeof(fork_t) + arg_size;
   info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char),
-                                     CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
+                                     CHPL_RT_MD_COMM_FRK_SND_INFO, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)

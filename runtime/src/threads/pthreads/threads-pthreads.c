@@ -110,6 +110,11 @@ void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
     chpl_internal_error("pthread_mutex_unlock() failed");
 }
 
+void chpl_thread_mutexDestroy(chpl_thread_mutex_p mutex) {
+  int result = pthread_mutex_destroy((pthread_mutex_t*) mutex);
+  if (result)
+    chpl_internal_error("pthread_mutex_destroy() failed");
+}
 
 // Thread management
 
@@ -365,7 +370,7 @@ static void* pthread_func(void* arg) {
 
   // add us to the list of threads
   tlp = (thread_list_p) chpl_mem_alloc(sizeof(struct thread_list),
-                                       CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
+                                       CHPL_RT_MD_THREAD_LIST_DESC, 0, 0);
 
   tlp->thread = pthread_self();
   tlp->next   = NULL;

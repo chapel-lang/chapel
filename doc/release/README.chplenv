@@ -244,12 +244,12 @@ Optional Settings
         muxed          : use Cray-specific lightweight threading (with
                          Cray pre-built module only)
 
-   If CHPL_TASKS is not set it defaults to "qthreads" unless the
-   target platform is either "cygwin*" or "netbsd*", the target
-   compiler is "cray-prgenv-cray", or the target architecture is
-   "knc". For those configurations it defaults to "fifo".  On
-   Cray XC and XE (TM) systems when using the pre-built module,
-   it defaults to "muxed".
+   If CHPL_TASKS is not set it defaults to "qthreads" unless the target
+   platform is either "cygwin*" or "netbsd*", the target compiler is
+   "cray-prgenv-cray", "pgi", or "cray-prgenv-pgi", or the target
+   architecture is "knc". For those configurations it defaults to
+   "fifo".  On Cray XC and XE (TM) systems when using the pre-built
+   module, it defaults to "muxed".
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_TASKS to 'fifo' to reduce build-time and third-party

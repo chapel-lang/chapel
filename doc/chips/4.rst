@@ -1,0 +1,499 @@
+Constructor Syntax and Semantics
+================================
+
+Status
+  Draft
+
+Author
+  Tom Hildebrandt
+
+
+Expands the syntax for a constructor to support an initializer list and
+clarifies the semantics of field initialization.  
+
+
+Abstract
+--------
+
+This Chapel Improvement Proposal records the last proposal for updated
+constructor syntax and semantics.  This is the proposal that was presented at a
+deep dive on 2014-12-09 with some changes based on feedback.
+
+Revision History
+----------------
+
+2015-06-09 First version as a ChIP.
+
+  Some time has passed since the December review.  This is my best
+  recollection of the current proposal: Corrections, revisions and suggestions are
+  welcome.
+
+2014-12-09 Deep dive and group review
+
+2012-06-?? hilde and vass complete a first draft
+
+
+Rationale
+---------
+
+Improvement of automated memory management (AMM) in Chapel forces a distinction
+between initialization and assignment.  In a constructor, relying on
+default-initialization of fields followed by assignment is inefficient.  Adding
+syntax for explicit field initialization removes that inefficiency.
+
+Also, the specification and implementation of ``const``-ness with respect to
+objects and their fields is simplified.
+
+Two brief examples follow, to underscore the differences between the existing and proposed
+constructors.
+
+Example -- Status Quo
++++++++++++++++++++++
+
+An example of how a record constructor is currently written::
+
+   record R {
+     var i = 10;
+     var r:real;
+     var b:bool;
+
+     proc R(s:real) {
+       r = s;
+     }
+   }
+   
+   var t = new R(7.0);
+   writeln(t);         // Prints: "(i = 10, r = 7.0, b = false)".
+
+
+The above code declares a record of type ``R`` containing a constructor.  The constructor
+accepts a real argument that is used to set the value of the ``r`` field.  Execution of
+the declaration of ``t`` causes ``t`` to be associated with a record whose ``i`` field contains
+the value "10", ``r`` field contains the value "7.0" and the ``b`` field is "false".  
+
+In more detail, an unnamed temporary record is created and default-initialized as follows:  The ``i``
+field receives the value "10", which is the field-default specified in the record
+declaration; since no default value is specified for the ``r`` field, the type-default
+value for type ``real`` "0.0" is used; similarly, the default value of ``bool`` "false"
+is used to initialize field ``b``.  The body of the constructor is then entered.  The
+value of field ``r`` is replaced by the value of ``s`` -- whatever value was passed as the
+argument of the corresponding constructor call.  In this case, ``s`` is "7.0", so that is
+the final value of the ``r`` field in the unnamed temporary.  The value of the
+temporary is then bitwise-copied into the space reserved for ``t``.  
+
+The problem with the above syntax is that the ``=`` in the body of the constructor must be
+treated as assignment.  This is because there is no syntactical way to distinguish initializations
+from assignment statements in that context.  
+
+If ``s`` is to be assigned to ``r``, that
+means that ``r`` must already have been initialized before the body of the constructor is
+entered.  This means that all of the fields in an object must be initialized before the
+body of one of its constructors is run.
+
+In the current implementation, that is what happens: each field in a record or class being
+constructed is first default-initialized; then, the statements in the body of the
+constructor are executed.  Statements in the constructor body may then overwrite the
+default field values with other values.
+
+If the fields are of fairly simple types, then this default-initialization followed by
+assignment is not so bad.  But when the types are complex or the assignment operator
+expensive, then it adversely affects performance.
+
+
+Example -- Proposed
++++++++++++++++++++
+
+An example of how a record constructor would be written under this proposal::
+
+   record R {
+     var i = 10;
+     var r:real;
+     var b:bool;
+
+     proc R(s:real)
+     init(r = s) {}
+   }
+
+   var t = new R(7.0);
+   writeln(r);         // Prints: "(i = 10, r = 7.0, b = false)".
+
+The user-visible semantics of this example are the same as for the one above.  However,
+there are two important differences in the implementation.  The ``=`` appearing in the
+``init`` clause causes field ``r`` to be *initialized* with the value ``s``.  This
+replaces the default-initialization of ``r`` followed by assignment from ``s`` with a
+simple copy-initialization from ``s``.  The syntax for the initialization of ``t`` remains
+the same, but the initialization is performed in-place, so the above bitwise copy is avoided.
+
+In more detail, space for ``t`` is allocated.  The constructor is then invoked on ``t`` as a
+method.  It first executes the ``init`` clause.  This clause causes field ``t.r`` to be
+initialized using the value of ``s``.  After all explicit field initializations appearing
+in the ``init`` clause have been executed, the uninitialized fields in ``t`` are
+initialized in lexical order (according to the order in which they appear in the
+declaration of ``record R``).  The first such field is ``i``.  Since a field-default value
+of "10" is supplied, that value is used to initialize ``i``.  Since ``r`` has already been
+initialized, it is skipped.  Since there is no field-default value for ``b``, it is
+initialized using its type-default value "false".  Then, control is transferred to the
+body of the constructor, which in this case is empty.  Since ``t`` is initialized
+in-place, no bitwise copy is required after construction.
+
+
+
+Description
+-----------
+
+The proposal is to add field-initializer syntax and semantics to the Chapel
+language.  It is a summary of the current state of the proposal based on
+feedback on the previous proposal, presented to the group on a deep dive on
+December 9 last year.  The previous proposal may be found in the source tree at
+https://github.com/chapel-lang/chapel/spec/proposals/constructors.
+
+For simplicity, this ChIP contains only the main proposal; support
+for ``noinit`` initialization is handled in a separate ChIP [reference to be supplied].
+
+The details of the proposal are given below, and restated briefly in the :ref:`summary` section.
+
+.. _syntax:
+
+Constructor Declaration Syntax
+++++++++++++++++++++++++++++++
+
+In the current proposal, a constructor is introduced using the "C++" style: It
+is a normal procedure declaration whose name matches the name of a (class or
+record) type (the *subject type*) in scope at the point of declaration. [#]_  A
+constructor may contain a field-initializer clause.  At present, the syntax for
+a constructor is the same as for a procedure or method declaration, as given
+by::
+
+   procedure-declaration-statement:
+     linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
+   method-declaration-statement:
+     linkage-specifier[OPT] proc-or-iter this-intent[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
+
+According to the proposal, the syntax would be augmented by the addition of an
+optional field-initializer-clause::
+  
+   procedure-declaration-statement:
+     linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT] field-initializer-clause[OPT] function-body
+   method-declaration-statement:
+     linkage-specifier[OPT] proc-or-iter this-intent[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT] field-initializer-clause[OPT] function-body
+
+It is illegal for a non-constructor method to contain a
+``field-initializer-clause``.  Because a special keyword is not used to
+introduce a constructor, it is impossible to distinguish between normal
+procedure declarations and constructor declarations (and respectively between
+normal method declarations versus method constructor declarations) based on
+syntax alone.  Parser production code or downstream processing must be employed
+to enforce this constraint.
+
+The rest of the required syntax is supplied by productions that render the
+``field-initializer-clause`` in terms of previously-defined language elements
+(consult the Syntax chapter in the `Chapel Specification <http://chapel.cray.com/spec/spec-0.97.pdf` for their definitions)::
+
+   field-initializer-clause:
+     `init' ( field-initializer-list )
+     `init' = constructor-call-expression
+
+   field-initializer-list:
+     field-initializer
+     field-initializer-list , field-initializer
+
+   field-initializer:
+     field-name = expression
+     field-name
+     variable-declaration
+
+   field-name:
+     identifier
+
+   pseudo-field-name:
+     identifier
+ 
+   constructor-call-expression:
+     call-expression
+
+In the first form of ``field-initializer-clause``, the ``init`` keyword is used
+to introduce the list of field-initializers.  The list of field-initializers is
+comma-separated and enclosed in parentheses.  Each field-name must name a
+``var`` or ``const`` field in the base type of the constructor, or be
+``super``.  
+
+If a ``variable-declaration`` appears in
+the ``field-initializer-list``, it creates a pseudo-field.  A pseudo-field can
+be useful for capturing intermediate results, e.g. to initialize two different
+fields to the same value -- the calculation of which is nontrivial.
+
+In the second form, the ``init`` keyword is followed by an ``=`` followed by a
+constructor call expression.  The name of constructor must match the name of the
+subject type.  The second form allows one constructor to invoke another.  It
+takes the place of a normal initializer list. [#]_
+
+
+.. _semantics:
+
+Constructor Declaration Semantics
++++++++++++++++++++++++++++++++++
+
+A constructor is a method on an object of the subject type.  When execution of a
+constructor begins, the object (``this``) is in an uninitialized state (hence
+all of its fields are also uninitialized).  Execution of the constructor
+proceeds by first executing the ``field-initializer-clause`` and then executing the body of
+the constructor.  
+
+Execution of the ``field-initializer-clause`` proceeds by executing each of the
+``field-initializer`` in lexical order.  In the form containing an ``=``, the
+expression is evaluated and its value is used to initialize the corresponding
+field in the object, as if by a copy. [#]_  In the form containing just a
+``field-name``, the field is initialized using the default-initializer supplied
+in the field declaration, if present.  Otherwise, it is initialized using the
+default value corresponding to its type.
+
+The keyword ``super`` refers to the base-class sub-object.  The ``super`` field
+behaves like any other field in the class. [#]_  A pseudo-field behaves like a normal
+variable declaration.  The variable introduced by a pseudo-field remains in
+scope until the end of the constructor body.
+
+After all ``field-initializer`` expressions have
+been processed, any fields in the object that remain uninitialized are
+initialized in order of their appearance in the class or record declaration.
+Each such initialization uses the value of ``initialization-part`` if present.
+Otherwise, the field is initialized to the default value of the corresponding
+type.  It is an error if neither a ``type-part`` nor an ``initialization-part``
+is supplied in such declarations.
+
+The expression appearing in a ``field-initializer`` may be arbitrarily complex.  It
+may refer to global variables and to formal arguments in the constructor's
+formal argument list.  However,
+it is illegal for the expression in a ``field-initializer`` to refer to a value
+that has not yet been initialized. [#]_ [#]_
+
+The semantics of a constructor body are the same as the semantics of a method.
+All fields of the subject type may be referred to implicitly, or explicitly
+using ``this``.  Methods on ``this`` may be invoked using either explicit or
+implicit syntax.  Because it is valid to call methods on ``this`` within the body of a
+constructor, there is no reason to have a special ``initialize()`` function that is called
+automatically if present.  The class designer can create arbitrarily-named initialization
+helper functions -- even those taking arguments and returning values other than ``void``.
+These must unfortunately be invoked explicitly, but that brings the advantage that those
+initialization helpers become less hidden.
+
+
+.. _inheritance:
+
+Inheritance
++++++++++++
+
+The syntax and semantics related to the ``super`` field are discussed above.
+Mention of the ``super`` field in any user-defined class or record type is
+always valid, since every class type derives from ``object`` and every record
+type derives from ``value``.  
+
+Since the subject type of a constructor is known at compile time, the type of
+``super`` is also known at compile time (being the immediate base type of the
+subject type).  Therefore, dispatches to ``super`` in a ``field-initializer-clause``
+or constructor body need not be dispatched dynamically.  Likewise, in the body
+of a constructor, the type of ``this`` is known at compile-time.  Therefore,
+methods on this may be bound statically.
+
+On the other hand, a constructor may arrange to pass ``this`` to a 
+method while obscuring the static type of ``this`` by casting it to a base-class
+type.  In that case, the method will be bound dynamically using the run-time
+type of ``this``.  The dynamic type of ``this`` is established after processing
+of the ``field-initializer-clause`` is complete, including the default
+initialization of any fields not mentioned explicitly.  The dynamic type is set
+equal to the subject type. [#]_
+
+
+.. _const_ness:
+
+Const-ness
+++++++++++
+
+A field declared to be ``const`` becomes immutable after it has been
+initialized. [#]_  When a constructor is used to initialize an object that is
+declared to be ``const``, the object as a whole (including any fields of
+``this`` that are not declared to be ``const``) are mutable until
+that constructor returns control to the caller.  Thereafter, the fields in that
+object are all immutable.
+
+
+.. _constructor_calls:
+
+Constructor Calls
++++++++++++++++++
+
+This proposal also slightly changes the semantics associated with constructor
+calls.  A constructor is invoked using the keyword ``new`` followed by the name
+of the type to be constructed, followed by an optional argument list.  In the
+current implementation, constructors are considered to return a value that is a
+fully-constructed object of the specified type.  The behavior for class objects
+will remain unchanged.   
+
+For records, however, the constructor will be invoked as a method.  In the
+current implementation, the statement::
+
+   var r:R = new R(<args>);
+
+(``R`` assumed to be a record type) causes ``r`` to be initialized to the
+default value of type R.  Then, an object of type ``R`` is
+constructed and copied into ``r`` by assignment.  
+
+In the current proposal, that syntax would remain the same, but the
+implementation has the option of implementing that statement using the
+semantics::
+
+   pragma "no init"
+   var r;
+   r.R(<args>);
+
+where the pragma means that the declaration leaves ``r`` in an uninitialized
+state.  The call to the constructor ``R(<args>)`` (as a method) then initializes
+the object ``r`` in-place.
+
+
+.. _summary:
+
+Summary
++++++++
+
+The main syntactical and semantical provisions of this proposal are summarized as:
+
+* The added syntax will consist of an introductory keyword followed by a list of
+  initializer expressions enclosed in parentheses.  
+* Each initializer must bind to
+  one of the fields declared in the constructor's object (class or record) type.
+* Each initializer provides a value to be used to initialize the corresponding
+  field. 
+* The field being initialized must be named.  
+* The actual initialization order is
+  the order of appearance of initializer list.  
+* Class- or record-default
+  initializers will be used if the initializer list does not supply a value.
+* Default values may be used explicitly by naming the field without
+  supplying a value.  
+* Pseudo-initializers may be used to capture results in an
+  initializer list.
+* A constructor call may be used place of a field initializer list.
+* The fields and methods of ``this`` may be accessed within the body of a constructor.
+* The special ``initialize()`` function is deprecated.
+* Fields declared to be ``const`` become immutable after they have been
+  initialized and before the body of the constructor is entered.  
+* Objects declared
+  to be ``const`` become immutable after the constructor and run to completion and
+  control is returned to the point of invocation of the constructor.
+
+
+.. rubric:: Footnotes
+
+.. [#] The idea of using a unique keyword such as ``ctor`` to introduce a
+       constructor was discussed.  The keyword approach is useful for generic
+       programming, because a constructor can be mentioned using a well-known
+       name (such as ``__init__`` in Python).  The idea was abandoned for the
+       sake of the current proposal because it did not obtain unanimous support.
+
+.. [#] Any constructor for the subject type initializes all fields in an object
+       of that type.  Since each field can be initialized only once, it would be
+       illogical to include other field-initializers before or after a
+       constructor call in a ``field-initializer-clause``.
+
+.. [#] It is unspecified whether a copy is actually performed.
+
+.. [#] In particular, an initializer for ``super`` can appear anywhere in a
+       ``field-initializer-clause`` or be omitted.  Once initialized, the fields
+       of super may be referenced in other ``field-initializer`` expressions and
+       methods of ``super`` may be invoked.  In this context, a reference to the
+       ``super`` field is always explicit: it must be referred to using
+       the name ``super``; it may not be referenced implicitly through ``this``.
+
+.. [#] As a consequence, only the names of fields
+       that precede the current ``field-initializer`` may appear
+       anywhere in that ``field-initializer``'s expression.  In particular, the name of
+       a field cannot appear in its own initializer expression.
+
+.. [#] The object itself (``this``) is not fully initialized until after the
+       initializer list has been processed in its entirety.  Therefore, it is illegal
+       for the keyword ``this`` to appear anywhere in a ``field-initializer-clause``.
+
+.. [#] In discussions, Vass expressed concerns about type-safety, given that any
+       routine called from the initializer list or body of a constructor could
+       publish the ``this`` object before it has been fully constructed.  There
+       are three pieces that constitute this proposal's response to that
+       concern:
+
+       1. Since it is illegal to mention ``this`` in the initializer list, it
+          cannot be published by any initialization expression appearing in the
+          ``field-initializer-clause``.  The stricture against referring to ``this`` in
+          that context also refers to implicit references.  That means that it is
+          illegal to call a method of the subject type in the
+          ``field-initializer-clause``, so ``this`` is prevented from escaping in
+          that manner as well.
+      
+       2. The dynamic type of the object is not established until processing of the
+          ``field-initializer-clause`` is complete.  It is not clear that the
+          specification requires the base-class sub-object to be laid out in memory
+          so that its starting address coincides with the starting address of the
+          derived-class object.  It is also unclear whether the two share the same
+          dynamic type field.  In the current implementation, they do not share the same
+          starting address but they do share the same dynamic type field.
+      
+          The scenario of concern is if a base-class constructor attempts to
+          publish the derived-class object before its initialization is complete.
+          This would be accomplished through initialization of the ``super``
+          field.  
+      
+          If the object being constructed shares its dynamic type field
+          with the base-class sub-object, then within the body of the base class
+          constructor the dynamic type of the ``super`` will be the type of the base class.
+          An attempt to publish the object there will publish an
+          object of base-class type.  Whether or not the object being constructed
+          and the base-class object coincide in memory, only field accessors and
+          methods applicable to the base type may be invoked: the compiler will not
+          produce code that attempts in any way to access fields belonging uniquely
+          (i.e. not through inheritance) to the object being constructed.  
+
+          This remains true until the shared dynamic type field is updated after the
+          object's ``field-initializer-clause`` is processed and before its body is
+          entered.  If the base-class sub-object and the object itself do not coincide in
+          memory, then the published object will still point to the base-class sub-object
+          whose dynamic type has been updated to the derived-class object's type.  That
+          would be bad; apparently our current implementation needs some re-thinking.  Of
+          the four possibilities outlined above, ours is the only one guaranteed to fail.
+          If the base-class sub-object and the object coincide and share their dynamic
+          type field, then the object being constructed will exhibit behaviors associated
+          with the derived type (i.e. the ability to access fields and invoke methods
+          associated with that type) as soon as execution of its
+          ``field-initializer-list`` is complete and before the body of its constructor
+          has been entered.  
+          If the base-class sub-object has its own type, then an object published
+          by a base-class constructor will always be of the base type.  In that
+          object layout scheme, there is no way to make a published ``this`` object
+          exhibit dynamic type (polymorphic) behavior.
+      
+       3. Because it is considered to be fully-initialized at the beginning of a
+          constructor body, the ``this`` object can be published anywhere in a
+          constructor body.  The objection here might be that an object is not
+          "blessed" as being fully constructed until the closing brace of the
+          constructor is reached.
+      
+          A simple workaround is to require that any such publication be placed at
+          the end of the constructor body.  A "virtual closing brace" exists at the
+          point in the code at which all of the fields have values consistent with
+          the invariants ascribed to a fully-constructed object of that class.
+          Statements which appear after that virtual closing brace deal with the
+          fully-constructed object, so it is OK for them to manipulate the object
+          as a whole.  If the virtual closing brace does not exist, then the
+          problem being addressed is a restatement of the Postman's Paradox.
+      
+          The stronger argument is that the point in the lifetime of the object at
+          which it is safe to publish it is under the control of the class designer
+          -- it is not a matter in which the language definition or the compiler
+          can effectively or even desirably interfere.  It may be ready to publish
+          at the very top of the constructor body -- subsequent changes being
+          responded to dynamically by watchers on the published object.  It might
+          not be ready to publish until several phases after its initial
+          construction.  In which case, "avid" publication through the base-class
+          constructor seems like a poor programming idiom.  All of this is best left to
+          the class designer: aside from its effect on const-ness, there is nothing
+          special about the closing brace of a constructor body.
+
+.. [#] In particular, it cannot be modified in the body of the constructor.
+
