@@ -290,6 +290,10 @@ Expr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
 }
 
+Expr* buildCStringLiteral(const char* pch) {
+  return new SymExpr(new_StringSymbol(pch));
+}
+
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   // The following optimization was added to avoid calling
