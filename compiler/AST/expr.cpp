@@ -4787,6 +4787,32 @@ GenRet CallExpr::codegen() {
         ptr = codegenRaddr(ptr);
       codegenCall("chpl_check_nil", ptr, info->lineno, info->filename); 
       break; }
+    case PRIM_GET_REAL:
+      if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_64]->refType) {
+        ret = codegenCallExpr("complex64GetRealRef", get(1));
+      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_128]->refType) {
+        ret = codegenCallExpr("complex128GetRealRef", get(1));
+      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_64]) {
+        ret = codegenCallExpr("complex64GetRealRef", codegenAddrOf(get(1)));
+      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_128]) {
+        ret = codegenCallExpr("complex128GetRealRef", codegenAddrOf(get(1)));
+      } else {
+        INT_FATAL("Unsupported type in PRIM_GET_REAL");
+      }
+      break;
+    case PRIM_GET_IMAG:
+      if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_64]->refType) {
+        ret = codegenCallExpr("complex64GetImagRef", get(1));
+      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_128]->refType) {
+        ret = codegenCallExpr("complex128GetImagRef", get(1));
+      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_64]) {
+        ret = codegenCallExpr("complex64GetImagRef", codegenAddrOf(get(1)));
+      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_128]) {
+        ret = codegenCallExpr("complex128GetImagRef", codegenAddrOf(get(1)));
+      } else {
+        INT_FATAL("Unsupported type in PRIM_GET_IMAG");
+      }
+      break;
     case PRIM_LOCAL_CHECK:
     {
       // arguments are (wide ptr, line, function/file, error string)

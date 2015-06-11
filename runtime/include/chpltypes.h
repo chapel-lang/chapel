@@ -242,6 +242,10 @@ typedef struct chpl_main_argument_s {
 
 _complex128 buildComplex128(_real64 re, _real64 im);
 _complex64 buildComplex64(_real32 re, _real32 im);
+_real64* complex128GetRealRef(_complex128* cplx);
+_real64* complex128GetImagRef(_complex128* cplx);
+_real32* complex64GetRealRef(_complex64* cplx);
+_real32* complex64GetImagRef(_complex64* cplx);
 
 /* This should be moved somewhere else, but where is the question */
 const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);

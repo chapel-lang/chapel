@@ -44,6 +44,22 @@ _complex64 buildComplex64(_real32 re, _real32 im) {
   return re + im*_Complex_I;
 }
 
+_real64* complex128GetRealRef(_complex128* cplx) {
+  return ((_real64*)cplx) + 0;
+}
+
+_real64* complex128GetImagRef(_complex128* cplx) {
+  return ((_real64*)cplx) + 1;
+}
+
+_real32* complex64GetRealRef(_complex64* cplx) {
+  return ((_real32*)cplx) + 0;
+}
+
+_real32* complex64GetImagRef(_complex64* cplx) {
+  return ((_real32*)cplx) + 1;
+}
+
 int64_t real2int( _real64 f) {
   // need to use a union here rather than a pointer cast to avoid gcc
   // warnings when compiling -O3
