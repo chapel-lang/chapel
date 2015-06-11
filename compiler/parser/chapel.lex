@@ -63,7 +63,8 @@
 
 static int  processIdentifier(yyscan_t scanner);
 static int  processToken(yyscan_t scanner, int t);
-static int  processStringLiteral(yyscan_t scanner, const char* q);
+static int  processStringLiteral(yyscan_t scanner, const char* q, int type);
+
 static int  processExtern(yyscan_t scanner);
 static int  processExternCode(yyscan_t scanner);
 
@@ -252,8 +253,10 @@ yield            return processToken(yyscanner, TYIELD);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
 {ident}          return processIdentifier(yyscanner);
-"\""             return processStringLiteral(yyscanner, "\"");
-"\'"             return processStringLiteral(yyscanner, "\'");
+"\""             return processStringLiteral(yyscanner, "\"", STRINGLITERAL);
+"\'"             return processStringLiteral(yyscanner, "\'", STRINGLITERAL);
+"c\""            return processStringLiteral(yyscanner, "\"", CSTRINGLITERAL);
+"c\'"            return processStringLiteral(yyscanner, "\'", CSTRINGLITERAL);
 
 "//"             return processSingleLineComment(yyscanner);
 "/*"             return processBlockComment(yyscanner);
@@ -375,7 +378,7 @@ static int processToken(yyscan_t scanner, int t) {
 
 static char* eatStringLiteral(yyscan_t scanner, const char* startChar);
 
-static int processStringLiteral(yyscan_t scanner, const char* q) {
+static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE*    yyLval = yyget_lval(scanner);
 
@@ -396,7 +399,7 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
     remain = remain - strlen(yyText);
   }
 
-  return STRINGLITERAL;
+  return type;
 }
 
 static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
