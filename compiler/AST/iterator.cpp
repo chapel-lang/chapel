@@ -443,7 +443,6 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       zip1body->insertAtTail(expr->copy(&map));
   }
 
-  INT_ASSERT(singleLoop);
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
     // By the time we get here, the condExpr has been passed through _cond_test
     // and the result stored in a temp, so condExprForTmpVariableGet just
@@ -459,8 +458,12 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this,
                                         ii->iclass->getField("more"), condTemp));
   } else if (isCForLoop(singleLoop)) {
-    // Do nothing.
+    // CForLoops do not use the "more" field in their loop termination test.
+    // See the code for that special case in buildHasMore().
   } else {
+    // ParamForLoops should have been removed during resolution.
+    // DoWhileLoops are not treated as singleLoop iterators.
+    // ForLoops should have been replaceed in expandForLoop().
     INT_FATAL("Unexpected singleLoop iterator type");
   }
 
@@ -540,8 +543,6 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     }
   }
 
-  // Check for more (only for non c for loops)
-  INT_ASSERT(singleLoop);
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
     Type* moreType = ii->iclass->getField("more")->type;
@@ -552,8 +553,12 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this,
                                         ii->iclass->getField("more"), condTemp));
   } else if (isCForLoop(singleLoop)) {
-    // Do nothing.
+    // CForLoops do not use the "more" field in their loop termination test.
+    // See the code for that special case in buildHasMore().
   } else {
+    // ParamForLoops should have been removed during resolution.
+    // DoWhileLoops are not treated as singleLoop iterators.
+    // ForLoops should have been replaceed in expandForLoop().
     INT_FATAL("Unexpected singleLoop iterator type");
   }
 
