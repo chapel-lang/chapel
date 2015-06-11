@@ -379,7 +379,7 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE*    yyLval = yyget_lval(scanner);
 
-  yyLval->pch = eatStringLiteral(scanner, q);
+  yyLval->pch = astr(eatStringLiteral(scanner, q));
 
   countToken(astr(q, yyLval->pch, q));
 
