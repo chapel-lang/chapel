@@ -230,6 +230,8 @@ void chpl_std_module_init(void) {
     chpl__init_preInit(0, myFilename);
 
     // Initialize the internal modules.
+    // String literals must be constructed before any other chapel code is run
+    chpl__init_ChapelStringLiterals(0, myFilename);
     chpl__init_PrintModuleInitOrder(0, myFilename);
     chpl__init_ChapelStandard(0, myFilename);
     // Note that in general, module code can contain "on" clauses

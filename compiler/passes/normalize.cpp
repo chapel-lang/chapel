@@ -305,8 +305,9 @@ void normalize(BaseAST* base) {
 
   for_vector(Symbol, symbol2, symbols) {
     if (VarSymbol* var = toVarSymbol(symbol2))
-      if (isFnSymbol(var->defPoint->parentSymbol))
-        fix_def_expr(var);
+      if (FnSymbol* fn = toFnSymbol(var->defPoint->parentSymbol))
+        if (fn != stringLiteralModule->initFn)
+          fix_def_expr(var);
   }
 
   calls.clear();
@@ -1050,20 +1051,20 @@ static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp)
 {
       Expr* noop = new CallExpr(PRIM_NOOP);
       Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
-                             new_StringSymbol(var->getModule()->name) :
-                             new_StringSymbol("Built-in"));
+                             new_CStringSymbol(var->getModule()->name) :
+                             new_CStringSymbol("Built-in"));
       CallExpr* strToValExpr =
         new CallExpr("_command_line_cast",
-                     new SymExpr(new_StringSymbol(var->name)),
+                     new SymExpr(new_CStringSymbol(var->name)),
                      new CallExpr(PRIM_TYPEOF, constTemp),
                      new CallExpr("chpl_config_get_value",
-                                  new_StringSymbol(var->name),
+                                  new_CStringSymbol(var->name),
                                   module_name));
       stmt->insertAfter(
         new CondStmt(
           new CallExpr("!",
                        new CallExpr("chpl_config_has_value",
-                                    new_StringSymbol(var->name),
+                                    new_CStringSymbol(var->name),
                                     module_name)),
           noop,
           new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
@@ -1231,16 +1232,6 @@ static void hack_resolve_types(ArgSymbol* arg) {
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->var != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
-          if ((arg->intent != INTENT_PARAM) &&
-              se && se->var->isImmediate() &&
-              toVarSymbol(se->var)->immediate->const_kind == CONST_KIND_STRING) {
-            // String literal default expressions for non-param
-            // generic formals are converted to strings.
-            arg->defaultExpr->body.insertAtTail(
-                new CallExpr("_cast",
-                             new SymExpr(dtString->symbol),
-                             arg->defaultExpr->body.tail->remove()));
-          }
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
         }
@@ -1297,7 +1288,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         if (queryEltType) {
           for_vector(SymExpr, se, symExprs) {
             if (se->var == queryEltType->sym)
-              se->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
+              se->replace(new CallExpr(".", arg, new_CStringSymbol("eltType")));
           }
         } else if (!noEltType) {
           // The element type is supplied, but it is null.
@@ -1313,7 +1304,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           newWhere->insertAtTail(oldWhere);
           newWhere->insertAtTail(
             new CallExpr("==", call->get(2)->remove(),
-                         new CallExpr(".", arg, new_StringSymbol("eltType"))));
+                         new CallExpr(".", arg, new_CStringSymbol("eltType"))));
         }
 
         if (queryDomain) {
@@ -1321,7 +1312,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           // If we match the domain symbol, replace it with arg._dom.
           for_vector(SymExpr, se, symExprs) {
             if (se->var == queryDomain->sym)
-              se->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
+              se->replace(new CallExpr(".", arg, new_CStringSymbol("_dom")));
           }
         } else if (!noDomain) {
           // The domain argument is supplied but NULL.
@@ -1337,7 +1328,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,
                                         new CallExpr(
                                           new CallExpr(".", arg,
-                                                       new_StringSymbol("reindex")),
+                                                       new_CStringSymbol("reindex")),
                                           call->get(1)->copy())));
           fn->insertAtHead(new DefExpr(tmp));
         }
@@ -1509,15 +1500,15 @@ fixup_query_formals(FnSymbol* fn) {
         std::vector<SymExpr*> symExprs;
         collectSymExprs(fn, symExprs);
         if (call->isNamed("_build_tuple")) {
-          add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_StringSymbol("size")));
+          add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_CStringSymbol("size")));
           call->baseExpr->replace(new SymExpr(dtTuple->symbol));
           isTupleType = true;
         }
         CallExpr* positionQueryTemplate = new CallExpr(PRIM_QUERY);
         for_actuals(actual, call) {
           if (NamedExpr* named = toNamedExpr(actual)) {
-            positionQueryTemplate->insertAtTail(new_StringSymbol(named->name));
-            CallExpr* nameQuery = new CallExpr(PRIM_QUERY, new_StringSymbol(named->name));
+            positionQueryTemplate->insertAtTail(new_CStringSymbol(named->name));
+            CallExpr* nameQuery = new CallExpr(PRIM_QUERY, new_CStringSymbol(named->name));
             if (DefExpr* def = toDefExpr(named->actual)) {
               replace_query_uses(formal, def, nameQuery, symExprs);
             } else {

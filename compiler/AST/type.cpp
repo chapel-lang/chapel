@@ -1344,6 +1344,13 @@ void initRootModule() {
   rootModule->filename = astr("<internal>");
 }
 
+void initStringLiteralModule() {
+  stringLiteralModule = new ModuleSymbol("ChapelStringLiterals", MOD_INTERNAL, new BlockStmt());
+  stringLiteralModule->filename = astr("<internal>");
+  stringLiteralModule->addFlag(FLAG_EXPORT_INIT);
+  theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
+}
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -1409,6 +1416,8 @@ void initPrimitiveTypes() {
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
+  dtString                             = new AggregateType(AGGREGATE_RECORD);
+
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
 
@@ -1432,7 +1441,7 @@ void initPrimitiveTypes() {
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
-  dtStringC->defaultValue              = new_StringSymbol("");
+  dtStringC->defaultValue              = new_CStringSymbol("");
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];
 
@@ -1634,17 +1643,16 @@ DefExpr* defineObjectClass() {
 }
 
 void initChplProgram(DefExpr* objectDef) {
-  CallExpr* base = 0;
-  CallExpr* std  = 0;
-
   theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  //CallExpr* strLit = new CallExpr(PRIM_USE, new UnresolvedSymExpr("chpl__StringLiterals"));
+  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
 
+  //theProgram->block->insertAtTail(strLit);
   theProgram->block->insertAtTail(base);
 
   // it may be better to add the following use after parsing

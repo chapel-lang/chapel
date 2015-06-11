@@ -1,3 +1,3 @@
 var x = 1;
-writeln("x = ", x);
+writeln(c"x = ", x);
 quit();

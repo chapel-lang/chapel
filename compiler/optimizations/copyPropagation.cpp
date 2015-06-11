@@ -371,6 +371,7 @@ static bool isUse(SymExpr* se)
   }
   else
   {
+    INT_ASSERT(call->primitive);
     switch(call->primitive->tag)
     {
      default:

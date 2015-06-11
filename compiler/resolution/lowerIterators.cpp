@@ -1844,7 +1844,7 @@ expandForLoop(ForLoop* forLoop) {
 
           forLoop->insertAtHead(new CondStmt(new SymExpr(isFinished),
                                              new CallExpr(PRIM_RT_ERROR,
-                                                          new_StringSymbol("zippered iterations have non-equal lengths"))));
+                                                          new_CStringSymbol("zippered iterations have non-equal lengths"))));
 
           forLoop->insertAtHead(new CallExpr(PRIM_MOVE, isFinished, new CallExpr(PRIM_UNARY_LNOT, hasMore)));
 
@@ -1852,7 +1852,7 @@ expandForLoop(ForLoop* forLoop) {
 
           forLoop->insertAfter(new CondStmt(new SymExpr(hasMore),
                                             new CallExpr(PRIM_RT_ERROR,
-                                                         new_StringSymbol("zippered iterations have non-equal lengths"))));
+                                                         new_CStringSymbol("zippered iterations have non-equal lengths"))));
 
           forLoop->insertAfter(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
         }

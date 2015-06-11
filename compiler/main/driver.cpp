@@ -963,6 +963,8 @@ int main(int argc, char* argv[]) {
 
     initChplProgram(objectClass);
 
+    initStringLiteralModule();
+
     setupOrderedGlobals(argv[0]);
 
     process_args(&sArgState, argc, argv);

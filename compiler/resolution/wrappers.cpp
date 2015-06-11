@@ -285,7 +285,7 @@ buildDefaultWrapper(FnSymbol* fn,
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), copyTemp));
+                             new_CStringSymbol(formal->name), copyTemp));
               copy_map.put(formal, copyTemp);
               call->argList.tail->replace(new SymExpr(copyTemp));
             }
@@ -353,7 +353,7 @@ buildDefaultWrapper(FnSymbol* fn,
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), temp));
+                             new_CStringSymbol(formal->name), temp));
     }
   }
   update_symbols(wrapper->body, &copy_map);
@@ -650,8 +650,18 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
       c2 = false;
       Type* actualType = actualSym->type;
       if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
-        // addArgCoercion() updates currActual, actualSym, c2
-        addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        if (formalType == dtStringC && actualType == dtString && actualSym->isImmediate()) {
+          // We do this swap since we know the string is a valid literal
+          // There also is no cast defined for string->c_string on purpose (you
+          // need to use .c_str()) so the common case below does not work.
+          VarSymbol *var = toVarSymbol(actualSym);
+          SymExpr *newActual = new SymExpr(new_CStringSymbol(var->immediate->v_string));
+          currActual->replace(newActual);
+          currActual = newActual;
+        } else {
+          // addArgCoercion() updates currActual, actualSym, c2
+          addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        }
       }
     } while (c2 && --checksLeft > 0);
 

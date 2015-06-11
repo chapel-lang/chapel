@@ -27,11 +27,11 @@ use checkType;
   }
 
   var c0 = new C("blah");
-  checkType(c_string, c0.x.type);
+  checkType(string, c0.x.type);
 
   param blah1 = "blah";
   var c1 = new C(blah1);
-  checkType(c_string, c1.x.type);
+  checkType(string, c1.x.type);
 }
 
 {
@@ -61,9 +61,9 @@ use checkType;
   }
 
   var r0 = new R("blah");
-  checkType(c_string, r0.x.type);
+  checkType(string, r0.x.type);
 
   param blah1 = "blah";
   var r1 = new R(blah1);
-  checkType(c_string, r1.x.type);
+  checkType(string, r1.x.type);
 }

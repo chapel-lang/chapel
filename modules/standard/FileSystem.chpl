@@ -742,7 +742,7 @@ iter glob(pattern: string = "*"): string {
 
   const err = chpl_glob(pattern.c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   //
   // Use safeCast here, and then back again, in order to avoid conditional
   // in iterator in order to get better generated code, and to support
@@ -765,7 +765,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
   const err = chpl_glob(pattern:c_string, 0, glb);
   // TODO: Handle error cases better
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb).safeCast(int);
   forall i in 0..num-1 do
     yield chpl_glob_index(glb, i.safeCast(size_t)): string;
@@ -790,7 +790,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
 
   const err = chpl_glob(pattern.c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   //
   // cast is used here to ensure we create an int-based leader
   //
@@ -815,7 +815,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
 
   const err = chpl_glob(pattern:c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb);
   if (r.high > num.safeCast(int)) then
     halt("glob() iterator zipped with something too big");

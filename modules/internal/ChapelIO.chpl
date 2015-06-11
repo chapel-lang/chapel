@@ -111,9 +111,9 @@ module ChapelIO {
             var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
             var eq:ioLiteral;
             if st == QIO_AGGREGATE_FORMAT_JSON {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+              eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
             } else {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+              eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
             }
             write(eq);
           }
@@ -135,9 +135,9 @@ module ChapelIO {
               var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
               var eq:ioLiteral;
               if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
               } else {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
               }
               write(eq);
             }
@@ -164,7 +164,7 @@ module ChapelIO {
         if st == QIO_AGGREGATE_FORMAT_JSON {
           start = new ioLiteral("{");
         } else if st == QIO_AGGREGATE_FORMAT_CHPL {
-          start = new ioLiteral("new " + typeToString(t) + "(");
+          start = new ioLiteral("new " + typeToString(t).c_str() + "(");
         } else {
           // the default 'braces' type
           if isClassType(t) {
@@ -476,7 +476,7 @@ module ChapelIO {
   }
   
   proc halt() {
-    __primitive("chpl_error", "halt reached");
+    __primitive("chpl_error", c"halt reached");
   }
   
   proc halt(s:string) {
@@ -484,13 +484,13 @@ module ChapelIO {
   }
 
   proc halt(s:c_string) {
-    __primitive("chpl_error", "halt reached - " + s);
+    __primitive("chpl_error", c"halt reached - " + s);
   }
   
   proc halt(args ...?numArgs) {
     var tmpstring: string;
     tmpstring.write((...args));
-    __primitive("chpl_error", "halt reached - " + tmpstring.c_str());
+    __primitive("chpl_error", c"halt reached - " + tmpstring.c_str());
   }
   
   proc warning(s:string) {
@@ -531,21 +531,6 @@ module ChapelIO {
     proc writePrimitive(x) {
       this.s += x:string;
     }
-  }
-  
-  // Convert 'x' to a string just the way it would be written out.
-  // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
-  proc _cast(type t, x) where t == c_string_copy {
-    compilerError("_cast to c_string_copy");
-    //proc isNilObject(o: object) return o == nil;
-    //proc isNilObject(o) param return false;
-    const w = new StringWriter();
-    //if isNilObject(x) then "nil".writeThis(w);
-    //else                   x.writeThis(w);
-    w.write(x);
-    const result = w.s.steal_base();
-    delete w;
-    return result;
   }
   
   pragma "dont disable remote value forwarding"
