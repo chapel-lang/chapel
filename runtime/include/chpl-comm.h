@@ -112,10 +112,15 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 // a communicable memory region and known to be readable. That is,
 // GET to that address should succeed without an access violation
 // or other memory protection error.
-// Returns 1 if the entire passed region is known to be in the
-// registered memory region, or 0 if some or all of it is not (or
-// the registered memory region is totally unknown as with e.g.
-// GASNET_SEGMENT=everything).
+// Returns 1 if the entire passed region can be read with a GET.
+// Returns 0 if it might not be safely readable.
+//
+// This function returns 1 if the requested region is known to be in a
+// pre-mapped registered memory region that can be read with GET without
+// any segmentation errors. For GASNET_SEGMENT=everything, for example,
+// this function always returns 0 since although any address is in the
+// segment, not all addresses are readable without causing a segmentation
+// violation on the remote locale.
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len);
 
 //
