@@ -50,6 +50,11 @@ returnInfoStringC(CallExpr* call) {
 }
 
 static Type*
+returnInfoString(CallExpr* call) {
+  return dtString;
+}
+
+static Type*
 returnInfoStringCopy(CallExpr* call) {
   return dtStringCopy;
 }
@@ -522,7 +527,7 @@ initPrimitive() {
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
-  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoStringC);
+  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoString);
 
   // These are the block info primitives.
   prim_def(PRIM_BLOCK_PARAM_LOOP, "param loop", returnInfoVoid);

@@ -283,7 +283,7 @@ module ChapelArray {
       type currType = _getLiteralType(elems(i).type);
 
       if currType != elemType {
-        compilerError( "Array literal element " + i:c_string +
+        compilerError( "Array literal element " + i +
                        " expected to be of type " + typeToString(elemType) +
                        " but is of type " + typeToString(currType) );
       }

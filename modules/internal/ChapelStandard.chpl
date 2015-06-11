@@ -25,6 +25,7 @@ module ChapelStandard {
 
   // Internal modules.
   use ChapelBase;
+  use CPtr;
   use CString;
   use String;
   use MemConsistency;

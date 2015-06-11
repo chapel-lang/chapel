@@ -630,7 +630,7 @@ static void build_type_constructor(AggregateType* ct) {
         fn->insertAtTail(
           new BlockStmt(
             new CallExpr(PRIM_SET_MEMBER, fn->_this, 
-              new_StringSymbol(field->name),
+              new_CStringSymbol(field->name),
               new CallExpr(PRIM_TYPE_INIT, exprType->remove())),
             BLOCK_TYPE));
 
@@ -653,14 +653,14 @@ static void build_type_constructor(AggregateType* ct) {
           if (field->hasFlag(FLAG_PARAM) || field->isType())
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
-                                          new_StringSymbol(field->name), arg));
+                                          new_CStringSymbol(field->name), arg));
 
           else if (arg->type == dtAny &&
                    !ct->symbol->hasFlag(FLAG_REF))
             // It would be nice to be able to remove this case.
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
-                                          new_StringSymbol(field->name),
+                                          new_CStringSymbol(field->name),
                                           new CallExpr("chpl__initCopy",
                                                        new CallExpr(PRIM_TYPE_INIT, arg))));
           #if 0
@@ -669,14 +669,14 @@ static void build_type_constructor(AggregateType* ct) {
           else
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
-                                          new_StringSymbol(field->name),
+                                          new_CStringSymbol(field->name),
                                           new CallExpr(PRIM_TYPE_INIT, arg)));
           #endif
         } else if (exprType) {
           CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
                                            fn->_this,
-                                           new_StringSymbol(field->name),
+                                           new_CStringSymbol(field->name),
                                            newInit);
           fn->insertAtTail(newSet);
 
@@ -699,13 +699,13 @@ static void build_type_constructor(AggregateType* ct) {
             CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
             CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
                                              fn->_this,
-                                             new_StringSymbol(field->name),
+                                             new_CStringSymbol(field->name),
                                              newInit);
             fn->insertAtTail(newSet);
           } else {
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
-                                          new_StringSymbol(field->name),
+                                          new_CStringSymbol(field->name),
                                           new CallExpr("chpl__initCopy", init->copy())));
           }
         }
@@ -734,7 +734,7 @@ static void build_type_constructor(AggregateType* ct) {
     ct->fields.insertAtTail(new DefExpr(outer));
     fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
                                   fn->_this,
-                                  new_StringSymbol("outer"),
+                                  new_CStringSymbol("outer"),
                                   fn->_outer));
 
     ct->outer = outer;
@@ -883,7 +883,7 @@ static void build_constructor(AggregateType* ct) {
                        tmp,
                        new CallExpr(PRIM_GET_MEMBER_VALUE,
                                     fn->_this,
-                                    new_StringSymbol("super"))));
+                                    new_CStringSymbol("super"))));
       }
     }
   }
@@ -986,7 +986,7 @@ static void build_constructor(AggregateType* ct) {
         !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, 
                                     fn->_this, 
-                                    new_StringSymbol(arg->name),
+                                    new_CStringSymbol(arg->name),
                                     new CallExpr("chpl__initCopy", arg)));
     else
       // Since we don't copy the argument before stuffing it in a field,
@@ -997,7 +997,7 @@ static void build_constructor(AggregateType* ct) {
       // (See NOTE 1 in callDestructors.cpp.)
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, 
                                     fn->_this, 
-                                    new_StringSymbol(arg->name),
+                                    new_CStringSymbol(arg->name),
                                     arg));
   }
 
@@ -1014,7 +1014,7 @@ static void build_constructor(AggregateType* ct) {
     // Save the pointer to the outer class
     fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                   fn->_this,
-                                  new_StringSymbol("outer"),
+                                  new_CStringSymbol("outer"),
                                   fn->_outer));
   }
 
@@ -1362,24 +1362,24 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                   if (i < nestDepth) {
                     dot = new CallExpr(".",
                                        method->_this,
-                                       new_StringSymbol("outer"));
+                                       new_CStringSymbol("outer"));
                   } else {
                     if (isTypeSymbol(sym))
                       dot = new CallExpr(".", method->_this, sym);
                     else
                       dot = new CallExpr(".",
                                          method->_this,
-                                         new_StringSymbol(name));
+                                         new_CStringSymbol(name));
                   }
                 } else {
                   if (i < nestDepth) {
                     dot = new CallExpr(".",
-                                       dot, new_StringSymbol("outer"));
+                                       dot, new_CStringSymbol("outer"));
                   } else {
                     if (isTypeSymbol(sym))
                       dot = new CallExpr(".", dot, sym);
                     else
-                      dot = new CallExpr(".", dot, new_StringSymbol(name));
+                      dot = new CallExpr(".", dot, new_CStringSymbol(name));
                   }
                 }
               }

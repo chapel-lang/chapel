@@ -6,6 +6,7 @@ $CHPL_HOME/modules/internal/ChapelBase.chpl:: note:                 <=(a: uint(6
 $CHPL_HOME/modules/internal/ChapelBase.chpl:: note:                 <=(param a: uint(64), b: uint(64))
 $CHPL_HOME/modules/internal/CString.chpl:: note:                 <=(a: c_string, b: c_string)
 $CHPL_HOME/modules/internal/CString.chpl:: note:                 <=(param a: c_string, param b: c_string)
+$CHPL_HOME/modules/internal/String.chpl:: note:                 <=(param a: string, param b: string)
 $CHPL_HOME/modules/internal/String.chpl:: note:                 <=(a: string, b: string)
 $CHPL_HOME/modules/internal/ChapelTuple.chpl:: note:                 <=(a: _tuple, b: _tuple)
 $CHPL_HOME/modules/internal/ChapelBase.chpl:: note:                 <=(a: int(8), b: int(8))
