@@ -92,11 +92,13 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
-      if debugDistRefCount {
-        extern proc printf(fmt: c_string, arg...);
+      if debugDistRefCount > 0 {
         const cnt = _distCnt.read();
-        printf("----- INC _distCnt (%016lx) was %ld\n",
-               __primitive("cast", uint(64), this), cnt);
+        if debugDistRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- INC _distCnt (%016lx) was %ld\n",
+                 __primitive("cast", uint(64), this), cnt);
+        }
         if cnt < 0 || cnt > 1000 then
             halt("_distCnt is bogus!");
       }
@@ -106,10 +108,12 @@ module ChapelDistribution {
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
       const cnt = _distCnt.dec();
-      if debugDistRefCount {
-        extern proc printf(fmt: c_string, arg...);
-        printf("----- DEC _distCnt (%016lx) now %ld\n",
-               __primitive("cast", uint(64), this), cnt);
+      if debugDistRefCount > 0 {
+        if debugDistRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- DEC _distCnt (%016lx) now %ld\n",
+                 __primitive("cast", uint(64), this), cnt);
+        }
         if cnt < 0 || cnt > 1000 then
             halt("_distCnt is bogus!");
         // Poison the distCount, so an attempt to move it away from zero a
@@ -196,11 +200,13 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
-      if debugDomRefCount {
-        extern proc printf(fmt: c_string, arg...);
+      if debugDomRefCount > 0 {
         const cnt = _domCnt.read();
-        printf("----- INC _domCnt (%016lx) was %ld\n", 
-               __primitive("cast", uint(64), this), cnt);
+        if debugDomRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- INC _domCnt (%016lx) was %ld\n", 
+                 __primitive("cast", uint(64), this), cnt);
+        }
         if cnt < 0 || cnt > 10000 then
           halt("_domCnt is bogus!");
       }
@@ -210,10 +216,12 @@ module ChapelDistribution {
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
       const cnt = _domCnt.dec(); //_domCnt.fetchSub(1)-1;
-      if debugDomRefCount {
-        extern proc printf(fmt: c_string, arg...);
-        printf("----- DEC _domCnt (%016lx) now %ld\n", 
-               __primitive("cast", uint(64), this), cnt);
+      if debugDomRefCount > 0 {
+        if debugDomRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- DEC _domCnt (%016lx) now %ld\n", 
+                 __primitive("cast", uint(64), this), cnt);
+        }
         if cnt < 0 || cnt > 10000 then
             halt("_domCnt is bogus!");
         // Poison the domCount, so an attempt to move it away from zero a
@@ -376,11 +384,13 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
-      if debugArrRefCount {
-        extern proc printf(fmt: c_string, arg...);
+      if debugArrRefCount > 0 {
         const cnt = _arrCnt.read();
-        printf("----- INC _arrCnt (%016lx) was %ld\n", 
-               __primitive("cast", uint(64), this), cnt);
+        if debugArrRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- INC _arrCnt (%016lx) was %ld\n", 
+                 __primitive("cast", uint(64), this), cnt);
+        }
         if cnt < 0 || cnt > 10000 then
           halt("_arrCnt is bogus!");
       }
@@ -390,10 +400,12 @@ module ChapelDistribution {
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
       const cnt = _arrCnt.dec(); //_arrCnt.fetchSub(1)-1;
-      if debugArrRefCount {
-        extern proc printf(fmt: c_string, arg...);
-        printf("----- DEC _arrCnt (%016lx) now %ld\n", 
-               __primitive("cast", uint(64), this), cnt);
+      if debugArrRefCount > 0 {
+        if debugArrRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- DEC _arrCnt (%016lx) now %ld\n", 
+                 __primitive("cast", uint(64), this), cnt);
+        }
         if cnt < 0 || cnt > 10000 then
             halt("_arrCnt is bogus!");
         // Poison the arrCount, so an attempt to move it away from zero a
