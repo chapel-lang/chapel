@@ -443,6 +443,7 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       zip1body->insertAtTail(expr->copy(&map));
   }
 
+  INT_ASSERT(singleLoop);
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
     // By the time we get here, the condExpr has been passed through _cond_test
     // and the result stored in a temp, so condExprForTmpVariableGet just
@@ -457,17 +458,10 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
                                         new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
     zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this,
                                         ii->iclass->getField("more"), condTemp));
-  } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
-    // A for loop has no termination condition, so it just runs all the indices
-    // in the underlying iterator.
-    SymExpr* iterator = forLoop->iteratorGet()->copy(&map);
-    VarSymbol* more = newTemp("_more_in_for", dtInt[INT_SIZE_DEFAULT]);
-    zip1body->insertAtTail(new DefExpr(more));
-    CallExpr* moreField = new CallExpr(PRIM_GET_MEMBER, iterator,
-                                       iterator->typeInfo()->getField("more"));
-    zip1body->insertAtTail(new CallExpr(PRIM_MOVE, more, moreField));
-    zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this,
-                                        ii->iclass->getField("more"), more));
+  } else if (isCForLoop(singleLoop)) {
+    // Do nothing.
+  } else {
+    INT_FATAL("Unexpected singleLoop iterator type");
   }
 
   zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -547,6 +541,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
 
   // Check for more (only for non c for loops)
+  INT_ASSERT(singleLoop);
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
     Type* moreType = ii->iclass->getField("more")->type;
@@ -556,15 +551,10 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
                                         new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
     zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this,
                                         ii->iclass->getField("more"), condTemp));
-  } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
-    SymExpr* iterator = forLoop->iteratorGet()->copy(&map);
-    VarSymbol* more = newTemp("_more_in_for", dtInt[INT_SIZE_DEFAULT]);
-    zip3body->insertAtTail(new DefExpr(more));
-    CallExpr* moreField = new CallExpr(PRIM_GET_MEMBER, iterator,
-                                       iterator->typeInfo()->getField("more"));
-    zip3body->insertAtTail(new CallExpr(PRIM_MOVE, more, moreField));
-    zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this,
-                                        ii->iclass->getField("more"), more));
+  } else if (isCForLoop(singleLoop)) {
+    // Do nothing.
+  } else {
+    INT_FATAL("Unexpected singleLoop iterator type");
   }
 
   zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
