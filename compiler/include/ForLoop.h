@@ -23,8 +23,9 @@
 #include "LoopStmt.h"
 
 // A ForLoop represents the for-statement language construct as described in
-// section 11.8 of the specification.  The buildForLoop() method transforms the
-// elements of the for-statement parrser production into its internal representation.
+// the specification (see "The For Loop" section in the chapter on "Statements").
+// The buildForLoop() method transforms the elements of the for-statement
+// parser production into its internal representation.
 // ForLoop objects are also used to represent coforall-statements and zippered
 // iteration.
 class ForLoop : public LoopStmt
