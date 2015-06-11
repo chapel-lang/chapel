@@ -1912,7 +1912,6 @@ inlineIterators() {
 // It may be that it needs to be revised and reinserted.  But it is at least 
 // less harried to approach the ideal from the side of leaking memory over
 // approaching from the side where execution fails.
-#if !HILDE_MM
 static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
 {
   // Examine the target label of the goto and find the block containing the
@@ -2014,7 +2013,6 @@ static void addCrossedFreeIteratorCalls()
     }
   }
 }
-#endif
 
 
 static void fixNumericalGetMemberPrims()
@@ -2341,7 +2339,7 @@ void lowerIterators() {
 
   removeUncalledIterators();
 
-//  addCrossedFreeIteratorCalls();
+  addCrossedFreeIteratorCalls();
 
   fixNumericalGetMemberPrims();
 
