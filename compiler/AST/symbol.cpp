@@ -2139,9 +2139,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
     if( developer ) {
-      bool problems;
+      bool problems = false;
 #if HAVE_LLVM_VER >= 35
-      problems = llvm::verifyFunction(*func, &llvm::errs());
+      // Debug info generation creates metadata nodes that won't be
+      // finished until the whole codegen is complete and finalize
+      // is called.
+      if( ! debug_info )
+        problems = llvm::verifyFunction(*func, &llvm::errs());
 #else
       problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
 #endif
