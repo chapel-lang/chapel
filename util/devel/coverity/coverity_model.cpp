@@ -24,3 +24,14 @@ void setupError(const char *filename, int lineno, int tag) {
     __coverity_panic__();
   }
 }
+
+//==============================
+// runtime
+//
+
+//
+// exit() ends execution
+//
+void exit(int status) {
+  __coverity_panic__();
+}

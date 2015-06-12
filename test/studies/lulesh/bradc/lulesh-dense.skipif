@@ -1,0 +1,4 @@
+# This performance test runs too long under valgrind.  We test other
+# versions of lulesh with valgrind, so it doesn't seem worth cloning
+# this version to reduce the problem size
+CHPL_TEST_VGRND_EXE == on

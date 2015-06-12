@@ -21,12 +21,14 @@
 
 #include "AstDumpToNode.h"
 #include "IpeModule.h"
+#include "IpeModuleRoot.h"
 #include "IpeEnv.h"
 #include "ipeDriver.h"
 
-IpeScopeModule::IpeScopeModule(IpeModule* module) : IpeScope(NULL)
+IpeScopeModule::IpeScopeModule(IpeModule* parent, IpeModule* module)
+  : IpeScope(parent != NULL ? parent->scopeGet() : NULL)
 {
-  mModule = module;
+  mModule     = module;
 }
 
 IpeScopeModule::~IpeScopeModule()
@@ -70,6 +72,7 @@ int IpeScopeModule::locationSet(ArgSymbol* arg) const
 
 int IpeScopeModule::locationSet(VarSymbol* var) const
 {
+#if 0
   int   delta  = 8;             // Currently, everything is 8 bytes
   int   offset = 0;
 
@@ -91,6 +94,11 @@ int IpeScopeModule::locationSet(VarSymbol* var) const
     var->locationSet(0, offset);
   }
 
+  else if (var->type == gIpeTypeModule)
+  {
+    offset = var->offset();
+  }
+
   else if (var->type == gIpeTypeProcedure)
   {
     offset = var->offset();
@@ -109,6 +117,13 @@ int IpeScopeModule::locationSet(VarSymbol* var) const
   }
 
   return offset + delta;
+#else
+
+  INT_ASSERT(false);
+
+  return 0;
+
+#endif
 }
 
 int IpeScopeModule::frameSize() const

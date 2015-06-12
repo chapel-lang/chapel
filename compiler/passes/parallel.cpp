@@ -762,7 +762,7 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                isModuleSymbol(def->parentSymbol) &&
                def->parentSymbol != rootModule &&
                isVarSymbol(def->sym) &&
-               !def->sym->hasFlag(FLAG_PRIVATE) &&
+               !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
                !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
           (is_bool_type(def->sym->type) ||
@@ -817,6 +817,10 @@ makeHeapAllocations() {
           if (formal == arg)
             se = toSymExpr(actual);
         }
+        INT_ASSERT(se);
+        // Previous passes mean that we should always get a formal SymExpr
+        // to match the ArgSymbol.  And that formal should have the
+        // ref flag, since we obtained it through the refVec.
         INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
         if (!refSet.set_in(se->var)) {
           refSet.set_add(se->var);
