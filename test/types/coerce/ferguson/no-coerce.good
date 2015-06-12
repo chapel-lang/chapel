@@ -1,0 +1,1 @@
+no-coerce.chpl:28: error: type mismatch in assignment from R to int(64)

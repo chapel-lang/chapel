@@ -1263,6 +1263,7 @@ canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType,
     CallExpr* castCall = new CallExpr("_allow_coerce", fts, tmp);
     FnSymbol *resolved_coerce = NULL;
     FnSymbol *resolved_cast = NULL;
+    bool can_coerce = false;
 
     // Add the cast to the AST so that it has a scope, etc.
 
@@ -1275,16 +1276,44 @@ canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType,
     nUserCoercions--;
     //FnSymbol* resolved = NULL;
 
-    // Remove the tests from the AST
-    castCall->remove();
-
-    // TODO -- can we actually free them too?
-
     if( resolved_coerce && ! resolved_coerce->hasFlag(FLAG_COERCE_FN) ) {
+      USR_FATAL_CONT(call, "could use supplied coercion");
+      USR_FATAL(resolved_coerce, "_allow_coerce exists but was not marked as a coerce function");
       resolved_coerce = NULL;
     }
 
+    if( resolved_coerce && resolved_coerce->retTag != RET_PARAM ) {
+      USR_FATAL_CONT(call, "could use supplied coercion");
+      USR_FATAL(resolved_coerce, "_allow_coerce exists but does not return a param");
+      resolved_coerce = NULL;
+    }
+ 
     if( resolved_coerce ) {
+      // Extract the return value out of the instantiated function.
+      Expr* result = resolve_type_expr(castCall);
+
+      if( !result || !is_bool_type(result->typeInfo()) ) {
+        USR_FATAL_CONT(call, "could use supplied coercion");
+        USR_FATAL(resolved_coerce, "_allow_coerce exists but does not return bool");
+      }
+      SymExpr* symExpr = toSymExpr(result);
+      VarSymbol* varSym = NULL;
+      if( symExpr ) varSym = toVarSymbol(symExpr->var);
+      if(varSym && varSym->immediate ) {
+        can_coerce = varSym->immediate->bool_value();
+      } else {
+        USR_FATAL_CONT(call, "could use supplied coercion");
+        USR_FATAL(resolved_coerce, "_allow_coerce exists but does not return immediate");
+      }
+      // Remove the result from the AST
+      result->remove();
+      // don't need to remove castCall since it was replaced with result.
+    } else {
+      // Remove the test from the AST
+      castCall->remove();
+    }
+
+    if( can_coerce ) {
       // Check also that _cast exists and resolves.
       castCall = new CallExpr("_cast", fts, tmp);
       call->getStmtExpr()->insertBefore(castCall);
@@ -2863,6 +2892,7 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
 }
 
 
+// Resolves a param or type expression
 static Expr*
 resolve_type_expr(Expr* expr) {
   Expr* result = NULL;
@@ -3231,7 +3261,7 @@ FnSymbol* tryResolveCall(CallExpr* call) {
   return resolveNormalCall(call, true);
 }
 
-// if checkonly is provided, don't instantiate any generics; just check
+// if checkonly is provided, don't print any errors; just check
 // to see if the particular function could be resolved.
 // returns the result of resolving - or NULL if we couldn't do it.
 // If checkonly is set, NULL can be returned - otherwise that would

@@ -4,7 +4,7 @@ record R {
 }
 
 pragma "coerce"
-proc _allow_coerce(type t, x: R) where t == int return true;
+proc _allow_coerce(type t, x: R) param where t == int return true;
 
 proc _cast(type t, x: R) where t == int {
   return x.x;
