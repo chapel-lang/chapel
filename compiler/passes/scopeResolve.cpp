@@ -106,6 +106,7 @@ static void     destroyModuleUsesCaches();
 static void     renameDefaultTypesToReflectWidths();
 
 static Symbol*  lookup(BaseAST* scope, const char* name);
+static std::map<UnresolveSymExpr*, Symbol *> lookup2(UnresolvedSymExpr* name);
 
 static BaseAST* getScope(BaseAST* ast);
 
@@ -1687,11 +1688,207 @@ static void lookupSimple(BaseAST*       scope,
                          const char*    name,
                          Vec<Symbol*>&  symbols);
 
+static void lookup2(BaseAST* scope, std::list<const char *> names,
+                    std::map<const char *, std::vector<Symbol* > >& symbols,
+                    std::vector<BaseAST*>& alreadyVisited);
+
+
+
 static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules);
 
 static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
                                            Vec<ModuleSymbol*>* current,
                                            Vec<ModuleSymbol*>* alreadySeen);
+
+// Given an unresolvedSymExpr, determine the value of all symbols in its
+// calling context and return them.
+static std::map<UnresolvedSymExpr*, Symbol *> lookup2(UnresolvedSymExpr* name) {
+  std::map<UnresolvedSymExpr*, Symbol *> symbolResults;
+  std::map<const char *, std::vector<Symbol * > > symbolOptions;
+  std::vector<BaseAST*> nestedscopes;
+
+  std::list<const char *> names;
+  const char * curname = name->unresolved;
+  names.push_front(curname);
+  symbolOptions.insert(curname, std::vector<Symbol *> ());
+
+  // TODO: Need to traverse all call expressions of the "." accessor.
+
+
+  // Call inner lookup on name as scope, the list of names, the symbols return
+  // map, and the vector of ASTs already visited.
+  lookup2(name, names, symbolOptions, nestedscopes);
+
+  for ( std::map<UnresolvedSymExpr*, std::vector<Symbol * > >::iterator it = symbolOptions.begin(); it != symbolOptions.end(); ++it) {
+    // TODO: Traverse all symbol vector options.  If a name has multiple, error
+    // Otherwise, store in the result.
+  }
+
+  return symbolResults;
+  // return list of symbols matching the unresolved sym expressions
+
+}
+
+// inSymbolTable returns a Symbol* if there was an entry for this scope
+// that matched this name, NULL otherwise.
+static Symbol* inSymbolTable(BaseAST* scope, const char* name) {
+  if (symbolTable.count(scope) != 0) {
+    SymbolTableEntry* entry = symbolTable[scope];
+    if (entry->count(name) != 0)
+      return (*entry)[name];
+  }
+  return NULL;
+}
+
+// If the current scope is an aggregate type, checks if the name refers to a
+// method or field on that type.  If a match is found, return it.  Otherwise
+// return NULL.
+static Symbol* inType(BaseAST* scope, const char* name) {
+  if (TypeSymbol* ts = toTypeSymbol(scope)) {
+    if (AggregateType* ct = toAggregateType(ts->type)) {
+      if (isMethodName(name, ct)) {
+        // Make sure that the method is actually visible in this scope
+        // before calling it a match
+
+        // TODO: flesh out
+      } else if (Symbol* sym = ct->getField(name, false)) {
+        return sym;
+      }
+    }
+  }
+  return NULL;
+}
+
+static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
+                                std::map<const char *, std::vector<Symbol* > >& symbols,
+                                std::vector<BaseAST*>& alreadyVisited) {
+  // TODO: Check if the other symbols are present before adding all of them to
+  // the map.
+  if (Symbol* sym = inSymbolTable(scope, name)) {
+    symbols[name].push_back(sym);
+  }
+
+  // TODO: Again, check that other names are found up the chain before
+  // adding all of them.
+  if (Symbol* sym = inType(scope, name)) {
+    symbols[name].push_back(sym);
+  }
+
+  if (symbols[name].size() == 0) {
+    if (BlockStmt* block = toBlockStmt(scope)) {
+      if (block->modUses) {
+        // optimization: only need to check if we want to go up a scope if
+        // the block has module uses in it.
+        if (FnSymbol* fn = toFnSymbol(getScope(block))) {
+          // The next scope up from the block statement is a function
+          // symbol. That means that we need to check if the arguments
+          // contain the symbol we are looking for before looking in module
+          // uses.
+          if (Symbol* sym = inSymbolTable(fn, name)) {
+            // We found it in the arguments, no need to check the module uses
+            // so return.
+            symbols[name].push_back(sym);
+            return true;
+          }
+        }
+        // If we got here, that means either we weren't the outermost scope in
+        // a FnSymbol or we were but the name doesn't match the name of an
+        // argument, so check the module uses.
+        Vec<ModuleSymbol*>* modules = NULL;
+
+        if (moduleUsesCache.count(block) == 0) {
+          modules = new Vec<ModuleSymbol*>();
+
+          for_actuals(expr, block->modUses) {
+            SymExpr* se = toSymExpr(expr);
+            INT_ASSERT(se);
+
+            ModuleSymbol* mod = toModuleSymbol(se->var);
+            INT_ASSERT(mod);
+
+            modules->add(mod);
+          }
+
+          INT_ASSERT(modules->n);
+
+          buildBreadthFirstModuleList(modules);
+
+          if (enableModuleUsesCache)
+            moduleUsesCache[block] = modules;
+        } else {
+          modules = moduleUsesCache[block];
+        }
+
+        forv_Vec(ModuleSymbol, mod, *modules) {
+          if (mod) {
+            if (Symbol* sym = inSymbolTable(mod->block, name)) {
+              symbols[name].push_back(sym);
+            }
+          } else {
+            //
+            // break on each new depth if a symbol has been found
+            //
+            if (symbols[name].size() > 0)
+              return true;
+          }
+        }
+      }
+    }
+  }
+
+  return symbols[name].size != 0;
+}
+
+// Only stores symbols in the vector if something was found (though we might
+// have reached an undecidable point, in which case we should return to be
+// safe).
+static void lookup2(BaseAST* scope, std::list<const char *> names,
+                    std::map<const char *, std::vector<Symbol* > >& symbols,
+                    std::vector<BaseAST*>& alreadyVisited) {
+  if (!alreadyVisited.set_in(scope)) {
+    alreadyVisited.set_add(scope);
+
+    bool foundAny = false;
+    for ( std::list<const char *>::iterator it = names.begin(); it != names.end(); ++it) {
+      const char* curname = *it;
+
+      if (lookupThisScopeOnly(scope, curname, symbols, alreadyVisited)) {
+        // TODO:
+        // We've found an instance here.  Let's look in our surrounding scopes
+        // for the symbols on the left and right part of the call (if any).
+
+        // We've found one match.  Keep looking, there might be a resolution
+        // error.
+        foundAny = true;
+      }
+    }
+    // We've finished looking in the current scope for this symbol
+    // If we found a candidate, return.
+    if (foundAny)
+      return;
+
+    // Otherwise, look in the next scope up.
+    FnSymbol* fn = toFnSymbol(scope);
+    if (fn && fn->_this) {
+      // If we're currently in a method, the next scope up is anything visible
+      // within the aggregate type
+      AggregateType* ct = toAggregateType(fn->_this->type);
+      if (ct)
+        lookup2(ct->symbol, names, symbols, alreadyVisited);
+    }
+    // Check if found something in last lookup2 call
+    for ( std::list<const char *>::iterator it = names.begin(); it != names.end(); ++it) {
+      if (names[*it].size() != 0) {
+        // Something was found.  There would not be any symbol in any of the
+        // vectors otherwise.
+        return;
+      }
+    }
+    // If we didn't find something in the aggregate type that matched, or we
+    // weren't in an aggregate type method, so look at next scope up.
+    lookup2(getScope(scope), names, symbols, alreadyVisited);
+  }
+}
 
 static Symbol* lookup(BaseAST* scope, const char* name)
 {
@@ -1728,13 +1925,10 @@ static void lookup(BaseAST*       scope,
   if (!alreadyVisited.set_in(scope)) {
     alreadyVisited.set_add(scope);
 
-    if (symbolTable.count(scope) != 0) {
-      SymbolTableEntry* entry = symbolTable[scope];
-
-      if (entry->count(name) != 0) {
-        Symbol* sym = (*entry)[name];
-        symbols.set_add(sym);
-      }
+    if (Symbol* sym = inSymbolTable(scope, name)) {
+      // inSymbolTable returns a Symbol* if there was an entry for this scope
+      // that matched this name, NULL otherwise.
+      symbols.set_add(sym);
     }
 
     if (TypeSymbol* ts = toTypeSymbol(scope))
@@ -1810,13 +2004,8 @@ static void lookupSimple(BaseAST*       scope,
                          const char*    name,
                          Vec<Symbol*>&  symbols)
 {
-  if (symbolTable.count(scope) != 0) {
-    SymbolTableEntry* entry = symbolTable[scope];
-
-    if (entry->count(name) != 0) {
-      Symbol* sym = (*entry)[name];
-      symbols.set_add(sym);
-    }
+  if (Symbol* sym = inSymbolTable(scope, name)) {
+    symbols.set_add(sym);
   }
 
   if (TypeSymbol* ts = toTypeSymbol(scope))
