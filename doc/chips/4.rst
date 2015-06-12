@@ -39,16 +39,22 @@ Rationale
 Improvement of automated memory management (AMM) in Chapel forces a distinction
 between initialization and assignment.  In a constructor, relying on
 default-initialization of fields followed by assignment is inefficient.  Adding
-syntax for explicit field initialization removes that inefficiency.
-
-Also, the specification and implementation of ``const``-ness with respect to
+syntax for explicit field initialization removes that inefficiency.  This optimization is
+expanded to include variable declarations as well.
+The specification and implementation of ``const``-ness with respect to
 objects and their fields is simplified.
 
-Two brief examples follow, to underscore the differences between the existing and proposed
-constructors.
+A further goal of this proposal is to clarify the semantics of
+initialization for objects of derived types.  Some programs compiled with the current
+implementation exhibit undesirable behavior.  Stating the expected behavior clearly is a
+first step toward replacing the current behavior with more reasonable semantics.
 
-Example -- Status Quo
-+++++++++++++++++++++
+Two brief examples follow, to briefly show the differences between existing and proposed
+constructors.  A further example follows, to show the undesirable behavior this
+proposal seeks to correct.
+
+Example -- Existing Syntax and Semantics
+++++++++++++++++++++++++++++++++++++++++++++++
 
 An example of how a record constructor is currently written::
 
@@ -100,8 +106,8 @@ assignment is not so bad.  But when the types are complex or the assignment oper
 expensive, then it adversely affects performance.
 
 
-Example -- Proposed
-+++++++++++++++++++
+Example -- Proposed Syntax and Semantics
+++++++++++++++++++++++++++++++++++++++++
 
 An example of how a record constructor would be written under this proposal::
 
@@ -137,12 +143,70 @@ body of the constructor, which in this case is empty.  Since ``t`` is initialize
 in-place, no bitwise copy is required after construction.
 
 
+Example -- Existing Undesirable Behavior
+++++++++++++++++++++++++++++++++++++++++
+
+The following code::
+
+   class C {
+     var x: int;
+     proc myfunc() { x = 1; }
+     proc C() { myfunc(); }
+   }
+   
+   class SubC : C {
+     proc myfunc() { x = 2; };
+   }
+
+   var myc = new C();
+   writeln(myc);
+   var mysubc = new SubC();
+   writeln(mysubc);
+
+is expected to produce::
+
+   {x = 1}
+   {x = 2}
+
+or::
+
+   {x = 1}
+   {x = 1}
+
+but instead outputs::
+
+   {x = 1}
+   {x = 0}
+
+The rationale for the expected output is that the default initialization of an
+object of type ``SubC`` should first perform default-initialization on its
+base-class sub-object.  This would entail calling the zero-argument constructor
+defined in ``class C``.  If the object being initialized has acquired its
+dynamic type by that point in execution, then the call to myfunc() in the
+constructor for ``C`` would dispatch to SubC.myfunc() and the value of its ``x``
+field would be set to 2.  Otherwise, since the static type of the base-class
+object is C, it would dispatch to C.myfunc().  In that case, the value of the
+object's ``x`` field would be set to 1.  In no case should it be set to 0.
+
+According to the current proposal, although dynamically-bound (polymorphic)
+functions can be invoked in the body of a constructor, the dynamic type of an
+object is not acquired until execution of is initializer list is complete.  That
+means that initialization of the base-class sub-object will use the static type
+of the base-class sub-object when dispatching to any methods called in the body of any of base-class
+constructor.  That means that we will end up with the second behavior: Both base-
+and derived-class objects will end up with their ``x`` fields initialized to 1.
+
 
 Description
 -----------
 
 The proposal is to add field-initializer syntax and semantics to the Chapel
-language.  It is a summary of the current state of the proposal based on
+language.  It clarifies the order of initialization of fields -- including
+initialization of base-class sub-objects -- and describes when ``const``
+declarations (implying immutability) apply to the fields in an object and to the
+object as a whole.
+
+This proposal is a summary of the current state of the proposal based on
 feedback on the previous proposal, presented to the group on a deep dive on
 December 9 last year.  The previous proposal may be found in the source tree at
 https://github.com/chapel-lang/chapel/spec/proposals/constructors.
@@ -151,6 +215,63 @@ For simplicity, this ChIP contains only the main proposal; support
 for ``noinit`` initialization is handled in a separate ChIP [reference to be supplied].
 
 The details of the proposal are given below, and restated briefly in the :ref:`summary` section.
+
+.. _variables:
+
+Variable Declaration Semantics
+++++++++++++++++++++++++++++++
+
+The syntax for variable declarations remains unchanged from the current specification.
+However, the distinction between initialization and assignment offered in this proposal
+requires a clarification of the *semantics* of variable initialization in light of that
+distinction.
+
+Given a declaration with an initializer::
+
+   var r:R = <expr>;
+
+The semantics of the current implementation are to first create and default-initialize the
+variable ``r``.  The initialization expression is evaluated and its value copied into the
+named variable ``r`` by assignment.  In the context of a variable declaration, ``=`` means
+"assignment".  So the above declaration is exactly equivalent to::
+
+   var r:R;    // r is default-initialized
+   r = <expr>; // The value of <expr> is copied into r by assignment.
+
+Here, we propose that in the context of a variable declaration, the ``=`` symbol be
+treated as initialization instead.  That is, the above declaration statement should be
+interpreted roughly as::
+
+   pragma "noinit" var r:R; // Create space for r but don't initialize it.
+   r.R(<expr>);             // Call a constructor on r.
+
+This implementation does not use assignment.  Instead, it assumes the existence of a
+constructor for type ``R`` that can bind to an argument of the type of ``<expr>``. [#]_
+If the initialization expression is already of the same type as the variable (as, for
+example, when the type of the variable is not stated explicitly), then copy-construction
+will be used.
+
+Under the proposal stated thus far, the syntax::
+
+   var r = new R(<args>);
+
+would imply that a temporary of type ``R`` is created and initialized by a call to
+``R(<args>)``.  The resulting value would then be copied into ``r`` through
+copy-construction.  (And finally, the temporary would be destroyed.)
+
+We propose to take this a step further.  Since the constructor for the temporary
+expression already operates on an object of type ``R`` it may as well operate on the
+variable being declared.  In that special case, the temporary is not needed and one
+copy-construction can be eliminated by invoking ``R(<args>)`` on ``r`` directly::
+
+   pragma "noinit" var r:R; // Reserve some space for r.
+   r.R(<args>);             // Initialize it by calling R(<args>).
+
+This special case could be considered an optimization, but it isn't really:  It would have
+observable effects within the program since it affects the number of times the
+copy-constructor (or its equivalent) is called.  The recommendation is to leave
+unspecified whether the copy-constructor is called in this case.
+
 
 .. _syntax:
 
@@ -242,7 +363,9 @@ the constructor.
 Execution of the ``field-initializer-clause`` proceeds by executing each of the
 ``field-initializer`` in lexical order.  In the form containing an ``=``, the
 expression is evaluated and its value is used to initialize the corresponding
-field in the object, as if by a copy. [#]_  In the form containing just a
+field in the object, as if by a constructor call.  These semantics are intended to be the
+same as for initialization in the context of a variable declaration, as discussed above in
+:ref:`variables`.  In the form containing just a
 ``field-name``, the field is initialized using the default-initializer supplied
 in the field declaration, if present.  Otherwise, it is initialized using the
 default value corresponding to its type.
@@ -321,33 +444,58 @@ object are all immutable.
 Constructor Calls
 +++++++++++++++++
 
-This proposal also slightly changes the semantics associated with constructor
-calls.  A constructor is invoked using the keyword ``new`` followed by the name
-of the type to be constructed, followed by an optional argument list.  In the
-current implementation, constructors are considered to return a value that is a
-fully-constructed object of the specified type.  The behavior for class objects
-will remain unchanged.   
+Given that an object being constructed should be in an uninitialized state, it should be
+illegal to invoke a constructor on an object that has already been initialized.  According
+to this proposal, the following code should generate a (compile-time) error::
 
-For records, however, the constructor will be invoked as a method.  In the
-current implementation, the statement::
+   var r:R;     // Default-initialized, for example.
+   ...
+   r.R(<args>); // Illegal.
 
-   var r:R = new R(<args>);
+Constructor invocations involving ``new`` as described in the specification would still be
+legal and retain the same semantics as are currently described there.  Invocation of a
+constructor in the context of a variable initialization for field initialization will have the
+semantics described above in :ref:`variables`.
 
-(``R`` assumed to be a record type) causes ``r`` to be initialized to the
-default value of type R.  Then, an object of type ``R`` is
-constructed and copied into ``r`` by assignment.  
 
-In the current proposal, that syntax would remain the same, but the
-implementation has the option of implementing that statement using the
-semantics::
+.. _implementation:
 
-   pragma "no init"
-   var r;
-   r.R(<args>);
+Implementation Notes
+++++++++++++++++++++
 
-where the pragma means that the declaration leaves ``r`` in an uninitialized
-state.  The call to the constructor ``R(<args>)`` (as a method) then initializes
-the object ``r`` in-place.
+This proposal is primarily about the syntax and semantics of constructors --
+approaching the subject from the user's perspective.  However, such a
+description also influences how the requisite semantics are implemented.
+
+In the above section on :ref:`semantics`, constructors are introduced as
+methods.  That means that they have an implicit ``this`` variable that refers to
+the object being constructed and they do not return a value.  This is consistent
+with the semantics currently implemented.
+
+The current implementation achieves these semantics in a somewhat roundabout
+manner -- first creating an unnamed temporary object, initializing this by a
+method call, and then transferring the contents of that object through a bitwise
+copy into the space allocated for the named variable.
+
+Although this proposal does not directly rely upon it, its recommendation is to
+rework the implementation code so that constructor calls do, in fact, operate
+like methods.  When that is done, the code::
+
+   var t = new R(7.0);
+
+will effectively be implemented as::
+
+   pragma "noinit" var t; // Reserve some space for t on the stack.
+   t.R(7.0);              // Call a constructor on t, passing 7.0 as an argument.
+
+The basic change required in the implementation is to move the allocation
+outside of what is currently a constructor function (not a method) and then
+rework constructor functions to be methods instead.  
+
+This change should have no user-visible effect at the behavioral level.  At the
+meta-behavioral level (performance and resource usage), the difference should be
+observable as faster execution and a smaller run-time memory footprint.  Some of
+the implementation code should also be simpler.
 
 
 .. _summary:
@@ -357,32 +505,62 @@ Summary
 
 The main syntactical and semantical provisions of this proposal are summarized as:
 
-* The added syntax will consist of an introductory keyword followed by a list of
-  initializer expressions enclosed in parentheses.  
-* Each initializer must bind to
-  one of the fields declared in the constructor's object (class or record) type.
-* Each initializer provides a value to be used to initialize the corresponding
-  field. 
-* The field being initialized must be named.  
-* The actual initialization order is
-  the order of appearance of initializer list.  
-* Class- or record-default
-  initializers will be used if the initializer list does not supply a value.
-* Default values may be used explicitly by naming the field without
-  supplying a value.  
-* Pseudo-initializers may be used to capture results in an
-  initializer list.
-* A constructor call may be used place of a field initializer list.
+* Variable initialization should treat ``=`` as initialization (i.e. a constructor call),
+  not as assignment.
+
+* A ``field-initialization-clause`` will be added to the syntax for constructors.
+
+  - The added syntax will consist of an introductory keyword followed by a list of
+    initializer expressions enclosed in parentheses.  
+
+  - Each initializer must bind to
+    one of the fields declared in the constructor's object (class or record) type.
+
+  - Each initializer provides a value to be used to initialize the corresponding
+    field. 
+
+  - The field being initialized must be named.  
+
+  - The actual initialization order is
+    the order of appearance of initializer list.  
+
+  - Class- or record-default
+    initializers will be used if the initializer list does not supply a value.
+
+  - Default values may be used explicitly by naming the field without
+    supplying a value.  
+
+  - Pseudo-initializers may be used to capture results in an
+    initializer list.
+
+  - A constructor call may be used place of a field initializer list.
+
 * The fields and methods of ``this`` may be accessed within the body of a constructor.
+
 * The special ``initialize()`` function is deprecated.
+
 * Fields declared to be ``const`` become immutable after they have been
   initialized and before the body of the constructor is entered.  
+
 * Objects declared
-  to be ``const`` become immutable after the constructor and run to completion and
+  to be ``const`` become immutable after the constructor has run to completion and
   control is returned to the point of invocation of the constructor.
+
+* Direct invocation of a constructor (using method invocation syntax) should be illegal.
 
 
 .. rubric:: Footnotes
+
+.. [#] If the concepts of coercion and construction are fused (as in C++) then argument
+       coercion needs to be disabled in the context of a constructor call.  Otherwise,
+       coercion chains could grow to arbitrary lengths, which is likely to lead to
+       absurdities.
+
+       If coercions are distinct from constructors, then it probably makes the most sense
+       to use only copy-construction for initialization.  The initialization expression
+       would need to be coercible to the target variable type.  It is unspecified whether
+       copy-construction calls an actual constructor or is instead implemented as a
+       bitwise copy followed by a call to a fixup (postblit) method.
 
 .. [#] The idea of using a unique keyword such as ``ctor`` to introduce a
        constructor was discussed.  The keyword approach is useful for generic
@@ -394,8 +572,6 @@ The main syntactical and semantical provisions of this proposal are summarized a
        of that type.  Since each field can be initialized only once, it would be
        illogical to include other field-initializers before or after a
        constructor call in a ``field-initializer-clause``.
-
-.. [#] It is unspecified whether a copy is actually performed.
 
 .. [#] In particular, an initializer for ``super`` can appear anywhere in a
        ``field-initializer-clause`` or be omitted.  Once initialized, the fields
