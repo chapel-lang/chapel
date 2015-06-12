@@ -816,12 +816,12 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 #ifdef HAVE_LLVM
       llvm::Value* adr = info->builder->CreateStructGEP(
 #if HAVE_LLVM_VER >= 37
-          refType->codegen().type,
+          NULL, //refType->codegen().type,
 #endif
           ret.val, WIDE_GEP_ADDR);
       llvm::Value* loc = info->builder->CreateStructGEP(
 #if HAVE_LLVM_VER >= 37
-          LOCALE_ID_TYPE->codegen().type,
+          NULL, //LOCALE_ID_TYPE->codegen().type,
 #endif
           ret.val, WIDE_GEP_LOC);
 
@@ -1178,9 +1178,9 @@ static GenRet codegenWideThingField(GenRet ws, int field)
       ret.isLVPtr = GEN_PTR;
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
 #if HAVE_LLVM_VER >= 37
-                                              ret.chplType->codegen().type,
+                                          NULL,//ret.chplType->codegen().type,
 #endif
-                                              ws.val, 0, field);
+                                          ws.val, 0, field);
     } else {
       ret.isLVPtr = GEN_VAL;
       ret.val = info->builder->CreateExtractValue(ws.val, field);
@@ -1495,7 +1495,7 @@ GenRet codegenFieldPtr(
       // Get a pointer to the union data then cast it to the right type
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
 #if HAVE_LLVM_VER >= 37
-          retType.type,
+          NULL, //retType.type,
 #endif
           baseValue, 0, cBaseType->getMemberGEP("_u"));
       llvm::PointerType* ty =
@@ -1508,7 +1508,7 @@ GenRet codegenFieldPtr(
       // Normally, we just use a GEP.
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
 #if HAVE_LLVM_VER >= 37
-          retType.type,
+          NULL, //retType.type,
 #endif
           baseValue, 0, cBaseType->getMemberGEP(c_field_name));
     }

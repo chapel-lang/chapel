@@ -746,7 +746,7 @@ GenRet VarSymbol::codegen() {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->builder->CreateConstInBoundsGEP2_32(
 #if HAVE_LLVM_VER >= 37
-                info->builder->getInt8PtrTy(),
+                NULL, //info->builder->getInt8PtrTy(), why not?
 #endif
                 constString, 0, 0)));
         ret.val = globalValue;
@@ -912,7 +912,7 @@ void VarSymbol::codegenDef() {
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
                 info->builder->CreateConstInBoundsGEP2_32(
 #if HAVE_LLVM_VER >= 37
-                  info->builder->getInt8PtrTy(),
+                  NULL, //info->builder->getInt8PtrTy(),
 #endif
                   globalString, 0, 0)));
         } else {
@@ -929,7 +929,7 @@ void VarSymbol::codegenDef() {
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
                 info->builder->CreateConstInBoundsGEP1_32(
 #if HAVE_LLVM_VER >= 37
-                  info->builder->getInt8PtrTy(),
+                  NULL, //info->builder->getInt8PtrTy(),
 #endif
                   globalString, 0)));
         }
