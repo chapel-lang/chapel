@@ -106,7 +106,7 @@ static void     destroyModuleUsesCaches();
 static void     renameDefaultTypesToReflectWidths();
 
 static Symbol*  lookup(BaseAST* scope, const char* name);
-static std::map<UnresolveSymExpr*, Symbol *> lookup2(UnresolvedSymExpr* name);
+static std::map<const char *, Symbol *> lookup2(UnresolvedSymExpr* name);
 
 static BaseAST* getScope(BaseAST* ast);
 
@@ -1690,7 +1690,7 @@ static void lookupSimple(BaseAST*       scope,
 
 static void lookup2(BaseAST* scope, std::list<const char *> names,
                     std::map<const char *, std::vector<Symbol* > >& symbols,
-                    std::vector<BaseAST*>& alreadyVisited);
+                    Vec<BaseAST*>& alreadyVisited);
 
 
 
@@ -1702,15 +1702,15 @@ static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 
 // Given an unresolvedSymExpr, determine the value of all symbols in its
 // calling context and return them.
-static std::map<UnresolvedSymExpr*, Symbol *> lookup2(UnresolvedSymExpr* name) {
-  std::map<UnresolvedSymExpr*, Symbol *> symbolResults;
+static std::map<const char *, Symbol *> lookup2(UnresolvedSymExpr* name) {
+  std::map<const char *, Symbol *> symbolResults;
   std::map<const char *, std::vector<Symbol * > > symbolOptions;
-  std::vector<BaseAST*> nestedscopes;
+  Vec<BaseAST*> nestedscopes;
 
   std::list<const char *> names;
   const char * curname = name->unresolved;
   names.push_front(curname);
-  symbolOptions.insert(curname, std::vector<Symbol *> ());
+  symbolOptions.insert(std::pair<const char *, std::vector<Symbol * > > (curname, std::vector<Symbol *> ()));
 
   // TODO: Need to traverse all call expressions of the "." accessor.
 
@@ -1719,9 +1719,27 @@ static std::map<UnresolvedSymExpr*, Symbol *> lookup2(UnresolvedSymExpr* name) {
   // map, and the vector of ASTs already visited.
   lookup2(name, names, symbolOptions, nestedscopes);
 
-  for ( std::map<UnresolvedSymExpr*, std::vector<Symbol * > >::iterator it = symbolOptions.begin(); it != symbolOptions.end(); ++it) {
-    // TODO: Traverse all symbol vector options.  If a name has multiple, error
-    // Otherwise, store in the result.
+  for ( std::map<const char *, std::vector<Symbol * > >::iterator it = symbolOptions.begin(); it != symbolOptions.end(); ++it) {
+    const char* itname = it->first;
+
+    bool numFound = symbolOptions[itname].size();
+    if (numFound == 0) {
+      // No symbols found for this name
+      symbolResults[itname] = NULL;
+    } else if (numFound == 1) {
+      // A unique symbol found for this name
+      symbolResults[itname] = symbolOptions[itname].front();
+    } else {
+      // Multiple symbols found for this name.  If at least one of them isn't
+      // a function, we need to handle it now so error out.  Otherwise, function
+      // resolution will handle it.
+      for_vector(Symbol, sym, symbolOptions[itname]) {
+        if (!isFnSymbol(sym))
+          USR_FATAL_CONT(sym, "Symbol %s multiply defined", itname);
+      }
+      USR_STOP();
+      symbolResults[itname] = NULL;
+    }
   }
 
   return symbolResults;
@@ -1749,7 +1767,6 @@ static Symbol* inType(BaseAST* scope, const char* name) {
       if (isMethodName(name, ct)) {
         // Make sure that the method is actually visible in this scope
         // before calling it a match
-
         // TODO: flesh out
       } else if (Symbol* sym = ct->getField(name, false)) {
         return sym;
@@ -1760,16 +1777,11 @@ static Symbol* inType(BaseAST* scope, const char* name) {
 }
 
 static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
-                                std::map<const char *, std::vector<Symbol* > >& symbols,
-                                std::vector<BaseAST*>& alreadyVisited) {
-  // TODO: Check if the other symbols are present before adding all of them to
-  // the map.
+                                std::map<const char *, std::vector<Symbol* > >& symbols) {
   if (Symbol* sym = inSymbolTable(scope, name)) {
     symbols[name].push_back(sym);
   }
 
-  // TODO: Again, check that other names are found up the chain before
-  // adding all of them.
   if (Symbol* sym = inType(scope, name)) {
     symbols[name].push_back(sym);
   }
@@ -1836,15 +1848,16 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
     }
   }
 
-  return symbols[name].size != 0;
+  return symbols[name].size() != 0;
 }
+
 
 // Only stores symbols in the vector if something was found (though we might
 // have reached an undecidable point, in which case we should return to be
 // safe).
 static void lookup2(BaseAST* scope, std::list<const char *> names,
                     std::map<const char *, std::vector<Symbol* > >& symbols,
-                    std::vector<BaseAST*>& alreadyVisited) {
+                    Vec<BaseAST*>& alreadyVisited) {
   if (!alreadyVisited.set_in(scope)) {
     alreadyVisited.set_add(scope);
 
@@ -1852,14 +1865,17 @@ static void lookup2(BaseAST* scope, std::list<const char *> names,
     for ( std::list<const char *>::iterator it = names.begin(); it != names.end(); ++it) {
       const char* curname = *it;
 
-      if (lookupThisScopeOnly(scope, curname, symbols, alreadyVisited)) {
+      if (lookupThisScopeOnly(scope, curname, symbols)) {
         // TODO:
         // We've found an instance here.  Let's look in our surrounding scopes
         // for the symbols on the left and right part of the call (if any).
 
-        // We've found one match.  Keep looking, there might be a resolution
-        // error.
-        foundAny = true;
+        // \/ not right yet \/
+        if (symbols[curname].size() != 0) {
+          // We've found one match.  Keep looking, there might be a resolution
+          // error.
+          foundAny = true;
+        }
       }
     }
     // We've finished looking in the current scope for this symbol
@@ -1878,7 +1894,7 @@ static void lookup2(BaseAST* scope, std::list<const char *> names,
     }
     // Check if found something in last lookup2 call
     for ( std::list<const char *>::iterator it = names.begin(); it != names.end(); ++it) {
-      if (names[*it].size() != 0) {
+      if (symbols[*it].size() != 0) {
         // Something was found.  There would not be any symbol in any of the
         // vectors otherwise.
         return;
@@ -1889,6 +1905,7 @@ static void lookup2(BaseAST* scope, std::list<const char *> names,
     lookup2(getScope(scope), names, symbols, alreadyVisited);
   }
 }
+
 
 static Symbol* lookup(BaseAST* scope, const char* name)
 {
