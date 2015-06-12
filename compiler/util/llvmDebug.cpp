@@ -26,8 +26,8 @@ call to finalize() on DIBuilder. The initialization happens in the
 constructor of debug_data (inlined in the header). It is instanced during
 codegen after setting up the LLVM module and put into debug_info. If the
 -g flag wasn't passed to the compiler then debug_info is null. The
-finalize call happens in codegen() right after the finishCodegenLLVM()
-call.
+finalize call happens in finishCodegenLLVM().
+
 As for all the additional data structures, all of that was built into LLVM
 rather than me. The functions to create the debug information requires the
 DI* types. It sort of makes sense to me, since it is building a DWARF tree
@@ -74,6 +74,11 @@ llvm::MDNode *myGetType(const Type *type) {
   return NULL;
 }
 
+
+void debug_data::finalize() {
+  printf("IN FINALIZE\n");
+  dibuilder.finalize();
+}
 
 void debug_data::create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags)
 {

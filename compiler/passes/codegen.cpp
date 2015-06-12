@@ -1331,7 +1331,6 @@ void codegen(void) {
     }
 
     finishCodegenLLVM();
-    if(debug_info)debug_info->finalize();
 #endif 
   } else {
     if (fHeterogeneous) {

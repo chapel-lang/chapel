@@ -123,7 +123,7 @@ class debug_data
  public:
   static bool can_debug() { return true; }
   debug_data(llvm::Module &m) : dibuilder(m){}
-  void finalize(){dibuilder.finalize();}
+  void finalize();
   void create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags);
 
   LLVM_DITYPE construct_type(Type *type);

@@ -46,6 +46,8 @@
 #include "build.h"
 #include "scopeResolve.h"
 
+#include "llvmDebug.h"
+
 typedef Type ChapelType;
 
 #ifndef HAVE_LLVM
@@ -970,6 +972,8 @@ void finishCodegenLLVM() {
 
   // Now finish any Clang code generation.
   cleanupClang(info);
+
+  if(debug_info)debug_info->finalize();
 
   // Verify the LLVM module.
   if( developer ) {
