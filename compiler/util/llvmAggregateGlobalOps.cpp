@@ -71,6 +71,10 @@
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
+#if HAVE_LLVM_VER >= 37
+#include "llvm/IR/GetElementPtrTypeIterator.h"
+#endif
+
 #include <cstdio>
 #include <list>
 
@@ -753,7 +757,9 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   }
 
   //MD = &getAnalysis<MemoryDependenceAnalysis>();
-#if HAVE_LLVM_VER >= 35
+#if HAVE_LLVM_VER >= 37
+  TD = & F.getParent()->getDataLayout();
+#elif HAVE_LLVM_VER >= 35
   TD = & getAnalysisIfAvailable<DataLayoutPass>()->getDataLayout();
 #else
   TD = getAnalysisIfAvailable<DataLayout>();

@@ -46,6 +46,8 @@
 #include "build.h"
 #include "scopeResolve.h"
 
+#include "llvmDebug.h"
+
 typedef Type ChapelType;
 
 #ifndef HAVE_LLVM
@@ -81,6 +83,7 @@ using namespace llvm;
 // and not normally installed in the include directory.
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
+#include "CGDebugInfo.h"
 #include "clang/CodeGen/BackendUtil.h"
 
 static void setupForGlobalToWide();
@@ -254,12 +257,14 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 }
 
 
+// Adds a mapping from id->getName() to a variable or CDecl to info->lvt
 static
-VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
+void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 {
   GenInfo* info = gGenInfo;
   Preprocessor &preproc = info->Clang->getPreprocessor();
-  VarSymbol* ret = NULL;
+  VarSymbol* varRet = NULL;
+  NamedDecl* cdeclRet = NULL;
 
   const bool debugPrint = false;
 
@@ -267,8 +272,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
   //Handling only simple string or integer defines
   if(macro->getNumArgs() > 0) {
-    if( debugPrint) printf("macro function!\n");
-    return ret; // TODO -- handle macro functions.
+    if( debugPrint) {
+      printf("the macro takes arguments\n");
+    }
+    return; // TODO -- handle macro functions.
   }
 
   // Check that we have a single token surrounded by any
@@ -305,20 +312,48 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       ntokens - left_parens - right_parens == 1 ) {
     // OK!
   } else {
-    if( debugPrint) printf("too complicated or empty!\n");
-    return ret; // we don't handle complicated expressions like A+B
+    if( debugPrint) {
+      printf("the following macro is too complicated or empty:\n");
+    }
+    return; // we don't handle complicated expressions like A+B
   }
 
 
   switch(tok.getKind()) {
     case tok::numeric_constant: {
       std::string numString;
+      int hex;
+      int isfloat;
       if( negate ) numString.append("-");
       numString.append(tok.getLiteralData(), tok.getLength());
 
       if( debugPrint) printf("num = %s\n", numString.c_str());
 
-      if(numString.find('.') == std::string::npos) {
+      hex = 0;
+      if( numString[0] == '0' && (numString[1] == 'x' || numString[1] == 'X'))
+      {
+        hex = 1;
+      }
+
+      isfloat = 0;
+      if(numString.find('.') != std::string::npos) {
+        isfloat = 1;
+      }
+      // also check for exponent since e.g. 1e10 is a float.
+      if( hex ) {
+        // C99 hex floats use p for exponent
+        if(numString.find('p') != std::string::npos ||
+           numString.find('P') != std::string::npos) {
+          isfloat = 1;
+        }
+      } else {
+        if(numString.find('e') != std::string::npos ||
+           numString.find('E') != std::string::npos) {
+          isfloat = 1;
+        }
+      }
+
+      if( !isfloat ) {
         IF1_int_type size = INT_SIZE_32;
 
         if(tolower(numString[numString.length() - 1]) == 'l') {
@@ -328,10 +363,10 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
         if(tolower(numString[numString.length() - 1]) == 'u') {
           numString[numString.length() - 1] = '\0';
-          ret = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
+          varRet = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
         }
         else {
-          ret = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
+          varRet = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
         }
       }
       else {
@@ -341,14 +376,14 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
           numString[numString.length() - 1] = '\0';
         }
 
-        ret = new_RealSymbol("real", strtod(numString.c_str(), NULL), size);
+        varRet = new_RealSymbol(numString.c_str(), size);
       }
       break;
     }
     case tok::string_literal: {
       std::string body = std::string(tok.getLiteralData(), tok.getLength());
       if( debugPrint) printf("str = %s\n", body.c_str());
-      ret = new_StringSymbol(body.c_str());
+      varRet = new_StringSymbol(body.c_str());
       break;
     }
     case tok::identifier: {
@@ -357,26 +392,31 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       if( debugPrint) {
         printf("id = %s\n", idName.c_str());
       }
-      VarSymbol* var = info->lvt->getVarSymbol(idName);
-      if( var ) {
-        // We've already got something here...
-        ret = var;
-      } else {
+
+      // Handle the case where the macro refers to something we've
+      // already parsed in C
+      varRet = info->lvt->getVarSymbol(idName);
+      if( !varRet ) {
+        cdeclRet = info->lvt->getCDecl(idName);
+      }
+      if( !varRet && !cdeclRet ) {
         // Check to see if it's another macro.
         MacroInfo* otherMacro = preproc.getMacroInfo(tokId);
         if( otherMacro && otherMacro != macro ) {
-          ret = handleMacro(tokId, otherMacro);
-        } else {
-          // It must be referring to a variable.
-          // FUTURE TODO - create an extern VarSymbol for
-          //   Chapel to that variable..
-          // The simple code below doesn't quite manage.
-          //ret = new VarSymbol(astr(idName.c_str()), dtUnknown);
-          //ret->addFlag(FLAG_EXTERN);
-          // We need to handle macros that wrap functions
-          // that are defined after the macros if we want
-          // GMP to work...
+          // Handle the other macro to add it to the LVT under the new name
+          // The recursive call will add it to the LVT
+          if( debugPrint) printf("other macro\n");
+          handleMacro(tokId, otherMacro);
+          // Get whatever was added in the recursive call
+          // so that we can add it under the new name.
+          varRet = info->lvt->getVarSymbol(idName);
+          cdeclRet = info->lvt->getCDecl(idName);
         }
+      }
+      if( debugPrint && varRet ) printf("found var %s\n", varRet->cname);
+      if( debugPrint && cdeclRet ) {
+        std::string s = cdeclRet->getName();
+        printf("found cdecl %s\n", s.c_str());
       }
       break;
     }
@@ -384,10 +424,19 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       break;
   }
 
-  if( ret ) {
-    info->lvt->addGlobalVarSymbol(id->getName(), ret);
+  if( debugPrint ) {
+    std::string s = id->getName();
+    const char* kind = NULL;
+    if( varRet ) kind = "var";
+    if( cdeclRet ) kind = "cdecl";
+    if( kind ) printf("%s: adding an %s to the lvt\n", s.c_str(), kind);
   }
-  return ret;
+  if( varRet ) {
+    info->lvt->addGlobalVarSymbol(id->getName(), varRet);
+  }
+  if( cdeclRet ) {
+    info->lvt->addGlobalCDecl(id->getName(), cdeclRet);
+  }
 }
 
 
@@ -433,7 +482,9 @@ void readMacrosClang(void) {
       i != preproc.macro_end();
       i++) {
 
-#if HAVE_LLVM_VER >= 33
+#if HAVE_LLVM_VER >= 37
+    handleMacro(i->first, i->second.getLatest()->getMacroInfo());
+#elif HAVE_LLVM_VER >= 33
     handleMacro(i->first, i->second->getMacroInfo());
 #else
     handleMacro(i->first, i->second);
@@ -441,102 +492,228 @@ void readMacrosClang(void) {
   }
 };
 
+// We need a way to:
+// 1: parse code only
+// 2: keep the code generator open until we finish generating Chapel code,
+//    since we might need to code generate called functions.
+// 3: append to the target description
+// 4: get LLVM values for code generated C things (e.g. types, function ptrs)
+
+// In previous versions, we had CCodeGenConsumer re-implementing
+// CodeGenerator from ModuleBuilder.cpp. But that creates a maintenance
+// burden, so here we switch to inheriting from CodeGenerator.
 class CCodeGenConsumer : public ASTConsumer {
   private:
     GenInfo* info;
+    unsigned HandlingTopLevelDecls;
+    SmallVector<CXXMethodDecl *, 8> DeferredInlineMethodDefinitions;
+
+    struct HandlingTopLevelDeclRAII {
+      CCodeGenConsumer &Self;
+      HandlingTopLevelDeclRAII(CCodeGenConsumer &Self) : Self(Self) {
+        ++Self.HandlingTopLevelDecls;
+      }
+      ~HandlingTopLevelDeclRAII() {
+        if (--Self.HandlingTopLevelDecls == 0)
+          Self.EmitDeferredDecls();
+      }
+    };
   public:
-    CCodeGenConsumer() : ASTConsumer(), info(gGenInfo) {
-      //info->module = new llvm::Module(info->moduleName, info->llvmContext);
+    CCodeGenConsumer()
+      : ASTConsumer(), info(gGenInfo), HandlingTopLevelDecls(0) {
+
+      assert(info->module);
     }
 
     virtual ~CCodeGenConsumer() { }
 
+    // these macros help us to copy and paste the code from ModuleBuilder.
+#define Ctx (info->Ctx)
+#define Diags (* info->Diags)
+#define Builder (info->cgBuilder)
+#define CodeGenOpts (info->codegenOptions)
+
     // mostly taken from ModuleBuilder.cpp
-     virtual void Initialize(ASTContext &Context) {
-       // This does setTargetTriple, setDataLayout, initialize targetData
-       // and cgBuilder.
-       setupClangContext(info, &Context);
-     }
 
-     virtual void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) {
-       // Custom to Chapel
-       if( info->parseOnly ) return;
-       // End custom to Chapel
-       info->cgBuilder->HandleCXXStaticMemberVarInstantiation(VD);
-     }
+     /// ASTConsumer override:
+     // Initialize - This is called to initialize the consumer, providing
+     // the ASTContext.
+    virtual void Initialize(ASTContext &Context) {
+      // This does setTargetTriple, setDataLayout, initialize targetData
+      // and cgBuilder.
+      setupClangContext(info, &Context);
 
-     virtual bool HandleTopLevelDecl(DeclGroupRef DG) {
-       // Make sure to emit all elements of a Decl.
-       for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
-         // Custom to Chapel
-         if(TypedefDecl *td = dyn_cast<TypedefDecl>(*I)) {
-           const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
-           //printf("Adding typedef %s\n", td->getNameAsString().c_str());
-           if(ctype != NULL) {
-             info->lvt->addGlobalCDecl(td);
-           }
-         } else if(FunctionDecl *fd = dyn_cast<FunctionDecl>(*I)) {
-           info->lvt->addGlobalCDecl(fd);
-         } else if(VarDecl *vd = dyn_cast<VarDecl>(*I)) {
-           info->lvt->addGlobalCDecl(vd);
-         } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(*I)) {
-           //Allow structs without typedefs
-           info->lvt->addGlobalCDecl(rd); 
+      for (size_t i = 0, e = CodeGenOpts.DependentLibraries.size(); i < e; ++i)
+        HandleDependentLibrary(CodeGenOpts.DependentLibraries[i]);
+    }
+
+    // ASTConsumer override:
+    // HandleCXXStaticMemberVarInstantiation - Tell the consumer that
+    // this variable has been instantiated.
+    virtual void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) {
+      // Custom to Chapel
+      if( info->parseOnly ) return;
+      // End custom to Chapel
+
+      if (Diags.hasErrorOccurred())
+        return;
+
+      Builder->HandleCXXStaticMemberVarInstantiation(VD);
+    }
+
+    // ASTConsumer override:
+    // 
+    // HandleTopLevelDecl - Handle the specified top-level declaration.
+    // This is called by the parser to process every top-level Decl*.
+    //
+    // \returns true to continue parsing, or false to abort parsing.
+    virtual bool HandleTopLevelDecl(DeclGroupRef DG) {
+       if (Diags.hasErrorOccurred())
+         return true;
+
+        HandlingTopLevelDeclRAII HandlingDecl(*this);
+
+      // Make sure to emit all elements of a Decl.
+      for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
+        // Custom to Chapel
+        if(TypedefDecl *td = dyn_cast<TypedefDecl>(*I)) {
+          const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
+          //printf("Adding typedef %s\n", td->getNameAsString().c_str());
+          if(ctype != NULL) {
+            info->lvt->addGlobalCDecl(td);
+          }
+        } else if(FunctionDecl *fd = dyn_cast<FunctionDecl>(*I)) {
+          info->lvt->addGlobalCDecl(fd);
+        } else if(VarDecl *vd = dyn_cast<VarDecl>(*I)) {
+          info->lvt->addGlobalCDecl(vd);
+        } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(*I)) {
+          //Allow structs without typedefs
+          info->lvt->addGlobalCDecl(rd); 
+        }
+        if( info->parseOnly ) continue;
+        // End custom to Chapel
+
+        Builder->EmitTopLevelDecl(*I);
+      }
+
+      return true;
+    }
+
+    // ModuleBuilder.cpp has EmitDeferredDecls but that's not in ASTConsumer.
+    void EmitDeferredDecls() {
+       if (DeferredInlineMethodDefinitions.empty())
+         return;
+
+       // Emit any deferred inline method definitions. Note that more deferred
+       // methods may be added during this loop, since ASTConsumer callbacks
+       // can be invoked if AST inspection results in declarations being added.
+       HandlingTopLevelDeclRAII HandlingDecl(*this);
+       for (unsigned I = 0; I != DeferredInlineMethodDefinitions.size(); ++I)
+         Builder->EmitTopLevelDecl(DeferredInlineMethodDefinitions[I]);
+       DeferredInlineMethodDefinitions.clear();
+    }
+
+   // ASTConsumer override:
+   // \brief This callback is invoked each time an inline method
+   // definition is completed.
+   virtual void HandleInlineMethodDefinition(CXXMethodDecl *D) {
+      if (Diags.hasErrorOccurred())
+        return;
+
+      assert(D->doesThisDeclarationHaveABody());
+
+      // We may want to emit this definition. However, that decision might be
+      // based on computing the linkage, and we have to defer that in case we
+      // are inside of something that will change the method's final linkage,
+      // e.g.
+      //   typedef struct {
+      //     void bar();
+      //     void foo() { bar(); }
+      //   } A;
+      DeferredInlineMethodDefinitions.push_back(D);
+
+      // Provide some coverage mapping even for methods that aren't emitted.
+      // Don't do this for templated classes though, as they may not be
+      // instantiable.
+      if (!D->getParent()->getDescribedClassTemplate())
+        Builder->AddDeferredUnusedCoverageMapping(D);
+    }
+
+     // skipped ASTConsumer HandleInterestingDecl
+     // HandleTagDeclRequiredDefinition
+     // HandleCXXImplicitFunctionInstantiation
+     // HandleTopLevelDeclInObjCContainer
+     // HandleImplicitImportDecl
+     // GetASTMutationListener
+     // GetASTDeserializationListener
+     // PrintStats
+     // shouldSkipFunctionBody
+
+    // ASTConsumer override:
+    // HandleTagDeclDefinition - This callback is invoked each time a TagDecl
+    // to (e.g. struct, union, enum, class) is completed. This allows the
+    // client hack on the type, which can occur at any point in the file
+    // (because these can be defined in declspecs).
+    virtual void HandleTagDeclDefinition(TagDecl *D) {
+      if (Diags.hasErrorOccurred())
+        return;
+
+      // Custom to Chapel - make a note of C globals
+      if(EnumDecl *ed = dyn_cast<EnumDecl>(D)) {
+         // Add the enum type
+         info->lvt->addGlobalCDecl(ed);
+         // Add the enum values
+         for(EnumDecl::enumerator_iterator e = ed->enumerator_begin();
+             e != ed->enumerator_end();
+             e++) {
+           info->lvt->addGlobalCDecl(*e); // & goes away with newer clang
          }
-         if( info->parseOnly ) continue;
-         // End custom to Chapel
+      } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
+         const clang::Type *ctype = rd->getTypeForDecl();
 
-         info->cgBuilder->EmitTopLevelDecl(*I);
-       }
+         if(ctype != NULL && rd->getDefinition() != NULL) {
+           info->lvt->addGlobalCDecl(rd);
+         }
+      }
+      if( info->parseOnly ) return;
+      // End Custom to Chapel
 
-       return true;
-     }
+      Builder->UpdateCompletedType(D);
 
-     /// HandleTagDeclDefinition - This callback is invoked each time a TagDecl
-     /// to (e.g. struct, union, enum, class) is completed. This allows the
-     /// client hack on the type, which can occur at any point in the file
-     /// (because these can be defined in declspecs).
-     virtual void HandleTagDeclDefinition(TagDecl *D) {
-       // Custom to Chapel - make a note of C globals
-       if(EnumDecl *ed = dyn_cast<EnumDecl>(D)) {
-          // Add the enum type
-          info->lvt->addGlobalCDecl(ed);
-          // Add the enum values
-          for(EnumDecl::enumerator_iterator e = ed->enumerator_begin();
-              e != ed->enumerator_end();
-              e++) {
-            info->lvt->addGlobalCDecl(*e); // & goes away with newer clang
+      // For MSVC compatibility, treat declarations of static data members with
+      // inline initializers as definitions.
+      if (Ctx->getLangOpts().MSVCCompat) {
+        for (Decl *Member : D->decls()) {
+          if (VarDecl *VD = dyn_cast<VarDecl>(Member)) {
+            if (Ctx->isMSStaticDataMemberInlineDefinition(VD) &&
+                Ctx->DeclMustBeEmitted(VD)) {
+              Builder->EmitGlobal(VD);
+            }
           }
-       } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
-          const clang::Type *ctype = rd->getTypeForDecl();
+        }
+      }
+    }
 
-          if(ctype != NULL && rd->getDefinition() != NULL) {
-            info->lvt->addGlobalCDecl(rd);
-          }
-       }
-       if( info->parseOnly ) return;
-       // End Custom to Chapel
+    // ASTConsumer override:
+    // \brief This callback is invoked the first time each TagDecl is required
+    // to be complete.
+    virtual void HandleTagDeclRequiredDefinition(const TagDecl *D) {
+      if (Diags.hasErrorOccurred())
+        return;
 
-       info->cgBuilder->UpdateCompletedType(D);
-
-       // In C++, we may have member functions that need to be emitted at this 
-       // point.
-       if (info->Ctx->getLangOpts().CPlusPlus && !D->isDependentContext()) {
-         for (DeclContext::decl_iterator M = D->decls_begin(),
-                                      MEnd = D->decls_end();
-              M != MEnd; ++M)
-           if (CXXMethodDecl *Method = dyn_cast<CXXMethodDecl>(*M))
-             if (Method->doesThisDeclarationHaveABody() &&
-                 (Method->hasAttr<UsedAttr>() ||
-                  Method->hasAttr<ConstructorAttr>()))
-               info->cgBuilder->EmitTopLevelDecl(Method);
-       }
+      if (CodeGen::CGDebugInfo *DI = Builder->getModuleDebugInfo())
+        if (const RecordDecl *RD = dyn_cast<RecordDecl>(D))
+          DI->completeRequiredType(RD);
+    }
 
 
-     }
-
-     virtual void HandleTranslationUnit(ASTContext &Ctx) {
-       if (info->Diags->hasErrorOccurred()) {
+     // ASTConsumer override:
+     // HandleTranslationUnit - This method is called when the ASTs for
+     // entire translation unit have been parsed.
+     virtual void HandleTranslationUnit(ASTContext &Context) {
+       if (Diags.hasErrorOccurred()) {
+         if(Builder)
+           Builder->clear();
          return;
        }
 
@@ -544,32 +721,94 @@ class CCodeGenConsumer : public ASTConsumer {
           we don't release the builder now, because
           we want to add a bunch of uses of functions
           that may not have been codegened yet.
-       if (info->cgBuilder)
-         cgBuilder->Release();
+
+          Instead, we call this in cleanupClang.
+       if (Builder)
+         Builder->Release();
        */
      }
 
+     // ASTConsumer override:
+     //
+     // CompleteTentativeDefinition - Callback invoked at the end of a
+     // translation unit to notify the consumer that the given tentative
+     // definition should be completed.
+     //
+     // The variable declaration
+     // itself will be a tentative definition. If it had an incomplete
+     // array type, its type will have already been changed to an array
+     // of size 1. However, the declaration remains a tentative
+     // definition and has not been modified by the introduction of an
+     // implicit zero initializer.
      virtual void CompleteTentativeDefinition(VarDecl *D) {
-       if (info->Diags->hasErrorOccurred())
+       if (Diags.hasErrorOccurred())
          return;
 
        // Custom to Chapel
        if( info->parseOnly ) return;
        // End Custom to Chapel
        
-       info->cgBuilder->EmitTentativeDefinition(D);
+       Builder->EmitTentativeDefinition(D);
      }
 
-     virtual void HandleVTable(CXXRecordDecl *RD, bool DefinitionRequired) {
-       if (info->Diags->hasErrorOccurred())
+     // ASTConsumer override:
+     // \brief Callback involved at the end of a translation unit to
+     // notify the consumer that a vtable for the given C++ class is
+     // required.
+     //
+     // \param RD The class whose vtable was used.
+     virtual void HandleVTable(CXXRecordDecl *RD
+#if HAVE_LLVM_VER < 37
+         , bool DefinitionRequired
+#endif
+         ) {
+       if (Diags.hasErrorOccurred())
          return;
 
        // Custom to Chapel
        if( info->parseOnly ) return;
        // End Custom to Chapel
 
-       info->cgBuilder->EmitVTable(RD, DefinitionRequired);
+       Builder->EmitVTable(RD
+#if HAVE_LLVM_VER < 37
+           , DefinitionRequired
+#endif
+           );
      }
+     
+     // ASTConsumer override:
+     //
+     // \brief Handle a pragma that appends to Linker Options.  Currently
+     // this only exists to support Microsoft's #pragma comment(linker,
+     // "/foo").
+     void HandleLinkerOptionPragma(llvm::StringRef Opts) override {
+       Builder->AppendLinkerOptions(Opts);
+     }
+
+     // HandleLinkerOptionPragma
+     // ASTConsumer override:
+     // \brief Handle a pragma that emits a mismatch identifier and value to
+     // the object file for the linker to work with.  Currently, this only
+     // exists tosupport Microsoft's #pragma detect_mismatch.
+     virtual void HandleDetectMismatch(llvm::StringRef Name,
+                                               llvm::StringRef Value) {
+       Builder->AddDetectMismatch(Name, Value);
+     }
+
+     // ASTConsumer override:
+     // \brief Handle a dependent library created by a pragma in the source.
+     /// Currently this only exists to support Microsoft's
+     /// #pragma comment(lib, "/foo").
+     virtual void HandleDependentLibrary(llvm::StringRef Lib) {
+       Builder->AddDependentLib(Lib);
+     }
+
+    // undefine macros we created to help with ModuleBuilder
+#undef Ctx
+#undef Diags
+#undef Builder
+#undef CodeGenOpts
+
 };
 
 
@@ -734,6 +973,8 @@ void finishCodegenLLVM() {
   // Now finish any Clang code generation.
   cleanupClang(info);
 
+  if(debug_info)debug_info->finalize();
+
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
@@ -753,14 +994,17 @@ void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
 
-  FunctionPassManager *fpm = new FunctionPassManager(info->module);
+  LEGACY_FUNCTION_PASS_MANAGER *fpm = new LEGACY_FUNCTION_PASS_MANAGER(info->module);
 
   PassManagerBuilder PMBuilder;
 
   // Set up the optimizer pipeline.
   // Start with registering info about how the
   // target lays out data structures.
-#if HAVE_LLVM_VER >= 36
+#if HAVE_LLVM_VER >= 37
+  // We already set the data layout in setupClangContext
+  // don't need to do anything else.
+#elif HAVE_LLVM_VER >= 36
   // We already set the data layout in setupClangContext
   fpm->add(new DataLayoutPass());
 #elif HAVE_LLVM_VER >= 35
@@ -829,13 +1073,12 @@ void runClang(const char* just_parse_filename) {
              so that we could automatically set CHPL_HOME. */
   std::string home(CHPL_HOME);
   std::string compileline = home + "/util/config/compileline";
-  std::string one = "1";
-  std::string zero = "0";
-  compileline += " COMP_GEN_WARN=" + (ccwarnings?one:zero);
-  compileline += " COMP_GEN_DEBUG=" + (debugCCode?one:zero);
-  compileline += " COMP_GEN_OPT=" + (optimizeCCode?one:zero);
-  compileline += " COMP_GEN_SPECIALIZE=" + (specializeCCode?one:zero);
-  compileline += " COMP_GEN_IEEE_FLOAT=" + (fieeefloat?one:zero);
+  compileline += " COMP_GEN_WARN="; compileline += istr(ccwarnings);
+  compileline += " COMP_GEN_DEBUG="; compileline += istr(debugCCode);
+  compileline += " COMP_GEN_OPT="; compileline += istr(optimizeCCode);
+  compileline += " COMP_GEN_SPECIALIZE="; compileline += istr(specializeCCode);
+  compileline += " COMP_GEN_FLOAT_OPT="; compileline += istr(ffloatOpt);
+
   std::string readargsfrom;
 
   if( just_parse_filename ) {
@@ -947,6 +1190,8 @@ void runClang(const char* just_parse_filename) {
     // Now initialize a code generator...
     // this will enable us to ask for addresses of static (inline) functions
     // and cause them to be emitted eventually.
+    // CCodeGenAction is defined above. It traverses the C AST
+    // and does the code generation.
     info->cgAction = new CCodeGenAction();
     if (!info->Clang->ExecuteAction(*info->cgAction)) {
       if (just_parse_filename) {
@@ -1212,6 +1457,13 @@ void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
   (layers.back())[cdecl->getName()] = store;
 }
 
+void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl) {
+  Storage store;
+  store.u.cdecl = cdecl;
+  (layers.back())[name] = store;
+}
+
+
 void LayeredValueTable::addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var)
 {
   Storage store;
@@ -1393,7 +1645,8 @@ bool isBuiltinExternCFunction(const char* cname)
 }
 
 static
-void addAggregateGlobalOps(const PassManagerBuilder &Builder, PassManagerBase &PM) {
+void addAggregateGlobalOps(const PassManagerBuilder &Builder,
+    LEGACY_PASS_MANAGER &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
     PM.add(createAggregateGlobalOpsOptPass(info->globalToWideInfo.globalSpace));
@@ -1401,7 +1654,8 @@ void addAggregateGlobalOps(const PassManagerBuilder &Builder, PassManagerBase &P
 }
 
 static
-void addGlobalToWide(const PassManagerBuilder &Builder, PassManagerBase &PM) {
+void addGlobalToWide(const PassManagerBuilder &Builder,
+    LEGACY_PASS_MANAGER &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
     PM.add(createGlobalToWide(&info->globalToWideInfo, info->targetLayout));

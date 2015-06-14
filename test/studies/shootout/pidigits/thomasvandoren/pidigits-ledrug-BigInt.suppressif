@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Believed to be CCE bugs (related to -hipa), see JIRA issue 64
+
+if [ "$CHPL_TEST_PERF" = "on" ] && [ "$CHPL_TARGET_COMPILER" = "cray-prgenv-cray" ]
+then
+  echo "True"
+else
+  echo "False"
+fi

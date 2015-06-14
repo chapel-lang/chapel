@@ -11,6 +11,7 @@
 outfile=$2
 cat $outfile | \
     grep -v -E 'srun: error: .* Exited with exit code 1' | \
-    grep -v -E 'slurmstepd: Terminating job step .* exit code 1 exited without notification' \
+    grep -v -E 'slurmstepd: Terminating job step .* exit code 1 exited without notification' | \
+    grep -v -E 'srun: Terminating job step .*' \
     > $outfile.tmp
 mv $outfile.tmp $outfile

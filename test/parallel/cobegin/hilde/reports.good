@@ -1,9 +1,9 @@
 
 - main program:0 is suspended
-- reports.chpl:12 is active
-- reports.chpl:12 is active
-- reports.chpl:12 is active
-- reports.chpl:12 is active
+- reports.chpl:13 is active
+- reports.chpl:14 is active
+- reports.chpl:15 is active
+- reports.chpl:16 is active
 --------------------------------
 Known tasks:
 Pending tasks:

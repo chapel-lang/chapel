@@ -270,14 +270,14 @@ Expr* buildIntLiteral(const char* pch) {
 
 
 Expr* buildRealLiteral(const char* pch) {
-  return new SymExpr(new_RealSymbol(pch, strtod(pch, NULL)));
+  return new SymExpr(new_RealSymbol(pch));
 }
 
 
 Expr* buildImagLiteral(const char* pch) {
   char* str = strdup(pch);
   str[strlen(pch)-1] = '\0';
-  SymExpr* se = new SymExpr(new_ImagSymbol(str, strtod(str, NULL)));
+  SymExpr* se = new SymExpr(new_ImagSymbol(str));
   free(str);
   return se;
 }
@@ -2110,6 +2110,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
+    beginBlk->astloc = stmt->astloc;
     // the original byref_vars is dead - will be clean_gvec-ed
     addByrefVars(beginBlk, byref_vars ? byref_vars->copy() : NULL);
     stmt->insertBefore(beginBlk);

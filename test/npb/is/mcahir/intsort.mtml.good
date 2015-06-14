@@ -1,6 +1,6 @@
-intsort.mtml.chpl:200: In function 'rank_keys':
-intsort.mtml.chpl:292: warning: scan has been serialized (see note in $CHPL_HOME/STATUS)
-intsort.mtml.chpl:292: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+intsort.mtml.chpl:213: In function 'rank_keys':
+intsort.mtml.chpl:305: warning: scan has been serialized (see note in $CHPL_HOME/STATUS)
+intsort.mtml.chpl:305: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 NAS Parallel Benchmarks 2.4 -- IS Benchmark
  Size:                           65536  (class S)
  Iterations:                        10

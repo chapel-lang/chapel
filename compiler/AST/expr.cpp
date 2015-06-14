@@ -42,6 +42,7 @@
 #include <cstring>
 #include <inttypes.h>
 #include <ostream>
+#include <stack>
 
 class FnSymbol;
 
@@ -767,6 +768,8 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   GenRet ret;
   GenInfo* info = gGenInfo;
   Type* wideRefType = NULL;
+  // what is the local reference type?
+  Type* refType = NULL;
 
   if( locale.chplType ) INT_ASSERT(locale.chplType == dtLocaleID->typeInfo());
 
@@ -776,7 +779,6 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
   if( raddr.chplType && !wideType ) {
     INT_ASSERT(raddr.isLVPtr != GEN_WIDE_PTR);
-    Type* refType;
     if( raddr.isLVPtr == GEN_VAL ) {
       // Then we should have a ref or a class.
       INT_ASSERT(raddr.chplType == dtNil ||
@@ -794,6 +796,8 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   }
 
   INT_ASSERT(wideRefType);
+  refType = wideRefType->getRefType();
+  INT_ASSERT(refType);
 
   locale = codegenValue(locale);
   if( widePointersStruct ) {
@@ -810,8 +814,16 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       info->cStatements.push_back(addrAssign);
     } else {
 #ifdef HAVE_LLVM
-      llvm::Value* adr = info->builder->CreateStructGEP(ret.val, WIDE_GEP_ADDR);
-      llvm::Value* loc = info->builder->CreateStructGEP(ret.val, WIDE_GEP_LOC);
+      llvm::Value* adr = info->builder->CreateStructGEP(
+#if HAVE_LLVM_VER >= 37
+          NULL, //refType->codegen().type,
+#endif
+          ret.val, WIDE_GEP_ADDR);
+      llvm::Value* loc = info->builder->CreateStructGEP(
+#if HAVE_LLVM_VER >= 37
+          NULL, //LOCALE_ID_TYPE->codegen().type,
+#endif
+          ret.val, WIDE_GEP_LOC);
 
       // cast address if needed. This is necessary for building a wide
       // NULL pointer since NULL is actually an i8*.
@@ -844,7 +856,12 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       // we are supposed to have since null has type void*.
       llvm::Value* locAddr = raddr.val;
       locAddr = info->builder->CreatePointerCast(locAddr, locAddrType);
+#if HAVE_LLVM_VER >= 37
+      ret.val = info->builder->CreateCall(fn, {locale.val, locAddr});
+#else
       ret.val = info->builder->CreateCall2(fn, locale.val, locAddr);
+#endif
+
 #endif
     } else {
       // Packed wide pointers.
@@ -1131,6 +1148,17 @@ static GenRet codegenWideThingField(GenRet ws, int field)
              field == WIDE_GEP_ADDR ||
              field == WIDE_GEP_SIZE );
 
+  if( field == WIDE_GEP_SIZE ) {
+    ret.chplType = SIZE_TYPE;
+  } else if( field == WIDE_GEP_LOC ) {
+    ret.chplType = LOCALE_ID_TYPE;
+  } else if( field == WIDE_GEP_ADDR ) {
+    // get the local reference type
+    // this will probably be overwritten by the caller,
+    // but it is used below in the LLVM code.
+    ret.chplType = getRefTypesForWideThing(ws, NULL);
+  }
+
   const char* fname = wide_fields[field];
 
   if( info->cfile ) {
@@ -1148,19 +1176,17 @@ static GenRet codegenWideThingField(GenRet ws, int field)
 #ifdef HAVE_LLVM
     if (ws.val->getType()->isPointerTy()){
       ret.isLVPtr = GEN_PTR;
-      ret.val = info->builder->CreateConstInBoundsGEP2_32(ws.val, 0, field);
+      ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                                          NULL,//ret.chplType->codegen().type,
+#endif
+                                          ws.val, 0, field);
     } else {
       ret.isLVPtr = GEN_VAL;
       ret.val = info->builder->CreateExtractValue(ws.val, field);
     }
     assert(ret.val);
 #endif
-  }
-
-  if( field == WIDE_GEP_SIZE ) {
-    ret.chplType = SIZE_TYPE;
-  } else if( field == WIDE_GEP_LOC ) {
-    ret.chplType = LOCALE_ID_TYPE;
   }
 
   return ret;
@@ -1461,11 +1487,17 @@ GenRet codegenFieldPtr(
 
     AggregateType *cBaseType = toAggregateType(baseType);
 
+    // We need the LLVM type of the field we're getting
+    INT_ASSERT(ret.chplType);
+    GenRet retType = ret.chplType;
+
     if( isUnion(ct) && !special ) {
       // Get a pointer to the union data then cast it to the right type
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+          NULL, //retType.type,
+#endif
           baseValue, 0, cBaseType->getMemberGEP("_u"));
-      GenRet retType = ret.chplType;
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1475,6 +1507,9 @@ GenRet codegenFieldPtr(
     } else {
       // Normally, we just use a GEP.
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+          NULL, //retType.type,
+#endif
           baseValue, 0, cBaseType->getMemberGEP(c_field_name));
     }
 #endif
@@ -6059,7 +6094,7 @@ new_Expr(const char* format, ...) {
 
 Expr*
 new_Expr(const char* format, va_list vl) {
-  Vec<Expr*> stack;
+  std::stack<Expr*> stack;
 
   for (int i = 0; format[i] != '\0'; i++) {
     if (isIdentifierChar(format[i])) {
@@ -6069,11 +6104,14 @@ new_Expr(const char* format, va_list vl) {
       const char* str = asubstr(&format[i], &format[i+n]);
       i += n-1;
       if (!strcmp(str, "TYPE")) {
-        BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+        if (stack.size() == 0) {
+          INT_FATAL("You neglected to provide a \"{ TYPE ...\" for a block type statement.");
+        } // Accessing the stack would result in unspecified behavior
+        BlockStmt* block = toBlockStmt(stack.top());
         INT_ASSERT(block);
         block->blockTag = BLOCK_TYPE;
       } else {
-        stack.add(new UnresolvedSymExpr(str));
+        stack.push(new UnresolvedSymExpr(str));
       }
     } else if (format[i] == '\'') {
       int n = 1;
@@ -6084,54 +6122,71 @@ new_Expr(const char* format, va_list vl) {
       if (format[i+1] == '(') {
         PrimitiveOp* prim = primitives_map.get(str);
         INT_ASSERT(prim);
-        stack.add(new CallExpr(prim));
+        stack.push(new CallExpr(prim));
         i++;
       } else {
-        stack.add(new SymExpr(new_StringSymbol(str)));
+        stack.push(new SymExpr(new_StringSymbol(str)));
       }
     } else if (format[i] == '%') {
       i++;
       if (format[i] == 'S')
-        stack.add(new SymExpr(va_arg(vl, Symbol*)));
+        stack.push(new SymExpr(va_arg(vl, Symbol*)));
       else if (format[i] == 'E')
-        stack.add(va_arg(vl, Expr*));
+        stack.push(va_arg(vl, Expr*));
       else
         INT_FATAL("unknown format specifier in new_Expr");
     } else if (format[i] == '(') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      stack.add(new CallExpr(expr));
+      stack.push(new CallExpr(expr));
       if (format[i+1] == ')') // handle empty calls
         i++;
     } else if (format[i] == ',') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      CallExpr* call = toCallExpr(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("There was nothing before the \',\'");
+      } // Accessing the stack would result in unspecified behavior
+      CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
     } else if (format[i] == ')') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      CallExpr* call = toCallExpr(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("This closing parentheses is unmatched");
+      } // Accessing the stack would result in unspecified behavior
+      CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
     } else if (format[i] == '{') {
-      stack.add(new BlockStmt());
+      stack.push(new BlockStmt());
     } else if (format[i] == ';') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("There was nothing before the \';\'");
+      } // Accessing the stack would result in unspecified behavior
+      BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
     } else if (format[i] == '}') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("This closing curly bracket is unmatched");
+      } // Accessing the stack would result in unspecified behavior
+      BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
     }
   }
 
-  INT_ASSERT(stack.n == 1);
-  return stack.v[0];
+  INT_ASSERT(stack.size() == 1);
+  return stack.top();
 }
