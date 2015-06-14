@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/215982/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit
+END
+p9-linkage.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/189919/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p9-linkage.cpp
+END
+p10.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/91881/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p10.cpp
+END
+p11.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p11.cpp
+END
+p12.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/156291/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p12.cpp
+END
+p1-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/215982/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p1-0x.cpp
+END
+p3-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p3-0x.cpp
+END
+p1-emit.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/207451/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p1-emit.cpp
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/93277/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p1.cpp
+END
+p2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/142903/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p2.cpp
+END
+p3.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/146988/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p3.cpp
+END
+p4.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/142597/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p4.cpp
+END
+p5.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/142903/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p5.cpp
+END
+p6.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p6.cpp
+END
+p7.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/133906/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p7.cpp
+END
+p8.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/152750/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p8.cpp
+END
+p9.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/temp/temp.spec/temp.explicit/p9.cpp
+END

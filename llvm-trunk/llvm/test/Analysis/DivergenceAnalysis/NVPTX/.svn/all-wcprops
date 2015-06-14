@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/234567/llvm/trunk/test/Analysis/DivergenceAnalysis/NVPTX
+END
+diverge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/234567/llvm/trunk/test/Analysis/DivergenceAnalysis/NVPTX/diverge.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/234567/llvm/trunk/test/Analysis/DivergenceAnalysis/NVPTX/lit.local.cfg
+END

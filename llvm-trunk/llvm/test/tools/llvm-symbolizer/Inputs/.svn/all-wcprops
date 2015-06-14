@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/221514/llvm/trunk/test/tools/llvm-symbolizer/Inputs
+END
+dsym-test-exe
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/220004/llvm/trunk/test/tools/llvm-symbolizer/Inputs/dsym-test-exe
+END
+dsym-test.c
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/220004/llvm/trunk/test/tools/llvm-symbolizer/Inputs/dsym-test.c
+END
+ppc64
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/221514/llvm/trunk/test/tools/llvm-symbolizer/Inputs/ppc64
+END
+dsym-test-exe-second
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/220004/llvm/trunk/test/tools/llvm-symbolizer/Inputs/dsym-test-exe-second
+END

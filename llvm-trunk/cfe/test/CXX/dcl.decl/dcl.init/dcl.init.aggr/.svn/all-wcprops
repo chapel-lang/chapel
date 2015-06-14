@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/191068/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.aggr
+END
+p4.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/164851/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.aggr/p4.cpp
+END
+p1-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/179958/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.aggr/p1-0x.cpp
+END
+p7.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/191068/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.aggr/p7.cpp
+END

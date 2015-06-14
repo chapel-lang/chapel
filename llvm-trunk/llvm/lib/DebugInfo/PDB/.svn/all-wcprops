@@ -1,0 +1,251 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/237471/llvm/trunk/lib/DebugInfo/PDB
+END
+PDBSymbolCompiland.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolCompiland.cpp
+END
+PDBSymbolTypeEnum.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/231215/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeEnum.cpp
+END
+PDBSymbolTypeBuiltin.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeBuiltin.cpp
+END
+PDBSymbolData.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/237471/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolData.cpp
+END
+PDBSymbolTypeCustom.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeCustom.cpp
+END
+PDBSymbolTypeVTable.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeVTable.cpp
+END
+PDBSymbolCompilandEnv.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolCompilandEnv.cpp
+END
+PDBSymbol.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230204/llvm/trunk/lib/DebugInfo/PDB/PDBSymbol.cpp
+END
+PDBSymbolTypeArray.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeArray.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/235900/llvm/trunk/lib/DebugInfo/PDB/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/228437/llvm/trunk/lib/DebugInfo/PDB/Makefile
+END
+PDBSymbolTypePointer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypePointer.cpp
+END
+PDBSymbolTypeDimension.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeDimension.cpp
+END
+PDBSymbolThunk.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolThunk.cpp
+END
+PDBSymbolTypeFunctionSig.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeFunctionSig.cpp
+END
+PDBSymbolBlock.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolBlock.cpp
+END
+PDBSymbolFunc.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolFunc.cpp
+END
+PDBSymbolTypeUDT.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeUDT.cpp
+END
+PDBSymbolUnknown.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolUnknown.cpp
+END
+PDBSymbolTypeTypedef.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeTypedef.cpp
+END
+PDBSymbolUsingNamespace.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolUsingNamespace.cpp
+END
+PDBSymbolPublicSymbol.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolPublicSymbol.cpp
+END
+PDBSymbolTypeFriend.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeFriend.cpp
+END
+PDBSymbolCustom.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/237471/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolCustom.cpp
+END
+PDBSymbolAnnotation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolAnnotation.cpp
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/235920/llvm/trunk/lib/DebugInfo/PDB/LLVMBuild.txt
+END
+PDBSymbolCompilandDetails.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolCompilandDetails.cpp
+END
+PDBSymbolLabel.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolLabel.cpp
+END
+PDBExtras.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/231215/llvm/trunk/lib/DebugInfo/PDB/PDBExtras.cpp
+END
+PDBSymbolFuncDebugStart.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolFuncDebugStart.cpp
+END
+PDBSymbolExe.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolExe.cpp
+END
+PDBSymbolTypeFunctionArg.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeFunctionArg.cpp
+END
+IPDBSourceFile.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230204/llvm/trunk/lib/DebugInfo/PDB/IPDBSourceFile.cpp
+END
+PDBInterfaceAnchors.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/229231/llvm/trunk/lib/DebugInfo/PDB/PDBInterfaceAnchors.cpp
+END
+PDB.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/235237/llvm/trunk/lib/DebugInfo/PDB/PDB.cpp
+END
+PDBSymbolFuncDebugEnd.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolFuncDebugEnd.cpp
+END
+PDBSymbolTypeManaged.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeManaged.cpp
+END
+PDBContext.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/236653/llvm/trunk/lib/DebugInfo/PDB/PDBContext.cpp
+END
+PDBSymDumper.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymDumper.cpp
+END
+PDBSymbolTypeVTableShape.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeVTableShape.cpp
+END
+PDBSymbolTypeBaseClass.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230889/llvm/trunk/lib/DebugInfo/PDB/PDBSymbolTypeBaseClass.cpp
+END

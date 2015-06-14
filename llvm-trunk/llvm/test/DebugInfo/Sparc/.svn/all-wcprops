@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/DebugInfo/Sparc
+END
+processes-relocations.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/DebugInfo/Sparc/processes-relocations.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/DebugInfo/Sparc/lit.local.cfg
+END
+gnu-window-save.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/DebugInfo/Sparc/gnu-window-save.ll
+END

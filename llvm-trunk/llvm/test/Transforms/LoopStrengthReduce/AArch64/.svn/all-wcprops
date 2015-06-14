@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopStrengthReduce/AArch64
+END
+req-regs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopStrengthReduce/AArch64/req-regs.ll
+END
+lsr-memcpy.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopStrengthReduce/AArch64/lsr-memcpy.ll
+END
+lsr-memset.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopStrengthReduce/AArch64/lsr-memset.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/LoopStrengthReduce/AArch64/lit.local.cfg
+END

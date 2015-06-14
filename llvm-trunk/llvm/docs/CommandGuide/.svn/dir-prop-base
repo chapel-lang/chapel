@@ -1,0 +1,9 @@
+K 10
+svn:ignore
+V 29
+pod2htm?.tmp
+*.html
+*.1
+*.ps
+
+END

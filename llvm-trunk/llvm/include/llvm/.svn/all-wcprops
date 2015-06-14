@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/llvm-project/!svn/ver/239062/llvm/trunk/include/llvm
+END
+LinkAllPasses.h
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/237459/llvm/trunk/include/llvm/LinkAllPasses.h
+END
+Pass.h
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/include/llvm/Pass.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/215610/llvm/trunk/include/llvm/CMakeLists.txt
+END
+PassAnalysisSupport.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/229340/llvm/trunk/include/llvm/PassAnalysisSupport.h
+END
+module.modulemap.build
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/209269/llvm/trunk/include/llvm/module.modulemap.build
+END
+PassRegistry.h
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/231385/llvm/trunk/include/llvm/PassRegistry.h
+END
+InitializePasses.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/238341/llvm/trunk/include/llvm/InitializePasses.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/235666/llvm/trunk/include/llvm/module.modulemap
+END
+LinkAllIR.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/199082/llvm/trunk/include/llvm/LinkAllIR.h
+END
+PassInfo.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/229340/llvm/trunk/include/llvm/PassInfo.h
+END
+PassSupport.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/219854/llvm/trunk/include/llvm/PassSupport.h
+END

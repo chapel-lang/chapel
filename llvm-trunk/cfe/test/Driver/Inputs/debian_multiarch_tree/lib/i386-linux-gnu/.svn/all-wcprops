@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/188405/cfe/trunk/test/Driver/Inputs/debian_multiarch_tree/lib/i386-linux-gnu
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/llvm-project/!svn/ver/151482/cfe/trunk/test/Driver/Inputs/debian_multiarch_tree/lib/i386-linux-gnu/.keep
+END
+libtest.so
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/llvm-project/!svn/ver/188405/cfe/trunk/test/Driver/Inputs/debian_multiarch_tree/lib/i386-linux-gnu/libtest.so
+END

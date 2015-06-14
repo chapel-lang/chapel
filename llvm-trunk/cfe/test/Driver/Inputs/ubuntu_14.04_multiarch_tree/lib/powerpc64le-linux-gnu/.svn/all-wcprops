@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/llvm-project/!svn/ver/211359/cfe/trunk/test/Driver/Inputs/ubuntu_14.04_multiarch_tree/lib/powerpc64le-linux-gnu
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/svn/llvm-project/!svn/ver/211359/cfe/trunk/test/Driver/Inputs/ubuntu_14.04_multiarch_tree/lib/powerpc64le-linux-gnu/.keep
+END

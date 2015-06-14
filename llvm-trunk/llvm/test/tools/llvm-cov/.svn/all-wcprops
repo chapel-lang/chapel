@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/237307/llvm/trunk/test/tools/llvm-cov
+END
+showHighlightedRanges.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/232354/llvm/trunk/test/tools/llvm-cov/showHighlightedRanges.cpp
+END
+showTemplateInstantiations.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/232693/llvm/trunk/test/tools/llvm-cov/showTemplateInstantiations.cpp
+END
+showExpansions.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232354/llvm/trunk/test/tools/llvm-cov/showExpansions.cpp
+END
+showLineExecutionCounts.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/237307/llvm/trunk/test/tools/llvm-cov/showLineExecutionCounts.cpp
+END
+showRegionMarkers.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/237307/llvm/trunk/test/tools/llvm-cov/showRegionMarkers.cpp
+END
+universal-binary.c
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232693/llvm/trunk/test/tools/llvm-cov/universal-binary.c
+END
+report.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/232693/llvm/trunk/test/tools/llvm-cov/report.cpp
+END
+llvm-cov.test
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/233132/llvm/trunk/test/tools/llvm-cov/llvm-cov.test
+END
+binary-formats.c
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/232693/llvm/trunk/test/tools/llvm-cov/binary-formats.c
+END
+copy_block_helper.m
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/233132/llvm/trunk/test/tools/llvm-cov/copy_block_helper.m
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/232346/llvm/trunk/test/tools/llvm-cov/lit.local.cfg
+END
+range_based_for.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/233132/llvm/trunk/test/tools/llvm-cov/range_based_for.cpp
+END

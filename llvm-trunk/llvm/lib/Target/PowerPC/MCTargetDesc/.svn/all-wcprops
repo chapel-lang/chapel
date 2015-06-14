@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/239040/llvm/trunk/lib/Target/PowerPC/MCTargetDesc
+END
+PPCMCAsmInfo.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/225534/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCMCAsmInfo.h
+END
+PPCPredicates.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/202451/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCPredicates.cpp
+END
+PPCMCCodeEmitter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/239040/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCMCCodeEmitter.cpp
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/146409/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/LLVMBuild.txt
+END
+PPCPredicates.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/215558/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCPredicates.h
+END
+PPCAsmBackend.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/238864/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCAsmBackend.cpp
+END
+PPCFixupKinds.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/215558/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCFixupKinds.h
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/135184/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/Makefile
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/195927/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/CMakeLists.txt
+END
+PPCELFObjectWriter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/238864/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCELFObjectWriter.cpp
+END
+PPCMachObjectWriter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/238634/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCMachObjectWriter.cpp
+END
+PPCMCExpr.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/238634/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCMCExpr.cpp
+END
+PPCMCExpr.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/238634/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCMCExpr.h
+END
+PPCMCTargetDesc.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/239036/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCMCTargetDesc.cpp
+END
+PPCMCTargetDesc.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/234950/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCMCTargetDesc.h
+END
+PPCMCAsmInfo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/231390/llvm/trunk/lib/Target/PowerPC/MCTargetDesc/PPCMCAsmInfo.cpp
+END

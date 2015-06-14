@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/165822/cfe/trunk/test/Modules/Inputs/normal-module-map
+END
+a1.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/144402/cfe/trunk/test/Modules/Inputs/normal-module-map/a1.h
+END
+a2.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/144402/cfe/trunk/test/Modules/Inputs/normal-module-map/a2.h
+END
+b1.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/144402/cfe/trunk/test/Modules/Inputs/normal-module-map/b1.h
+END
+module.map
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/146165/cfe/trunk/test/Modules/Inputs/normal-module-map/module.map
+END

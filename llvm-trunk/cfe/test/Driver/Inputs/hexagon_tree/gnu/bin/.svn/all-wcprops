@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/169512/cfe/trunk/test/Driver/Inputs/hexagon_tree/gnu/bin
+END
+hexagon-gcc
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/169495/cfe/trunk/test/Driver/Inputs/hexagon_tree/gnu/bin/hexagon-gcc
+END
+hexagon-ld
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/169512/cfe/trunk/test/Driver/Inputs/hexagon_tree/gnu/bin/hexagon-ld
+END
+hexagon-as
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/169495/cfe/trunk/test/Driver/Inputs/hexagon_tree/gnu/bin/hexagon-as
+END

@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/llvm-project/!svn/ver/239029/llvm/trunk/include/llvm-c
+END
+BitReader.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/215558/llvm/trunk/include/llvm-c/BitReader.h
+END
+Object.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/206750/llvm/trunk/include/llvm-c/Object.h
+END
+TargetMachine.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/199926/llvm/trunk/include/llvm-c/TargetMachine.h
+END
+BitWriter.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/219643/llvm/trunk/include/llvm-c/BitWriter.h
+END
+Support.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/219975/llvm/trunk/include/llvm-c/Support.h
+END
+Disassembler.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/218682/llvm/trunk/include/llvm-c/Disassembler.h
+END
+LinkTimeOptimizer.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/193253/llvm/trunk/include/llvm-c/LinkTimeOptimizer.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/210842/llvm/trunk/include/llvm-c/module.modulemap
+END
+Analysis.h
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/153157/llvm/trunk/include/llvm-c/Analysis.h
+END
+Linker.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/230988/llvm/trunk/include/llvm-c/Linker.h
+END
+Target.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/194379/llvm/trunk/include/llvm-c/Target.h
+END
+Initialization.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/215558/llvm/trunk/include/llvm-c/Initialization.h
+END
+Core.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/239029/llvm/trunk/include/llvm-c/Core.h
+END
+ExecutionEngine.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/224720/llvm/trunk/include/llvm-c/ExecutionEngine.h
+END
+IRReader.h
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/200018/llvm/trunk/include/llvm-c/IRReader.h
+END
+lto.h
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/235943/llvm/trunk/include/llvm-c/lto.h
+END

@@ -1,0 +1,473 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/llvm-project/!svn/ver/239019/llvm/trunk/test/MC/X86
+END
+x86_64-imm-widths.s
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/115685/llvm/trunk/test/MC/X86/x86_64-imm-widths.s
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/MC/X86/lit.local.cfg
+END
+x86-32-ms-inline-asm.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/219725/llvm/trunk/test/MC/X86/x86-32-ms-inline-asm.s
+END
+sgx-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/214460/llvm/trunk/test/MC/X86/sgx-encoding.s
+END
+cfi_def_cfa-crash.s
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/194285/llvm/trunk/test/MC/X86/cfi_def_cfa-crash.s
+END
+x86_64-avx-clmul-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/115292/llvm/trunk/test/MC/X86/x86_64-avx-clmul-encoding.s
+END
+intel-syntax-ambiguous.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/216604/llvm/trunk/test/MC/X86/intel-syntax-ambiguous.s
+END
+gnux32-dwarf-gen.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/173498/llvm/trunk/test/MC/X86/gnux32-dwarf-gen.s
+END
+avx512bw-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/235385/llvm/trunk/test/MC/X86/avx512bw-encoding.s
+END
+x86_64-rand-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/178314/llvm/trunk/test/MC/X86/x86_64-rand-encoding.s
+END
+intel-syntax-directional-label.s
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/203826/llvm/trunk/test/MC/X86/intel-syntax-directional-label.s
+END
+x86-windows-itanium-libcalls.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/213883/llvm/trunk/test/MC/X86/x86-windows-itanium-libcalls.ll
+END
+avx512-err.s
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/237107/llvm/trunk/test/MC/X86/avx512-err.s
+END
+x86-64.s
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/233686/llvm/trunk/test/MC/X86/x86-64.s
+END
+validate-inst-intel.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/225941/llvm/trunk/test/MC/X86/validate-inst-intel.s
+END
+shuffle-comments.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/224264/llvm/trunk/test/MC/X86/shuffle-comments.s
+END
+relax-insn.s
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/198761/llvm/trunk/test/MC/X86/relax-insn.s
+END
+intel-syntax-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/177243/llvm/trunk/test/MC/X86/intel-syntax-encoding.s
+END
+stackmap-nops.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/MC/X86/stackmap-nops.ll
+END
+x86-64-avx512dq.s
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/238834/llvm/trunk/test/MC/X86/x86-64-avx512dq.s
+END
+x86_64-xop-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/229078/llvm/trunk/test/MC/X86/x86_64-xop-encoding.s
+END
+x86_64-bmi-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/142779/llvm/trunk/test/MC/X86/x86_64-bmi-encoding.s
+END
+reloc-macho.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/221304/llvm/trunk/test/MC/X86/reloc-macho.s
+END
+x86-64-avx512bw_vl.s
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/238729/llvm/trunk/test/MC/X86/x86-64-avx512bw_vl.s
+END
+i386-darwin-frame-register.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/MC/X86/i386-darwin-frame-register.ll
+END
+x86-32-fma3.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/115292/llvm/trunk/test/MC/X86/x86-32-fma3.s
+END
+intel-syntax-2.s
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/215031/llvm/trunk/test/MC/X86/intel-syntax-2.s
+END
+x86-32-coverage.s
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/228514/llvm/trunk/test/MC/X86/x86-32-coverage.s
+END
+x86_nop.s
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/212321/llvm/trunk/test/MC/X86/x86_nop.s
+END
+intel-syntax-bitwise-ops.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/200896/llvm/trunk/test/MC/X86/intel-syntax-bitwise-ops.s
+END
+fixup-cpu-mode.s
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/200351/llvm/trunk/test/MC/X86/fixup-cpu-mode.s
+END
+expand-var.s
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/235015/llvm/trunk/test/MC/X86/expand-var.s
+END
+x86_directives.s
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/115292/llvm/trunk/test/MC/X86/x86_directives.s
+END
+x86-16.s
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/233686/llvm/trunk/test/MC/X86/x86-16.s
+END
+padlock.s
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/201649/llvm/trunk/test/MC/X86/padlock.s
+END
+x86_64-avx-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/231945/llvm/trunk/test/MC/X86/x86_64-avx-encoding.s
+END
+intel-syntax-ptr-sized.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/216481/llvm/trunk/test/MC/X86/intel-syntax-ptr-sized.s
+END
+x86_long_nop.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/212321/llvm/trunk/test/MC/X86/x86_long_nop.s
+END
+x86_64-rtm-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/177888/llvm/trunk/test/MC/X86/x86_64-rtm-encoding.s
+END
+intel-syntax-avx512.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/238811/llvm/trunk/test/MC/X86/intel-syntax-avx512.s
+END
+intel-syntax-error.s
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/215374/llvm/trunk/test/MC/X86/intel-syntax-error.s
+END
+index-operations.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/199809/llvm/trunk/test/MC/X86/index-operations.s
+END
+2011-09-06-NoNewline.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/143352/llvm/trunk/test/MC/X86/2011-09-06-NoNewline.s
+END
+ret.s
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/199648/llvm/trunk/test/MC/X86/ret.s
+END
+x86-itanium.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/213274/llvm/trunk/test/MC/X86/x86-itanium.ll
+END
+x86-32-avx.s
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/229266/llvm/trunk/test/MC/X86/x86-32-avx.s
+END
+intel-syntax-x86-64-avx512f_vl.s
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/236714/llvm/trunk/test/MC/X86/intel-syntax-x86-64-avx512f_vl.s
+END
+no-elf-compact-unwind.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/211416/llvm/trunk/test/MC/X86/no-elf-compact-unwind.s
+END
+x86_64-fma4-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/177014/llvm/trunk/test/MC/X86/x86_64-fma4-encoding.s
+END
+x86_64-signed-reloc.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/200495/llvm/trunk/test/MC/X86/x86_64-signed-reloc.s
+END
+intel-syntax-invalid-scale.s
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/199942/llvm/trunk/test/MC/X86/intel-syntax-invalid-scale.s
+END
+x86-target-directives.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/199068/llvm/trunk/test/MC/X86/x86-target-directives.s
+END
+x86_64-sse4a.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/157634/llvm/trunk/test/MC/X86/x86_64-sse4a.s
+END
+macho-uleb.s
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/215712/llvm/trunk/test/MC/X86/macho-uleb.s
+END
+x86_operands.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/214457/llvm/trunk/test/MC/X86/x86_operands.s
+END
+intel-syntax-hex.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/176031/llvm/trunk/test/MC/X86/intel-syntax-hex.s
+END
+x86_errors.s
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/226642/llvm/trunk/test/MC/X86/x86_errors.s
+END
+x86_64-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/227963/llvm/trunk/test/MC/X86/x86_64-encoding.s
+END
+intel-syntax-unsized-memory.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/224347/llvm/trunk/test/MC/X86/intel-syntax-unsized-memory.s
+END
+x86-64-avx512dq_vl.s
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/238738/llvm/trunk/test/MC/X86/x86-64-avx512dq_vl.s
+END
+x86_64-hle-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/184207/llvm/trunk/test/MC/X86/x86_64-hle-encoding.s
+END
+compact-unwind.s
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/223676/llvm/trunk/test/MC/X86/compact-unwind.s
+END
+intel-syntax-invalid-basereg.s
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/199948/llvm/trunk/test/MC/X86/intel-syntax-invalid-basereg.s
+END
+x86-64-avx512bw.s
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/239016/llvm/trunk/test/MC/X86/x86-64-avx512bw.s
+END
+validate-inst-att.s
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/225941/llvm/trunk/test/MC/X86/validate-inst-att.s
+END
+3DNow.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/136292/llvm/trunk/test/MC/X86/3DNow.s
+END
+address-size.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/198584/llvm/trunk/test/MC/X86/address-size.s
+END
+avx512-encodings.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/239019/llvm/trunk/test/MC/X86/avx512-encodings.s
+END
+intel-syntax.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/238536/llvm/trunk/test/MC/X86/intel-syntax.s
+END
+fde-reloc.s
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/222896/llvm/trunk/test/MC/X86/fde-reloc.s
+END
+reloc-undef-global.s
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/235015/llvm/trunk/test/MC/X86/reloc-undef-global.s
+END
+x86_64-tbm-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/200516/llvm/trunk/test/MC/X86/x86_64-tbm-encoding.s
+END
+x86_64-fma3-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/115292/llvm/trunk/test/MC/X86/x86_64-fma3-encoding.s
+END
+x86-64-avx512f_vl.s
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/238923/llvm/trunk/test/MC/X86/x86-64-avx512f_vl.s
+END
+x86-32.s
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/233686/llvm/trunk/test/MC/X86/x86-32.s
+END
+variant-diagnostics.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/200161/llvm/trunk/test/MC/X86/variant-diagnostics.s
+END
+invalid-sleb.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/233155/llvm/trunk/test/MC/X86/invalid-sleb.s
+END
+avx512vl-encoding.s
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/235385/llvm/trunk/test/MC/X86/avx512vl-encoding.s
+END

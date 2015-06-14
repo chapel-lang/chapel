@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/237695/llvm/trunk/lib/Support/Windows
+END
+Process.inc
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/236409/llvm/trunk/lib/Support/Windows/Process.inc
+END
+COM.inc
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/235898/llvm/trunk/lib/Support/Windows/COM.inc
+END
+ThreadLocal.inc
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/224225/llvm/trunk/lib/Support/Windows/ThreadLocal.inc
+END
+explicit_symbols.inc
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/227574/llvm/trunk/lib/Support/Windows/explicit_symbols.inc
+END
+TimeValue.inc
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/234982/llvm/trunk/lib/Support/Windows/TimeValue.inc
+END
+Path.inc
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/236409/llvm/trunk/lib/Support/Windows/Path.inc
+END
+Watchdog.inc
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/177962/llvm/trunk/lib/Support/Windows/Watchdog.inc
+END
+Signals.inc
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/237695/llvm/trunk/lib/Support/Windows/Signals.inc
+END
+Mutex.inc
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/201258/llvm/trunk/lib/Support/Windows/Mutex.inc
+END
+WindowsSupport.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/229335/llvm/trunk/lib/Support/Windows/WindowsSupport.h
+END
+Program.inc
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/235184/llvm/trunk/lib/Support/Windows/Program.inc
+END
+Memory.inc
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/210871/llvm/trunk/lib/Support/Windows/Memory.inc
+END
+DynamicLibrary.inc
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/221947/llvm/trunk/lib/Support/Windows/DynamicLibrary.inc
+END
+RWMutex.inc
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/220251/llvm/trunk/lib/Support/Windows/RWMutex.inc
+END
+Host.inc
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/218374/llvm/trunk/lib/Support/Windows/Host.inc
+END

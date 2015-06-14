@@ -1,0 +1,593 @@
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/238276/llvm/trunk/test/Transforms/Inline
+END
+noalias-cs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/Inline/noalias-cs.ll
+END
+inline_invoke.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/196710/llvm/trunk/test/Transforms/Inline/inline_invoke.ll
+END
+invoke_test-3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/138928/llvm/trunk/test/Transforms/Inline/invoke_test-3.ll
+END
+2003-09-22-PHINodesInNormalInvokeDest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/177650/llvm/trunk/test/Transforms/Inline/2003-09-22-PHINodesInNormalInvokeDest.ll
+END
+blockaddress.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/212077/llvm/trunk/test/Transforms/Inline/blockaddress.ll
+END
+alloca-in-scc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/Inline/alloca-in-scc.ll
+END
+2008-09-02-NoInline.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/Inline/2008-09-02-NoInline.ll
+END
+PR4909.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/81540/llvm/trunk/test/Transforms/Inline/PR4909.ll
+END
+recursive.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/186269/llvm/trunk/test/Transforms/Inline/recursive.ll
+END
+inline_dbg_declare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/Inline/inline_dbg_declare.ll
+END
+delete-call.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/188173/llvm/trunk/test/Transforms/Inline/delete-call.ll
+END
+inline-byval-bonus.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/inline-byval-bonus.ll
+END
+noalias-calls.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/225474/llvm/trunk/test/Transforms/Inline/noalias-calls.ll
+END
+2007-06-25-WeakInline.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/Inline/2007-06-25-WeakInline.ll
+END
+2006-11-09-InlineCGUpdate-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/168694/llvm/trunk/test/Transforms/Inline/2006-11-09-InlineCGUpdate-2.ll
+END
+pr22285.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/236539/llvm/trunk/test/Transforms/Inline/pr22285.ll
+END
+noalias.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/noalias.ll
+END
+invoke_test-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/138928/llvm/trunk/test/Transforms/Inline/invoke_test-2.ll
+END
+inline-fast-math-flags.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/inline-fast-math-flags.ll
+END
+align.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/align.ll
+END
+inline_returns_twice.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/197216/llvm/trunk/test/Transforms/Inline/inline_returns_twice.ll
+END
+2007-12-19-InlineNoUnwind.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/139046/llvm/trunk/test/Transforms/Inline/2007-12-19-InlineNoUnwind.ll
+END
+null-function.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/212250/llvm/trunk/test/Transforms/Inline/null-function.ll
+END
+store-sroa.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/232827/llvm/trunk/test/Transforms/Inline/store-sroa.ll
+END
+2006-07-12-InlinePruneCGUpdate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/2006-07-12-InlinePruneCGUpdate.ll
+END
+inline-optnone.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/195046/llvm/trunk/test/Transforms/Inline/inline-optnone.ll
+END
+dynamic_alloca_test.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/Inline/dynamic_alloca_test.ll
+END
+lifetime.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/Inline/lifetime.ll
+END
+nested-inline.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/186271/llvm/trunk/test/Transforms/Inline/nested-inline.ll
+END
+crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/138928/llvm/trunk/test/Transforms/Inline/crash.ll
+END
+2004-04-15-InlineDeletesCall.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/140076/llvm/trunk/test/Transforms/Inline/2004-04-15-InlineDeletesCall.ll
+END
+inline-optsize.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/inline-optsize.ll
+END
+2009-05-07-CallUsingSelfCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/Inline/2009-05-07-CallUsingSelfCrash.ll
+END
+2003-10-13-AllocaDominanceProblem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/Inline/2003-10-13-AllocaDominanceProblem.ll
+END
+frameescape.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/Inline/frameescape.ll
+END
+ptr-diff.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/ptr-diff.ll
+END
+pr21206.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/225302/llvm/trunk/test/Transforms/Inline/pr21206.ll
+END
+byval.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/Inline/byval.ll
+END
+callgraph-update.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/138928/llvm/trunk/test/Transforms/Inline/callgraph-update.ll
+END
+alloca-bonus.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/alloca-bonus.ll
+END
+alloca-merge-align.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/Inline/alloca-merge-align.ll
+END
+basictest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/basictest.ll
+END
+crash2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/crash2.ll
+END
+debug-info-duplicate-calls.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/Inline/debug-info-duplicate-calls.ll
+END
+2004-04-20-InlineLinkOnce.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/Inline/2004-04-20-InlineLinkOnce.ll
+END
+2006-01-14-CallGraphUpdate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/Inline/2006-01-14-CallGraphUpdate.ll
+END
+2007-04-15-InlineEH.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/Inline/2007-04-15-InlineEH.ll
+END
+vector-bonus.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/238276/llvm/trunk/test/Transforms/Inline/vector-bonus.ll
+END
+2003-09-22-PHINodesInExceptionDest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/Inline/2003-09-22-PHINodesInExceptionDest.ll
+END
+invoke_test-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/Inline/invoke_test-1.ll
+END
+inline_dce.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/Inline/inline_dce.ll
+END
+byval_lifetime.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/byval_lifetime.ll
+END
+2010-05-12-ValueMap.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/171343/llvm/trunk/test/Transforms/Inline/2010-05-12-ValueMap.ll
+END
+inline-cold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/inline-cold.ll
+END
+invoke-cost.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/197215/llvm/trunk/test/Transforms/Inline/invoke-cost.ll
+END
+switch.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/207403/llvm/trunk/test/Transforms/Inline/switch.ll
+END
+invoke-combine-clauses.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/invoke-combine-clauses.ll
+END
+ephemeral.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/ephemeral.ll
+END
+inline-tail.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/221226/llvm/trunk/test/Transforms/Inline/inline-tail.ll
+END
+2003-09-14-InlineValue.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/138928/llvm/trunk/test/Transforms/Inline/2003-09-14-InlineValue.ll
+END
+devirtualize.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/Inline/devirtualize.ll
+END
+inline-invoke-with-asm-call.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/194001/llvm/trunk/test/Transforms/Inline/inline-invoke-with-asm-call.ll
+END
+devirtualize-3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/devirtualize-3.ll
+END
+noinline.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/171343/llvm/trunk/test/Transforms/Inline/noinline.ll
+END
+crash-lifetime-marker.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/235312/llvm/trunk/test/Transforms/Inline/crash-lifetime-marker.ll
+END
+always-inline.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/209150/llvm/trunk/test/Transforms/Inline/always-inline.ll
+END
+inline-indirect.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/228957/llvm/trunk/test/Transforms/Inline/inline-indirect.ll
+END
+casts.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/Inline/casts.ll
+END
+inline-fp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/inline-fp.ll
+END
+inline_minisize.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/inline_minisize.ll
+END
+inline_cleanup.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186269/llvm/trunk/test/Transforms/Inline/inline_cleanup.ll
+END
+inline_prune.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/Inline/inline_prune.ll
+END
+optimization-remarks.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/optimization-remarks.ll
+END
+alloca_test.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/171246/llvm/trunk/test/Transforms/Inline/alloca_test.ll
+END
+array_merge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/131839/llvm/trunk/test/Transforms/Inline/array_merge.ll
+END
+2004-10-17-InlineFunctionWithoutReturn.ll
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/llvm-project/!svn/ver/140076/llvm/trunk/test/Transforms/Inline/2004-10-17-InlineFunctionWithoutReturn.ll
+END
+inline-invoke-tail.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/inline-invoke-tail.ll
+END
+inline-vla.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/Inline/inline-vla.ll
+END
+ignore-debug-info.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/Inline/ignore-debug-info.ll
+END
+gvn-inline-iteration.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/gvn-inline-iteration.ll
+END
+inline_ssp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/Inline/inline_ssp.ll
+END
+alloca-dbgdeclare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/Inline/alloca-dbgdeclare.ll
+END
+devirtualize-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/Inline/devirtualize-2.ll
+END
+noalias2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/Inline/noalias2.ll
+END
+cfg_preserve_test.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/Inline/cfg_preserve_test.ll
+END
+2003-09-22-PHINodeInlineFail.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/Inline/2003-09-22-PHINodeInlineFail.ll
+END
+byval-tail-call.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/byval-tail-call.ll
+END
+lifetime-no-datalayout.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/Inline/lifetime-no-datalayout.ll
+END
+2009-01-13-RecursiveInlineCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/2009-01-13-RecursiveInlineCrash.ll
+END
+debug-invoke.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/Inline/debug-invoke.ll
+END
+invoke-cleanup.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/196711/llvm/trunk/test/Transforms/Inline/invoke-cleanup.ll
+END
+noinline-recursive-fn.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/Inline/noinline-recursive-fn.ll
+END
+inline-musttail-varargs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/Inline/inline-musttail-varargs.ll
+END
+inline_constprop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/inline_constprop.ll
+END
+2006-11-09-InlineCGUpdate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/168694/llvm/trunk/test/Transforms/Inline/2006-11-09-InlineCGUpdate.ll
+END
+attributes.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/234773/llvm/trunk/test/Transforms/Inline/attributes.ll
+END
+2009-01-08-NoInlineDynamicAlloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/Inline/2009-01-08-NoInlineDynamicAlloca.ll
+END
+externally_available.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/Inline/externally_available.ll
+END

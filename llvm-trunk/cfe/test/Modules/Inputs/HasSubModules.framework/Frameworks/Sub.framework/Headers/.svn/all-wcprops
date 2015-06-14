@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/llvm-project/!svn/ver/174683/cfe/trunk/test/Modules/Inputs/HasSubModules.framework/Frameworks/Sub.framework/Headers
+END
+Types.h
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/llvm-project/!svn/ver/174683/cfe/trunk/test/Modules/Inputs/HasSubModules.framework/Frameworks/Sub.framework/Headers/Types.h
+END
+Sub.h
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/llvm-project/!svn/ver/174683/cfe/trunk/test/Modules/Inputs/HasSubModules.framework/Frameworks/Sub.framework/Headers/Sub.h
+END

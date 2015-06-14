@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/238959/llvm/trunk/test/tools/dsymutil/X86
+END
+basic-linking-x86.test
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/238959/llvm/trunk/test/tools/dsymutil/X86/basic-linking-x86.test
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230824/llvm/trunk/test/tools/dsymutil/X86/lit.local.cfg
+END
+basic-lto-dw4-linking-x86.test
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/233130/llvm/trunk/test/tools/dsymutil/X86/basic-lto-dw4-linking-x86.test
+END
+basic-lto-linking-x86.test
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/238959/llvm/trunk/test/tools/dsymutil/X86/basic-lto-linking-x86.test
+END

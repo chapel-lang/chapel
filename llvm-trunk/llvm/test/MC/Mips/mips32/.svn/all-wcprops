@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/236489/llvm/trunk/test/MC/Mips/mips32
+END
+valid.s
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/234398/llvm/trunk/test/MC/Mips/mips32/valid.s
+END
+valid-xfail.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/215847/llvm/trunk/test/MC/Mips/mips32/valid-xfail.s
+END
+invalid-mips32r2.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/219927/llvm/trunk/test/MC/Mips/mips32/invalid-mips32r2.s
+END
+invalid-mips32r2-xfail.s
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/208690/llvm/trunk/test/MC/Mips/mips32/invalid-mips32r2-xfail.s
+END
+invalid-mips64.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/236489/llvm/trunk/test/MC/Mips/mips32/invalid-mips64.s
+END
+abiflags.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/212946/llvm/trunk/test/MC/Mips/mips32/abiflags.s
+END

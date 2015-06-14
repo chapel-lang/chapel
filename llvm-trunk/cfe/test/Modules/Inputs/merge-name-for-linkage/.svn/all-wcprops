@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/226765/cfe/trunk/test/Modules/Inputs/merge-name-for-linkage
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/226765/cfe/trunk/test/Modules/Inputs/merge-name-for-linkage/a.h
+END
+b.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/226765/cfe/trunk/test/Modules/Inputs/merge-name-for-linkage/b.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/226765/cfe/trunk/test/Modules/Inputs/merge-name-for-linkage/module.modulemap
+END

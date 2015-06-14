@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/uclibc/soft-float/usr/lib
+END
+crti.o
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/uclibc/soft-float/usr/lib/crti.o
+END
+crtn.o
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/uclibc/soft-float/usr/lib/crtn.o
+END
+crt1.o
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/uclibc/soft-float/usr/lib/crt1.o
+END

@@ -1,0 +1,167 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/233995/llvm/trunk/test/MC/MachO/ARM
+END
+llvm-objdump-macho.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/156850/llvm/trunk/test/MC/MachO/ARM/llvm-objdump-macho.s
+END
+relax-thumb2-branches.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/145925/llvm/trunk/test/MC/MachO/ARM/relax-thumb2-branches.s
+END
+nop-armv6t2-padding.s
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/146038/llvm/trunk/test/MC/MachO/ARM/nop-armv6t2-padding.s
+END
+nop-thumb2-padding.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/146038/llvm/trunk/test/MC/MachO/ARM/nop-thumb2-padding.s
+END
+static-movt-relocs.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/224959/llvm/trunk/test/MC/MachO/ARM/static-movt-relocs.s
+END
+relax-thumb-ldr-literal.s
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/148424/llvm/trunk/test/MC/MachO/ARM/relax-thumb-ldr-literal.s
+END
+darwin-Thumb-reloc.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/146038/llvm/trunk/test/MC/MachO/ARM/darwin-Thumb-reloc.s
+END
+darwin-ARM-reloc.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/219126/llvm/trunk/test/MC/MachO/ARM/darwin-ARM-reloc.s
+END
+version-min.s
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/204197/llvm/trunk/test/MC/MachO/ARM/version-min.s
+END
+bad-darwin-directives.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/205678/llvm/trunk/test/MC/MachO/ARM/bad-darwin-directives.s
+END
+long-call-branch-island-relocation.s
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/164615/llvm/trunk/test/MC/MachO/ARM/long-call-branch-island-relocation.s
+END
+cstexpr-gotpcrel.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/MC/MachO/ARM/cstexpr-gotpcrel.ll
+END
+thumb2-function-relative-load.s
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/148454/llvm/trunk/test/MC/MachO/ARM/thumb2-function-relative-load.s
+END
+version-min-diagnostics.s
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/204197/llvm/trunk/test/MC/MachO/ARM/version-min-diagnostics.s
+END
+no-subsections-reloc.s
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/148865/llvm/trunk/test/MC/MachO/ARM/no-subsections-reloc.s
+END
+nop-thumb-padding.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/146038/llvm/trunk/test/MC/MachO/ARM/nop-thumb-padding.s
+END
+thumb2-movt-fixup.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/146038/llvm/trunk/test/MC/MachO/ARM/thumb2-movt-fixup.s
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/MC/MachO/ARM/lit.local.cfg
+END
+empty-function-nop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/151778/llvm/trunk/test/MC/MachO/ARM/empty-function-nop.ll
+END
+thumb2-movw-fixup.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/160978/llvm/trunk/test/MC/MachO/ARM/thumb2-movw-fixup.s
+END
+thumb-bl-jbits.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/156118/llvm/trunk/test/MC/MachO/ARM/thumb-bl-jbits.s
+END
+llvm-objdump-macho-stripped.s
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/157031/llvm/trunk/test/MC/MachO/ARM/llvm-objdump-macho-stripped.s
+END
+data-in-code.s
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/157062/llvm/trunk/test/MC/MachO/ARM/data-in-code.s
+END
+bad-darwin-ARM-reloc.s
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/197282/llvm/trunk/test/MC/MachO/ARM/bad-darwin-ARM-reloc.s
+END
+nop-armv4-padding.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/169420/llvm/trunk/test/MC/MachO/ARM/nop-armv4-padding.s
+END
+ios-version-min-load-command.s
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/217172/llvm/trunk/test/MC/MachO/ARM/ios-version-min-load-command.s
+END
+aliased-symbols.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/233995/llvm/trunk/test/MC/MachO/ARM/aliased-symbols.s
+END

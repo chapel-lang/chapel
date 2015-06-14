@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/sysroot/usr/lib
+END
+crtbegin_so.o
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/sysroot/usr/lib/crtbegin_so.o
+END
+crtend_android.o
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/sysroot/usr/lib/crtend_android.o
+END
+crtend_so.o
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/sysroot/usr/lib/crtend_so.o
+END
+crtbegin_dynamic.o
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/sysroot/usr/lib/crtbegin_dynamic.o
+END
+crtbegin_static.o
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/sysroot/usr/lib/crtbegin_static.o
+END

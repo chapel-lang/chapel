@@ -1,0 +1,5 @@
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/201458/cfe/trunk/test/Preprocessor/Inputs/headermap-rel/Foo.framework
+END

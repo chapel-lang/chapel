@@ -1,0 +1,245 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/llvm-project/!svn/ver/239062/llvm/trunk/unittests/ADT
+END
+HashingTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/231112/llvm/trunk/unittests/ADT/HashingTest.cpp
+END
+FunctionRefTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/221753/llvm/trunk/unittests/ADT/FunctionRefTest.cpp
+END
+IntervalMapTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/122093/llvm/trunk/unittests/ADT/IntervalMapTest.cpp
+END
+TwineTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/232465/llvm/trunk/unittests/ADT/TwineTest.cpp
+END
+APFloatTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/231679/llvm/trunk/unittests/ADT/APFloatTest.cpp
+END
+VariadicFunctionTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/146827/llvm/trunk/unittests/ADT/VariadicFunctionTest.cpp
+END
+PostOrderIteratorTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/222447/llvm/trunk/unittests/ADT/PostOrderIteratorTest.cpp
+END
+ImmutableSetTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/120070/llvm/trunk/unittests/ADT/ImmutableSetTest.cpp
+END
+DenseMapTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/231225/llvm/trunk/unittests/ADT/DenseMapTest.cpp
+END
+FoldingSet.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/119870/llvm/trunk/unittests/ADT/FoldingSet.cpp
+END
+APSIntTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/228239/llvm/trunk/unittests/ADT/APSIntTest.cpp
+END
+SmallStringTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/203375/llvm/trunk/unittests/ADT/SmallStringTest.cpp
+END
+TripleTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/238353/llvm/trunk/unittests/ADT/TripleTest.cpp
+END
+MapVectorTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/233159/llvm/trunk/unittests/ADT/MapVectorTest.cpp
+END
+BitVectorTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/197647/llvm/trunk/unittests/ADT/BitVectorTest.cpp
+END
+StringRefTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/206112/llvm/trunk/unittests/ADT/StringRefTest.cpp
+END
+StringMapTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/229340/llvm/trunk/unittests/ADT/StringMapTest.cpp
+END
+MakeUniqueTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/203387/llvm/trunk/unittests/ADT/MakeUniqueTest.cpp
+END
+PointerIntPairTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/229501/llvm/trunk/unittests/ADT/PointerIntPairTest.cpp
+END
+DenseSetTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/220168/llvm/trunk/unittests/ADT/DenseSetTest.cpp
+END
+APIntTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/239062/llvm/trunk/unittests/ADT/APIntTest.cpp
+END
+SparseBitVectorTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/77025/llvm/trunk/unittests/ADT/SparseBitVectorTest.cpp
+END
+SCCIteratorTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/232366/llvm/trunk/unittests/ADT/SCCIteratorTest.cpp
+END
+ilistTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/231256/llvm/trunk/unittests/ADT/ilistTest.cpp
+END
+SparseMultiSetTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/173144/llvm/trunk/unittests/ADT/SparseMultiSetTest.cpp
+END
+OptionalTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/229340/llvm/trunk/unittests/ADT/OptionalTest.cpp
+END
+PointerUnionTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/210442/llvm/trunk/unittests/ADT/PointerUnionTest.cpp
+END
+SmallVectorTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/unittests/ADT/SmallVectorTest.cpp
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/114831/llvm/trunk/unittests/ADT/Makefile
+END
+TinyPtrVectorTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/226428/llvm/trunk/unittests/ADT/TinyPtrVectorTest.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/222447/llvm/trunk/unittests/ADT/CMakeLists.txt
+END
+IntEqClassesTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/122293/llvm/trunk/unittests/ADT/IntEqClassesTest.cpp
+END
+DeltaAlgorithmTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/unittests/ADT/DeltaAlgorithmTest.cpp
+END
+SparseSetTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/155227/llvm/trunk/unittests/ADT/SparseSetTest.cpp
+END
+SmallPtrSetTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/202612/llvm/trunk/unittests/ADT/SmallPtrSetTest.cpp
+END
+PackedVectorTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/187254/llvm/trunk/unittests/ADT/PackedVectorTest.cpp
+END
+ArrayRefTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/230907/llvm/trunk/unittests/ADT/ArrayRefTest.cpp
+END
+DAGDeltaAlgorithmTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/unittests/ADT/DAGDeltaAlgorithmTest.cpp
+END
+ImmutableMapTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/210442/llvm/trunk/unittests/ADT/ImmutableMapTest.cpp
+END
+IntrusiveRefCntPtrTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/195092/llvm/trunk/unittests/ADT/IntrusiveRefCntPtrTest.cpp
+END

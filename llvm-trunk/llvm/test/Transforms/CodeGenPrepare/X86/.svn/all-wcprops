@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/233776/llvm/trunk/test/Transforms/CodeGenPrepare/X86
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/CodeGenPrepare/X86/lit.local.cfg
+END
+memset_chk-simplify-nobuiltin.ll
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/llvm-project/!svn/ver/233776/llvm/trunk/test/Transforms/CodeGenPrepare/X86/memset_chk-simplify-nobuiltin.ll
+END
+extend-sink-hoist.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/CodeGenPrepare/X86/extend-sink-hoist.ll
+END
+x86-shuffle-sink.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/201668/llvm/trunk/test/Transforms/CodeGenPrepare/X86/x86-shuffle-sink.ll
+END
+sink-addrspacecast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/CodeGenPrepare/X86/sink-addrspacecast.ll
+END

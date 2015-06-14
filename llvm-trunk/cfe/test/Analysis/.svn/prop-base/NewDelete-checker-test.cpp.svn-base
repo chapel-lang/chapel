@@ -1,0 +1,7 @@
+K 13
+svn:mergeinfo
+V 226
+/cfe/branches/type-system-rewrite/test/Analysis/NewDelete-checker-test.mm:134693-134817
+/cfe/trunk/test/SemaTemplate/test/Analysis/NewDelete-checker-test.mm:126920
+/cfe/trunk/test/test/Analysis/NewDelete-checker-test.mm:170344
+END

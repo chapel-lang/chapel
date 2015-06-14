@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/237815/cfe/trunk/test/Modules/Inputs/submodules-merge-defs
+END
+import-and-redefine.h
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/233250/cfe/trunk/test/Modules/Inputs/submodules-merge-defs/import-and-redefine.h
+END
+use-defs.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/233250/cfe/trunk/test/Modules/Inputs/submodules-merge-defs/use-defs.h
+END
+empty.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/233250/cfe/trunk/test/Modules/Inputs/submodules-merge-defs/empty.h
+END
+defs.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/237815/cfe/trunk/test/Modules/Inputs/submodules-merge-defs/defs.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/233420/cfe/trunk/test/Modules/Inputs/submodules-merge-defs/module.modulemap
+END
+merged-defs.h
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/233425/cfe/trunk/test/Modules/Inputs/submodules-merge-defs/merged-defs.h
+END

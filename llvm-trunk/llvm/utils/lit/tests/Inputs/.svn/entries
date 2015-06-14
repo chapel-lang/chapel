@@ -1,0 +1,55 @@
+10
+
+dir
+239069
+https://user@llvm.org/svn/llvm-project/llvm/trunk/utils/lit/tests/Inputs
+https://user@llvm.org/svn/llvm-project
+
+
+
+2013-09-14T01:19:17.615777Z
+190738
+ddunbar
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+91177308-0d34-0410-b5e6-96231b3b80d8
+
+shtest-shell
+dir
+
+shtest-format
+dir
+
+googletest-format
+dir
+
+progress-bar
+dir
+
+test-data
+dir
+
+discovery
+dir
+
+unittest-adaptor
+dir
+
+exec-discovery
+dir
+
+exec-discovery-in-tree
+dir
+

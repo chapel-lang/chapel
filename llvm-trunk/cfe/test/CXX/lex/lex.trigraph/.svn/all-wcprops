@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/224790/cfe/trunk/test/CXX/lex/lex.trigraph
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/224790/cfe/trunk/test/CXX/lex/lex.trigraph/p1.cpp
+END
+p2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/224790/cfe/trunk/test/CXX/lex/lex.trigraph/p2.cpp
+END
+p3.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/224790/cfe/trunk/test/CXX/lex/lex.trigraph/p3.cpp
+END

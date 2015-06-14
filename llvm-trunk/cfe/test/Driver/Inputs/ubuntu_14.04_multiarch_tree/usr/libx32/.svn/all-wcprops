@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/212725/cfe/trunk/test/Driver/Inputs/ubuntu_14.04_multiarch_tree/usr/libx32
+END
+crtn.o
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/212725/cfe/trunk/test/Driver/Inputs/ubuntu_14.04_multiarch_tree/usr/libx32/crtn.o
+END
+crt1.o
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/212725/cfe/trunk/test/Driver/Inputs/ubuntu_14.04_multiarch_tree/usr/libx32/crt1.o
+END
+crti.o
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/212725/cfe/trunk/test/Driver/Inputs/ubuntu_14.04_multiarch_tree/usr/libx32/crti.o
+END

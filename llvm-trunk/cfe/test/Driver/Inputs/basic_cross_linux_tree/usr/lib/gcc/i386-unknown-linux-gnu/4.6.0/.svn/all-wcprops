@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/llvm-project/!svn/ver/184499/cfe/trunk/test/Driver/Inputs/basic_cross_linux_tree/usr/lib/gcc/i386-unknown-linux-gnu/4.6.0
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 137
+/svn/llvm-project/!svn/ver/184499/cfe/trunk/test/Driver/Inputs/basic_cross_linux_tree/usr/lib/gcc/i386-unknown-linux-gnu/4.6.0/crtbegin.o
+END

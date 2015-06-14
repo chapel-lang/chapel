@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/215864/cfe/trunk/include/clang/ARCMigrate
+END
+ARCMT.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/208063/cfe/trunk/include/clang/ARCMigrate/ARCMT.h
+END
+ARCMTActions.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/215557/cfe/trunk/include/clang/ARCMigrate/ARCMTActions.h
+END
+FileRemapper.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/215864/cfe/trunk/include/clang/ARCMigrate/FileRemapper.h
+END

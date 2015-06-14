@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/lib/gcc/mips-linux-gnu/4.6.3
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/179934/cfe/trunk/test/Driver/Inputs/mips_cs_tree/lib/gcc/mips-linux-gnu/4.6.3/crtbegin.o
+END
+crtend.o
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/llvm-project/!svn/ver/179934/cfe/trunk/test/Driver/Inputs/mips_cs_tree/lib/gcc/mips-linux-gnu/4.6.3/crtend.o
+END

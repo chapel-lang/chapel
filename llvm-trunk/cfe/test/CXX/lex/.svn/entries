@@ -1,0 +1,70 @@
+10
+
+dir
+239086
+http://user@llvm.org/svn/llvm-project/cfe/trunk/test/CXX/lex
+http://user@llvm.org/svn/llvm-project
+
+
+
+2014-12-23T22:32:37.618145Z
+224790
+nico
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+91177308-0d34-0410-b5e6-96231b3b80d8
+
+lex.comment
+dir
+
+lex.phases
+dir
+
+lex.separate
+dir
+
+lex.header
+dir
+
+lex.key
+dir
+
+lex.ppnumber
+dir
+
+lex.charset
+dir
+
+lex.literal
+dir
+
+lex.digraph
+dir
+
+lex.operators
+dir
+
+lex.name
+dir
+
+lex.pptoken
+dir
+
+lex.token
+dir
+
+lex.trigraph
+dir
+

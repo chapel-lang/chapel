@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/224114/llvm/trunk/tools/lli/ChildTarget
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/191861/llvm/trunk/tools/lli/ChildTarget/LLVMBuild.txt
+END
+ChildTarget.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/224114/llvm/trunk/tools/lli/ChildTarget/ChildTarget.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/200297/llvm/trunk/tools/lli/ChildTarget/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/199929/llvm/trunk/tools/lli/ChildTarget/Makefile
+END

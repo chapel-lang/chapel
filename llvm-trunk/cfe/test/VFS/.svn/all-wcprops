@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/llvm-project/!svn/ver/236121/cfe/trunk/test/VFS
+END
+module-import.m
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/205632/cfe/trunk/test/VFS/module-import.m
+END
+include-real-from-virtual.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/include-real-from-virtual.c
+END
+include-virtual-from-real.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/include-virtual-from-real.c
+END
+incomplete-umbrella.m
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/211746/cfe/trunk/test/VFS/incomplete-umbrella.m
+END
+implicit-include.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/implicit-include.c
+END
+include-mixed-real-and-virtual.c
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/include-mixed-real-and-virtual.c
+END
+framework-import.m
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/framework-import.m
+END
+umbrella-mismatch.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/230064/cfe/trunk/test/VFS/umbrella-mismatch.m
+END
+external-names.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/236121/cfe/trunk/test/VFS/external-names.c
+END
+include.c
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/include.c
+END
+parse-errors.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/parse-errors.c
+END
+real-path-found-first.m
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/209534/cfe/trunk/test/VFS/real-path-found-first.m
+END
+relative-path.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/202903/cfe/trunk/test/VFS/relative-path.c
+END

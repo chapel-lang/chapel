@@ -1,0 +1,17 @@
+K 15
+cvs2svn:cvs-rev
+V 3
+1.4
+K 13
+svn:eol-style
+V 6
+native
+K 14
+svn:executable
+V 1
+*
+K 12
+svn:keywords
+V 23
+Author Date Id Revision
+END

@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/188107/llvm/trunk/utils/lit/tests/Inputs/unittest-adaptor
+END
+test-two.txt
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/174019/llvm/trunk/utils/lit/tests/Inputs/unittest-adaptor/test-two.txt
+END
+lit.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/188107/llvm/trunk/utils/lit/tests/Inputs/unittest-adaptor/lit.cfg
+END
+test-one.txt
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/174019/llvm/trunk/utils/lit/tests/Inputs/unittest-adaptor/test-one.txt
+END

@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/238424/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote
+END
+stubs-remote.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/stubs-remote.ll
+END
+cross-module-a.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/cross-module-a.ll
+END
+multi-module-a.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/multi-module-a.ll
+END
+test-global-init-nonzero-sm-pic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/llvm-project/!svn/ver/238424/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/test-global-init-nonzero-sm-pic.ll
+END
+test-global-init-nonzero-remote.ll
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/test-global-init-nonzero-remote.ll
+END
+test-data-align-remote.ll
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/test-data-align-remote.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/lit.local.cfg
+END
+test-ptr-reloc-sm-pic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/238424/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/test-ptr-reloc-sm-pic.ll
+END
+test-ptr-reloc-remote.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/test-ptr-reloc-remote.ll
+END
+cross-module-sm-pic-a.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/238424/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/cross-module-sm-pic-a.ll
+END
+test-fp-no-external-funcs-remote.ll
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/test-fp-no-external-funcs-remote.ll
+END
+multi-module-sm-pic-a.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/238424/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/multi-module-sm-pic-a.ll
+END
+simpletest-remote.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/simpletest-remote.ll
+END
+test-common-symbols-remote.ll
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/test-common-symbols-remote.ll
+END
+stubs-sm-pic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/233182/llvm/trunk/test/ExecutionEngine/OrcMCJIT/remote/stubs-sm-pic.ll
+END

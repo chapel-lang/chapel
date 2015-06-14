@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/207199/llvm/trunk/bindings/python/llvm/tests
+END
+test_object.py
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/207199/llvm/trunk/bindings/python/llvm/tests/test_object.py
+END
+test_core.py
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/201929/llvm/trunk/bindings/python/llvm/tests/test_core.py
+END
+test_file
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/190388/llvm/trunk/bindings/python/llvm/tests/test_file
+END
+base.py
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/190458/llvm/trunk/bindings/python/llvm/tests/base.py
+END
+test.bc
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/190458/llvm/trunk/bindings/python/llvm/tests/test.bc
+END
+test_disassembler.py
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/197757/llvm/trunk/bindings/python/llvm/tests/test_disassembler.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/152482/llvm/trunk/bindings/python/llvm/tests/__init__.py
+END
+test_bitreader.py
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/190467/llvm/trunk/bindings/python/llvm/tests/test_bitreader.py
+END

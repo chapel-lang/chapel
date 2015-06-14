@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/llvm-project/!svn/ver/212316/llvm/trunk/test/Unit
+END
+lit.site.cfg.in
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/202510/llvm/trunk/test/Unit/lit.site.cfg.in
+END
+lit.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/212316/llvm/trunk/test/Unit/lit.cfg
+END

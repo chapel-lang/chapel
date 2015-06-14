@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/237505/cfe/trunk/test/CXX/temp/temp.arg/temp.arg.nontype
+END
+p1-11.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/179514/cfe/trunk/test/CXX/temp/temp.arg/temp.arg.nontype/p1-11.cpp
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/193462/cfe/trunk/test/CXX/temp/temp.arg/temp.arg.nontype/p1.cpp
+END
+p5.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/237505/cfe/trunk/test/CXX/temp/temp.arg/temp.arg.nontype/p5.cpp
+END

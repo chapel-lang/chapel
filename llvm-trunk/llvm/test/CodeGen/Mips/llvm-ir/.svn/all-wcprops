@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/237792/llvm/trunk/test/CodeGen/Mips/llvm-ir
+END
+call.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/call.ll
+END
+select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/237792/llvm/trunk/test/CodeGen/Mips/llvm-ir/select.ll
+END
+or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/or.ll
+END
+indirectbr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/237792/llvm/trunk/test/CodeGen/Mips/llvm-ir/indirectbr.ll
+END
+shl.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/237792/llvm/trunk/test/CodeGen/Mips/llvm-ir/shl.ll
+END
+add.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/add.ll
+END
+sub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/sub.ll
+END
+ret.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/ret.ll
+END
+mul.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/mul.ll
+END
+ashr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/237792/llvm/trunk/test/CodeGen/Mips/llvm-ir/ashr.ll
+END
+and.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/and.ll
+END
+sdiv.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/sdiv.ll
+END
+srem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/srem.ll
+END
+udiv.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/udiv.ll
+END
+urem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/urem.ll
+END
+lshr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/237792/llvm/trunk/test/CodeGen/Mips/llvm-ir/lshr.ll
+END
+xor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/229695/llvm/trunk/test/CodeGen/Mips/llvm-ir/xor.ll
+END

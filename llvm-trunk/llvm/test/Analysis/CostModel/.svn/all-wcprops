@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/232682/llvm/trunk/test/Analysis/CostModel
+END
+no_info.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/227669/llvm/trunk/test/Analysis/CostModel/no_info.ll
+END

@@ -1,0 +1,46 @@
+10
+
+dir
+239086
+http://user@llvm.org/svn/llvm-project/cfe/trunk/test/Driver/Inputs/debian_multiarch_tree/usr/lib/gcc
+http://user@llvm.org/svn/llvm-project
+
+
+
+2012-04-26T08:35:58.156029Z
+155628
+atanasyan
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+91177308-0d34-0410-b5e6-96231b3b80d8
+
+i686-linux-gnu
+dir
+
+x86_64-linux-gnu
+dir
+
+powerpc-linux-gnu
+dir
+
+mips-linux-gnu
+dir
+
+mipsel-linux-gnu
+dir
+
+powerpc64-linux-gnu
+dir
+

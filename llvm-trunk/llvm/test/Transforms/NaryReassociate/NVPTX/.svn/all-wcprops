@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/238396/llvm/trunk/test/Transforms/NaryReassociate/NVPTX
+END
+nary-gep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/238396/llvm/trunk/test/Transforms/NaryReassociate/NVPTX/nary-gep.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/235695/llvm/trunk/test/Transforms/NaryReassociate/NVPTX/lit.local.cfg
+END
+nary-slsr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/235695/llvm/trunk/test/Transforms/NaryReassociate/NVPTX/nary-slsr.ll
+END

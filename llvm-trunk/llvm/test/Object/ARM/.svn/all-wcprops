@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/221470/llvm/trunk/test/Object/ARM
+END
+objdump-thumb.test
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/179848/llvm/trunk/test/Object/ARM/objdump-thumb.test
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Object/ARM/lit.local.cfg
+END
+symbol-addr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/178676/llvm/trunk/test/Object/ARM/symbol-addr.ll
+END
+macho-data-in-code.test
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/221470/llvm/trunk/test/Object/ARM/macho-data-in-code.test
+END

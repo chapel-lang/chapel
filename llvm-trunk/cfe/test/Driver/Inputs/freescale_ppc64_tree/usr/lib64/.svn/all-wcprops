@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/164179/cfe/trunk/test/Driver/Inputs/freescale_ppc64_tree/usr/lib64
+END
+crti.o
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/164179/cfe/trunk/test/Driver/Inputs/freescale_ppc64_tree/usr/lib64/crti.o
+END
+crtn.o
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/164179/cfe/trunk/test/Driver/Inputs/freescale_ppc64_tree/usr/lib64/crtn.o
+END
+crt1.o
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/164179/cfe/trunk/test/Driver/Inputs/freescale_ppc64_tree/usr/lib64/crt1.o
+END

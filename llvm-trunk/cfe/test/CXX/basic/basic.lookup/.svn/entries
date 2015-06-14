@@ -1,0 +1,46 @@
+10
+
+dir
+239086
+http://user@llvm.org/svn/llvm-project/cfe/trunk/test/CXX/basic/basic.lookup
+http://user@llvm.org/svn/llvm-project
+
+
+
+2015-01-18T19:05:48.624385Z
+226410
+sepavloff
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+91177308-0d34-0410-b5e6-96231b3b80d8
+
+basic.lookup.argdep
+dir
+
+basic.lookup.classref
+dir
+
+basic.lookup.qual
+dir
+
+basic.lookup.elab
+dir
+
+basic.lookup.udir
+dir
+
+basic.lookup.unqual
+dir
+

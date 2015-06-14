@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/llvm-project/!svn/ver/172163/cfe/trunk/test/TableGen
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/172087/cfe/trunk/test/TableGen/lit.local.cfg
+END
+tg-fixits.td
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/172163/cfe/trunk/test/TableGen/tg-fixits.td
+END
+DiagnosticBase.inc
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/172087/cfe/trunk/test/TableGen/DiagnosticBase.inc
+END
+anonymous-groups.td
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/172087/cfe/trunk/test/TableGen/anonymous-groups.td
+END

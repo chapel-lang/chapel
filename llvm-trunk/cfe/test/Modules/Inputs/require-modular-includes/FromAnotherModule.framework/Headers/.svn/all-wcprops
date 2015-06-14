@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/llvm-project/!svn/ver/208004/cfe/trunk/test/Modules/Inputs/require-modular-includes/FromAnotherModule.framework/Headers
+END
+FromAnotherModule.h
+K 25
+svn:wc:ra_dav:version-url
+V 144
+/svn/llvm-project/!svn/ver/208004/cfe/trunk/test/Modules/Inputs/require-modular-includes/FromAnotherModule.framework/Headers/FromAnotherModule.h
+END

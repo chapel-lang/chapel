@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/SimplifyCFG/AArch64
+END
+prefer-fma.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/SimplifyCFG/AArch64/prefer-fma.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230241/llvm/trunk/test/Transforms/SimplifyCFG/AArch64/lit.local.cfg
+END

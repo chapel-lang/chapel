@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/238396/llvm/trunk/test/Transforms/NaryReassociate
+END
+nary-add.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/237269/llvm/trunk/test/Transforms/NaryReassociate/nary-add.ll
+END

@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/149011/cfe/trunk/test/Driver/Inputs/multiarch_freebsd64_tree/usr/lib
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/149011/cfe/trunk/test/Driver/Inputs/multiarch_freebsd64_tree/usr/lib/.keep
+END
+crt1.o
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/149011/cfe/trunk/test/Driver/Inputs/multiarch_freebsd64_tree/usr/lib/crt1.o
+END

@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/226409/llvm/trunk/test/MC/Disassembler/Mips/mips32
+END
+valid-mips32-el.txt
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/226408/llvm/trunk/test/MC/Disassembler/Mips/mips32/valid-mips32-el.txt
+END
+valid-mips32.txt
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/226408/llvm/trunk/test/MC/Disassembler/Mips/mips32/valid-mips32.txt
+END
+valid-xfail-mips32.txt
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/226409/llvm/trunk/test/MC/Disassembler/Mips/mips32/valid-xfail-mips32.txt
+END

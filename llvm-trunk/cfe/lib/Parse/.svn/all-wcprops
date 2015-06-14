@@ -1,0 +1,113 @@
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/lib/Parse
+END
+ParseExprCXX.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/237835/cfe/trunk/lib/Parse/ParseExprCXX.cpp
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/108633/cfe/trunk/lib/Parse/Makefile
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/212919/cfe/trunk/lib/Parse/CMakeLists.txt
+END
+Parser.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/237531/cfe/trunk/lib/Parse/Parser.cpp
+END
+ParseTentative.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/230274/cfe/trunk/lib/Parse/ParseTentative.cpp
+END
+ParseInit.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/232622/cfe/trunk/lib/Parse/ParseInit.cpp
+END
+ParseDecl.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/lib/Parse/ParseDecl.cpp
+END
+ParsePragma.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/236493/cfe/trunk/lib/Parse/ParsePragma.cpp
+END
+ParseTemplate.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/237064/cfe/trunk/lib/Parse/ParseTemplate.cpp
+END
+ParseObjc.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/235276/cfe/trunk/lib/Parse/ParseObjc.cpp
+END
+ParseExpr.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/236519/cfe/trunk/lib/Parse/ParseExpr.cpp
+END
+ParseCXXInlineMethods.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/233043/cfe/trunk/lib/Parse/ParseCXXInlineMethods.cpp
+END
+ParseStmt.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/236201/cfe/trunk/lib/Parse/ParseStmt.cpp
+END
+ParseAST.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/224893/cfe/trunk/lib/Parse/ParseAST.cpp
+END
+ParseStmtAsm.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/237073/cfe/trunk/lib/Parse/ParseStmtAsm.cpp
+END
+ParseDeclCXX.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/237835/cfe/trunk/lib/Parse/ParseDeclCXX.cpp
+END
+RAIIObjectsForParser.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/237192/cfe/trunk/lib/Parse/RAIIObjectsForParser.h
+END
+ParseOpenMP.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/236821/cfe/trunk/lib/Parse/ParseOpenMP.cpp
+END

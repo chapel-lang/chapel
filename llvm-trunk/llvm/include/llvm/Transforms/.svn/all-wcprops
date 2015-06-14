@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/238882/llvm/trunk/include/llvm/Transforms
+END
+Vectorize.h
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/207174/llvm/trunk/include/llvm/Transforms/Vectorize.h
+END
+Instrumentation.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/236791/llvm/trunk/include/llvm/Transforms/Instrumentation.h
+END
+ObjCARC.h
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/209609/llvm/trunk/include/llvm/Transforms/ObjCARC.h
+END
+Scalar.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/238882/llvm/trunk/include/llvm/Transforms/Scalar.h
+END
+IPO.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/230054/llvm/trunk/include/llvm/Transforms/IPO.h
+END

@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/224375/cfe/trunk/test/CXX/class.access/class.friend
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/193020/cfe/trunk/test/CXX/class.access/class.friend/p1.cpp
+END
+p9-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/161652/cfe/trunk/test/CXX/class.access/class.friend/p9-cxx0x.cpp
+END
+p11.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/224375/cfe/trunk/test/CXX/class.access/class.friend/p11.cpp
+END
+p2-cxx03.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/141801/cfe/trunk/test/CXX/class.access/class.friend/p2-cxx03.cpp
+END
+p6.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/184501/cfe/trunk/test/CXX/class.access/class.friend/p6.cpp
+END
+p3-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/194273/cfe/trunk/test/CXX/class.access/class.friend/p3-cxx0x.cpp
+END

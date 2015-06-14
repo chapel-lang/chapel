@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/238699/llvm/trunk/include/llvm/DebugInfo/DWARF
+END
+DWARFAcceleratorTable.h
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/232078/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFAcceleratorTable.h
+END
+DWARFDebugLine.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/238699/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFDebugLine.h
+END
+DWARFDebugRangeList.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/232230/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFDebugRangeList.h
+END
+DWARFFormValue.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/237721/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFFormValue.h
+END
+DWARFDebugFrame.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/227586/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFDebugFrame.h
+END
+DWARFRelocMap.h
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/227586/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFRelocMap.h
+END
+DWARFSection.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/237062/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFSection.h
+END
+DWARFDebugAbbrev.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/227586/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFDebugAbbrev.h
+END
+DWARFAbbreviationDeclaration.h
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/231297/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFAbbreviationDeclaration.h
+END
+DWARFUnit.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/237733/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFUnit.h
+END
+DWARFDebugArangeSet.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/227586/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFDebugArangeSet.h
+END
+DWARFTypeUnit.h
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/227586/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFTypeUnit.h
+END
+DWARFDebugLoc.h
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/227586/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFDebugLoc.h
+END
+DWARFDebugInfoEntry.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/235612/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFDebugInfoEntry.h
+END
+DWARFContext.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/237961/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFContext.h
+END
+DWARFDebugAranges.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/227586/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFDebugAranges.h
+END
+DWARFCompileUnit.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/227586/llvm/trunk/include/llvm/DebugInfo/DWARF/DWARFCompileUnit.h
+END

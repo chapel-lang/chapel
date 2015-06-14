@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/237947/llvm/trunk/test/Transforms/LoopUnroll/PowerPC
+END
+a2-high-cost-trip-count-computation.ll
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/llvm-project/!svn/ver/237947/llvm/trunk/test/Transforms/LoopUnroll/PowerPC/a2-high-cost-trip-count-computation.ll
+END
+a2-unrolling.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopUnroll/PowerPC/a2-unrolling.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/LoopUnroll/PowerPC/lit.local.cfg
+END
+p7-unrolling.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/225566/llvm/trunk/test/Transforms/LoopUnroll/PowerPC/p7-unrolling.ll
+END

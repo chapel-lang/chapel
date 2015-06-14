@@ -1,0 +1,58 @@
+10
+
+dir
+239086
+http://user@llvm.org/svn/llvm-project/cfe/trunk/test/CXX/depr
+http://user@llvm.org/svn/llvm-project
+
+
+
+2009-06-13T06:06:53.362325Z
+73286
+dgregor
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+91177308-0d34-0410-b5e6-96231b3b80d8
+
+depr.ios.members
+dir
+
+depr.incr.bool
+dir
+
+depr.string
+dir
+
+depr.static
+dir
+
+depr.lib.iterator.primitives
+dir
+
+depr.lib.binders
+dir
+
+depr.auto.ptr
+dir
+
+depr.c.headers
+dir
+
+depr.str.strstreams
+dir
+
+depr.access.dcl
+dir
+

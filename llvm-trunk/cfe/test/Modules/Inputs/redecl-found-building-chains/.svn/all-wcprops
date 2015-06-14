@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/232411/cfe/trunk/test/Modules/Inputs/redecl-found-building-chains
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/232411/cfe/trunk/test/Modules/Inputs/redecl-found-building-chains/a.h
+END
+b.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/232411/cfe/trunk/test/Modules/Inputs/redecl-found-building-chains/b.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/llvm-project/!svn/ver/232411/cfe/trunk/test/Modules/Inputs/redecl-found-building-chains/module.modulemap
+END
+c.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/232411/cfe/trunk/test/Modules/Inputs/redecl-found-building-chains/c.h
+END
+d.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/232411/cfe/trunk/test/Modules/Inputs/redecl-found-building-chains/d.h
+END

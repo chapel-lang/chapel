@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/227339/llvm/trunk/tools/llvm-c-test
+END
+object.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/206750/llvm/trunk/tools/llvm-c-test/object.c
+END
+include-all.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/193233/llvm/trunk/tools/llvm-c-test/include-all.c
+END
+targets.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/193254/llvm/trunk/tools/llvm-c-test/targets.c
+END
+disassemble.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/218682/llvm/trunk/tools/llvm-c-test/disassemble.c
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/227319/llvm/trunk/tools/llvm-c-test/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/193233/llvm/trunk/tools/llvm-c-test/Makefile
+END
+llvm-c-test.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/227319/llvm/trunk/tools/llvm-c-test/llvm-c-test.h
+END
+metadata.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/227339/llvm/trunk/tools/llvm-c-test/metadata.c
+END
+calc.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/193254/llvm/trunk/tools/llvm-c-test/calc.c
+END
+helpers.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/193233/llvm/trunk/tools/llvm-c-test/helpers.c
+END
+main.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/227319/llvm/trunk/tools/llvm-c-test/main.c
+END
+module.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/193416/llvm/trunk/tools/llvm-c-test/module.c
+END

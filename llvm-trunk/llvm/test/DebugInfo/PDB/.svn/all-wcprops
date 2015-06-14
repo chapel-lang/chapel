@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/231215/llvm/trunk/test/DebugInfo/PDB
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/230164/llvm/trunk/test/DebugInfo/PDB/lit.local.cfg
+END
+pdbdump-symbol-format.test
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/231215/llvm/trunk/test/DebugInfo/PDB/pdbdump-symbol-format.test
+END
+pdbdump-flags.test
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230744/llvm/trunk/test/DebugInfo/PDB/pdbdump-flags.test
+END

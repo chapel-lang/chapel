@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/224411/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/146619/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p1.cpp
+END
+p10.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/173883/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p10.cpp
+END
+p11.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/202925/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p11.cpp
+END
+p12.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/106093/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p12.cpp
+END
+p13.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p13.cpp
+END
+p4.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/102163/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p4.cpp
+END
+p8.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/120296/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p8.cpp
+END
+p3-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p3-cxx0x.cpp
+END
+p5-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/203302/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p5-cxx0x.cpp
+END
+p6-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/203302/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p6-cxx0x.cpp
+END
+p8-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/224411/cfe/trunk/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p8-cxx0x.cpp
+END

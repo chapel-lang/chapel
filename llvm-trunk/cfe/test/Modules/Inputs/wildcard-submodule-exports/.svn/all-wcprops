@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/169919/cfe/trunk/test/Modules/Inputs/wildcard-submodule-exports
+END
+A_two.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/145811/cfe/trunk/test/Modules/Inputs/wildcard-submodule-exports/A_two.h
+END
+B_two.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/145811/cfe/trunk/test/Modules/Inputs/wildcard-submodule-exports/B_two.h
+END
+C_two.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/169919/cfe/trunk/test/Modules/Inputs/wildcard-submodule-exports/C_two.h
+END
+module.map
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/145811/cfe/trunk/test/Modules/Inputs/wildcard-submodule-exports/module.map
+END
+A_one.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/145811/cfe/trunk/test/Modules/Inputs/wildcard-submodule-exports/A_one.h
+END
+B_one.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/145811/cfe/trunk/test/Modules/Inputs/wildcard-submodule-exports/B_one.h
+END
+C_one.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/169919/cfe/trunk/test/Modules/Inputs/wildcard-submodule-exports/C_one.h
+END

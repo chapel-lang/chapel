@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/utils/lint
+END
+cpp_lint.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/utils/lint/cpp_lint.py
+END
+common_lint.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/utils/lint/common_lint.py
+END
+generic_lint.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/utils/lint/generic_lint.py
+END
+remove_trailing_whitespace.sh
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/utils/lint/remove_trailing_whitespace.sh
+END

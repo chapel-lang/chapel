@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/236506/llvm/trunk/lib/ExecutionEngine/Orc
+END
+IndirectionUtils.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/236506/llvm/trunk/lib/ExecutionEngine/Orc/IndirectionUtils.cpp
+END
+OrcMCJITReplacement.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230143/llvm/trunk/lib/ExecutionEngine/Orc/OrcMCJITReplacement.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/236506/llvm/trunk/lib/ExecutionEngine/Orc/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/226940/llvm/trunk/lib/ExecutionEngine/Orc/Makefile
+END
+OrcMCJITReplacement.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/lib/ExecutionEngine/Orc/OrcMCJITReplacement.h
+END
+ExecutionUtils.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/233885/llvm/trunk/lib/ExecutionEngine/Orc/ExecutionUtils.cpp
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/227040/llvm/trunk/lib/ExecutionEngine/Orc/LLVMBuild.txt
+END
+OrcTargetSupport.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/235325/llvm/trunk/lib/ExecutionEngine/Orc/OrcTargetSupport.cpp
+END

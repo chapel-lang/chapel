@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/206221/cfe/trunk/test/Modules/Inputs/modules-with-same-name/path2/A
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/206201/cfe/trunk/test/Modules/Inputs/modules-with-same-name/path2/A/a.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/llvm-project/!svn/ver/206221/cfe/trunk/test/Modules/Inputs/modules-with-same-name/path2/A/module.modulemap
+END

@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/llvm-project/!svn/ver/161038/cfe/trunk/test/Driver/Inputs/ubuntu_12.04_LTS_multiarch_tree/usr/lib/gcc/arm-linux-gnueabi/4.6.1
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 141
+/svn/llvm-project/!svn/ver/161038/cfe/trunk/test/Driver/Inputs/ubuntu_12.04_LTS_multiarch_tree/usr/lib/gcc/arm-linux-gnueabi/4.6.1/crtbegin.o
+END
+crtend.o
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/svn/llvm-project/!svn/ver/161038/cfe/trunk/test/Driver/Inputs/ubuntu_12.04_LTS_multiarch_tree/usr/lib/gcc/arm-linux-gnueabi/4.6.1/crtend.o
+END

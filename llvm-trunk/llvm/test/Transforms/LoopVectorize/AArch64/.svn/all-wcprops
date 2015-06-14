@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/AArch64
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/LoopVectorize/AArch64/lit.local.cfg
+END
+sdiv-pow2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/AArch64/sdiv-pow2.ll
+END
+gather-cost.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/AArch64/gather-cost.ll
+END
+aarch64-unroll.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/AArch64/aarch64-unroll.ll
+END
+arbitrary-induction-step.ll
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/AArch64/arbitrary-induction-step.ll
+END
+arm64-unroll.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/AArch64/arm64-unroll.ll
+END

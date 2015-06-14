@@ -1,0 +1,1577 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/llvm-project/!svn/ver/237555/cfe/trunk/test/Index
+END
+targeted-preamble.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/143605/cfe/trunk/test/Index/targeted-preamble.h
+END
+annotate-comments-unterminated.c
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/Index/annotate-comments-unterminated.c
+END
+warning-flags.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/123793/cfe/trunk/test/Index/warning-flags.c
+END
+annotate-literals.m
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/152138/cfe/trunk/test/Index/annotate-literals.m
+END
+preamble_macro_template.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/219529/cfe/trunk/test/Index/preamble_macro_template.cpp
+END
+complete-at-exprstmt.m
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/142424/cfe/trunk/test/Index/complete-at-exprstmt.m
+END
+complete-hiding.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/116774/cfe/trunk/test/Index/complete-hiding.c
+END
+load-classes.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/205714/cfe/trunk/test/Index/load-classes.cpp
+END
+index-refs.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/181237/cfe/trunk/test/Index/index-refs.m
+END
+format-comment-cdecls.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/220376/cfe/trunk/test/Index/format-comment-cdecls.c
+END
+load-namespaces.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/200640/cfe/trunk/test/Index/load-namespaces.cpp
+END
+annotate-tokens-preamble.c
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/141200/cfe/trunk/test/Index/annotate-tokens-preamble.c
+END
+complete-macro-args.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/175925/cfe/trunk/test/Index/complete-macro-args.c
+END
+complete-preamble.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/162083/cfe/trunk/test/Index/complete-preamble.h
+END
+getcursor-pp-pch.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/140207/cfe/trunk/test/Index/getcursor-pp-pch.c
+END
+complete-super.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/154413/cfe/trunk/test/Index/complete-super.cpp
+END
+getcursor-preamble.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/173811/cfe/trunk/test/Index/getcursor-preamble.h
+END
+complete-declarators.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/116774/cfe/trunk/test/Index/complete-declarators.cpp
+END
+overriding-ftemplate-comments.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/223628/cfe/trunk/test/Index/overriding-ftemplate-comments.cpp
+END
+getcursor-preamble.m
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/173844/cfe/trunk/test/Index/getcursor-preamble.m
+END
+complete-memfunc-cvquals.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/116774/cfe/trunk/test/Index/complete-memfunc-cvquals.cpp
+END
+print-type-cxx11.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/197164/cfe/trunk/test/Index/print-type-cxx11.cpp
+END
+comment-objc-decls.m
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/172238/cfe/trunk/test/Index/comment-objc-decls.m
+END
+annotate-tokens-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/200640/cfe/trunk/test/Index/annotate-tokens-cxx0x.cpp
+END
+complete-at-directives.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/116241/cfe/trunk/test/Index/complete-at-directives.m
+END
+local-symbols.m
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/202745/cfe/trunk/test/Index/local-symbols.m
+END
+annotate-tokens-include.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/117001/cfe/trunk/test/Index/annotate-tokens-include.c
+END
+complete-preamble.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/Index/complete-preamble.cpp
+END
+get-cursor-includes.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/122350/cfe/trunk/test/Index/get-cursor-includes.c
+END
+cursor-dynamic-call.mm
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/221641/cfe/trunk/test/Index/cursor-dynamic-call.mm
+END
+annotate-tokens-include.h
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/103143/cfe/trunk/test/Index/annotate-tokens-include.h
+END
+comment-with-preamble.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/179907/cfe/trunk/test/Index/comment-with-preamble.c
+END
+index-module.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/237555/cfe/trunk/test/Index/index-module.m
+END
+cxx-operator-overload.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/91446/cfe/trunk/test/Index/cxx-operator-overload.cpp
+END
+annotate-comments-typedef.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/201990/cfe/trunk/test/Index/annotate-comments-typedef.m
+END
+c-index-redecls.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/125434/cfe/trunk/test/Index/c-index-redecls.c
+END
+complete-lambdas.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/150583/cfe/trunk/test/Index/complete-lambdas.cpp
+END
+comment-c-decls.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/220376/cfe/trunk/test/Index/comment-c-decls.c
+END
+file-macro-refs.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/145377/cfe/trunk/test/Index/file-macro-refs.c
+END
+cindex-test-inclusions.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/94575/cfe/trunk/test/Index/cindex-test-inclusions.c
+END
+overrides.m
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/162408/cfe/trunk/test/Index/overrides.m
+END
+file-refs.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/141277/cfe/trunk/test/Index/file-refs.cpp
+END
+index-invalid-code.m
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/152481/cfe/trunk/test/Index/index-invalid-code.m
+END
+complete-super.m
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/173903/cfe/trunk/test/Index/complete-super.m
+END
+preamble-reparse-cmd-define.c
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/196529/cfe/trunk/test/Index/preamble-reparse-cmd-define.c
+END
+index-many-call-ops.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/217064/cfe/trunk/test/Index/index-many-call-ops.cpp
+END
+file-includes.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/181285/cfe/trunk/test/Index/file-includes.c
+END
+initializer-memory.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/130420/cfe/trunk/test/Index/initializer-memory.cpp
+END
+complete-stmt.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/174038/cfe/trunk/test/Index/complete-stmt.c
+END
+redeclarations.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/143077/cfe/trunk/test/Index/redeclarations.cpp
+END
+print-display-names.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/115428/cfe/trunk/test/Index/print-display-names.cpp
+END
+complete-interfaces.m
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/136559/cfe/trunk/test/Index/complete-interfaces.m
+END
+preamble-reparse-cmd-define.c.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/139512/cfe/trunk/test/Index/preamble-reparse-cmd-define.c.h
+END
+comment-to-html-xml-conversion.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/223632/cfe/trunk/test/Index/comment-to-html-xml-conversion.cpp
+END
+targeted-nested1.h
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/143605/cfe/trunk/test/Index/targeted-nested1.h
+END
+subclass-comment.mm
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/188658/cfe/trunk/test/Index/subclass-comment.mm
+END
+comment-unqualified-objc-pointer.m
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/191551/cfe/trunk/test/Index/comment-unqualified-objc-pointer.m
+END
+in-class-init.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/Index/in-class-init.cpp
+END
+index-with-working-dir.c
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/166801/cfe/trunk/test/Index/index-with-working-dir.c
+END
+file-refs.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/141277/cfe/trunk/test/Index/file-refs.c
+END
+cindex-on-invalid-usrs.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/145928/cfe/trunk/test/Index/cindex-on-invalid-usrs.m
+END
+crash-recovery-modules.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/184383/cfe/trunk/test/Index/crash-recovery-modules.m
+END
+skipped-ranges.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/196487/cfe/trunk/test/Index/skipped-ranges.c
+END
+recover-bad-code-rdar_7487294.c
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/Index/recover-bad-code-rdar_7487294.c
+END
+print-mangled-name.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/230454/cfe/trunk/test/Index/print-mangled-name.cpp
+END
+fix-its.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/172762/cfe/trunk/test/Index/fix-its.c
+END
+cindex-from-source.m
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/190681/cfe/trunk/test/Index/cindex-from-source.m
+END
+file-refs.m
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/153303/cfe/trunk/test/Index/file-refs.m
+END
+reparse-predef-objc-protocol.m
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/215929/cfe/trunk/test/Index/reparse-predef-objc-protocol.m
+END
+ms-if-exists.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/142951/cfe/trunk/test/Index/ms-if-exists.cpp
+END
+usrs.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/223649/cfe/trunk/test/Index/usrs.cpp
+END
+fix-its.m
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/197605/cfe/trunk/test/Index/fix-its.m
+END
+c-index-unsupported-warning-test.c
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/186582/cfe/trunk/test/Index/c-index-unsupported-warning-test.c
+END
+retain-comments-from-system-headers.c
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/203367/cfe/trunk/test/Index/retain-comments-from-system-headers.c
+END
+unmatched-braces.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/153367/cfe/trunk/test/Index/unmatched-braces.c
+END
+complete-template-friends-defined.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/226083/cfe/trunk/test/Index/complete-template-friends-defined.cpp
+END
+annotate-module.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/208846/cfe/trunk/test/Index/annotate-module.m
+END
+complete-optional-params.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/227309/cfe/trunk/test/Index/complete-optional-params.cpp
+END
+comment-cplus-decls.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/202181/cfe/trunk/test/Index/comment-cplus-decls.cpp
+END
+unmatched-braces.m
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/153367/cfe/trunk/test/Index/unmatched-braces.m
+END
+index-pch-with-module.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/237555/cfe/trunk/test/Index/index-pch-with-module.m
+END
+code-completion-skip-bodies.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/172705/cfe/trunk/test/Index/code-completion-skip-bodies.cpp
+END
+index-suppress-refs.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/150193/cfe/trunk/test/Index/index-suppress-refs.hpp
+END
+complete-ctor-inits.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/116774/cfe/trunk/test/Index/complete-ctor-inits.cpp
+END
+complete-categories.m
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/96759/cfe/trunk/test/Index/complete-categories.m
+END
+properties-class-extensions.m
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/179803/cfe/trunk/test/Index/properties-class-extensions.m
+END
+usrs.m
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/llvm-project/!svn/ver/205064/cfe/trunk/test/Index/usrs.m
+END
+complete-pointer-and-reference-to-functions.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/227309/cfe/trunk/test/Index/complete-pointer-and-reference-to-functions.cpp
+END
+annotate-tokens.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/201042/cfe/trunk/test/Index/annotate-tokens.cpp
+END
+complete-recovery.m
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/196510/cfe/trunk/test/Index/complete-recovery.m
+END
+preamble-reparse-warn-end-of-file.c
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/203446/cfe/trunk/test/Index/preamble-reparse-warn-end-of-file.c
+END
+code-completion.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/227309/cfe/trunk/test/Index/code-completion.cpp
+END
+invalid-code-rdar_7833619.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/100589/cfe/trunk/test/Index/invalid-code-rdar_7833619.m
+END
+attributes-cuda.cu
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/215208/cfe/trunk/test/Index/attributes-cuda.cu
+END
+c-index-getCursor-test.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230454/cfe/trunk/test/Index/c-index-getCursor-test.m
+END
+index-kernel-invocation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/157205/cfe/trunk/test/Index/index-kernel-invocation.cpp
+END
+crash-recovery.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/195819/cfe/trunk/test/Index/crash-recovery.c
+END
+complete-property-getset.m
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/91702/cfe/trunk/test/Index/complete-property-getset.m
+END
+codecompletion-chained.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/170596/cfe/trunk/test/Index/codecompletion-chained.cpp
+END
+complete-module-undef.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/218694/cfe/trunk/test/Index/complete-module-undef.m
+END
+index-pch-objc.m
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/211439/cfe/trunk/test/Index/index-pch-objc.m
+END
+cxx11-lambdas.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/223632/cfe/trunk/test/Index/cxx11-lambdas.cpp
+END
+pch-depending-on-deleted-module.c
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/206201/cfe/trunk/test/Index/pch-depending-on-deleted-module.c
+END
+complete-exprs.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/174038/cfe/trunk/test/Index/complete-exprs.c
+END
+annotate-deep-statements.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/217064/cfe/trunk/test/Index/annotate-deep-statements.cpp
+END
+pch-opaque-value.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/145752/cfe/trunk/test/Index/pch-opaque-value.cpp
+END
+modules-objc-categories.m
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/178378/cfe/trunk/test/Index/modules-objc-categories.m
+END
+pch-with-module.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/230454/cfe/trunk/test/Index/pch-with-module.m
+END
+remap-cursor-at.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/196529/cfe/trunk/test/Index/remap-cursor-at.c
+END
+complete-exprs.m
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/162084/cfe/trunk/test/Index/complete-exprs.m
+END
+preamble-reparse-cmd-define.c.remap
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/139512/cfe/trunk/test/Index/preamble-reparse-cmd-define.c.remap
+END
+complete-cxx-inline-methods.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/162890/cfe/trunk/test/Index/complete-cxx-inline-methods.cpp
+END
+arc-annotate.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/165456/cfe/trunk/test/Index/arc-annotate.m
+END
+include_test.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/94575/cfe/trunk/test/Index/include_test.h
+END
+complete-method-decls.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/202995/cfe/trunk/test/Index/complete-method-decls.m
+END
+annotate-comments-property-accessor.m
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/172278/cfe/trunk/test/Index/annotate-comments-property-accessor.m
+END
+complete-blocks.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/142335/cfe/trunk/test/Index/complete-blocks.m
+END
+overriding-method-comments.mm
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/223628/cfe/trunk/test/Index/overriding-method-comments.mm
+END
+complete-protocols.m
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/121416/cfe/trunk/test/Index/complete-protocols.m
+END
+pragma-diag-reparse.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/144153/cfe/trunk/test/Index/pragma-diag-reparse.c
+END
+crash-recovery-code-complete.c
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/201482/cfe/trunk/test/Index/crash-recovery-code-complete.c
+END
+complete-with-annotations.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/156531/cfe/trunk/test/Index/complete-with-annotations.cpp
+END
+complete-objc-message.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/174038/cfe/trunk/test/Index/complete-objc-message.m
+END
+rdar-8288645-invalid-code.mm
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/138234/cfe/trunk/test/Index/rdar-8288645-invalid-code.mm
+END
+arc-complete.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/133103/cfe/trunk/test/Index/arc-complete.m
+END
+preamble.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/203213/cfe/trunk/test/Index/preamble.c
+END
+getcursor-pp-pch.c.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/140207/cfe/trunk/test/Index/getcursor-pp-pch.c.h
+END
+index-suppress-refs.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/146615/cfe/trunk/test/Index/index-suppress-refs.h
+END
+annotate-comments.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/187230/cfe/trunk/test/Index/annotate-comments.cpp
+END
+preamble-reparse-import.m-1.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/144510/cfe/trunk/test/Index/preamble-reparse-import.m-1.h
+END
+TestClassForwardDecl.m
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/230454/cfe/trunk/test/Index/TestClassForwardDecl.m
+END
+complete-tabs.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/92882/cfe/trunk/test/Index/complete-tabs.c
+END
+c-index-pch.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/139438/cfe/trunk/test/Index/c-index-pch.c
+END
+index-suppress-refs.m
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/174645/cfe/trunk/test/Index/index-suppress-refs.m
+END
+complete-lambdas.mm
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/174037/cfe/trunk/test/Index/complete-lambdas.mm
+END
+complete-preprocessor.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/164740/cfe/trunk/test/Index/complete-preprocessor.m
+END
+targeted-file-refs.c
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/144791/cfe/trunk/test/Index/targeted-file-refs.c
+END
+print-type.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/234762/cfe/trunk/test/Index/print-type.cpp
+END
+complete-properties.m
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/158357/cfe/trunk/test/Index/complete-properties.m
+END
+complete-constructor-params.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/232145/cfe/trunk/test/Index/complete-constructor-params.cpp
+END
+annotate-comments-preprocessor.c
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/158940/cfe/trunk/test/Index/annotate-comments-preprocessor.c
+END
+werror.c
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/152192/cfe/trunk/test/Index/werror.c
+END
+complete-declarators.m
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/178199/cfe/trunk/test/Index/complete-declarators.m
+END
+index-file.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/183325/cfe/trunk/test/Index/index-file.cpp
+END
+preamble-reparse.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/196529/cfe/trunk/test/Index/preamble-reparse.c
+END
+load-stmts.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/230656/cfe/trunk/test/Index/load-stmts.cpp
+END
+complete-in-invalid-method.m
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/149987/cfe/trunk/test/Index/complete-in-invalid-method.m
+END
+complete-synthesized.m
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/154409/cfe/trunk/test/Index/complete-synthesized.m
+END
+complete-enums.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/152977/cfe/trunk/test/Index/complete-enums.c
+END
+parse-all-comments.c
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/180625/cfe/trunk/test/Index/parse-all-comments.c
+END
+complete-kvc.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/132452/cfe/trunk/test/Index/complete-kvc.m
+END
+invalid-rdar-8236270.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/148583/cfe/trunk/test/Index/invalid-rdar-8236270.cpp
+END
+preamble-reparse-import.m
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/144510/cfe/trunk/test/Index/preamble-reparse-import.m
+END
+targeted-cursor.m.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/151330/cfe/trunk/test/Index/targeted-cursor.m.h
+END
+comment-cplus11-specific.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/180924/cfe/trunk/test/Index/comment-cplus11-specific.cpp
+END
+blocks.c
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/141200/cfe/trunk/test/Index/blocks.c
+END
+annotate-nested-name-specifier.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/171774/cfe/trunk/test/Index/annotate-nested-name-specifier.cpp
+END
+load-exprs.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/127776/cfe/trunk/test/Index/load-exprs.c
+END
+index-pch.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/176148/cfe/trunk/test/Index/index-pch.cpp
+END
+c-index-getCursor-pp.c
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/171773/cfe/trunk/test/Index/c-index-getCursor-pp.c
+END
+cindex-on-invalid.m
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/129872/cfe/trunk/test/Index/cindex-on-invalid.m
+END
+annotate-toplevel-in-objccontainer.m.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/145110/cfe/trunk/test/Index/annotate-toplevel-in-objccontainer.m.h
+END
+annotate-tokens-pp.c
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/171776/cfe/trunk/test/Index/annotate-tokens-pp.c
+END
+complete-modules.m
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/182871/cfe/trunk/test/Index/complete-modules.m
+END
+cursor-ref-names.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/141200/cfe/trunk/test/Index/cursor-ref-names.cpp
+END
+complete-in-stringify.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/139087/cfe/trunk/test/Index/complete-in-stringify.c
+END
+get-cursor-macro-args.h
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/166359/cfe/trunk/test/Index/get-cursor-macro-args.h
+END
+get-cursor.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/221881/cfe/trunk/test/Index/get-cursor.cpp
+END
+complete-enums.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/162081/cfe/trunk/test/Index/complete-enums.cpp
+END
+preamble-reparse-import.m-2.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/144510/cfe/trunk/test/Index/preamble-reparse-import.m-2.h
+END
+get-cursor-macro-args.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/166359/cfe/trunk/test/Index/get-cursor-macro-args.m
+END
+annotate-comments-availability-attrs.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/168056/cfe/trunk/test/Index/annotate-comments-availability-attrs.cpp
+END
+complete-type-factors.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/226670/cfe/trunk/test/Index/complete-type-factors.m
+END
+annotate-tokens-with-default-args.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/136572/cfe/trunk/test/Index/annotate-tokens-with-default-args.h
+END
+boxed-exprs.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/156485/cfe/trunk/test/Index/boxed-exprs.h
+END
+complete-objc-message-id.m
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/139086/cfe/trunk/test/Index/complete-objc-message-id.m
+END
+boxed-exprs.m
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/156485/cfe/trunk/test/Index/boxed-exprs.m
+END
+annotate-tokens.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/232141/cfe/trunk/test/Index/annotate-tokens.c
+END
+c-index-api-loadTU-test.m
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230454/cfe/trunk/test/Index/c-index-api-loadTU-test.m
+END
+recursive-member-access.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/141200/cfe/trunk/test/Index/recursive-member-access.c
+END
+complete-ivar-access.m
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/143642/cfe/trunk/test/Index/complete-ivar-access.m
+END
+complete-at-EOF.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/220136/cfe/trunk/test/Index/complete-at-EOF.c
+END
+print-type-size.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/234762/cfe/trunk/test/Index/print-type-size.cpp
+END
+preamble-reparse-with-BOM.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/183717/cfe/trunk/test/Index/preamble-reparse-with-BOM.m
+END
+headerfile-comment-to-html.m
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/174124/cfe/trunk/test/Index/headerfile-comment-to-html.m
+END
+annotate-tokens.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/183242/cfe/trunk/test/Index/annotate-tokens.m
+END
+print-usrs.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/101542/cfe/trunk/test/Index/print-usrs.c
+END
+index-suppress-refs.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/150193/cfe/trunk/test/Index/index-suppress-refs.cpp
+END
+complete-functor-call.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/227309/cfe/trunk/test/Index/complete-functor-call.cpp
+END
+rdar12316296-codecompletion.m
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/164351/cfe/trunk/test/Index/rdar12316296-codecompletion.m
+END
+create-tu-fail.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/Index/create-tu-fail.c
+END
+nested-binaryoperators.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/141200/cfe/trunk/test/Index/nested-binaryoperators.cpp
+END
+annotate-macro-args.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/137961/cfe/trunk/test/Index/annotate-macro-args.h
+END
+complete-exprs.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/164705/cfe/trunk/test/Index/complete-exprs.cpp
+END
+index-subscripting-literals.m
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/152138/cfe/trunk/test/Index/index-subscripting-literals.m
+END
+complete-qualified.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/Index/complete-qualified.cpp
+END
+annotate-attribute.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/142186/cfe/trunk/test/Index/annotate-attribute.cpp
+END
+linkage.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/170406/cfe/trunk/test/Index/linkage.c
+END
+print-type.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/205922/cfe/trunk/test/Index/print-type.c
+END
+annotate-macro-args.m
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/164982/cfe/trunk/test/Index/annotate-macro-args.m
+END
+complete-documentation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/Index/complete-documentation.cpp
+END
+annotate-comments-objc.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/204944/cfe/trunk/test/Index/annotate-comments-objc.m
+END
+asm-attribute.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/191345/cfe/trunk/test/Index/asm-attribute.c
+END
+complete-call.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/227309/cfe/trunk/test/Index/complete-call.cpp
+END
+print-type.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/205921/cfe/trunk/test/Index/print-type.m
+END
+complete-member-access.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/148703/cfe/trunk/test/Index/complete-member-access.m
+END
+attributes.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/207767/cfe/trunk/test/Index/attributes.c
+END
+preamble-reparse-warn-macro.c
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/203446/cfe/trunk/test/Index/preamble-reparse-warn-macro.c
+END
+preamble-reparse-import.m-3.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/144510/cfe/trunk/test/Index/preamble-reparse-import.m-3.h
+END
+retain-target-options.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/149566/cfe/trunk/test/Index/retain-target-options.c
+END
+file-refs-subscripting.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/152138/cfe/trunk/test/Index/file-refs-subscripting.m
+END
+usrs-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/223632/cfe/trunk/test/Index/usrs-cxx0x.cpp
+END
+error-on-deserialized.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/187123/cfe/trunk/test/Index/error-on-deserialized.c
+END
+index-module-with-vfs.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/206309/cfe/trunk/test/Index/index-module-with-vfs.m
+END
+comment-lots-of-unknown-commands.c
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/219802/cfe/trunk/test/Index/comment-lots-of-unknown-commands.c
+END
+comment-cplus-template-decls.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/207382/cfe/trunk/test/Index/comment-cplus-template-decls.cpp
+END
+pch-with-errors.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/206685/cfe/trunk/test/Index/pch-with-errors.c
+END
+annotate-subscripting.m
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/152138/cfe/trunk/test/Index/annotate-subscripting.m
+END
+annotate-toplevel-in-objccontainer.m
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/Index/annotate-toplevel-in-objccontainer.m
+END
+complete-property-flags.m
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/201765/cfe/trunk/test/Index/complete-property-flags.m
+END
+compile_commands.json
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/159484/cfe/trunk/test/Index/compile_commands.json
+END
+comment-misc-tags.m
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/189126/cfe/trunk/test/Index/comment-misc-tags.m
+END
+overrides.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/182139/cfe/trunk/test/Index/overrides.cpp
+END
+pch-with-errors.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/187914/cfe/trunk/test/Index/pch-with-errors.m
+END
+targeted-annotation.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/180635/cfe/trunk/test/Index/targeted-annotation.c
+END
+load-decls.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/200640/cfe/trunk/test/Index/load-decls.c
+END
+recursive-cxx-member-calls.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/205714/cfe/trunk/test/Index/recursive-cxx-member-calls.cpp
+END
+remap-complete.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/196529/cfe/trunk/test/Index/remap-complete.c
+END
+availability.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/192718/cfe/trunk/test/Index/availability.c
+END
+complete-documentation-templates.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/Index/complete-documentation-templates.cpp
+END
+reparse-instantiate.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/143984/cfe/trunk/test/Index/reparse-instantiate.cpp
+END
+complete-natural.m
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/134615/cfe/trunk/test/Index/complete-natural.m
+END
+invalid-code-rdar10451854.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/144766/cfe/trunk/test/Index/invalid-code-rdar10451854.m
+END
+complete-pch.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/190681/cfe/trunk/test/Index/complete-pch.m
+END
+complete-macros.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/236176/cfe/trunk/test/Index/complete-macros.c
+END
+complete-macros.h
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/205917/cfe/trunk/test/Index/complete-macros.h
+END
+index-templates.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/223632/cfe/trunk/test/Index/index-templates.cpp
+END
+targeted-top.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/143605/cfe/trunk/test/Index/targeted-top.h
+END
+complete-access-checks.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/141278/cfe/trunk/test/Index/complete-access-checks.cpp
+END
+targeted-fields.h
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/143605/cfe/trunk/test/Index/targeted-fields.h
+END
+include_test_2.h
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/94575/cfe/trunk/test/Index/include_test_2.h
+END
+targeted-cursor.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/143638/cfe/trunk/test/Index/targeted-cursor.c
+END
+IBOutletCollection.m
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/174689/cfe/trunk/test/Index/IBOutletCollection.m
+END
+index-many-logical-ops.c
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/217064/cfe/trunk/test/Index/index-many-logical-ops.c
+END
+remap-load.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/196529/cfe/trunk/test/Index/remap-load.c
+END
+targeted-cursor.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/151386/cfe/trunk/test/Index/targeted-cursor.m
+END
+get-cursor.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/232141/cfe/trunk/test/Index/get-cursor.c
+END
+crash-recovery-reparse.c
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/196529/cfe/trunk/test/Index/crash-recovery-reparse.c
+END
+comment-xml-schema.c
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/195405/cfe/trunk/test/Index/comment-xml-schema.c
+END
+annotate-tokens-with-default-args.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/141200/cfe/trunk/test/Index/annotate-tokens-with-default-args.cpp
+END
+annotate-context-sensitive.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/171774/cfe/trunk/test/Index/annotate-context-sensitive.cpp
+END
+complete-templates.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/114358/cfe/trunk/test/Index/complete-templates.cpp
+END
+index-refs.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/201990/cfe/trunk/test/Index/index-refs.cpp
+END
+get-cursor.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/185722/cfe/trunk/test/Index/get-cursor.m
+END
+complete-unterminated.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/110933/cfe/trunk/test/Index/complete-unterminated.c
+END
+TestClassDecl.m
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/Index/TestClassDecl.m
+END
+print-bitwidth.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/169276/cfe/trunk/test/Index/print-bitwidth.c
+END
+index-decls.m
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/182895/cfe/trunk/test/Index/index-decls.m
+END
+index-attrs.m
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/153792/cfe/trunk/test/Index/index-attrs.m
+END
+comment-custom-block-command.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/185809/cfe/trunk/test/Index/comment-custom-block-command.cpp
+END
+preamble-reparse-chained.c
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/127119/cfe/trunk/test/Index/preamble-reparse-chained.c
+END
+complete-documentation-properties.m
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/Index/complete-documentation-properties.m
+END

@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/lib/gcc/mips-mti-linux-gnu/4.9.0/micromips/nan2008
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 138
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/lib/gcc/mips-mti-linux-gnu/4.9.0/micromips/nan2008/crtbegin.o
+END
+crtend.o
+K 25
+svn:wc:ra_dav:version-url
+V 136
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/lib/gcc/mips-mti-linux-gnu/4.9.0/micromips/nan2008/crtend.o
+END

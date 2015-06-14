@@ -1,0 +1,155 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/llvm-project/!svn/ver/238774/cfe/trunk/lib/Lex
+END
+Pragma.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/238129/cfe/trunk/lib/Lex/Pragma.cpp
+END
+MacroInfo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/236280/cfe/trunk/lib/Lex/MacroInfo.cpp
+END
+HeaderSearch.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/237550/cfe/trunk/lib/Lex/HeaderSearch.cpp
+END
+MacroArgs.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/236176/cfe/trunk/lib/Lex/MacroArgs.cpp
+END
+Lexer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/llvm-project/!svn/ver/238774/cfe/trunk/lib/Lex/Lexer.cpp
+END
+PPCallbacks.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/146959/cfe/trunk/lib/Lex/PPCallbacks.cpp
+END
+TokenLexer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/235186/cfe/trunk/lib/Lex/TokenLexer.cpp
+END
+ScratchBuffer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/234202/cfe/trunk/lib/Lex/ScratchBuffer.cpp
+END
+PPExpressions.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/236404/cfe/trunk/lib/Lex/PPExpressions.cpp
+END
+PreprocessingRecord.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/236404/cfe/trunk/lib/Lex/PreprocessingRecord.cpp
+END
+ModuleMap.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/237508/cfe/trunk/lib/Lex/ModuleMap.cpp
+END
+PPLexerChange.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/237872/cfe/trunk/lib/Lex/PPLexerChange.cpp
+END
+TokenConcatenation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/221576/cfe/trunk/lib/Lex/TokenConcatenation.cpp
+END
+PreprocessorLexer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/190980/cfe/trunk/lib/Lex/PreprocessorLexer.cpp
+END
+Preprocessor.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/237871/cfe/trunk/lib/Lex/Preprocessor.cpp
+END
+HeaderMap.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/220657/cfe/trunk/lib/Lex/HeaderMap.cpp
+END
+PPMacroExpansion.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/238547/cfe/trunk/lib/Lex/PPMacroExpansion.cpp
+END
+UnicodeCharSets.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/215557/cfe/trunk/lib/Lex/UnicodeCharSets.h
+END
+LiteralSupport.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/233491/cfe/trunk/lib/Lex/LiteralSupport.cpp
+END
+PTHLexer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/238774/cfe/trunk/lib/Lex/PTHLexer.cpp
+END
+PPCaching.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/195802/cfe/trunk/lib/Lex/PPCaching.cpp
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/108633/cfe/trunk/lib/Lex/Makefile
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/202238/cfe/trunk/lib/Lex/CMakeLists.txt
+END
+PPDirectives.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/237718/cfe/trunk/lib/Lex/PPDirectives.cpp
+END
+PPConditionalDirectiveRecord.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/236404/cfe/trunk/lib/Lex/PPConditionalDirectiveRecord.cpp
+END

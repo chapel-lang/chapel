@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/58436/cfe/trunk/tools/scan-view/Resources
+END
+bugcatcher.ico
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/56439/cfe/trunk/tools/scan-view/Resources/bugcatcher.ico
+END
+FileRadar.scpt
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/58436/cfe/trunk/tools/scan-view/Resources/FileRadar.scpt
+END
+GetRadarVersion.scpt
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/56375/cfe/trunk/tools/scan-view/Resources/GetRadarVersion.scpt
+END

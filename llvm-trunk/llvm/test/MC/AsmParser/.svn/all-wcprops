@@ -1,0 +1,593 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/238053/llvm/trunk/test/MC/AsmParser
+END
+section_names.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/179361/llvm/trunk/test/MC/AsmParser/section_names.s
+END
+directive_file-errors.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/147951/llvm/trunk/test/MC/AsmParser/directive_file-errors.s
+END
+invalid-input-assertion.s
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/209496/llvm/trunk/test/MC/AsmParser/invalid-input-assertion.s
+END
+macro-irp.s
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/198530/llvm/trunk/test/MC/AsmParser/macro-irp.s
+END
+dot-symbol.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/201530/llvm/trunk/test/MC/AsmParser/dot-symbol.s
+END
+directive_tdata.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/103985/llvm/trunk/test/MC/AsmParser/directive_tdata.s
+END
+ifndef.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/125120/llvm/trunk/test/MC/AsmParser/ifndef.s
+END
+variables-invalid.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/153137/llvm/trunk/test/MC/AsmParser/variables-invalid.s
+END
+directive_values.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/200615/llvm/trunk/test/MC/AsmParser/directive_values.s
+END
+align_invalid.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/185554/llvm/trunk/test/MC/AsmParser/align_invalid.s
+END
+cfi-window-save.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/191431/llvm/trunk/test/MC/AsmParser/cfi-window-save.s
+END
+conditional_asm.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/211218/llvm/trunk/test/MC/AsmParser/conditional_asm.s
+END
+directive-err.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/201999/llvm/trunk/test/MC/AsmParser/directive-err.s
+END
+directive_abort.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/113551/llvm/trunk/test/MC/AsmParser/directive_abort.s
+END
+macros-darwin.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/200409/llvm/trunk/test/MC/AsmParser/macros-darwin.s
+END
+variables.s
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/84257/llvm/trunk/test/MC/AsmParser/variables.s
+END
+directive_rept.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/198097/llvm/trunk/test/MC/AsmParser/directive_rept.s
+END
+directive_loc.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/211282/llvm/trunk/test/MC/AsmParser/directive_loc.s
+END
+directive_desc.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/108179/llvm/trunk/test/MC/AsmParser/directive_desc.s
+END
+ifeqs-diagnostics.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232636/llvm/trunk/test/MC/AsmParser/ifeqs-diagnostics.s
+END
+ifdef.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/125120/llvm/trunk/test/MC/AsmParser/ifdef.s
+END
+directive_seh.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/210575/llvm/trunk/test/MC/AsmParser/directive_seh.s
+END
+directive-warning.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/213873/llvm/trunk/test/MC/AsmParser/directive-warning.s
+END
+directive_include.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/190089/llvm/trunk/test/MC/AsmParser/directive_include.s
+END
+macro-rept-err2.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/156714/llvm/trunk/test/MC/AsmParser/macro-rept-err2.s
+END
+at-pseudo-variable.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/235862/llvm/trunk/test/MC/AsmParser/at-pseudo-variable.s
+END
+exprs-invalid.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/134069/llvm/trunk/test/MC/AsmParser/exprs-invalid.s
+END
+macro-exitm.s
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/213876/llvm/trunk/test/MC/AsmParser/macro-exitm.s
+END
+macro-qualifier-diagnostics.s
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/201630/llvm/trunk/test/MC/AsmParser/macro-qualifier-diagnostics.s
+END
+directive_align.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/185554/llvm/trunk/test/MC/AsmParser/directive_align.s
+END
+directive_set.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/224808/llvm/trunk/test/MC/AsmParser/directive_set.s
+END
+macros-gas.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/201784/llvm/trunk/test/MC/AsmParser/macros-gas.s
+END
+dot-symbol-assignment-backwards.s
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/201530/llvm/trunk/test/MC/AsmParser/dot-symbol-assignment-backwards.s
+END
+exprs.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/201784/llvm/trunk/test/MC/AsmParser/exprs.s
+END
+ifc.s
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/201985/llvm/trunk/test/MC/AsmParser/ifc.s
+END
+directive_end-2.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/197547/llvm/trunk/test/MC/AsmParser/directive_end-2.s
+END
+hello.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/108174/llvm/trunk/test/MC/AsmParser/hello.s
+END
+section.s
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/238053/llvm/trunk/test/MC/AsmParser/section.s
+END
+expr_symbol_modifiers.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/114154/llvm/trunk/test/MC/AsmParser/expr_symbol_modifiers.s
+END
+macros-argument-parsing.s
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/201500/llvm/trunk/test/MC/AsmParser/macros-argument-parsing.s
+END
+directive_subsections_via_symbols.s
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/108174/llvm/trunk/test/MC/AsmParser/directive_subsections_via_symbols.s
+END
+directive_darwin_section.s
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/78637/llvm/trunk/test/MC/AsmParser/directive_darwin_section.s
+END
+directive-err-diagnostics.s
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/201999/llvm/trunk/test/MC/AsmParser/directive-err-diagnostics.s
+END
+directive_tbss.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/103985/llvm/trunk/test/MC/AsmParser/directive_tbss.s
+END
+macro-rept.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/156714/llvm/trunk/test/MC/AsmParser/macro-rept.s
+END
+incbin_abcd
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/146592/llvm/trunk/test/MC/AsmParser/incbin_abcd
+END
+directive_rept-diagnostics.s
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/198099/llvm/trunk/test/MC/AsmParser/directive_rept-diagnostics.s
+END
+directive_file.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/211282/llvm/trunk/test/MC/AsmParser/directive_file.s
+END
+directive_symbol_attrs.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/76257/llvm/trunk/test/MC/AsmParser/directive_symbol_attrs.s
+END
+floating-literals.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/188372/llvm/trunk/test/MC/AsmParser/floating-literals.s
+END
+directive_org.s
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/76257/llvm/trunk/test/MC/AsmParser/directive_org.s
+END
+directive_line.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/211282/llvm/trunk/test/MC/AsmParser/directive_line.s
+END
+line_with_hash.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/142537/llvm/trunk/test/MC/AsmParser/line_with_hash.s
+END
+macros-darwin-vararg.s
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/214799/llvm/trunk/test/MC/AsmParser/macros-darwin-vararg.s
+END
+directive_comm.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/133349/llvm/trunk/test/MC/AsmParser/directive_comm.s
+END
+macro-irpc.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/158604/llvm/trunk/test/MC/AsmParser/macro-irpc.s
+END
+dot-symbol-assignment.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/201530/llvm/trunk/test/MC/AsmParser/dot-symbol-assignment.s
+END
+purgem.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/159544/llvm/trunk/test/MC/AsmParser/purgem.s
+END
+labels.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/163395/llvm/trunk/test/MC/AsmParser/labels.s
+END
+directive_tlv.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/103985/llvm/trunk/test/MC/AsmParser/directive_tlv.s
+END
+directive_lcomm.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/163395/llvm/trunk/test/MC/AsmParser/directive_lcomm.s
+END
+extern.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/156707/llvm/trunk/test/MC/AsmParser/extern.s
+END
+dollars-in-identifiers.s
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/111946/llvm/trunk/test/MC/AsmParser/dollars-in-identifiers.s
+END
+macro-err1.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/201499/llvm/trunk/test/MC/AsmParser/macro-err1.s
+END
+assignment.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/103950/llvm/trunk/test/MC/AsmParser/assignment.s
+END
+expr-shr.s
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/235963/llvm/trunk/test/MC/AsmParser/expr-shr.s
+END
+macros-argument-parsing-diagnostics.s
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/201499/llvm/trunk/test/MC/AsmParser/macros-argument-parsing-diagnostics.s
+END
+dash-n.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/113552/llvm/trunk/test/MC/AsmParser/dash-n.s
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/MC/AsmParser/lit.local.cfg
+END
+macro-rept-err1.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/164245/llvm/trunk/test/MC/AsmParser/macro-rept-err1.s
+END
+vararg.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/211219/llvm/trunk/test/MC/AsmParser/vararg.s
+END
+macro-def-in-instantiation.s
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/201045/llvm/trunk/test/MC/AsmParser/macro-def-in-instantiation.s
+END
+directive_space.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/129106/llvm/trunk/test/MC/AsmParser/directive_space.s
+END
+comments-x86-darwin.s
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/215615/llvm/trunk/test/MC/AsmParser/comments-x86-darwin.s
+END
+equ.s
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/124467/llvm/trunk/test/MC/AsmParser/equ.s
+END
+macro-args.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/164246/llvm/trunk/test/MC/AsmParser/macro-args.s
+END
+dot-symbol-non-absolute.s
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/201530/llvm/trunk/test/MC/AsmParser/dot-symbol-non-absolute.s
+END
+directive_elf_size.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/108607/llvm/trunk/test/MC/AsmParser/directive_elf_size.s
+END
+ifb.s
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/156705/llvm/trunk/test/MC/AsmParser/ifb.s
+END
+directive_incbin.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/190089/llvm/trunk/test/MC/AsmParser/directive_incbin.s
+END
+directive_thread_init_func.s
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/103985/llvm/trunk/test/MC/AsmParser/directive_thread_init_func.s
+END
+if-diagnostics.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/211218/llvm/trunk/test/MC/AsmParser/if-diagnostics.s
+END
+directive_end.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/197547/llvm/trunk/test/MC/AsmParser/directive_end.s
+END
+ifnes.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/232636/llvm/trunk/test/MC/AsmParser/ifnes.s
+END
+rename.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/232535/llvm/trunk/test/MC/AsmParser/rename.s
+END
+ifeqs.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/201998/llvm/trunk/test/MC/AsmParser/ifeqs.s
+END
+at-pseudo-variable-bad.s
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/235862/llvm/trunk/test/MC/AsmParser/at-pseudo-variable-bad.s
+END
+secure_log_unique.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/186643/llvm/trunk/test/MC/AsmParser/secure_log_unique.s
+END
+vararg-default-value.s
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/206951/llvm/trunk/test/MC/AsmParser/vararg-default-value.s
+END
+macro-qualifier.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/201630/llvm/trunk/test/MC/AsmParser/macro-qualifier.s
+END
+directive_lsym.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/80484/llvm/trunk/test/MC/AsmParser/directive_lsym.s
+END
+cfi-unfinished-frame.s
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/147717/llvm/trunk/test/MC/AsmParser/cfi-unfinished-frame.s
+END
+directive_zerofill.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/108180/llvm/trunk/test/MC/AsmParser/directive_zerofill.s
+END
+directive_fill.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/200607/llvm/trunk/test/MC/AsmParser/directive_fill.s
+END
+bad-macro.s
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/162291/llvm/trunk/test/MC/AsmParser/bad-macro.s
+END
+macros-parsing.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/155926/llvm/trunk/test/MC/AsmParser/macros-parsing.s
+END
+pr11865.s
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/149174/llvm/trunk/test/MC/AsmParser/pr11865.s
+END
+directive_ascii.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/117592/llvm/trunk/test/MC/AsmParser/directive_ascii.s
+END

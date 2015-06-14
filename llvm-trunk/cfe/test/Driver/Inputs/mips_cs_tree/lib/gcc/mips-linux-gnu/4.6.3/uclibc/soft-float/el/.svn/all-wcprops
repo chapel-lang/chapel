@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/lib/gcc/mips-linux-gnu/4.6.3/uclibc/soft-float/el
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 136
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/lib/gcc/mips-linux-gnu/4.6.3/uclibc/soft-float/el/crtbegin.o
+END
+crtend.o
+K 25
+svn:wc:ra_dav:version-url
+V 134
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/lib/gcc/mips-linux-gnu/4.6.3/uclibc/soft-float/el/crtend.o
+END

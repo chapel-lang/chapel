@@ -1,0 +1,5 @@
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/216231/llvm/trunk/test/Transforms/AtomicExpandLoadLinked/ARM
+END

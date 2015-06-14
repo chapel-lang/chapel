@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3
+END
+toplevel.ml
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/toplevel.ml
+END
+toy.ml
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/toy.ml
+END
+parser.ml
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/parser.ml
+END
+lexer.ml
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/lexer.ml
+END
+token.ml
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/token.ml
+END
+myocamlbuild.ml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/myocamlbuild.ml
+END
+codegen.ml
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/codegen.ml
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/Makefile
+END
+_tags
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/_tags
+END
+ast.ml
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/97966/llvm/trunk/examples/OCaml-Kaleidoscope/Chapter3/ast.ml
+END

@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/203302/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct
+END
+sfinae-1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/sfinae-1.cpp
+END
+p9.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/99613/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/p9.cpp
+END
+cwg1170.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/cwg1170.cpp
+END

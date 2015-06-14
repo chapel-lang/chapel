@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/189885/llvm/trunk/utils/lit/tests/Inputs/discovery
+END
+test-two.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/174001/llvm/trunk/utils/lit/tests/Inputs/discovery/test-two.txt
+END
+lit.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/189885/llvm/trunk/utils/lit/tests/Inputs/discovery/lit.cfg
+END
+test-one.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/174001/llvm/trunk/utils/lit/tests/Inputs/discovery/test-one.txt
+END

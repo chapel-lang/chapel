@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/235386/llvm/trunk/unittests/ExecutionEngine/Orc
+END
+IndirectionUtilsTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/235347/llvm/trunk/unittests/ExecutionEngine/Orc/IndirectionUtilsTest.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/235347/llvm/trunk/unittests/ExecutionEngine/Orc/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230196/llvm/trunk/unittests/ExecutionEngine/Orc/Makefile
+END
+OrcTestCommon.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/235347/llvm/trunk/unittests/ExecutionEngine/Orc/OrcTestCommon.cpp
+END
+LazyEmittingLayerTest.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/233509/llvm/trunk/unittests/ExecutionEngine/Orc/LazyEmittingLayerTest.cpp
+END
+OrcTestCommon.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/235386/llvm/trunk/unittests/ExecutionEngine/Orc/OrcTestCommon.h
+END

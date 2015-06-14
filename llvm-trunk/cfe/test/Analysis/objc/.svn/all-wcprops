@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/196466/cfe/trunk/test/Analysis/objc
+END
+direct-ivar-assignment-in-annotated-functions.m
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/196466/cfe/trunk/test/Analysis/objc/direct-ivar-assignment-in-annotated-functions.m
+END

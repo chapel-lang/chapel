@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/232455/cfe/trunk/test/Modules/Inputs/anon-namespace
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232455/cfe/trunk/test/Modules/Inputs/anon-namespace/a.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/232455/cfe/trunk/test/Modules/Inputs/anon-namespace/module.modulemap
+END
+b1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232455/cfe/trunk/test/Modules/Inputs/anon-namespace/b1.h
+END
+c.h
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232455/cfe/trunk/test/Modules/Inputs/anon-namespace/c.h
+END
+b2.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232455/cfe/trunk/test/Modules/Inputs/anon-namespace/b2.h
+END

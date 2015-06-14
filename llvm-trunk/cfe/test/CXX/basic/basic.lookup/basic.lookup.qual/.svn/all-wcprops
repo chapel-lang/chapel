@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/226410/cfe/trunk/test/CXX/basic/basic.lookup/basic.lookup.qual
+END
+p6.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/209319/cfe/trunk/test/CXX/basic/basic.lookup/basic.lookup.qual/p6.cpp
+END
+p6-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/209891/cfe/trunk/test/CXX/basic/basic.lookup/basic.lookup.qual/p6-0x.cpp
+END

@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/236146/llvm/trunk/lib/Target/Sparc/TargetInfo
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/196988/llvm/trunk/lib/Target/Sparc/TargetInfo/LLVMBuild.txt
+END
+SparcTargetInfo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/236146/llvm/trunk/lib/Target/Sparc/TargetInfo/SparcTargetInfo.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/195927/llvm/trunk/lib/Target/Sparc/TargetInfo/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/94378/llvm/trunk/lib/Target/Sparc/TargetInfo/Makefile
+END

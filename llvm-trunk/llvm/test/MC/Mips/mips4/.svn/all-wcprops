@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/236489/llvm/trunk/test/MC/Mips/mips4
+END
+invalid-mips32.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/211185/llvm/trunk/test/MC/Mips/mips4/invalid-mips32.s
+END
+invalid-mips5.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/208546/llvm/trunk/test/MC/Mips/mips4/invalid-mips5.s
+END
+invalid-mips5-wrong-error.s
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/217873/llvm/trunk/test/MC/Mips/mips4/invalid-mips5-wrong-error.s
+END
+invalid-mips32r2.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/219927/llvm/trunk/test/MC/Mips/mips4/invalid-mips32r2.s
+END
+invalid-mips64.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/208549/llvm/trunk/test/MC/Mips/mips4/invalid-mips64.s
+END
+invalid-mips64r2.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230500/llvm/trunk/test/MC/Mips/mips4/invalid-mips64r2.s
+END
+invalid-mips64r2-xfail.s
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/208690/llvm/trunk/test/MC/Mips/mips4/invalid-mips64r2-xfail.s
+END
+valid.s
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/236489/llvm/trunk/test/MC/Mips/mips4/valid.s
+END
+valid-xfail.s
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/230500/llvm/trunk/test/MC/Mips/mips4/valid-xfail.s
+END

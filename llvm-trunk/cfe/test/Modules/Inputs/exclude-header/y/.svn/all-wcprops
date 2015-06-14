@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/205762/cfe/trunk/test/Modules/Inputs/exclude-header/y
+END
+b.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/205762/cfe/trunk/test/Modules/Inputs/exclude-header/y/b.h
+END

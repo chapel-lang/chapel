@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/239003/llvm/trunk/lib/Transforms/Vectorize
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226126/llvm/trunk/lib/Transforms/Vectorize/LLVMBuild.txt
+END
+Vectorize.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/229094/llvm/trunk/lib/Transforms/Vectorize/Vectorize.cpp
+END
+SLPVectorizer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/239003/llvm/trunk/lib/Transforms/Vectorize/SLPVectorizer.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/228798/llvm/trunk/lib/Transforms/Vectorize/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/149468/llvm/trunk/lib/Transforms/Vectorize/Makefile
+END
+BBVectorize.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/237810/llvm/trunk/lib/Transforms/Vectorize/BBVectorize.cpp
+END
+LoopVectorize.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/236613/llvm/trunk/lib/Transforms/Vectorize/LoopVectorize.cpp
+END

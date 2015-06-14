@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/234678/cfe/trunk/include/clang/Rewrite/Frontend
+END
+FrontendActions.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/234678/cfe/trunk/include/clang/Rewrite/Frontend/FrontendActions.h
+END
+ASTConsumers.h
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/225979/cfe/trunk/include/clang/Rewrite/Frontend/ASTConsumers.h
+END
+Rewriters.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/215557/cfe/trunk/include/clang/Rewrite/Frontend/Rewriters.h
+END
+FixItRewriter.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/234678/cfe/trunk/include/clang/Rewrite/Frontend/FixItRewriter.h
+END

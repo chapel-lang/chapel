@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/219657/cfe/trunk/test/Modules/Inputs/merge-using-decls
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/219657/cfe/trunk/test/Modules/Inputs/merge-using-decls/a.h
+END
+b.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/219657/cfe/trunk/test/Modules/Inputs/merge-using-decls/b.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/219657/cfe/trunk/test/Modules/Inputs/merge-using-decls/module.modulemap
+END

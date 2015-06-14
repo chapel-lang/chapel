@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/236342/llvm/trunk/test/tools/llvm-pdbdump
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230888/llvm/trunk/test/tools/llvm-pdbdump/lit.local.cfg
+END
+load-address.test
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/236342/llvm/trunk/test/tools/llvm-pdbdump/load-address.test
+END
+regex-filter.test
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/231215/llvm/trunk/test/tools/llvm-pdbdump/regex-filter.test
+END
+enum-layout.test
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/231215/llvm/trunk/test/tools/llvm-pdbdump/enum-layout.test
+END
+class-layout.test
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230933/llvm/trunk/test/tools/llvm-pdbdump/class-layout.test
+END

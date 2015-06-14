@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/237007/cfe/trunk/test/CodeGenCUDA
+END
+address-spaces.cu
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/233208/cfe/trunk/test/CodeGenCUDA/address-spaces.cu
+END
+host-device-calls-host.cu
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230385/cfe/trunk/test/CodeGenCUDA/host-device-calls-host.cu
+END
+launch-bounds.cu
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/235452/cfe/trunk/test/CodeGenCUDA/launch-bounds.cu
+END
+llvm-used.cu
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/227861/cfe/trunk/test/CodeGenCUDA/llvm-used.cu
+END
+cuda-builtin-vars.cu
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235448/cfe/trunk/test/CodeGenCUDA/cuda-builtin-vars.cu
+END
+kernel-call.cu
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/207453/cfe/trunk/test/CodeGenCUDA/kernel-call.cu
+END
+device-stub.cu
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/237007/cfe/trunk/test/CodeGenCUDA/device-stub.cu
+END
+filter-decl.cu
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/235905/cfe/trunk/test/CodeGenCUDA/filter-decl.cu
+END
+ptx-kernels.cu
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/224259/cfe/trunk/test/CodeGenCUDA/ptx-kernels.cu
+END

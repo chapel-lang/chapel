@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/llvm-project/!svn/ver/238928/cfe/trunk/utils/check_cfc
+END
+check_cfc.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/233919/cfe/trunk/utils/check_cfc/check_cfc.cfg
+END
+setup.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/233919/cfe/trunk/utils/check_cfc/setup.py
+END
+obj_diff.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/238926/cfe/trunk/utils/check_cfc/obj_diff.py
+END
+test_check_cfc.py
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/238928/cfe/trunk/utils/check_cfc/test_check_cfc.py
+END
+check_cfc.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/238928/cfe/trunk/utils/check_cfc/check_cfc.py
+END

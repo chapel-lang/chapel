@@ -1,0 +1,12 @@
+K 10
+svn:ignore
+V 95
+config.h
+.cvsignore
+AsmPrinters.def
+Targets.def
+AsmParsers.def
+Disassemblers.def
+llvm-config.h
+
+END

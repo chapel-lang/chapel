@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/188513/llvm/trunk/test/tools/llvm-lit
+END
+chain.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/169441/llvm/trunk/test/tools/llvm-lit/chain.c
+END

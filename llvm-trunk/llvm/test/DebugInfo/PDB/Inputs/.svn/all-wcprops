@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/230744/llvm/trunk/test/DebugInfo/PDB/Inputs
+END
+empty.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230161/llvm/trunk/test/DebugInfo/PDB/Inputs/empty.cpp
+END
+symbolformat.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230744/llvm/trunk/test/DebugInfo/PDB/Inputs/symbolformat.cpp
+END
+symbolformat-fpo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230161/llvm/trunk/test/DebugInfo/PDB/Inputs/symbolformat-fpo.cpp
+END
+empty.pdb
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230161/llvm/trunk/test/DebugInfo/PDB/Inputs/empty.pdb
+END
+symbolformat.pdb
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230744/llvm/trunk/test/DebugInfo/PDB/Inputs/symbolformat.pdb
+END

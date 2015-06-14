@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/231950/cfe/trunk/test/Modules/Inputs/merge-template-friend
+END
+friend.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/231950/cfe/trunk/test/Modules/Inputs/merge-template-friend/friend.h
+END
+def.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/231950/cfe/trunk/test/Modules/Inputs/merge-template-friend/def.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/231950/cfe/trunk/test/Modules/Inputs/merge-template-friend/module.modulemap
+END

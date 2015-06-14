@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/201617/cfe/trunk/test/Preprocessor/Inputs/microsoft-header-search
+END
+findme.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/198086/cfe/trunk/test/Preprocessor/Inputs/microsoft-header-search/findme.h
+END
+include1.h
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/198086/cfe/trunk/test/Preprocessor/Inputs/microsoft-header-search/include1.h
+END
+falsepos.h
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/201617/cfe/trunk/test/Preprocessor/Inputs/microsoft-header-search/falsepos.h
+END

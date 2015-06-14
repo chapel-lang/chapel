@@ -1,0 +1,539 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/238702/llvm/trunk/test/Transforms/GVN
+END
+basic-undef-test.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/236511/llvm/trunk/test/Transforms/GVN/basic-undef-test.ll
+END
+pre-single-pred.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/pre-single-pred.ll
+END
+2009-11-12-MemDepMallocBitCast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/GVN/2009-11-12-MemDepMallocBitCast.ll
+END
+preserve-tbaa.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/preserve-tbaa.ll
+END
+2011-06-01-NonLocalMemdepMiscompile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/GVN/2011-06-01-NonLocalMemdepMiscompile.ll
+END
+2008-07-02-Unreachable.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2008-07-02-Unreachable.ll
+END
+2009-02-17-LoadPRECrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/GVN/2009-02-17-LoadPRECrash.ll
+END
+2007-07-26-InterlockingLoops.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/GVN/2007-07-26-InterlockingLoops.ll
+END
+non-local-offset.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/non-local-offset.ll
+END
+load-pre-nonlocal.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/GVN/load-pre-nonlocal.ll
+END
+2007-07-26-PhiErasure.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-26-PhiErasure.ll
+END
+2008-12-12-RLE-Crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2008-12-12-RLE-Crash.ll
+END
+nonescaping-malloc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/nonescaping-malloc.ll
+END
+commute.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/GVN/commute.ll
+END
+atomic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/232889/llvm/trunk/test/Transforms/GVN/atomic.ll
+END
+2007-07-25-SinglePredecessor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-25-SinglePredecessor.ll
+END
+basic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/GVN/basic.ll
+END
+load-constant-mem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/load-constant-mem.ll
+END
+malloc-load-removal.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/malloc-load-removal.ll
+END
+2010-03-31-RedundantPHIs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2010-03-31-RedundantPHIs.ll
+END
+crash-no-aa.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/crash-no-aa.ll
+END
+load-pre-align.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/load-pre-align.ll
+END
+2009-06-17-InvalidPRE.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2009-06-17-InvalidPRE.ll
+END
+rle-must-alias.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/GVN/rle-must-alias.ll
+END
+2011-09-07-TypeIdFor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/139360/llvm/trunk/test/Transforms/GVN/2011-09-07-TypeIdFor.ll
+END
+rle-semidominated.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/rle-semidominated.ll
+END
+pre-load.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/pre-load.ll
+END
+2008-12-09-SelfRemove.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2008-12-09-SelfRemove.ll
+END
+2011-04-27-phioperands.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/GVN/2011-04-27-phioperands.ll
+END
+cond_br.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/cond_br.ll
+END
+2010-05-08-OneBit.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2010-05-08-OneBit.ll
+END
+2009-07-13-MemDepSortFail.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2009-07-13-MemDepSortFail.ll
+END
+invariant-load.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/GVN/invariant-load.ll
+END
+phi-translate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/phi-translate.ll
+END
+2010-11-13-Simplify.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/GVN/2010-11-13-Simplify.ll
+END
+volatile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/volatile.ll
+END
+lpre-call-wrap-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/lpre-call-wrap-2.ll
+END
+pr14166.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/pr14166.ll
+END
+pre-no-cost-phi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/228024/llvm/trunk/test/Transforms/GVN/pre-no-cost-phi.ll
+END
+pr17732.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/GVN/pr17732.ll
+END
+rle-nonlocal.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/rle-nonlocal.ll
+END
+2008-02-12-UndefLoad.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/GVN/2008-02-12-UndefLoad.ll
+END
+range.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/range.ll
+END
+2012-05-22-PreCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/157251/llvm/trunk/test/Transforms/GVN/2012-05-22-PreCrash.ll
+END
+phi-translate-partial-alias.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/phi-translate-partial-alias.ll
+END
+2007-07-30-PredIDom.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-30-PredIDom.ll
+END
+unreachable_block_infinite_loop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/238702/llvm/trunk/test/Transforms/GVN/unreachable_block_infinite_loop.ll
+END
+load-from-unreachable-predecessor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/load-from-unreachable-predecessor.ll
+END
+2011-07-07-MatchIntrinsicExtract.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/GVN/2011-07-07-MatchIntrinsicExtract.ll
+END
+2008-12-14-rle-reanalyze.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/GVN/2008-12-14-rle-reanalyze.ll
+END
+bitcast-of-call.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/GVN/bitcast-of-call.ll
+END
+edge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/230564/llvm/trunk/test/Transforms/GVN/edge.ll
+END
+2007-07-25-Loop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-25-Loop.ll
+END
+tbaa.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/tbaa.ll
+END
+pre-compare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/GVN/pre-compare.ll
+END
+2007-07-25-NestedLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-25-NestedLoop.ll
+END
+pr10820.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/pr10820.ll
+END
+pre-gep-load.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/pre-gep-load.ll
+END
+calloc-load-removal.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/calloc-load-removal.ll
+END
+local-pre.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/194424/llvm/trunk/test/Transforms/GVN/local-pre.ll
+END
+2007-07-31-RedundantPhi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-31-RedundantPhi.ll
+END
+2008-02-13-NewPHI.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2008-02-13-NewPHI.ll
+END
+lpre-call-wrap.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/lpre-call-wrap.ll
+END
+condprop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/condprop.ll
+END
+lifetime-simple.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/lifetime-simple.ll
+END
+load-pre-licm.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/load-pre-licm.ll
+END
+noalias.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/noalias.ll
+END
+pr17852.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/pr17852.ll
+END
+pre-basic-add.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/GVN/pre-basic-add.ll
+END
+2009-03-10-PREOnVoid.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/214355/llvm/trunk/test/Transforms/GVN/2009-03-10-PREOnVoid.ll
+END
+2007-07-25-InfiniteLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-25-InfiniteLoop.ll
+END
+pr12979.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/171343/llvm/trunk/test/Transforms/GVN/pr12979.ll
+END
+null-aliases-nothing.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/null-aliases-nothing.ll
+END
+2007-07-26-NonRedundant.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-26-NonRedundant.ll
+END
+crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/crash.ll
+END
+calls-nonlocal.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/116720/llvm/trunk/test/Transforms/GVN/calls-nonlocal.ll
+END
+rle-no-phi-translate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/rle-no-phi-translate.ll
+END
+calls-readonly.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/GVN/calls-readonly.ll
+END
+fpmath.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Transforms/GVN/fpmath.ll
+END
+2009-01-21-SortInvalidation.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2009-01-21-SortInvalidation.ll
+END
+2009-01-22-SortInvalidation.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2009-01-22-SortInvalidation.ll
+END
+rle.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/GVN/rle.ll
+END
+2008-12-15-CacheVisited.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2008-12-15-CacheVisited.ll
+END
+cond_br2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/cond_br2.ll
+END
+MemdepMiscompile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/MemdepMiscompile.ll
+END
+readattrs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/readattrs.ll
+END
+2007-07-31-NoDomInherit.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/GVN/2007-07-31-NoDomInherit.ll
+END
+rle-phi-translate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/rle-phi-translate.ll
+END
+2007-07-25-DominatedLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/GVN/2007-07-25-DominatedLoop.ll
+END

@@ -1,0 +1,395 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/238473/llvm/trunk/test/CodeGen/Thumb
+END
+2009-08-12-RegInfoAssert.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/CodeGen/Thumb/2009-08-12-RegInfoAssert.ll
+END
+select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/186280/llvm/trunk/test/CodeGen/Thumb/select.ll
+END
+cortex-m0-unaligned-access.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/cortex-m0-unaligned-access.ll
+END
+thumb-memcpy-ldm-stm.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/238473/llvm/trunk/test/CodeGen/Thumb/thumb-memcpy-ldm-stm.ll
+END
+2010-06-18-SibCallCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/2010-06-18-SibCallCrash.ll
+END
+2009-08-20-ISelBug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/2009-08-20-ISelBug.ll
+END
+2010-07-01-FuncAlign.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/107435/llvm/trunk/test/CodeGen/Thumb/2010-07-01-FuncAlign.ll
+END
+2011-EpilogueBug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/2011-EpilogueBug.ll
+END
+frame_thumb.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/CodeGen/Thumb/frame_thumb.ll
+END
+ldr_frame.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/ldr_frame.ll
+END
+2009-07-20-TwoAddrBug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/2009-07-20-TwoAddrBug.ll
+END
+stack-frame.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/206331/llvm/trunk/test/CodeGen/Thumb/stack-frame.ll
+END
+mul.ll
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/mul.ll
+END
+thumb-imm.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/thumb-imm.ll
+END
+2007-05-05-InvalidPushPop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/CodeGen/Thumb/2007-05-05-InvalidPushPop.ll
+END
+2007-01-31-RegInfoAssert.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/CodeGen/Thumb/2007-01-31-RegInfoAssert.ll
+END
+2011-06-16-NoGPRs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/CodeGen/Thumb/2011-06-16-NoGPRs.ll
+END
+mature-mc-support.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/201345/llvm/trunk/test/CodeGen/Thumb/mature-mc-support.ll
+END
+2009-12-17-pre-regalloc-taildup.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/2009-12-17-pre-regalloc-taildup.ll
+END
+fpow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/fpow.ll
+END
+inlineasm-imm-thumb.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/inlineasm-imm-thumb.ll
+END
+push.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/186280/llvm/trunk/test/CodeGen/Thumb/push.ll
+END
+ldm-merge-call.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/ldm-merge-call.ll
+END
+PR17309.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/CodeGen/Thumb/PR17309.ll
+END
+ispositive.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/ispositive.ll
+END
+segmented-stacks.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/segmented-stacks.ll
+END
+ldr_ext.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/ldr_ext.ll
+END
+fastcc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/CodeGen/Thumb/fastcc.ll
+END
+trap.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/trap.ll
+END
+dyn-stackalloc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/CodeGen/Thumb/dyn-stackalloc.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/CodeGen/Thumb/lit.local.cfg
+END
+2011-05-11-DAGLegalizer.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/CodeGen/Thumb/2011-05-11-DAGLegalizer.ll
+END
+2012-04-26-M0ISelBug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/221336/llvm/trunk/test/CodeGen/Thumb/2012-04-26-M0ISelBug.ll
+END
+tst_teq.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/tst_teq.ll
+END
+segmented-stacks-dynamic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/205997/llvm/trunk/test/CodeGen/Thumb/segmented-stacks-dynamic.ll
+END
+unord.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/199016/llvm/trunk/test/CodeGen/Thumb/unord.ll
+END
+asmprinter-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/CodeGen/Thumb/asmprinter-bug.ll
+END
+2009-08-12-ConstIslandAssert.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/2009-08-12-ConstIslandAssert.ll
+END
+2014-06-10-thumb1-ldst-opt-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/2014-06-10-thumb1-ldst-opt-bug.ll
+END
+stack-access.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/232825/llvm/trunk/test/CodeGen/Thumb/stack-access.ll
+END
+2010-07-15-debugOrdering.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/CodeGen/Thumb/2010-07-15-debugOrdering.ll
+END
+copy_thumb.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/216138/llvm/trunk/test/CodeGen/Thumb/copy_thumb.ll
+END
+stack-coloring-without-frame-ptr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/stack-coloring-without-frame-ptr.ll
+END
+iabs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/223416/llvm/trunk/test/CodeGen/Thumb/iabs.ll
+END
+ldm-stm-base-materialization.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/238473/llvm/trunk/test/CodeGen/Thumb/ldm-stm-base-materialization.ll
+END
+stack_guard_remat.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/CodeGen/Thumb/stack_guard_remat.ll
+END
+vargs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/CodeGen/Thumb/vargs.ll
+END
+sjljehprepare-lower-vector.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/199768/llvm/trunk/test/CodeGen/Thumb/sjljehprepare-lower-vector.ll
+END
+barrier.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/barrier.ll
+END
+2009-06-18-ThumbCommuteMul.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/2009-06-18-ThumbCommuteMul.ll
+END
+thumb-ldm.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/CodeGen/Thumb/thumb-ldm.ll
+END
+ldm-merge-struct.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/CodeGen/Thumb/ldm-merge-struct.ll
+END
+fpconv.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/fpconv.ll
+END
+rev.ll
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/rev.ll
+END
+inlineasm-thumb.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/221178/llvm/trunk/test/CodeGen/Thumb/inlineasm-thumb.ll
+END
+long_shift.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/long_shift.ll
+END
+2007-02-02-JoinIntervalsCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81293/llvm/trunk/test/CodeGen/Thumb/2007-02-02-JoinIntervalsCrash.ll
+END
+large-stack.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/large-stack.ll
+END
+DbgValueOtherTargets.test
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/DbgValueOtherTargets.test
+END
+pop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/216294/llvm/trunk/test/CodeGen/Thumb/pop.ll
+END
+long-setcc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/205586/llvm/trunk/test/CodeGen/Thumb/long-setcc.ll
+END
+long.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/long.ll
+END
+triple.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/197607/llvm/trunk/test/CodeGen/Thumb/triple.ll
+END
+stm-merge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/CodeGen/Thumb/stm-merge.ll
+END
+2009-07-27-PEIAssert.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/106221/llvm/trunk/test/CodeGen/Thumb/2009-07-27-PEIAssert.ll
+END

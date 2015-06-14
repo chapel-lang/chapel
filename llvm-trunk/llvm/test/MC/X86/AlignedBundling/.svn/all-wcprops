@@ -1,0 +1,125 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/235366/llvm/trunk/test/MC/X86/AlignedBundling
+END
+lock-without-bundle-mode-error.s
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/185554/llvm/trunk/test/MC/X86/AlignedBundling/lock-without-bundle-mode-error.s
+END
+unlock-without-lock-error.s
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/185554/llvm/trunk/test/MC/X86/AlignedBundling/unlock-without-lock-error.s
+END
+autogen-inst-offset-align-to-end.s
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/174067/llvm/trunk/test/MC/X86/AlignedBundling/autogen-inst-offset-align-to-end.s
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/MC/X86/AlignedBundling/lit.local.cfg
+END
+asm-printing-bundle-directives.s
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/171797/llvm/trunk/test/MC/X86/AlignedBundling/asm-printing-bundle-directives.s
+END
+relax-in-bundle-group.s
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/relax-in-bundle-group.s
+END
+section-alignment.s
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/235366/llvm/trunk/test/MC/X86/AlignedBundling/section-alignment.s
+END
+bundle-group-too-large-error.s
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/bundle-group-too-large-error.s
+END
+align-mode-argument-error.s
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/185554/llvm/trunk/test/MC/X86/AlignedBundling/align-mode-argument-error.s
+END
+labeloffset.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/labeloffset.s
+END
+pad-align-to-bundle-end.s
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/pad-align-to-bundle-end.s
+END
+relax-at-bundle-end.s
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/relax-at-bundle-end.s
+END
+pad-bundle-groups.s
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/pad-bundle-groups.s
+END
+switch-section-locked-error.s
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/185554/llvm/trunk/test/MC/X86/AlignedBundling/switch-section-locked-error.s
+END
+long-nop-pad.s
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/long-nop-pad.s
+END
+different-sections.s
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/different-sections.s
+END
+bundle-lock-option-error.s
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/185554/llvm/trunk/test/MC/X86/AlignedBundling/bundle-lock-option-error.s
+END
+single-inst-bundling.s
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/single-inst-bundling.s
+END
+autogen-inst-offset-padding.s
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/170720/llvm/trunk/test/MC/X86/AlignedBundling/autogen-inst-offset-padding.s
+END
+nesting.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/234714/llvm/trunk/test/MC/X86/AlignedBundling/nesting.s
+END

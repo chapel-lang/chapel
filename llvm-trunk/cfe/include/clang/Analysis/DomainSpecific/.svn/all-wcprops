@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/215557/cfe/trunk/include/clang/Analysis/DomainSpecific
+END
+CocoaConventions.h
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/215557/cfe/trunk/include/clang/Analysis/DomainSpecific/CocoaConventions.h
+END
+ObjCNoReturn.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/215557/cfe/trunk/include/clang/Analysis/DomainSpecific/ObjCNoReturn.h
+END

@@ -1,0 +1,5 @@
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/213937/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/sysroot/el/fp64/nan2008
+END

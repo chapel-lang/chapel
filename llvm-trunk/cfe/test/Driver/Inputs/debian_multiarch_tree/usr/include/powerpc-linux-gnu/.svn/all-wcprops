@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/llvm-project/!svn/ver/151482/cfe/trunk/test/Driver/Inputs/debian_multiarch_tree/usr/include/powerpc-linux-gnu
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/llvm-project/!svn/ver/151482/cfe/trunk/test/Driver/Inputs/debian_multiarch_tree/usr/include/powerpc-linux-gnu/.keep
+END

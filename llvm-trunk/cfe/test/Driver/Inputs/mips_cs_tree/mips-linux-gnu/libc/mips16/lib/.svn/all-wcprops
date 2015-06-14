@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/179934/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/mips16/lib
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/llvm-project/!svn/ver/179934/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/mips16/lib/.keep
+END

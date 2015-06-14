@@ -1,0 +1,34 @@
+10
+
+dir
+239086
+http://user@llvm.org/svn/llvm-project/cfe/trunk/test/Frontend/Inputs/SystemHeaderPrefix/libs
+http://user@llvm.org/svn/llvm-project
+
+
+
+2012-06-13T20:27:03.143751Z
+158418
+rsmith
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+91177308-0d34-0410-b5e6-96231b3b80d8
+
+boost
+dir
+
+mylib
+dir
+

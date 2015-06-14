@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/237086/cfe/trunk/tools/clang-format/fuzzer
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/237086/cfe/trunk/tools/clang-format/fuzzer/CMakeLists.txt
+END
+ClangFormatFuzzer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/236691/cfe/trunk/tools/clang-format/fuzzer/ClangFormatFuzzer.cpp
+END

@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/227639/llvm/trunk/lib/Fuzzer/test/unit
+END
+lit.site.cfg.in
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/227639/llvm/trunk/lib/Fuzzer/test/unit/lit.site.cfg.in
+END
+lit.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/227639/llvm/trunk/lib/Fuzzer/test/unit/lit.cfg
+END

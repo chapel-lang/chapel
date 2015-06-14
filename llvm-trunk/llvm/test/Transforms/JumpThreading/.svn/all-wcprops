@@ -1,0 +1,167 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/236684/llvm/trunk/test/Transforms/JumpThreading
+END
+2011-04-02-SimplifyDeadBlock.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/128782/llvm/trunk/test/Transforms/JumpThreading/2011-04-02-SimplifyDeadBlock.ll
+END
+lvi-load.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/JumpThreading/lvi-load.ll
+END
+thread-loads.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/JumpThreading/thread-loads.ll
+END
+2012-07-19-NoSuccessorIndirectBr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/160546/llvm/trunk/test/Transforms/JumpThreading/2012-07-19-NoSuccessorIndirectBr.ll
+END
+assume-edge-dom.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/219688/llvm/trunk/test/Transforms/JumpThreading/assume-edge-dom.ll
+END
+landing-pad.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/JumpThreading/landing-pad.ll
+END
+select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/JumpThreading/select.ll
+END
+or-undef.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/JumpThreading/or-undef.ll
+END
+degenerate-phi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/171250/llvm/trunk/test/Transforms/JumpThreading/degenerate-phi.ll
+END
+basic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/JumpThreading/basic.ll
+END
+pr15851_hang.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/211103/llvm/trunk/test/Transforms/JumpThreading/pr15851_hang.ll
+END
+and-cond.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/124526/llvm/trunk/test/Transforms/JumpThreading/and-cond.ll
+END
+and-and-cond.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/124526/llvm/trunk/test/Transforms/JumpThreading/and-and-cond.ll
+END
+phi-eq.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/JumpThreading/phi-eq.ll
+END
+pr22086.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/225126/llvm/trunk/test/Transforms/JumpThreading/pr22086.ll
+END
+thread-cmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/236684/llvm/trunk/test/Transforms/JumpThreading/thread-cmp.ll
+END
+indirectbr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/JumpThreading/indirectbr.ll
+END
+compare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/JumpThreading/compare.ll
+END
+2008-11-27-EntryMunge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/JumpThreading/2008-11-27-EntryMunge.ll
+END
+2011-04-14-InfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/JumpThreading/2011-04-14-InfLoop.ll
+END
+branch-no-const.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/JumpThreading/branch-no-const.ll
+END
+2010-08-26-and.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/JumpThreading/2010-08-26-and.ll
+END
+assume.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/JumpThreading/assume.ll
+END
+no-irreducible-loops.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/JumpThreading/no-irreducible-loops.ll
+END
+crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/JumpThreading/crash.ll
+END
+conservative-lvi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/222768/llvm/trunk/test/Transforms/JumpThreading/conservative-lvi.ll
+END
+pr9331.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/127243/llvm/trunk/test/Transforms/JumpThreading/pr9331.ll
+END

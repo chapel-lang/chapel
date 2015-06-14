@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/193601/cfe/trunk/test/Driver/Inputs/x86-64_ubuntu_13.10/usr/arm-linux-gnueabi/lib
+END
+crt1.o
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/193601/cfe/trunk/test/Driver/Inputs/x86-64_ubuntu_13.10/usr/arm-linux-gnueabi/lib/crt1.o
+END
+crti.o
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/193601/cfe/trunk/test/Driver/Inputs/x86-64_ubuntu_13.10/usr/arm-linux-gnueabi/lib/crti.o
+END
+crtn.o
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/193601/cfe/trunk/test/Driver/Inputs/x86-64_ubuntu_13.10/usr/arm-linux-gnueabi/lib/crtn.o
+END

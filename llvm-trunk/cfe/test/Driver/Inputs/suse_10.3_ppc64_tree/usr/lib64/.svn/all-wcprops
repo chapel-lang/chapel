@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/146176/cfe/trunk/test/Driver/Inputs/suse_10.3_ppc64_tree/usr/lib64
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/146176/cfe/trunk/test/Driver/Inputs/suse_10.3_ppc64_tree/usr/lib64/.keep
+END

@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/SLPVectorizer/AArch64
+END
+mismatched-intrinsics.ll
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/Transforms/SLPVectorizer/AArch64/mismatched-intrinsics.ll
+END
+load-store-q.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/SLPVectorizer/AArch64/load-store-q.ll
+END
+commute.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/SLPVectorizer/AArch64/commute.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/SLPVectorizer/AArch64/lit.local.cfg
+END
+sdiv-pow2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/SLPVectorizer/AArch64/sdiv-pow2.ll
+END

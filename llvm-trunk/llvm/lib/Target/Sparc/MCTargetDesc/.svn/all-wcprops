@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/239040/llvm/trunk/lib/Target/Sparc/MCTargetDesc
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/198030/llvm/trunk/lib/Target/Sparc/MCTargetDesc/LLVMBuild.txt
+END
+SparcMCExpr.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/238864/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcMCExpr.cpp
+END
+SparcMCAsmInfo.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/239036/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcMCAsmInfo.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/198580/llvm/trunk/lib/Target/Sparc/MCTargetDesc/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/135184/llvm/trunk/lib/Target/Sparc/MCTargetDesc/Makefile
+END
+SparcMCExpr.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/238634/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcMCExpr.h
+END
+SparcMCCodeEmitter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/239040/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcMCCodeEmitter.cpp
+END
+SparcMCTargetDesc.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/239036/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcMCTargetDesc.cpp
+END
+SparcAsmBackend.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/236324/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcAsmBackend.cpp
+END
+SparcFixupKinds.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/215558/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcFixupKinds.h
+END
+SparcTargetStreamer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/200129/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcTargetStreamer.cpp
+END
+SparcELFObjectWriter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/236146/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcELFObjectWriter.cpp
+END
+SparcMCTargetDesc.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/236146/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcMCTargetDesc.h
+END
+SparcMCAsmInfo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/239036/llvm/trunk/lib/Target/Sparc/MCTargetDesc/SparcMCAsmInfo.cpp
+END

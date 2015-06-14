@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230712/cfe/trunk/test/Modules/Inputs/merge-decl-context
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230712/cfe/trunk/test/Modules/Inputs/merge-decl-context/a.h
+END
+b.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230558/cfe/trunk/test/Modules/Inputs/merge-decl-context/b.h
+END
+c.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230558/cfe/trunk/test/Modules/Inputs/merge-decl-context/c.h
+END
+merge-decl-context.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/llvm-project/!svn/ver/230712/cfe/trunk/test/Modules/Inputs/merge-decl-context/merge-decl-context.modulemap
+END
+d.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230712/cfe/trunk/test/Modules/Inputs/merge-decl-context/d.h
+END

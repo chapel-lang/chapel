@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/215551/cfe/trunk/test/Driver/Inputs/basic_netbsd_tree/usr/lib
+END
+crtendS.o
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/192641/cfe/trunk/test/Driver/Inputs/basic_netbsd_tree/usr/lib/crtendS.o
+END
+crtn.o
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/192641/cfe/trunk/test/Driver/Inputs/basic_netbsd_tree/usr/lib/crtn.o
+END
+crt0.o
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/192641/cfe/trunk/test/Driver/Inputs/basic_netbsd_tree/usr/lib/crt0.o
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/192641/cfe/trunk/test/Driver/Inputs/basic_netbsd_tree/usr/lib/crtbegin.o
+END
+crtend.o
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/192641/cfe/trunk/test/Driver/Inputs/basic_netbsd_tree/usr/lib/crtend.o
+END
+crtbeginS.o
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/192641/cfe/trunk/test/Driver/Inputs/basic_netbsd_tree/usr/lib/crtbeginS.o
+END
+crti.o
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/192641/cfe/trunk/test/Driver/Inputs/basic_netbsd_tree/usr/lib/crti.o
+END

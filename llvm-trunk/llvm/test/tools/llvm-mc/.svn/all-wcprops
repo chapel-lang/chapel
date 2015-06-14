@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/221707/llvm/trunk/test/tools/llvm-mc
+END
+line_end_with_space.test
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/221707/llvm/trunk/test/tools/llvm-mc/line_end_with_space.test
+END

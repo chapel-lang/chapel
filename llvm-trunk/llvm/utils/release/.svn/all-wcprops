@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/llvm-project/!svn/ver/238753/llvm/trunk/utils/release
+END
+findRegressions-simple.py
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/155230/llvm/trunk/utils/release/findRegressions-simple.py
+END
+tag.sh
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/238753/llvm/trunk/utils/release/tag.sh
+END
+test-release.sh
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/238753/llvm/trunk/utils/release/test-release.sh
+END
+findRegressions-nightly.py
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/155230/llvm/trunk/utils/release/findRegressions-nightly.py
+END
+merge.sh
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/225737/llvm/trunk/utils/release/merge.sh
+END
+export.sh
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/236081/llvm/trunk/utils/release/export.sh
+END

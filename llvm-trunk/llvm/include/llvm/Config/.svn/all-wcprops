@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/238388/llvm/trunk/include/llvm/Config
+END
+llvm-config.h.in
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/233310/llvm/trunk/include/llvm/Config/llvm-config.h.in
+END
+AsmPrinters.def.in
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/163095/llvm/trunk/include/llvm/Config/AsmPrinters.def.in
+END
+config.h.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/231679/llvm/trunk/include/llvm/Config/config.h.cmake
+END
+Targets.def.in
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/74026/llvm/trunk/include/llvm/Config/Targets.def.in
+END
+config.h.in
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/238388/llvm/trunk/include/llvm/Config/config.h.in
+END
+AsmParsers.def.in
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/163095/llvm/trunk/include/llvm/Config/AsmParsers.def.in
+END
+Disassemblers.def.in
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/163095/llvm/trunk/include/llvm/Config/Disassemblers.def.in
+END
+llvm-config.h.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/233310/llvm/trunk/include/llvm/Config/llvm-config.h.cmake
+END

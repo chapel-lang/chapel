@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport
+END
+a1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/a1.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/module.modulemap
+END
+a2.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/a2.h
+END
+b1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/b1.h
+END
+b2.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/b2.h
+END
+c1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/c1.h
+END
+d1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/d1.h
+END
+d2.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/d2.h
+END
+e1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/e1.h
+END
+e2.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/e2.h
+END
+f1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/macro-reexport/f1.h
+END

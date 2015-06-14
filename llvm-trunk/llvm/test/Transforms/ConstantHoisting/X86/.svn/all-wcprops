@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/ConstantHoisting/X86
+END
+cast-inst.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/ConstantHoisting/X86/cast-inst.ll
+END
+const-base-addr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/ConstantHoisting/X86/const-base-addr.ll
+END
+large-immediate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/210504/llvm/trunk/test/Transforms/ConstantHoisting/X86/large-immediate.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/ConstantHoisting/X86/lit.local.cfg
+END
+delete-dead-cast-inst.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/ConstantHoisting/X86/delete-dead-cast-inst.ll
+END
+phi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/204537/llvm/trunk/test/Transforms/ConstantHoisting/X86/phi.ll
+END
+stackmap.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/ConstantHoisting/X86/stackmap.ll
+END

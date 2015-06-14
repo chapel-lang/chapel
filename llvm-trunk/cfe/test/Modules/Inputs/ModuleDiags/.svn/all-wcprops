@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/181067/cfe/trunk/test/Modules/Inputs/ModuleDiags
+END
+has_warnings.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/181067/cfe/trunk/test/Modules/Inputs/ModuleDiags/has_warnings.h
+END
+has_errors.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/181067/cfe/trunk/test/Modules/Inputs/ModuleDiags/has_errors.h
+END
+module.map
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/181067/cfe/trunk/test/Modules/Inputs/ModuleDiags/module.map
+END

@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/213865/cfe/trunk/test/CXX/lex/lex.literal/lex.ext
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/152287/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p1.cpp
+END
+p10.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/152349/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p10.cpp
+END
+p11.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/192128/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p11.cpp
+END
+p2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/152404/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p2.cpp
+END
+p12.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/192128/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p12.cpp
+END
+p3.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/213865/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p3.cpp
+END
+p4.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/152392/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p4.cpp
+END
+p5.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/192140/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p5.cpp
+END
+p6.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/152392/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p6.cpp
+END
+p7.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/192140/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p7.cpp
+END
+p8.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/152211/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p8.cpp
+END
+p9.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/152211/cfe/trunk/test/CXX/lex/lex.literal/lex.ext/p9.cpp
+END

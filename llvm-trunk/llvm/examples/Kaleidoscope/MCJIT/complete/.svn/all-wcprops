@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235543/llvm/trunk/examples/Kaleidoscope/MCJIT/complete
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/186854/llvm/trunk/examples/Kaleidoscope/MCJIT/complete/Makefile
+END
+genk-timing.py
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/186854/llvm/trunk/examples/Kaleidoscope/MCJIT/complete/genk-timing.py
+END
+split-lib.py
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/186854/llvm/trunk/examples/Kaleidoscope/MCJIT/complete/split-lib.py
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/186854/llvm/trunk/examples/Kaleidoscope/MCJIT/complete/README.txt
+END
+toy.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/235543/llvm/trunk/examples/Kaleidoscope/MCJIT/complete/toy.cpp
+END

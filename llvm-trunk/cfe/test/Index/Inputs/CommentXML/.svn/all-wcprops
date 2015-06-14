@@ -1,0 +1,245 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/207712/cfe/trunk/test/Index/Inputs/CommentXML
+END
+invalid-function-13.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/184688/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-13.xml
+END
+valid-function-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-01.xml
+END
+valid-function-02.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/207712/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-02.xml
+END
+valid-function-03.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-03.xml
+END
+valid-function-04.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-04.xml
+END
+valid-function-05.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-05.xml
+END
+valid-function-06.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-06.xml
+END
+valid-deprecated-attr.xml
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/165066/cfe/trunk/test/Index/Inputs/CommentXML/valid-deprecated-attr.xml
+END
+valid-function-07.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/194521/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-07.xml
+END
+valid-namespace-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-namespace-01.xml
+END
+valid-function-08.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-08.xml
+END
+invalid-para-kind-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/174216/cfe/trunk/test/Index/Inputs/CommentXML/invalid-para-kind-01.xml
+END
+valid-function-09.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-09.xml
+END
+invalid-para-kind-02.xml
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/174216/cfe/trunk/test/Index/Inputs/CommentXML/invalid-para-kind-02.xml
+END
+valid-typedef-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-typedef-01.xml
+END
+valid-typedef-02.xml
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-typedef-02.xml
+END
+valid-enum-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/161442/cfe/trunk/test/Index/Inputs/CommentXML/valid-enum-01.xml
+END
+valid-class-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-class-01.xml
+END
+valid-para-kind-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/176127/cfe/trunk/test/Index/Inputs/CommentXML/valid-para-kind-01.xml
+END
+valid-class-02.xml
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-class-02.xml
+END
+valid-class-03.xml
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-class-03.xml
+END
+valid-class-04.xml
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-class-04.xml
+END
+invalid-function-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-01.xml
+END
+valid-unavailable-attr.xml
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/165066/cfe/trunk/test/Index/Inputs/CommentXML/valid-unavailable-attr.xml
+END
+invalid-function-02.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-02.xml
+END
+invalid-function-03.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-03.xml
+END
+invalid-function-04.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-04.xml
+END
+invalid-function-05.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-05.xml
+END
+valid-other-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-other-01.xml
+END
+invalid-function-06.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-06.xml
+END
+valid-availability-attr-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/164961/cfe/trunk/test/Index/Inputs/CommentXML/valid-availability-attr-01.xml
+END
+invalid-function-07.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-07.xml
+END
+invalid-function-08.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-08.xml
+END
+valid-availability-attr-02.xml
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/165104/cfe/trunk/test/Index/Inputs/CommentXML/valid-availability-attr-02.xml
+END
+invalid-function-09.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-09.xml
+END
+valid-variable-01.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-variable-01.xml
+END
+valid-function-10.xml
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/valid-function-10.xml
+END
+invalid-function-10.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-10.xml
+END
+invalid-function-11.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-11.xml
+END
+invalid-function-12.xml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/161431/cfe/trunk/test/Index/Inputs/CommentXML/invalid-function-12.xml
+END

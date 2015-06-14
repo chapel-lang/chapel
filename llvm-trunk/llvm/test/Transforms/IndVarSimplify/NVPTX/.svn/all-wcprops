@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/IndVarSimplify/NVPTX
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/221799/llvm/trunk/test/Transforms/IndVarSimplify/NVPTX/lit.local.cfg
+END
+no-widen-expensive.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/IndVarSimplify/NVPTX/no-widen-expensive.ll
+END

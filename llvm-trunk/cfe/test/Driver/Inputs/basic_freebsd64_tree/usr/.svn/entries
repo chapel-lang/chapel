@@ -1,0 +1,34 @@
+10
+
+dir
+239086
+http://user@llvm.org/svn/llvm-project/cfe/trunk/test/Driver/Inputs/basic_freebsd64_tree/usr
+http://user@llvm.org/svn/llvm-project
+
+
+
+2012-01-26T01:35:15.547434Z
+149011
+chandlerc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+91177308-0d34-0410-b5e6-96231b3b80d8
+
+lib
+dir
+
+lib32
+dir
+

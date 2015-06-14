@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 123
+/svn/llvm-project/!svn/ver/157686/cfe/trunk/test/Driver/Inputs/montavista_i686_tree/usr/lib/gcc/i686-montavista-linux/4.2.0
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 134
+/svn/llvm-project/!svn/ver/157686/cfe/trunk/test/Driver/Inputs/montavista_i686_tree/usr/lib/gcc/i686-montavista-linux/4.2.0/crtbegin.o
+END
+libgcc.a
+K 25
+svn:wc:ra_dav:version-url
+V 132
+/svn/llvm-project/!svn/ver/157686/cfe/trunk/test/Driver/Inputs/montavista_i686_tree/usr/lib/gcc/i686-montavista-linux/4.2.0/libgcc.a
+END

@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/220812/cfe/trunk/test/CodeGenObjCXX/Inputs
+END
+literal-support.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/220812/cfe/trunk/test/CodeGenObjCXX/Inputs/literal-support.h
+END

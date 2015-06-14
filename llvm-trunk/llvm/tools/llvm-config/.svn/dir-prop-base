@@ -1,0 +1,12 @@
+K 10
+svn:ignore
+V 99
+FinalLibDeps.txt
+GenLibDeps.out
+LibDeps.txt
+LibDeps.txt.tmp
+libdeps.gif
+llvm-config.in
+objdeps.gif
+
+END

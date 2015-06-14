@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/228786/llvm/trunk/test/Transforms/PruneEH
+END
+simpletest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/228786/llvm/trunk/test/Transforms/PruneEH/simpletest.ll
+END
+seh-nounwind.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/228782/llvm/trunk/test/Transforms/PruneEH/seh-nounwind.ll
+END
+2008-06-02-Weak.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/PruneEH/2008-06-02-Weak.ll
+END
+simplenoreturntest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/PruneEH/simplenoreturntest.ll
+END
+recursivetest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/228786/llvm/trunk/test/Transforms/PruneEH/recursivetest.ll
+END

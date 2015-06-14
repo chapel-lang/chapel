@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/examples/Kaleidoscope/Chapter3
+END
+toy.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/234679/llvm/trunk/examples/Kaleidoscope/Chapter3/toy.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/225318/llvm/trunk/examples/Kaleidoscope/Chapter3/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/82574/llvm/trunk/examples/Kaleidoscope/Chapter3/Makefile
+END

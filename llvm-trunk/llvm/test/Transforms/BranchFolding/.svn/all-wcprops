@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/219951/llvm/trunk/test/Transforms/BranchFolding
+END
+2007-10-19-InlineAsmDirectives.ll
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/219951/llvm/trunk/test/Transforms/BranchFolding/2007-10-19-InlineAsmDirectives.ll
+END

@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/235410/llvm/trunk/test/Transforms/StraightLineStrengthReduce/X86
+END
+no-slsr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/235410/llvm/trunk/test/Transforms/StraightLineStrengthReduce/X86/no-slsr.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/233286/llvm/trunk/test/Transforms/StraightLineStrengthReduce/X86/lit.local.cfg
+END

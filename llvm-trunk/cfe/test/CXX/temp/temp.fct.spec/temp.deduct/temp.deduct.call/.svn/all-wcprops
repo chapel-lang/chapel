@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/176474/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.call
+END
+basic.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/176474/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.call/basic.cpp
+END
+p2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.call/p2.cpp
+END
+p3.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/133327/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.call/p3.cpp
+END
+p4.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.call/p4.cpp
+END
+p1-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/174039/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.call/p1-0x.cpp
+END
+p6.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/152575/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.call/p6.cpp
+END
+p3-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.call/p3-0x.cpp
+END

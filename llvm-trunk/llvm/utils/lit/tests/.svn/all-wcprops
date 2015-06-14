@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/224129/llvm/trunk/utils/lit/tests
+END
+progress-bar.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/179243/llvm/trunk/utils/lit/tests/progress-bar.py
+END
+test-data.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/190535/llvm/trunk/utils/lit/tests/test-data.py
+END
+.coveragerc
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/174017/llvm/trunk/utils/lit/tests/.coveragerc
+END
+discovery.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/188009/llvm/trunk/utils/lit/tests/discovery.py
+END
+unittest-adaptor.py
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/188358/llvm/trunk/utils/lit/tests/unittest-adaptor.py
+END
+shell-parsing.py
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/188358/llvm/trunk/utils/lit/tests/shell-parsing.py
+END
+test-output.py
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/224129/llvm/trunk/utils/lit/tests/test-output.py
+END
+shtest-encoding.py
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/188398/llvm/trunk/utils/lit/tests/shtest-encoding.py
+END
+lit.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/190738/llvm/trunk/utils/lit/tests/lit.cfg
+END
+shtest-shell.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/174102/llvm/trunk/utils/lit/tests/shtest-shell.py
+END
+shtest-format.py
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/189559/llvm/trunk/utils/lit/tests/shtest-format.py
+END
+googletest-format.py
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/188417/llvm/trunk/utils/lit/tests/googletest-format.py
+END
+usage.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/173999/llvm/trunk/utils/lit/tests/usage.py
+END
+xunit-output.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/223307/llvm/trunk/utils/lit/tests/xunit-output.py
+END

@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Analysis/CallGraph
+END
+do-nothing-intrinsic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/164707/llvm/trunk/test/Analysis/CallGraph/do-nothing-intrinsic.ll
+END
+2008-09-09-DirectCall.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Analysis/CallGraph/2008-09-09-DirectCall.ll
+END
+2008-09-09-UsedByGlobal.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/159544/llvm/trunk/test/Analysis/CallGraph/2008-09-09-UsedByGlobal.ll
+END
+no-intrinsics.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186263/llvm/trunk/test/Analysis/CallGraph/no-intrinsics.ll
+END

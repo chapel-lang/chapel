@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/197756/cfe/trunk/test/Index/reparse-with-remaps
+END
+reparse.c
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/197756/cfe/trunk/test/Index/reparse-with-remaps/reparse.c
+END
+test.h-0
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/197756/cfe/trunk/test/Index/reparse-with-remaps/test.h-0
+END
+test.h-1
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/197756/cfe/trunk/test/Index/reparse-with-remaps/test.h-1
+END
+test.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/197756/cfe/trunk/test/Index/reparse-with-remaps/test.h
+END

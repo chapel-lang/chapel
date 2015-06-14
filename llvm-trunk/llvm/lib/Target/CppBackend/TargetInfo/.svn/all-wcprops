@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/237165/llvm/trunk/lib/Target/CppBackend/TargetInfo
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/195921/llvm/trunk/lib/Target/CppBackend/TargetInfo/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/94378/llvm/trunk/lib/Target/CppBackend/TargetInfo/Makefile
+END
+CppBackendTargetInfo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/237165/llvm/trunk/lib/Target/CppBackend/TargetInfo/CppBackendTargetInfo.cpp
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/196988/llvm/trunk/lib/Target/CppBackend/TargetInfo/LLVMBuild.txt
+END

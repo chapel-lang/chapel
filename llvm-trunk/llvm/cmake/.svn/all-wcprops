@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/llvm-project/!svn/ver/238744/llvm/trunk/cmake
+END
+nsis_logo.bmp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/188509/llvm/trunk/cmake/nsis_logo.bmp
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/llvm-project/!svn/ver/201053/llvm/trunk/cmake/Makefile
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/llvm-project/!svn/ver/124793/llvm/trunk/cmake/README
+END
+nsis_icon.ico
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/204960/llvm/trunk/cmake/nsis_icon.ico
+END
+config-ix.cmake
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/236312/llvm/trunk/cmake/config-ix.cmake
+END

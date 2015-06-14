@@ -1,0 +1,197 @@
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/237377/llvm/trunk/test/Transforms/ConstProp
+END
+div-zero.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/ConstProp/div-zero.ll
+END
+2002-09-03-SetCC-Bools.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/ConstProp/2002-09-03-SetCC-Bools.ll
+END
+logicaltest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/129558/llvm/trunk/test/Transforms/ConstProp/logicaltest.ll
+END
+2007-11-23-cttz.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/173356/llvm/trunk/test/Transforms/ConstProp/2007-11-23-cttz.ll
+END
+bswap.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/186269/llvm/trunk/test/Transforms/ConstProp/bswap.ll
+END
+2006-11-30-vector-cast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/ConstProp/2006-11-30-vector-cast.ll
+END
+2009-06-20-constexpr-zero-lhs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/73839/llvm/trunk/test/Transforms/ConstProp/2009-06-20-constexpr-zero-lhs.ll
+END
+2007-02-05-BitCast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/ConstProp/2007-02-05-BitCast.ll
+END
+float-to-ptr-cast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/85171/llvm/trunk/test/Transforms/ConstProp/float-to-ptr-cast.ll
+END
+remtest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/ConstProp/remtest.ll
+END
+2006-12-01-TruncBoolBug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/ConstProp/2006-12-01-TruncBoolBug.ll
+END
+2006-12-01-bool-casts.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/ConstProp/2006-12-01-bool-casts.ll
+END
+bitcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/ConstProp/bitcast.ll
+END
+convert-from-fp16.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/237377/llvm/trunk/test/Transforms/ConstProp/convert-from-fp16.ll
+END
+2007-02-23-sdiv.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/ConstProp/2007-02-23-sdiv.ll
+END
+calls.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/ConstProp/calls.ll
+END
+2002-05-03-NotOperator.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/ConstProp/2002-05-03-NotOperator.ll
+END
+2002-05-03-DivideByZeroException.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/ConstProp/2002-05-03-DivideByZeroException.ll
+END
+insertvalue.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/229864/llvm/trunk/test/Transforms/ConstProp/insertvalue.ll
+END
+2003-05-12-DivideError.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/ConstProp/2003-05-12-DivideError.ll
+END
+loads.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/ConstProp/loads.ll
+END
+overflow-ops.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/ConstProp/overflow-ops.ll
+END
+2009-09-01-GEP-Crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/ConstProp/2009-09-01-GEP-Crash.ll
+END
+constant-expr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/124547/llvm/trunk/test/Transforms/ConstProp/constant-expr.ll
+END
+extractvalue.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/ConstProp/extractvalue.ll
+END
+2008-07-07-VectorCompare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/ConstProp/2008-07-07-VectorCompare.ll
+END
+shift.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/232176/llvm/trunk/test/Transforms/ConstProp/shift.ll
+END
+InsertElement.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/235854/llvm/trunk/test/Transforms/ConstProp/InsertElement.ll
+END
+phi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/129558/llvm/trunk/test/Transforms/ConstProp/phi.ll
+END
+basictest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/ConstProp/basictest.ll
+END
+2005-01-28-SetCCGEP.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/ConstProp/2005-01-28-SetCCGEP.ll
+END
+trunc_vec.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/216149/llvm/trunk/test/Transforms/ConstProp/trunc_vec.ll
+END

@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/212904/llvm/trunk/lib/Transforms/Hello
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/212904/llvm/trunk/lib/Transforms/Hello/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/106768/llvm/trunk/lib/Transforms/Hello/Makefile
+END
+Hello.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/206844/llvm/trunk/lib/Transforms/Hello/Hello.cpp
+END
+Hello.exports
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/106768/llvm/trunk/lib/Transforms/Hello/Hello.exports
+END

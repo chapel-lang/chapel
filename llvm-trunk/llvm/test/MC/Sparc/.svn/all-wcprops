@@ -1,0 +1,131 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/llvm-project/!svn/ver/237585/llvm/trunk/test/MC/Sparc
+END
+sparc-ctrl-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/236107/llvm/trunk/test/MC/Sparc/sparc-ctrl-instructions.s
+END
+sparc-fp-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/208969/llvm/trunk/test/MC/Sparc/sparc-fp-instructions.s
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/MC/Sparc/lit.local.cfg
+END
+sparc-pic.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/202573/llvm/trunk/test/MC/Sparc/sparc-pic.s
+END
+sparc-synthetic-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/237585/llvm/trunk/test/MC/Sparc/sparc-synthetic-instructions.s
+END
+sparc-assembly-exprs.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/236137/llvm/trunk/test/MC/Sparc/sparc-assembly-exprs.s
+END
+sparc-atomic-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/237581/llvm/trunk/test/MC/Sparc/sparc-atomic-instructions.s
+END
+sparc-directive-xword.s
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/202564/llvm/trunk/test/MC/Sparc/sparc-directive-xword.s
+END
+sparc64-ctrl-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/202670/llvm/trunk/test/MC/Sparc/sparc64-ctrl-instructions.s
+END
+sparc-mem-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/237581/llvm/trunk/test/MC/Sparc/sparc-mem-instructions.s
+END
+sparcv8-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/202661/llvm/trunk/test/MC/Sparc/sparcv8-instructions.s
+END
+sparc-relocations.s
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/200112/llvm/trunk/test/MC/Sparc/sparc-relocations.s
+END
+sparcv9-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/202598/llvm/trunk/test/MC/Sparc/sparcv9-instructions.s
+END
+sparc-alu-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/208969/llvm/trunk/test/MC/Sparc/sparc-alu-instructions.s
+END
+sparc-special-registers.s
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/237582/llvm/trunk/test/MC/Sparc/sparc-special-registers.s
+END
+sparc-little-endian.s
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/236324/llvm/trunk/test/MC/Sparc/sparc-little-endian.s
+END
+sparc64-alu-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/198740/llvm/trunk/test/MC/Sparc/sparc64-alu-instructions.s
+END
+sparcv9-atomic-instructions.s
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/237581/llvm/trunk/test/MC/Sparc/sparcv9-atomic-instructions.s
+END
+sparc-vis.s
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/202660/llvm/trunk/test/MC/Sparc/sparc-vis.s
+END
+sparc-directives.s
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/202564/llvm/trunk/test/MC/Sparc/sparc-directives.s
+END
+sparc-nop-data.s
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/202572/llvm/trunk/test/MC/Sparc/sparc-nop-data.s
+END

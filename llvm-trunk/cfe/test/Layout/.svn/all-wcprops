@@ -1,0 +1,113 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout
+END
+ms-x86-misalignedarray.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/199250/cfe/trunk/test/Layout/ms-x86-misalignedarray.cpp
+END
+itanium-union-bitfield.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/220272/cfe/trunk/test/Layout/itanium-union-bitfield.cpp
+END
+ms-x86-primary-bases.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/202457/cfe/trunk/test/Layout/ms-x86-primary-bases.cpp
+END
+ms-x86-vfvb-alignment.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-vfvb-alignment.cpp
+END
+ms-x86-empty-base-after-base-with-vbptr.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/199250/cfe/trunk/test/Layout/ms-x86-empty-base-after-base-with-vbptr.cpp
+END
+ms-x86-lazy-empty-nonvirtual-base.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-lazy-empty-nonvirtual-base.cpp
+END
+ms-x86-alias-avoidance-padding.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-alias-avoidance-padding.cpp
+END
+ms-x86-bitfields-vbases.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/206004/cfe/trunk/test/Layout/ms-x86-bitfields-vbases.cpp
+END
+ms-x86-empty-nonvirtual-bases.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-empty-nonvirtual-bases.cpp
+END
+ms-x86-empty-virtual-base.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-empty-virtual-base.cpp
+END
+ms-x86-basic-layout.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-basic-layout.cpp
+END
+ms-x86-vfvb-sharing.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-vfvb-sharing.cpp
+END
+ms-x86-aligned-tail-padding.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-aligned-tail-padding.cpp
+END
+ms-x86-size-alignment-fail.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-size-alignment-fail.cpp
+END
+ms-x86-pack-and-align.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-pack-and-align.cpp
+END
+ms-x86-member-pointers.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/200585/cfe/trunk/test/Layout/ms-x86-member-pointers.cpp
+END
+ms-x86-empty-layout.c
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/238238/cfe/trunk/test/Layout/ms-x86-empty-layout.c
+END
+ms-x86-vtordisp.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/218340/cfe/trunk/test/Layout/ms-x86-vtordisp.cpp
+END

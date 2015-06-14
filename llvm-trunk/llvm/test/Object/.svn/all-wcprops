@@ -1,0 +1,449 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/llvm-project/!svn/ver/239068/llvm/trunk/test/Object
+END
+kext.test
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/230779/llvm/trunk/test/Object/kext.test
+END
+mri5.test
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/219521/llvm/trunk/test/Object/mri5.test
+END
+archive-symtab.test
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/221747/llvm/trunk/test/Object/archive-symtab.test
+END
+nm-weak-global-macho.test
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/193912/llvm/trunk/test/Object/nm-weak-global-macho.test
+END
+nm-shared-object.test
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/208463/llvm/trunk/test/Object/nm-shared-object.test
+END
+yaml2obj-readobj.test
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/208900/llvm/trunk/test/Object/yaml2obj-readobj.test
+END
+archive-move.test
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/231017/llvm/trunk/test/Object/archive-move.test
+END
+yaml2obj-coff-multi-doc.test
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/209967/llvm/trunk/test/Object/yaml2obj-coff-multi-doc.test
+END
+yaml2obj-elf-rel.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/207694/llvm/trunk/test/Object/yaml2obj-elf-rel.yaml
+END
+yaml2obj-elf-section-basic.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/208995/llvm/trunk/test/Object/yaml2obj-elf-section-basic.yaml
+END
+objdump-symbol-table.test
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/238028/llvm/trunk/test/Object/objdump-symbol-table.test
+END
+elf-reloc-no-sym.test
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/183284/llvm/trunk/test/Object/elf-reloc-no-sym.test
+END
+objdump-export-list.test
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/224563/llvm/trunk/test/Object/objdump-export-list.test
+END
+check_binary_output.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/186480/llvm/trunk/test/Object/check_binary_output.ll
+END
+archive-replace-pos.test
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186829/llvm/trunk/test/Object/archive-replace-pos.test
+END
+yaml2obj-elf-symbol-LocalGlobalWeak.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/184627/llvm/trunk/test/Object/yaml2obj-elf-symbol-LocalGlobalWeak.yaml
+END
+readobj-elf-versioning.test
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/204584/llvm/trunk/test/Object/readobj-elf-versioning.test
+END
+yaml2obj-elf-file-headers.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/184269/llvm/trunk/test/Object/yaml2obj-elf-file-headers.yaml
+END
+corrupt.test
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/188022/llvm/trunk/test/Object/corrupt.test
+END
+nm-error.test
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/200370/llvm/trunk/test/Object/nm-error.test
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/183953/llvm/trunk/test/Object/lit.local.cfg
+END
+nm-universal-binary.test
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/215216/llvm/trunk/test/Object/nm-universal-binary.test
+END
+mri-addlib.test
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/221265/llvm/trunk/test/Object/mri-addlib.test
+END
+archive-error-tmp.txt
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/221269/llvm/trunk/test/Object/archive-error-tmp.txt
+END
+size-trivial-macho.test
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/212108/llvm/trunk/test/Object/size-trivial-macho.test
+END
+archive-format.test
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/231074/llvm/trunk/test/Object/archive-format.test
+END
+obj2yaml-coff-long-section-name.test
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/219458/llvm/trunk/test/Object/obj2yaml-coff-long-section-name.test
+END
+mri2.test
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/219521/llvm/trunk/test/Object/mri2.test
+END
+mri-crlf.test
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/221153/llvm/trunk/test/Object/mri-crlf.test
+END
+relocation-executable.test
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/182908/llvm/trunk/test/Object/relocation-executable.test
+END
+yaml2obj-elf-multi-doc.test
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/209967/llvm/trunk/test/Object/yaml2obj-elf-multi-doc.test
+END
+obj2yaml.test
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/238899/llvm/trunk/test/Object/obj2yaml.test
+END
+objdump-relocations.test
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/220866/llvm/trunk/test/Object/objdump-relocations.test
+END
+archive-delete.test
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/231017/llvm/trunk/test/Object/archive-delete.test
+END
+archive-long-index.test
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/212576/llvm/trunk/test/Object/archive-long-index.test
+END
+nm-darwin-m.test
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/211326/llvm/trunk/test/Object/nm-darwin-m.test
+END
+yaml2obj-elf-symbol-basic.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/204584/llvm/trunk/test/Object/yaml2obj-elf-symbol-basic.yaml
+END
+coff-archive.test
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/220952/llvm/trunk/test/Object/coff-archive.test
+END
+directory.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/210687/llvm/trunk/test/Object/directory.ll
+END
+obj2yaml-coff-weak-external.test
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/205911/llvm/trunk/test/Object/obj2yaml-coff-weak-external.test
+END
+ar-create.test
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/186469/llvm/trunk/test/Object/ar-create.test
+END
+archive-toc.test
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/224307/llvm/trunk/test/Object/archive-toc.test
+END
+archive-extract-dir.test
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/231017/llvm/trunk/test/Object/archive-extract-dir.test
+END
+nm-irix6.test
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/229520/llvm/trunk/test/Object/nm-irix6.test
+END
+mri3.test
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/221265/llvm/trunk/test/Object/mri3.test
+END
+mri-addmod.test
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/221265/llvm/trunk/test/Object/mri-addmod.test
+END
+yaml2obj-elf-bits-endian.test
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/183711/llvm/trunk/test/Object/yaml2obj-elf-bits-endian.test
+END
+readobj-shared-object.test
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/238899/llvm/trunk/test/Object/readobj-shared-object.test
+END
+coff-archive-short.test
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/220952/llvm/trunk/test/Object/coff-archive-short.test
+END
+obj2yaml-coff-section-aux-symbol.test
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/219480/llvm/trunk/test/Object/obj2yaml-coff-section-aux-symbol.test
+END
+yaml2obj-elf-rel-noref.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/235513/llvm/trunk/test/Object/yaml2obj-elf-rel-noref.yaml
+END
+archive-update.test
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/231017/llvm/trunk/test/Object/archive-update.test
+END
+objdump-file-header.test
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/161219/llvm/trunk/test/Object/objdump-file-header.test
+END
+readobj.test
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/174639/llvm/trunk/test/Object/readobj.test
+END
+objdump-reloc-shared.test
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/215844/llvm/trunk/test/Object/objdump-reloc-shared.test
+END
+obj2yaml-coff-long-file-symbol.test
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/204314/llvm/trunk/test/Object/obj2yaml-coff-long-file-symbol.test
+END
+objdump-section-content.test
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/179589/llvm/trunk/test/Object/objdump-section-content.test
+END
+mri4.test
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/221265/llvm/trunk/test/Object/mri4.test
+END
+macho-invalid.test
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/239068/llvm/trunk/test/Object/macho-invalid.test
+END
+objdump-private-headers.test
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/223343/llvm/trunk/test/Object/objdump-private-headers.test
+END
+elf-unknown-type.test
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/226943/llvm/trunk/test/Object/elf-unknown-type.test
+END
+nm-trivial-object.test
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/238019/llvm/trunk/test/Object/nm-trivial-object.test
+END
+ar-error.test
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/209570/llvm/trunk/test/Object/ar-error.test
+END
+nm-archive.test
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/220952/llvm/trunk/test/Object/nm-archive.test
+END
+objdump-sectionheaders.test
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/172130/llvm/trunk/test/Object/objdump-sectionheaders.test
+END
+yaml2obj-elf-symbol-visibility.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/221491/llvm/trunk/test/Object/yaml2obj-elf-symbol-visibility.yaml
+END
+obj2yaml-sectiongroup.test
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230124/llvm/trunk/test/Object/obj2yaml-sectiongroup.test
+END
+extract.ll
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/231017/llvm/trunk/test/Object/extract.ll
+END
+yaml2obj-elf-file-headers-with-e_flags.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/221268/llvm/trunk/test/Object/yaml2obj-elf-file-headers-with-e_flags.yaml
+END
+mangle-ir.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/212347/llvm/trunk/test/Object/mangle-ir.ll
+END
+yaml2obj-elf-section-invalid-size.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/208995/llvm/trunk/test/Object/yaml2obj-elf-section-invalid-size.yaml
+END
+mri1.test
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/221265/llvm/trunk/test/Object/mri1.test
+END
+objdump-no-sectionheaders.test
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/212059/llvm/trunk/test/Object/objdump-no-sectionheaders.test
+END
+simple-archive.test
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/212576/llvm/trunk/test/Object/simple-archive.test
+END

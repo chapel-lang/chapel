@@ -1,0 +1,227 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/llvm-project/!svn/ver/230464/cfe/trunk/test/SemaOpenCL
+END
+array-parameters.cl
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/206275/cfe/trunk/test/SemaOpenCL/array-parameters.cl
+END
+func_ptr.cl
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/201788/cfe/trunk/test/SemaOpenCL/func_ptr.cl
+END
+sampler_t_overload.cl
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/174601/cfe/trunk/test/SemaOpenCL/sampler_t_overload.cl
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/206688/cfe/trunk/test/SemaOpenCL/lit.local.cfg
+END
+sampler_t.cl
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/174601/cfe/trunk/test/SemaOpenCL/sampler_t.cl
+END
+vector_inc_dec_ops.cl
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/190129/cfe/trunk/test/SemaOpenCL/vector_inc_dec_ops.cl
+END
+invalid-logical-ops-1.1.cl
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/175736/cfe/trunk/test/SemaOpenCL/invalid-logical-ops-1.1.cl
+END
+vector_conv_invalid.cl
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/207267/cfe/trunk/test/SemaOpenCL/vector_conv_invalid.cl
+END
+invalid-kernel-attrs.cl
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/209127/cfe/trunk/test/SemaOpenCL/invalid-kernel-attrs.cl
+END
+shifts.cl
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/230464/cfe/trunk/test/SemaOpenCL/shifts.cl
+END
+init.cl
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/SemaOpenCL/init.cl
+END
+optional-core-fp64-cl2.0.cl
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/227565/cfe/trunk/test/SemaOpenCL/optional-core-fp64-cl2.0.cl
+END
+invalid-kernel-parameters.cl
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/186908/cfe/trunk/test/SemaOpenCL/invalid-kernel-parameters.cl
+END
+extern.cl
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/219929/cfe/trunk/test/SemaOpenCL/extern.cl
+END
+extension-fp64-cl1.1.cl
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/227565/cfe/trunk/test/SemaOpenCL/extension-fp64-cl1.1.cl
+END
+vector_literals_invalid.cl
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/140270/cfe/trunk/test/SemaOpenCL/vector_literals_invalid.cl
+END
+vector_literals_const.cl
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/SemaOpenCL/vector_literals_const.cl
+END
+str_literals.cl
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/194717/cfe/trunk/test/SemaOpenCL/str_literals.cl
+END
+half.cl
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/208499/cfe/trunk/test/SemaOpenCL/half.cl
+END
+invalid-constant.cl
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/198422/cfe/trunk/test/SemaOpenCL/invalid-constant.cl
+END
+vec_compare.cl
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/SemaOpenCL/vec_compare.cl
+END
+address-spaces-conversions-cl2.0.cl
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/222834/cfe/trunk/test/SemaOpenCL/address-spaces-conversions-cl2.0.cl
+END
+cond.cl
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/228118/cfe/trunk/test/SemaOpenCL/cond.cl
+END
+amdgpu-num-register-attrs.cl
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/223490/cfe/trunk/test/SemaOpenCL/amdgpu-num-register-attrs.cl
+END
+unsupported.cl
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/172732/cfe/trunk/test/SemaOpenCL/unsupported.cl
+END
+extension-fp64.cl
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/127476/cfe/trunk/test/SemaOpenCL/extension-fp64.cl
+END
+storageclass.cl
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/178906/cfe/trunk/test/SemaOpenCL/storageclass.cl
+END
+invalid-logical-ops-1.2.cl
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/175736/cfe/trunk/test/SemaOpenCL/invalid-logical-ops-1.2.cl
+END
+event_t_overload.cl
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/174630/cfe/trunk/test/SemaOpenCL/event_t_overload.cl
+END
+sizeof.cl
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/198264/cfe/trunk/test/SemaOpenCL/sizeof.cl
+END
+address-spaces.cl
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/219929/cfe/trunk/test/SemaOpenCL/address-spaces.cl
+END
+invalid-kernel.cl
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/206275/cfe/trunk/test/SemaOpenCL/invalid-kernel.cl
+END
+event_t.cl
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/198417/cfe/trunk/test/SemaOpenCL/event_t.cl
+END
+warn-missing-prototypes.cl
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/160766/cfe/trunk/test/SemaOpenCL/warn-missing-prototypes.cl
+END
+optional-core-fp64-cl1.2.cl
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/227565/cfe/trunk/test/SemaOpenCL/optional-core-fp64-cl1.2.cl
+END
+endian-attr.cl
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/190303/cfe/trunk/test/SemaOpenCL/endian-attr.cl
+END
+vec_step.cl
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/127475/cfe/trunk/test/SemaOpenCL/vec_step.cl
+END

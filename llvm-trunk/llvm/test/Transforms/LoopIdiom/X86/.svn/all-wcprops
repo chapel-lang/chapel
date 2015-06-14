@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/LoopIdiom/X86
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/LoopIdiom/X86/lit.local.cfg
+END
+popcnt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/172145/llvm/trunk/test/Transforms/LoopIdiom/X86/popcnt.ll
+END

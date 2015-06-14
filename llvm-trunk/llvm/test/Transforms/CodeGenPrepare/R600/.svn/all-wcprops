@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/238218/llvm/trunk/test/Transforms/CodeGenPrepare/R600
+END
+no-sink-addrspacecast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/238217/llvm/trunk/test/Transforms/CodeGenPrepare/R600/no-sink-addrspacecast.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/238218/llvm/trunk/test/Transforms/CodeGenPrepare/R600/lit.local.cfg
+END

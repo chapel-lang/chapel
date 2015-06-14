@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/234839/llvm/trunk/test/ExecutionEngine/RuntimeDyld/X86/Inputs
+END
+ExternalGlobal.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/234839/llvm/trunk/test/ExecutionEngine/RuntimeDyld/X86/Inputs/ExternalGlobal.ll
+END

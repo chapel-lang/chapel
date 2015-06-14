@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230526/cfe/trunk/test/Modules/Inputs/merge-vtable-codegen
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230526/cfe/trunk/test/Modules/Inputs/merge-vtable-codegen/a.h
+END
+b.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230526/cfe/trunk/test/Modules/Inputs/merge-vtable-codegen/b.h
+END
+c.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230526/cfe/trunk/test/Modules/Inputs/merge-vtable-codegen/c.h
+END
+merge-vtable-codegen.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/230526/cfe/trunk/test/Modules/Inputs/merge-vtable-codegen/merge-vtable-codegen.modulemap
+END

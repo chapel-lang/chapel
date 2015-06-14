@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/llvm-project/!svn/ver/220004/llvm/trunk/test/tools/llvm-symbolizer/Inputs/dsym-test-exe-differentname.dSYM/Contents
+END
+Info.plist
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/llvm-project/!svn/ver/220004/llvm/trunk/test/tools/llvm-symbolizer/Inputs/dsym-test-exe-differentname.dSYM/Contents/Info.plist
+END

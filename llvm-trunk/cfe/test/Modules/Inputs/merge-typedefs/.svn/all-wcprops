@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/216417/cfe/trunk/test/Modules/Inputs/merge-typedefs
+END
+a1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/216417/cfe/trunk/test/Modules/Inputs/merge-typedefs/a1.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/215306/cfe/trunk/test/Modules/Inputs/merge-typedefs/module.modulemap
+END
+a2.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/215306/cfe/trunk/test/Modules/Inputs/merge-typedefs/a2.h
+END
+b1.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/216417/cfe/trunk/test/Modules/Inputs/merge-typedefs/b1.h
+END
+b2.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/215306/cfe/trunk/test/Modules/Inputs/merge-typedefs/b2.h
+END

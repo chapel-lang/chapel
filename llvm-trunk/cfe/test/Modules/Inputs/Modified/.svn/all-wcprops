@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/177621/cfe/trunk/test/Modules/Inputs/Modified
+END
+A.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/167539/cfe/trunk/test/Modules/Inputs/Modified/A.h
+END
+B.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/177621/cfe/trunk/test/Modules/Inputs/Modified/B.h
+END
+module.map
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/177621/cfe/trunk/test/Modules/Inputs/Modified/module.map
+END

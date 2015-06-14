@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/SimplifyCFG/X86
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/SimplifyCFG/X86/lit.local.cfg
+END
+speculate-cttz-ctlz.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/228923/llvm/trunk/test/Transforms/SimplifyCFG/X86/speculate-cttz-ctlz.ll
+END
+switch-covered-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/SimplifyCFG/X86/switch-covered-bug.ll
+END
+switch-table-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/SimplifyCFG/X86/switch-table-bug.ll
+END
+switch_to_lookup_table.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/SimplifyCFG/X86/switch_to_lookup_table.ll
+END

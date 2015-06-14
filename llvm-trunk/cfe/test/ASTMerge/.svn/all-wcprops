@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/llvm-project/!svn/ver/238948/cfe/trunk/test/ASTMerge
+END
+namespace.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/namespace.cpp
+END
+class-template.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/class-template.cpp
+END
+property.m
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/property.m
+END
+codegen-body.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/238948/cfe/trunk/test/ASTMerge/codegen-body.c
+END
+typedef.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/typedef.c
+END
+exprs.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/ASTMerge/exprs.c
+END
+codegen-exprs.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/236012/cfe/trunk/test/ASTMerge/codegen-exprs.c
+END
+enum.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/enum.c
+END
+struct.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/struct.c
+END
+class.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/186219/cfe/trunk/test/ASTMerge/class.cpp
+END
+function.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/function.c
+END
+category.m
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/category.m
+END
+var.c
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/var.c
+END
+interface.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/185652/cfe/trunk/test/ASTMerge/interface.m
+END

@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/232191/llvm/trunk/test/tools/dsymutil/Inputs
+END
+libbasic.a
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/225207/llvm/trunk/test/tools/dsymutil/Inputs/libbasic.a
+END
+basic-lto-dw4.macho.x86_64.o
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/232191/llvm/trunk/test/tools/dsymutil/Inputs/basic-lto-dw4.macho.x86_64.o
+END
+basic-lto-dw4.macho.x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/232191/llvm/trunk/test/tools/dsymutil/Inputs/basic-lto-dw4.macho.x86_64
+END
+basic-lto.macho.x86_64.o
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/224134/llvm/trunk/test/tools/dsymutil/Inputs/basic-lto.macho.x86_64.o
+END
+basic-lto.macho.x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/224134/llvm/trunk/test/tools/dsymutil/Inputs/basic-lto.macho.x86_64
+END
+basic1.macho.x86_64.o
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/224134/llvm/trunk/test/tools/dsymutil/Inputs/basic1.macho.x86_64.o
+END
+basic-archive.macho.x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/225207/llvm/trunk/test/tools/dsymutil/Inputs/basic-archive.macho.x86_64
+END
+basic1.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/225207/llvm/trunk/test/tools/dsymutil/Inputs/basic1.c
+END
+basic2.macho.x86_64.o
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/224134/llvm/trunk/test/tools/dsymutil/Inputs/basic2.macho.x86_64.o
+END
+basic.macho.x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/224134/llvm/trunk/test/tools/dsymutil/Inputs/basic.macho.x86_64
+END
+basic2.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/224134/llvm/trunk/test/tools/dsymutil/Inputs/basic2.c
+END
+basic3.macho.x86_64.o
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/224134/llvm/trunk/test/tools/dsymutil/Inputs/basic3.macho.x86_64.o
+END
+basic3.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/224134/llvm/trunk/test/tools/dsymutil/Inputs/basic3.c
+END

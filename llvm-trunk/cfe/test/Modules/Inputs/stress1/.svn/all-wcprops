@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/233327/cfe/trunk/test/Modules/Inputs/stress1
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/233162/cfe/trunk/test/Modules/Inputs/stress1/module.modulemap
+END
+common.h
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/233263/cfe/trunk/test/Modules/Inputs/stress1/common.h
+END
+m00.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/233162/cfe/trunk/test/Modules/Inputs/stress1/m00.h
+END
+m01.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/233327/cfe/trunk/test/Modules/Inputs/stress1/m01.h
+END
+m02.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/233162/cfe/trunk/test/Modules/Inputs/stress1/m02.h
+END
+m03.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/233162/cfe/trunk/test/Modules/Inputs/stress1/m03.h
+END
+merge00.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/233327/cfe/trunk/test/Modules/Inputs/stress1/merge00.h
+END

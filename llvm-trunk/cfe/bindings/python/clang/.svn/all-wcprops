@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/234762/cfe/trunk/bindings/python/clang
+END
+enumerations.py
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/160111/cfe/trunk/bindings/python/clang/enumerations.py
+END
+cindex.py
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/234762/cfe/trunk/bindings/python/clang/cindex.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/94392/cfe/trunk/bindings/python/clang/__init__.py
+END

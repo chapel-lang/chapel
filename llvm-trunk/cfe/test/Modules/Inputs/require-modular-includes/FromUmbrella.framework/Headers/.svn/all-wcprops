@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/llvm-project/!svn/ver/208004/cfe/trunk/test/Modules/Inputs/require-modular-includes/FromUmbrella.framework/Headers
+END
+FromUmbrella.h
+K 25
+svn:wc:ra_dav:version-url
+V 134
+/svn/llvm-project/!svn/ver/208004/cfe/trunk/test/Modules/Inputs/require-modular-includes/FromUmbrella.framework/Headers/FromUmbrella.h
+END

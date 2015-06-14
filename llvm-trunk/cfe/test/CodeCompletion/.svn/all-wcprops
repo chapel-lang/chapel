@@ -1,0 +1,203 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/202529/cfe/trunk/test/CodeCompletion
+END
+function-templates.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/91446/cfe/trunk/test/CodeCompletion/function-templates.cpp
+END
+stdin.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/stdin.c
+END
+macros.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/164610/cfe/trunk/test/CodeCompletion/macros.c
+END
+truncation.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/truncation.c
+END
+templates.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/91446/cfe/trunk/test/CodeCompletion/templates.cpp
+END
+objc-expr.m
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/objc-expr.m
+END
+ordinary-name.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/142424/cfe/trunk/test/CodeCompletion/ordinary-name.cpp
+END
+member-access.c
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/member-access.c
+END
+functions.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/functions.cpp
+END
+auto.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/160857/cfe/trunk/test/CodeCompletion/auto.cpp
+END
+documentation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/documentation.cpp
+END
+tag.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/tag.c
+END
+call.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/call.c
+END
+PR9728.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/130042/cfe/trunk/test/CodeCompletion/PR9728.cpp
+END
+enum-switch-case.c
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/enum-switch-case.c
+END
+truncation.c.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/82571/cfe/trunk/test/CodeCompletion/truncation.c.h
+END
+namespace-alias.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/namespace-alias.cpp
+END
+constexpr.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/168327/cfe/trunk/test/CodeCompletion/constexpr.cpp
+END
+using.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/using.cpp
+END
+objc-message.mm
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/202529/cfe/trunk/test/CodeCompletion/objc-message.mm
+END
+preamble.c
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/164705/cfe/trunk/test/CodeCompletion/preamble.c
+END
+operator.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/operator.cpp
+END
+namespace.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/namespace.cpp
+END
+ordinary-name.c
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/121431/cfe/trunk/test/CodeCompletion/ordinary-name.c
+END
+member-access.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/93370/cfe/trunk/test/CodeCompletion/member-access.cpp
+END
+nested-name-specifier.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/nested-name-specifier.cpp
+END
+objc-message.m
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/93370/cfe/trunk/test/CodeCompletion/objc-message.m
+END
+call.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/call.cpp
+END
+tag.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/tag.cpp
+END
+enum-switch-case.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/enum-switch-case.cpp
+END
+some_struct.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/154784/cfe/trunk/test/CodeCompletion/some_struct.h
+END
+enum-switch-case-qualified.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/enum-switch-case-qualified.cpp
+END
+using-namespace.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/188174/cfe/trunk/test/CodeCompletion/using-namespace.cpp
+END

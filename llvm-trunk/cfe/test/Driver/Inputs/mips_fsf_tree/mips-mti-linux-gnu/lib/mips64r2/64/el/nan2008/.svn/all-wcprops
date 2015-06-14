@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/mips-mti-linux-gnu/lib/mips64r2/64/el/nan2008
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/mips-mti-linux-gnu/lib/mips64r2/64/el/nan2008/.keep
+END

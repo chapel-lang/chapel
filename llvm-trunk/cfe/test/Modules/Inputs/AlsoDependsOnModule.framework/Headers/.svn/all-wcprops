@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/145813/cfe/trunk/test/Modules/Inputs/AlsoDependsOnModule.framework/Headers
+END
+AlsoDependsOnModule.h
+K 25
+svn:wc:ra_dav:version-url
+V 123
+/svn/llvm-project/!svn/ver/145813/cfe/trunk/test/Modules/Inputs/AlsoDependsOnModule.framework/Headers/AlsoDependsOnModule.h
+END

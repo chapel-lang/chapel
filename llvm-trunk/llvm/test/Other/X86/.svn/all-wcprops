@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Other/X86
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Other/X86/lit.local.cfg
+END
+inline-asm-newline-terminator.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/131302/llvm/trunk/test/Other/X86/inline-asm-newline-terminator.ll
+END

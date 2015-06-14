@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 133
+/svn/llvm-project/!svn/ver/208004/cfe/trunk/test/Modules/Inputs/require-modular-includes/FromNonModularSubframework.framework/Modules
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 150
+/svn/llvm-project/!svn/ver/208004/cfe/trunk/test/Modules/Inputs/require-modular-includes/FromNonModularSubframework.framework/Modules/module.modulemap
+END

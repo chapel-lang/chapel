@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/167114/cfe/trunk/test/Driver/Inputs/B_opt_tree/dir1
+END
+ld
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/167114/cfe/trunk/test/Driver/Inputs/B_opt_tree/dir1/ld
+END
+i386-unknown-linux-ld
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/167114/cfe/trunk/test/Driver/Inputs/B_opt_tree/dir1/i386-unknown-linux-ld
+END

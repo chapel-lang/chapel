@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/207947/cfe/trunk/bindings/python/examples/cindex
+END
+cindex-dump.py
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/207947/cfe/trunk/bindings/python/examples/cindex/cindex-dump.py
+END
+cindex-includes.py
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/96107/cfe/trunk/bindings/python/examples/cindex/cindex-includes.py
+END

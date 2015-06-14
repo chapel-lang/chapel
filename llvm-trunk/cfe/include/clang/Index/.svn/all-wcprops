@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/236400/cfe/trunk/include/clang/Index
+END
+USRGeneration.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/236400/cfe/trunk/include/clang/Index/USRGeneration.h
+END
+CommentToXML.h
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/207087/cfe/trunk/include/clang/Index/CommentToXML.h
+END

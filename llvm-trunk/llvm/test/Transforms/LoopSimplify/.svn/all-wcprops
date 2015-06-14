@@ -1,0 +1,161 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/LoopSimplify
+END
+2003-04-25-AssertFail.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2003-04-25-AssertFail.ll
+END
+indirectbr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/LoopSimplify/indirectbr.ll
+END
+2010-12-26-PHIInfiniteLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2010-12-26-PHIInfiniteLoop.ll
+END
+2004-04-13-LoopSimplifyUpdateDomFrontier.ll
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2004-04-13-LoopSimplifyUpdateDomFrontier.ll
+END
+preserve-scev.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/LoopSimplify/preserve-scev.ll
+END
+merge-exits.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopSimplify/merge-exits.ll
+END
+2010-07-15-IncorrectDomFrontierUpdate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2010-07-15-IncorrectDomFrontierUpdate.ll
+END
+ashr-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopSimplify/ashr-crash.ll
+END
+phi-node-simplify.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/LoopSimplify/phi-node-simplify.ll
+END
+2011-12-14-LandingpadHeader.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/227390/llvm/trunk/test/Transforms/LoopSimplify/2011-12-14-LandingpadHeader.ll
+END
+2004-04-12-LoopSimplify-SwitchBackedges.ll
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2004-04-12-LoopSimplify-SwitchBackedges.ll
+END
+dup-preds.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/LoopSimplify/dup-preds.ll
+END
+single-backedge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/139578/llvm/trunk/test/Transforms/LoopSimplify/single-backedge.ll
+END
+hardertest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/hardertest.ll
+END
+notify-scev.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopSimplify/notify-scev.ll
+END
+2012-03-20-indirectbr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/153134/llvm/trunk/test/Transforms/LoopSimplify/2012-03-20-indirectbr.ll
+END
+2003-05-12-PreheaderExitOfChild.ll
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2003-05-12-PreheaderExitOfChild.ll
+END
+2007-10-28-InvokeCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/209689/llvm/trunk/test/Transforms/LoopSimplify/2007-10-28-InvokeCrash.ll
+END
+unreachable-loop-pred.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/unreachable-loop-pred.ll
+END
+indirectbr-backedge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/indirectbr-backedge.ll
+END
+2003-08-15-PreheadersFail.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/LoopSimplify/2003-08-15-PreheadersFail.ll
+END
+2003-12-10-ExitBlocksProblem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopSimplify/2003-12-10-ExitBlocksProblem.ll
+END
+2004-04-01-IncorrectDomUpdate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2004-04-01-IncorrectDomUpdate.ll
+END
+2004-02-05-DominatorInfoCorruption.ll
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2004-02-05-DominatorInfoCorruption.ll
+END
+2004-03-15-IncorrectDomUpdate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/2004-03-15-IncorrectDomUpdate.ll
+END
+basictest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/125317/llvm/trunk/test/Transforms/LoopSimplify/basictest.ll
+END

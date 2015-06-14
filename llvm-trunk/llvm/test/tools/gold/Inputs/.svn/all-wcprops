@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/230991/llvm/trunk/test/tools/gold/Inputs
+END
+linker-script.export
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/214916/llvm/trunk/test/tools/gold/Inputs/linker-script.export
+END
+invalid.bc
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/214214/llvm/trunk/test/tools/gold/Inputs/invalid.bc
+END
+pr19901-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/216215/llvm/trunk/test/tools/gold/Inputs/pr19901-1.ll
+END
+bcsection.s
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/218078/llvm/trunk/test/tools/gold/Inputs/bcsection.s
+END
+drop-debug.bc
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230991/llvm/trunk/test/tools/gold/Inputs/drop-debug.bc
+END
+alias-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/216215/llvm/trunk/test/tools/gold/Inputs/alias-1.ll
+END
+comdat.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/225983/llvm/trunk/test/tools/gold/Inputs/comdat.ll
+END
+linkonce-weak.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/219188/llvm/trunk/test/tools/gold/Inputs/linkonce-weak.ll
+END
+weak.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/215447/llvm/trunk/test/tools/gold/Inputs/weak.ll
+END
+common.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/217458/llvm/trunk/test/tools/gold/Inputs/common.ll
+END

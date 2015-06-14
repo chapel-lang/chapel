@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/211786/cfe/trunk/test/Driver/Inputs/basic_android_tree/arm-linux-androideabi/bin
+END
+ld
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/211786/cfe/trunk/test/Driver/Inputs/basic_android_tree/arm-linux-androideabi/bin/ld
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/arm-linux-androideabi/bin/.keep
+END
+ld.gold
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/211786/cfe/trunk/test/Driver/Inputs/basic_android_tree/arm-linux-androideabi/bin/ld.gold
+END
+ld.bfd
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/llvm-project/!svn/ver/211786/cfe/trunk/test/Driver/Inputs/basic_android_tree/arm-linux-androideabi/bin/ld.bfd
+END

@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/238578/llvm/trunk/test/MC/Disassembler/PowerPC
+END
+ppc64-encoding-fp.txt
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/226070/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-fp.txt
+END
+ppc64-encoding-e500.txt
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/214724/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-e500.txt
+END
+ppc64-encoding-vmx.txt
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/238144/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-vmx.txt
+END
+ppc64-encoding-p8vector.txt
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/237499/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-p8vector.txt
+END
+ppc64-encoding-bookII.txt
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/235663/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-bookII.txt
+END
+ppc64-encoding-4xx.txt
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/235616/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-4xx.txt
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/MC/Disassembler/PowerPC/lit.local.cfg
+END
+ppc64-encoding-bookIII.txt
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/235616/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-bookIII.txt
+END
+ppc64-encoding-6xx.txt
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/214825/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-6xx.txt
+END
+ppc64-operands.txt
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/235616/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-operands.txt
+END
+qpx.txt
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235616/llvm/trunk/test/MC/Disassembler/PowerPC/qpx.txt
+END
+dcbt.txt
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/235657/llvm/trunk/test/MC/Disassembler/PowerPC/dcbt.txt
+END
+ppc64-encoding-ext.txt
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/235616/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding-ext.txt
+END
+vsx.txt
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/238578/llvm/trunk/test/MC/Disassembler/PowerPC/vsx.txt
+END
+ppc64-encoding.txt
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/238032/llvm/trunk/test/MC/Disassembler/PowerPC/ppc64-encoding.txt
+END

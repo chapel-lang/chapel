@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/191064/cfe/trunk/test/CXX/basic/basic.link
+END
+p6.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/188307/cfe/trunk/test/CXX/basic/basic.link/p6.cpp
+END
+p7.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/191064/cfe/trunk/test/CXX/basic/basic.link/p7.cpp
+END
+p9.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/148072/cfe/trunk/test/CXX/basic/basic.link/p9.cpp
+END

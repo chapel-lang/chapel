@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/237507/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref
+END
+p5-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/237507/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/p5-0x.cpp
+END
+p5-var.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/237507/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/p5-var.cpp
+END
+p5-cxx0x-no-extra-copy.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/p5-cxx0x-no-extra-copy.cpp
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/p1.cpp
+END
+p5-cxx03-extra-copy.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/218008/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/p5-cxx03-extra-copy.cpp
+END
+p5-examples.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/170634/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/p5-examples.cpp
+END
+basic.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/basic.cpp
+END
+p3.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/91446/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/p3.cpp
+END
+p5.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/181252/cfe/trunk/test/CXX/dcl.decl/dcl.init/dcl.init.ref/p5.cpp
+END

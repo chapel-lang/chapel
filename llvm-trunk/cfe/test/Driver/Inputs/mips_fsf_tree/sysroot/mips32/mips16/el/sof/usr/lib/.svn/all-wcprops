@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/sysroot/mips32/mips16/el/sof/usr/lib
+END
+crtn.o
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/sysroot/mips32/mips16/el/sof/usr/lib/crtn.o
+END
+crt1.o
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/sysroot/mips32/mips16/el/sof/usr/lib/crt1.o
+END
+crti.o
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/llvm-project/!svn/ver/192343/cfe/trunk/test/Driver/Inputs/mips_fsf_tree/sysroot/mips32/mips16/el/sof/usr/lib/crti.o
+END

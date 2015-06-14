@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/llvm-project/!svn/ver/216166/cfe/trunk/utils/ABITest
+END
+build-and-summarize-all.sh
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/71201/cfe/trunk/utils/ABITest/build-and-summarize-all.sh
+END
+build.sh
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/72405/cfe/trunk/utils/ABITest/build.sh
+END
+ABITestGen.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/216166/cfe/trunk/utils/ABITest/ABITestGen.py
+END
+Enumeration.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/62253/cfe/trunk/utils/ABITest/Enumeration.py
+END
+Makefile.test.common
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/72405/cfe/trunk/utils/ABITest/Makefile.test.common
+END
+TypeGen.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/216166/cfe/trunk/utils/ABITest/TypeGen.py
+END
+build-and-summarize.sh
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/71201/cfe/trunk/utils/ABITest/build-and-summarize.sh
+END
+summarize.sh
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/72405/cfe/trunk/utils/ABITest/summarize.sh
+END

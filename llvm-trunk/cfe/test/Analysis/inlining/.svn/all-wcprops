@@ -1,0 +1,155 @@
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/233028/cfe/trunk/test/Analysis/inlining
+END
+ObjCDynTypePopagation.m
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/176054/cfe/trunk/test/Analysis/inlining/ObjCDynTypePopagation.m
+END
+assume-super-init-does-not-return-nil.m
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/173385/cfe/trunk/test/Analysis/inlining/assume-super-init-does-not-return-nil.m
+END
+dyn-dispatch-bifurcate.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/199130/cfe/trunk/test/Analysis/inlining/dyn-dispatch-bifurcate.cpp
+END
+false-positive-suppression.m
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/180996/cfe/trunk/test/Analysis/inlining/false-positive-suppression.m
+END
+inline-defensive-checks.m
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/178381/cfe/trunk/test/Analysis/inlining/inline-defensive-checks.m
+END
+path-notes.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/228624/cfe/trunk/test/Analysis/inlining/path-notes.m
+END
+eager-reclamation-path-notes.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/228624/cfe/trunk/test/Analysis/inlining/eager-reclamation-path-notes.cpp
+END
+eager-reclamation-path-notes.c
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/228624/cfe/trunk/test/Analysis/inlining/eager-reclamation-path-notes.c
+END
+stl.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/200980/cfe/trunk/test/Analysis/inlining/stl.cpp
+END
+RetainCountExamples.m
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/173385/cfe/trunk/test/Analysis/inlining/RetainCountExamples.m
+END
+test_objc_inlining_option.m
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/173385/cfe/trunk/test/Analysis/inlining/test_objc_inlining_option.m
+END
+containers.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/211832/cfe/trunk/test/Analysis/inlining/containers.cpp
+END
+test-always-inline-size-option.c
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/163571/cfe/trunk/test/Analysis/inlining/test-always-inline-size-option.c
+END
+InlineObjCInstanceMethod.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/161683/cfe/trunk/test/Analysis/inlining/InlineObjCInstanceMethod.h
+END
+ObjCImproperDynamictallyDetectableCast.m
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/173385/cfe/trunk/test/Analysis/inlining/ObjCImproperDynamictallyDetectableCast.m
+END
+DynDispatchBifurcate.m
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/181896/cfe/trunk/test/Analysis/inlining/DynDispatchBifurcate.m
+END
+retain-count-self-init.m
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/173385/cfe/trunk/test/Analysis/inlining/retain-count-self-init.m
+END
+InlineObjCInstanceMethod.m
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/167780/cfe/trunk/test/Analysis/inlining/InlineObjCInstanceMethod.m
+END
+InlineObjCClassMethod.m
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/191599/cfe/trunk/test/Analysis/inlining/InlineObjCClassMethod.m
+END
+path-notes.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/233028/cfe/trunk/test/Analysis/inlining/path-notes.cpp
+END
+path-notes.c
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/228624/cfe/trunk/test/Analysis/inlining/path-notes.c
+END
+inline-defensive-checks.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/178933/cfe/trunk/test/Analysis/inlining/inline-defensive-checks.cpp
+END
+false-positive-suppression.c
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/185608/cfe/trunk/test/Analysis/inlining/false-positive-suppression.c
+END
+false-positive-suppression.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/177763/cfe/trunk/test/Analysis/inlining/false-positive-suppression.cpp
+END
+inline-defensive-checks.c
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/185608/cfe/trunk/test/Analysis/inlining/inline-defensive-checks.c
+END

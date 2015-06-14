@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/216742/cfe/trunk/lib/FrontendTool
+END
+ExecuteCompilerInvocation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/216742/cfe/trunk/lib/FrontendTool/ExecuteCompilerInvocation.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/202238/cfe/trunk/lib/FrontendTool/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/213171/cfe/trunk/lib/FrontendTool/Makefile
+END

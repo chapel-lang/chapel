@@ -1,0 +1,185 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/238858/llvm/trunk/test/MC/Disassembler/AArch64
+END
+trace-regs.txt
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/207753/llvm/trunk/test/MC/Disassembler/AArch64/trace-regs.txt
+END
+arm64-scalar-fp.txt
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-scalar-fp.txt
+END
+arm64-memory.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-memory.txt
+END
+arm64-basic-a64-undefined.txt
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-basic-a64-undefined.txt
+END
+arm64-logical.txt
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-logical.txt
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/MC/Disassembler/AArch64/lit.local.cfg
+END
+neon-instructions.txt
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/208867/llvm/trunk/test/MC/Disassembler/AArch64/neon-instructions.txt
+END
+arm64-crc32.txt
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-crc32.txt
+END
+armv8.1a-atomic.txt
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/238858/llvm/trunk/test/MC/Disassembler/AArch64/armv8.1a-atomic.txt
+END
+arm64-crypto.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-crypto.txt
+END
+basic-a64-undefined.txt
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/207754/llvm/trunk/test/MC/Disassembler/AArch64/basic-a64-undefined.txt
+END
+gicv3-regs.txt
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/207753/llvm/trunk/test/MC/Disassembler/AArch64/gicv3-regs.txt
+END
+armv8.1a-pan.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/235104/llvm/trunk/test/MC/Disassembler/AArch64/armv8.1a-pan.txt
+END
+arm64-bitfield.txt
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-bitfield.txt
+END
+ldp-postind.predictable.txt
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/207753/llvm/trunk/test/MC/Disassembler/AArch64/ldp-postind.predictable.txt
+END
+basic-a64-instructions.txt
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/236245/llvm/trunk/test/MC/Disassembler/AArch64/basic-a64-instructions.txt
+END
+arm64-system.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-system.txt
+END
+ldp-preind.predictable.txt
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/207753/llvm/trunk/test/MC/Disassembler/AArch64/ldp-preind.predictable.txt
+END
+armv8.1a-vhe.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/235107/llvm/trunk/test/MC/Disassembler/AArch64/armv8.1a-vhe.txt
+END
+arm64-advsimd.txt
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/234896/llvm/trunk/test/MC/Disassembler/AArch64/arm64-advsimd.txt
+END
+armv8.1a-rdma.txt
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/233693/llvm/trunk/test/MC/Disassembler/AArch64/armv8.1a-rdma.txt
+END
+arm64-canonical-form.txt
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-canonical-form.txt
+END
+ldp-offset-predictable.txt
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/207753/llvm/trunk/test/MC/Disassembler/AArch64/ldp-offset-predictable.txt
+END
+arm64-arithmetic.txt
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-arithmetic.txt
+END
+a64-ignored-fields.txt
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/207753/llvm/trunk/test/MC/Disassembler/AArch64/a64-ignored-fields.txt
+END
+arm64-branch.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-branch.txt
+END
+arm64-invalid-logical.txt
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-invalid-logical.txt
+END
+arm64-non-apple-fmov.txt
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/MC/Disassembler/AArch64/arm64-non-apple-fmov.txt
+END
+armv8.1a-lor.txt
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/235314/llvm/trunk/test/MC/Disassembler/AArch64/armv8.1a-lor.txt
+END
+basic-a64-unpredictable.txt
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/208091/llvm/trunk/test/MC/Disassembler/AArch64/basic-a64-unpredictable.txt
+END

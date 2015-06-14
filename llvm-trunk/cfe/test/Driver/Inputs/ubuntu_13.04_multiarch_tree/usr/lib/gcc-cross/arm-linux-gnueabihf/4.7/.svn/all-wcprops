@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 132
+/svn/llvm-project/!svn/ver/187175/cfe/trunk/test/Driver/Inputs/ubuntu_13.04_multiarch_tree/usr/lib/gcc-cross/arm-linux-gnueabihf/4.7
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 143
+/svn/llvm-project/!svn/ver/187175/cfe/trunk/test/Driver/Inputs/ubuntu_13.04_multiarch_tree/usr/lib/gcc-cross/arm-linux-gnueabihf/4.7/crtbegin.o
+END

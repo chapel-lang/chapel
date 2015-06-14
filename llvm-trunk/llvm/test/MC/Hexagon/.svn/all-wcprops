@@ -1,0 +1,167 @@
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon
+END
+inst_add64.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/222795/llvm/trunk/test/MC/Hexagon/inst_add64.ll
+END
+inst_and.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_and.ll
+END
+inst_sub64.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/222795/llvm/trunk/test/MC/Hexagon/inst_sub64.ll
+END
+inst_cmp_ult.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon/inst_cmp_ult.ll
+END
+inst_cmp_eq.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon/inst_cmp_eq.ll
+END
+inst_cmp_ugti.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon/inst_cmp_ugti.ll
+END
+inst_xor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_xor.ll
+END
+inst_cmp_gt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon/inst_cmp_gt.ll
+END
+inst_and64.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/222846/llvm/trunk/test/MC/Hexagon/inst_and64.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/221465/llvm/trunk/test/MC/Hexagon/lit.local.cfg
+END
+inst_cmp_eqi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon/inst_cmp_eqi.ll
+END
+inst_cmp_lt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon/inst_cmp_lt.ll
+END
+inst_select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/233696/llvm/trunk/test/MC/Hexagon/inst_select.ll
+END
+inst_sxtb.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_sxtb.ll
+END
+inst_or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_or.ll
+END
+inst_xor64.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/222846/llvm/trunk/test/MC/Hexagon/inst_xor64.ll
+END
+inst_cmp_gti.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon/inst_cmp_gti.ll
+END
+basic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/221465/llvm/trunk/test/MC/Hexagon/basic.ll
+END
+inst_sxth.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_sxth.ll
+END
+inst_zxtb.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_zxtb.ll
+END
+inst_aslh.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_aslh.ll
+END
+inst_add.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_add.ll
+END
+inst_sub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_sub.ll
+END
+inst_or64.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/222846/llvm/trunk/test/MC/Hexagon/inst_or64.ll
+END
+inst_zxth.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_zxth.ll
+END
+inst_asrh.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/222785/llvm/trunk/test/MC/Hexagon/inst_asrh.ll
+END
+inst_cmp_ugt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/238556/llvm/trunk/test/MC/Hexagon/inst_cmp_ugt.ll
+END

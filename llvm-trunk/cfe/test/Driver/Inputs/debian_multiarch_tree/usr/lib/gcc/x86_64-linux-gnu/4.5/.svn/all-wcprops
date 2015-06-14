@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/llvm-project/!svn/ver/151485/cfe/trunk/test/Driver/Inputs/debian_multiarch_tree/usr/lib/gcc/x86_64-linux-gnu/4.5
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/llvm-project/!svn/ver/151485/cfe/trunk/test/Driver/Inputs/debian_multiarch_tree/usr/lib/gcc/x86_64-linux-gnu/4.5/crtbegin.o
+END

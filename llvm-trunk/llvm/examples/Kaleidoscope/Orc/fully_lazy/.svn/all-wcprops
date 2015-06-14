@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/236506/llvm/trunk/examples/Kaleidoscope/Orc/fully_lazy
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/229888/llvm/trunk/examples/Kaleidoscope/Orc/fully_lazy/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/229949/llvm/trunk/examples/Kaleidoscope/Orc/fully_lazy/Makefile
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/229466/llvm/trunk/examples/Kaleidoscope/Orc/fully_lazy/README.txt
+END
+toy.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/236506/llvm/trunk/examples/Kaleidoscope/Orc/fully_lazy/toy.cpp
+END

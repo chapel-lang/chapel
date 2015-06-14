@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/223071/llvm/trunk/bindings/ocaml/transforms/vectorize
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/223071/llvm/trunk/bindings/ocaml/transforms/vectorize/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/220843/llvm/trunk/bindings/ocaml/transforms/vectorize/Makefile
+END
+llvm_vectorize.mli
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/220842/llvm/trunk/bindings/ocaml/transforms/vectorize/llvm_vectorize.mli
+END
+vectorize_ocaml.c
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/193950/llvm/trunk/bindings/ocaml/transforms/vectorize/vectorize_ocaml.c
+END
+llvm_vectorize.ml
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/220842/llvm/trunk/bindings/ocaml/transforms/vectorize/llvm_vectorize.ml
+END

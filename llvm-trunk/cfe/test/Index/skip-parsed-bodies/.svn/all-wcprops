@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/224426/cfe/trunk/test/Index/skip-parsed-bodies
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/169539/cfe/trunk/test/Index/skip-parsed-bodies/lit.local.cfg
+END
+compile_commands.json
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/224426/cfe/trunk/test/Index/skip-parsed-bodies/compile_commands.json
+END
+pragma_once.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/169558/cfe/trunk/test/Index/skip-parsed-bodies/pragma_once.h
+END
+t1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/169539/cfe/trunk/test/Index/skip-parsed-bodies/t1.cpp
+END
+t2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/169761/cfe/trunk/test/Index/skip-parsed-bodies/t2.cpp
+END
+t3.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/169761/cfe/trunk/test/Index/skip-parsed-bodies/t3.cpp
+END
+imported.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/169761/cfe/trunk/test/Index/skip-parsed-bodies/imported.h
+END
+t.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/169539/cfe/trunk/test/Index/skip-parsed-bodies/t.h
+END

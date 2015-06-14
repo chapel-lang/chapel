@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/141000/cfe/trunk/test/Driver/Inputs/multilib_64bit_linux_tree/usr/lib32
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/141000/cfe/trunk/test/Driver/Inputs/multilib_64bit_linux_tree/usr/lib32/.keep
+END

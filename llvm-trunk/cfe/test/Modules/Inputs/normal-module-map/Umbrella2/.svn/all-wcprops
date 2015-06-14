@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/146159/cfe/trunk/test/Modules/Inputs/normal-module-map/Umbrella2
+END
+Umbrella2.h
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/144433/cfe/trunk/test/Modules/Inputs/normal-module-map/Umbrella2/Umbrella2.h
+END
+module.map
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/146159/cfe/trunk/test/Modules/Inputs/normal-module-map/Umbrella2/module.map
+END

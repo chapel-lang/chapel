@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/196908/llvm/trunk/examples/ModuleMaker
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/115080/llvm/trunk/examples/ModuleMaker/README.txt
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/196908/llvm/trunk/examples/ModuleMaker/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/examples/ModuleMaker/Makefile
+END
+ModuleMaker.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/171371/llvm/trunk/examples/ModuleMaker/ModuleMaker.cpp
+END

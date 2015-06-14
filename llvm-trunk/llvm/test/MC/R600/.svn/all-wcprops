@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/llvm-project/!svn/ver/238211/llvm/trunk/test/MC/R600
+END
+vop2-err.s
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/vop2-err.s
+END
+sopk.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/sopk.s
+END
+mubuf.s
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/mubuf.s
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/221994/llvm/trunk/test/MC/R600/lit.local.cfg
+END
+sopp.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/sopp.s
+END
+sop1.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/sop1.s
+END
+sop2.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/sop2.s
+END
+vop1.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/235629/llvm/trunk/test/MC/R600/vop1.s
+END
+vop2.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/238211/llvm/trunk/test/MC/R600/vop2.s
+END
+vop3.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/235630/llvm/trunk/test/MC/R600/vop3.s
+END
+ds-err.s
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/ds-err.s
+END
+vop3-errs.s
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/235626/llvm/trunk/test/MC/R600/vop3-errs.s
+END
+sopc.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/sopc.s
+END
+smrd.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/smrd.s
+END
+ds.s
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/ds.s
+END
+vopc.s
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/vopc.s
+END
+sop1-err.s
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/234381/llvm/trunk/test/MC/R600/sop1-err.s
+END

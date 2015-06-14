@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/BBVectorize
+END
+mem-op-depth.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/BBVectorize/mem-op-depth.ll
+END
+no-ldstr-conn.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/BBVectorize/no-ldstr-conn.ll
+END
+cycle.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/BBVectorize/cycle.ll
+END
+simple-tst.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/BBVectorize/simple-tst.ll
+END
+simple-ldstr-ptrs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/BBVectorize/simple-ldstr-ptrs.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Transforms/BBVectorize/lit.local.cfg
+END
+simple-sel.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/BBVectorize/simple-sel.ll
+END
+simple3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/BBVectorize/simple3.ll
+END
+simple-ldstr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/BBVectorize/simple-ldstr.ll
+END
+metadata.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/BBVectorize/metadata.ll
+END
+ld1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/BBVectorize/ld1.ll
+END
+simple-int.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/207174/llvm/trunk/test/Transforms/BBVectorize/simple-int.ll
+END
+search-limit.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/BBVectorize/search-limit.ll
+END
+func-alias.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/BBVectorize/func-alias.ll
+END
+req-depth.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/BBVectorize/req-depth.ll
+END
+simple.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/BBVectorize/simple.ll
+END
+loop1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/BBVectorize/loop1.ll
+END

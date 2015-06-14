@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/149199/cfe/trunk/test/Index/Inputs/Headers/nested
+END
+nested.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/149199/cfe/trunk/test/Index/Inputs/Headers/nested/nested.h
+END
+module.map
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/149199/cfe/trunk/test/Index/Inputs/Headers/nested/module.map
+END

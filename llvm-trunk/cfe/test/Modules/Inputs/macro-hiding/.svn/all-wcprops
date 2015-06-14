@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/213498/cfe/trunk/test/Modules/Inputs/macro-hiding
+END
+a1.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/213416/cfe/trunk/test/Modules/Inputs/macro-hiding/a1.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/213498/cfe/trunk/test/Modules/Inputs/macro-hiding/module.modulemap
+END
+a2.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/213416/cfe/trunk/test/Modules/Inputs/macro-hiding/a2.h
+END
+b1.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/213416/cfe/trunk/test/Modules/Inputs/macro-hiding/b1.h
+END
+b2.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/213416/cfe/trunk/test/Modules/Inputs/macro-hiding/b2.h
+END
+c1.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/213416/cfe/trunk/test/Modules/Inputs/macro-hiding/c1.h
+END
+d1.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/213416/cfe/trunk/test/Modules/Inputs/macro-hiding/d1.h
+END
+e1.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/213498/cfe/trunk/test/Modules/Inputs/macro-hiding/e1.h
+END
+e2.h
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/213498/cfe/trunk/test/Modules/Inputs/macro-hiding/e2.h
+END

@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/llvm-project/!svn/ver/238576/llvm/trunk/test/CodeGen/MIR
+END
+llvmIR.mir
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/238341/llvm/trunk/test/CodeGen/MIR/llvmIR.mir
+END
+machine-function.mir
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/238519/llvm/trunk/test/CodeGen/MIR/machine-function.mir
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/238341/llvm/trunk/test/CodeGen/MIR/lit.local.cfg
+END
+llvm-ir-error-reported.mir
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/238576/llvm/trunk/test/CodeGen/MIR/llvm-ir-error-reported.mir
+END
+machine-function-missing-name.mir
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/238519/llvm/trunk/test/CodeGen/MIR/machine-function-missing-name.mir
+END
+llvmIRMissing.mir
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/238341/llvm/trunk/test/CodeGen/MIR/llvmIRMissing.mir
+END

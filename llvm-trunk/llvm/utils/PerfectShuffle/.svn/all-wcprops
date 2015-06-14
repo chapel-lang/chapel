@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/210442/llvm/trunk/utils/PerfectShuffle
+END
+PerfectShuffle.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/210442/llvm/trunk/utils/PerfectShuffle/PerfectShuffle.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/208225/llvm/trunk/utils/PerfectShuffle/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/utils/PerfectShuffle/Makefile
+END

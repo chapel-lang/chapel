@@ -1,0 +1,3551 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/238531/llvm/trunk/test/Transforms/InstCombine
+END
+memset-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memset-1.ll
+END
+div-shift-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/div-shift-crash.ll
+END
+load-cmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/InstCombine/load-cmp.ll
+END
+2005-06-15-DivSelectCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2005-06-15-DivSelectCrash.ll
+END
+hoist_instr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/hoist_instr.ll
+END
+or-to-xor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/or-to-xor.ll
+END
+bit-checks.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/bit-checks.ll
+END
+zext-fold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/zext-fold.ll
+END
+apint-rem1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-rem1.ll
+END
+2007-10-12-Crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2007-10-12-Crash.ll
+END
+or-xor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/223768/llvm/trunk/test/Transforms/InstCombine/or-xor.ll
+END
+2008-06-08-ICmpPHI.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2008-06-08-ICmpPHI.ll
+END
+aligned-altivec.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/aligned-altivec.ll
+END
+xor2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/217865/llvm/trunk/test/Transforms/InstCombine/xor2.ll
+END
+trunc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/trunc.ll
+END
+2007-05-10-icmp-or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2007-05-10-icmp-or.ll
+END
+sub-xor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/216037/llvm/trunk/test/Transforms/InstCombine/sub-xor.ll
+END
+2012-07-25-LoadPart.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/2012-07-25-LoadPart.ll
+END
+zext-bool-add-sub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/210052/llvm/trunk/test/Transforms/InstCombine/zext-bool-add-sub.ll
+END
+mem-gep-zidx.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/mem-gep-zidx.ll
+END
+memmove.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/memmove.ll
+END
+narrow-switch.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/224588/llvm/trunk/test/Transforms/InstCombine/narrow-switch.ll
+END
+2012-04-23-Neon-Intrinsics.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/test/Transforms/InstCombine/2012-04-23-Neon-Intrinsics.ll
+END
+2009-06-16-SRemDemandedBits.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2009-06-16-SRemDemandedBits.ll
+END
+2008-03-13-IntToPtr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2008-03-13-IntToPtr.ll
+END
+2009-01-19-fmod-constant-float.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2009-01-19-fmod-constant-float.ll
+END
+strncat-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strncat-1.ll
+END
+2012-02-28-ICmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/151694/llvm/trunk/test/Transforms/InstCombine/2012-02-28-ICmp.ll
+END
+2009-01-31-InfIterate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2009-01-31-InfIterate.ll
+END
+not-fcmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/222876/llvm/trunk/test/Transforms/InstCombine/not-fcmp.ll
+END
+2009-02-25-CrashZeroSizeArray.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2009-02-25-CrashZeroSizeArray.ll
+END
+strrchr-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/strrchr-1.ll
+END
+2011-02-14-InfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/125557/llvm/trunk/test/Transforms/InstCombine/2011-02-14-InfLoop.ll
+END
+2007-09-17-AliasConstFold2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/214355/llvm/trunk/test/Transforms/InstCombine/2007-09-17-AliasConstFold2.ll
+END
+puts-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/puts-1.ll
+END
+toascii-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/toascii-1.ll
+END
+2007-05-14-Crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/233121/llvm/trunk/test/Transforms/InstCombine/2007-05-14-Crash.ll
+END
+IntPtrCast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/83828/llvm/trunk/test/Transforms/InstCombine/IntPtrCast.ll
+END
+2011-05-28-swapmulsub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2011-05-28-swapmulsub.ll
+END
+2008-01-27-FloatSelect.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/2008-01-27-FloatSelect.ll
+END
+2009-01-08-AlignAlloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2009-01-08-AlignAlloca.ll
+END
+fold-vector-zero.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/fold-vector-zero.ll
+END
+2003-06-05-BranchInvertInfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2003-06-05-BranchInvertInfLoop.ll
+END
+overflow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/234638/llvm/trunk/test/Transforms/InstCombine/overflow.ll
+END
+pow-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/pow-2.ll
+END
+2006-09-15-CastToBool.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2006-09-15-CastToBool.ll
+END
+2009-02-04-FPBitcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2009-02-04-FPBitcast.ll
+END
+2009-02-11-NotInitialized.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/177619/llvm/trunk/test/Transforms/InstCombine/2009-02-11-NotInitialized.ll
+END
+2009-01-19-fmod-constant-float-specials.ll
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2009-01-19-fmod-constant-float-specials.ll
+END
+exp2-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/exp2-2.ll
+END
+memcpy_chk-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memcpy_chk-2.ll
+END
+fold-bin-operand.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/fold-bin-operand.ll
+END
+icmp-range.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/icmp-range.ll
+END
+constant-fold-gep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/constant-fold-gep.ll
+END
+apint-zext1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/83828/llvm/trunk/test/Transforms/InstCombine/apint-zext1.ll
+END
+2008-09-29-FoldingOr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-09-29-FoldingOr.ll
+END
+memset-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memset-2.ll
+END
+2008-05-08-StrLenSink.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2008-05-08-StrLenSink.ll
+END
+2007-03-25-BadShiftMask.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2007-03-25-BadShiftMask.ll
+END
+set.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/set.ll
+END
+apint-and1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/apint-and1.ll
+END
+strcat-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcat-1.ll
+END
+2007-09-10-AliasConstFold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2007-09-10-AliasConstFold.ll
+END
+2011-09-03-Trampoline.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2011-09-03-Trampoline.ll
+END
+strchr-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/232902/llvm/trunk/test/Transforms/InstCombine/strchr-1.ll
+END
+2008-07-10-CastSextBool.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-07-10-CastSextBool.ll
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Transforms/InstCombine/README.txt
+END
+apint-rem2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-rem2.ll
+END
+2007-11-25-CompatibleAttributes.ll
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2007-11-25-CompatibleAttributes.ll
+END
+2008-11-08-FCmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/222704/llvm/trunk/test/Transforms/InstCombine/2008-11-08-FCmp.ll
+END
+LandingPadClauses.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/227284/llvm/trunk/test/Transforms/InstCombine/LandingPadClauses.ll
+END
+strpbrk-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/strpbrk-1.ll
+END
+2007-12-10-ConstFoldCompare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/2007-12-10-ConstFoldCompare.ll
+END
+2002-05-14-SubFailure.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/2002-05-14-SubFailure.ll
+END
+malloc-free-delete.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/malloc-free-delete.ll
+END
+round.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/203198/llvm/trunk/test/Transforms/InstCombine/round.ll
+END
+apint-shl-trunc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/apint-shl-trunc.ll
+END
+2003-10-29-CallSiteResolve.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/138933/llvm/trunk/test/Transforms/InstCombine/2003-10-29-CallSiteResolve.ll
+END
+2012-03-10-InstCombine.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/2012-03-10-InstCombine.ll
+END
+volatile_store.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/volatile_store.ll
+END
+select-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/231156/llvm/trunk/test/Transforms/InstCombine/select-select.ll
+END
+default-alignment.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/231613/llvm/trunk/test/Transforms/InstCombine/default-alignment.ll
+END
+printf-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/printf-1.ll
+END
+2011-05-13-InBoundsGEP.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2011-05-13-InBoundsGEP.ll
+END
+2004-08-10-BoolSetCC.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2004-08-10-BoolSetCC.ll
+END
+insert-extract-shuffle.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/203229/llvm/trunk/test/Transforms/InstCombine/insert-extract-shuffle.ll
+END
+srem-simplify-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/srem-simplify-bug.ll
+END
+udivrem-change-width.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/udivrem-change-width.ll
+END
+apint-div1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-div1.ll
+END
+pr12251.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/pr12251.ll
+END
+strncat-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strncat-2.ll
+END
+bit-tracking.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/bit-tracking.ll
+END
+load-bitcast64.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/238452/llvm/trunk/test/Transforms/InstCombine/load-bitcast64.ll
+END
+cast-set.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/199846/llvm/trunk/test/Transforms/InstCombine/cast-set.ll
+END
+float-shrink-compare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/223270/llvm/trunk/test/Transforms/InstCombine/float-shrink-compare.ll
+END
+2007-01-14-FcmpSelf.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-01-14-FcmpSelf.ll
+END
+strrchr-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strrchr-2.ll
+END
+2008-05-22-NegValVector.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-05-22-NegValVector.ll
+END
+bswap-fold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/223349/llvm/trunk/test/Transforms/InstCombine/bswap-fold.ll
+END
+mul-masked-bits.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/mul-masked-bits.ll
+END
+pr2645-0.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/pr2645-0.ll
+END
+2006-12-15-Range-Test.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2006-12-15-Range-Test.ll
+END
+cast-mul-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/86670/llvm/trunk/test/Transforms/InstCombine/cast-mul-select.ll
+END
+cast-int-fcmp-eq-0.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/225265/llvm/trunk/test/Transforms/InstCombine/cast-int-fcmp-eq-0.ll
+END
+zeroext-and-reduce.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/zeroext-and-reduce.ll
+END
+2013-03-05-Combine-BitcastTy-Into-Alloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/2013-03-05-Combine-BitcastTy-Into-Alloca.ll
+END
+pow-3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/188656/llvm/trunk/test/Transforms/InstCombine/pow-3.ll
+END
+unpack-fca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/236970/llvm/trunk/test/Transforms/InstCombine/unpack-fca.ll
+END
+select-crash-noverify.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/InstCombine/select-crash-noverify.ll
+END
+bswap.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/bswap.ll
+END
+cast-call-combine.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/201822/llvm/trunk/test/Transforms/InstCombine/cast-call-combine.ll
+END
+vector_gep1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/vector_gep1.ll
+END
+2012-3-15-or-xor-constant.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/186269/llvm/trunk/test/Transforms/InstCombine/2012-3-15-or-xor-constant.ll
+END
+2004-02-23-ShiftShiftOverflow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2004-02-23-ShiftShiftOverflow.ll
+END
+idioms.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/idioms.ll
+END
+apint-zext2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/83828/llvm/trunk/test/Transforms/InstCombine/apint-zext2.ll
+END
+abs_abs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/210782/llvm/trunk/test/Transforms/InstCombine/abs_abs.ll
+END
+2007-12-16-AsmNoUnwind.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2007-12-16-AsmNoUnwind.ll
+END
+apint-and2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/apint-and2.ll
+END
+2006-12-08-Phi-ICmp-Op-Fold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2006-12-08-Phi-ICmp-Op-Fold.ll
+END
+2008-01-21-MulTrunc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/86398/llvm/trunk/test/Transforms/InstCombine/2008-01-21-MulTrunc.ll
+END
+fsub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/93669/llvm/trunk/test/Transforms/InstCombine/fsub.ll
+END
+strcat-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcat-2.ll
+END
+2008-07-08-VolatileLoadMerge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2008-07-08-VolatileLoadMerge.ll
+END
+2009-01-31-Pressure.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2009-01-31-Pressure.ll
+END
+icmp-logical.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/222230/llvm/trunk/test/Transforms/InstCombine/icmp-logical.ll
+END
+fmul.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/fmul.ll
+END
+strchr-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strchr-2.ll
+END
+2009-01-05-i128-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2009-01-05-i128-crash.ll
+END
+add2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/238066/llvm/trunk/test/Transforms/InstCombine/add2.ll
+END
+2005-06-15-ShiftSetCCCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2005-06-15-ShiftSetCCCrash.ll
+END
+2007-10-31-StringCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2007-10-31-StringCrash.ll
+END
+2008-09-02-VectorCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-09-02-VectorCrash.ll
+END
+and-or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/and-or.ll
+END
+stpcpy-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/stpcpy-1.ll
+END
+2008-04-22-ByValBitcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2008-04-22-ByValBitcast.ll
+END
+objsize-address-space.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/objsize-address-space.ll
+END
+signed-comparison.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/signed-comparison.ll
+END
+2011-10-07-AlignPromotion.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2011-10-07-AlignPromotion.ll
+END
+2007-02-07-PointerCast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2007-02-07-PointerCast.ll
+END
+strpbrk-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strpbrk-2.ll
+END
+sincospi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/sincospi.ll
+END
+fdiv.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/199629/llvm/trunk/test/Transforms/InstCombine/fdiv.ll
+END
+pr17827.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/196129/llvm/trunk/test/Transforms/InstCombine/pr17827.ll
+END
+memcpy.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/186269/llvm/trunk/test/Transforms/InstCombine/memcpy.ll
+END
+2009-04-07-MulPromoteToI96.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2009-04-07-MulPromoteToI96.ll
+END
+2007-05-18-CastFoldBug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-05-18-CastFoldBug.ll
+END
+2009-07-02-MaskedIntVector.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2009-07-02-MaskedIntVector.ll
+END
+printf-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/printf-2.ll
+END
+setcc-strength-reduce.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/setcc-strength-reduce.ll
+END
+2007-01-27-AndICmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/185909/llvm/trunk/test/Transforms/InstCombine/2007-01-27-AndICmp.ll
+END
+double-float-shrink-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/220514/llvm/trunk/test/Transforms/InstCombine/double-float-shrink-1.ll
+END
+call-cast-target-inalloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/207676/llvm/trunk/test/Transforms/InstCombine/call-cast-target-inalloca.ll
+END
+udiv-simplify-bug-0.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/udiv-simplify-bug-0.ll
+END
+2006-10-26-VectorReassoc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/2006-10-26-VectorReassoc.ll
+END
+AddOverFlow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Transforms/InstCombine/AddOverFlow.ll
+END
+select-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/InstCombine/select-crash.ll
+END
+apint-div2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-div2.ll
+END
+strncat-3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strncat-3.ll
+END
+intrinsics.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/237995/llvm/trunk/test/Transforms/InstCombine/intrinsics.ll
+END
+cast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/InstCombine/cast.ll
+END
+invoke.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/invoke.ll
+END
+crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/crash.ll
+END
+pr2645-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/pr2645-1.ll
+END
+2007-12-18-AddSelCmpSub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-12-18-AddSelCmpSub.ll
+END
+bitcast-alias-function.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/bitcast-alias-function.ll
+END
+2005-06-16-RangeCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2005-06-16-RangeCrash.ll
+END
+2008-07-13-DivZero.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-07-13-DivZero.ll
+END
+select-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/199629/llvm/trunk/test/Transforms/InstCombine/select-2.ll
+END
+bittest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/bittest.ll
+END
+vector_gep2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/vector_gep2.ll
+END
+vec_extract_2elts.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/179786/llvm/trunk/test/Transforms/InstCombine/vec_extract_2elts.ll
+END
+rem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/210052/llvm/trunk/test/Transforms/InstCombine/rem.ll
+END
+and-compare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/222879/llvm/trunk/test/Transforms/InstCombine/and-compare.ll
+END
+phi-merge-gep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/phi-merge-gep.ll
+END
+2008-06-05-ashr-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-06-05-ashr-crash.ll
+END
+pr21199.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/222590/llvm/trunk/test/Transforms/InstCombine/pr21199.ll
+END
+2007-08-02-InfiniteLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2007-08-02-InfiniteLoop.ll
+END
+alias-recursion.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/alias-recursion.ll
+END
+strcat-3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcat-3.ll
+END
+2008-06-21-CompareMiscomp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-06-21-CompareMiscomp.ll
+END
+add3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/add3.ll
+END
+2003-11-03-VarargsCallBug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2003-11-03-VarargsCallBug.ll
+END
+2007-12-28-IcmpSub2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2007-12-28-IcmpSub2.ll
+END
+stpcpy-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/stpcpy-2.ll
+END
+pr19420.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/206214/llvm/trunk/test/Transforms/InstCombine/pr19420.ll
+END
+2003-07-21-ExternalConstant.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2003-07-21-ExternalConstant.ll
+END
+fp-ret-bitcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/fp-ret-bitcast.ll
+END
+strncpy_chk-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/strncpy_chk-1.ll
+END
+2003-08-12-AllocaNonNull.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2003-08-12-AllocaNonNull.ll
+END
+fold-vector-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/fold-vector-select.ll
+END
+double-float-shrink-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/167815/llvm/trunk/test/Transforms/InstCombine/double-float-shrink-2.ll
+END
+udiv-simplify-bug-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/162743/llvm/trunk/test/Transforms/InstCombine/udiv-simplify-bug-1.ll
+END
+weak-symbols.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/weak-symbols.ll
+END
+vector-casts.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/vector-casts.ll
+END
+urem-simplify-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/urem-simplify-bug.ll
+END
+and-or-not.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/and-or-not.ll
+END
+sprintf-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/sprintf-1.ll
+END
+apint-shift.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/apint-shift.ll
+END
+memcpy-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memcpy-1.ll
+END
+blend_x86.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/209667/llvm/trunk/test/Transforms/InstCombine/blend_x86.ll
+END
+2012-10-25-vector-of-pointers.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2012-10-25-vector-of-pointers.ll
+END
+x86-insertps.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/235810/llvm/trunk/test/Transforms/InstCombine/x86-insertps.ll
+END
+x86-crc32-demanded.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/132163/llvm/trunk/test/Transforms/InstCombine/x86-crc32-demanded.ll
+END
+2008-08-17-ICmpXorSignbit.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-08-17-ICmpXorSignbit.ll
+END
+align-attr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/align-attr.ll
+END
+apint-xor1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/164768/llvm/trunk/test/Transforms/InstCombine/apint-xor1.ll
+END
+preserve-sminmax.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/85171/llvm/trunk/test/Transforms/InstCombine/preserve-sminmax.ll
+END
+PR7357.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/PR7357.ll
+END
+nsw.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/nsw.ll
+END
+osx-names.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/osx-names.ll
+END
+memcmp-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/memcmp-1.ll
+END
+2002-12-05-MissedConstProp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/2002-12-05-MissedConstProp.ll
+END
+load.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/load.ll
+END
+2007-03-19-BadTruncChangePR1261.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/81293/llvm/trunk/test/Transforms/InstCombine/2007-03-19-BadTruncChangePR1261.ll
+END
+2012-6-7-vselect-bitcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/158166/llvm/trunk/test/Transforms/InstCombine/2012-6-7-vselect-bitcast.ll
+END
+2004-03-13-InstCombineInfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2004-03-13-InstCombineInfLoop.ll
+END
+2006-12-08-Select-ICmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2006-12-08-Select-ICmp.ll
+END
+2008-08-05-And.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2008-08-05-And.ll
+END
+2011-03-08-SRemMinusOneBadOpt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/127306/llvm/trunk/test/Transforms/InstCombine/2011-03-08-SRemMinusOneBadOpt.ll
+END
+2008-07-08-ShiftOneAndOne.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-07-08-ShiftOneAndOne.ll
+END
+2008-01-06-VoidCast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/187444/llvm/trunk/test/Transforms/InstCombine/2008-01-06-VoidCast.ll
+END
+2008-02-16-SDivOverflow2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-02-16-SDivOverflow2.ll
+END
+extractvalue.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/InstCombine/extractvalue.ll
+END
+bitcast-bigendian.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/188155/llvm/trunk/test/Transforms/InstCombine/bitcast-bigendian.ll
+END
+2004-08-09-RemInfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2004-08-09-RemInfLoop.ll
+END
+bitcast-sext-vector.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/94280/llvm/trunk/test/Transforms/InstCombine/bitcast-sext-vector.ll
+END
+apint-and-xor-merge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-and-xor-merge.ll
+END
+and-not-or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/and-not-or.ll
+END
+disable-simplify-libcalls.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/disable-simplify-libcalls.ll
+END
+icmp-shr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/220314/llvm/trunk/test/Transforms/InstCombine/icmp-shr.ll
+END
+vec_extract_var_elt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/vec_extract_var_elt.ll
+END
+2012-05-28-select-hang.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2012-05-28-select-hang.ll
+END
+strncpy_chk-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strncpy_chk-2.ll
+END
+2010-11-21-SizeZeroTypeGEP.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2010-11-21-SizeZeroTypeGEP.ll
+END
+sub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/sub.ll
+END
+2004-09-28-BadShiftAndSetCC.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2004-09-28-BadShiftAndSetCC.ll
+END
+mul.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/235250/llvm/trunk/test/Transforms/InstCombine/mul.ll
+END
+overflow-mul.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/InstCombine/overflow-mul.ll
+END
+fwrite-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/fwrite-1.ll
+END
+2008-02-23-MulSub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-02-23-MulSub.ll
+END
+fputs-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/fputs-1.ll
+END
+gep-addrspace.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/gep-addrspace.ll
+END
+bitcast-vec-canon.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/bitcast-vec-canon.ll
+END
+select-extractelement.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/194013/llvm/trunk/test/Transforms/InstCombine/select-extractelement.ll
+END
+select-load-call.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/select-load-call.ll
+END
+debug-line.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/InstCombine/debug-line.ll
+END
+2004-09-20-BadLoadCombine.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2004-09-20-BadLoadCombine.ll
+END
+2008-07-08-SubAnd.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-07-08-SubAnd.ll
+END
+pr20059.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/212632/llvm/trunk/test/Transforms/InstCombine/pr20059.ll
+END
+fpextend_x86.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/195934/llvm/trunk/test/Transforms/InstCombine/fpextend_x86.ll
+END
+div.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/222625/llvm/trunk/test/Transforms/InstCombine/div.ll
+END
+2011-05-02-VectorBoolean.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2011-05-02-VectorBoolean.ll
+END
+ptr-int-cast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/ptr-int-cast.ll
+END
+srem1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/srem1.ll
+END
+vec_shuffle.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/234051/llvm/trunk/test/Transforms/InstCombine/vec_shuffle.ll
+END
+bitcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/bitcast.ll
+END
+memcpy-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memcpy-2.ll
+END
+CPP_min_max.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/CPP_min_max.ll
+END
+sign-test-and-or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/201176/llvm/trunk/test/Transforms/InstCombine/sign-test-and-or.ll
+END
+assume-loop-align.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/assume-loop-align.ll
+END
+objsize-64.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/objsize-64.ll
+END
+apint-xor2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/164768/llvm/trunk/test/Transforms/InstCombine/apint-xor2.ll
+END
+2007-02-01-LoadSinkAlloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2007-02-01-LoadSinkAlloca.ll
+END
+2007-10-10-EliminateMemCpy.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2007-10-10-EliminateMemCpy.ll
+END
+and-xor-merge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/222879/llvm/trunk/test/Transforms/InstCombine/and-xor-merge.ll
+END
+shufflemask-undef.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/shufflemask-undef.ll
+END
+ffs-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/211084/llvm/trunk/test/Transforms/InstCombine/ffs-1.ll
+END
+memcmp-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memcmp-2.ll
+END
+badmalloc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/badmalloc.ll
+END
+apint-mul1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-mul1.ll
+END
+isdigit-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/isdigit-1.ll
+END
+2009-06-11-StoreAddrSpace.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2009-06-11-StoreAddrSpace.ll
+END
+binop-cast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/83828/llvm/trunk/test/Transforms/InstCombine/binop-cast.ll
+END
+strcpy_chk-64.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcpy_chk-64.ll
+END
+addrspacecast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/addrspacecast.ll
+END
+fcmp-special.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/96777/llvm/trunk/test/Transforms/InstCombine/fcmp-special.ll
+END
+sdiv-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/168430/llvm/trunk/test/Transforms/InstCombine/sdiv-1.ll
+END
+2007-02-23-PhiFoldInfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2007-02-23-PhiFoldInfLoop.ll
+END
+2008-06-24-StackRestore.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2008-06-24-StackRestore.ll
+END
+aligned-qpx.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/236973/llvm/trunk/test/Transforms/InstCombine/aligned-qpx.ll
+END
+onehot_merge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/199604/llvm/trunk/test/Transforms/InstCombine/onehot_merge.ll
+END
+atomic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/atomic.ll
+END
+2012-08-28-udiv_ashl.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/2012-08-28-udiv_ashl.ll
+END
+inline-intrinsic-assert.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/231927/llvm/trunk/test/Transforms/InstCombine/inline-intrinsic-assert.ll
+END
+fpextend.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/fpextend.ll
+END
+2008-06-13-ReadOnlyCallStore.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-06-13-ReadOnlyCallStore.ll
+END
+cos-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/cos-1.ll
+END
+bitcast-store.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Transforms/InstCombine/bitcast-store.ll
+END
+2007-01-18-VectorInfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2007-01-18-VectorInfLoop.ll
+END
+bitcount.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/bitcount.ll
+END
+strspn-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strspn-1.ll
+END
+JavaCompare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/JavaCompare.ll
+END
+select-cmp-br.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/select-cmp-br.ll
+END
+minnum.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/225304/llvm/trunk/test/Transforms/InstCombine/minnum.ll
+END
+or-fcmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/or-fcmp.ll
+END
+sink_instruction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/sink_instruction.ll
+END
+srem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/srem.ll
+END
+loadstore-alignment.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/loadstore-alignment.ll
+END
+memset2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/memset2.ll
+END
+or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/or.ll
+END
+2009-02-21-LoadCST.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2009-02-21-LoadCST.ll
+END
+isascii-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/isascii-1.ll
+END
+apint-add1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-add1.ll
+END
+sext.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/210052/llvm/trunk/test/Transforms/InstCombine/sext.ll
+END
+dce-iterate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/dce-iterate.ll
+END
+and-xor-or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/and-xor-or.ll
+END
+2007-04-08-SingleEltVectorCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2007-04-08-SingleEltVectorCrash.ll
+END
+2004-11-22-Missed-and-fold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/2004-11-22-Missed-and-fold.ll
+END
+alloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/alloca.ll
+END
+2012-12-14-simp-vgep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2012-12-14-simp-vgep.ll
+END
+branch.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/231881/llvm/trunk/test/Transforms/InstCombine/branch.ll
+END
+apint-sub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/219639/llvm/trunk/test/Transforms/InstCombine/apint-sub.ll
+END
+constant-fold-alias.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/constant-fold-alias.ll
+END
+multi-use-or.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/multi-use-or.ll
+END
+vec_insertelt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/vec_insertelt.ll
+END
+range-check.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/223224/llvm/trunk/test/Transforms/InstCombine/range-check.ll
+END
+2006-10-19-SignedToUnsignedCastAndConst-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/llvm-project/!svn/ver/81293/llvm/trunk/test/Transforms/InstCombine/2006-10-19-SignedToUnsignedCastAndConst-2.ll
+END
+2007-06-06-AshrSignBit.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2007-06-06-AshrSignBit.ll
+END
+2008-11-27-IDivVector.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-11-27-IDivVector.ll
+END
+memchr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232903/llvm/trunk/test/Transforms/InstCombine/memchr.ll
+END
+2007-03-21-SignedRangeTest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-03-21-SignedRangeTest.ll
+END
+2009-03-20-AShrOverShift.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2009-03-20-AShrOverShift.ll
+END
+distribute.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/211768/llvm/trunk/test/Transforms/InstCombine/distribute.ll
+END
+assume-redundant.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/assume-redundant.ll
+END
+2004-05-07-UnsizedCastLoad.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2004-05-07-UnsizedCastLoad.ll
+END
+memcpy-to-load.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/memcpy-to-load.ll
+END
+2008-07-16-sse2_storel_dq.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/2008-07-16-sse2_storel_dq.ll
+END
+deadcode.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/deadcode.ll
+END
+icmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/233291/llvm/trunk/test/Transforms/InstCombine/icmp.ll
+END
+apint-mul2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-mul2.ll
+END
+OverlappingInsertvalues.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/208355/llvm/trunk/test/Transforms/InstCombine/OverlappingInsertvalues.ll
+END
+gep-sext.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/gep-sext.ll
+END
+not.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/228954/llvm/trunk/test/Transforms/InstCombine/not.ll
+END
+2009-03-24-InfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2009-03-24-InfLoop.ll
+END
+2004-07-27-ConstantExprMul.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2004-07-27-ConstantExprMul.ll
+END
+sdiv-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/sdiv-2.ll
+END
+objsize-noverify.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/InstCombine/objsize-noverify.ll
+END
+2008-05-17-InfLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/2008-05-17-InfLoop.ll
+END
+align-2d-gep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/align-2d-gep.ll
+END
+pr21210.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/222590/llvm/trunk/test/Transforms/InstCombine/pr21210.ll
+END
+compare-signs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/194925/llvm/trunk/test/Transforms/InstCombine/compare-signs.ll
+END
+narrow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/narrow.ll
+END
+fold-sqrt-sqrtf.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/145460/llvm/trunk/test/Transforms/InstCombine/fold-sqrt-sqrtf.ll
+END
+load-bitcast32.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/238452/llvm/trunk/test/Transforms/InstCombine/load-bitcast32.ll
+END
+fabs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/219717/llvm/trunk/test/Transforms/InstCombine/fabs.ll
+END
+struct-assign-tbaa.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/struct-assign-tbaa.ll
+END
+fneg-ext.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/187462/llvm/trunk/test/Transforms/InstCombine/fneg-ext.ll
+END
+2004-04-04-InstCombineReplaceAllUsesWith.ll
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2004-04-04-InstCombineReplaceAllUsesWith.ll
+END
+fpcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/238531/llvm/trunk/test/Transforms/InstCombine/fpcast.ll
+END
+switch-truncate-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/231761/llvm/trunk/test/Transforms/InstCombine/switch-truncate-crash.ll
+END
+cos-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/cos-2.ll
+END
+2008-07-09-SubAndError.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/2008-07-09-SubAndError.ll
+END
+2012-07-30-addrsp-bitcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/2012-07-30-addrsp-bitcast.ll
+END
+2007-03-26-BadShiftMask.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-03-26-BadShiftMask.ll
+END
+2004-09-20-BadLoadCombine2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2004-09-20-BadLoadCombine2.ll
+END
+2008-11-01-SRemDemandedBits.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-11-01-SRemDemandedBits.ll
+END
+2008-01-06-CastCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-01-06-CastCrash.ll
+END
+type_pun.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/InstCombine/type_pun.ll
+END
+abs-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/abs-1.ll
+END
+2012-01-11-OpaqueBitcastCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/147946/llvm/trunk/test/Transforms/InstCombine/2012-01-11-OpaqueBitcastCrash.ll
+END
+udiv_select_to_select_shift.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/81261/llvm/trunk/test/Transforms/InstCombine/udiv_select_to_select_shift.ll
+END
+2007-11-15-CompareMiscomp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-11-15-CompareMiscomp.ll
+END
+2009-12-17-CmpSelectNull.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/2009-12-17-CmpSelectNull.ll
+END
+strcpy_chk-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/strcpy_chk-1.ll
+END
+vec_phi_extract.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/vec_phi_extract.ll
+END
+call.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/call.ll
+END
+phi-select-constexpr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/196611/llvm/trunk/test/Transforms/InstCombine/phi-select-constexpr.ll
+END
+apint-add2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-add2.ll
+END
+2008-04-29-VolatileLoadDontMerge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2008-04-29-VolatileLoadDontMerge.ll
+END
+2005-03-04-ShiftOverflow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/2005-03-04-ShiftOverflow.ll
+END
+pr21891.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/224168/llvm/trunk/test/Transforms/InstCombine/pr21891.ll
+END
+enforce-known-alignment.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/enforce-known-alignment.ll
+END
+logical-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/175380/llvm/trunk/test/Transforms/InstCombine/logical-select.ll
+END
+add.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/164768/llvm/trunk/test/Transforms/InstCombine/add.ll
+END
+2006-12-01-BadFPVectorXform.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2006-12-01-BadFPVectorXform.ll
+END
+fold-phi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/221237/llvm/trunk/test/Transforms/InstCombine/fold-phi.ll
+END
+2007-10-31-RangeCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2007-10-31-RangeCrash.ll
+END
+maxnum.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/220341/llvm/trunk/test/Transforms/InstCombine/maxnum.ll
+END
+max-of-nots.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/236203/llvm/trunk/test/Transforms/InstCombine/max-of-nots.ll
+END
+constant-expr-datalayout.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/constant-expr-datalayout.ll
+END
+shift.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/InstCombine/shift.ll
+END
+memset_chk-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/227250/llvm/trunk/test/Transforms/InstCombine/memset_chk-1.ll
+END
+2010-11-01-lshr-mask.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/2010-11-01-lshr-mask.ll
+END
+and-or-and.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/and-or-and.ll
+END
+gc.relocate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/237214/llvm/trunk/test/Transforms/InstCombine/gc.relocate.ll
+END
+sqrt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/sqrt.ll
+END
+2004-12-08-RemInfiniteLoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2004-12-08-RemInfiniteLoop.ll
+END
+apint-and-compare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-and-compare.ll
+END
+strncpy-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/strncpy-1.ll
+END
+2008-12-17-SRemNegConstVec.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-12-17-SRemNegConstVec.ll
+END
+constant-fold-math.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/218803/llvm/trunk/test/Transforms/InstCombine/constant-fold-math.ll
+END
+apint-cast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/86398/llvm/trunk/test/Transforms/InstCombine/apint-cast.ll
+END
+gepgep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/gepgep.ll
+END
+2004-01-13-InstCombineInvokePHI.ll
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2004-01-13-InstCombineInvokePHI.ll
+END
+vec_extract_elt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/vec_extract_elt.ll
+END
+addnegneg.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/222994/llvm/trunk/test/Transforms/InstCombine/addnegneg.ll
+END
+2008-02-13-MulURem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/2008-02-13-MulURem.ll
+END
+2007-01-13-ExtCompareMiscompile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-01-13-ExtCompareMiscompile.ll
+END
+shufflevec-constant.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/shufflevec-constant.ll
+END
+pr20079.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/212360/llvm/trunk/test/Transforms/InstCombine/pr20079.ll
+END
+strncmp-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/strncmp-1.ll
+END
+and-fcmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/179417/llvm/trunk/test/Transforms/InstCombine/and-fcmp.ll
+END
+2011-06-13-nsw-alloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2011-06-13-nsw-alloca.ll
+END
+2008-11-20-DivMulRem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/2008-11-20-DivMulRem.ll
+END
+strcspn-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcspn-1.ll
+END
+apint-cast-and-cast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/apint-cast-and-cast.ll
+END
+vector-mul.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/vector-mul.ll
+END
+2006-12-23-Select-Cmp-Cmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2006-12-23-Select-Cmp-Cmp.ll
+END
+apint-call-cast-target.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/225254/llvm/trunk/test/Transforms/InstCombine/apint-call-cast-target.ll
+END
+fcmp-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/96955/llvm/trunk/test/Transforms/InstCombine/fcmp-select.ll
+END
+2010-11-23-Distributed.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/2010-11-23-Distributed.ll
+END
+2008-02-28-OrFCmpCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-02-28-OrFCmpCrash.ll
+END
+sitofp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/229437/llvm/trunk/test/Transforms/InstCombine/sitofp.ll
+END
+strcpy_chk-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcpy_chk-2.ll
+END
+apint-not.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/apint-not.ll
+END
+r600-intrinsics.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/211247/llvm/trunk/test/Transforms/InstCombine/r600-intrinsics.ll
+END
+apint-cast-cast-to-and.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/apint-cast-cast-to-and.ll
+END
+assume2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/217343/llvm/trunk/test/Transforms/InstCombine/assume2.ll
+END
+apint-shift-simplify.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/apint-shift-simplify.ll
+END
+vector-type.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/178278/llvm/trunk/test/Transforms/InstCombine/vector-type.ll
+END
+signext.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/223109/llvm/trunk/test/Transforms/InstCombine/signext.ll
+END
+strcpy-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/strcpy-1.ll
+END
+2008-10-23-ConstFoldWithoutMask.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-10-23-ConstFoldWithoutMask.ll
+END
+pr12338.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/222590/llvm/trunk/test/Transforms/InstCombine/pr12338.ll
+END
+lshr-phi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/lshr-phi.ll
+END
+apint-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/apint-select.ll
+END
+memcpy-from-global.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/memcpy-from-global.ll
+END
+2007-03-13-CompareMerge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-03-13-CompareMerge.ll
+END
+2009-05-23-FCmpToICmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2009-05-23-FCmpToICmp.ll
+END
+zext-or-icmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/zext-or-icmp.ll
+END
+2003-05-27-ConstExprCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2003-05-27-ConstExprCrash.ll
+END
+nothrow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/nothrow.ll
+END
+2008-05-09-SinkOfInvoke.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2008-05-09-SinkOfInvoke.ll
+END
+strcmp-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/strcmp-1.ll
+END
+gepphigep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/232718/llvm/trunk/test/Transforms/InstCombine/gepphigep.ll
+END
+2006-02-13-DemandedMiscompile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2006-02-13-DemandedMiscompile.ll
+END
+2006-03-30-ExtractElement.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2006-03-30-ExtractElement.ll
+END
+align-external.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/align-external.ll
+END
+memset_chk-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memset_chk-2.ll
+END
+2002-08-02-CastTest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2002-08-02-CastTest.ll
+END
+select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/236202/llvm/trunk/test/Transforms/InstCombine/select.ll
+END
+fold-calls.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/fold-calls.ll
+END
+no-negzero.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/no-negzero.ll
+END
+2005-07-07-DeadPHILoop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2005-07-07-DeadPHILoop.ll
+END
+2003-09-09-VolatileLoadElim.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2003-09-09-VolatileLoadElim.ll
+END
+apint-and-or-and.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/apint-and-or-and.ll
+END
+copysign.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/203076/llvm/trunk/test/Transforms/InstCombine/copysign.ll
+END
+load-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/load-select.ll
+END
+call-intrinsics.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/InstCombine/call-intrinsics.ll
+END
+fold-fops-into-selects.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/186759/llvm/trunk/test/Transforms/InstCombine/fold-fops-into-selects.ll
+END
+shift-sra.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/shift-sra.ll
+END
+strncpy-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strncpy-2.ll
+END
+load3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/load3.ll
+END
+known_align.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/known_align.ll
+END
+zero-point-zero-add.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/zero-point-zero-add.ll
+END
+bitcast-vector-fold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/186263/llvm/trunk/test/Transforms/InstCombine/bitcast-vector-fold.ll
+END
+canonicalize_branch.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Transforms/InstCombine/canonicalize_branch.ll
+END
+simplify-libcalls.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/simplify-libcalls.ll
+END
+2007-11-07-OpaqueAlignCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2007-11-07-OpaqueAlignCrash.ll
+END
+and2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/219585/llvm/trunk/test/Transforms/InstCombine/and2.ll
+END
+merge-icmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/merge-icmp.ll
+END
+strncmp-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strncmp-2.ll
+END
+2008-06-19-UncondLoad.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2008-06-19-UncondLoad.ll
+END
+adjust-for-sminmax.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/adjust-for-sminmax.ll
+END
+select-cmp-cttz-ctlz.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/229124/llvm/trunk/test/Transforms/InstCombine/select-cmp-cttz-ctlz.ll
+END
+stack-overalign.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/stack-overalign.ll
+END
+strcspn-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcspn-2.ll
+END
+2008-04-28-VolatileStore.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-04-28-VolatileStore.ll
+END
+call2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/call2.ll
+END
+2008-05-31-AddBool.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/2008-05-31-AddBool.ll
+END
+2007-11-22-IcmpCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2007-11-22-IcmpCrash.ll
+END
+vector-srem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/vector-srem.ll
+END
+simplify-demanded-bits-pointer.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/simplify-demanded-bits-pointer.ll
+END
+2006-04-28-ShiftShiftLongLong.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/125267/llvm/trunk/test/Transforms/InstCombine/2006-04-28-ShiftShiftLongLong.ll
+END
+pr8547.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/pr8547.ll
+END
+2006-05-04-DemandedBitCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2006-05-04-DemandedBitCrash.ll
+END
+strto-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/strto-1.ll
+END
+2006-10-20-mask.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/189529/llvm/trunk/test/Transforms/InstCombine/2006-10-20-mask.ll
+END
+cast_ptr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/cast_ptr.ll
+END
+2012-06-06-LoadOfPHIs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2012-06-06-LoadOfPHIs.ll
+END
+pr21651.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/InstCombine/pr21651.ll
+END
+2005-04-07-UDivSelectCrash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2005-04-07-UDivSelectCrash.ll
+END
+strcpy-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcpy-2.ll
+END
+win-math.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/189724/llvm/trunk/test/Transforms/InstCombine/win-math.ll
+END
+ExtractCast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/ExtractCast.ll
+END
+2008-05-23-CompareFold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2008-05-23-CompareFold.ll
+END
+2008-01-13-AndCmpCmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-01-13-AndCmpCmp.ll
+END
+align-addr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/align-addr.ll
+END
+2006-12-05-fp-to-int-ext.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2006-12-05-fp-to-int-ext.ll
+END
+2008-01-14-VarArgTrampoline.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2008-01-14-VarArgTrampoline.ll
+END
+2004-11-27-SetCCForCastLargerAndConstant.ll
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/91631/llvm/trunk/test/Transforms/InstCombine/2004-11-27-SetCCForCastLargerAndConstant.ll
+END
+strcmp-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strcmp-2.ll
+END
+2008-06-13-InfiniteLoopStore.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-06-13-InfiniteLoopStore.ll
+END
+pr2996.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/pr2996.ll
+END
+2010-01-28-NegativeSRem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/94745/llvm/trunk/test/Transforms/InstCombine/2010-01-28-NegativeSRem.ll
+END
+2008-10-11-DivCompareFold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-10-11-DivCompareFold.ll
+END
+vsx-unaligned.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/vsx-unaligned.ll
+END
+stacksaverestore.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/stacksaverestore.ll
+END
+statepoint.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/237214/llvm/trunk/test/Transforms/InstCombine/statepoint.ll
+END
+zext.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/199608/llvm/trunk/test/Transforms/InstCombine/zext.ll
+END
+2008-07-16-fsub.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-07-16-fsub.ll
+END
+2007-03-25-DoubleShift.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2007-03-25-DoubleShift.ll
+END
+memmove-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memmove-1.ll
+END
+vec_narrow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/vec_narrow.ll
+END
+stpcpy_chk-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/stpcpy_chk-1.ll
+END
+fprintf-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/fprintf-1.ll
+END
+xor-undef.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/xor-undef.ll
+END
+2007-12-12-GEPScale.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2007-12-12-GEPScale.ll
+END
+ceil.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/204583/llvm/trunk/test/Transforms/InstCombine/ceil.ll
+END
+getelementptr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/235455/llvm/trunk/test/Transforms/InstCombine/getelementptr.ll
+END
+obfuscated_splat.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/obfuscated_splat.ll
+END
+constant-fold-hang.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/231755/llvm/trunk/test/Transforms/InstCombine/constant-fold-hang.ll
+END
+dom-conditions.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/231879/llvm/trunk/test/Transforms/InstCombine/dom-conditions.ll
+END
+2010-03-03-ExtElim.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/2010-03-03-ExtElim.ll
+END
+memmove_chk-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/227250/llvm/trunk/test/Transforms/InstCombine/memmove_chk-1.ll
+END
+memset.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/memset.ll
+END
+err-rep-cold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/err-rep-cold.ll
+END
+div-shift.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/185973/llvm/trunk/test/Transforms/InstCombine/div-shift.ll
+END
+strstr-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/strstr-1.ll
+END
+2008-07-11-RemAnd.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-07-11-RemAnd.ll
+END
+and.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/185909/llvm/trunk/test/Transforms/InstCombine/and.ll
+END
+strlen-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strlen-1.ll
+END
+2012-05-27-Negative-Shift-Crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2012-05-27-Negative-Shift-Crash.ll
+END
+2003-05-26-CastMiscompile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2003-05-26-CastMiscompile.ll
+END
+objsize.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/InstCombine/objsize.ll
+END
+2008-05-31-Bools.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-05-31-Bools.ll
+END
+urem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/urem.ll
+END
+apint-or1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-or1.ll
+END
+minmax-fold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/237821/llvm/trunk/test/Transforms/InstCombine/minmax-fold.ll
+END
+2009-01-16-PointerAddrSpace.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/194760/llvm/trunk/test/Transforms/InstCombine/2009-01-16-PointerAddrSpace.ll
+END
+neon-intrinsics.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/117154/llvm/trunk/test/Transforms/InstCombine/neon-intrinsics.ll
+END
+2008-01-13-NoBitCastAttributes.ll
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/133228/llvm/trunk/test/Transforms/InstCombine/2008-01-13-NoBitCastAttributes.ll
+END
+2008-11-27-UDivNegative.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-11-27-UDivNegative.ll
+END
+call-cast-target.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/231948/llvm/trunk/test/Transforms/InstCombine/call-cast-target.ll
+END
+2012-09-17-ZeroSizedAlloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2012-09-17-ZeroSizedAlloca.ll
+END
+2006-02-28-Crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2006-02-28-Crash.ll
+END
+2012-04-24-vselect.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/2012-04-24-vselect.ll
+END
+multi-size-address-space-pointer.ll
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/multi-size-address-space-pointer.ll
+END
+2008-05-08-LiveStoreDelete.ll
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2008-05-08-LiveStoreDelete.ll
+END
+demand_shrink_nsw.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/236269/llvm/trunk/test/Transforms/InstCombine/demand_shrink_nsw.ll
+END
+no_cgscc_assert.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/221802/llvm/trunk/test/Transforms/InstCombine/no_cgscc_assert.ll
+END
+2005-06-16-SetCCOrSetCCMiscompile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2005-06-16-SetCCOrSetCCMiscompile.ll
+END
+debuginfo.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/InstCombine/debuginfo.ll
+END
+constant-fold-address-space-pointer.ll
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/InstCombine/constant-fold-address-space-pointer.ll
+END
+2008-01-21-MismatchedCastAndCompare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/83825/llvm/trunk/test/Transforms/InstCombine/2008-01-21-MismatchedCastAndCompare.ll
+END
+2008-05-22-IDivVector.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-05-22-IDivVector.ll
+END
+2008-07-10-ICmpBinOp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-07-10-ICmpBinOp.ll
+END
+loadstore-metadata.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/loadstore-metadata.ll
+END
+2008-11-27-MultiplyIntVec.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-11-27-MultiplyIntVec.ll
+END
+add-shrink.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/210049/llvm/trunk/test/Transforms/InstCombine/add-shrink.ll
+END
+vec_demanded_elts.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/233432/llvm/trunk/test/Transforms/InstCombine/vec_demanded_elts.ll
+END
+unordered-fcmp-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/222705/llvm/trunk/test/Transforms/InstCombine/unordered-fcmp-select.ll
+END
+2008-01-06-BitCastAttributes.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/187444/llvm/trunk/test/Transforms/InstCombine/2008-01-06-BitCastAttributes.ll
+END
+2009-03-18-vector-ashr-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2009-03-18-vector-ashr-crash.ll
+END
+add-sitofp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/211084/llvm/trunk/test/Transforms/InstCombine/add-sitofp.ll
+END
+invariant.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/invariant.ll
+END
+2009-01-24-EmptyStruct.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2009-01-24-EmptyStruct.ll
+END
+store.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/231270/llvm/trunk/test/Transforms/InstCombine/store.ll
+END
+x86-vperm2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/233127/llvm/trunk/test/Transforms/InstCombine/x86-vperm2.ll
+END
+2008-01-29-AddICmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/159547/llvm/trunk/test/Transforms/InstCombine/2008-01-29-AddICmp.ll
+END
+memmove-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memmove-2.ll
+END
+exact.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/exact.ll
+END
+stpcpy_chk-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/stpcpy_chk-2.ll
+END
+2012-02-13-FCmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2012-02-13-FCmp.ll
+END
+xor.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/test/Transforms/InstCombine/xor.ll
+END
+2007-10-28-stacksave.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/2007-10-28-stacksave.ll
+END
+phi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/phi.ll
+END
+fast-math.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/231359/llvm/trunk/test/Transforms/InstCombine/fast-math.ll
+END
+2008-05-18-FoldIntToPtr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2008-05-18-FoldIntToPtr.ll
+END
+2002-03-11-InstCombineHang.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2002-03-11-InstCombineHang.ll
+END
+memmove_chk-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/memmove_chk-2.ll
+END
+2012-04-30-SRem.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/155818/llvm/trunk/test/Transforms/InstCombine/2012-04-30-SRem.ll
+END
+odr-linkage.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/odr-linkage.ll
+END
+assume.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/assume.ll
+END
+2010-05-30-memcpy-Struct.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Transforms/InstCombine/2010-05-30-memcpy-Struct.ll
+END
+2008-04-29-VolatileLoadMerge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2008-04-29-VolatileLoadMerge.ll
+END
+constant-fold-compare.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/91587/llvm/trunk/test/Transforms/InstCombine/constant-fold-compare.ll
+END
+strstr-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strstr-2.ll
+END
+2009-02-20-InstCombine-SROA.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/InstCombine/2009-02-20-InstCombine-SROA.ll
+END
+pow-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/203037/llvm/trunk/test/Transforms/InstCombine/pow-1.ll
+END
+strlen-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/InstCombine/strlen-2.ll
+END
+2007-06-21-DivCompareMiscomp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Transforms/InstCombine/2007-06-21-DivCompareMiscomp.ll
+END
+apint-or2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/81257/llvm/trunk/test/Transforms/InstCombine/apint-or2.ll
+END
+2008-07-08-AndICmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2008-07-08-AndICmp.ll
+END
+exp2-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/200795/llvm/trunk/test/Transforms/InstCombine/exp2-1.ll
+END
+memcpy_chk-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/227250/llvm/trunk/test/Transforms/InstCombine/memcpy_chk-1.ll
+END
+2006-11-10-ashr-miscompile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/81537/llvm/trunk/test/Transforms/InstCombine/2006-11-10-ashr-miscompile.ll
+END
+vec_sext.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/199608/llvm/trunk/test/Transforms/InstCombine/vec_sext.ll
+END
+bitcast-vec-uniform.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/InstCombine/bitcast-vec-uniform.ll
+END
+fcmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/231626/llvm/trunk/test/Transforms/InstCombine/fcmp.ll
+END

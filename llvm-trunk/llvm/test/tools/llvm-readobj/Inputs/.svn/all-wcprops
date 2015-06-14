@@ -1,0 +1,413 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/238151/llvm/trunk/test/tools/llvm-readobj/Inputs
+END
+dynamic-table-exe.mips
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/198561/llvm/trunk/test/tools/llvm-readobj/Inputs/dynamic-table-exe.mips
+END
+relocs.obj.elf-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/179360/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.elf-x86_64
+END
+trivial.obj.elf-x86-64
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/178679/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.elf-x86-64
+END
+relocs.obj.macho-arm
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/179360/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.macho-arm
+END
+relocs.obj.elf-mips64el
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/179360/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.elf-mips64el
+END
+relocs-no-symtab.obj.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/222736/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs-no-symtab.obj.coff-i386
+END
+basereloc.obj.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/222289/llvm/trunk/test/tools/llvm-readobj/Inputs/basereloc.obj.coff-i386
+END
+trivial.obj.coff-arm
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/203761/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.coff-arm
+END
+dynamic-table-exe.x86
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/208489/llvm/trunk/test/tools/llvm-readobj/Inputs/dynamic-table-exe.x86
+END
+relocs.obj.macho-i386
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/179360/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.macho-i386
+END
+multifile-linetables.obj.coff-2013-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/llvm-project/!svn/ver/218303/llvm/trunk/test/tools/llvm-readobj/Inputs/multifile-linetables.obj.coff-2013-x86_64
+END
+got-tls.so.elf-mips64el
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/211150/llvm/trunk/test/tools/llvm-readobj/Inputs/got-tls.so.elf-mips64el
+END
+trivial.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.ll
+END
+directives.obj.coff-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/219274/llvm/trunk/test/tools/llvm-readobj/Inputs/directives.obj.coff-x86_64
+END
+relocs.obj.macho-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/179360/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.macho-x86_64
+END
+file-aux-record.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/217858/llvm/trunk/test/tools/llvm-readobj/Inputs/file-aux-record.yaml
+END
+multifile-linetables.obj.coff-2012-i368
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/219621/llvm/trunk/test/tools/llvm-readobj/Inputs/multifile-linetables.obj.coff-2012-i368
+END
+export-x64.dll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/225120/llvm/trunk/test/tools/llvm-readobj/Inputs/export-x64.dll
+END
+multifile-linetables.obj.coff-2012-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/llvm-project/!svn/ver/219621/llvm/trunk/test/tools/llvm-readobj/Inputs/multifile-linetables.obj.coff-2012-x86_64
+END
+abiflags.obj.elf-mipsel
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/236737/llvm/trunk/test/tools/llvm-readobj/Inputs/abiflags.obj.elf-mipsel
+END
+cxx-cli-aux.obj.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/204023/llvm/trunk/test/tools/llvm-readobj/Inputs/cxx-cli-aux.obj.coff-i386
+END
+trivial.obj.elf-i386
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/178679/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.elf-i386
+END
+imports.exe.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/218933/llvm/trunk/test/tools/llvm-readobj/Inputs/imports.exe.coff-i386
+END
+trivial.exe.coff-arm
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/227673/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.exe.coff-arm
+END
+multifunction-linetables.obj.coff-2013-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/llvm-project/!svn/ver/218303/llvm/trunk/test/tools/llvm-readobj/Inputs/multifunction-linetables.obj.coff-2013-x86_64
+END
+trivial.obj.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/204199/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.coff-i386
+END
+bad-relocs.obj.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/222413/llvm/trunk/test/tools/llvm-readobj/Inputs/bad-relocs.obj.coff-i386
+END
+dynamic-table.c
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/198561/llvm/trunk/test/tools/llvm-readobj/Inputs/dynamic-table.c
+END
+relocs.obj.elf-aarch64
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/222821/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.elf-aarch64
+END
+abiflags.obj.elf-mips
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/236737/llvm/trunk/test/tools/llvm-readobj/Inputs/abiflags.obj.elf-mips
+END
+relocs.obj.elf-i386
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/179360/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.elf-i386
+END
+trivial.exe.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/186734/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.exe.coff-i386
+END
+dynamic-table-so.mips
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/198560/llvm/trunk/test/tools/llvm-readobj/Inputs/dynamic-table-so.mips
+END
+relocs.obj.elf-ppc64
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/179360/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.elf-ppc64
+END
+trivial.obj.macho-i386
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/178679/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.macho-i386
+END
+trivial.obj.macho-ppc64
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/179440/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.macho-ppc64
+END
+imports.exe.coff-x86-64
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/218933/llvm/trunk/test/tools/llvm-readobj/Inputs/imports.exe.coff-x86-64
+END
+file-multiple-aux-records.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/217858/llvm/trunk/test/tools/llvm-readobj/Inputs/file-multiple-aux-records.yaml
+END
+comdat-function-linetables.obj.coff-2012-i386
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/llvm-project/!svn/ver/219621/llvm/trunk/test/tools/llvm-readobj/Inputs/comdat-function-linetables.obj.coff-2012-i386
+END
+export-arm.dll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/225120/llvm/trunk/test/tools/llvm-readobj/Inputs/export-arm.dll
+END
+multifile-linetables.obj.coff-2013-i368
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/218303/llvm/trunk/test/tools/llvm-readobj/Inputs/multifile-linetables.obj.coff-2013-i368
+END
+trivial.obj.coff-x86-64
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/178679/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.coff-x86-64
+END
+multifunction-linetables.obj.coff-2012-i368
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/llvm-project/!svn/ver/219621/llvm/trunk/test/tools/llvm-readobj/Inputs/multifunction-linetables.obj.coff-2012-i368
+END
+trivial.obj.elf-mipsel
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/212908/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.elf-mipsel
+END
+relocs.obj.elf-arm
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/222817/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.elf-arm
+END
+trivial.obj.macho-x86-64
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/178679/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.macho-x86-64
+END
+multifunction-linetables.obj.coff-2012-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/llvm-project/!svn/ver/219621/llvm/trunk/test/tools/llvm-readobj/Inputs/multifunction-linetables.obj.coff-2012-x86_64
+END
+trivial.obj.macho-arm
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/179778/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.macho-arm
+END
+magic.coff-unknown
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/194734/llvm/trunk/test/tools/llvm-readobj/Inputs/magic.coff-unknown
+END
+trivial.obj.macho-ppc
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/179440/llvm/trunk/test/tools/llvm-readobj/Inputs/trivial.obj.macho-ppc
+END
+magic.coff-importlib
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/194852/llvm/trunk/test/tools/llvm-readobj/Inputs/magic.coff-importlib
+END
+rpath.exe.elf-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/189829/llvm/trunk/test/tools/llvm-readobj/Inputs/rpath.exe.elf-x86_64
+END
+macho-universal-archive.x86_64.i386
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/llvm-project/!svn/ver/234758/llvm/trunk/test/tools/llvm-readobj/Inputs/macho-universal-archive.x86_64.i386
+END
+nop.exe.coff-x86-64
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/200117/llvm/trunk/test/tools/llvm-readobj/Inputs/nop.exe.coff-x86-64
+END
+relocs.obj.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/215350/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.coff-i386
+END
+dtflags.elf-x86-64
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/238151/llvm/trunk/test/tools/llvm-readobj/Inputs/dtflags.elf-x86-64
+END
+mips-options.elf-mips64el
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/235285/llvm/trunk/test/tools/llvm-readobj/Inputs/mips-options.elf-mips64el
+END
+relocs.obj.coff-x86_64
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/215350/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.coff-x86_64
+END
+comdat-function-linetables.obj.coff-2013-i386
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/llvm-project/!svn/ver/219125/llvm/trunk/test/tools/llvm-readobj/Inputs/comdat-function-linetables.obj.coff-2013-i386
+END
+relocs.obj.elf-mips
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/179360/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.obj.elf-mips
+END
+relocs.py
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/222821/llvm/trunk/test/tools/llvm-readobj/Inputs/relocs.py
+END
+export-x86.dll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/225120/llvm/trunk/test/tools/llvm-readobj/Inputs/export-x86.dll
+END
+multifunction-linetables.obj.coff-2013-i368
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/llvm-project/!svn/ver/218303/llvm/trunk/test/tools/llvm-readobj/Inputs/multifunction-linetables.obj.coff-2013-i368
+END
+macho-universal.x86_64.i386
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/233107/llvm/trunk/test/tools/llvm-readobj/Inputs/macho-universal.x86_64.i386
+END
+bigobj.coff-x86-64
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/217496/llvm/trunk/test/tools/llvm-readobj/Inputs/bigobj.coff-x86-64
+END
+cxx-cli-aux.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/204023/llvm/trunk/test/tools/llvm-readobj/Inputs/cxx-cli-aux.cpp
+END
+zero-string-table.obj.coff-i386
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/llvm-project/!svn/ver/202292/llvm/trunk/test/tools/llvm-readobj/Inputs/zero-string-table.obj.coff-i386
+END
+got-empty.exe.mipsel
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/212374/llvm/trunk/test/tools/llvm-readobj/Inputs/got-empty.exe.mipsel
+END

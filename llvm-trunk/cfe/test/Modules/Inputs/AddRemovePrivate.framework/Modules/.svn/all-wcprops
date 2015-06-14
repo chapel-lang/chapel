@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/215455/cfe/trunk/test/Modules/Inputs/AddRemovePrivate.framework/Modules
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/215455/cfe/trunk/test/Modules/Inputs/AddRemovePrivate.framework/Modules/module.modulemap
+END
+module.private.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 123
+/svn/llvm-project/!svn/ver/215455/cfe/trunk/test/Modules/Inputs/AddRemovePrivate.framework/Modules/module.private.modulemap
+END

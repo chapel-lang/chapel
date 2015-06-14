@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/llvm-project/!svn/ver/143841/cfe/trunk/test/Driver/Inputs/gcc_version_parsing1/lib/gcc/i386-unknown-linux/4.6
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/llvm-project/!svn/ver/143841/cfe/trunk/test/Driver/Inputs/gcc_version_parsing1/lib/gcc/i386-unknown-linux/4.6/crtbegin.o
+END

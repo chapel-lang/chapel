@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/227934/llvm/trunk/test/Bindings/llvm-c
+END
+disassemble.test
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/218682/llvm/trunk/test/Bindings/llvm-c/disassemble.test
+END
+globals.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/193233/llvm/trunk/test/Bindings/llvm-c/globals.ll
+END
+add_named_metadata_operand.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/227319/llvm/trunk/test/Bindings/llvm-c/add_named_metadata_operand.ll
+END
+invalid-bitcode.test
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/227934/llvm/trunk/test/Bindings/llvm-c/invalid-bitcode.test
+END
+objectfile.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/217279/llvm/trunk/test/Bindings/llvm-c/objectfile.ll
+END
+functions.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/193233/llvm/trunk/test/Bindings/llvm-c/functions.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Bindings/llvm-c/lit.local.cfg
+END
+calc.test
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/193233/llvm/trunk/test/Bindings/llvm-c/calc.test
+END
+set_metadata.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/227319/llvm/trunk/test/Bindings/llvm-c/set_metadata.ll
+END

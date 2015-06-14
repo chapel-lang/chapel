@@ -1,0 +1,113 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/llvm-project/!svn/ver/236029/cfe/trunk/test/SemaCUDA
+END
+implicit-member-target.cu
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/224358/cfe/trunk/test/SemaCUDA/implicit-member-target.cu
+END
+method-target.cu
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/218482/cfe/trunk/test/SemaCUDA/method-target.cu
+END
+qualifiers.cu
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/236029/cfe/trunk/test/SemaCUDA/qualifiers.cu
+END
+amdgpu-num-gpr-attr.cu
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/223490/cfe/trunk/test/SemaCUDA/amdgpu-num-gpr-attr.cu
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/206688/cfe/trunk/test/SemaCUDA/lit.local.cfg
+END
+function-target.cu
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/230385/cfe/trunk/test/SemaCUDA/function-target.cu
+END
+implicit-intrinsic.cu
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/218688/cfe/trunk/test/SemaCUDA/implicit-intrinsic.cu
+END
+asm-constraints-device.cu
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/232747/cfe/trunk/test/SemaCUDA/asm-constraints-device.cu
+END
+implicit-copy.cu
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/224358/cfe/trunk/test/SemaCUDA/implicit-copy.cu
+END
+config-type.cu
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/125216/cfe/trunk/test/SemaCUDA/config-type.cu
+END
+launch_bounds.cu
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/235452/cfe/trunk/test/SemaCUDA/launch_bounds.cu
+END
+kernel-call.cu
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/207453/cfe/trunk/test/SemaCUDA/kernel-call.cu
+END
+function-target-disabled-check.cu
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/235049/cfe/trunk/test/SemaCUDA/function-target-disabled-check.cu
+END
+cuda-builtin-vars.cu
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/235448/cfe/trunk/test/SemaCUDA/cuda-builtin-vars.cu
+END
+asm-constraints-mixed.cu
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/232747/cfe/trunk/test/SemaCUDA/asm-constraints-mixed.cu
+END
+implicit-member-target-collision.cu
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/218624/cfe/trunk/test/SemaCUDA/implicit-member-target-collision.cu
+END
+implicit-member-target-collision-cxx11.cu
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/218624/cfe/trunk/test/SemaCUDA/implicit-member-target-collision-cxx11.cu
+END
+function-target-hd.cu
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230385/cfe/trunk/test/SemaCUDA/function-target-hd.cu
+END

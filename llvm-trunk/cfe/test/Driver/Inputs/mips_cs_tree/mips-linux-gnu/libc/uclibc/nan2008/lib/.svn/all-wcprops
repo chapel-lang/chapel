@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/uclibc/nan2008/lib
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/llvm-project/!svn/ver/215552/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/uclibc/nan2008/lib/.keep
+END

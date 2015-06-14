@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/self-import-header/depend_builtin
+END
+h1.h
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/self-import-header/depend_builtin/h1.h
+END
+module.map
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/226875/cfe/trunk/test/Modules/Inputs/self-import-header/depend_builtin/module.map
+END

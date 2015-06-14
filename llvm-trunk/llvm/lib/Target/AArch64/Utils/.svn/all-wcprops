@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/238192/llvm/trunk/lib/Target/AArch64/Utils
+END
+AArch64BaseInfo.h
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/238192/llvm/trunk/lib/Target/AArch64/Utils/AArch64BaseInfo.h
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/lib/Target/AArch64/Utils/LLVMBuild.txt
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/lib/Target/AArch64/Utils/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/209577/llvm/trunk/lib/Target/AArch64/Utils/Makefile
+END
+AArch64BaseInfo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/238192/llvm/trunk/lib/Target/AArch64/Utils/AArch64BaseInfo.cpp
+END

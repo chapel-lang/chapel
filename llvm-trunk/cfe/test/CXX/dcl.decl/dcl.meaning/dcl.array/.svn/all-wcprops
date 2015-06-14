@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/191064/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.array
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/122802/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.array/p1.cpp
+END
+p3.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/191064/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.array/p3.cpp
+END
+p1-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.array/p1-cxx0x.cpp
+END

@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/151185/cfe/trunk/test/Driver/Inputs/prefixed_tools_tree
+END
+x86_64--linux-ld
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/151185/cfe/trunk/test/Driver/Inputs/prefixed_tools_tree/x86_64--linux-ld
+END
+x86_64--linux-as
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/151185/cfe/trunk/test/Driver/Inputs/prefixed_tools_tree/x86_64--linux-as
+END

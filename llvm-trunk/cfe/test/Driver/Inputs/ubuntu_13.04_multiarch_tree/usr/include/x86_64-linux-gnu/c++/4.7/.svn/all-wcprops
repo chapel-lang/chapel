@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/llvm-project/!svn/ver/176557/cfe/trunk/test/Driver/Inputs/ubuntu_13.04_multiarch_tree/usr/include/x86_64-linux-gnu/c++/4.7
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 133
+/svn/llvm-project/!svn/ver/176557/cfe/trunk/test/Driver/Inputs/ubuntu_13.04_multiarch_tree/usr/include/x86_64-linux-gnu/c++/4.7/.keep
+END

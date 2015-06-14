@@ -1,0 +1,419 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Feature
+END
+smallest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/smallest.ll
+END
+attributes.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Feature/attributes.ll
+END
+newcasts.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/194760/llvm/trunk/test/Feature/newcasts.ll
+END
+sparcld.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/sparcld.ll
+END
+casttest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/casttest.ll
+END
+undefined.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/undefined.ll
+END
+fold-fpcast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/fold-fpcast.ll
+END
+cfgstructures.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/cfgstructures.ll
+END
+varargs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/varargs.ll
+END
+unreachable.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/unreachable.ll
+END
+NamedMDNode.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Feature/NamedMDNode.ll
+END
+paramattrs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Feature/paramattrs.ll
+END
+alignment.ll
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/133228/llvm/trunk/test/Feature/alignment.ll
+END
+metadata.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Feature/metadata.ll
+END
+basictest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/basictest.ll
+END
+aliases.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Feature/aliases.ll
+END
+optnone.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/195046/llvm/trunk/test/Feature/optnone.ll
+END
+constpointer.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/constpointer.ll
+END
+packed_struct.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Feature/packed_struct.ll
+END
+properties.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/168694/llvm/trunk/test/Feature/properties.ll
+END
+md_on_instruction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/232828/llvm/trunk/test/Feature/md_on_instruction.ll
+END
+NamedMDNode2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Feature/NamedMDNode2.ll
+END
+weirdnames.ll
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/weirdnames.ll
+END
+exception.ll
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/138539/llvm/trunk/test/Feature/exception.ll
+END
+weak_constant.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/weak_constant.ll
+END
+forwardreftest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/133371/llvm/trunk/test/Feature/forwardreftest.ll
+END
+ppcld.ll
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/ppcld.ll
+END
+escaped_label.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/escaped_label.ll
+END
+instructions.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/207801/llvm/trunk/test/Feature/instructions.ll
+END
+prototype.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/prototype.ll
+END
+x86ld.ll
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/x86ld.ll
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/README.txt
+END
+comdat.ll
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/225302/llvm/trunk/test/Feature/comdat.ll
+END
+terminators.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/85377/llvm/trunk/test/Feature/terminators.ll
+END
+recursivetype.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/recursivetype.ll
+END
+alias2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Feature/alias2.ll
+END
+testconstants.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Feature/testconstants.ll
+END
+seh-nounwind.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/228782/llvm/trunk/test/Feature/seh-nounwind.ll
+END
+indirectcall2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/indirectcall2.ll
+END
+testtype.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/134829/llvm/trunk/test/Feature/testtype.ll
+END
+optnone-opt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/optnone-opt.ll
+END
+globalredefinition3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/159544/llvm/trunk/test/Feature/globalredefinition3.ll
+END
+global_section.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/global_section.ll
+END
+constexpr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Feature/constexpr.ll
+END
+simplecalltest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/simplecalltest.ll
+END
+prefixdata.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/190773/llvm/trunk/test/Feature/prefixdata.ll
+END
+packed.ll
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/packed.ll
+END
+globalvars.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Feature/globalvars.ll
+END
+callingconventions.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/223076/llvm/trunk/test/Feature/callingconventions.ll
+END
+minsize_attr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/175605/llvm/trunk/test/Feature/minsize_attr.ll
+END
+small.ll
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/small.ll
+END
+varargs_new.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/varargs_new.ll
+END
+inlineasm.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/81086/llvm/trunk/test/Feature/inlineasm.ll
+END
+vector-cast-constant-exprs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/159525/llvm/trunk/test/Feature/vector-cast-constant-exprs.ll
+END
+cold.ll
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/182638/llvm/trunk/test/Feature/cold.ll
+END
+load_module.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/187711/llvm/trunk/test/Feature/load_module.ll
+END
+intrinsics.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/203037/llvm/trunk/test/Feature/intrinsics.ll
+END
+prologuedata.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/223189/llvm/trunk/test/Feature/prologuedata.ll
+END
+optnone-llc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/optnone-llc.ll
+END
+const_pv.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Feature/const_pv.ll
+END
+testalloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/testalloca.ll
+END
+indirectcall.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/indirectcall.ll
+END
+memorymarkers.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Feature/memorymarkers.ll
+END
+testvarargs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Feature/testvarargs.ll
+END
+global_pv.ll
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/171250/llvm/trunk/test/Feature/global_pv.ll
+END
+float.ll
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/146786/llvm/trunk/test/Feature/float.ll
+END
+intrinsic-noduplicate.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/204200/llvm/trunk/test/Feature/intrinsic-noduplicate.ll
+END
+testlogical.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Feature/testlogical.ll
+END
+calltest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/138541/llvm/trunk/test/Feature/calltest.ll
+END

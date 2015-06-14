@@ -1,0 +1,155 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/232682/llvm/trunk/test/Analysis/CostModel/X86
+END
+arith.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/179413/llvm/trunk/test/Analysis/CostModel/X86/arith.ll
+END
+intrinsic-cost.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/232528/llvm/trunk/test/Analysis/CostModel/X86/intrinsic-cost.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/Analysis/CostModel/X86/lit.local.cfg
+END
+vshift-cost.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/201272/llvm/trunk/test/Analysis/CostModel/X86/vshift-cost.ll
+END
+masked-intrinsic-cost.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/227035/llvm/trunk/test/Analysis/CostModel/X86/masked-intrinsic-cost.ll
+END
+vselect-cost.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/229835/llvm/trunk/test/Analysis/CostModel/X86/vselect-cost.ll
+END
+gep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Analysis/CostModel/X86/gep.ll
+END
+scalarize.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/203509/llvm/trunk/test/Analysis/CostModel/X86/scalarize.ll
+END
+vdiv-cost.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/207371/llvm/trunk/test/Analysis/CostModel/X86/vdiv-cost.ll
+END
+alternate-shuffle-cost.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/212296/llvm/trunk/test/Analysis/CostModel/X86/alternate-shuffle-cost.ll
+END
+cmp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/217863/llvm/trunk/test/Analysis/CostModel/X86/cmp.ll
+END
+loop_v2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Analysis/CostModel/X86/loop_v2.ll
+END
+div.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/184872/llvm/trunk/test/Analysis/CostModel/X86/div.ll
+END
+tiny.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/169423/llvm/trunk/test/Analysis/CostModel/X86/tiny.ll
+END
+testshiftshl.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/232682/llvm/trunk/test/Analysis/CostModel/X86/testshiftshl.ll
+END
+vectorized-loop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Analysis/CostModel/X86/vectorized-loop.ll
+END
+cast.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/221657/llvm/trunk/test/Analysis/CostModel/X86/cast.ll
+END
+testshiftashr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/178999/llvm/trunk/test/Analysis/CostModel/X86/testshiftashr.ll
+END
+insert-extract-at-zero.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/167402/llvm/trunk/test/Analysis/CostModel/X86/insert-extract-at-zero.ll
+END
+load_store.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Analysis/CostModel/X86/load_store.ll
+END
+reduction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/191021/llvm/trunk/test/Analysis/CostModel/X86/reduction.ll
+END
+i32.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/170999/llvm/trunk/test/Analysis/CostModel/X86/i32.ll
+END
+sitofp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/221883/llvm/trunk/test/Analysis/CostModel/X86/sitofp.ll
+END
+uitofp.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/221657/llvm/trunk/test/Analysis/CostModel/X86/uitofp.ll
+END
+testshiftlshr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/232682/llvm/trunk/test/Analysis/CostModel/X86/testshiftlshr.ll
+END

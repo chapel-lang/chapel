@@ -1,0 +1,353 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/llvm-project/!svn/ver/239029/llvm/trunk/lib/IR
+END
+Verifier.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/238264/llvm/trunk/lib/IR/Verifier.cpp
+END
+Value.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/llvm-project/!svn/ver/238791/llvm/trunk/lib/IR/Value.cpp
+END
+User.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/219844/llvm/trunk/lib/IR/User.cpp
+END
+Type.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/238889/llvm/trunk/lib/IR/Type.cpp
+END
+Globals.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/237461/llvm/trunk/lib/IR/Globals.cpp
+END
+GVMaterializer.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/203069/llvm/trunk/lib/IR/GVMaterializer.cpp
+END
+Function.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/238144/llvm/trunk/lib/IR/Function.cpp
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/209269/llvm/trunk/lib/IR/module.modulemap
+END
+ConstantsContext.h
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/237620/llvm/trunk/lib/IR/ConstantsContext.h
+END
+Attributes.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/238264/llvm/trunk/lib/IR/Attributes.cpp
+END
+LLVMBuild.txt
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/171359/llvm/trunk/lib/IR/LLVMBuild.txt
+END
+SymbolTableListTraitsImpl.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/215558/llvm/trunk/lib/IR/SymbolTableListTraitsImpl.h
+END
+DiagnosticPrinter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/216784/llvm/trunk/lib/IR/DiagnosticPrinter.cpp
+END
+Core.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/239029/llvm/trunk/lib/IR/Core.cpp
+END
+AttributeImpl.h
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/236615/llvm/trunk/lib/IR/AttributeImpl.h
+END
+Statepoint.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/229838/llvm/trunk/lib/IR/Statepoint.cpp
+END
+Use.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/llvm-project/!svn/ver/216228/llvm/trunk/lib/IR/Use.cpp
+END
+BasicBlock.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/238252/llvm/trunk/lib/IR/BasicBlock.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/236799/llvm/trunk/lib/IR/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/171373/llvm/trunk/lib/IR/Makefile
+END
+GCOV.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/233555/llvm/trunk/lib/IR/GCOV.cpp
+END
+ConstantFold.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/239015/llvm/trunk/lib/IR/ConstantFold.cpp
+END
+LLVMContextImpl.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/235196/llvm/trunk/lib/IR/LLVMContextImpl.cpp
+END
+ValueTypes.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/235198/llvm/trunk/lib/IR/ValueTypes.cpp
+END
+DebugInfo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/lib/IR/DebugInfo.cpp
+END
+DebugInfoMetadata.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/237949/llvm/trunk/lib/IR/DebugInfoMetadata.cpp
+END
+MetadataTracking.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/226484/llvm/trunk/lib/IR/MetadataTracking.cpp
+END
+ConstantRange.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/232575/llvm/trunk/lib/IR/ConstantRange.cpp
+END
+Pass.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/llvm-project/!svn/ver/226864/llvm/trunk/lib/IR/Pass.cpp
+END
+MDBuilder.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/238749/llvm/trunk/lib/IR/MDBuilder.cpp
+END
+Comdat.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/211920/llvm/trunk/lib/IR/Comdat.cpp
+END
+DataLayout.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/232570/llvm/trunk/lib/IR/DataLayout.cpp
+END
+ValueSymbolTable.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/237150/llvm/trunk/lib/IR/ValueSymbolTable.cpp
+END
+Constants.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/237967/llvm/trunk/lib/IR/Constants.cpp
+END
+AsmWriter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/238867/llvm/trunk/lib/IR/AsmWriter.cpp
+END
+InlineAsm.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/233502/llvm/trunk/lib/IR/InlineAsm.cpp
+END
+LLVMContext.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/238867/llvm/trunk/lib/IR/LLVMContext.cpp
+END
+Dominators.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/236575/llvm/trunk/lib/IR/Dominators.cpp
+END
+AutoUpgrade.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/237838/llvm/trunk/lib/IR/AutoUpgrade.cpp
+END
+Metadata.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/238791/llvm/trunk/lib/IR/Metadata.cpp
+END
+Instruction.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/238252/llvm/trunk/lib/IR/Instruction.cpp
+END
+IRBuilder.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/237810/llvm/trunk/lib/IR/IRBuilder.cpp
+END
+DebugLoc.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/lib/IR/DebugLoc.cpp
+END
+Mangler.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/llvm-project/!svn/ver/232541/llvm/trunk/lib/IR/Mangler.cpp
+END
+Module.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/237461/llvm/trunk/lib/IR/Module.cpp
+END
+LegacyPassManager.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/236163/llvm/trunk/lib/IR/LegacyPassManager.cpp
+END
+Operator.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/237960/llvm/trunk/lib/IR/Operator.cpp
+END
+PassRegistry.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/231385/llvm/trunk/lib/IR/PassRegistry.cpp
+END
+DiagnosticInfo.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/llvm-project/!svn/ver/236435/llvm/trunk/lib/IR/DiagnosticInfo.cpp
+END
+IntrinsicInst.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/223802/llvm/trunk/lib/IR/IntrinsicInst.cpp
+END
+PassManager.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/225841/llvm/trunk/lib/IR/PassManager.cpp
+END
+ConstantFold.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/236752/llvm/trunk/lib/IR/ConstantFold.h
+END
+DIBuilder.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/237949/llvm/trunk/lib/IR/DIBuilder.cpp
+END
+Instructions.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/238716/llvm/trunk/lib/IR/Instructions.cpp
+END
+IRPrintingPasses.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/234969/llvm/trunk/lib/IR/IRPrintingPasses.cpp
+END
+LLVMContextImpl.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/238791/llvm/trunk/lib/IR/LLVMContextImpl.h
+END
+MetadataImpl.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/228085/llvm/trunk/lib/IR/MetadataImpl.h
+END
+TypeFinder.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/231889/llvm/trunk/lib/IR/TypeFinder.cpp
+END

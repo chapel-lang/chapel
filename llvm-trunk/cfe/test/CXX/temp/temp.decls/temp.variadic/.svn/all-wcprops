@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/222400/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic
+END
+p5.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/222400/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/p5.cpp
+END
+sizeofpack.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/187734/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/sizeofpack.cpp
+END
+fixed-expansion.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/llvm-project/!svn/ver/198833/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/fixed-expansion.cpp
+END
+partial-ordering.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/partial-ordering.cpp
+END
+example-bind.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/example-bind.cpp
+END
+injected-class-name.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/injected-class-name.cpp
+END
+parameter-matching.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/parameter-matching.cpp
+END
+multi-level-substitution.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/llvm-project/!svn/ver/179969/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/multi-level-substitution.cpp
+END
+p5.mm
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/172485/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/p5.mm
+END
+ext-blocks.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/ext-blocks.cpp
+END
+example-function.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/example-function.cpp
+END
+deduction.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/deduction.cpp
+END
+metafunctions.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/215408/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/metafunctions.cpp
+END
+p1.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/p1.cpp
+END
+p2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/184644/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/p2.cpp
+END
+example-tuple.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/166280/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/example-tuple.cpp
+END
+p4.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/152618/cfe/trunk/test/CXX/temp/temp.decls/temp.variadic/p4.cpp
+END

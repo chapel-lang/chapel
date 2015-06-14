@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/206776/cfe/trunk/test/Modules/Inputs/submodules
+END
+type_traits.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/145683/cfe/trunk/test/Modules/Inputs/submodules/type_traits.h
+END
+not_missing.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/197486/cfe/trunk/test/Modules/Inputs/submodules/not_missing.h
+END
+module.map
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/206776/cfe/trunk/test/Modules/Inputs/submodules/module.map
+END
+import-self-a.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/193005/cfe/trunk/test/Modules/Inputs/submodules/import-self-a.h
+END
+hash_map.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/145683/cfe/trunk/test/Modules/Inputs/submodules/hash_map.h
+END
+import-self-b.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/200584/cfe/trunk/test/Modules/Inputs/submodules/import-self-b.h
+END
+import-self-c.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/193005/cfe/trunk/test/Modules/Inputs/submodules/import-self-c.h
+END
+import-self-d.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/193005/cfe/trunk/test/Modules/Inputs/submodules/import-self-d.h
+END
+vector.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/145683/cfe/trunk/test/Modules/Inputs/submodules/vector.h
+END

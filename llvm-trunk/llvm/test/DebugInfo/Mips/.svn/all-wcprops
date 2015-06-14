@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/DebugInfo/Mips
+END
+processes-relocations.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/DebugInfo/Mips/processes-relocations.ll
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/210496/llvm/trunk/test/DebugInfo/Mips/lit.local.cfg
+END
+InlinedFnLocalVar.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/DebugInfo/Mips/InlinedFnLocalVar.ll
+END
+delay-slot.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/DebugInfo/Mips/delay-slot.ll
+END
+fn-call-line.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/DebugInfo/Mips/fn-call-line.ll
+END

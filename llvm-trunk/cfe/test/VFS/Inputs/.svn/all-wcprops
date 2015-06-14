@@ -1,0 +1,125 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/llvm-project/!svn/ver/230064/cfe/trunk/test/VFS/Inputs
+END
+actual_module.map
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/209534/cfe/trunk/test/VFS/Inputs/actual_module.map
+END
+import_some_frame.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/209534/cfe/trunk/test/VFS/Inputs/import_some_frame.h
+END
+some_frame_module.map
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/209534/cfe/trunk/test/VFS/Inputs/some_frame_module.map
+END
+public_header2.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/209534/cfe/trunk/test/VFS/Inputs/public_header2.h
+END
+missing-key.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/Inputs/missing-key.yaml
+END
+vfsoverlay.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/211746/cfe/trunk/test/VFS/Inputs/vfsoverlay.yaml
+END
+IncompleteVFS.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/211746/cfe/trunk/test/VFS/Inputs/IncompleteVFS.h
+END
+actual_header.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/Inputs/actual_header.h
+END
+external-names.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/202539/cfe/trunk/test/VFS/Inputs/external-names.h
+END
+Foo.h
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/205975/cfe/trunk/test/VFS/Inputs/Foo.h
+END
+unknown-value.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/Inputs/unknown-value.yaml
+END
+actual_module2.map
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/205632/cfe/trunk/test/VFS/Inputs/actual_module2.map
+END
+include_real.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/Inputs/include_real.h
+END
+public_header.h
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/209534/cfe/trunk/test/VFS/Inputs/public_header.h
+END
+use-external-names.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/202539/cfe/trunk/test/VFS/Inputs/use-external-names.yaml
+END
+incomplete-umbrella.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/211746/cfe/trunk/test/VFS/Inputs/incomplete-umbrella.modulemap
+END
+vfsoverlay2.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/205632/cfe/trunk/test/VFS/Inputs/vfsoverlay2.yaml
+END
+Incomplete.h
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/211746/cfe/trunk/test/VFS/Inputs/Incomplete.h
+END
+unknown-key.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/Inputs/unknown-key.yaml
+END
+invalid-yaml.yaml
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/202176/cfe/trunk/test/VFS/Inputs/invalid-yaml.yaml
+END

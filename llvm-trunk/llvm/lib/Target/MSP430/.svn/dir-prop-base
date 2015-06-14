@@ -1,0 +1,15 @@
+K 10
+svn:ignore
+V 134
+Debug
+Debug+Checks
+Debug+Coverage
+Debug+Coverage-Asserts
+*.inc
+Release
+Release-Asserts
+Release+Coverage
+Debug+Asserts
+Release+Asserts
+
+END

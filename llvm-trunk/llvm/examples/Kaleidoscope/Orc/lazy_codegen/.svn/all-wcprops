@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/233509/llvm/trunk/examples/Kaleidoscope/Orc/lazy_codegen
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/228459/llvm/trunk/examples/Kaleidoscope/Orc/lazy_codegen/README.txt
+END
+toy.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/233509/llvm/trunk/examples/Kaleidoscope/Orc/lazy_codegen/toy.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/228524/llvm/trunk/examples/Kaleidoscope/Orc/lazy_codegen/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/229949/llvm/trunk/examples/Kaleidoscope/Orc/lazy_codegen/Makefile
+END

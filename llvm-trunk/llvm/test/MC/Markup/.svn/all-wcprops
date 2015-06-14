@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/llvm-project/!svn/ver/167181/llvm/trunk/test/MC/Markup
+END
+basic-markup.mc
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/167181/llvm/trunk/test/MC/Markup/basic-markup.mc
+END
+lit.local.cfg
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/167181/llvm/trunk/test/MC/Markup/lit.local.cfg
+END

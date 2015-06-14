@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/184499/cfe/trunk/test/Driver/Inputs/multilib_64bit_linux_tree/usr/bin
+END
+ld
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/184499/cfe/trunk/test/Driver/Inputs/multilib_64bit_linux_tree/usr/bin/ld
+END
+x86_64-unknown-linux-gnu-as
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/llvm-project/!svn/ver/184499/cfe/trunk/test/Driver/Inputs/multilib_64bit_linux_tree/usr/bin/x86_64-unknown-linux-gnu-as
+END
+as
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/184499/cfe/trunk/test/Driver/Inputs/multilib_64bit_linux_tree/usr/bin/as
+END
+x86_64-unknown-linux-gnu-ld
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/llvm-project/!svn/ver/184499/cfe/trunk/test/Driver/Inputs/multilib_64bit_linux_tree/usr/bin/x86_64-unknown-linux-gnu-ld
+END

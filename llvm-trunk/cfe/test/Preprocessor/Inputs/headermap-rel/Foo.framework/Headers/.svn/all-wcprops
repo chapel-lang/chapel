@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/llvm-project/!svn/ver/201458/cfe/trunk/test/Preprocessor/Inputs/headermap-rel/Foo.framework/Headers
+END
+Foo.h
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/llvm-project/!svn/ver/201458/cfe/trunk/test/Preprocessor/Inputs/headermap-rel/Foo.framework/Headers/Foo.h
+END

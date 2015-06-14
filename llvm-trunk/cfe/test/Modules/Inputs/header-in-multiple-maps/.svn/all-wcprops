@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/229188/cfe/trunk/test/Modules/Inputs/header-in-multiple-maps
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/229188/cfe/trunk/test/Modules/Inputs/header-in-multiple-maps/a.h
+END
+map1
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/229188/cfe/trunk/test/Modules/Inputs/header-in-multiple-maps/map1
+END
+map2
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/229188/cfe/trunk/test/Modules/Inputs/header-in-multiple-maps/map2
+END
+map3
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/229188/cfe/trunk/test/Modules/Inputs/header-in-multiple-maps/map3
+END

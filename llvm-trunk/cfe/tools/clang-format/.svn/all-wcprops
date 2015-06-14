@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/llvm-project/!svn/ver/238823/cfe/trunk/tools/clang-format
+END
+clang-format.el
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/236943/cfe/trunk/tools/clang-format/clang-format.el
+END
+git-clang-format
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/216945/cfe/trunk/tools/clang-format/git-clang-format
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/227465/cfe/trunk/tools/clang-format/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/220867/cfe/trunk/tools/clang-format/Makefile
+END
+ClangFormat.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/236943/cfe/trunk/tools/clang-format/ClangFormat.cpp
+END
+clang-format-sublime.py
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/194287/cfe/trunk/tools/clang-format/clang-format-sublime.py
+END
+clang-format.py
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/238823/cfe/trunk/tools/clang-format/clang-format.py
+END
+clang-format-bbedit.applescript
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/180933/cfe/trunk/tools/clang-format/clang-format-bbedit.applescript
+END
+clang-format-diff.py
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/231926/cfe/trunk/tools/clang-format/clang-format-diff.py
+END

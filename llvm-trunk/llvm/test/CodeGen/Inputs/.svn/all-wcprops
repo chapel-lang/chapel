@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/CodeGen/Inputs
+END
+DbgValueOtherTargets.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/CodeGen/Inputs/DbgValueOtherTargets.ll
+END

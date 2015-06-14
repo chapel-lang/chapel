@@ -1,0 +1,575 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/llvm-project/!svn/ver/237605/llvm/trunk/test/Verifier
+END
+gcroot-meta.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/gcroot-meta.ll
+END
+dominates.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/159544/llvm/trunk/test/Verifier/dominates.ll
+END
+jumptable.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/214287/llvm/trunk/test/Verifier/jumptable.ll
+END
+gcroot-alloca.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/gcroot-alloca.ll
+END
+recursive-type-3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/196626/llvm/trunk/test/Verifier/recursive-type-3.ll
+END
+comdat2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/225302/llvm/trunk/test/Verifier/comdat2.ll
+END
+mdcompositetype-templateparams-tuple.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/mdcompositetype-templateparams-tuple.ll
+END
+cttz-undef-arg.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/159544/llvm/trunk/test/Verifier/cttz-undef-arg.ll
+END
+bitcast-address-space-through-gep-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Verifier/bitcast-address-space-through-gep-2.ll
+END
+dbg.ll
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/dbg.ll
+END
+llvm.used-invalid-type2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/186876/llvm/trunk/test/Verifier/llvm.used-invalid-type2.ll
+END
+llvm.dbg.declare-expression.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/llvm.dbg.declare-expression.ll
+END
+inalloca2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/203376/llvm/trunk/test/Verifier/inalloca2.ll
+END
+varargs-intrinsic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Verifier/varargs-intrinsic.ll
+END
+2008-11-15-RetVoid.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/179036/llvm/trunk/test/Verifier/2008-11-15-RetVoid.ll
+END
+comdat.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/225302/llvm/trunk/test/Verifier/comdat.ll
+END
+bitcast-vector-pointer-as.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/198352/llvm/trunk/test/Verifier/bitcast-vector-pointer-as.ll
+END
+ident-meta3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/224327/llvm/trunk/test/Verifier/ident-meta3.ll
+END
+frameescape.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Verifier/frameescape.ll
+END
+2009-05-29-InvokeResult1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/72586/llvm/trunk/test/Verifier/2009-05-29-InvokeResult1.ll
+END
+invalid-statepoint.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/237214/llvm/trunk/test/Verifier/invalid-statepoint.ll
+END
+fpmath.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Verifier/fpmath.ll
+END
+module-flags-3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/229361/llvm/trunk/test/Verifier/module-flags-3.ll
+END
+gc_relocate_operand.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/237605/llvm/trunk/test/Verifier/gc_relocate_operand.ll
+END
+bitcast-address-space-nested-global-cycle.ll
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/llvm-project/!svn/ver/198352/llvm/trunk/test/Verifier/bitcast-address-space-nested-global-cycle.ll
+END
+recursive-type-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/196626/llvm/trunk/test/Verifier/recursive-type-2.ll
+END
+musttail-invalid.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Verifier/musttail-invalid.ll
+END
+llvm.dbg.declare-address.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/llvm.dbg.declare-address.ll
+END
+llvm.dbg.declare-variable.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/llvm.dbg.declare-variable.ll
+END
+llvm.dbg.intrinsic-dbg-attachment.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/llvm.dbg.intrinsic-dbg-attachment.ll
+END
+recursive-struct-param.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/232143/llvm/trunk/test/Verifier/recursive-struct-param.ll
+END
+statepoint.ll
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/llvm-project/!svn/ver/237214/llvm/trunk/test/Verifier/statepoint.ll
+END
+memcpy.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/230941/llvm/trunk/test/Verifier/memcpy.ll
+END
+PhiGrouping.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/179036/llvm/trunk/test/Verifier/PhiGrouping.ll
+END
+AmbiguousPhi.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/179036/llvm/trunk/test/Verifier/AmbiguousPhi.ll
+END
+bitcast-alias-address-space.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/210062/llvm/trunk/test/Verifier/bitcast-alias-address-space.ll
+END
+bitcast-address-space-through-gep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Verifier/bitcast-address-space-through-gep.ll
+END
+musttail-valid.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Verifier/musttail-valid.ll
+END
+invalid-patchable-statepoint.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/237214/llvm/trunk/test/Verifier/invalid-patchable-statepoint.ll
+END
+2002-04-13-RetTypes.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/179036/llvm/trunk/test/Verifier/2002-04-13-RetTypes.ll
+END
+inalloca1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/199434/llvm/trunk/test/Verifier/inalloca1.ll
+END
+bitcast-address-space-through-inttoptr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/198352/llvm/trunk/test/Verifier/bitcast-address-space-through-inttoptr.ll
+END
+llvm.compiler_used-invalid-type.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/186705/llvm/trunk/test/Verifier/llvm.compiler_used-invalid-type.ll
+END
+ident-meta2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/224257/llvm/trunk/test/Verifier/ident-meta2.ll
+END
+gc_relocate_addrspace.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/237605/llvm/trunk/test/Verifier/gc_relocate_addrspace.ll
+END
+module-flags-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/228818/llvm/trunk/test/Verifier/module-flags-2.ll
+END
+llvm.used-invalid-init2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/180019/llvm/trunk/test/Verifier/llvm.used-invalid-init2.ll
+END
+bitcast-address-space-nested-global.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/198352/llvm/trunk/test/Verifier/bitcast-address-space-nested-global.ll
+END
+2008-01-11-VarargAttrs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Verifier/2008-01-11-VarargAttrs.ll
+END
+recursive-type-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/196626/llvm/trunk/test/Verifier/recursive-type-1.ll
+END
+2002-11-05-GetelementptrPointers.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Verifier/2002-11-05-GetelementptrPointers.ll
+END
+2008-08-22-MemCpyAlignment.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/179036/llvm/trunk/test/Verifier/2008-08-22-MemCpyAlignment.ll
+END
+gcroot-ptrptr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/gcroot-ptrptr.ll
+END
+invoke.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/220055/llvm/trunk/test/Verifier/invoke.ll
+END
+range-2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Verifier/range-2.ll
+END
+2010-08-07-PointerIntrinsic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Verifier/2010-08-07-PointerIntrinsic.ll
+END
+gcwrite-ptrptr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/gcwrite-ptrptr.ll
+END
+mdcompositetype-templateparams.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/mdcompositetype-templateparams.ll
+END
+inalloca-vararg.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/235145/llvm/trunk/test/Verifier/inalloca-vararg.ll
+END
+llvm.dbg.value-variable.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/llvm.dbg.value-variable.ll
+END
+gc_relocate_return.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/237605/llvm/trunk/test/Verifier/gc_relocate_return.ll
+END
+ident-meta1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/224327/llvm/trunk/test/Verifier/ident-meta1.ll
+END
+byval-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/byval-1.ll
+END
+module-flags-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/llvm-project/!svn/ver/224327/llvm/trunk/test/Verifier/module-flags-1.ll
+END
+gcread-ptrptr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/gcread-ptrptr.ll
+END
+2009-05-29-InvokeResult3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/72586/llvm/trunk/test/Verifier/2009-05-29-InvokeResult3.ll
+END
+2004-05-21-SwitchConstantMismatch.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/2004-05-21-SwitchConstantMismatch.ll
+END
+function-metadata-bad.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/237260/llvm/trunk/test/Verifier/function-metadata-bad.ll
+END
+global-ctors.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/209015/llvm/trunk/test/Verifier/global-ctors.ll
+END
+bitcast-address-spaces.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/198352/llvm/trunk/test/Verifier/bitcast-address-spaces.ll
+END
+alias.ll
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/llvm-project/!svn/ver/214355/llvm/trunk/test/Verifier/alias.ll
+END
+2006-07-11-StoreStruct.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/179036/llvm/trunk/test/Verifier/2006-07-11-StoreStruct.ll
+END
+function-metadata-good.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/237260/llvm/trunk/test/Verifier/function-metadata-good.ll
+END
+comdat3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/230051/llvm/trunk/test/Verifier/comdat3.ll
+END
+range-1.ll
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Verifier/range-1.ll
+END
+llvm.dbg.value-value.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/llvm.dbg.value-value.ll
+END
+bitcast-address-space-through-constant-inttoptr.ll
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/llvm-project/!svn/ver/198352/llvm/trunk/test/Verifier/bitcast-address-space-through-constant-inttoptr.ll
+END
+dbg-typerefs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/dbg-typerefs.ll
+END
+llvm.used-ptr-type.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/180019/llvm/trunk/test/Verifier/llvm.used-ptr-type.ll
+END
+bitcast-address-space-through-constant-inttoptr-inside-gep-instruction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 132
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Verifier/bitcast-address-space-through-constant-inttoptr-inside-gep-instruction.ll
+END
+llvm.used-invalid-init.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/180019/llvm/trunk/test/Verifier/llvm.used-invalid-init.ll
+END
+invalid-statepoint2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/237214/llvm/trunk/test/Verifier/invalid-statepoint2.ll
+END
+2006-10-15-AddrLabel.ll
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Verifier/2006-10-15-AddrLabel.ll
+END
+2006-12-12-IntrinsicDefine.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/179036/llvm/trunk/test/Verifier/2006-12-12-IntrinsicDefine.ll
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/README.txt
+END
+inalloca3.ll
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/207676/llvm/trunk/test/Verifier/inalloca3.ll
+END
+SelfReferential.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/179036/llvm/trunk/test/Verifier/SelfReferential.ll
+END
+ident-meta4.ll
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/llvm-project/!svn/ver/228815/llvm/trunk/test/Verifier/ident-meta4.ll
+END
+llvm.used-invalid-type.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/180019/llvm/trunk/test/Verifier/llvm.used-invalid-type.ll
+END
+llvm.dbg.value-expression.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Verifier/llvm.dbg.value-expression.ll
+END
+sret.ll
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/llvm-project/!svn/ver/208453/llvm/trunk/test/Verifier/sret.ll
+END
+byval-4.ll
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/llvm-project/!svn/ver/79992/llvm/trunk/test/Verifier/byval-4.ll
+END
+2009-05-29-InvokeResult2.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/72586/llvm/trunk/test/Verifier/2009-05-29-InvokeResult2.ll
+END
+2008-03-01-AllocaSized.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/229363/llvm/trunk/test/Verifier/2008-03-01-AllocaSized.ll
+END
+2007-12-21-InvokeParamAttrs.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/70892/llvm/trunk/test/Verifier/2007-12-21-InvokeParamAttrs.ll
+END

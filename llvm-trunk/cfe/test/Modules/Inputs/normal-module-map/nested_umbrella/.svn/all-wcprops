@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/165822/cfe/trunk/test/Modules/Inputs/normal-module-map/nested_umbrella
+END
+a-extras.h
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/165821/cfe/trunk/test/Modules/Inputs/normal-module-map/nested_umbrella/a-extras.h
+END
+decltype.h
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/llvm-project/!svn/ver/165822/cfe/trunk/test/Modules/Inputs/normal-module-map/nested_umbrella/decltype.h
+END
+1.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/165821/cfe/trunk/test/Modules/Inputs/normal-module-map/nested_umbrella/1.h
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/146165/cfe/trunk/test/Modules/Inputs/normal-module-map/nested_umbrella/a.h
+END
+b.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/146165/cfe/trunk/test/Modules/Inputs/normal-module-map/nested_umbrella/b.h
+END

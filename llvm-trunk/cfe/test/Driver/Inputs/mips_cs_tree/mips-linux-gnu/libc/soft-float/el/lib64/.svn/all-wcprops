@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/llvm-project/!svn/ver/179934/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/soft-float/el/lib64
+END
+.keep
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/llvm-project/!svn/ver/179934/cfe/trunk/test/Driver/Inputs/mips_cs_tree/mips-linux-gnu/libc/soft-float/el/lib64/.keep
+END

@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/llvm-project/!svn/ver/71274/cfe/trunk/utils/ABITest/single-args-32
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/71274/cfe/trunk/utils/ABITest/single-args-32/Makefile
+END

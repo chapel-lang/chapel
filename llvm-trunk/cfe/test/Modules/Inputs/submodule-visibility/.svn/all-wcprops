@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/237871/cfe/trunk/test/Modules/Inputs/submodule-visibility
+END
+a.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/237473/cfe/trunk/test/Modules/Inputs/submodule-visibility/a.h
+END
+cycle1.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/237871/cfe/trunk/test/Modules/Inputs/submodule-visibility/cycle1.h
+END
+b.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/237473/cfe/trunk/test/Modules/Inputs/submodule-visibility/b.h
+END
+cycle2.h
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/237871/cfe/trunk/test/Modules/Inputs/submodule-visibility/cycle2.h
+END
+module.modulemap
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/237871/cfe/trunk/test/Modules/Inputs/submodule-visibility/module.modulemap
+END

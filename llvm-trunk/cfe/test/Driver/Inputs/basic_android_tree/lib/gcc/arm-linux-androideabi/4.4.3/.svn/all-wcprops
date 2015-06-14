@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/lib/gcc/arm-linux-androideabi/4.4.3
+END
+crtbeginS.o
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/lib/gcc/arm-linux-androideabi/4.4.3/crtbeginS.o
+END
+crtbeginT.o
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/lib/gcc/arm-linux-androideabi/4.4.3/crtbeginT.o
+END
+crtendS.o
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/lib/gcc/arm-linux-androideabi/4.4.3/crtendS.o
+END
+crtbegin.o
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/lib/gcc/arm-linux-androideabi/4.4.3/crtbegin.o
+END
+crtend.o
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/llvm-project/!svn/ver/163109/cfe/trunk/test/Driver/Inputs/basic_android_tree/lib/gcc/arm-linux-androideabi/4.4.3/crtend.o
+END

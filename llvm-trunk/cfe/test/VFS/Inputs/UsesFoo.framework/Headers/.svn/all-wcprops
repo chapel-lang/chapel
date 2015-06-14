@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230064/cfe/trunk/test/VFS/Inputs/UsesFoo.framework/Headers
+END
+UsesFoo.h
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230064/cfe/trunk/test/VFS/Inputs/UsesFoo.framework/Headers/UsesFoo.h
+END

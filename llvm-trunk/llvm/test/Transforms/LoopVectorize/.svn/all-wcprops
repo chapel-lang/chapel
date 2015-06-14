@@ -1,0 +1,521 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/llvm-project/!svn/ver/237449/llvm/trunk/test/Transforms/LoopVectorize
+END
+write-only.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/write-only.ll
+END
+runtime-check-readonly.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/runtime-check-readonly.ll
+END
+conditional-assignment.ll
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/LoopVectorize/conditional-assignment.ll
+END
+loop-form.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/loop-form.ll
+END
+small-loop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/small-loop.ll
+END
+12-12-11-if-conv.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/12-12-11-if-conv.ll
+END
+ptr_loops.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/LoopVectorize/ptr_loops.ll
+END
+no_array_bounds.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/LoopVectorize/no_array_bounds.ll
+END
+control-flow.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/LoopVectorize/control-flow.ll
+END
+reverse_induction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/reverse_induction.ll
+END
+metadata-unroll.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/metadata-unroll.ll
+END
+read-only.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/read-only.ll
+END
+same-base-access.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/same-base-access.ll
+END
+calloc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/calloc.ll
+END
+metadata-width.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/metadata-width.ll
+END
+version-mem-access.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/version-mem-access.ll
+END
+start-non-zero.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/start-non-zero.ll
+END
+no_idiv_reduction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/no_idiv_reduction.ll
+END
+struct_access.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/struct_access.ll
+END
+no_outside_user.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/no_outside_user.ll
+END
+gcc-examples.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/gcc-examples.ll
+END
+tbaa-nodep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/tbaa-nodep.ll
+END
+if-conversion-reduction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/if-conversion-reduction.ll
+END
+loop-vect-memdep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/loop-vect-memdep.ll
+END
+vect.omp.persistence.ll
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/vect.omp.persistence.ll
+END
+metadata.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/metadata.ll
+END
+if-conversion.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/LoopVectorize/if-conversion.ll
+END
+2012-10-20-infloop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/217528/llvm/trunk/test/Transforms/LoopVectorize/2012-10-20-infloop.ll
+END
+cpp-new-array.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/cpp-new-array.ll
+END
+hoist-loads.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/hoist-loads.ll
+END
+value-ptr-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/value-ptr-bug.ll
+END
+flags.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/flags.ll
+END
+no_switch.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/LoopVectorize/no_switch.ll
+END
+reverse_iter.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/reverse_iter.ll
+END
+vect.stats.ll
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/vect.stats.ll
+END
+incorrect-dom-info.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/incorrect-dom-info.ll
+END
+runtime-check.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/runtime-check.ll
+END
+if-conv-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/217528/llvm/trunk/test/Transforms/LoopVectorize/if-conv-crash.ll
+END
+intrinsic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/intrinsic.ll
+END
+bsd_regex.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/bsd_regex.ll
+END
+if-pred-stores.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/if-pred-stores.ll
+END
+lcssa-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/217528/llvm/trunk/test/Transforms/LoopVectorize/lcssa-crash.ll
+END
+exact.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/exact.ll
+END
+unroll_novec.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/unroll_novec.ll
+END
+memdep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/memdep.ll
+END
+non-const-n.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/non-const-n.ll
+END
+safegep.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/safegep.ll
+END
+runtime-check-address-space.ll
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/runtime-check-address-space.ll
+END
+unsized-pointee-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/unsized-pointee-crash.ll
+END
+scalar-select.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/scalar-select.ll
+END
+debugloc.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/LoopVectorize/debugloc.ll
+END
+cast-induction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/cast-induction.ll
+END
+runtime-check-readonly-address-space.ll
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/runtime-check-readonly-address-space.ll
+END
+ee-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/ee-crash.ll
+END
+if-conversion-nest.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/if-conversion-nest.ll
+END
+multi-use-reduction-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/multi-use-reduction-bug.ll
+END
+phi-hang.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/179757/llvm/trunk/test/Transforms/LoopVectorize/phi-hang.ll
+END
+induction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/induction.ll
+END
+runtime-limit.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/runtime-limit.ll
+END
+float-reduction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/float-reduction.ll
+END
+induction_plus.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/induction_plus.ll
+END
+opt.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/opt.ll
+END
+nsw-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/nsw-crash.ll
+END
+minmax_reduction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/minmax_reduction.ll
+END
+dbg.value.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/236120/llvm/trunk/test/Transforms/LoopVectorize/dbg.value.ll
+END
+global_alias.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/LoopVectorize/global_alias.ll
+END
+i8-induction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/i8-induction.ll
+END
+bzip_reverse_loops.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/bzip_reverse_loops.ll
+END
+unroll.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/236613/llvm/trunk/test/Transforms/LoopVectorize/unroll.ll
+END
+if-conversion-edgemasks.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/if-conversion-edgemasks.ll
+END
+increment.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/increment.ll
+END
+funcall.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/funcall.ll
+END
+undef-inst-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/undef-inst-bug.ll
+END
+2012-10-22-isconsec.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/232184/llvm/trunk/test/Transforms/LoopVectorize/2012-10-22-isconsec.ll
+END
+multiple-address-spaces.ll
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/multiple-address-spaces.ll
+END
+align.ll
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/align.ll
+END
+vectorize-once.ll
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/231631/llvm/trunk/test/Transforms/LoopVectorize/vectorize-once.ll
+END
+duplicated-metadata.ll
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/duplicated-metadata.ll
+END
+reduction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/reduction.ll
+END
+lifetime.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/lifetime.ll
+END
+infiniteloop.ll
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/191853/llvm/trunk/test/Transforms/LoopVectorize/infiniteloop.ll
+END
+store-shuffle-bug.ll
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/store-shuffle-bug.ll
+END
+nofloat.ll
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/llvm-project/!svn/ver/230786/llvm/trunk/test/Transforms/LoopVectorize/nofloat.ll
+END
+no_int_induction.ll
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/no_int_induction.ll
+END
+simple-unroll.ll
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/simple-unroll.ll
+END
+scev-exitlim-crash.ll
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/LoopVectorize/scev-exitlim-crash.ll
+END

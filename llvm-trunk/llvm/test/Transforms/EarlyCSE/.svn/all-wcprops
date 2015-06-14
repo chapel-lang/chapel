@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/llvm-project/!svn/ver/238074/llvm/trunk/test/Transforms/EarlyCSE
+END
+floatingpoint.ll
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/llvm-project/!svn/ver/177280/llvm/trunk/test/Transforms/EarlyCSE/floatingpoint.ll
+END
+basic.ll
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/llvm-project/!svn/ver/230794/llvm/trunk/test/Transforms/EarlyCSE/basic.ll
+END
+conditional.ll
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/llvm-project/!svn/ver/238071/llvm/trunk/test/Transforms/EarlyCSE/conditional.ll
+END
+edge.ll
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/llvm-project/!svn/ver/238074/llvm/trunk/test/Transforms/EarlyCSE/edge.ll
+END
+read-reg.ll
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/237584/llvm/trunk/test/Transforms/EarlyCSE/read-reg.ll
+END
+instsimplify-dom.ll
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/186269/llvm/trunk/test/Transforms/EarlyCSE/instsimplify-dom.ll
+END
+commute.ll
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/llvm-project/!svn/ver/186268/llvm/trunk/test/Transforms/EarlyCSE/commute.ll
+END

@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/llvm-project/!svn/ver/224974/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct
+END
+p3.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/llvm-project/!svn/ver/91446/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p3.cpp
+END
+p13.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/224974/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p13.cpp
+END
+p14.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/llvm-project/!svn/ver/215408/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p14.cpp
+END
+p6.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/208825/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p6.cpp
+END
+p8.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/203302/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p8.cpp
+END
+p2-cxx0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/llvm-project/!svn/ver/189769/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p2-cxx0x.cpp
+END
+p6-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/208825/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p6-0x.cpp
+END
+p8-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/141900/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p8-0x.cpp
+END
+p9-0x.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/158348/cfe/trunk/test/CXX/dcl.decl/dcl.meaning/dcl.fct/p9-0x.cpp
+END

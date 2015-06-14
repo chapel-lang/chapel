@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/llvm-project/!svn/ver/236342/llvm/trunk/include/llvm/DebugInfo/PDB/DIA
+END
+DIASupport.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/228747/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIASupport.h
+END
+DIAEnumSymbols.h
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/llvm-project/!svn/ver/228747/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIAEnumSymbols.h
+END
+DIARawSymbol.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/llvm-project/!svn/ver/230745/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIARawSymbol.h
+END
+DIALineNumber.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/228747/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIALineNumber.h
+END
+DIASourceFile.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/228747/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIASourceFile.h
+END
+DIASession.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/llvm-project/!svn/ver/236342/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIASession.h
+END
+DIADataStream.h
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/llvm-project/!svn/ver/228747/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIADataStream.h
+END
+DIAEnumLineNumbers.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/228747/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIAEnumLineNumbers.h
+END
+DIAEnumSourceFiles.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/llvm-project/!svn/ver/228747/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIAEnumSourceFiles.h
+END
+DIAEnumDebugStreams.h
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/llvm-project/!svn/ver/228747/llvm/trunk/include/llvm/DebugInfo/PDB/DIA/DIAEnumDebugStreams.h
+END
