@@ -1303,7 +1303,8 @@ void codegen(void) {
     }
 
     finishCodegenLLVM();
-    if(debug_info)debug_info->finalize();
+    if(debug_info)
+        debug_info->finalize();
 #endif 
     return;
   }
