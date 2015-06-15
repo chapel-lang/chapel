@@ -1260,7 +1260,7 @@ canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType,
     tmp->addFlag(FLAG_COERCE_TEMP);
     DefExpr* def = new DefExpr(tmp);
     
-    CallExpr* castCall = new CallExpr("_allow_coerce", fts, tmp);
+    CallExpr* castCall = new CallExpr("coercible", gMethodToken, tmp, fts);
     FnSymbol *resolved_coerce = NULL;
     FnSymbol *resolved_cast = NULL;
     bool can_coerce = false;
