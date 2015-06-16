@@ -157,17 +157,17 @@ pragma "no doc"
 inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, nil); }
 
 pragma "no doc"
-inline proc _cast(type t, x) where t:c_ptr && x:_nilType {
-  return __primitive("cast", t, x);
+inline proc _nilType.cast(type t) where t:c_ptr {
+  return __primitive("cast", t, this);
 }
 
 pragma "no doc"
-inline proc _cast(type t, x) where t:c_ptr && x.type:c_ptr {
-  return __primitive("cast", t, x);
+inline proc c_ptr.cast(type t) where t:c_ptr {
+  return __primitive("cast", t, this);
 }
 pragma "no doc"
-inline proc _cast(type t, x) where t:c_void_ptr && x.type:c_ptr {
-  return __primitive("cast", t, x);
+inline proc c_ptr.cast(type t) where t:c_void_ptr {
+  return __primitive("cast", t, this);
 }
 
 /* Allocate memory that is filled with zeros. This memory should eventually be
@@ -315,17 +315,14 @@ inline proc !(a: syserr) return (qio_err_iserr(a) == 0:c_int);
 pragma "no doc"
 inline proc _cond_test(a: syserr) return (qio_err_iserr(a) != 0:c_int);
 pragma "no doc"
-inline proc _cast(type t, x: syserr) where t == int(32)
-  return qio_err_to_int(x);
+inline proc syserr.cast(type t) where t == int(32)
+  return qio_err_to_int(this);
 pragma "no doc"
-inline proc _cast(type t, x: syserr) where t == int(64)
-  return qio_err_to_int(x):int(64);
+inline proc syserr.cast(type t) where t == int(64)
+  return qio_err_to_int(this):int(64);
 pragma "no doc"
-inline proc _cast(type t, x: int(32)) where t == syserr
-  return qio_int_to_err(x);
-pragma "no doc"
-inline proc _cast(type t, x: int(64)) where t == syserr
-  return qio_int_to_err(x:int(32));
+inline proc integral.cast(type t) where t == syserr
+  return qio_int_to_err(this:int(32));
 pragma "no doc"
 pragma "trivial assignment"
 inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }

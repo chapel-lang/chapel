@@ -210,21 +210,21 @@ module ChapelTuple {
   //
   // tuple casts to complex(64) and complex(128)
   //
-  inline proc _cast(type t, x: (?,?)) where t == complex(64) {
+  inline proc _tuple.cast(type t) where this.size == 2 && t == complex(64) {
     var c: complex(64) = noinit;
     // There is no point allowing this to default initialize, we're just going
     // to overwrite it anyways
-    c.re = x(1):real(32);
-    c.im = x(2):real(32);
+    c.re = this(1):real(32);
+    c.im = this(2):real(32);
     return c;
   }
   
-  inline proc _cast(type t, x: (?,?)) where t == complex(128) {
+  inline proc _tuple.cast(type t) where this.size == 2 && t == complex(128) {
     var c: complex(128) = noinit;
     // There is no point allowing this to default initialize, we're just going
     // to overwrite it anyways
-    c.re = x(1):real(64);
-    c.im = x(2):real(64);
+    c.re = this(1):real(64);
+    c.im = this(2):real(64);
     return c;
   }
   

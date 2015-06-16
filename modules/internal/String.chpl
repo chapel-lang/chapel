@@ -135,8 +135,8 @@ module String {
   
   // cast to and from Chapel strings use c_string
   pragma "compiler generated"
-  inline proc _cast(type t, x) where t == string {
-    var cs = _cast(c_string_copy, x);
+  inline proc c_string.cast(type t) where t == string {
+    var cs = this.cast(c_string_copy);
     // Note, this uses a non-allocating toString(), and steals cs (no need to free).
     const ret = toString(cs);
     return ret;
@@ -148,20 +148,20 @@ module String {
   // TODO: If string literals were all actually chpl_strings, then I think the
   // coercion (and this cruft) could be removed.
   pragma "compiler generated"
-  inline proc _cast(type t, x: string) where isEnumType(t)
-    return _cast(t, x.c_str());
+  inline proc string.cast(type t) where isEnumType(t)
+    return this.c_str().cast(t);
 
-  inline proc _cast(type t, x: string) where isBoolType(t) || isNumericType(t)
-    return _cast(t, x.c_str());
+  inline proc string.cast(type t) where isBoolType(t) || isNumericType(t)
+    return this.c_str().cast(t);
 
   //
   // casts from c_string to bool types
   //
-  inline proc _cast(type t, x:c_string) where isBoolType(t)
+  inline proc c_string.cast(type t) where isBoolType(t)
   {
     pragma "insert line file info"
     extern proc c_string_to_chpl_bool(x:c_string) : bool;
-    return c_string_to_chpl_bool(x) : t;
+    return c_string_to_chpl_bool(this) : t;
   }
 
   //
@@ -184,22 +184,22 @@ module String {
   pragma "insert line file info"
   extern proc c_string_to_uint64_t(x:c_string) : uint(64);
 
-  inline proc _cast(type t, x:c_string) where t == int(8)
-    return c_string_to_int8_t(x);
-  inline proc _cast(type t, x:c_string) where t == int(16)
-    return c_string_to_int16_t(x);
-  inline proc _cast(type t, x:c_string) where t == int(32)
-    return c_string_to_int32_t(x);
-  inline proc _cast(type t, x:c_string) where t == int(64)
-    return c_string_to_int64_t(x);
-  inline proc _cast(type t, x:c_string) where t == uint(8)
-    return c_string_to_uint8_t(x);
-  inline proc _cast(type t, x:c_string) where t == uint(16)
-    return c_string_to_uint16_t(x);
-  inline proc _cast(type t, x:c_string) where t == uint(32)
-    return c_string_to_uint32_t(x);
-  inline proc _cast(type t, x:c_string) where t == uint(64)
-    return c_string_to_uint64_t(x);
+  inline proc c_string.cast(type t) where t == int(8)
+    return c_string_to_int8_t(this);
+  inline proc c_string.cast(type t) where t == int(16)
+    return c_string_to_int16_t(this);
+  inline proc c_string.cast(type t) where t == int(32)
+    return c_string_to_int32_t(this);
+  inline proc c_string.cast(type t) where t == int(64)
+    return c_string_to_int64_t(this);
+  inline proc c_string.cast(type t) where t == uint(8)
+    return c_string_to_uint8_t(this);
+  inline proc c_string.cast(type t) where t == uint(16)
+    return c_string_to_uint16_t(this);
+  inline proc c_string.cast(type t) where t == uint(32)
+    return c_string_to_uint32_t(this);
+  inline proc c_string.cast(type t) where t == uint(64)
+    return c_string_to_uint64_t(this);
 
   //
   // casts from c_string to real/imag types
@@ -213,14 +213,14 @@ module String {
   pragma "insert line file info"
   extern proc c_string_to_imag64(x:c_string) : imag(64);
   
-  inline proc _cast(type t, x:c_string) where t == real(32)
-    return c_string_to_real32(x);
-  inline proc _cast(type t, x:c_string) where t == real(64)
-    return c_string_to_real64(x);
-  inline proc _cast(type t, x:c_string) where t == imag(32)
-    return c_string_to_imag32(x);
-  inline proc _cast(type t, x:c_string) where t == imag(64)
-    return c_string_to_imag64(x);
+  inline proc c_string.cast(type t) where t == real(32)
+    return c_string_to_real32(this);
+  inline proc c_string.cast(type t) where t == real(64)
+    return c_string_to_real64(this);
+  inline proc c_string.cast(type t) where t == imag(32)
+    return c_string_to_imag32(this);
+  inline proc c_string.cast(type t) where t == imag(64)
+    return c_string_to_imag64(this);
 
   //
   // casts from c_string to complex types
@@ -230,28 +230,29 @@ module String {
   pragma "insert line file info"
   extern proc c_string_to_complex128(x:c_string) : complex(128);
 
-  inline proc _cast(type t, x:c_string) where t == complex(64)
-    return c_string_to_complex64(x);
-  inline proc _cast(type t, x:c_string) where t == complex(128)
-    return c_string_to_complex128(x);
+  inline proc c_string.cast(type t) where t == complex(64)
+    return c_string_to_complex64(this);
+  inline proc c_string.cast(type t) where t == complex(128)
+    return c_string_to_complex128(this);
 
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where t == c_string_copy {
-    if isnan(x.re) || isnan(x.im) then
+  inline proc numeric.cast(type t)
+    where isComplexType(this.type) && t == c_string_copy {
+    if isnan(this.re) || isnan(this.im) then
       return __primitive("string_copy", "nan");
-    var re = (x.re):c_string_copy;
+    var re = (this.re):c_string_copy;
     var im: c_string_copy;
     var op: c_string;
-    if x.im < 0 {
-      im = (-x.im):c_string_copy;
+    if this.im < 0 {
+      im = (-this.im):c_string_copy;
       op = " - ";
     } else if im == "-0.0" {
       im = "0.0":c_string_copy;
       op = " - ";
     } else {
-      im = (x.im):c_string_copy;
+      im = (this.im):c_string_copy;
       op = " + ";
     }
     // TODO: Add versions of the concatenation operator that consume their
@@ -269,8 +270,9 @@ module String {
   // Nor user nor module code should use this cast, because it strips ownership
   // from the c_string_copy returned by the above cast without first arranging
   // for its disposal.
-  inline proc _cast(type t, x:complex(?w)) where t == c_string
-    return _cast(c_string_copy, x);
+  inline proc numeric.cast(type t)
+    where isComplexType(this.type) && t == c_string
+    return this.cast(c_string_copy);
 
   
   pragma "init copy fn"
@@ -435,75 +437,80 @@ module CString {
     __primitive("=", a, b);
   }
 
-  inline proc _cast(type t, x: c_string) where t == string {
-    return toString(x);
+  inline proc c_string.cast(type t) where t == string {
+    return toString(this);
   }
 
-  inline proc _cast(type t, ref x: c_string_copy) where t == string {
-    return toString(x);
+  inline proc ref c_string_copy.cast(type t) where t == string {
+    return toString(this);
   }
 
-  inline proc _cast(type t, x: string) where t == c_string {
-    return x.c_str();
+  inline proc string.cast(type t) where t == c_string {
+    return this.c_str();
   }
 
-  inline proc _cast(type t, x: string) where t == c_string_copy {
-    return __primitive("string_copy", x);
+  inline proc string.cast(type t) where t == c_string_copy {
+    return __primitive("string_copy", this);
   }
 
   // A c_string_copy can always be used as a c_string.
-  inline proc _cast(type t, x: c_string_copy) where t == c_string {
-    return __primitive("cast", t, x);
+  inline proc c_string_copy.cast(type t) where t == c_string {
+    return __primitive("cast", t, this);
   }
 
   extern proc chpl_bool_to_c_string(x:bool) : c_string;
-  inline proc _cast(type t, x: bool(?w)) where t == c_string {
-    return chpl_bool_to_c_string(x:bool);
+  inline proc boolean.cast(type t) where t == c_string {
+    return chpl_bool_to_c_string(this:bool);
   }
-  inline proc _cast(type t, x: bool(?w)) where t == c_string_copy {
-    return __primitive("string_copy", chpl_bool_to_c_string(x:bool));
+  inline proc boolean.cast(type t) where t == c_string_copy {
+    return __primitive("string_copy", chpl_bool_to_c_string(this:bool));
   }
 
-  inline proc _cast(type t, x:enumerated) where t == c_string_copy {
+  inline proc enumerated.cast(type t) where t == c_string_copy {
     // Use the compiler-generated enum to c_string conversion.
-    var cs = _cast(c_string, x);
+    var cs = this.cast(c_string);
     return __primitive("string_copy", cs);
   }
 
-  inline proc _cast(type t, x:integral) where t == c_string_copy {
+  inline proc integral.cast(type t) where t == c_string_copy {
     extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy ;
-    return integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
+    return integral_to_c_string_copy(this:int(64), numBytes(this.type),
+        isIntType(this.type));
   }
 
   extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy ;
   //
   // casts from real
   //
-  inline proc _cast(type t, x:real(?w)) where t == c_string_copy {
-    return real_to_c_string_copy(x:real(64), false);
+  inline proc numeric.cast(type t)
+    where isRealType(this.type) && t == c_string_copy {
+    return real_to_c_string_copy(this:real(64), false);
   }
   // TODO: This is only in place to support test code in types/string/sungeun.
   // Nor user nor module code should use this cast, because it strips ownership
   // from the c_string_copy returned by the above cast without first arranging
   // for its disposal.
-  inline proc _cast(type t, x:real(?w)) where t == c_string
-    return _cast(c_string_copy, x);
+  inline proc numeric.cast(type t, x:real(?w))
+    where isRealType(this.type) && t == c_string
+    return this.cast(c_string_copy);
 
   //
   // casts from imag
   //
-  inline proc _cast(type t, x:imag(?w)) where t == c_string_copy {
+  inline proc numeric.cast(type t)
+    where isImagType(this.type) && t == c_string_copy {
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See ChapelBase:965.
-    var r = __primitive("cast", real(64), x);
+    var r = __primitive("cast", real(64), this);
     return real_to_c_string_copy(r, true);
   }
   // TODO: This is only in place to support test code in types/string/sungeun.
   // Nor user nor module code should use this cast, because it strips ownership
   // from the c_string_copy returned by the above cast without first arranging
   // for its disposal.
-  inline proc _cast(type t, x:imag(?w)) where t == c_string
-    return _cast(c_string_copy, x);
+  inline proc numeric.cast(type t)
+    where isImagType(this.type) && t == c_string
+    return this.cast(c_string_copy);
 
   // Only support param c_string concatenation (for now)
   inline proc +(param a: c_string, param b: c_string) param

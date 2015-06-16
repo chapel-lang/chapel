@@ -1023,19 +1023,19 @@ proc chpl__initCopy(x: regexp) {
 
 // Cast regexp to string.
 pragma "no doc"
-inline proc _cast(type t, x: regexp) where t == string {
+inline proc regexp.cast(type t) where t == string {
   var pattern: string;
-  on x.home {
+  on this.home {
     var cs: c_string_copy;
-    qio_regexp_get_pattern(x._regexp, cs);
+    qio_regexp_get_pattern(this._regexp, cs);
     pattern = toString(cs);
   }
   return pattern;
 }
 // Cast string to regexp
 pragma "no doc"
-inline proc _cast(type t, x: string) where t == regexp {
-  return compile(x);
+inline proc string.cast(type t) where t == regexp {
+  return compile(this);
 }
 
 

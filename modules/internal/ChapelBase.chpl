@@ -716,8 +716,8 @@ module ChapelBase {
     __primitive("=", a, b);
   }
 
-  inline proc _cast(type t, x) where t:_ddata && x:_nilType {
-    return __primitive("cast", t, x);
+  inline proc _nilType.cast(type t) where t:_ddata {
+    return __primitive("cast", t, this);
   }
 
   inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
@@ -872,7 +872,7 @@ module ChapelBase {
   }
   
   pragma "command line setting"
-  proc _command_line_cast(param s: c_string, type t, x) return _cast(t, x);
+  proc _command_line_cast(param s: c_string, type t, x) return x.cast(t);
 
 
   //
@@ -885,94 +885,101 @@ module ChapelBase {
            isIntegralType(t) || 
            isRealType(t);
   
-  inline proc _cast(type t, x: bool) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
+//  inline proc bool.cast(type tl) where chpl_typeSupportsPrimitiveCast(t)
+//    return __primitive("cast", t, this);
   
-  inline proc _cast(type t, x: bool(?w)) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
+  inline proc boolean.cast(type t) where chpl_typeSupportsPrimitiveCast(t)
+    return __primitive("cast", t, this);
   
-  inline proc _cast(type t, x: int(?w)) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
+  inline proc integral.cast(type t) where chpl_typeSupportsPrimitiveCast(t)
+    return __primitive("cast", t, this);
   
-  inline proc _cast(type t, x: uint(?w)) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
-  
-  inline proc _cast(type t, x: real(?w)) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
+  inline proc numeric.cast(type t, x: real(?w))
+    where isRealType(this.type) && chpl_typeSupportsPrimitiveCast(t)
+    return __primitive("cast", t, this);
  
-  inline proc _cast(type t, x: enumerated) where chpl_typeSupportsPrimitiveCast(t)
-    return __primitive("cast", t, x);
+  inline proc enumerated.cast(type t) where chpl_typeSupportsPrimitiveCast(t)
+    return __primitive("cast", t, this);
 
-  inline proc _cast(type t, x) where t:object && x:t
-    return __primitive("cast", t, x);
+  inline proc object.cast(type t) where t:object && this.type:t
+    return __primitive("cast", t, this);
   
-  inline proc _cast(type t, x) where t:object && x:_nilType
-    return __primitive("cast", t, x);
+  inline proc _nilType.cast(type t) where t:object
+    return __primitive("cast", t, this);
   
-  inline proc _cast(type t, x) where x:object && t:x && (x.type != t)
-    return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
+  // This one is a method that might be called on nil.
+  inline proc object.cast(type t)
+    where this:object && t:this && (this.type != t)
+    return if this != nil then __primitive("dynamic_cast", t, this) else __primitive("cast", t, nil);
   
-  inline proc _cast(type t, x:_nilType) where t == _nilType
+  inline proc _nilType.cast(type t) where t == _nilType
     return nil;
   
   //
   // casts to complex
   //
-  inline proc _cast(type t, x: bool) where isComplexType(t)
-    return (x, 0):t;
+  inline proc boolean.cast(type t) where isComplexType(t)
+    return (this, 0):t;
   
-  inline proc _cast(type t, x: int(?w)) where isComplexType(t)
-    return (x, 0):t;
+  inline proc integral.cast(type t) where isComplexType(t)
+    return (this, 0):t;
   
-  inline proc _cast(type t, x: uint(?w)) where isComplexType(t)
-    return (x, 0):t;
+  inline proc numeric.cast(type t)
+    where isRealType(this.type) && isComplexType(t)
+    return (this, 0):t;
   
-  inline proc _cast(type t, x: real(?w)) where isComplexType(t)
-    return (x, 0):t;
+  inline proc numeric.cast(type t)
+    where isImagType(this.type) && isComplexType(t)
+    return (0, _i2r(this)):t;
   
-  inline proc _cast(type t, x: imag(?w)) where isComplexType(t)
-    return (0, _i2r(x)):t;
-  
-  inline proc _cast(type t, x: complex(?w)) where isComplexType(t)
-    return (x.re, x.im):t;
+  inline proc numeric.cast(type t)
+    where isComplexType(this.type) && isComplexType(t)
+    return (this.re, this.im):t;
   
   //
   // casts to imag
   //
-  inline proc _cast(type t, x: bool) where isImagType(t)
-    return if x then 1i:t else 0i:t;
+  inline proc boolean.cast(type t) where isImagType(t)
+    return if this then 1i:t else 0i:t;
   
-  inline proc _cast(type t, x: int(?w)) where isImagType(t)
+  // TODO - MPF says this should not return 0...
+  inline proc integral.cast(type t) where isImagType(t)
     return 0i:t;
   
-  inline proc _cast(type t, x: uint(?w)) where isImagType(t)
+  // TODO - MPF says this should not return 0...
+  inline proc numeric.cast(type t)
+    where isRealType(this.type) && isImagType(t)
     return 0i:t;
   
-  inline proc _cast(type t, x: real(?w)) where isImagType(t)
-    return 0i:t;
+  inline proc numeric.cast(type t)
+    where isImagType(this.type) && isImagType(t)
+    return __primitive("cast", t, this);
   
-  inline proc _cast(type t, x: imag(?w)) where isImagType(t)
-    return __primitive("cast", t, x);
-  
-  inline proc _cast(type t, x: complex(?w)) where isImagType(t)
-    return let xim = x.im in __primitive("cast", t, xim);
+  inline proc numeric.cast(type t)
+    where isComplexType(this.type) && isImagType(t)
+    return let xim = this.im in __primitive("cast", t, xim);
   
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where isRealType(t) || isIntegralType(t) {
+  inline proc numeric.cast(type t)
+    where isComplexType(this.type) && (isRealType(t) || isIntegralType(t)) {
     var y: t;
-    y = x.re:t;
+    y = this.re:t;
     return y;
   }
   
   //
   // casts from imag
   //
-  inline proc _cast(type t, x: imag(?w)) where isRealType(t) || isIntegralType(t)
+
+  // TODO - MPF says this should not return 0...
+  inline proc numeric.cast(type t)
+    where isImagType(this.type) && (isRealType(t) || isIntegralType(t))
     return 0:t;
   
-  inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
+  inline proc numeric.cast(type t, x: imag(?w))
+    where isImagType(this.type) && isBoolType(t)
     return if x != 0i then true else false;
   
   inline proc chpl__typeAliasInit(type t) type return t;
