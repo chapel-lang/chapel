@@ -3682,6 +3682,38 @@ FnSymbol* CallExpr::findFnSymbol(void) {
   return fn;
 }
 
+bool CallExpr::isCast(void) {
+  return isNamed("cast") &&
+         numActuals() == 3 &&
+         get(1)->typeInfo() == dtMethodToken;
+}
+
+// used to be arg 2
+Expr* CallExpr::castFrom(void) {
+  INT_ASSERT(isCast());
+  return get(2);
+}
+
+// used to be arg 1
+Expr* CallExpr::castTo(void) {
+  INT_ASSERT(isCast());
+  return get(3);
+}
+
+CallExpr* createCastCallPostNormalize(BaseAST* src, BaseAST* toType)
+{
+  CallExpr* expr = new CallExpr("cast", gMethodToken, src, toType);
+  expr->methodTag = true;
+  return expr;
+}
+CallExpr* createCastCallPreNormalize(BaseAST* src, BaseAST* toType)
+{
+  CallExpr* fn = new CallExpr(".", src, new_StringSymbol("cast"));
+  CallExpr* expr = new CallExpr(fn, toType);
+  return expr;
+}
+
+
 
 Type* CallExpr::typeInfo(void) {
   if (primitive)
