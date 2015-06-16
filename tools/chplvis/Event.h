@@ -18,6 +18,7 @@
  */
 
 #include <string>
+#include <stdio.h>
 
 #ifndef _EVENT_H_
 #define _EVENT_H_
