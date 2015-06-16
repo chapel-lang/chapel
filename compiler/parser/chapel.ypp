@@ -1425,7 +1425,7 @@ expr:
 | TLP TDOTDOTDOT expr TRP
     { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | expr TCOLON expr
-    { $$ = new CallExpr("_cast", $3, $1); }
+    { $$ = createCastCallPreNormalize($1, $3); }
 | expr TDOTDOT expr
     { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
 | expr TDOTDOT

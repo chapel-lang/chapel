@@ -1116,6 +1116,8 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (formalType == dtIntegral && (is_int_type(actualType) || is_uint_type(actualType)))
     return true;
+  if (formalType == dtBoolean && is_bool_type(actualType))
+    return true;
   if (formalType == dtAnyEnumerated && (is_enum_type(actualType)))
     return true;
   if (formalType == dtNumeric &&
@@ -1276,15 +1278,17 @@ canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType,
     nUserCoercions--;
     //FnSymbol* resolved = NULL;
 
+    /*
     if( resolved_coerce && ! resolved_coerce->hasFlag(FLAG_COERCE_FN) ) {
       USR_FATAL_CONT(call, "could use supplied coercion");
-      USR_FATAL(resolved_coerce, "_allow_coerce exists but was not marked as a coerce function");
+      USR_FATAL(resolved_coerce, "coercible exists but was not marked as a coerce function");
       resolved_coerce = NULL;
     }
+    */
 
     if( resolved_coerce && resolved_coerce->retTag != RET_PARAM ) {
       USR_FATAL_CONT(call, "could use supplied coercion");
-      USR_FATAL(resolved_coerce, "_allow_coerce exists but does not return a param");
+      USR_FATAL(resolved_coerce, "coercible method exists but does not return a param");
       resolved_coerce = NULL;
     }
  
@@ -1294,7 +1298,7 @@ canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType,
 
       if( !result || !is_bool_type(result->typeInfo()) ) {
         USR_FATAL_CONT(call, "could use supplied coercion");
-        USR_FATAL(resolved_coerce, "_allow_coerce exists but does not return bool");
+        USR_FATAL(resolved_coerce, "coercible method exists but does not return bool");
       }
       SymExpr* symExpr = toSymExpr(result);
       VarSymbol* varSym = NULL;
@@ -1303,7 +1307,7 @@ canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType,
         can_coerce = varSym->immediate->bool_value();
       } else {
         USR_FATAL_CONT(call, "could use supplied coercion");
-        USR_FATAL(resolved_coerce, "_allow_coerce exists but does not return immediate");
+        USR_FATAL(resolved_coerce, "coercible method exists but does not return immediate");
       }
       // Remove the result from the AST
       result->remove();
@@ -1315,7 +1319,7 @@ canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType,
 
     if( can_coerce ) {
       // Check also that _cast exists and resolves.
-      castCall = new CallExpr("_cast", fts, tmp);
+      castCall = createCastCallPostNormalize(tmp, fts);
       call->getStmtExpr()->insertBefore(castCall);
 
       nUserCoercions++;
@@ -1326,7 +1330,7 @@ canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType,
 
       if( ! resolved_cast ) {
         USR_FATAL_CONT(call, "could use supplied coercion");
-        USR_FATAL(resolved_coerce, "_allow_coerce exists but there was no corresponding _cast");
+        USR_FATAL(resolved_coerce, "coercible method exists but there was no corresponding cast method");
       }
     }
 
@@ -2496,15 +2500,18 @@ printResolutionErrorUnresolved(
                      Vec<FnSymbol*>& visibleFns,
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
-  if (!strcmp("_cast", info->name)) {
-    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
+  if (call->isCast() ) {
+    // args are 1: dtMethodToken, 2: this (from), 3: to
+    int from = 2;
+    int to = 3;
+    if (!info->actuals.v[to]->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal cast to non-type",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+                toString(info->actuals.v[from]->type),
+                toString(info->actuals.v[to]->type));
     } else {
       USR_FATAL(call, "illegal cast from %s to %s",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+                toString(info->actuals.v[from]->type),
+                toString(info->actuals.v[to]->type));
     }
   } else if (!strcmp("free", info->name)) {
     if (info->actuals.n > 0 &&
@@ -4116,12 +4123,12 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 static Expr* dropUnnecessaryCast(CallExpr* call) {
   // Check for and remove casts to the original type and size
   Expr* result = call;
-  if (!call->isNamed("_cast"))
-    INT_FATAL("dropUnnecessaryCasts called on non _cast call");
+  if (! call->isCast() )
+    INT_FATAL("dropUnnecessaryCasts called on non cast call");
 
-  if (SymExpr* sym = toSymExpr(call->get(2))) {
+  if (SymExpr* sym = toSymExpr(call->castFrom())) {
     if (VarSymbol* var = toVarSymbol(sym->var)) {
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
+      if (SymExpr* sym = toSymExpr(call->castTo())) {
         Type* oldType = var->type;
         Type* newType = sym->var->type;
 
@@ -4131,7 +4138,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
         }
       }
     } else if (EnumSymbol* e = toEnumSymbol(sym->var)) {
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
+      if (SymExpr* sym = toSymExpr(call->castFrom())) {
         EnumType* oldType = toEnumType(e->type);
         EnumType* newType = toEnumType(sym->var->type);
         if (newType && oldType == newType) {
@@ -4993,14 +5000,14 @@ preFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isNamed("_cast")) {
+    } else if (call->isCast()) {
       result = dropUnnecessaryCast(call);
       if (result == call) {
         // The cast was not dropped.  Remove integer casts on immediate values.
-        if (SymExpr* sym = toSymExpr(call->get(2))) {
+        if (SymExpr* sym = toSymExpr(call->castFrom())) {
           if (VarSymbol* var = toVarSymbol(sym->var)) {
             if (var->immediate) {
-              if (SymExpr* sym = toSymExpr(call->get(1))) {
+              if (SymExpr* sym = toSymExpr(call->castTo())) {
                 Type* oldType = var->type;
                 Type* newType = sym->var->type;
                 if ((is_int_type(oldType) || is_uint_type(oldType) ||
@@ -5021,7 +5028,7 @@ preFold(Expr* expr) {
                   } else if (typeenum) {
                     int64_t value, count = 0;
                     bool replaced = false;
-                    if (!get_int(call->get(2), &value)) {
+                    if (!get_int(call->castFrom(), &value)) {
                       INT_FATAL("unexpected case in cast_fold");
                     }
                     for_enums(constant, typeenum) {
@@ -5036,7 +5043,7 @@ preFold(Expr* expr) {
                       }
                     }
                     if (!replaced) {
-                      USR_FATAL(call->get(2), "enum cast out of bounds");
+                      USR_FATAL(call->castFrom(), "enum cast out of bounds");
                     }
                   } else { // error out here.
                     INT_FATAL("unexpected case in cast_fold");
@@ -5045,7 +5052,7 @@ preFold(Expr* expr) {
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
-            if (SymExpr* sym = toSymExpr(call->get(1))) {
+            if (SymExpr* sym = toSymExpr(call->castTo())) {
               Type* newType = sym->var->type;
               if (newType == dtStringC) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
@@ -6009,7 +6016,7 @@ postFold(Expr* expr) {
       }
 
       if (sym->var->type != dtUnknown && sym->var->type != val->type) {
-        CallExpr* cast = new CallExpr("_cast", sym->var, val);
+        CallExpr* cast = createCastCallPostNormalize(val, sym->var);
         sym->replace(cast);
         result = preFold(cast);
       } else {
@@ -6308,7 +6315,8 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               call->insertBefore(new DefExpr(tmp));
               call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
             }
-            CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
+            CallExpr* cast = createCastCallPostNormalize(
+                                          tmp, lhsType->symbol);
             call->insertAtTail(cast);
             casts.add(cast);
           }

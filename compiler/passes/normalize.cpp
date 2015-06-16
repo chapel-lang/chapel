@@ -1079,7 +1079,7 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
     if (init && var->hasFlag(FLAG_PARAM)) {
       stmt->insertAfter(
         new CallExpr(PRIM_MOVE, var,
-          new CallExpr("_cast", type->remove(), init->remove())));
+          createCastCallPostNormalize(init->remove(), type->remove())));
       return;
     }
 

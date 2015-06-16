@@ -117,9 +117,9 @@ void expandExternArrayCalls() {
           } else {
             // Generic array, replace with (c_ptr(eltType)):c_void_ptr
             externCall->argList.insertAtTail(
-                new CallExpr("_cast",
-                  new UnresolvedSymExpr("c_void_ptr"),
-                  new CallExpr("c_ptrTo", new SymExpr(formal))));
+                createCastCallPreNormalize(
+                  new CallExpr("c_ptrTo", new SymExpr(formal)),
+                  new UnresolvedSymExpr("c_void_ptr") ));
           }
         } else {
           externCall->argList.insertAtTail(new SymExpr(formal));

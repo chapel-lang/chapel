@@ -175,7 +175,7 @@ static void change_cast_in_where(FnSymbol* fn) {
     collect_asts(fn->where, asts);
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
-        if (call->isNamed("_cast")) {
+        if (call->isCast() ) {
           call->primitive = primitives[PRIM_IS_SUBTYPE];
           call->baseExpr->remove();
         }

@@ -576,7 +576,7 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
 
   if (castCall == NULL)
     // the common case
-    castCall = new CallExpr("_cast", fts, prevActual);
+    castCall = createCastCallPostNormalize(prevActual, fts);
 
   // move the result to the temp
   CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
