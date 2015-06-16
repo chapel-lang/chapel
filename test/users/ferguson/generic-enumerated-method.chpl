@@ -11,7 +11,7 @@ var x = MyEnum.x.blarg();
 writeln(x);
 
 record R {
-  var bz:uint(8) = MyEnum.x.blarg();
+  var bz:int = MyEnum.x.blarg();
 }
 
 
