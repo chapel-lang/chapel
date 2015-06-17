@@ -115,9 +115,12 @@ module-docs: chpldoc
 
 docs: module-docs
 
-chplvis: compiler FORCE # third-party-fltk
+chplvis: compiler third-party-fltk FORCE 
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
+
+third-party-fltk: FORCE
+	cd third-party/fltk && $(MAKE)
 
 clean: FORCE
 	cd compiler && $(MAKE) clean

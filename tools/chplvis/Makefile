@@ -53,10 +53,7 @@ GENH= chplvis.h
 
 OFILES= $(SRCS:.cxx=.o) $(GENSRCS:.cxx=.o)
 
-all: $(FLTK_FLUID) chplvis
-
-$(FLTK_FLUID):
-	(cd $(FLTK_DIR) ; make install)
+all: chplvis
 
 chplvis: $(GENSRCS) $(OFILES) 
 	$(CXX) -o chplvis $(OFILES) $(LDFLAGS) $(LIBS)
