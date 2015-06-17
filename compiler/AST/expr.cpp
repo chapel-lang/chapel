@@ -36,6 +36,8 @@
 #include "type.h"
 #include "WhileStmt.h"
 
+// temporary.
+#include "view.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -3683,21 +3685,53 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 }
 
 bool CallExpr::isCast(void) {
-  return isNamed("cast") &&
-         numActuals() == 3 &&
-         get(1)->typeInfo() == dtMethodToken;
+  // Before normalize, a cast looks like this:
+  // (call (call . someValue "cast") typeToCastTo)
+  CallExpr *base = toCallExpr(baseExpr);
+  if( base && base->isNamed(".") ) {
+      SymExpr* symexpr = toSymExpr(base->get(2));
+      VarSymbol* methodName = toVarSymbol(symexpr->var);
+      if( 0 == strcmp("cast", methodName->immediate->string_value()) ) {
+        return true;
+      }
+  }
+
+  // After normalize, a cast looks like this:
+  // (call "cast" methodToken someValue typeToCastTo) 
+  if (isNamed("cast") &&
+      numActuals() == 3 &&
+      get(1)->typeInfo() == dtMethodToken) return true;
+
+  return false;
 }
 
 // used to be arg 2
 Expr* CallExpr::castFrom(void) {
   INT_ASSERT(isCast());
+
+  if( get(1)->typeInfo() == dtMethodToken ) {
+    // after normalize
+    return get(2);
+  } else {
+    // before normalize
+    CallExpr *base = toCallExpr(baseExpr);
+    INT_ASSERT(base);
+    return base->get(1);
+  }
+
   return get(2);
 }
 
 // used to be arg 1
 Expr* CallExpr::castTo(void) {
   INT_ASSERT(isCast());
-  return get(3);
+ 
+  if( get(1)->typeInfo() == dtMethodToken ) {
+    // after normalize
+    return get(3);
+  } else {
+    return get(1);
+  }
 }
 
 CallExpr* createCastCallPostNormalize(BaseAST* src, BaseAST* toType)
