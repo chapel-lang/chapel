@@ -61,6 +61,8 @@ endif
 # CHPL_MAKE_COMPILER_SUBDIR=linux64.gnu.loc-flat.wide-struct.llvm-none
 # CHPL_MAKE_RUNTIME_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.tmr-generic.mem-default.atomics-intrinsics.none.gmp-none.hwloc-none.re-none.wide-struct.fs-none
 # CHPL_MAKE_LAUNCHER_SUBDIR=linux64.gnu.loc-flat.udp.everything.tasks-fifo.pthreads.launch-amudprun.tmr-generic.mem-default.atomics-intrinsics.none.wide-struct
+# CHPL_MAKE_DLMALLOC_UNIQ_CFG_PATH etc
+# CHPL_MAKE_THIRD_PARTY_LINK_ARGS
 # Don't recompute the settings every time!
 ifndef CHPL_MAKE_SETTINGS_NO_NEWLINES
 # ... but it involves a little bit of Make-craziness because
@@ -125,6 +127,13 @@ CFLAGS += $(PROFILE_CFLAGS)
 LDFLAGS += $(PROFILE_LFLAGS)
 endif
 
+# These variables are for C flags that are really coming from the C compiler
+# itself or from or 3rd-party configurations.
+# They might be set it make/compiler Makefiles or in third-party Makefiles
+# for example.
+CHPL_MAKE_BASE_CFLAGS =
+CHPL_MAKE_BASE_LFLAGS =
+
 #
 # Third-party package stuff
 #
@@ -168,7 +177,7 @@ printplatform:
 #
 # use: make print-X to print the value of the variable X
 #
-print-%: ; @echo $* is $($*)
+print-%: ; @echo "$*" is "$($*)"
 
 
 # OBJ_SUBDIR is used in compiler/
