@@ -349,6 +349,11 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
     Symbol* symbol = lookup(useCall, sym->unresolved);
 
+    std::map<const char*, Symbol*> otherResults = lookup2(sym);
+    if (symbol != otherResults[sym->unresolved]) {
+      INT_FATAL(useCall, "Lydia, fix your stuff!");
+    }
+
     mod = toModuleSymbol(symbol);
 
     if (symbol && !mod) {
