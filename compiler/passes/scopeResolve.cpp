@@ -1888,26 +1888,31 @@ static void lookup2(BaseAST* scope, std::list<const char *> names,
     if (foundAny)
       return;
 
-    // Otherwise, look in the next scope up.
-    FnSymbol* fn = toFnSymbol(scope);
-    if (fn && fn->_this) {
-      // If we're currently in a method, the next scope up is anything visible
-      // within the aggregate type
-      AggregateType* ct = toAggregateType(fn->_this->type);
-      if (ct)
-        lookup2(ct->symbol, names, symbols, alreadyVisited);
-    }
-    // Check if found something in last lookup2 call
-    for ( std::list<const char *>::iterator it = names.begin(); it != names.end(); ++it) {
-      if (symbols[*it].size() != 0) {
-        // Something was found.  There would not be any symbol in any of the
-        // vectors otherwise.
-        return;
+    if (scope->getModule()->block == scope) {
+      if (getScope(scope))
+        lookup2(getScope(scope), names, symbols, alreadyVisited);
+    } else {
+      // Otherwise, look in the next scope up.
+      FnSymbol* fn = toFnSymbol(scope);
+      if (fn && fn->_this) {
+        // If we're currently in a method, the next scope up is anything visible
+        // within the aggregate type
+        AggregateType* ct = toAggregateType(fn->_this->type);
+        if (ct)
+          lookup2(ct->symbol, names, symbols, alreadyVisited);
       }
+      // Check if found something in last lookup2 call
+      for ( std::list<const char *>::iterator it = names.begin(); it != names.end(); ++it) {
+        if (symbols[*it].size() != 0) {
+          // Something was found.  There would not be any symbol in any of the
+          // vectors otherwise.
+          return;
+        }
+      }
+      // If we didn't find something in the aggregate type that matched, or we
+      // weren't in an aggregate type method, so look at next scope up.
+      lookup2(getScope(scope), names, symbols, alreadyVisited);
     }
-    // If we didn't find something in the aggregate type that matched, or we
-    // weren't in an aggregate type method, so look at next scope up.
-    lookup2(getScope(scope), names, symbols, alreadyVisited);
   }
 }
 
