@@ -2058,13 +2058,19 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
                            const DisambiguationContext& DC,
                            DisambiguationState& DS) {
 
-  TRACE_DISAMBIGUATE_BY_MATCH("Actual's type: %s\n", toString(actual->type));
+  // We only want to deal with the value types here, avoiding odd overloads
+  // working (or not) due to _ref.
+  Type *f1Type = formal1->type->getValType();
+  Type *f2Type = formal2->type->getValType();
+  Type *actualType = actual->type->getValType();
+
+  TRACE_DISAMBIGUATE_BY_MATCH("Actual's type: %s\n", toString(actualType));
 
   bool formal1Promotes = false;
-  canDispatch(actual->type, actual, formal1->type, fn1, &formal1Promotes);
+  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
   DS.fn1Promotes |= formal1Promotes;
 
-  TRACE_DISAMBIGUATE_BY_MATCH("Formal 1's type: %s\n", toString(formal1->type));
+  TRACE_DISAMBIGUATE_BY_MATCH("Formal 1's type: %s\n", toString(f1Type));
   if (formal1Promotes) {
     TRACE_DISAMBIGUATE_BY_MATCH("Actual requires promotion to match formal 1\n");
   } else {
@@ -2078,11 +2084,11 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
   }
 
   bool formal2Promotes = false;
-  canDispatch(actual->type, actual, formal2->type, fn1, &formal2Promotes);
+  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes);
   DS.fn2Promotes |= formal2Promotes;
 
-  TRACE_DISAMBIGUATE_BY_MATCH("Formal 2's type: %s\n", toString(formal2->type));
-  if (formal1Promotes) {
+  TRACE_DISAMBIGUATE_BY_MATCH("Formal 2's type: %s\n", toString(f2Type));
+  if (formal2Promotes) {
     TRACE_DISAMBIGUATE_BY_MATCH("Actual requires promotion to match formal 2\n");
   } else {
     TRACE_DISAMBIGUATE_BY_MATCH("Actual DOES NOT require promotion to match formal 2\n");
@@ -2094,11 +2100,11 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
     TRACE_DISAMBIGUATE_BY_MATCH("Formal 2 is NOT an instantiated param.\n");
   }
 
-  if (formal1->type == formal2->type && formal1->hasFlag(FLAG_INSTANTIATED_PARAM) && !formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+  if (f1Type == f2Type && formal1->hasFlag(FLAG_INSTANTIATED_PARAM) && !formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
     TRACE_DISAMBIGUATE_BY_MATCH("A: Fn %d is more specific\n", DC.i);
     DS.fn1MoreSpecific = true;
 
-  } else if (formal1->type == formal2->type && !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) && formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+  } else if (f1Type == f2Type && !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) && formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
     TRACE_DISAMBIGUATE_BY_MATCH("B: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
@@ -2110,11 +2116,11 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
     TRACE_DISAMBIGUATE_BY_MATCH("D: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
-  } else if (formal1->type == formal2->type && !formal1->instantiatedFrom && formal2->instantiatedFrom) {
+  } else if (f1Type == f2Type && !formal1->instantiatedFrom && formal2->instantiatedFrom) {
     TRACE_DISAMBIGUATE_BY_MATCH("E: Fn %d is more specific\n", DC.i);
     DS.fn1MoreSpecific = true;
 
-  } else if (formal1->type == formal2->type && formal1->instantiatedFrom && !formal2->instantiatedFrom) {
+  } else if (f1Type == f2Type && formal1->instantiatedFrom && !formal2->instantiatedFrom) {
     TRACE_DISAMBIGUATE_BY_MATCH("F: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
@@ -2126,10 +2132,10 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
     TRACE_DISAMBIGUATE_BY_MATCH("H: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
-  } else if (considerParamMatches(actual->type, formal1->type, formal2->type)) {
+  } else if (considerParamMatches(actualType, f1Type, f2Type)) {
     TRACE_DISAMBIGUATE_BY_MATCH("In first param case\n");
     // The actual matches formal1's type, but not formal2's
-    if (paramWorks(actual, formal2->type)) {
+    if (paramWorks(actual, f2Type)) {
       // but the actual is a param and works for formal2
       if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         // the param works equally well for both, but
@@ -2147,10 +2153,10 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
       TRACE_DISAMBIGUATE_BY_MATCH("I: Fn %d is more specific\n", DC.i);
       DS.fn1MoreSpecific = true;
     }
-  } else if (considerParamMatches(actual->type, formal2->type, formal1->type)) {
+  } else if (considerParamMatches(actualType, f2Type, f1Type)) {
     TRACE_DISAMBIGUATE_BY_MATCH("In second param case\n");
     // The actual matches formal2's type, but not formal1's
-    if (paramWorks(actual, formal1->type)) {
+    if (paramWorks(actual, f1Type)) {
       // but the actual is a param and works for formal1
       if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
         // the param works equally well for both, but
@@ -2168,19 +2174,19 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
       TRACE_DISAMBIGUATE_BY_MATCH("J: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
     }
-  } else if (moreSpecific(fn1, formal1->type, formal2->type) && formal2->type != formal1->type) {
+  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
     TRACE_DISAMBIGUATE_BY_MATCH("K: Fn %d is more specific\n", DC.i);
     DS.fn1MoreSpecific = true;
 
-  } else if (moreSpecific(fn1, formal2->type, formal1->type) && formal2->type != formal1->type) {
+  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
     TRACE_DISAMBIGUATE_BY_MATCH("L: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
-  } else if (is_int_type(formal1->type) && is_uint_type(formal2->type)) {
+  } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
     TRACE_DISAMBIGUATE_BY_MATCH("M: Fn %d is more specific\n", DC.i);
     DS.fn1MoreSpecific = true;
 
-  } else if (is_int_type(formal2->type) && is_uint_type(formal1->type)) {
+  } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
     TRACE_DISAMBIGUATE_BY_MATCH("N: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
