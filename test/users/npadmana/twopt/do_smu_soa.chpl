@@ -4,6 +4,7 @@ use Time;
 
 // Test flags
 config const isTest=false;
+config const doBrute=false;
 
 // Input/Output filenames
 config const fn1 = "test.dat";
@@ -289,17 +290,19 @@ proc testPairs() {
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
 
-  // Do the paircounts with a tree
-  smuAccumulate(hh,pp,pp,pp.Dpart,pp.Dpart,1.0);
-  for xx in hh.bins(1) do writef("%12.4dr",xx); 
-  writeln();
-  for xx in hh.bins(2) do writef("%12.4dr",xx); 
-  writeln("\n##");
-  for ii in hh.Dhist.dim(1) {
-    for jj in hh.Dhist.dim(2) {
-      writef("%20.5er ",hh[(ii,jj)]);
-    }
+  // Optionally, do the paircounts in the brute-force n**2 way
+  if (doBrute) {
+    smuAccumulate(hh,pp,pp,pp.Dpart,pp.Dpart,1.0);
+    for xx in hh.bins(1) do writef("%12.4dr",xx); 
     writeln();
+    for xx in hh.bins(2) do writef("%12.4dr",xx); 
+    writeln("\n##");
+    for ii in hh.Dhist.dim(1) {
+      for jj in hh.Dhist.dim(2) {
+        writef("%20.5er ",hh[(ii,jj)]);
+      }
+      writeln();
+    }
   }
 
   // Build the tree
