@@ -17,13 +17,25 @@
 
 # A make file for this demo tool
 
+# Chapel config
+
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
+
+CHPL_MAKE_HOST_TARGET = --target
+include $(CHPL_MAKE_HOME)/make/Makefile.base
+
 # FLTK config section
 
-CXX= $(shell fltk-config --cxx)
-CXXFLAGS= $(shell fltk-config --cxxflags) -Wall -I. -g
+FLTK_CONFIG=$(FLTK_INSTALL_DIR)/bin/fltk-config
+FLTK_FLUID=$(FLTK_INSTALL_DIR)/bin/fluid
 
-LDFLAGS= $(shell fltk-config --ldflags)
-LIBS= $(shell fltk-config --libs)
+CXX= $(shell $(FLTK_CONFIG) --cxx)
+CXXFLAGS= $(shell $(FLTK_CONFIG) --cxxflags) -Wall -I. -g
+
+LDFLAGS= $(shell $(FLTK_CONFIG) --ldflags)
+LIBS= $(shell $(FLTK_CONFIG) --libs)
 
 CHPL_HOME= $(shell printenv CHPL_HOME)
 CHPL_HOST_PLATFORM= $(shell printenv CHPL_HOST_PLATFORM)
@@ -41,11 +53,16 @@ GENH= chplvis.h
 
 OFILES= $(SRCS:.cxx=.o) $(GENSRCS:.cxx=.o)
 
+all: $(FLTK_FLUID) chplvis
+
+$(FLTK_FLUID):
+	(cd $(FLTK_DIR) ; make install)
+
 chplvis: $(GENSRCS) $(OFILES) 
 	$(CXX) -o chplvis $(OFILES) $(LDFLAGS) $(LIBS)
 
 chplvis.cxx chplvis.h: chplvis.fl
-	fluid -c chplvis.fl
+	$(FLTK_FLUID) -c chplvis.fl
 
 clean:
 	rm -f $(GENSRCS) $(GENH) $(OFILES) *~
