@@ -660,7 +660,7 @@ module ChapelArray {
   // The following method is called by the compiler to determine the default
   // value of a given type.
   /* Need new <alias>() for this to function
-  proc _defaultOf(type t) where t:_distribution {
+  proc _defaultOf(type t) where t==_distribution {
     var ret: t = noinit;
     type valType = __primitive("query type field", t, "_valueType");
     var typeInstance = new <valType>();

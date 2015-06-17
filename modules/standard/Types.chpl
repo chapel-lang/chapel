@@ -391,38 +391,37 @@ inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
 
 // Various types whose default value is known
 pragma "no doc"
-inline proc _defaultOf(type t) param where t: void return _void;
+inline proc _defaultOf(type t) param where t == void return _void;
 pragma "no doc"
-inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
+inline proc _defaultOf(type t) where t == opaque return _nullOpaque;
 pragma "no doc"
-inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
+inline proc _defaultOf(type t) where t == chpl_taskID_t return chpl_nullTaskID;
 pragma "no doc"
-inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
+inline proc _defaultOf(type t) where t == _sync_aux_t return _nullSyncVarAuxFields;
 pragma "no doc"
-inline proc _defaultOf(type t) where t: _single_aux_t return _nullSingleVarAuxFields;
+inline proc _defaultOf(type t) where t == _single_aux_t return _nullSingleVarAuxFields;
 pragma "no doc"
-inline proc _defaultOf(type t) where t: _task_list return _nullTaskList;
+inline proc _defaultOf(type t) where t == _task_list return _nullTaskList;
 
 
 // When I finish removing PRIM_INIT before initialization to a known value, then
 // this method should work.  Until then, my stopgap will be an external function
 // in the runtime.
-//inline proc _defaultOf(type t) where t: memory_order return memory_order_seq_cst;
+//inline proc _defaultOf(type t) where t == memory_order return memory_order_seq_cst;
 pragma "no doc"
 extern proc _defaultOfMemoryOrder(): memory_order;
 
 pragma "no instantiation limit"
 pragma "compiler generated"
 pragma "no doc"
+inline proc _defaultOf(type t) where t == memory_order
+  return _defaultOfMemoryOrder();
+
+pragma "no instantiation limit"
+pragma "compiler generated"
+pragma "no doc"
 inline proc _defaultOf(type t) {
-  select t {
-    when memory_order {
-      return _defaultOfMemoryOrder();
-    }
-    otherwise {
-      return nil:t;
-    }
-  }
+  return nil:t;
 }
 
 
