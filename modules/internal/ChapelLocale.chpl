@@ -237,6 +237,20 @@ module ChapelLocale {
         }
       }
     }
+   
+    // Temporary?
+    iter chpl_initOnLocales(param tag: iterKind)
+      where tag==iterKind.leader {
+        yield 1;
+      halt("error");
+    }
+    iter chpl_initOnLocales(param tag: iterKind, followThis)
+      where tag==iterKind.follower {
+        yield 1;
+      halt("error");
+    }
+
+
   }
 
   //
