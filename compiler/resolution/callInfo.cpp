@@ -21,8 +21,8 @@
 #include "callInfo.h"
 #include "expr.h"
 
-
-CallInfo::CallInfo(CallExpr* icall, bool checkonly) : call(icall), scope(NULL) {
+CallInfo::CallInfo(CallExpr* icall, bool checkonly)
+  : call(icall), scope(NULL), name(NULL), actuals(), actualNames() {
   if (SymExpr* se = toSymExpr(call->baseExpr))
     name = se->var->name;
   else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr))
