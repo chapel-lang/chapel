@@ -99,8 +99,8 @@ module ChapelDistribution {
           printf("----- INC _distCnt (%016lx) was %ld\n",
                  __primitive("cast", uint(64), this), cnt);
         }
-        if cnt < 0 || cnt > 1000 then
-            halt("_distCnt is bogus!");
+        if cnt < 0 || cnt > 10000 then
+          halt("_distCnt ", cnt, " is bogus!");
       }
       _distCnt.inc(cnt);
     }
@@ -114,8 +114,8 @@ module ChapelDistribution {
           printf("----- DEC _distCnt (%016lx) now %ld\n",
                  __primitive("cast", uint(64), this), cnt);
         }
-        if cnt < 0 || cnt > 1000 then
-            halt("_distCnt is bogus!");
+        if cnt < 0 || cnt > 10000 then
+          halt("_distCnt ", cnt, " is bogus!");
         // Poison the distCount, so an attempt to move it away from zero a
         // second time will fail
         if cnt == 0 then _distCnt.dec();
@@ -208,7 +208,7 @@ module ChapelDistribution {
                  __primitive("cast", uint(64), this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
-          halt("_domCnt is bogus!");
+          halt("_domCnt ", cnt, " is bogus!");
       }
       _domCnt.inc(cnt);
     }
@@ -223,7 +223,7 @@ module ChapelDistribution {
                  __primitive("cast", uint(64), this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
-            halt("_domCnt is bogus!");
+          halt("_domCnt ", cnt, " is bogus!");
         // Poison the domCount, so an attempt to move it away from zero a
         // second time will fail
         if cnt == 0 then _domCnt.dec();
@@ -392,7 +392,7 @@ module ChapelDistribution {
                  __primitive("cast", uint(64), this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
-          halt("_arrCnt is bogus!");
+          halt("_arrCnt ", cnt, " is bogus!");
       }
       _arrCnt.inc(cnt);
     }
@@ -407,7 +407,7 @@ module ChapelDistribution {
                  __primitive("cast", uint(64), this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
-            halt("_arrCnt is bogus!");
+          halt("_arrCnt ", cnt, " is bogus!");
         // Poison the arrCount, so an attempt to move it away from zero a
         // second time will fail
         if cnt == 0 then _arrCnt.dec();
