@@ -74,6 +74,12 @@ proc simulate(numChameneos) {
   // print information about the population once we're done
   //
   printInfo(chameneos);
+
+  //
+  // hasta las chameneos, baby.
+  //
+  destroyChameneos(chameneos);
+  delete meetingPlace;
 }
 
 
@@ -263,6 +269,11 @@ proc createChameneos(size): [1..size] Chameneos {
 
   return [i in 1..size] new Chameneos(i, if (size == 10) then colorsFor10[i]
                                                          else ((i-1)%3):Color);
+}
+
+
+proc destroyChameneos(ca: [] Chameneos) {
+  for c in ca do delete c;
 }
 
 

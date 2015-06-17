@@ -1276,6 +1276,9 @@ rebuildIterator(IteratorInfo* ii,
 
   // Return the filled-in iterator record.
   fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
+  // TODO: Add a consistency check to ensure that the two clauses in
+  // getReturnSymbol() (retSymbol!=NULL versus ==NULL) always agree.
+  fn->retSymbol = iterator;
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
   fn->addFlag(FLAG_INLINE);
 }
