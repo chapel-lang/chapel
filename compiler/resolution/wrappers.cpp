@@ -48,6 +48,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include "view.h"
 
 //########################################################################
 //# Static Function Forward Declarations
@@ -467,8 +468,8 @@ static bool needToAddCoercion(CallExpr* call,
   if (actualType == formalType)
     return false;
   else
-    return canCoerce(call, actualType, actualSym, formalType, fn) ||
-           isDispatchParent(actualType, formalType);
+    return canCoerce(call, actualType, actualSym, formalType, fn)
+           || isDispatchParent(actualType, formalType);
 }
 
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
@@ -481,6 +482,7 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   SET_LINENO(prevActual);
   TypeSymbol* ats = actualSym->type->symbol;
   TypeSymbol* fts = formal->type->symbol;
+
   CallExpr* castCall;
   VarSymbol* castTemp = newTemp("coerce_tmp"); // ..., formal->type ?
   castTemp->addFlag(FLAG_COERCE_TEMP);
@@ -574,9 +576,19 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     castCall = NULL;
   }
 
-  if (castCall == NULL)
+  if (castCall == NULL) {
     // the common case
-    castCall = createCastCallPostNormalize(prevActual, fts);
+    
+    printf("HERE\n");
+    if( isDispatchParent(ats->type, fts->type) ) {
+      // Just use primitive cast to go from class type to object
+      castCall = new CallExpr(PRIM_CAST, fts, prevActual);
+    } else {
+      castCall = createCastCallPostNormalize(prevActual, fts);
+    }
+    print_view(castCall);
+
+  }
 
   // move the result to the temp
   CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);

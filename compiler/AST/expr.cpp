@@ -3737,7 +3737,7 @@ Expr* CallExpr::castTo(void) {
 CallExpr* createCastCallPostNormalize(BaseAST* src, BaseAST* toType)
 {
   CallExpr* expr = new CallExpr("cast", gMethodToken, src, toType);
-  expr->methodTag = true;
+  //expr->methodTag = true;
   return expr;
 }
 CallExpr* createCastCallPreNormalize(BaseAST* src, BaseAST* toType)
