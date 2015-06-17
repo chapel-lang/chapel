@@ -186,6 +186,11 @@ void scopeResolve() {
 
         TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
 
+        std::map<const char*, Symbol*> otherResults = lookup2(sym);
+        if (ts != toTypeSymbol(otherResults[sym->unresolved])) {
+          INT_FATAL(fn, "Lydia, fix your stuff!");
+        }
+
         if (!ts) {
           USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
         }
