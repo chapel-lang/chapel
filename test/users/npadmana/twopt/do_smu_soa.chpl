@@ -282,26 +282,15 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scal
 
 
 proc testPairs() {
-  var totTimer: Timer;
-  totTimer.start();
-  totTimer.clear();
-  var timer: Timer;
-  timer.start();
-  timer.clear();
-
   var pp = readFile("test.dat");
-  const inputTime = timer.elapsed();  timer.clear();
   // Put in a shuffle
   pp.shuffle();
-  const shuffleTime = timer.elapsed();  timer.clear();
 
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
-  const histSetupTime = timer.elapsed();  timer.clear();
 
   // Do the paircounts with a tree
   smuAccumulate(hh,pp,pp,pp.Dpart,pp.Dpart,1.0);
-  const accumTime = timer.elapsed();  timer.clear();
   for xx in hh.bins(1) do writef("%12.4dr",xx); 
   writeln();
   for xx in hh.bins(2) do writef("%12.4dr",xx); 
@@ -312,14 +301,11 @@ proc testPairs() {
     }
     writeln();
   }
-  const outputTime = timer.elapsed();  timer.clear();
 
   // Build the tree
   var root1 = BuildTree(pp, 0, pp.npart-1, 0); 
-  const buildTreeTime = timer.elapsed();  timer.clear();
   hh.reset();
   sync TreeAccumulate(hh,pp,pp,root1,root1);
-  const accumTreeTime = timer.elapsed();  timer.clear();
   for xx in hh.bins(1) do writef("%12.4dr",xx); 
   writeln();
   for xx in hh.bins(2) do writef("%12.4dr",xx); 
@@ -330,20 +316,6 @@ proc testPairs() {
     }
     writeln();
   }
-
-  const output2Time = timer.elapsed();  timer.clear();
-  const totTime = totTimer.elapsed();
-
-  writeln("input:      ", inputTime);
-  writeln("shuffle:    ", shuffleTime);
-  writeln("hist setup: ", histSetupTime);
-  writeln("accum:      ", accumTime);
-  writeln("output1:    ", outputTime);
-  writeln("build tree: ", buildTreeTime);
-  writeln("accum tree: ", accumTreeTime);
-  writeln("output2:    ", output2Time);
-  writeln("-------------");
-  writeln("total:      ", totTime);
 
   //
   // clean up
@@ -393,6 +365,7 @@ proc doPairs() {
   sync TreeAccumulate(hh, pp1,pp2, root1, root2);
   tt.stop();
   writef("Time to tree paircount : %r \n", tt.elapsed());
+  //writeHist("%s.tree".format(pairfn),hh);
 
   //
   // clean up
@@ -402,6 +375,5 @@ proc doPairs() {
   delete root1;
   delete root2;
   delete hh;
-  //writeHist("%s.tree".format(pairfn),hh);
 }
 

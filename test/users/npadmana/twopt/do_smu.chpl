@@ -252,36 +252,24 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : SOA_WeightedParticle3D, node1, no
 
 // A simple testHarness
 proc testPairs() {
-  var totTimer: Timer;
-  totTimer.start();
-  totTimer.clear();
-  var timer: Timer;
-  timer.start();
-  timer.clear();
   
   // Read in the file
   var nlines = countLines(fn1);
   var pp1 : [0.. #nlines] WeightedParticle3D;
   readFile("test.dat",pp1);
-  const inputTime = timer.elapsed();  timer.clear();
 
   // Build the tree
   var scr : [0.. #nlines] WeightedParticle3D;
   var root1 = BuildTree(pp1,scr,0);
-  const buildTreeTime = timer.elapsed();  timer.clear();
 
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
-  const histSetupTime = timer.elapsed();  timer.clear();
 
   // AOS -> SOA
   var soa1 = new SOA_WeightedParticle3D(pp1);
-  //  delete pp1;
-  const aos2soaTime = timer.elapsed(); timer.clear();
 
   // Do the paircounts with a tree
   sync TreeAccumulate(hh, soa1, soa1, root1, root1);
-  const accumTreeTime = timer.elapsed();  timer.clear();
   for xx in hh.bins(1) do writef("%12.4dr",xx); 
   writeln();
   for xx in hh.bins(2) do writef("%12.4dr",xx); 
@@ -292,19 +280,6 @@ proc testPairs() {
     }
     writeln();
   }
-  const output2Time = timer.elapsed();  timer.clear();
-  const totTime = totTimer.elapsed();
-
-  writeln("input:      ", inputTime);
-  //  writeln("shuffle:    ", shuffleTime);
-  writeln("hist setup: ", histSetupTime);
-  //  writeln("accum:      ", accumTime);
-  //  writeln("output1:    ", outputTime);
-  writeln("build tree: ", buildTreeTime);
-  writeln("accum tree: ", accumTreeTime);
-  writeln("output2:    ", output2Time);
-  writeln("------------");
-  writeln("total:      ", totTime);
 
   //
   // clean up
@@ -351,8 +326,6 @@ proc doPairs() {
   tt.clear(); tt.start();
   var soa1 = new SOA_WeightedParticle3D(pp1);
   var soa2 = new SOA_WeightedParticle3D(pp2);
-  //  delete pp1;
-  //  delete pp2;
   tt.stop();
   writef("Time to SOA : %r \n", tt.elapsed());
 
