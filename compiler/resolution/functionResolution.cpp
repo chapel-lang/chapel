@@ -530,7 +530,8 @@ FnSymbol* getAutoDestroy(Type* t) {
 
 
 const char* toString(Type* type) {
-  return type->getValType()->symbol->name;
+  if( type ) return type->getValType()->symbol->name;
+  return "null type";
 }
 
 
@@ -2501,15 +2502,16 @@ static void
 printResolutionErrorUnresolved(
                      Vec<FnSymbol*>& visibleFns,
                      CallInfo* info) {
+  if( ! info ) INT_FATAL("CallInfo is NULL");
+  if( ! info->call ) INT_FATAL("call is NULL");
   CallExpr* call = userCall(info->call);
   if (call->isCast() ) {
-    // args are 1: dtMethodToken, 2: this (from), 3: to
-    int from = 2;
-    int to = 3;
+    // args are: dtMethodToken, this (from), to
+    // but actuals is 0-based, so ...
+    int from = 1;
+    int to = 2;
     if (!info->actuals.v[to]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL(call, "illegal cast to non-type",
-                toString(info->actuals.v[from]->type),
-                toString(info->actuals.v[to]->type));
+      USR_FATAL(call, "illegal cast to non-type");
     } else {
       USR_FATAL(call, "illegal cast from %s to %s",
                 toString(info->actuals.v[from]->type),

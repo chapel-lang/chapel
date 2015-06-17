@@ -176,8 +176,16 @@ static void change_cast_in_where(FnSymbol* fn) {
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isCast() ) {
-          call->primitive = primitives[PRIM_IS_SUBTYPE];
-          call->baseExpr->remove();
+          CallExpr* isSubtype;
+          Expr* to = call->castTo();
+          Expr* from = call->castFrom();
+          // now remove to and from so we can add them
+          // again as arguments. Don't interleave the
+          // remove with the calls to castTo and castFrom.
+          to->remove();
+          from->remove();
+          isSubtype = new CallExpr(PRIM_IS_SUBTYPE, to, from);
+          call->replace(isSubtype);
         }
       }
     }
