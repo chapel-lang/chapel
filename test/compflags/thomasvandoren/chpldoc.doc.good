@@ -9,6 +9,7 @@ Documentation Options:
       --comment-style <indicator>     Only includes comments that start with
                                       <indicator>
       --text-only                     Generate text only documentation
+      --[no-]print-commands           [Don't] print system commands
 
 Information Options:
   -h, --help                          Help (show this list)
