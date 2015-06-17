@@ -339,8 +339,9 @@ expression-list:
   expression , expression-list
 \end{syntax}
 The expression that follows the keyword \chpl{select}, the select
-expression, is compared with the list of expressions following the
-keyword \chpl{when}, the case expressions, using the equality
+expression, is evaluated once and its value is then compared
+with the list of case expressions following each
+\chpl{when} keyword. These values are compared using the equality
 operator \chpl{==}.  If the expressions cannot be compared with the
 equality operator, a compile-time error is generated.  The first case
 expression that contains an expression where that comparison
