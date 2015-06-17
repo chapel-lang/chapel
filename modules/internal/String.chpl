@@ -490,7 +490,7 @@ module CString {
   // Nor user nor module code should use this cast, because it strips ownership
   // from the c_string_copy returned by the above cast without first arranging
   // for its disposal.
-  inline proc numeric.cast(type t, x:real(?w))
+  inline proc numeric.cast(type t)
     where isRealType(this.type) && t == c_string
     return this.cast(c_string_copy);
 

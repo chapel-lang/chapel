@@ -894,7 +894,7 @@ module ChapelBase {
   inline proc integral.cast(type t) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, this);
   
-  inline proc numeric.cast(type t, x: real(?w))
+  inline proc numeric.cast(type t)
     where isRealType(this.type) && chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, this);
  
@@ -978,9 +978,9 @@ module ChapelBase {
     where isImagType(this.type) && (isRealType(t) || isIntegralType(t))
     return 0:t;
   
-  inline proc numeric.cast(type t, x: imag(?w))
+  inline proc numeric.cast(type t)
     where isImagType(this.type) && isBoolType(t)
-    return if x != 0i then true else false;
+    return if this != 0i then true else false;
   
   inline proc chpl__typeAliasInit(type t) type return t;
   inline proc chpl__typeAliasInit(v) {
