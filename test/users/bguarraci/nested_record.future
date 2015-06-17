@@ -1,0 +1,3 @@
+bug: inner record constructor should not need the outer parameter explicitly added
+
+nested_record.chpl:3: error: constructor for class 'InnerRecord' requires a generic argument called 'outer'
