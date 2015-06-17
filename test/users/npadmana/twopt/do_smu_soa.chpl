@@ -89,6 +89,7 @@ class Particle3D {
       jj = (rng.getNext()*(npart-ii)):int + ii;
       _ndx[jj] <=> _ndx[ii];
     }
+    delete rng;
 
     reorder(Dpart);
   }
@@ -316,7 +317,12 @@ proc testPairs() {
     writeln();
   }
 
-
+  //
+  // clean up
+  //
+  delete pp;
+  delete root1;
+  delete hh;
 }
     
 
@@ -360,5 +366,14 @@ proc doPairs() {
   tt.stop();
   writef("Time to tree paircount : %r \n", tt.elapsed());
   //writeHist("%s.tree".format(pairfn),hh);
+
+  //
+  // clean up
+  //
+  delete pp1;
+  delete pp2;
+  delete root1;
+  delete root2;
+  delete hh;
 }
 

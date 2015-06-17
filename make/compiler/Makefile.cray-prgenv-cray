@@ -40,7 +40,9 @@ endif
 #
 MODULECMD = /opt/modules/$(MODULE_VERSION)/bin/modulecmd sh
 
-ENSURE_GASNET_COMPATIBLE_COMPILER = eval `$(MODULECMD) swap PrgEnv-cray PrgEnv-gnu` &&
+# this appears to not be needed recently
+# it was added in 2009, see a89bf917ae3102c7ce3544ac3be10b7b4e9fa76c
+#ENSURE_GASNET_COMPATIBLE_COMPILER = eval `$(MODULECMD) swap PrgEnv-cray PrgEnv-gnu` &&
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
 

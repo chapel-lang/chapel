@@ -16,26 +16,8 @@
 # limitations under the License.
 
 ifneq ($(MAKE_LAUNCHER), 1)
-include $(GASNET_INC_MAKEFILE)
-
-#
-# Because we build GASNet using PrgEnv/gnu for the cray-prgenv-cray
-# compiler, we need to drop the flags it used to avoid conflicts.
-# Otherwise, we'd like to inherit the GASNet flags
-#
-ifneq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-CHPL_GASNET_CFLAGS = $(GASNET_CPPFLAGS) $(GASNET_MISC_CFLAGS) $(MANUAL_CFLAGS)
-OPT_CFLAGS += $(GASNET_OPT_CFLAGS)
-# squash inlining warnings for compilers that provide a flag to do so 
-ifneq (, $(filter $(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-gnu gnu \
-                    cray-prgenv-intel intel clang))
-OPT_CFLAGS += -Wno-inline
-endif
-CHPL_GASNET_LFLAGS = $(GASNET_LFLAGS)
-else
-CHPL_GASNET_CFLAGS =
-CHPL_GASNET_LFLAGS =
-endif
+# Gasnet setup makefile defines CHPL_GASNET_CFLAGS
+include $(GASNET_SETUP_MAKEFILE)
 
 #
 # On the XT/XE, we often build GASNet using a different compiler than the
@@ -44,12 +26,14 @@ endif
 # current PrgEnv.
 #
 ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xc cray-xk))
-CC = cc $(CHPL_GASNET_CFLAGS)
-LD = cc $(CHPL_GASNET_LFLAGS)
+# Just don't set CC and LD - they'll be set by our compiler/Makefile....
 else
-CC = $(GASNET_CC) $(CHPL_GASNET_CFLAGS)
-LD = $(GASNET_LD) $(CHPL_GASNET_LFLAGS)
+CC = $(GASNET_CC)
+LD = $(GASNET_LD)
 endif
+
+CHPL_MAKE_BASE_CFLAGS += $(CHPL_GASNET_CFLAGS)
+CHPL_MAKE_THIRD_PARTY_LINK_ARGS += $(CHPL_GASNET_LFLAGS)
 
 LIBS += $(GASNET_LIBS)
 endif

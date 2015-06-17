@@ -1699,6 +1699,9 @@ void makeBinaryLLVM(void) {
     command += libFlag[i];
   }
 
+  if( printSystemCommands ) {
+    printf("%s\n", command.c_str());
+  }
   mysystem(command.c_str(), "Make Binary - Linking");
 
   // Now run the makefile to move from tmpbinname to the proper program
@@ -1707,6 +1710,11 @@ void makeBinaryLLVM(void) {
   const char* makecmd = astr(astr(CHPL_MAKE, " "),
                              makeflags,
                              getIntermediateDirName(), "/Makefile");
+
+  if( printSystemCommands ) {
+    printf("%s\n", makecmd);
+  }
+
   mysystem(makecmd, "Make Binary - Building Launcher and Copying");
 }
 

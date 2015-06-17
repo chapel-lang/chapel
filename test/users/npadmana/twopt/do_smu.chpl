@@ -279,6 +279,13 @@ proc testPairs() {
     }
     writeln();
   }
+
+  //
+  // clean up
+  //
+  delete soa1;
+  delete hh;
+  delete root1;
 }
 
 
@@ -337,5 +344,14 @@ proc doPairs() {
   tt.stop();
   writef("Time to tree paircount : %r \n", tt.elapsed());
   writeHist("%s.tree".format(pairfn),hh);
+
+  //
+  // clean up
+  //
+  delete soa1;
+  delete soa2;
+  delete hh;
+  delete root1;
+  delete root2;
 }
 

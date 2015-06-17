@@ -1,0 +1,40 @@
+# This Makefile will include GASNet's makefile and set
+# up some variables to combine the GASNet compiler options
+# with the Chapel compiler options.
+
+
+include $(GASNET_INC_MAKEFILE)
+
+# 
+# The following lines try to combine GASNet's favorite C compiler
+# flags with ours.  The CHPL_GASNET_MORE_CFLAGS macro is used in
+# case we need to dampen some of our own settings in order to
+# compile GASnet without warnings.
+
+# todo - should we use MANUAL_CFLAGS from GASNet?
+
+ifeq ($(CC),$(GASNET_CC))
+CHPL_GASNET_CFLAGS_ALL = $(GASNET_MISC_CPPFLAGS) $(GASNET_DEFINES) $(GASNET_INCLUDES) $(GASNET_MISC_CFLAGS) $(MANUAL_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
+OPT_CFLAGS += $(GASNET_OPT_CFLAGS)
+CHPL_GASNET_LFLAGS = $(GASNET_LFLAGS)
+else
+# If GASNet is using a different compiler from the rest of the Chapel build,
+# don't use GASNet's
+# GASNET_MISC_CPPFLAGS
+# GASNET_MISC_CFLAGS
+# GASNET_OPT_CFLAGS
+# MANUAL_CFLAGS
+CHPL_GASNET_CFLAGS_ALL = $(GASNET_DEFINES) $(GASNET_INCLUDES) $(CHPL_GASNET_MORE_CFLAGS)
+endif
+
+
+# SUPPORT_SETENV_CFLAGS is from 2008 b4ced4c09d5677385d8bfaa507a95371576a9b42
+
+# Remove -Winline from Gasnet's provided flags
+CHPL_GASNET_CFLAGS = $(CHPL_GASNET_CFLAGS_ALL:-Winline=)
+ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xk cray-xc) )
+CHPL_GASNET_CFLAGS += -DGASNET_NEEDS_MAX_SEGSIZE
+endif
+
+
+
