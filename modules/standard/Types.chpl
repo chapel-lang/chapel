@@ -92,7 +92,7 @@ proc isVoidType(type t) param return t == void;
 
 pragma "no instantiation limit"
 proc isBoolType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
+  (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
 
 pragma "no instantiation limit"
 proc isIntType(type t) param return
@@ -111,15 +111,15 @@ proc isEnumType(type t) param {
 
 pragma "no instantiation limit"
 proc isComplexType(type t) param return
-  (t == complex(64)) | (t == complex(128));
+  (t == complex(64)) || (t == complex(128));
 
 pragma "no instantiation limit"
 proc isRealType(type t) param return
-  (t == real(32)) | (t == real(64));
+  (t == real(32)) || (t == real(64));
 
 pragma "no instantiation limit"
 proc isImagType(type t) param return
-  (t == imag(32)) | (t == imag(64));
+  (t == imag(32)) || (t == imag(64));
 
 // Here is a single doc comment for the above.
 /*

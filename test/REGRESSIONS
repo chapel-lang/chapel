@@ -166,15 +166,25 @@ general
 Reviewed 2015-05-20
 ===================
 
+execution timeout for new test (2015-06-06, bradc)
+(perf.xc.local.cray, valgrind)
+--------------------------------------------------
+[Error: Timed out executing program users/npadmana/twopt/do_smu_soa]
+
 === sporadic failures below ===
 
 sporadic race condition in task intents (vass -- don't remove until fixed)
 https://chapel.atlassian.net/browse/CHAPEL-63
 --------------------------------------------------------------------------
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
-  (verify: 2015-05-13)
-  (fast:   2015-05-20)
+  (verify:   2015-05-13)
+  (fast:     2015-05-20)
+  (baseline: 2015-05-25, 2015-05-27..)
 
+sporadic failure to build chpldoc due to python download timeout (mike, ben)
+----------------------------------------------------------------------------
+*all chpldoc tests*
+  (memleaks: 2015-05-28)
 
 
 ****************************************************************************
@@ -186,6 +196,12 @@ linux64
 Inherits 'general'
 Reviewed 2015-05-20
 ===================
+
+=== sporadic failures below ===
+
+sporadic segfault (one-off?)
+----------------------------
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory] (2015-05-26)
 
 
 ===================
@@ -201,23 +217,12 @@ Inherits '*32'
 Reviewed 2015-05-20
 ===================
 
-new test fails (2015-05-22, hilde)
-----------------------------------
-[Error matching program output for memory/hilde/memLeaksByDesc]
-
 
 ===================
 darwin
 Inherits 'general'
 Reviewed 2015-05-20
 ===================
-
-=== sporadic failures below ===
-
-Bus failure (not test specific?)
---------------------------------
-[Error matching .bad file for users/vass/crash1callDestructorsMain]
-  (2015-04-25)
 
 
 ===================
@@ -276,13 +281,8 @@ Reviewed 2015-05-20
 ===================
 baseline
 Inherits 'general'
-Reviewed 2015-05-20
+Reviewed 2015-06-11
 ===================
-
-Dies with signal 6 (bradc)
-https://chapel.atlassian.net/browse/CHAPEL-24
----------------------------------------------
-[Error matching program output for studies/glob/test_glob]
 
 
 ===================
@@ -309,17 +309,8 @@ Reviewed 2015-05-20
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-05-19
+Reviewed 2015-06-04
 ===================
-
-.bad mismatch due to freeing of syncs change (2015-05-21, lydia)
-----------------------------------------------------------------
-[Error matching .bad file for parallel/sync/diten/returnSync]
-
-execution timeout due to lack of --fast (2015-05-21, diten)
------------------------------------------------------------
-[Error: Timed out executing program studies/lulesh/bradc/lulesh-dense]
-
 
 
 ****************************************************************************
@@ -360,6 +351,12 @@ Inherits 'general'
 Reviewed 2015-05-20
 ===================
 
+=== sporadic failures below ===
+
+sporadic execution timeout
+--------------------------
+[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (2015-06-04)
+
 
 =================================
 no-local.linux32
@@ -382,7 +379,8 @@ https://chapel.atlassian.net/browse/CHAPEL-8
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] 
   (gasnet.fifo:       2015-03-24, 2015-03-31, 2015-04-04..2015-04-05,
                       2015-04-12, 2015-04-26..2015-04-27, 2015-04-30, 
-                      2015-05-02, 2015-05-03..2015-05-05, 2015-05-14)
+                      2015-05-02, 2015-05-03..2015-05-05, 2015-05-14,
+                      2015-05-25)
   (gasnet-fast:       2015-04-30, ..2015-05-03)
   (gasnet-everything: 2015-05-11)
 
@@ -394,51 +392,18 @@ Reviewed 2015-05-20
 ===================
 
 
-=== sporadic failures below ===
-
-sporadic recursive failure in AMUDP_SPMDShutdown
-------------------------------------------------
-[Error matching program output for extern/bradc/extern_string_test-remote]
-  (2015-05-01)
-
-
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2015-05-20
+Reviewed 2015-05-24
 ===================
-
-Segfault (2015-02-22, michael)
-https://chapel.atlassian.net/browse/CHAPEL-26
----------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
 
 
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2015-05-20
+Reviewed 2015-05-23
 ===============================
-
-errors due to new memory tracking feature (2015-05-22, hilde)
--------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/fft]
-[Error matching program output for release/examples/benchmarks/hpcc/hpl]
-[Error matching program output for release/examples/benchmarks/hpcc/ptrans]
-[Error matching program output for release/examples/benchmarks/hpcc/ra-atomics]
-[Error matching program output for release/examples/benchmarks/hpcc/stream-ep]
-[Error matching program output for release/examples/benchmarks/hpcc/stream]
-[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop]
-[Error matching program output for release/examples/benchmarks/hpcc/variants/stream-promoted]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
-[Error matching program output for release/examples/hello2-module]
-[Error matching program output for release/examples/hello3-datapar]
-[Error matching program output for release/examples/hello4-datapar-dist]
-[Error matching program output for release/examples/hello6-taskpar-dist]
-[Error matching program output for release/examples/hello]
-[Error matching program output for release/examples/primers/distributions]
-[Error matching program output for release/examples/primers/locales]
 
 
 =============================
@@ -455,7 +420,12 @@ https://chapel.atlassian.net/browse/CHAPEL-13
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
   (2015-03-24, 2015-03-28, 2015-04-08, 2015-04-24)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest]
-  (2015-04-15)
+  (2015-04-15, 2015-06-02)
+
+sporadic segfault (one-off)
+---------------------------
+[Error matching .bad file for parallel/forall/vass/memleaks2-BlockDist] (2015-06-02)
+
 
 
 =============================
@@ -463,6 +433,13 @@ gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
 Reviewed 2015-05-20
 =============================
+
+=== sporadic failures below ===
+
+sporadic execution timeout (one-off?)
+-------------------------------------
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
+  (2015-06-11..)
 
 
 =============================
@@ -484,6 +461,14 @@ Inherits 'general'
 Reviewed 2015-05-19
 ===================
 
+=== sporadic failures below ===
+
+sporadic compilation timeouts (one-offs?)
+-----------------------------------------
+[Error: Timed out compilation for trivial/deitz/test_if_expr2]
+  (xc-wb.prgenv-gnu: 2015-05-25)
+[Error: Timed out compilation for trivial/diten/infix2postfix]
+  (xc-wb.prgenv-cray: 2015-05-25)
 
 =======================
 *gnu*
@@ -548,8 +533,8 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-sporadic dropping/mangling of output
-------------------------------------
+sporadic dropping of output
+---------------------------
 [Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass]
   (2015-01-12..2015-01-19)
 [Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith]
@@ -600,6 +585,8 @@ sporadic dropping/mangling of output
   (2015-02-25)
 [Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)]
   (host testing 2015-03-01)
+[Error matching program output for release/examples/primers/procedures]
+  (2015-06-11..)
 
 
 ======================================
@@ -633,9 +620,6 @@ Inherits 'general'
 Reviewed 2015-05-19
 ===================
 
-library version mismatch (2015-05-22, ???)
-------------------------------------------
-* all *
 
 ==============================
 xc-wb.pgi
@@ -643,6 +627,9 @@ Inherits 'xc-wb.*' and '*pgi*'
 Reviewed 2015-05-19
 ==============================
 
+all tests fail with internal error (2015-05-24, lydia)
+------------------------------------------------------
+*all*
 
 ==============================
 xc-wb.prgenv-pgi
@@ -677,6 +664,7 @@ sporadic incorrect diff
   (xe.none.cray:       2015-05-02, 2015-05-08)
   (xc.none.cray.slurm: 2015-05-13)
 
+
 ===================
 xc.*
 Inherits 'x?.*'
@@ -685,10 +673,16 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-sporadic execution timeouts
----------------------------
+sporadic execution timeouts (one-offs?)
+---------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
-  (xc.aries.pgi.slurm:     2015-05-21)
+  (xc.aries.pgi.slurm: 2015-05-21)
+[Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 1)]
+  (xc.ugni.gnu.aprun: 2015-05-28)
+[Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 2)]
+  (xc.ugni.gnu.aprun:   2015-05-28, 2015-06-11..)
+  (xc.ugni.intel.aprun: 2015-06-09)
+
 
 sporadic [chpl_launchcmd] ... [ERROR] Output file from job does not exist
 https://chapel.atlassian.net/browse/CHAPEL-17
@@ -702,14 +696,21 @@ https://chapel.atlassian.net/browse/CHAPEL-17
   (xc.none.gnu.aprun: 2015-05-06)
 [Error matching program output for release/examples/primers/procedures]
   (xc.ugni.intel.aprun 2015-04-15)
+  (xc.aries.intel.aprun 2015-05-24)
+  (xc.ugni-qthreads.intel 2015-05-28)
 [Error matching program output for release/examples/primers/sparse]
   (xc.ugni.-qthreads.gnu.aprun 2015-04-16)
 [Error matching program output for release/examples/programs/quicksort]
   (xc.mpi.cray.aprun, 2015-04-23)
+  (xc.ugni-qthreads.intel.aprun, 2015-05-26)
 [Error matching program output for release/examples/primers/genericClasses]
   (xc.ugni.intel.aprun: 2015-05-02)
 [Error matching program output for release/examples/benchmarks/shootout/nbody]
   (xc.ugni.intel.aprun: 2015-05-11)
+[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop]
+  (xc.none.cray.aprun: 2015-05-23)
+[Error matching program output for release/examples/benchmarks/hpcc/ptrans]
+  (xc.aries.pgi.aprun: 2015-05-26)
 
 sporadic slurmstepd 'Expired credential' problem after termination
 ------------------------------------------------------------------
@@ -723,6 +724,18 @@ sporadic slurmstepd 'Expired credential' problem after termination
   (perf.xc.16.ugni.gnu: 2015-05-11)
 [Error: Timed out executing program statements/lydia/moduleVersusFunction]
   (perf.xc.local.pgi: 2015-05-11)
+[Error: Jira 18 -- Expired slurm credential for studies/shootout/fannkuch-redux/bradc/fannkuch-redux-blc-compact]
+  (perf.xc.local.cray: 2015-06-09)
+
+sporadic slurm 'job has expired id has expired' during PE update
+----------------------------------------------------------------
+[Error matching performance keys for studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-iter]
+  (perf.xc.local.gnu:    2015-06-09)
+[Error matching performance keys for studies/shootout/fannkuch-redux/bharshbarg/fannkuch-redux-coforall]
+  (perf.xc.local.intel:  2015-06-09)
+[Error matching performance keys for studies/shootout/meteor/kbrady/meteor-implicit-domain]
+  (perf.xc.no-local.gnu: 2015-06-09)
+
 
 sporadic squeue invalid job id error due to slurm update while we're running
 ----------------------------------------------------------------------------
@@ -749,31 +762,38 @@ Reviewed 2015-05-20
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)]
-  (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26, 2015-05-20)
-  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra]
+  (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26, 2015-05-20, 2015-05-23,
+                          2015-05-26)
+  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18, 2015-06-07)
   (xe.ugni.intel          2015-03-24, 2015-03-30, 2015-04-01..2015-04-02, 
-                          2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22..)
+                          2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22,
+                          2015-06-09)
   (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
                           2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
                           2015-05-05..2015-05-06, 2015-05-10,
-                          2015-05-14..2015-05-16)
+                          2015-05-14..2015-05-16, 2015-05-23..2015-05-24,
+                          2015-05-28, 2015-06-09..)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
   (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
                            2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
-                           2015-05-11, 2015-05-17, 2015-05-21..2015-05-22)
-  (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 
+                           2015-05-11, 2015-05-17, 2015-05-21..2015-05-22,
+                           2015-05-26, 2015-06-05..2015-06-06, 2015-06-10)
+  (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 2015-05-26..)
                            2015-05-03..2015-05-04, 2015-05-06..??, 
-                           2015-05-13..2015-05-17)
+                           2015-05-13..2015-05-17, 2015-06-05)
   (xe.ugni-qthreads.intel: ??..2015-03-22)
   (xe.ugni-qthreads.gnu:   2015-05-05, 2015-05-17, 2015-05-22)
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
   (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
-                          2015-05-05..2015-05-06, 2015-05-18, 2015-05-21)
+                          2015-05-05..2015-05-06, 2015-05-18, 2015-05-21,
+                          2015-06-09..2015-06-10)
   (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
-                          2015-05-18)
-  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18)
-  (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21)
+                          2015-05-18, 2015-05-24..2015-05-25, 2015-05-28)
+  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18, 
+                          2015-06-05..2015-06-06, 2015-06-10)
+  (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21, 
+                          2015-05-23..2015-05-24, 2015-05-26, 2015-06-06)
 
 
 ==========================================
@@ -896,10 +916,9 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-cause is unknown
-----------------
-[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-printf]
-  (2015-04-22)
+sporadic 'config attempted to be looked up with empty module name' (lydia)
+--------------------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/hpl] (2015-05-23..2015-06-04)
 
 
 ================================
@@ -929,13 +948,17 @@ Reviewed 2015-05-19
 
 === sporadic failures below ===
 
-sporadic execution timeout
---------------------------
+sporadic execution timeout (lydia)
+----------------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
 (cygwin64: ..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06, 
                 2015-03-10, 2015-03-12..2015-03-28, 2015-03-30..2015-04-04, 
                 2015-04-07..2015-05-04, 2015-05-07..2015-05-14, 2015-05-17)
  cygwin32: ..., 2015-03-11, 2015-03-13..2015-03-20, 2015-03-22..)
+[Error: Timed out executing program release/examples/primers/fileIO]
+  (cygwin64: 2015-06-02, 2015-06-06)
+  (cygwin32: 2015-06-08, 2015-06-11..)
+
 
 
 ===========================
@@ -945,6 +968,7 @@ Reviewed 2015-05-19
 ===========================
 
 errors/timeouts due to sync freeing? (2015-05-21, lydia)
+(currently squashed due to running examples only)
 --------------------------------------------------------
 [Error matching program output for parallel/forall/vass/ri-3-stress]
 [Error: Timed out executing program npb/cg/bradc/cg-sparse]
@@ -962,13 +986,8 @@ Reviewed 2015-05-19
 
 === sporadic failures below ===
 
-sporadic internal error
------------------------
-[Error matching program output for reductions/diten/testSerialReductions]
-  (2015-03-06, 2015-03-13..2015-04-14, 2015-05-01)
-
-sporadic child_copy: data read copy failed
-------------------------------------------
+sporadic child_copy: data read copy failed (one-off?)
+-----------------------------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky]
   (2015-05-11)
 
@@ -976,7 +995,8 @@ sporadic pthread_cond_init() failure
 ------------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
   (2015-02-25..2015-03-04, 2015-03-07, 2015-03-11, 2015-03-29, 2015-04-05, 
-   2015-05-05..2015-05-06, 2015-05-15..2015-05-16, 2015-05-18..)
+   2015-05-05..2015-05-06, 2015-05-15..2015-05-16, 2015-05-18..2015-06-01)
+
 
 
 ****************************************************************************
@@ -984,30 +1004,35 @@ sporadic pthread_cond_init() failure
 ****************************************************************************
 
 ===================
-dist-block
+dist-*
 Inherits 'gasnet*'
+===================
+
+
+===================
+dist-block
+Inherits 'dist-*'
 Reviewed 2015-05-20
 ===================
 
 === sporadic failures below ===
 
-sporadic segfault
------------------
+sporadic segfault (one-off?)
+----------------------------
 [Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
   (2015-05-14)
 
 
-
 ===================
 dist-cyclic
-Inherits 'gasnet*'
+Inherits 'dist-*'
 Reviewed 2015-05-20
 ===================
 
 
 ===================
 dist-replicated
-Inherits 'gasnet*'
+Inherits 'dist-*'
 Reviewed 2015-05-20
 ===================
 

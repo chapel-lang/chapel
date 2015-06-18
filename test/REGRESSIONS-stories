@@ -346,7 +346,7 @@ o studies/glob/test_glob (baseline): bradc
   - io/vass/time-write
 
 
-o multilocale/deitz/needMultiLocales/test_remote_file_read (gasnet-fast): mppf
+* multilocale/deitz/needMultiLocales/test_remote_file_read (gasnet-fast): mppf
 
   https://chapel.atlassian.net/browse/CHAPEL-26
 
@@ -715,7 +715,7 @@ o SIGBUS at execution time (xc.knc): anyone
   - functions/iterators/angeles/distAdaptativeWSv2
 
 
-o timed out once (perf.xc.local.cray): anyone
+* timed out once (perf.xc.local.cray): anyone
 
   https://chapel.atlassian.net/browse/CHAPEL-61
 

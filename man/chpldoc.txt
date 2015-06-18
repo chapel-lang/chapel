@@ -33,6 +33,9 @@ DESCRIPTION
   --text-only       Specify that documents should use a text output file
                     format rather than HTML.
 
+  --[no-]print-commands  Prints the system commands that the compiler
+                    executes in order to create the documentation.
+
   Information Options
 
   -h, --help        Print a list of the command line options, indicating

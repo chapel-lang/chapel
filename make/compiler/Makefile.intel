@@ -112,15 +112,11 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 #  174 : warns about expressions that have no effect
 #  177 : warns about unused variable declarations
 
+# 10121 : something to do with setenv?
+
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
-
-#
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS = -std=gnu89 -wr10121
-
 
 #
 # compiler warnings settings

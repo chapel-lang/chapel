@@ -196,5 +196,8 @@ studies/rbc/tvandoren/RBC.graph
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph
 studies/colostate/cfd-mini.graph
+# suite: Nikhil Padmanabhan
+users/npadmana/twopt/twopt-buildtrees.graph
+users/npadmana/twopt/twopt-paircount.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
