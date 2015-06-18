@@ -36,11 +36,11 @@
 #include <string.h>
 #include <complex.h>
 
-_complex128 buildComplex128(_real64 re, _real64 im) {
+_complex128 _chpl_complex128(_real64 re, _real64 im) {
   return re + im*_Complex_I;
 }
-
-_complex64 buildComplex64(_real32 re, _real32 im) {
+	
+_complex64 _chpl_complex64(_real32 re, _real32 im) {
   return re + im*_Complex_I;
 }
 

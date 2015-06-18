@@ -1384,7 +1384,7 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 #define INIT_PRIM_COMPLEX( name, width)                                                   \
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width);       \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(                    \
-                                  "buildComplex" #width "(0.0, 0.0)",                    \
+                                  "_chpl_complex" #width "(0.0, 0.0)",                    \
                                    0.0, 0.0, COMPLEX_SIZE_ ## width);                     \
   dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::pair<std::string, int>("re", 0)); \
   dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::pair<std::string, int>("im", 1));

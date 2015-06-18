@@ -150,6 +150,7 @@ module ChapelBase {
   
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                     // the iterator to yield zero times.
+  param useC99Complex = true; // not a config for now
 
   proc _throwOpError(param op: c_string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
@@ -324,7 +325,13 @@ module ChapelBase {
   inline proc -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", typeToString(a.type)); }
   inline proc -(a: real(?w)) return __primitive("u-", a);
   inline proc -(a: imag(?w)) return __primitive("u-", a);
-  inline proc -(a: complex(?w)) return __primitive("u-", a);
+  inline proc -(a: complex(?w)) {
+    if useC99Complex {
+      return __primitive("u-", a);
+    } else {
+      return (-a.re, -a.im):complex(w);
+    }
+  }
   
   inline proc +(param a: int(?w)) param return a;
   inline proc +(param a: uint(?w)) param return a;
@@ -344,7 +351,13 @@ module ChapelBase {
   inline proc +(a: uint(?w), b: uint(w)) return __primitive("+", a, b);
   inline proc +(a: real(?w), b: real(w)) return __primitive("+", a, b);
   inline proc +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
-  inline proc +(a: complex(?w), b: complex(w)) return __primitive("+", a, b);
+  inline proc +(a: complex(?w), b: complex(w)) {
+    if useC99Complex {
+      return __primitive("+", a, b);
+    } else {
+      return (a.re+b.re, a.im+b.im):complex(w);
+    }
+  }
 
   inline proc +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex(w*2);
   inline proc +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex(w*2);
@@ -357,7 +370,13 @@ module ChapelBase {
   inline proc -(a: uint(?w), b: uint(w)) return __primitive("-", a, b);
   inline proc -(a: real(?w), b: real(w)) return __primitive("-", a, b);
   inline proc -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
-  inline proc -(a: complex(?w), b: complex(w)) return __primitive("-", a, b);
+  inline proc -(a: complex(?w), b: complex(w)) {
+    if useC99Complex {
+      return __primitive("-", a, b);
+    } else {
+      return (a.re-b.re, a.im-b.im):complex(w);
+    }
+  }
 
   inline proc -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex(w*2);
   inline proc -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex(w*2);
@@ -382,7 +401,13 @@ module ChapelBase {
   inline proc *(a: uint(?w), b: uint(w)) return __primitive("*", a, b);
   inline proc *(a: real(?w), b: real(w)) return __primitive("*", a, b);
   inline proc *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
-  inline proc *(a: complex(?w), b: complex(w)) return __primitive("*", a, b);
+  inline proc *(a: complex(?w), b: complex(w)) {
+    if useC99Complex {
+      return __primitive("*", a, b);
+    } else {
+      return (a.re*b.re-a.im*b.im, a.im*b.re+a.re*b.im):complex(w);
+    }
+  }
   
   inline proc *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
   inline proc *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
@@ -395,7 +420,14 @@ module ChapelBase {
   inline proc /(a: uint(?w), b: uint(w)) return __primitive("/", a, b);
   inline proc /(a: real(?w), b: real(w)) return __primitive("/", a, b);
   inline proc /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
-  inline proc /(a: complex(?w), b: complex(w)) return __primitive("/", a, b);
+  inline proc /(a: complex(?w), b: complex(w)) {
+    if useC99Complex {
+      return __primitive("/", a, b);
+    } else {
+      return let d = b.re*b.re+b.im*b.im in
+             ((a.re*b.re+a.im*b.im)/d, (a.im*b.re-a.re*b.im)/d):complex(w);
+    }
+  }
   
   inline proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
   inline proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
@@ -456,12 +488,16 @@ module ChapelBase {
   inline proc **(a: uint(?w), b: uint(w)) return _intExpHelp(a, b);
   inline proc **(a: real(?w), b: real(w)) return __primitive("**", a, b);
   inline proc **(a: complex(?w), b: complex(w)) {
-    if a.type == complex(128) {
-      extern proc cpow(x: complex(128), y: complex(128)): complex(128);
-      return cpow(a, b);
+    if useC99Complex {
+      if a.type == complex(128) {
+        extern proc cpow(x: complex(128), y: complex(128)): complex(128);
+        return cpow(a, b);
+      } else {
+        extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
+        return cpowf(a, b);
+      }
     } else {
-      extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
-      return cpowf(a, b);
+      halt("complex exponent not implemented");
     }
   }
 
@@ -641,29 +677,37 @@ module ChapelBase {
   //  bug?  in setters, parameterize real argument over complex bit width
   //
   inline proc ref chpl_anycomplex.re ref {
-    if setter {
-      return __primitive("complex_get_real", this);
-    } else {
-      if this.type == complex(128) {
-        extern proc creal(x:complex(128)): real(64);
-        return creal(this);
+    if useC99Complex {
+      if setter {
+        return __primitive("complex_get_real", this);
       } else {
-        extern proc crealf(x:complex(64)): real(32);
-        return crealf(this);
+        if this.type == complex(128) {
+          extern proc creal(x:complex(128)): real(64);
+          return creal(this);
+        } else {
+          extern proc crealf(x:complex(64)): real(32);
+          return crealf(this);
+        }
       }
+    } else {
+      return __primitive("complex_get_real", this);
     }
   }
   inline proc ref chpl_anycomplex.im ref {
-    if setter {
-      return __primitive("complex_get_imag", this);
-    } else {
-      if this.type == complex(128) {
-        extern proc cimag(x:complex(128)): real(64);
-        return cimag(this);
+    if useC99Complex {
+      if setter {
+        return __primitive("complex_get_imag", this);
       } else {
-        extern proc cimagf(x:complex(64)): real(32);
-        return cimagf(this);
+        if this.type == complex(128) {
+          extern proc cimag(x:complex(128)): real(64);
+          return cimag(this);
+        } else {
+          extern proc cimagf(x:complex(64)): real(32);
+          return cimagf(this);
+        }
       }
+    } else {
+      return __primitive("complex_get_imag", this);
     }
   }
   
