@@ -86,21 +86,21 @@ CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 CHPL_RT_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_RT_DIR)
 
 printincludesanddefines:
-	@echo $(RUNTIME_DEFS) $(RUNTIME_INCLS)
+	@echo $(CHPL_MAKE_BASE_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS)
 
 printcompileline:
-	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
+	@echo $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
 
 printcflags:
-	@echo $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
+	@echo $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
 
 printlibraries:
 	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
 printlinkline:
 	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
 
 printmaino:
