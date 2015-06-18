@@ -199,6 +199,11 @@ printDevelErrorHeader(BaseAST* ast) {
 
   if (ast && ast->linenum())
     fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
+  else if( currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
+    // Print out our best guess for the location of an error
+    // if we had no source location
+    fprintf(stderr, "%s:%d: ", currentAstLoc.filename, currentAstLoc.lineno);
+  }
 
   if (err_print) {
     fprintf(stderr, "note: ");
