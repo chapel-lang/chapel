@@ -87,6 +87,10 @@ writeln(); // line break
 class Tree {
   var data: string;
   var left, right: Tree;
+  proc ~Tree() {
+    if left != nil then delete left;
+    if right != nil then delete right;
+  }
 }
 
 var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"),
@@ -169,3 +173,5 @@ coforall node in postorder(tree) do
   node.data = decorate(node.data);
 writeln(tree);
 writeln();
+
+delete tree;
