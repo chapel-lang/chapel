@@ -1271,6 +1271,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
 
   Symbol* sym = lookup(unresolvedSymExpr, name);
 
+  std::map<const char*, Symbol*> otherResults = lookup2(unresolvedSymExpr, name);
+  if (sym != otherResults[name]) {
+    INT_FATAL(unresolveSymExpr, "Lydia, fix your stuff!");
+  }
+
   //
   // handle function call without parentheses
   //
