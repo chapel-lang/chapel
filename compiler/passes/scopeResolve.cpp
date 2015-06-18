@@ -490,6 +490,11 @@ static AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* ch
   INT_ASSERT(se);
 
   Symbol*            sym = lookup(storesName, se->unresolved);
+  std::map<const char*, Symbol*> otherResults = lookup2(storesName, se->unresolved);
+  if (sym != otherResults[se->unresolved]) {
+    INT_FATAL(storesName, "Lydia, fix your stuff!");
+  }
+
   TypeSymbol*        ts  = toTypeSymbol(sym);
 
   //    printf("looking up %s\n", se->unresolved);
