@@ -43,8 +43,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "WhileStmt.h"
-//vass
-#include "view.h"
 
 #include "../ifa/prim_data.h"
 
@@ -2755,6 +2753,18 @@ static void verifyTaskFnCall(BlockStmt* parent, CallExpr* call) {
 }
 
 //
+// Allow invoking isConstValWillNotChange() even on formals
+// with blank and 'const' intents.
+//
+static bool isConstValWillNotChange(Symbol* sym) {
+  if (ArgSymbol* arg = toArgSymbol(sym)) {
+    IntentTag cInt = concreteIntent(arg->intent, arg->type->getValType());
+    return cInt == INTENT_CONST_IN;
+  }
+  return sym->isConstValWillNotChange();
+}
+
+//
 // Returns the expression that we want to capture before.
 //
 // Why not just 'parent'? In users/shetag/fock/fock-dyn-prog-cntr.chpl,
@@ -2782,7 +2792,7 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
   return parent;
 }
 
-// block id -> (sym -> sym)
+// map: (block id) -> (map: sym -> sym)
 typedef std::map<int, SymbolMap*> CapturedValueMap;
 static CapturedValueMap capturedValues;
 static void freeCache(CapturedValueMap& c) {
@@ -2790,6 +2800,17 @@ static void freeCache(CapturedValueMap& c) {
     delete it->second;
 }
 
+//
+// Generate code to store away the value of 'varActual' before
+// the cobegin or the coforall loop starts. Use this value
+// instead of 'varActual' as the actual to the task function,
+// meaning (later in compilation) in the argument bundle.
+//
+// This is to ensure that all task functions use the same value
+// for their respective formal when that has an 'in'-like intent,
+// even if 'varActual' is modified between creations of
+// the multiple task functions.
+//
 static void captureTaskIntentValues(int argNum, ArgSymbol* formal,
                                     Expr* actual, Symbol* varActual,
                                     CallInfo& info, CallExpr* call,
@@ -2845,7 +2866,14 @@ static void captureTaskIntentValues(int argNum, ArgSymbol* formal,
   iact = captemp;
 }
 
-static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo& info)
+//
+// Copy the type of the actual into the type of the corresponding formal
+// of a task function. (I think resolution wouldn't make this happen
+// automatically and correctly in all cases.)
+// Also do captureTaskIntentValues() when needed.
+//
+static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
+                                 CallInfo& info)
 {
   INT_ASSERT(taskFn);
   if (!needsCapture(taskFn)) {
@@ -2876,7 +2904,8 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo& info)
     // instantiated by now. Otherwise our task function has to remain generic.
     INT_ASSERT(!varActual->type->symbol->hasFlag(FLAG_GENERIC));
 
-    // need to copy varActual->type even for type variables
+    // Need to copy varActual->type even for type variables.
+    // BTW some formals' types may have been set in createTaskFunctions().
     formal->type = varActual->type;
 
     // If the actual is a ref, still need to capture it => remove ref.
@@ -2902,6 +2931,7 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo& info)
     // records and strings are (incorrectly) captured at the point
     // when the task function/arg bundle is created.
     if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) &&
+        !isConstValWillNotChange(varActual) &&
         (concreteIntent(formal->intent, formal->type->getValType())
          & INTENT_FLAG_IN))
       // skip dummy_locale_arg: chpl_localeID_t
@@ -3308,7 +3338,7 @@ void resolveNormalCall(CallExpr* call) {
     }
   } else {
     visibleFns.add(call->isResolved());
-    handleCaptureArgs(call, call->isResolved(), info);
+    handleTaskIntentArgs(call, call->isResolved(), info);
   }
 
   if ((explainCallLine && explainCallMatch(call)) ||
