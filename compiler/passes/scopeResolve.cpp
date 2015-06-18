@@ -1747,7 +1747,7 @@ static std::map<const char *, Symbol *> lookup2(BaseAST* scope, const char* name
   for ( std::map<const char *, std::vector<Symbol * > >::iterator it = symbolOptions.begin(); it != symbolOptions.end(); ++it) {
     const char* itname = it->first;
 
-    bool numFound = symbolOptions[itname].size();
+    int numFound = symbolOptions[itname].size();
     if (numFound == 0) {
       // No symbols found for this name
       symbolResults[itname] = NULL;
@@ -1808,6 +1808,18 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
   }
 
   if (Symbol* sym = inType(scope, name)) {
+    if (symbols[name].size() != 0) {
+      if (symbols[name].front() == sym) {
+        // Upon entrace to this function, symbols[name].size() should be 0
+        // The previous if statement will add at most 1 element
+        // If that element does not match this field/method we just found,
+        // then there is actually a conflict, so it should be added (which
+        // continuing through the if statement will allow).  Otherwise, we're
+        // looking at the exact same Symbol, so there's no need to add it and
+        // we can just return.
+        return true;
+      }
+    }
     symbols[name].push_back(sym);
   }
 
