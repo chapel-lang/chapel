@@ -478,7 +478,8 @@ module CString {
         isIntType(this.type));
   }
   inline proc integral.cast(type t) where t == string {
-    return toString(this.cast(c_string_copy));
+    var tmp = this.cast(c_string_copy);
+    return toString(tmp);
   }
 
 
