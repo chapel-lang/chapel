@@ -3345,8 +3345,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
   bool explain = fExplainVerbose &&
-    ((explainCallLine && explainCallMatch(call)) ||
-     info.call->id == explainCallID);
+    ((explainCallLine && explainCallMatch(info.call)) ||
+     call->id == explainCallID);
   DisambiguationContext DC(call, &info.actuals, scope, explain);
 
   ResolutionCandidate* best = disambiguateByMatch(candidates, DC);

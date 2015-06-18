@@ -477,6 +477,10 @@ module CString {
     return integral_to_c_string_copy(this:int(64), numBytes(this.type),
         isIntType(this.type));
   }
+  inline proc integral.cast(type t) where t == string {
+    return toString(this.cast(c_string_copy));
+  }
+
 
   extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy ;
   //
