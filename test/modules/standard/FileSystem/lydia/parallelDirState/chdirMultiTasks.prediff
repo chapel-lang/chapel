@@ -1,12 +1,25 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-correctRes="${PWD}/task1/0
-${PWD}/task1/0
-${PWD}/task1/1
-${PWD}/task1/2
-${PWD}/task1/3
-${PWD}/task1/4
-${PWD}/task1/5"
-if [ "`cat $2`" = "${correctRes}" ]; then
-	echo ok > $2
-fi
+import os, os.path, sys
+
+parentDir = os.getenv('PWD')
+parentDir = os.path.realpath(parentDir)
+expected = parentDir + '/task1/0\n' + parentDir + '/task1/0\n'
+expected += parentDir + '/task1/1\n' + parentDir + '/task1/2\n'
+expected += parentDir + '/task1/3\n' + parentDir + '/task1/4\n'
+expected += parentDir + '/task1/5\n'
+
+f = open(sys.argv[2], 'r')
+
+result = ""
+
+# read in entirety of file
+for line in f:
+    result += line
+
+if (result == expected):
+    f.close()
+    f = open(sys.argv[2], 'w')
+    f.write("ok\n")
+
+f.close();

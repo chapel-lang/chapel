@@ -245,6 +245,15 @@ proc main() {
 
     run(population2, forest);
     printInfo(population2);
+
+
+    // clean up after ourselves
+    destroyChameneos(population1);
+    destroyChameneos(population2);
+    delete forest;
   }
 }
 
+proc destroyChameneos(ca: [] Chameneos) {
+  for c in ca do delete c;
+}
