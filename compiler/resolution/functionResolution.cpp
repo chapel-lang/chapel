@@ -3084,12 +3084,8 @@ resolveDefaultGenericType(CallExpr* call) {
         if( vs->hasFlag(FLAG_EXTERN) && vs->hasFlag(FLAG_TYPE_VARIABLE) &&
             vs->defPoint && vs->defPoint->init ) {
           if( CallExpr* def = toCallExpr(vs->defPoint->init) ) {
-            printf("Resolving an argument in this:\n");
-            print_view(call);
             vs->defPoint->init = resolveExpr(def);
             te->replace(new SymExpr(vs->defPoint->init->typeInfo()->symbol));
-            printf("Resolved to this:\n");
-            print_view(call);
           }
         }
       }
