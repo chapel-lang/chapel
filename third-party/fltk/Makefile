@@ -9,17 +9,17 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-all: install.done
+all: install.$(CHPL_HOST_PLATFORM)
 
-install.done: $(FLTK_INSTALL_DIR)
-	touch install.done
+install.$(CHPL_HOST_PLATFORM): $(FLTK_INSTALL_DIR)
+	touch install.$(CHPL_HOST_PLATFORM)
 
-$(FLTK_INSTALL_DIR): build.done
+$(FLTK_INSTALL_DIR): build.$(CHPL_HOST_PLATFORM)
 	cd $(FLTK_BUILD_DIR) && $(MAKE) install
 
-build.done: $(FLTK_BUILD_DIR)
+build.$(CHPL_HOST_PLATFORM): $(FLTK_BUILD_DIR)
 	cd $(FLTK_BUILD_DIR) && ./configure --prefix=$(FLTK_INSTALL_DIR) &&  $(MAKE)
-	touch build.done
+	touch build.$(CHPL_HOST_PLATFORM)
 
 $(FLTK_BUILD_DIR):
 	@echo Unpacking fltk-$(FLTK_VERSION)-source.tar.gz
@@ -28,14 +28,14 @@ $(FLTK_BUILD_DIR):
 
 clean:
 	cd $(FLTK_BUILD_DIR) && $(MAKE) clean
-	rm -f build.done install.done
+	rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
 
 cleanall:
 	cd $(FLTK_BUILD_DIR) && $(MAKE) cleanall
-	rm -f build.done install.done
+	rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
 
 clobber:
 	-rm -rf $(FLTK_BUILD_DIR) $(FLTK_INSTALL_DIR) *~
-	-rm -f build.done install.done
+	-rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
 
 FORCE:
