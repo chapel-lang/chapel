@@ -106,7 +106,7 @@ static void     destroyModuleUsesCaches();
 static void     renameDefaultTypesToReflectWidths();
 
 static Symbol*  lookup(BaseAST* scope, const char* name);
-static std::map<const char *, Symbol *> lookup2(UnresolvedSymExpr* name);
+static std::map<const char *, Symbol *> lookup2(BaseAST* scope, const char* name);
 
 static BaseAST* getScope(BaseAST* ast);
 
@@ -186,7 +186,7 @@ void scopeResolve() {
 
         TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
 
-        std::map<const char*, Symbol*> otherResults = lookup2(sym);
+        std::map<const char*, Symbol*> otherResults = lookup2(sym, sym->unresolved);
         if (ts != toTypeSymbol(otherResults[sym->unresolved])) {
           INT_FATAL(fn, "Lydia, fix your stuff!");
         }
@@ -349,7 +349,7 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
     Symbol* symbol = lookup(useCall, sym->unresolved);
 
-    std::map<const char*, Symbol*> otherResults = lookup2(sym);
+    std::map<const char*, Symbol*> otherResults = lookup2(useCall, sym->unresolved);
     if (symbol != otherResults[sym->unresolved]) {
       INT_FATAL(useCall, "Lydia, fix your stuff!");
     }
@@ -381,6 +381,12 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
 
     symbol = lookup(lhs->block, rhsName);
+    std::map<const char*, Symbol*> otherResults = lookup2(lhs->block, rhsName);
+    if (symbol != otherResults[rhsName]) {
+      INT_FATAL(useCall, "Lydia, fix your stuff!");
+    }
+
+
     mod    = toModuleSymbol(symbol);
 
     if (symbol && !mod) {
@@ -1712,22 +1718,21 @@ static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 
 // Given an unresolvedSymExpr, determine the value of all symbols in its
 // calling context and return them.
-static std::map<const char *, Symbol *> lookup2(UnresolvedSymExpr* name) {
+static std::map<const char *, Symbol *> lookup2(BaseAST* scope, const char* name) {
   std::map<const char *, Symbol *> symbolResults;
   std::map<const char *, std::vector<Symbol * > > symbolOptions;
   Vec<BaseAST*> nestedscopes;
 
   std::list<const char *> names;
-  const char * curname = name->unresolved;
-  names.push_front(curname);
-  symbolOptions.insert(std::pair<const char *, std::vector<Symbol * > > (curname, std::vector<Symbol *> ()));
+  names.push_front(name);
+  symbolOptions.insert(std::pair<const char *, std::vector<Symbol * > > (name, std::vector<Symbol *> ()));
 
   // TODO: Need to traverse all call expressions of the "." accessor.
 
 
   // Call inner lookup on name as scope, the list of names, the symbols return
   // map, and the vector of ASTs already visited.
-  lookup2(name, names, symbolOptions, nestedscopes);
+  lookup2(scope, names, symbolOptions, nestedscopes);
 
   for ( std::map<const char *, std::vector<Symbol * > >::iterator it = symbolOptions.begin(); it != symbolOptions.end(); ++it) {
     const char* itname = it->first;
