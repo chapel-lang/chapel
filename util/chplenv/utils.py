@@ -65,3 +65,9 @@ def run_command(command, stdout=True, stderr=False):
             return output[1]
         else:
             return ''
+
+def compiler_is_prgenv(compiler_val):
+  return (compiler_val.startswith('cray-prgenv') or
+     os.environ.get('CHPL_ORIG_TARGET_COMPILER','').startswith('cray-prgenv'))
+
+

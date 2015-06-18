@@ -59,11 +59,6 @@ LIB_DYNAMIC_FLAG = -qmkshrobj -X64
 # TODO: Set flag for lax or IEEE floating point (e.g. -qfloat)
 
 #
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS =
-
-#
 # Flags for turning on warnings for C++/C code
 #
 WARN_CXXFLAGS = -qhalt=i

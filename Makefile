@@ -68,7 +68,7 @@ modules: FORCE
 runtime: FORCE
 	cd runtime && $(MAKE)
 	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
-	export CHPL_TARGET_COMPILER=clang-included && \
+	source ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
 	cd runtime && $(MAKE) ; \
 	fi
 
@@ -81,7 +81,7 @@ third-party-try-re2: FORCE
 	-@if [ -z "$$CHPL_REGEXP" ]; then \
 	cd third-party && $(MAKE) try-re2; \
 	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
-	export CHPL_TARGET_COMPILER=clang-included && \
+	source ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
 	$(MAKE) try-re2; \
 	fi \
 	fi
@@ -90,7 +90,7 @@ third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
 	cd third-party && $(MAKE) try-gmp; \
 	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
-	export CHPL_TARGET_COMPILER=clang-included && \
+	source ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
 	$(MAKE) try-gmp; \
 	fi \
 	fi
