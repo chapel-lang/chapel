@@ -46,6 +46,10 @@
 
 #include "../ifa/prim_data.h"
 
+
+#include "view.h"
+
+
 #include <inttypes.h>
 #include <map>
 #include <sstream>
@@ -337,6 +341,7 @@ static bool isSubType(Type* sub, Type* super);
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
 static Expr* postFold(Expr* expr);
+static Expr* resolveExpr(Expr* expr);
 static void
 computeReturnTypeParamVectors(BaseAST* ast,
                               Symbol* retSymbol,
@@ -3070,6 +3075,21 @@ resolveDefaultGenericType(CallExpr* call) {
             te->replace(cc);
             resolveCall(cc);
             cc->replace(new SymExpr(cc->typeInfo()->symbol));
+          }
+        }
+      }
+      if (VarSymbol* vs = toVarSymbol(te->var)) {
+        // Fix for complicated extern vars like
+        // extern var x: c_ptr(c_int);
+        if( vs->hasFlag(FLAG_EXTERN) && vs->hasFlag(FLAG_TYPE_VARIABLE) &&
+            vs->defPoint && vs->defPoint->init ) {
+          if( CallExpr* def = toCallExpr(vs->defPoint->init) ) {
+            printf("Resolving an argument in this:\n");
+            print_view(call);
+            vs->defPoint->init = resolveExpr(def);
+            te->replace(new SymExpr(vs->defPoint->init->typeInfo()->symbol));
+            printf("Resolved to this:\n");
+            print_view(call);
           }
         }
       }
