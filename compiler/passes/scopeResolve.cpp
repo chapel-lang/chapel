@@ -1273,7 +1273,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
 
   std::map<const char*, Symbol*> otherResults = lookup2(unresolvedSymExpr, name);
   if (sym != otherResults[name]) {
-    INT_FATAL(unresolvedSymExpr, "Lydia, fix your stuff!");
+    USR_WARN(sym, "Lydia, this was different");
+    sym = otherResults[name];
   }
 
   //
@@ -1801,6 +1802,7 @@ static Symbol* inType(BaseAST* scope, const char* name) {
   return NULL;
 }
 
+// Assumes that symbols[name] contains nothing before entering this function
 static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
                                 std::map<const char *, std::vector<Symbol* > >& symbols) {
   if (Symbol* sym = inSymbolTable(scope, name)) {
@@ -1826,23 +1828,6 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
   if (symbols[name].size() == 0) {
     if (BlockStmt* block = toBlockStmt(scope)) {
       if (block->modUses) {
-        // optimization: only need to check if we want to go up a scope if
-        // the block has module uses in it.
-        if (FnSymbol* fn = toFnSymbol(getScope(block))) {
-          // The next scope up from the block statement is a function
-          // symbol. That means that we need to check if the arguments
-          // contain the symbol we are looking for before looking in module
-          // uses.
-          if (Symbol* sym = inSymbolTable(fn, name)) {
-            // We found it in the arguments, no need to check the module uses
-            // so return.
-            symbols[name].push_back(sym);
-            return true;
-          }
-        }
-        // If we got here, that means either we weren't the outermost scope in
-        // a FnSymbol or we were but the name doesn't match the name of an
-        // argument, so check the module uses.
         Vec<ModuleSymbol*>* modules = NULL;
 
         if (moduleUsesCache.count(block) == 0) {
@@ -1878,7 +1863,25 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
             // break on each new depth if a symbol has been found
             //
             if (symbols[name].size() > 0)
-              return true;
+              break;
+          }
+        }
+
+        if (symbols[name].size() > 0) {
+          // We found a symbol in the module use.  This could conflict with the
+          // function symbol's arguments if we are at the top level scope
+          // within a function.  Note that we'd check the next scope up if
+          // size() == 0, so we only need to do this check here because the
+          // module case would hide it otherwise
+          if (FnSymbol* fn = toFnSymbol(getScope(block))) {
+            // The next scope up from the block statement is a function
+            // symbol. That means that we need to check the arguments
+            if (Symbol* sym = inSymbolTable(fn, name)) {
+              // We found it in the arguments.  This should cause a conflict,
+              // because it is probably an error that the user had the same
+              // name as a module level variable.
+              symbols[name].push_back(sym);
+            }
           }
         }
       }
