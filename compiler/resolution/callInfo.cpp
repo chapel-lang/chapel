@@ -50,7 +50,7 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly)
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
     Type* t = se->var->type;
-    if (t == dtUnknown) {
+    if (t == dtUnknown && ! se->var->hasFlag(FLAG_TYPE_VARIABLE) ) {
       if (checkonly) call = NULL;
       else USR_FATAL(call, "use of '%s' before encountering its definition,"
                            "type unknown", se->var->name);

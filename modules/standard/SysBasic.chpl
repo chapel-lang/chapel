@@ -170,6 +170,21 @@ inline proc c_ptr.cast(type t) where t:c_void_ptr {
   return __primitive("cast", t, this);
 }
 
+
+pragma "compiler generated"
+pragma "no doc"
+inline proc _defaultOf(type t) where t == c_void_ptr {
+    return __primitive("cast", t, nil);
+}
+
+pragma "compiler generated"
+pragma "no doc"
+inline proc _defaultOf(type t) where t:c_ptr {
+    return __primitive("cast", t, nil);
+}
+
+
+
 /* Allocate memory that is filled with zeros. This memory should eventually be
    freed with c_free.
 

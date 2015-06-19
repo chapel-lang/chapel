@@ -259,7 +259,13 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(astr("x", istr(i))))));
-    call->insertAtTail(new CallExpr("chpl__autoCopy", tmp));
+    // If it is a reference, pass it through.
+    DefExpr* def = toDefExpr(ct->fields.get(i+1));
+    INT_ASSERT(def);
+    if (isReferenceType(def->sym->type))
+      call->insertAtTail(tmp);
+    else
+      call->insertAtTail(new CallExpr("chpl__autoCopy", tmp));
   }
   
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
