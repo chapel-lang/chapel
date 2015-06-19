@@ -1,2 +1,3 @@
-#!/bin/sh
-sed -n '/\x0/p' test.dat > $2
+#!/bin/bash
+output=$2
+sort -u test.dat > $output
