@@ -850,8 +850,10 @@ static void applyGetterTransform(CallExpr* call) {
     }
     call->methodTag = true;
     if (CallExpr* parent = toCallExpr(call->parentExpr))
-      if (parent->baseExpr == call)
+      if (parent->baseExpr == call) {
         call->partialTag = true;
+        call->methodTag = false;
+      }
   }
 }
 

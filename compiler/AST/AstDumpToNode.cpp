@@ -893,6 +893,8 @@ bool AstDumpToNode::enterCallExpr(CallExpr* node)
     fprintf(mFP, "\"");
   }
 
+  if (node->methodTag)
+    write("(noparens)");
   if (node->partialTag)
     write("(partial)");
 

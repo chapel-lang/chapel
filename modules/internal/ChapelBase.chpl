@@ -1543,13 +1543,13 @@ module ChapelBase {
 
   // Various types whose default value is known
   pragma "no doc"
-  inline proc _defaultOf(type t) param where t: void return _void;
+  inline proc _defaultOf(type t) param where t == void return _void;
   pragma "no doc"
-  inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
+  inline proc _defaultOf(type t) where t == opaque return _nullOpaque;
   pragma "no doc"
-  inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
+  inline proc _defaultOf(type t) where t == chpl_taskID_t return chpl_nullTaskID;
   pragma "no doc"
-  inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
+  inline proc _defaultOf(type t) where t == _sync_aux_t return _nullSyncVarAuxFields;
   pragma "no doc"
   inline proc _defaultOf(type t) where t == _task_list return _nullTaskList;
 

@@ -150,8 +150,11 @@ bool AstDump::enterCallExpr(CallExpr* node) {
     }
   }
 
+  if (node->methodTag)
+    write("(noparens)");
   if (node->partialTag)
     write("(partial)");
+
 
   return true;
 }

@@ -3542,7 +3542,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (call->partialTag && (!best || !best->fn ||
                            !best->fn->hasFlag(FLAG_NO_PARENS))) {
     if (best != NULL) {
-      delete best;
+      //delete best; deleted below.
       best = NULL;
     }
   } else if (!best) {
@@ -4315,7 +4315,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
         }
       }
     } else if (EnumSymbol* e = toEnumSymbol(sym->var)) {
-      if (SymExpr* sym = toSymExpr(call->castFrom())) {
+      if (SymExpr* sym = toSymExpr(call->castTo())) {
         EnumType* oldType = toEnumType(e->type);
         EnumType* newType = toEnumType(sym->var->type);
         if (newType && oldType == newType) {
