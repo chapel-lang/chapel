@@ -61,20 +61,6 @@ IteratorInfo::IteratorInfo() :
 {}
 
 
-static inline IteratorInfo*
-getIteratorInfoForIterator(Symbol* iterator)
-{
-  // This is the getIterator function that was used to create iterator.
-  FnSymbol* getIteratorFn = iterator->type->defaultInitializer;
-  // This is its argument, which is the original iterable.
-  Symbol* iterable = getIteratorFn->getFormal(1);
-  // This original iterator function is stashed here.
-  FnSymbol* iteratorFn = iterable->type->defaultInitializer;
-  // The iteratorInfo we need is stashed there.
-  return iteratorFn->iteratorInfo;
-}
-
-
 // Return the PRIM_YIELD CallExpr* or NULL.
 static inline CallExpr* asYieldExpr(BaseAST* e) {
   if (CallExpr* call = toCallExpr(e))
