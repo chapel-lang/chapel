@@ -1004,7 +1004,6 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
   Expr *redRef1 = NULL, *redRef2 = NULL;
   Symbol* extraFormals[numExtraArgs];
   Symbol* shadowVars[numExtraArgs];
-  bool gotNestedReduce = false;
 
   for (int ix = 0; ix < numExtraArgs; ix++) {
     Symbol*     eActual = extraActuals[ix];
@@ -1033,7 +1032,6 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
     if (isReduce && nested) {
       // We shouldn't bother with all this when it is not a task function.
       INT_ASSERT(isTaskFun(fn));
-      gotNestedReduce = true;
       setupRedRefs(fn, nested, redRef1, redRef2);
       ArgSymbol* parentOp = eFormal; // the reduceParent arg
       VarSymbol* currOp   = new VarSymbol(astrArg(ix, "reduceCurr"));
@@ -1066,14 +1064,8 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       // Make a tuple that includes the extra args.
       Expr* origRetArg = rcall->get(1)->remove();
       VarSymbol* newOrigRet = localizeYieldForExtendLeader(origRetArg, rcall);
-      // We need to yield references to svars as part of tuples,
-      // hence the _allow_ref version. However, with some promotion wrappers
-      // e.g. npb/is/diten/is.chpl, this hits the bug that autoCopy on a tuple
-      // with a ref component dereferences that component.
-      // So we avoid _allow_ref if we do not have reduce intents.
-      const char* buildName =
-        gotNestedReduce ? "_build_tuple_always_allow_ref" : "_build_tuple";
-      CallExpr* buildTuple = new CallExpr(buildName, newOrigRet);
+      CallExpr* buildTuple = new CallExpr("_build_tuple_always_allow_ref",
+                                          newOrigRet);
 
       // add tuple components
       for (int ix = 0; ix < numExtraArgs; ix++) {

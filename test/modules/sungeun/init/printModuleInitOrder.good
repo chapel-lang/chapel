@@ -8,7 +8,6 @@ Initializing Modules:
      StringCasts
     MemConsistency
     Atomics
-    NetworkAtomics
     AtomicsCommon
     ChapelThreads
     ChapelTuple

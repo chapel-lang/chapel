@@ -196,6 +196,12 @@ module ChapelIteratorSupport {
     return standalone;
   }
 
+  pragma "expand tuples with values"
+  inline proc _toStandalone(x, args...) {
+    return _toStandalone(x.these(), (...args));
+  }
+
+
   //
   // return true if any iterator supports fast followers
   //

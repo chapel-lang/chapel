@@ -1,5 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-parentDir=${PWD}
+import os, os.path, sys
+import fileinput
 
-echo "`sed "s%$parentDir%%g" $2`" > $2
+parentDir = os.getenv('PWD')
+parentDir = os.path.realpath(parentDir)
+
+for line in fileinput.input(sys.argv[2], inplace=True):
+  print(line.replace(parentDir, '').rstrip())
+

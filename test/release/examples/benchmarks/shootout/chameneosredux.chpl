@@ -76,7 +76,7 @@ proc simulate(numChameneos) {
   printInfo(chameneos);
 
   //
-  // hasta las chameneos, baby.
+  // Clean up after ourselves
   //
   destroyChameneos(chameneos);
   delete meetingPlace;
@@ -271,7 +271,9 @@ proc createChameneos(size): [1..size] Chameneos {
                                                          else ((i-1)%3):Color);
 }
 
-
+//
+// Destroy the array of chameneos
+//
 proc destroyChameneos(ca: [] Chameneos) {
   for c in ca do delete c;
 }

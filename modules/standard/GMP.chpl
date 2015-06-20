@@ -238,7 +238,7 @@ module GMP {
   extern proc mpz_mul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
 
   extern proc mpz_addmul(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-  extern proc mpz_addmul_ui(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: c_ulong);
+  extern proc mpz_addmul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
 
   extern proc mpz_submul(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
   extern proc mpz_submul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
@@ -395,8 +395,6 @@ module GMP {
   extern proc mpz_sizeinbase(ref OP: mpz_t, BASE: c_int): size_t;
 
   extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
-
-  extern proc mpz_addmul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OPT2: c_ulong);
 
   // floating-point functions
   extern proc mpf_init(ref X: mpf_t);

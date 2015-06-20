@@ -462,19 +462,14 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
                                         new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
     zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this,
                                         ii->iclass->getField("more"), condTemp));
-  } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
-    // 2015-02-23 hilde: TODO: See if we can apply the above simplification
-    // here and in buildZip3 as well.
-    // A for loop has no termination condition, so it just runs all the indices
-    // in the underlying iterator.
-    SymExpr* iterator = forLoop->iteratorGet()->copy(&map);
-    VarSymbol* more = newTemp("_more_in_for", dtInt[INT_SIZE_DEFAULT]);
-    CallExpr* moreField = new CallExpr(PRIM_GET_MEMBER, iterator,
-                                       new_StringSymbol("more"));
-    zip1body->insertAtTail(new CallExpr(PRIM_MOVE, more, moreField));
-    zip1body->insertAtTail(new CondStmt(new SymExpr(more),
-                                        new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
-                                        new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+  } else if (isCForLoop(singleLoop)) {
+    // CForLoops do not use the "more" field in their loop termination test.
+    // See the code for that special case in buildHasMore().
+  } else {
+    // ParamForLoops should have been removed during resolution.
+    // DoWhileLoops are not treated as singleLoop iterators.
+    // ForLoops should have been replaceed in expandForLoop().
+    INT_FATAL("Unexpected singleLoop iterator type");
   }
 
   zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -553,7 +548,6 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     }
   }
 
-  // Check for more (only for non c for loops)
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
     Type* moreType = ii->iclass->getField("more")->type;
@@ -563,15 +557,14 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
                                         new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
     zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this,
                                         ii->iclass->getField("more"), condTemp));
-  } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
-    SymExpr* iterator = forLoop->iteratorGet()->copy(&map);
-    VarSymbol* more = newTemp("_more_in_for", dtInt[INT_SIZE_DEFAULT]);
-    CallExpr* moreField = new CallExpr(PRIM_GET_MEMBER, iterator,
-                                       new_StringSymbol("more"));
-    zip3body->insertAtTail(new CallExpr(PRIM_MOVE, more, moreField));
-    zip3body->insertAtTail(new CondStmt(new SymExpr(more),
-                                        new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
-                                        new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+  } else if (isCForLoop(singleLoop)) {
+    // CForLoops do not use the "more" field in their loop termination test.
+    // See the code for that special case in buildHasMore().
+  } else {
+    // ParamForLoops should have been removed during resolution.
+    // DoWhileLoops are not treated as singleLoop iterators.
+    // ForLoops should have been replaceed in expandForLoop().
+    INT_FATAL("Unexpected singleLoop iterator type");
   }
 
   zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));

@@ -21,13 +21,11 @@ lvar(m64, imag(64), 6.064i)
 lvar(z64,  complex(64),  ((-2+64i):complex(64)))
 lvar(z128, complex(128), (-2+128i))
 
-lvar(str, string, "a_string")
+/* no strings for now */
 lvar(enm, EnumType, EnumType.eLast)
-
-lvar(rec1, RecordSmall, rSmall)
-lvar(rec2, RecordLarge, rLarge)
+/* no records for now */
+/* no unions for now */
 lvar(cls,  ClassType, cInstance)
-lvar(unn,  UnionType, uInstance)
 /* no tuples for now */
 
 lvar(dom1, DomType1, init1dom)

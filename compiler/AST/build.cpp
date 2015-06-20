@@ -1432,9 +1432,19 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
 
 
 BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
+  BlockStmt* block = new BlockStmt();
   CondStmt* otherwise = NULL;
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
+
+  VarSymbol* tmp = newTemp();
+
+  tmp->addFlag(FLAG_MAYBE_PARAM);
+  tmp->addFlag(FLAG_MAYBE_TYPE);
+  tmp->addFlag(FLAG_EXPR_TEMP);
+
+  block->insertAtTail(new DefExpr(tmp));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, selectCond));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
@@ -1452,10 +1462,10 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       for_actuals(whenCond, conds) {
         whenCond->remove();
         if (!expr)
-          expr = new CallExpr("==", selectCond->copy(), whenCond);
+          expr = new CallExpr("==", tmp, whenCond);
         else
           expr = buildLogicalOrExpr(expr, new CallExpr("==",
-                                                   selectCond->copy(),
+                                                   tmp,
                                                    whenCond));
       }
       if (!condStmt) {
@@ -1473,7 +1483,9 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       USR_FATAL(selectCond, "Select has no when clauses");
     condStmt->elseStmt = otherwise->thenStmt;
   }
-  return buildChapelStmt(top);
+
+  block->insertAtTail(top);
+  return block;
 }
 
 
