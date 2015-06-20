@@ -306,8 +306,10 @@ inline static bool isCreated(SymExpr* se)
             // result.  An autoCopy needs to be inserted where an owned copy is required.
             return false;
            case PRIM_GET_MEMBER_VALUE:
+           case PRIM_GET_SVEC_MEMBER_VALUE:
             // Returns a bitwise copy of the referenced field which is, as a
             // consequence, unowned.
+            return false;
            case PRIM_ARRAY_GET_VALUE:
             // Returns a bitwise copy of the selected array element which is, as a
             // consequence, unowned.
