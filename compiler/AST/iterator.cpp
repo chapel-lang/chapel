@@ -476,24 +476,11 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   } else if (singleLoop->isCForLoop()) {
     // CForLoops do not use the "more" field in their loop termination test.
     // See the code for that special case in buildHasMore().
-  } else if (singleLoop->isForLoop()) {
-    // Get the underlying iterator.
-    INT_ASSERT(my_this->type == ii->iclass);
-    Symbol* iteratorField = ii->iclass->getField("F1__iterator");
-    VarSymbol* iterator = newTemp("forloop_iter", iteratorField->type);
-    zip1body->insertAtTail(new DefExpr(iterator));
-    CallExpr* iteratorFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, my_this,
-                                               iteratorField);
-    zip1body->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorFieldRead));
-
-    // Call the contained iteratator's zip1() function. 
-    IteratorInfo* under_ii = getIteratorInfoForIterator(iterator);
-    zip1body->insertAtTail(new CallExpr(under_ii->zip1, iterator));
   } else {
     // ParamForLoops should have been removed during resolution.
     // DoWhileLoops are not treated as singleLoop iterators.
     // ForLoops should have been replaceed in expandForLoop().
-    INT_FATAL("Unexpected singleLoop iterator type");
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
 
   zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -529,18 +516,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   if (singleLoop && singleLoop->isForLoop())
   {
-    // Get the underlying iterator.
-    INT_ASSERT(my_this->type == ii->iclass);
-    Symbol* iteratorField = ii->iclass->getField("F1__iterator");
-    VarSymbol* iterator = newTemp("forloop_iter", iteratorField->type);
-    zip2body->insertAtTail(new DefExpr(iterator));
-    CallExpr* iteratorFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, my_this,
-                                               iteratorField);
-    zip2body->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorFieldRead));
-
-    // Call the contained iteratator's zip1() function. 
-    IteratorInfo* under_ii = getIteratorInfoForIterator(iterator);
-    zip2body->insertAtTail(new CallExpr(under_ii->zip2, iterator));
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type.");
   }
 
   // Copy all non-defs in singleLoop before the yield
@@ -608,24 +584,11 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   } else if (isCForLoop(singleLoop)) {
     // CForLoops do not use the "more" field in their loop termination test.
     // See the code for that special case in buildHasMore().
-  } else if (singleLoop->isForLoop()) {
-    // Get the underlying iterator.
-    INT_ASSERT(my_this->type == ii->iclass);
-    Symbol* iteratorField = ii->iclass->getField("F1__iterator");
-    VarSymbol* iterator = newTemp("forloop_iter", iteratorField->type);
-    zip3body->insertAtTail(new DefExpr(iterator));
-    CallExpr* iteratorFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, my_this,
-                                               iteratorField);
-    zip3body->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorFieldRead));
-
-    // Call the contained iteratator's zip1() function. 
-    IteratorInfo* under_ii = getIteratorInfoForIterator(iterator);
-    zip3body->insertAtTail(new CallExpr(under_ii->zip3, iterator));
   } else {
     // ParamForLoops should have been removed during resolution.
     // DoWhileLoops are not treated as singleLoop iterators.
     // ForLoops should have been replaceed in expandForLoop().
-    INT_FATAL("Unexpected singleLoop iterator type");
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
 
   zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -661,18 +624,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   if (singleLoop && singleLoop->isForLoop())
   {
-    // Get the underlying iterator.
-    INT_ASSERT(my_this->type == ii->iclass);
-    Symbol* iteratorField = ii->iclass->getField("F1__iterator");
-    VarSymbol* iterator = newTemp("forloop_iter", iteratorField->type);
-    zip4body->insertAtTail(new DefExpr(iterator));
-    CallExpr* iteratorFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, my_this,
-                                               iteratorField);
-    zip4body->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorFieldRead));
-
-    // Call the contained iteratator's zip1() function. 
-    IteratorInfo* under_ii = getIteratorInfoForIterator(iterator);
-    zip4body->insertAtTail(new CallExpr(under_ii->zip4, iterator));
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type.");
   }
 
   // Copy all iterator body expressions after singleLoop that are not
@@ -796,24 +748,6 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
       hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
                                              testBlock->body.tail->copy(&map)));
     }
-    else if (singleLoop->isForLoop())
-    {
-      // Get the underlying iterator.
-      INT_ASSERT(my_this->type == ii->iclass);
-      Symbol* iteratorField = ii->iclass->getField("F1__iterator");
-      // It is fragile to expect the underlying iterator ^^^ to always occupy
-      // the F1 slot.  I'm not sure how else to find it....
-      VarSymbol* iterator = newTemp("forloop_iter", iteratorField->type);
-      hasMoreBody->insertAtTail(new DefExpr(iterator));
-      CallExpr* iteratorFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, my_this,
-                                                 iteratorField);
-      hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorFieldRead));
-
-      // Read the more field out of the underlying iterator.
-      CallExpr* moreFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, iterator, 
-                                             iterator->typeInfo()->getField("more"));
-      hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, moreFieldRead));
-    }
     else if (isWhileStmt(singleLoop))
     {
       // Just returns the current "more" field.
@@ -826,7 +760,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
                                                           ii->iclass->getField("more"))));
     }
     else
-      INT_FATAL("Unhandled singleLoop iterator type");
+      INT_FATAL(singleLoop, "Unhandled singleLoop iterator type");
   } else {
     hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE,
                                            tmp,
@@ -857,19 +791,7 @@ buildGetValue(IteratorInfo* ii, BlockStmt* singleLoop) {
 
   if (singleLoop && singleLoop->isForLoop())
   {
-    // Get the underlying iterator.
-    INT_ASSERT(my_this->type == ii->iclass);
-    Symbol* iteratorField = ii->iclass->getField("F1__iterator");
-    VarSymbol* iterator = newTemp("forloop_iter", iteratorField->type);
-    getValueBody->insertAtTail(new DefExpr(iterator));
-    CallExpr* iteratorFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, my_this,
-                                               iteratorField);
-    getValueBody->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorFieldRead));
-
-    // Read the value field out of the underlying iterator.
-    CallExpr* valueFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, iterator,
-                                            iterator->typeInfo()->getField("value"));
-    getValueBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, valueFieldRead));
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
   else
   {
@@ -905,27 +827,12 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
         initBody->insertAtTail(expr->copy(&map));
       }
     }
-    else if (singleLoop->isForLoop())
-    {
-      // Get the underlying iterator.
-      INT_ASSERT(my_this->type == ii->iclass);
-      Symbol* iteratorField = ii->iclass->getField("F1__iterator");
-      VarSymbol* iterator = newTemp("forloop_iter", iteratorField->type);
-      initBody->insertAtTail(new DefExpr(iterator));
-      CallExpr* iteratorFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, my_this,
-                                                 iteratorField);
-      initBody->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorFieldRead));
-
-      // Call the underlying iterator's init function.
-      IteratorInfo* under_ii = getIteratorInfoForIterator(iterator);
-      initBody->insertAtTail(new CallExpr(under_ii->init, iterator));
-    }
     else if (singleLoop->isWhileStmt())
     {
       // No init code for a while loop.
     }
     else
-      INT_FATAL("Unhandled singleLoop type");
+      INT_FATAL(singleLoop, "Unhandled singleLoop type");
   }
 
   initBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -955,27 +862,12 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
         incrBody->insertAtTail(expr->copy(&map));
       }
     }
-    else if (singleLoop->isForLoop())
-    {
-      // Get the underlying iterator.
-      INT_ASSERT(my_this->type == ii->iclass);
-      Symbol* iteratorField = ii->iclass->getField("F1__iterator");
-      VarSymbol* iterator = newTemp("forloop_iter", iteratorField->type);
-      incrBody->insertAtTail(new DefExpr(iterator));
-      CallExpr* iteratorFieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, my_this,
-                                                 iteratorField);
-      incrBody->insertAtTail(new CallExpr(PRIM_MOVE, iterator, iteratorFieldRead));
-
-      // Call the underlying iterator's incr function.
-      IteratorInfo* under_ii = getIteratorInfoForIterator(iterator);
-      incrBody->insertAtTail(new CallExpr(under_ii->incr, iterator));
-    }
     else if (singleLoop->isWhileStmt())
     {
       // No incr clause in a while statement.
     }
     else
-      INT_FATAL("Unhandled singleLoop case.");
+      INT_FATAL(singleLoop, "Unhandled singleLoop case.");
   }
 
   incrBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
