@@ -1,2 +1,0 @@
-# Here is another test that does not run correctly unless iterator inlining is disabled.
---no-inline-iterators
