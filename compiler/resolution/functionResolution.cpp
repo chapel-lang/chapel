@@ -25,7 +25,6 @@
 #endif
 
 #include "resolution.h"
-
 #include "astutil.h"
 #include "stlUtil.h"
 #include "build.h"
@@ -43,12 +42,9 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "WhileStmt.h"
-
 #include "../ifa/prim_data.h"
-
-
+// view.h is here for debugging convenience
 #include "view.h"
-
 
 #include <inttypes.h>
 #include <map>
