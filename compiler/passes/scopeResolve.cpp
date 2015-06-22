@@ -1784,17 +1784,62 @@ static Symbol* inSymbolTable(BaseAST* scope, const char* name) {
   return NULL;
 }
 
+static Symbol* getMethod(const char* name, Type* type) {
+  if (!strcmp(name, type->symbol->name))
+    return NULL;
+
+  forv_Vec(Symbol, method, type->methods) {
+    if (method && !strcmp(name, method->name))
+      return method;
+  }
+
+  forv_Vec(Type, pt, type->dispatchParents) {
+    if (Symbol *sym = getMethod(name, pt))
+      return sym;
+  }
+
+  if (AggregateType* ct = toAggregateType(type)) {
+    Type *outerType = ct->symbol->defPoint->parentSymbol->type;
+
+    if (AggregateType* outer = toAggregateType(outerType))
+      if (Symbol *sym = getMethod(name, outer))
+        return sym;
+  }
+
+  return NULL;
+}
+
+static bool methodMatched(BaseAST* scope, FnSymbol* method) {
+  if (fn->_this->type->symbol == scope) {
+    return true;
+  } else {
+    BaseAST* curScope = getScope(scope);
+    while (curScope) {
+      if (TypeSymbol* ts = toTypeSymbol(scope)) {
+        // Are we in a type symbol?
+        if (Symbol* sym = getMethod(method->name, ts->type)) {
+          // Does that type symbol have a method with the same name?
+          if (sym == method) {
+            // Is it us?
+            return true;
+          } else {
+            // We are not in scope
+            return false;
+          }
+        }
+      }
+      curScope = getScope(curScope);
+    }
+    return false;
+  }
+}
+
 // If the current scope is an aggregate type, checks if the name refers to a
-// method or field on that type.  If a match is found, return it.  Otherwise
-// return NULL.
+// field on that type.  If a match is found, return it.  Otherwise return NULL.
 static Symbol* inType(BaseAST* scope, const char* name) {
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
-      if (isMethodName(name, ct)) {
-        // Make sure that the method is actually visible in this scope
-        // before calling it a match
-        // TODO: flesh out
-      } else if (Symbol* sym = ct->getField(name, false)) {
+      if (Symbol* sym = ct->getField(name, false)) {
         return sym;
       }
     }
