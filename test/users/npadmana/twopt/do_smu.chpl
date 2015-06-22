@@ -275,7 +275,11 @@ proc testPairs() {
   writeln("\n##");
   for ii in hh.Dhist.dim(1) {
     for jj in hh.Dhist.dim(2) {
-      writef("%20.5er ",hh[(ii,jj)]);
+      if ((ii==0) & (jj==0)) {
+        writef("%20.5er ",0);
+      } else {
+        writef("%20.5er ",hh[(ii,jj)]);
+      }
     }
     writeln();
   }
