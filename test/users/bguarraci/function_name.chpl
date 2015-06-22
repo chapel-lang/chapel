@@ -6,5 +6,5 @@ proc sum(n: int) {
   return sum;
 }
 
-var sum = asum(100);
+var sum = sum(100);
 writeln(sum);
