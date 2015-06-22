@@ -158,9 +158,11 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.standalone && !localeModelHasSublocales {
-      if debugDefaultDist {
+      if chpl__testParFlag then
+        chpl__testPar("default rectangular domain standalone invoked on ", ranges);
+      if debugDefaultDist then
         writeln("*** In domain standalone code:");
-      }
+
       const numTasks = if tasksPerLocale == 0 then here.maxTaskPar
                        else tasksPerLocale;
       if debugDefaultDist {
@@ -397,9 +399,9 @@ module DefaultRectangular {
 
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain follower invoked on ", followThis);
-
       if debugDefaultDist then
         writeln("In domain follower code: Following ", followThis);
+
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=idxType, stridable=stridable);
       if stridable {
