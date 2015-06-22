@@ -270,14 +270,14 @@ Expr* buildIntLiteral(const char* pch) {
 
 
 Expr* buildRealLiteral(const char* pch) {
-  return new SymExpr(new_RealSymbol(pch, strtod(pch, NULL)));
+  return new SymExpr(new_RealSymbol(pch));
 }
 
 
 Expr* buildImagLiteral(const char* pch) {
   char* str = strdup(pch);
   str[strlen(pch)-1] = '\0';
-  SymExpr* se = new SymExpr(new_ImagSymbol(str, strtod(str, NULL)));
+  SymExpr* se = new SymExpr(new_ImagSymbol(str));
   free(str);
   return se;
 }
@@ -1430,9 +1430,19 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
 
 
 BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
+  BlockStmt* block = new BlockStmt();
   CondStmt* otherwise = NULL;
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
+
+  VarSymbol* tmp = newTemp();
+
+  tmp->addFlag(FLAG_MAYBE_PARAM);
+  tmp->addFlag(FLAG_MAYBE_TYPE);
+  tmp->addFlag(FLAG_EXPR_TEMP);
+
+  block->insertAtTail(new DefExpr(tmp));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, selectCond));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
@@ -1450,10 +1460,10 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       for_actuals(whenCond, conds) {
         whenCond->remove();
         if (!expr)
-          expr = new CallExpr("==", selectCond->copy(), whenCond);
+          expr = new CallExpr("==", tmp, whenCond);
         else
           expr = buildLogicalOrExpr(expr, new CallExpr("==",
-                                                   selectCond->copy(),
+                                                   tmp,
                                                    whenCond));
       }
       if (!condStmt) {
@@ -1471,7 +1481,9 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       USR_FATAL(selectCond, "Select has no when clauses");
     condStmt->elseStmt = otherwise->thenStmt;
   }
-  return buildChapelStmt(top);
+
+  block->insertAtTail(top);
+  return block;
 }
 
 
@@ -2110,6 +2122,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
+    beginBlk->astloc = stmt->astloc;
     // the original byref_vars is dead - will be clean_gvec-ed
     addByrefVars(beginBlk, byref_vars ? byref_vars->copy() : NULL);
     stmt->insertBefore(beginBlk);

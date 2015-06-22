@@ -988,7 +988,9 @@ qioerr qio_channel_write_string(const int threadsafe, const int byteorder, const
   if( err ) goto rewind;
 
   // write the string itself
-  err = qio_channel_write_amt(false, ch, ptr, len);
+  if (len > 0) {
+    err = qio_channel_write_amt(false, ch, ptr, len);
+  }
   if( err ) goto rewind;
 
   // write the terminator if necessary.
@@ -1177,6 +1179,13 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
   ti.max_chars = SSIZE_MAX;
   ti.max_bytes = SSIZE_MAX;
   ti.ret_bytes = -1;
+
+  if( !ptr || len == 0 ) {
+    // hilde sez: Having a distinguished value for empty strings is
+    // undesirable.
+    ptr = "";
+    len = 0;
+  }
 
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
@@ -1708,8 +1717,8 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
     //printf("In read digit, chr is %c\n", chr);
     if( qio_err_to_int(err) == EEOF ) ACCEPT;
     if( s->allow_point && chr == s->point_char && s->point == -1 ) {
-      NEXT_CHR_OR_EOF;
       s->end = s->point = qio_channel_offset_unlocked(ch);
+      NEXT_CHR_OR_EOF;
       // Continue to read digits.
     } else if( s->allow_real && 
                ( (s->usebase <= 10 && chr == s->exponent_char) ||
@@ -1750,6 +1759,7 @@ done:
   }
 error:
   qio_channel_revert_unlocked(ch);
+
   return err;
 }
 
@@ -2245,6 +2255,10 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 // should be skipped in the final output. Such bytes are counted
 // in the return value. (this happens with 0x in %a conversions)
 //
+// The output buffer will always contain a null byte at the end,
+// but that byte is not counted in the return value. For that reason,
+// a return = buf_sz means that we ran out of space (by 1 byte).
+//
 // num is the number to be converted
 // buf and buf_sz are the output buffer
 // base is the numeric base (10 or 16 only)
@@ -2268,6 +2282,16 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
   // is. This conversion must concern itself with precision but
   // need not handle padding or various trailing . or .0 rules.
   // That is handled in the caller.
+
+  // snprintf always returns the number of characters that would be
+  // output if the buffer were unlimited. It truncates the output -
+  // and includes a trailing '\0' byte - if there is not enough space.
+  //
+  // For example:
+  // If snprintf wants to output 12 characters, but buf_sz is 12,
+  // it will return 12 and replace the last byte with a '\0'.
+  // Therefore, if snprintf returns buf_sz, the output was truncated
+  // and we need to try again.
 
   *skip = 0;
 
@@ -2337,18 +2361,21 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
 
 // Converts a double value into a string
 // returns:
-//   n a number of bytes that would be used for the conversion;
-//     the conversion was performed successfully if n <= size,
-//     not including the trailing null byte
+//   n a number of bytes that will be output by the conversion
 //  -1 for out of memory
 //  -2 for error in conversion
 // *extra_space_needed is, on output, an amount of extra temporary
 // space in the passed buffer which is necessary to achieve the conversion,
-// beyond the returned n.
+// beyond the returned n. In the current implementation, this is always
+// at least 1 (to account for the trailing NULL byte) and might be more
+// (if we needed to print a longer number and then shrink it).
 //
 // if conversion was not totally successful because we ran out of space,
 // the returned n value might overestimate the space required. It should
 // not underestimate it though.
+//
+// The conversion was successfull if
+//   n + *extra_space_needed <= size.
 static
 int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, const qio_style_t* restrict style, int * extra_space_needed )
 {
@@ -2416,7 +2443,8 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
   // We might use this many extra bytes that aren't represented
   // in the output number of bytes, but are temporary space we
   // need to achieve the conversion.
-  *extra_space_needed = skip;
+  // Always include 1 in extra space for the NULL byte at the end.
+  *extra_space_needed = 1 + skip;
 
   if( got < 0 ) return -1;
 
@@ -2725,12 +2753,14 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
   // Try printing it directly into the buffer.
   got = _ftoa(ch->cached_cur, qio_ptr_diff(ch->cached_end, ch->cached_cur),
               num, base, needs_i, style, &extra);
+
   if( got < 0 ) {
     if( got == -1 ) err = QIO_ENOMEM;
     else QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
     goto error;
   } else if( qio_space_in_ptr_diff(got + extra,
                                    ch->cached_end, ch->cached_cur) ) {
+
     ch->cached_cur = qio_ptr_add(ch->cached_cur, got);
     err = _qio_channel_post_cached_write(ch);
     // OK!
@@ -2763,6 +2793,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "converting floating point number to string");
       goto error_free;
     } else if( got + extra < max ) {
+
       err = qio_channel_write_amt(false, ch, buf, got);
       goto error_free;
     } else {

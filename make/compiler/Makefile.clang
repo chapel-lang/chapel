@@ -59,11 +59,11 @@ OPT_CFLAGS = -O3
 #
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
+RUNTIME_CFLAGS = -std=gnu99 $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
 RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
-GEN_CFLAGS = -std=c99
+GEN_CFLAGS = -std=gnu99
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
 LIB_STATIC_FLAG = 
@@ -99,11 +99,6 @@ RUNTIME_GEN_CFLAGS += -maix64
 GEN_CFLAGS += -maix64
 COMP_GEN_LFLAGS += -maix64
 endif
-
-#
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS = -std=gnu89
 
 
 #

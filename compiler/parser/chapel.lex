@@ -96,7 +96,17 @@ exponent         [Ee][\+\-]?{digit}+
 floatLiteral1    {digit}*"."{digit}+({exponent})?
 floatLiteral2    {digit}+"."{exponent}
 floatLiteral3    {digit}+{exponent}
-floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
+
+/* hex float literals, have decimal exponents indicating the power of 2 */
+hexDecExponent   [Pp][\+\-]?{digit}+
+floatLiteral4    0[xX]{hexDigit}*"."{hexDigit}+({hexDecExponent})?
+floatLiteral5    0[xX]{hexDigit}+"."{hexDecExponent}
+floatLiteral6    0[xX]{hexDigit}+{hexDecExponent}
+
+decFloatLiteral  {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
+hexFloatLiteral  {floatLiteral4}|{floatLiteral5}|{floatLiteral6}
+
+floatLiteral     {decFloatLiteral}|{hexFloatLiteral}
 
 %s               externmode
 
@@ -250,7 +260,7 @@ yield            return processToken(yyscanner, TYIELD);
 
 \n               return processNewline(yyscanner);
 
-[ \t\r]          processWhitespace(yyscanner);
+[ \t\r\f]        processWhitespace(yyscanner);
 .                processInvalidToken(yyscanner);
 
 %%
@@ -369,7 +379,7 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE*    yyLval = yyget_lval(scanner);
 
-  yyLval->pch = eatStringLiteral(scanner, q);
+  yyLval->pch = astr(eatStringLiteral(scanner, q));
 
   countToken(astr(q, yyLval->pch, q));
 
