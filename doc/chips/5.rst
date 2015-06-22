@@ -50,7 +50,7 @@ Description
 
   * Special functions
 
-	* Special functions are called by the compiler as needed
+    * Special functions are called by the compiler as needed
 
       * Implement initialization, overwriting and destruction of scoped variables
       * Scoped variables are named variables, formals and fields, and function return values.
