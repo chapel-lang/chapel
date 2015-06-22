@@ -50,10 +50,18 @@ Description
 
   * Special functions
 
+	* Special functions are called by the compiler as needed
+
+      * Implement initialization, overwriting and destruction of scoped variables
+      * Scoped variables are named variables, formals and fields, and function return values.
+      * By implication, special functions are not called to create/destroy temporary copies
+      * By further implication, objects can be moved around by bitwise copying (blitting)
+        * An object becomes fixed in memory after a reference to it has been created.
+      * How records are passed back as function return values is unclear.
+
     * Destruction
 
-      * Release resources held by an object fully-initialized to a type's
-		"invariant state"
+      * Release resources held by an object fully-initialized to a type's "invariant state"
 
     * Default-Initialization
 
@@ -67,7 +75,9 @@ Description
     * Assignment
 
       * Replace information in an initialized object using information from another object
-      * Assignment is provided by the compiler as a convenience
+      * Is currently invoked by the compiler
+      * Will not be invoked by the compiler after conversion to the new AMM model is complete
+      * A compiler-supplied version will still be generated as a convenience
       * Typically has the same semantics as copy-initialization
 
   * Current implementation
@@ -92,15 +102,28 @@ Description
       * Compiler-supplied version implemented as field-wise assignment, recursively
       * Assignment of fundamental types is a bitwise copy
 
+    * Return value semantics
+
+      * Compiler calls copy constructor inside called routine.
+      * Returned value is always "owned"
+
 * Proposed
 
   * No change to destruction
+
+    * Compiler calls autoDestroy function where destruction is needed
+    * Compiler-supplied autoDestroy function calls destructor
+    * Default destructor is empty (trivial)
+
   * Default-Initialization
 
     * Consider redefining as zero-initialization followed by fixup
     * If so, zero-initialization should be exposed as a user concept
 
       * No magic: user can write explicitly any behavior the compiler supplies
+
+    * Compiler-supplied version calls bulk zero (memset(ptr, 0, size)) followed by a call to the  postzero() method
+    * Compiler-supplied postzero() method is empty (trivial)
 
   * Copy-Initialization
 
@@ -119,6 +142,18 @@ Description
 
       * Reference counts on shared objects may go to zero
       * Provided as a convenience by compiler, so must be overridden in that case
+
+  * Return value semantics
+
+    * ``postblit`` should be called 
+      * After space has been allocated and the result copied into it
+      * Before the stack frame for the called function is deleted
+
+  * Proposal TODOs
+
+    * Come up with a consistent naming scheme for the well-known functions
+    * Describe compiler-provided behavior.
+    * Review consistency of the relationship between compiler-supplied and user overrides for both well-known and user functions
 
 * Discussion
 
@@ -180,3 +215,15 @@ Description
       * Can be really badly wrong if contained references are reference counted
 
         * User override becomes obligatory
+
+  * Return value semantics
+
+    * Why not skip the postblit?
+
+      * Lifetime of the return value must be extended past the return
+
+        * To provide the forward owner (if there is one) a chance to make a copy.
+
+          * Invoking copy semantics (postblit) before return is one way to do this
+          * Maybe not the only option
+
