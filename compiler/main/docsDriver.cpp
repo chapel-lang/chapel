@@ -21,6 +21,7 @@
 
 #include "commonFlags.h"
 #include "driver.h"
+#include "mysystem.h"
 
 bool fDocs = false;
 char fDocsAuthor[256] = "";
@@ -88,6 +89,7 @@ ArgumentDescription docs_arg_desc[] = {
  //       it is not supported, so the flag is always true.
  //       (thomasvandoren, 2015-03-08)
  //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
+ {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
 
  {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
  DRIVER_ARG_HELP,
