@@ -1,0 +1,182 @@
+Implement Object Copying Using a "Postblit" Method
+==================================================
+
+Status
+  Draft
+
+Author
+  Tom Hildebrandt (outline)
+
+
+This proposal is to implement object copying using a bitwise copy followed by a
+"postblit" operation.
+
+Abstract
+--------
+
+In objects containing references, the choice between shallow and deep copying
+influences semantics, performance and memory usage.  Even in garbage-collected
+languages, a type designer must choose carefully when a deep copy is to be made.
+
+Special functions provide an interface between the compiler and code that
+implements a type, so that the choice between shallow and deep copying can be
+implemented consistently.  These special functions include destruction,
+default-initialization, copy-initialization and (usually) assignment.
+
+The current proposal is to implement copy-initialization using a bitwise copy
+followed by a "postblit" method call.  This idea is borrowed from the D Language
+and is in contrast to the better-known copy-constructor.  Implementing
+copy-initialization in this way can have significant performance benefits for
+Chapel, since it interacts well with the bulk-copying of bits across slow
+network connections.
+
+Rationale
+---------
+
+The existing language concept for copy-initialization, the copy-constructor,
+treats copying and any required fixup (i.e. construction) as a whole, and is
+defined recursively.  A straightforward implementation thus leads to many
+fine-grained copy operations at the leaves of a data structure.  
+
+Network performance characteristics instead favor coarse-grained copy
+operations.  By separating the data copying from subsequent fixup, it is
+expected that much better object copying performance can be achieved --
+especially for large data structures such as arrays.
+
+Description
+-----------
+
+* Background
+
+  * Special functions
+
+    * Destruction
+
+      * Release resources held by an object fully-initialized to a type's
+		"invariant state"
+
+    * Default-Initialization
+
+      * Place an uninitialized object in a state compatible with its destructor
+      * That is, initialize it given no additional information
+
+    * Copy-Initialization
+
+      * Initialize an object, given the information in an existing object as a starting point
+
+    * Assignment
+
+      * Replace information in an initialized object using information from another object
+      * Assignment is provided by the compiler as a convenience
+      * Typically has the same semantics as copy-initialization
+
+  * Current implementation
+
+    * Destruction
+
+      * Implemented by an "autoDestroy" function
+      * Compiler-default implementation calls destructor
+
+    * Default-Initialization
+
+      * Implemented using "_defaultOf" function.
+      * Compiler supplied version calls zero-argument constructor, if supplied
+
+    * Copy-Initialization
+
+      * Implemented using "autoCopy" function
+      * There is no compiler-supplied definition
+
+    * Assignment
+
+      * Compiler-supplied version implemented as field-wise assignment, recursively
+      * Assignment of fundamental types is a bitwise copy
+
+* Proposed
+
+  * No change to destruction
+  * Default-Initialization
+
+    * Consider redefining as zero-initialization followed by fixup
+    * If so, zero-initialization should be exposed as a user concept
+
+      * No magic: user can write explicitly any behavior the compiler supplies
+
+  * Copy-Initialization
+
+    * Bulk (bitwise) copy followed by a "postblit" method call
+    * Postblit provides post-copy fixup
+
+      * Includes deep-copy semantics if desired
+      * Probably easier if different from zero-initialization fixup
+
+    * Bitwise copy should be exposed as a user concept
+
+      * No magic priciple echoed
+  * Assignment
+
+    * Implemented as destruction followed by copy-initialization
+
+      * Reference counts on shared objects may go to zero
+      * Provided as a convenience by compiler, so must be overridden in that case
+
+* Discussion
+
+  * Default-Initialization
+
+    * Pro
+
+      * Usually zero-initialization works OK
+      * Overridable if user desires
+      * Consistent with copy-initialization using postblit
+
+    * Con
+
+      * Zero-initialization may be wasted effort if fixup sets fields explicitly
+
+  * Copy-Initialization
+
+    * Bulk copy of array implementations can be very effciient
+
+      * All array elements copied in one go
+      * Then, postblit applied to each element in turn
+
+        * Parallel application of element-wise postblit is possible
+
+          * Assuming no dependencies among elements
+
+            * Definition of postblit should guarantee this
+            * Not necessarily guaranteed
+
+              * Reference to global data
+              * Reference to array as a whole through parent pointer
+
+          * Fixup of inter-element dependencies should be supplied at the
+            container level
+
+            * I.e. treating those dependencies at the element level is bad design
+    * Pro
+
+      * More efficient for copying large data structures
+      * No fixup required for shallow copy semantics
+      * Overridable if user desires
+
+    * Con
+
+      * Wasted effort for fields overwritten in fixup
+
+        * Copying creates a "locally-cached copy"
+
+          * Information used by postblit needed to be transmitted anyway
+
+  * Assignment
+
+    * Pro
+
+      * Supports bulk copy with no extra work
+
+    * Con
+
+      * Can be really badly wrong if contained references are reference counted
+
+        * User override becomes obligatory
