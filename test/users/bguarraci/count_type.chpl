@@ -13,5 +13,5 @@ writeln(foo.count.type == foo.buffer.domain.high.type);
 for i in 0..foo.count-1 {
   // count_type.chpl:22: error: unresolved access of '[domain(1,int(64),false)] int(64)' by '[uint(64)]'
   writeln(i.type == foo.buffer.domain.high.type);
-  writeln(foo.buffer[i]);
+  // writeln(foo.buffer[i]);
 }
