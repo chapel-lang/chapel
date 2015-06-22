@@ -1670,7 +1670,7 @@ static void
 expandForLoop(ForLoop* forLoop) {
   SymExpr*   se2      = forLoop->iteratorGet();
   VarSymbol* iterator = toVarSymbol(se2->var);
-  bool converted;
+  bool converted = false;
 
   if (!fNoInlineIterators)
   {
@@ -2304,6 +2304,18 @@ void lowerIterators() {
     if (isAlive(block) == true && block->isForLoop() == true) {
       if (ForLoop* loop = toForLoop(block)) {
         expandForLoop(loop);
+      }
+    }
+  }
+
+  if (fVerify)
+  {
+    forv_Vec(BlockStmt, block, gBlockStmts)
+    {
+      if (isAlive(block) && block->isForLoop())
+      {
+        // All forLoops should have been removed from the tree by now.
+        INT_FATAL(block, "Unexpected forLoop in tree.");
       }
     }
   }
