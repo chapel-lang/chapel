@@ -3453,6 +3453,9 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   CallInfo info(call, checkonly);
 
+  // Return early if creating the call info would have been an error.
+  if( checkonly && info.badcall ) return NULL;
+
   Vec<FnSymbol*> visibleFns; // visible functions
 
   //
