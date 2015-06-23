@@ -135,7 +135,7 @@ module String {
   
   // cast to and from Chapel strings use c_string
   pragma "compiler generated"
-  inline proc c_string.cast(type t) where t == string {
+  inline proc _any.cast(type t) where t == string {
     var cs = this.cast(c_string_copy);
     // Note, this uses a non-allocating toString(), and steals cs (no need to free).
     const ret = toString(cs);
@@ -477,11 +477,6 @@ module CString {
     return integral_to_c_string_copy(this:int(64), numBytes(this.type),
         isIntType(this.type));
   }
-  inline proc integral.cast(type t) where t == string {
-    var tmp = this.cast(c_string_copy);
-    return toString(tmp);
-  }
-
 
   extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy ;
   //
