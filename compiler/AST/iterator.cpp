@@ -418,11 +418,13 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
 static void
 buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   BlockStmt* zip1body = new BlockStmt();
-  Symbol*    ic       = ii->advance->getFormal(1);
-  SymbolMap  map;
 
-  // In copied expressions, replace _ic --> zip1->_this .
-  map.put(ic, ii->zip1->_this);
+  // See Note #1.
+  SymbolMap map;
+  Symbol* advance_this = ii->advance->getFormal(1);
+  Symbol* my_this = ii->zip1->getFormal(1);
+  INT_ASSERT(my_this == ii->zip1->_this);
+  map.put(advance_this, my_this);
 
   // Copy non-arg def expressions from the original iterator
   // 2015-02-23 hilde: TODO #1:
@@ -460,16 +462,16 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     zip1body->insertAtTail(new DefExpr(condTemp));
     zip1body->insertAtTail(new CallExpr(PRIM_MOVE, condTemp,
                                         new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
-    zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this,
+    zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, my_this,
                                         ii->iclass->getField("more"), condTemp));
-  } else if (isCForLoop(singleLoop)) {
+  } else if (singleLoop->isCForLoop()) {
     // CForLoops do not use the "more" field in their loop termination test.
     // See the code for that special case in buildHasMore().
   } else {
     // ParamForLoops should have been removed during resolution.
     // DoWhileLoops are not treated as singleLoop iterators.
     // ForLoops should have been replaceed in expandForLoop().
-    INT_FATAL("Unexpected singleLoop iterator type");
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
 
   zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -484,9 +486,12 @@ static void
 buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // In copied expressions, replace _ic with zip2->_this .
+  // See Note #1.
   SymbolMap map;
-  Symbol* ic = ii->advance->getFormal(1);
-  map.put(ic, ii->zip2->_this);
+  Symbol* advance_this = ii->advance->getFormal(1);
+  Symbol* my_this = ii->zip2->getFormal(1);
+  INT_ASSERT(my_this == ii->zip2->_this);
+  map.put(advance_this, my_this);
 
   // This block will replace the body of the zip2 function stubbed in
   // during resolution.
@@ -500,6 +505,11 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
         zip2body->insertAtTail(def->copy(&map));
   }
 
+  if (singleLoop && singleLoop->isForLoop())
+  {
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type.");
+  }
+
   // Copy all non-defs in singleLoop before the yield
   for_alist(expr, singleLoop->body) {
     if (CallExpr* call = toCallExpr(expr))
@@ -508,6 +518,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (!isDefExpr(expr))
       zip2body->insertAtTail(expr->copy(&map));
   }
+
   zip2body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip2->body->replace(zip2body);
@@ -520,12 +531,14 @@ static void
 buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   BlockStmt* zip3body = new BlockStmt();
-  bool       flag     = true;
-  Symbol*    ic       = ii->advance->getFormal(1);
-  SymbolMap  map;
 
-  // In copied expressions, replace _ic with zip2->_this .
-  map.put(ic, ii->zip3->_this);
+  // In copied expressions, replace _ic with zip3->_this .
+  // See Note #1.
+  SymbolMap map;
+  Symbol* advance_this = ii->advance->getFormal(1);
+  Symbol* my_this = ii->zip3->getFormal(1);
+  INT_ASSERT(my_this == ii->zip3->_this);
+  map.put(advance_this, my_this);
 
   // Copy non-arg def expressions from the original iterator
   // See TODO #1 above.
@@ -536,15 +549,17 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
 
   // Copy all non-defs in singleLoop after the yield
+  bool beforeYield = true;
   for_alist(expr, singleLoop->body) {
     // Skip everything before the yield
-    if (flag) {
+    if (beforeYield) {
       if (CallExpr* call = toCallExpr(expr))
         if (call->isPrimitive(PRIM_YIELD))
-          flag = false;
-
-    } else if (!isDefExpr(expr)) {
-      zip3body->insertAtTail(expr->copy(&map));
+          beforeYield = false;
+    } else {
+      // after yield
+      if (!isDefExpr(expr))
+        zip3body->insertAtTail(expr->copy(&map));
     }
   }
 
@@ -555,7 +570,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     zip3body->insertAtTail(new DefExpr(condTemp));
     zip3body->insertAtTail(new CallExpr(PRIM_MOVE, condTemp,
                                         new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
-    zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this,
+    zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, my_this,
                                         ii->iclass->getField("more"), condTemp));
   } else if (isCForLoop(singleLoop)) {
     // CForLoops do not use the "more" field in their loop termination test.
@@ -564,7 +579,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     // ParamForLoops should have been removed during resolution.
     // DoWhileLoops are not treated as singleLoop iterators.
     // ForLoops should have been replaceed in expandForLoop().
-    INT_FATAL("Unexpected singleLoop iterator type");
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
 
   zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -579,9 +594,12 @@ static void
 buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // In copied expressions, replace _ic with zip4->_this .
-  Symbol* ic = ii->advance->getFormal(1);
+  // See Note #1.
   SymbolMap map;
-  map.put(ic, ii->zip4->_this);
+  Symbol* advance_this = ii->advance->getFormal(1);
+  Symbol* my_this = ii->zip4->getFormal(1);
+  INT_ASSERT(my_this == ii->zip4->_this);
+  map.put(advance_this, my_this);
 
   // This block will replace the body of the zip4 function stubbed in
   // during resolution.
@@ -593,6 +611,11 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
         zip4body->insertAtTail(def->copy(&map));
+  }
+
+  if (singleLoop && singleLoop->isForLoop())
+  {
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type.");
   }
 
   // Copy all iterator body expressions after singleLoop that are not
@@ -687,38 +710,53 @@ buildAdvance(FnSymbol* fn,
 // Build hasMore function.
 static void
 buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
+  // Create an empty body for hasMore()
   BlockStmt* hasMoreBody = new BlockStmt();
-  VarSymbol* tmp         = newTemp(ii->hasMore->retType);
 
+  // Stick in a declaration for the return value temp at the top.
+  VarSymbol* tmp         = newTemp(ii->hasMore->retType);
   hasMoreBody->insertAtTail(new DefExpr(tmp));
 
-  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
-    CForLoop*  cforLoop  = toCForLoop(singleLoop);
-    BlockStmt* testBlock = NULL;
+  // See Notes #1 and #2.
+  SymbolMap map;
+  Symbol* advance_this = ii->advance->getFormal(1);
+  Symbol* my_this = ii->hasMore->getFormal(1);
+  INT_ASSERT(my_this == ii->hasMore->_this);
+  map.put(advance_this, my_this);
 
-    Symbol*    ic        = ii->advance->getFormal(1);
-    SymbolMap  map;
+  if (singleLoop != NULL) {
+    if (singleLoop->isCForLoop() == true) {
+      CForLoop*  cforLoop  = toCForLoop(singleLoop);
 
-    // In copied expressions, replace _ic with hasMore->_this .
-    map.put(ic, ii->hasMore->_this);
-
-    // 2015-02-23 hilde: There was an unnecessary call to copy(&map) here --
-    // pointed out by mnoakes -- which I removed.
-    testBlock = cforLoop->testBlockGet();
-
-    for_alist(expr, testBlock->body) {
-      if (expr != testBlock->body.tail) {
-        hasMoreBody->insertAtTail(expr->copy(&map));
+      // Inline the contents of the test block in the hasMore function,
+      BlockStmt* testBlock = cforLoop->testBlockGet();
+      for_alist(expr, testBlock->body) {
+        if (expr != testBlock->body.tail) {
+          hasMoreBody->insertAtTail(expr->copy(&map));
+        }
       }
+
+      hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                             testBlock->body.tail->copy(&map)));
     }
-
-    hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, testBlock->body.tail->copy(&map)));
-
+    else if (isWhileStmt(singleLoop))
+    {
+      // Just returns the current "more" field.
+      // This is duplicate code as for the non-singleLoop case below, which is
+      // unfortunate....
+      hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE,
+                                             tmp,
+                                             new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                          my_this,
+                                                          ii->iclass->getField("more"))));
+    }
+    else
+      INT_FATAL(singleLoop, "Unhandled singleLoop iterator type");
   } else {
     hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE,
                                            tmp,
                                            new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                                        ii->hasMore->getFormal(1),
+                                                        my_this,
                                                         ii->iclass->getField("more"))));
   }
 
@@ -729,36 +767,63 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
 
 // Build getValue function.
 static void
-buildGetValue(IteratorInfo* ii) {
-  BlockStmt* getMoreBody = new BlockStmt();
+buildGetValue(IteratorInfo* ii, BlockStmt* singleLoop) {
+  BlockStmt* getValueBody = new BlockStmt();
+
+  // See Note #1.
+  SymbolMap map;
+  Symbol* advance_this = ii->advance->getFormal(1);
+  Symbol* my_this = ii->getValue->getFormal(1);
+  INT_ASSERT(my_this == ii->getValue->_this);
+  map.put(advance_this, my_this);
+
   VarSymbol* tmp         = newTemp(ii->getValue->retType);
+  getValueBody->insertAtTail(new DefExpr(tmp));
 
-  getMoreBody->insertAtTail(new DefExpr(tmp));
-  getMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->iclass->getField("value"))));
-  getMoreBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+  if (singleLoop && singleLoop->isForLoop())
+  {
+    INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
+  }
+  else
+  {
+    getValueBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                            new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                         my_this, ii->iclass->getField("value"))));
+  }
+  getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
 
-  ii->getValue->body->replace(getMoreBody);
+  ii->getValue->body->replace(getValueBody);
 }
 
 static void
 buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* initBody = new BlockStmt();
 
-  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
-    CForLoop*  cforLoop  = toCForLoop(singleLoop);
-    BlockStmt* initBlock = NULL;
+  // See Notes #1 and #2.
+  SymbolMap  map;
+  Symbol* advance_this = ii->advance->getFormal(1);
+  Symbol* my_this = ii->init->getFormal(1);
+  INT_ASSERT(ii->init->getFormal(1) == ii->init->_this);
+  map.put(advance_this, my_this);
 
-    Symbol*    ic        = ii->advance->getFormal(1);
-    SymbolMap  map;
+  if (singleLoop != NULL)
+  {
+    if (singleLoop->isCForLoop() == true) {
+      CForLoop*  cforLoop  = toCForLoop(singleLoop);
+      BlockStmt* initBlock = NULL;
 
-    // In copied expressions, replace _ic with init->_this .
-    map.put(ic, ii->init->_this);
+      initBlock = cforLoop->initBlockGet();
 
-    initBlock = cforLoop->initBlockGet();
-
-    for_alist(expr, initBlock->body) {
-      initBody->insertAtTail(expr->copy(&map));
+      for_alist(expr, initBlock->body) {
+        initBody->insertAtTail(expr->copy(&map));
+      }
     }
+    else if (singleLoop->isWhileStmt())
+    {
+      // No init code for a while loop.
+    }
+    else
+      INT_FATAL(singleLoop, "Unhandled singleLoop type");
   }
 
   initBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -770,21 +835,30 @@ static void
 buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* incrBody = new BlockStmt();
 
-  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
-    CForLoop*  cforLoop  = toCForLoop(singleLoop);
-    BlockStmt* incrBlock = NULL;
+  // See Notes #1 and #2.
+  SymbolMap map;
+  Symbol* advance_this = ii->advance->getFormal(1);
+  Symbol* my_this = ii->incr->getFormal(1);
+  INT_ASSERT(my_this == ii->incr->_this);
+  map.put(advance_this, my_this);
 
-    Symbol*    ic        = ii->advance->getFormal(1);
-    SymbolMap  map;
+  if (singleLoop != NULL) {
+    if (singleLoop->isCForLoop() == true) {
+      CForLoop*  cforLoop  = toCForLoop(singleLoop);
+      BlockStmt* incrBlock = NULL;
 
-    // In copied expressions, replace _ic with incr->_this .
-    map.put(ic, ii->incr->_this);
+      incrBlock = cforLoop->incrBlockGet();
 
-    incrBlock = cforLoop->incrBlockGet();
-
-    for_alist(expr, incrBlock->body) {
-      incrBody->insertAtTail(expr->copy(&map));
+      for_alist(expr, incrBlock->body) {
+        incrBody->insertAtTail(expr->copy(&map));
+      }
     }
+    else if (singleLoop->isWhileStmt())
+    {
+      // No incr clause in a while statement.
+    }
+    else
+      INT_FATAL(singleLoop, "Unhandled singleLoop case.");
   }
 
   incrBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -1324,7 +1398,7 @@ rebuildGetIterator(IteratorInfo* ii) {
     CallExpr* fieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
     getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, fieldReadTmp, fieldRead));
     
-    // Very special iterator-only MM code!  See Note 1.
+    // Very special iterator-only MM code!  See Note #3.
     VarSymbol* fieldWriteTmp = fieldReadTmp;
     if (isDomImplType(field->type) ||
         isArrayImplType(field->type) ||
@@ -1604,7 +1678,7 @@ void lowerIterator(FnSymbol* fn) {
     // expressions from the c for loop primitives and put them in the iterator
     // functions.
     buildHasMore(ii, singleLoop);
-    buildGetValue(ii);
+    buildGetValue(ii, singleLoop);
     buildInit(ii, singleLoop);
     buildIncr(ii, singleLoop);
   }
@@ -1614,27 +1688,46 @@ void lowerIterator(FnSymbol* fn) {
   rebuildFreeIterator(ii);
 }
 
-//########################################################################
-//# NOTES
-//#
-//# Note 1:
-//#  A call to "proc these()" on an array or dom returns the underlying class
-//#  object rather than the record-wrapped version.  The record wrapping is
-//#  used for perform memory management, so without it the "nude" array or
-//#  dom is unmanaged.  
-//#  Since the underlying object is a class object rather than a record
-//#  object, it is invisible to the AMM implementation in
-//#  insertAutoCopyAutoDestroy().  That is, all MM on class objects has to be
-//#  done "manually".  Since we are manipulating class objects here, we have
-//#  to insert that MM specially.
-//#  This implementation leverages the autoCopy/autoDestroy mechanism used
-//#  for AMM of records.  The reason for this is that pruneResolvedTree()
-//#  clears out functions that are not referred to anywhere in the code.
-//#  Since this code is adding calls post-resolution, they must be preserved
-//#  some way and they must already be resolved.  Leveraging this mechanism
-//#  for the (class) implementations of record-wrapped types seems
-//#  reasonable, since in spirit our use of "autoCopy" and "autoDestroy" is
-//#  consistent with their use w.r.t. records.  The only downside is that
-//#  autoCopy and autoDestroy functions now have to be added explicilty to
-//#  each RWT implementation.
-//########################################################################
+////////////////////////////////////////////////////////////////////////////////
+// NOTES
+//
+// Note #1:
+//  In the single-loop optimization, parts of the original advance()
+//  function are copied into the zip?, init, incr, hasMore and getValue
+//  functions.  In those functions, "this" will refer to the "this" argument
+//  passed into the original advance functions (== ii->advance->getFormal(1)).
+//  When expressions are copied out of parts of the original advance function,
+//  they must be updated to refer to the "this" argument of the function in
+//  which they appear (== ii->????->getFormal(1)).  That is why the symbol map
+//  is constructed and used in many of the build???? routines.  It turns out
+//  that ii->????->_this is an alias for ii->????->getFormal(1).  I chose to
+//  use the getFormal(1) variant, because IMO it is more obvious: Most of these
+//  routines do not establish a "this" variable, but they all have the same
+//  formal argument.
+//
+// Note #2:
+//  In some of the build routines, the SymbolMap map is not used at the outer
+//  scope.  I left its declaration and initialization at the outer scope in all
+//  build????() functions, for consistency.
+//
+// Note #3:
+//  A call to "proc these()" on an array or dom returns the underlying class
+//  object rather than the record-wrapped version.  The record wrapping is
+//  used for performing memory management, so without it the "nude" array or
+//  dom is unmanaged.  
+//  Since the underlying object is a class object rather than a record
+//  object, it is invisible to the AMM implementation in
+//  insertAutoCopyAutoDestroy().  That is, all MM on class objects has to be
+//  done "manually".  Since we are manipulating class objects here, we have
+//  to insert that MM specially.
+//  This implementation leverages the autoCopy/autoDestroy mechanism used
+//  for AMM of records.  The reason for this is that pruneResolvedTree()
+//  clears out functions that are not referred to anywhere in the code.
+//  Since this code is adding calls post-resolution, they must be preserved
+//  some way and they must already be resolved.  Leveraging this mechanism
+//  for the (class) implementations of record-wrapped types seems
+//  reasonable, since in spirit our use of "autoCopy" and "autoDestroy" is
+//  consistent with their use w.r.t. records.  The only downside is that
+//  autoCopy and autoDestroy functions now have to be added explicilty to
+//  each RWT implementation.
+////////////////////////////////////////////////////////////////////////////////
