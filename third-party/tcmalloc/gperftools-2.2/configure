@@ -696,6 +696,7 @@ ENABLE_LIBC_MALLOC_OVERRIDE_TRUE
 UNWIND_LIBS
 ENABLE_STATIC_FALSE
 ENABLE_STATIC_TRUE
+TC_MALLINFO_HEADER
 ac_cv_have_struct_mallinfo
 CXXCPP
 OTOOL64
@@ -21053,6 +21054,18 @@ else
   ac_cv_have_struct_mallinfo=0
 
 fi
+
+if test "$ac_cv_header_malloc_h" = yes; then
+  TC_MALLINFO_HEADER="malloc.h"
+   # gperftools/tcmalloc.h needs this
+elif test "$ac_cv_header_sys_malloc_h" = yes; then
+  TC_MALLINFO_HEADER="sys/malloc.h"
+   # gperftools/tcmalloc.h needs this
+elif test "$ac_cv_header_malloc_malloc_h" = yes; then
+  TC_MALLINFO_HEADER="malloc/malloc.h"
+   # gperftools/tcmalloc.h needs this
+fi
+
 
 # We need to check for mmap.  cygwin supports mmap, but the autoconf
 # test doesn't work on cygwin:
