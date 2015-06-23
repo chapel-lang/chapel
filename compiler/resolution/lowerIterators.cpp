@@ -1666,6 +1666,9 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 }
 
 
+// Replace a ForLoop with its inline equivalent, if possible.
+// Otherwise, convert it into a C-style for loop.
+// The given forLoop is converted unconditionally.
 static void
 expandForLoop(ForLoop* forLoop) {
   SymExpr*   se2      = forLoop->iteratorGet();
@@ -1901,6 +1904,11 @@ inlineIterators() {
       FnSymbol* ifn      = irecord->defaultInitializer;
 
       if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
+        // The Boolean return value from expandIteratorInline() is being
+        // ignored here, which means that forLoop might not have been replaced.
+        // However, all ForLoops that remain in the tree after the call to
+        // inlineIterators() are passed through expandForLoop() which *does*
+        // replace them.
         expandIteratorInline(forLoop);
       }
     }
