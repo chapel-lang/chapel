@@ -1273,7 +1273,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
 
   std::map<const char*, Symbol*> otherResults = lookup2(unresolvedSymExpr, name);
   if (sym != otherResults[name]) {
-    USR_WARN(sym, "Lydia, this was different");
+    if ((sym && !sym->hasFlag(FLAG_METHOD)) || (otherResults[name] && !otherResults[name]->hasFlag(FLAG_METHOD)))
+      USR_WARN(sym, "Lydia, this was different");
     sym = otherResults[name];
   }
 
@@ -1810,7 +1811,7 @@ static Symbol* getMethod(const char* name, Type* type) {
 }
 
 static bool methodMatched(BaseAST* scope, FnSymbol* method) {
-  if (fn->_this->type->symbol == scope) {
+  if (method->_this->type->symbol == scope) {
     return true;
   } else {
     BaseAST* curScope = getScope(scope);
@@ -1841,6 +1842,10 @@ static Symbol* inType(BaseAST* scope, const char* name) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
       if (Symbol* sym = ct->getField(name, false)) {
         return sym;
+      } else if (Symbol* fn = getMethod(name, ct)) {
+        if (methodMatched(scope, toFnSymbol(fn))) {
+          return fn;
+        }
       }
     }
   }
@@ -1851,7 +1856,12 @@ static Symbol* inType(BaseAST* scope, const char* name) {
 static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
                                 std::map<const char *, std::vector<Symbol* > >& symbols) {
   if (Symbol* sym = inSymbolTable(scope, name)) {
-    symbols[name].push_back(sym);
+    // Shove this into inSymbolTable?
+    if (sym->hasFlag(FLAG_METHOD) && !methodMatched(scope, toFnSymbol(sym))) {
+      // Don't add it
+    } else {
+      symbols[name].push_back(sym);
+    }
   }
 
   if (Symbol* sym = inType(scope, name)) {
@@ -1901,7 +1911,11 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
         forv_Vec(ModuleSymbol, mod, *modules) {
           if (mod) {
             if (Symbol* sym = inSymbolTable(mod->block, name)) {
-              symbols[name].push_back(sym);
+              if (sym->hasFlag(FLAG_METHOD) && !methodMatched(scope, toFnSymbol(sym))) {
+                // Don't add it
+              } else {
+                symbols[name].push_back(sym);
+              }
             }
           } else {
             //
@@ -1925,7 +1939,8 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
               // We found it in the arguments.  This should cause a conflict,
               // because it is probably an error that the user had the same
               // name as a module level variable.
-              symbols[name].push_back(sym);
+              USR_WARN(sym, "Module level symbol is hiding function argument '%s'", name);
+              //symbols[name].push_back(sym);
             }
           }
         }
