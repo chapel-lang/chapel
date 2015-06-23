@@ -167,6 +167,8 @@ static void
 printDevelErrorHeader(BaseAST* ast) {
   int apologize = 0;
   int have_ast_line = 0;
+  const char* filename;
+  int linenum;
 
   if (!err_print) {
     if (Expr* expr = toExpr(ast)) {
@@ -202,8 +204,28 @@ printDevelErrorHeader(BaseAST* ast) {
     }
   }
 
-  have_ast_line = ast && ast->linenum();
-  if (!have_ast_line || !err_user)
+
+  if( ast && ast->linenum() ) {
+    have_ast_line = 1;
+    filename = cleanFilename(ast);
+    linenum = ast->linenum();
+  } else {
+    have_ast_line = 0;
+    if( !err_print && currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
+      // Use our best guess for the line number for user errors,
+      // but don't do that for err_print (USR_PRINT) notes that don't
+      // come with line numbers.
+      filename = cleanFilename(currentAstLoc.filename);
+      linenum = currentAstLoc.lineno;
+    } else {
+      filename = NULL;
+      linenum = -1;
+    }
+  }
+
+  if (err_user)
+    apologize = 0;
+  else
     apologize = 1;
 
   if( apologize ) {
@@ -213,24 +235,22 @@ printDevelErrorHeader(BaseAST* ast) {
                     " as this output. See %s for\n"
                     " further instructions on filing bug reports.\n"
                     "\n", help_url);
-    if( !have_ast_line &&
-        currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
+    if( !have_ast_line && filename) {
       // Print out our best guess for the location of an error
       // if we had no source location
       fprintf(stderr, " The error may be related to this location:\n"
                       " %s:%d\n",
-                      currentAstLoc.filename, currentAstLoc.lineno);
+                      filename, linenum);
     }
   }
 
 
-  if (have_ast_line)
-    fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
-  else
-    apologize = 1;
-
-  if (!err_user)
-    apologize = 1;
+  if (filename) {
+    fprintf(stderr, "%s:%d: ", filename, linenum);
+    if( developer && !have_ast_line ) {
+      fprintf(stderr, "[source location guessed] ");
+    }
+  }
 
   if (err_print) {
     fprintf(stderr, "note: ");
