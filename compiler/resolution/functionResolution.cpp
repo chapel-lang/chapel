@@ -43,7 +43,6 @@
 #include "symbol.h"
 #include "WhileStmt.h"
 #include "../ifa/prim_data.h"
-// view.h is here for debugging convenience
 #include "view.h"
 
 #include <inttypes.h>
