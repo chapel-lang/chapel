@@ -580,7 +580,8 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     // the common case
     
     //printf("HERE\n");
-    if( isDispatchParent(ats->type, fts->type) ) {
+    if( isClass(fts->type) && isClass(ats->type) &&
+        isDispatchParent(ats->type, fts->type) ) {
       // Just use primitive cast to go from class type to object
       castCall = new CallExpr(PRIM_CAST, fts, prevActual);
     } else {
