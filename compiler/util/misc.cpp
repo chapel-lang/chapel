@@ -35,6 +35,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+
+static const char* help_url = "http://chapel.cray.com";
+
 static void cleanup_for_exit(void) {
   deleteTmpDir();
   stopCatchingSignals();
@@ -162,6 +165,9 @@ setupError(const char *filename, int lineno, int tag) {
 
 static void
 printDevelErrorHeader(BaseAST* ast) {
+  int apologize = 0;
+  int have_ast_line = 0;
+
   if (!err_print) {
     if (Expr* expr = toExpr(ast)) {
       Symbol* parent = expr->parentSymbol;
@@ -196,14 +202,35 @@ printDevelErrorHeader(BaseAST* ast) {
     }
   }
 
+  have_ast_line = ast && ast->linenum();
+  if (!have_ast_line || !err_user)
+    apologize = 1;
 
-  if (ast && ast->linenum())
-    fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
-  else if( currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
-    // Print out our best guess for the location of an error
-    // if we had no source location
-    fprintf(stderr, "%s:%d: ", currentAstLoc.filename, currentAstLoc.lineno);
+  if( apologize ) {
+    fprintf(stderr, " Unfortunately the Chapel compiler has encountered\n"
+                    " an internal error. Please file a bug report that\n"
+                    " includes a program reproducing the problem as well\n"
+                    " as this output. See %s for\n"
+                    " further instructions on filing bug reports.\n"
+                    "\n", help_url);
+    if( !have_ast_line &&
+        currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
+      // Print out our best guess for the location of an error
+      // if we had no source location
+      fprintf(stderr, " The error may be related to this location:\n"
+                      " %s:%d\n",
+                      currentAstLoc.filename, currentAstLoc.lineno);
+    }
   }
+
+
+  if (have_ast_line)
+    fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
+  else
+    apologize = 1;
+
+  if (!err_user)
+    apologize = 1;
 
   if (err_print) {
     fprintf(stderr, "note: ");
@@ -220,6 +247,7 @@ printDevelErrorHeader(BaseAST* ast) {
   if (!err_user && !developer) {
     print_user_internal_error();
   }
+
 
 }
 
