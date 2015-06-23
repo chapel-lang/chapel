@@ -942,6 +942,10 @@ module ChapelBase {
   //
   inline proc boolean.cast(type t) where isImagType(t)
     return if this then 1i:t else 0i:t;
+
+  // TODO - MPF says this should not return 0...
+  inline proc enumerated.cast(type t) where isImagType(t)
+    return 0i:t;
   
   // TODO - MPF says this should not return 0...
   inline proc integral.cast(type t) where isImagType(t)
