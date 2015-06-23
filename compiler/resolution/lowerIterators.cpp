@@ -172,7 +172,7 @@ static void computeRecursiveIteratorSet() {
     FnSymbol* currFn = taskFn;
     while (true) {
       if (currFn->calledBy->n == 0) {
-        // currFn has on callers, so by inference neither does taskFn.
+        // currFn has no callers, so by inference neither does taskFn.
         // That being the case, we can bail -- no harm done.
         break;
       }
@@ -1152,7 +1152,9 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             TaskFnCopyMap& taskFnCopies);
 
 /// \param call A for loop block primitive.
-static void
+static bool
+// Returns true if the given ForLoop was handled (converted and removed from
+// the tree); false otherwise.
 expandIteratorInline(ForLoop* forLoop) {
   Symbol*   ic       = forLoop->iteratorGet()->var;
   FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
@@ -1160,17 +1162,26 @@ expandIteratorInline(ForLoop* forLoop) {
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
 
-    //
+    // The iterand of the forLoop is marked as a recursive iterator.  This is
+    // the case we are looking for.  But first, we have to weed out a few
+    // troublesome cases.
+
+    // sjd:
     // loops over recursive iterators in recursive iterators only need
     // to be handled in the recursive iterator function
     //
     if (forLoop->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
-
-    // ditto for task functions called from recursive iterators
+//      printf("ForLoop %d parent %d has FLAG_RECURSIVE_ITERATOR\n", forLoop->id, forLoop->parentSymbol->id);
+      return false;
+    // vass: ditto for task functions called from recursive iterators
     } else if (taskFunInRecursiveIteratorSet.set_in(forLoop->parentSymbol)) {
-
+//      printf("ForLoop %d parent %d is in taskFunInRecursiveIteratorSet\n", forLoop->id, forLoop->parentSymbol->id);
+      return false;
     } else {
+//      printf("ForLoop %d calling %d expanded inline\n", forLoop->id, iterator->id);
       expandRecursiveIteratorInline(forLoop);
+      INT_ASSERT(!forLoop->inTree());
+      return true;
     }
 
   } else {
@@ -1191,7 +1202,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // if the loop being expanded was order independent, all of the yielding
     // loops in the body are also order independent. Note that this must occur
     // after the ibody replaces the forLoop since findEnclosingLoop() requires
-    // that it's argument be in the AST. It must occur before yields are
+    // that its argument be in the AST. It must occur before yields are
     // replaced in the functions below though.
     if (isOrderIndependent) {
       std::vector<CallExpr*> callExprs;
@@ -1216,6 +1227,10 @@ expandIteratorInline(ForLoop* forLoop) {
     collect_asts(ibody, asts);
 
     replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
+
+    // We can return true if forLoop has been removed from the tree.
+    INT_ASSERT(!forLoop->inTree());
+    return true;
   }
 }
 
@@ -1651,26 +1666,42 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 }
 
 
+// Replace a ForLoop with its inline equivalent, if possible.
+// Otherwise, convert it into a C-style for loop.
+// The given forLoop is converted unconditionally.
 static void
 expandForLoop(ForLoop* forLoop) {
   SymExpr*   se2      = forLoop->iteratorGet();
   VarSymbol* iterator = toVarSymbol(se2->var);
+  bool converted = false;
 
-  if (!fNoInlineIterators &&
-      iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer->iteratorInfo &&
-      canInlineIterator(iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer) &&
-      (iterator->type->dispatchChildren.n == 0 ||
-       (iterator->type->dispatchChildren.n == 1 &&
-        iterator->type->dispatchChildren.v[0] == dtObject))) {
-    expandIteratorInline(forLoop);
-
-  } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator) &&
+  if (!fNoInlineIterators)
+  {
+    if (iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer->iteratorInfo &&
+        canInlineIterator(iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer) &&
+        (iterator->type->dispatchChildren.n == 0 ||
+         (iterator->type->dispatchChildren.n == 1 &&
+          iterator->type->dispatchChildren.v[0] == dtObject))) {
+      converted = expandIteratorInline(forLoop);
+    } 
+    // Conversion fails above if there is a recursive iterator call in a
+    // recursive iterator, or if there is a task function call in a recursive
+    // iterator.  In either case, it seems like a bad idea to try to perform
+    // inlineSingleYieldIterator() on the same forLoop.  That is the reason for
+    // the unequivocal "else".
+    // To try the other olternative, replace the following line with:
+    // if (!converted && canInlineSingleYieldIterator(iterator) &&
+    else if (canInlineSingleYieldIterator(iterator) &&
             (iterator->type->dispatchChildren.n == 0 ||
              (iterator->type->dispatchChildren.n == 1 &&
               iterator->type->dispatchChildren.v[0] == dtObject))) {
-    inlineSingleYieldIterator(forLoop);
+      inlineSingleYieldIterator(forLoop);
+      converted = true;
+    }
+  }
 
-  } else {
+  if (! converted)
+  {
     // This code handles zippered iterators, dynamic iterators, and any other
     // iterator that cannot be inlined.
 
@@ -1873,6 +1904,11 @@ inlineIterators() {
       FnSymbol* ifn      = irecord->defaultInitializer;
 
       if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
+        // The Boolean return value from expandIteratorInline() is being
+        // ignored here, which means that forLoop might not have been replaced.
+        // However, all ForLoops that remain in the tree after the call to
+        // inlineIterators() are passed through expandForLoop() which *does*
+        // replace them.
         expandIteratorInline(forLoop);
       }
     }
@@ -2276,6 +2312,18 @@ void lowerIterators() {
     if (isAlive(block) == true && block->isForLoop() == true) {
       if (ForLoop* loop = toForLoop(block)) {
         expandForLoop(loop);
+      }
+    }
+  }
+
+  if (fVerify)
+  {
+    forv_Vec(BlockStmt, block, gBlockStmts)
+    {
+      if (isAlive(block) && block->isForLoop())
+      {
+        // All forLoops should have been removed from the tree by now.
+        INT_FATAL(block, "Unexpected forLoop in tree.");
       }
     }
   }
