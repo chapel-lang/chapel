@@ -3449,9 +3449,6 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 // be a fatal error.
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
-  if( call->id == 1240246 )
-    gdbShouldBreakHere();
-
   resolveDefaultGenericType(call);
 
   CallInfo info(call, checkonly);
