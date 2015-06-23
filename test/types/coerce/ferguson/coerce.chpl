@@ -3,11 +3,11 @@ record R {
   var x: int;
 }
 
-pragma "coerce"
-proc _allow_coerce(type t, x: R) param where t == int return true;
+//pragma "coerce"
+proc R.coercible(type t) param where t == int return true;
 
-proc _cast(type t, x: R) where t == int {
-  return x.x;
+proc R.cast(type t) where t == int {
+  return this.x;
 }
 
 
@@ -20,3 +20,6 @@ writeln(rec);
 x = rec;
 
 writeln(x);
+
+// Also check explicit cast.
+writeln(rec:int);
