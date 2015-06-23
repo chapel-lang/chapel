@@ -2884,10 +2884,10 @@ record ioBits {
 }
 
 pragma "no doc"
-inline proc ioBits.cast(type t) where t == c_string {
+inline proc ioBits.cast(type t) where t == string {
   const ret = "ioBits(v=" +this.v:string+ ", nbits=" +this.nbits:string+ ")";
   // FIX ME: should this be copied?
-  return ret.c_str();
+  return ret;
 }
 
 
