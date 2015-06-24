@@ -1868,7 +1868,6 @@ buildFunctionSymbol(FnSymbol*   fn,
 				   new UnresolvedSymExpr(class_name));
     fn->_this = arg;
     if (thisTag == INTENT_TYPE) {
-      printf("id = %d\n", arg->id);
       arg->intent = INTENT_BLANK;
       arg->addFlag(FLAG_TYPE_VARIABLE);
       arg->type = dtAny;
