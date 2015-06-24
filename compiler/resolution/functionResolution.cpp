@@ -61,8 +61,6 @@
 #define TRACE_DISAMBIGUATE_BY_MATCH(...)
 #endif
 
-static bool onMyFunc = false;
-
 /** Contextual info used by the disambiguation process.
  *
  * This class wraps information that is used by multiple functions during the
@@ -1701,15 +1699,11 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
 
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
-  if (!currCandidate->fn) {
-    if (onMyFunc) { fprintf(stderr, "Returning early\n"); }
-    return;
-  }
+  if (!currCandidate->fn) return;
 
   resolveTypedefedArgTypes(currCandidate->fn);
 
   if (!currCandidate->computeAlignment(info)) {
-    if (onMyFunc) { fprintf(stderr, "failed to compute alignment\n"); }
     return;
   }
 
@@ -1742,14 +1736,10 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
 		 formal->intent == INTENT_TYPE) {
 	// OK
       } else {
-	if (onMyFunc) { 
-	  fprintf(stderr, "returning due to flag type var\n");
-	}
 	return;
       }
-    
+
       if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
-	if (onMyFunc) { fprintf(stderr, "returning due to inability to dispatch\n"); }
         return;
       }
     }
@@ -1848,11 +1838,9 @@ filterCandidate(Vec<ResolutionCandidate*>& candidates,
                 CallInfo& info) {
 
   if (currCandidate->fn->hasFlag(FLAG_GENERIC)) {
-    if (onMyFunc) { fprintf(stderr, "generic\n"); }
     filterGenericCandidate(candidates, currCandidate, info);
 
   } else {
-    if (onMyFunc) { fprintf(stderr, "non-generic\n"); }
     filterConcreteCandidate(candidates, currCandidate, info);
   }
 }
@@ -3291,19 +3279,14 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
         ((explainCallLine && explainCallMatch(info.call)) ||
          info.call->id == explainCallID))
     {
-      onMyFunc = true;
       USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
     }
 
-    if (onMyFunc) {
-      fprintf(stderr, "*** Filtering candidates\n");
-    }
     filterCandidate(candidates, visibleFn, info);
   }
 
   // Return if we got a successful match with user-defined functions.
   if (candidates.n) {
-    onMyFunc = false;
     return;
   }
 
@@ -8147,10 +8130,15 @@ static void replaceTypeArgsWithFormalTypeTemps()
           }
         }
       }
+      formal->defPoint->remove();
+      //
+      // If we're removing the formal representing 'this' (if it's a
+      // type, say), we should nullify the 'this' pointer in the
+      // function as well...
+      //
       if (formal == fn->_this) {
 	fn->_this = NULL;
       }
-      formal->defPoint->remove();
     }
   }
 }
