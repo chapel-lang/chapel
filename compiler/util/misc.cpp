@@ -268,7 +268,6 @@ printDevelErrorHeader(BaseAST* ast) {
     print_user_internal_error();
   }
 
-
 }
 
 static void printDevelErrorFooter(void) {
