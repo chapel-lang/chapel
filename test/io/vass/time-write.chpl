@@ -62,6 +62,9 @@ config const n = 3;
 config const tries = 2;
 config const fmt = "%7.3dr";
 config const compareTimes = false;
+config const useStderr = false;
+const info = if useStderr then stderr else stdout;
+
 
 // Each trial() function writes a newline 'n' times.
 
@@ -73,12 +76,12 @@ extern proc cs_trial(n: int);
 proc lstr_trial() {
   extern proc printf(format: c_string, arg...);
   for 1..n do
-    printf("%s", "\n");
+    printf("%s", "\n".c_str());
 }
 
 proc lcs_trial() {
   extern proc printf(format: c_string, arg...);
-  const c_newline_local = "\n".c_str();
+  const c_newline_local: c_string = "\n";
   for 1..n do
     printf("%s", c_newline_local);
 }
@@ -90,7 +93,7 @@ proc gstr_trial() {
     printf("%s", str_newline_global.c_str());
 }
 
-const c_newline_global = "\n".c_str();
+const c_newline_global: c_string = "\n";
 proc gcs_trial() {
   extern proc printf(format: c_string, arg...);
   for 1..n do
@@ -128,14 +131,14 @@ inline proc addTime(ref t: real) {
 
 const reportFormat = "%-24s " + fmt + "\n";
 inline proc reportTime(title: string, time: real) {
-  stderr.writef(reportFormat, title, time);
+  info.writef(reportFormat, title, time);
 }
 
-stderr.writef("n      %i\n", n);
-stderr.writef("tries  %i\n", tries);
+info.writef("n      %i\n", n);
+info.writef("tries  %i\n", tries);
 
 for t in 1..tries {
-  stderr.writef("starting try %i\n", t);
+  info.writef("starting try %i\n", t);
   addTime(tDummy);
 
   cf_trial(n);   addTime(tcf);
@@ -149,9 +152,9 @@ for t in 1..tries {
   sto_trial();   addTime(tsto);
 }
 
-stderr.writef("done tries\n");
-//stderr.writef("n      %i\n", n);
-//stderr.writef("tries  %i\n", tries);
+info.writef("done tries\n");
+//info.writef("n      %i\n", n);
+//info.writef("tries  %i\n", tries);
 
 if compareTimes {
   reportTime("C printf", tcf);

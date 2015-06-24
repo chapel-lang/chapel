@@ -1,4 +1,5 @@
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use Time;
 use CommDiagnostics;
@@ -27,7 +28,7 @@ config var N: int = 128;
 config var TMAX: int = 50;
 
 config var printData: bool = false;
-config var dist: string = "CM";
+config var dist: string = "C";
 
 /* Initializes a 1D structure */
 proc initialize_1D(distribution) {
@@ -185,10 +186,10 @@ proc main() {
         var dist_1D = dom_1D;
         /* Run the benchmark */
         kernel_fdtd2d(dist_1D, dist_2D, M, N); 
-    } else if dist == "CM" {
+    /*} else if dist == "CM" {
         var dist_1D = dom_1D dmapped CyclicZipOpt(startIdx=dom_1D.low);
         var dist_2D = dom_2D dmapped CyclicZipOpt(startIdx=dom_2D.low);
-        kernel_fdtd2d(dist_1D, dist_2D, M, N);
+        kernel_fdtd2d(dist_1D, dist_2D, M, N);*/
     } else if dist == "C" {
         var dist_1D = dom_1D dmapped Cyclic(startIdx=dom_1D.low);
         var dist_2D = dom_2D dmapped Cyclic(startIdx=dom_2D.low);

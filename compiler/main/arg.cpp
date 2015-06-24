@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -210,7 +210,7 @@ void usage(const ArgumentState* state,
 
           case 'L':
             if (desc[i].location != 0)
-              printf("%"PRId64, *(int64_t*) desc[i].location);
+              printf("%" PRId64, *(int64_t*) desc[i].location);
             else
               printf("''");
 
@@ -315,6 +315,15 @@ void init_args(ArgumentState* state, const char* argv0) {
 
   state->program_name = name;
   state->program_loc  = findProgramPath(argv0);
+}
+
+
+/*
+ * Initialize arg_desc member.
+ */
+
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc) {
+  state->desc = arg_desc;
 }
 
 /************************************* | **************************************
@@ -599,7 +608,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
     }
     else
     {
-      state->file_argument = (char **)realloc(
+      state->file_argument = (const char **)realloc(
         state->file_argument,
         sizeof(char*) * (state->nfile_arguments + 2));
 
@@ -672,7 +681,14 @@ static void process_arg(const ArgumentState*       state,
           break;
 
         case 'S':
-          strncpy((char*) desc->location, arg, atoi(desc->type + 1));
+          if( desc->location ) {
+            int len = strlen(arg);
+            int maxlen = atoi(desc->type + 1);
+            if( len > maxlen ) {
+              USR_FATAL("argument for --%s is too long", desc->name);
+            }
+            strncpy((char*) desc->location, arg, maxlen);
+          }
           break;
 
         default:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,6 +42,7 @@
 #include <cstring>
 #include <inttypes.h>
 #include <ostream>
+#include <stack>
 
 class FnSymbol;
 
@@ -123,6 +124,20 @@ Expr::~Expr() {
 
 bool Expr::isStmt() const {
   return false;
+}
+
+// IPE: Provide the name of the symbol/variable being defined
+const char* DefExpr::name() const {
+  const char* retval = 0;
+
+  if (isLcnSymbol(sym)    == true ||
+      isTypeSymbol(sym)   == true ||
+      isFnSymbol(sym)     == true ||
+      isModuleSymbol(sym) == true) {
+    retval = sym->name;
+  }
+
+  return retval;
 }
 
 // Return true if this expression is a ModuleDefinition i.e. it
@@ -268,32 +283,30 @@ void Expr::prettyPrint(std::ostream *o) {
 }
 
 Expr* Expr::remove() {
-  if (this != NULL) {
-    if (list) {
-      if (next)
-        next->prev = prev;
-      else
-        list->tail = prev;
+  if (list) {
+    if (next)
+      next->prev = prev;
+    else
+      list->tail = prev;
 
-      if (prev)
-        prev->next = next;
-      else
-        list->head = next;
+    if (prev)
+      prev->next = next;
+    else
+      list->head = next;
 
-      list->length--;
+    list->length--;
 
-      next = NULL;
-      prev = NULL;
-      list = NULL;
-    } else {
-      callReplaceChild(this, NULL);
-    }
+    next = NULL;
+    prev = NULL;
+    list = NULL;
+  } else {
+    callReplaceChild(this, NULL);
+  }
 
-    if (parentSymbol) {
-      remove_help(this, 'r');
-    } else {
-      trace_remove(this, 'R');
-    }
+  if (parentSymbol) {
+    remove_help(this, 'r');
+  } else {
+    trace_remove(this, 'R');
   }
 
   return this;
@@ -370,6 +383,36 @@ void Expr::insertAfter(Expr* new_ast) {
   if (parentSymbol)
     sibling_insert_help(this, new_ast);
   list->length++;
+}
+
+
+void
+Expr::replace(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  replace(new_Expr(format, args));
+  va_end(args);
+}
+
+
+void
+Expr::insertBefore(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertBefore(new_Expr(format, args));
+  va_end(args);
+}
+
+
+void
+Expr::insertAfter(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertAfter(new_Expr(format, args));
+  va_end(args);
 }
 
 
@@ -1828,7 +1871,7 @@ GenRet codegenLocalDeref(GenRet r)
   // (instead of running codegenDeref with chplType=type->refType )
   ret = codegenValue(r);
   ret.isLVPtr = GEN_PTR;
-  if( r.chplType ) ret.chplType = r.chplType->getValType(); 
+  if( r.chplType ) ret.chplType = r.chplType->getValType();
   return ret;
 }
 
@@ -5896,6 +5939,116 @@ isIdentifierChar(const char c) {
           (c == '_') || (c == '.'));
 }
 
+
+/*********** new_Expr() ***********/
+/*
+
+new_Expr() lets you build AST more succinctly.
+
+You can call new_Expr() directly, or implicitly by calling:
+
+  BlockStmt::insertAtHead
+  BlockStmt::insertAtTail
+  FnSymbol::insertAtHead
+  FnSymbol::insertAtTail
+  Expr::insertBefore
+  Expr::insertAfter
+  Expr::replace
+
+Synopsis:
+
+  new_Expr(const char* format, ...)
+
+The format string should contain a Chapel statement or expression.
+
+SIMPLE CALLS
+
+The code
+
+  block->insertAtTail("foo()");
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr("foo"));
+
+USING SYMBOLS AND EXPRESSIONS
+
+Symbols and expressions can be added to the newly created expressions
+using %S and %E format flags.  For example, given:
+
+  VarSymbol* tmp;
+  CallExpr* call;
+
+the code
+
+  block->insertAtTail("foo(%S)", tmp);
+  block->insertAtTail("foo(%E)", call);
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr("foo", tmp));
+  block->insertAtTail(new CallExpr("foo", call));
+
+PRIMITIVES
+
+Primitives can be defined by enclosing the name of the primitive in
+apostrophes.  So the code
+
+  block->insertAtTail("'move'(%S, new CallExpr("foo"))");
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("foo")));
+
+STRING LITERALS
+
+String literals are also supported by enclosing a string in
+apostrophes.
+
+BLOCK STATEMENTS
+
+Finally, block statements and type block statements
+(BlockStmt::blockTag == BLOCK_TYPE) are supported
+via curly brackets and semicolons. For example:
+
+  new_Expr("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
+
+METHOD CALLS
+
+Note that AST represents method calls differently before and after normalize.
+
+Here are examples before normalize:
+
+  // localOp.accumulate(followIdx)
+  new_Expr(".(%S, 'accumulate')(%S)", localOp, followIdx);
+
+  // globalOp.generate()
+  new_Expr(".(%S, 'generate')()", globalOp);
+
+  // Paren-less calls are perhaps done so: localOp.identity
+  new_Expr(".(%S, 'identity')", localOp);
+
+After normalize method calls are represented as procedure calls with
+the first argument being gMethodToken:
+
+  // rvar.identity
+  new_Expr("identity(%S,%S)", gMethodToken, rvar);
+
+  // rvar.accumulate(svar)
+  new_Expr("accumulate(%S,%S,%S)", gMethodToken, rvar, svar);
+
+FINAL EXAMPLE
+
+The code
+
+  leadBlock->insertAtTail(new CallExpr(PRIM_MOVE, leadIter, new CallExpr("_getIterator", new CallExpr("_toLeader", iter))));
+
+can be written as
+
+  leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))", leadIter, iter);
+
+*/
+
 Expr*
 new_Expr(const char* format, ...) {
   va_list vl;
@@ -5907,7 +6060,7 @@ new_Expr(const char* format, ...) {
 
 Expr*
 new_Expr(const char* format, va_list vl) {
-  Vec<Expr*> stack;
+  std::stack<Expr*> stack;
 
   for (int i = 0; format[i] != '\0'; i++) {
     if (isIdentifierChar(format[i])) {
@@ -5917,11 +6070,14 @@ new_Expr(const char* format, va_list vl) {
       const char* str = asubstr(&format[i], &format[i+n]);
       i += n-1;
       if (!strcmp(str, "TYPE")) {
-        BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+        if (stack.size() == 0) {
+          INT_FATAL("You neglected to provide a \"{ TYPE ...\" for a block type statement.");
+        } // Accessing the stack would result in unspecified behavior
+        BlockStmt* block = toBlockStmt(stack.top());
         INT_ASSERT(block);
         block->blockTag = BLOCK_TYPE;
       } else {
-        stack.add(new UnresolvedSymExpr(str));
+        stack.push(new UnresolvedSymExpr(str));
       }
     } else if (format[i] == '\'') {
       int n = 1;
@@ -5932,54 +6088,71 @@ new_Expr(const char* format, va_list vl) {
       if (format[i+1] == '(') {
         PrimitiveOp* prim = primitives_map.get(str);
         INT_ASSERT(prim);
-        stack.add(new CallExpr(prim));
+        stack.push(new CallExpr(prim));
         i++;
       } else {
-        stack.add(new SymExpr(new_StringSymbol(str)));
+        stack.push(new SymExpr(new_StringSymbol(str)));
       }
     } else if (format[i] == '%') {
       i++;
       if (format[i] == 'S')
-        stack.add(new SymExpr(va_arg(vl, Symbol*)));
+        stack.push(new SymExpr(va_arg(vl, Symbol*)));
       else if (format[i] == 'E')
-        stack.add(va_arg(vl, Expr*));
+        stack.push(va_arg(vl, Expr*));
       else
         INT_FATAL("unknown format specifier in new_Expr");
     } else if (format[i] == '(') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      stack.add(new CallExpr(expr));
+      stack.push(new CallExpr(expr));
       if (format[i+1] == ')') // handle empty calls
         i++;
     } else if (format[i] == ',') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      CallExpr* call = toCallExpr(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("There was nothing before the \',\'");
+      } // Accessing the stack would result in unspecified behavior
+      CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
     } else if (format[i] == ')') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      CallExpr* call = toCallExpr(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("This closing parentheses is unmatched");
+      } // Accessing the stack would result in unspecified behavior
+      CallExpr* call = toCallExpr(stack.top());
       INT_ASSERT(call);
       call->insertAtTail(expr);
     } else if (format[i] == '{') {
-      stack.add(new BlockStmt());
+      stack.push(new BlockStmt());
     } else if (format[i] == ';') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("There was nothing before the \';\'");
+      } // Accessing the stack would result in unspecified behavior
+      BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
     } else if (format[i] == '}') {
-      Expr* expr = stack.pop();
+      Expr* expr = stack.top();
+      stack.pop();
       INT_ASSERT(expr);
-      BlockStmt* block = toBlockStmt(stack.v[stack.n-1]);
+      if (stack.size() == 0) {
+        INT_FATAL("This closing curly bracket is unmatched");
+      } // Accessing the stack would result in unspecified behavior
+      BlockStmt* block = toBlockStmt(stack.top());
       INT_ASSERT(block);
       block->insertAtTail(expr);
     }
   }
 
-  INT_ASSERT(stack.n == 1);
-  return stack.v[0];
+  INT_ASSERT(stack.size() == 1);
+  return stack.top();
 }

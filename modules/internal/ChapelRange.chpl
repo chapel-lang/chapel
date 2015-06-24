@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,6 +29,8 @@ module ChapelRange {
   config param useOptimizedRangeIterators = true;
 
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+
+  proc indexToStrideType(type idxType) type  return chpl__signedType(idxType);
   
   //
   // range type
@@ -66,7 +68,7 @@ module ChapelRange {
     var _alignment: idxType = 0;                   // alignment
     var _aligned : bool = false;
 
-    proc strType type return chpl__signedType(idxType);
+    proc strType type  return indexToStrideType(idxType);
     inline proc low  return _low;
     inline proc high return _high;
     inline proc stride       where stridable  return _stride;
@@ -94,7 +96,7 @@ module ChapelRange {
                    param stridable : bool = false,
                    _low : idxType = 1,
                    _high : idxType = 0,
-                   _stride : chpl__signedType(idxType) = 1,
+                   _stride : indexToStrideType(idxType) = 1,
                    _alignment : idxType = 0,
                    _aligned : bool = false)
   {
@@ -646,7 +648,7 @@ module ChapelRange {
   inline proc +(r: range(?e, ?b, ?s), i: integral)
   {
     type resultType = (r._low+i).type;
-    type strType = chpl__signedType(resultType);
+    type strType = indexToStrideType(resultType);
 
     return new range(resultType, b, s,
                      r._low + i, r._high + i,
@@ -659,7 +661,7 @@ module ChapelRange {
   inline proc -(r: range(?e,?b,?s), i: integral)
   {
     type resultType = (r._low+i).type;
-    type strType = chpl__signedType(resultType);
+    type strType = indexToStrideType(resultType);
   
     return new range(resultType, b, s,
                      r._low - i, r._high - i,
@@ -667,13 +669,58 @@ module ChapelRange {
   }
   
   
-  inline proc chpl_by_help(r: range(?i,?b,?s), step) {
+  inline proc chpl_check_step_integral(step) {
+    if !isIntegral(step.type) then
+      compilerError("can't apply 'by' using step of a non-integral type ",
+                    typeToString(step.type));
+  }
+  
+  proc chpl_need_to_check_step(step, type strType) param {
+    compilerAssert(isInt(strType)); // we assume strType is signed
+    // 'step' is either same-sized unsigned, or any larger size
+    return step.type != strType && numBits(step.type) >= numBits(strType);
+  }
+  
+  // Helpers to check if the stride of a range is invalid. Error (either at
+  // runtime or compile time) if it's invalid.
+  
+  inline proc chpl_range_check_stride(step, type idxType) {
+    chpl_check_step_integral(step);
+    type strType = indexToStrideType(idxType);
+
+    // At present, step must coerce to range's idxType or strType.
+    if numBits(step.type) > numBits(strType) then
+      compilerError("can't apply 'by' to a range with idxType ",
+                    typeToString(idxType), " using a step of type ",
+                    typeToString(step.type));
+
+    if boundsChecking {
+      if step == 0 then
+        __primitive("chpl_error", "the step argument of the 'by' operator is zero");
+
+      if chpl_need_to_check_step(step, strType) &&
+         step > (max(strType):step.type)
+      then
+        __primitive("chpl_error", "the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
+    }
+  }
+  
+  inline proc chpl_range_check_stride(param step, type idxType)  {
+    chpl_check_step_integral(step);
+    type strType = indexToStrideType(idxType);
+
     if step == 0 then
-      __primitive("chpl_error", "the step argument of the 'by' operator is zero");
+      compilerError("the step argument of the 'by' operator is zero");
+
+    // do not check e.g. when step and strType are both int(64)
+    if chpl_need_to_check_step(step, strType) &&
+       step > (max(strType):step.type)
+    then
+      compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
+  }
   
-    if ((step > 0) && (step:r.strType < 0)) then
-      __primitive("chpl_error", "the step argument of the 'by' operator is too large");
   
+  proc chpl_by_help(r: range(?i,?b,?s), step) {
     const lw: i = r.low,
           hh: i = r.high,
           st: r.strType = r.stride * step:r.strType;
@@ -689,41 +736,21 @@ module ChapelRange {
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
 
-
-  proc by(r : range(?i,?b,?s), step:chpl__unsignedType(i))
-  {
+  inline proc by(r, step) {
+    if !isRange(r) then
+      compilerError("the first argument of the 'by' operator is not a range");
+    chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step);
   }
-
-  proc by(r : range(?i,?b,?s), step:chpl__signedType(i))
-  {
-    return chpl_by_help(r, step);
-  }
-
+  
   // We want to warn the user at compiler time if they had an invalid param
-  // stride rather than waiting until runtime. However, we don't want to stamp
-  // out a by function for every valid param stride, so these only handle
-  // invalid cases, and let the non-param cases above handle values known at
-  // compile time that are non-zero
-  proc by(r : range(?i,?b,?s), param step:chpl__unsignedType(i)) where step == 0
-  {
-    compilerError("the 'by' operator cannot take a value of zero");
+  // stride rather than waiting until runtime.
+  inline proc by(r : range(?), param step) {
+    chpl_range_check_stride(step, r.idxType);
+    return chpl_by_help(r, step:r.strType);
   }
-
-  proc by(r : range(?i,?b,?s), param step:chpl__signedType(i)) where step == 0
-  {
-    compilerError("the 'by' operator cannot take a value of zero");
-  }
-
-  proc by(r : range(?i,?b,?s), step)
-  {
-    compilerError("can't apply 'by' to a range with idxType ",
-                  typeToString(i), " using a step of type ",
-                  typeToString(step.type));
-    return r;
-  }
-
-
+  
+  
   // This is the syntax processing routine for the "align" keyword.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
@@ -886,7 +913,7 @@ module ChapelRange {
       __primitive("chpl_error", "count -- Cannot count off elements from a range which is ambiguously aligned.");
 
     type resultType = r.idxType;
-    type strType = chpl__signedType(resultType);
+    type strType = indexToStrideType(resultType);
   
     if (count == 0) then
       // Return a degenerate range.
@@ -1008,7 +1035,7 @@ module ChapelRange {
     }
 
     if (willOverFlow && shouldHalt) {
-      halt("Overflow detected for iteration over a bounded range.");
+      halt("Iteration over a bounded range may be incorrect due to overflow.");
     }
     return willOverFlow;
   }
@@ -1102,11 +1129,10 @@ module ChapelRange {
 
   iter chpl_direct_uint_stride_range_iter(low: ?t, high, stride) {
     if (useOptimizedRangeIterators) {
+      chpl_range_check_stride(stride, t);
+
       if boundsChecking then
         chpl_checkIfRangeIterWillOverflow(t, low, high, stride);
-
-      if stride == 0 then
-          __primitive("chpl_error", "the step argument of the 'by' operator is zero");
 
       var i: t;
       while __primitive("C for loop",
@@ -1122,11 +1148,7 @@ module ChapelRange {
 
   iter chpl_direct_param_stride_range_iter(low: ?t, high, param stride) {
     if (useOptimizedRangeIterators) {
-      if stride == 0 then
-        compilerError("the 'by' operator cannot take a value of zero");
-
-      if ((stride > 0) && (stride:chpl__unsignedType(t) < 0)) then
-        compilerError("the step argument of the 'by' operator is too large");
+      chpl_range_check_stride(stride, t);
 
       var i: t;
       if (stride > 0) {
@@ -1274,6 +1296,55 @@ module ChapelRange {
   //# Parallel Iterators
   //#
 
+  iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
+                                              !localeModelHasSublocales
+  {
+    if ! isBoundedRange(this) {
+      compilerError("parallel iteration is not supported over unbounded ranges");
+    }
+    if this.isAmbiguous() {
+      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+    }
+    if debugChapelRange {
+      writeln("*** In range standalone iterator:");
+    }
+
+    const len = this.length;
+    const numChunks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(len);
+
+    if debugChapelRange {
+      writeln("*** RI: length=", len, " numChunks=", numChunks);
+    }
+
+    if numChunks <= 1 {
+      for i in this {
+        yield i;
+      }
+    } else {
+      coforall chunk in 0..#numChunks {
+        if stridable {
+          // TODO: find a way to avoid this densify/undensify for strided
+          // ranges, perhaps by adding knowledge of alignment to _computeBlock
+          // or using an aligned range
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
+          const mylen = hi - (lo-1);
+          var low = orderToIndex(lo);
+          var high = (low:strType + stride * (mylen - 1):strType):idxType;
+          if stride < 0 then low <=> high;
+          for i in low..high by stride {
+            yield i;
+          }
+        } else {
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, this.high, this.low, this.low);
+          for i in lo..hi {
+            yield i;
+          }
+        }
+      }
+    }
+  }
+
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
     if ! isBoundedRange(this) then
@@ -1393,20 +1464,14 @@ module ChapelRange {
   
     if ! this.hasFirst() {
       if this.isEmpty() {
-        if myFollowThis.isEmpty() then
-          // nothing to do
-          return;
-        else
+        if ! myFollowThis.isEmpty() then
           halt("zippered iteration with a range has non-equal lengths");
       } else {
         halt("iteration over a range with no first index");
       }
     }
     if ! myFollowThis.hasFirst() {
-      if !myFollowThis.isAmbiguous() && myFollowThis.isEmpty() then
-        // nothing to do
-        return;
-      else
+      if ! (!myFollowThis.isAmbiguous() && myFollowThis.isEmpty()) then
         halt("zippered iteration over a range with no first index");
     }
   
@@ -1414,8 +1479,6 @@ module ChapelRange {
        myFollowThis.hasLast()
     {
       const flwlen = myFollowThis.length;
-      if flwlen == 0 then
-        return; // nothing to do
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
@@ -1424,31 +1487,42 @@ module ChapelRange {
         } else
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }    
-  
-      // same as undensifyBounded(this, myFollowThis), but on a rangeBase
-      var low: idxType  = this.orderToIndex(myFollowThis.first);
-      if flwlen == 1
-      {
+      if this.stridable || myFollowThis.stridable {
+        var r = 1:idxType .. 0:idxType by 1:indexToStrideType(idxType);
+
+        if flwlen != 0 {
+          const stride = this.stride * myFollowThis.stride;
+          var low: idxType  = this.orderToIndex(myFollowThis.first);
+          var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
+          assert(high == this.orderToIndex(myFollowThis.last));
+
+          if stride < 0 then low <=> high;
+          r = low .. high by stride:strType;
+        }
+
         if debugChapelRange then
-          writeln("Expanded range = ", low..low);
-        yield low;
-        return;
+          writeln("Expanded range = ",r);
+
+        for i in r do
+          yield i;
+
+      } else {
+        var r = 1:idxType .. 0:idxType;
+
+        if flwlen != 0 {
+          const low: idxType  = this.orderToIndex(myFollowThis.first);
+          const high: idxType = ( low: strType + (flwlen - 1):strType ):idxType;
+          assert(high == this.orderToIndex(myFollowThis.last));
+
+          r = low .. high;
+        }
+
+        if debugChapelRange then
+          writeln("Expanded range = ",r);
+
+        for i in r do
+          yield i;
       }
-  
-      const stride = this.stride * myFollowThis.stride;
-  
-      var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
-      assert(high == this.orderToIndex(myFollowThis.last));
-      if stride < 0 then low <=> high;
-      assert(low <= high);
-  
-      const r = low .. high by stride:strType;
-      if debugChapelRange then
-        writeln("Expanded range = ",r);
-  
-      // todo: factor out this loop (and the above writeln) into a function?
-      for i in r do
-        yield i;
     }
     else // ! myFollowThis.hasLast()
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -417,8 +417,14 @@ module ChapelBase {
   inline proc *(param a: int(?w), param b: int(w)) param return __primitive("*", a, b);
   inline proc *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
   
-  inline proc /(param a: int(?w), param b: int(w)) param return __primitive("/", a, b);
-  inline proc /(param a: uint(?w), param b: uint(w)) param return __primitive("/", a, b);
+  inline proc /(param a: int(?w), param b: int(w)) param {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline proc /(param a: uint(?w), param b: uint(w)) param {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
   
   //
   // % on primitive types
@@ -702,6 +708,9 @@ module ChapelBase {
       return __primitive("array_get", this, i);
     }
   }
+
+  proc chpl_isDdata(type t) param where t: _ddata return true;
+  proc chpl_isDdata(type t) param return false;
   
   inline proc =(ref a: _ddata(?t), b: _ddata(t)) {
     __primitive("=", a, b);
@@ -1004,7 +1013,12 @@ module ChapelBase {
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
   }
-  
+
+  // Catch-all initCopy implementation:
+  pragma "compiler generated"
+  pragma "init copy fn"
+  inline proc chpl__initCopy(x) return x;
+
   pragma "dont disable remote value forwarding"
   pragma "removable auto copy"
   pragma "donor fn"
@@ -1309,7 +1323,14 @@ module ChapelBase {
   inline proc /(a: int(64), b: uint(64)) { _throwOpError("/"); }
   
   // non-param/param and param/non-param
+  // The int version is only defined so we can catch the divide by zero error
+  // at compile time
+  inline proc /(a: int(64), param b: int(64)) {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
   inline proc /(a: uint(64), param b: uint(64)) {
+    if b == 0 then compilerError("param divide by zero");
     return __primitive("/", a, b);
   }
   inline proc /(param a: uint(64), b: uint(64)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,7 +47,7 @@ module LocalesArray {
   // we set up the version on all other locales during LocaleModel
   // initialization (see chpl_rootLocaleInitPrivate()).  The copy for
   // locale 0 is set up here for the declaration.
-  pragma "private"
+  pragma "locale private"
   var Locales => (rootLocale:RootLocale).getDefaultLocaleArray();
 
   // We don't use the same private "trick" as with Locales above with

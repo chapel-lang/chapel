@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -273,9 +273,9 @@ module String {
     return _cast(c_string_copy, x);
 
   
-  pragma "compiler generated"
   pragma "init copy fn"
-  inline proc chpl__initCopy(a) {
+  inline proc chpl__initCopy(a)
+    where a.type == c_string || a.type == c_string_copy {
     // Currently, string representations are shared.
     // (See note on proc =(a:string, b:string) above.)
       return a;

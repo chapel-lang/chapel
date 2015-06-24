@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,7 +34,7 @@ module DefaultSparse {
     var nnzDomSize = nnz;
     var nnzDom = {1..nnzDomSize};
 
-    var indices: [nnzDom] index(rank);
+    var indices: [nnzDom] index(rank, idxType);
 
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
@@ -62,6 +62,31 @@ module DefaultSparse {
     iter these() {
       for i in 1..nnz {
         yield indices(i);
+      }
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone {
+      const numElems = nnz;
+      const numChunks = _computeNumChunks(numElems): numElems.type;
+      if debugDefaultSparse {
+        writeln("DefaultSparseDom standalone: ", numChunks, " chunks, ",
+                numElems, " elems");
+      }
+
+      // split our numElems elements over numChunks tasks
+      if numChunks <= 1 {
+        // ... except if 1, just use the current thread
+        for i in 1..numElems {
+          yield indices(i);
+        }
+      } else {
+        coforall chunk in 1..numChunks {
+          const (startIx, endIx) =
+            _computeChunkStartEnd(numElems, numChunks, chunk);
+          for i in startIx..endIx {
+            yield indices(i);
+          }
+        }
       }
     }
 
@@ -106,8 +131,6 @@ module DefaultSparse {
     proc find(ind) {
       //
       // sjd: unfortunate specialization for rank == 1
-      // sjd: would it be better if indices were an array of rank*idxType?
-      // sjd: isn't it a bug as is because the idxType may not match index(rank)?
       //
       if rank == 1 && isTuple(ind) && ind.size == 1 then
         return BinarySearch(indices, ind(1), 1, nnz);
@@ -266,8 +289,31 @@ module DefaultSparse {
     }
 
     iter these() ref {
-      for e in data[1..dom.nnz] do yield e;
+      for i in 1..dom.nnz do yield data[i];
     }
+
+    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+      const numElems = dom.nnz;
+      const numChunks = _computeNumChunks(numElems): numElems.type;
+      if debugDefaultSparse {
+        writeln("DefaultSparseArr standalone: ", numChunks, " chunks, ",
+                numElems, " elems");
+      }
+      if numChunks <= 1 {
+        for i in 1..numElems {
+          yield data[i];
+        }
+      } else {
+        coforall chunk in 1..numChunks {
+          const (startIx, endIx) =
+            _computeChunkStartEnd(numElems, numChunks, chunk);
+          for i in startIx..endIx {
+            yield data[i];
+          }
+        }
+      }
+    }
+
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
       // forward to the leader iterator on our domain
@@ -284,7 +330,7 @@ module DefaultSparse {
       if debugDefaultSparse then
         writeln("DefaultSparseArr follower: ", startIx, "..", endIx);
 
-      for e in data[startIx..endIx] do yield e;
+      for i in startIx..endIx do yield data[i];
     }
 
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {

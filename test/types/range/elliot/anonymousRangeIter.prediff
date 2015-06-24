@@ -24,7 +24,7 @@ with open (actualGenCodeFile) as f:
 with open (testOutputFile, 'a') as f:
     for line in expectedGeneratedCodeLines:
         if line in actualGeneratedCode:
-            f.write('Found expected line: {0}\n'.format(line))
+            f.write('Found expected line\n')
         else:
             f.write('{0} is missing line: {1}\n'.format(actualGenCodeFile, line))
 

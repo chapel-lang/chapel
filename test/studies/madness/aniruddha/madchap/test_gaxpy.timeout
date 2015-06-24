@@ -1,0 +1,4 @@
+# As of 02/09/15 this test times out occasionally for gasnet-fifo.
+# We should be able to remove this when we test on real hardware
+# instead of using local spawning.
+1800

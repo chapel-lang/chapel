@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -14,5 +14,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+#
+# Settings for Cray XT3 and XT4 systems
+#
+
+export XTPE_INFO_MESSAGE_OFF=true
 
 include $(CHPL_MAKE_HOME)/make/platform/Makefile.cray-x-series

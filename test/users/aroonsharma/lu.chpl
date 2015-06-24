@@ -1,5 +1,5 @@
 use CyclicDist;
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
 use BlockDist;
 use Time;
 use CommDiagnostics;
@@ -16,7 +16,7 @@ config var correct = false;
 config var timeit = false;
 config var messages = false;
 config var printMatrices: bool = false;
-config var dist: string = "CM";
+config var dist: string = "C";
 
 config var N: int = 128;
 
@@ -39,6 +39,10 @@ proc print_matrix(A: [], n_dim: int) {
     }
 }
 
+proc within_epsilon(a: real, b: real)
+{
+  return fabs(a-b) < 0.00001;
+}
 
 /* The process which runs the benchmark */
 proc kernel_lu(dist_square, n_dim: int) {
@@ -106,7 +110,8 @@ proc kernel_lu(dist_square, n_dim: int) {
 		
 		for ii in 1..n_dim {
 			for jj in 1..n_dim {
-				still_correct &&= (A[ii,jj] == ATest[ii,jj]);
+				still_correct &&=
+                                  (within_epsilon(A[ii,jj],ATest[ii,jj]));
 			}
 		}
 		writeln("Is the calculation correct? ", still_correct);
@@ -131,9 +136,9 @@ proc main() {
         var user_dist_square = dom_square;
         /* Run the benchmark */
         kernel_lu(user_dist_square, N); 
-    } else if dist == "CM" {
+    /*} else if dist == "CM" {
         var user_dist_square = dom_square dmapped CyclicZipOpt(startIdx=dom_square.low);
-        kernel_lu(user_dist_square, N);   
+        kernel_lu(user_dist_square, N);   */
     } else if dist == "C" {
         var user_dist_square = dom_square dmapped Cyclic(startIdx=dom_square.low);
         kernel_lu(user_dist_square, N); 

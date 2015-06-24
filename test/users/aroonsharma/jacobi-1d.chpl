@@ -28,7 +28,7 @@ config var bsize = 4;
 config var TSTEPS: int = 10;
 
 config var printData: bool = false;
-config var dist: string = "C";
+config var dist: string = "B";
 
 /* Initializes a 1D structure */
 proc initialize_1D(distribution, adder: int, divider: int) {

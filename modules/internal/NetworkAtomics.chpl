@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -24,54 +24,54 @@ module NetworkAtomics {
   // int(64)
   extern proc chpl_comm_atomic_get_int64(ref result:int(64),
                                          l:int(32), ref obj:int(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_put_int64(ref desired:int(64),
                                          l:int(32), ref obj:int(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_add_int64(ref op:int(64),
                                          l:int(32), ref obj:int(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_add_int64(ref op:int(64),
                                                l:int(32), ref obj:int(64),
                                                ref result:int(64),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_sub_int64(ref op:int(64),
                                          l:int(32), ref obj:int(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_sub_int64(ref op:int(64),
                                                l:int(32), ref obj:int(64),
                                                ref result:int(64),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_and_int64(ref op:int(64),
                                          l:int(32), ref obj:int(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_and_int64(ref op:int(64),
                                                l:int(32), ref obj:int(64),
                                                ref result:int(64),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_or_int64(ref op:int(64),
                                         l:int(32), ref obj:int(64),
-                                        ln:int(32), fn:string);
+                                        ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_or_int64(ref op:int(64),
                                               l:int(32), ref obj:int(64),
                                               ref result:int(64),
-                                              ln:int(32), fn:string);
+                                              ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xor_int64(ref op:int(64),
                                          l:int(32), ref obj:int(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_xor_int64(ref op:int(64),
                                                l:int(32), ref obj:int(64),
                                                ref result:int(64),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xchg_int64(ref desired:int(64),
                                           l:int(32), ref obj:int(64),
                                           ref result:int(64),
-                                          ln:int(32), fn:string);
+                                          ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_cmpxchg_int64(ref expected:int(64),
                                              ref desired:int(64),
                                              l:int(32), ref obj:int(64),
                                              ref result:bool(32),
-                                             ln:int(32), fn:string);
+                                             ln:int(32), fn:c_string);
 
   // int(64)
   pragma "atomic type"
@@ -218,54 +218,54 @@ module NetworkAtomics {
   // int(32)
   extern proc chpl_comm_atomic_get_int32(ref result:int(32),
                                          l:int(32), ref obj:int(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_put_int32(ref desired:int(32),
                                          l:int(32), ref obj:int(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_add_int32(ref op:int(32),
                                          l:int(32), ref obj:int(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_add_int32(ref op:int(32),
                                                l:int(32), ref obj:int(32),
                                                ref result:int(32),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_sub_int32(ref op:int(32),
                                          l:int(32), ref obj:int(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_sub_int32(ref op:int(32),
                                                l:int(32), ref obj:int(32),
                                                ref result:int(32),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_and_int32(ref op:int(32),
                                          l:int(32), ref obj:int(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_and_int32(ref op:int(32),
                                                l:int(32), ref obj:int(32),
                                                ref result:int(32),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_or_int32(ref op:int(32),
                                         l:int(32), ref obj:int(32),
-                                        ln:int(32), fn:string);
+                                        ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_or_int32(ref op:int(32),
                                               l:int(32), ref obj:int(32),
                                               ref result:int(32),
-                                              ln:int(32), fn:string);
+                                              ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xor_int32(ref op:int(32),
                                          l:int(32), ref obj:int(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_xor_int32(ref op:int(32),
                                                l:int(32), ref obj:int(32),
                                                ref result:int(32),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xchg_int32(ref desired:int(32),
                                           l:int(32), ref obj:int(32),
                                           ref result:int(32),
-                                          ln:int(32), fn:string);
+                                          ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_cmpxchg_int32(ref expected:int(32),
                                              ref desired:int(32),
                                              l:int(32), ref obj:int(32),
                                              ref result:bool(32),
-                                             ln:int(32), fn:string);
+                                             ln:int(32), fn:c_string);
 
   // int32
   pragma "atomic type"
@@ -409,54 +409,54 @@ module NetworkAtomics {
   // uint(64)
   extern proc chpl_comm_atomic_get_uint64(ref result:uint(64),
                                          l:int(32), ref obj:uint(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_put_uint64(ref desired:uint(64),
                                          l:int(32), ref obj:uint(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_add_uint64(ref op:uint(64),
                                          l:int(32), ref obj:uint(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_add_uint64(ref op:uint(64),
                                                l:int(32), ref obj:uint(64),
                                                ref result:uint(64),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_sub_uint64(ref op:uint(64),
                                          l:int(32), ref obj:uint(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_sub_uint64(ref op:uint(64),
                                                l:int(32), ref obj:uint(64),
                                                ref result:uint(64),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_and_uint64(ref op:uint(64),
                                          l:int(32), ref obj:uint(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_and_uint64(ref op:uint(64),
                                                l:int(32), ref obj:uint(64),
                                                ref result:uint(64),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_or_uint64(ref op:uint(64),
                                         l:int(32), ref obj:uint(64),
-                                        ln:int(32), fn:string);
+                                        ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_or_uint64(ref op:uint(64),
                                               l:int(32), ref obj:uint(64),
                                               ref result:uint(64),
-                                              ln:int(32), fn:string);
+                                              ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xor_uint64(ref op:uint(64),
                                          l:int(32), ref obj:uint(64),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_xor_uint64(ref op:uint(64),
                                                l:int(32), ref obj:uint(64),
                                                ref result:uint(64),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xchg_uint64(ref desired:uint(64),
                                           l:int(32), ref obj:uint(64),
                                           ref result:uint(64),
-                                          ln:int(32), fn:string);
+                                          ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_cmpxchg_uint64(ref expected:uint(64),
                                              ref desired:uint(64),
                                              l:int(32), ref obj:uint(64),
                                              ref result:bool(32),
-                                             ln:int(32), fn:string);
+                                             ln:int(32), fn:c_string);
 
   // uint(64)
   pragma "atomic type"
@@ -600,54 +600,54 @@ module NetworkAtomics {
   // uint(32)
   extern proc chpl_comm_atomic_get_uint32(ref result:uint(32),
                                          l:int(32), ref obj:uint(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_put_uint32(ref desired:uint(32),
                                          l:int(32), ref obj:uint(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_add_uint32(ref op:uint(32),
                                          l:int(32), ref obj:uint(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_add_uint32(ref op:uint(32),
                                                l:int(32), ref obj:uint(32),
                                                ref result:uint(32),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_sub_uint32(ref op:uint(32),
                                          l:int(32), ref obj:uint(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_sub_uint32(ref op:uint(32),
                                                l:int(32), ref obj:uint(32),
                                                ref result:uint(32),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_and_uint32(ref op:uint(32),
                                          l:int(32), ref obj:uint(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_and_uint32(ref op:uint(32),
                                                l:int(32), ref obj:uint(32),
                                                ref result:uint(32),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_or_uint32(ref op:uint(32),
                                         l:int(32), ref obj:uint(32),
-                                        ln:int(32), fn:string);
+                                        ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_or_uint32(ref op:uint(32),
                                               l:int(32), ref obj:uint(32),
                                               ref result:uint(32),
-                                              ln:int(32), fn:string);
+                                              ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xor_uint32(ref op:uint(32),
                                          l:int(32), ref obj:uint(32),
-                                         ln:int(32), fn:string);
+                                         ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_xor_uint32(ref op:uint(32),
                                                l:int(32), ref obj:uint(32),
                                                ref result:uint(32),
-                                               ln:int(32), fn:string);
+                                               ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xchg_uint32(ref desired:uint(32),
                                           l:int(32), ref obj:uint(32),
                                           ref result:uint(32),
-                                          ln:int(32), fn:string);
+                                          ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_cmpxchg_uint32(ref expected:uint(32),
                                              ref desired:uint(32),
                                              l:int(32), ref obj:uint(32),
                                              ref result:bool(32),
-                                             ln:int(32), fn:string);
+                                             ln:int(32), fn:c_string);
 
   // uint(32)
   pragma "atomic type"
@@ -882,33 +882,33 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
   // real(64)
   extern proc chpl_comm_atomic_get_real64(ref result:real(64),
                                           l:int(32), ref obj:real(64),
-                                          ln:int(32), fn:string);
+                                          ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_put_real64(ref desired:real(64),
                                           l:int(32), ref obj:real(64),
-                                          ln:int(32), fn:string);
+                                          ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_add_real64(ref op:real(64),
                                           l:int(32), ref obj:real(64),
-                                          ln:int(32), fn:string);
+                                          ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_add_real64(ref op:real(64),
                                                 l:int(32), ref obj:real(64),
                                                 ref result:real(64),
-                                                ln:int(32), fn:string);
+                                                ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_sub_real64(ref op:real(64),
                                           l:int(32), ref obj:real(64),
-                                          ln:int(32), fn:string);
+                                          ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_fetch_sub_real64(ref op:real(64),
                                                 l:int(32), ref obj:real(64),
                                                 ref result:real(64),
-                                                ln:int(32), fn:string);
+                                                ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_xchg_real64(ref desired:real(64),
                                            l:int(32), ref obj:real(64),
                                            ref result:real(64),
-                                           ln:int(32), fn:string);
+                                           ln:int(32), fn:c_string);
   extern proc chpl_comm_atomic_cmpxchg_real64(ref expected:real(64),
                                               ref desired:real(64),
                                               l:int(32), ref obj:real(64),
                                               ref result:bool(32),
-                                              ln:int(32), fn:string);
+                                              ln:int(32), fn:c_string);
   
   pragma "atomic type"
   record ratomic_real64 {

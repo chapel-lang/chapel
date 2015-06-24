@@ -4,7 +4,12 @@ use Cwd 'abs_path';
 use File::Basename;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
+$replymail = "chapel-developers\@lists.sourceforge.net";
+
+$tokctdir = abs_path(dirname(__FILE__));
+$tokctr = "$tokctdir/tokencount.cron";
+$chplhomedir = abs_path("$tokctdir/../..");
 
 $printusage = 0;
 if (@ARGV) {
@@ -43,6 +48,9 @@ chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
+    if ($debug == 1) {
+        $replymail = $debugemail;
+    }
 }
 $today = `date +%w-%a`; chomp($today);
 
@@ -58,12 +66,22 @@ if (exists($ENV{"BUILD_URL"})) {
 
 
 #
-# set mail options
+# set mail options. Default to util/test/send_email.py, if available and
+# working. If not available or not working, default to 'mail'.
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
-    $mailer = "mail";
+    $chplsendemail = "$chplhomedir/util/test/send_email.py";
+    `$chplsendemail --help >/dev/null 2>&1`;
+    if ($? == 0) {
+        $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
+    } else {
+        print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
+        $mailer = "mail";
+    }
 }
+print "\$mailer = $mailer\n";
+
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
     $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
@@ -72,6 +90,7 @@ if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
 if ($cronrecipient ne "") {
     print "Overriding \$failuremail with: $cronrecipient.\n";
     $failuremail = $cronrecipient;
+    $replymail = $cronrecipient;
 }
 
 
@@ -87,9 +106,6 @@ if ($debug == 1) {
 #
 # directory locations
 #
-$tokctdir = abs_path(dirname(__FILE__));
-$tokctr = "$tokctdir/tokencount.cron";
-$chplhomedir = abs_path("$tokctdir/../..");
 $logdir = "/data/sea/chapel/Nightly";
 $statdir = "$logdir/Stats";
 if ($debug == 1) {

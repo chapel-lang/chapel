@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,8 +23,14 @@
 #include "expr.h"
 #include "stlUtil.h"
 
-WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
-  LoopStmt(initBody)
+WhileStmt::WhileStmt(Expr* condExpr, BlockStmt* body) :
+  LoopStmt(body)
+{
+  mCondExpr = condExpr;
+}
+
+WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* body) :
+  LoopStmt(body)
 {
   mCondExpr = (var != 0) ? new SymExpr(var) : 0;
 }
@@ -40,13 +46,14 @@ void WhileStmt::copyShare(const WhileStmt& ref,
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  SymExpr*   condExpr  = ref.condExprGet();
+  Expr*      condExpr  = ref.condExprGet();
 
-  astloc         = ref.astloc;
-  blockTag       = ref.blockTag;
+  astloc            = ref.astloc;
+  blockTag          = ref.blockTag;
 
-  mBreakLabel    = ref.mBreakLabel;
-  mContinueLabel = ref.mContinueLabel;
+  mBreakLabel       = ref.mBreakLabel;
+  mContinueLabel    = ref.mContinueLabel;
+  mOrderIndependent = ref.mOrderIndependent;
 
   if (condExpr != 0)
     mCondExpr = condExpr->copy(map, true);
@@ -80,9 +87,28 @@ bool WhileStmt::isWhileStmt() const
   return true;
 }
 
-SymExpr* WhileStmt::condExprGet() const
+Expr* WhileStmt::condExprGet() const
 {
   return mCondExpr;
+}
+
+// Much of the compiler expects the condExpr to be a
+// SymExpr that references a tmpVariable for the loop.
+SymExpr* WhileStmt::condExprForTmpVariableGet() const
+{
+  SymExpr* retval = toSymExpr(mCondExpr);
+
+  INT_ASSERT(retval != 0);
+
+  return retval;
+}
+
+void WhileStmt::replaceChild(Expr* oldAst, Expr* newAst)
+{
+  if (oldAst == mCondExpr)
+    mCondExpr = newAst;
+  else
+    BlockStmt::replaceChild(oldAst, newAst);
 }
 
 CallExpr* WhileStmt::blockInfoGet() const
@@ -118,70 +144,100 @@ bool WhileStmt::deadBlockCleanup()
 *                                                                           *
 ************************************* | ************************************/
 
+// This routine looks for loops in which the condition variable is *not*
+// updated within the body of the loop, and issues a warning for places in the
+// code where that occurs.
 void WhileStmt::checkConstLoops()
 {
-  bool foundit = false;
+  SymExpr* tmpVar  = condExprForTmpVariableGet();
+  // This gets set to 'true' if an update of the loop condition is found.
 
-  if (VarSymbol* condSym = toVarSymbol(mCondExpr->var))
+  // Get the loop condition variable.
+  if (VarSymbol* condSym = toVarSymbol(tmpVar->var))
   {
+    // Look for definitions of the loop condition variable within the body of
+    // the loop.
     if (SymExpr* condDef = getWhileCondDef(condSym))
     {
-      // Parse the move expr.
+      // Get the call expression (we assume) that updates the condition variable.
       if (CallExpr* outerCall = toCallExpr(condDef->parentExpr))
       {
+        // We assume the outer call is a move expression and that its LHS is
+        // the (SymExpr that contains the) loop condition variable.
         if (outerCall->get(1) == condDef)
         {
           if (outerCall->isPrimitive(PRIM_MOVE))
           {
+            // We expect the update to be the result of a call to _cond_test.
             if (CallExpr* innerCall = toCallExpr(outerCall->get(2)))
             {
               if (innerCall->numActuals()          == 1 &&
-                  innerCall->isNamed("_cond_test") == true)
+                  strcmp(innerCall->isResolved()->name, "_cond_test") == 0)
               {
-                foundit = true;
                 checkWhileLoopCondition(innerCall->get(1));
               }
+              else
+                INT_FATAL(innerCall, "Expected the update of a loop conditional to be piped through _cond_test().");
             }
-
+            // The RHS of the move can also be a SymExpr as the result of param
+            // folding ...
             else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
             {
-              // Sometimes _cond_test resolves to a param version, so
-              // we get either true or false.
+              // ... in which case, we exprect it to be a literal 'true' or 'false'.
               if (moveSrc->var == gTrue)
               {
-                foundit = true;
+                // while true do ... ;  -- probably OK.
+                // User said to loop forever ... .
               }
 
               else if (moveSrc->var == gFalse)
               {
-                foundit = true;
                 // while false do ...; -- probably nothing to worry about
+                // We probably don't get here unless fRemoveUnreachableBlocks
+                // is false.
               }
 
               else
               {
                 // What else can it be?
+                INT_FATAL(moveSrc, "Expected const loop condition variable to be true or false.");
               }
             }
+            else
+              // The RHS was neither a CallExpr nor a SymExpr.
+              INT_FATAL(outerCall, "Invalid RHS in a loop condition variable update expression.");
           }
+          else
+            INT_FATAL(outerCall, "Expected a loop condition variable update to be a MOVE.");
         }
+        else
+          // Note that this being true depends on the compiler inserting a temp
+          // that is the result of applying _cond_test to a more-general loop
+          // conditional expression.
+          // Copy propagation could potentially make this false again....
+          INT_FATAL(condDef, "Expected loop condition variable to be only updated (not read).");
       }
+      else
+        INT_FATAL(condDef, "The update of a loop condition variable could not be converted to a call.");
+    }
+    else
+    {
+      // There was no update of the loop condition variable in the body of the loop.
+      USR_WARN(condSym, "Infinite loop? The loop condition variable is never updated within the loop.");
     }
   }
-
-  // Let us notify ourselves if the block structure is something else,
-  // so we can adjust the code to handle those cases as well.
-  // If desired, disable this assert - the only outcome of that may be
-  // that the warning will not be issued in some cases.
-  INT_ASSERT(foundit);
+  else
+    INT_FATAL(tmpVar, "The loop condition variable could not be converted to a VarSymbol.");
 }
 
+// Find a defintion of the condition variable in the body of the loop.
+// Returns null if no such expression is found.
 SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
 {
   std::vector<SymExpr*> symExprs;
   SymExpr*              condDef = NULL;
 
-  collectSymExprsSTL(this, symExprs);
+  collectSymExprs(this, symExprs);
 
   for_vector(SymExpr, se, symExprs)
   {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -637,7 +637,7 @@ checkRetTypeMatchesRetVarType()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (fn->hasFlag(FLAG_ITERATOR_FN))
+    if (fn->isIterator())
       // Iterators break this rule.
       // retType is the type of the iterator record
       // The return value type is the type of the index the iterator returns.

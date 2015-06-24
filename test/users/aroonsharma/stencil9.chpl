@@ -1,5 +1,5 @@
 use CyclicDist;
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
 use BlockDist;
 use Time;
 use CommDiagnostics;
@@ -7,7 +7,7 @@ use CommDiagnostics;
 config const n = 10;
 config const epsilon = 0.01;
 config const printArrays = false;
-config var dist: string = "CM";
+config var dist: string = "C";
 config var timeit = false;
 config var messages = false;
 config var correct = false;
@@ -126,10 +126,10 @@ proc main() {
         const dist_little = Dom;
         const dist_big = BigDom;
         kernel_stencil9(dist_little, dist_big, Dom, BigDom); 
-    } else if dist == "CM" {
+    /*} else if dist == "CM" {
         const dist_little = Dom dmapped CyclicZipOpt(startIdx=Dom.low);
         const dist_big = BigDom dmapped CyclicZipOpt(startIdx=BigDom.low);
-        kernel_stencil9(dist_little, dist_big, Dom, BigDom);
+        kernel_stencil9(dist_little, dist_big, Dom, BigDom);*/
     } else if dist == "C" {
         const dist_little = Dom dmapped Cyclic(startIdx=Dom.low);
         const dist_big = BigDom dmapped Cyclic(startIdx=BigDom.low);

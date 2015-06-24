@@ -28,8 +28,9 @@ Using Chapel with Cygwin
   in addition to the standard set of Cygwin packages:
 
      Devel
-       + gcc
+       + gcc and gcc-g++
        + make
+       + patch
      Perl
        + perl
      Python
@@ -37,7 +38,6 @@ Using Chapel with Cygwin
      Shells
        + tcsh
      Utils
-       + bc
        + diffutils
 
 

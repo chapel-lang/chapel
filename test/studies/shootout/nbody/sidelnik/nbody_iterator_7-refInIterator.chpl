@@ -23,7 +23,7 @@ class Planet {
 
 iter TriangleIter(B: [] Planet) {
   for i in NBODIES {
-    refvar b1 = B[i];
+    ref b1 = B[i];
     for j in i+1..numBodies {
       yield (b1,B[j]);
     }
@@ -98,11 +98,11 @@ proc main() {
   bodies(4) = new Planet(p4,v4, 5.15138902046611451e-05 * solar_mass);
   
   offset_momentum(bodies);
-  writeln(format("#.#########", energy(bodies)));
+  writef("%{#.#########}\n", energy(bodies));
   for 1..n {
     advance(bodies, 0.01);
   }
-  writeln(format("#.#########", energy(bodies)));
+  writef("%{#.#########}\n", energy(bodies));
   
   for body in bodies do delete body;
 }

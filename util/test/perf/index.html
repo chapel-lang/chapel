@@ -1,23 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <!-- In order to support IE7 and IE8, we use excanvas, emulate certain IE
+         versions, and use jquery version 1 instead of 2. Future versions of
+         dygraphs will remove support for anything older than IE9, so we can
+         remove that code, and use a newer jquery version. -->
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+    <title>Chapel Performance Graphs</title>
     <link rel="stylesheet" href="perfgraph.css">
     <!--[if IE]>
-        <script type="text/javascript"
-                src="http://dygraphs.com/excanvas.js"></script>
+        <script src="http://dygraphs.com/excanvas.js"></script>
         <![endif]-->
-    <script type="text/javascript"
-            src="dygraph-combined.js"></script>
-    <!-- <script type="text/javascript"
-            src="http://dygraphs.com/dygraph-dev.js"></script>
-      -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.0/dygraph-combined.js"></script>
     <script src="graphdata.js"></script>
+
   </head>
   <body onload="perfGraphInit()">
     <center><h2 id="titleElem"></h2></center>
     <center><h4 id="dateElem"></h4></center>
-    <script language="javascript" type="text/javascript" >
+    <script>
       <!-- hide
            function jumpto(x){
              if (document.form1.jumpmenu.value != "null") {
@@ -29,25 +33,26 @@
     </script>
     <table>
       <tr>
-        <td id="suiteOptions" class="graphList">
-          <p id='toggleConf'><em>Toggle configurations</em></p>
-          <p><em>Select a test suite</em></p>
-          <div id="suiteMenu"></div>
-          <p><strong>OR</strong></p>
-          <p><em>Select and display specific tests</em></p>
-          <input type="button" onclick="displaySelectedGraphs()"
-          value="Display">
-           <input type="button" onclick="clearDates()"
-          value="Clear Dates">
-          <br>
-          <input type="button" onclick="selectAllGraphs()"
-          value="Select All">
-          <input type="button" onclick="unselectAllGraphs()"
-          value="Unselect All">
-          <div id="graphlist"></div>
-        <td id="graphdisplay" valign="top">
-        </td>
-        <td id="legenddisplay" valign="top">
+        <td id="graphSelectionPane" class="graphSelectionPane">
+            <p id='toggleConf'><em>Toggle configurations</em></p>
+            <p><em>Select a test suite</em></p>
+            <div id="suiteMenu"></div>
+            <p><strong>OR</strong></p>
+            <p><em>Select and display specific tests</em></p>
+            <input type="button" onclick="displaySelectedGraphs()"
+            value="Display">
+             <input type="button" onclick="clearDates()"
+            value="Clear Dates">
+            <br>
+            <input type="button" onclick="selectAllGraphs()"
+            value="Select All">
+            <input type="button" onclick="unselectAllGraphs()"
+            value="Unselect All">
+            <div id="graphlist" class="graphList"></div>
+          <td valign="top">
+            <div id="graphdisplay" class=graphdisplay></div>
+          </td>
+          <td id="legenddisplay" valign="top">
         </td>
       </tr>
     </table>
@@ -55,5 +60,4 @@
     <script src="perfgraph.js"></script>
   </body>
 </html>
-
 

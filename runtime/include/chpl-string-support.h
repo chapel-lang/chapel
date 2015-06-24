@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -51,19 +51,19 @@ typedef const char* c_string_copy;
 #include "chpltypes.h"
 #include <string.h>
 
-static ___always_inline
+static inline
 int8_t ascii(c_string s) {
   return (int8_t) *s;
 }
 
-static ___always_inline
+static inline
 int64_t string_length(c_string x) {
   if (x == NULL)
     return 0;
   return strlen(x);
 }
 
-static ___always_inline
+static inline
 int32_t string_compare(c_string x, c_string y) {
   if (x == y) return 0;
   if (x == NULL) return -1;

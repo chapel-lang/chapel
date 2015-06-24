@@ -25,10 +25,10 @@ set -x CHPL_HOST_PLATFORM (eval $CHPL_HOME/util/chplenv/chpl_platform.py)
 echo "to $CHPL_HOST_PLATFORM"
 
 echo -n "Updating PATH "
-set -x PATH $MYPATH "$CHPL_HOME/bin/$CHPL_HOST_PLATFORM" "$CHPL_HOME/util"
+set -x PATH "$CHPL_HOME/bin/$CHPL_HOST_PLATFORM" "$CHPL_HOME/util" $MYPATH
 echo "to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 echo "                     and $CHPL_HOME/util"
 
 echo -n "Updating MANPATH "
-set -x MANPATH "$MYMANPATH" "$CHPL_HOME"/man
+set -x MANPATH "$CHPL_HOME"/man "$MYMANPATH"
 echo "to include $CHPL_HOME/man"

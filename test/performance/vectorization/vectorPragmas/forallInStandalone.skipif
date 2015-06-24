@@ -1,0 +1,7 @@
+# With numa the range leader has 2 yield points in it, so there will be double
+# the number of vectorized loops for the standalone iterator (this is a good
+# thing.) I could add a compgood-numa or something and have an extra prediff
+# for this test, but it doesn't seem worthwhile since numa really only affects
+# the leader iterators, and thus the number of loops that might be marked, I
+# don't think it provides any additional benefit to test this.
+CHPL_LOCALE_MODEL==numa

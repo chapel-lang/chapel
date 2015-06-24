@@ -16,6 +16,7 @@ config const epsilon = 2.0 ** -51.0,
 
 // boolean configs
 config const printTiming = true;
+config const printError = true;
 
 proc main() {
   // compute problem size
@@ -97,7 +98,7 @@ proc bitReverseShuffle(W: [?WD]) {
 proc bitReverse(val: ?valType, numBits = 64) {
   param mask: uint(64) = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask));
-  const valReverse = bitRotLeft(valReverse64, numBits);
+  const valReverse = rotl(valReverse64, numBits);
   return valReverse: valType;
 }
 
@@ -162,8 +163,14 @@ proc verifyResults(z, Z, execTime, Twiddles) {
 
   maxerr = maxerr / logN / epsilon;
 
-  write(if (maxerr < threshold) then "SUCCESS" else "FAILURE");
-  writeln(", error = ", maxerr);
+  if maxerr < threshold {
+    write("SUCCESS");
+    if printError then writeln(", error = ", maxerr);
+    else writeln();
+  } else {
+    write("FAILURE");
+    writeln(", error = ", maxerr);
+  }
   writeln();
   writeln("N      = ", N);
   if (printTiming) {

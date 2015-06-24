@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -16,10 +16,4 @@
 # limitations under the License.
 
 GEN_CFLAGS += -I$(QTHREAD_INCLUDE_DIR)
-GEN_LFLAGS += -L$(QTHREAD_LIB_DIR) -Wl,-rpath -Wl,$(QTHREAD_LIB_DIR)
-
-LIBS += -lqthread_chpl -lchpl -lqthread -lpthread
-
-ifneq ($(CHPL_MAKE_PLATFORM), darwin)
-  LIBS += -lrt
-endif
+GEN_LFLAGS += -L$(QTHREAD_LIB_DIR) -Wl,-rpath,$(QTHREAD_LIB_DIR)

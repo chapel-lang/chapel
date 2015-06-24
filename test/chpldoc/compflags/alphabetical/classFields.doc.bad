@@ -1,0 +1,10 @@
+Module: classFields
+   Class: Parent
+      var niece
+         This field should be third 
+      var nephew
+         This field should be second 
+      var umbrella
+         This field should be last 
+      var alone
+         This field should be first 

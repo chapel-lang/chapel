@@ -1,0 +1,3 @@
+# This file exists soleley for util/chplenv/third-party-pkgs to
+# recognize that clang-included means that we depend on LLVM.
+LLVM_ALIASES=clang-included

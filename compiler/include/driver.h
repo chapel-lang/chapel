@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,20 +28,6 @@
 class Timer;
 
 
-// For versions of bison beyond 2.3, this struct and the following
-// two defines should be moved back into chapel.ypp into a %code requires
-// block so that YYLTYPE is near the YYLLOC_DEFAULT definition.
-struct YYLTYPE {
-  int   first_line;
-  int   first_column;
-  int   last_line;
-  int   last_column;
-  char* comment;
-};
-
-#define YYLTYPE_IS_DECLARED 1
-#define YYLTYPE_IS_TRIVIAL  1
-
 extern int  instantiation_limit;
 
 // optimization control flags
@@ -59,6 +45,8 @@ extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
+extern bool fNoCastChecks;
+extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
@@ -67,9 +55,11 @@ extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
 extern bool fNoOptimizeLoopIterators;
+extern bool fNoVectorize;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
+extern bool fRemoveUnreachableBlocks;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
 extern int  tuple_copy_limit;
@@ -128,8 +118,9 @@ extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fGenIDS;
 extern bool fLocal;
+extern bool fIgnoreLocalClasses;
 extern bool fHeterogeneous;
-extern bool fieeefloat;
+extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 
 extern bool llvmCodegen;
@@ -156,11 +147,6 @@ extern bool fVerify;
 extern int  num_constants_per_variable;
 extern bool printCppLineno;
 
-extern bool fDocs;
-extern bool fDocsAlphabetize;
-extern char fDocsCommentLabel[256];
-extern char fDocsFolder[256];
-extern bool fDocsTextOnly;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;
@@ -172,6 +158,7 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
 extern bool fReportOptimizedLoopIterators;
+extern bool fReportOrderIndependentLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
 extern bool fReportScalarReplace;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,10 +76,11 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
   SymbolMap map;
   CForLoop* retval = new CForLoop();
 
-  retval->astloc         = forLoop->astloc;
-  retval->blockTag       = forLoop->blockTag;
-  retval->mBreakLabel    = forLoop->breakLabelGet();
-  retval->mContinueLabel = forLoop->continueLabelGet();
+  retval->astloc            = forLoop->astloc;
+  retval->blockTag          = forLoop->blockTag;
+  retval->mBreakLabel       = forLoop->breakLabelGet();
+  retval->mContinueLabel    = forLoop->continueLabelGet();
+  retval->mOrderIndependent = forLoop->isOrderIndependent();
 
   for_alist(expr, forLoop->body)
     retval->insertAtTail(expr->copy(&map, true));
@@ -132,11 +133,12 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
   CForLoop*  retval    = new CForLoop();
 
-  retval->astloc         = astloc;
-  retval->blockTag       = blockTag;
+  retval->astloc            = astloc;
+  retval->blockTag          = blockTag;
 
-  retval->mBreakLabel    = mBreakLabel;
-  retval->mContinueLabel = mContinueLabel;
+  retval->mBreakLabel       = mBreakLabel;
+  retval->mContinueLabel    = mContinueLabel;
+  retval->mOrderIndependent = mOrderIndependent;
 
   if (initBlockGet() != 0 && testBlockGet() != 0 && incrBlockGet() != 0)
     retval->loopHeaderSet(initBlockGet()->copy(map, true),
@@ -276,6 +278,8 @@ GenRet CForLoop::codegen()
     BlockStmt*  incrBlock = incrBlockGet();
     std::string incr      = codegenCForLoopHeader(incrBlock->copy());
     std::string hdr       = "for (" + init + "; " + test + "; " + incr + ") ";
+
+    codegenOrderIndependence();
 
     info->cStatements.push_back(hdr);
 

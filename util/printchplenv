@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import optparse, os
+import optparse, os, subprocess
 from sys import stdout
 
 from chplenv import *
@@ -23,7 +23,7 @@ def print_mode(mode='list'):
 
     if m == 'list' or mode == 'debug':
         stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
-        stdout.write("CHPL_HOME: {0}\n".format(chpl_home))
+        stdout.write("CHPL_HOME: {0} *\n".format(chpl_home))
         this_dir = os.path.realpath(os.path.dirname(__file__))
         stdout.write("script location: {0}\n".format(this_dir))
     elif chpl_home and m == 'shell':
@@ -45,7 +45,7 @@ def print_mode(mode='list'):
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
 
-    get_module_lcd = ( (chpl_home == chpl_module_home) and (chpl_home != '') and
+    get_module_lcd = ( utils.using_chapel_module() and
                      (mode == 'runtime' or mode == 'make') )
     if m != 'compiler' and m != 'launcher':
         target_arch = chpl_arch.get('target', mode == 'make', get_module_lcd)
@@ -128,13 +128,68 @@ def print_mode(mode='list'):
         print_mode('runtime')
         stdout.write('CHPL_MAKE_LAUNCHER_SUBDIR=')
         print_mode('launcher')
+
+        link_args_3p = []
+
+        print_var('  CHPL_DLMALLOC_UNIQ_CFG_PATH',
+                  chpl_3p_dlmalloc_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if target_mem == 'dlmalloc':
+            link_args_3p.extend(chpl_3p_dlmalloc_configs.get_link_args())
+
+        print_var('  CHPL_GMP_UNIQ_CFG_PATH',
+                  chpl_3p_gmp_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(gmp))
+
+        print_var('  CHPL_HWLOC_UNIQ_CFG_PATH',
+                  chpl_3p_hwloc_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if hwloc == 'hwloc':
+            link_args_3p.extend(chpl_3p_hwloc_configs.get_link_args())
+
+        print_var('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH',
+                  chpl_3p_massivethreads_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if tasks == 'massivethreads':
+            link_args_3p.extend(chpl_3p_massivethreads_configs.get_link_args())
+
+        print_var('  CHPL_QTHREAD_UNIQ_CFG_PATH',
+                  chpl_3p_qthreads_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if tasks == 'qthreads':
+            link_args_3p.extend(chpl_3p_qthreads_configs.get_link_args())
+
+        print_var('  CHPL_RE2_UNIQ_CFG_PATH',
+                  chpl_3p_re2_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if regexp == 're2':
+            link_args_3p.extend(chpl_3p_re2_configs.get_link_args())
+
+        print_var('  CHPL_TCMALLOC_UNIQ_CFG_PATH',
+                  chpl_3p_tcmalloc_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if target_mem == 'tcmalloc':
+            link_args_3p.extend(chpl_3p_tcmalloc_configs.get_link_args())
+
+        link_args_3p_dedup=[]
+        for arg in reversed(link_args_3p):
+            if arg not in link_args_3p_dedup:
+                link_args_3p_dedup.append(arg)
+        print_var('  CHPL_THIRD_PARTY_LINK_ARGS',
+                  ' '.join(reversed(link_args_3p_dedup)),
+                  mode, filters=('runtime',))
+
     elif m == 'compiler' or m == 'runtime' or m == 'launcher':
         stdout.write('\n')
 
 
 def print_var(env_var, value, mode, short_name='', filters=None):
-    if mode == 'list':
-        stdout.write("{0}: {1}\n".format(env_var, value))
+    if mode == 'list' or mode == 'debug':
+        user_set = os.environ.get(env_var, '')
+        if user_set:
+          user_set = ' *'
+        stdout.write("{1}: {2}{0}\n".format(user_set, env_var, value))
     elif mode == 'make':
         make_env_var = env_var.replace("CHPL_", "CHPL_MAKE_", 1).lstrip()
         stdout.write("{0}={1}\n".format(make_env_var, value))
@@ -155,11 +210,6 @@ def print_var(env_var, value, mode, short_name='', filters=None):
         stdout.write("export {0}='{1}'\n".format(env_var, value))
     elif mode == 'cshell':
         stdout.write("setenv {0} '{1}'\n".format(env_var, value))
-    elif mode == 'debug':
-        user_set = os.environ.get(env_var, '')
-        if user_set:
-          user_set = '*'
-        stdout.write("{0}{1}={2}\n".format(user_set, env_var, value))
     else:
         raise ValueError("Invalid mode '{0}'".format(mode))
 
@@ -169,7 +219,9 @@ def _main():
         usage='usage: %prog [--list|--make|--simple|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
 
     parser.add_option('--list', action='store_const', dest='mode', default='list',
-                      const='list', help="print out a listing of the environment")
+                      const='list',
+                      help="print out a listing of the environment indicating "
+                           "which options are user supplied with a * (default)")
     parser.add_option('--make', action='store_const', dest='mode', const='make',
                       help="print out a listing of the environment that is "
                            "used in the build process")

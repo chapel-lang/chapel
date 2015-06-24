@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -873,6 +873,12 @@ module ChapelArray {
       return member(i);
     }
 
+    pragma "reference to const when const this"
+    proc newAlias() {
+      var x = _value;
+      return _newDomain(x);
+    }
+
     /*
        Returns true if this domain is a subset of 'super'
     */
@@ -1455,6 +1461,7 @@ module ChapelArray {
     proc numElements return _value.dom.dsiNumIndices;
     proc size return numElements;
   
+    pragma "reference to const when const this"
     proc newAlias() {
       var x = _value;
       return _newArray(x);
@@ -2315,6 +2322,17 @@ module ChapelArray {
     if b._value == nil then
       // This happens e.g. for 'new' on a record with an array field whose
       // default initalizer is a forall expr. E.g. arrayInClassRecord.chpl.
+      return;
+
+    if a._value == b._value {
+      // Do nothing for A = A but we could generate a warning here
+      // since it is probably unintended. We need this check here in order
+      // to avoid memcpy(x,x) which happens inside doiBulkTransfer.
+      return;
+    }
+
+    if a.size == 0 && b.size == 0 then
+      // Do nothing for zero-length assignments
       return;
 
     if boundsChecking then

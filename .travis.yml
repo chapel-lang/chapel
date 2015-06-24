@@ -7,7 +7,7 @@ compiler:
   # - clang
 before_script:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq bc tcsh
+  - sudo apt-get install -qq tcsh
 script:
   - ./util/buildRelease/smokeTest
 env:

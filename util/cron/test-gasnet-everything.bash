@@ -10,4 +10,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-everything"
 # Test a GASNet compile using the default segment (everything for linux64)
 export CHPL_GASNET_SEGMENT=everything
 
-$CWD/nightly -cron
+$CWD/nightly -cron -futures

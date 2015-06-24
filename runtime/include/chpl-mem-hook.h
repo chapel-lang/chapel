@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -53,7 +53,7 @@
 #endif
 
 // Returns the starting number for memory descriptors for use by Chapel code.
-static ___always_inline
+static inline
 chpl_mem_descInt_t chpl_memhook_md_num(void)
 {
   return CHPL_RT_MD_NUM;
@@ -68,7 +68,7 @@ void chpl_memhook_check_post(void* memAlloc,
                              int32_t lineno, c_string filename);
 
 
-static ___always_inline
+static inline
 void chpl_memhook_malloc_pre(size_t number, size_t size,
                              chpl_mem_descInt_t description,
                              int32_t lineno, c_string filename) {
@@ -77,7 +77,7 @@ void chpl_memhook_malloc_pre(size_t number, size_t size,
 }
 
 
-static ___always_inline
+static inline
 void chpl_memhook_malloc_post(void* memAlloc,
                               size_t number, size_t size,
                               chpl_mem_descInt_t description,
@@ -89,7 +89,7 @@ void chpl_memhook_malloc_post(void* memAlloc,
 }
 
 
-static ___always_inline
+static inline
 void chpl_memhook_free_pre(void* memAlloc,
                            int32_t lineno, c_string filename) {
   if (CHPL_MEMHOOKS_ACTIVE) {
@@ -100,7 +100,7 @@ void chpl_memhook_free_pre(void* memAlloc,
 }
 
 
-static ___always_inline
+static inline
 void chpl_memhook_realloc_pre(void* memAlloc, size_t size,
                               chpl_mem_descInt_t description,
                               int32_t lineno, c_string filename) {
@@ -111,7 +111,7 @@ void chpl_memhook_realloc_pre(void* memAlloc, size_t size,
 }
 
 
-static ___always_inline
+static inline
 void chpl_memhook_realloc_post(void* moreMemAlloc, void* memAlloc,
                                size_t size,
                                chpl_mem_descInt_t description,

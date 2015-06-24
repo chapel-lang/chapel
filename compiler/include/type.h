@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -114,9 +114,12 @@ class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
 
+
   // what integer type contains all of this enum values?
   // if this is NULL it will just be recomputed when needed.
   PrimitiveType* integerType;
+
+  const char* doc;
 
   EnumType();
   ~EnumType();
@@ -132,6 +135,11 @@ class EnumType : public Type {
   // This will only really work after the function resolution.
   void sizeAndNormalize();
   PrimitiveType* getIntegerType();
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
 };
 
 
@@ -172,6 +180,12 @@ class AggregateType : public Type {
   bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
   bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
   bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
+  std::string docsSuperClass();
 };
 
 
@@ -184,6 +198,11 @@ class PrimitiveType : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
 };
 
 
@@ -249,6 +268,7 @@ TYPE_EXTERN Type* dtObject;
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
+TYPE_EXTERN std::map<Type*, Type*> wideToNarrowRefMap; // reference of wide class to reference of narrow class
 
 void     initRootModule();
 void     initPrimitiveTypes();

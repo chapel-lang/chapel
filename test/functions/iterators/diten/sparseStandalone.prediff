@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+testname=$1
+outfile=$2
+
+tmpfile=$outfile.prediff.tmp
+mv $outfile $tmpfile
+sed 's/[0-9][0-9]* chunks/n chunks/g' $tmpfile > $outfile
+rm $tmpfile

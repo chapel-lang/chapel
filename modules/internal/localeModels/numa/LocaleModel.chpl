@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -265,7 +265,7 @@ module LocaleModel {
   class RootLocale : AbstractRootLocale {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
-    const myLocales: [myLocaleSpace] locale;
+    var myLocales: [myLocaleSpace] locale;
 
     proc RootLocale() {
       parent = nil;
@@ -273,11 +273,11 @@ module LocaleModel {
       maxTaskPar = 0;
     }
 
-    // The init() function must use initOnLocales() to iterate (in
+    // The init() function must use chpl_initOnLocales() to iterate (in
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
     proc init() {
-      forall locIdx in initOnLocales() {
+      forall locIdx in chpl_initOnLocales() {
         chpl_task_setSubloc(c_sublocid_any);
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;

@@ -1,4 +1,5 @@
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use Time;
 use CommDiagnostics;
@@ -15,7 +16,7 @@ config var correct = false;
 config var timeit = false;
 config var messages = false;
 config var printMatrices: bool = false;
-config var dist: string = "CM";
+config var dist: string = "C";
 config var N: int = 128;
 
 /* Initializes a matrix based on a distribution */
@@ -85,9 +86,7 @@ proc kernel_cholesky(dist_square, n_dim: int) {
     for i in dist_square[1, 1..n_dim] {
         for j in dist_square[i, 1..i] {
             s = 0.0;
-            forall (a,b) in zip(C[i,1..j], C[j,1..j]) {
-                s += a * b;
-            }                
+            s += + reduce forall (a,b) in zip(C[i,1..j], C[j,1..j]) do a*b;
             if (i == j) {
                 C[i,j] = sqrt(A[i,i] - s);
             } else {
@@ -124,7 +123,7 @@ proc kernel_cholesky(dist_square, n_dim: int) {
 	    for i in 1..n_dim {
 	        for j in 1..i {
 	            sTest = 0.0;
-	            forall (a,b) in zip(Ctest[i,1..j], Ctest[j,1..j]) {
+	            for (a,b) in zip(Ctest[i,1..j], Ctest[j,1..j]) {
 	                sTest += a * b;
 	            }                
 	            if (i == j) {
@@ -169,9 +168,9 @@ proc main() {
         var user_dist_square = dom_square;
         /* Run the benchmark */
         kernel_cholesky(user_dist_square, N); 
-    } else if dist == "CM" {
+    /*} else if dist == "CM" {
         var user_dist_square = dom_square dmapped CyclicZipOpt(startIdx=dom_square.low);
-        kernel_cholesky(user_dist_square, N);   
+        kernel_cholesky(user_dist_square, N);   */
     } else if dist == "C" {
         var user_dist_square = dom_square dmapped Cyclic(startIdx=dom_square.low);
         kernel_cholesky(user_dist_square, N); 

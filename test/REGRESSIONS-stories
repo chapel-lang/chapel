@@ -56,9 +56,6 @@ Guidance for REGRESSIONS week
   diagnosis of one of the failure modes you're working on, it may be
   worthwhile broadcasting what you've learned so that if someone else
   is working on a related issue, you don't step on one anothers' toes.
-  I think this is particularly true for Mac/Darwin testing (and
-  possibly baseline testing) where many of the failure modes have not
-  been deeply diagnosed (at least, by me).
 
 > When looking for things to pick up, look for your name/email/obvious
   variations on these. Some issues I've assigned to people for
@@ -71,13 +68,6 @@ Guidance for REGRESSIONS week
   (prioritizing high things over medium and medium over low,
   obviously.  In particular, I'd prefer that nobody work on medium/low
   priority things until all high items are owned or resolved).
-
-> If I counted right, I've enumerated 90 stories below which, if all
-  resolved, would get us to a completely clean regressions suite.
-  That suggests that if each person got through 7-8 stories, we'd have
-  a clean slate (though of course, not all stories are created equally
-  in terms of level of effort required to fix them or level of
-  importance).
 
 > Each story has a title, a parenthetical indicating where it fails,
   and an owner if there is an obvious one, or "anyone" if not.  Each
@@ -102,423 +92,448 @@ Guidance for REGRESSIONS week
   incomprehensible to me (give a shout if you have any insight into
   it).
 
+> I could 60 stories which is 2/3 of where we started last time, and
+  we're running lots more configurations now than then.  So while
+  that's a higher number than we'd like, at least we're now worse off.
+  This means if we could each close 5 stories, we'd have an absolutely
+  clean testing run, retire REGRESSIONS and simply track issues in an
+  issue tracker...
 
 
 high priority (sources of noise)
 --------------------------------
 
-~ gasnet oversubscription timeouts (gasnet*): elliot
+* sporadic timeout on tests that normally complete quickly (xc.*): elliot/gbt/anyone
 
-  We get regular and/or sporadic timeouts on gasnet.linux32,
-  gasnet.numa, gasnet.fifo, gasnet.llvm, dist-block, dist-cyclic,
-  dist-replicated.  Is there anything we can do about this until
-  we get dedicated dist. mem. HW for gasnet testing?  Why only
-  these configurations and not gasnet-fast/gasnet-everything?
+  https://chapel.atlassian.net/browse/CHAPEL-2
 
-
-* sporadic segfaults/glibc issues (xe-wb.*): anyone
-
-  The following tests fail sporadically, but very frequently, either
-  with a segfault or a glibc assertion error in our whitebox testing
-  environment (on any given night, more than one will fail).  Does
-  this point to a true issue, or a problem with our whitebox
-  environment?  Can they be reproduced on Cray HW?  Does valgrind on
-  the whiteboxes turn anything up?
-
-  - io/ferguson/asserteof]
-  - trivial/shannon/readWriteBool]
-  - trivial/shannon/readWriteComplex]
-  - trivial/shannon/readWriteEnum]
-  - types/file/freadComplex]
-  - types/file/freadIntFailed]
-  - types/file/freadNoFloat]
-  - types/file/freadNoInt]
-  - types/file/freadNotABoolean]
-  - types/file/fwriteIntFailed]
+  Specific tests aren't listed (which is not very helpful).  Is this
+  the stream* case?  If anyone knows which tests are affected, please
+  collapse any other stories below into this one as appropriate...
 
 
-* sporadic glibc double free or corruption (baseline): anyone
+o sporadic dropped output (prgenv-cray): anyone but poor gbt who's
+  spent enough time on this
 
-  The following tests sporadically, but frequently, get a glibc double
-  free or corruption error on --baseline testing.  Why?
+  https://chapel.atlassian.net/browse/CHAPEL-3
 
-  - release/examples/benchmarks/hpcc/hpl
-  - studies/glob/test_glob (compopts: 1)
-  - studies/hpcc/FFT/marybeth/fft-test-even
-  - studies/hpcc/HPL/bradc/hpl-blc-noreindex
-  - studies/hpcc/HPL/bradc/hpl-blc
-  - studies/hpcc/HPL/vass/hpl
+  For the past several months, we've seen fairly consistent dropping
+  of I/O in testing but so infrequently and across so many tests that
+  it's hard to know how to triagulate on the issue and determine
+  whether it's ours or CCE's, let alone reproduce it.  See the
+  'sporadic dropping/mangling of otput' for details
 
-
-* studies/amr/diffusion/level/Level_DiffusionBE_driver (baseline): anyone
-
-  This test gets a frequent memory corruption/stacksize issue in
-  baseline testing.  What can we do about that?
+  On one hand, this is one of our most annoying and disquieting
+  sources of noise; on the other, it's maddeningly difficult to chase
+  down, so time _may_ be best spent elsewhere...
 
 
-* surprising cygwin timeouts (darwin): anyone
+o SSCA2_main times out sporadically (xe.ugni*, perf.xc.*): anyone
 
-  The following tests time out frequently/sporadically on cygwin and
-  nowhere else, which seems very surprising (and suggests, to me, a
-  deadlock).  Why is that?  What does it suggest about our
-  implementation? (or cygwin?)
+  https://chapel.atlassian.net/browse/CHAPEL-4
 
-  - parallel/taskPar/sungeun/barrier/basic
-  - parallel/taskPar/sungeun/barrier/reuse
-  - parallel/taskPar/sungeun/barrier/split-phase
-  - studies/sudoku/dinan/sudoku
+  Seems like we probably need to dial down the problem size in some fashion?
+
+  - release/examples/benchmarks/ssca2/SSCA2_main
 
 
-o sporadic dropped output (prgenv-cray): anyone
+o miniMD timeouts (perf.xc.16.mpi.gnu, perf.xc.16.ugni.gnu): anyone/ben
 
-  For the past month or so (maybe longer), we've seen fairly
-  consistent dropping of I/O in testing but so infrequently and across
-  so many tests that it's hard to know how to triagulate on the issue
-  and determine whether it's ours or CCE's.
+  https://chapel.atlassian.net/browse/CHAPEL-5
 
-  - functions/diten/refIntents (09/30/14)
-  - release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1) (10/03/14)
-  - release/examples/primers/arrays (10/03/14)
-  - functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1) (10/07/14)
-  - optimizations/sungeun/RADOpt/access1d (compopts: 1) (10/10/14)
-  - distributions/robust/arithmetic/collapsing/test_domain_rank_change1 (10/24/14)
+  What would it take to solidify this test's execution time?
 
 
-o sporadic quicksort segfault/timeout (gasnet.numa): elliot/diten/gbt
+* ra times out sporadically (xe.ugni*): anyone
 
-  release/examples/programs/quicksort sporadically segfaults and/or
-  times out on gasnet.numa with some regularity.  This seems
-  concerning in addition to being noisy.  What needs to be done to fix
-  it?
+  https://chapel.atlassian.net/browse/CHAPEL-6
+
+  Is this surprising?  Is it the same stream* timeout issue indicated
+  above?
+
+  - release/examples/benchmarks/hpcc/ra
 
 
-~ sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
+* sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
 
-  Under valgrind testing, these tests fail fairly frequently due to
+  https://chapel.atlassian.net/browse/CHAPEL-7
+
+  Under valgrind testing, these tests fail with some regularity due to
   invalid reads/writes in routines starting with dl_*.  Why?
 
+  - reductions/bradc/manual/promote
   - performance/sungeun/dgemm
   - studies/sudoku/dinan/sudoku
 
 
-* sporadic cyclic compilation timeouts (cyclic): anyone/diten
+o types/string/StringImpl/memLeaks/* (gasnet*, gasnet.fifo): kyleb, hilde?
 
-  Cyclic compilations time out sporadically and frequently.  Is this
-  for some reasonbecause David's machine is too slow/busy?  What can
-  we do to improve the situation?
+  https://chapel.atlassian.net/browse/CHAPEL-8
 
-  - distributions/robust/arithmetic/basics/test_array_assignment
-  - distributions/robust/arithmetic/basics/test_array_swap
-  - distributions/robust/arithmetic/reindexing/test_array_alias1]
-  - distributions/robust/arithmetic/basics/test_zipper_default]
-  - distributions/robust/arithmetic/modules/test_module_Random]
-  - distributions/robust/arithmetic/modules/test_module_Search]
+  These tests get sporadic failures of various flavors under gasnet.
+  Sung tried to quiet them down at some point, but apparently didn't
+  succeed.  Are the problems these tests are hitting related to other
+  known AMM issues?  Will the tests have value when new strings come
+  on-line?  Do Kyle's string tests have any similar noisiness on the
+  string development branch?
 
 
-o types/string/StringImpl/memLeaks/coforall (gasnet.fifo, gasnet*?): anyone
+* sporadic valgrind timeouts (valgrind): anyone
 
-  This test gets sporadic failures.  Sung tried to quiet it down at
-  some point, but occasional failures still show up, especially for
-  gasnet.fifo.
+  https://chapel.atlassian.net/browse/CHAPEL-9
 
+  These tests regularly cause noise in valgrind testing.  What can be
+  done to improve that?  Are they just long-running?
+
+  - domains/sungeun/assoc/stress.numthr
+  - performance/bharshbarg/arr-forall
+  - studies/shootout/fannkuch-redux/sungeun/fannkuch-redux
+
+
+* sporadic invalid reads/writes (valgrind): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-10
+
+  These tests started sporadically getting invalid reads/writes on
+  4/11.  Did something change on 4/10 to cause this? (see also
+  'invalid reads/writes' below)
+
+  - exercises/boundedBuffer2
+  - trivial/bradc/formatoutput
+
+
+* pivotal story 91235766 (gasnet-fast): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-12
+
+  This test is effectively in a "keep it in REGRESSIONS until someone
+  determines that it shouldn't be" limbo which doesn't seem very
+  useful.  What can we do to remove it?
+
+  - multilocale/local/diten/test_local2
+
+
+o bulkcomm execution timeouts (gasnet.fifo): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-13
+
+  These tests seem to time out very regularly.  What can be done to
+  stop that?  Do the tests themselves run too long, or are they
+  hitting some sort of deadlock on occasion?
+
+  - optimizations/bulkcomm/alberto/Block/2dBDtoDRTest
+  - optimizations/bulkcomm/alberto/Block/2dDRtoBDTest
+
+
+* execflags/bradc/gdbddash/gdbSetConfig (xc-wb.*): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-14
+
+  Why oh why does this test time out so frequently on the xc-wb testing?
+
+
+o sporadic x? HW execution timeouts (xe.ugni*): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-15
+
+  Is this a fairly recently seen failure?  Any occurrences before 3/22?
+
+  - release/examples/benchmarks/hpcc/variants/ra-cleanloop
+
+
+* lulesh timeouts (xe.mpi.pgi, perf.xc.local.cray): anyone/bradc
+
+  https://chapel.atlassian.net/browse/CHAPEL-16
+
+  What would it take to make this stop timing out?
+
+
+o sporadic [chpl_launchcmd] "output file from job does not exist..." errors (xc.*): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-17
+
+  We seem to have been seeing this in the 03/25 onward timeframe, if not before
+
+  - a bunch of tests... see REGRESSIONS
+
+
+o sporadic slurm 'expired credential' problem (xc.*): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-18
+
+  We seem to have gotten a few of these 4/13 and 4/16.  What's up?
+
+  - see REGRESSIONS
+
+
+* sporadic pgi failures (perf.xc.local.pgi): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-19
+
+  Why are these failing regularly on PGI?  Note possible relation to
+  'These started timing out consistently on 2/18' CHAPEL-20
+
+  - studies/shootout/nbody/bradc/nbody-blc-slice
+  - release/examples/benchmarks/hpcc/ptrans
+
+
+o cygwin noise (cygwin*): 
+
+  https://chapel.atlassian.net/browse/CHAPEL-21
+
+  These tests bounce between error matching output and timing out.  Help?
+
+  - studies/cholesky/jglewis/version2/performance/test_cholesky_performance
+  - reductions/diten/testSerialReductions
+
+
+* Colorado state tests noisy (or failing) on Cygwin (cygwin32): ben
+
+  https://chapel.atlassian.net/browse/CHAPEL-22
+
+  Some of these are noisy, others simply fail
+
+  - studies/colostate/OMP-Jacobi-1D-Naive-Parallel
+  - studies/colostate/OMP-Jacobi-2D-Naive-Parallel
+  - studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling
 
 
 high priority (failing in one or more configurations)
 -----------------------------------------------------
 
-* static_dynamic tests (darwin, cygwin, prgenv-*, x?-wb.intel): anyone
+* regexp issues (valgrind, linux32, cygwin*, cygwin64): mppf/anyone
 
-  These tests fail in a number of configurations and variations.  All
-  variations fail on darwin and cygwin.  compopts 6 fails in most any
-  prgenv-* whitebox testing; compopts 1-3 fail for x?-wb.intel.  Should
-  these cases get a special .good file, be .skipif'd, or can something
-  more be done to maximize the value of the tests or change our behavior
-  in these cases?
+  https://chapel.atlassian.net/browse/CHAPEL-23
 
+  * regexp/ferguson/rechan
+    io/tzakian/recordReader/test
 
-~ test_10k_begins (darwin, memleaks on chap16, linux32): anyone
+      These two Have gotten valgrind errors since enabled
 
-  This test hits a 'halt' on darwin, a sporadic segfault on memleaks
-  testing, and frequently causes problems in parallel testing when a
-  machine is being heavily used.  It's a stress test by nature, so
-  likely to push the envelope.  Is this the cause of these problems,
-  or is it something else?  What should we do to preserve the intent
-  of the test but make it less of a nuisance?
+  * regexp/ferguson/ctests/regexp_channel_test (linux32): mppf
 
+  * regexp/ferguson/ctests/regexp_channel_test (cygwin*, cygwin64): mppf
 
-* memory/shannon/outofmemory/mallocOutOfMemory (darwin, gasnet-fast): anyone
+      Fails in various ways on various platforms.  Not sure what to
+      make of the fact that it's listed in cygwin* and cygwin64 with
+      different failure modes.  Did someone mistakenly refactor a
+      cygwin32 failure mode upwards?
 
-  This test times out in these two configurations quite consistently.
-  Is there a good reason for this?  What can be done to make it go
-  away without undermining the original intent of the test (which I
-  think is to make sure that something reasonable happens when we run
-  out of memory?)
+  * regexp/ferguson/ctests/regexp_test
+
+      Times out on linux32
 
 
-* associative/bharshbarg/parSafeAdd (gasnet-fast, valgrind): anyone/ben
-
-  This test times out fairly consistently with gasnet-fast and gets a
-  sporadic failure due to invalid write of size 8 on valgrind testing.
-  What can we do about these?
-
-
-~ domains/sungeun/assoc/parSafeMember (gasnet-fast, valgrind, pgi, linux32): anyone/ben
-
-  This test has a tendency to time out in several configurations.
-  What can we do to help that?  (Note that PGI doesn't support native
-  atomics, so that may be a factor here if this is a long-running
-  test.  Valgrind is slow by nature (see "Valgrind timeouts" story).
-  Not sure what about gasnet-fast would be slower... use of dlmalloc?
-
-
-* types/range/hilde/align (pgi, intel): anyone
-
-  Something about this test makes it simply print the wrong answer on
-  PGI and Intel compiles.  If it's in module code (e.g., reliance on
-  signed integer wraparound?) let's fix it.  If it's in the test,
-  let's fix it there.
-
-
-* parallel/cobegin/diten/cobeginRace (darwin, memleaks on chap16): anyone
-
-  This test is printing that it times out.  Why?
-
-
-* io/sungeun/ioerror (darwin, cygwin): anyone
-
-  Test isn't working as expected -- why?
-
-
-~ minMod* (memleaks, prgenv-*, pgi): bradc
-
-  These tests have never been as portable as they should be.  Fix
-  them, Brad.
-
-
-* nbody* (memleaks): bradc
-
-  These tests have been timing out ever since moving them to chap16.
-  Why?  Do we still care about these tests?
-
-
-* studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
-
-  Do we still need to be testing this version?  What value does it
-  have other than historical?  Isn't it race-y still?
-
-
-
-
-high priority (mac quiettude)
+high priority (open too long)
 -----------------------------
 
-* extern/ferguson/c_ptrs (darwin): anyone
+o studies/glob/test_glob (baseline): bradc
 
-  This test is getting a "self-comparison always evaluates to tree"
-  warning/error when compiling for darwin.  What can be done to make
-  it go away?  (preferably by getting rid of the self-comparison
-  rather than simply squashing it, though that could be a reasonable
-  last resort).
+  https://chapel.atlassian.net/browse/CHAPEL-24
 
-
-* "warning about using a non-literal format string" (darwin): anyone
-
-  Three tests are failing with a warning about using a non-literal
-  format string.  Is there anything we can do to help with this short
-  of squashing that warning, or is this an outshoot of Chapel language
-  features (in which case the warning wolud need to be squashed I
-  think).
+  Failing since ???.  The claim was that the AMM improvements would
+  fix this test, but who wants to wait for that?  This test exercises
+  prototype routines that have since been matured and put into
+  FileSystem.  Can the test be revamped to use the official routines?
 
 
-* parallel/sync/diten/userLevelEndCount (darwin): anyone
+* io/vass/time-write (perf.xc.no-local.gnu): vass
 
-  We get a "static declaration of 'wait3' follows non-static" warning
-  here.  What should be done about it?
+  https://chapel.atlassian.net/browse/CHAPEL-25
 
+  Failing since first run?  Why?  Race in using printf()?
 
-* */compSampler* (darwin): anyone
-
-  We get various errors in the generated code.  What needs to be done
-  to make them go away?
+  - io/vass/time-write
 
 
-* "nondeterministic output order issue?" (darwin): anyone
+o multilocale/deitz/needMultiLocales/test_remote_file_read (gasnet-fast): mppf
 
-  These tests seemed to be getting misorderings in their output.  Why?
+  https://chapel.atlassian.net/browse/CHAPEL-26
 
-
-* parallel/begin/vass/multi-yield-leader (darwin): anyone
-
-  This test seems to be getting the incorrect output.  Why?
+  This test has been failing with a segfault since 2/22.
 
 
-* parallel/sync/figueroa/ReadMethods (darwin): anyone
+* memory/bradc/allocBig (linux32): kyleb
 
-  I noted (with some uncertainty) that this test seems to have/get
-  incorrect initial values.  What's going wrong?
+  https://chapel.atlassian.net/browse/CHAPEL-27
 
-
-* parallel/taskPar/figueroa/taskParallel (darwin): anyone
-
-  The referee's output is missing?  Why?
+  Chapel string passed to extern routine.  Didn't get fixed with the
+  rest of the fixes that went in with/after that patch?  Has been
+  failing since 3/5.
 
 
-* "unused value warning" (darwin): anyone
+* modules/standard/BitOps/rotl (xc-wb.prgenv-cray): kyleb
 
-  These tests are getting an unused value warning in their generated
-  code.  Does fixing this require a compiler change or a code change?
-  Would a compiler change help catch the issue further upstream?
+  https://chapel.atlassian.net/browse/CHAPEL-28
+
+  Error matching program output since 2015-03-10.
 
 
-* surprising darwin timeouts (darwin): anyone
+* fftw.h not found since  3/19 (xc.llvm): thomas
 
-  The following tests time out consistently on darwin but nowhere else
-  (and don't strike me as being particularly long-running tests.  Is
-  something going off the rails?
+  https://chapel.atlassian.net/browse/CHAPEL-29
 
-  - exercises/RandomNumber6
-  - parallel/begin/deitz/test_begin2
-  - parallel/begin/deitz/test_begin]
-  - parallel/begin/deitz/test_coforall_sugar3
-  - parallel/begin/deitz/test_global_for_begin
-  - parallel/sync/figueroa/WriteMethods
+  - release/examples/primers/FFTWlib
 
+
+* new errors on 2015-03-28 (valgrind): vass
+
+  https://chapel.atlassian.net/browse/CHAPEL-30
+
+  What happened on that night to make these tests start failing and
+  continue to fail ever since?
+
+  - performance/sungeun/assign_across_locales
+  - studies/amr/diffusion/grid/Grid_DiffusionBE_driver
+  - studies/amr/diffusion/level/Level_DiffusionBE_driver
+  - studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple
+
+
+* chpldoc missing package (cygwin32): thomas
+
+  https://chapel.atlassian.net/browse/CHAPEL-31
+
+  And has been since 4/7.
+
+  - chpldoc*
+
+
+* ipe/powerOfTwo (valgrind, *32): noakes
+
+  https://chapel.atlassian.net/browse/CHAPEL-32
+
+  This test has been failing with a segfault on 32-bit systems since
+  4/19; valgrind will probably point out the cause.
+
+
+high priority (worrisome)
+-------------------------
+
+* invalid reads/writes (valgrind): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-11
+
+  These are marked as being not manually reproducible, but they've
+  failed so regularly since 4/11, how can that be?  Did something
+  change on 4/10 to cause this?  (See also 'sporadic invalid
+  reads/writes' above).
+
+  - arrays/bradc/reindex/reindex]
+  - domains/bradc/constdomain
+  - domains/bradc/subdomain
+  - spec/marybeth/for
+  - spec/marybeth/select
+  - users/ferguson/forall_expr
 
 
 high priority (potential portability issues)
 --------------------------------------------
 
-o I/O test assertions fail (intel): anyone
+* I/O test assertions fail (intel): mppf
 
-  These tests fail on intel which seems worrisome.  See also the
-  "binary files differ" story for intel.
+  https://chapel.atlassian.net/browse/CHAPEL-33
 
-  - io/ferguson/io_test
+  This test fails on intel which seems worrisome.
+
   - io/ferguson/writef_readf
 
 
-o binary files differ (intel): anyone
+* binary files differ (intel): mppf
 
-  These tests get that their binary files differ on intel which
-  seems worrisome.  See also the "I/O test assertions fail" story
-  for intel.
+  https://chapel.atlassian.net/browse/CHAPEL-34
+
+  This test reports that its binary files differs on intel which
+  seems worrisome.
 
   - io/ferguson/writefbinary
-  - studies/parboil/SAD/sadSerial
 
 
+* factorization failed (intel): anyone
 
-high priority (open way too long)
----------------------------------
+  https://chapel.atlassian.net/browse/CHAPEL-35
 
-* communication counts changed in March 2014, still failing (cyclic): gbt
-
-  - distributions/robust/arithmetic/performance/multilocale/alloc
-
-
-* communication counts changed in May, 2013, still failing (cyclic): vass
-
-  - distributions/robust/arithmetic/performance/multilocale/assign
-  - distributions/robust/arithmetic/performance/multilocale/reduce
+  This test seems to have started failing on 03/12 -- why?  How did we
+  miss it?
 
 
-* replicated testing appears not to be useful -- is it? (replicated): vass
+high priority (CCE quiettude)
+-----------------------------
 
-  2/3rds of the replicated tests fail on a nightly basis (and have
-  since this configuration was enabled, I believe).  The replicated
-  distribution is, by nature, somewhat different than other standard
-  ones like Block and Cyclic.  Is the current replicated testing
-  actually of any value?  Is there something else we could be running
-  to more quietly lock in the value of the replicated for some
-  reasondistribution?
+* compilation timeouts (xe*cray): anyone
 
+  https://chapel.atlassian.net/browse/CHAPEL-36
 
-o types/records/sungeun/recordWithRefCopyFns (verify): mike/hilde/bradc
-
-  I think we just need to huddle up and make a call about what to do
-  with this test?
+  The Cray compiler is notoriously slow.  What can be done?
+  - release/examples/benchmarks/lulesh/lulesh
+  - release/examples/benchmarks/miniMD/miniMD
+  - release/examples/benchmarks/ssca2/SSCA2_main
 
 
-* cannot create C string from remote string (due to r22900/23558): anyone/kyleb
+* text file busy with path mandelbrot (xc-wb.prgenv-cray): thomas
 
-  The following tests have been failing under gasnet due to string
-  changes and would hopefully be resolved when strings are all done.
-  But is there anything we can do about them in the meantime?
+  https://chapel.atlassian.net/browse/CHAPEL-37
 
-  - classes/sungeun/remoteDynamicDispatch (compopts: 1)
-  - multilocale/diten/needMultiLocales/remoteStringTuple
-  - optimizations/sungeun/RADOpt/access1d (compopts: 1)
-  - optimizations/sungeun/RADOpt/access2d (compopts: 1)
-  - optimizations/sungeun/RADOpt/access3d (compopts: 1)
+  - exercises/Mandelbrot/mandelbrot
 
 
+* invalid option "openmp" on the command line (xc-wb.prgenv-cray): ben/thomas
 
-high priority (easy)
---------------------
+  https://chapel.atlassian.net/browse/CHAPEL-38
 
-* testProbSize/countMemory issues (darwin, cygwin): bradc
-
-  Get these working cleanly
-
-
-* refArgIsWide (darwin): anyone
-
-  Some script/command on darwin (probably in the prediff) is not
-  justifying integers as the .good expects.  Make portable
+  - studies/colostate/OMP-Jacobi-1D-Naive-Parallel
+  - studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling
+  - studies/colostate/OMP-Jacobi-2D-Naive-Parallel
+  - studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling
 
 
-* nonportable prediff (darwin): anyone
+* types/enum/ferguson/enum_mintype_test (prgenv-cray): anyone
 
-  I believe these two tests have non-portable prediff commands:
-  - parallel/coforall/gbt/time-sync-incs
-  - studies/hpcc/HPL/stonea/serial/hplExample5
+  https://chapel.atlassian.net/browse/CHAPEL-39
 
-
-* quiet gdbddash tests (darwin, pgi): anyone
-
-  I believe these are failing due to different gdb versions (at least
-  that's been the case in the past).  Can a .prediff or specialized
-  .good file be used to cause these to pass in the configurations
-  where they don't?  If not, should we .skipif?
+  This test gets a "value outside int rage" at C compilation time.
+  What should we do about this?
 
 
-* missing "unable to create more than ... threads" warning (valgrind): anyone
+* error differs but within acceptable margin (xc-wb.prgenv-cray): anyone
 
-  The following test dials down the number of threads when running with
-  valgrind so doesn't get the expected .good.  What should we be doing
-  here for real?
+  https://chapel.atlassian.net/browse/CHAPEL-40
 
-  - parallel/taskPool/figueroa/TooManyThreads
+  - studies/hpcc/FFT/marybeth/fft
 
 
-* we should presumably unsuppress these tests (baseline): bradc
+* consistent execution timeout (xc-wb.prgenv-cray): anyone
 
-  - trivial/mjoyner/inlinefunc/inlfunc1_report
-  - trivial/mjoyner/inlinefunc/inlfunc2_report
+  https://chapel.atlassian.net/browse/CHAPEL-41
 
+  What changed on 2015-02-15 to make this start timing out?  Why only
+  here?
+
+  - performance/compiler/bradc/cg-sparse-timecomp
+
+
+o when building 'chpl' with CCE, weird stuff happens (xc-wb.host.prgenv-cray): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-42
+
+  Proposed approach was to build compiler with CCE and run with
+  valgrind to see if we're doing something bad under CCE.  bradc has
+  notes but never had time to follow through.
+
+
+* studies/hpcc/FFT/marybeth/fft (prgenv-cray): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-43
+
+  Error differs, but within an acceptable margin; should squash
+  printing of the error for correctness testing?
 
 
 medium priority (worrisome)
 ---------------------------
 
-* overlapping memcpy in valgrind (valgrind): anyone
+* conditional jump in re2 (valgrind): anyone
 
-  The following tests get an overlapping memcpy error in valgrind,
-  though this doesn't seem to cause any real problems anywhere else.
-  Why is this?  What should we do to make it go away?
-
-  - io/bradc/readWholeArr
-  - io/ferguson/readThis/readarr
-  - io/ferguson/writebinaryarray
-  - release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)
-  - release/examples/primers/fileIO
-  - studies/parboil/SAD/sadSerial
-  - studies/parboil/histo/histoSerial
-  - studies/parboil/stencil/stencil3D
-  - users/ferguson/bulkerr
-
-
-o conditional jump in re2 (valgrind): anyone
+  https://chapel.atlassian.net/browse/CHAPEL-44
 
   The following tests get a "conditional jump depends on uninitialized
   value" -- should we patch re2 to fix something?
@@ -527,205 +542,40 @@ o conditional jump in re2 (valgrind): anyone
   - regexp/ferguson/rechan
 
 
-* invalid read in gmp (valgrind): anyone
-
-  The following test gets an "invalid read" -- is there something we
-  can do about this?
-
-  - modules/standard/gmp/ferguson/gmp_dist_array
-
-
-* unresolved call list(BaseArr) (host.prgenv-cray): mike
-
-  Can we capture this issue well enough to feel confident that it's a
-  CCE issue?  Does valgrind turn up anything new?  Is there any way we
-  can turn it over to them without them having to compile all of
-  Chapel?x
-
-
-~ 21-capture-in-cobegin: vass
-
-  Is this still failing sporadically?  (I haven't seen it in awhile)
-  Can we reproduce it?  Is there anything to do here?
-
-
-
 medium priority (clutter)
 -------------------------
 
-* stack overflow (valgrind): anyone
+* memory/sungeun/refCount/domainMaps (*32): anyone
 
-  The following test gets a stack overflow -- is there something we
-  can/should do about this?  Should we skip if in valgrind testing?
+  https://chapel.atlassian.net/browse/CHAPEL-45
 
-  - parallel/cobegin/gbt/cobegin-stacksize
-
-
-o invalid read/write of size 8 in ftoa() (valgrind): hilde
-
-  Tom, you couldn't reproduce this the other day and hoped it was
-  sporadic, but it has failed on a nightly basis consistently ever
-  since it appeared (10/08/14).  Would you take another look and see
-  if you can reproduce it by reproducing the test system's
-  environment, building with optimizations on, etc.?
-
-  - performance/sungeun/assign_across_locales
+  Reports a different amount of memory leaked on 32-bit platforms.  Is
+  this because something of pointer size is being leaked?  Can we
+  quiet this somehow without losing whatever value it has?
 
 
-* "Unrecognized instruction" (valgrind): anyone
+* users/vass/type-tests.isSubType (*32): anyone/vass
 
-  The following two tests get an unrecognized instruction error.  Is
-  there anything we can/should do about this?  Does it indicate a
-  too-old version of valgrind?  In that case, perhaps we should add a
-  suppression such that once we get a newer valgrind, we'll be
-  notified that they're working?
+  https://chapel.atlassian.net/browse/CHAPEL-46
 
-  - types/atomic/ferguson/atomictest
-  - types/atomic/sungeun/atomic_vars
+  Consistently segfaulting since first run, according to REGRESSIONS.
 
 
-* Valgrind timeouts (valgrind): anyone
+* domains/sungeun/assoc/parSafeMember (pgi): anyone (ben?)
 
-  The following tests time out very consistently under valgrind.  By
-  nature, valgrind testing takes a long time so maybe this is why.
-  But most tests pass within their valgrind timeout.  How long do
-  these tests take to run under valgrind? Is there something we could
-  do in these specific tests to dial down their problem size and
-  reduce their execution time without compromising what they were
-  supposed to be testing?
+  https://chapel.atlassian.net/browse/CHAPEL-47
 
-  - io/ferguson/ctests/qio_test (compopts: 1)
-  - parallel/begin/sungeun/captureAppearsToWork
-  - parallel/begin/sungeun/capture
-  - studies/hpcc/PTRANS/PTRANS
-  - studies/lammps/shemmy/p-lammps-n1
-  - studies/lammps/shemmy/p-lammps-n2
-  - studies/lammps/shemmy/p-lammps-n4
-  - types/range/bradc/overflowInComputeBlock
-  - types/single/sungeun/stress
-  - release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4) (sporadically)
+  This test has a tendency to time out under PGI.  Note that PGI
+  doesn't support native atomics, so that may be the cause.  Could the
+  test be reduced to get it under the timeout and rely instead on
+  running across multiple nights for stability, or does it need to run
+  this long?  Can the # iterations be set based on
+  CHPL_TARGET_COMPILER in the sources?
 
 
-* comm count mismatches (gasnet.numa): elliot/diten/gbt
+* negative floating point 0.0 issue (pgi): anyone
 
-  The following tests have gotten comm count mismatches (since we
-  started numa testing, I believe).  What can we do to make these go
-  away?
-
-
-* overflow issues (cygwin, x?-wb.gnu): anyone
-
-  Newer gccs seem to warn about these tests -- is the Chapel
-  implementation relying on overflow, or just these tests?  What
-  should we do to quiet these?
-
-  - puzzles/hilde/overflow (compopts: 1) 
-  - studies/shootout/mandelbrot/bugs/mandelbrot-error
-
-
-o statements/vass/while-const1 (prgenv-cray): anyone
-
-  This test gets an infinite loop warning.  What should we do about
-  this?
-
-
-o types/enum/ferguson/enum_mintype_test (prgenv-cray): anyone
-
-  This test gets a "value outside int rage" at C compilation time.
-  What should we do about this?
-
-
-* expressions/bradc/uminusVsTimesPrec (prgenv-cray): anyone/bradc
-
-  This test gets the wrong result due to its reliance on wraparound in
-  signed integers within the test itself (which Chapel sholdn't
-  guarantee).  What should we do about this?  Can the test be
-  rewritten to avoid the reliance?
-
-
-o filenames printed when multiple .c files specified (prgenv-cray): anyone
-
-  These tests fail because they print the .c files as they're compiled.
-  What can we do about this?
-
-  - modules/standard/BitOps/c-tests/bitops (compopts: 1)
-  - modules/standard/BitOps/c-tests/bitops (compopts: 2)
-  - modules/standard/BitOps/c-tests/clz (compopts: 1)
-  - modules/standard/BitOps/c-tests/clz (compopts: 2)
-  - modules/standard/BitOps/c-tests/ctz (compopts: 1)
-  - modules/standard/BitOps/c-tests/ctz (compopts: 2)
-  - modules/standard/BitOps/c-tests/performance/32/bitops-32 (compopts: 1)
-  - modules/standard/BitOps/c-tests/performance/32/bitops-32 (compopts: 2)
-  - modules/standard/BitOps/c-tests/performance/64/bitops-64 (compopts: 1)
-  - modules/standard/BitOps/c-tests/performance/64/bitops-64 (compopts: 2)
-  - modules/standard/BitOps/c-tests/popcount (compopts: 1)
-  - modules/standard/BitOps/c-tests/popcount (compopts: 2)
-  - optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)
-
-
-o segfault in meteor-fast (prgenv-cray): tmac
-
-  We've seen a segfault in meteor-fast for prgenv-cray since it was filed.
-
-
-* zippered iterations have non-equal lengths (prgenv-cray): elliot
-
-  statements/bradc/swaps/swapArrayDiffIndices has gotten an error about
-  zippered iterations having different lengths since 9/17/14.  I think
-  this is in Elliot's court.
-
-
-* glob tests have a portability issue (prgenv-cray): bradc
-
-  This has been since they've been checked in:
-
-  - studies/filerator/globberator (execopts: 1)
-  - studies/filerator/globberator (execopts: 2)
-  - studies/filerator/testboth
-  - studies/filerator/testemptyglob
-
-
-o studies/hpcc/FFT/marybeth/fft (prgenv-cray): anyone
-
-  Error differs, but within an acceptable margin; should squash
-  printing of the error for correctness testing?
-
-
-o types/file/freadComplex (prgenv-cray): anyone
-
-  Error message seems to be missing?  note that this test is a problem
-  child on whitebox testing (which may or may not be related to its
-  being listed here)
-
-
-o compilation timeouts (prgenv-cray): anyone
-
-  The Cray compiler is notoriously slow.  Should we dial down the
-  optimization level for default Chapel compiles (i.e., when --fast is
-  not thrown) or is it better to test it the way the CCE group expects
-  it to be?
-
-  - optimizations/bulkcomm/alberto/Block/3dStrideTest
-  - optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)
-  - optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)
-  - studies/ssca2/test-rmatalt/nondet (compopts: 1)
-  - users/franzf/v0/chpl/main (compopts: 1)
-  - users/franzf/v1/chpl/main (compopts: 1)
-
-
-* long identifiers names are a problem (pgi): anyone
-
-  The following test fails due to having too-long identifiers:
-  - distributions/dm/t5a
-
-
-o undefined reference to chpl_bitops_debruijn64 (pgi): anyone
-
-  optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test
-  fails on pgi due to this undefined ref.  Why is it a singleton?
-
-
-o negative floating point 0.0 issue (pgi): anyone
+  https://chapel.atlassian.net/browse/CHAPEL-48
 
   Something about -0.0i doesn't make PGI happy
 
@@ -734,149 +584,97 @@ o negative floating point 0.0 issue (pgi): anyone
   - types/file/bradc/scalar/floatcomplexexceptions
 
 
-o check_channel assertion failure (cygwin): anyone
+* QIO assertion errors (cygwin): mppf
 
-  The following test has never worked on cygwin, I believe.  Could it?
+  https://chapel.atlassian.net/browse/CHAPEL-49
 
-  - ./regexp_channel_test
-
-
-* RLIMIT_NPROC undeclared (cygwin): anyone
-
-  The following test relies on RLIMIT_NPROC which cygwin doesn't support.
-  What should we do?
-
-  - parallel/taskPool/figueroa/TooManyThreads (compopts: 1)
-
-
-* CHPL_RT_CALL_STACK_SIZE too big (cygwin): anyone
-
-  What should we do about the following tests?
-
-  - execflags/bradc/callStackSize
-  - parallel/cobegin/gbt/cobegin-stacksize
-
-
-* Tests print 'output' as the filename? (cygwin): anyone
-
-  Michael seemed to think there was nothing to be done for these.
-  Is he right?  If so, should we suppress?
-
-  - functions/iterators/tzakian/open_inside_file_iter
-  - io/ferguson/asserteof
-  - trivial/shannon/readWriteBool
-  - trivial/shannon/readWriteComplex
-  - trivial/shannon/readWriteEnum
-  - types/file/freadComplex
-  - types/file/freadIntFailed
-  - types/file/freadNoFloat
-  - types/file/freadNoInt
-  - types/file/freadNotABoolean
-  - types/file/fwriteIntFailed
-
-
-o QIO assertion errors (cygwin): anyone
-
-  The following tests get QIO assertion errors.  Should they?
+  The following test gets QIO assertion errors.  Should it?
 
   - io/ferguson/ctests/qio_formatted_test (compopts: 1)
-  - io/ferguson/ctests/qio_test (compopts: 1)
 
 
-* io/ferguson/utf8/widecols.chpl (cygwin): anyone
+* -0.0 not supported on PGI? (pgi): anyone
 
-  This test gets an apparent whitespace difference on cygwin
-  for some reason.
+  https://chapel.atlassian.net/browse/CHAPEL-50
 
+  Are they within their rights with C or is this a portability issue or ...?
+  Should we suppress?  Is there a flag/fix?
 
-* io/fsouza/chown/permission_error (cygwin): anyone
-
-  This test has had an output mismatch since added.
-
-
-* io/sungeun/ioerror (execopts: 5) (cygwin): anyone
-
-  This test gets the wrong result.
+  - types/complex/bradc/negateimaginary3
+  - types/complex/bradc/negativeimaginaryliteral
+  - types/file/bradc/scalar/floatcomplexexceptions
 
 
-* madness numerical roundoff issues (cygwin): anyone
+* unclear how KNCs interact with the file system (xc.knc): anyone
 
-  These madness tests seem to get roundoff issues on cygwin (and only
-  for some reasoncygwin?  really?)
+  https://chapel.atlassian.net/browse/CHAPEL-51
 
-  - studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)
-  - studies/madness/aniruddha/madchap/test_likepy
-  - studies/madness/common/test_likepy
-  - studies/madness/dinan/mad_chapel/test_diff
-  - studies/madness/dinan/mad_chapel/test_gaxpy
-  - studies/madness/dinan/mad_chapel/test_likepy
+  - release/examples/primers/fileIO
 
 
-* incorrect baseline output (baseline): anyone
+* OOB array access for non 2**k core count (perf.xc.*): ben
 
-  These tests get the incorrect output, but maybe this is to be expected
-  on baseline testing?  How should we quiet them?
+  https://chapel.atlassian.net/browse/CHAPEL-52
 
-  - arrays/deitz/parallelism/stream/test_stream_is_parallel
-  - arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel
+  I remember strategizing about this one at the perf meeting, but not the
+  conclusion.  Also times out when it's not failing...
 
-
-* different string leakage in baseline (baseline): anyone
-
-  These tests leak different amounts of memory when run with --baseline;
-  This will perhaps be resolved when strings are records.  Is there
-  for some reasonsomething we could do in the meantime?  Use
-  tring_rec?  Live with it?
-
-  - arrays/deitz/part7/test_descriptor_frees
-  - memory/figueroa/LeakedMemory2
-  - memory/figueroa/LeakedMemoryArrayOfClasses
-  - memory/sungeun/refCount/arraysAndDomains
-  - memory/sungeun/refCount/arrays
-  - memory/vass/memleak-array-of-records-1
+  - npb/is/mcahir/intsort.mtml
 
 
-* classes/figueroa/RecordConstructor2 (baseline): anyone/hilde
+* These started timing out consistently on 2/18 (perf.xc.no-local.gnu): anyone
 
-  This test gets the wrong output on baseline -- why?  What can we do
-  about it?
+  https://chapel.atlassian.net/browse/CHAPEL-20
 
+  Why would that be?
 
-* extern/bradc/structs/externFloat4calls.someFields (baseline): anyone
-
-  This fails with --baseline and seems to be related to --inline vs. --no
-
-
-* extern/ferguson/crazyRecord (baseline): anyone
-
-  This fails on baseline with the wrong output -- why?
+  - release/examples/benchmarks/hpcc/ptrans
+  - studies/shootout/nbody/bradc/nbody-blc-slice
+  - studies/shootout/nbody/sidelnik/nbody_forloop_3
+  - studies/ssca2/memory/SSCA2_mem (see also 'SSCA2_main times out sporadically'?)
 
 
-* types/string/StringImpl/memLeaks/promotion (baseline): anyone
+* "got == expect[i]" assertion error (cygwin32): mppf
 
-  This fails on baseline (even after Sung tried to get all these tests
-  passing).  Why?
+  https://chapel.atlassian.net/browse/CHAPEL-53
+
+  - io/ferguson/ctests/qio_bits_test
 
 
-  
+* consistent execution timeout / assertion error (cygwin32, cygwin64): mppf
+
+  https://chapel.atlassian.net/browse/CHAPEL-54
+
+  - io/ferguson/ctests/qio_test
+
+
 medium priority (noisy)
 -----------------------
 
-o sporadic data read copy failed (cygwin): anyone
+* sporadic execution timeouts (gasnet.fifo): anyone
 
-  These tests got a "sporadic data read copy failed" problem in the
-  for some reason10/16-10/18 timeframe.  Can this be reproduced?
-  Did we just get unlucky?  Was something temporarily broken?
+  https://chapel.atlassian.net/browse/CHAPEL-55
 
-  - reductions/sungeun/test_minmaxloc
-  - regexp/ferguson/rechan
+  This test has timed out a few times recently -- why is that?  What
+  should be done with it?
+
+  - studies/madness/aniruddha/madchap/test_mul
+
+
+* sadSerial times out sporadically (perf.xc.local.intel): lydia
+
+  https://chapel.atlassian.net/browse/CHAPEL-56
+
+  - studies/parboil/SAD/sadSerial
 
 
 
 low priority (annoying, but should get better in the future)
 ------------------------------------------------------------
 
-o fasta-lines (perf.bradc-lnx, perf.chap03): anyone
+* fasta-lines (perf.bradc-lnx, perf.chap03, perf.chapel-shootout): anyone
+
+  https://chapel.atlassian.net/browse/CHAPEL-57
 
   This fails due to insane memory usage due to strings.  Can anything
   be done to improve this situation until strings get better?  Would
@@ -887,7 +685,9 @@ o fasta-lines (perf.bradc-lnx, perf.chap03): anyone
 low priority (portability issue, significant level of effort required)
 ----------------------------------------------------------------------
 
-o release/examples/benchmarks/shootout/pidigits (llvm): anyone/thomas
+* release/examples/benchmarks/shootout/pidigits (llvm): anyone/thomas/mppf
+
+  https://chapel.atlassian.net/browse/CHAPEL-58
 
   This fails due to the use of macros in gmp.h.  Thomas had a
   potential plan for dealing with it, which I forget offhnad.
@@ -897,23 +697,28 @@ o release/examples/benchmarks/shootout/pidigits (llvm): anyone/thomas
 low priority (so infrequent as to be potentially not our issue)
 ---------------------------------------------------------------
 
-* multilocale/diten/localBlock/needMultiLocales/localBlock5 (gasnet-fast): anyone
+o SIGBUS at execution time (xc.knc): anyone
 
-  This got a 'slave got an unknown command on coord socket' once (and maybe
-  once ever)
+  https://chapel.atlassian.net/browse/CHAPEL-59
 
+  I think we've seen this just once?
 
-o users/jglewis/SSCA2_sync_array_initialization_bug (gasnet-fast): anyone
-
-  This got a an 'unresolved access of range by (2)' once (and maybe
-  once ever)
+  - release/examples/benchmarks/lulesh/lulesh
 
 
-* domains/johnk/capacityAssoc (cygwin): anyone
+* timed out once? (perf.xc.*): anyone
 
-  This got a "CreateProcessW failed" error once (and maybe once ever)
+  https://chapel.atlassian.net/browse/CHAPEL-60
+
+  Was this a one-off?
+
+  - functions/iterators/angeles/distAdaptativeWSv2
 
 
-* distributions/robust/arithmetic/reindexing/test_strided_reindex2 (cyclic): anyone
+o timed out once (perf.xc.local.cray): anyone
 
-  This got an "extent mismatch error" once (and maybe once ever
+  https://chapel.atlassian.net/browse/CHAPEL-61
+
+  Was this a one-off?
+
+  - studies/shootout/fasta/kbrady/fasta-printf

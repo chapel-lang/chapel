@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,6 +33,9 @@
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
+#include <ostream>
+#include <string>
+
 #include "map.h"
 #include "vec.h"
 
@@ -46,18 +49,21 @@
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
+                                                   \
   macro(ModuleSymbol) sep                          \
-  macro(VarSymbol) sep                             \
-  macro(ArgSymbol) sep                             \
-  macro(TypeSymbol) sep                            \
-  macro(FnSymbol) sep                              \
-  macro(EnumSymbol) sep                            \
-  macro(LabelSymbol) sep                           \
+  macro(VarSymbol)    sep                          \
+  macro(ArgSymbol)    sep                          \
+  macro(TypeSymbol)   sep                          \
+  macro(FnSymbol)     sep                          \
+  macro(EnumSymbol)   sep                          \
+  macro(LabelSymbol)  sep                          \
+                                                   \
   macro(SymExpr) sep                               \
   macro(UnresolvedSymExpr) sep                     \
   macro(DefExpr) sep                               \
   macro(CallExpr) sep                              \
   macro(NamedExpr) sep                             \
+                                                   \
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
@@ -69,6 +75,7 @@
 class AstVisitor;
 class Expr;
 class GenRet;
+class LcnSymbol;
 class Symbol;
 class Type;
 
@@ -212,12 +219,18 @@ public:
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();
+  Type*             getRefType();
 
   const char*       astTagAsString()                             const;
 
   AstTag            astTag;     // BaseAST subclass
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
+
+  void                printTabs(std::ostream *file, unsigned int tabs);
+  virtual void        printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
+
+  static  const       std::string tabText;
 
 protected:
                     BaseAST(AstTag type);
@@ -226,7 +239,6 @@ protected:
 private:
                     BaseAST();
 
-  Type*             getRefType();
   Type*             getWideRefType();
 };
 
@@ -269,8 +281,7 @@ public:
 // vectors of modules
 //
 extern Vec<ModuleSymbol*> allModules;  // contains all modules
-extern Vec<ModuleSymbol*> userModules; // contains main + user modules
-extern Vec<ModuleSymbol*> mainModules; // contains main modules
+extern Vec<ModuleSymbol*> userModules; // contains user modules
 
 //
 // class test inlines: determine the dynamic type of a BaseAST*
@@ -284,8 +295,14 @@ static inline bool isSymbol(const BaseAST* a)
 static inline bool isType(const BaseAST* a)
 { return a && isType(a->astTag); }
 
-#define def_is_ast(Type) \
-  static inline bool is##Type(BaseAST* a) { return a && a->astTag == E_##Type; }
+static inline bool isLcnSymbol(const BaseAST* a)
+{ return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol); }
+
+#define def_is_ast(Type)                          \
+  static inline bool is##Type(const BaseAST* a)   \
+  {                                               \
+    return a && a->astTag == E_##Type;            \
+  }
 
 def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
@@ -308,20 +325,24 @@ def_is_ast(EnumType)
 def_is_ast(AggregateType)
 #undef def_is_ast
 
-bool isLoopStmt(BaseAST* a);
-bool isWhileStmt(BaseAST* a);
-bool isWhileDoStmt(BaseAST* a);
-bool isDoWhileStmt(BaseAST* a);
-bool isParamForLoop(BaseAST* a);
-bool isForLoop(BaseAST* a);
-bool isCForLoop(BaseAST* a);
+bool isLoopStmt(const BaseAST* a);
+bool isWhileStmt(const BaseAST* a);
+bool isWhileDoStmt(const BaseAST* a);
+bool isDoWhileStmt(const BaseAST* a);
+bool isParamForLoop(const BaseAST* a);
+bool isForLoop(const BaseAST* a);
+bool isCoforallLoop(const BaseAST* a);
+bool isCForLoop(const BaseAST* a);
 
 //
 // safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
 //
 #define def_to_ast(Type) \
-  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; }
+  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; } \
+  static inline const Type * toConst##Type(const BaseAST* a) \
+    { return is##Type(a) ? (const Type*)a : NULL; }
+
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
@@ -354,6 +375,16 @@ def_to_ast(CForLoop);
 def_to_ast(ParamForLoop);
 
 #undef def_to_ast
+
+static inline LcnSymbol* toLcnSymbol(BaseAST* a)
+{
+  return isLcnSymbol(a) ? (LcnSymbol*) a : NULL;
+}
+
+static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
+{
+  return isLcnSymbol(a) ? (const LcnSymbol*) a : NULL;
+}
 
 //
 // traversal macros
@@ -401,6 +432,11 @@ def_to_ast(ParamForLoop);
       AST_CALL_CHILD(stmt, WhileStmt,    condExprGet(),  call, __VA_ARGS__);   \
                                                                                \
     } else if (stmt->isForLoop()      == true) {                               \
+      AST_CALL_LIST (stmt, ForLoop,      body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop,      indexGet(),     call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop,      iteratorGet(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isCoforallLoop() == true) {                               \
       AST_CALL_LIST (stmt, ForLoop,      body,           call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, ForLoop,      indexGet(),     call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, ForLoop,      iteratorGet(),  call, __VA_ARGS__);   \

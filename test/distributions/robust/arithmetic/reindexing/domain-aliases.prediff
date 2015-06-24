@@ -1,0 +1,9 @@
+#!/bin/bash
+
+case "${4:-}" in
+  (*distType=DistType.replicated*)
+      echo adjusting output for ReplicatedDist 
+      sed 's@ replicated over LOCALE0 LOCALE1 LOCALE2 LOCALE3@@' $2 > $2.tmp
+      mv $2.tmp $2
+      ;;
+esac

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@
 //
 pragma "export init"
 module ChapelStandard {
-  use startInitCommDiags;
+  use startInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
   use ChapelBase;
@@ -58,8 +58,9 @@ module ChapelStandard {
   use ChapelDynDispHack;
 
   // Standard modules.
+  use Assert;
   use Types;
   use Math;
 
-  use stopInitCommDiags;
+  use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

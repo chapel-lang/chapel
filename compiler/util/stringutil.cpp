@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,10 @@
 
 #include "misc.h"
 
+#include <algorithm>
+#include <functional>
 #include <inttypes.h>
+#include <sstream>
 
 static ChainHashMap<const char*, StringHashFns, const char*> chapelStringsTable;
 
@@ -188,9 +191,125 @@ uint64_t hexStr2uint64(const char* str) {
     INT_FATAL("Illegal string passed to hexStrToUint64()");
   }
   uint64_t val;
-  int numitems = sscanf(str+2, "%"SCNx64, &val);
+  int numitems = sscanf(str+2, "%" SCNx64, &val);
   if (numitems != 1) {
     INT_FATAL("Illegal string passed to hexStrToUint64");
   }
   return val;
+}
+
+
+/*
+ * Trim spaces from start of string.
+ *
+ * From: http://stackoverflow.com/a/217605
+ */
+inline std::string ltrim(std::string s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+  return s;
+}
+
+
+/*
+ * Return true if 's' is empty or only has whitespace characters.
+ */
+inline bool isEmpty(std::string s) {
+  return s.end() == std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace)));
+}
+
+
+/*
+ * Erase 'count' number of characters from beginning of each line in 's'. Just
+ * ltrim() the first line, though.
+ */
+std::string erasePrefix(std::string s, int count) {
+  std::stringstream sStream(s);
+  std::string line;
+  bool first = true;
+  std::string result = std::string("");
+  while (std::getline(sStream, line)) {
+    if (first) {
+      result += ltrim(line);
+      result += std::string("\n");
+      first = false;
+      continue;
+    }
+
+    // Check that string has at least 'count' characters to erase. If there are
+    // fewer than 'count', erase all characters in line.
+    size_t endIndex;
+    if (line.length() >= (size_t)count) {
+      endIndex = count;
+    } else {
+      endIndex = line.length();
+    }
+
+    line.erase(line.begin(), line.begin() + endIndex);
+    result += line;
+    result += std::string("\n");
+  }
+  return result;
+}
+
+
+/*
+ * Returns first non empty line of the string after ltrimming it. "Empty lines"
+ * are those with no characters or only whitespace characters.
+ */
+std::string firstNonEmptyLine(std::string s) {
+  std::stringstream sStream(s);
+  std::string line;
+  std::string result;
+  while (std::getline(sStream, line)) {
+    if (!isEmpty(line)) {
+      result = ltrim(line);
+      break;
+    }
+  }
+  return result;
+}
+
+
+/*
+ * Iterate through string, skipping the first line, finding the minimum amount
+ * of whitespace before each line.
+ *
+ * FIXME: Find minimum prefix also if every single line begins with
+ *        "\s+*\s". (thomasvandoren, 2015-02-04)
+ */
+int minimumPrefix(std::string s) {
+  std::stringstream sStream(s);
+  std::string line;
+  bool first = true;
+  int minPrefix = INT_MAX;
+  int currentPrefix;
+  while (std::getline(sStream, line)) {
+    // Skip the first line. It is a special case that often has been trimmed to
+    // some extent.
+    if (first) {
+      first = false;
+      continue;
+    }
+
+    // If line only contains blanks, do not include it in this
+    // computation. Especially in the case that the string is empty.
+    if (isEmpty(line)) {
+      continue;
+    }
+
+    // Find the first non-space character. Record if it is the new minimum.
+    currentPrefix = std::find_if(line.begin(), line.end(), std::not1(std::ptr_fun<int, int>(std::isspace))) - line.begin();
+    if (currentPrefix < minPrefix) {
+      minPrefix = currentPrefix;
+    }
+  }
+  return minPrefix;
+}
+
+
+/*
+ * Find and remove same amount of whitespace from all lines of s.
+ */
+std::string ltrimAllLines(std::string s) {
+  return erasePrefix(s, minimumPrefix(s));
 }

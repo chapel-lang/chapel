@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -42,12 +42,12 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
   if (pid == 1) {
     chpl_capPrivateObjects = 8;
     // "private" means "node-private", so we can use the system allocator.
-    chpl_privateObjects = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_COMM_PRIVATE_OBJECTS_ARRAY, 0, "");
+    chpl_privateObjects = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, "");
   } else {
     if (pid > chpl_capPrivateObjects) {
       void** tmp;
       chpl_capPrivateObjects *= 2;
-      tmp = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_COMM_PRIVATE_OBJECTS_ARRAY, 0, "");
+      tmp = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, "");
       chpl_memcpy((void*)tmp, (void*)chpl_privateObjects, (pid-1)*sizeof(void*));
       chpl_privateObjects = tmp;
       // purposely leak old copies of chpl_privateObject to avoid the need to

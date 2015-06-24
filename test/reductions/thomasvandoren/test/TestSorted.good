@@ -1,0 +1,6 @@
+TestSorted.chpl:15: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+TestSorted.chpl:19: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+A: 6 4 5 4 2 2 2 3 7 0
+sorted? false
+A: 0 2 2 2 3 4 4 5 6 7
+sorted? true

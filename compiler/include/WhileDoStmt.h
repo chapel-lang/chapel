@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,6 +38,7 @@ private:
   // Instance interface
   //
 public:
+                         WhileDoStmt(Expr*      cond, BlockStmt* body);
   virtual               ~WhileDoStmt();
 
   virtual WhileDoStmt*   copy(SymbolMap* map = NULL, bool internal = false);
@@ -53,8 +54,7 @@ public:
 private:
                          WhileDoStmt();
 
-                         WhileDoStmt(VarSymbol* var,
-                                     BlockStmt* initBody);
+                         WhileDoStmt(VarSymbol* var,  BlockStmt* body);
 };
 
 #endif

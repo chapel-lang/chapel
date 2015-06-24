@@ -122,11 +122,16 @@ struct chpl_task_list {
     chpl_task_list_p next;
 };
 
+pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
+chpl_qthread_tls_t chpl_qthread_process_tls = {
+    PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
+    NULL, 0, NULL, 0 };
+
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-  PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
-  NULL, 0, NULL, 0 };
+    PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
+    NULL, 0, NULL, 0 };
  
  //
  
@@ -157,77 +162,41 @@ void chpl_task_yield(void)
 void chpl_sync_lock(chpl_sync_aux_t *s)
 {
     aligned_t l;
+    chpl_bool uncontested_lock = true;
 
     PROFILE_INCR(profile_sync_lock, 1);
 
-    l = qthread_incr(&s->lockers_in, 1);
-
-    // Yield if somebody else has the lock. If the current task can't get the
-    // lock then it can't make progress until the lock is released, so let
-    // somebody else do some work. It might be better to yield only after X
-    // number of failures to acquire the lock for cases where the lock would be
-    // released "soon", but we didn't see any performance impacts of doing it
-    // every time.
     //
-    // A core issue is that it's possible that a task scheduled on the same
-    // worker could be the one responsible for unlocking the sync var. For
-    // instance if a task locked the sync var, then does a chpl_task_yield, it
-    // could now be scheduled to run after the current task so this task must
-    // yield in order to prevent deadlock. However, if the task that will
-    // unlock is on another worker, then a spinloop would result in lower
-    // latency. That tension between deadlock avoidance and latency
-    // minimization is what pushes us to even consider spinning in addition to
-    // yielding, and to worry about how much of it we should do.
+    // To prevent starvation due to never switching away from a task that is
+    // spinning while doing readXX() on a sync variable, yield if this sync var
+    // has a "lot" of uncontested locks. Note that the uncontested locks do not
+    // have to be consecutive. Also note that the number of uncontested locks
+    // is a lossy counter. Currently a "lot" is defined as ~100 uncontested
+    // locks, with care taken to not yield on the first uncontested lock.
     //
     // If real qthreads sync vars were used, it's possible this wouldn't be
     // needed.
-    while (l != s->lockers_out) qthread_yield();
+    //
+
+    l = qthread_incr(&s->lockers_in, 1);
+
+    while (l != s->lockers_out) {
+        uncontested_lock = false;
+        qthread_yield();
+    }
+
+    if (uncontested_lock) {
+        if ((++s->uncontested_locks & 0x5F) == 0) {
+            qthread_yield();
+        }
+    }
 }
 
 void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_unlock, 1);
 
-    // Give other tasks that might be waiting on a sync var a chance to run.
-    // Currently this is every 1024 unlocks. [x % 2n == x & (2n - 1)] This
-    // number was chosen with trial and error and is a good balance of
-    // not hurting performance and allowing progress. Determined by modifying
-    // the value over several days and examining performance and correctness
-    // testing.
-    //
-    // It's possible that two tasks can deadlock if they are both on the same
-    // worker and the running task relies on the work the second task is
-    // supposed to do to make progress. The first task will never yield
-    // automatically, so this forces a yield on sync var unlock every so often
-    // to allow progress.
-    //
-    // Consider this example:
-    //
-    // var alreadySet: [1..10] bool;
-    // while (syncVar.readXX() != 10) {
-    //   for i in 1..10 {
-    //     if alreadySet[i] == false then
-    //       begin syncVar += 1;
-    //     alreadySet[i] = true;
-    //   }
-    // }
-    //
-    // Some of the incrementing tasks might get placed on the same worker as
-    // the task waiting for the syncVar to be 10. That task will never yield,
-    // so the value would never get set to 10 and we'd be stuck in the loop
-    //
-    // qthread_yield is used over chpl_task_yield. chpl_task_yield just adds
-    // calling a sched yield if there are no shepherds. If we don't have any
-    // shepherds we are either setting up or tearing down in which case the
-    // pthread unlock will guarantee progress. When qthread_yield() is called
-    // from a non-qthread it's just a no-op.
-    //
-    // I believe this is still necessary even if we used real qthread sync
-    // vars. As the second task would never get a chance to try and acquire the
-    // lock, so other tasks wouldn't know a task is waiting on the sync var.
-    if ((qthread_incr(&s->lockers_out, 1) & 0x3FF) == 0x3FF) {
-        qthread_yield();
-    }
+    qthread_incr(&s->lockers_out, 1);
 }
 
 static inline void about_to_block(int32_t  lineno,
@@ -535,8 +504,18 @@ static void setupCallStacks(int32_t hwpar) {
     // If the user compiled with no stack checks (either explicitly or
     // implicitly) turn off qthread guard pages. TODO there should also be a
     // chpl level env var backing this at runtime (can be the same var.)
+    // Also turn off guard pages if the heap page size isn't the same as
+    // the system page size, because when that's the case we can reliably
+    // make the guard pages un-referenceable.  (This typically arises when
+    // the heap is on hugepages, as is often the case on Cray systems.)
+    //
+    // Note that we won't override an explicit setting of QT_GUARD_PAGES
+    // in the former case, but we do in the latter case.
     if (CHPL_STACK_CHECKS == 0) {
         chpl_qt_setenv("GUARD_PAGES", "false", 0);
+    }
+    else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
+        chpl_qt_setenv("GUARD_PAGES", "false", 1);
     }
 
     // Precedence (high-to-low):
@@ -585,6 +564,8 @@ void chpl_task_init(void)
     int32_t   commMaxThreads;
     int32_t   hwpar;
     pthread_t initer;
+
+    chpl_qthread_process_pthread = pthread_self();
 
     commMaxThreads = chpl_comm_getMaxThreads();
 

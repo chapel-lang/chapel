@@ -1,5 +1,0 @@
-bug: writeln for string in record in class not correct
-
-See $CHPL_HOME/test/types/string/sungeun/string2InRecordInClass.future
-for more info.
-

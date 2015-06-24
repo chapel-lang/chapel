@@ -1,4 +1,5 @@
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use BlockCycDist;
 use Time;
@@ -23,7 +24,7 @@ config var printMatrices: bool = false;
 config var alpha: int = 1;
 config var beta: int = 1;
 config var size: int = 128;
-config var dist: string = "CM";
+config var dist: string = "C";
 
 /* Map the distribution according to user input. Currently not used */
 proc map_distribution(size:int): domain(2) {
@@ -31,8 +32,8 @@ proc map_distribution(size:int): domain(2) {
     var user_dist: domain(2);
     if dist == "NONE" {
     	user_dist = dom;
-    } else if dist == "CM" {
-    	user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
+    /*} else if dist == "CM" {
+    	user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);*/
     } else if dist == "C" {
     	user_dist = dom dmapped Cyclic(startIdx=dom.low);
     } else if dist == "B" {
@@ -207,9 +208,9 @@ proc main() {
         var user_dist = dom;
         /* Run the benchmark */
         kernel_2mm(alpha, beta, user_dist, size); 
-    } else if dist == "CM" {
+    /*} else if dist == "CM" {
 	    var user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
-	    kernel_2mm(alpha, beta, user_dist, size);   
+	    kernel_2mm(alpha, beta, user_dist, size);   */
     } else if dist == "C" {
         var user_dist = dom dmapped Cyclic(startIdx=dom.low);
         kernel_2mm(alpha, beta, user_dist, size);   

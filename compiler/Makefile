@@ -1,14 +1,14 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,7 @@ SUBDIRS = \
 	AST \
 	backend \
 	ifa \
+	ipe \
 	main \
 	optimizations \
 	parser \
@@ -60,6 +61,7 @@ include adt/Makefile.include
 include AST/Makefile.include
 include backend/Makefile.include
 include ifa/Makefile.include
+include ipe/Makefile.include
 include main/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
@@ -67,13 +69,14 @@ include passes/Makefile.include
 include resolution/Makefile.include
 include util/Makefile.include
 
-SVN_SRCS = 
+SVN_SRCS =
 
 CHPL_OBJS = \
 	$(ADT_OBJS) \
 	$(AST_OBJS) \
 	$(BACKEND_OBJS) \
 	$(IFA_OBJS) \
+	$(IPE_OBJS) \
 	$(MAIN_OBJS) \
 	$(OPTIMIZATIONS_OBJS) \
 	$(PARSER_OBJS) \
@@ -82,7 +85,7 @@ CHPL_OBJS = \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
 
-EXECS = $(CHPL) $(CHPLDOC)
+EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
 
 PRETARGETS = $(BUILD_VERSION_FILE) third-party-pkgs
 TARGETS = $(CHPL)
@@ -114,10 +117,19 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
-	rm -f $(CHPLDOC)
-	ln -s $(notdir $(CHPL)) $(CHPLDOC)
+	rm -f $(CHPLIPE)
+	ln -s $(notdir $(CHPL)) $(CHPLIPE)
 	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
+
+$(CHPLDOC): $(CHPL)
+	rm -f $(CHPLDOC)
+	ln -s $(notdir $(CHPL)) $(CHPLDOC)
+
+chpldoc: $(CHPLDOC)
+
+parser:
+	$(MAKE) -C parser parser
 
 $(CHPL_BIN_DIR):
 	mkdir -p $@

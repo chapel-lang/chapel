@@ -1,4 +1,5 @@
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use Time;
 use CommDiagnostics;
@@ -15,7 +16,7 @@ config var correct = false;
 config var timeit = false;
 config var messages = false;
 config var printMatrices: bool = false;
-config var dist: string = "CM";
+config var dist: string = "C";
 config var M: int = 128;
 config var N: int = 128;
 
@@ -185,10 +186,10 @@ proc main() {
         var user_dist_linear = dom_linear;
         /* Run the benchmark */
         kernel_covariance(user_dist_square, user_dist_linear, M, N); 
-    } else if dist == "CM" {
+    /*} else if dist == "CM" {
         var user_dist_square = dom_square dmapped CyclicZipOpt(startIdx=dom_square.low);
         var user_dist_linear = dom_linear dmapped CyclicZipOpt(startIdx=dom_linear.low);
-        kernel_covariance(user_dist_square, user_dist_linear, M, N);   
+        kernel_covariance(user_dist_square, user_dist_linear, M, N);   */
     } else if dist == "C" {
         var user_dist_square = dom_square dmapped Cyclic(startIdx=dom_square.low);
         var user_dist_linear = dom_linear dmapped Cyclic(startIdx=dom_linear.low);

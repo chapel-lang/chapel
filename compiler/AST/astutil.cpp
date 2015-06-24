@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +30,11 @@
 #include "type.h"
 #include "WhileStmt.h"
 
+#include "oldCollectors.h" // Deprecated. To be removed.
+// After #include "oldCollectors.h" has been removed from all other source
+// files, the corresponding collector functions can be removed from this
+// implementation file, then this #include, and finally the .h file itself.
+
 #include <vector>
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
@@ -45,8 +50,8 @@ void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
 }
 
 
-void collectFnCallsSTL(BaseAST* ast, std::vector<CallExpr*>& calls) {
-  AST_CHILDREN_CALL(ast, collectFnCallsSTL, calls);
+void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCalls, calls);
   if (CallExpr* call = toCallExpr(ast))
     if (call->isResolved())
       calls.push_back(call);
@@ -67,11 +72,11 @@ void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   }
 }
 
-void collect_stmts_STL(BaseAST* ast, std::vector<Expr*>& stmts) {
+void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {
     stmts.push_back(expr);
     if (isBlockStmt(expr) || isCondStmt(expr)) {
-      AST_CHILDREN_CALL(ast, collect_stmts_STL, stmts);
+      AST_CHILDREN_CALL(ast, collect_stmts, stmts);
     }
   }
 }
@@ -82,8 +87,8 @@ void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs) {
     defExprs.add(defExpr);
 }
 
-void collectDefExprsSTL(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
-  AST_CHILDREN_CALL(ast, collectDefExprsSTL, defExprs);
+void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
+  AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
   if (DefExpr* defExpr = toDefExpr(ast))
     defExprs.push_back(defExpr);
 }
@@ -94,8 +99,8 @@ void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
     callExprs.add(callExpr);
 }
 
-void collectCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
-  AST_CHILDREN_CALL(ast, collectCallExprsSTL, callExprs);
+void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+  AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
   if (CallExpr* callExpr = toCallExpr(ast))
     callExprs.push_back(callExpr);
 }
@@ -108,9 +113,9 @@ void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs,
       callExprs.add(callExpr);
 }
 
-void collectMyCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs,
+void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs,
                            FnSymbol* parent_fn) {
-  AST_CHILDREN_CALL(ast, collectMyCallExprsSTL, callExprs, parent_fn);
+  AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);
   if (CallExpr* callExpr = toCallExpr(ast))
     if (callExpr->parentSymbol == parent_fn)
       callExprs.push_back(callExpr);
@@ -122,8 +127,8 @@ void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts) {
     gotoStmts.add(gotoStmt);
 }
 
-void collectGotoStmtsSTL(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
-  AST_CHILDREN_CALL(ast, collectGotoStmtsSTL, gotoStmts);
+void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
+  AST_CHILDREN_CALL(ast, collectGotoStmts, gotoStmts);
   if (GotoStmt* gotoStmt = toGotoStmt(ast))
     gotoStmts.push_back(gotoStmt);
 }
@@ -134,8 +139,8 @@ void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs) {
     symExprs.add(symExpr);
 }
 
-void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
-  AST_CHILDREN_CALL(ast, collectSymExprsSTL, symExprs);
+void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
     symExprs.push_back(symExpr);
 }
@@ -173,8 +178,8 @@ void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
     symbols.add(symbol);
 }
 
-void collectSymbolsSTL(BaseAST* ast, std::vector<Symbol*>& symbols) {
-  AST_CHILDREN_CALL(ast, collectSymbolsSTL, symbols);
+void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
+  AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))
     symbols.push_back(symbol);
 }
@@ -184,9 +189,9 @@ void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
-void collect_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
-  AST_CHILDREN_CALL(ast, collect_asts_STL, asts);
+  AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
 void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
@@ -194,8 +199,8 @@ void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
   asts.add(ast);
 }
 
-void collect_asts_postorder_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
-  AST_CHILDREN_CALL(ast, collect_asts_postorder_STL, asts);
+void collect_asts_postorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_asts_postorder, asts);
   asts.push_back(ast);
 }
 
@@ -210,10 +215,10 @@ void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
   asts.add(ast);
 }
-              
-static void collect_top_asts_internal_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+
+static void collect_top_asts_internal(BaseAST* ast, std::vector<BaseAST*>& asts) {
   if (!isSymbol(ast) || isArgSymbol(ast)) {
-    AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
+    AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
     asts.push_back(ast);
   }
 }
@@ -225,11 +230,11 @@ static void collect_top_asts_internal_STL(BaseAST* ast, std::vector<BaseAST*>& a
 // replaced by more specific traversals implemented in this file.
 // Something to check out another day.
 //
-void collect_top_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
-  AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
+void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
   asts.push_back(ast);
 }
-              
+
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
   reset_ast_loc(destNode, sourceNode->astloc);
 }
@@ -272,7 +277,7 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   Vec<Symbol*> symSet;
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->parentSymbol) {
-      if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+      if (isLcnSymbol(def->sym)) {
         symSet.set_add(def->sym);
       }
     }
@@ -290,7 +295,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs) {
   if (DefExpr* def = toDefExpr(ast)) {
-    if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+    if (isLcnSymbol(def->sym)) {
       symSet.set_add(def->sym);
     }
   } else if (SymExpr* se = toSymExpr(ast)) {
@@ -390,7 +395,7 @@ bool isRelationalOperator(CallExpr* call) {
 // TODO this should be fixed to include PRIM_SET_MEMBER
 // See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
 // TODO this should also be fixed to include the PRIM_SVEC_SET_MEMBER
-// which gets inserted from the returnStartTuplesByRefArgs pass 
+// which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
@@ -620,7 +625,7 @@ bool isTypeExpr(Expr* expr)
       SymExpr* right = toSymExpr(call->get(2));
       VarSymbol* var = toVarSymbol(right->var);
 
-      if (var->hasFlag(FLAG_TYPE_VARIABLE))
+      if (var->isType())
         return true;
 
       if (var->immediate)
@@ -647,7 +652,7 @@ static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   types.set_add(ts);
   std::vector<DefExpr*> defExprs;
-  collectDefExprsSTL(ts, defExprs);
+  collectDefExprs(ts, defExprs);
   for_vector(DefExpr, def, defExprs) {
     if (def->sym->type && !types.set_in(def->sym->type->symbol))
       pruneVisit(def->sym->type->symbol, fns, types);
@@ -661,7 +666,7 @@ static void
 pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   fns.set_add(fn);
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(fn, symExprs);
+  collectSymExprs(fn, symExprs);
   for_vector(SymExpr, se, symExprs) {
     if (FnSymbol* next = toFnSymbol(se->var))
       if (!fns.set_in(next))
@@ -858,3 +863,27 @@ prune() {
 // each pass must be unique.  See initLogFlags() in runpasses.cpp.
 void prune2() { prune(); } // Synonym for prune.
 
+/*
+ * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
+ * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1)
+ * and what this function gets out is the symbol that is the first field
+ * instead of just the number 1.
+ */
+Symbol* getSvecSymbol(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
+             call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+             call->isPrimitive(PRIM_SET_SVEC_MEMBER));
+  Type* type = call->get(1)->getValType();
+  AggregateType* tuple = toAggregateType(type);
+  SymExpr* fieldVal = toSymExpr(call->get(2));
+  VarSymbol* fieldSym = toVarSymbol(fieldVal->var);
+  if (fieldSym) {
+    int immediateVal = fieldSym->immediate->int_value();
+
+    INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
+    return tuple->getField(immediateVal);
+  } else {
+    // GET_SVEC_MEMBER(p, i), where p is a star tuple
+    return NULL;
+  }
+}

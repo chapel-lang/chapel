@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -37,8 +37,6 @@
 // chpl_error needed for some of the packed wide pointer error cases.
 #include "error.h"
 
-#define WIDE_PTR_INLINE ___always_inline
-
 // Methods for working with wide pointers (packed or not) and localeID_t.
 // There are several variants of many of these in order to simplify
 // different code generation tasks. The versions that take in a pointer
@@ -56,7 +54,7 @@
   #define CHPL_PTR_MASK ( (1ULL << CHPL_PTR_BITS) - 1ULL)
 #endif
 
-static WIDE_PTR_INLINE
+static inline
 wide_ptr_t chpl_return_wide_ptr_node(c_nodeid_t node, void* addr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
@@ -82,7 +80,7 @@ wide_ptr_t chpl_return_wide_ptr_node(c_nodeid_t node, void* addr)
 #endif
 }
 
-static WIDE_PTR_INLINE
+static inline
 void chpl_check_wide_ptr(wide_ptr_t ptr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
@@ -97,7 +95,7 @@ void chpl_check_wide_ptr(wide_ptr_t ptr)
 #endif
 }
 
-static WIDE_PTR_INLINE
+static inline
 wide_ptr_t chpl_return_wide_ptr_loc(chpl_localeID_t loc, void * addr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
@@ -113,14 +111,14 @@ wide_ptr_t chpl_return_wide_ptr_loc(chpl_localeID_t loc, void * addr)
 #endif
 }
 
-static WIDE_PTR_INLINE
+static inline
 wide_ptr_t chpl_return_wide_ptr_loc_ptr(const chpl_localeID_t* loc, void * addr)
 {
   return chpl_return_wide_ptr_loc(*loc, addr);
 }
 
 
-static WIDE_PTR_INLINE
+static inline
 c_nodeid_t chpl_wide_ptr_get_node(wide_ptr_t ptr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
@@ -133,7 +131,7 @@ c_nodeid_t chpl_wide_ptr_get_node(wide_ptr_t ptr)
 #endif
 }
 
-static WIDE_PTR_INLINE
+static inline
 void* chpl_wide_ptr_get_address(wide_ptr_t ptr)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED
@@ -147,7 +145,7 @@ void* chpl_wide_ptr_get_address(wide_ptr_t ptr)
 #endif
 }
 
-static WIDE_PTR_INLINE
+static inline
 chpl_localeID_t chpl_wide_ptr_get_localeID(wide_ptr_t ptr)
 {
   chpl_localeID_t loc;
@@ -161,7 +159,7 @@ chpl_localeID_t chpl_wide_ptr_get_localeID(wide_ptr_t ptr)
   return loc;
 }
 
-static WIDE_PTR_INLINE
+static inline
 void chpl_wide_ptr_read_localeID(wide_ptr_t ptr,
                                  chpl_localeID_t* loc)
 {
@@ -169,7 +167,7 @@ void chpl_wide_ptr_read_localeID(wide_ptr_t ptr,
 }
 
 
-static WIDE_PTR_INLINE
+static inline
 wide_ptr_t chpl_return_wide_ptr_add(wide_ptr_t ptr, size_t amt)
 {
 #ifndef CHPL_WIDE_POINTER_PACKED

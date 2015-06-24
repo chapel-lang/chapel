@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,24 +27,31 @@
 // The caller is responsible for calling qbytes_release on it when done.
 qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
 {
+  qbytes_t tmp;
   qbytes_t* ret;
   int64_t src_len;
+  void* src_data;
   qioerr err;
 
-  // First, get the length of the bytes.
-  chpl_gen_comm_get( &src_len, src_locale, & src_addr->len, sizeof(int64_t), CHPL_TYPE_int64_t, 1, -1, "<internal>");
-//  chpl_comm_get
+  // Zero-initialize tmp.
+  memset(&tmp, 0, sizeof(qbytes_t));
+
+  // First, get the length and local pointer to the bytes.
+  chpl_gen_comm_get( &tmp, src_locale, src_addr, sizeof(qbytes_t), CHPL_TYPE_int64_t, 1, -1, "<internal>");
+  src_len = tmp.len;
+  src_data = tmp.data;
 
   // The initial ref count is 1.
   err = qbytes_create_calloc(&ret, src_len);
   if( err ) return NULL;
 
-
   // TODO -- note -- technically, this should be gasnet_get_bulk,
   // since we don't want to require src/dst to have a particular alignment.
 
   // Next, get the data itself.
-  chpl_gen_comm_get( ret->data, src_locale, & src_addr->data, sizeof(uint8_t), CHPL_TYPE_uint8_t, src_len, -1, "<internal>");
+  if( src_data ) {
+    chpl_gen_comm_get( ret->data, src_locale, src_data, sizeof(uint8_t), CHPL_TYPE_uint8_t, src_len, -1, "<internal>");
+  }
 
   // Great! All done.
   return ret; 

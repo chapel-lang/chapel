@@ -1,4 +1,0 @@
-Module: badClose
-   proc bad()
-       This comment is not closed properly
-

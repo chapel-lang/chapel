@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -359,7 +359,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 
   std::vector<CallExpr*> calls;
 
-  collectCallExprsSTL(fn, calls);
+  collectCallExprs(fn, calls);
 
   for_vector(CallExpr, call, calls) {
     DEBUG_PRINTF("\tcall %p (id=%d): ", call, call->id);

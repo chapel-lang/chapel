@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -43,7 +43,6 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
 
-
 #
 # Flags for compiler, runtime, and generated code
 #
@@ -66,6 +65,10 @@ ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
 SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
 endif
 endif
+
+# Set flag for lax or IEEE floating point
+FAST_FLOAT_GEN_CFLAGS = -ffast-math
+IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC

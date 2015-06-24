@@ -17,6 +17,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import contextlib
 import itertools
 import logging
+import multiprocessing
 import operator
 import optparse
 import os
@@ -26,7 +27,7 @@ import sys
 import time
 
 # Add the chplenv dir to the python path.
-chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+chplenv_dir = os.path.join(os.path.dirname(__file__), 'chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 # Import chplenv modules here.
@@ -35,6 +36,7 @@ import chpl_gmp
 import chpl_launcher
 import chpl_llvm
 import chpl_locale_model
+import chpl_make
 import chpl_mem
 import chpl_regexp
 import chpl_tasks
@@ -205,7 +207,10 @@ def main():
         print_configs()
         return 0
 
-    orig_env = os.environ.copy()
+    if opts.parallel:
+        logging.info('Using parallel execution for build.')
+
+    build_env = os.environ.copy()
 
     build_configs = get_configs(opts)
     config_count_str = '{0} configuration{1}'.format(
@@ -220,7 +225,8 @@ def main():
             result = build_chpl(
                 opts.chpl_home,
                 build_config,
-                orig_env,
+                build_env,
+                parallel=opts.parallel,
                 verbose=opts.verbose
             )
             statuses.append((build_config, result))
@@ -269,7 +275,7 @@ def get_configs(opts):
     return configs
 
 
-def build_chpl(chpl_home, build_config, env, verbose=False):
+def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False):
     """Build Chapel with the provided environment.
 
     :type chpl_home: str
@@ -281,6 +287,9 @@ def build_chpl(chpl_home, build_config, env, verbose=False):
     :type env: dict
     :arg env: Dictionary of key/value pairs to set as the environment.
 
+    :type parallel: bool
+    :arg parallel: enable parallel execution for build
+
     :type verbose: bool
     :arg verbose: if True, increase output
 
@@ -289,9 +298,15 @@ def build_chpl(chpl_home, build_config, env, verbose=False):
     """
     build_env = build_config.get_env(env)
     logging.info('Building config: {0}'.format(build_config))
+
+    make_cmd = chpl_make.get()
+    if parallel:
+        make_cmd += ' --jobs={0}'.format(multiprocessing.cpu_count())
+    logging.debug('Using make command: {0}'.format(make_cmd))
+
     with elapsed_time(build_config):
         result, output, error = check_output(
-            'make', chpl_home, build_env, verbose=verbose)
+            make_cmd, chpl_home, build_env, verbose=verbose)
         logging.debug('Exit code for config {0}: {1}'.format(
             build_config, result))
     logging.info('Finished config:\n{0}'.format(build_config.verbose_str()))
@@ -452,6 +467,11 @@ comm=gasnet either of these will work:
     parser.add_option(
         '--chpl-home',
         help='CHPL_HOME setting. (default: %default)'
+    )
+    parser.add_option(
+        '-p', '--parallel',
+        action='store_true',
+        help='Enable parallel execution for build.'
     )
 
     config_group = optparse.OptionGroup(

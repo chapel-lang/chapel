@@ -89,7 +89,7 @@ var T: [TableSpace] elemType;
 
 config const maxLookahead = 1024;
 
-pragma "private" var myBuckets: Buckets;
+pragma "locale private" var myBuckets: Buckets;
 
 //
 // The program entry point

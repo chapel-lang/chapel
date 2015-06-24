@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,32 +19,30 @@
 
 #include <string>
 
-void printArg(std::ofstream *file, ArgSymbol *arg);
-
-void printIntent(std::ofstream *file, IntentTag intent);
-
-void printTabs(std::ofstream *file);
+#include "symbol.h"
 
 void createDocsFileFolders(std::string filename);
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name);
+void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs);
 
-void printFunction(std::ofstream *file, FnSymbol *fn);
+void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
-void printVarStart(std::ofstream *file, VarSymbol *var);
-
-void printVarType(std::ofstream *file, VarSymbol *var);
-
-void printVarDocs(std::ofstream *file, VarSymbol *var);
-
-void printClass(std::ofstream *file, AggregateType *cl);
-
-void printFields(std::ofstream *file, AggregateType *cl);
-
-void inheritance(Vec<AggregateType*> *list, AggregateType *cl);
+void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
 bool devOnlyFunction(FnSymbol *fn);
 
 bool devOnlyModule(ModuleSymbol *mod);
 
 bool isNotSubmodule(ModuleSymbol *mod);
+
+static void makeDir(const char* dirpath);
+
+static bool existsAndDir(const char* dirpath);
+
+static std::string generateSphinxProject(std::string dirpath);
+
+static void generateSphinxOutput(std::string sphinxDir, std::string outputDir);
+
+static std::string filenameFromMod(ModuleSymbol *mod, std::string docsWorkDir);
+
+static std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsWorkDir);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -41,7 +41,7 @@ typedef struct {
 // This is the external copy constructor for a chpl_localeID_t, specified
 // by the module code for a numa locale model.
 //
-static ___always_inline
+static inline
 chpl_localeID_t chpl__initCopy_chpl_rt_localeID_t(chpl_localeID_t initial) {
   return initial;
 }
@@ -50,18 +50,18 @@ chpl_localeID_t chpl__initCopy_chpl_rt_localeID_t(chpl_localeID_t initial) {
 // These functions are used by the module code to assemble and
 // disassemble global locale IDs.
 //
-static ___always_inline
+static inline
 chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node, c_sublocid_t subloc) {
   chpl_localeID_t loc = { node, subloc };
   return loc;
 }
 
-static ___always_inline
+static inline
 c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc) {
   return loc.node;
 }
 
-static ___always_inline
+static inline
 c_sublocid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
   return loc.subloc;
 }

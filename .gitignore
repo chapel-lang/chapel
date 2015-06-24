@@ -32,15 +32,7 @@ tags
 /compiler/main/BUILD_VERSION
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
-/compiler/parser/chapel.output
-/compiler/parser/chapel.tab.cpp
-/compiler/parser/chapel.tab.h
-/compiler/parser/modulefinder.tab.c
-/compiler/parser/modulefinder.tab.h
-/compiler/parser/modulefinder.lex.yy.c
-/compiler/parser/lex.yy.cpp
-/compiler/parser/lex.yy.h
-/compiler/parser/modulefinder
+/compiler/parser/bison-chapel.output
 /compiler/passes/reservedSymbolNames.h
 
 # Doc ignores.
@@ -64,9 +56,10 @@ tags
 /make/Chapel.xcodeproj/*.mode1v3
 
 # Man ignores.
-/man/man1/chpl.1
+/man/man1/
 
 # Modules ignores.
+/modules/docs
 /modules/internal/tasks/muxed
 /modules/internal/threads/soft-threads
 
@@ -106,11 +99,11 @@ tags
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
 
 /test/chpldoc/**/docs
-/test/chpldoc/**/*.good
 
 /test/chpldoc/compflags/folder/myDocs
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
+/test/chpldoc/compflags/folder/save-sphinx/my-sphinx
 
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
@@ -145,6 +138,9 @@ tags
 /test/compflags/sungeun/configs/type_variables/configTypeUserType.good
 /test/compflags/sungeun/configs/type_variables/configTypeFunNoType.good
 /test/compflags/sungeun/configs/type_variables/configTypeFun.good
+
+/test/compflags/thomasvandoren/chpldoc/*.doc.good
+/test/compflags/thomasvandoren/chpldoc/docs/
 
 /test/compflags/waynew/*.c
 /test/compflags/waynew/*.tmp_launcher
@@ -234,25 +230,46 @@ tags
 /test/io/ferguson/asserteof.test.nums
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
-/test/io/fsouza/chdir/destination
-/test/io/fsouza/chown/file.txt
-/test/io/fsouza/isdir/my_file
-/test/io/fsouza/isfile/my_file
-/test/io/lydia/chmod/file
-/test/io/lydia/exists/broken_link
-/test/io/lydia/exists/dir_link
-/test/io/lydia/exists/file
-/test/io/lydia/exists/file_link
-/test/io/lydia/isLink/my_file
-/test/io/lydia/isLink/my_link_dir
-/test/io/lydia/isLink/my_link_file
 
 /test/localeModels/gbt/maxTaskPar.good
 
+/test/memory/gbt/test-memLog.memLog.*
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
 
 /test/modules/gbt/printchplenv.good
+/test/modules/standard/FileSystem/fsouza/chdir/destination
+/test/modules/standard/FileSystem/fsouza/chown/file.txt
+/test/modules/standard/FileSystem/fsouza/isdir/my_dir
+/test/modules/standard/FileSystem/fsouza/isdir/my_file
+/test/modules/standard/FileSystem/fsouza/isfile/my_dir
+/test/modules/standard/FileSystem/fsouza/isfile/my_file
+/test/modules/standard/FileSystem/lydia/chmod/dir
+/test/modules/standard/FileSystem/lydia/chmod/file
+/test/modules/standard/FileSystem/lydia/copy/bar.txt
+/test/modules/standard/FileSystem/lydia/copyFile/bar.txt
+/test/modules/standard/FileSystem/lydia/copyTree/complexDest
+/test/modules/standard/FileSystem/lydia/copyTree/emptyDest
+/test/modules/standard/FileSystem/lydia/copyTree/sparseDest
+/test/modules/standard/FileSystem/lydia/copyTree/verySparseDest
+/test/modules/standard/FileSystem/lydia/copyTree/shortDest
+/test/modules/standard/FileSystem/lydia/copyTree/denseDest
+/test/modules/standard/FileSystem/lydia/copyTree/cutoffDest
+/test/modules/standard/FileSystem/lydia/copyTree/existing_dir
+/test/modules/standard/FileSystem/lydia/exists/broken_link
+/test/modules/standard/FileSystem/lydia/exists/dir
+/test/modules/standard/FileSystem/lydia/exists/dir_link
+/test/modules/standard/FileSystem/lydia/exists/file
+/test/modules/standard/FileSystem/lydia/exists/file_link
+/test/modules/standard/FileSystem/lydia/exists/going_away
+/test/modules/standard/FileSystem/lydia/isLink/my_dir
+/test/modules/standard/FileSystem/lydia/isLink/my_file
+/test/modules/standard/FileSystem/lydia/isLink/my_link_dir
+/test/modules/standard/FileSystem/lydia/isLink/my_link_file
+/test/modules/standard/FileSystem/lydia/isMount/symlinkToRoot
+/test/modules/standard/FileSystem/lydia/isMount/notAMonkey/symlinkToRoot
+/test/modules/standard/FileSystem/lydia/symlink/bar.txt
+/test/modules/standard/Path/lydia/realpath/blahblahblah.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/modules/standard/machine/numCores.good
 /test/modules/standard/memory/countMemory/countMemory.*.good
@@ -268,6 +285,8 @@ tags
 
 /test/performance/compiler/elliot/passCheck.good
 
+/test/performance/vectorization/vectorPragmas/*.good
+
 /test/release/examples/spec
 /test/release/examples/benchmarks/hpcc/variants/stream-promoted
 /test/release/examples/benchmarks/hpcc/variants/ra-cleanloop
@@ -275,18 +294,22 @@ tags
 /test/release/examples/primers/docs
 /test/release/examples/primers/Arr.dat
 /test/release/examples/primers/arrays
+/test/release/examples/primers/arrayVectorOps
+/test/release/examples/primers/associative
 /test/release/examples/primers/atomics
-/test/release/examples/primers/chpldoc
+/test/release/examples/primers/chpldoc.doc
 /test/release/examples/primers/classes
 /test/release/examples/primers/distributions
 /test/release/examples/primers/domains
 /test/release/examples/primers/fileIO
+/test/release/examples/primers/FFTWlib
 /test/release/examples/primers/genericClasses
 /test/release/examples/primers/iterators
-/test/release/examples/primers/leaderfollower
 /test/release/examples/primers/locales
 /test/release/examples/primers/opaque
+/test/release/examples/primers/parIters
 /test/release/examples/primers/procedures
+/test/release/examples/primers/randomNumbers
 /test/release/examples/primers/ranges
 /test/release/examples/primers/reductions
 /test/release/examples/primers/slices
@@ -298,13 +321,19 @@ tags
 /test/release/examples/primers/varargs
 /test/release/examples/primers/test.bin
 
-/test/spec/
+/test/runtime/gbt/numThreadsSymbolicLogical.good
+/test/runtime/gbt/numThreadsSymbolicPhysical.good
 
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output
 /test/studies/amr/**/*.tmp.save
 /test/studies/dijkstra/RtsGraph_out.txt
 
+/test/studies/hpcc/CommDiags/ra.chpl
+/test/studies/hpcc/CommDiags/raAtomics.chpl
+/test/studies/hpcc/CommDiags/stream.chpl
+/test/studies/hpcc/CommDiags/streamEP.chpl
+/test/studies/hpcc/CommDiags/hpl.chpl
 /test/studies/hpcc/FFT/bradc/dfft
 /test/studies/hpcc/FFT/bradc/*.txt
 /test/studies/hpcc/FFT/bradc/fft
@@ -344,6 +373,7 @@ tags
 /test/studies/ssca2/graphio/graphio.2.ev2_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.start_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.weight_snapshot.data
+/test/studies/ssca2/performance/SSCA2_kernels.chpl
 /test/studies/ssca2/rachels/SSCA2_main.RMAT.good
 /test/studies/ssca2/rachels/SSCA2_main.1Dtorus.good
 /test/studies/ssca2/rachels/SSCA2_main.2Dtorus.good
@@ -391,6 +421,8 @@ tags
 /third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
 /third-party/re2/re2
+/third-party/qthread/qthread-1.10/autom4te.cache/
+/third-party/qthread/qthread-1.10/config.h.in
 
 # Util ignores.
 /util/pastPerformance/ra.dat

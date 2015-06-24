@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -817,7 +817,7 @@ localCopyPropagationCore(BasicBlock*          bb,
 
     std::vector<SymExpr*> symExprs;
 
-    collectSymExprsSTL(expr, symExprs);
+    collectSymExprs(expr, symExprs);
 
     propagateCopies(symExprs, available, refs);
 
@@ -921,14 +921,13 @@ static void computeKillSets(FnSymbol* fn,
     BasicBlock* bb2 = (*fn->basicBlocks)[i];
 
     // Collect up the set of symbols killed in this block in killSet.
-    // You were here!!!
     std::set<Symbol*> killSet;
     for_vector(Expr, expr, bb2->exprs)
     {
-      Vec<SymExpr*> symExprs;
+      std::vector<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
 
-      forv_Vec(SymExpr, se, symExprs)
+      for_vector(SymExpr, se, symExprs)
       {
         // Invalidate a symbol if it is redefined.
         if (isDef(se))
@@ -954,7 +953,7 @@ static void computeKillSets(FnSymbol* fn,
     // Use killSet to initialize the KILL set for this block.
     // It's OK if we include the pairs from this block in KILL[i] because we
     // put them back when we add in the COPY set.
-    for (int j = 0; j < KILL[i]->size(); ++j)
+    for (size_t j = 0; j < KILL[i]->size(); ++j)
       if (killSet.find(availablePairs[j].first) != killSet.end() ||
           killSet.find(availablePairs[j].second) != killSet.end())
         KILL[i]->set(j);
@@ -992,8 +991,10 @@ static void initCopySets(std::vector<BitVec*>& COPY, std::vector<size_t>& ends,
 // When these are corrected and the test becomes true, then we can drop back
 // to the simpler form given here:
 #ifdef INLINING_DOES_NOT_LEAVE_INTERNAL_BASIC_BLOCKS_WITHOUT_PREDECESSORS
-static void initInSets(std::vector<BitVec*>& IN, size_t nbbs)
+static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
 {
+  size_t nbbs = fn->basicBlocks->size();
+
   // Note that we start with i = 1, so that IN[0] is left as all zeroes.
   for (size_t i = 1; i < nbbs; i++)
     IN[i]->set();
@@ -1218,7 +1219,12 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         }
         if (!stillAlive) {
           var->defPoint->remove();
-          defMap.get(var)->v[0]->getStmtExpr()->remove();
+          Vec<SymExpr*>* defs = defMap.get(var);
+          if (defs == NULL) {
+            INT_FATAL(var, "Expected var to be defined");
+          }
+          // Remove the first definition from the AST.
+          defs->v[0]->getStmtExpr()->remove();
         }
       } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                  rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
@@ -1307,14 +1313,14 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 
 
 size_t singleAssignmentRefPropagation(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   collect_asts(fn, asts);
 
   Vec<Symbol*> refSet;
   Vec<Symbol*> refVec;
   Vec<SymExpr*> symExprs;
   // Walk the asts in this function, and build lists of reference variables and sym exprs.
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
       if (isReferenceType(var->type)) {
         refVec.add(var);

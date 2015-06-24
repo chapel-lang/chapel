@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,9 +21,9 @@
 
 #include "chpl.h"
 #include "expr.h"
+#include "parser.h"
 #include "stmt.h"
-
-#include "../parser/lexyacc.h"
+#include "stringutil.h"
 
 static Map<const char*, Expr*> configMap;
 static Vec<const char*>        usedConfigParams;

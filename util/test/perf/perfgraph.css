@@ -1,6 +1,9 @@
 body {
     font-family: "Arial";
 }
+.graphdisplay {
+    margin-left: 375px;
+}
 .graph {
     vertical-align: top;
     white-space: nowrap;
@@ -19,7 +22,7 @@ div.perfLegend {
     vertical-align: top;
     width: 400px;
     height: 300px;
-    overflow: auto
+    overflow: auto;
 }
 span.highlight {
     border: 1px solid grey;
@@ -28,12 +31,17 @@ div.lspacer {
     width: 400px;
     height: 30px;
 }
-.graphList {
-    vertical-align: top;
-    width: 200px;
+.graphSelectionPane {
     padding-left: 20px;
     padding-right: 20px;
+    position:fixed;
+    vertical-align: top;
     border-right: 1px solid black;
+}
+.graphList {
+    margin-top: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 .toggle {
     height: 20px;

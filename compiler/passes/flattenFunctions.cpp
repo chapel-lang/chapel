@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@
 #include "passes.h"
 #include "resolveIntents.h"
 #include "stmt.h"
+#include "stlUtil.h"
 
 
 //
@@ -47,14 +48,18 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 //
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
+
   collect_asts(fn, asts);
-  forv_Vec(BaseAST, ast, asts) {
+
+  for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
-      if (toVarSymbol(sym) || toArgSymbol(sym))
+
+      if (isLcnSymbol(sym)) {
         if (isOuterVar(sym, fn))
           uses->put(sym,gNil);
+      }
     }
   }
 }
@@ -194,14 +199,14 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
 
 static void
 replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
-  Vec<BaseAST*> asts;
-  collect_asts(fn->body, asts);
+  if (vars->n == 0) return;
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(fn->body, symExprs);
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       ArgSymbol* arg = toArgSymbol(e->value);
       Type* type = arg->type;
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
+      for_vector(SymExpr, se, symExprs) {
           if (se->var == sym) {
             if (type == sym->type) {
               se->var = arg;
@@ -230,7 +235,6 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               }
             }
           }
-        }
       }
     }
   }
@@ -279,10 +283,10 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   do {
     change = false;
     forv_Vec(FnSymbol, fn, nestedFunctions) {
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
       collect_top_asts(fn, asts);
       SymbolMap* uses = args_map.get(fn);
-      forv_Vec(BaseAST, ast, asts) {
+      for_vector(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isResolved()) {
             if (FnSymbol* fcall = call->findFnSymbol()) {

@@ -1,0 +1,1 @@
+sparseToExtern.chpl:10: error: c_ptrTo unsupported array type

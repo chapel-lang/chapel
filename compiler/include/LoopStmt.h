@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,12 +33,20 @@ public:
   LabelSymbol*           continueLabelGet()                           const;
   void                   continueLabelSet(LabelSymbol* sym);
 
+  bool                   isOrderIndependent()                         const;
+  void                   orderIndependentSet(bool b);
+
+  static LoopStmt*       findEnclosingLoop(Expr* expr);
+
 protected:
                          LoopStmt(BlockStmt* initBody);
   virtual               ~LoopStmt();
 
   LabelSymbol*           mBreakLabel;
   LabelSymbol*           mContinueLabel;
+  bool                   mOrderIndependent;
+  void                   codegenOrderIndependence();
+
 
 private:
                          LoopStmt();

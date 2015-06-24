@@ -1,4 +1,5 @@
-use CyclicZipOpt;
+/*use CyclicZipOpt;*/
+use CyclicDist;
 use BlockDist;
 use Time;
 use CommDiagnostics;
@@ -15,7 +16,7 @@ config var correct = false;
 config var timeit = false;
 config var messages = false;
 config var printData: bool = false;
-config var dist: string = "CM";
+config var dist: string = "C";
 
 config var Dim: int = 128;
 
@@ -39,6 +40,12 @@ proc print_matrix(A: [], dim: int) {
         writeln();
     }
 }
+
+proc within_epsilon(a: real, b: real)
+{
+  return fabs(a-b) < 0.00001;
+}
+
 
 /* The process which runs the benchmark */
 proc kernel_trmm(dist, dim: int) {
@@ -100,7 +107,8 @@ proc kernel_trmm(dist, dim: int) {
 		
 		for ii in 1..dim {
 			for jj in 1..dim {
-				still_correct &&= (B[ii,jj] == BTest[ii,jj]);
+				still_correct &&=
+                                  within_epsilon(B[ii,jj], BTest[ii,jj]);
 			}
 		}
 		writeln("Is the calculation correct? ", still_correct);
@@ -120,14 +128,14 @@ proc main() {
         var user_dist = dom;
         /* Run the benchmark */
         kernel_trmm(user_dist, Dim); 
-    } else if dist == "CM" {
+    /*} else if dist == "CM" {
         var user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
-        kernel_trmm(user_dist, Dim);   
+        kernel_trmm(user_dist, Dim);   */
     } else if dist == "C" {
         var user_dist = dom dmapped Cyclic(startIdx=dom.low);
         kernel_trmm(user_dist, Dim); 
     } else if dist == "B" {
         var user_dist = dom dmapped Block(boundingBox=dom);
         kernel_trmm(user_dist, Dim);  
-    } 
+    }
 }

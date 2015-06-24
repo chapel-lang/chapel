@@ -1,5 +1,5 @@
 import socket, time
-import cgi
+import json
 from collections import defaultdict
 
 import yaml
@@ -10,7 +10,6 @@ except ImportError:
   # Fall back to the python Loader otherwise
   from yaml import Loader
 
-_hostname = socket.gethostname().split('.')[0]
 _dat_date_format = '%m/%d/%y'
 _csv_date_format = '%Y-%m-%d'
 # doubled up braces are the escape in .format
@@ -18,8 +17,9 @@ _annotation_format = """{{\
  series: "{series}",\
  x: "{x}",\
  shortText: {shortText},\
- text: "{x}: {text}",\
+ text: {text},\
  cssClass: "blackAnnotation",\
+ tickHeight: 2, \
  attachAtBottom: true\
 }}"""
 
@@ -44,32 +44,34 @@ def load(path):
   return data
 
 
-def get(data, graph, series, start, end):
+def get(data, graph, series, start, end, config_name):
   matches = defaultdict(list)
-  _find_annotations('all', matches, data, start, end)
-  _find_annotations(graph, matches, data, start, end)
+  _find_annotations('all', matches, data, start, end, config_name)
+  _find_annotations(graph, matches, data, start, end, config_name)
 
   formatted = []
   for i, date in enumerate(sorted(matches.keys()), start=1):
     date_string = time.strftime(_csv_date_format, date)
+    ann_text = json.dumps('{0}: {1}'.format(date_string,
+      r'\n'.join(matches[date])))
     formatted.append(_annotation_format.format(
         series = series,
         x = date_string,
         shortText = i,
-        text = r'\n'.join(matches[date]),
+        text = ann_text,
     ))
 
   return formatted
 
 
-def _find_annotations(graph, matches, data, start, end):
+def _find_annotations(graph, matches, data, start, end, config_name):
   if graph in data:
     for date, annotations in data[graph].iteritems():
       if start <= date and date <= end:
         for ann in annotations:
           if isinstance(ann, dict):
-            if _hostname in ann['host']:
-              matches[date].append(cgi.escape(ann['text'], True))
+            if config_name in ann['config']:
+              matches[date].append(ann['text'])
           else:
-            matches[date].append(cgi.escape(ann, True))
+            matches[date].append(ann)
 

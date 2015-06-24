@@ -16,7 +16,7 @@ config var correct = false;
 config var timeit = false;
 config var messages = false;
 config var printMatrices: bool = false;
-config var dist: string = "CM";
+config var dist: string = "C";
 config var M: int = 128;
 config var N: int = 128;
 

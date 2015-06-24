@@ -1,2 +1,0 @@
-CHPL_COMM==gasnet
-CHPL_TASKS==qthreads

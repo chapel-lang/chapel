@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,10 +50,13 @@ public:
   virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
+  // Interface to Expr
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
   virtual Expr*          getFirstExpr();
   virtual Expr*          getNextExpr(Expr* expr);
 
   virtual bool           isForLoop()                                  const;
+  virtual bool           isCoforallLoop()                             const;
 
   virtual bool           deadBlockCleanup();
 

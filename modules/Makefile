@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,7 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
-
+SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 default: all
@@ -35,18 +35,57 @@ clean: FORCE
 
 cleanall: FORCE
 
-clobber: FORCE
+clobber: FORCE clean-documentation
 	rm -rf standard/gen
 
 depend:
 
-MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/makeSysBasicTypes
+MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/make_sys_basic_types.py
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-# When makeSysBasicTypes call fails, delete the SysCTypes.chpl file that is
-# created, but still make sure the command fails.
-	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) > $(@F) || { rm -f $(@F) && false ; } )
+	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) $(@F)
+
+$(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
+	mkdir -p $(@D)
+	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
+
+
+MODULES_TO_DOCUMENT = \
+	standard/AdvancedIters.chpl \
+	standard/Assert.chpl \
+	standard/BitOps.chpl \
+	standard/Buffers.chpl \
+	standard/CommDiagnostics.chpl \
+	standard/Curl.chpl \
+	standard/FFTW.chpl \
+	standard/FFTW_MT.chpl \
+	standard/FileSystem.chpl \
+	standard/GMP.chpl \
+	standard/HDFS.chpl \
+	standard/HDFSiterator.chpl \
+	standard/Help.chpl \
+	standard/IO.chpl \
+	standard/List.chpl \
+	standard/Math.chpl \
+	standard/Memory.chpl \
+	standard/Norm.chpl \
+	standard/Path.chpl \
+	standard/Random.chpl \
+	standard/Regexp.chpl \
+	standard/Search.chpl \
+	standard/Sort.chpl \
+	standard/Sys.chpl \
+	standard/Types.chpl \
+	standard/UtilReplicatedVar.chpl \
+	$(SYS_CTYPES_MODULE_DOC)
+
+documentation: $(SYS_CTYPES_MODULE_DOC)
+	export CHPLDOC_AUTHOR='Cray Inc' && \
+	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
+
+clean-documentation:
+	rm -rf ./docs
 
 FORCE:
 

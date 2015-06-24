@@ -1,0 +1,7 @@
+Module: enums.doc
+   enum Color { Red, Yellow, Blue }
+      This is a color enum. 
+
+   proc gimmeAColor(): Color
+      This function returns an enum 
+
