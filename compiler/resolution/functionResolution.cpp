@@ -1723,20 +1723,8 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
   int coindex = -1;
   for_formals(formal, currCandidate->fn) {
     if (Symbol* actual = currCandidate->alignedActuals.v[++coindex]) {
-      //
-      // If the formal or actual is a type, the other must be too;
-      // Or, if the actual is a type and the formal is a 'this' argument
-      // with type intent
-      //
-      if (actual->hasFlag(FLAG_TYPE_VARIABLE) == 
-	  formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-	// OK
-      } else if (actual->hasFlag(FLAG_TYPE_VARIABLE) && 
-		 formal->hasFlag(FLAG_ARG_THIS) && 
-		 formal->intent == INTENT_TYPE) {
-	// OK
-      } else {
-	return;
+      if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+        return;
       }
 
       if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
@@ -8026,13 +8014,6 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
       if (! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
         formal->defPoint->remove();
     }
-
-    //
-    // BLC: new!
-    //
-    if (formal->hasFlag(FLAG_ARG_THIS) && formal->intent == INTENT_TYPE) {
-      formal->defPoint->remove();
-    }
   }
 
   // Insert the clone (convertRuntimeTypeToValue) into the runtimeTypeToValueMap.
@@ -8133,8 +8114,8 @@ static void replaceTypeArgsWithFormalTypeTemps()
       formal->defPoint->remove();
       //
       // If we're removing the formal representing 'this' (if it's a
-      // type, say), we should nullify the 'this' pointer in the
-      // function as well...
+      // type, say), we need to nullify the 'this' pointer in the
+      // function as well to avoid assumptions that it's legal later.
       //
       if (formal == fn->_this) {
 	fn->_this = NULL;
