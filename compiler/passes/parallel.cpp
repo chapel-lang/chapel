@@ -206,7 +206,8 @@ static Symbol* insertAutoCopyDestroyForTaskArg
 
   // This applies only to arguments being passed to asynchronous task functions.
   // No need to increment+decrement the reference counters for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN))
+  if (fn->hasFlag(FLAG_BEGIN) ||
+      fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
   {
     Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
@@ -613,6 +614,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                   call->isPrimitive(PRIM_WIDE_GET_NODE))
@@ -702,6 +704,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             block->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
           }
         }
+      }
+      else
+      {
+        // Free the variable at the end of the task function.
       }
     }
     // else ... 
@@ -994,7 +1000,8 @@ makeHeapAllocations() {
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
-          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
+          Expr* value = call->get(2)->remove();
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, value));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
         } else if (call->isResolved() &&
                    call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
