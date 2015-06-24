@@ -108,10 +108,14 @@ proc kernel_lu(dist_square, n_dim: int) {
 	        }
 	    }
 		
+		//compare the strings of the numbers instead of the actual numbers themselves
+		//because some of them are 'NaN'
 		for ii in 1..n_dim {
 			for jj in 1..n_dim {
-				still_correct &&=
-                                  (within_epsilon(A[ii,jj],ATest[ii,jj]));
+				var x = A[ii, jj]: string;
+				var y = ATest[ii, jj]: string;
+				still_correct &&= (x == y);
+				//still_correct &&= (within_epsilon(A[ii,jj],ATest[ii,jj]));
 			}
 		}
 		writeln("Is the calculation correct? ", still_correct);
