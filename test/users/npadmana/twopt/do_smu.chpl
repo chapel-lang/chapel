@@ -289,6 +289,7 @@ proc doPairs() {
   tt.stop();
   if !isTest then writef("Time to SOA : %r \n", tt.elapsed());
 
+  /*
   // Brute force paircounts
   // This is only here for comparisons... and should be turned off in general
   if (doBrute && !isTest) {
@@ -300,6 +301,7 @@ proc doPairs() {
     writeHist(ff1,hh);
     ff1.close();
   }
+  */
 
    // Do the paircounts with a tree
   hh.reset();
