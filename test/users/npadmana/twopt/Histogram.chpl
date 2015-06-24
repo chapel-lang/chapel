@@ -40,14 +40,17 @@ module Histogram {
       arr[pos].add(w);
     }
 
+    proc set(ndx : dim*int, val : real) {
+      arr[ndx].write(val);
+    }
+
     proc this(ndx) : real {
       return arr[ndx].read();
     }
 
   } // UniformBins
 
-  proc writeHist(fn : string, hh : UniformBins) {
-    var ff = openwriter(fn);
+  proc writeHist(ff : channel, hh : UniformBins, fmt : string = "%20.14er ") {
     // Dump out values
     for xx in hh.bins(1) do ff.writef("%12.4dr",xx); 
     ff.writeln();
@@ -55,11 +58,10 @@ module Histogram {
     ff.writeln("\n##");
     for ii in hh.Dhist.dim(1) {
       for jj in hh.Dhist.dim(2) {
-        ff.writef("%20.14er ",hh[(ii,jj)]);
+        ff.writef(fmt, hh[(ii,jj)]);
       }
       ff.writeln();
     }
-    ff.close();
   }
 
 
