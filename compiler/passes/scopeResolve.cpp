@@ -1626,6 +1626,16 @@ static void resolveEnumeratedTypes() {
             const char* name;
             bool found = false;
 
+            CallExpr* parent = toCallExpr(call->parentExpr);
+            if( parent && parent->baseExpr == call ) {
+              // This is a call e.g.
+              // myenum.method( a )
+              // aka call(call(. myenum "method") a)
+              // so that call needs to go through normalize and resolve
+              continue;
+            }
+
+
             INT_ASSERT(get_string(second, &name));
 
             for_enums(constant, type) {
