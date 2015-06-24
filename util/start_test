@@ -414,7 +414,7 @@
 # $CHPL_TARGET_PLATFORM.  In addition, if "--no-local" is selected as
 # a compiler option, the file <testname>.no-local.good may be used.
 # The most specific good file will be used, in this order:
-# machname, "no-local", commlayer, platform, generic.
+# machname, "no-local”, commlayer, platform, generic.
 #
 # Tests that are not yet expected to work can be marked as such
 # by creating a <testname>.future file.  The presence of the
