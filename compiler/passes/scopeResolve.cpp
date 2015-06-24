@@ -105,8 +105,7 @@ static void     destroyModuleUsesCaches();
 
 static void     renameDefaultTypesToReflectWidths();
 
-static Symbol*  lookup(BaseAST* scope, const char* name);
-static std::map<const char *, Symbol *> lookup2(BaseAST* scope, const char* name);
+static std::map<const char *, Symbol *> lookup(BaseAST* scope, const char* name);
 
 static BaseAST* getScope(BaseAST* ast);
 
@@ -184,12 +183,9 @@ void scopeResolve() {
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         SET_LINENO(fn->_this);
 
-        TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
-
-        std::map<const char*, Symbol*> otherResults = lookup2(sym, sym->unresolved);
-        if (ts != toTypeSymbol(otherResults[sym->unresolved])) {
-          INT_FATAL(fn, "Lydia, fix your stuff!");
-        }
+        TypeSymbol* ts;
+        std::map<const char*, Symbol*> otherResults = lookup(sym, sym->unresolved);
+        ts = toTypeSymbol(otherResults[sym->unresolved]);
 
         if (!ts) {
           USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
@@ -271,9 +267,25 @@ static void addOneToSymbolTable(DefExpr* def)
                     sym->name,
                     def->sym->stringLoc());
         }
+
+        if (!oldFn && (newFn && !newFn->_this)) {
+          // A function definition is conflicting with another named symbol
+          // that isn't a function (could be a variable, a module name, etc.)
+          USR_FATAL(sym,
+                    "'%s' has multiple definitions, redefined at:\n  %s",
+                    sym->name,
+                    def->sym->stringLoc());
+        } else if (!newFn && (oldFn && !oldFn->_this)) {
+          // Another named symbol that isn't a function is conflicting with
+          // a function definition name.
+          USR_FATAL(sym,
+                    "'%s' has multiple definitions, redefined at:\n  %s",
+                    sym->name,
+                    def->sym->stringLoc());
+        }
       }
 
-      if (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))
+      if (!newFn || (newFn && !newFn->_this))
         (*entry)[def->sym->name] = def->sym;
     } else {
       (*entry)[def->sym->name] = def->sym;
@@ -347,12 +359,9 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
     }
 
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    Symbol* symbol = lookup(useCall, sym->unresolved);
-
-    std::map<const char*, Symbol*> otherResults = lookup2(useCall, sym->unresolved);
-    if (symbol != otherResults[sym->unresolved]) {
-      INT_FATAL(useCall, "Lydia, fix your stuff!");
-    }
+    Symbol* symbol;
+    std::map<const char*, Symbol*> otherResults = lookup(useCall, sym->unresolved);
+    symbol = otherResults[sym->unresolved];
 
     mod = toModuleSymbol(symbol);
 
@@ -380,11 +389,8 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
     if (!get_string(rhs, &rhsName))
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
 
-    symbol = lookup(lhs->block, rhsName);
-    std::map<const char*, Symbol*> otherResults = lookup2(lhs->block, rhsName);
-    if (symbol != otherResults[rhsName]) {
-      INT_FATAL(useCall, "Lydia, fix your stuff!");
-    }
+    std::map<const char*, Symbol*> otherResults = lookup(lhs->block, rhsName);
+    symbol = otherResults[rhsName];
 
 
     mod    = toModuleSymbol(symbol);
@@ -489,11 +495,9 @@ static AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* ch
 
   INT_ASSERT(se);
 
-  Symbol*            sym = lookup(storesName, se->unresolved);
-  std::map<const char*, Symbol*> otherResults = lookup2(storesName, se->unresolved);
-  if (sym != otherResults[se->unresolved]) {
-    INT_FATAL(storesName, "Lydia, fix your stuff!");
-  }
+  Symbol* sym;
+  std::map<const char*, Symbol*> otherResults = lookup(storesName, se->unresolved);
+  sym = otherResults[se->unresolved];
 
   TypeSymbol*        ts  = toTypeSymbol(sym);
 
@@ -1269,14 +1273,9 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
 
   SET_LINENO(unresolvedSymExpr);
 
-  Symbol* sym = lookup(unresolvedSymExpr, name);
-
-  std::map<const char*, Symbol*> otherResults = lookup2(unresolvedSymExpr, name);
-  if (sym != otherResults[name]) {
-    if ((sym && !sym->hasFlag(FLAG_METHOD)) || (otherResults[name] && !otherResults[name]->hasFlag(FLAG_METHOD)))
-      USR_WARN(sym, "Lydia, this was different");
-    sym = otherResults[name];
-  }
+  Symbol* sym;
+  std::map<const char*, Symbol*> otherResults = lookup(unresolvedSymExpr, name);
+  sym = otherResults[name];
 
   //
   // handle function call without parentheses
@@ -1707,16 +1706,7 @@ static void renameDefaultType(Type* type, const char* newname) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void  lookup(BaseAST*       scope,
-                    const char*    name,
-                    Vec<Symbol*>&  symbols,
-                    Vec<BaseAST*>& alreadyVisited);
-
-static void lookupSimple(BaseAST*       scope,
-                         const char*    name,
-                         Vec<Symbol*>&  symbols);
-
-static void lookup2(BaseAST* scope, std::list<const char *> names,
+static void lookup(BaseAST* scope, std::list<const char *> names,
                     std::map<const char *, std::vector<Symbol* > >& symbols,
                     Vec<BaseAST*>& alreadyVisited);
 
@@ -1730,7 +1720,7 @@ static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 
 // Given an unresolvedSymExpr, determine the value of all symbols in its
 // calling context and return them.
-static std::map<const char *, Symbol *> lookup2(BaseAST* scope, const char* name) {
+static std::map<const char *, Symbol *> lookup(BaseAST* scope, const char* name) {
   std::map<const char *, Symbol *> symbolResults;
   std::map<const char *, std::vector<Symbol * > > symbolOptions;
   Vec<BaseAST*> nestedscopes;
@@ -1744,7 +1734,7 @@ static std::map<const char *, Symbol *> lookup2(BaseAST* scope, const char* name
 
   // Call inner lookup on name as scope, the list of names, the symbols return
   // map, and the vector of ASTs already visited.
-  lookup2(scope, names, symbolOptions, nestedscopes);
+  lookup(scope, names, symbolOptions, nestedscopes);
 
   for ( std::map<const char *, std::vector<Symbol * > >::iterator it = symbolOptions.begin(); it != symbolOptions.end(); ++it) {
     const char* itname = it->first;
@@ -1955,7 +1945,7 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
 // Only stores symbols in the vector if something was found (though we might
 // have reached an undecidable point, in which case we should return to be
 // safe).
-static void lookup2(BaseAST* scope, std::list<const char *> names,
+static void lookup(BaseAST* scope, std::list<const char *> names,
                     std::map<const char *, std::vector<Symbol* > >& symbols,
                     Vec<BaseAST*>& alreadyVisited) {
   if (!alreadyVisited.set_in(scope)) {
@@ -1985,7 +1975,7 @@ static void lookup2(BaseAST* scope, std::list<const char *> names,
 
     if (scope->getModule()->block == scope) {
       if (getScope(scope))
-        lookup2(getScope(scope), names, symbols, alreadyVisited);
+        lookup(getScope(scope), names, symbols, alreadyVisited);
     } else {
       // Otherwise, look in the next scope up.
       FnSymbol* fn = toFnSymbol(scope);
@@ -1994,9 +1984,9 @@ static void lookup2(BaseAST* scope, std::list<const char *> names,
         // within the aggregate type
         AggregateType* ct = toAggregateType(fn->_this->type);
         if (ct)
-          lookup2(ct->symbol, names, symbols, alreadyVisited);
+          lookup(ct->symbol, names, symbols, alreadyVisited);
       }
-      // Check if found something in last lookup2 call
+      // Check if found something in last lookup call
       for ( std::list<const char *>::iterator it = names.begin(); it != names.end(); ++it) {
         if (symbols[*it].size() != 0) {
           // Something was found.  There would not be any symbol in any of the
@@ -2006,134 +1996,9 @@ static void lookup2(BaseAST* scope, std::list<const char *> names,
       }
       // If we didn't find something in the aggregate type that matched, or we
       // weren't in an aggregate type method, so look at next scope up.
-      lookup2(getScope(scope), names, symbols, alreadyVisited);
+      lookup(getScope(scope), names, symbols, alreadyVisited);
     }
   }
-}
-
-
-static Symbol* lookup(BaseAST* scope, const char* name)
-{
-  Vec<Symbol*>  symbols;
-  Vec<BaseAST*> nestedscopes;
-  lookup(scope, name, symbols, nestedscopes);
-
-  symbols.set_to_vec();
-
-  if (symbols.n == 0)
-    // No symbols found.
-    return NULL;
-
-  if (symbols.n == 1)
-    // A unique symbol was found.
-    return symbols.v[0];
-
-  forv_Vec(Symbol, sym, symbols) {
-    if (!isFnSymbol(sym))
-      USR_FATAL_CONT(sym, "Symbol %s multiply defined", name);
-  }
-  USR_STOP();
-
-  return NULL;
-}
-
-// This version recurses through module uses.
-// Adds zero or more symbols to the passed-in symbols vector.
-static void lookup(BaseAST*       scope,
-                   const char*    name,
-                   Vec<Symbol*>&  symbols,
-                   Vec<BaseAST*>& alreadyVisited)
-{
-  if (!alreadyVisited.set_in(scope)) {
-    alreadyVisited.set_add(scope);
-
-    if (Symbol* sym = inSymbolTable(scope, name)) {
-      // inSymbolTable returns a Symbol* if there was an entry for this scope
-      // that matched this name, NULL otherwise.
-      symbols.set_add(sym);
-    }
-
-    if (TypeSymbol* ts = toTypeSymbol(scope))
-      if (AggregateType* ct = toAggregateType(ts->type))
-        if (Symbol* sym = ct->getField(name, false))
-          symbols.set_add(sym);
-
-    if (symbols.n == 0) {
-      if (BlockStmt* block = toBlockStmt(scope)) {
-        if (block->modUses) {
-          Vec<ModuleSymbol*>* modules = NULL;
-
-          if (moduleUsesCache.count(block) == 0) {
-            modules = new Vec<ModuleSymbol*>();
-
-            for_actuals(expr, block->modUses) {
-              SymExpr* se = toSymExpr(expr);
-              INT_ASSERT(se);
-
-              ModuleSymbol* mod = toModuleSymbol(se->var);
-              INT_ASSERT(mod);
-
-              modules->add(mod);
-            }
-
-            INT_ASSERT(modules->n);
-
-            buildBreadthFirstModuleList(modules);
-
-            if (enableModuleUsesCache)
-              moduleUsesCache[block] = modules;
-          } else {
-            modules = moduleUsesCache[block];
-          }
-
-          forv_Vec(ModuleSymbol, mod, *modules) {
-            if (mod) {
-              lookupSimple(mod->block, name, symbols);
-            } else {
-              //
-              // break on each new depth if a symbol has been found
-              //
-              if (symbols.n > 0)
-                break;
-            }
-          }
-        }
-      }
-    }
-
-    if (symbols.n == 0) {
-      if (scope->getModule()->block == scope) {
-        if (getScope(scope)) {
-          lookup(getScope(scope), name, symbols, alreadyVisited);
-        }
-      } else {
-        FnSymbol* fn = toFnSymbol(scope);
-        if (fn && fn->_this)
-        {
-          AggregateType* ct = toAggregateType(fn->_this->type);
-          if (ct)
-            lookup(ct->symbol, name, symbols, alreadyVisited);
-        }
-        if (symbols.n == 0)
-          lookup(getScope(scope), name, symbols, alreadyVisited);
-      }
-    }
-  }
-}
-
-// This version does not recurse through module uses.
-static void lookupSimple(BaseAST*       scope,
-                         const char*    name,
-                         Vec<Symbol*>&  symbols)
-{
-  if (Symbol* sym = inSymbolTable(scope, name)) {
-    symbols.set_add(sym);
-  }
-
-  if (TypeSymbol* ts = toTypeSymbol(scope))
-    if (AggregateType* ct = toAggregateType(ts->type))
-      if (Symbol* sym = ct->getField(name, false))
-        symbols.set_add(sym);
 }
 
 static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {
