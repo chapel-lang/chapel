@@ -26,7 +26,7 @@ config const nsbins=5;
 var gtime1 : Timer;
 
 proc main() {
-  if isTest then testPairs(); else doPairs();
+  doPairs();
 }
 
 record WeightedParticle3D {
@@ -62,10 +62,6 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
    ipart += 1;
   }
 }
-
-    
-
-
 
 class SOA_WeightedParticle3D {
   var npart : int;
@@ -249,50 +245,6 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : SOA_WeightedParticle3D, node1, no
 
 }
 
-// A simple testHarness
-proc testPairs() {
-  
-  // Read in the file
-  var nlines = countLines(fn1);
-  var pp1 : [0.. #nlines] WeightedParticle3D;
-  readFile("test.dat",pp1);
-
-  // Build the tree
-  var scr : [0.. #nlines] WeightedParticle3D;
-  var root1 = BuildTree(pp1,scr,0);
-
-  // Set up the histogram
-  var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
-
-  // AOS -> SOA
-  var soa1 = new SOA_WeightedParticle3D(pp1);
-
-  // Do the paircounts with a tree
-  sync TreeAccumulate(hh, soa1, soa1, root1, root1);
-  for xx in hh.bins(1) do writef("%12.4dr",xx); 
-  writeln();
-  for xx in hh.bins(2) do writef("%12.4dr",xx); 
-  writeln("\n##");
-  for ii in hh.Dhist.dim(1) {
-    for jj in hh.Dhist.dim(2) {
-      if ((ii==0) & (jj==0)) {
-        writef("%20.5er ",0);
-      } else {
-        writef("%20.5er ",hh[(ii,jj)]);
-      }
-    }
-    writeln();
-  }
-
-  //
-  // clean up
-  //
-  delete soa1;
-  delete hh;
-  delete root1;
-}
-
-
 // The main code 
 proc doPairs() {
   var tt : Timer;
@@ -306,9 +258,11 @@ proc doPairs() {
   var pp2 : [0.. #nlines2] WeightedParticle3D;
   readFile(fn1,pp2);
   tt.stop();
-  writef("Read in %i lines from file %s \n", pp1.size, fn1);
-  writef("Read in %i lines from file %s \n", pp2.size, fn2);
-  writef("Time to read : %r \n", tt.elapsed());
+  if (!isTest) {
+    writef("Read in %i lines from file %s \n", pp1.size, fn1);
+    writef("Read in %i lines from file %s \n", pp2.size, fn2);
+    writef("Time to read : %r \n", tt.elapsed());
+  }
 
   // Build the tree
   tt.clear(); tt.start(); gtime1.clear();
@@ -317,8 +271,10 @@ proc doPairs() {
   var scr2 : [0.. #nlines2] WeightedParticle3D;
   var root2 = BuildTree(pp2,scr2,0);
   tt.stop();
-  writef("Time to build trees : %r \n", tt.elapsed());
-  writef("Time in splitOn : %r \n", gtime1.elapsed());
+  if (!isTest) {
+    writef("Time to build trees : %r \n", tt.elapsed());
+    writef("Time in splitOn : %r \n", gtime1.elapsed());
+  }
   
 
 
@@ -326,19 +282,23 @@ proc doPairs() {
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
 
   // AOS -> SOA
+  // TODO : Turn off this swapping...
   tt.clear(); tt.start();
   var soa1 = new SOA_WeightedParticle3D(pp1);
   var soa2 = new SOA_WeightedParticle3D(pp2);
   tt.stop();
-  writef("Time to SOA : %r \n", tt.elapsed());
+  if !isTest then writef("Time to SOA : %r \n", tt.elapsed());
 
   // Brute force paircounts
-  if doBrute {
+  // This is only here for comparisons... and should be turned off in general
+  if (doBrute && !isTest) {
     tt.clear(); tt.start();
     smuAccumulate(hh, soa1,soa2, soa1.Dpart, soa2.Dpart, 1.0);
     tt.stop();
     writef("Time to brute force paircount : %r \n", tt.elapsed());
-    writeHist("%s.brute".format(pairfn),hh);
+    var ff1 = openwriter("%s.brute".format(pairfn));
+    writeHist(ff1,hh);
+    ff1.close();
   }
 
    // Do the paircounts with a tree
@@ -346,8 +306,16 @@ proc doPairs() {
   tt.clear(); tt.start();
   sync TreeAccumulate(hh, soa1, soa2, root1, root2);
   tt.stop();
-  writef("Time to tree paircount : %r \n", tt.elapsed());
-  writeHist("%s.tree".format(pairfn),hh);
+  if (!isTest) {
+    writef("Time to tree paircount : %r \n", tt.elapsed());
+    var ff = openwriter("%s.tree".format(pairfn));
+    writeHist(ff,hh);
+    ff.close();
+  } else {
+    hh.set((0,0),0.0);
+    writeHist(stdout,hh,"%20.5er ");
+  }
+
 
   //
   // clean up
