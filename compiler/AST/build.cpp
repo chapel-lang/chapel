@@ -1862,13 +1862,20 @@ buildFunctionSymbol(FnSymbol*   fn,
 
   if (class_name)
   {
-    fn->_this = new ArgSymbol(thisTag,
-                              "this",
-                              dtUnknown,
-                              new UnresolvedSymExpr(class_name));
+    ArgSymbol* arg = new ArgSymbol(thisTag,
+				   "this",
+				   dtUnknown,
+				   new UnresolvedSymExpr(class_name));
+    fn->_this = arg;
+    if (thisTag == INTENT_TYPE) {
+      printf("id = %d\n", arg->id);
+      arg->intent = INTENT_BLANK;
+      arg->addFlag(FLAG_TYPE_VARIABLE);
+      arg->type = dtAny;
+    }
 
-    fn->_this->addFlag(FLAG_ARG_THIS);
-    fn->insertFormalAtHead(new DefExpr(fn->_this));
+    arg->addFlag(FLAG_ARG_THIS);
+    fn->insertFormalAtHead(new DefExpr(arg));
 
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
 

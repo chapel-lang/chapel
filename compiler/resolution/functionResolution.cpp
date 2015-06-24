@@ -61,6 +61,8 @@
 #define TRACE_DISAMBIGUATE_BY_MATCH(...)
 #endif
 
+static bool onMyFunc = false;
+
 /** Contextual info used by the disambiguation process.
  *
  * This class wraps information that is used by multiple functions during the
@@ -1699,11 +1701,15 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
 
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
-  if (!currCandidate->fn) return;
+  if (!currCandidate->fn) {
+    if (onMyFunc) { fprintf(stderr, "Returning early\n"); }
+    return;
+  }
 
   resolveTypedefedArgTypes(currCandidate->fn);
 
   if (!currCandidate->computeAlignment(info)) {
+    if (onMyFunc) { fprintf(stderr, "failed to compute alignment\n"); }
     return;
   }
 
@@ -1723,11 +1729,27 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
   int coindex = -1;
   for_formals(formal, currCandidate->fn) {
     if (Symbol* actual = currCandidate->alignedActuals.v[++coindex]) {
-      if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        return;
+      //
+      // If the formal or actual is a type, the other must be too;
+      // Or, if the actual is a type and the formal is a 'this' argument
+      // with type intent
+      //
+      if (actual->hasFlag(FLAG_TYPE_VARIABLE) == 
+	  formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+	// OK
+      } else if (actual->hasFlag(FLAG_TYPE_VARIABLE) && 
+		 formal->hasFlag(FLAG_ARG_THIS) && 
+		 formal->intent == INTENT_TYPE) {
+	// OK
+      } else {
+	if (onMyFunc) { 
+	  fprintf(stderr, "returning due to flag type var\n");
+	}
+	return;
       }
-
+    
       if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+	if (onMyFunc) { fprintf(stderr, "returning due to inability to dispatch\n"); }
         return;
       }
     }
@@ -1826,9 +1848,11 @@ filterCandidate(Vec<ResolutionCandidate*>& candidates,
                 CallInfo& info) {
 
   if (currCandidate->fn->hasFlag(FLAG_GENERIC)) {
+    if (onMyFunc) { fprintf(stderr, "generic\n"); }
     filterGenericCandidate(candidates, currCandidate, info);
 
   } else {
+    if (onMyFunc) { fprintf(stderr, "non-generic\n"); }
     filterConcreteCandidate(candidates, currCandidate, info);
   }
 }
@@ -3267,14 +3291,19 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
         ((explainCallLine && explainCallMatch(info.call)) ||
          info.call->id == explainCallID))
     {
+      onMyFunc = true;
       USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
     }
 
+    if (onMyFunc) {
+      fprintf(stderr, "*** Filtering candidates\n");
+    }
     filterCandidate(candidates, visibleFn, info);
   }
 
   // Return if we got a successful match with user-defined functions.
   if (candidates.n) {
+    onMyFunc = false;
     return;
   }
 
@@ -8014,6 +8043,13 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
       if (! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
         formal->defPoint->remove();
     }
+
+    //
+    // BLC: new!
+    //
+    if (formal->hasFlag(FLAG_ARG_THIS) && formal->intent == INTENT_TYPE) {
+      formal->defPoint->remove();
+    }
   }
 
   // Insert the clone (convertRuntimeTypeToValue) into the runtimeTypeToValueMap.
@@ -8110,6 +8146,9 @@ static void replaceTypeArgsWithFormalTypeTemps()
             break;
           }
         }
+      }
+      if (formal == fn->_this) {
+	fn->_this = NULL;
       }
       formal->defPoint->remove();
     }
