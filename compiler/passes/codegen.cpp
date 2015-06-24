@@ -159,7 +159,7 @@ genGlobalString(const char* cname, const char* value) {
         info->module->getOrInsertGlobal(
           cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
     globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
-          new_StringSymbol(value)->codegen().val)->getInitializer());
+          new_CStringSymbol(value)->codegen().val)->getInitializer());
     globalString->setConstant(true);
     info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
 #endif
@@ -984,7 +984,7 @@ static void codegen_header() {
     std::vector<llvm::Constant *> memDescTable;
     forv_Vec(const char*, memDesc, memDescsVec) {
       memDescTable.push_back(llvm::cast<llvm::GlobalVariable>(
-            new_StringSymbol(memDesc)->codegen().val)->getInitializer());
+            new_CStringSymbol(memDesc)->codegen().val)->getInitializer());
     }
     llvm::ArrayType *memDescTableType = llvm::ArrayType::get(
         llvm::IntegerType::getInt8PtrTy(info->module->getContext()),
@@ -1180,7 +1180,7 @@ codegen_config() {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (3);
         args[0] = info->builder->CreateLoad(
-            new_StringSymbol(var->name)->codegen().val);
+            new_CStringSymbol(var->name)->codegen().val);
 
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -1193,15 +1193,15 @@ codegen_config() {
           type = type->getField("addr")->type;
         }
         args[1] = info->builder->CreateLoad(
-            new_StringSymbol(type->symbol->name)->codegen().val);
+            new_CStringSymbol(type->symbol->name)->codegen().val);
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
           args[2] = info->builder->CreateLoad(
-              new_StringSymbol("Built-in")->codegen().val);
+              new_CStringSymbol("Built-in")->codegen().val);
         }
         else {
           args[2] =info->builder->CreateLoad(
-              new_StringSymbol(var->getModule()->name)->codegen().val);
+              new_CStringSymbol(var->getModule()->name)->codegen().val);
         }
 
         info->builder->CreateCall(installConfigFunc, args);

@@ -1,6 +1,7 @@
 Initializing Modules:
    ChapelStandard
     ChapelBase
+    CPtr
     CString
     String
      BaseStringType

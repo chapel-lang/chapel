@@ -268,6 +268,7 @@ TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 TYPE_EXTERN std::map<Type*, Type*> wideToNarrowRefMap; // reference of wide class to reference of narrow class
 
 void     initRootModule();
+void     initStringLiteralModule();
 void     initPrimitiveTypes();
 DefExpr* defineObjectClass();
 void     initChplProgram(DefExpr* objectDef);

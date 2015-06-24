@@ -5273,7 +5273,7 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_INT_ERROR:
       codegenCall("chpl_internal_error",
-                  new_StringSymbol("compiler generated error"));
+                  new_CStringSymbol("compiler generated error"));
       break;
     case PRIM_STRING_COPY:
     {

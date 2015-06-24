@@ -211,7 +211,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   for_formals(formal, ct->defaultInitializer) {
     VarSymbol* tmp = newTemp(formal->name);
     if (!strcmp(formal->name, "size"))
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_StringSymbol(formal->name))));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_CStringSymbol(formal->name))));
     else if (!formal->hasFlag(FLAG_IS_MEME)) {
       if (formal->isParameter()) {
         tmp->addFlag(FLAG_PARAM);
@@ -257,7 +257,7 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
   for (int i=1; i<ct->fields.length; i++) {
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));
-    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(astr("x", istr(i))))));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_CStringSymbol(astr("x", istr(i))))));
 
     // If it is a reference, pass it through.
     DefExpr* def = toDefExpr(ct->fields.get(i+1));
@@ -493,7 +493,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
         VarSymbol* var = toVarSymbol(value);
         if (var && var->immediate) {
           Immediate* immediate = var->immediate;
-          if (var->type == dtStringC)
+          if (var->type == dtString || var->type == dtStringC)
             renameInstantiatedTypeString(sym, var);
           else if (immediate->const_kind == NUM_KIND_BOOL) {
             // Handle boolean types specially.

@@ -1364,7 +1364,7 @@ static void insertNodeComparison(Expr* stmt, SymExpr* lhs, SymExpr* rhs) {
   stmt->insertBefore(new CondStmt(new CallExpr(PRIM_NOTEQUAL,
                                   new SymExpr(left),
                                   new SymExpr(right)),
-    new CallExpr(PRIM_RT_ERROR, new_StringSymbol("Attempted to assign to local class field with remote class"))));
+    new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Attempted to assign to local class field with remote class"))));
 }
 
 static void handleLocalFields(Map<Symbol*,Vec<SymExpr*>*>& defMap,

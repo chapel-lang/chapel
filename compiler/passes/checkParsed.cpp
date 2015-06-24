@@ -46,7 +46,7 @@ checkParsed() {
       if ((!def->init || def->init->isNoInitExpr())
           && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
         if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
-          if (def->parentExpr != rootModule->block)
+          if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
             if (!def->sym->hasFlag(FLAG_INDEX_VAR))
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",

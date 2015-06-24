@@ -619,8 +619,18 @@ const char* toString(CallInfo* info) {
 
 const char* toString(FnSymbol* fn) {
   if (fn->userString) {
-    if (developer)
-      return astr(fn->userString, " [", istr(fn->id), "]");
+    if (developer) {
+      const char* devStr;
+      devStr = astr(fn->userString);
+      if (fn->where) {
+        std::ostringstream oss;
+        oss << devStr << " where ";
+        fn->where->body.head->prettyPrint(&oss);
+        devStr = astr(oss.str().c_str());
+      }
+      devStr = astr(devStr, " [", istr(fn->id), "]");
+      return devStr;
+    }
     else
       return fn->userString;
   }
@@ -987,6 +997,10 @@ resolveFormals(FnSymbol* fn) {
         // Already a ref type, so done.
         continue;
 
+      // Don't pass dtString params in by reference
+      if(formal->type == dtString && formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+        continue;
+
       if (formal->intent == INTENT_INOUT ||
           formal->intent == INTENT_OUT ||
           formal->intent == INTENT_REF ||
@@ -1245,6 +1259,9 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
   }
+  if (formalType == dtStringC && actualType == dtString)
+    if (actualSym && actualSym->isImmediate())
+      return true;
   return false;
 }
 
@@ -1285,11 +1302,10 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if (// isLcnSymbol(actualSym) && // What does this exclude?
-      actualType == dtStringC && formalType == dtString)
+  if (formalType == dtString && actualType == dtStringC)
     return true;
-  //if (formalType == dtString && actualType == dtStringCopy)
-  //  return true;
+  if (formalType == dtString && actualType == dtStringCopy)
+    return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
     return true;
 
@@ -1489,21 +1505,20 @@ computeGenericSubs(SymbolMap &subs,
 
       if (alignedActuals.v[i]) {
         if (Type* type = getInstantiationType(alignedActuals.v[i]->type, formal->type)) {
-          // String literal actuals aligned with non-param generic
-          // formals of type dtAny will result in an instantiation of
-          // a dtString formal.  This is in line with variable
-          // declarations with non-typed initializing expressions and
-          // non-param formals with string literal default expressions
-          // (see fix_def_expr() and hack_resolve_types() in
-          // normalize.cpp). This conversion is not performed for extern
-          // functions.
-          if ((!fn->hasFlag(FLAG_EXTERN)) && (formal->type == dtAny) &&
-              (!formal->hasFlag(FLAG_PARAM)) && (type == dtStringC) &&
-              (alignedActuals.v[i]->type == dtStringC) &&
-              (alignedActuals.v[i]->isImmediate()))
-            subs.put(formal, dtString->symbol);
-          else
+          // String literal actuals aligned with non-param generic formals of
+          // type dtAny will result in an instantiation of dtStringC when the
+          // function is extern. In other words, let us write:
+          //   extern proc foo(str);
+          //   foo("bar");
+          // and pass "bar" as a c_string instead of a string
+          if (fn->hasFlag(FLAG_EXTERN) && (formal->type == dtAny) &&
+              (!formal->hasFlag(FLAG_PARAM)) && (type == dtString) &&
+              (alignedActuals.v[i]->type == dtString) &&
+              (alignedActuals.v[i]->isImmediate())) {
+            subs.put(formal, dtStringC->symbol);
+          } else {
             subs.put(formal, type->symbol);
+          }
         }
       } else if (formal->defaultExpr) {
 
@@ -2033,6 +2048,11 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
     }
     if (is_uint_type(formalType)) {
       return fits_in_uint(get_width(formalType), imm);
+    }
+    if (imm->const_kind == CONST_KIND_STRING) {
+      if (formalType == dtStringC && actual->type == dtString) {
+        return true;
+      }
     }
   }
 
@@ -3763,7 +3783,7 @@ static void resolveTupleExpand(CallExpr* call) {
       e = new CallExpr(sym->copy(), new_IntSymbol(i));
     } else {
       e = new CallExpr(PRIM_GET_MEMBER_VALUE, sym->copy(),
-                       new_StringSymbol(astr("x", istr(i))));
+                       new_CStringSymbol(astr("x", istr(i))));
     }
     CallExpr* move = new CallExpr(PRIM_MOVE, tmp, e);
     call->getStmtExpr()->insertBefore(move);
@@ -3793,7 +3813,7 @@ static void resolveSetMember(CallExpr* call) {
     int64_t i;
     if (get_int(sym, &i)) {
       name = astr("x", istr(i));
-      call->get(2)->replace(new SymExpr(new_StringSymbol(name)));
+      call->get(2)->replace(new SymExpr(new_CStringSymbol(name)));
     }
   }
 
@@ -4242,7 +4262,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
     INT_FATAL("dropUnnecessaryCasts called on non _cast call");
 
   if (SymExpr* sym = toSymExpr(call->get(2))) {
-    if (VarSymbol* var = toVarSymbol(sym->var)) {
+    if (LcnSymbol* var = toLcnSymbol(sym->var)) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         Type* oldType = var->type;
         Type* newType = sym->var->type;
@@ -4758,9 +4778,9 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
 
   Expr* result;
   if (isReferenceType(fieldType) || intoIndexVarByVal)
-    result = new CallExpr(PRIM_GET_MEMBER_VALUE, baseVar, new_StringSymbol(field));
+    result = new CallExpr(PRIM_GET_MEMBER_VALUE, baseVar, new_CStringSymbol(field));
   else
-    result = new CallExpr(PRIM_GET_MEMBER, baseVar, new_StringSymbol(field));
+    result = new CallExpr(PRIM_GET_MEMBER, baseVar, new_CStringSymbol(field));
 
   call->replace(result);
   return result;
@@ -5082,7 +5102,7 @@ preFold(Expr* expr) {
         VarSymbol* tmp = newTemp("_instantiated_field_tmp_");
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_TUPLE) && field->name[0] == 'x')
-          result = new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), new_StringSymbol(field->name));
+          result = new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), new_CStringSymbol(field->name));
         else
           result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
@@ -5129,7 +5149,7 @@ preFold(Expr* expr) {
                      is_bool_type(oldType)) &&
                     (is_int_type(newType) || is_uint_type(newType) ||
                      is_bool_type(newType) || is_enum_type(newType) ||
-                     (newType == dtStringC))) {
+                     newType == dtString || newType == dtStringC)) {
                   VarSymbol* typevar = toVarSymbol(newType->defaultValue);
                   EnumType* typeenum = toEnumType(newType);
                   if (typevar) {
@@ -5139,6 +5159,13 @@ preFold(Expr* expr) {
                     Immediate coerce = *typevar->immediate;
                     coerce_immediate(var->immediate, &coerce);
                     result = new SymExpr(new_ImmediateSymbol(&coerce));
+                    call->replace(result);
+                  } else if (newType == dtString) {
+                    // typevar will be null for dtString so we need a special
+                    // case.
+                    Immediate coerce = Immediate("", STRING_KIND_STRING);
+                    coerce_immediate(var->immediate, &coerce);
+                    result = new SymExpr(new_StringSymbol(coerce.v_string));
                     call->replace(result);
                   } else if (typeenum) {
                     int64_t value, count = 0;
@@ -5163,14 +5190,20 @@ preFold(Expr* expr) {
                   } else {
                     INT_FATAL("unexpected case in cast_fold");
                   }
+                } else if (oldType == dtString && newType == dtStringC) {
+                  result = new SymExpr(new_CStringSymbol(var->immediate->v_string));
+                  call->replace(result);
                 }
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
             if (SymExpr* sym = toSymExpr(call->get(1))) {
               Type* newType = sym->var->type;
-              if (newType == dtStringC) {
+              if (newType == dtString) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
+                call->replace(result);
+              } else if (newType == dtStringC) {
+                result = new SymExpr(new_CStringSymbol(enumSym->name));
                 call->replace(result);
               }
             }
@@ -5413,7 +5446,7 @@ preFold(Expr* expr) {
         // specified.  This is the user's error.
         USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
       }
-      result = new SymExpr(new_StringSymbol(name));
+      result = new SymExpr(new_CStringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
@@ -5434,7 +5467,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_StringSymbol(field->name));
+                                new_CStringSymbol(field->name));
           break;
         }
       }
@@ -5484,7 +5517,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
           result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_StringSymbol(field->name));
+                                new_CStringSymbol(field->name));
           break;
         }
       }
@@ -5944,7 +5977,10 @@ postFold(Expr* expr) {
       if (lhs->var->isParameter() && rhs->var->isParameter()) {
         const char* lstr = get_string(lhs);
         const char* rstr = get_string(rhs);
-        result = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+        if (lhs->var->type == dtString)
+          result = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+        else
+          result = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_length")) {
@@ -5952,7 +5988,8 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol(strlen(str), INT_SIZE_DEFAULT));
+        int length = unescapeString(str).length();
+        result = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("ascii")) {
@@ -6264,7 +6301,8 @@ resolveExpr(Expr* expr) {
         !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
       if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
-        if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
+        if (!(ct == dtString && (sym->var->isParameter() || sym->var->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
+            !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
@@ -7065,6 +7103,10 @@ resolve() {
   resolveRecordInitializers();
   resolveOther();
 
+  // Resolve the string literal constructors after everything else since new
+  // ones may be created during postFold
+  resolveFns(stringLiteralModule->initFn);
+
   insertDynamicDispatchCalls();
   insertReturnTemps();
 
@@ -7177,6 +7219,12 @@ static void resolveUses(ModuleSymbol* mod)
 static void resolveExports() {
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn == stringLiteralModule->initFn) {
+      // The string literal module initFn is exported but is explicitly
+      // resolved laast since code may be added to it in postFold calls while
+      // resolving other functions
+      continue;
+    }
     if (fn->hasFlag(FLAG_EXPORT)) {
       SET_LINENO(fn);
       resolveFormals(fn);
@@ -7724,6 +7772,8 @@ static void removeUnusedFunctions() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
+      if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
+
       if (! fn->isResolved() || fn->retTag == RET_PARAM) {
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
@@ -8154,7 +8204,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
       continue;
 
     block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var,
-                                     new_StringSymbol(field->name), formal));
+                                     new_CStringSymbol(field->name), formal));
   }
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, var));
@@ -8224,7 +8274,7 @@ static void buildRuntimeTypeInitCopyFn(AggregateType* ct)
     if (field->hasFlag(FLAG_TYPE_VARIABLE))
         tmp->addFlag(FLAG_TYPE_VARIABLE);
     fn->insertAtTail(new DefExpr(tmp));
-    Symbol* fieldName = new_StringSymbol(field->name);
+    Symbol* fieldName = new_CStringSymbol(field->name);
     CallExpr* rhs = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fieldName);
     fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, rhs));
     call->insertAtTail(new NamedExpr(field->name, new SymExpr(tmp)));
@@ -8393,7 +8443,7 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
             VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, new_StringSymbol(field->name))));
+                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, new_CStringSymbol(field->name))));
             if (formal->hasFlag(FLAG_TYPE_VARIABLE))
               tmp->addFlag(FLAG_TYPE_VARIABLE);
             runtimeTypeToValueCall->insertAtTail(tmp);

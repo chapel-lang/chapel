@@ -54,10 +54,9 @@ const s: string;
   f(real, s=s);
 }
 
-// s should be c_string for these
 {
   proc f(param s = "hi") {
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   f();
@@ -68,7 +67,7 @@ const s: string;
 {
   proc f(type gtype, g, param s = "hi") {
     checkType(gtype, g.type);
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   f(int, 1);
@@ -79,7 +78,7 @@ const s: string;
 {
   proc f(param s = "hi", type gtype, g = 3.14) {
     checkType(gtype, g.type);
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   f(gtype=real);
@@ -87,6 +86,7 @@ const s: string;
   f(real, s="bye");
 }
 
+// s should be c_string for these
 {
   proc f(s: c_string = "hi") {
     checkType(c_string, s.type);

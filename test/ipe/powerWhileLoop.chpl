@@ -9,7 +9,7 @@ while (i < n)
   i   = i   + 1;
 }
 
-writeln('i:   ', i);
-writeln('n:   ', n);
-writeln('res: ', res);
+writeln(c'i:   ', i);
+writeln(c'n:   ', n);
+writeln(c'res: ', res);
 quit();

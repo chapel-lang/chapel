@@ -380,7 +380,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     case tok::string_literal: {
       std::string body = std::string(tok.getLiteralData(), tok.getLength());
       if( debugPrint) printf("str = %s\n", body.c_str());
-      varRet = new_StringSymbol(body.c_str());
+      varRet = new_CStringSymbol(body.c_str());
       break;
     }
     case tok::identifier: {

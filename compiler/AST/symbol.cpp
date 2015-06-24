@@ -60,6 +60,7 @@ ModuleSymbol* rootModule = NULL;
 ModuleSymbol* theProgram = NULL;
 ModuleSymbol* mainModule = NULL;
 ModuleSymbol* baseModule = NULL;
+ModuleSymbol* stringLiteralModule = NULL;
 ModuleSymbol* standardModule = NULL;
 ModuleSymbol* printModuleInitModule = NULL;
 Symbol *gNil = NULL;
@@ -396,7 +397,6 @@ void VarSymbol::makeField() {
   this->isField = true;
 }
 
-
 #ifdef HAVE_LLVM
 static
 llvm::Value* codegenImmediateLLVM(Immediate* i)
@@ -529,69 +529,12 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       }
       break;
     case CONST_KIND_STRING:
-
-        // Note that string immediate values are stored
-        // with C escapes - that is newline is 2 chars \ n
-        // so we have to convert to a sequence of bytes
-        // for LLVM (the C backend can just print it out).
-
-        std::string newString = "";
-        char nextChar;
-        int pos = 0;
-
-        while((nextChar = i->v_string[pos++]) != '\0') {
-          if(nextChar != '\\') {
-            newString += nextChar;
-            continue;
-          }
-
-          nextChar = i->v_string[pos++];
-          switch(nextChar) {
-            case '\'':
-            case '\"':
-            case '?':
-            case '\\':
-              newString += nextChar;
-              break;
-            case 'a':
-              newString += '\a';
-              break;
-            case 'b':
-              newString += '\b';
-              break;
-            case 'f':
-              newString += '\f';
-              break;
-            case 'n':
-              newString += '\n';
-              break;
-            case 'r':
-              newString += '\r';
-              break;
-            case 't':
-              newString += '\t';
-              break;
-            case 'v':
-              newString += '\v';
-              break;
-            case 'x':
-              {
-                char buf[3];
-                long num;
-                buf[0] = buf[1] = buf[2] = '\0';
-                if( i->v_string[pos] ) buf[0] = i->v_string[pos++];
-                if( i->v_string[pos] ) buf[1] = i->v_string[pos++];
-                num = strtol(buf, NULL, 16);
-                newString += (char) num;
-              }
-              break;
-            default:
-              INT_FATAL("Unknown C string escape");
-              break;
-          }
-        }
-
-        ret = info->builder->CreateGlobalString(newString);
+      // Note that string immediate values are stored
+      // with C escapes - that is newline is 2 chars \ n
+      // so we have to convert to a sequence of bytes
+      // for LLVM (the C backend can just print it out).
+      std::string newString = unescapeString(i->v_string);
+      ret = info->builder->CreateGlobalString(newString);
       break;
   }
 
@@ -606,7 +549,9 @@ GenRet VarSymbol::codegen() {
   ret.chplType = typeInfo();
 
   if( outfile ) {
-    if (immediate) {
+    // dtString immediates don't actually codegen as immediates, we just use
+    // them for param string functionality.
+    if (immediate && ret.chplType != dtString) {
       ret.isLVPtr = GEN_VAL;
       if (immediate->const_kind == CONST_KIND_STRING) {
         ret.c += '"';
@@ -2876,6 +2821,7 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     block->moduleUseAdd(rootModule);
+    block->moduleUseAdd(stringLiteralModule);
   }
 }
 
@@ -3000,22 +2946,158 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 *                                                                   *
 ********************************* | ********************************/
 
+std::string unescapeString(const char* const str) {
+  std::string newString = "";
+  char nextChar;
+  int pos = 0;
+
+  while((nextChar = str[pos++]) != '\0') {
+    if(nextChar != '\\') {
+      newString += nextChar;
+      continue;
+    }
+
+    nextChar = str[pos++];
+    switch(nextChar) {
+      case '\'':
+      case '\"':
+      case '?':
+      case '\\':
+        newString += nextChar;
+        break;
+      case 'a':
+        newString += '\a';
+        break;
+      case 'b':
+        newString += '\b';
+        break;
+      case 'f':
+        newString += '\f';
+        break;
+      case 'n':
+        newString += '\n';
+        break;
+      case 'r':
+        newString += '\r';
+        break;
+      case 't':
+        newString += '\t';
+        break;
+      case 'v':
+        newString += '\v';
+        break;
+      case 'x':
+        {
+          char buf[3];
+          long num;
+          buf[0] = buf[1] = buf[2] = '\0';
+          if( str[pos] ) buf[0] = str[pos++];
+          if( str[pos] ) buf[1] = str[pos++];
+          num = strtol(buf, NULL, 16);
+          newString += (char) num;
+        }
+        break;
+      default:
+        INT_FATAL("Unknown C string escape");
+        break;
+    }
+  }
+  return newString;
+}
+
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
 VarSymbol *new_StringSymbol(const char *str) {
+  SET_LINENO(stringLiteralModule);
+
+  // Hash the string and return an existing symbol if found.
+  // Aka. uniqify all string literals
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
+  imm.string_kind = STRING_KIND_STRING;
+  imm.v_string = astr(str);
+  VarSymbol *s = stringLiteralsHash.get(&imm);
+  if (s) {
+    return s;
+  }
+
+  if (resolved) {
+    INT_FATAL("new_StringSymbol called after function resolution.");
+  }
+
+  // String (as record) literals are inserted from the very beginning on the
+  // parser all the way through resolution (postFold). Since resolution happens
+  // after normalization we need to insert everything in normalized form. We
+  // also need to disable parts of normalize from running on literals inserted
+  // at parse time.
+
+  VarSymbol* cptrTemp = newTemp("call_tmp");
+  cptrTemp->addFlag(FLAG_TYPE_VARIABLE);
+  CallExpr *cptrCall = new CallExpr(PRIM_MOVE,
+      cptrTemp,
+      new CallExpr("_type_construct_c_ptr", new SymExpr(dtUInt[INT_SIZE_8]->symbol)));
+
+  VarSymbol* castTemp = newTemp("call_tmp");
+  CallExpr *castCall = new CallExpr(PRIM_MOVE,
+      castTemp,
+      new CallExpr("_cast", cptrTemp, new_CStringSymbol(str)));
+
+  int strLength = unescapeString(str).length();
+
+  CallExpr *ctor = new CallExpr("_construct_string",
+      castTemp,
+      new_IntSymbol(strLength),   // length
+      new_IntSymbol(strLength ? strLength+1 : 0), // size, empty string needs 0
+      gFalse);                    // owned = false
+  ctor->insertAtTail(gFalse);     // needToCopy = false
+
+  s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
+  s->addFlag(FLAG_NO_AUTO_DESTROY);
+  s->addFlag(FLAG_CONST);
+  DefExpr* stringLitDef = new DefExpr(s);
+  // DefExpr(s) always goes into the module scope to make it a global
+  stringLiteralModule->block->insertAtTail(stringLitDef);
+
+  CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
+
+  if (stringLiteralModule->initFn) {
+    stringLiteralModule->initFn->insertBeforeReturn(new DefExpr(cptrTemp));
+    stringLiteralModule->initFn->insertBeforeReturn(cptrCall);
+    stringLiteralModule->initFn->insertBeforeReturn(new DefExpr(castTemp));
+    stringLiteralModule->initFn->insertBeforeReturn(castCall);
+    stringLiteralModule->initFn->insertBeforeReturn(ctorCall);
+
+  } else {
+    // Modules dont have an initFn until normalization happens
+    // These Exprs will be moved into the initFn when it is created.
+    stringLiteralModule->block->insertAtTail(new DefExpr(cptrTemp));
+    stringLiteralModule->block->insertAtTail(cptrCall);
+    stringLiteralModule->block->insertAtTail(new DefExpr(castTemp));
+    stringLiteralModule->block->insertAtTail(castCall);
+    stringLiteralModule->block->insertAtTail(ctorCall);
+  }
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  stringLiteralsHash.put(s->immediate, s);
+  return s;
+}
+
+VarSymbol *new_CStringSymbol(const char *str) {
+  Immediate imm;
+  imm.const_kind = CONST_KIND_STRING;
+  imm.string_kind = STRING_KIND_C_STRING;
   imm.v_string = astr(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtStringC;
   if (s) {
     return s;
   }
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+  s = new VarSymbol(astr("_cstr_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
@@ -3196,8 +3278,16 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
 static Type*
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
-    case CONST_KIND_STRING:
-      return dtStringC;
+    case CONST_KIND_STRING: {
+      if (imm->string_kind == STRING_KIND_STRING) {
+        return dtString;
+      } else if (imm->string_kind == STRING_KIND_C_STRING) {
+        return dtStringC;
+      } else {
+        INT_FATAL("unhandled string immedate type");
+        break;
+      }
+    }
     case NUM_KIND_BOOL:
       return dtBools[imm->num_index];
     case NUM_KIND_UINT:

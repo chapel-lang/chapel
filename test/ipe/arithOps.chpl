@@ -12,18 +12,18 @@ iTwoTen       = iTen + iTwenty * iTen;
 iTwoNinety    = 30 * iTen - iTen;
 iOneFortyFive = iTwoNinety / 2;
 
-writeln('iTwenty       = ', iTwenty);
-writeln('iThirty       = ', iThirty);
-writeln(' ');
+writeln(c'iTwenty       = ', iTwenty);
+writeln(c'iThirty       = ', iThirty);
+writeln(c' ');
 
-writeln('iTwoTen       = ', iTwoTen);
-writeln('iTwoNinety    = ', iTwoNinety);
-writeln('iOneFortyFive = ', iOneFortyFive);
+writeln(c'iTwoTen       = ', iTwoTen);
+writeln(c'iTwoNinety    = ', iTwoNinety);
+writeln(c'iOneFortyFive = ', iOneFortyFive);
 
-writeln('');
-writeln('');
-writeln('');
-writeln('');
+writeln(c'');
+writeln(c'');
+writeln(c'');
+writeln(c'');
 
 
 
@@ -49,12 +49,12 @@ rTwoTen       = rTen + rTwenty * rTen;
 rTwoNinety    = 30.0 * rTen - rTen;
 rOneFortyFive = rTwoNinety / 2.0;
 
-writeln('rTwenty       = ', rTwenty);
-writeln('rThirty       = ', rThirty);
-writeln('rTwoTen       = ', rTwoTen);
-writeln('rTwoNinety    = ', rTwoNinety);
-writeln('rOneFortyFive = ', rOneFortyFive);
-writeln(' ');
+writeln(c'rTwenty       = ', rTwenty);
+writeln(c'rThirty       = ', rThirty);
+writeln(c'rTwoTen       = ', rTwoTen);
+writeln(c'rTwoNinety    = ', rTwoNinety);
+writeln(c'rOneFortyFive = ', rOneFortyFive);
+writeln(c' ');
 
 
 quit();

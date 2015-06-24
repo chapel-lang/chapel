@@ -2533,7 +2533,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
-    if e2 then path = "unknown".c_str();
+    if e2 then path = c"unknown";
     // FIX ME: could use a toString() that doesn't allocate space
     ioerror(err, "in openfd", path:string);
   }
@@ -2588,7 +2588,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
-    if e2 then path = "unknown".c_str();
+    if e2 then path = c"unknown";
     ioerror(err, "in openfp", path:string);
     // c_string path leaked, but ioerror will exit
   }
@@ -2866,7 +2866,8 @@ pragma "no doc"
 inline proc _cast(type t, x: ioLiteral) where t == string {
   var len = x.val.length;
   // need to copy the string out of the literal
-  return new string(x.val:c_ptr(uint(8)), len, len, owned=false);
+  return new string(x.val:c_ptr(uint(8)), len, len+1,
+                    owned=true, needToCopy=true);
 }
 
 /*
@@ -3446,12 +3447,12 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     var err:syserr = ENOERR;
     var got:bool = false;
 
-    err = qio_channel_scan_literal(false, _channel_internal, "true".c_str(), "true".length:ssize_t, 1);
+    err = qio_channel_scan_literal(false, _channel_internal, c"true", "true".length:ssize_t, 1);
     if !err {
       got = true;
     } else if err == EFORMAT {
       // try reading false instead.
-      err = qio_channel_scan_literal(false, _channel_internal, "false".c_str(), "false".length:ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, c"false", "false".length:ssize_t, 1);
       // got is already false, so we don't need to set it.
     }
     if !err then x = got;
@@ -3477,6 +3478,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     var len:int(64);
     var tx: c_string_copy;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
+    // TODO: make this better
     // FIX ME: Should deprecate the t == c_string path, because we always
     // return an "owned" char* buffer (or NULL).
     x = tx:string;
@@ -3484,9 +3486,9 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     for i in chpl_enumerate(t) {
-      var str = i:c_string;
-      var slen:ssize_t = str.length:ssize_t;
-      err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
+      var str = i:string;
+      var slen:ssize_t = str.length.safeCast(ssize_t);
+      err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
       // Do not free str, because enum literals are C string literals
       if !err {
         x = i;
@@ -3504,9 +3506,9 @@ pragma "no doc"
 proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, "true".c_str(), "true".length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, c"true", "true".length:ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, "false".c_str(), "false".length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, c"false", "false".length:ssize_t);
     }
   } else if isIntegralType(t) {
     // handles int types
@@ -3701,7 +3703,7 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     //writeln("in scan literal ", x.val);
-    return qio_channel_scan_literal(false, _channel_internal, x.val.c_str(), x.val.length: ssize_t, x.ignoreWhiteSpace);
+    return qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length: ssize_t, x.ignoreWhiteSpace);
     //e = qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
     //writeln("Scanning literal ", x.val,  " yeilded error ", e);
     //return e;
@@ -3734,7 +3736,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val.c_str(), x.val.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length:ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {

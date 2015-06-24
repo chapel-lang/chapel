@@ -262,6 +262,7 @@
 %token <pch> REALLITERAL
 %token <pch> IMAGLITERAL
 %token <pch> STRINGLITERAL
+%token <pch> CSTRINGLITERAL
 %token <pch> EXTERNCODE
 
 //
@@ -1482,6 +1483,7 @@ literal_expr:
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
+| CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR

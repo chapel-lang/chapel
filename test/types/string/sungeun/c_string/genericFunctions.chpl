@@ -96,7 +96,7 @@ var vs: string;
 
 {
   proc g(param s) {
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   g("bye");
@@ -104,9 +104,19 @@ var vs: string;
 }
 
 {
+  proc g(param s) {
+    checkType(c_string, s.type);
+  }
+
+  g(c"bye");
+  g(s=c"bye");
+}
+
+
+{
   proc f(type gtype, g, param s) {
     checkType(gtype, g.type);
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   f(int, 3, "bye");
@@ -116,7 +126,7 @@ var vs: string;
 {
   proc f(param s, type gtype, g = 3.14) {
     checkType(gtype, g.type);
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   f("bye", real);

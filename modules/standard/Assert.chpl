@@ -38,7 +38,7 @@ module Assert {
 */
 proc assert(test: bool) {
   if !test then
-    __primitive("chpl_error", "assert failed");
+    __primitive("chpl_error", c"assert failed");
 }
   
 
@@ -56,7 +56,7 @@ proc assert(test: bool, args ...?numArgs) {
   if !test {
     var tmpstring: string;
     tmpstring.write((...args));
-    __primitive("chpl_error", "assert failed - " + tmpstring.c_str());
+    __primitive("chpl_error", c"assert failed - " + tmpstring.c_str());
   }
 }
 
