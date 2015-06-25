@@ -1750,14 +1750,22 @@ buildClassDefExpr(const char* name,
 }
 
 
+//
+// If an argument has intent 'INTENT_TYPE', this function sets up the
+// ArgSymbol the way downstream passes expect it to be.
+//
+static void setupTypeIntentArg(ArgSymbol* arg) {
+  arg->intent = INTENT_BLANK;
+  arg->addFlag(FLAG_TYPE_VARIABLE);
+  arg->type = dtAny;
+}
+
+
 DefExpr*
 buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
   ArgSymbol* arg = new ArgSymbol(tag, ident, dtUnknown, type, init, variable);
   if (arg->intent == INTENT_TYPE) {
-    type = NULL;
-    arg->intent = INTENT_BLANK;
-    arg->addFlag(FLAG_TYPE_VARIABLE);
-    arg->type = dtAny;
+    setupTypeIntentArg(arg);
   } else if (!type && !init)
     arg->type = dtAny;
   return new DefExpr(arg);
@@ -1863,14 +1871,12 @@ buildFunctionSymbol(FnSymbol*   fn,
   if (class_name)
   {
     ArgSymbol* arg = new ArgSymbol(thisTag,
-				   "this",
-				   dtUnknown,
-				   new UnresolvedSymExpr(class_name));
+                                   "this",
+                                   dtUnknown,
+                                   new UnresolvedSymExpr(class_name));
     fn->_this = arg;
     if (thisTag == INTENT_TYPE) {
-      arg->intent = INTENT_BLANK;
-      arg->addFlag(FLAG_TYPE_VARIABLE);
-      arg->type = dtAny;
+      setupTypeIntentArg(arg);
     }
 
     arg->addFlag(FLAG_ARG_THIS);
