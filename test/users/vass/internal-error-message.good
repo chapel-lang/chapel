@@ -2,7 +2,7 @@ internal-error-message.chpl:72: In function 'scalar_outer_product_cholesky':
  Unfortunately the Chapel compiler has encountered
  an internal error. Please file a bug report that
  includes a program reproducing the problem as well
- as this output. See http://chapel.cray.com for
+ as this output. See http://chapel.cray.com/getinvolved.html for
  further instructions on filing bug reports.
 
 internal-error-message.chpl:90: internal error: the type of the actual argument 'A' is generic [callInfo.cpp:56]
