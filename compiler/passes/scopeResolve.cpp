@@ -1716,18 +1716,19 @@ static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
                                            Vec<ModuleSymbol*>* current,
                                            Vec<ModuleSymbol*>* alreadySeen);
 
-// Given an unresolvedSymExpr, determine the value of all symbols in its
-// calling context and return them.
+// Given a name and a scope, determine the symbol referred by that name in the
+// context of that scope.
 static Symbol* lookup(BaseAST* scope, const char* name) {
   Symbol * symbolResult;
   std::vector<Symbol * > symbolOptions;
   Vec<BaseAST*> nestedscopes;
 
-  // TODO: Need to traverse all call expressions of the "." accessor.
+  // Lydia note: I would like to investigate the effect of traversing all call
+  // expressions of the "." accessor.
 
 
-  // Call inner lookup on name as scope, the list of names, the symbols return
-  // map, and the vector of ASTs already visited.
+  // Call inner lookup on scope, the name, the symbols return vector, and the
+  // vector of ASTs already visited.
   lookup(scope, name, symbolOptions, nestedscopes);
 
   int numFound = symbolOptions.size();
@@ -1750,8 +1751,7 @@ static Symbol* lookup(BaseAST* scope, const char* name) {
   }
 
   return symbolResult;
-  // return list of symbols matching the unresolved sym expressions
-
+  // return symbol matching the name
 }
 
 // inSymbolTable returns a Symbol* if there was an entry for this scope
@@ -1759,26 +1759,38 @@ static Symbol* lookup(BaseAST* scope, const char* name) {
 static Symbol* inSymbolTable(BaseAST* scope, const char* name) {
   if (symbolTable.count(scope) != 0) {
     SymbolTableEntry* entry = symbolTable[scope];
-    if (entry->count(name) != 0)
-      return (*entry)[name];
+    if (entry->count(name) != 0) {
+      // If the symbol found isn't a method, or it was a method and we are
+      // in the appropriate scope to add it (as determined by calling
+      // methodMatched), then return the symbol
+      if (!sym->hasFlag(FLAG_METHOD) || (methodMatched(scope, toFnSymbol(sym))))
+        return (*entry)[name];
+    }
   }
   return NULL;
 }
 
+// Determines and obtains a method by the given name on the given type
+//
+// This function uses the same methodology as isMethodName but returns the
+// symbol found instead of just a boolean
 static Symbol* getMethod(const char* name, Type* type) {
   if (!strcmp(name, type->symbol->name))
     return NULL;
 
+  // Looks for name in methods defined directly on this type
   forv_Vec(Symbol, method, type->methods) {
     if (method && !strcmp(name, method->name))
       return method;
   }
 
+  // Looks for name in methods defined on parent types
   forv_Vec(Type, pt, type->dispatchParents) {
     if (Symbol *sym = getMethod(name, pt))
       return sym;
   }
 
+  // Looks for name in types wrapping this type definition
   if (AggregateType* ct = toAggregateType(type)) {
     Type *outerType = ct->symbol->defPoint->parentSymbol->type;
 
@@ -1790,11 +1802,15 @@ static Symbol* getMethod(const char* name, Type* type) {
   return NULL;
 }
 
+// For a scope and a given method, determine if the method is visible in this
+// scope
 static bool methodMatched(BaseAST* scope, FnSymbol* method) {
   if (method->_this->type->symbol == scope) {
     return true;
   } else {
     BaseAST* curScope = getScope(scope);
+    // Traverse up the scopes either until we find this method or until there
+    // are no more scopes to traverse
     while (curScope) {
       if (TypeSymbol* ts = toTypeSymbol(scope)) {
         // Are we in a type symbol?
@@ -1816,13 +1832,15 @@ static bool methodMatched(BaseAST* scope, FnSymbol* method) {
 }
 
 // If the current scope is an aggregate type, checks if the name refers to a
-// field on that type.  If a match is found, return it.  Otherwise return NULL.
+// field or method on that type.  If a match is found, return it.  Otherwise
+// return NULL.
 static Symbol* inType(BaseAST* scope, const char* name) {
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
       if (Symbol* sym = ct->getField(name, false)) {
         return sym;
       } else if (Symbol* fn = getMethod(name, ct)) {
+        // There is a method of that name, is it visible?
         if (methodMatched(scope, toFnSymbol(fn))) {
           return fn;
         }
@@ -1832,16 +1850,11 @@ static Symbol* inType(BaseAST* scope, const char* name) {
   return NULL;
 }
 
-// Assumes that symbols[name] contains nothing before entering this function
+// Assumes that symbols contains nothing before entering this function
 static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
                                 std::vector<Symbol* >& symbols) {
   if (Symbol* sym = inSymbolTable(scope, name)) {
-    // Shove this into inSymbolTable?
-    if (sym->hasFlag(FLAG_METHOD) && !methodMatched(scope, toFnSymbol(sym))) {
-      // Don't add it
-    } else {
-      symbols.push_back(sym);
-    }
+    symbols.push_back(sym);
   }
 
   if (Symbol* sym = inType(scope, name)) {
@@ -1861,6 +1874,7 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
   }
 
   if (symbols.size() == 0) {
+    // Nothing found so far, look into the uses.
     if (BlockStmt* block = toBlockStmt(scope)) {
       if (block->modUses) {
         Vec<ModuleSymbol*>* modules = NULL;
@@ -1891,11 +1905,7 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
         forv_Vec(ModuleSymbol, mod, *modules) {
           if (mod) {
             if (Symbol* sym = inSymbolTable(mod->block, name)) {
-              if (sym->hasFlag(FLAG_METHOD) && !methodMatched(scope, toFnSymbol(sym))) {
-                // Don't add it
-              } else {
-                symbols.push_back(sym);
-              }
+              symbols.push_back(sym);
             }
           } else {
             //
@@ -1921,6 +1931,7 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
               // name as a module level variable.
               USR_WARN(sym, "Module level symbol is hiding function argument '%s'", name);
               //symbols.push_back(sym);
+              // If we wanted this to be an error case, uncomment the above line
             }
           }
         }
@@ -1932,9 +1943,12 @@ static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
 }
 
 
-// Only stores symbols in the vector if something was found (though we might
-// have reached an undecidable point, in which case we should return to be
-// safe).
+// Recursive look up - separates the checks which occur in the scope from the
+// steps that occur to get the next scope.
+//
+// Note that having this set up would make it easier to check the entirety of
+// an access call (M1.M2.M3, for instance) as the recursion does not occur in
+// the innermost scope.
 static void lookup(BaseAST* scope, const char * name,
                     std::vector<Symbol* >& symbols,
                     Vec<BaseAST*>& alreadyVisited) {
@@ -1942,9 +1956,14 @@ static void lookup(BaseAST* scope, const char * name,
     alreadyVisited.set_add(scope);
 
     if (lookupThisScopeOnly(scope, name, symbols)) {
-        // TODO:
-        // We've found an instance here.  Let's look in our surrounding scopes
-        // for the symbols on the left and right part of the call (if any).
+      // We've found an instance here.
+      // Lydia note: in the access call case, we'd want to look in our
+      // surrounding scopes for the symbols on the left and right part of the
+      // call (if any) to verify we were finding anything in particular.
+      // A symbol could be visible in the innermost scope because it was defined
+      // in an outer scope (for instance, if M1 defines foo, M2 doesn't shadow
+      // it and we're looking for M1.M2.foo), so that is something to keep in
+      // mind as well.
 
       return;
     }
