@@ -8130,6 +8130,14 @@ static void replaceTypeArgsWithFormalTypeTemps()
         }
       }
       formal->defPoint->remove();
+      //
+      // If we're removing the formal representing 'this' (if it's a
+      // type, say), we need to nullify the 'this' pointer in the
+      // function as well to avoid assumptions that it's legal later.
+      //
+      if (formal == fn->_this) {
+        fn->_this = NULL;
+      }
     }
   }
 }
