@@ -8118,7 +8118,7 @@ static void replaceTypeArgsWithFormalTypeTemps()
       // function as well to avoid assumptions that it's legal later.
       //
       if (formal == fn->_this) {
-	fn->_this = NULL;
+        fn->_this = NULL;
       }
     }
   }
