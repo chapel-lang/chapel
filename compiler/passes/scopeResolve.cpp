@@ -1754,22 +1754,6 @@ static Symbol* lookup(BaseAST* scope, const char* name) {
   // return symbol matching the name
 }
 
-// inSymbolTable returns a Symbol* if there was an entry for this scope
-// that matched this name, NULL otherwise.
-static Symbol* inSymbolTable(BaseAST* scope, const char* name) {
-  if (symbolTable.count(scope) != 0) {
-    SymbolTableEntry* entry = symbolTable[scope];
-    if (entry->count(name) != 0) {
-      // If the symbol found isn't a method, or it was a method and we are
-      // in the appropriate scope to add it (as determined by calling
-      // methodMatched), then return the symbol
-      if (!sym->hasFlag(FLAG_METHOD) || (methodMatched(scope, toFnSymbol(sym))))
-        return (*entry)[name];
-    }
-  }
-  return NULL;
-}
-
 // Determines and obtains a method by the given name on the given type
 //
 // This function uses the same methodology as isMethodName but returns the
@@ -1829,6 +1813,23 @@ static bool methodMatched(BaseAST* scope, FnSymbol* method) {
     }
     return false;
   }
+}
+
+// inSymbolTable returns a Symbol* if there was an entry for this scope
+// that matched this name, NULL otherwise.
+static Symbol* inSymbolTable(BaseAST* scope, const char* name) {
+  if (symbolTable.count(scope) != 0) {
+    SymbolTableEntry* entry = symbolTable[scope];
+    if (entry->count(name) != 0) {
+      Symbol* sym = (*entry)[name];
+      // If the symbol found isn't a method, or it was a method and we are
+      // in the appropriate scope to add it (as determined by calling
+      // methodMatched), then return the symbol
+      if (!sym->hasFlag(FLAG_METHOD) || (methodMatched(scope, toFnSymbol(sym))))
+        return sym;
+    }
+  }
+  return NULL;
 }
 
 // If the current scope is an aggregate type, checks if the name refers to a
