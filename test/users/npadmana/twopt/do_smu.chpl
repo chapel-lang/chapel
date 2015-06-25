@@ -32,6 +32,7 @@ proc main() {
 record WeightedParticle3D {
   var x : NDIM*real;
   var w : real;
+  var r2 : real;
 }
 
 proc countLines(fn : string) : int {
@@ -59,46 +60,26 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
    if (icol < 4) then assert(false,"malformed line...");
    for jj in Ddim do pp[ipart].x(jj) = cols[jj];
    pp[ipart].w = cols[4];
+   pp[ipart].r2 = + reduce (pp[ipart].x**2);
    ipart += 1;
   }
 }
 
-class SOA_WeightedParticle3D {
-  var npart : int;
-  var Dpart : domain(1);
-  var x,y,z,w,r2 : [Dpart] real;
-
-
-  proc SOA_WeightedParticle3D(pp : []WeightedParticle3D) {
-    npart = pp.size;
-    Dpart = 0.. #npart;
-
-    forall ii in Dpart {
-      x[ii] = pp[ii].x(1);
-      y[ii] = pp[ii].x(2);
-      z[ii] = pp[ii].x(3);
-      w[ii] = pp[ii].w;
-      r2[ii] = + reduce (pp[ii].x**2);
-    }
-  }
-}
-
-
-proc smuAccumulate(hh : UniformBins, p1,p2 : SOA_WeightedParticle3D, d1,d2 : domain(1), scale : real) {
+proc smuAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : domain(1), scale : real) {
   forall ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;
     var sl, s2, l1, s1, l2, mu, wprod : real;
-    x1 = p1.x[ii]; y1 = p1.y[ii]; z1 = p1.z[ii]; w1 = p1.w[ii]; r2 = p1.r2[ii];
+    x1 = p1[ii].x(1); y1 = p1[ii].x(2); z1 = p1[ii].x(3); w1 = p1[ii].w; r2 = p1[ii].r2;
 
     for jj in d2 { // Second set of particles
-      mu=2*(p2.x[jj]*x1 + p2.y[jj]*y1 + p2.z[jj]*z1);
-      sl = r2 - p2.r2[jj];
-      l1 = r2 + p2.r2[jj];
+      mu=2*(p2[jj].x(1)*x1 + p2[jj].x(2)*y1 + p2[jj].x(3)*z1);
+      sl = r2 - p2[jj].r2;
+      l1 = r2 + p2[jj].r2;
       s2 = l1 - mu;
       l2 = l1 + mu;
       if ((s2 >= smax2) || (s2 < 1.0e-20)) then continue;
-      wprod = scale * w1 * p2.w[jj];
+      wprod = scale * w1 * p2[jj].w;
       s1 = sqrt(s2);
       mu = sl/(s1*sqrt(l2));
       if (mu < 0) then mu = -mu;
@@ -107,6 +88,8 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : SOA_WeightedParticle3D, d1,d2 : dom
     }
   }
 }
+
+
 
 proc splitOn(pp : []WeightedParticle3D, scr : []WeightedParticle3D, splitDim : int, xsplit : real) : int {
   var npart, lnpart : int;
@@ -206,7 +189,7 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : SOA_WeightedParticle3D, node1, node2 : KDNode) {
+proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node2 : KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);
@@ -284,8 +267,8 @@ proc doPairs() {
   // AOS -> SOA
   // TODO : Turn off this swapping...
   tt.clear(); tt.start();
-  var soa1 = new SOA_WeightedParticle3D(pp1);
-  var soa2 = new SOA_WeightedParticle3D(pp2);
+//  var soa1 = new SOA_WeightedParticle3D(pp1);
+//  var soa2 = new SOA_WeightedParticle3D(pp2);
   tt.stop();
   if !isTest then writef("Time to SOA : %r \n", tt.elapsed());
 
@@ -306,7 +289,7 @@ proc doPairs() {
    // Do the paircounts with a tree
   hh.reset();
   tt.clear(); tt.start();
-  sync TreeAccumulate(hh, soa1, soa2, root1, root2);
+  sync TreeAccumulate(hh, pp1, pp2, root1, root2);
   tt.stop();
   if (!isTest) {
     writef("Time to tree paircount : %r \n", tt.elapsed());
@@ -322,8 +305,8 @@ proc doPairs() {
   //
   // clean up
   //
-  delete soa1;
-  delete soa2;
+//  delete soa1;
+//  delete soa2;
   delete hh;
   delete root1;
   delete root2;
