@@ -4,7 +4,11 @@ use Time;
 
 // Test flags
 config const isTest=false;
+config const isPerf=false;
 config const doBrute=false;
+
+// Performance test parameters
+config const nParticles=10000;
 
 // Input/Output filenames
 config const fn1 = "test.dat";
@@ -46,13 +50,25 @@ class Particle3D {
   var _tmp : [Dpart] real;
   var _n1, _ndx : [Dpart] int;
 
-  proc Particle3D(npart1 : int) {
+  proc Particle3D(npart1 : int, random : bool = false) {
     npart = npart1;
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};
+    if random {
+      var rng = new RandomStream();
+      var x, y, z : real;
+      for ii in Dpart {
+        x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z = rng.getNext()*1000.0;
+        arr[0,ii] = x; arr[1, ii] = y; arr[2, ii] = z;
+        arr[3,ii] = 1.0;
+        arr[4,ii] = x**2 + y**2 + z**2;
+      }
+      delete rng;
+    }
   }
 
   proc this(ii : int) : NTOT*real {
+    // ??? Hardcoded hack!
     return (arr[0,ii],arr[1,ii],arr[2,ii],arr[3,ii],arr[4,ii]);
   }
 
@@ -115,6 +131,7 @@ proc readFile(fn : string) : Particle3D  {
     pp.arr[..,ipart] = [x,y,z,w,r2];
     ipart += 1;
   }
+  ff.close();
 
   return pp;
 }
@@ -282,12 +299,18 @@ proc doPairs() {
 
   // Read in the file
   tt.clear(); tt.start();
-  var pp1 = readFile(fn1);
-  var pp2 = readFile(fn2);
-  tt.stop();
-  if !isTest {
+  var pp1, pp2 : Particle3D;
+  if isPerf {
+    pp1 = new Particle3D(nParticles, true);
+    pp2 = new Particle3D(nParticles, true);
+  } else {
+    pp1 = readFile(fn1);
+    pp2 = readFile(fn2);
     writef("Read in %i lines from file %s \n", pp1.npart, fn1);
     writef("Read in %i lines from file %s \n", pp2.npart, fn2);
+  }
+  tt.stop();
+  if !isTest {
     writef("Time to read : %r \n", tt.elapsed());
   }
 
@@ -318,9 +341,11 @@ proc doPairs() {
   tt.stop();
   if (!isTest) {
     writef("Time to tree paircount : %r \n", tt.elapsed());
-    var ff = openwriter("%s.tree".format(pairfn));
-    writeHist(ff,hh);
-    ff.close();
+    if !isPerf {
+      var ff = openwriter("%s.tree".format(pairfn));
+      writeHist(ff,hh);
+      ff.close();
+    }
   } else {
     hh.set((0,0),0.0);
     writeHist(stdout,hh,"%20.5er ");
