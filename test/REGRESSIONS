@@ -166,17 +166,6 @@ general
 Reviewed 2015-05-20
 ===================
 
-New failing future due to fixing of ref intent overloading (2015-06-19, kyle)
-(linux64, gasnet-everything)
------------------------------------------------------------------------------
-[Error matching .bad file for functions/bradc/paramThis/funParamThis4]
-
-New failing future due to scoping of defaultOf (2015-06-19, lydia/michael)
-(linux64, gasnet-everything)
---------------------------------------------------------------------------
-[Error matching .bad file for modules/sungeun/no-use-record]
-
-
 === sporadic failures below ===
 
 sporadic failure to build chpldoc due to python download timeout (mike, ben)
