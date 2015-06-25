@@ -165,11 +165,6 @@ setupError(const char *filename, int lineno, int tag) {
 
 static void
 printDevelErrorHeader(BaseAST* ast) {
-  int apologize = 0;
-  int have_ast_line = 0;
-  const char* filename;
-  int linenum;
-
   if (!err_print) {
     if (Expr* expr = toExpr(ast)) {
       Symbol* parent = expr->parentSymbol;
@@ -204,13 +199,16 @@ printDevelErrorHeader(BaseAST* ast) {
     }
   }
 
+  bool have_ast_line = false;
+  const char* filename;
+  int linenum;
 
   if ( ast && ast->linenum() ) {
-    have_ast_line = 1;
+    have_ast_line = true;
     filename = cleanFilename(ast);
     linenum = ast->linenum();
   } else {
-    have_ast_line = 0;
+    have_ast_line = false;
     if ( !err_print && currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
       // Use our best guess for the line number for user errors,
       // but don't do that for err_print (USR_PRINT) notes that don't
@@ -223,10 +221,8 @@ printDevelErrorHeader(BaseAST* ast) {
     }
   }
 
-  if (err_user)
-    apologize = 0;
-  else
-    apologize = 1;
+  bool apologize = !err_user;
+  bool guess = filename && !have_ast_line;
 
   if ( apologize ) {
     fprintf(stderr, " Unfortunately the Chapel compiler has encountered\n"
@@ -235,7 +231,7 @@ printDevelErrorHeader(BaseAST* ast) {
                     " as this output. See %s for\n"
                     " further instructions on filing bug reports.\n"
                     "\n", help_url);
-    if ( !have_ast_line && filename) {
+    if ( guess ) {
       // Print out our best guess for the location of an error
       // if we had no source location
       fprintf(stderr, " The error may be related to this location:\n"
@@ -245,9 +241,13 @@ printDevelErrorHeader(BaseAST* ast) {
   }
 
 
+  // TODO: indicate that the file/line is a guess if
+  //  (err_user && filename && guess && !developer)
+  // which will almost certainly change some .good files
+
   if (filename) {
     fprintf(stderr, "%s:%d: ", filename, linenum);
-    if( developer && !have_ast_line ) {
+    if( developer && guess ) {
       fprintf(stderr, "[source location guessed] ");
     }
   }
