@@ -4964,7 +4964,7 @@ preFold(Expr* expr) {
             }
           }
           if (!nowarn)
-            USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
+            USR_WARN(type->symbol, "type %s does not currently support noinit, using default initialization", type->symbol->name);
           result = new CallExpr(PRIM_INIT, call->get(1)->remove());
           call->replace(result);
           inits.add((CallExpr *)result);
