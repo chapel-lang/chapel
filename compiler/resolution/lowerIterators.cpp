@@ -1941,13 +1941,40 @@ inlineIterators() {
 }
 
 
-// I think these routines are no longer needed.  AMM should take care of adding
-// free iterator calls where they are needed.
-// This routine was inserting autodestroys in test_glob that are not needed and
-// undesirable, so it looks like it's time to turn it off.
-// It may be that it needs to be revised and reinserted.  But it is at least 
-// less harried to approach the ideal from the side of leaking memory over
-// approaching from the side where execution fails.
+static bool iteratorDefPrecedesGoto(CallExpr* freeIterCall,
+                                    GotoStmt* stmt,
+                                    BlockStmt* block)
+{
+  // The iterator being freed is the argument of the _freeIterator call.
+  SymExpr* iterator = toSymExpr(freeIterCall->get(1));
+
+  std::vector<Expr*> exprs;
+  collectExprs(block, exprs);
+  for_vector(Expr, expr, exprs)
+  {
+    if (expr == stmt)
+      // We found the goto first.
+      // The iterator is not live, so there is no need to delete it.
+      return false;
+
+    if (CallExpr* call = toCallExpr(expr))
+    {
+      if (call->isPrimitive(PRIM_MOVE))
+      {
+        SymExpr* lhs = toSymExpr(call->get(1));
+        if (lhs->var == iterator->var)
+          // This is a def of the iterator symbol, so it is initialized before
+          // the goto statement.
+          return true;
+      }
+    }
+  }
+  // We never saw a definition for the iterator, so the safe thing to do is to
+  // not delete it.
+  return false;
+}
+
+
 static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
 {
   // Examine the target label of the goto and find the block containing the
@@ -1980,10 +2007,14 @@ static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
           // Naturally, a flag is preferred.
           if (fn && !strcmp(fn->name, "_freeIterator"))
           {
-            // OK, we found a _freeIterator call that will be crossed,
-            // so duplicate it just before the break or return.
-            SET_LINENO(call);
-            stmt->insertBefore(call->copy());
+            // Don't bother with iterators that haven't been initialized yet.
+            if (iteratorDefPrecedesGoto(call, stmt, block))
+            {
+              // OK, we found a _freeIterator call that will be crossed,
+              // so duplicate it just before the break or return.
+              SET_LINENO(call);
+              stmt->insertBefore(call->copy());
+            }
           }
         }
       }
