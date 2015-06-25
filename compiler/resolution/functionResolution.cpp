@@ -2408,6 +2408,12 @@ printResolutionErrorUnresolved(
                      Vec<FnSymbol*>& visibleFns,
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
+
+  if( developer ) {
+    // Should this be controled another way?
+    USR_FATAL_CONT(call, "failed to resolve call with id %i", call->id);
+  }
+
   if (!strcmp("_cast", info->name)) {
     if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal cast to non-type",
@@ -3268,6 +3274,9 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
          info.call->id == explainCallID))
     {
       USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+      if( info.call->id == breakOnResolveID ) {
+        gdbShouldBreakHere();
+      }
     }
 
     filterCandidate(candidates, visibleFn, info);
@@ -3295,6 +3304,9 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
          info.call->id == explainCallID))
     {
       USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+      if( info.call->id == breakOnResolveID ) {
+        gdbShouldBreakHere();
+      }
     }
 
     filterCandidate(candidates, visibleFn, info);
@@ -3328,6 +3340,12 @@ resolveCall(CallExpr* call)
 
 
 void resolveNormalCall(CallExpr* call) {
+
+  if( call->id == breakOnResolveID ) {
+    printf("breaking on call:\n");
+    print_view(call);
+    gdbShouldBreakHere();
+  }
 
   resolveDefaultGenericType(call);
 
