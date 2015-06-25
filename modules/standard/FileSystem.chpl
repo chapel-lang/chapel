@@ -805,6 +805,10 @@ proc isDir(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
+  var doesExist = exists(error, name);
+  if (error != ENOERR || !doesExist) {
+    return false;
+  }
   error = chpl_fs_is_dir(ret, name.c_str());
   return ret != 0;
 }
@@ -833,6 +837,10 @@ proc isFile(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
+  var doesExist = exists(error, name);
+  if (error != ENOERR || !doesExist) {
+    return false;
+  }
   error = chpl_fs_is_file(ret, name.c_str());
   return ret != 0;
 }
@@ -861,6 +869,10 @@ proc isLink(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
+  var doesExist = exists(error, name);
+  if (error != ENOERR || !doesExist) {
+    return false;
+  }
   error = chpl_fs_is_link(ret, name.c_str());
   return ret != 0;
 }
@@ -889,6 +901,10 @@ pragma "no doc"
 proc isMount(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
 
+  var doesExist = exists(error, name);
+  if (error != ENOERR || !doesExist) {
+    return false;
+  }
   if (isFile(name)) {
     // Files aren't mount points.  That would be silly.
     error = ENOERR;
