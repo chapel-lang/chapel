@@ -4301,8 +4301,11 @@ GenRet CallExpr::codegen() {
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ret = codegenRaddr(get(1));
       } else {
-        ret = get(1);
+        ret = codegenValue(get(1));
       }
+      // _wide_get_addr promises to return a uint.  Hence the cast.
+      ret = codegenCast(dtUInt[INT_SIZE_64], ret);
+      ret.isUnsigned = true;
       break;
     }
     case PRIM_ADDR_OF:

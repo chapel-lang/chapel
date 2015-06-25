@@ -96,15 +96,15 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
+static Type*
+returnInfoUInt64(CallExpr* call) {
+  return dtUInt[INT_SIZE_64];
+}
+
 /*
 static Type*
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
-}
-
-static Type*
-returnInfoUInt64(CallExpr* call) {
-  return dtUInt[INT_SIZE_64];
 }
 
 
@@ -560,7 +560,7 @@ initPrimitive() {
   // This will be unnecessary once the module code calls the corresponding
   // function directly.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
-  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
+  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoUInt64, false, true);
 
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
