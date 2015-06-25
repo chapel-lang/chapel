@@ -306,8 +306,10 @@ proc doPairs() {
   } else {
     pp1 = readFile(fn1);
     pp2 = readFile(fn2);
-    writef("Read in %i lines from file %s \n", pp1.npart, fn1);
-    writef("Read in %i lines from file %s \n", pp2.npart, fn2);
+    if !isTest {
+      writef("Read in %i lines from file %s \n", pp1.npart, fn1);
+      writef("Read in %i lines from file %s \n", pp2.npart, fn2);
+    }
   }
   tt.stop();
   if !isTest {
