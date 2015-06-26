@@ -1019,17 +1019,13 @@ static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt)
     CallExpr* partial;
     if (!type) {
       partial = new CallExpr("newAlias", gMethodToken, init->remove());
-      // newAlias is not a method, so we don't set the methodTag
-      // TODO AMM: newAlias should return a constructed object, which would make
-      // this autoCopy redundant.
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
     } else {
       partial = new CallExpr("reindex", gMethodToken, init->remove());
       partial->partialTag = true;
       partial->methodTag = true;
-      // TODO AMM: Does reindex return a constructed object?  If so, the autoCopy
-      // call is redundant.
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var,
+                                     new CallExpr(partial, type->remove())));
     }
 }
 

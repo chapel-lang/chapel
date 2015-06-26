@@ -1,3 +1,7 @@
 #!/bin/bash
+# This script is a bit fragile, so should be re-thought if it becomes too noisy.
+# grep should match one "else", which is the else branch of the "config var u" initialization.
+# If it matches more than that, the test fails because param folding did not remove dead
+# "then" or "else" clauses.
 
-grep folded output/*.c output/*.h >> $1.exec.out.tmp
+grep " else " output/foldUintZeroes.c | wc >> $1.exec.out.tmp

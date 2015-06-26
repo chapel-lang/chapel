@@ -1,0 +1,3 @@
+#!/bin/bash
+
+grep folded output/*.c output/*.h >> $1.exec.out.tmp
