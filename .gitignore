@@ -262,6 +262,8 @@ tags
 /test/modules/standard/FileSystem/lydia/exists/file
 /test/modules/standard/FileSystem/lydia/exists/file_link
 /test/modules/standard/FileSystem/lydia/exists/going_away
+/test/modules/standard/FileSystem/lydia/isLink/broken_dir_link
+/test/modules/standard/FileSystem/lydia/isLink/broken_file_link
 /test/modules/standard/FileSystem/lydia/isLink/my_dir
 /test/modules/standard/FileSystem/lydia/isLink/my_file
 /test/modules/standard/FileSystem/lydia/isLink/my_link_dir
