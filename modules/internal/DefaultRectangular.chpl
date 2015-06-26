@@ -71,7 +71,8 @@ module DefaultRectangular {
   //
   pragma "private" var defaultDist = new dmap(new DefaultDist());
   inline proc chpl_defaultDistInitPrivate() {
-    if defaultDist._value==nil then defaultDist = new dmap(new DefaultDist());
+    if defaultDist._value==nil then __primitive("move", defaultDist, new dmap(new DefaultDist()));
+      //defaultDist = new dmap(new DefaultDist());
   }
   
   class DefaultRectangularDom: BaseRectangularDom {
