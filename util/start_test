@@ -731,7 +731,6 @@ set perflabel = ""
 set perfkeys  = ""
 set compperformance = 0
 set compperformancedescription = ""
-set oldgraphs = 0
 set gengraphs = 0
 set graphsdisprange = 1
 set graphsgendefault = "avg"
@@ -915,11 +914,6 @@ while ( $#argv > 0 )
     case -generate-graphs:
         shift
         set gengraphs = 1
-        breaksw
-    case --gen-old-graphs:
-    case -gen-old-graphs:
-        shift
-        set oldgraphs = 1
         breaksw
     case --nodisplaygraphrange:
     case -nodisplaygraphrange:
@@ -1339,7 +1333,6 @@ if ($performance || $gengraphs) then
         set startdate_t = ""
     endif
     set createCoolerGraphs = ($utildir/test/genGraphs $genGraphOpts)
-    set createGraphs = $utildir/test/createGraphs
     set viewGraphs = $utildir/test/viewGraphs
 endif
 
@@ -1624,15 +1617,6 @@ foreach test ($testlist)
             # For single tests, we only look for a $testname.graph file
             set graphfile = `basename $testname | sed -e 's/\.chpl$//' -e 's/\.test\.c$//'`.graph
             if (-e $graphfile) then
-                if ($oldgraphs) then
-                    echo "[Executing createGraphs for $basedir/$graphfile in $perfdir]" |& $tee -a $logfile
-                    $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
-                    if ($status == 0) then
-                        echo "[Success generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                    else
-                        echo "[Error generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                    endif
-                endif
                 # new performance graph stuff
                 echo "[Executing genGraphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
                 $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" "$graphsdisprange" -r "$graphsgendefault" "$graphfile" |& $tee -a $logfile
@@ -1792,18 +1776,6 @@ foreach testType ($testTypes)
                 # generate performance graphs
                 # do this in a somewhat kludgy way to avoid stderr output
                 set graphfiles = `find . -maxdepth 1 -name \*.graph`
-                if ($oldgraphs) then
-                    foreach gfile ($graphfiles)
-                        set graphfile = `basename $gfile`
-                        echo "[Executing createGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        $createGraphs "$graphfile" "$perfdir" "$startdate" |& $tee -a $logfile
-                        if ($status == 0) then
-                            echo "[Success generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        else
-                            echo "[Error generating old-style graphs for $graphfile in $perfdir]" |& $tee -a $logfile
-                        endif
-                    end
-                endif
                 # new performance graph stuff
                 if (! $?CHPL_TEST_PERF_DIR && "$graphfiles" != "") then
                     echo "[Executing genGraphs for graphfiles in $dir in $perfhtmldir]" |& $tee -a $logfile
@@ -1851,15 +1823,6 @@ if ($compperformance) then
 endif
 
 if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
-    if ($oldgraphs) then
-        echo "[Executing viewGraphs in $perfdir]" |& $tee -a $logfile
-        $viewGraphs "$perfdir" |& $tee -a $logfile
-        if ($status == 0) then
-            echo "[Success generating old-style graph views in $perfdir]" |& $tee -a $logfile
-        else
-            echo "[Error generating old-style graph views in $perfdir]" |& $tee -a $logfile
-        endif
-    endif
     # new performance graph stuff
     set execGraphList = $CHPL_HOME/test/GRAPHFILES
     echo "[Executing genGraphs for $execGraphList in $perfhtmldir]" |& $tee -a $logfile
