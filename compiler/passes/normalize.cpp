@@ -983,10 +983,7 @@ fix_def_expr(VarSymbol* var) {
   if (var->hasFlag(FLAG_CONST) && !var->hasEitherFlag(FLAG_EXTERN, FLAG_REF_VAR)) {
     constTemp = newTemp("const_tmp");
     stmt->insertBefore(new DefExpr(constTemp));
-    // Temporary hack: Add an autoCopy here, because the var is being
-    // initialized with the RHS value.
-    // Later, this insertion will be handled parsimoniously by insertAutoCopyAutoDestroy.
-    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", constTemp)));
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
   }
 
   //
