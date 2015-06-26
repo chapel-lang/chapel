@@ -1,5 +1,9 @@
 module Histogram {
 
+  // This allows us to turn off the atomic histogram add
+  // to test the overhead we're getting from it.
+  config param doHist = true;
+
   class UniformBins {
     param dim : int;
     var nbins : dim*int;
@@ -37,7 +41,7 @@ module Histogram {
 
       var pos : dim*int;
       for param ii in 1..dim do pos(ii) = ((x(ii)-lo(ii))*invdx[ii]) : int;
-      arr[pos].add(w);
+      if doHist then arr[pos].add(w);
     }
 
     proc set(ndx : dim*int, val : real) {

@@ -6,7 +6,6 @@ use Time;
 config const isTest=false;
 config const isPerf=false;
 config const doBrute=false;
-config param doHist=true;
 
 // Performance test parameters
 config const nParticles=10000;
@@ -290,7 +289,7 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scal
         mu = sl/(s1*sqrt(l2));
         if (mu < 0) then mu = -mu;
 
-        if doHist then hh.add((s1,mu),wprod);
+        hh.add((s1,mu),wprod);
       }
     }
   }
