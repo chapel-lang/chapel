@@ -1788,6 +1788,14 @@ static Symbol* getMethod(const char* name, Type* type) {
 
 // For a scope and a given method, determine if the method is visible in this
 // scope
+// Lydia note (2015/06/26)
+// Semantic issue not handled by this function: when a parenthesis-less method
+// is defined by an outside module and the use of that module is at the same
+// scope as another symbol of the same name as the method, which symbol should
+// take precedent?  When the use is not present, both the prior version of
+// scopeResolve and the current version don't resolve the symbol, leaving the
+// decision to function resolution, which thinks it should have gotten the
+// method that wasn't available
 static bool methodMatched(BaseAST* scope, FnSymbol* method) {
   if (method->_this->type->symbol == scope) {
     return true;
