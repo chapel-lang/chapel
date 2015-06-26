@@ -1,10 +1,15 @@
 use Regexp;
 use Histogram;
 use Time;
+use Random;
 
 // Use the test/twopt code
 config const isTest=false;
+config const isPerf=false;
 config const doBrute=false;
+
+// Performance test parameters
+config const nParticles=10000;
 
 config const fn1 = "test.dat";
 config const fn2 = "test.dat";
@@ -34,6 +39,19 @@ record WeightedParticle3D {
   var w : real;
   var r2 : real;
 }
+
+proc generateRandom(pp : []WeightedParticle3D) {
+  var x,y,z : real;
+  var rng = new RandomStream();
+  for ip in pp {
+    x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z=rng.getNext()*1000.0;
+    ip.x = (x,y,z);
+    ip.w = 1.0;
+    ip.r2 = x**2 + y**2 + z**2;
+  }
+  delete rng;
+}
+
 
 proc countLines(fn : string) : int {
   var ff = open(fn, iomode.r);
@@ -233,25 +251,39 @@ proc doPairs() {
   var tt : Timer;
 
   // Read in the file
+  var nlines1, nlines2 : int;
+  var Dpart1 = {0.. #0};
+  var Dpart2 = {0.. #0};
+  var pp1 : [Dpart1] WeightedParticle3D;
+  var pp2 : [Dpart2] WeightedParticle3D;
   tt.clear(); tt.start();
-  var nlines1 = countLines(fn1);
-  var pp1 : [0.. #nlines1] WeightedParticle3D;
-  readFile(fn1,pp1);
-  var nlines2 = countLines(fn2);
-  var pp2 : [0.. #nlines2] WeightedParticle3D;
-  readFile(fn1,pp2);
-  tt.stop();
-  if (!isTest) {
-    writef("Read in %i lines from file %s \n", pp1.size, fn1);
-    writef("Read in %i lines from file %s \n", pp2.size, fn2);
-    writef("Time to read : %r \n", tt.elapsed());
+  if isPerf {
+    nlines1 = nParticles;
+    Dpart1 = {0.. #nlines1};
+    generateRandom(pp1);
+    nlines2 = nParticles;
+    Dpart2 = {0.. #nlines2};
+    generateRandom(pp2);
+  } else {
+    nlines1 = countLines(fn1);
+    Dpart1 = {0.. #nlines1};
+    readFile(fn1,pp1);
+    nlines2 = countLines(fn2);
+    Dpart2 = {0.. #nlines2};
+    readFile(fn1,pp2);
+    if (!isTest) {
+      writef("Read in %i lines from file %s \n", pp1.size, fn1);
+      writef("Read in %i lines from file %s \n", pp2.size, fn2);
+    }
   }
+  tt.stop();
+  if !isTest then writef("Time to read : %r \n", tt.elapsed());
 
   // Build the tree
   tt.clear(); tt.start(); gtime1.clear();
-  var scr1 : [0.. #nlines1] WeightedParticle3D;
+  var scr1 : [Dpart1] WeightedParticle3D;
   var root1 = BuildTree(pp1,scr1,0);
-  var scr2 : [0.. #nlines2] WeightedParticle3D;
+  var scr2 : [Dpart2] WeightedParticle3D;
   var root2 = BuildTree(pp2,scr2,0);
   tt.stop();
   if (!isTest) {
@@ -263,14 +295,6 @@ proc doPairs() {
 
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
-
-  // AOS -> SOA
-  // TODO : Turn off this swapping...
-  tt.clear(); tt.start();
-//  var soa1 = new SOA_WeightedParticle3D(pp1);
-//  var soa2 = new SOA_WeightedParticle3D(pp2);
-  tt.stop();
-  if !isTest then writef("Time to SOA : %r \n", tt.elapsed());
 
   /*
   // Brute force paircounts
@@ -293,9 +317,11 @@ proc doPairs() {
   tt.stop();
   if (!isTest) {
     writef("Time to tree paircount : %r \n", tt.elapsed());
-    var ff = openwriter("%s.tree".format(pairfn));
-    writeHist(ff,hh);
-    ff.close();
+    if !isPerf {
+      var ff = openwriter("%s.tree".format(pairfn));
+      writeHist(ff,hh);
+      ff.close();
+    }
   } else {
     hh.set((0,0),0.0);
     writeHist(stdout,hh,"%20.5er ");
@@ -305,8 +331,6 @@ proc doPairs() {
   //
   // clean up
   //
-//  delete soa1;
-//  delete soa2;
   delete hh;
   delete root1;
   delete root2;
