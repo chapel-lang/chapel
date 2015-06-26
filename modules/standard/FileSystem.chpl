@@ -869,10 +869,6 @@ proc isLink(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
-  var doesExist = exists(error, name);
-  if (error != ENOERR || !doesExist) {
-    return false;
-  }
   error = chpl_fs_is_link(ret, name.c_str());
   return ret != 0;
 }
