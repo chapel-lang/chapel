@@ -155,8 +155,9 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
   if (exitStatus == -1 && errno == ENOENT) {
     // The link examined does not exist, return false
     *ret = 0;
-  } else if (exitStatus)
+  } else if (exitStatus) {
     return qio_mkerror_errno();
+  }
   *ret = S_ISLNK(buf.st_mode);
   return 0;
 }
