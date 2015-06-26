@@ -1726,6 +1726,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
 
 DefExpr*
 buildClassDefExpr(const char* name,
+                  const char* cname,
                   Type*       type,
                   Expr*       inherit,
                   BlockStmt*  decls,
@@ -1737,6 +1738,9 @@ buildClassDefExpr(const char* name,
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
   if (isExtern == FLAG_EXTERN) {
+    if (cname) {
+      ts->cname = astr(cname);
+    }
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
