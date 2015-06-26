@@ -274,22 +274,23 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scal
   forall ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;
-    var sl, s2, l1, s1, l2, mu, wprod : real;
     (x1,y1,z1,w1,r2) = p1[ii];
 
-    for jj in d2 { // Second set of particles
+    forall jj in d2 { // Second set of particles
+      var sl, s2, l1, s1, l2, mu, wprod : real;
       mu=2*(p2.arr[0,jj]*x1 + p2.arr[1,jj]*y1 + p2.arr[2,jj]*z1);
       sl = r2 - p2.arr[R2,jj];
       l1 = r2 + p2.arr[R2,jj];
       s2 = l1 - mu;
       l2 = l1 + mu;
-      if ((s2 >= smax2) || (s2 < 1.0e-20)) then continue;
-      wprod = scale * w1 * p2.arr[W,jj];
-      s1 = sqrt(s2);
-      mu = sl/(s1*sqrt(l2));
-      if (mu < 0) then mu = -mu;
-      
-      hh.add((s1,mu),wprod);
+      if ((s2 < smax2) && (s2 > 1.0e-20)) {
+        wprod = scale * w1 * p2.arr[W,jj];
+        s1 = sqrt(s2);
+        mu = sl/(s1*sqrt(l2));
+        if (mu < 0) then mu = -mu;
+
+        hh.add((s1,mu),wprod);
+      }
     }
   }
 }
