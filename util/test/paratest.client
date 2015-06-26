@@ -10,7 +10,7 @@
 #  testdir - directory to run start_test on
 #  chplenv - Chapel environment variables
 #  futures-mode - include .futures (0=no, 1=all, 2=futures only, 3=futures with skipifs)
-#  valgrind - run valgrind (0=no, 1=yes)
+#  valgrind - run valgrind (0=no, 1=yes, 2=execs only)
 #  compopts - optional Chapel compiler options
 #
 # NOTE: Assumes paratest.client is run from $CHPL_HOME/test
@@ -60,6 +60,7 @@ sub main {
     $chplenv = $ARGV[3];
     $futures_mode = "-futures-mode \"" . $ARGV[4] . "\"";
     $valgrind = ($ARGV[5] == 1) ? "-valgrind" : "";
+    $valgrind = ($ARGV[5] == 2) ? "-valgrindexe" : "";
 
     print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
     if ($#ARGV>=7) {
