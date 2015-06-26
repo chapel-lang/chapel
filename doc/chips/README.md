@@ -6,3 +6,4 @@ See the first CHIP for a an overview.
 * [Constrained Generics](2.rst)
 * [ZeroMQ Integration](3.rst)
 * [Constructor Syntax and Semantics](4.rst)
+* [Copy Objects Using Postblit](5.rst)

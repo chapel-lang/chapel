@@ -939,6 +939,7 @@ opt_this_intent_tag:
          { $$ = INTENT_BLANK; }
 | TPARAM { $$ = INTENT_PARAM; }
 | TREF   { $$ = INTENT_REF;   }
+| TTYPE  { $$ = INTENT_TYPE;  }
 ;
 
 proc_or_iter:
