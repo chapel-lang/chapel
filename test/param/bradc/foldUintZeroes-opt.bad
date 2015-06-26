@@ -1,5 +1,0 @@
-Whew!
-Whew!
-Whew!
-Whew!
-output/ChapelStringLiterals.c:  call_tmp641 = ((c_ptr_uint8_t)("This should get folded out"));
