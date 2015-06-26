@@ -271,13 +271,13 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 : KDNode
 
 // The basic pair counter
 proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scale : real) {
-  forall ii in d1 { // Loop over first set of particles
+  for ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;
+    var sl, s2, l1, s1, l2, mu, wprod : real;
     (x1,y1,z1,w1,r2) = p1[ii];
 
-    forall jj in d2 { // Second set of particles
-      var sl, s2, l1, s1, l2, mu, wprod : real;
+    for jj in d2 { // Second set of particles
       mu=2*(p2.arr[0,jj]*x1 + p2.arr[1,jj]*y1 + p2.arr[2,jj]*z1);
       sl = r2 - p2.arr[R2,jj];
       l1 = r2 + p2.arr[R2,jj];
