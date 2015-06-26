@@ -97,7 +97,7 @@ module ChapelDistribution {
         if debugDistRefCount > 1 {
           extern proc printf(fmt: c_string, arg...);
           printf("----- INC _distCnt (%016lx) was %ld\n",
-                 __primitive("cast", uint(64), this), cnt);
+                 __primitive("_wide_get_addr", this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
           halt("_distCnt ", cnt, " is bogus!");
@@ -112,7 +112,7 @@ module ChapelDistribution {
         if debugDistRefCount > 1 {
           extern proc printf(fmt: c_string, arg...);
           printf("----- DEC _distCnt (%016lx) now %ld\n",
-                 __primitive("cast", uint(64), this), cnt);
+                 __primitive("_wide_get_addr", this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
           halt("_distCnt ", cnt, " is bogus!");
@@ -205,7 +205,7 @@ module ChapelDistribution {
         if debugDomRefCount > 1 {
           extern proc printf(fmt: c_string, arg...);
           printf("----- INC _domCnt (%016lx) was %ld\n", 
-                 __primitive("cast", uint(64), this), cnt);
+                 __primitive("_wide_get_addr", this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
           halt("_domCnt ", cnt, " is bogus!");
@@ -220,7 +220,7 @@ module ChapelDistribution {
         if debugDomRefCount > 1 {
           extern proc printf(fmt: c_string, arg...);
           printf("----- DEC _domCnt (%016lx) now %ld\n", 
-                 __primitive("cast", uint(64), this), cnt);
+                 __primitive("_wide_get_addr", this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
           halt("_domCnt ", cnt, " is bogus!");
@@ -388,8 +388,8 @@ module ChapelDistribution {
         const cnt = _arrCnt.read();
         if debugArrRefCount > 1 {
           extern proc printf(fmt: c_string, arg...);
-          printf("----- INC _arrCnt (%016lx) was %ld\n", 
-                 __primitive("cast", uint(64), this), cnt);
+          printf("----- INC _arrCnt (%016lx) was %ld\n",
+                 __primitive("_wide_get_addr", this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
           halt("_arrCnt ", cnt, " is bogus!");
@@ -403,8 +403,8 @@ module ChapelDistribution {
       if debugArrRefCount > 0 {
         if debugArrRefCount > 1 {
           extern proc printf(fmt: c_string, arg...);
-          printf("----- DEC _arrCnt (%016lx) now %ld\n", 
-                 __primitive("cast", uint(64), this), cnt);
+          printf("----- DEC _arrCnt (%016lx) now %ld\n",
+                 __primitive("_wide_get_addr", this), cnt);
         }
         if cnt < 0 || cnt > 10000 then
           halt("_arrCnt ", cnt, " is bogus!");
