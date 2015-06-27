@@ -1,1 +1,1 @@
-$CHPL_HOME/modules/internal/ChapelBase.chpl:462: error: 0 cannot be raised to a negative power
+$CHPL_HOME/modules/internal/ChapelBase.chpl:463: error: 0 cannot be raised to a negative power
