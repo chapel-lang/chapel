@@ -1,1 +1,7 @@
-refvar-assign-with-cast.chpl:2: internal error: FUNnnnn chpl Version 1.10.0.-999
+ Unfortunately the Chapel compiler has encountered
+ an internal error. Please file a bug report that
+ includes a program reproducing the problem as well
+ as this output. See http://chapel.cray.com/getinvolved.html for
+ further instructions on filing bug reports.
+
+refvar-assign-with-cast.chpl:2: internal error: FUN5221 chpl Version 1.11.0.559e3c7

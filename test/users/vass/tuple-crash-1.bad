@@ -1,1 +1,9 @@
-internal error: FUN
+ Unfortunately the Chapel compiler has encountered
+ an internal error. Please file a bug report that
+ includes a program reproducing the problem as well
+ as this output. See http://chapel.cray.com/getinvolved.html for
+ further instructions on filing bug reports.
+
+ The error may be related to this location:
+ $CHPL_HOME/modules/internal/ChapelBase.chpl:172
+$CHPL_HOME/modules/internal/ChapelBase.chpl:172: internal error: FUN2567 chpl Version 1.11.0.559e3c7
