@@ -1,0 +1,6 @@
+# -baseline
+#
+# This test generates a report on inlining. We suppress it instead of skipping
+# it in order to test that inlining is correctly turned off with --baseline
+
+COMPOPTS <= --baseline
