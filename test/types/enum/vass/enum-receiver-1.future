@@ -1,7 +1,0 @@
-bug: invoking a method directly on an enum constant results in a compile-time error
-
-'tx.start()' works fine, but compiler complains about '(tm.t2).start()':
-
-enum-receiver-1.chpl:10: error: unresolved enumerated type symbol "start"
-
-... which it shouldn't.
