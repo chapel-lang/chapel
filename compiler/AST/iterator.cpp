@@ -417,6 +417,12 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
 // singleLoop construct).
 static void
 buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+
+  // Expects to be called inside a clause that already tests singleLoop !=
+  // NULL.  This restriction can be removed if the != NULL test is pushed down
+  // into this routine.
+  INT_ASSERT(singleLoop != NULL);
+
   BlockStmt* zip1body = new BlockStmt();
 
   // See Note #1.
@@ -485,6 +491,11 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 static void
 buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
+  // Expects to be called inside a clause that already tests singleLoop !=
+  // NULL.  This restriction can be removed if the != NULL test is pushed down
+  // into this routine.
+  INT_ASSERT(singleLoop != NULL);
+
   // In copied expressions, replace _ic with zip2->_this .
   // See Note #1.
   SymbolMap map;
@@ -505,7 +516,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
         zip2body->insertAtTail(def->copy(&map));
   }
 
-  if (singleLoop && singleLoop->isForLoop())
+  if (singleLoop->isForLoop())
   {
     INT_FATAL(singleLoop, "Unexpected singleLoop iterator type.");
   }
@@ -529,6 +540,11 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 // body that are *after* the yield
 static void
 buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+
+  // Expects to be called inside a clause that already tests singleLoop !=
+  // NULL.  This restriction can be removed if the != NULL test is pushed down
+  // into this routine.
+  INT_ASSERT(singleLoop != NULL);
 
   BlockStmt* zip3body = new BlockStmt();
 
@@ -593,6 +609,11 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 static void
 buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
+  // Expects to be called inside a clause that already tests singleLoop !=
+  // NULL.  This restriction can be removed if the != NULL test is pushed down
+  // into this routine.
+  INT_ASSERT(singleLoop != NULL);
+
   // In copied expressions, replace _ic with zip4->_this .
   // See Note #1.
   SymbolMap map;
@@ -613,7 +634,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
         zip4body->insertAtTail(def->copy(&map));
   }
 
-  if (singleLoop && singleLoop->isForLoop())
+  if (singleLoop->isForLoop())
   {
     INT_FATAL(singleLoop, "Unexpected singleLoop iterator type.");
   }

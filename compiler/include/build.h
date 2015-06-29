@@ -111,6 +111,7 @@ CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* docs);
 
 DefExpr*  buildClassDefExpr(const char* name,
+                            const char* cname,
                             Type*       type,
                             Expr*       inherit,
                             BlockStmt*  decls,

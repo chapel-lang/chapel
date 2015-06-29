@@ -113,10 +113,15 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
   type(init_type),
   flags(),
-  name(astr(init_name)),
-  cname(name),
   defPoint(NULL)
-{}
+{
+  if (init_name) {
+    name = astr(init_name);
+  } else {
+    name = astr("");
+  }
+  cname = name;
+}
 
 
 Symbol::~Symbol() {

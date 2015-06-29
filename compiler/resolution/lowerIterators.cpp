@@ -1196,14 +1196,11 @@ expandIteratorInline(ForLoop* forLoop) {
     // to be handled in the recursive iterator function
     //
     if (forLoop->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
-//      printf("ForLoop %d parent %d has FLAG_RECURSIVE_ITERATOR\n", forLoop->id, forLoop->parentSymbol->id);
       return false;
     // vass: ditto for task functions called from recursive iterators
     } else if (taskFunInRecursiveIteratorSet.set_in(forLoop->parentSymbol)) {
-//      printf("ForLoop %d parent %d is in taskFunInRecursiveIteratorSet\n", forLoop->id, forLoop->parentSymbol->id);
       return false;
     } else {
-//      printf("ForLoop %d calling %d expanded inline\n", forLoop->id, iterator->id);
       expandRecursiveIteratorInline(forLoop);
       INT_ASSERT(!forLoop->inTree());
       return true;

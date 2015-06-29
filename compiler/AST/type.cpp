@@ -1624,6 +1624,7 @@ DefExpr* defineObjectClass() {
   dtObject = new AggregateType(AGGREGATE_CLASS);
 
   retval   = buildClassDefExpr("object",
+                               NULL,
                                dtObject,
                                NULL,
                                new BlockStmt(),

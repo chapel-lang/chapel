@@ -256,7 +256,8 @@ void   trace_remove(BaseAST* ast, char flag);
 
 //
 // macro to update the global line number used to set the line number
-// of an AST node when it is constructed
+// of an AST node when it is constructed - or to print out the line
+// number of code related to a core dump.
 //
 // This should be used before constructing new nodes to make sure the
 // line number is correctly set. The global line number reverts to

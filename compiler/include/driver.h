@@ -106,6 +106,7 @@ extern bool widePointersStruct;
 
 extern char fExplainCall[256];
 extern int  explainCallID;
+extern int  breakOnResolveID;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
