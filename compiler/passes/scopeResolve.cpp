@@ -1719,7 +1719,7 @@ static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 // Given a name and a scope, determine the symbol referred by that name in the
 // context of that scope.
 static Symbol* lookup(BaseAST* scope, const char* name) {
-  Symbol * symbolResult;
+  Symbol * symbolResult = NULL;
   std::vector<Symbol * > symbolOptions;
   Vec<BaseAST*> nestedscopes;
 
@@ -1758,19 +1758,19 @@ static Symbol* lookup(BaseAST* scope, const char* name) {
 //
 // This function uses the same methodology as isMethodName but returns the
 // symbol found instead of just a boolean
-static Symbol* getMethod(const char* name, Type* type) {
-  if (!strcmp(name, type->symbol->name))
+static FnSymbol* getMethod(const char* name, Type* type) {
+  if (strcmp(name, type->symbol->name) == 0)
     return NULL;
 
   // Looks for name in methods defined directly on this type
-  forv_Vec(Symbol, method, type->methods) {
+  forv_Vec(FnSymbol, method, type->methods) {
     if (method && !strcmp(name, method->name))
       return method;
   }
 
   // Looks for name in methods defined on parent types
   forv_Vec(Type, pt, type->dispatchParents) {
-    if (Symbol *sym = getMethod(name, pt))
+    if (FnSymbol *sym = getMethod(name, pt))
       return sym;
   }
 
@@ -1779,7 +1779,7 @@ static Symbol* getMethod(const char* name, Type* type) {
     Type *outerType = ct->symbol->defPoint->parentSymbol->type;
 
     if (AggregateType* outer = toAggregateType(outerType))
-      if (Symbol *sym = getMethod(name, outer))
+      if (FnSymbol *sym = getMethod(name, outer))
         return sym;
   }
 
@@ -1833,7 +1833,9 @@ static Symbol* inSymbolTable(BaseAST* scope, const char* name) {
       // If the symbol found isn't a method, or it was a method and we are
       // in the appropriate scope to add it (as determined by calling
       // methodMatched), then return the symbol
-      if (!sym->hasFlag(FLAG_METHOD) || (methodMatched(scope, toFnSymbol(sym))))
+      FnSymbol* fn = toFnSymbol(sym);
+      if (sym && (!sym->hasFlag(FLAG_METHOD) ||
+                  (fn && (methodMatched(scope, fn)))))
         return sym;
     }
   }
@@ -1860,16 +1862,18 @@ static Symbol* inType(BaseAST* scope, const char* name) {
 }
 
 // Assumes that symbols contains nothing before entering this function
-static bool lookupThisScopeOnly(BaseAST* scope, const char * name,
+static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
                                 std::vector<Symbol* >& symbols) {
+  INT_ASSERT(symbols.size() == 0);
+
   if (Symbol* sym = inSymbolTable(scope, name)) {
     symbols.push_back(sym);
   }
 
   if (Symbol* sym = inType(scope, name)) {
-    if (symbols.size() != 0) {
+    if (symbols.size() == 1) {
       if (symbols.front() == sym) {
-        // Upon entrace to this function, symbols.size() should be 0
+        // Upon entrance to this function, symbols.size() should be 0
         // The previous if statement will add at most 1 element
         // If that element does not match this field/method we just found,
         // then there is actually a conflict, so it should be added (which
@@ -1964,7 +1968,7 @@ static void lookup(BaseAST* scope, const char * name,
   if (!alreadyVisited.set_in(scope)) {
     alreadyVisited.set_add(scope);
 
-    if (lookupThisScopeOnly(scope, name, symbols)) {
+    if (lookupThisScopeAndUses(scope, name, symbols)) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part of the
