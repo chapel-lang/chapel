@@ -18,7 +18,9 @@ proc main() {
   }
 
   pauseVdebug("point 1");
+
   writeln("ICs: ", temp, "\n");
+
   resumeVdebug();
 
   for step in [1..nsteps] do {
