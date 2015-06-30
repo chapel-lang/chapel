@@ -480,7 +480,7 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind] [-help|-h] [-timeout t]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
@@ -490,7 +490,7 @@ sub print_help {
     print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
     print "    -nodepara m: Run m paratest.client tasks on each node.\n";
-    print "    -valgrind  : pass -valgrind to start_test.\n";
+    print "    -valgrind[exe]  : pass -valgrind or -valgrindexe to start_test.\n";
     print "    -timeout  t: t is the max time to wait after last directory is served.\n";
     print "    -junit-xml : Create jUnit test report.\n";
     print "    -junit-xml-file f: Put jUnit test report at location 'f' (implies -junit-xml).\n";
@@ -591,6 +591,9 @@ sub main {
             }
         } elsif (/^-valgrind/) {
             $valgrind = 1;
+            if (/^-valgrindexe/) {
+                $valgrind = 2;
+            }
         } elsif (/^-show-all-errors/) {
             $show_all_errors = 1;
         } elsif (/^-junit-xml$/) {
