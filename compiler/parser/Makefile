@@ -40,14 +40,25 @@ CLEAN_TARGS += \
 
 endif
 
-parser: FORCE
-	@rm -f bison-chapel.output bison-chapel.cpp flex-chapel.cpp
-	@rm -f ../include/bison-chapel.h ../include/flex-chapel.h
+# Removes bison-chapel.cpp after a build with conflicts so make wont think the
+# dependency is met on subsequent builds
+bison-chapel.cpp: chapel.ypp
+	@rm -f bison-chapel.output bison-chapel.cpp
+	@rm -f ../include/bison-chapel.h
 	bison chapel.ypp
-	@if grep -q "conflicts:" bison-chapel.output; then echo "PROBLEM: chapel.ypp contains conflicts"; exit 1; fi;
+	@if grep -q "conflicts:" bison-chapel.output; \
+		then echo "PROBLEM: chapel.ypp contains conflicts"; \
+		rm -f bison-chapel.cpp; \
+		exit 1; \
+	fi;
+
+flex-chapel.cpp: chapel.lex bison-chapel.cpp
+	@rm -f flex-chapel.cpp
+	@rm -f ../include/flex-chapel.h
 	flex chapel.lex
 
-FORCE:
+# Empty recipe (;) to avoid the implicit rules for .cpp files
+parser: bison-chapel.cpp flex-chapel.cpp ;
 
 #
 # standard footer
