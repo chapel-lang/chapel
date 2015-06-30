@@ -623,8 +623,13 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
          "Type binding clauses ('%s.' in this case) are not supported in "
          "declarations within a class, record or union", name);
     } else {
-      fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
-      fn->_this->addFlag(FLAG_ARG_THIS);
+      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
+      fn->_this = arg;
+      if (fn->hasFlag(FLAG_THIS_INTENT_TYPE)) {
+        fn->removeFlag(FLAG_THIS_INTENT_TYPE);
+        setupTypeIntentArg(arg);
+      }
+      arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtHead(new DefExpr(fn->_this));
       fn->insertFormalAtHead(
           new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
