@@ -168,11 +168,122 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 }
 
 
+//########################################################################
+//# Begin cruft
+//#
+//# The searches and predicates below, up to the matching "End cruft" label are
+//# here as compensation for the lack of direct representation in the AST of
+//# cobegin and coforall blocks.
+//# The implementation of these parallel constructs is rendered very early in
+//# translation (in build???() actions in the parser), so they have already
+//# been flattened somewhat immediately after parsing.  It would be desirable
+//# to use a more high-level representation for these parallel constructs early
+//# in translation, and even up to this point.  That would allow the
+//# taskMayOutliveTaskArg() predicate to be computed very cheaply, rather than
+//# using these somewhat involved tree searches.
+//#
+
+
+// Given a (cobegin or coforall) task function call, find the correponding call
+// to _upEndCount().  We assume that the _upEndCount() call is at the same
+// level as the task function call and precedes it in the tree.
+// TODO: This general utility can be moved to expr.cpp.
+static CallExpr*
+findSiblingCallPreceding(const char* name, CallExpr* taskFnCall)
+{
+  Expr* expr = taskFnCall->prev;
+  while ((expr = expr->prev))
+  {
+    if (CallExpr* call = toCallExpr(expr))   // expr is a call
+      if (FnSymbol* fn = call->isResolved()) // that calls a function
+        if (strcmp(fn->name, name) == 0)     // named <name>.
+          return call;
+  }
+
+  // Returns NULL if no such call was found.
+  return NULL;
+}
+
+
+static BlockStmt*
+findTaskScope(CallExpr* taskFnCall)
+{
+  CallExpr* upEndCountCall = findSiblingCallPreceding("_upEndCount", taskFnCall);
+  if (upEndCountCall == NULL)
+    INT_FATAL(taskFnCall, "Could not find an _upEndCount call for this task function call");
+
+  // This is the task counter for this parallel construct
+  Symbol* count = toSymExpr(upEndCountCall->get(1))->var;
+
+  // We assume that the task count is declared just inside the block
+  // representing the parallel construct.
+  BlockStmt* taskScope = toBlockStmt(count->defPoint->parentExpr);
+
+  return taskScope;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// Returns true if the task function fn may outlive the given task arg (passed
+// to it through fcall); false otherwise.
+//
+// Inside a cobegin or coforall block, execution of the task will not outlive
+// the _waitEndCount() call at the end of the block representing the
+// corresponding parallel construct.  So, we proceed by finding the block
+// containing the declaration of arg and the block containing the task call's
+// corresponding _waitEndCount() call.  If the latter block properly contains
+// the former, then we return true.
+// Viewed another way: Variables with the same scope as the counter used in the
+// _waitEndCount() call are guaranteed to outlast all tasks called by the
+// cobegin or coforall.
+//
+static bool
+taskMayOutliveTaskArg(Expr* arg, CallExpr* taskFnCall)
+{
+  // Get the task function.
+  FnSymbol* fn = taskFnCall->isResolved();
+
+  // "begin" functions are asynchronous -- no telling when they will terminate
+  // relative to their calling context.  Therefore, a copy is always required.
+  if (fn->hasFlag(FLAG_BEGIN))
+    return true;
+
+  // Ditto for non-blocking "on" functions.
+  if (fn->hasFlag(FLAG_NON_BLOCKING))
+    return true;
+
+  // For cobegin or coforall functions, we are a bit more picky.
+  // We only have to copy the arg if it may be deleted before the corresponding
+  // parallel construct is exited.
+  if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
+  {
+    DefExpr* argDef = toSymExpr(arg)->var->defPoint;
+    Expr* argScope = toBlockStmt(argDef->parentExpr);
+    BlockStmt* taskScope = findTaskScope(taskFnCall);
+
+    if (argScope)
+      // Ignore cases where the argument scope is not a containing block.
+      if (taskScope->contains(argScope))
+        return true;
+  }
+
+  return false;
+}
+
+//#
+//# End cruft
+//#
+//########################################################################
+
+
 /// Optionally autoCopies an argument being inserted into an argument bundle.
 ///
 /// This routine optionally inserts an autoCopy ahead of each invocation of a
-/// task function that begins asynchronous execution (currently just "begin" and
-/// "nonblocking on" functions).  
+/// task function where it is needed.  These cases currently include:
+///  - All record arguments to a begin or nonblock "on" function; and
+///  - Record arguments to a cobegin or coforall task function only if the
+///    argument's scope is inside the body of the coforall or cobegin.
+///    (See Note #1.)
 /// If such an autoCopy call is inserted, a matching autoDestroy call is placed
 /// at the end of the tasking routine before the call to _downEndCount.  Since a
 /// tasking function may be called from several call sites, the task function is
@@ -198,16 +309,14 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 static Symbol* insertAutoCopyDestroyForTaskArg
   (Expr* arg, ///< The actual argument being passed.
    CallExpr* fcall, ///< The call that invokes the task function.
-   FnSymbol* fn, ///< The task function.
    bool firstCall)
 {
   SymExpr* s = toSymExpr(arg);
   Symbol* var = s->var;
 
-  // This applies only to arguments being passed to asynchronous task functions.
-  // No need to increment+decrement the reference counters for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN) ||
-      fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
+  // Call autoCopy/autoDestroy on task arguments that potentially require deep
+  // copy semantics.
+  if (taskMayOutliveTaskArg(arg, fcall))
   {
     Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
@@ -249,6 +358,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       {
         // The task function may be called from several call sites, so insert
         // the autodestroy call only once (when processing the first fcall).
+        FnSymbol* fn = fcall->isResolved();
         Symbol* formal = actual_to_formal(arg);
         if (arg->typeInfo() != baseType)
         {
@@ -285,6 +395,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
           // Insert a call to the autoDestroy function ahead of the return (or
           // _downEndCount() call, if present).
           // (But only once per function for each affected argument.)
+          FnSymbol* fn = fcall->isResolved();
           Symbol* formal = actual_to_formal(arg);
           CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
           fn->insertBeforeDownEndCount(autoDestroyCall);
@@ -320,7 +431,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   {
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
     // calls.
-    Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, fn, firstCall);
+    Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, firstCall);
 
     // Copy the argument into the corresponding slot in the argument bundle.
     CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
@@ -1305,3 +1416,25 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   return wide;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// NOTES
+//
+// Note #1:
+//  The need for an autoCopy call arises because a variable scoped to the body
+//  of a coforall (e.g.) will be deleted when one traversal of the body
+//  completes.  All the body of a coforall does in reality is to queue up a
+//  task to be run when the coforall loop completes.
+//  Which means that the original variable is long gone by the time the task
+//  runs.  A shallow (i.e. bitwise) copy will not suffice, because class
+//  variables in the record might point to class objects that have since been
+//  reclaimed.
+//
+//  The cases in which the autoCopy/autoDestroy on task args can be avoided can
+//  be considered an optimization:  As long is the lifetime of the variable
+//  used as an argument is guaranteed to exceed the lifetime of the task, then
+//  a deep copy (through autoCopy) is not necessary.  The implicit sync at the
+//  end of cobegins and coforalls means that all tasks generated by these
+//  constructs will complete before the construct is exited.  Therefore a
+//  variable declared outside of a cobegin or coforall is guaranteed to outlast
+//  any task it spawns.  Therefore it is legal to apply the optimization in
+//  this case.
