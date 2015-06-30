@@ -1006,10 +1006,6 @@ module ChapelBase {
     compilerError("illegal assignment of type to value");
   }
   
-  pragma "ref"
-  pragma "init copy fn"
-  inline proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("deref", r));
-  
   pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
@@ -1061,11 +1057,6 @@ module ChapelBase {
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
-  
-  pragma "ref" 
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(r: _ref) ref return r;
   
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;

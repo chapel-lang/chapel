@@ -11,7 +11,7 @@ config const fn2 = "test.dat";
 config const pairfn = "test-DD.dat";
 
 param NDIM  = 3;
-const Ddim = {0.. #NDIM};
+const Ddim = {1.. #NDIM};
 
 config const spaces=compile("\\s+");
 config const bufsize=10000;
@@ -30,7 +30,7 @@ proc main() {
 }
 
 record WeightedParticle3D {
-  var x : [Ddim] real;
+  var x : NDIM*real;
   var w : real;
 }
 
@@ -46,19 +46,19 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
   const maxcols=25;
 
   var ff = open(fn, iomode.r);
-  var cols : [0.. #maxcols] real;
-  var icol=0;
+  var cols : [1.. #maxcols] real;
+  var icol=1;
   var ipart = 0;
   for iff in ff.lines() {
-   icol = 0; 
+   icol = 1; 
    for col1 in iff.split(spaces) {
      if (col1.length==0) then continue;
      cols[icol] = col1 : real;
      icol += 1;
    }
    if (icol < 4) then assert(false,"malformed line...");
-   pp[ipart].x = cols[Ddim];
-   pp[ipart].w = cols[3];
+   for jj in Ddim do pp[ipart].x(jj) = cols[jj];
+   pp[ipart].w = cols[4];
    ipart += 1;
   }
 }
@@ -78,9 +78,9 @@ class SOA_WeightedParticle3D {
     Dpart = 0.. #npart;
 
     forall ii in Dpart {
-      x[ii] = pp[ii].x[0];
-      y[ii] = pp[ii].x[1];
-      z[ii] = pp[ii].x[2];
+      x[ii] = pp[ii].x(1);
+      y[ii] = pp[ii].x(2);
+      z[ii] = pp[ii].x(3);
       w[ii] = pp[ii].w;
       r2[ii] = + reduce (pp[ii].x**2);
     }
@@ -112,20 +112,19 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : SOA_WeightedParticle3D, d1,d2 : dom
   }
 }
 
-proc splitOn(pp : []WeightedParticle3D, scr : []WeightedParticle3D, splitDim : int, rr : []real) : int {
+proc splitOn(pp : []WeightedParticle3D, scr : []WeightedParticle3D, splitDim : int, xsplit : real) : int {
   var npart, lnpart : int;
   var lo = pp.domain.low;
   var hi = pp.domain.high;
   npart = pp.domain.size;
   lnpart = 0;
   for ipp in pp {
-    if (ipp.x[splitDim] < rr[splitDim]) then lnpart+=1;
+    if (ipp.x(splitDim) < xsplit) then lnpart+=1;
   }
-//  var part : [pp.domain] WeightedParticle3D;
   var li, ri : int;
   li = lo; ri = (lo+lnpart);
   for ipp in pp {
-    if (ipp.x[splitDim] < rr[splitDim]) {
+    if (ipp.x(splitDim) < xsplit) {
       scr[li] = ipp;
       li+=1;
     } else {
@@ -144,7 +143,7 @@ proc splitOn(pp : []WeightedParticle3D, scr : []WeightedParticle3D, splitDim : i
 class KDNode {
   var lo, hi,npart,id : int;
   var dom : domain(1);
-  var xcen : [Ddim]real;
+  var xcen : NDIM*real;
   var rcell : real;
   var left, right : KDNode;
 
@@ -175,12 +174,12 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   var pmax = pp[me.lo].x;
   for ipp in pp {
     for idim in Ddim {
-      if (ipp.x[idim] < pmin[idim]) then pmin[idim] = ipp.x[idim];
-      if (ipp.x[idim] > pmax[idim]) then pmax[idim] = ipp.x[idim];
+      if (ipp.x(idim) < pmin(idim)) then pmin(idim) = ipp.x(idim);
+      if (ipp.x(idim) > pmax(idim)) then pmax(idim) = ipp.x(idim);
     }
   }
   me.xcen = (pmax+pmin)/2.0;
-  var dx : [Ddim]real;
+  var dx : NDIM*real;
   me.rcell = 0.0;
   var r1 : real;
   for ipp in pp {
@@ -196,13 +195,13 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
 
   // Find dimension to split on
   dx = pmax - pmin; 
-  var splitDim = 0;
+  var splitDim = 1;
   for idim in Ddim {
-    if (dx[idim] > dx[splitDim]) then splitDim=idim;
+    if (dx(idim) > dx(splitDim)) then splitDim=idim;
   }
 
   // Split
-  var lnpart = splitOn(pp, scr,splitDim, me.xcen);
+  var lnpart = splitOn(pp, scr,splitDim, me.xcen(splitDim));
   var ldom = {me.lo..(me.lo+lnpart-1)};
   var rdom = {(me.lo+lnpart)..me.hi};
   gtime1.stop();
@@ -276,7 +275,11 @@ proc testPairs() {
   writeln("\n##");
   for ii in hh.Dhist.dim(1) {
     for jj in hh.Dhist.dim(2) {
-      writef("%20.5er ",hh[(ii,jj)]);
+      if ((ii==0) & (jj==0)) {
+        writef("%20.5er ",0);
+      } else {
+        writef("%20.5er ",hh[(ii,jj)]);
+      }
     }
     writeln();
   }

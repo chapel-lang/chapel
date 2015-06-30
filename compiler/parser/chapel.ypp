@@ -325,13 +325,13 @@
 %nonassoc TPRAGMA
 
 %type <flag> opt_config
-%type <flag> opt_extern
 
 %type <pt> opt_intent_tag opt_this_intent_tag
 
 %type <retTag> opt_ret_tag
 
 %type <pch> ident fn_ident assignop_ident opt_ident
+%type <pch> opt_ident_or_string
 
 
 
@@ -514,6 +514,11 @@ ident:
   TIDENT  { $$ = $1; }
 ;
 
+opt_ident_or_string:
+  opt_ident     { $$ = $1; }
+| STRINGLITERAL { $$ = $1; }
+;
+
 do_stmt:
   TDO stmt    { $$ = $2; }
 | block_stmt  { $$ = $1; }
@@ -641,13 +646,16 @@ type_select_stmt:
 /** DECLARATION STATEMENTS ***************************************************/
 
 class_decl_stmt:
-  opt_extern class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
-    { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1, @1.comment)); }
-;
-
-opt_extern:
-           { $$ = FLAG_UNKNOWN; @$.comment = context->latestComment; context->latestComment = NULL; }
-| TEXTERN  { $$ = FLAG_EXTERN;  @$.comment = context->latestComment; context->latestComment = NULL; }
+  class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($2, NULL, $1, $3, $5, FLAG_UNKNOWN,
+                                             @1.comment));
+    }
+| TEXTERN opt_ident_or_string class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($4, $2, $3, $5, $7, FLAG_EXTERN,
+                                             @3.comment));
+    }
 ;
 
 class_tag:
@@ -763,15 +771,7 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXPORT       {
-                  $$ = new FnSymbol("");
-                  $$->addFlag(FLAG_EXPORT);
-                  $$->addFlag(FLAG_LOCAL_ARGS);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
-                }
-| TEXPORT ident {
+| TEXPORT opt_ident_or_string {
                   $$ = new FnSymbol($2);
                   $$->addFlag(FLAG_EXPORT);
                   $$->addFlag(FLAG_LOCAL_ARGS);
@@ -779,15 +779,7 @@ linkage_spec:
                   @$.comment             = context->latestComment;
                   context->latestComment = NULL;
                 }
-| TEXTERN       {
-                  $$ = new FnSymbol("");
-                  $$->addFlag(FLAG_EXTERN);
-                  $$->addFlag(FLAG_LOCAL_ARGS);
-
-                  @$.comment             = context->latestComment;
-                  context->latestComment = NULL;
-                }
-| TEXTERN ident {
+| TEXTERN opt_ident_or_string {
                   $$ = new FnSymbol($2);
                   $$->addFlag(FLAG_EXTERN);
                   $$->addFlag(FLAG_LOCAL_ARGS);
@@ -939,6 +931,7 @@ opt_this_intent_tag:
          { $$ = INTENT_BLANK; }
 | TPARAM { $$ = INTENT_PARAM; }
 | TREF   { $$ = INTENT_REF;   }
+| TTYPE  { $$ = INTENT_TYPE;  }
 ;
 
 proc_or_iter:
