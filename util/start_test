@@ -86,7 +86,6 @@
 #   -valgrindexe
 #   -syspreexec <path>
 #   -sysprediff <path>
-#   -suppress <suppression file>
 #   -nostdinredirect
 #   -launchertimeout <queueing system>
 #   -logfile   <log filename>         $testdir/Logs/<username>.<tgt-platform>.log
@@ -147,14 +146,6 @@
 # platform you're testing.  At the end of the run, a second log file
 # named <logfile>.summary will be generated containing only the Errors
 # and future tests that were logged.
-#
-# A -suppress option can be used to specify a file listing tests that
-# should be ignored for a particular run if they fail (and an error
-# will be generated if they pass when they were expected to fail).
-# The format of this suppress file is to list a single test per line
-# with optional comment lines starting with an initial '#' character.
-# After the whole testing system has been run, the tests in the
-# suppression file will be grepped out of the summary log file.
 #
 # The -valgrind option specifies that the compiler and generated
 # executable should be run using valgrind in order to find errors.
@@ -745,7 +736,6 @@ set numlocales = 0
 set comm = `$utildir/chplenv/chpl_comm.py`
 set launcher = `$utildir/chplenv/chpl_launcher.py`
 set locMod = `$utildir/chplenv/chpl_locale_model.py`
-set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
 set progress = 0
@@ -967,12 +957,6 @@ while ( $#argv > 0 )
         shift
         set valgrindexe = 1
         breaksw
-    case -suppress:
-    case --suppress:
-        shift
-        set suppressions = $argv[1]
-        shift
-        breaksw
     case --numlocales:
     case -numlocales:
         shift
@@ -1061,7 +1045,6 @@ while ( $#argv > 0 )
         echo "          -valgrindexe"
         echo "          -syspreexec <path>"
         echo "          -sysprediff <path>"
-        echo "          -suppress <filename>"
         echo "          -numlocales <number>"
         echo "          -[no]stdinredirect"
         echo "          -launchertimeout <queueing system>"
@@ -1913,9 +1896,6 @@ set failures = 0
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
     grep "$errormarker" $logfile |& $tee -a $logfile.summary >/dev/null
-    if ($suppressions != "") then
-        $utildir/test/filterSuppressions $suppressions $logfile.summary
-    endif
     grep "$errormarker" $logfile.summary
 
     grep "$suppressmarker" $logfile |& $tee -a $logfile.summary
@@ -1955,8 +1935,6 @@ else if ($testRootDir != "") then
     # something slipped through in sub_test).
     set junit_args = "$junit_args --remove-prefix=$testRootDir"
 endif
-if ($suppressions != "") then
-    set junit_args = "$junit_args --suppress=$suppressions"
 endif
 if ($junit_xml == 1) then
     echo "[Generating jUnit XML report]"
