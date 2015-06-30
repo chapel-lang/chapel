@@ -517,7 +517,7 @@ ident:
 
 opt_ident_or_string:
   opt_ident     { $$ = $1; }
-| CSTRINGLITERAL { $$ = $1; }
+| STRINGLITERAL { $$ = $1; }
 ;
 
 do_stmt:
