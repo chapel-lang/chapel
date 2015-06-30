@@ -1,0 +1,2 @@
+accessPrivateUsedNephew2.chpl:17: In function 'main':
+accessPrivateUsedNephew2.chpl:18: error: Cannot find 'child.secretFunction', module 'child' is private

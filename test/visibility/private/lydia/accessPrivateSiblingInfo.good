@@ -1,0 +1,2 @@
+accessPrivateSiblingInfo.chpl:3: In function 'main':
+accessPrivateSiblingInfo.chpl:5: error: Cannot find 'M2.secretFunction', module 'M2' is private

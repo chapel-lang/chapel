@@ -1,0 +1,2 @@
+accessPrivateSiblingSubmodule.chpl:9: In function 'main':
+accessPrivateSiblingSubmodule.chpl:10: error: Cannot find 'child.secretFunction', module 'child' is private

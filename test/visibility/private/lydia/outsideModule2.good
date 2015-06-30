@@ -1,0 +1,1 @@
+outsideModule2.chpl:1: error: Cannot access module 'anotherModule'
