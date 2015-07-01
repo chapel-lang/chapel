@@ -1,2 +1,0 @@
-useFileSystemShadowsPath.chpl:5: In function 'foo':
-useFileSystemShadowsPath.chpl:8: error: 'path' undeclared (first use this function)
