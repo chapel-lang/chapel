@@ -62,6 +62,9 @@ comprt: FORCE
 compiler: FORCE
 	cd compiler && $(MAKE)
 
+parser: FORCE
+	cd compiler && $(MAKE) parser
+
 modules: FORCE
 	cd modules && $(MAKE)
 
