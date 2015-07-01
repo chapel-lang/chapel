@@ -62,7 +62,7 @@ module Scalable_Graph_Generator
 // Note that we include the inquiry of the domain type for edges so we can use 
 // this to allocate additional arrays using the same distribution
 
-  proc Scalable_Data_Generator ( SCALE :int, N_VERTICES : int,
+  proc Scalable_Data_Generator ( scale :int, n_vertices : int,
                                 n_raw_edges : int, Edges:[?ArrD] )
 
     {
@@ -79,7 +79,7 @@ module Scalable_Graph_Generator
                        new RandomStream ();
 
 
-      const vertex_range = 1..N_VERTICES;
+      const vertex_range = 1..n_vertices;
 
 // Graph500 settings for RMAT parameters
         const a: real = 0.57;
@@ -93,8 +93,8 @@ module Scalable_Graph_Generator
 //        const c: real = 0.10;
 //        const d: real = 0.25;
 
-        const N_SHUFFLE = SCALE*N_VERTICES;
-        const Half_N_SHUFFLE = SCALE*N_VERTICES/2;
+        const N_SHUFFLE = scale*n_vertices;
+        const Half_N_SHUFFLE = scale*n_vertices/2;
 
 //      const ab: real = a+b; 
 //            abc: real = a+b+c;
@@ -128,7 +128,7 @@ module Scalable_Graph_Generator
 // Note: need to be very careful with sync variables as a writeln
 // invokes a read, which then sets to empty
 
-   for i in 1..SCALE do {
+   for i in 1..scale do {
       var   skip : real;
       Rand_Gen.fillRandom ( Unif_Random );
       skip = Rand_Gen.getNext ();
@@ -138,8 +138,8 @@ module Scalable_Graph_Generator
      { 
 
 //     Choose two locations at random
-       var ndx1 = floor (1 + Unif_Random (j) * N_VERTICES) : int;
-       var ndx2 = floor (1 + Unif_Random2(j) * N_VERTICES) : int;
+       var ndx1 = floor (1 + Unif_Random (j) * n_vertices) : int;
+       var ndx2 = floor (1 + Unif_Random2(j) * n_vertices) : int;
 
 //     If the locations are not the same, then swap
        if (ndx1 != ndx2){
@@ -173,9 +173,9 @@ module Scalable_Graph_Generator
 //             to have multiple trips through the full list of edges
 
   if RMAT_WITH_NOISE then {
-      var bit = 1 << SCALE;
+      var bit = 1 << scale;
 
-      for depth in 1..SCALE do {
+      for depth in 1..scale do {
           bit >>= 1;
           var   skip : real;
 
@@ -218,9 +218,9 @@ module Scalable_Graph_Generator
 
 //    Use faster code with does not include noise
 
-      var bit = 1 << SCALE;
+      var bit = 1 << scale;
 
-      for depth in 1..SCALE do {
+      for depth in 1..scale do {
           bit >>= 1;
           var   skip : real;
 
@@ -270,7 +270,7 @@ module Scalable_Graph_Generator
    graph_gen_time.start();
 
 //   Sample specification only applies edgefactor*N swaps
-//   for i in 1..SCALE do {
+//   for i in 1..scale do {
       var   skip : real;
       Rand_Gen.fillRandom ( Unif_Random );
       skip = Rand_Gen.getNext ();
@@ -280,8 +280,8 @@ module Scalable_Graph_Generator
      { 
 
 //     Choose two locations at random
-       var ndx1 = floor (1 + Unif_Random (j) * N_VERTICES) : int;
-       var ndx2 = floor (1 + Unif_Random2 (j) * N_VERTICES) : int;
+       var ndx1 = floor (1 + Unif_Random (j) * n_vertices) : int;
+       var ndx2 = floor (1 + Unif_Random2 (j) * n_vertices) : int;
 
 //     If the locations are not the same, then swap
        if (ndx1 != ndx2){
