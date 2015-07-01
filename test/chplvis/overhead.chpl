@@ -2,8 +2,8 @@ use VisualDebug;
 
 startVdebug("OH");
 tagVdebug("tag 1");
-pauseVdebug("pause 1");
-resumeVdebug();
+pauseVdebug();
+resumeVdebug("resume 1");
 stopVdebug();
 
 writeln("done.");

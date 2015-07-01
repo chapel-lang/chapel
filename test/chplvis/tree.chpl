@@ -107,7 +107,7 @@ tagVdebug ("writeln 3");
 
 writeln("C is: ", c);
 
-pauseVdebug ("cubeiter");
+pauseVdebug ();
 
 iter cubeiter ( n: int, id: int=0, off: int = -1) : int {
    var offset = 1;
@@ -149,7 +149,7 @@ write("cubeiter: ");
 for z in cubeiter(numLocales) do write(" ", z);
 writeln();
 
-resumeVdebug();
+resumeVdebug("cubeiter");
 
 forall z in cubeiter(numLocales) do  d[z] = here.id;
 
@@ -191,7 +191,7 @@ iter cubeiter2 ( param tag: iterKind, n: int, id: int=0, off: int = -1) : int
 	     do yield z;
 }
 
-pauseVdebug("cubeiter2");
+pauseVdebug();
 
 writeln ("id2com tests: ");
 for a in id2com(0,8) do write (a, " ");
@@ -199,7 +199,7 @@ writeln ();
 
 var e: [Bspace] int;
 
-resumeVdebug();
+resumeVdebug("cubeiter2");
 
 forall x in cubeiter2(numLocales) do e[x] = here.id;
 

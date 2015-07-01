@@ -17,11 +17,11 @@ proc main() {
     temp[i] = ao*exp(-x[i]*x[i]/(2.0*sigma*sigma));
   }
 
-  pauseVdebug("point 1");
+  pauseVdebug();
 
   writeln("ICs: ", temp, "\n");
 
-  resumeVdebug();
+  resumeVdebug("point 1");
 
   for step in [1..nsteps] do {
     forall i in interior do

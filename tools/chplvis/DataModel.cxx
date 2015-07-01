@@ -109,7 +109,7 @@ int DataModel::LoadData(const char * filename)
       return 0;
     }
     // Debug
-    /*
+    /* 
     printf ("\nAfter file %s\n", fname);
     itr = theEvents.begin();
     while (itr != theEvents.end()) {
@@ -118,6 +118,7 @@ int DataModel::LoadData(const char * filename)
     }
     printf ("---------------\n");
     */
+    
   }
 
   // printf (" done.\n");
@@ -152,8 +153,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   int  nErrs = 0;
 
   // Removing overhead ..
-  int ignoreFork = 0;
-  int ignoreTask = 0;
+  // int ignoreFork = 0;
+  // int ignoreTask = 0;
 
   if (!data) return 0;
 
@@ -163,11 +164,14 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     return 0;
   }
 
+  // Event times
+  long e_sec, e_usec;
+
   // User/System time variables 
   long u_sec, u_usec, s_sec, s_usec;
-
-  if (sscanf(line, "ChplVdebug: nodes %d id %d seq %lf ru %ld.%ld %ld.%ld",
-	     &floc, &findex, &fseq, &u_sec, &u_usec, &s_sec, &s_usec) != 7) {
+  if (sscanf(line, "ChplVdebug: nodes %d id %d seq %lf %ld.%ld %ld.%ld %ld.%ld",
+		     &floc, &findex, &fseq, &e_sec, &e_usec, &u_sec, &u_usec, &s_sec, &s_usec)
+      != 9) {
     fprintf (stderr, "LoadData: incorrect data on first line of %s.\n",
 	     filename);
     fclose(data);
@@ -190,15 +194,15 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   numTags = 0;
 
   // Remove overhead ...
-  if (findex != 0) {
-    ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
-    ignoreTask = 3;
+  //if (findex != 0) {
+  //  ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
+  //  ignoreTask = 3;
     // printf ("%s: overhead fork %d, task %d\n", filename, ignoreFork, ignoreTask );
-  }
+  //}
 
   
   // Now read the rest of the file
-  Event *newEvent = new E_start(u_sec, u_usec, s_sec, s_usec, findex);
+  Event *newEvent = new E_start(e_sec, e_usec, findex, u_sec, u_usec, s_sec, s_usec);
   if (itr == theEvents.end()) {
     theEvents.push_front(newEvent);
   } else {
@@ -236,7 +240,6 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     // Tags
     int tagId;
     long nameOffset;  // Character offset for the tag name
-    char pause;
     int slen;
 
     int cvt;
@@ -269,14 +272,14 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		   " nfilename = '%s'\n", nid, ntll, nbstr, nlineno, nfilename);
 	  nErrs++;
 	} else {
-	  int nfnLen = strlen(nfilename);
+	  //int nfnLen = strlen(nfilename);
 	  //printf ("task line from %s\n", nfilename);
-	  if (ignoreTask && nfnLen >= 34
-	      && (strcmp(&nfilename[nfnLen-34], "localeModels/flat/LocaleModel.chpl") == 0)) {
-	    ignoreTask--;
+	  //if (ignoreTask && nfnLen >= 34
+	  //    && (strcmp(&nfilename[nfnLen-34], "localeModels/flat/LocaleModel.chpl") == 0)) {
+	  //  ignoreTask--;
 	    //printf ("Found VisualDebug task line\n");
-	    break;
-	  }
+	  //  break;
+	  // }
 	  newEvent = new E_task (sec, usec, ntll);
 	}
 	break;
@@ -321,54 +324,56 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, filename);
 	  nErrs++;
 	} else {
-	  if (ignoreFork && (rnid == nid*2+1 || rnid == nid*2+2)) {
-	    ignoreFork--;
+	  //if (ignoreFork && (rnid == nid*2+1 || rnid == nid*2+2)) {
+	  //  ignoreFork--;
 	    // printf ("Ignoring fork: %s\n", linedata);
-	    break;
-	  }
+	  //  break;
+	  // }
 	  newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_');
 	}
 	break;
 
-      case 'R':  // resume generating data
-	if (sscanf (&linedata[nextCh], "%ld.%ld %d %d",
-		    &s_sec, &s_usec, &nid, &tagId) != 4 ) {
+      case 'P':  // Pause generating data
+	if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d",
+		    &u_sec, &u_usec, &s_sec, &s_usec, &nid, &tagId) != 6 ) {
 	  fprintf (stderr, "Bad 'End' line: %s\n", filename);
 	  nErrs++;
 	} else {
-	  newEvent = new E_resume(sec, usec, nid, sec, s_usec, tagId);
-	  if (findex != 0) {
-	    ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
-	    ignoreTask = 2;
-          }
+	  newEvent = new E_pause(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, tagId);
+	  //if (findex != 0) {
+	  //  ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
+	  //  ignoreTask = 2;
+          //}
 	}
 	break;
 
       case 'T':  // Tag in the data
 	slen = strlen(line)-1;
 	if (line[slen] == '\n') line[slen] = 0;
-	if (sscanf (&linedata[nextCh], "%ld.%ld %d %d %c %ln",
-			   &s_sec, &s_usec, &nid, &tagId, &pause, &nameOffset) != 5 ) {
+        // printf ("TagLine: '%s'\n", &linedata[nextCh]);
+	if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d %ln",
+			  &u_sec, &u_usec, &s_sec, &s_usec, &nid, &tagId, &nameOffset) != 6) {
 	  fprintf (stderr, "Bad 'Tag' line: %s\n", filename);
 	} else {
 	  nextCh += nameOffset;
-	  newEvent = new E_tag(sec, usec, nid, s_sec, s_usec, tagId, pause=='p',
+	  newEvent = new E_tag(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, tagId, 
 			       &linedata[nextCh]);
 	  if (tagId >= numTags)
 	    numTags = tagId+1;
-	  if (findex != 0) {
-	    ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
-	    ignoreTask = 2;
-          }
+	  //if (findex != 0) {
+	  //  ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
+	  //  ignoreTask = 2;
+          //}
 	}
 	break;
 
       case 'E':  // end of the file
-	if (sscanf (&linedata[nextCh], "%ld.%ld %d", &s_sec, &s_usec, &nid) != 3 ) {
+	if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d",
+		    &u_sec, &u_usec, &s_sec, &s_usec, &nid) != 5 ) {
 	  fprintf (stderr, "Bad 'End' line: %s\n", filename);
 	  nErrs++;
 	} else {
-	  newEvent = new E_end(sec, usec, nid, s_sec, s_usec);
+	  newEvent = new E_end(sec, usec, nid, u_sec, u_usec, s_sec, s_usec);
 	}
 	break;
 
@@ -415,11 +420,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		       && ((E_tag *)(*itr))->tagNo() == tp->tagNo())
 		  itr++;
 	      } else {
-		// Work with resumes
-		E_resume *rp = (E_resume *)newEvent;
+		// Work with pauses
+		E_pause *rp = (E_pause *)newEvent;
 		while (itr != theEvents.end()
-		       && (*itr)->Ekind() == Ev_resume
-		       && ((E_resume *)(*itr))->tagId() == rp->tagId())
+		       && (*itr)->Ekind() == Ev_pause
+		       && ((E_pause *)(*itr))->tagId() == rp->tagId())
 		  itr++;
 	      }
 	    }
@@ -442,10 +447,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
   if (nErrs) fprintf(stderr, "%d errors in data file '%s'.\n", nErrs, filename);
 
-  if (ignoreFork > 0 || ignoreTask > 0) {
-    fprintf (stderr, "%s: Error in data filters: ignoreFork = %d, ignoreTask = %d\n",
-	     filename, ignoreFork, ignoreTask);
-  }
+  //  if (ignoreFork > 0 || ignoreTask > 0) {
+  //    fprintf (stderr, "%s: Error in data filters: ignoreFork = %d, ignoreTask = %d\n",
+  //	     filename, ignoreFork, ignoreTask);
+  //  }
   
   if ( !feof(data) ) return 0;
   

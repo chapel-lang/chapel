@@ -64,16 +64,16 @@ extern int chpl_dprintf(int fd, const char * format, ...)
 #endif
    ;
 
+//  don't log messages/forks associated with a tag.
+extern void chpl_vdebug_nolog(void);
 //  start and open file if not NULL
 extern void chpl_vdebug_start(const char *, double now); 
 //  stop collecting data
 extern void chpl_vdebug_stop(void);
-//  stop logging messages/forks associated with a tag.
-extern void chpl_vdebug_starttag(void);
-//  Tag the data with a character tag, and possibly pause
-extern void chpl_vdebug_tag(const char *, int pause);
+//  Tag the data with a character tag, and possibly resume
+extern void chpl_vdebug_tag(const char *);
 //  resume from a tag point
-extern void chpl_vdebug_resume(void);
+extern void chpl_vdebug_pause(void);
 
 // End Visual Debug support
 

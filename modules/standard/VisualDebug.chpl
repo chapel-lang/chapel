@@ -40,33 +40,32 @@ module VisualDebug
 
   extern proc chpl_vdebug_start ( rootname: c_string, time:real);
   extern proc chpl_vdebug_stop ();
-  extern proc chpl_vdebug_tag ( tagname: c_string, pause:int);
-  extern proc chpl_vdebug_starttag();
-  extern proc chpl_vdebug_resume ();
+  extern proc chpl_vdebug_tag ( tagname: c_string);
+  extern proc chpl_vdebug_pause ();
+  extern proc chpl_vdebug_nolog ();
 
 
 /* Tree "coforall procedure .... calls one of the above rotunes */
 
-  enum vis_op {v_start, v_stop, v_tag, v_starttag, v_resume};
+  enum vis_op {v_start, v_stop, v_tag, v_pause};
 
-  proc VDebugTree (what: vis_op, name: string, time: real, pause: int,
-                   id: int = 0) {
+  proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0) {
       var child = id * 2 + 1;
+      chpl_vdebug_nolog();
       cobegin {
          /* left */
          if child < numLocales then
-             on Locales[child] do VDebugTree (what, name, time, pause, child);
+             on Locales[child] do VDebugTree (what, name, time, child);
 	 /* right */
          if child+1 < numLocales then
-             on Locales[child+1] do VDebugTree (what, name, time, pause, child+1);
+             on Locales[child+1] do VDebugTree (what, name, time, child+1);
      }
 	 /* Do the op at the root  */
 	 select what {
 	    when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
             when vis_op.v_stop     do chpl_vdebug_stop ();
-            when vis_op.v_tag      do chpl_vdebug_tag (name.c_str(), pause);
-            when vis_op.v_starttag do chpl_vdebug_starttag ();
-            when vis_op.v_resume   do chpl_vdebug_resume ();
+            when vis_op.v_tag      do chpl_vdebug_tag (name.c_str());
+            when vis_op.v_pause    do chpl_vdebug_pause ();
          }
   }
 
@@ -78,7 +77,7 @@ module VisualDebug
     var now = chpl_now_time();
     //coforall l in Locales do
     //  on l do chpl_vdebug_start (rootname.c_str(), now);
-    VDebugTree (vis_op.v_start, rootname, now, 0);
+    VDebugTree (vis_op.v_start, rootname, now);
   }
 
 /*
@@ -86,11 +85,10 @@ module VisualDebug
   :arg tagname: name of the tag
 */
   proc tagVdebug ( tagname : string ) {
-    chpl_vdebug_starttag();
     //coforall l in Locales[1..] do
     //  on l do chpl_vdebug_tag (tagname.c_str(), 0);
     //chpl_vdebug_tag (tagname.c_str(), 0);
-    VDebugTree (vis_op.v_tag, tagname, 0, 0);
+    VDebugTree (vis_op.v_tag, tagname, 0);
   }
 
 /*
@@ -100,30 +98,29 @@ module VisualDebug
     chpl_vdebug_stop();
     // coforall l in Locales[1..] do
     //  on l do chpl_vdebug_stop();
-    VDebugTree (vis_op.v_stop, "", 0, 0);
+    VDebugTree (vis_op.v_stop, "", 0);
   }
 
 /*
   Stop collection of data for chplvis and tag the pause point.
   :arg tagname: name of the tag
 */
-  proc pauseVdebug ( tagname : string ) {
-    chpl_vdebug_starttag();
+  proc pauseVdebug () {
     //coforall l in Locales[1..] do
     //  on l do chpl_vdebug_tag (tagname.c_str(), 1);
     //chpl_vdebug_tag(tagname.c_str(), 1);
-    VDebugTree (vis_op.v_tag, tagname, 0, 1);
+    VDebugTree (vis_op.v_pause, "", 0);
   }
 
 /*
   Resume collection of data for chplvis after a pauseVdebug().
   This is a "no-op" if pauseVdebug was not called before.
 */
-  proc resumeVdebug () {
+  proc resumeVdebug ( tagname : string ) {
     //coforall l in Locales[1..] do
     //  on l do chpl_vdebug_resume ();
     //chpl_vdebug_resume();
-    VDebugTree (vis_op.v_resume, "", 0, 0);
+    VDebugTree (vis_op.v_tag, tagname, 0);
   }
 
 }

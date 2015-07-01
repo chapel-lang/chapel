@@ -218,7 +218,7 @@ void ViewField::processData(int tagNum)
     E_start  *sp = NULL;
     E_end    *ep = NULL;
     E_tag    *gp = NULL;
-    E_resume *rp = NULL;
+    E_pause  *pp = NULL;
 
     bool stopProcessing = false;
 
@@ -280,11 +280,18 @@ void ViewField::processData(int tagNum)
 	//	theLocales[ep->nodeId()].Cpu);
 	break;
 
-      case Ev_resume:
+      case Ev_pause:
 	// Reset the ref time?
-	rp = (E_resume *)ev;
- 	theLocales[rp->nodeId()].refUserCpu = rp->user_time();
-	theLocales[rp->nodeId()].refSysCpu = rp->sys_time();
+	pp = (E_pause *)ev;
+	// Need to update times for correctness, either for tag->tag or resume
+	theLocales[pp->nodeId()].userCpu += pp->user_time()
+	  - theLocales[pp->nodeId()].refUserCpu;
+	theLocales[pp->nodeId()].sysCpu += pp->sys_time()
+	  - theLocales[pp->nodeId()].refSysCpu;
+	theLocales[pp->nodeId()].Cpu = theLocales[pp->nodeId()].userCpu 
+	  + theLocales[pp->nodeId()].sysCpu;
+	if (maxCpu < theLocales[pp->nodeId()].Cpu)
+	    maxCpu = theLocales[pp->nodeId()].Cpu;
 	break;
 	 
       case Ev_tag:
@@ -302,7 +309,7 @@ void ViewField::processData(int tagNum)
 	  //printf ("Tag: setting ref times\n");
 	  theLocales[gp->nodeId()].refUserCpu = gp->user_time();
 	  theLocales[gp->nodeId()].refSysCpu = gp->sys_time();
-	} else if (gp->isPause() || tgNo == stopTag ) {
+	} else if (tgNo == stopTag ) {
 	  //printf ("Tag: updating user/sys/cpu times.\n");
 	  // Need to update times for correctness, either for tag->tag or resume
 	  theLocales[gp->nodeId()].userCpu += gp->user_time()

@@ -186,9 +186,16 @@ static int chpl_make_vdebug_file (const char *rootname) {
     return 0;
 }
 
+void chpl_vdebug_nolog () {
+  chpl_vdebug = 0;
+}
+
 void chpl_vdebug_start (const char *fileroot, double now) {
   const char * rootname;
   struct rusage ru;
+  struct timeval tv;
+  struct timezone tz = {0,0};
+  (void)gettimeofday(&tv, &tz);
 
   chpl_vdebug = 0;
 
@@ -213,8 +220,9 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     ru.ru_stime.tv_usec = 0;
   }
   chpl_dprintf (chpl_vdebug_fd,
-		"ChplVdebug: nodes %d id %d seq %.3lf ru %ld.%06ld %ld.%06ld \n",
+		"ChplVdebug: nodes %d id %d seq %.3lf %lld.%06ld %ld.%06ld %ld.%06ld \n",
 		chpl_numNodes, chpl_nodeID, now,
+		(long long) tv.tv_sec, (long) tv.tv_usec,
 		(long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		(long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec  );
   chpl_vdebug = 1;
@@ -222,7 +230,10 @@ void chpl_vdebug_start (const char *fileroot, double now) {
 
 void chpl_vdebug_stop (void) {
   struct rusage ru;  
+  struct timeval tv;
+  struct timezone tz = {0,0};
   if (chpl_vdebug_fd >= 0) {
+    (void)gettimeofday(&tv, &tz);
     if ( getrusage (RUSAGE_SELF, &ru) < 0) {
       ru.ru_utime.tv_sec = 0;
       ru.ru_utime.tv_usec = 0;
@@ -230,7 +241,8 @@ void chpl_vdebug_stop (void) {
       ru.ru_stime.tv_usec = 0;
     }
     // Generate the End record
-    chpl_dprintf (chpl_vdebug_fd, "End: %ld.%06ld %ld.%06ld %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "End: %lld.%06ld %ld.%06ld %ld.%06ld %d\n",
+		  (long long) tv.tv_sec, (long) tv.tv_usec,
 		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
 		  chpl_nodeID);
@@ -239,51 +251,46 @@ void chpl_vdebug_stop (void) {
   chpl_vdebug = 0;
 }
 
-static int do_tag;
-void chpl_vdebug_starttag(void)
-{
-  // Don't record the messages for the tag
-  chpl_vdebug = 0;
-  do_tag = 1;
-}
-
 static int tag_no = 0;  // A unique tag number for sorting tags ...
-void chpl_vdebug_tag (const char *str, int pause)
+void chpl_vdebug_tag (const char *str)
 {
   struct rusage ru;
+  struct timeval tv;
+  struct timezone tz = {0,0};
 
-  if (chpl_vdebug || do_tag) {
-    if ( getrusage (RUSAGE_SELF, &ru) < 0) {
-      ru.ru_utime.tv_sec = 0;
-      ru.ru_utime.tv_usec = 0;
-      ru.ru_stime.tv_sec = 0;
-      ru.ru_stime.tv_usec = 0;
-    }
-    chpl_dprintf (chpl_vdebug_fd, "Tag: %ld.%06ld %ld.%06ld %d %d %c %s\n",
-		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
-		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
-		  chpl_nodeID, tag_no++, (pause ? 'p' : 't'), str);
-
-    // Stop collection of data for a pause
-    chpl_vdebug = !pause;
-    do_tag = 0;
+  (void)gettimeofday(&tv, &tz);
+  if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+    ru.ru_utime.tv_sec = 0;
+    ru.ru_utime.tv_usec = 0;
+    ru.ru_stime.tv_sec = 0;
+    ru.ru_stime.tv_usec = 0;
   }
+  chpl_dprintf (chpl_vdebug_fd, "Tag: %lld.%06ld %ld.%06ld %ld.%06ld %d %d %s\n",
+		(long long) tv.tv_sec, (long) tv.tv_usec,
+		(long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+		(long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
+		chpl_nodeID, tag_no++, str);
+  chpl_vdebug = 1;
 }
 
-void chpl_vdebug_resume (void) {
+void chpl_vdebug_pause (void) {
   struct rusage ru;
+  struct timeval tv;
+  struct timezone tz = {0,0};
   if (chpl_vdebug_fd >=0 && chpl_vdebug == 0) {
+    (void)gettimeofday(&tv, &tz);
     if ( getrusage (RUSAGE_SELF, &ru) < 0) {
       ru.ru_utime.tv_sec = 0;
       ru.ru_utime.tv_usec = 0;
       ru.ru_stime.tv_sec = 0;
       ru.ru_stime.tv_usec = 0;
     }
-    chpl_dprintf (chpl_vdebug_fd, "Resume: %ld.%06ld %ld.%06ld %d %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "Pause: %lld.%06ld %ld.%06ld %ld.%06ld %d %d\n",
+		  (long long) tv.tv_sec, (long) tv.tv_usec,
 		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
 		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
 		  chpl_nodeID, tag_no-1);
-    chpl_vdebug = 1;
+    chpl_vdebug = 0;
   }
 }
 
