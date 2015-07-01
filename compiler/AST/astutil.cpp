@@ -253,20 +253,25 @@ void compute_call_sites() {
       fn->calledBy = new Vec<CallExpr*>();
   }
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (FnSymbol* fn = call->isResolved()) {
-      fn->calledBy->add(call);
-    } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
-      // sjd: do we have to do anything special here?
-      //      should this call be added to some function's calledBy list?
-    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
-      Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
-      fn->calledBy->add(call);
-      forv_Vec(FnSymbol, child, *children)
-        child->calledBy->add(call);
-    }
+    update_call_sites(call);
   }
 }
+
+void update_call_sites(CallExpr* call) {
+  if (FnSymbol* fn = call->isResolved()) {
+    fn->calledBy->add(call);
+  } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+    // sjd: do we have to do anything special here?
+    //      should this call be added to some function's calledBy list?
+  } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+    FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
+    Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+    fn->calledBy->add(call);
+    forv_Vec(FnSymbol, child, *children)
+      child->calledBy->add(call);
+  }
+}
+
 
 // builds the def and use maps for every variable/argument
 // in the entire program.
@@ -885,5 +890,27 @@ Symbol* getSvecSymbol(CallExpr* call) {
   } else {
     // GET_SVEC_MEMBER(p, i), where p is a star tuple
     return NULL;
+  }
+}
+
+/*
+* Collect all of the function symbols that belong to function calls 
+* and nested function calls that occur from baseAST. In other words
+* look through the baseAST and find all the function and nested function
+* calls and collect their fnsymbols. 
+*/
+void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
+  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
+  //if there is a function call, get the FnSymbol associated with it 
+  //and look through that FnSymbol for other function calls. Do not 
+  //look through an already visited FnSymbol, or you'll have an infinite
+  //loop in the case of recursion. 
+  if (CallExpr* call = toCallExpr(ast)) {
+    if (FnSymbol* fnSymbol = call->isResolved()) {
+      if(fnSymbols.count(fnSymbol) == 0) {
+        fnSymbols.insert(fnSymbol);
+        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbols, fnSymbols);
+      }
+    }
   }
 }

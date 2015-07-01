@@ -955,6 +955,7 @@ static bool usedInOn(Symbol* sym, Map<Symbol*, Vec<SymExpr*>*> &useMap, CallGrap
 
 void
 narrowWideReferences() {
+  return;
   if (!requireWideReferences()) return;
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
