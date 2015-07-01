@@ -128,7 +128,7 @@ $(CHPLDOC): $(CHPL)
 
 chpldoc: $(CHPLDOC)
 
-parser:
+parser: FORCE
 	$(MAKE) -C parser parser
 
 $(CHPL_BIN_DIR):
