@@ -462,6 +462,8 @@ public:
   void                 moduleUseAdd(ModuleSymbol* module);
   void                 moduleUseRemove(ModuleSymbol* module);
 
+  bool                 isVisible(BaseAST* scope);
+
   ModTag               modTag;
 
   BlockStmt*           block;
