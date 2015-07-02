@@ -1512,7 +1512,7 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
             if (!mod2->isVisible(call)) {
               // The module is not visible at this scope because it is
               // private to mod!  Error out
-              USR_FATAL(call, "Cannot find '%s', '%s' is private to '%s'", mbr_name, mbr_name, mod->name);
+              USR_FATAL(call, "Cannot access '%s', '%s' is private to '%s'", mbr_name, mbr_name, mod->name);
             }
           }
           call->replace(new SymExpr(sym));
@@ -2112,6 +2112,9 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {
   return buildBreadthFirstModuleList(modules, modules, &seen);
 }
 
+// If the uses of a particular module are considered its level 1 uses, then
+// this function will only add level 2 and lower uses to the modules vector
+// argument.
 static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
                                         Vec<ModuleSymbol*>* current,
                                         Vec<ModuleSymbol*>* alreadySeen) {
@@ -2131,8 +2134,15 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
         INT_ASSERT(mod);
 
         if (!alreadySeen->set_in(mod)) {
-          next.add(mod);
-          modules->add(mod);
+          if (!mod->hasFlag(FLAG_PRIVATE)) {
+            // Uses of private modules are not transitive - the symbols in the
+            // private modules are only visible to itself and its immediate
+            // parent.  Therefore, if the symbol is private, we will not
+            // traverse it further and will merely add it to the alreadySeen
+            // vector.
+            next.add(mod);
+            modules->add(mod);
+          }
           alreadySeen->set_add(mod);
         }
       }
