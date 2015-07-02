@@ -18,10 +18,77 @@
  */
 
 //
-// Insert wide references
+// Insert Wide References (IWR)
 //
 // See notes at the top of parallel.cpp for background on heap
 // allocation in this pass
+//
+// This pass inserts the wide pointers required for communication across
+// locales.
+//
+// --------------------------------------------------
+// Some simple terminology you may find in this pass:
+//
+// - "wide" : Something that may be remote, type will differ from local vars.
+//
+// - "narrow" : A local variable.
+//
+// - "val" : Refers to the '_val' field in a reference type.
+//
+// --------------------------------------------------
+//
+// Note: Prior to ~June 2015 there were to passes that performed the same
+// duties of this single pass:
+//   - insertWideReferences: Simply widened everything by default
+//   - narrowWideReferences: Selectively narrowed variables
+//
+// This pass begins by identifying variables that we currently are unable to
+// keep local, and widens those variables. From this small set, we then
+// propagate wideness throughout the AST. Here are a couple of simple cases:
+//
+// - move A, B
+//   # A must match B's wideness.
+//
+// - move DEST, (addr_of SRC)
+//   # If SRC is wide, the '_val' field of the reference DEST must be wide.
+//
+// - move DEST, (get_member_value BASE, MEMBER)
+//   # If BASE or MEMBER are wide, DEST must be wide
+//
+// There are many other corner cases. The general idea is that if data may be
+// remote, references or moves of that data have to be remote as well.
+//
+// When a variable is widened, we'll put it into a queue and propagate it later.
+// Variables may re-enter the queue, but generally won't.
+//
+// We only store wideness for LcnSymbols using these two fields:
+//   - mustBeWide : applies to any type
+//   - valIsWide  : currently refers to a reference's _val field.
+//
+// Once this propagation has completed, we'll do some more walking of the AST
+// to insert temporaries and some other minor tasks to make sure the program
+// will compile.
+//
+// The 'local' block is implemented in this pass, and occurs after propagation.
+//
+//
+// --------------------------------------------------
+// Concerning References:
+//
+// There are currently three states of wideness for references:
+//   - _ref_T : T is the local version of any type.
+//
+//   - _ref_wide_T : T is a class, and this ref points to a wide class.
+//
+//   - _wide_ref_wide_T : a wide pointer to a reference to a wide class.
+//
+// A references can be widened twice. First for the _val field, and once more
+// for the actual _ref.
+//
+//
+// --------------------------------------------------
+// Utility functions:
+//
 //
 
 #include "expr.h"
