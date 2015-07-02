@@ -19,36 +19,47 @@
 
 /*
 
-    Support for the visualization tool "chplvis"
+   Support for the visualization tool "chplvis"
 
-    This module provides access to and enables hooks to dump out
-    task and communication information for post-run visualization
-    of the tasks and communication.
+   This module provides access to and enables hooks to dump out
+   task and communication information for post-run visualization
+   of the tasks and communication.
 
- */
+*/
 module VisualDebug
 {
 
   use String;
 
-  // get access to this quickly?
+  pragma "no doc"
   extern proc chpl_now_time():real;
 
   //
   // Data Generation for the Visual Debug tool  (offline)
   //
 
+  pragma "no doc"
   extern proc chpl_vdebug_start ( rootname: c_string, time:real);
+
+  pragma "no doc"
   extern proc chpl_vdebug_stop ();
+
+  pragma "no doc"
   extern proc chpl_vdebug_tag ( tagname: c_string);
+
+  pragma "no doc"
   extern proc chpl_vdebug_pause ();
+
+  pragma "no doc"
   extern proc chpl_vdebug_nolog ();
 
 
 /* Tree "coforall procedure .... calls one of the above rotunes */
 
+pragma "no doc"
   enum vis_op {v_start, v_stop, v_tag, v_pause};
 
+pragma "no doc"
   proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0) {
       var child = id * 2 + 1;
       chpl_vdebug_nolog();
@@ -69,9 +80,15 @@ module VisualDebug
          }
   }
 
-/*
-  Open a new set of data files, one for each locale, for chplvis.
-  :arg rootname:  Rootname for file. "-n" is added where n is locale number.
+/* 
+  Start logging events for VisualDebug.  Open a new set of data
+  files, one for each locale, for chplvis.  This routine should be
+  called only once for each program.  It creates a directory with the
+  rootname and creates the files in that directory.  The files are
+  named with the rootname and "-n" is added where n is the locale
+  number.
+
+  :arg rootname:  Directory name and rootname for files. 
 */
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();
@@ -82,6 +99,7 @@ module VisualDebug
 
 /*
   Add a tag to the data for chplvis to allow "view points" in the data.
+
   :arg tagname: name of the tag
 */
   proc tagVdebug ( tagname : string ) {
@@ -92,18 +110,17 @@ module VisualDebug
   }
 
 /*
-  Stop collecting data of chplvis and close the data files.  
+  Stop collecting VisualDebug data and close the data files.
 */
   proc stopVdebug () {
-    chpl_vdebug_stop();
+    // chpl_vdebug_stop();
     // coforall l in Locales[1..] do
     //  on l do chpl_vdebug_stop();
     VDebugTree (vis_op.v_stop, "", 0);
   }
 
 /*
-  Stop collection of data for chplvis and tag the pause point.
-  :arg tagname: name of the tag
+  Suspend collection of VisualDebug data.
 */
   proc pauseVdebug () {
     //coforall l in Locales[1..] do
@@ -113,13 +130,15 @@ module VisualDebug
   }
 
 /*
-  Resume collection of data for chplvis after a pauseVdebug().
-  This is a "no-op" if pauseVdebug was not called before.
+  Resume collection of VisualDebug data for chplvis after a pauseVdebug().
+  This also generates a tag record visible by chplvis.
+
+  :arg tagname: name of the tag
 */
   proc resumeVdebug ( tagname : string ) {
     //coforall l in Locales[1..] do
     //  on l do chpl_vdebug_resume ();
-    //chpl_vdebug_resume();
+    //chpl_vdebug_resume(tagname);
     VDebugTree (vis_op.v_tag, tagname, 0);
   }
 
