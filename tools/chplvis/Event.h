@@ -57,7 +57,7 @@ class  E_start : public Event {
      
   public:
     E_start (long esec, long eusec, int nid, long u_sec, long u_usec,
-	     long s_sec, long s_usec)
+             long s_sec, long s_usec)
       : Event(esec, eusec, nid), u_sec(u_sec), u_usec(u_usec),
         s_sec(s_sec), s_usec(s_usec) {};
 
@@ -68,7 +68,7 @@ class  E_start : public Event {
 
     virtual void print() {
       printf ("Start: id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld\n",
-	      nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec);
+              nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec);
     }
 };
 
@@ -83,7 +83,7 @@ class  E_task : public Event {
 
     virtual int Ekind() {return Ev_task;}
     virtual void print() { printf ("Task: id %d time %ld.%06ld\n",
-				   nodeid, sec, usec); }
+                                   nodeid, sec, usec); }
 
 };
 
@@ -96,7 +96,7 @@ class E_comm : public Event {
 
    public:
      E_comm (long esec, long eusec, int esrcid, int edstid, int elSize,
-	     int dLen, bool get) : Event(esec, eusec, esrcid), dstid(edstid),
+             int dLen, bool get) : Event(esec, eusec, esrcid), dstid(edstid),
                                    elemsize(elSize), datalen(dLen), isget(get) {};
 
      int srcId() { return nodeId(); }
@@ -109,7 +109,7 @@ class E_comm : public Event {
      virtual int Ekind() {return Ev_comm;}
      virtual void print() { 
        printf ("Comm: id %d time %ld.%06ld to %d size %d\n",
-	       nodeid, sec, usec, dstid, elemsize * datalen); }
+               nodeid, sec, usec, dstid, elemsize * datalen); }
 };
 
 class E_fork : public Event {
@@ -121,7 +121,7 @@ class E_fork : public Event {
 
    public:
        E_fork (long esec, long eusec, int esrcid, int edstid, int argsize,
-	       bool fast) : Event(esec,eusec, esrcid), dstid(edstid),
+               bool fast) : Event(esec,eusec, esrcid), dstid(edstid),
                             argsize(argsize), isFast(fast) {};
 
      int srcId() { return nodeId(); }
@@ -132,7 +132,7 @@ class E_fork : public Event {
      virtual int Ekind() {return Ev_fork;}
      virtual void print() {
        printf ("Fork%s: id %d time %ld.%06ld to %d datasize %d\n",
-	       (isFast ? "(fast)" : ""), nodeid, sec, usec, dstid, argsize);
+               (isFast ? "(fast)" : ""), nodeid, sec, usec, dstid, argsize);
      }
 };
 
@@ -146,7 +146,7 @@ class E_tag : public Event {
 
    public:
      E_tag (long esec, long eusec, int nodeid, long u_sec, long u_usec, long s_sec, long s_usec,
-	    long tagno, char *tag)
+            long tagno, char *tag)
        : Event(esec, eusec, nodeid), tag_num(tagno), tag_name(tag), u_sec(u_sec),
          u_usec(u_usec), s_sec(s_sec), s_usec(s_usec)
        { }
@@ -161,7 +161,7 @@ class E_tag : public Event {
      virtual int Ekind() {return Ev_tag;}
      virtual void print() {
        printf ("Tag: id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld tagNo %d, Tag='%s'\n",
-	       nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tag_num, tag_name.c_str());
+               nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tag_num, tag_name.c_str());
      }
 
 };
@@ -175,7 +175,7 @@ class E_pause : public Event {
 
   public:
     E_pause (long esec, long eusec, int nodeid, long u_sec, long u_usec,
-	      long s_sec, long s_usec, int tagid)
+              long s_sec, long s_usec, int tagid)
       : Event(esec, eusec, nodeid), u_sec(u_sec), u_usec(u_usec),
               s_sec(s_sec), s_usec(s_usec), tagid(tagid) {};
 
@@ -186,7 +186,7 @@ class E_pause : public Event {
     virtual int Ekind() { return Ev_pause; }
     virtual void print() {
       printf ("Pause:  id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld tagNo %d\n",
-	      nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tagid); 
+              nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tagid); 
     }
 };
 
@@ -198,7 +198,7 @@ class E_end : public Event {
 
   public:
     E_end (long esec, long eusec, int nodeid, long u_sec, long u_usec, 
-	   long s_sec, long s_usec)
+           long s_sec, long s_usec)
       : Event(esec, eusec, nodeid), u_sec(u_sec), u_usec(u_usec),
               s_sec(s_sec), s_usec(s_usec) {};
 
@@ -208,7 +208,7 @@ class E_end : public Event {
     virtual int Ekind() { return Ev_end; }
     virtual void print() {
       printf ("End: id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld\n",
-	      nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec);
+              nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec);
     }
 };
 

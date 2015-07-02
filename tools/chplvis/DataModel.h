@@ -53,34 +53,34 @@ class DataModel {
 
   Event * getFirstEvent()
       {
-	curEvent = theEvents.begin();
-	if (curEvent == theEvents.end())
-	  return NULL;
-	return *curEvent;
+        curEvent = theEvents.begin();
+        if (curEvent == theEvents.end())
+          return NULL;
+        return *curEvent;
       }
   
   Event * getNextEvent()
       {
-	curEvent++;
-	if (curEvent == theEvents.end())
-	  return NULL;
-	return *curEvent;
+        curEvent++;
+        if (curEvent == theEvents.end())
+          return NULL;
+        return *curEvent;
       }
 
   int NumTags () { return numTags; }
 
   Event * getTagNo(int n)
       {
-	//printf ("getTagNo %d: ", n);
+        //printf ("getTagNo %d: ", n);
         curEvent = theEvents.begin();
         // sequential search ... ugg
-	while (curEvent != theEvents.end()
-	       && (((*curEvent)->Ekind() != Ev_tag)
-		   || ((E_tag *)(*curEvent))->tagNo() != n)) {
-	  curEvent++;
-	  //printf (".");
-	}
-	//printf ("\n");
+        while (curEvent != theEvents.end()
+               && (((*curEvent)->Ekind() != Ev_tag)
+                   || ((E_tag *)(*curEvent))->tagNo() != n)) {
+          curEvent++;
+          //printf (".");
+        }
+        //printf ("\n");
         return *curEvent;
       }
 

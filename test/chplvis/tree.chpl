@@ -83,8 +83,8 @@ iter id2com ( id: int, off: int ) {
      var ix = 1;
      while (offset > 0) {
         yield (id+offset,ix);
-	offset = offset >> 1;
-	ix = ix + 1;
+        offset = offset >> 1;
+        ix = ix + 1;
      }
 }
 
@@ -121,7 +121,7 @@ iter cubeiter ( n: int, id: int=0, off: int = -1) : int {
    if (id + offset < n ) then
      while (offset > 0) {
         for z in cubeiter(n, id+offset, offset >> 1) do yield z;
-	offset = offset >> 1;
+        offset = offset >> 1;
      }
 }
 
@@ -140,8 +140,8 @@ iter cubeiter ( param tag: iterKind, n: int, id: int=0, off: int = -1) : int
      if (id + offset < n ) then
         on Locales[id+offset] do
            for z in cubeiter(n, id+offset, offset >> 1, tag=iterKind.standalone)
-	      do yield z;
-	offset = offset >> 1;
+              do yield z;
+        offset = offset >> 1;
      }
 }
 
@@ -169,7 +169,7 @@ iter cubeiter2 ( n: int, id: int=0, off: int = -1) : int {
    if (id + offset < n ) then
      while (offset > 0) {
         for z in cubeiter(n, id+offset, offset >> 1) do yield z;
-	offset = offset >> 1;
+        offset = offset >> 1;
      }
 }
 
@@ -188,7 +188,7 @@ iter cubeiter2 ( param tag: iterKind, n: int, id: int=0, off: int = -1) : int
      if ccid < n then 
        on Locales[ccid] do
           for z in cubeiter2(n, ccid, offset >> shift, tag=iterKind.standalone)
-	     do yield z;
+             do yield z;
 }
 
 pauseVdebug();

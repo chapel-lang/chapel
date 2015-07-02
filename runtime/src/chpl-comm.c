@@ -159,18 +159,18 @@ static int chpl_make_vdebug_file (const char *rootname) {
     // Make sure the directory is made.
     if (stat(rootname, &sb) < 0) {
       if (errno == ENOENT) {
-	if (mkdir(rootname,0777) < 0 && (errno != EEXIST)) {
-	  fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
-	  return -1;
-	}
+        if (mkdir(rootname,0777) < 0 && (errno != EEXIST)) {
+          fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
+          return -1;
+        }
       } else {
-	fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
-	return -1;
+        fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
+        return -1;
       }
     } else {
       if ((sb.st_mode & S_IFMT) != S_IFDIR) {
-	fprintf (stderr, "%s: not a directory.\n", rootname);
-	return -1;
+        fprintf (stderr, "%s: not a directory.\n", rootname);
+        return -1;
       }
     }
     
@@ -220,11 +220,11 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     ru.ru_stime.tv_usec = 0;
   }
   chpl_dprintf (chpl_vdebug_fd,
-		"ChplVdebug: nodes %d id %d seq %.3lf %lld.%06ld %ld.%06ld %ld.%06ld \n",
-		chpl_numNodes, chpl_nodeID, now,
-		(long long) tv.tv_sec, (long) tv.tv_usec,
-		(long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
-		(long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec  );
+                "ChplVdebug: nodes %d id %d seq %.3lf %lld.%06ld %ld.%06ld %ld.%06ld \n",
+                chpl_numNodes, chpl_nodeID, now,
+                (long long) tv.tv_sec, (long) tv.tv_usec,
+                (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+                (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec  );
   chpl_vdebug = 1;
 }
 
@@ -242,10 +242,10 @@ void chpl_vdebug_stop (void) {
     }
     // Generate the End record
     chpl_dprintf (chpl_vdebug_fd, "End: %lld.%06ld %ld.%06ld %ld.%06ld %d\n",
-		  (long long) tv.tv_sec, (long) tv.tv_usec,
-		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
-		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
-		  chpl_nodeID);
+                  (long long) tv.tv_sec, (long) tv.tv_usec,
+                  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+                  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
+                  chpl_nodeID);
     close (chpl_vdebug_fd);
   }
   chpl_vdebug = 0;
@@ -266,10 +266,10 @@ void chpl_vdebug_tag (const char *str)
     ru.ru_stime.tv_usec = 0;
   }
   chpl_dprintf (chpl_vdebug_fd, "Tag: %lld.%06ld %ld.%06ld %ld.%06ld %d %d %s\n",
-		(long long) tv.tv_sec, (long) tv.tv_usec,
-		(long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
-		(long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
-		chpl_nodeID, tag_no++, str);
+                (long long) tv.tv_sec, (long) tv.tv_usec,
+                (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+                (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
+                chpl_nodeID, tag_no++, str);
   chpl_vdebug = 1;
 }
 
@@ -286,10 +286,10 @@ void chpl_vdebug_pause (void) {
       ru.ru_stime.tv_usec = 0;
     }
     chpl_dprintf (chpl_vdebug_fd, "Pause: %lld.%06ld %ld.%06ld %ld.%06ld %d %d\n",
-		  (long long) tv.tv_sec, (long) tv.tv_usec,
-		  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
-		  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
-		  chpl_nodeID, tag_no-1);
+                  (long long) tv.tv_sec, (long) tv.tv_usec,
+                  (long)ru.ru_utime.tv_sec, (long)ru.ru_utime.tv_usec,
+                  (long)ru.ru_stime.tv_sec, (long)ru.ru_stime.tv_usec,
+                  chpl_nodeID, tag_no-1);
     chpl_vdebug = 0;
   }
 }

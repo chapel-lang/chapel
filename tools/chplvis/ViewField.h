@@ -42,6 +42,8 @@ struct localeInfo {
   double Cpu;
   double refUserCpu; 
   double refSysCpu;
+  double elapTime;
+  double refTime;
   LocaleWin *win;
   // Fl_Color heat;
 };

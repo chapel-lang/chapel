@@ -37,8 +37,8 @@ void CommWin::updateWin()
   
   // Create the text
   snprintf (mesg, msgsize, "Total Comms = %d\nTotal bytes = %ld\n"
-	    "  Gets = %d\n  Puts = %d\n  Forks = %d\n",
-	    comm->numComms, comm->commSize, comm->numGets, comm->numPuts,
-	    comm->numComms - comm->numGets - comm->numPuts);
+            "  Gets = %d\n  Puts = %d\n  Forks = %d\n",
+            comm->numComms, comm->commSize, comm->numGets, comm->numPuts,
+            comm->numComms - comm->numGets - comm->numPuts);
   info->value(mesg);
 }
