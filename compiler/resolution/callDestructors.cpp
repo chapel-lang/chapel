@@ -757,6 +757,10 @@ static void addAutoDestroyCallsForModule(ModuleSymbol* mod, FnSymbol* fn,
         if (var->hasFlag(FLAG_NO_AUTO_DESTROY))
           continue;
 
+        // Don't destroy type variables (they have no run-time representation).
+        if (var->hasFlag(FLAG_TYPE_VARIABLE))
+          continue;
+
         if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type))
         {
           // Skip destructors for class types (only nude RWT types at this point).
