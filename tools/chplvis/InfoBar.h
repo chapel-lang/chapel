@@ -31,7 +31,8 @@ class InfoBar : public Fl_Box {
   int maxComms;
   long maxSize;
   double maxCpu;
-  bool showtasks;
+  double maxClock;
+  enum showWhat { show_Tasks, show_CPU, show_Clock} infoTop;
   bool showcomms;
 
   char *fileName;
@@ -49,7 +50,8 @@ class InfoBar : public Fl_Box {
     maxComms = 0;
     maxSize = 0;
     maxCpu = 0;
-    showtasks = true;
+    maxClock = 0;
+    infoTop = show_Tasks;
     showcomms = true;
     fileName = NULL;
     tagName = NULL;
@@ -57,19 +59,21 @@ class InfoBar : public Fl_Box {
 
   void draw(void);
 
-  void setMaxes(int tasks, int comms, long size, double cpu) {
+  void setMaxes(int tasks, int comms, long size, double cpu, double clock) {
     maxTasks = tasks;
     maxComms = comms;
     maxSize = size;
     maxCpu = cpu;
+    maxClock = clock;
   }
 
   void setFileName(const char *name);
   void setTagName(const char *name);
   void clearTagName() { if (tagName != NULL) free(tagName); tagName = NULL; }
 
-  void showTasks() { showtasks = true; }
-  void showCpu() { showtasks = false; }
+  void showTasks() { infoTop = show_Tasks; }
+  void showCpu() { infoTop = show_CPU; }
+  void showClock() { infoTop = show_Clock;}
   void showComms() { showcomms = true; }
   void showSize() { showcomms = false; }
 

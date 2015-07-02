@@ -98,8 +98,7 @@ Function {make_comm_window(int fromLn, int toLn, struct commInfo *commData)} {op
     }
   }
   code {w->setMembers(Comm_Title, commInfo, commData, fromLn, toLn);
-w->updateWin();} {selected
-  }
+w->updateWin();} {}
 } 
 
 Function {} {open
@@ -163,6 +162,12 @@ MainWindow->redraw();}
           callback {DbgView->showCpu();
 MainWindow->redraw();}
           xywh {0 0 36 21}
+        }
+        MenuItem {} {
+          label {Show Clock}
+          callback {DbgView->showClock();
+MainWindow->redraw();} selected
+          xywh {0 0 31 20}
         }
         MenuItem {} {
           label {Show Communication Count}

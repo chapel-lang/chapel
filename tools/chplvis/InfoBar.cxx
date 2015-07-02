@@ -93,13 +93,21 @@ void InfoBar::draw(void)
 
   // Messages on max counts, next to the color reference
   char mesg[150] = "";
-  if (showtasks) {
-    if (maxTasks > 0)
-      snprintf (mesg, 150, "max Tasks: %d", maxTasks);
-  } else {
-    if (maxCpu > 0)
-      snprintf (mesg, 150, "max CPU: %f", maxCpu);
+  switch (infoTop) {
+    case show_Tasks:
+      if (maxTasks > 0)
+        snprintf (mesg, 150, "max Tasks: %d", maxTasks);
+      break;
+    case show_CPU:
+      if(maxCpu > 0)
+        snprintf (mesg, 150, "max CPU: %f", maxCpu);
+      break;
+    case show_Clock:
+      if (maxClock > 0)
+        snprintf (mesg, 150, "max Clock: %f", maxClock);
+      break;
   }
+
   fl_draw(mesg, x()+CR_Left+105, y_center-20, 120, 20, FL_ALIGN_LEFT, NULL, 0);
   mesg[0] = 0;
   if (showcomms) {

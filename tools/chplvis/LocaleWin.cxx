@@ -37,13 +37,14 @@ void LocaleWin::updateWin()
   
   // Create the text
   snprintf (mesg, msgsize, "Number of Tasks: %d\n"
-            "CPU:\n"
-            "      User %lf\n"
+            "CPU:  User %lf\n"
             "      Sys %lf\n"
-            "      Total %lf\n",
+            "      Total %lf\n"
+            "Clock: %lf\n",
             loc->numTasks,
             loc->userCpu,
             loc->sysCpu,
-            loc->Cpu);
+            loc->Cpu,
+            loc->clockTime);
   info->value(mesg);
 }

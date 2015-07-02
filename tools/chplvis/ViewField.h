@@ -42,7 +42,7 @@ struct localeInfo {
   double Cpu;
   double refUserCpu; 
   double refSysCpu;
-  double elapTime;
+  double clockTime;
   double refTime;
   LocaleWin *win;
   // Fl_Color heat;
@@ -84,9 +84,10 @@ class ViewField : public Fl_Box {
     int tagsSize;
     int tagMenu;
 
-    bool showtasks;
+    enum show_what {show_Tasks, show_CPU, show_Clock} infoTop;
     int maxTasks;
     double maxCpu;
+    double maxClock;
 
     bool showcomms;
     int maxComms;
@@ -131,8 +132,10 @@ class ViewField : public Fl_Box {
   void drawCommLine(int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
 
   // What to show!
-  void showTasks(void) { showtasks = true; }
-  void showCpu(void) { showtasks = false; }
+  void showTasks(void) { infoTop = show_Tasks; }
+  void showCpu(void) { infoTop = show_CPU; }
+  void showClock(void) { infoTop = show_Clock; }
+
   void showComms(void) { showcomms = true; }
   void showDsize(void) { showcomms = false; }
 

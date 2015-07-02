@@ -50,8 +50,9 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   maxTasks = 1;
   maxComms = 1;
   maxCpu = 0.000001;
+  maxClock = 0;
   maxDatasize = 1;
-  showtasks = true;
+  infoTop = show_Tasks;
   showcomms = true;
   
 };
@@ -72,8 +73,9 @@ ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *
   maxTasks = 1;
   maxComms = 1;
   maxCpu = 0.000001;
+  maxClock = 0;
   maxDatasize = 1;
-  showtasks = true;
+  infoTop = show_Tasks;
   showcomms = true;
 };
 
@@ -141,7 +143,7 @@ void ViewField::allocArrays()
     theLocales[ix].Cpu = 0;
     theLocales[ix].userCpu = 0;
     theLocales[ix].sysCpu = 0;
-    theLocales[ix].elapTime = 0;
+    theLocales[ix].clockTime = 0;
     theLocales[ix].refTime = 0;
     theLocales[ix].win = NULL;
   }
@@ -182,6 +184,8 @@ void ViewField::processData(int tagNum)
     theLocales[ix1].Cpu = 0;
     theLocales[ix1].refUserCpu = 0;
     theLocales[ix1].refSysCpu = 0;
+    theLocales[ix1].clockTime = 0;
+    theLocales[ix1].refTime = 0;
     if (theLocales[ix1].win != NULL) {
       theLocales[ix1].win->hide();
     }
@@ -198,6 +202,7 @@ void ViewField::processData(int tagNum)
   maxTasks = 1;
   maxComms = 0;
   maxCpu = 0.0000001;
+  maxClock = 0;
   maxDatasize = 0;
 
   Event *ev;
@@ -222,6 +227,8 @@ void ViewField::processData(int tagNum)
     E_tag    *gp = NULL;
     E_pause  *pp = NULL;
 
+    int curNodeId = ev->nodeId();
+
     bool stopProcessing = false;
 
     // debug:
@@ -231,8 +238,8 @@ void ViewField::processData(int tagNum)
       case Ev_task:
         //  Task event
         tp = (E_task *)ev;
-        if (++theLocales[tp->nodeId()].numTasks > maxTasks)
-          maxTasks = theLocales[tp->nodeId()].numTasks;
+        if (++theLocales[curNodeId].numTasks > maxTasks)
+          maxTasks = theLocales[curNodeId].numTasks;
         break;
 
       case Ev_comm:
@@ -264,42 +271,53 @@ void ViewField::processData(int tagNum)
 
       case Ev_start:
         sp = (E_start *)ev;
-        theLocales[sp->nodeId()].refUserCpu = sp->user_time();
-        theLocales[sp->nodeId()].refSysCpu = sp->sys_time();
+        theLocales[curNodeId].refUserCpu = sp->user_time();
+        theLocales[curNodeId].refSysCpu = sp->sys_time();
+        theLocales[curNodeId].refTime = sp->clock_time();
         break;
 
       case Ev_end:
         ep = (E_end *)ev;
-        theLocales[ep->nodeId()].userCpu += ep->user_time()
-          - theLocales[ep->nodeId()].refUserCpu;
-        theLocales[ep->nodeId()].sysCpu += ep->sys_time()
-          - theLocales[ep->nodeId()].refSysCpu;
-        theLocales[ep->nodeId()].Cpu =  theLocales[ep->nodeId()].userCpu 
-          + theLocales[ep->nodeId()].sysCpu;  
-        if (maxCpu < theLocales[ep->nodeId()].Cpu)
-          maxCpu = theLocales[ep->nodeId()].Cpu;
-        //printf ("end: node = %d cpu = %f\n",  ep->nodeId(), 
-        //      theLocales[ep->nodeId()].Cpu);
+        theLocales[curNodeId].userCpu += ep->user_time()
+          - theLocales[curNodeId].refUserCpu;
+        theLocales[curNodeId].sysCpu += ep->sys_time()
+          - theLocales[curNodeId].refSysCpu;
+        theLocales[curNodeId].Cpu =  theLocales[curNodeId].userCpu 
+          + theLocales[curNodeId].sysCpu;  
+        if (maxCpu < theLocales[curNodeId].Cpu)
+          maxCpu = theLocales[curNodeId].Cpu;
+        theLocales[curNodeId].clockTime +=
+          ep->clock_time() - theLocales[curNodeId].refTime;
+        if (maxClock < theLocales[curNodeId].clockTime)
+          maxClock = theLocales[curNodeId].clockTime;
         break;
 
       case Ev_pause:
-        // Reset the ref time?
         pp = (E_pause *)ev;
         // Need to update times for correctness, either for tag->tag or resume
-        theLocales[pp->nodeId()].userCpu += pp->user_time()
-          - theLocales[pp->nodeId()].refUserCpu;
-        theLocales[pp->nodeId()].sysCpu += pp->sys_time()
-          - theLocales[pp->nodeId()].refSysCpu;
-        theLocales[pp->nodeId()].Cpu = theLocales[pp->nodeId()].userCpu 
-          + theLocales[pp->nodeId()].sysCpu;
-        if (maxCpu < theLocales[pp->nodeId()].Cpu)
-            maxCpu = theLocales[pp->nodeId()].Cpu;
+        theLocales[curNodeId].userCpu += pp->user_time()
+          - theLocales[curNodeId].refUserCpu;
+        theLocales[curNodeId].sysCpu += pp->sys_time()
+          - theLocales[curNodeId].refSysCpu;
+        theLocales[curNodeId].Cpu = theLocales[curNodeId].userCpu 
+          + theLocales[curNodeId].sysCpu;
+        if (maxCpu < theLocales[curNodeId].Cpu)
+            maxCpu = theLocales[curNodeId].Cpu;
+        theLocales[curNodeId].clockTime +=
+          pp->clock_time() - theLocales[curNodeId].refTime;
+        if (maxClock < theLocales[curNodeId].clockTime)
+          maxClock = theLocales[curNodeId].clockTime;
+        // Reset the ref times to zero so the next tag will initialize them
+        theLocales[curNodeId].refTime = 0;  // This is the one tested
         break;
          
       case Ev_tag:
         // Checking out the tag ...
         gp = (E_tag *)ev;
         int tgNo = gp->tagNo();
+        // tagNum == -3 => new open, -2 is All tag, -1 => Start to tag 0.
+        // So this says: new open and tags[] not initialized, initialize it for
+        // the menu system for tags
         if (tagNum == -3 && tags[tgNo].tagNo < 0) {
           tags[tgNo].tagNo = tgNo;
           // printf("processing tag '%s'\n", gp->tagName().c_str());
@@ -307,30 +325,35 @@ void ViewField::processData(int tagNum)
           snprintf (tags[tgNo].tagName, gp->tagName().length()+25,
                     "Tags/Tag %d (%s)", tgNo, gp->tagName().c_str());
         }
-        if (tagNum == tgNo) {
+        if (theLocales[curNodeId].refTime == 0) {
           //printf ("Tag: setting ref times\n");
-          theLocales[gp->nodeId()].refUserCpu = gp->user_time();
-          theLocales[gp->nodeId()].refSysCpu = gp->sys_time();
+          theLocales[curNodeId].refUserCpu = gp->user_time();
+          theLocales[curNodeId].refSysCpu = gp->sys_time();
+          theLocales[curNodeId].refTime = gp->clock_time();
         } else if (tgNo == stopTag ) {
           //printf ("Tag: updating user/sys/cpu times.\n");
           // Need to update times for correctness, either for tag->tag or resume
-          theLocales[gp->nodeId()].userCpu += gp->user_time()
-            - theLocales[gp->nodeId()].refUserCpu;
-          theLocales[gp->nodeId()].sysCpu += gp->sys_time()
-            - theLocales[gp->nodeId()].refSysCpu;
-          theLocales[gp->nodeId()].Cpu = theLocales[gp->nodeId()].userCpu 
-            + theLocales[gp->nodeId()].sysCpu;
-          if (maxCpu < theLocales[gp->nodeId()].Cpu)
-            maxCpu = theLocales[gp->nodeId()].Cpu;
+          theLocales[curNodeId].userCpu += gp->user_time()
+            - theLocales[curNodeId].refUserCpu;
+          theLocales[curNodeId].sysCpu += gp->sys_time()
+            - theLocales[curNodeId].refSysCpu;
+          theLocales[curNodeId].Cpu = theLocales[curNodeId].userCpu 
+            + theLocales[curNodeId].sysCpu;
+          if (maxCpu < theLocales[curNodeId].Cpu)
+            maxCpu = theLocales[curNodeId].Cpu;
+          theLocales[curNodeId].clockTime +=
+            gp->clock_time() - theLocales[curNodeId].refTime;
+          if (maxClock < theLocales[curNodeId].clockTime)
+            maxClock = theLocales[curNodeId].clockTime;
         }
 
-        //printf ("tag: node = %d user = %f, sys = %f, cpu = %f\n",  gp->nodeId(),
-        //        theLocales[gp->nodeId()].userCpu,
-        //      theLocales[gp->nodeId()].sysCpu,
-        //      theLocales[gp->nodeId()].Cpu);
+        //printf ("tag: node = %d user = %f, sys = %f, cpu = %f\n",  curNodeId,
+        //        theLocales[curNodeId].userCpu,
+        //      theLocales[curNodeId].sysCpu,
+        //      theLocales[curNodeId].Cpu);
 
         // Stop here?
-        stopProcessing = (gp->nodeId() == numlocales-1) &&
+        stopProcessing = (curNodeId == numlocales-1) &&
                          tgNo == stopTag;
         break;
     }
@@ -343,7 +366,7 @@ void ViewField::processData(int tagNum)
 
   }
 
-  Info->setMaxes(maxTasks, maxComms, maxDatasize, maxCpu);
+  Info->setMaxes(maxTasks, maxComms, maxDatasize, maxCpu, maxClock);
   //printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
 
   if (tagNum == -3)  makeTagsMenu();
@@ -491,10 +514,15 @@ void ViewField::draw()
 
   int ix;
   for (ix = 0; ix < numlocales; ix++) {
-    if (showtasks) {
+    switch (infoTop) {
+    case show_Tasks:
       drawLocale(ix, heatColor(theLocales[ix].numTasks, maxTasks));
-    } else {
+      break;
+    case show_CPU:
       drawLocale(ix, heatColor(theLocales[ix].Cpu, maxCpu));
+      break;
+    case show_Clock:
+      drawLocale(ix, heatColor(theLocales[ix].clockTime, maxClock));
     }
   }
 
@@ -528,10 +556,18 @@ void ViewField::draw()
     Info->showComms();
   else 
     Info->showSize();
-  if (showtasks)
+  switch (infoTop) {
+    case show_Tasks:
       Info->showTasks();
-  else
+      break;
+    case show_CPU:
       Info->showCpu();
+      break;
+    case show_Clock:
+      Info->showClock();
+      break;
+  }
+    
   Info->draw();
 }
 

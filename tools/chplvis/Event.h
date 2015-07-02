@@ -38,6 +38,7 @@ class Event {  // Base class for events .....
 
     long tsec () { return sec; }
     long tusec () { return usec; }
+    double clock_time() { return sec+((double)usec/1000000); }
 
     virtual int Ekind() = 0;
     int nodeId() { return nodeid; }
