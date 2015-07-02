@@ -1,2 +1,4 @@
 accessPrivateSiblingInfo.chpl:3: In function 'main':
-accessPrivateSiblingInfo.chpl:5: error: Cannot find 'M2.secretFunction', module 'M2' is private
+accessPrivateSiblingInfo.chpl:5: warning: Most visible 'M2' is an inaccessible private symbol, defined at:
+ accessPrivateSiblingInfo.chpl:12
+accessPrivateSiblingInfo.chpl:5: error: 'M2' undeclared (first use this function)

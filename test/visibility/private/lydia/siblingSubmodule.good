@@ -1,1 +1,3 @@
-siblingSubmodule.chpl:9: error: Cannot access module 'child'
+siblingSubmodule.chpl:9: warning: Most visible 'child' is an inaccessible private symbol, defined at:
+ siblingSubmodule.chpl:2
+siblingSubmodule.chpl:9: error: Cannot find module 'child'
