@@ -40,6 +40,7 @@ qioerr chpl_fs_cwd(const char** working_dir);
 
 qioerr chpl_fs_exists(int* ret, const char* name);
 
+qioerr chpl_fs_get_size(int* ret, const char* name);
 qioerr chpl_fs_get_uid(int* ret, const char* name);
 qioerr chpl_fs_get_gid(int* ret, const char* name);
 
