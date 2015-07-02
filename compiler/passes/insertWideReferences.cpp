@@ -69,6 +69,16 @@
   #define EFFECT_PRINTF(...)
 #endif
 
+static void debug(Symbol* sym, const char* format, ...) {
+#ifdef PRINT_NARROW_ANALYSIS
+  DEBUG_PRINTF("%s (%d) in %s ", sym->cname, sym->id, sym->getModule()->cname);
+  va_list argptr;
+  va_start(argptr, format);
+  vfprintf(stdout, format, argptr);
+  va_end(argptr);
+#endif
+}
+
 Timer debugTimer;
 
 static std::set<LcnSymbol*> _todo_set;
@@ -158,7 +168,6 @@ static bool queueEmpty() {
 
 static void fixType(LcnSymbol* sym) {
   if (isWideType(sym)) return;
-  printf("Fixing type %s\n", sym->type->symbol->cname);
   DefExpr* def = sym->defPoint;
   if ((isObj(sym) || sym->type == dtString) && sym->mustBeWide) {
     if (!typeCanBeWide(sym)) return;
@@ -186,7 +195,7 @@ static void fixType(LcnSymbol* sym) {
     if (sym->mustBeWide && !sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
       if (Type* wide = wideRefMap.get(def->sym->type))
         def->sym->type = wide;
-    } else if(sym->valIsWide) {
+    } else if (sym->valIsWide) {
       if (Type* wide = wideValMap[def->sym->type])
         def->sym->type = wide;
     } else {
@@ -197,6 +206,7 @@ static void fixType(LcnSymbol* sym) {
 
 
 static void setWide(LcnSymbol* sym) {
+  if (sym->id == 867926) gdbShouldBreakHere();
   if (!typeCanBeWide(sym)) return;//INT_ASSERT(false);
   if (isArgSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) return;
   if (!sym->mustBeWide) {
@@ -220,20 +230,25 @@ static void setValWide(LcnSymbol* sym) {
     fixType(sym);
     addToQueue(sym);
   } else {
-    DEBUG_PRINTF("%s (%d) already has a wide Val, won't put in queue\n", sym->cname, sym->id);
+    DEBUG_PRINTF("%s (%d) already has a wide _val, won't put in queue\n", sym->cname, sym->id);
   }
 }
 static void setValWide(SymExpr* se) { setValWide(toLcnSymbol(se->var)); }
 static void setValWide(Symbol* sym) { setValWide(toLcnSymbol(sym)); }
 
-static void debug(Symbol* sym, const char* format, ...) {
-#ifdef PRINT_NARROW_ANALYSIS
-  DEBUG_PRINTF("%s (%d) in %s ", sym->cname, sym->id, sym->getModule()->cname);
-  va_list argptr;
-  va_start(argptr, format);
-  vfprintf(stdout, format, argptr);
-  va_end(argptr);
-#endif
+// The wideness/type of 'dest' will be made the same as 'src'.
+static void widenRef(LcnSymbol* src, LcnSymbol* dest) {
+  INT_ASSERT(isRef(src) && isRef(dest));
+
+  if (src->mustBeWide) {
+    debug(src, ": Ref %s (%d) must be be wide\n", dest->cname, dest->id);
+    setWide(dest);
+  }
+  else if (src->valIsWide) {
+    debug(src, ": Ref %s (%d) must have a wide _val\n", dest->cname, dest->id);
+    setValWide(dest);
+  }
+  // else INT_FATAL("Unexpected ref widening\n");
 }
 
 //
@@ -259,13 +274,12 @@ handleField(Symbol* field) {
   //
   if (strcmp(ts->name, "_class_localscoforall_fn") == 0) {
     if (isRef(field)) {
-      setWide(field);
+      //setWide(field);
     }
     return;
   }
 
   debug(field, " is a wide field in %s\n", ts->cname);
-
   setWide(field);
   return;
 }
@@ -468,6 +482,7 @@ static void propagateVar(LcnSymbol* sym) {
           if (call->primitive) {
             switch (call->primitive->tag) {
               case PRIM_ADDR_OF:
+                debug(sym, ": _val of ref %s (%d) needs to be wide\n", LHS->cname, LHS->id);
                 setValWide(LHS);
                 break;
               
@@ -497,13 +512,14 @@ static void propagateVar(LcnSymbol* sym) {
         LcnSymbol* rhs = toLcnSymbol(toSymExpr(call->get(2))->var);
         INT_ASSERT(sym == rhs);
         if (isObj(LHS) && isObj(rhs)) {
+          debug(sym, ": Assigning from wide to narrow %s (%d)\n", LHS->cname, LHS->id);
           setWide(LHS);
         }
         else if (isRef(LHS) && isRef(rhs)) {
-          if (rhs->mustBeWide) setWide(LHS);
-          else setValWide(LHS);
+          widenRef(sym, LHS);
         }
         else if (isRef(LHS) && isObj(rhs)) {
+          debug(sym, ": _val of ref %s (%d) needs to be wide\n", LHS->cname, LHS->id);
           setValWide(LHS);
         }
         else {
@@ -514,7 +530,13 @@ static void propagateVar(LcnSymbol* sym) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* base = toSymExpr(call->get(1));
         if (strcmp(base->var->type->symbol->cname, "_class_localscoforall_fn") == 0) {
-          setWide(member->var);
+          DEBUG_PRINTF("Handling coforall field set_member\n");
+          if (isRef(sym)) {
+            widenRef(sym, toLcnSymbol(member->var));
+          } else {
+            debug(sym, ": coforall field %s (%d) must be wide\n", member->var->cname, member->var->id);
+            setWide(member->var);
+          }
         }
       }
       else if (call->isPrimitive(PRIM_RETURN)) {
@@ -536,10 +558,7 @@ static void propagateVar(LcnSymbol* sym) {
                 setWide(lhs);
               }
               else if (isRef(sym) && isRef(lhs->var)) {
-                if (sym->mustBeWide)
-                  setWide(lhs);
-                else if (sym->valIsWide)
-                  setValWide(lhs);
+                widenRef(sym, toLcnSymbol(lhs->var));
               }
             }
           }
@@ -547,6 +566,7 @@ static void propagateVar(LcnSymbol* sym) {
       }
       else if (call->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER)) {
         if (use == call->get(2)) {
+          debug(sym, ": Setting shift base wide\n");
           setWide(toSymExpr(call->get(1))->var);
         }
       }
@@ -569,26 +589,33 @@ static void propagateVar(LcnSymbol* sym) {
           // and we don't want to do that while iterating over uses, I think.
           //cloneThese.push_back(call);
         } else {
-          if (sym->mustBeWide)
-            setWide(arg);
-          else if (sym->valIsWide)
-            setValWide(arg);
+          debug(sym, ": Default widening of arg %s (%d)\n", arg->cname, arg->id);
+          if (isRef(sym)) widenRef(sym, arg);
+          else setWide(arg);
         }
       }
     }
   }
 
-  // Look at cases where we pass 'sym' to a formal with certain intents.
+  // Look at certain definitions, mainly concerning references
   for_defs(def, defMap, sym) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isResolved()) {
+        debug(sym, ": Widening def arg\n");
         ArgSymbol* arg = actual_to_formal(def);
-        setWide(arg);
+        if (isRef(sym)) widenRef(sym, arg);
+        else setWide(arg);
       }
       else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_ADDR_OF)) {
-            setWide(toSymExpr(rhs->get(1)));
+            SymExpr* se = toSymExpr(rhs->get(1));
+            debug(sym, ": ref has a wide _val, src %s (%d) of addr_of must be wide\n", se->var->cname, se->var->id);
+            setWide(se);
+          }
+          else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) && isRef(sym)) {
+            SymExpr* se = toSymExpr(rhs->get(2));
+            widenRef(sym, toLcnSymbol(se->var));
           }
         }
       }
@@ -596,7 +623,7 @@ static void propagateVar(LcnSymbol* sym) {
   }
 }
 
-static void propagateField(Symbol* sym) {
+static void propagateField(LcnSymbol* sym) {
   debug(sym, ": Propagating field\n");
 
   for_uses(use, useMap, sym) {
@@ -604,19 +631,21 @@ static void propagateField(Symbol* sym) {
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (parentCall->isPrimitive(PRIM_MOVE) ||
             parentCall->isPrimitive(PRIM_ASSIGN)) {
-          Symbol* LHS = toSymExpr(parentCall->get(1))->var;
+          LcnSymbol* LHS = toLcnSymbol(toSymExpr(parentCall->get(1))->var);
           if (call->primitive) {
             switch (call->primitive->tag) {
               case PRIM_GET_MEMBER:
                 // Currently we have to keep a 'local field' wide for 
                 // compatibility with some codegen stuff.
+                debug(sym, ": field causes _val of %s (%d) to be wide\n", LHS->cname, LHS->id);
                 setValWide(LHS);
                 break;
               
               case PRIM_GET_MEMBER_VALUE:
                 if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
                   DEBUG_PRINTF("\t"); debug(LHS, ": widened gmv\n");
-                  setWide(LHS);
+                  if (isRef(sym)) widenRef(sym, LHS);
+                  else setWide(LHS);
                 }
                 break;
               default:
@@ -628,9 +657,9 @@ static void propagateField(Symbol* sym) {
       }
       else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         SymExpr* RHS = toSymExpr(call->get(3));
-        if (isRef(RHS->var)) {
-          // TODO: for real?
-          setWide(RHS->var);
+        if (isRef(sym)) {
+          DEBUG_PRINTF("Widening ref RHS of set_member\n");
+          widenRef(sym, toLcnSymbol(RHS->var));
         }
         else if (sym->hasFlag(FLAG_LOCAL_FIELD)) {
           // TODO: add to list, handle later?
@@ -1014,6 +1043,7 @@ insertWideReferences(void) {
   }
 
   forv_Vec(Symbol, sym, heapVars) {
+    DEBUG_PRINTF("Heap var %s (%d) is wide\n", sym->cname, sym->id);
     setWide(sym);
   }
   addKnownWides();
@@ -1034,10 +1064,6 @@ insertWideReferences(void) {
   }
   debugTimer.stop();
 
-#ifdef PRINT_NARROW_EFFECT_SUMMARY
-  printf("Spent %2.3f seconds propagating vars\n", debugTimer.elapsedSecs());
-#endif
-
   // IWR
   insertStringLiteralTemps();
   widenGetPrivClass(); // widens class type in PRIM_GET_PRIV_CLASS
@@ -1056,6 +1082,7 @@ insertWideReferences(void) {
   moveAddressSourcesToTemp();
 
 #ifdef PRINT_NARROW_EFFECT_SUMMARY
+  printf("Spent %2.3f seconds propagating vars\n", debugTimer.elapsedSecs());
   int wide = 0, narrow = 0;
   forv_Vec(VarSymbol, sym, gVarSymbols) {
     if (sym->mustBeWide || sym->valIsWide)
