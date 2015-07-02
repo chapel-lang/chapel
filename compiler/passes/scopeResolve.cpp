@@ -36,6 +36,7 @@
 #include "symbol.h"
 
 #include <map>
+#include <set>
 
 #ifdef HAVE_LLVM
 // TODO: Remove uses of old-style collectors from LLVM-specific code.
@@ -1506,6 +1507,14 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
           }
 
         } else if (sym) {
+          if (ModuleSymbol* mod2 = toModuleSymbol(sym)) {
+            // Private only applied to module symbols at this time
+            if (!mod2->isVisible(call)) {
+              // The module is not visible at this scope because it is
+              // private to mod!  Error out
+              USR_FATAL(call, "Cannot find '%s', '%s' is private to '%s'", mbr_name, mbr_name, mod->name);
+            }
+          }
           call->replace(new SymExpr(sym));
 
 #ifdef HAVE_LLVM
@@ -1704,9 +1713,10 @@ static void renameDefaultType(Type* type, const char* newname) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void lookup(BaseAST* scope, const char * name,
-                    std::vector<Symbol* >& symbols,
-                    Vec<BaseAST*>& alreadyVisited);
+static BaseAST* lookup(BaseAST* scope, const char * name,
+                       std::vector<Symbol* >& symbols,
+                       Vec<BaseAST*>& alreadyVisited,
+                       std::set<int> rejectedPrivateIds);
 
 
 
@@ -1719,39 +1729,118 @@ static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 // Given a name and a scope, determine the symbol referred by that name in the
 // context of that scope.
 static Symbol* lookup(BaseAST* scope, const char* name) {
-  Symbol * symbolResult = NULL;
   std::vector<Symbol * > symbolOptions;
   Vec<BaseAST*> nestedscopes;
+
+  std::set<int> rejectedPrivateIds;
+  // rejectedPrivateIds is a set of all ids for private symbols that we have
+  // encountered and determined are not visible to us.  Though it adds storage
+  // and requires a check of all later symbol matches once it has any contents,
+  // it allows us to go back to a scope we may have partially traversed (and
+  // left early due to finding the incorrect private symbol match).  It also
+  // means that, in the event a private symbol lives in the internal or commonly
+  // used standard modules, the user will not be flooded with multiple output
+  // for the same incorrect match.
 
   // Lydia note: I would like to investigate the effect of traversing all call
   // expressions of the "." accessor.
 
+  BaseAST* previousLast = NULL;
+  BaseAST* lastSearched = scope;
+  // Covers case where we have called lookup with the same scope twice in a
+  // row
+  while (previousLast != lastSearched) {
+    previousLast = lastSearched;
+    // Call inner lookup on scope, the name, the symbols return vector, and the
+    // vector of ASTs already visited.
+    lastSearched = lookup(previousLast, name, symbolOptions, nestedscopes, rejectedPrivateIds);
 
-  // Call inner lookup on scope, the name, the symbols return vector, and the
-  // vector of ASTs already visited.
-  lookup(scope, name, symbolOptions, nestedscopes);
+    int numFound = symbolOptions.size();
 
-  int numFound = symbolOptions.size();
-  if (numFound == 0) {
-    // No symbols found for this name
-      symbolResult = NULL;
-  } else if (numFound == 1) {
-    // A unique symbol found for this name
-      symbolResult = symbolOptions.front();
-  } else {
-    // Multiple symbols found for this name.  If at least one of them isn't
-    // a function, we need to handle it now so error out.  Otherwise, function
-    // resolution will handle it.
-    for_vector(Symbol, sym, symbolOptions) {
-      if (!isFnSymbol(sym))
-        USR_FATAL_CONT(sym, "Symbol %s multiply defined", name);
+    if (numFound == 0) {
+      // No symbols found for this name
+      return NULL;
+    } else if (numFound == 1) {
+      // A unique symbol found for this name
+      Symbol* symbolResult = symbolOptions.front();
+      ModuleSymbol* mod = toModuleSymbol(symbolResult);
+      if (mod != NULL) {
+        // Right now, we only allow the private keyword on module symbols.  This
+        // will expand, but for now eliminate the other options.
+        if (!mod->isVisible(scope)) {
+          rejectedPrivateIds.insert(mod->id);
+          // The only symbol found was private.  Warn the user and continue
+          // looking
+          USR_WARN(scope, "Most visible '%s' is an inaccessible private symbol, defined at:\n %s", name, mod->stringLoc());
+          symbolOptions.clear(); // Empty the results vector for a clean start
+          continue;
+        } else {
+          // The symbol found either was public, or was visible in this scope
+          // so return it.
+          return symbolResult;
+        }
+      } else {
+        // The symbol found wasn't a module symbol, so it can't be private, so
+        // we have a match!
+        return symbolResult;
+      }
+    } else {
+      // Multiple symbols found for this name.  If at least one of them isn't
+      // a function, we need to handle it now so error out.  Otherwise, function
+      // resolution will handle it.
+      // In the case where all but one of the symbols found are private and not
+      // visible in the current scope, we want to return the odd one while
+      // notifying the user of the other options
+      std::vector<Symbol*> symbolResult;
+      unsigned int numPrivate = 0;
+      for_vector(Symbol, sym, symbolOptions) {
+        if (!isFnSymbol(sym)) {
+          ModuleSymbol* mod = toModuleSymbol(sym);
+          if (mod != NULL) {
+            // Right now, we only allow the private keyword on module symbols.
+            // This will expand, but for now eliminate the other options.
+            if (!mod->isVisible(scope)) {
+              rejectedPrivateIds.insert(mod->id);
+              USR_WARN(scope, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, sym->stringLoc());
+              numPrivate = numPrivate + 1;
+            } else {
+              // Public modules, or private modules that are accessible
+              symbolResult.push_back(sym);
+            }
+          } else {
+            symbolResult.push_back(sym);
+            // Other symbols (that aren't FnSymbols)
+          }
+        }
+      }
+      if (numPrivate == symbolOptions.size()) {
+        // We've found only private symbols, look in parent scopes.
+        // Empty the results vector for a clean start
+        symbolOptions.clear();
+        continue;
+      } else if (numPrivate + 1 == symbolOptions.size()) {
+        // There is only one public/accessible symbol.  If it isn't a function
+        // symbol, we should return it.  We don't need to keep looking
+        if (symbolResult.size() == 1) {
+          return symbolResult.front();
+        } else {
+          return NULL;
+        }
+      } else {
+        // Okay, in addition to the potential for private symbols, we've got
+        // some symbol conflicts here.  We've ignored all the function symbols,
+        // so we can assume that everything in here needs to be output.
+        for_vector(Symbol, sym, symbolResult) {
+          USR_FATAL_CONT(sym, "Symbol %s multiply defined", name);
+        }
+        USR_STOP();
+        // We've found sufficiently many matches that we shouldn't look any
+        // further
+        return NULL;
+      }
     }
-    USR_STOP();
-    symbolResult = NULL;
   }
-
-  return symbolResult;
-  // return symbol matching the name
+  return NULL;
 }
 
 // Determines and obtains a method by the given name on the given type
@@ -1863,11 +1952,15 @@ static Symbol* inType(BaseAST* scope, const char* name) {
 
 // Assumes that symbols contains nothing before entering this function
 static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
-                                std::vector<Symbol* >& symbols) {
+                                   std::vector<Symbol* >& symbols,
+                                   std::set<int> rejectedPrivateIds) {
   INT_ASSERT(symbols.size() == 0);
 
   if (Symbol* sym = inSymbolTable(scope, name)) {
-    symbols.push_back(sym);
+    if (rejectedPrivateIds.find(sym->id) == rejectedPrivateIds.end()) {
+      // The symbol found was not one of the rejected private symbols
+      symbols.push_back(sym);
+    }
   }
 
   if (Symbol* sym = inType(scope, name)) {
@@ -1883,6 +1976,8 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
         return true;
       }
     }
+    // When methods and fields can be private, need to check against the
+    // rejected private symbols here.  But that's in the future.
     symbols.push_back(sym);
   }
 
@@ -1918,7 +2013,10 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
         forv_Vec(ModuleSymbol, mod, *modules) {
           if (mod) {
             if (Symbol* sym = inSymbolTable(mod->block, name)) {
-              symbols.push_back(sym);
+              if (rejectedPrivateIds.find(sym->id) == rejectedPrivateIds.end()) {
+                // The symbol found was not one of the rejected private symbols
+                symbols.push_back(sym);
+              }
             }
           } else {
             //
@@ -1962,13 +2060,14 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
 // Note that having this set up would make it easier to check the entirety of
 // an access call (M1.M2.M3, for instance) as the recursion does not occur in
 // the innermost scope.
-static void lookup(BaseAST* scope, const char * name,
-                    std::vector<Symbol* >& symbols,
-                    Vec<BaseAST*>& alreadyVisited) {
+static BaseAST* lookup(BaseAST* scope, const char * name,
+                       std::vector<Symbol* >& symbols,
+                       Vec<BaseAST*>& alreadyVisited,
+                       std::set<int> rejectedPrivateIds) {
   if (!alreadyVisited.set_in(scope)) {
     alreadyVisited.set_add(scope);
 
-    if (lookupThisScopeAndUses(scope, name, symbols)) {
+    if (lookupThisScopeAndUses(scope, name, symbols, rejectedPrivateIds)) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part of the
@@ -1978,12 +2077,12 @@ static void lookup(BaseAST* scope, const char * name,
       // it and we're looking for M1.M2.foo), so that is something to keep in
       // mind as well.
 
-      return;
+      return scope;
     }
 
     if (scope->getModule()->block == scope) {
       if (getScope(scope))
-        lookup(getScope(scope), name, symbols, alreadyVisited);
+        return lookup(getScope(scope), name, symbols, alreadyVisited, rejectedPrivateIds);
     } else {
       // Otherwise, look in the next scope up.
       FnSymbol* fn = toFnSymbol(scope);
@@ -1992,16 +2091,19 @@ static void lookup(BaseAST* scope, const char * name,
         // within the aggregate type
         AggregateType* ct = toAggregateType(fn->_this->type);
         if (ct)
-          lookup(ct->symbol, name, symbols, alreadyVisited);
+          lookup(ct->symbol, name, symbols, alreadyVisited, rejectedPrivateIds);
       }
       // Check if found something in last lookup call
       if (symbols.size() == 0) {
         // If we didn't find something in the aggregate type that matched, or we
         // weren't in an aggregate type method, so look at next scope up.
-        lookup(getScope(scope), name, symbols, alreadyVisited);
+        return lookup(getScope(scope), name, symbols, alreadyVisited, rejectedPrivateIds);
+      } else {
+        return scope; // Because found on the aggregate type symbol
       }
     }
   }
+  return NULL;
 }
 
 static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {
