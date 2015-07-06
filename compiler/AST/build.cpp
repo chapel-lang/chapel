@@ -1890,19 +1890,6 @@ buildFunctionSymbol(FnSymbol*   fn,
 
     fn->addFlag(FLAG_METHOD);
     fn->insertFormalAtHead(new DefExpr(mt));
-  } else {
-    //
-    // This is either a standalone function or a secondary method
-    //
-    if (thisTag == INTENT_TYPE) {
-      fn->addFlag(FLAG_THIS_INTENT_TYPE);
-    } else if (thisTag == INTENT_BLANK) {
-      // noop
-    } else if (thisTag == INTENT_REF) {
-      // we have code that uses it -- who processes it?
-    } else {
-      USR_FATAL_CONT(fn, "Unexpected 'this' intent");
-    }
   }
 
   return fn;
