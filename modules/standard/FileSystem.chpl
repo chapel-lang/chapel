@@ -52,7 +52,7 @@
    -------------------------
    :proc:`getGID`
    :proc:`getMode`
-   :proc:`getSize`
+   :proc:`getFileSize`
    :proc:`getUID`
    :proc:`exists`
    :proc:`isDir`
@@ -657,10 +657,10 @@ proc getMode(name: string): int {
 
 
 pragma "no doc"
-proc getSize(out error: syserr, name: string): int {
-  extern proc chpl_fs_get_size(ref result: c_int, filename: c_string):syserr;
+proc getFileSize(out error: syserr, name: string): int {
+  extern proc chpl_fs_get_size(ref result: off_t, filename: c_string):syserr;
 
-  var result: c_int;
+  var result: off_t;
   error = chpl_fs_get_size(result, name.c_str());
   return result;
 }
@@ -675,9 +675,9 @@ proc getSize(out error: syserr, name: string): int {
    :return: The size in bytes of the file in question
    :rtype: int
 */
-proc getSize(name: string): int {
+proc getFileSize(name: string): int {
   var err: syserr = ENOERR;
-  var ret = getSize(err, name);
+  var ret = getFileSize(err, name);
   if err != ENOERR then ioerror(err, "in getFileSize", name);
   return ret;
 }

@@ -1,4 +1,4 @@
 use FileSystem;
 
-writeln(getSize("foo.txt"));
+writeln(getFileSize("foo.txt"));
 // Should output 28
