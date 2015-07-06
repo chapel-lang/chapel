@@ -1,0 +1,8 @@
+CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:10): default rectangular domain follower invoked on (0..9)
+CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:10): default rectangular domain follower invoked on (10..19)
+CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:12): default rectangular domain follower invoked on (0..9)
+CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:12): default rectangular domain follower invoked on (10..19)
+CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:8): default rectangular domain follower invoked on (0..9)
+CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:8): default rectangular domain follower invoked on (10..19)
+1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0

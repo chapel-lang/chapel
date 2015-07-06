@@ -285,6 +285,9 @@ std::string generateSphinxProject(std::string dirpath) {
   // Copy the sphinx template into the output dir.
   const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
   const char * cmd = astr("cp -r ", sphinxTemplate, " ", sphinxDir, "/");
+  if( printSystemCommands ) {
+    printf("%s\n", cmd);
+  }
   mysystem(cmd, "copying chpldoc sphinx template");
 
   const char * moddir = astr(sphinxDir, "/source/modules");
@@ -321,6 +324,9 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
     sphinxBuild, " -b html -d ",
     sphinxDir.c_str(), "/build/doctrees -W ",
     sphinxDir.c_str(), "/source ", outputDir.c_str());
+  if( printSystemCommands ) {
+    printf("%s\n", cmd);
+  }
   mysystem(cmd, "building html output from chpldoc sphinx project");
   printf("HTML files are at: %s\n", outputDir.c_str());
 }

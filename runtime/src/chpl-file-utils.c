@@ -152,8 +152,13 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
   // comparison is also not valid when an unlinked file is provided.
   struct stat buf;
   int exitStatus = lstat(name, &buf);
-  if (exitStatus)
+  if (exitStatus == -1 && errno == ENOENT) {
+    // The link examined does not exist, return false
+    *ret = 0;
+    return 0;
+  } else if (exitStatus) {
     return qio_mkerror_errno();
+  }
   *ret = S_ISLNK(buf.st_mode);
   return 0;
 }

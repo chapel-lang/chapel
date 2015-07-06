@@ -1054,7 +1054,7 @@ static void narrowVarsArgsFieldsInMap(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         narrowField(var, wi);
       }
       else {
-        // TODO: Can FLAG_PRIVATE vars be narrow?
+        // TODO: Can FLAG_LOCALE_PRIVATE vars be narrow?
 
         narrowSym(var, wi, defMap, useMap);
 

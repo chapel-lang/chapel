@@ -37,10 +37,11 @@
 
 #include <inttypes.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <cstdio>
-
+#include <vector>
 
 // Global so that we don't have to pass around
 // to all of the codegen() routines
@@ -360,6 +361,29 @@ compareSymbol(const void* v1, const void* v2) {
   return result;
 }
 
+static bool
+compareSymbol2(void* v1, void* v2) {
+  Symbol* s1 = (Symbol*)v1;
+  Symbol* s2 = (Symbol*)v2;
+  ModuleSymbol* m1 = s1->getModule();
+  ModuleSymbol* m2 = s2->getModule();
+  if (m1 != m2) {
+    if (m1->modTag < m2->modTag)
+      return 1;
+    if (m1->modTag > m2->modTag)
+      return 0;
+    return strcmp(m1->cname, m2->cname) < 0;
+  }
+
+  if (s1->linenum() != s2->linenum())
+    return s1->linenum() < s2->linenum();
+
+  int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
+  if (!result)
+    result = strcmp(s1->cname, s2->cname);
+
+  return result < 0;
+}
 
 //
 // given a name and up to two sets of names, return a name that is in
@@ -617,7 +641,7 @@ static void codegen_header() {
   GenInfo* info = gGenInfo;
   Vec<const char*> cnames;
   Vec<TypeSymbol*> types;
-  Vec<FnSymbol*> functions;
+  std::vector<FnSymbol*> functions;
   Vec<VarSymbol*> globals;
 
   // reserved symbol names that require renaming to compile
@@ -651,9 +675,9 @@ static void codegen_header() {
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     legalizeName(fn);
-    functions.add(fn);
+    functions.push_back(fn);
   }
-  qsort(functions.v, functions.n, sizeof(functions.v[0]), compareSymbol);
+  std::sort(functions.begin(), functions.end(), compareSymbol2);
 
 
   //
@@ -742,7 +766,7 @@ static void codegen_header() {
   // mangle function names if they clash with types, enum constants,
   // global variables, or other functions
   //
-  forv_Vec(FnSymbol, fn, functions) {
+  for_vector(FnSymbol, fn, functions) {
     if (fn->isRenameable())
       fn->cname = uniquifyName(fn->cname, &cnames);
   }
@@ -892,17 +916,17 @@ static void codegen_header() {
 
 
   genComment("Function Prototypes");
-  forv_Vec(FnSymbol, fnSymbol, functions) {
+  for_vector(FnSymbol, fnSymbol, functions) {
     fnSymbol->codegenPrototype();
   }
     
   genComment("Function Pointer Table");
-  forv_Vec(FnSymbol, fn, functions) {
-    if (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
-        fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
-        fn->hasFlag(FLAG_ON_BLOCK)) {
-    ftableVec.add(fn);
-    ftableMap.put(fn, ftableVec.n-1);
+  for_vector(FnSymbol, fn2, functions) {
+    if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
+        fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+        fn2->hasFlag(FLAG_ON_BLOCK)) {
+    ftableVec.add(fn2);
+    ftableMap.put(fn2, ftableVec.n-1);
     }
   }
 

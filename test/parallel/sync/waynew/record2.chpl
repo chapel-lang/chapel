@@ -12,22 +12,24 @@ record R {
 }
 var c: R;
 
-writeln( "\ntest 2");
-begin {
-  var r: int;
-  var j: int;
-  j = 0;
-  while (j < ITERATIONS) {
-    sleep( 1);
-    r = c.s;
-    writeln( "2: got ", r);
-    j += 1;
+sync {
+  writeln( "\ntest 2");
+  begin {
+    var r: int;
+    var j: int;
+    j = 0;
+    while (j < ITERATIONS) {
+      sleep( 1);
+      r = c.s;
+      writeln( "2: got ", r);
+      j += 1;
+    }
   }
-}
 
-var k: int;
-k = 0;
-while (k < ITERATIONS) {
-  c.s = k;
-  k += 1;
+  var k: int;
+  k = 0;
+  while (k < ITERATIONS) {
+    c.s = k;
+    k += 1;
+  }
 }

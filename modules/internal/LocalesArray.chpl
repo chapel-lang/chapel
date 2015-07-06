@@ -47,7 +47,7 @@ module LocalesArray {
   // we set up the version on all other locales during LocaleModel
   // initialization (see chpl_rootLocaleInitPrivate()).  The copy for
   // locale 0 is set up here for the declaration.
-  pragma "private"
+  pragma "locale private"
   var Locales => (rootLocale:RootLocale).getDefaultLocaleArray();
 
   // We don't use the same private "trick" as with Locales above with

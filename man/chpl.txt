@@ -103,9 +103,7 @@ OPTIONS
   --[no-]dead-code-elimination   Enable [disable] dead code elimination.
 
   --fast            Turns off all runtime checks using --no-checks, turns
-                    on -O and --specialize, and enables most other compiler
-                    optimizations described in this section (--no-ieee-float
-                    and --cache-remote are notable exceptions).
+                    on -O, --specialize, and --vectorize.
 
   --[no-]fast-followers   Enable [disable] the fast follower
                     optimization in which fast implementations of
@@ -114,7 +112,7 @@ OPTIONS
   --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
                     floating point conformance. The default is whatever level
                     of optimization/IEEE floating point support your C compiler
-                    provides with the C compiler optimization provided.
+                    provides at the optimization level provided by 'chpl'.
 
   --[no-]loop-invariant-code-motion   Enable [disable] the optimization that
                     moves loop invariant code from loop runs into the loop's

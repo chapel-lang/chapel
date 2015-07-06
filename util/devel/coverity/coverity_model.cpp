@@ -29,14 +29,9 @@ void setupError(const char *filename, int lineno, int tag) {
 // runtime
 //
 
-// chpl_error() ends execution
-// Note: this signature doesn't match the real one precisely, but it's
-//       close enough.
-void chpl_error(const char* message, int lineno, const char* filename) {
-  __coverity_panic__();
-}
-
-// chpl_internal_error() ends execution
-void chpl_internal_error(const char* message) {
+//
+// exit() ends execution
+//
+void exit(int status) {
   __coverity_panic__();
 }

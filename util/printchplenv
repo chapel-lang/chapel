@@ -23,7 +23,7 @@ def print_mode(mode='list'):
 
     if m == 'list' or mode == 'debug':
         stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
-        stdout.write("CHPL_HOME: {0}\n".format(chpl_home))
+        stdout.write("CHPL_HOME: {0} *\n".format(chpl_home))
         this_dir = os.path.realpath(os.path.dirname(__file__))
         stdout.write("script location: {0}\n".format(this_dir))
     elif chpl_home and m == 'shell':
@@ -185,8 +185,11 @@ def print_mode(mode='list'):
 
 
 def print_var(env_var, value, mode, short_name='', filters=None):
-    if mode == 'list':
-        stdout.write("{0}: {1}\n".format(env_var, value))
+    if mode == 'list' or mode == 'debug':
+        user_set = os.environ.get(env_var, '')
+        if user_set:
+          user_set = ' *'
+        stdout.write("{1}: {2}{0}\n".format(user_set, env_var, value))
     elif mode == 'make':
         make_env_var = env_var.replace("CHPL_", "CHPL_MAKE_", 1).lstrip()
         stdout.write("{0}={1}\n".format(make_env_var, value))
@@ -207,11 +210,6 @@ def print_var(env_var, value, mode, short_name='', filters=None):
         stdout.write("export {0}='{1}'\n".format(env_var, value))
     elif mode == 'cshell':
         stdout.write("setenv {0} '{1}'\n".format(env_var, value))
-    elif mode == 'debug':
-        user_set = os.environ.get(env_var, '')
-        if user_set:
-          user_set = '*'
-        stdout.write("{0}{1}={2}\n".format(user_set, env_var, value))
     else:
         raise ValueError("Invalid mode '{0}'".format(mode))
 
@@ -221,7 +219,9 @@ def _main():
         usage='usage: %prog [--list|--make|--simple|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
 
     parser.add_option('--list', action='store_const', dest='mode', default='list',
-                      const='list', help="print out a listing of the environment")
+                      const='list',
+                      help="print out a listing of the environment indicating "
+                           "which options are user supplied with a * (default)")
     parser.add_option('--make', action='store_const', dest='mode', const='make',
                       help="print out a listing of the environment that is "
                            "used in the build process")

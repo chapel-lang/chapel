@@ -1430,9 +1430,19 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
 
 
 BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
+  BlockStmt* block = new BlockStmt();
   CondStmt* otherwise = NULL;
   CondStmt* top = NULL;
   CondStmt* condStmt = NULL;
+
+  VarSymbol* tmp = newTemp();
+
+  tmp->addFlag(FLAG_MAYBE_PARAM);
+  tmp->addFlag(FLAG_MAYBE_TYPE);
+  tmp->addFlag(FLAG_EXPR_TEMP);
+
+  block->insertAtTail(new DefExpr(tmp));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, selectCond));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
@@ -1450,10 +1460,10 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       for_actuals(whenCond, conds) {
         whenCond->remove();
         if (!expr)
-          expr = new CallExpr("==", selectCond->copy(), whenCond);
+          expr = new CallExpr("==", tmp, whenCond);
         else
           expr = buildLogicalOrExpr(expr, new CallExpr("==",
-                                                   selectCond->copy(),
+                                                   tmp,
                                                    whenCond));
       }
       if (!condStmt) {
@@ -1471,7 +1481,9 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
       USR_FATAL(selectCond, "Select has no when clauses");
     condStmt->elseStmt = otherwise->thenStmt;
   }
-  return buildChapelStmt(top);
+
+  block->insertAtTail(top);
+  return block;
 }
 
 
@@ -1714,6 +1726,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
 
 DefExpr*
 buildClassDefExpr(const char* name,
+                  const char* cname,
                   Type*       type,
                   Expr*       inherit,
                   BlockStmt*  decls,
@@ -1725,6 +1738,9 @@ buildClassDefExpr(const char* name,
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
   if (isExtern == FLAG_EXTERN) {
+    if (cname) {
+      ts->cname = astr(cname);
+    }
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
@@ -1738,14 +1754,22 @@ buildClassDefExpr(const char* name,
 }
 
 
+//
+// If an argument has intent 'INTENT_TYPE', this function sets up the
+// ArgSymbol the way downstream passes expect it to be.
+//
+static void setupTypeIntentArg(ArgSymbol* arg) {
+  arg->intent = INTENT_BLANK;
+  arg->addFlag(FLAG_TYPE_VARIABLE);
+  arg->type = dtAny;
+}
+
+
 DefExpr*
 buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
   ArgSymbol* arg = new ArgSymbol(tag, ident, dtUnknown, type, init, variable);
   if (arg->intent == INTENT_TYPE) {
-    type = NULL;
-    arg->intent = INTENT_BLANK;
-    arg->addFlag(FLAG_TYPE_VARIABLE);
-    arg->type = dtAny;
+    setupTypeIntentArg(arg);
   } else if (!type && !init)
     arg->type = dtAny;
   return new DefExpr(arg);
@@ -1850,13 +1874,17 @@ buildFunctionSymbol(FnSymbol*   fn,
 
   if (class_name)
   {
-    fn->_this = new ArgSymbol(thisTag,
-                              "this",
-                              dtUnknown,
-                              new UnresolvedSymExpr(class_name));
+    ArgSymbol* arg = new ArgSymbol(thisTag,
+                                   "this",
+                                   dtUnknown,
+                                   new UnresolvedSymExpr(class_name));
+    fn->_this = arg;
+    if (thisTag == INTENT_TYPE) {
+      setupTypeIntentArg(arg);
+    }
 
-    fn->_this->addFlag(FLAG_ARG_THIS);
-    fn->insertFormalAtHead(new DefExpr(fn->_this));
+    arg->addFlag(FLAG_ARG_THIS);
+    fn->insertFormalAtHead(new DefExpr(arg));
 
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
 
@@ -2110,6 +2138,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
     beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
+    beginBlk->astloc = stmt->astloc;
     // the original byref_vars is dead - will be clean_gvec-ed
     addByrefVars(beginBlk, byref_vars ? byref_vars->copy() : NULL);
     stmt->insertBefore(beginBlk);

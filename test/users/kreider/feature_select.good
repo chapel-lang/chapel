@@ -1,0 +1,1 @@
+feature_select.chpl:10: warning: select does not exhaustively check all enum members
