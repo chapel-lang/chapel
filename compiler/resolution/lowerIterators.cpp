@@ -33,9 +33,9 @@
 #include "symbol.h"
 
 
-// Get the corresponding iterator FnSymbol, insead of:
-//   ...->defaultInitializer->getFormal(1)->type->defaultInitializer
+// getTheIteratorFn(): get the corresponding original iterator's FnSymbol.
 
+// 'ic' must be an instance of _iteratorClass
 FnSymbol* getTheIteratorFn(Symbol* ic) {
   return getTheIteratorFn(ic->type);
 }
@@ -44,6 +44,12 @@ FnSymbol* getTheIteratorFn(CallExpr* call) {
   return getTheIteratorFn(call->get(1)->typeInfo());
 }
 
+// getTheIteratorFn() - was:
+//   ...->defaultInitializer->getFormal(1)->type->defaultInitializer
+//
+// * _iteratorClass's defaultInitializer's first arg type is _iteratorRecord
+// * _iteratorRecord type's defaultInitializer gives us the iterator
+//
 FnSymbol* getTheIteratorFn(Type* icType) {
   // either an IC or a tuple thereof
   // the asserts document the current state
