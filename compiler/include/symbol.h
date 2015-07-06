@@ -161,13 +161,13 @@ public:
 
   void      locationSet(int depth, int offset);
 
-  // By storing wide information in Symbol, we can leverage exiting
+  // By storing wide information in Symbol, we can leverage existing
   // AST management constructs when manipulating the AST while
   // in the process of determining wideness.
 
   // Does this symbol need a wide type?
   bool mustBeWide;
-  
+
   // For symbols whose types are wrappers around a single thing.
   // Usually for compiler-managed types (like refs).
   // If true, then the wrapped thing is wide.

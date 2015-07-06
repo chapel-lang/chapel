@@ -268,7 +268,6 @@ void compute_call_sites() {
   }
 }
 
-
 // builds the def and use maps for every variable/argument
 // in the entire program.
 void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,

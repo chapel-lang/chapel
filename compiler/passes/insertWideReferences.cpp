@@ -37,7 +37,7 @@
 //
 // --------------------------------------------------
 //
-// Note: Prior to ~June 2015 there were to passes that performed the same
+// Note: Prior to ~June 2015 there were two passes that performed the same
 // duties of this single pass:
 //   - insertWideReferences: Simply widened everything by default
 //   - narrowWideReferences: Selectively narrowed variables
