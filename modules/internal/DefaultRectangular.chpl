@@ -69,7 +69,7 @@ module DefaultRectangular {
   // Replicated copies are set up in chpl_initOnLocales() during locale
   // model initialization
   //
-  pragma "private" var defaultDist = new dmap(new DefaultDist());
+  pragma "locale private" var defaultDist = new dmap(new DefaultDist());
    proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
       // FIXME benharsh: Here's what we want to do:

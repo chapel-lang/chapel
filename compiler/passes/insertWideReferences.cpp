@@ -395,7 +395,7 @@ static void addKnownWides() {
 
       // FLAG_PRIVATE variables can be used within an on-statement without
       // needing to be wide.
-      if (isModuleSymbol(defParent) && !var->hasFlag(FLAG_PRIVATE)) {
+      if (isModuleSymbol(defParent) && !var->hasFlag(FLAG_LOCALE_PRIVATE)) {
         if (usedInOn(var)) {
           setWide(var);
           debug(var, ": Module scope variable used in on-statement\n");
