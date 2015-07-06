@@ -625,8 +625,7 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
       fn->_this = arg;
-      if (fn->hasFlag(FLAG_THIS_INTENT_TYPE)) {
-        fn->removeFlag(FLAG_THIS_INTENT_TYPE);
+      if (fn->thisTag == INTENT_TYPE) {
         setupTypeIntentArg(arg);
       }
       arg->addFlag(FLAG_ARG_THIS);
