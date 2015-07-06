@@ -299,6 +299,11 @@ Inherits 'general'
 Reviewed 2015-06-04
 ===================
 
+conditional move or jump depends on uninitialized value (2015-06-27, lydia)
+---------------------------------------------------------------------------
+[Error matching program output for modules/standard/FileSystem/lydia/isLink/no_such_file_or_dir]
+
+
 
 ****************************************************************************
 *                   Different build configurations                         *
@@ -361,9 +366,9 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-sporadic failures even after Sung quieted it down (gbt)
+sporadic failures even after Sung quieted it down (gbt, elliot)
 https://chapel.atlassian.net/browse/CHAPEL-8
--------------------------------------------------------
+---------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] 
   (gasnet.fifo:       2015-03-24, 2015-03-31, 2015-04-04..2015-04-05,
                       2015-04-12, 2015-04-26..2015-04-27, 2015-04-30, 
@@ -371,6 +376,9 @@ https://chapel.atlassian.net/browse/CHAPEL-8
                       2015-05-25, 2015-06-16)
   (gasnet-fast:       2015-04-30, ..2015-05-03)
   (gasnet-everything: 2015-05-11)
+[Error matching program output for types/string/StringImpl/memLeaks/substring]
+  (gasnet.fifo: 2015-06-25)
+
 
 
 ===================
@@ -386,6 +394,11 @@ Inherits 'gasnet*'
 Reviewed 2015-05-24
 ===================
 
+=== sporadic failures below ===
+
+sporadic amudp slave got an xsocket: connection closed on recv() in recvAll()
+-----------------------------------------------------------------------------
+[Error matching .bad file for distributions/dm/hplx] (2015-06-28..)
 
 ===============================
 gasnet.darwin
@@ -399,10 +412,6 @@ gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
 Reviewed 2015-05-20
 =============================
-
-memory leak information printed out (2015-06-25, ???)
------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/substring]
 
 
 === sporadic failures below ===
@@ -418,6 +427,10 @@ https://chapel.atlassian.net/browse/CHAPEL-13
 sporadic segfault (one-off)
 ---------------------------
 [Error matching .bad file for parallel/forall/vass/memleaks2-BlockDist] (2015-06-02)
+
+spoardic(?) glibc invalid next size (one-off?)
+----------------------------------------------
+[Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug] (2015-06-29..)
 
 
 
@@ -467,6 +480,10 @@ xc-wb.prgenv-gnu
 Inherits 'xc-wb.*' and '*gnu*'
 Reviewed 2015-05-19
 ==============================
+
+test prints timeout rather than completing (2015-06-29)
+-------------------------------------------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace]
 
 
 ===========================
@@ -594,6 +611,16 @@ Inherits 'general'
 Reviewed 2015-05-19
 ===================
 
+===================
+xc-wb.*pgi
+Inherits 'general'
+Reviewed 2015-05-19
+===================
+
+execution timeouts (first run in quite awhile) (2015-06-28)
+-----------------------------------------------------------
+[Error: Timed out executing program parallel/forall/vass/ri-3-stress]
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
 
 ==============================
 xc-wb.pgi
@@ -601,15 +628,20 @@ Inherits 'xc-wb.*' and '*pgi*'
 Reviewed 2015-05-19
 ==============================
 
-all tests fail with internal error (2015-05-24, lydia)
-------------------------------------------------------
-*all*
+execution timeouts (first run in quite awhile) (2015-06-28)
+-----------------------------------------------------------
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
+
 
 ==============================
 xc-wb.prgenv-pgi
 Inherits 'xc-wb.*' and '*pgi*'
 Reviewed 2015-05-19
 ==============================
+
+execution timeouts (first run in quite awhile) (2015-06-28)
+-----------------------------------------------------------
+[Error: Timed out executing program studies/sudoku/dinan/sudoku]
 
 
 ===========================
@@ -699,6 +731,8 @@ sporadic slurmstepd 'Expired slurm credential' problem after termination
   (perf.xc.local.cray: 2015-06-12)
 [Error: Jira 18 -- Expired slurm credential for users/npadmana/twopt/do_smu_soa]
   (perf.xc.no-local.gnu: 2015-06-12..2015-06-13)
+[Error: Jira 18 -- Expired slurm credential for release/examples/hello]
+  (xc.llvm: 2015-06-29..)
 
 sporadic slurm 'job has expired id has expired' during PE update
 ----------------------------------------------------------------
@@ -741,10 +775,11 @@ sporadic execution timeouts
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ra]
   (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26, 2015-05-20, 2015-05-23,
                           2015-05-26)
-  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18, 2015-06-07)
+  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18, 2015-06-07,
+                          2015-06-27..)
   (xe.ugni.intel          2015-03-24, 2015-03-30, 2015-04-01..2015-04-02, 
                           2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22,
-                          2015-06-09, 2015-06-19, 2015-06-24)
+                          2015-06-09, 2015-06-19, 2015-06-24, 2015-06-28)
   (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
                           2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
                           2015-05-05..2015-05-06, 2015-05-10,
@@ -755,17 +790,18 @@ sporadic execution timeouts
                            2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
                            2015-05-11, 2015-05-17, 2015-05-21..2015-05-22,
                            2015-05-26, 2015-06-05..2015-06-06, 2015-06-10,
-                           2015-06-13)
+                           2015-06-13, 2015-06-26)
   (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 2015-05-26..)
                            2015-05-03..2015-05-04, 2015-05-06..??
                            2015-05-13..2015-05-17, 2015-06-05, 
-                           2015-06-14..2015-06-15, 2015-06-22, 2015-06-24)
-  (xe.ugni-qthreads.intel: ??..2015-03-22)
+                           2015-06-14..2015-06-15, 2015-06-22, 2015-06-24,
+                           2015-06-26, 2015-06-29..)
+  (xe.ugni-qthreads.intel: ??..2015-03-22, 2015-06-26)
   (xe.ugni-qthreads.gnu:   2015-05-05, 2015-05-17, 2015-05-22, 2015-06-15)
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
   (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
                           2015-05-05..2015-05-06, 2015-05-18, 2015-05-21,
-                          2015-06-09..2015-06-10, 2015-06-24..)
+                          2015-06-09..2015-06-10, 2015-06-24..2015-06-26)
   (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
                           2015-05-18, 2015-05-24..2015-05-25, 2015-05-28,
                           2015-06-12, 2015-06-18)
@@ -784,10 +820,6 @@ xc.knc
 Inherits 'xc.*'
 Reviewed 2015-05-20
 ==========================================
-
-execvp() failed: No such file or directory (2015-06-16, gbt)
-------------------------------------------------------------
-* pretty much all *
 
 
 ==========================
@@ -889,6 +921,11 @@ sporadic 'config attempted to be looked up with empty module name' (lydia)
 --------------------------------------------------------------------------
 [Error matching performance keys for release/examples/benchmarks/hpcc/hpl] (2015-05-23..2015-06-04)
 
+sporadic fasta-printf output mismatch
+-------------------------------------
+[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-printf] (2015-06-28)
+
+
 
 ================================
 perf.xc.local.pgi
@@ -927,7 +964,7 @@ sporadic execution timeout (lydia)
 [Error: Timed out executing program release/examples/primers/fileIO]
   (cygwin64: 2015-06-02, 2015-06-06)
   (cygwin32: 2015-06-08, 2015-06-11, 2015-06-14..2015-06-15, 
-             2015-06-17..2015-06-21, 2015-06-23..)
+             2015-06-17..2015-06-21, 2015-06-23..2015-06-25, 2015-06-27..)
 
 
 
