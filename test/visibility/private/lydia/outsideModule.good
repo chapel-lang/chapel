@@ -1,3 +1,3 @@
-outsideModule.chpl:4: warning: Most visible 'M2' is an inaccessible private symbol, defined at:
+outsideModule.chpl:4: warning: A visible 'M2' is an inaccessible private symbol, defined at:
  moduleUse2.chpl:9
 outsideModule.chpl:4: error: Cannot find module 'M2'
