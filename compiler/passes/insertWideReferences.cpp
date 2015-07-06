@@ -82,9 +82,8 @@
 //
 //   - _wide_ref_wide_T : a wide pointer to a reference to a wide class.
 //
-// A references can be widened twice. First for the _val field, and once more
+// A references can be widened twice. Once for the _val field, and once more
 // for the actual _ref.
-//
 //
 // --------------------------------------------------
 // Utility functions:

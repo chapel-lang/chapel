@@ -61,7 +61,6 @@ void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 
 // compute call sites FnSymbol::calls
 void compute_call_sites();
-void update_call_sites(CallExpr* call);
 
 //
 // collect set of symbols and vector of SymExpr; can be used to

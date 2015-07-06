@@ -253,22 +253,18 @@ void compute_call_sites() {
       fn->calledBy = new Vec<CallExpr*>();
   }
   forv_Vec(CallExpr, call, gCallExprs) {
-    update_call_sites(call);
-  }
-}
-
-void update_call_sites(CallExpr* call) {
-  if (FnSymbol* fn = call->isResolved()) {
-    fn->calledBy->add(call);
-  } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
-    // sjd: do we have to do anything special here?
-    //      should this call be added to some function's calledBy list?
-  } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-    FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
-    Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
-    fn->calledBy->add(call);
-    forv_Vec(FnSymbol, child, *children)
-      child->calledBy->add(call);
+    if (FnSymbol* fn = call->isResolved()) {
+      fn->calledBy->add(call);
+    } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+      // sjd: do we have to do anything special here?
+      //      should this call be added to some function's calledBy list?
+    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
+      Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+      fn->calledBy->add(call);
+      forv_Vec(FnSymbol, child, *children)
+        child->calledBy->add(call);
+    }
   }
 }
 
