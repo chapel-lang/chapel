@@ -1747,6 +1747,7 @@ static Symbol* lookup(BaseAST* scope, const char* name) {
   // Lydia note: I would like to investigate the effect of traversing all call
   // expressions of the "." accessor.
 
+
   // Call inner lookup on scope, the name, the symbols return vector, and the
   // vector of ASTs already visited.
   lookup(scope, name, symbolOptions, nestedscopes, rejectedPrivateIds, scope);
@@ -1769,7 +1770,9 @@ static Symbol* lookup(BaseAST* scope, const char* name) {
     USR_STOP();
     symbolResult = NULL;
   }
+
   return symbolResult;
+  // return symbol matching the name
 }
 
 // Determines and obtains a method by the given name on the given type
