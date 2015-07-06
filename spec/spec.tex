@@ -23,6 +23,13 @@
 \setlength{\cftsubsecindent}{1.3em} % cftchapnumwidth
 \setlength{\cftsubsubsecindent}{4.5em} % cftchapnumwidth + cftsecnumwidth
 
+% bring in todonotes and make sure we have enough space in the margins. Also
+% note, even side margin is changed below since I couldn't figure out how to
+% force notes to the right side.
+\usepackage[paperwidth=9.5in, paperheight=11in]{geometry}
+\setlength{\marginparwidth}{1.8in}
+\usepackage[colorinlistoftodos, textwidth=1.8in, shadow]{todonotes}
+
 \usepackage{ifpdf}
 \ifpdf
 \usepackage[pdftex,
@@ -114,7 +121,7 @@
            }
 
 \oddsidemargin 0.0in
-\evensidemargin 0.5in
+\evensidemargin 1.3in
 \textwidth 6in
 \headheight 0.2in
 \topmargin 0in
