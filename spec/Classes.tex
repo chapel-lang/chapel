@@ -192,6 +192,7 @@ proc-or-iter:
 this-intent:
   `param'
   `ref'
+  `type'
 
 type-binding:
   identifier .
@@ -749,6 +750,8 @@ procedures (\rsec{Functions}). The exception is the receiver
 \index{this@\chpl{this}}
 \index{classes!this@\chpl{this}}
 \index{receiver}
+\index{static methods}
+\index{methods!static}
 
 A method's \emph{receiver} is its implicit argument, 
 the class instance on which the method is invoked.
@@ -784,12 +787,54 @@ call \chpl{c1.foo()} results in a call to \chpl{bar} where the argument
 is \chpl{c1}.
 \end{chapelexample}
 
-The optional \sntx{this-intent} declares the intent by which the receiver
-argument will be passed.  When the value of \sntx{this-intent} is \chpl{param},
-it implies that the function can only be applied to param objects of the given
-type binding.  If the value is \chpl{ref}, the argument will be passed by
-reference---allowing modification of \chpl{this}.  Otherwise, the argument will
-be passed with the blank intent as specified in \rsec{The_Blank_Intent}.
+The optional \sntx{this-intent} declares how the receiver argument is
+constrained or will be passed for a given method call.
+
+When \sntx{this-intent} is \chpl{param}, it specifies that the
+function can only be applied to param objects of the given type
+binding.  When \sntx{this-intent} is \chpl{type}, it specifies that
+the function is a \emph{static method} (in the C++ sense) and can only
+be called on the type itself rather than an instance of the type.
+
+\begin{chapelexample}{paramTypeThisIntent.chpl}
+In the following code, the \chpl{isOdd} method is defined with
+a \sntx{this-intent} of \chpl{param}, permitting it to be called on
+params only.  The \chpl{size} method is defined with
+a \sntx{this-intent} of \chpl{type}, requiring it to be called on
+the \chpl{int} type itself, not on integer values.
+\begin{chapel}
+proc param int.isOdd() param {
+  return this & 0x1 == 0x1;
+}
+
+proc type int.size() param {
+  return 64;
+}
+
+param three = 3;
+var seven = 7;
+
+writeln(42.isOdd());          // prints false
+writeln(three.isOdd());       // prints true
+writeln((42+three).isOdd());  // prints true
+// writeln(seven.isOdd());    // illegal since 'seven' is not a param
+
+writeln(int.size());          // prints 64
+// writeln(42.size());        // illegal since 'size()' is a static method
+\end{chapel}
+\begin{chapeloutput}
+false
+true
+true
+64
+\end{chapeloutput}
+\end{chapelexample}
+
+
+When \sntx{this-intent} is \chpl{ref}, the receiver argument will be
+passed by reference, allowing modification of \chpl{this}.  If
+no \sntx{this-intent} is specified, the receiver will be passed with
+the blank intent as specified in \rsec{The_Blank_Intent}.
 
 \begin{chapelexample}{refThisIntent.chpl}
 In the following code, the \chpl{doubleMe} function is defined with a
