@@ -658,9 +658,9 @@ proc getMode(name: string): int {
 
 pragma "no doc"
 proc getFileSize(out error: syserr, name: string): int {
-  extern proc chpl_fs_get_size(ref result: off_t, filename: c_string):syserr;
+  extern proc chpl_fs_get_size(ref result: int, filename: c_string):syserr;
 
-  var result: off_t;
+  var result: int;
   error = chpl_fs_get_size(result, name.c_str());
   return result;
 }
