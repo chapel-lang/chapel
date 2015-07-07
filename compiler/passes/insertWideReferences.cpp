@@ -1651,7 +1651,7 @@ static void insertWideReferenceTemps() {
     // FIXME: find a better place to do this
     if (call->isPrimitive(PRIM_LOCAL_CHECK)) {
       if (LcnSymbol* se = toLcnSymbol(toSymExpr(call->get(1))->var)) {
-        if (!se->mustBeWide || !se->valIsWide)
+        if (!(se->mustBeWide || se->valIsWide))
           call->remove();
       }
     }
