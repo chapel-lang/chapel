@@ -5273,8 +5273,8 @@ preFold(Expr* expr) {
         call->insertAtTail(tmp);
       }
     } else if (call->isPrimitive(PRIM_TO_STANDALONE)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
-     CallExpr* standaloneCall = new CallExpr(iterator->name);
+      FnSymbol* iterator = getTheIteratorFn(call);
+      CallExpr* standaloneCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
         standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
@@ -5284,7 +5284,7 @@ preFold(Expr* expr) {
       call->replace(standaloneCall);
       result = standaloneCall;
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* leaderCall;
       if (FnSymbol* leader = iteratorLeaderMap.get(iterator))
         leaderCall = new CallExpr(leader);
@@ -5299,7 +5299,7 @@ preFold(Expr* expr) {
       call->replace(leaderCall);
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* followerCall;
       if (FnSymbol* follower = iteratorFollowerMap.get(iterator))
         followerCall = new CallExpr(follower);

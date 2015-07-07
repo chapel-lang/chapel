@@ -321,7 +321,8 @@ class FnSymbol : public Symbol {
   BlockStmt* body;
   IntentTag thisTag;
   RetTag retTag;
-  IteratorInfo* iteratorInfo;
+  IteratorInfo* iteratorInfo; // Attached only to iterators, specifically to
+                              // original (user) iterators before lowering.
   Symbol* _this;
   Symbol* _outer;
   FnSymbol *instantiatedFrom;
