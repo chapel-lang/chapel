@@ -45,6 +45,14 @@ var b: [Bspace] int;
 var c: [Bspace] int;
 var d: [Bspace] int;
 
+tagVdebug ("simple forall");
+
+forall i in space do b[i] = here.id;
+
+tagVdebug ("writeln 0");
+
+writeln("B ist: ", b);
+
 tagVdebug ("treeIter");
 
 forall i in treeiter(numLocales) do b[i] = here.id;
