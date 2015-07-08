@@ -82,6 +82,8 @@ available in Chapel, their use is highly discouraged. For advanced users,
 section \ref{relating_to_C_MCM} describes how to use the C11 and C++11
 specifications to understand the behavior of Chapel programs using relaxed
 atomic operations.
+\todo{Michael thinks this is too pessimistic and doesn't describe why
+      they are problematic... mabye "should be reserved for advanced use"?}
 
 \section{Sequential Consistency for Data-Race-Free Programs}
 \label{SC_for_DRF}
@@ -125,9 +127,8 @@ or remote memory.
 
 1. Task creation and task waiting create a conceptual tree of program
 statements. Thus, the body of the tasks, task creation, and task wait
-operations create a partial order $<_p$ on memory operations.  We will call
-$<_p$ \textit{program order}. \todo {is there supposed to be more to this
-sentence?} For the purposes of this section, the statements in the body of each
+operations create a partial order $<_p$ on memory operations.  
+For the purposes of this section, the statements in the body of each
 Chapel task will be implemented in terms of \textit{load}, \textit{store}, and
 \textit{atomic operations}. The $on$ statement might change where the current
 task is running but it has no impact on the memory consistency requirements.
@@ -180,7 +181,7 @@ waits for them all to complete (with \chpl{wait($t_1$..$t_n$)}).
   \item \chpl{begin} creates a task to execute the contained statement and adds
 it to a list of tasks executing in dynamic scope (\chpl{t = begin\{X\}}).
 
-  \item \chpl{sync} statement waits for \todo{"any" $=>$ "all"?} any of the $n$ tasks $t_i$ created in
+  \item \chpl{sync} statement waits for all of the $n$ tasks $t_i$ created in
 the dynamic scope of the sync statement with \chpl{wait($t_1$..$t_n$)}.
 
 \end{itemize}
@@ -279,6 +280,7 @@ sequential program semantics:
 % \end{center}
 
 
+\todo{Where to we describe array/domain consistency?}
 % I don't think this belongs in the MCM section. I think it's valuable, but
 % inappropriate for it to be here in it's current form. I'm guessing this is
 % meant to lead into some of the discussions we had around optimizing data
@@ -780,6 +782,7 @@ statements block.
 Atomic variables provide an alternative means to spin-wait. Atomic variables include a waitFor method that will block the calling thread until a read of the atomic value matches a particular value. For example:
 \todo{Why introduce waitFor(), instead of using the direct translation to
 atomic vars?}
+\todo{because waitFor includes the appropriate yelds/network servicing. Generally speaking, it's a bad idea to put a tight spin-loop in a cooperatively scheduled environment.}
 
 \begin{chapel}
 var x: atomic int;
