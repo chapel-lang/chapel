@@ -28,6 +28,7 @@
 #include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"
+#include "chplsys.h"
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -89,11 +90,21 @@ static int do_pthread_create(pthread_t* thread,
   // update the attributes with a mem-layer allocated
   // thread stack
 
-  size_t stack_size = threadCallStackSize;
-  // TODO -- guard pages...
-  void* stack = chpl_valloc(stack_size);
+  size_t stack_size, align;
+  void* stack;
+  int rc;
 
-  pthread_attr_setstack(attr, stack, stack_size);
+  // TODO -- guard pages...
+  stack_size  = threadCallStackSize;
+  align = chpl_getSysPageSize();
+  stack = chpl_memalign(align, stack_size);
+
+
+  rc = pthread_attr_setstack(attr, stack, stack_size);
+  if( rc != 0 ) {
+    memset(thread, 0, sizeof(pthread_t));
+    return rc;
+  }
 
   return pthread_create(thread, attr, start_routine, arg);
 }

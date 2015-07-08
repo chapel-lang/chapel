@@ -422,16 +422,26 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   // since we want to run all work in a task with a comm-friendly stack,
   // run main in a pthread that we will wait for.
   size_t stack_size;
+  size_t align;
   pthread_attr_t attr;
   pthread_t thread;
   void* stack;
   int rc;
 
   stack_size  = chpl_thread_getCallStackSize();
-  stack = chpl_valloc(stack_size);
+  align = chpl_getSysPageSize();
+  stack = chpl_memalign(align, stack_size);
 
-  pthread_attr_setstack(&attr, stack, stack_size);
-  
+  rc = pthread_attr_init(&attr);
+  if( rc != 0 ) {
+    chpl_internal_error("pthread_attr_init main failed");
+  }
+ 
+  rc = pthread_attr_setstack(&attr, stack, stack_size);
+  if( rc != 0 ) {
+    chpl_internal_error("pthread_attr_setstack main failed");
+  }
+ 
   rc = pthread_create(&thread, &attr, do_callMain, chpl_main);
   if( rc != 0 ) {
     chpl_internal_error("pthread_create main failed");
@@ -441,6 +451,8 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   if( rc != 0 ) {
     chpl_internal_error("pthread_join main failed");
   } 
+
+  pthread_attr_destroy(&attr);
 }
 
 
