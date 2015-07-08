@@ -2118,66 +2118,59 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 // an access in the provided scope, false if the module is private and the
 // scope is not its direct parent or a sibling module when the parent of both
 // had a use of it.
-bool ModuleSymbol::isVisible(BaseAST* scope) {
-  if (hasFlag(FLAG_PRIVATE)) {
+bool ModuleSymbol::isVisible(BaseAST* scope) const {
+  if (!hasFlag(FLAG_PRIVATE)) {
+    // If it isn't public, it is trivially visible.
+    return true;
+  } else {
     BaseAST* parentScope = getScope(defPoint);
     INT_ASSERT(parentScope != NULL); // Should be true, given we found this
     // module symbol.
 
-    if (scope == parentScope) {
-      // The scope provided is the scope in which we are defined
-      return true;
-    } else {
-      // Well, the scope is not our immediate parent.  It could be a subscope
-      // of our parent scope, though, so we need to walk up scopes until we
-      // either find our parent scope (in which case, we're visible if it "use"s
-      // us) or we run out of scope to check against (in which case we are most
-      // certainly *not* visible)
-      BaseAST* searchScope = getScope(scope);
-      bool passedModule = false;
-      while (searchScope != NULL) {
-        if (searchScope == parentScope) {
-          // parentScope is in the hierarchy of the searchScope!  But that
-          // doesn't mean we're visible unless we haven't passed another module
-          // symbol in our upward traversal, or there is a use of us at this
-          // scope.
-          if (!passedModule) {
-            // We haven't passed a module symbol in our upward traversal.
-            return true;
-          } else if (BlockStmt* block = toBlockStmt(parentScope)) {
-            if (block->modUses) {
-              for_actuals(expr, block->modUses) {
-                SymExpr* se = toSymExpr(expr);
-                INT_ASSERT(se);
-
-                ModuleSymbol* mod = toModuleSymbol(se->var);
-                INT_ASSERT(mod);
-
-                if (mod == this) {
-                  // Ha!  A use of us!
-                  return true;
-                }
-              }
-            }
-          }
-          // Either none of the uses were of us, we weren't in a block
-          // statement, or there weren't any uses at all.
-          return false;
-        } else {
-          if (BlockStmt* block = toBlockStmt(searchScope)) {
-            if (block->parentExpr == NULL &&
-                isModuleSymbol(block->parentSymbol)) {
-              passedModule = true;
-            }
-          }
-          searchScope = getScope(searchScope);
-          // Keep walkin', we didn't find the parent scope yet.
+    // We need to walk up scopes until we either find our parent scope (in
+    // which case, we're visible if it "use"s us) or we run out of scope to
+    // check against (in which case we are most certainly *not* visible)
+    BaseAST* searchScope = scope;
+    bool passedModule = false;
+    while (searchScope != NULL && searchScope != parentScope) {
+      if (BlockStmt* block = toBlockStmt(searchScope)) {
+        if (block->parentExpr == NULL && isModuleSymbol(block->parentSymbol)) {
+          passedModule = true;
         }
       }
-      return false;
+      searchScope = getScope(searchScope);
+      // Keep walkin', we didn't find the parent scope yet.
     }
-  } else {
-    return true;
+
+    if (searchScope == parentScope) {
+      // parentScope is in the hierarchy of the searchScope!  But that doesn't
+      // mean we're visible unless we haven't passed another module symbol
+      // in our upward traversal, or there is a use of us at this scope.
+      if (!passedModule) {
+        // We haven't passed a module symbol in our upward traversal.
+        return true;
+      } else if (BlockStmt* block = toBlockStmt(parentScope)) {
+        if (block->modUses) {
+          for_actuals(expr, block->modUses) {
+            SymExpr* se = toSymExpr(expr);
+            INT_ASSERT(se);
+
+            ModuleSymbol* mod = toModuleSymbol(se->var);
+            INT_ASSERT(mod);
+
+            if (mod == this) {
+              // Ha!  A use of us!
+              return true;
+            }
+          }
+        }
+      }
+    }
+    // All the cases where we would have been visible were not satisfied.  This
+    // could mean our parentScope wasn't in the hierarchy of scope, or that we
+    // passed a module boundary and a valid use of us wasn't present at the
+    // parentScope.
+    return false;
   }
 }
 

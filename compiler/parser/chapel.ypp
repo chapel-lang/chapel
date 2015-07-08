@@ -325,7 +325,7 @@
 %nonassoc TPRAGMA
 
 %type <flag> opt_config
-%type <flag> access_control
+%type <b> access_control
 
 %type <pt> opt_intent_tag opt_this_intent_tag
 
@@ -458,9 +458,9 @@ module_decl_stmt:
 ;
 
 access_control:
-        { $$ = FLAG_UNKNOWN; @$.comment = context->latestComment; context->latestComment = NULL; } // public
-| TPUBLIC { $$ = FLAG_UNKNOWN; @$.comment = context->latestComment; context->latestComment = NULL; } // also public
-| TPRIVATE { $$ = FLAG_PRIVATE; @$.comment = context->latestComment; context->latestComment = NULL; } // private
+        { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // public
+| TPUBLIC { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // also public
+| TPRIVATE { $$ = true; @$.comment = context->latestComment; context->latestComment = NULL; } // private
 ;
 
 

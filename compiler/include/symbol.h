@@ -463,7 +463,7 @@ public:
   void                 moduleUseAdd(ModuleSymbol* module);
   void                 moduleUseRemove(ModuleSymbol* module);
 
-  bool                 isVisible(BaseAST* scope);
+  bool                 isVisible(BaseAST* scope) const;
 
   ModTag               modTag;
 

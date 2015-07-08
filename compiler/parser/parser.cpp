@@ -197,7 +197,7 @@ ModuleSymbol* parseFile(const char* filename,
     } else if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
       const char* modulename = filenameToModulename(filename);
 
-      retval = buildModule(modulename, yyblock, yyfilename, FLAG_UNKNOWN, NULL);
+      retval = buildModule(modulename, yyblock, yyfilename, false, NULL);
       // surrounding module is public by default - if the module designer
       // wanted it private, they would have declared it so.
 
