@@ -380,26 +380,26 @@ static yyconst flex_int16_t yy_accept[371] =
       127,  127,  127,  127,  127,  127,  127,  127,  127,  127,
       127,  127,   20,  127,  127,  127,  127,  127,  127,   30,
       127,  127,   33,   34,  127,  127,   38,  127,  127,  127,
-      127,  127,  127,  127,   48,  127,  127,  127,  127,  127,
+      127,  127,  127,  127,   47,  127,  127,  127,  127,  127,
 
-      127,  127,  127,  127,  127,  127,   60,   61,  127,  127,
-      127,  127,   40,   79,    0,  124,    0,  124,  124,    0,
+      127,  127,  127,  127,  127,  127,   59,   60,  127,  127,
+      127,  127,   66,   79,    0,  124,    0,  124,  124,    0,
         0,  127,  127,  127,  127,  127,  127,  127,  127,  127,
       127,  127,  127,  127,  127,   16,   17,  127,  127,  127,
       127,  127,  127,   27,  127,  127,  127,  127,  127,  127,
-      127,  127,  127,   44,  127,  127,  127,  127,   50,  127,
-      127,  127,  127,  127,   56,   57,   58,  127,   62,  127,
-      127,   65,  127,    0,    0,    0,  124,  127,    1,  127,
+      127,  127,  127,   43,  127,  127,  127,  127,   49,  127,
+      127,  127,  127,  127,   55,   56,   57,  127,   61,  127,
+      127,   64,  127,    0,    0,    0,  124,  127,    1,  127,
         3,    4,    6,  127,  127,  127,   10,  127,  127,  127,
       127,  127,  127,  127,   24,  127,   26,   28,  127,   31,
 
       127,  127,  127,   39,  127,  127,  127,  127,  127,  127,
-      127,  127,  127,  127,  127,   59,   63,   64,   66,    0,
+      127,  127,  127,  127,  127,   58,   62,   63,   65,    0,
       124,    0,  124,  127,    2,  127,  127,    9,  127,   12,
       127,   15,   18,   19,   21,   25,   29,   32,   35,  127,
-       41,  127,   45,   46,   47,   49,   51,   52,   53,   54,
-      127,  127,    7,  127,  127,   13,  127,   43,  127,  127,
-        8,   11,  127,  127,  127,   37,   55,  127,   42,    0
+       40,  127,   44,   45,   46,   48,   50,   51,   52,   53,
+      127,  127,    7,  127,  127,   13,  127,   42,  127,  127,
+        8,   11,  127,  127,  127,   37,   54,  127,   41,    0
     } ;
 
 static yyconst flex_int32_t yy_ec[256] =
@@ -1276,137 +1276,137 @@ return processToken(yyscanner, TPARAM);
 case 40:
 YY_RULE_SETUP
 #line 154 "chapel.lex"
-return processToken(yyscanner, TZIP);
+return processToken(yyscanner, TPRAGMA);
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
 #line 155 "chapel.lex"
-return processToken(yyscanner, TPRAGMA);
+return processToken(yyscanner, TPRIMITIVE);
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
 #line 156 "chapel.lex"
-return processToken(yyscanner, TPRIMITIVE);
+return processToken(yyscanner, TPRIVATE);
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
 #line 157 "chapel.lex"
-return processToken(yyscanner, TPRIVATE);
+return processToken(yyscanner, TPROC);
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
 #line 158 "chapel.lex"
-return processToken(yyscanner, TPROC);
+return processToken(yyscanner, TPUBLIC);
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
 #line 159 "chapel.lex"
-return processToken(yyscanner, TPUBLIC);
+return processToken(yyscanner, TRECORD);
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
 #line 160 "chapel.lex"
-return processToken(yyscanner, TRECORD);
+return processToken(yyscanner, TREDUCE);
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
 #line 161 "chapel.lex"
-return processToken(yyscanner, TREDUCE);
+return processToken(yyscanner, TREF);
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
 #line 162 "chapel.lex"
-return processToken(yyscanner, TREF);
+return processToken(yyscanner, TRETURN);
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
 #line 163 "chapel.lex"
-return processToken(yyscanner, TRETURN);
+return processToken(yyscanner, TSCAN);
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
 #line 164 "chapel.lex"
-return processToken(yyscanner, TSCAN);
+return processToken(yyscanner, TSELECT);
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
 #line 165 "chapel.lex"
-return processToken(yyscanner, TSELECT);
+return processToken(yyscanner, TSERIAL);
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
 #line 166 "chapel.lex"
-return processToken(yyscanner, TSERIAL);
+return processToken(yyscanner, TSINGLE);
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
 #line 167 "chapel.lex"
-return processToken(yyscanner, TSINGLE);
+return processToken(yyscanner, TSPARSE);
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
 #line 168 "chapel.lex"
-return processToken(yyscanner, TSPARSE);
+return processToken(yyscanner, TSUBDOMAIN);
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
 #line 169 "chapel.lex"
-return processToken(yyscanner, TSUBDOMAIN);
+return processToken(yyscanner, TSYNC);
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
 #line 170 "chapel.lex"
-return processToken(yyscanner, TSYNC);
+return processToken(yyscanner, TTHEN);
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
 #line 171 "chapel.lex"
-return processToken(yyscanner, TTHEN);
+return processToken(yyscanner, TTYPE);
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
 #line 172 "chapel.lex"
-return processToken(yyscanner, TTYPE);
+return processToken(yyscanner, TUNION);
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
 #line 173 "chapel.lex"
-return processToken(yyscanner, TUNION);
+return processToken(yyscanner, TUSE);
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
 #line 174 "chapel.lex"
-return processToken(yyscanner, TUSE);
+return processToken(yyscanner, TVAR);
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
 #line 175 "chapel.lex"
-return processToken(yyscanner, TVAR);
+return processToken(yyscanner, TWHEN);
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
 #line 176 "chapel.lex"
-return processToken(yyscanner, TWHEN);
+return processToken(yyscanner, TWHERE);
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
 #line 177 "chapel.lex"
-return processToken(yyscanner, TWHERE);
+return processToken(yyscanner, TWHILE);
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
 #line 178 "chapel.lex"
-return processToken(yyscanner, TWHILE);
+return processToken(yyscanner, TWITH);
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
 #line 179 "chapel.lex"
-return processToken(yyscanner, TWITH);
+return processToken(yyscanner, TYIELD);
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
 #line 180 "chapel.lex"
-return processToken(yyscanner, TYIELD);
+return processToken(yyscanner, TZIP);
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
