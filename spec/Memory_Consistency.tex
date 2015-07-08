@@ -9,20 +9,24 @@
 \end{openissue}
 
 In this section, we describe Chapel's memory consistency model. This memory
-consistency model is in spirit of the Sequential Consistency for Data Race free
-programs model adopted by C11, C++11, Java, UPC, and Fortran 2008. In
+consistency model is in the spirit of Sequential Consistency (SC) for
+data-race-free programs adopted by C11, C++11, Java, UPC, and Fortran 2008. In
 particular, correct programs will use synchronization constructs when tasks
-communicate with each other. The model does not define the behavior of
-incorrect programs with data races.
+communicate with each other. This model does not define the behavior of
+\todo{should we use "legal" and "illegal" instead?} incorrect programs with
+data races.
 
 The \chpl{forall}, \chpl{coforall}, \chpl{cobegin}, \chpl{begin}, as well as
-the square-bracket notation and promoted functions or operators can create
-multiple tasks in a Chapel program. When more than one of these tasks could
-operate on the same memory at the same time, and at least one of the operations
-is a write, there will be a \textit{data race} unless the tasks are correctly
+the \todo{is there a more formal name for square-bracket and promotion?}
+square-bracket \chpl{forall} notation and promoted functions or operators can
+create multiple tasks in a Chapel program. When two or more tasks operate on
+the same memory location concurrently, and at least one of the operations is a
+write, there will be a \textit{data race} unless the tasks are correctly
 synchronized.
 
-Chapel has many features that can be used to correctly synchronize tasks:
+Chapel has several \todo{maybe concepts or constructs instead of features?}
+features that can be used to correctly \todo{link to chapter 24?}synchronize
+tasks:
 
 \begin{itemize}
 
@@ -36,17 +40,18 @@ Chapel has many features that can be used to correctly synchronize tasks:
 
 \section{Design Principles}
 
-We used the following design principles in developing the memory consistency
-model for Chapel.
+The following design principles were used in developing Chapel's memory
+consistency model:
 
-1. Sequential programs have program order semantics. Programs that are totally
-   sequential cannot have data races and should execute as though each statement
-   was executed one at a time and in the natural order.
+1. Sequential programs have \todo{use before def} program order semantics.
+   Programs that are totally sequential cannot have data races and should
+   appear to execute as though each statement was executed one at a time and in
+   the natural order.
 
 2. Chapel's fork-join constructs introduce additional order dependencies.
    Operations within a task cannot behave as though they started before the
-   task started. Similarly, all operations in a task must appear to a parent
-   task to be completed when the parent task joins with that task.
+   task started. Similarly, all operations in a task must appear to be
+   completed to a parent task when the parent task joins with that task.
 
 3. Distributed memory programs have the same memory consistency model as local
    programs. The Chapel language seeks to allow a single description of an
@@ -55,8 +60,8 @@ model for Chapel.
    working on local or distributed data.
 
 4. Chapel's memory model should be as relaxed as possible to achieve the above
-   design principles. In particular, making all operations provide sequential
-   consistency is not likely to enable good performance. At the same time,
+   design principles. In particular, making all operations sequentially
+   consistent is not likely to enable good performance. At the same time,
    sequential consistency should be available to programmers when requested.
 
 See \textit{A Primer on Memory Consistency and Cache Coherence} by Sorin,
@@ -66,29 +71,29 @@ the $XC$ memory model described there.
 
 \section{Overview of the Memory Consistency Model}
 
-The memory consistency model for Chapel is the same as the C11 and C++11 memory
+The memory consistency model for Chapel is similar to the C11 and C++11 memory
 consistency models, with some minor exceptions which are described in section
 \ref{relating_to_C_MCM}. Section \ref{SC_for_DRF} directly describes Sequential
-Consistency for Data Race Free programs as an alternative way of understanding
+Consistency for Data-Race-Free programs as an alternative way of understanding
 the recommended subset of the C11 and C++11 memory consistency models. This
 description does not fully specify the behavior of atomics using a more relaxed
-ordering than sequential consistency. While those features are available in
-Chapel, they are not recommended casual use since it difficult to understand
-how to write correct programs. Section \ref{relating_to_C_MCM} describes how to
-use the C11 and C++11 specifications to understand the behavior of Chapel
-programs using these more relaxed features.
+ordering than sequential consistency. While relaxed atomic operations are
+available in Chapel, their use is highly discouraged. For advanced users,
+section \ref{relating_to_C_MCM} describes how to use the C11 and C++11
+specifications to understand the behavior of Chapel programs using relaxed
+atomic operations.
 
-\section{Sequential Consistency for Data Race Free Programs}
+\section{Sequential Consistency for Data-Race-Free Programs}
 \label{SC_for_DRF}
-\index{memory consistency model!sequential consistency for data race free programs}
+\index{memory consistency model!sequential consistency for data-race-free programs}
 
 The memory consistency model is described in terms of two orders:
 \textit{program order} and \textit{memory order}. The \textit{program order}
 $<_p$ is a partial order describing serial or fork-join parallelism
 dependencies between variable reads and writes. The \textit{memory order} $<_m$
 is a total order that describes the semantics of atomic operations with
-sequential consistency (SC). Other forms of atomic operations do not create
-this total order and will be discussed in the next section.
+sequential consistency. More relaxed atomic operations do not create this total
+order.
 
 We will use the following notation:
 \begin{itemize}
@@ -100,68 +105,69 @@ could point to local or remote memory.
 could point to local or remote memory.
 
   \item $A(a,o)$ indicates an \textit{atomic operation} on a variable at
-address $a$ with ordering constraint $o$. As with \textit{load} and
-\textit{store}, $a$ can point to local or remote memory. $o$ can be relaxed,
-acquire, release, or sequential consistency (SC). These atomic operations must
-be completed at once (ie atomically) and so it is not possible to read an
-intemediate state from an atomic operation, even with relaxed consistency. 
+address $a$ with ordering constraint $o$. $a$ could point to local or remote
+memory.  $o$ can be relaxed, acquire, release, or sequential consistency. These
+atomic operations must be completed in a single step (i.e. atomically) and so
+it is not possible to read an intermediate state from an atomic operation, even
+with relaxed consistency.
 
   \item $A(a)$ indicates an \textit{atomic operation} on a variable at address
-$a$ with sequential consistency (SC) ordering constraint
+$a$ with sequential consistency ordering constraint. $a$ could point to local
+or remote memory.
 
-  \item $L(a)$, $S(a)$, and $A(a,o)$ are also called \textit{memory operations}
-  \item $X <_p Y$ indicates that $X$ preceeds $Y$ in program order
-  \item $X <_m Y$ indicates that $X$ preceeds $Y$ in memory order
+  \item $L(a)$, $S(a)$, $A(a,o)$, and $A(a)$ are also called \textit{memory operations}
+  \item $X <_p Y$ indicates that $X$ precedes $Y$ in program order
+  \item $X <_m Y$ indicates that $X$ precedes $Y$ in memory order
   \item \chpl{t = begin\{X\}} start a new task named $t$ to execute $X$
   \item \chpl{wait($t_1$..$t_n$)} wait for tasks $t_1..t_n$ to complete
-  \item $on$ $L$ run the remainder of this task on another locale $L$
+  \item \chpl{on(L)} run the remainder of this task on locale $L$
 \end{itemize}
 
-0. Task creation and task waiting create a conceptual tree of program
+1. Task creation and task waiting create a conceptual tree of program
 statements. Thus, the body of the tasks, task creation, and task wait
-operations create a partial order $<_p$ on memory operations. We will call
-$<_p$ \textit{program order}. For the purposes of this section, the statements
-in the body of each Chapel task will be implemented in terms of \textit{load},
-\textit{store}, and \textit{atomic operation}. The $on$ statement changes where
-the current task is running but otherwise has no impact on the memory
-consistency requirements.
+operations create a partial order $<_p$ on memory operations.  We will call
+$<_p$ \textit{program order}. \todo {is there supposed to be more to this
+sentence?} For the purposes of this section, the statements in the body of each
+Chapel task will be implemented in terms of \textit{load}, \textit{store}, and
+\textit{atomic operations}. The $on$ statement might change where the current
+task is running but it has no impact on the memory consistency requirements.
 
 \begin{itemize}
 
   \item If we have a program snippet without tasks, such as \chpl{X; Y;}, where
-$X$ and $Y$ are memory operations (ie one of $L(a)$,$S(a)$, or $A(a,o)$), then
+$X$ and $Y$ are memory operations (i.e. one of $L(a)$,$S(a)$, or $A(a,o)$), then
 $X <_p Y$.
 
   \item The program \chpl{X; begin\{Y\}; Z;} implies $X$ $<_p$ $Y$ but there is
 no particular relationship between $Y$ and $Z$ in program order.
 
-  \item The program \chpl{t = begin\{Y\}; wait(ti); Z;} implies $Y$ $<_p$ $Z$
+  \item \todo{use of "wait" before mention of translation in next paragraph} The program \chpl{t = begin\{Y\}; wait(t); Z;} implies $Y$ $<_p$ $Z$
   \item $X$ $<_p$ $Y$ and $Y$ $<_p$ $Z$ imply $X$ $<_p$ $Z$
 \end{itemize}
 
 For the purposes of describing this memory model, it is assumed that Chapel
 programs will be translated into sequences of \textit{memory operations},
-\chpl{begin}, and \chpl{wait} statements. The translation of a Chapel program
-into a sequence of \textit{memory operations} must preserve sequential program
-semantics. That is, if we have a snippet of a a Chapel program without task
-operations, such as \chpl{X; Y;}, the statements $X$ and $Y$ will be converted
-into a sequence of \textit{load}, \textit{store}, and \textit{atomic
-operations} in a manner that preserves the behavior of a serial portion of the
-program. Operations in one statement preceed operations in the next statement.
-Thus, $X=x_1,x_2,...$ and $Y=y_1,y_2,...$ where $x_i$ and $y_j$ are each a
-sequence of \textit{load}, \textit{store}, or \textit{atomic operations} and we
-have $x_i <_p y_j$.
+\chpl{begin} statements, and \chpl{wait} statements. The translation of a
+Chapel program into a sequence of \textit{memory operations} must preserve
+sequential program semantics. That is, if we have a snippet of a Chapel program
+without task operations, such as \chpl{X; Y;}, the statements $X$ and $Y$ will
+be converted into a sequence of \textit{load}, \textit{store}, and
+\textit{atomic operations} in a manner that preserves the behavior of a serial
+portion of the program. Operations in one statement precede operations in the
+next statement.  Thus, $X=x_1,x_2,...$ and $Y=y_1,y_2,...$ where $x_i$ and
+$y_j$ are each a sequence of \textit{load}, \textit{store}, or \textit{atomic
+operations} and we have $x_i <_p y_j$.
 
 Likewise, for the purposes of this memory model, Chapel's parallelism keywords
 are viewed as a sequence of operations including the primitives of starting a
 task (\chpl{begin}) and waiting for some number of tasks
-(\chpl{wait(ti..tn)}). In particular:
+(\chpl{wait($t_1$..$t_n$)}). In particular:
 
 \begin{itemize}
 
-  \item \chpl{forall} creates some implementation-dependent number of tasks $m$
+  \item \chpl{forall} creates some implementation-dependent number of tasks $n$
 with \chpl{$t_i$ = begin\{some-loop-bodies\}} to execute some number of loop
-iterations and waits for them to complete with \chpl{wait($t_1$..$t_m$)}.
+iterations and waits for them to complete with \chpl{wait($t_1$..$t_n$)}.
 
   \item \chpl{coforall} creates one task per loop iteration (\chpl{$t_i$ =
 begin\{loop-body\}} for all loop iterations $i=1..n$) and then waits for them
@@ -174,7 +180,7 @@ waits for them all to complete (with \chpl{wait($t_1$..$t_n$)}).
   \item \chpl{begin} creates a task to execute the contained statement and adds
 it to a list of tasks executing in dynamic scope (\chpl{t = begin\{X\}}).
 
-  \item \chpl{sync} statement waits for any of the $n$ tasks $t_i$ created in
+  \item \chpl{sync} statement waits for \todo{"any" $=>$ "all"?} any of the $n$ tasks $t_i$ created in
 the dynamic scope of the sync statement with \chpl{wait($t_1$..$t_n$)}.
 
 \end{itemize}
@@ -185,6 +191,8 @@ statement with a block statement would result in a program with equivalent
 program order. Put another way, the \chpl{on} statement has sequential
 semantics and the memory consistency model is the same no matter where a task
 is executing.
+\todo{This paragraph gets a little wordy/repetitive. That said, I think
+emphasis on this is good so I wouldn't go too far in the other direction.}
 
 Also note that \chpl{sync} variables will have memory consistency behavior
 equivalent to a sequence of operations on \chpl{atomic} variables and so are
@@ -193,31 +201,33 @@ consistency, a operations on a \chpl{sync} variable will have the same
 consistency implications as if an \chpl{atomic} variable were used with
 SC as a lock to protect modifications of the \chpl{sync}
 variable's value or full/empty state.
+\todo{change "sync" to "sync/single"? Also this paragraph is pretty hard to
+read. Is the intent just to say that sync/single vars always have SC
+consistency and do not provide other consistencies? And so they are just like
+SC atomic operations and don't need to discuss further?}
 
-
-1. All tasks insert SC atomic operations into the order $<_m$ respecting
+2. All tasks insert SC atomic operations into the order $<_m$ respecting
 program order as described in the rules below. Note that atomic operations with
 relaxed semantics (relaxed, acquire, or release semantics which are less strict
-than SC) do not create a total order. We will discuss relaxed atomic operations
-below.
+than SC) do not create a total order.
 
 \begin{itemize}
   \item If $A(a)<_pA(b)$ then $A(a)<_mA(b)$
 \end{itemize}
 
-2. Every SC atomic operation gets its value from the last SC atomic operation before it to the same address in the total order $<_m$:
+3. Every SC atomic operation gets its value from the last SC atomic operation before it to the same address in the total order $<_m$:
 \begin{itemize}
   \item Value of $A(a)$ = Value of $MAX_{<_m} \{A'(a)|A'(a) <_m A(a) \}$
 \end{itemize}
 
-3. For data race free programs, all tasks insert loads and stores into the
+4. For data-race-free programs, all tasks insert loads and stores into the
 total order $<_m$ respecting the below rules which preserve the order of loads
 and stores relative to atomic operations.  Note that if a program contains data
 races, the \textit{memory order} is not an order at all for the racy loads
 $L(a)$ and stores $S(a)$ because these loads and stores do not have to be
 completed at once (in other words, two racing stores to the same address could
 result in a value being written that is neither of the written values but is a
-combination of the two writes). Below we formalize the order in which data race free programs insert loads and stores into the total memory order:
+combination of the two writes). Below we formalize the order in which data-race-free programs insert loads and stores into the total memory order:
 \begin{itemize}
   \item If $L(a)<_pA(b)$ then $L(a)<_mA(b)$
   \item If $S(a)<_pA(b)$ then $S(a)<_mA(b)$
@@ -225,7 +235,7 @@ combination of the two writes). Below we formalize the order in which data race 
   \item If $A(a)<_pS(b)$ then $A(a)<_mS(b)$
 \end{itemize}
 
-4. For data race free programs, all tasks insert their loads and stores to the
+5. For data-race-free programs, all tasks insert their loads and stores to the
 same address into the order $<_m$ respecting the following rules which preserve
 sequential program semantics:
 
@@ -235,7 +245,7 @@ sequential program semantics:
   \item If $S(a) <_p S'(a)$ then $S(a) <_m S'(a)$
 \end{itemize}
 
-5. For data race free programs, every load gets its value from the last store before it to the same address in the total order $<_m$:
+6. For data-race-free programs, every load gets its value from the last store before it to the same address in the total order $<_m$:
 \begin{itemize}
   \item Value of $L(a)$ = Value of $MAX_{<_m}$ \{ $S(a)|S(a)$ $<_m$ $L(a)$ or $S(a)$ $<_p$ $L(a)$ \}
 \end{itemize}
@@ -268,72 +278,79 @@ sequential program semantics:
 % \end{tabular}
 % \end{center}
 
-\section{Data Structure Consistency}
 
-Generally speaking, data structures provided by the Chapel language and
-libraries are not safe for concurrent use when one of those uses is
-modification. In particular, 
-
-\begin{itemize}
-
-\item Elements of a Chapel array are not safe against \textit{data races}
-unless they are of an \textit{atomic} or \textit{sync} type.
-
-\item Chapel arrays and domains are not safe for concurrent changes to
-their shape.
-
-\item Chapel arrays are safe for concurrent updates to different elements
-that already exist or for read-only access from multiple tasks.
-
-\end{itemize}
-
-Data structure authors should make an effort to document how their data
-structure is safe or is not safe for concurrent updates. Generally speaking,
-data structures might fall into these categories:
-
-\begin{itemize}
-
-\item safe for any concurrent updates (e.g. a work queue)
-
-\item safe for concurrent updates to disjoint regions but not for shape
-changes (e.g. an array)
-
-\item not safe for any concurrent updates, even to disjoint regions (e.g.
-the a string that reallocates itself when a character is changed)
-
-\end{itemize}
-
-The data structure consistency could operate with either of these
-strategies:
-
-\begin{itemize}
-
-\item data structure updates will be visible once the usual task
-synchronization takes place, or
-
-\item the data structure requires consistency to be managed explicitly
-(e.g. with a 'flush' call).
-
-\end{itemize}
+% I don't think this belongs in the MCM section. I think it's valuable, but
+% inappropriate for it to be here in it's current form. I'm guessing this is
+% meant to lead into some of the discussions we had around optimizing data
+% structures and allowing them to be invalid until a "flush", but it's current
+% form talks about implementation specific aspects of our data structures.
+%\section{Data Structure Consistency}
+%
+%Generally speaking, data structures provided by the Chapel language and
+%libraries are not safe for concurrent use when one of those uses is
+%modification. In particular,
+%
+%\begin{itemize}
+%
+%\item Elements of a Chapel array are not safe against \textit{data races}
+%unless they are of an \textit{atomic} or \textit{sync} type.
+%
+%\item Chapel arrays and domains are not safe for concurrent changes to
+%their shape.
+%
+%\item Chapel arrays are safe for concurrent updates to different elements
+%that already exist or for read-only access from multiple tasks.
+%
+%\end{itemize}
+%
+%Data structure authors should make an effort to document how their data
+%structure is safe or is not safe for concurrent updates. Generally speaking,
+%data structures might fall into these categories:
+%
+%\begin{itemize}
+%
+%\item safe for any concurrent updates (e.g. a work queue)
+%
+%\item safe for concurrent updates to disjoint regions but not for shape
+%changes (e.g. an array)
+%
+%\item not safe for any concurrent updates, even to disjoint regions (e.g.
+%the a string that reallocates itself when a character is changed)
+%
+%\end{itemize}
+%
+%The data structure consistency could operate with either of these
+%strategies:
+%
+%\begin{itemize}
+%
+%\item data structure updates will be visible once the usual task
+%synchronization takes place, or
+%
+%\item the data structure requires consistency to be managed explicitly
+%(e.g. with a 'flush' call).
+%
+%\end{itemize}
 
 \section{Relationship to the C11 and C++11 memory models}
 \label{relating_to_C_MCM}
 \index{memory consistency model!relationship to C memory consistency model}
 
 We have already shown an outline of the memory consistency model for Chapel.
-Some features of the language allow you to request weaker than SC ordering.
-This section describes how to understand Chapel programs in terms of the C11
-and C++11 specifications. We will summarize some of the features of the C11 and
-C++11 memory models. These summaries should be taken only as an aid in
-understanding. Also, we will refer to the C++ model specifically but keep
-in mind that the C memory model is substantially similar.
+Some features of the language allow you to request \todo{are "weaker" and "more
+relaxed" synonyms or should we try to unify on one wording?} weaker than SC
+ordering. This section describes how to understand Chapel programs in terms of
+the C11 and C++11 specifications. We will summarize some of the features of the
+C11 and C++11 memory models. These summaries should be taken only as an aid in
+understanding. Although we refer to the C++11 model specifically, the C11
+memory model is extremely similar.
 
 \subsection{Understanding the C++11 memory model}
 
 The C++11 specification describes the memory consistency model in terms of
 a total order on atomic operations \textit{separately for each atomic
-memory location}. It is does \textit{not} guarantee a global total order
-on atomic operations unless the SC consistency is always used. In
+memory location}. It does \textit{not} guarantee a global total order
+on atomic operations unless sequential consistency is always used. In
 particular, for relaxed consistency atomics, the operations on the atomics
 do complete in a total order \textit{for each atomic memory location}.  In
 other words, at any given moment, an atomic at address $a$ updated with a
@@ -342,7 +359,7 @@ result of the update or not. It cannot have an intermediate state.
 However, since it is a total order for each address, relaxed atomic
 operations to two different memory locations could be reordered.
 
-The C++11 memory models also use some key terms, which we will summarize here:
+The C++11 memory models also uses some key terms, which we will summarize here:
 
 \begin{itemize}
 
@@ -353,12 +370,12 @@ The C++11 memory models also use some key terms, which we will summarize here:
   for example, that a load must return the current value and not a value cached
   from before the acquire operation.
 
-  \item \textit{release semantics} means that a a memory operation cannot move
+  \item \textit{release semantics} means that a memory operation cannot move
   from before the release operation to after the release operation. That means,
   for example, that a previously started store must complete before the release
   operation completes.
 
-  \item \textit{synchronizes with} expresses one how threaded programs need
+  \item \textit{synchronizes with} expresses how threaded programs need
   memory operations to be ordered. A \textit{release} operation to a particular
   memory location M \textit{synchronizes with} an \textit{acquire} operation
   that takes its value from the \textit{release} operation. In addition, thread
@@ -391,14 +408,14 @@ for each atomic operation:
   of other loads and stores or the order of relaxed atomic operations to other
   addresses is not necessarily preserved.
 
-  \item \chpl{memory\_order\_acq\_rel} a store operation has \textit{release
-  semantics} and a load operation has \textit{acquire semantics}.
-
   \item \chpl{memory\_order\_acquire} a load operation has \textit{acquire
   semantics}.
 
   \item \chpl{memory\_order\_release} a store operation has \textit{release
   semantics}.
+
+  \item \chpl{memory\_order\_acq\_rel} a store operation has \textit{release
+  semantics} and a load operation has \textit{acquire semantics}.
 
   \item \chpl{memory\_order\_seq\_cst} Includes the properties of both
   \chpl{memory\_order\_acquire} and \chpl{memory\_order\_release} and
@@ -474,12 +491,12 @@ create a \textit{data races}
 \item all atomic operations (including relaxed atomic operations) should
 eventually be visible to all other threads. This property is not true for
 normal loads and stores. This property is paragraph 25 in the C++
-specifiacion section 1.10. 
+specification section 1.10.
 
 \end{itemize}
 
 \section{Unordered Loads and Stores}
-
+\todo{Greg/Sung should review this section more thoroughly.}
 The Chapel memory model also supports the idea of \textit{unordered} loads
 and stores.
 
@@ -627,19 +644,19 @@ sequentially consistent. The reasoning here is that:
 \begin{itemize}
 
  \item The load and store operations cannot be reordered across SC atomic
- operations (Rule 3 above).
+ operations \todo{above where?}(Rule 3 above).
 
- \item Access by two different tasks to the same memory location, when at
- least one of the accesses is a store, is a race condition. In order to
- avoid race conditions and preserve SC semantics, accesses to the same
- memory location from different tasks when one of the accesses is a store
- must be mediated by SC atomic operations.
+ \item Concurrent access by at least two tasks to the same memory location,
+ when at least one of the accesses is a store, is a race condition. In order to
+ avoid race conditions and preserve SC semantics, accesses to the same memory
+ location from different tasks when one of the accesses is a store must be
+ mediated by SC atomic operations.
 
  \item The SC atomic operation constrains the order of the load and store
  operations so that they appear as a total order.
 \end{itemize}
 
-Sketch of proof. Suppose that a data race free program produces a non-SC
+Sketch of proof. Suppose that a data-race-free program produces a non-SC
 outcome. That would mean that there is no total ordering on the loads or stores
 to a particular memory location. If the memory location is never updated in the
 relevant program region, the loads could be considered to be in any order in
@@ -724,7 +741,7 @@ A[23] = 2.3
 
 \begin{chapelexample}{syncSpinWait.chpl}
 One consequence of Chapel's memory consistency model is that a task cannot spin-wait on a
-variable waiting for another task to write to that variable.  The behavior of
+normal variable waiting for another task to write to that variable.  The behavior of
 the following code is undefined:
 
 \begin{chapelpre}
@@ -761,6 +778,8 @@ statements block.
 
 \begin{chapelexample}{atomicSpinWait.chpl}
 Atomic variables provide an alternative means to spin-wait. Atomic variables include a waitFor method that will block the calling thread until a read of the atomic value matches a particular value. For example:
+\todo{Why introduce waitFor(), instead of using the direct translation to
+atomic vars?}
 
 \begin{chapel}
 var x: atomic int;
