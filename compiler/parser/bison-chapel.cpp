@@ -4790,35 +4790,35 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 455 "chapel.ypp"
-    { (yyval.pblockstmt) = buildChapelStmt(new DefExpr(buildModule((yyvsp[(3) - (5)].pch), new BlockStmt(), yyfilename, (yyvsp[(1) - (5)].flag), (yylsp[(1) - (5)]).comment))); }
+    { (yyval.pblockstmt) = buildChapelStmt(new DefExpr(buildModule((yyvsp[(3) - (5)].pch), new BlockStmt(), yyfilename, (yyvsp[(1) - (5)].b), (yylsp[(1) - (5)]).comment))); }
     break;
 
   case 36:
 
 /* Line 1806 of yacc.c  */
 #line 457 "chapel.ypp"
-    { (yyval.pblockstmt) = buildChapelStmt(new DefExpr(buildModule((yyvsp[(3) - (6)].pch), (yyvsp[(5) - (6)].pblockstmt), yyfilename, (yyvsp[(1) - (6)].flag), (yylsp[(1) - (6)]).comment))); }
+    { (yyval.pblockstmt) = buildChapelStmt(new DefExpr(buildModule((yyvsp[(3) - (6)].pch), (yyvsp[(5) - (6)].pblockstmt), yyfilename, (yyvsp[(1) - (6)].b), (yylsp[(1) - (6)]).comment))); }
     break;
 
   case 37:
 
 /* Line 1806 of yacc.c  */
 #line 461 "chapel.ypp"
-    { (yyval.flag) = FLAG_UNKNOWN; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
+    { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
     break;
 
   case 38:
 
 /* Line 1806 of yacc.c  */
 #line 462 "chapel.ypp"
-    { (yyval.flag) = FLAG_UNKNOWN; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
+    { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
     break;
 
   case 39:
 
 /* Line 1806 of yacc.c  */
 #line 463 "chapel.ypp"
-    { (yyval.flag) = FLAG_PRIVATE; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
+    { (yyval.b) = true; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
     break;
 
   case 40:
