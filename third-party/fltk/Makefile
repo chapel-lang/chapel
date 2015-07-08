@@ -6,6 +6,11 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
 
+ifndef CHPL_HOST_PLATFORM
+first:
+	@echo third-party/fltk error:  CHPL_HOST_PLATFORM not set
+endif
+
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
