@@ -13,7 +13,7 @@ consistency model is in the spirit of Sequential Consistency (SC) for
 data-race-free programs adopted by C11, C++11, Java, UPC, and Fortran 2008. In
 particular, correct programs will use synchronization constructs when tasks
 communicate with each other. This model does not define the behavior of
-\todo{should we use "legal" and "illegal" instead?} incorrect programs with
+programs with
 data races.
 
 The \chpl{forall}, \chpl{coforall}, \chpl{cobegin}, \chpl{begin}, as well as
@@ -24,9 +24,9 @@ the same memory location concurrently, and at least one of the operations is a
 write, there will be a \textit{data race} unless the tasks are correctly
 synchronized.
 
-Chapel has several \todo{maybe concepts or constructs instead of features?}
-features that can be used to correctly \todo{link to chapter 24?}synchronize
+Chapel provides several ways to correctly synchronize
 tasks:
+\todo{link to chapter 24 and 25 as the chapters that describe these features?}
 
 \begin{itemize}
 
@@ -43,7 +43,7 @@ tasks:
 The following design principles were used in developing Chapel's memory
 consistency model:
 
-1. Sequential programs have \todo{use before def} program order semantics.
+1. Sequential programs have program order semantics.
    Programs that are totally sequential cannot have data races and should
    appear to execute as though each statement was executed one at a time and in
    the natural order.
@@ -78,12 +78,11 @@ Consistency for Data-Race-Free programs as an alternative way of understanding
 the recommended subset of the C11 and C++11 memory consistency models. This
 description does not fully specify the behavior of atomics using a more relaxed
 ordering than sequential consistency. While relaxed atomic operations are
-available in Chapel, their use is highly discouraged. For advanced users,
-section \ref{relating_to_C_MCM} describes how to use the C11 and C++11
+available in Chapel, they are intended for advanced users only
+Advanced users should refer to
+section \ref{relating_to_C_MCM} which describes how to use the C11 and C++11
 specifications to understand the behavior of Chapel programs using relaxed
 atomic operations.
-\todo{Michael thinks this is too pessimistic and doesn't describe why
-      they are problematic... mabye "should be reserved for advanced use"?}
 
 \section{Sequential Consistency for Data-Race-Free Programs}
 \label{SC_for_DRF}
@@ -142,7 +141,7 @@ $X <_p Y$.
   \item The program \chpl{X; begin\{Y\}; Z;} implies $X$ $<_p$ $Y$ but there is
 no particular relationship between $Y$ and $Z$ in program order.
 
-  \item \todo{use of "wait" before mention of translation in next paragraph} The program \chpl{t = begin\{Y\}; wait(t); Z;} implies $Y$ $<_p$ $Z$
+  \item The program \chpl{t = begin\{Y\}; wait(t); Z;} implies $Y$ $<_p$ $Z$
   \item $X$ $<_p$ $Y$ and $Y$ $<_p$ $Z$ imply $X$ $<_p$ $Z$
 \end{itemize}
 
@@ -187,25 +186,17 @@ the dynamic scope of the sync statement with \chpl{wait($t_1$..$t_n$)}.
 \end{itemize}
 
 For the purposes of the memory model, the \chpl{on} statement does not have any
-special meaning for program order. In other words, replacing the \chpl{on}
-statement with a block statement would result in a program with equivalent
-program order. Put another way, the \chpl{on} statement has sequential
-semantics and the memory consistency model is the same no matter where a task
-is executing.
-\todo{This paragraph gets a little wordy/repetitive. That said, I think
-emphasis on this is good so I wouldn't go too far in the other direction.}
+special meaning for program order. Put another way, the \chpl{on} statement has
+sequential semantics and the memory consistency model is the same no matter
+where a task is executing.
 
-Also note that \chpl{sync} variables will have memory consistency behavior
+Also note that \chpl{sync/single} variables will have memory consistency behavior
 equivalent to a sequence of operations on \chpl{atomic} variables and so are
 not separately described here. In particular, for the purposes of memory
-consistency, a operations on a \chpl{sync} variable will have the same
+consistency, a operations on a \chpl{sync/single} variable will have the same
 consistency implications as if an \chpl{atomic} variable were used with
-SC as a lock to protect modifications of the \chpl{sync}
+SC as a lock to protect modifications of the \chpl{sync/single}
 variable's value or full/empty state.
-\todo{change "sync" to "sync/single"? Also this paragraph is pretty hard to
-read. Is the intent just to say that sync/single vars always have SC
-consistency and do not provide other consistencies? And so they are just like
-SC atomic operations and don't need to discuss further?}
 
 2. All tasks insert SC atomic operations into the order $<_m$ respecting
 program order as described in the rules below. Note that atomic operations with
@@ -221,6 +212,7 @@ than SC) do not create a total order.
   \item Value of $A(a)$ = Value of $MAX_{<_m} \{A'(a)|A'(a) <_m A(a) \}$
 \end{itemize}
 
+\label{SC_for_DRF_atomic_order}
 4. For data-race-free programs, all tasks insert loads and stores into the
 total order $<_m$ respecting the below rules which preserve the order of loads
 and stores relative to atomic operations.  Note that if a program contains data
@@ -280,7 +272,7 @@ sequential program semantics:
 % \end{center}
 
 
-\todo{Where to we describe array/domain consistency?}
+\todo{Don't count on data structures being safe for parallel update unless the data structure is designed to do so}
 % I don't think this belongs in the MCM section. I think it's valuable, but
 % inappropriate for it to be here in it's current form. I'm guessing this is
 % meant to lead into some of the discussions we had around optimizing data
@@ -339,8 +331,7 @@ sequential program semantics:
 \index{memory consistency model!relationship to C memory consistency model}
 
 We have already shown an outline of the memory consistency model for Chapel.
-Some features of the language allow you to request \todo{are "weaker" and "more
-relaxed" synonyms or should we try to unify on one wording?} weaker than SC
+Some features of the language allow you to request an ordering more relaxed than SC
 ordering. This section describes how to understand Chapel programs in terms of
 the C11 and C++11 specifications. We will summarize some of the features of the
 C11 and C++11 memory models. These summaries should be taken only as an aid in
@@ -519,7 +510,7 @@ notation:
 \end{itemize}
 
 The \textit{unordered} loads and stores $UL(a)$ and $US(a)$ respect fences
-but not program order. Rule 3 from section \ref{SC_for_DRF} above is
+but not program order. Item 4 (\ref{SC_for_DRF_atomic_order}) in section \ref{SC_for_DRF} is
 extended to \textit{unordered} operations:
 
 \begin{itemize}
@@ -646,7 +637,7 @@ sequentially consistent. The reasoning here is that:
 \begin{itemize}
 
  \item The load and store operations cannot be reordered across SC atomic
- operations \todo{above where?}(Rule 3 above).
+ operations (see Rule 4 in Section \ref{SC_for_DRF}).
 
  \item Concurrent access by at least two tasks to the same memory location,
  when at least one of the accesses is a store, is a race condition. In order to
@@ -780,9 +771,7 @@ statements block.
 
 \begin{chapelexample}{atomicSpinWait.chpl}
 Atomic variables provide an alternative means to spin-wait. Atomic variables include a waitFor method that will block the calling thread until a read of the atomic value matches a particular value. For example:
-\todo{Why introduce waitFor(), instead of using the direct translation to
-atomic vars?}
-\todo{because waitFor includes the appropriate yelds/network servicing. Generally speaking, it's a bad idea to put a tight spin-loop in a cooperatively scheduled environment.}
+\todo{Include a version that spin waits on an atomic, and then explain why waitFor is better ( it ncludes the appropriate yelds/network servicing. Generally speaking, it's a bad idea to put a tight spin-loop in a cooperatively scheduled environment.)}
 
 \begin{chapel}
 var x: atomic int;
