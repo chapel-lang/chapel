@@ -93,15 +93,15 @@ int chpl_posix_memalign(void** ptr, size_t alignment, size_t size) {
 
 void* chpl_valloc(size_t size)
 {
-  return chpl_memalign(chpl_getHeapPageSize(), size);
+  return chpl_memalign(chpl_getSysPageSize(), size);
 }
 
 void* chpl_pvalloc(size_t size)
 {
-  size_t page_size = chpl_getHeapPageSize();
+  size_t page_size = chpl_getSysPageSize();
   size_t num_pages = (size + page_size - 1) / page_size;
   size_t rounded_up = num_pages * page_size; 
-  return chpl_memalign(chpl_getHeapPageSize(), rounded_up);
+  return chpl_memalign(page_size, rounded_up);
 }
 
 
