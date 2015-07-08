@@ -2480,7 +2480,18 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
         got++;
 
         if( style->showpointzero ) {
-          if( got < size ) dst[got] = '0';
+          // if we're adding a .0 for integers, but
+          // we're printing out a floating point that
+          // just happened to have no decimal digits after a
+          // %g conversion, add a .x digit
+          if( got < size ) {
+            // figure out which digit to print.
+            // Alternatively, we could have _ftoa_core handle this...
+            // assumes num is positive.
+            double intpart = trunc(num);
+            double first_after_point = round(10.0*(num - intpart));
+            dst[got] = '0' + first_after_point;
+          }
           got++;
         }
       }
