@@ -81,6 +81,22 @@ static void            (*saved_threadEndFn)(void);
 static void*           initial_pthread_func(void*);
 static void*           pthread_func(void*);
 
+static int do_pthread_create(pthread_t* thread,
+                             pthread_attr_t* attr,
+                             void *(*start_routine)(void *),
+                             void *restrict arg) {
+
+  // update the attributes with a mem-layer allocated
+  // thread stack
+
+  size_t stack_size = threadCallStackSize;
+  // TODO -- guard pages...
+  void* stack = chpl_valloc(stack_size);
+
+  pthread_attr_setstack(attr, stack, stack_size);
+
+  return pthread_create(thread, attr, start_routine, arg);
+}
 
 // Mutexes
 
@@ -279,7 +295,7 @@ static void* initial_pthread_func(void* ignore) {
 
 int chpl_thread_createCommThread(chpl_fn_p fn, void* arg) {
   pthread_t polling_thread;
-  return pthread_create(&polling_thread, NULL, (void*(*)(void*))fn, arg);
+  return do_pthread_create(&polling_thread, &thread_attributes, (void*(*)(void*))fn, arg);
 }
 
 void chpl_thread_exit(void) {
@@ -349,7 +365,7 @@ int chpl_thread_create(void* arg)
   numThreads++;
   pthread_mutex_unlock(&numThreadsLock);
 
-  if (pthread_create(&pthread, &thread_attributes, pthread_func, arg)) {
+  if (do_pthread_create(&pthread, &thread_attributes, pthread_func, arg)) {
     pthread_mutex_lock(&numThreadsLock);
     numThreads--;
     pthread_mutex_unlock(&numThreadsLock);
