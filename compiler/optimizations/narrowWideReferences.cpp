@@ -1425,7 +1425,7 @@ static void handleLocalFields(Map<Symbol*,Vec<SymExpr*>*>& defMap,
               DEBUG_PRINTF("inserting assignment locality check\n");
               SET_LINENO(def);
               Expr* stmt = toExpr(def)->getStmtExpr();
-              VarSymbol* tmp = newTemp(def->var->getValType());
+              VarSymbol* tmp = newTemp("derefTmp", def->var->getValType());
               stmt->insertBefore(new DefExpr(tmp));
               SymExpr* other = toSymExpr(call->get(2));
               stmt->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp), new CallExpr(PRIM_DEREF, new SymExpr(se->var))));

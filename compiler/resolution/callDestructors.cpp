@@ -464,7 +464,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
             (!parent || !parent->isPrimitive(PRIM_MOVE))) {
           replacementHelper(move, ret, arg, useFn);
         } else {
-          Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
+          Symbol* tmp = newTemp("ret_to_arg_derefTmp", useFn->retType);
           se->getStmtExpr()->insertBefore(new DefExpr(tmp));
           se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
           se->var = tmp;

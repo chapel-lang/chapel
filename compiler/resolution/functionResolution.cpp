@@ -3968,7 +3968,7 @@ static void resolveMove(CallExpr* call) {
         // type information earlier
         SymExpr* castVar = toSymExpr(rhsCall->get(1));
         INT_ASSERT(castVar);
-        VarSymbol* derefTmp = newTemp("castDeref", castVar->typeInfo()->getValType());
+        VarSymbol* derefTmp = newTemp("castDerefTmp", castVar->typeInfo()->getValType());
         call->insertBefore(new DefExpr(derefTmp));
         call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
                                         new CallExpr(PRIM_DEREF,
@@ -4165,7 +4165,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, defaultExpr->body.tail->remove()));
         fn->insertAtHead(defaultExpr);
       } else {
-        VarSymbol* refTmp = newTemp("_formal_ref_tmp_");
+        VarSymbol* refTmp = newTemp("_formal_derefTmp");
         VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
         typeTmp->addFlag(FLAG_MAYBE_TYPE);
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTmp)));
@@ -5717,7 +5717,7 @@ static void
 insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
     if (!se->var->type->refType) {
-      VarSymbol* tmp = newTemp("_value_tmp_", se->var->getValType());
+      VarSymbol* tmp = newTemp("derefTmp", se->var->getValType());
       insertPoint->insertBefore(new DefExpr(tmp));
       insertPoint->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, se->var)));
       se->var = tmp;

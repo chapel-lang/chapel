@@ -1320,7 +1320,7 @@ rebuildIterator(IteratorInfo* ii,
     if (local->type == field->type->refType) {
       // If a ref var, 
       // load the local into a temp and use this to set the value of the corresponding field.
-      Symbol* tmp = newTemp(field->type);
+      Symbol* tmp = newTemp("derefTmp", field->type);
       fn->insertAtTail(new DefExpr(tmp));
       fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
