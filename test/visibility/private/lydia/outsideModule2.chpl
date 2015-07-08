@@ -1,5 +1,5 @@
 use anotherModule;
-// anotherModule is private and defined in its own file.  This use should fail.
+// anotherModule is private and defined in its own file.
 
 var x = 16;
 writeln(secretFunction(x));

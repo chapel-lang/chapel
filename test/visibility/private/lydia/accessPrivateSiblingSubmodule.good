@@ -1,4 +1,1 @@
-accessPrivateSiblingSubmodule.chpl:9: In function 'main':
-accessPrivateSiblingSubmodule.chpl:10: warning: A visible 'child' is an inaccessible private symbol, defined at:
- accessPrivateSiblingSubmodule.chpl:2
-accessPrivateSiblingSubmodule.chpl:10: error: 'child' undeclared (first use this function)
+33

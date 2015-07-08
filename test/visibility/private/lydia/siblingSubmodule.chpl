@@ -6,7 +6,7 @@ module parent {
   }
 
   module sibling {
-    use child; // Should this be an error on 'child' or 'parent.child'?
+    use child;
 
     proc main() {
       writeln(secretFunction(11));

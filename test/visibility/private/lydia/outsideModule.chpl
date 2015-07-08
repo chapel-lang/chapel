@@ -1,6 +1,5 @@
 module M3 {
-  // since M2 is a private module, it is not visible outside of moduleUse.chpl
-  // Therefore, this should error.
+  // since M2 is a private global module, it should be visible
   use M2;
 
   proc main() {

@@ -2116,8 +2116,7 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 
 // Returns true if this module is capable of being used or traversed as part of
 // an access in the provided scope, false if the module is private and the
-// scope is not its direct parent or a sibling module when the parent of both
-// had a use of it.
+// scope is not in its direct parent
 bool ModuleSymbol::isVisible(BaseAST* scope) const {
   if (!hasFlag(FLAG_PRIVATE)) {
     // If it isn't public, it is trivially visible.
@@ -2131,45 +2130,16 @@ bool ModuleSymbol::isVisible(BaseAST* scope) const {
     // which case, we're visible if it "use"s us) or we run out of scope to
     // check against (in which case we are most certainly *not* visible)
     BaseAST* searchScope = scope;
-    bool passedModule = false;
-    while (searchScope != NULL && searchScope != parentScope) {
-      if (BlockStmt* block = toBlockStmt(searchScope)) {
-        if (block->parentExpr == NULL && isModuleSymbol(block->parentSymbol)) {
-          passedModule = true;
-        }
+    while (searchScope != NULL) {
+      if (searchScope == parentScope) {
+        return true;
       }
+
       searchScope = getScope(searchScope);
       // Keep walkin', we didn't find the parent scope yet.
     }
 
-    if (searchScope == parentScope) {
-      // parentScope is in the hierarchy of the searchScope!  But that doesn't
-      // mean we're visible unless we haven't passed another module symbol
-      // in our upward traversal, or there is a use of us at this scope.
-      if (!passedModule) {
-        // We haven't passed a module symbol in our upward traversal.
-        return true;
-      } else if (BlockStmt* block = toBlockStmt(parentScope)) {
-        if (block->modUses) {
-          for_actuals(expr, block->modUses) {
-            SymExpr* se = toSymExpr(expr);
-            INT_ASSERT(se);
-
-            ModuleSymbol* mod = toModuleSymbol(se->var);
-            INT_ASSERT(mod);
-
-            if (mod == this) {
-              // Ha!  A use of us!
-              return true;
-            }
-          }
-        }
-      }
-    }
-    // All the cases where we would have been visible were not satisfied.  This
-    // could mean our parentScope wasn't in the hierarchy of scope, or that we
-    // passed a module boundary and a valid use of us wasn't present at the
-    // parentScope.
+    // We got to the top of the scope without finding the parent.
     return false;
   }
 }

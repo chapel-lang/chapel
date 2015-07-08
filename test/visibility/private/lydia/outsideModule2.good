@@ -1,3 +1,1 @@
-outsideModule2.chpl:1: warning: A visible 'anotherModule' is an inaccessible private symbol, defined at:
- ./anotherModule.chpl:1
-outsideModule2.chpl:1: error: Cannot find module 'anotherModule'
+48
