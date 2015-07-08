@@ -403,8 +403,36 @@ void chpl_task_exit(void) {
 }
 
 
-void chpl_task_callMain(void (*chpl_main)(void)) {
+typedef void (*main_ptr_t)(void); 
+static void* do_callMain(void* arg) {
+  main_ptr_t chpl_main = (main_ptr_t) arg;
   chpl_main();
+  return NULL;
+}
+
+void chpl_task_callMain(void (*chpl_main)(void)) {
+  // since we want to run all work in a task with a comm-friendly stack,
+  // run main in a pthread that we will wait for.
+  size_t stack_size;
+  pthread_attr_t attr;
+  pthread_t thread;
+  void* stack;
+  int rc;
+
+  stack_size  = chpl_thread_getCallStackSize();
+  stack = chpl_valloc(stack_size);
+
+  pthread_attr_setstack(&attr, stack, stack_size);
+  
+  rc = pthread_create(&thread, &attr, do_callMain, NULL);
+  if( rc != 0 ) {
+    chpl_internal_error("pthread_create failed");
+  }
+
+  rc = pthread_join(thread, NULL);
+  if( rc != 0 ) {
+    chpl_internal_error("pthread_create failed");
+  } 
 }
 
 
