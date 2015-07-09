@@ -1,6 +1,6 @@
 use VisualDebug;
 
-startVdebug("OH1");
+startVdebug("OH2");
 for ix in 1 .. 40 {
   tagVdebug("tag 1");
   pauseVdebug();

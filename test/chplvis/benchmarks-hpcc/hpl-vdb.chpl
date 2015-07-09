@@ -89,7 +89,7 @@ proc main() {
 
   initAB(Ab);
 
-  startVdebug("HPL");
+  startVdebug("HPLvis");
   const startTime = getCurrentTime();     // capture the start time
 
   LUFactorize(n, Ab, piv);                 // compute the LU factorization

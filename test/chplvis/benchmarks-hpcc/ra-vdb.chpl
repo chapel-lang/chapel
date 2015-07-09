@@ -129,7 +129,7 @@ proc main() {
   //
   [i in TableSpace] T[i] = i;
 
-  startVdebug("RA");
+  startVdebug("RAvis");
   const startTime = getCurrentTime();              // capture the start time
 
   //

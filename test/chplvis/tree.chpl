@@ -1,4 +1,11 @@
-// explore the communication and execution patters ... trying to get a tree
+// explore the communication and execution patters
+//   Trees
+//   Hypercube tree patters
+//
+//   Done both with iterators and procs.
+//
+//   Also, using VisualDebug to show comm patters of
+//   these structures
 
 use VisualDebug;
 use BlockDist;
@@ -14,12 +21,11 @@ iter treeiter ( n: int, id: int=0) : int {
 }
 
 iter treeiter ( param tag: iterKind, n: int, id: int=0) : int
-    where tag == iterKind.standalone {
-   // if (id == 0) then writeln ("Running standalone parallel treeiter.");
+      where tag == iterKind.standalone {
    if (id < n) {
-     /* on Locales[id] do */ yield id;
+     yield id;
 
-     // recursive?
+     // recursive ... but still have to yeild here
      cobegin {
        if 2*id+1 < n then on Locales[2*id+1] do
          for z in treeiter(n=n, id=2*id + 1, tag=iterKind.standalone) do yield z;
@@ -30,7 +36,7 @@ iter treeiter ( param tag: iterKind, n: int, id: int=0) : int
 }
 
 
-startVdebug ("Tr");
+startVdebug ("TREEvis");
 
 const space = { 0..#numLocales };
 
@@ -51,7 +57,7 @@ forall i in space do b[i] = here.id;
 
 tagVdebug ("writeln 0");
 
-writeln("B ist: ", b);
+writeln("B is: ", b);
 
 tagVdebug ("treeIter");
 
@@ -182,8 +188,7 @@ iter cubeiter2 ( n: int, id: int=0, off: int = -1) : int {
 }
 
 iter cubeiter2 ( param tag: iterKind, n: int, id: int=0, off: int = -1) : int
-    where tag == iterKind.standalone {
-   // if (id == 0) then writeln ("Running standalone parallel treeiter.");
+       where tag == iterKind.standalone {
    var offset = 1;
    if (off < 0) then
       while (offset*2+id < n) do offset = offset << 1;
@@ -201,9 +206,10 @@ iter cubeiter2 ( param tag: iterKind, n: int, id: int=0, off: int = -1) : int
 
 pauseVdebug();
 
-writeln ("id2com tests: ");
-for a in id2com(0,8) do write (a, " ");
-writeln ();
+// Tests not enabled
+// writeln ("id2com tests: ");
+// for a in id2com(0,8) do write (a, " ");
+// writeln ();
 
 var e: [Bspace] int;
 
