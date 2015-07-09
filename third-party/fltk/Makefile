@@ -41,6 +41,6 @@ cleanall:
 
 clobber:
 	-rm -rf $(FLTK_BUILD_DIR) $(FLTK_INSTALL_DIR) *~
-	-rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
+	-rm -rf build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
 
 FORCE:
