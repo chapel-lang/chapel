@@ -1,0 +1,17 @@
+======================
+FLTK for Chapel release
+======================
+
+This copy of FLTK is being released with Cahpel for convenience and
+uses a snapshot of FLTK obtained from the FLTK web site at
+http://fltk.org.  We are using the 1.3.X branch.
+
+FLTK is used for the chplvis program, a GUI tool to help visualize
+your computation across locales.  For more information about FLTK,
+please visit the above web site.
+
+License Note: FLTK is under GPL-2 and LGPL-2.  There is one exception
+to this, and that is static linking of the FLTK library with an
+executible.  In that case, the executible is not considered a derative
+work and thus does not fall under the LGPL-2 license.  This is the
+case used by the Chapel use of FLTK.
