@@ -59,8 +59,10 @@ static void add_env_options(int* argc, char** argv[]) {
   // Add a -E option for each environment variable.
   //
   for (i = 0; i < envc; i++) {
-    new_argv[*argc + 2 * i + 0] = (char*) "-E";
-    new_argv[*argc + 2 * i + 1] = environ[i];
+    if( ! strchr(environ[i], '`' ) ) {
+      new_argv[*argc + 2 * i + 0] = (char*) "-E";
+      new_argv[*argc + 2 * i + 1] = environ[i];
+    }
   }
 
   //
