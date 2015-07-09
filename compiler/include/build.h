@@ -60,7 +60,7 @@ BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, const char* docs);
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, bool priv, const char* docs);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
