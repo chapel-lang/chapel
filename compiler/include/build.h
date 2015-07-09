@@ -116,6 +116,7 @@ DefExpr*  buildClassDefExpr(const char* name,
                             BlockStmt*  decls,
                             Flag        isExtern,
                             const char* docs);
+void setupTypeIntentArg(ArgSymbol* arg);
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);

@@ -1758,7 +1758,7 @@ buildClassDefExpr(const char* name,
 // If an argument has intent 'INTENT_TYPE', this function sets up the
 // ArgSymbol the way downstream passes expect it to be.
 //
-static void setupTypeIntentArg(ArgSymbol* arg) {
+void setupTypeIntentArg(ArgSymbol* arg) {
   arg->intent = INTENT_BLANK;
   arg->addFlag(FLAG_TYPE_VARIABLE);
   arg->type = dtAny;
