@@ -234,8 +234,6 @@ LcnSymbol::LcnSymbol(AstTag      astTag,
 {
   mDepth  = -1;
   mOffset = -1;
-  mustBeWide = false;
-  valIsWide = false;
 }
 
 LcnSymbol::~LcnSymbol()
@@ -295,8 +293,6 @@ VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
   newVarSymbol->copyFlags(this);
   newVarSymbol->cname = cname;
-  newVarSymbol->mustBeWide = mustBeWide;
-  newVarSymbol->valIsWide = valIsWide;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -1029,8 +1025,6 @@ ArgSymbol::copyInner(SymbolMap* map) {
   ps->copyFlags(this);
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
-  ps->mustBeWide = mustBeWide;
-  ps->valIsWide = valIsWide;
   return ps;
 }
 
