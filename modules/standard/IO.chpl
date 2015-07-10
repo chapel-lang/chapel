@@ -2130,7 +2130,7 @@ proc file.check() {
 }
 
 pragma "no doc"
-proc file.~file() {
+proc ref file.~file() {
   on this.home {
     qio_file_release(_file_internal);
     this._file_internal = QIO_FILE_PTR_NULL;
@@ -2775,7 +2775,7 @@ proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, 
 }
 
 pragma "no doc"
-proc channel.~channel() {
+proc ref channel.~channel() {
   on this.home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
