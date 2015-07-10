@@ -18,8 +18,12 @@ The syntax to declare an iterator is given
 by:
 \begin{syntax}
 iterator-declaration-statement:
-  `iter' iterator-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+  privacy-specifier[OPT] `iter' iterator-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
   iterator-body
+
+privacy-specifier:
+  `private'
+  `public'
 
 iterator-name:
   identifier
