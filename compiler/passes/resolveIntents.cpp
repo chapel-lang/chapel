@@ -121,7 +121,7 @@ void resolveArgIntent(ArgSymbol* arg) {
 }
 
 // In Chapel, there is only one reference level: there are no references to
-// reference (ignoring the wide case and class variables for simplicity).
+// references (ignoring the wide case and class variables for simplicity).
 // This routine adjusts the type of the argument to match the REF flag of its
 // concrete intent, which in turn controls how the argument is passed in the
 // generated code.
