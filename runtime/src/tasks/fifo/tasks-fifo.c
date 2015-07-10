@@ -30,6 +30,7 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chplsys.h"
+#include "chpl-visual-debug.h"  // May disappear shortly
 #include "error.h"
 #include <stdio.h>
 #include <string.h>

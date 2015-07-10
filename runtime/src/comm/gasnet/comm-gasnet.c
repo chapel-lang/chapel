@@ -33,6 +33,7 @@
 #include "error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-cache.h" // to call chpl_cache_init()
+#include "chpl-visual-debug.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
