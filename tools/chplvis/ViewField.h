@@ -141,6 +141,39 @@ class ViewField : public Fl_Box {
 
   void showAllData(void) { printf ("showAllData called\n"); }
 
+  // Window show/hide functions ...
+  void hideAllCommWindows(void)
+    {
+      int ix1, ix2;
+      for (ix1 = 0; ix1 < numlocales; ix1++)
+        for (ix2 = 0; ix2 < numlocales; ix2++)
+          if (comms[ix1][ix2].win != NULL)
+            comms[ix1][ix2].win->hide();
+    }
+  void showAllCommWindows(void)
+    {
+      int ix1, ix2;
+      for (ix1 = 0; ix1 < numlocales; ix1++)
+        for (ix2 = 0; ix2 < numlocales; ix2++)
+          if (comms[ix1][ix2].win != NULL)
+            comms[ix1][ix2].win->show();
+    }
+  void hideAllLocaleWindows(void)
+    {
+      int ix;
+      for (ix = 0; ix < numlocales; ix++)
+        if (theLocales[ix].win != NULL)
+          theLocales[ix].win->hide();
+    }        
+
+  void showAllLocaleWindows(void)
+    {
+      int ix;
+      for (ix = 0; ix < numlocales; ix++)
+        if (theLocales[ix].win != NULL)
+          theLocales[ix].win->show();
+    }
+
 };
 
 #endif

@@ -64,8 +64,8 @@ Function {mainWinCallback(Fl_Widget *)} {return_type void
 Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
 } {
   Fl_Window {} {open
-    xywh {1037 56 180 120} type Double color 7 resizable
-    class LocaleWin size_range {180 120 0 0} visible
+    xywh {1037 56 180 120} type Double color 7 hide resizable
+    class LocaleWin size_range {180 120 0 0}
   } {
     Fl_Box Locale_Title {
       label {Locale }
@@ -84,8 +84,8 @@ w->updateWin();} {}
 Function {make_comm_window(int fromLn, int toLn, struct commInfo *commData)} {open
 } {
   Fl_Window {} {open
-    xywh {1039 205 180 120} type Double color 7 resizable
-    class CommWin visible
+    xywh {1039 205 180 120} type Double color 7 hide resizable
+    class CommWin
   } {
     Fl_Box Comm_Title {
       label Comm
@@ -105,7 +105,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1278 56 500 590} type Double color 7 resizable size_range {500 590 0 0} visible
+    xywh {1278 56 500 590} type Double color 7 hide resizable size_range {500 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 500 20} color 55
@@ -148,6 +148,31 @@ if (selfile) {
         }
       }
       Submenu {} {
+        label Windows open selected
+        xywh {0 0 62 20}
+      } {
+        MenuItem {} {
+          label {Show All Comm}
+          callback {DbgView->showAllCommWindows();}
+          xywh {0 0 31 20}
+        }
+        MenuItem {} {
+          label {Hide All Comm}
+          callback {DbgView->hideAllCommWindows();}
+          xywh {0 0 31 20}
+        }
+        MenuItem {} {
+          label {Show All Locale}
+          callback {DbgView->showAllLocaleWindows();}
+          xywh {0 0 31 20}
+        }
+        MenuItem {} {
+          label {Hide All Locale}
+          callback {DbgView->hideAllLocaleWindows();}
+          xywh {0 0 31 20}
+        }
+      }
+      Submenu {} {
         label Data open
         xywh {0 0 70 21}
       } {
@@ -166,7 +191,7 @@ MainWindow->redraw();}
         MenuItem {} {
           label {Show Clock}
           callback {DbgView->showClock();
-MainWindow->redraw();} selected
+MainWindow->redraw();}
           xywh {0 0 31 20}
         }
         MenuItem {} {
