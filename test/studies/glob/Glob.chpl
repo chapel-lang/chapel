@@ -32,7 +32,7 @@ extern const WRDE_DOOFFS : c_int;
 extern const WRDE_NOCMD  : c_int;
 extern const WRDE_REUSE  : c_int;
 
-iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory:string = ""):string {
+iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, const in directory:string = ""):string {
   var err : c_int;
   var tx  : c_string;
   var glb : wordexp_t;
@@ -85,7 +85,7 @@ iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
   yield followThis;
 }
 
-iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:string = ""):string {
+iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, const in directory:string = ""):string {
   var err : c_int;
   var tx  : c_string;
   var glb : glob_t;

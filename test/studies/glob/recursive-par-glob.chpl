@@ -11,7 +11,7 @@ extern proc glob_index(x:glob_t, idx:size_t): c_string;
 extern proc wordexp_num(x:wordexp_t): size_t;
 extern proc wordexp_index(x:wordexp_t, idx:size_t): c_string;
 
-iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false, extension:string = ""):string {
+iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false, const in extension:string = ""):string {
     var err: c_int;
     var tx:c_string;
     if expand { // use wordexp
@@ -44,7 +44,7 @@ iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false
 }
 
 // TODO: make this a L/F on directories when we we want to recurse
-iter glob(param tag:iterKind, pattern:string, flags:int, expand:bool = false, recursive:bool = false, extension:string = "") : string
+iter glob(param tag:iterKind, pattern:string, flags:int, expand:bool = false, recursive:bool = false, const in extension:string = "") : string
 where tag == iterKind.leader {
   var err: c_int;
   var tx:c_string;
@@ -80,7 +80,7 @@ where tag == iterKind.leader {
 }
 
 // ....
-iter glob(param tag:iterKind, pattern:string, flags:int, expand:bool = false, recursive:bool = false, extension:string = "", followThis) : string
+iter glob(param tag:iterKind, pattern:string, flags:int, expand:bool = false, recursive:bool = false, const in extension:string = "", followThis) : string
 where tag == iterKind.follower {
     yield followThis;
 }
