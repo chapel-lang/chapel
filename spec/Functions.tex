@@ -120,10 +120,6 @@ procedure-declaration-statement:
   privacy-specifier[OPT] linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
     function-body
 
-privacy-specifier:
-  `private'
-  `public'
-
 linkage-specifier:
   `inline'
 
@@ -232,7 +228,7 @@ Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
 
 The optional \sntx{privacy-specifier} keywords indicate the visibility
-of module level functions to outside modules.  By default, functions are
+of module level procedures to outside modules.  By default, procedures are
 publicly visible.  More details on visibility can be found in
 ~\rsec{Visibility}.
 
@@ -1085,7 +1081,7 @@ Given a function call, a function is determined to be a \emph{visible
 function} if the name of the function is the same as the name of the
 function call and the function is defined in the same scope as the
 function call or a lexical outer scope of the function call, or if the
-function is publicly defined in a module that is used from the same
+function is publicly declared in a module that is used from the same
 scope as the function call or a lexical outer scope of the function
 call.  Function visibility in generic functions is discussed
 in~\rsec{Function_Visibility_in_Generic_Functions}.
