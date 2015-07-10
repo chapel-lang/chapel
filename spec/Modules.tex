@@ -10,7 +10,7 @@ Module definitions are described in~\rsec{Module_Definitions}.  The
 relation between files and modules is described
 in~\rsec{Implicit_Modules}.  Nested modules are described
 in~\rsec{Nested_Modules}.  The visibility of a module's symbols by
-users of the module is described in~\rsec{Visibility}.  The execution
+users of the module is described in~\rsec{Visibility_Of_Symbols}.  The execution
 of a program and module initialization is described
 in~\rsec{Program_Execution}.
 
@@ -36,7 +36,7 @@ A module's name is specified after the \chpl{module} keyword.
 The \sntx{block-statement} opens the module's scope.  Symbols defined
 in this block statement are defined in the module's scope and are
 called \emph{top-level module symbols}.  The visibility of a module is
-defined by its \sntx{privacy-specifier}~(\rsec{Visibility}).
+defined by its \sntx{privacy-specifier}~(\rsec{Visibility_Of_A_Module}).
 
 Module declaration statements must be top-level statements within a
 module.  A module that is declared within another module is called a
@@ -188,14 +188,20 @@ printY();
 \end{chapelexample}
 
 
-\section{Visibility}
-\label{Visibility}
-\index{modules!visibility}
+\section{Access of Module Contents}
+\label{Access_Of_Module_Contents}
+\index{modules!access}
 
-A module can be used by code outside of that module.  This allows
-access to the top-level module symbols without the need for explicit
-naming~(\rsec{Explicit_Naming}).  Using modules is accomplished via
-the use statement as defined in~\rsec{Using_Modules}.
+A module can be used by code outside of that module depending on the
+visibility of the module itself~(\rsec{Visibility_Of_A_Module}).  This
+allows access to its visible contents~(\rsec{Visibility_Of_Symbols})
+without the need for explicit naming~(\rsec{Explicit_Naming}).  Using
+modules is accomplished via the use statement as defined
+in~\rsec{Using_Modules}.
+
+\subsection{Visibility Of A Module}
+\label{Visibility_Of_A_Module}
+\index{modules!access}
 
 The privacy of a module may place limitations on when outside access
 of its contents is valid. While public modules can be used and
@@ -204,6 +210,9 @@ defined beneath the parent scope of a private module will have the
 ability to use or explicitly name its symbols. Modules are public by
 default.
 
+\subsection{Visibility Of Module's Symbols}
+\label{Visibility_Of_Symbols}
+\index{modules!access}
 All symbols defined at the top level scope of a module are considered
 public by default.  This means that if the module itself is accessible
 by outside scopes, symbols defined within it may be accessible through
@@ -302,9 +311,9 @@ compiler error.
 
 If a module is public or defined in a common parent scope to where
 accessing its symbols is desirable, then a use statement on that
-module may be employed.  Use statements make the symbols defined by a
-module available without requiring them to be prefixed by the module's
-name.  The syntax of the use statement is given by:
+module may be employed.  Use statements make the public symbols
+defined by a module available without requiring them to be prefixed by
+the module's name.  The syntax of the use statement is given by:
 
 \begin{syntax}
 use-statement:
