@@ -21,6 +21,7 @@
 // Visual Debug Support file
 //
 
+#include "chpl-visual-debug.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
 #include <stdint.h>
