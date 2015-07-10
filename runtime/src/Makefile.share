@@ -43,6 +43,7 @@ COMMON_NOGEN_SRCS = \
 	chplsys.c \
 	chpl-tasks.c \
 	chpl-timers.c \
+        chpl-visual-debug.c \
 	gdb.c \
 
 MAIN_SRCS = \
