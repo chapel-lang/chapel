@@ -9,9 +9,10 @@ and types, is associated with some module.
 Module definitions are described in~\rsec{Module_Definitions}.  The
 relation between files and modules is described
 in~\rsec{Implicit_Modules}.  Nested modules are described
-in~\rsec{Nested_Modules}.  Module uses and explicit naming of symbols
-are described in~\rsec{Using_Modules}.  The execution of a program and
-module initialization is described in~\rsec{Program_Execution}.
+in~\rsec{Nested_Modules}.  The visibility of symbols within a module
+in relation to other modules is described in~\rsec{Visibility}.  The
+execution of a program and module initialization is described
+in~\rsec{Program_Execution}.
 
 \section{Module Definitions}
 \label{Module_Definitions}
@@ -21,7 +22,11 @@ module initialization is described in~\rsec{Program_Execution}.
 A module is declared with the following syntax:
 \begin{syntax}
 module-declaration-statement:
-  `module' module-identifier block-statement
+  privacy-specifier[OPT] `module' module-identifier block-statement
+
+privacy-specifier:
+  `private'
+  `public'
 
 module-identifier:
   identifier
@@ -30,7 +35,8 @@ module-identifier:
 A module's name is specified after the \chpl{module} keyword.
 The \sntx{block-statement} opens the module's scope.  Symbols defined
 in this block statement are defined in the module's scope and are
-called \emph{top-level module symbols}.
+called \emph{top-level module symbols}.  The visibility of a module is
+defined by its \sntx{privacy-specifier}~(\rsec{Visibility}).
 
 Module declaration statements must be top-level statements within a
 module.  A module that is declared within another module is called a
@@ -182,14 +188,29 @@ printY();
 \end{chapelexample}
 
 
-\section{Using Modules}
-\label{Using_Modules}
-\index{modules!using}
+\section{Visibility}
+\label{Visibility}
+\index{modules!visibility}
 
 A module can be used by code outside of that module.  This allows
 access to the top-level module symbols without the need for explicit
 naming~(\rsec{Explicit_Naming}).  Using modules is accomplished via
-the use statement as defined in~\rsec{The_Use_Statement}.
+the use statement as defined in~\rsec{Using_Modules}.
+
+The privacy of a module may place limitations on when outside access
+of its contents is valid. While public modules can be used and
+accessed through explicit naming in arbitrary contexts, only scopes
+defined beneath the parent scope of a private module will have the
+ability to use or explicitly name its symbols. Modules are public by
+default.
+
+All symbols defined at the top level scope of a module are considered
+public by default.  This means that if the module itself is accessible
+by outside scopes, symbols defined within it may be accessible through
+explicit naming or when a use of the defining module is present.  When
+a symbol is declared as private, however, such access is not permitted
+and the symbol in question is only visible to the contents of the
+defining module.
 
 \subsection{Explicit Naming}
 \label{Explicit_Naming}
@@ -274,6 +295,83 @@ that of M1.  On the other hand, the call to printY() is ambiguous
 because it is defined in both M1 and M3.  This will result in a
 compiler error.
 \end{chapelexample}
+
+\subsection{Using Modules}
+\label{Using_Modules}
+\index{modules!using}
+
+If a module is public or defined in a common parent scope to where
+accessing its symbols is desirable, then a use statement on that
+module may be employed.  Use statements make the symbols defined by a
+module available without requiring them to be prefixed by the module's
+name.  The syntax of the use statement is given by:
+
+\begin{syntax}
+use-statement:
+  `use' module-name-list ;
+
+module-name-list:
+  module-name
+  module-name , module-name-list
+
+module-name:
+  identifier
+  module-name . module-name
+\end{syntax}
+
+Symbols made available by a use statement are at an outer scope from those
+defined directly in the scope where the use statement occurs, but at a
+nearer scope than symbols defined in the scope containing the scope where
+the use statement occurs.
+
+Use statements are transitive by default: if used modules themselves
+use other modules, these symbols are also available and are scoped
+according to the depth of use statements followed to find them.  However,
+if a used module is private, this use is not transitive and any uses
+of the module which made use of the private module will not bring the
+private module's symbols into scope.
+
+It is an error for two public variables, types, or modules to be
+defined at the same depth.
+
+\begin{openissue}
+There is an expectation that this statement will be extended to allow
+the programmer to restrict which symbols are 'used' as well as to
+rename symbols that are 'used.'
+\end{openissue}
+
+\begin{chapelexample}{use.chpl}
+  The following example illustrates how the use statement makes
+  symbols declared in \chpl{M1}'s scope (like procedure
+  \chpl{foo()}) visible within the scope of \chpl{M2}'s \chpl{main}
+  function.  Without the \chpl{use} statement, the procedure call to
+  \chpl{foo} could not be resolved since \chpl{M2} would not have
+  access to symbols in \chpl{M1}.
+
+  When executed, the program
+\begin{chapel}
+module M1 {
+  proc foo() {
+    writeln("In M1's foo.");
+  }
+}
+
+module M2 {
+  proc main() {
+    use M1;
+
+    writeln("In M2's main.");
+    foo();
+  }
+}
+\end{chapel}
+prints out
+\begin{chapelprintoutput}{}
+In M2's main.
+In M1's foo.
+\end{chapelprintoutput}
+\end{chapelexample}
+
 
 
 \subsection{Module Initialization}
