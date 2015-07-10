@@ -117,8 +117,12 @@ Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 Procedures are defined with the following syntax:
 \begin{syntax}
 procedure-declaration-statement:
-  linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+  privacy-specifier[OPT] linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
     function-body
+
+privacy-specifier:
+  `private'
+  `public'
 
 linkage-specifier:
   `inline'
@@ -226,6 +230,11 @@ Function and operator overloading is supported in Chapel and is
 discussed in~\rsec{Function_Overloading}.
 Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
+
+The optional \sntx{privacy-specifier} keywords indicate the visibility
+of module level functions to outside modules.  By default, functions are
+publicly visible.  More details on visibility can be found in
+~\rsec{Visibility}.
 
 The linkage specifier \chpl{inline} indicates that the function body must be inlined at
 every call site.
@@ -1076,9 +1085,9 @@ Given a function call, a function is determined to be a \emph{visible
 function} if the name of the function is the same as the name of the
 function call and the function is defined in the same scope as the
 function call or a lexical outer scope of the function call, or if the
-function is defined in a module that is used from the same scope as
-the function call or a lexical outer scope of the function call.
-Function visibility in generic functions is discussed
+function is publicly defined in a module that is used from the same
+scope as the function call or a lexical outer scope of the function
+call.  Function visibility in generic functions is discussed
 in~\rsec{Function_Visibility_in_Generic_Functions}.
 
 \subsection{Determining Candidate Functions}
