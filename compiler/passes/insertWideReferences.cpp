@@ -121,7 +121,7 @@
 
 //#define PRINT_NARROW_EFFECT_SUMMARY
 //#define PRINT_NARROW_EFFECT
-//#define PRINT_NARROW_ANALYSIS
+#define PRINT_NARROW_ANALYSIS
 
 #ifdef PRINT_NARROW_ANALYSIS
   #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -272,8 +272,7 @@ static void fixType(LcnSymbol* sym) {
 
 
 static void setWide(LcnSymbol* sym) {
-  if (sym->id == 867926) gdbShouldBreakHere();
-  if (!typeCanBeWide(sym)) return;//INT_ASSERT(false);
+  if (!typeCanBeWide(sym)) return;
   if (isArgSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) return;
   if (!sym->mustBeWide) {
     sym->mustBeWide = true;
@@ -289,7 +288,9 @@ static void setWide(SymExpr* se) { setWide(toLcnSymbol(se->var)); }
 
 
 static void setValWide(LcnSymbol* sym) {
-  if (!typeCanBeWide(sym)) return;//INT_ASSERT(false);
+  Type* valType = sym->type->getValType();
+  if (!typeCanBeWide(sym)) return;
+  if (valType != dtString && !isClass(sym->type->getValType())) return;
   if (isArgSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) return;
   if (!sym->valIsWide) {
     sym->valIsWide = true;
@@ -314,7 +315,6 @@ static void widenRef(LcnSymbol* src, LcnSymbol* dest) {
     debug(src, ": Ref %s (%d) must have a wide _val\n", dest->cname, dest->id);
     setValWide(dest);
   }
-  // else INT_FATAL("Unexpected ref widening\n");
 }
 
 //
@@ -792,6 +792,60 @@ static void insertLocalTemp(Expr* expr) {
   se->replace(new SymExpr(var));
 }
 
+// Insert local temps for accesses to fields
+static void insertLocalFieldTemp(Expr* expr) {
+  CallExpr* call = toCallExpr(expr);
+  INT_ASSERT(call);
+
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+  SymExpr* LHS = toSymExpr(call->get(1));
+  LcnSymbol* lvar = toLcnSymbol(LHS->var);
+
+  if (isObj(lvar)) {
+    SET_LINENO(expr);
+    VarSymbol* tmp = newTemp("wide_tmp", call->get(2)->typeInfo());
+    tmp->mustBeWide = true; tmp->valIsWide = true;
+
+    Type* narrowType = tmp->type->getField("addr")->type;
+    lvar->type = narrowType;
+    lvar->mustBeWide = false; lvar->valIsWide = false;
+
+    expr->insertBefore(new DefExpr(tmp));
+    expr->insertAfter(new CallExpr(PRIM_MOVE, LHS->copy(), tmp));
+
+    if (!fNoLocalChecks) {
+      CallExpr* check = new CallExpr(PRIM_LOCAL_CHECK, tmp);
+      expr->insertAfter(check);
+    }
+
+    LHS->replace(new SymExpr(tmp));
+  }
+  else if (lvar->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+    return;
+    SET_LINENO(expr);
+    VarSymbol* tmp = newTemp("wide_tmp", call->get(2)->typeInfo());
+    tmp->mustBeWide = true; tmp->valIsWide = true;
+
+    Type* narrowType = tmp->type->getField("addr")->type;
+    lvar->type = narrowType;
+    lvar->mustBeWide = false; lvar->valIsWide = false;
+
+    expr->insertBefore(new DefExpr(tmp));
+    expr->insertAfter(new CallExpr(PRIM_MOVE, LHS->copy(), tmp));
+
+    if (!fNoLocalChecks) {
+      CallExpr* check = new CallExpr(PRIM_LOCAL_CHECK, tmp);
+      expr->insertAfter(check);
+    }
+
+    LHS->replace(new SymExpr(tmp));
+  }
+  else {
+    INT_ASSERT(lvar->type == call->get(2)->typeInfo());
+  }
+}
+
 
 //
 // If call has the potential to cause communication, assert that the wide
@@ -836,6 +890,7 @@ static void localizeCall(CallExpr* call) {
               insertLocalTemp(rhs->get(1));
             }
           }
+          insertLocalFieldTemp(call);
           break;
         } else if (rhs->isPrimitive(PRIM_ARRAY_GET) ||
                    rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
@@ -888,7 +943,11 @@ static void localizeCall(CallExpr* call) {
         insertLocalTemp(call->get(2));
         if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
             call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-          toSymExpr(call->get(1))->var->type = call->get(1)->typeInfo()->getField("addr")->type;
+          LcnSymbol* se = toLcnSymbol(toSymExpr(call->get(1))->var);
+          se->type = call->get(1)->typeInfo()->getField("addr")->type;
+          se->mustBeWide = false;
+          if (se->type->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
+            se->valIsWide = true;
         }
       }
       break;
@@ -1064,8 +1123,6 @@ insertWideReferences(void) {
   if (!requireWideReferences())
     return;
 
-  // TODO: Can this declaration and initialization be moved closer to where it
-  // is used?
   Vec<Symbol*> heapVars;
   getHeapVars(heapVars);
 
@@ -1077,7 +1134,7 @@ insertWideReferences(void) {
   INT_ASSERT(wideRefMap.n == 0);
   buildWideRefMap();
 
-  // TODO: RuntimeTypeInfo's with local fields?
+  // TODO: Can we create RuntimeTypeInfos with local fields?
 
   //
   // change arrays of classes into arrays of wide classes
@@ -1130,6 +1187,8 @@ insertWideReferences(void) {
   }
   debugTimer.stop();
 
+  // TODO: Make sure temps have proper mustBeWide/valIsWide values
+
   // IWR
   insertStringLiteralTemps();
   widenGetPrivClass(); // widens class type in PRIM_GET_PRIV_CLASS
@@ -1144,7 +1203,6 @@ insertWideReferences(void) {
 
   // NWR
   insertWideReferenceTemps();
-  //handle local fields
   moveAddressSourcesToTemp();
 
 #ifdef PRINT_NARROW_EFFECT_SUMMARY
@@ -1251,7 +1309,12 @@ static void buildWideRefMap()
       // Create __wide__refs for each ref type.
       // For refs to classes, we use the 'refToWideClass' type we just created.
       AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
-      TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
+      TypeSymbol* wts = NULL;
+      if (refToWideClass) {
+        wts = new TypeSymbol(astr("__wide_", refToWideClass->symbol->cname), wide);
+      } else {
+        wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
+      }
       wts->addFlag(FLAG_WIDE_REF);
       theProgram->block->insertAtTail(new DefExpr(wts));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
@@ -1651,8 +1714,9 @@ static void insertWideReferenceTemps() {
     // FIXME: find a better place to do this
     if (call->isPrimitive(PRIM_LOCAL_CHECK)) {
       if (LcnSymbol* se = toLcnSymbol(toSymExpr(call->get(1))->var)) {
-        if (!(se->mustBeWide || se->valIsWide))
+        if (!(se->mustBeWide || se->valIsWide)) {
           call->remove();
+        }
       }
     }
 
@@ -1716,17 +1780,7 @@ static void insertWideReferenceTemps() {
             SymExpr* field = toSymExpr(rhs->get(2));
             SymExpr* LHS = toSymExpr(call->get(1));
             if (field->var->hasFlag(FLAG_LOCAL_FIELD) && !isWideType(LHS->var)) {
-              SET_LINENO(LHS);
-              VarSymbol* tmp = newTemp(field->var->type);
-              Expr* stmt = LHS->getStmtExpr();
-              stmt->insertBefore(new DefExpr(tmp));
-              stmt->insertAfter(new CallExpr(PRIM_MOVE, LHS->copy(), tmp));
-
-              if (!fNoLocalChecks) {
-                stmt->insertAfter(new CallExpr(PRIM_LOCAL_CHECK, tmp));
-              }
-
-              LHS->replace(new SymExpr(tmp));
+              insertLocalFieldTemp(call);
             }
           }
         }
@@ -1740,3 +1794,4 @@ static void insertWideReferenceTemps() {
     }
   }
 }
+
