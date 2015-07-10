@@ -111,6 +111,8 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 // callDestructors.cpp
 void insertReferenceTemps();
 void insertReferenceTemps(CallExpr* call);
+void insertDerefTemps();
+void insertDerefTemps(CallExpr* call);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

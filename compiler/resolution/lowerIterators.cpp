@@ -1097,7 +1097,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   // passed to it when this function is flattened)
   //
   Symbol*    ic             = forLoop->iteratorGet()->var;
-  FnSymbol*  iterator       = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+  FnSymbol*  iterator       = ic->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer;
   CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
 
   // replace function in iteratorFnCall with iterator function once that is created
@@ -1182,7 +1182,7 @@ static bool
 // the tree); false otherwise.
 expandIteratorInline(ForLoop* forLoop) {
   Symbol*   ic       = forLoop->iteratorGet()->var;
-  FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+  FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer;
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
@@ -1699,8 +1699,8 @@ expandForLoop(ForLoop* forLoop) {
 
   if (!fNoInlineIterators)
   {
-    if (iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer->iteratorInfo &&
-        canInlineIterator(iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer) &&
+    if (iterator->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer->iteratorInfo &&
+        canInlineIterator(iterator->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer) &&
         (iterator->type->dispatchChildren.n == 0 ||
          (iterator->type->dispatchChildren.n == 1 &&
           iterator->type->dispatchChildren.v[0] == dtObject))) {
@@ -1920,7 +1920,7 @@ inlineIterators() {
       // of the iterator class.
       FnSymbol* getIterFn = iterator->type->defaultInitializer;
       // The operand of the getIterator function is an iterator record.
-      Type* irecord = getIterFn->getFormal(1)->type;
+      Type* irecord = getIterFn->getFormal(1)->type->getValType();
       // The original iterator function is stored in the defaultInitializer
       // field of an iterator record.
       FnSymbol* ifn      = irecord->defaultInitializer;

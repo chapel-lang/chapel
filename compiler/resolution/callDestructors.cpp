@@ -937,6 +937,105 @@ void insertReferenceTemps() {
 }
 
 
+//
+// Insert dereference temps as needed to make reference arguments and variables
+// match formals that expect their arguments by value
+// (This should be rare, except for fundamental types, small records and
+//  task arguments passed using remote value forwarding.)
+//
+
+static inline void
+insertDerefTemp(Expr* expr)
+{
+  Expr* stmt = expr->getStmtExpr();
+  SET_LINENO(stmt);
+
+  Type* t = expr->typeInfo();
+  INT_ASSERT(t->symbol->hasFlag(FLAG_REF));
+
+  VarSymbol* tmp = newTemp("derefTmp", t->getValType());
+  stmt->insertBefore(new DefExpr(tmp));
+
+  expr->replace(new SymExpr(tmp));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                  new CallExpr(PRIM_DEREF, expr)));
+}
+
+void insertDerefTemps(CallExpr* call)
+{
+  if ((call->isResolved()) ||
+      call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+  {
+    // This is a function call (not a primitive).
+    for_formals_actuals(formal, actual, call)
+    {
+      if (actual->typeInfo() == formal->type->refType)
+      {
+        // A deref temp is needed.
+        insertDerefTemp(actual);
+      }
+    }
+  }
+
+  if (call->primitive)
+  {
+    // A primitive.
+    // Do nothing in the general case.
+    // In specific cases, insert a deref temp if required.
+    switch (call->primitive->tag)
+    {
+     default:
+      // Default: Do not insert a deref temp.
+      break;
+
+     case PRIM_MOVE:
+      {
+        Expr* actual = call->get(2);
+        Expr* lhs = call->get(1);
+        if (actual->typeInfo() == lhs->typeInfo()->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+
+     case PRIM_RETURN:
+      {
+        // The type of the argument to the return primitive should match the
+        // return type of the function that contains it.
+        Expr* actual = call->get(1);
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(fn);
+        if (actual->typeInfo() == fn->retType->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+
+     case PRIM_SET_MEMBER:
+      {
+        Expr* actual = call->get(3);
+        Expr* field = call->get(2);
+        Type* target = field->typeInfo();
+        if (actual->typeInfo() == target->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+    }
+  }
+
+  // String literals are represented as DefExpr(CallExpr('_construct_string',
+  // string_literal)), so they are niether primitives nor resolved calls.
+}
+
+void insertDerefTemps() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (! call->parentSymbol)
+      // Not in tree, so skip
+      continue;
+
+    insertDerefTemps(call);
+  }
+}
+
+
 void
 callDestructors() {
   fixupDestructors();

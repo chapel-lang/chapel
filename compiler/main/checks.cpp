@@ -165,6 +165,7 @@ void check_flattenFunctions()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
+  checkFormalActualTypesMatch();
   // Suggestion: Ensure no nested functions.
 }
 
@@ -173,6 +174,7 @@ void check_cullOverReferences()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
+  checkFormalActualTypesMatch();
 }
 
 void check_callDestructors()

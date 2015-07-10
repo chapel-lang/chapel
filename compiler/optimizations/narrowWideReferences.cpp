@@ -381,6 +381,11 @@ printNode(int id) {
 //
 static void
 addNarrowDep(Symbol* from, Symbol* to) {
+  // If "from" is not in the map, then it is already narrow, so there is no
+  // dependence.
+  if (wideInfoMap->get(from) == NULL)
+    return;
+
   wideInfoMap->get(to)->inVec.add(from);
   wideInfoMap->get(from)->outVec.add(to);
 }

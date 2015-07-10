@@ -23,7 +23,23 @@
 bool intentsResolved = false;
 
 static IntentTag constIntentForType(Type* t) {
-  if (isSyncType(t) ||
+#if 1
+  // TODO: After some discussion, we are leaning toward reverting this change
+  // and instead changing the specified intent on extern procs to "in" for
+  // structs passed by value to extern routines written in C.
+  if (t->symbol->hasFlag(FLAG_EXTERN)) {
+    // Now that we respect ref, we don't want to convert
+    //  extern record S { var x,y : int; }
+    //  extern proc foo(s:S) : void ;
+    // into
+    //  void foo(S const * s);
+    // We put this case first, so instead we get
+    //  void foo(S const s);
+    // by avoiding the case for "isRecord(t)" below.
+    return INTENT_CONST_IN;
+  }
+#endif
+  else if (isSyncType(t) ||
       isRecordWrappedType(t) ||  // domain, array, or distribution
       isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
@@ -104,9 +120,43 @@ void resolveArgIntent(ArgSymbol* arg) {
     concreteIntent(arg->intent, arg->type);
 }
 
+// In Chapel, there is only one reference level: there are no references to
+// reference (ignoring the wide case and class variables for simplicity).
+// This routine adjusts the type of the argument to match the REF flag of its
+// concrete intent, which in turn controls how the argument is passed in the
+// generated code.
+//
+// Application of this function to various arguments will temporarily violate
+// the invariant that the types of formal and actual arguments match.  The calls
+// to insertReferenceTemps() and insertDerefTemps() will correct that.
+static void adjustRefLevel(ArgSymbol* arg)
+{
+  if (arg->intent & INTENT_FLAG_REF)
+  {
+    // This conditional is only present for debugging purposes.
+    // It may be removed when this change-of-type seems obvious.
+    Type* t = arg->type;
+    if (! t->symbol->hasFlag(FLAG_REF))
+    {
+      if (isRecordWrappedType(t))
+        // Do not do this for record-wrapped types, because somewhere else we
+        // believe that RWTs should always be passed around by value(!?)
+        return;
+
+      // This argument wants to be passed by ref.
+      // But is not.  Let's fix that.
+      INT_ASSERT(arg->type->refType);
+      arg->type = arg->type->refType;
+    }
+  }
+}
+
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     resolveArgIntent(arg);
+    adjustRefLevel(arg);
   }
+  insertReferenceTemps();
+  insertDerefTemps();
   intentsResolved = true;
 }
