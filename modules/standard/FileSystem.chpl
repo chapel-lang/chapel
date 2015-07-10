@@ -576,7 +576,7 @@ proc exists(name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
-iter findfiles(startdir: string = ".", recursive: bool = false, 
+iter findfiles(const in startdir: string = ".", recursive: bool = false, 
                hidden: bool = false): string {
   if (recursive) then
     for subdir in walkdirs(startdir, hidden=hidden) do
@@ -588,7 +588,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
-iter findfiles(startdir: string = ".", recursive: bool = false, 
+iter findfiles(const in startdir: string = ".", recursive: bool = false, 
                hidden: bool = false, param tag: iterKind): string 
        where tag == iterKind.standalone {
   if (recursive) then
@@ -711,7 +711,7 @@ module chpl_glob_c_interface {
 
    :yield: The matching filenames as strings
 */
-iter glob(pattern: string = "*"): string {
+iter glob(const in pattern: string = "*"): string {
   var glb : chpl_glob_c_interface.glob_t;
 
   const err = chpl_glob_c_interface.chpl_glob(pattern.c_str(), 0, glb);
@@ -732,7 +732,7 @@ iter glob(pattern: string = "*"): string {
 
 
 pragma "no doc"
-iter glob(pattern: string = "*", param tag: iterKind): string
+iter glob(const in pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   var glb : chpl_glob_c_interface.glob_t;
 
@@ -757,7 +757,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 // the state at the end of the call).
 //
 pragma "no doc"
-iter glob(pattern: string = "*", param tag: iterKind)
+iter glob(const in pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   var glb : chpl_glob_c_interface.glob_t;
 
@@ -779,7 +779,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
-iter glob(pattern: string = "*", followThis, param tag: iterKind): string 
+iter glob(const in pattern: string = "*", followThis, param tag: iterKind): string 
        where tag == iterKind.follower {
   var glb : chpl_glob_c_interface.glob_t;
   if (followThis.size != 1) then
@@ -958,7 +958,7 @@ proc isMount(name: string): bool {
 
    :yield: The names of the specified directory's contents, as strings
 */
-iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true, 
+iter listdir(const in path: string = ".", hidden: bool = false, dirs: bool = true, 
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
   extern type direntptr;
@@ -1249,7 +1249,7 @@ proc locale.umask(mask: int): int {
 
    :yield: The directory names encountered, relative to `path`, as strings
 */
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+iter walkdirs(const in path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false, 
               sort: bool = false): string {
 
@@ -1280,7 +1280,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
 // Here's a parallel version
 //
 pragma "no doc"
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int), 
+iter walkdirs(const in path: string = ".", topdown: bool = true, depth: int =max(int), 
               hidden: bool = false, followlinks: bool = false, 
               sort: bool = false, param tag: iterKind): string 
        where tag == iterKind.standalone {
