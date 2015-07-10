@@ -459,7 +459,7 @@ module FFTW {
   // and labeled private.
   //
   pragma "no doc"
-  module Private_FFTW {
+  private module Private_FFTW {
     //
     // Check for a mismatch in size between two domain dimensions,
     // print an error if they don't, and return whether or not a
