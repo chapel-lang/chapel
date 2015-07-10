@@ -1,0 +1,1 @@
+inferReturnForDerivedTypes.chpl:15: error: unable to resolve return type
