@@ -27,9 +27,13 @@
 #include "stringutil.h"
 
 #include <vector>
+#include <set>
 
-static bool canRemoveRefTemps(FnSymbol* fn);
-static CallExpr* findRefTempInit(SymExpr* se);
+static void calculateFormalActualMap(SymbolMap& map, std::set<Symbol*>& noDR,
+                                     FnSymbol* fn, CallExpr* call,
+                                     Vec<FnSymbol*>& canRemoveRefTempSet);
+static void removeUnnecessaryDerefs(std::set<Symbol*>& noDR, BlockStmt* block);
+
 
 //
 // inlines the function called by 'call' at that call site
@@ -41,40 +45,19 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
 
   Expr* stmt = call->getStmtExpr();
 
-  //
   // calculate a map from actual symbols to formal symbols
-  //
   SymbolMap map;
-  for_formals_actuals(formal, actual, call) {
-    SymExpr* se = toSymExpr(actual);
-    INT_ASSERT(se);
-    if ((formal->intent & INTENT_REF) && canRemoveRefTempSet.set_in(fn)) {
-      if (se->var->hasFlag(FLAG_REF_TEMP)) {
-        if (CallExpr* move = findRefTempInit(se)) {
-          SymExpr* origSym = NULL;
-          if (CallExpr* addrOf = toCallExpr(move->get(2))) {
-            INT_ASSERT(addrOf->isPrimitive(PRIM_ADDR_OF));
-            origSym = toSymExpr(addrOf->get(1));
-          } else {
-            origSym = toSymExpr(move->get(2));
-          }
-          INT_ASSERT(origSym);
-          map.put(formal, origSym->var);
-          se->var->defPoint->remove();
-          move->remove();
-          continue;
-        }
-      }
-    }
-    map.put(formal, se->var);
-  }
+  std::set<Symbol*> noDerefs;
+  calculateFormalActualMap(map, noDerefs, fn, call, canRemoveRefTempSet);
 
-  //
-  // copy function body, inline it at call site, and update return
-  //
+  // copy function body
   BlockStmt* block = fn->body->copy(&map);
   if (!preserveInlinedLineNumbers)
     reset_ast_loc(block, call);
+  if (!noDerefs.empty())
+    removeUnnecessaryDerefs(noDerefs, block);
+
+  // update the return
   CallExpr* return_stmt = toCallExpr(block->body.last());
   if (!return_stmt || !return_stmt->isPrimitive(PRIM_RETURN))
     INT_FATAL(call, "function is not normalized");
@@ -88,6 +71,8 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
     INT_ASSERT(formal != toArgSymbol(se->var));
   return_stmt->remove();
   return_value->remove();
+
+  // replace the call site
   stmt->insertBefore(block);
   if (fn->retType == dtVoid)
     stmt->remove();
@@ -152,6 +137,88 @@ static CallExpr* findRefTempInit(SymExpr* se) {
   }
   return NULL;
 }
+
+//
+// Build the map formal->actual.
+//
+// For formals with ref intents, remove ref temp actuals when applicable
+// and use the symbol that the ref temp references.
+//
+// While there, compute which actuals we should remove derefs for.
+//
+static void calculateFormalActualMap(SymbolMap& map, std::set<Symbol*>& noDR,
+                                     FnSymbol* fn, CallExpr* call,
+                                     Vec<FnSymbol*>& canRemoveRefTempSet)
+{
+  for_formals_actuals(formal, actual, call) {
+    SymExpr* se = toSymExpr(actual);
+    INT_ASSERT(se);
+    if ((formal->intent & INTENT_REF) && canRemoveRefTempSet.set_in(fn)) {
+      if (se->var->hasFlag(FLAG_REF_TEMP)) {
+        if (CallExpr* move = findRefTempInit(se)) {
+          SymExpr* origSym = NULL;
+          if (CallExpr* addrOf = toCallExpr(move->get(2))) {
+            INT_ASSERT(addrOf->isPrimitive(PRIM_ADDR_OF));
+            origSym = toSymExpr(addrOf->get(1));
+          } else {
+            origSym = toSymExpr(move->get(2));
+          }
+          INT_ASSERT(origSym);
+          map.put(formal, origSym->var);
+          se->var->defPoint->remove();
+          move->remove();
+          continue;
+        }
+      }
+    }
+    map.put(formal, se->var);
+  }
+
+  // One may be tempted to compute 'noDR' in removeUnnecessaryDerefs().
+  // However, by that time 'map' may contain additional symbols, like labels
+  // and ArgSymbols from other functions, complicating computation of noDR.
+  // So we do it here while it is simple.
+  //
+  form_Map(SymbolMapElem, el, map) {
+    Symbol* formal = el->key;
+    Symbol* actual = el->value;
+    if (isReferenceType(formal->type) && formal->type != actual->type) {
+      INT_ASSERT(formal->type->getValType() == actual->type);
+      noDR.insert(actual);
+    }
+  }
+}
+
+static int breakOnRM = 0; //vass
+
+//
+// Remove 'deref' prim calls for the symbols in 'noDR'.
+// Those symbols are e.g. where a ref temp actual was replaced
+// with its referencee in calculateFormalActualMap().
+//
+static void removeUnnecessaryDerefs(std::set<Symbol*>& noDR, BlockStmt* block)
+{
+  if (block->id == breakOnRM)
+    gdbShouldBreakHere(); //vass
+  int cnt = 0; //vass
+  std::vector<CallExpr*> allCalls;
+  collectCallExprs(block, allCalls);
+  for_vector(CallExpr, call, allCalls) {
+    if (call->isPrimitive(PRIM_DEREF)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      Symbol* arg = se->var;
+      if (noDR.count(arg))
+      { cnt++; //vass
+        call->replace(new SymExpr(arg));
+      }
+    }
+  }
+  if (block->id == breakOnRM) {
+    printf("cnt %d   block %d\n", cnt, block->id); //vass
+    gdbShouldBreakHere(); //vass
+  }
+}
+
 
 //
 // inline function fn at all call sites
