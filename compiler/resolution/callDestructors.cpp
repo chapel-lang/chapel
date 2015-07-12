@@ -1025,6 +1025,16 @@ void insertDerefTemps(CallExpr* call)
   // string_literal)), so they are niether primitives nor resolved calls.
 }
 
+
+void insertDerefTemps(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+  collectCallExprs(fn, callExprs);
+  for_vector(CallExpr, call, callExprs)
+    insertDerefTemps(call);
+}
+
+
 void insertDerefTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (! call->parentSymbol)

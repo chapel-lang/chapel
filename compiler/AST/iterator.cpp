@@ -33,6 +33,7 @@
 #include "view.h"
 #include "WhileStmt.h"
 #include "resolution.h" // for autoDestroyMap.
+#include "passes.h" // for insertDerefTemps().
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
@@ -533,6 +534,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   zip2body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip2->body->replace(zip2body);
+  insertDerefTemps(ii->zip2);
 }
 
 
