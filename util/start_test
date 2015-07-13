@@ -172,9 +172,6 @@ def test_file(test):
 def test_directory(test, testtype):
 	print "[Working from directory %s]" % test
 
-	basepath = os.getcwd()
-	os.chdir(test)
-
 	# recurse through directory
 	for root, dirs, files in os.walk(test, followlinks=True):
 		if not os.access(root, os.X_OK):
@@ -281,8 +278,6 @@ def test_directory(test, testtype):
 			generate_graphs()
 
 			os.chdir(path)
-	# get back to where we started
-	os.chdir(basepath)
 
 
 def summarize():
