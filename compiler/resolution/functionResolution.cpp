@@ -299,7 +299,8 @@ static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited);
+                    Vec<BlockStmt*>& visited,
+                    CallExpr* callOrigin);
 static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static void resolveDefaultGenericType(CallExpr* call);
@@ -2694,7 +2695,8 @@ static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited) {
+                    Vec<BlockStmt*>& visited,
+                    CallExpr* callOrigin) {
   //
   // all functions in standard modules are stored in a single block
   //
@@ -2728,7 +2730,9 @@ getVisibleFunctions(BlockStmt* block,
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
       canSkipThisBlock = false; // cannot skip if this block uses modules
-      getVisibleFunctions(mod->block, name, visibleFns, visited);
+      if (mod->isVisible(callOrigin)) {
+        getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+      }
     }
   }
 
@@ -2736,13 +2740,13 @@ getVisibleFunctions(BlockStmt* block,
   // visibilityBlockCache contains blocks that can be skipped
   //
   if (BlockStmt* next = visibilityBlockCache.get(block)) {
-    getVisibleFunctions(next, name, visibleFns, visited);
+    getVisibleFunctions(next, name, visibleFns, visited, callOrigin);
     return (canSkipThisBlock) ? next : block;
   }
 
   if (block != rootModule->block) {
     BlockStmt* next = getVisibilityBlock(block);
-    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited);
+    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited, callOrigin);
     if (cache)
       visibilityBlockCache.put(block, cache);
     return (canSkipThisBlock) ? cache : block;
@@ -3363,7 +3367,7 @@ void resolveNormalCall(CallExpr* call) {
   if (!call->isResolved()) {
     if (!info.scope) {
       Vec<BlockStmt*> visited;
-      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited);
+      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited, call);
     } else {
       if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
         if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
@@ -4403,7 +4407,7 @@ createFunctionAsValue(CallExpr *call) {
 
   Vec<FnSymbol*> visibleFns;
   Vec<BlockStmt*> visited;
-  getVisibleFunctions(getVisibilityBlock(call), flname, visibleFns, visited);
+  getVisibleFunctions(getVisibilityBlock(call), flname, visibleFns, visited, call);
 
   if (visibleFns.n > 1) {
     USR_FATAL(call, "%s: can not capture overloaded functions as values",
@@ -4559,7 +4563,7 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
       Vec<FnSymbol*> visibleFns;
       Vec<BlockStmt*> visited;
 
-      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited);
+      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited, call);
 
       forv_Vec(FnSymbol, called_fn, visibleFns) {
         bool seen_this_fn = false;
@@ -5269,8 +5273,8 @@ preFold(Expr* expr) {
         call->insertAtTail(tmp);
       }
     } else if (call->isPrimitive(PRIM_TO_STANDALONE)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
-     CallExpr* standaloneCall = new CallExpr(iterator->name);
+      FnSymbol* iterator = getTheIteratorFn(call);
+      CallExpr* standaloneCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
         standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
@@ -5280,7 +5284,7 @@ preFold(Expr* expr) {
       call->replace(standaloneCall);
       result = standaloneCall;
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* leaderCall;
       if (FnSymbol* leader = iteratorLeaderMap.get(iterator))
         leaderCall = new CallExpr(leader);
@@ -5295,7 +5299,7 @@ preFold(Expr* expr) {
       call->replace(leaderCall);
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* followerCall;
       if (FnSymbol* follower = iteratorFollowerMap.get(iterator))
         followerCall = new CallExpr(follower);

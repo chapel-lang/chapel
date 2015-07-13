@@ -1,0 +1,2 @@
+callStaticFromInstance.chpl:6: error: unresolved call 'int(64).foo()'
+callStaticFromInstance.chpl:1: note: candidates are: type int.foo()

@@ -1,8 +1,0 @@
-feature request: support class and record methods with proc type syntax
-
-Similar to static class methods in java and c++, this feature request
-introduces a class method. A common use case is factory methods, although there
-are plenty of other ways they are useful.
-
-This also shows how pseudo-attributes could be used with paren-less proc type
-methods.

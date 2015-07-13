@@ -176,13 +176,20 @@ Field access is described in \rsec{Class_Field_Accesses}.
 \label{Class_Methods}
 \index{classes!methods}
 \index{methods!classes}
+\index{methods!primary}
+\index{methods!secondary}
+\index{primary methods}
+\index{secondary methods}
 
-A class method is a procedure or iterator that is bound to a class.
+A \emph{method} is a procedure or iterator that is associated with a
+type known as the \emph{receiver}.  Methods on classes are referred
+to as to as \emph{class methods}.  Methods may be defined on other
+types as well.
 
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  linkage-specifier[OPT] proc-or-iter this-intent[OPT] type-binding function-name argument-list[OPT] 
+  linkage-specifier[OPT] proc-or-iter this-intent[OPT] type-binding[OPT] function-name argument-list[OPT] 
     return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
 proc-or-iter:
@@ -192,13 +199,20 @@ proc-or-iter:
 this-intent:
   `param'
   `ref'
+  `type'
 
 type-binding:
   identifier .
 \end{syntax}
-If a method is declared within the lexical scope of a class, record,
-or union, the type binding can be omitted and is taken to be the
-innermost class, record, or union that the method is defined in.
+Methods defined within the lexical scope of a class, record, or union
+are referred to as \emph{primary methods}.  For such methods,
+the \sntx{type-binding} can be omitted and is taken to be the
+innermost class, record, or union in which the method is defined.
+Methods defined outside of such scopes are known as \emph{secondary
+methods} and must have a \sntx{type-binding} (otherwise, they would
+simply be standalone functions rather than methods).  Note that
+secondary methods can be defined not only for classes, records, and
+unions, but also for any other type (e.g., integers, reals, strings).
 
 Method calls are described in \rsec{Class_Method_Calls}.
 
@@ -749,16 +763,20 @@ procedures (\rsec{Functions}). The exception is the receiver
 \index{this@\chpl{this}}
 \index{classes!this@\chpl{this}}
 \index{receiver}
+\index{type methods}
+\index{instance methods}
+\index{methods!type}
+\index{methods!instance}
 
-A method's \emph{receiver} is its implicit argument, 
-the class instance on which the method is invoked.
-Its type is the class in which the method is defined.
-The receiver actual argument is specified
-by the receiver-clause of a method-call-expression
-as specified in \rsec{Class_Field_Accesses}.
+A method's \emph{receiver} is an implicit formal argument
+named \chpl{this} representing the expression on which the method is
+invoked.  The receiver's actual argument is specified by the
+\sntx{receiver-clause} of a method-call-expression as specified
+in \rsec{Class_Field_Accesses}.  
+
+
+
 % TODO: specify how the receiver affects the choice of the method.
-The receiver formal argument can be referred to within the method
-using the identifier \chpl{this}.
 
 \begin{chapelexample}{implicitThis.chpl}
 Let class \chpl{C}, method \chpl{foo}, and function \chpl{bar} be
@@ -780,16 +798,64 @@ delete c1;
 {}
 \end{chapeloutput}
 Then given an instance of \chpl{C} called \chpl{c1}, the method
-call \chpl{c1.foo()} results in a call to \chpl{bar} where the argument
-is \chpl{c1}.
+call \chpl{c1.foo()} results in a call to \chpl{bar} where the
+argument is \chpl{c1}.  Within primary method \chpl{C.foo()}, the
+(implicit) receiver formal has static type \chpl{C} and is referred to
+as \chpl{this}.
 \end{chapelexample}
 
-The optional \sntx{this-intent} declares the intent by which the receiver
-argument will be passed.  When the value of \sntx{this-intent} is \chpl{param},
-it implies that the function can only be applied to param objects of the given
-type binding.  If the value is \chpl{ref}, the argument will be passed by
-reference---allowing modification of \chpl{this}.  Otherwise, the argument will
-be passed with the blank intent as specified in \rsec{The_Blank_Intent}.
+Methods whose receivers are objects are called \emph{instance
+methods}.  Methods may also be defined to have \chpl{type}
+receivers---these are known as \emph{type methods}.
+
+The optional \sntx{this-intent} is used to specify type methods, to
+constrain a receiver argument to be a \chpl{param}, or to specify how
+the receiver argument should be passed to the method.
+
+A method whose \sntx{this-intent} is \chpl{type} defines a \emph{type
+method}.  It can only be called on the type itself rather than on an
+instance of the type.  When \sntx{this-intent} is \chpl{param}, it
+specifies that the function can only be applied to param objects of
+the given type binding.
+
+\begin{chapelexample}{paramTypeThisIntent.chpl}
+In the following code, the \chpl{isOdd} method is defined with
+a \sntx{this-intent} of \chpl{param}, permitting it to be called on
+params only.  The \chpl{size} method is defined with
+a \sntx{this-intent} of \chpl{type}, requiring it to be called on
+the \chpl{int} type itself, not on integer values.
+\begin{chapel}
+proc param int.isOdd() param {
+  return this & 0x1 == 0x1;
+}
+
+proc type int.size() param {
+  return 64;
+}
+
+param three = 3;
+var seven = 7;
+
+writeln(42.isOdd());          // prints false
+writeln(three.isOdd());       // prints true
+writeln((42+three).isOdd());  // prints true
+// writeln(seven.isOdd());    // illegal since 'seven' is not a param
+
+writeln(int.size());          // prints 64
+// writeln(42.size());        // illegal since 'size()' is a static method
+\end{chapel}
+\begin{chapeloutput}
+false
+true
+true
+64
+\end{chapeloutput}
+\end{chapelexample}
+
+When \sntx{this-intent} is \chpl{ref}, the receiver argument will be
+passed by reference, allowing modifications to \chpl{this}.  If
+no \sntx{this-intent} is specified, the receiver will be passed with
+the default intent as specified in \rsec{The_Default_Intent}.
 
 \begin{chapelexample}{refThisIntent.chpl}
 In the following code, the \chpl{doubleMe} function is defined with a
