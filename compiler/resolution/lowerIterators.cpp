@@ -2180,9 +2180,9 @@ static void handlePolymorphicIterators()
 
           AggregateType* ct = toAggregateType(type);
           for_fields(field, ct) {
-            VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getField(field->name)->type);
+            VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getValType()->getField(field->name)->type);
             thenStmt->insertAtTail(new DefExpr(ftmp));
-            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getField(field->name))));
+            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getValType()->getField(field->name))));
             // Store temp in record field.
             if (ftmp->type == field->type) {
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp));
@@ -2214,7 +2214,7 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   Symbol* ret = fn->getReturnSymbol();
   BlockStmt* block = new BlockStmt();
   block->insertAtTail(ret->defPoint->remove());
-  AggregateType* irt = toAggregateType(arg->type);
+  AggregateType* irt = toAggregateType(arg->type->getValType());
   for_fields(field, irt) {
     SET_LINENO(field);
 //    AggregateType* fat = toAggregateType(field->type);
@@ -2247,7 +2247,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
 {
   Symbol* arg = fn->getFormal(1);
   BlockStmt* block = new BlockStmt();
-  AggregateType* irt = toAggregateType(arg->type);
+  AggregateType* irt = toAggregateType(arg->type->getValType());
   for_fields(field, irt) {
     SET_LINENO(field);
     if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
@@ -2276,7 +2276,7 @@ static void reconstructIRautoCopyAutoDestroy()
   // reconstruct autoCopy and autoDestroy for iterator records
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    if (fn->numFormals() == 1 && fn->getFormal(1)->type->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       SET_LINENO(fn);
       if (fn->hasFlag(FLAG_AUTO_COPY_FN))
         reconstructIRAutoCopy(fn);
