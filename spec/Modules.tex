@@ -203,30 +203,34 @@ statement~(\rsec{Using_Modules}).
 \label{Visibility_Of_A_Module}
 \index{modules!access}
 
-The privacy of a module may place limitations on when outside access
-of its contents is valid. While public modules can be used and
-accessed through explicit naming in arbitrary contexts, only scopes
-defined beneath the parent scope of a private module will have the
-ability to use or explicitly name its symbols. Modules are public by
-default.
+A top-level module is visible anywhere if the \sntx{privacy-specifier}
+of its declaration is \chpl{public} or is omitted (i.e. by default).
+A top-level module declared \chpl{private} is visible only within that
+module.  The visibility of a nested module is subject to the rules
+of~\rsec{Visibility_Of_Symbols}. There, the nested module is
+considered a "symbol defined at the top level scope" of its outer
+module.
 
 \subsection{Visibility Of Module's Symbols}
 \label{Visibility_Of_Symbols}
 \index{modules!access}
-All symbols defined at the top level scope of a module are considered
-public by default.  This means that if the module itself is accessible
-by outside scopes, symbols defined within it may be accessible through
-explicit naming or when a use of the defining module is present.  When
-a symbol is declared as private, however, such access is not permitted
-and the symbol in question is only visible to the contents of the
-defining module.
+
+A symbol defined at the top level scope of a module is \emph{visible}
+from outside the module when the \sntx{privacy-specifier} of its
+definition is \chpl{public} or is omitted (i.e. by default).  A
+symbol's visibility inside its module is controlled by normal lexical
+scoping and is not affected by its \sntx{privacy-specifier}.  A
+module's visible symbols are accessible via explicit
+naming~(\rsec{Explicit_Naming}) or the use
+statement~(\rsec{Using_Modules}) only where the module's symbol is
+visible~(\rsec{Visibility_Of_A_Module}).
 
 \subsection{Explicit Naming}
 \label{Explicit_Naming}
 \index{modules!explicitly named}
 
-All top-level module symbols can be named explicitly with the
-following syntax:
+All publicly visible top-level module symbols can be named explicitly
+with the following syntax:
 \begin{syntax}
 module-access-expression:
   module-identifier-list . identifier
@@ -309,11 +313,11 @@ compiler error.
 \label{Using_Modules}
 \index{modules!using}
 
-If a module is public or defined in a common parent scope to where
-accessing its symbols is desirable, then a use statement on that
-module may be employed.  Use statements make the public symbols
-defined by a module available without requiring them to be prefixed by
-the module's name.  The syntax of the use statement is given by:
+If a module is visible to where accessing its symbols is desirable,
+then a use statement on that module may be employed.  Use statements
+make a module's visible symbols available without requiring them to be
+prefixed by the module's name.  The syntax of the use statement is
+given by:
 
 \begin{syntax}
 use-statement:
@@ -333,12 +337,13 @@ defined directly in the scope where the use statement occurs, but at a
 nearer scope than symbols defined in the scope containing the scope where
 the use statement occurs.
 
-Use statements are transitive by default: if used modules themselves
-use other modules, these symbols are also available and are scoped
-according to the depth of use statements followed to find them.  However,
-if a used module is private, this use is not transitive and any uses
-of the module which made use of the private module will not bring the
-private module's symbols into scope.
+Use statements are transitive by default: if a module A used by
+another module B also contains a use of a further module C, C's
+symbols will also be considered visible within B, at a further scope
+than the symbols of other modules immediately used by B.
+
+% We would like to provide a way to specify that a use should not be
+% transitive
 
 It is an error for two public variables, types, or modules to be
 defined at the same depth.
