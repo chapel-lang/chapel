@@ -175,9 +175,10 @@ def test_directory(test, testtype):
 	# recurse through directory
 	for root, dirs, files in os.walk(test):
 		if not os.access(root, os.X_OK):
-			dir = os.path.abspath(root)
 			print "[Warning: Cannot cd into %s skipping directory]" % dir
 			continue
+		else:
+			dir = os.path.abspath(root)
 
 		print
 		print "[Working on directory %s]" % root
@@ -189,7 +190,7 @@ def test_directory(test, testtype):
 		# ignore skipifs for --clean-only run
 		if not args.cleanonly:
 			path = os.getcwd()
-			os.chdir(root)
+			os.chdir(dir)
 
 			# SKIP IF IMPLEMENTATIONS
 			testenv = os.path.join(utildir, "test/testEnv")
@@ -252,7 +253,7 @@ def test_directory(test, testtype):
 					"EXECOPTS")))) :
 				# cd to dir for clean and run, saving current location 
 				path = os.getcwd()
-				os.chdir(root)
+				os.chdir(dir)
 				# clean dir
 				clean()
 
@@ -272,7 +273,7 @@ def test_directory(test, testtype):
 		# generate graphs
 		else:
 			path = os.getcwd()
-			os.chdir(root)
+			os.chdir(dir)
 			# generate graphs for all testsin dir
 			generate_graphs()
 
@@ -388,8 +389,6 @@ def run(test = False):
 	datestr = time.strftime("%a %b %d %H:%M:%S %Z %Y")
 	os.environ["CHPL_TEST_UTIL_DIR"] = utildir
 	
-	error = 0; # error return code
-
 	# run test
 	print
 	if test: # single test
@@ -701,8 +700,7 @@ def set_up_general():
 	# compiler
 	global compiler
 	if not args.compiler:
-		compiler = os.path.expandvars("$CHPL_HOME/bin/%s/chpl" %
-				platform.system().lower())
+		compiler = os.path.expandvars("$CHPL_HOME/bin/%s/chpl" % host_platform)
 	else:
 		compiler = args.compiler
 
