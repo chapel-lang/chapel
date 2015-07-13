@@ -27,8 +27,6 @@ def main():
 	parser = parser_setup()
 	global args
 	args = parser.parse_args()
-	print args
-	print
 	
 	invocationDir = os.getcwd()
 
@@ -171,6 +169,11 @@ def test_directory(test, testtype):
 
 	# recurse through directory
 	for root, dirs, files in os.walk(test):
+		if not os.access(root, os.X_OK):
+			dir = os.path.abspath(root)
+			print "[Warning: Cannot cd into %s skipping directory]" % dir
+			continue
+
 		print
 		print "[Working on directory %s]" % root
 
@@ -180,18 +183,21 @@ def test_directory(test, testtype):
 
 		# ignore skipifs for --clean-only run
 		if not args.cleanonly:
+			path = os.getcwd()
+			os.chdir(root)
+
 			# SKIP IF IMPLEMENTATIONS
 			testenv = os.path.join(utildir, "test/testEnv")
 			
 			# Skip the directory if there is a SKIPIF file that evaluates true
 			skiptest = False
 			skipifpath = os.path.join(root, "SKIPIF")
-			if os.path.isfile(skipifpath) :
+			if os.path.isfile("SKIPIF") :
 				# if executable
-				if os.access(skipifpath, os.X_OK):
-					skiptest = getOutput([skipifpath])
+				if os.access("./SKIPIF", os.X_OK):
+					skiptest = getOutput(["./SKIPIF"])
 				else: # if not, run a script to check SKIPIF condition
-					skiptest = getOutput([testenv, skipifpath]) 
+					skiptest = getOutput([testenv, "SKIPIF"]) 
 				# check output and skip if true
 				if skiptest == "1" or skiptest == "True" :
 					print ("[Skipping directory based on SKIPIF environment" 
@@ -214,6 +220,8 @@ def test_directory(test, testtype):
 					"environment settings in %s]") % skipfilename
 					del dirs[:]
 					continue
+
+			os.chdir(path) # cd back to starting dir
 
 		# run tests in directory
 		# don't run if only doing performance graphs
