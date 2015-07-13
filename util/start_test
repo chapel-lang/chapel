@@ -29,8 +29,13 @@ def main():
 	args = parser.parse_args()
 	print args
 	print
+	
+	invocationDir = os.getcwd()
 
 	run_tests(args.tests)
+
+	# in case we've changed directories
+	os.chdir(invocationDir)
 
 	cleanup()
 
@@ -561,7 +566,7 @@ def check_environment():
 def set_up_environment():
 	if args.memleakslog:
 		os.environ["CHPL_MEM_LEAK_TESTING"] = True
-		args.execopts += " --memLeaksLog=" + os.path.absdir(args.memleakslog)
+		args.execopts += " --memLeaksLog=" + os.path.abspath(args.memleakslog)
 
 	# pre-
 	if args.preexec:
@@ -620,7 +625,7 @@ def set_up_general():
 	# logfile
 	global logfile 
 	if args.logfile: 
-		logfile = os.path.absdir(args.logfile)
+		logfile = os.path.abspath(args.logfile)
 	logfiledir = os.path.dirname(logfile)
 	if not os.access(logfiledir, os.X_OK):
 		print "[Permission denied for logfile directory: %s]" % logfiledir
@@ -897,7 +902,7 @@ def set_up_executables():
 	# pre-exec
 	if args.preexec:
 		if os.path.isfile(args.preexec) and os.access(args.preexec, os.X_OK):
-			args.preexec = os.path.absdir(args.preexec)
+			args.preexec = os.path.abspath(args.preexec)
 			print "[system-wide preexec: %s]" % args.preexec
 		else:
 			print ("[Error: Cannot find or execute system-wide preexec: %s" %
@@ -908,7 +913,7 @@ def set_up_executables():
 	# pre-diff
 	if args.prediff:
 		if os.path.isfile(args.prediff) and os.access(args.prediff, os.X_OK):
-			args.prediff = os.path.absdir(args.prediff)
+			args.prediff = os.path.abspath(args.prediff)
 			print "[system-wide prediff: %s]" % args.prediff
 		else:
 			print ("[Error: Cannot find or execute system-wide prediff: %s" %
@@ -1056,8 +1061,7 @@ def check_for_duplicates():
 
 def cleanup():
 	if os.path.isdir(chpltesttmpdir):
-		if args.performance or args.compperformance:
-			print "[Removing %s directory]" % chpltesttmpdir
+		print "[Removing %s directory]" % chpltesttmpdir
 		shutil.rmtree(chpltesttmpdir)
 
 
