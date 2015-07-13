@@ -1205,7 +1205,7 @@ module DefaultRectangular {
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
   
-    const len = dom.dsiNumIndices:int(32);
+    const len = dom.dsiNumIndices.safeCast(size_t);
 
     if len == 0 then return;
 
@@ -1297,7 +1297,7 @@ module DefaultRectangular {
     
     var dstWholeDim = isWholeDim(A),
         srcWholeDim = isWholeDim(B);
-    var stridelevels:int(32);
+    var stridelevels:size_t;
     
     /* If the stridelevels in source and destination arrays are different, we take the larger*/
     stridelevels=max(A.computeBulkStrideLevels(dstWholeDim),B.computeBulkStrideLevels(srcWholeDim));
@@ -1306,7 +1306,7 @@ module DefaultRectangular {
     
     //These variables should be actually of size stridelevels+1, but stridelevels is not param...
     
-    var srcCount, dstCount:[1..rank+1] int(32);
+    var srcCount, dstCount:[1..rank+1] size_t;
     
     // Covering the case in which stridelevels has to be incremented after
     // unifying srcCount and dstCount into a single count array. To illustrate the problem:
@@ -1348,7 +1348,7 @@ module DefaultRectangular {
     srcCount= B.computeBulkCount(stridelevels,srcWholeDim,srcAux);
     
   /*Then the Stride arrays for source and destination arrays*/
-    var dstStride, srcStride: [1..rank] int(32);
+    var dstStride, srcStride: [1..rank] size_t;
     /*When the source and destination arrays have different sizes 
       (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
       so we have to calculate the minimun count array */
@@ -1380,7 +1380,7 @@ module DefaultRectangular {
   // we are on vs. where the source and destination are.
   // The logic mimics that in doiBulkTransfer().
   //
-  proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels:int(32), dstStride, srcStride, count, Alo, Blo)
+  proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, count, Alo, Blo)
    {
     if debugDefaultDistBulkTransfer then
       writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", count, " dst.Blk: ",blk, " src.Blk: ",B.blk);
@@ -1453,9 +1453,9 @@ module DefaultRectangular {
   
       //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliarry
       //arrays to the locale that hosts A. This should translate into some more gets...
-      const countAux=count:int(32);
-      const srcstrides=srcStride:int(32);
-      const dststrides=dstStride:int(32);
+      const countAux=count.safeCast(size_t);
+      const srcstrides=srcStride.safeCast(size_t);
+      const dststrides=dstStride.safeCast(size_t);
 
       const dststr=dststrides._value.theData;
       const srcstr=srcstrides._value.theData;
@@ -1490,7 +1490,7 @@ module DefaultRectangular {
            -- for exameple, whole rows --
        - Stridelevels == rank if there is a "by X" whith X>1 in the range description for 
            the rightmost dimension)*/
-  proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank == 1
+  proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):size_t where rank == 1
   {//To understand the blk(1)==1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 4)
     if (dom.dsiStride==1 && blk(1)==1)|| dom.dsiDim(1).length==1 then return 0;
@@ -1520,9 +1520,9 @@ module DefaultRectangular {
   //   is 3 positions([1,3,1],[1,3,4]), so the checkStrideDistance(i) for i=2 
   //   will return false, therefore, stridelevels +=1
   //More in test/optimizations/bulkcomm/alberto/2dDRtoBDTest.chpl (example 4)
-  proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank > 1 
+  proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):size_t where rank > 1 
   {
-    var stridelevels:int(32) = 0;
+    var stridelevels:size_t = 0;
     if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1 
     || (blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 2   
     then stridelevels+=1; //In many tests, both cases are true
@@ -1531,21 +1531,21 @@ module DefaultRectangular {
       if (dom.dsiDim(i-1).length>1 && !checkStrideDistance(i)) //CASE 3
         then stridelevels+=1; 
     
-    return stridelevels:int(32);
+    return stridelevels;
   }
   
   /* This function returns the count array for the default rectangular array. */
-  proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*int(32) where rank ==1
+  proc DefaultRectangularArr.computeBulkCount(stridelevels:size_t, rankcomp, aux = false):(rank+1)*size_t where rank ==1
   {
-    var c: (rank+1)*int(32);
+    var c: (rank+1)*size_t;
     //To understand the blk(1)>1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 4)
     if dom.dsiStride > 1 || blk(1)>1 {
       c[1]=1;
-      c[2]=dom.dsiDim(1).length:int(32);
+      c[2]=dom.dsiDim(1).length.safeCast(size_t);
     }
     else
-      c[1]=dom.dsiDim(1).length:int(32);
+      c[1]=dom.dsiDim(1).length.safeCast(size_t);
     return c;
   }
   
@@ -1578,14 +1578,14 @@ module DefaultRectangular {
   //        join to dimension 1, and the value of count[3] will be the number 
   //        of elements in dimension 2 x number of elements in dimesion 1 (1 x 4).
   //More in test/optimizations/bulkcomms/alberto/3dAgTestStride.chpl (example 6 and 7)
-  proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*int(32) where rank >1
+  proc DefaultRectangularArr.computeBulkCount(stridelevels:size_t, rankcomp, aux = false):(rank+1)*size_t where rank >1
   {
-    var c: (rank+1)*int(32) ;
-    var init:int(32)=1;
+    var c: (rank+1)*size_t ;
+    var init:size_t=1;
   //var dim is used to point to the analyzed dimension at each iteration
   //due to the same stride can be valid across two contiguous dimensions
     var dim:int =rank;
-    var tmp:int(32)=1;
+    var tmp:size_t=1;
     if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1
       ||(blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 2
       {c[1]=1; init=2;}
@@ -1596,9 +1596,9 @@ module DefaultRectangular {
       if dim == 0 then c[i]=1;//the leftmost dimension 
       else
         {
-          c[i]=this.dom.dsiDim(dim).length:int(32);
+          c[i]=this.dom.dsiDim(dim).length.safeCast(size_t);
   //find the next dimension for which the next different stride arises
-    for h in 2..dim by -1:int(32) 
+    for h in 2..dim by -1:size_t 
           {
   //The aux variable is to cover the case in which stridelevels has to be
   // incremented after unifying srcCount and dstCount into a single count array,
@@ -1608,7 +1608,7 @@ module DefaultRectangular {
       if( (checkStrideDistance(h) && (!aux || h!=rank))//CASE 3
                || (dom.dsiDim(h).length==1&& h!=rank)) //CASE 4
         {
-          c[i]*=dom.dsiDim(h-1).length:int(32);
+          c[i]*=dom.dsiDim(h-1).length.safeCast(size_t);
                 dim -= 1;
         }
       else break;  
@@ -1643,25 +1643,25 @@ module DefaultRectangular {
   //        is part of a BD array.
   //More in test/optimizations/bulkcomm/alberto/perfTest_v2.chpl (BD <- BD Example 13)
   
-  proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32)/*, aFromBD=false*/)
+  proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:size_t/*, aFromBD=false*/)
   {
-    var c: rank*int(32); 
+    var c: rank*size_t; 
     var h=1; //Stride array index
     var cum=1; //cumulative variable
     
     if (cnt[h]==1 && dom.dsiDim(rank).length>1)
     {//To understand the blk[rank]==1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 12)
-      c[h]=blk[rank]:int(32); //CASE 1
+      c[h]=blk[rank].safeCast(size_t); //CASE 1
       h+=1;
     }
    
-    for param i in 2..rank by -1:int(32){
+    for param i in 2..rank by -1:size_t{
       if (levels>=h)
       {
         if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1) //CASE 2
         {//now, we are in the right dimension (i dimension) to obtain the stride value
-          c[h]=blk(i-1):int(32);
+          c[h]=blk(i-1).safeCast(size_t);
           h+=1; //Increment the index
           cum=1; //reset the cumulative variable
         }
