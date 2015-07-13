@@ -137,13 +137,16 @@ def finish():
 
 def test_file(test):
 	pathtotest = os.path.relpath(test)
+	testname = os.path.basename(test)
+	
+	path = os.getcwd()
+	os.chdir(os.path.dirname("./" + test))
 	
 	# clean executables, etc
 	print
-	print "[Cleaning file %s]" % pathtotest
-	os.environ["CHPL_ONETEST"] = test
+	print "[Cleaning file %s]" % test
 	# clean and run test
-	clean(test)
+	clean(testname)
 
 	error = 0
 	if not args.cleanonly:
@@ -162,6 +165,8 @@ def test_file(test):
 		
 		if args.gengraphs:
 			generate_graphs(test)
+	
+	os.chdir(path) # go back to previous dir
 
 
 def test_directory(test, testtype):
@@ -389,6 +394,8 @@ def run(test = False):
 	print
 	if test: # single test
 		print "[Working on file %s]" % os.path.relpath(test)
+		os.environ["CHPL_ONETEST"] = os.path.basename(test)
+
 	if os.access("sub_test", os.X_OK):
 		sub_test = os.path.abspath("sub_test")
 	else:
@@ -530,8 +537,7 @@ def check_environment():
 	if os.environ.get("CHPL_TEST_TMP_DIR") != None:
 		chpltesttmpdir = os.environ["CHPL_TEST_TMP_DIR"]
 	else:
-		chpltesttmpdir = tempfile.mkdtemp(prefix="chplTestTmpDir.",
-				dir=os.getcwd())
+		chpltesttmpdir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
 		os.environ["CHPL_TEST_TMP_DIR"] = chpltesttmpdir
 
 	# find test dir and check for access
