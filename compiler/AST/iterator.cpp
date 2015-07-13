@@ -1318,6 +1318,7 @@ rebuildIterator(IteratorInfo* ii,
     Symbol* field = local2field.get(local);
     Symbol* localValue = local;
 
+#if 0
     if (local->type == field->type->refType) {
       // If a ref var, 
       // load the local into a temp and use this to set the value of the corresponding field.
@@ -1330,7 +1331,7 @@ rebuildIterator(IteratorInfo* ii,
     }
     // We can't use insertDerefTemps() because this iterator function is no
     // longer in the tree.
-
+#endif
     // Very special code for record-wrapped types:
     // This is a workaround for weirdness in how record-wrapped types are
     // handled in iterator records.  Calls to the these() method on arrays and
