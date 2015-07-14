@@ -59,6 +59,13 @@ static void add_env_options(int* argc, char** argv[]) {
   // Add a -E option for each environment variable.
   //
   for (i = 0; i < envc; i++) {
+    // except don't add -E for variables containing a `
+    // this is a workaround for poor quoting,
+    // but this workaround is easy. To do a better job, we
+    // need to know the answers to these questions:
+    //  - which shell are we using?
+    //  - how do you quote strings in that shell?
+    //  - where should the string quoting be done?
     if( ! strchr(environ[i], '`' ) ) {
       new_argv[*argc + 2 * i + 0] = (char*) "-E";
       new_argv[*argc + 2 * i + 1] = environ[i];
