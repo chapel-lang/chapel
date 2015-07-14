@@ -42,8 +42,7 @@ environment variable to one of the following options:
 
 qthreads       : best performance; default for most targets
 fifo           : most portable, but heavyweight; default for Intel KNC,
-                 NetBSD, Cygwin, or when target compiler is
-                 "cray-prgenv-cray", "pgi", or "cray-prgenv-pgi"
+                 NetBSD, Cygwin, or when Cray is the target compiler
 massivethreads : based on U Tokyo's MassiveThreads library
 muxed          : available only on Cray Inc. systems; not documented
                  here, see $CHPL_HOME/doc/platforms/README.cray instead
@@ -183,14 +182,13 @@ For more information on Qthreads, see $CHPL_HOME/third-party/README.
 CHPL_TASKS == fifo
 ------------------
 
-FIFO tasking over POSIX threads (or pthreads) works on all platforms and
-is the default for Intel KNC, Cygwin, NetBSD, or when the target
-compiler is "cray-prgenv-cray", "pgi", or "cray-prgenv-pgi".  It is
-attractive in its portability, though on most platforms it will tend to
-be heavier weight than Chapel strictly requires.  FIFO tasking is also
-used when Chapel is configured in 'Quick Start' mode (see
-$CHPL_HOME/README for details).  To use FIFO tasking, please take the
-following steps:
+FIFO tasking over POSIX threads (or pthreads) works on all platforms
+and is the default for Intel KNC, Cygwin, NetBSD, or when Cray is the
+target compiler.  It is attractive in its portability, though on most
+platforms it will tend to be heavier weight than Chapel strictly
+requires.  FIFO tasking is also used when Chapel is configured in
+'Quick Start' mode (see $CHPL_HOME/README for details).  To use FIFO
+tasking, please take the following steps:
 
 1) Ensure that the environment variable CHPL_HOME points to the
    top-level Chapel directory, as always.

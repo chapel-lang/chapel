@@ -52,6 +52,7 @@
    -------------------------
    :proc:`getGID`
    :proc:`getMode`
+   :proc:`getFileSize`
    :proc:`getUID`
    :proc:`exists`
    :proc:`isDir`
@@ -654,6 +655,34 @@ proc getMode(name: string): int {
   return result;
 }
 
+
+pragma "no doc"
+proc getFileSize(out error: syserr, name: string): int {
+  extern proc chpl_fs_get_size(ref result: int, filename: c_string):syserr;
+
+  var result: int;
+  error = chpl_fs_get_size(result, name.c_str());
+  return result;
+}
+
+/* Obtains and returns the size (in bytes) of the file specified by `name`.
+
+   Will halt with an error message if one is detected
+
+   :arg name: The file whose size is desired
+   :type name: string
+
+   :return: The size in bytes of the file in question
+   :rtype: int
+*/
+proc getFileSize(name: string): int {
+  var err: syserr = ENOERR;
+  var ret = getFileSize(err, name);
+  if err != ENOERR then ioerror(err, "in getFileSize", name);
+  return ret;
+}
+
+
 pragma "no doc"
 proc getUID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
@@ -805,6 +834,10 @@ proc isDir(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
+  var doesExist = exists(error, name);
+  if (error != ENOERR || !doesExist) {
+    return false;
+  }
   error = chpl_fs_is_dir(ret, name.c_str());
   return ret != 0;
 }
@@ -833,6 +866,10 @@ proc isFile(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
+  var doesExist = exists(error, name);
+  if (error != ENOERR || !doesExist) {
+    return false;
+  }
   error = chpl_fs_is_file(ret, name.c_str());
   return ret != 0;
 }
@@ -889,6 +926,10 @@ pragma "no doc"
 proc isMount(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
 
+  var doesExist = exists(error, name);
+  if (error != ENOERR || !doesExist) {
+    return false;
+  }
   if (isFile(name)) {
     // Files aren't mount points.  That would be silly.
     error = ENOERR;

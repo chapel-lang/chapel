@@ -148,6 +148,8 @@ is:
     - added -E to tests which would benefit from it
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
+  05/21/15:
+    - set dataParTasksPerLocale to 2 to avoid occasional validation failure
 
 jacobi:
   03/07/14:
@@ -200,6 +202,12 @@ memleaks:
     - Enabled GMP in nightly testing, allowing pidigits to run in memory leaks
   07/09/14:
     - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
+  05/04/15:
+    - Changed tracking of internal memory descriptor types
+  05/20/15:
+    - Closed sync/single leaks
+  06/05/15:
+    - Nikhil's k-d tests added to repository
 
 memleaksfull:
   07/08/14:

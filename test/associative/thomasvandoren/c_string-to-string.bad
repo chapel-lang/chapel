@@ -1,1 +1,9 @@
-internal error: FUN2864 chpl Version 1.11.0.65999a9
+ Unfortunately the Chapel compiler has encountered
+ an internal error. Please file a bug report that
+ includes a program reproducing the problem as well
+ as this output. See http://chapel.cray.com/getinvolved.html for
+ further instructions on filing bug reports.
+
+ The error may be related to this location:
+ c_string-to-string.chpl:6
+c_string-to-string.chpl:6: internal error: FUN3024 chpl Version 1.11.0.559e3c7

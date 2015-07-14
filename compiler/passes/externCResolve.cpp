@@ -23,7 +23,6 @@
 #include "build.h"
 #include "codegen.h"
 #include "expr.h"
-#include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -100,7 +99,9 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
           fields->insertAtTail(buildVarDecls(stmt, flags, NULL));
         }
 
-        DefExpr* strct = buildClassDefExpr(tmp_name, new AggregateType(AGGREGATE_RECORD), NULL, fields, FLAG_EXTERN, NULL);
+        DefExpr* strct = buildClassDefExpr(tmp_name, NULL,
+                                           new AggregateType(AGGREGATE_RECORD),
+                                           NULL, fields, FLAG_EXTERN, NULL);
 
         //...and patch up the resulting struct so that its cname is
         //  correct and codegen can find it.       

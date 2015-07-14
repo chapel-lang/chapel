@@ -1,0 +1,2 @@
+thisIntentStandalone.chpl:7: error: Cannot apply a 'this' intent to a standalone function
+thisIntentStandalone.chpl:11: error: Cannot apply a 'this' intent to a standalone function

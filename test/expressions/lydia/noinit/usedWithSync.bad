@@ -1,4 +1,4 @@
-warning: type _syncvar(int(64)) does not currently support noinit, using default initialization
-warning: type _syncvar(bool) does not currently support noinit, using default initialization
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:36: warning: type _syncvar(int(64)) does not currently support noinit, using default initialization
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:36: warning: type _syncvar(bool) does not currently support noinit, using default initialization
 4
 true

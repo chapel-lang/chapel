@@ -44,7 +44,6 @@
 #include "clangSupport.h"
 
 #include "build.h"
-#include "scopeResolve.h"
 
 typedef Type ChapelType;
 
