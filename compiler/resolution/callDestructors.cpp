@@ -988,9 +988,30 @@ void insertDerefTemps(CallExpr* call)
       // Default: Do not insert a deref temp.
       break;
 
+     case PRIM_ADDR_OF:
+      {
+        Expr* actual = call->get(1);
+        if (isReferenceType(actual->typeInfo()))
+        {
+          // Can't take the address of a reference, so just remove this call.
+          call->replace(actual->remove());
+        }
+      }
+      break;
+
      case PRIM_MOVE:
       {
         Expr* actual = call->get(2);
+        // If the RHS of the move is an addr-of call, we skip it.
+        //  - It will be removed by the PRIM_ADDR_OF clause if its operand is
+        //    already a reference, and
+        //  - Calling typeInfo on an 'addr of' primitive whose argument is
+        //    already of ref cause a compiler error.  (Chapel only supports one
+        //    level of references.)
+        if (CallExpr* aoc = toCallExpr(actual))
+          if (aoc->isPrimitive(PRIM_ADDR_OF))
+            break;
+
         Expr* lhs = call->get(1);
         if (actual->typeInfo() == lhs->typeInfo()->refType)
           insertDerefTemp(actual);
