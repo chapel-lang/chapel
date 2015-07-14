@@ -73,6 +73,16 @@ installation-specific configuration, e.g.), you can often use the -v
 flag to capture the commands that the launcher executes on your behalf
 and customize them for your needs.
 
+--------------------------------
+Forwarding Environment Variables
+--------------------------------
+
+Chapel launchers generally arrange for environment variables to be
+forwarded to worker processes. However, this strategy is not always
+reliable. The remote system may ovrride some environment variables, and
+some launchers might not correctly forward all environment variables.  In
+particular, the amudprun launcher will not forward environment variables
+containing backticks (`).
 
 ---------------------------------
 _real binary suffix for execution
