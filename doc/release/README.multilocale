@@ -92,6 +92,12 @@ To run Chapel on multiple locales, the following steps are required:
            with SLURM using the following command:
               export GASNET_CSPAWN_CMD="srun -N%N %C"
 
+           Also note that if you are using SSH to launch jobs, you
+           might get a login banner printed out along with your program's
+           output. We have found the following setting useful to disable
+           such printing:
+             export SSH_OPTIONS="-o LogLevel=Error"
+
        (ii) To simulate multiple Chapel locales with one workstation,
             you can request that GASNet spawn its child functions on
             your local machine using:
