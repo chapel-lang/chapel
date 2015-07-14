@@ -156,6 +156,11 @@ Settings:
   to specify a different filename for the output.
 
 
+  Other SLURM variables will have an impact; for example, the SLURM
+  partition can be set to 'debug' with this command:
+
+    export SLURM_PARTITION=debug
+
 --------------------
 Additional launchers
 --------------------
