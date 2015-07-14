@@ -122,6 +122,8 @@ public:
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
+  virtual bool       isVisible(BaseAST* scope)                 const;
+
   Type*              type;
   FlagSet            flags;
 
@@ -248,6 +250,8 @@ public:
   virtual bool    isConstant()                              const;
   virtual bool    isConstValWillNotChange()                 const;
   virtual bool    isParameter()                             const;
+
+  virtual bool    isVisible(BaseAST* scope)                 const;
 
   bool            requiresCPtr();
   const char*     intentDescrString();
@@ -462,8 +466,6 @@ public:
   void                 addDefaultUses();
   void                 moduleUseAdd(ModuleSymbol* module);
   void                 moduleUseRemove(ModuleSymbol* module);
-
-  bool                 isVisible(BaseAST* scope) const;
 
   ModTag               modTag;
 

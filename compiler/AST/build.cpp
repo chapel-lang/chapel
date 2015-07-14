@@ -1963,6 +1963,14 @@ buildFunctionDecl(FnSymbol*   fn,
   return buildChapelStmt(new DefExpr(fn));
 }
 
+void applyPrivateToBlock(BlockStmt* block) {
+  for_alist(stmt, block->body) {
+    if (DefExpr* defExpr = toDefExpr(stmt)) {
+      defExpr->sym->addFlag(FLAG_PRIVATE);
+    }
+  }
+}
+
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {

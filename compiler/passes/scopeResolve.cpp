@@ -1490,33 +1490,29 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
           }
         }
 
-        if (FnSymbol* fn = toFnSymbol(sym)) {
-          if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
-            call->replace(new CallExpr(fn));
-          } else {
-            UnresolvedSymExpr* se = new UnresolvedSymExpr(mbr_name);
+        if (sym) {
+          if (!sym->isVisible(call)) {
+            // The symbol is not visible at this scope because it is
+            // private to mod!  Error out
+            USR_FATAL(call, "Cannot access '%s', '%s' is private to '%s'", mbr_name, mbr_name, mod->name);
+          } else if (FnSymbol* fn = toFnSymbol(sym)) {
+            if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
+              call->replace(new CallExpr(fn));
+            } else {
+              UnresolvedSymExpr* se = new UnresolvedSymExpr(mbr_name);
 
-            skipSet.set_add(se);
-            call->replace(se);
+              skipSet.set_add(se);
+              call->replace(se);
 
-            CallExpr* parent = toCallExpr(se->parentExpr);
-            INT_ASSERT(parent);
+              CallExpr* parent = toCallExpr(se->parentExpr);
+              INT_ASSERT(parent);
 
-            parent->insertAtHead(mod);
-            parent->insertAtHead(gModuleToken);
-          }
-
-        } else if (sym) {
-          if (ModuleSymbol* mod2 = toModuleSymbol(sym)) {
-            // Private only applied to module symbols at this time
-            if (!mod2->isVisible(call)) {
-              // The module is not visible at this scope because it is
-              // private to mod!  Error out
-              USR_FATAL(call, "Cannot access '%s', '%s' is private to '%s'", mbr_name, mbr_name, mod->name);
+              parent->insertAtHead(mod);
+              parent->insertAtHead(gModuleToken);
             }
+          } else {
+            call->replace(new SymExpr(sym));
           }
-          call->replace(new SymExpr(sym));
-
 #ifdef HAVE_LLVM
         } else if (!sym && externC && tryCResolve(call->getModule(),mbr_name)) {
           // Try to resolve again now that the symbol should
@@ -1894,12 +1890,9 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
       if (rejectedPrivateIds.find(sym->id) == rejectedPrivateIds.end()) {
         // The symbol found was not one of the already rejected private
         // symbols
-        ModuleSymbol* mod = toModuleSymbol(sym);
-        INT_ASSERT(mod);
-        // For now, only module symbols can be private.  That will change.
-        if (!mod->isVisible(callingContext)) {
-          rejectedPrivateIds.insert(mod->id);
-          USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, mod->stringLoc());
+        if (!sym->isVisible(callingContext)) {
+          rejectedPrivateIds.insert(sym->id);
+          USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, sym->stringLoc());
         } else {
           symbols.push_back(sym);
         }
@@ -1964,13 +1957,9 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
                     rejectedPrivateIds.end()) {
                   // The symbol found was not one of the already rejected
                   // private symbols
-                  ModuleSymbol* mod = toModuleSymbol(sym);
-                  INT_ASSERT(mod);
-                  // For now, only module symbols can be private.  That will
-                  // change.
-                  if (!mod->isVisible(callingContext)) {
-                    rejectedPrivateIds.insert(mod->id);
-                    USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, mod->stringLoc());
+                  if (!sym->isVisible(callingContext)) {
+                    rejectedPrivateIds.insert(sym->id);
+                    USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, sym->stringLoc());
                   } else {
                     symbols.push_back(sym);
                   }
@@ -2117,7 +2106,7 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
 // Returns true if this module is capable of being used or traversed as part of
 // an access in the provided scope, false if the module is private and the
 // scope is not in its direct parent
-bool ModuleSymbol::isVisible(BaseAST* scope) const {
+bool Symbol::isVisible(BaseAST* scope) const {
   if (!hasFlag(FLAG_PRIVATE)) {
     // If it isn't public, it is trivially visible.
     return true;
