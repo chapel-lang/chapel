@@ -435,7 +435,8 @@ module CString {
     __primitive("=", a, b);
   }
 
-  // yes this is invoked sometimes
+  // Yes this is invoked sometimes. In the long run, however,
+  // we'd like the compiler to eliminate casts to the same type instead.
   inline proc _cast(type t, x: c_string) where t == c_string {
     return x;
   }
