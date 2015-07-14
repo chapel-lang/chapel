@@ -392,7 +392,7 @@ body, which is a sequence of statements that express constraints on the
 implementing types. The type parameters are in scope for the body of the
 interface. The common case is for there to be only a single implementing type,
 so if the interface definition omits the list of type parameters, then the type
-name self is in scope for the body of the interface and is a place holder for
+name Self is in scope for the body of the interface and is a place holder for
 the single implementing type.
 
 Example
@@ -406,9 +406,9 @@ specify a type to play the role of the itemType.
 
   interface Stack {
     type itemType;
-    proc self.push(x : itemType);
-    proc self.pop(): itemType;
-    proc self.isEmpty(): bool;
+    proc Self.push(x : itemType);
+    proc Self.pop(): itemType;
+    proc Self.isEmpty(): bool;
   }
 
 
@@ -427,17 +427,17 @@ Example 2
 The following Vector interface demonstrates four different kinds of function
 signatures. The norm signature simply requires that the implementation provide
 a regular function definition for norm. The + operator can be provided by
-either a function definition or a method. The self.size signature requires a
-method, and the self.these signature requires an iterator method.
+either a function definition or a method. The Self.size signature requires a
+method, and the Self.these signature requires an iterator method.
 
 .. code-block:: chapel
 
   interface Vector {
     type eltType;
-    proc norm(v : self): eltType;
-    proc +(u : self, v : self): self;
-    proc self.size(): int;
-    iter self.these(): eltType;
+    proc norm(v : Self): eltType;
+    proc +(u : Self, v : Self): Self;
+    proc Self.size(): int;
+    iter Self.these(): eltType;
   }
 
 Function definitions
@@ -453,12 +453,12 @@ Example 3
 .. code-block:: chapel
 
   interface LessThanComparable : EqualityComparable {
-    proc <(x : self, y: self): bool;
-    proc <=(x : self, y: self): bool
+    proc <(x : Self, y: Self): bool;
+    proc <=(x : Self, y: Self): bool
       { return !(y < x); }
-    proc >(x : self, y: self): bool
+    proc >(x : Self, y: Self): bool
       { return y < x; }
-    proc >=(x : self, y: self): bool
+    proc >=(x : Self, y: Self): bool
       { return !(x < y); }
   }
 
@@ -512,8 +512,39 @@ an interface.
 The syntax for implements statements is as follows.
 
 implements-statement:
-  type–list implements interface–name [where–clause] ;
-  type–list implements interface–name [where–clause] { statement* }
+  type implements interface–name [where–clause] ;
+  type implements interface–name [where–clause] { statement* }
+  implements interface–name(type-list) [where–clause] ;
+  implements interface–name(type-list) [where–clause] { statement* }
+
+ 
+In addition, the implements statement can be appended to a class or record
+declaration, e.g.:
+
+.. code-block:: chapel
+
+  record MyRecord implements SomeInterface {
+    ...
+  }
+
+is equivalent to
+
+.. code-block:: chapel
+
+  record MyRecord {
+    ...
+  }
+  MyRecord implements SomeInterface;
+
+Here are a few more examples:
+.. code-block:: chapel
+
+  // assert that a type implements multiple interfaces
+  MyRecord implements SomeInterface, SomeOtherInterface;
+  
+  // assert that two types together implement an interface
+  implements TwoTypeInterface(MyRecord, int);
+
 
 The implements relation between a type and an interface is established by an
 implements statement. All the requirements of the interface must be satisfied
@@ -545,10 +576,10 @@ implements statements for integers.
 .. code-block:: chapel
 
   interface Semigroup {
-    proc binary_op(x : self, y : self):self;
+    proc binary_op(x : Self, y : Self):Self;
   }
   interface Monoid : Semigroup {
-    proc identity_elt(): self;
+    proc identity_elt(): Self;
    }
   int implements Semigroup {
     proc binary_op(x : int, y : int):int { return x + y; }
@@ -601,7 +632,7 @@ The where–clause of a generic function may include type constraints on the typ
 Example
 +++++++
 
-In the following example, the function f is well-typed because S2 implements Stack, so thepopmethodonyhasreturntypeS2.itemType,S1 implements Stacksothepushmethodonx has return type S1.itemType, and we have required that S1.itemType equal S2.itemType.
+In the following example, the function f is well-typed because S2 implements Stack, so the pop method on y has return type S2.itemType, S1 implements Stack so the push method on x has return type S1.itemType, and we have required that S1.itemType equal S2.itemType.
 
 .. code-block:: chapel
 
@@ -712,7 +743,9 @@ satisfied in the current scope, then the generic function is a candidate. The
 following rules specify when a type requirement is satisfied.
 
 1. An implements clause is satisfied if there exists a most specific implements
-   statement in the lexical scope of the point of instantiation.
+   statement in the lexical scope of the point of instantiation *or* an
+   implicit implement statement at that point could be added without
+   error.
 2. A type equality is satisfied if the two type specifiers are equal in the
    lexical scope of the point of instantiation.
 
@@ -849,7 +882,7 @@ following interface
 
   interface I {
     type helper;
-    proc self.get_helper() : helper;
+    proc Self.get_helper() : helper;
   }
 
 then S == T implies I(S).helper == I(T).helper. However, for associated types,
@@ -926,7 +959,7 @@ Example
 .. code-block:: chapel
 
   interface I {
-    proc self.f() { }
+    proc Self.f() { }
   }
   class C { }
   C implements I;
@@ -948,7 +981,7 @@ Continuing from the previous example, we have an any type that implements two in
 .. code-block:: chapel
 
   interface J {
-    proc self.g() { }
+    proc Self.g() { }
   }
   C implements J;
 
@@ -969,52 +1002,62 @@ The next example demonstrates the use of an any type with a slightly more comple
 Semantics Requirements
 ----------------------
 
-The design for interfaces that we sketch here does not include explicit support
-for semantic requirements. For example, the Monoid interface naturally includes
-the requirement that the binary operator be associative, but we do not provide
-a way to express this as a interface statement. The main reason for this
-omission is that automatically checking semantic requirements is beyond the
-state of the art (and is undecidable in general). However, there are several
-ways to take semantic requirements into account with some help from the
-programmer.
+The interface design here uses explicit support for semantic requirements
+in order to support implicit implementation of interfaces (ie, it uses
+the structural strategy for interface types; in other words, that a type
+implements an interface can be inferred by the compiler).
 
-In the sketch given here, we intend for programmers to use comments to express
-semantic requirements and we expect programmers to manually check semantic
-requirements when writing an implementation statement.  Thus, the
-implementation statement is treated as a programmer assertion that the semantic
-requirements have been satisfied.
+However, it is important to be able to represent semantic requirements,
+for example that addition is associative, or that an object should can be
+serialized. Generally speaking, it is not enough for certain functions to
+be available in order for these requirements to be satisfied. In fact, we
+expect that the compiler will be unable to verify that these requirements
+are satisfied. 
 
-In this design, implementation statements are mandatory, that is, they are the
-only way to establish that a type implements a interface.  An alternative
-design could allow the implementation relationship to be inferred when it is
-needed. However, that would introduce a challenge with respect to how the
-programmer could assert that the semantic requirements are satisfied. Ferguson
-proposes a solution based on symbolic *tags* which we will refer to as
-behaviors here.  Behaviors could be adapted to our design in the following way.
-First, we would add a statement for declaring new behaviors. For example, the
-following would declare a behavior that corresponds to the property of a type U
-having an associative addition operator.
-
-::
-  newbehavior associative_addition(?U);
-
-Second, we would add a new kind of requires statement for behaviors. The
-following shows an AdditiveSemigroup interface with the requirement for
-associative_addition.
+So, we need a strategy to indicate that an interface is satisfied. One
+way to do so would be to use special symbols in an interface that by
+convention would only be specified when the programmer is asserting
+that the required behavior is occuring. For example:
 
 .. code-block:: chapel
 
-  interface AdditiveSemigroup(T) {
-    proc +(T,T) : T;
-    requires associative_addition(T);
+  // Types implementing this interface are asserting
+  // that addition is associative
+  interface AssociativeAddition(T) {
+    proc __behavior_associative_addition(T);
   }
 
-Lastly, we would add a new kind of statement for declaring that a type
-satisfies a behavior. The following assertion would establish that integer
-addition is associative.
+  interface AdditiveSemigroup(T) : AssociativeAddition {
+    proc +(T,T) : T;
+    proc __behavior_associative_addition(T);
+  }
 
-::
-  satisfies associative_addition(int);
+The main drawback to this approach is that __behavior_associative_addition
+is an arbitrary name that really should be unique for AssociativeAddition.
+So, it would be better to have the compiler generate a unique name - that
+cannot collide with any other declaration - for such cases.
+
+Here are some possible improvements:
+
+.. code-block:: chapel
+
+  // Idea 1:
+  // explicitly support behaviors as alternatives to interfaces
+  newbehavior AssociativeAddition(T);
+  // and possibly a different way to say something has the behavior
+  satisfies AssociativeAddition(int);
+
+  // Idea 2:
+  // explicitly support nominal interfaces
+  explicit interface AssociativeAddition(T) {
+    // this interface is nominal
+  }
+
+  // Idea 3:
+  // syntax to create a unique placeholder
+  interface AssociativeAddition(T) {
+    unique;
+  }
 
 
 Fitting in with Existing Generics
@@ -1083,7 +1126,7 @@ default to nominal and opt-in to structural? Or vice versa?
 What syntax should we use for implements clauses in where clauses? Should 
 we use 'require' or some other keyword different from 'where'?
 
-What is the final syntax for interfaces? Do we want 'self' to refer to the
+What is the final syntax for interfaces? Do we want 'Self' to refer to the
 first type in an interface?
 
 How can functions with some unconstrained generic parameters and some
@@ -1116,4 +1159,5 @@ Decisions
 
 Several Chapel developers discussed this on June 2, 2015. There is broad
 agreement on the general direction but some issues need to be addressed.
+
 
