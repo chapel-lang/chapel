@@ -432,8 +432,8 @@ static gasnet_handlerentry_t ftable[] = {
 // Chapel interface starts here
 //
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       int32_t elemSize, int32_t typeIndex,
-                                       int32_t len,
+                                       size_t elemSize, int32_t typeIndex,
+                                       size_t len,
                                        int ln, c_string fn)
 {
   size_t nbytes = elemSize*len;
@@ -451,8 +451,8 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 }
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       int32_t elemSize, int32_t typeIndex,
-                                       int32_t len,
+                                       size_t elemSize, int32_t typeIndex,
+                                       size_t len,
                                        int ln, c_string fn)
 {
   size_t nbytes = elemSize*len;
@@ -717,7 +717,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   }
 }
 
-void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
+void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   int  node, offset;
   int  payloadSize = size + sizeof(priv_bcast_t);
   done_t* done;
@@ -875,7 +875,7 @@ void chpl_comm_exit(int all, int status) {
 }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    size_t elemSize, int32_t typeIndex, size_t len,
                     int ln, c_string fn) {
   const int size = elemSize*len;
   int remote_in_segment;
@@ -948,7 +948,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
-                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    size_t elemSize, int32_t typeIndex, size_t len,
                     int ln, c_string fn) {
   const int size = elemSize*len;
   int remote_in_segment;
@@ -1071,7 +1071,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 //
 void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id, 
                          void* srcaddr, void* srcstrides, void* count,
-                         int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                         size_t stridelevels, size_t elemSize, int32_t typeIndex, 
                          int ln, c_string fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
@@ -1082,30 +1082,30 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
   size_t cnt[strlvls+1];
 
   // Only count[0] and strides are measured in number of bytes.
-  cnt[0] = ((int32_t*)count)[0] * elemSize;
+  cnt[0] = ((size_t*)count)[0] * elemSize;
 
   if (strlvls>0) {
-    srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+    srcstr[0] = ((size_t*)srcstrides)[0] * elemSize;
+    dststr[0] = ((size_t*)dststrides)[0] * elemSize;
     for (i=1; i<strlvls; i++) { 
-      srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((int32_t*)count)[i];
+      srcstr[i] = ((size_t*)srcstrides)[i] * elemSize;
+      dststr[i] = ((size_t*)dststrides)[i] * elemSize;
+      cnt[i] = ((size_t*)count)[i];
     }
-    cnt[strlvls] = ((int32_t*)count)[strlvls];
+    cnt[strlvls] = ((size_t*)count)[strlvls];
   }
 
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_nodeID, fn, ln, srcnode,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n", chpl_nodeID, fn, ln, srcnode,(long)strlvls,(long)elemSize,(long)sizeof(size_t),(long)sizeof(gasnet_node_t));
 
     printf("dststrides in bytes:\n");                 
-    for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
+    for (i=0;i<strlvls;i++) printf(" %ld ",(long)dststr[i]);
     printf("\n");                     
     printf("srcstrides in bytes:\n");                 
-    for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
+    for (i=0;i<strlvls;i++) printf(" %ld ",(long)srcstr[i]);
     printf("\n");                     
     printf("count (count[0] in bytes):\n");                   
-    for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
+    for (i=0;i<=strlvls;i++) printf(" %ld ",(long)cnt[i]);
     printf("\n");                     
   }
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
@@ -1124,7 +1124,7 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
 // See the comment for cmpl_comm_gets().
 void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id, 
                          void* srcaddr, void* srcstrides, void* count,
-                         int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                         size_t stridelevels, size_t elemSize, int32_t typeIndex, 
                          int ln, c_string fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
@@ -1135,28 +1135,28 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
   size_t cnt[strlvls+1];
 
   // Only count[0] and strides are measured in number of bytes.
-  cnt[0] = ((int32_t*)count)[0] * elemSize;
+  cnt[0] = ((size_t*)count)[0] * elemSize;
   if (strlvls>0) {
-    srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+    srcstr[0] = ((size_t*)srcstrides)[0] * elemSize;
+    dststr[0] = ((size_t*)dststrides)[0] * elemSize;
     for (i=1; i<strlvls; i++) { 
-      srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((int32_t*)count)[i];
+      srcstr[i] = ((size_t*)srcstrides)[i] * elemSize;
+      dststr[i] = ((size_t*)dststrides)[i] * elemSize;
+      cnt[i] = ((size_t*)count)[i];
     }
-    cnt[strlvls] = ((int32_t*)count)[strlvls];
+    cnt[strlvls] = ((size_t*)count)[strlvls];
   }
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_nodeID, fn, ln, dstnode,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n", chpl_nodeID, fn, ln, dstnode,(long)strlvls,(long)elemSize,(long)sizeof(size_t),(long)sizeof(gasnet_node_t));
 
     printf("dststrides in bytes:\n");                 
-    for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
+    for (i=0;i<strlvls;i++) printf(" %ld ",(long)dststr[i]);
     printf("\n");                     
     printf("srcstrides in bytes:\n");                 
-    for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
+    for (i=0;i<strlvls;i++) printf(" %ld ",(long)srcstr[i]);
     printf("\n");                     
     printf("count (count[0] in bytes):\n");                   
-    for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
+    for (i=0;i<=strlvls;i++) printf(" %ld ",(long)cnt[i]);
     printf("\n");                     
   }
 
@@ -1176,7 +1176,7 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
 void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
-                     chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+                     chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t* info;
   int     info_size;
   done_t  done;
@@ -1233,7 +1233,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
-                        chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+                        chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
   int     info_size;
   int     passArg = (chpl_nodeID == node
@@ -1291,7 +1291,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
 
 // GASNET - should only be called for "small" functions
 void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+                          chpl_fn_int_t fid, void *arg, size_t arg_size) {
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
   int     info_size = sizeof(fork_t) + arg_size;
