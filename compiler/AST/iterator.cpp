@@ -33,7 +33,6 @@
 #include "view.h"
 #include "WhileStmt.h"
 #include "resolution.h" // for autoDestroyMap.
-#include "passes.h" // for insertDerefTemps().
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
@@ -534,7 +533,6 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   zip2body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip2->body->replace(zip2body);
-  insertDerefTemps(ii->zip2);
 }
 
 
@@ -1318,20 +1316,6 @@ rebuildIterator(IteratorInfo* ii,
     Symbol* field = local2field.get(local);
     Symbol* localValue = local;
 
-#if 0
-    if (local->type == field->type->refType) {
-      // If a ref var, 
-      // load the local into a temp and use this to set the value of the corresponding field.
-      Symbol* tmp = newTemp("derefTmp", field->type);
-      fn->insertAtTail(new DefExpr(tmp));
-      fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-                     new CallExpr(PRIM_DEREF, local)));
-      localValue = tmp;
-    }
-    // We can't use insertDerefTemps() because this iterator function is no
-    // longer in the tree.
-#endif
     // Very special code for record-wrapped types:
     // This is a workaround for weirdness in how record-wrapped types are
     // handled in iterator records.  Calls to the these() method on arrays and
