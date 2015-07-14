@@ -1,10 +1,15 @@
 use Regexp;
 use Histogram;
 use Time;
+use Random;
 
 // Use the test/twopt code
 config const isTest=false;
+config const isPerf=false;
 config const doBrute=false;
+
+// Performance test parameters
+config const nParticles=10000;
 
 config const fn1 = "test.dat";
 config const fn2 = "test.dat";
@@ -26,13 +31,27 @@ config const nsbins=5;
 var gtime1 : Timer;
 
 proc main() {
-  if isTest then testPairs(); else doPairs();
+  doPairs();
 }
 
 record WeightedParticle3D {
   var x : NDIM*real;
   var w : real;
+  var r2 : real;
 }
+
+proc generateRandom(pp : []WeightedParticle3D) {
+  var x,y,z : real;
+  var rng = new RandomStream();
+  for ip in pp {
+    x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z=rng.getNext()*1000.0;
+    ip.x = (x,y,z);
+    ip.w = 1.0;
+    ip.r2 = x**2 + y**2 + z**2;
+  }
+  delete rng;
+}
+
 
 proc countLines(fn : string) : int {
   var ff = open(fn, iomode.r);
@@ -59,50 +78,26 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
    if (icol < 4) then assert(false,"malformed line...");
    for jj in Ddim do pp[ipart].x(jj) = cols[jj];
    pp[ipart].w = cols[4];
+   pp[ipart].r2 = + reduce (pp[ipart].x**2);
    ipart += 1;
   }
 }
 
-    
-
-
-
-class SOA_WeightedParticle3D {
-  var npart : int;
-  var Dpart : domain(1);
-  var x,y,z,w,r2 : [Dpart] real;
-
-
-  proc SOA_WeightedParticle3D(pp : []WeightedParticle3D) {
-    npart = pp.size;
-    Dpart = 0.. #npart;
-
-    forall ii in Dpart {
-      x[ii] = pp[ii].x(1);
-      y[ii] = pp[ii].x(2);
-      z[ii] = pp[ii].x(3);
-      w[ii] = pp[ii].w;
-      r2[ii] = + reduce (pp[ii].x**2);
-    }
-  }
-}
-
-
-proc smuAccumulate(hh : UniformBins, p1,p2 : SOA_WeightedParticle3D, d1,d2 : domain(1), scale : real) {
+proc smuAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : domain(1), scale : real) {
   forall ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;
     var sl, s2, l1, s1, l2, mu, wprod : real;
-    x1 = p1.x[ii]; y1 = p1.y[ii]; z1 = p1.z[ii]; w1 = p1.w[ii]; r2 = p1.r2[ii];
+    x1 = p1[ii].x(1); y1 = p1[ii].x(2); z1 = p1[ii].x(3); w1 = p1[ii].w; r2 = p1[ii].r2;
 
     for jj in d2 { // Second set of particles
-      mu=2*(p2.x[jj]*x1 + p2.y[jj]*y1 + p2.z[jj]*z1);
-      sl = r2 - p2.r2[jj];
-      l1 = r2 + p2.r2[jj];
+      mu=2*(p2[jj].x(1)*x1 + p2[jj].x(2)*y1 + p2[jj].x(3)*z1);
+      sl = r2 - p2[jj].r2;
+      l1 = r2 + p2[jj].r2;
       s2 = l1 - mu;
       l2 = l1 + mu;
       if ((s2 >= smax2) || (s2 < 1.0e-20)) then continue;
-      wprod = scale * w1 * p2.w[jj];
+      wprod = scale * w1 * p2[jj].w;
       s1 = sqrt(s2);
       mu = sl/(s1*sqrt(l2));
       if (mu < 0) then mu = -mu;
@@ -111,6 +106,8 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : SOA_WeightedParticle3D, d1,d2 : dom
     }
   }
 }
+
+
 
 proc splitOn(pp : []WeightedParticle3D, scr : []WeightedParticle3D, splitDim : int, xsplit : real) : int {
   var npart, lnpart : int;
@@ -210,7 +207,7 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : SOA_WeightedParticle3D, node1, node2 : KDNode) {
+proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node2 : KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);
@@ -249,111 +246,91 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : SOA_WeightedParticle3D, node1, no
 
 }
 
-// A simple testHarness
-proc testPairs() {
-  
-  // Read in the file
-  var nlines = countLines(fn1);
-  var pp1 : [0.. #nlines] WeightedParticle3D;
-  readFile("test.dat",pp1);
-
-  // Build the tree
-  var scr : [0.. #nlines] WeightedParticle3D;
-  var root1 = BuildTree(pp1,scr,0);
-
-  // Set up the histogram
-  var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
-
-  // AOS -> SOA
-  var soa1 = new SOA_WeightedParticle3D(pp1);
-
-  // Do the paircounts with a tree
-  sync TreeAccumulate(hh, soa1, soa1, root1, root1);
-  for xx in hh.bins(1) do writef("%12.4dr",xx); 
-  writeln();
-  for xx in hh.bins(2) do writef("%12.4dr",xx); 
-  writeln("\n##");
-  for ii in hh.Dhist.dim(1) {
-    for jj in hh.Dhist.dim(2) {
-      if ((ii==0) & (jj==0)) {
-        writef("%20.5er ",0);
-      } else {
-        writef("%20.5er ",hh[(ii,jj)]);
-      }
-    }
-    writeln();
-  }
-
-  //
-  // clean up
-  //
-  delete soa1;
-  delete hh;
-  delete root1;
-}
-
-
 // The main code 
 proc doPairs() {
   var tt : Timer;
 
   // Read in the file
+  var nlines1, nlines2 : int;
+  var Dpart1 = {0.. #0};
+  var Dpart2 = {0.. #0};
+  var pp1 : [Dpart1] WeightedParticle3D;
+  var pp2 : [Dpart2] WeightedParticle3D;
   tt.clear(); tt.start();
-  var nlines1 = countLines(fn1);
-  var pp1 : [0.. #nlines1] WeightedParticle3D;
-  readFile(fn1,pp1);
-  var nlines2 = countLines(fn2);
-  var pp2 : [0.. #nlines2] WeightedParticle3D;
-  readFile(fn1,pp2);
+  if isPerf {
+    nlines1 = nParticles;
+    Dpart1 = {0.. #nlines1};
+    generateRandom(pp1);
+    nlines2 = nParticles;
+    Dpart2 = {0.. #nlines2};
+    generateRandom(pp2);
+  } else {
+    nlines1 = countLines(fn1);
+    Dpart1 = {0.. #nlines1};
+    readFile(fn1,pp1);
+    nlines2 = countLines(fn2);
+    Dpart2 = {0.. #nlines2};
+    readFile(fn1,pp2);
+    if (!isTest) {
+      writef("Read in %i lines from file %s \n", pp1.size, fn1);
+      writef("Read in %i lines from file %s \n", pp2.size, fn2);
+    }
+  }
   tt.stop();
-  writef("Read in %i lines from file %s \n", pp1.size, fn1);
-  writef("Read in %i lines from file %s \n", pp2.size, fn2);
-  writef("Time to read : %r \n", tt.elapsed());
+  if !isTest then writef("Time to read : %r \n", tt.elapsed());
 
   // Build the tree
   tt.clear(); tt.start(); gtime1.clear();
-  var scr1 : [0.. #nlines1] WeightedParticle3D;
+  var scr1 : [Dpart1] WeightedParticle3D;
   var root1 = BuildTree(pp1,scr1,0);
-  var scr2 : [0.. #nlines2] WeightedParticle3D;
+  var scr2 : [Dpart2] WeightedParticle3D;
   var root2 = BuildTree(pp2,scr2,0);
   tt.stop();
-  writef("Time to build trees : %r \n", tt.elapsed());
-  writef("Time in splitOn : %r \n", gtime1.elapsed());
+  if (!isTest) {
+    writef("Time to build trees : %r \n", tt.elapsed());
+    writef("Time in splitOn : %r \n", gtime1.elapsed());
+  }
   
 
 
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
 
-  // AOS -> SOA
-  tt.clear(); tt.start();
-  var soa1 = new SOA_WeightedParticle3D(pp1);
-  var soa2 = new SOA_WeightedParticle3D(pp2);
-  tt.stop();
-  writef("Time to SOA : %r \n", tt.elapsed());
-
+  /*
   // Brute force paircounts
-  if doBrute {
+  // This is only here for comparisons... and should be turned off in general
+  if (doBrute && !isTest) {
     tt.clear(); tt.start();
     smuAccumulate(hh, soa1,soa2, soa1.Dpart, soa2.Dpart, 1.0);
     tt.stop();
     writef("Time to brute force paircount : %r \n", tt.elapsed());
-    writeHist("%s.brute".format(pairfn),hh);
+    var ff1 = openwriter("%s.brute".format(pairfn));
+    writeHist(ff1,hh);
+    ff1.close();
   }
+  */
 
    // Do the paircounts with a tree
   hh.reset();
   tt.clear(); tt.start();
-  sync TreeAccumulate(hh, soa1, soa2, root1, root2);
+  sync TreeAccumulate(hh, pp1, pp2, root1, root2);
   tt.stop();
-  writef("Time to tree paircount : %r \n", tt.elapsed());
-  writeHist("%s.tree".format(pairfn),hh);
+  if (!isTest) {
+    writef("Time to tree paircount : %r \n", tt.elapsed());
+    if !isPerf {
+      var ff = openwriter("%s.tree".format(pairfn));
+      writeHist(ff,hh);
+      ff.close();
+    }
+  } else {
+    hh.set((0,0),0.0);
+    writeHist(stdout,hh,"%20.5er ");
+  }
+
 
   //
   // clean up
   //
-  delete soa1;
-  delete soa2;
   delete hh;
   delete root1;
   delete root2;

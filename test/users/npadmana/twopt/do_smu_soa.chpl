@@ -4,7 +4,11 @@ use Time;
 
 // Test flags
 config const isTest=false;
+config const isPerf=false;
 config const doBrute=false;
+
+// Performance test parameters
+config const nParticles=10000;
 
 // Input/Output filenames
 config const fn1 = "test.dat";
@@ -33,11 +37,7 @@ config const nsbins=5;
 var gtime1 : Timer;
 
 proc main() {
-  if isTest {
-    testPairs();
-  } else {
-    doPairs();
-  }
+  doPairs();
 }
 
 
@@ -50,13 +50,25 @@ class Particle3D {
   var _tmp : [Dpart] real;
   var _n1, _ndx : [Dpart] int;
 
-  proc Particle3D(npart1 : int) {
+  proc Particle3D(npart1 : int, random : bool = false) {
     npart = npart1;
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};
+    if random {
+      var rng = new RandomStream();
+      var x, y, z : real;
+      for ii in Dpart {
+        x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z = rng.getNext()*1000.0;
+        arr[0,ii] = x; arr[1, ii] = y; arr[2, ii] = z;
+        arr[3,ii] = 1.0;
+        arr[4,ii] = x**2 + y**2 + z**2;
+      }
+      delete rng;
+    }
   }
 
   proc this(ii : int) : NTOT*real {
+    // ??? Hardcoded hack!
     return (arr[0,ii],arr[1,ii],arr[2,ii],arr[3,ii],arr[4,ii]);
   }
 
@@ -119,6 +131,7 @@ proc readFile(fn : string) : Particle3D  {
     pp.arr[..,ipart] = [x,y,z,w,r2];
     ipart += 1;
   }
+  ff.close();
 
   return pp;
 }
@@ -258,7 +271,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 : KDNode
 
 // The basic pair counter
 proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scale : real) {
-  forall ii in d1 { // Loop over first set of particles
+  for ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;
     var sl, s2, l1, s1, l2, mu, wprod : real;
@@ -270,91 +283,46 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scal
       l1 = r2 + p2.arr[R2,jj];
       s2 = l1 - mu;
       l2 = l1 + mu;
-      if ((s2 >= smax2) || (s2 < 1.0e-20)) then continue;
-      wprod = scale * w1 * p2.arr[W,jj];
-      s1 = sqrt(s2);
-      mu = sl/(s1*sqrt(l2));
-      if (mu < 0) then mu = -mu;
-      
-      hh.add((s1,mu),wprod);
+      if ((s2 < smax2) && (s2 > 1.0e-20)) {
+        wprod = scale * w1 * p2.arr[W,jj];
+        s1 = sqrt(s2);
+        mu = sl/(s1*sqrt(l2));
+        if (mu < 0) then mu = -mu;
+
+        hh.add((s1,mu),wprod);
+      }
     }
   }
 }
-
-
-proc testPairs() {
-  var pp = readFile("test.dat");
-  // Put in a shuffle
-  pp.shuffle();
-
-  // Set up the histogram
-  var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
-
-  // Optionally, do the paircounts in the brute-force n**2 way
-  if (doBrute) {
-    smuAccumulate(hh,pp,pp,pp.Dpart,pp.Dpart,1.0);
-    for xx in hh.bins(1) do writef("%12.4dr",xx); 
-    writeln();
-    for xx in hh.bins(2) do writef("%12.4dr",xx); 
-    writeln("\n##");
-    for ii in hh.Dhist.dim(1) {
-      for jj in hh.Dhist.dim(2) {
-        if ((ii==0) & (jj==0)) {
-          writef("%20.5er ",0);
-        } else {
-          writef("%20.5er ",hh[(ii,jj)]);
-        }
-      }
-      writeln();
-    }
-  }
-
-  // Build the tree
-  var root1 = BuildTree(pp, 0, pp.npart-1, 0); 
-  hh.reset();
-  sync TreeAccumulate(hh,pp,pp,root1,root1);
-  for xx in hh.bins(1) do writef("%12.4dr",xx); 
-  writeln();
-  for xx in hh.bins(2) do writef("%12.4dr",xx); 
-  writeln("\n##");
-  for ii in hh.Dhist.dim(1) {
-    for jj in hh.Dhist.dim(2) {
-      if ((ii==0) & (jj==0)) {
-        writef("%20.5er ",0);
-      } else {
-        writef("%20.5er ",hh[(ii,jj)]);
-      }
-    }
-    writeln();
-  }
-
-  //
-  // clean up
-  //
-  delete pp;
-  delete root1;
-  delete hh;
-}
-    
 
 proc doPairs() {
   var tt : Timer;
 
   // Read in the file
   tt.clear(); tt.start();
-  var pp1 = readFile(fn1);
-  var pp2 = readFile(fn2);
+  var pp1, pp2 : Particle3D;
+  if isPerf {
+    pp1 = new Particle3D(nParticles, true);
+    pp2 = new Particle3D(nParticles, true);
+  } else {
+    pp1 = readFile(fn1);
+    pp2 = readFile(fn2);
+    if !isTest {
+      writef("Read in %i lines from file %s \n", pp1.npart, fn1);
+      writef("Read in %i lines from file %s \n", pp2.npart, fn2);
+    }
+  }
   tt.stop();
-  writef("Read in %i lines from file %s \n", pp1.npart, fn1);
-  writef("Read in %i lines from file %s \n", pp2.npart, fn2);
-  writef("Time to read : %r \n", tt.elapsed());
+  if !isTest {
+    writef("Time to read : %r \n", tt.elapsed());
+  }
 
   // Shuffle the particles -- this is not used here, but will be usef for the multilocale version
   tt.clear(); tt.start();
   pp1.shuffle();
   pp2.shuffle();
   tt.stop();
-  writef("Time to shuffle : %r \n",tt.elapsed());
+  if !isTest then writef("Time to shuffle : %r \n",tt.elapsed());
 
 
   // Build the tree
@@ -362,10 +330,9 @@ proc doPairs() {
   var root1 = BuildTree(pp1, 0, pp1.npart-1, 0);
   var root2 = BuildTree(pp2, 0, pp2.npart-1, 0);
   tt.stop();
-  writef("Time to build trees : %r \n", tt.elapsed());
+  if !isTest then writef("Time to build trees : %r \n", tt.elapsed());
   //writef("Time in splitOn : %r \n", gtime1.elapsed());
   
-
 
   // Set up the histogram
   var hh = new UniformBins(2,(nsbins,nmubins), ((0.0,smax),(0.0,1.0+1.e-10)));
@@ -375,8 +342,17 @@ proc doPairs() {
   tt.clear(); tt.start();
   sync TreeAccumulate(hh, pp1,pp2, root1, root2);
   tt.stop();
-  writef("Time to tree paircount : %r \n", tt.elapsed());
-  //writeHist("%s.tree".format(pairfn),hh);
+  if (!isTest) {
+    writef("Time to tree paircount : %r \n", tt.elapsed());
+    if !isPerf {
+      var ff = openwriter("%s.tree".format(pairfn));
+      writeHist(ff,hh);
+      ff.close();
+    }
+  } else {
+    hh.set((0,0),0.0);
+    writeHist(stdout,hh,"%20.5er ");
+  }
 
   //
   // clean up

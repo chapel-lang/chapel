@@ -83,6 +83,12 @@ by a library or the execution environment.  See the chapter on interoperability
 (\rsec{Interoperability}) for more information on external classes.
 % External class inheritance is not currently supported.
 
+\begin{future}
+Privacy controls for classes and records are currently not specified,
+as discussion is needed regarding its impact on inheritance, for
+instance.
+\end{future}
+
 \subsection{Class Types}
 \label{Class_Types}
 \index{classes!types}
@@ -852,11 +858,10 @@ true
 \end{chapeloutput}
 \end{chapelexample}
 
-
 When \sntx{this-intent} is \chpl{ref}, the receiver argument will be
 passed by reference, allowing modifications to \chpl{this}.  If
 no \sntx{this-intent} is specified, the receiver will be passed with
-the blank intent as specified in \rsec{The_Blank_Intent}.
+the default intent as specified in \rsec{The_Default_Intent}.
 
 \begin{chapelexample}{refThisIntent.chpl}
 In the following code, the \chpl{doubleMe} function is defined with a
