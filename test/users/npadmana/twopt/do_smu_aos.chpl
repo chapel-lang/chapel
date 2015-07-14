@@ -32,14 +32,6 @@ var gtime1 : Timer;
 
 proc main() {
   doPairs();
-  //
-  // The following is an unfortunate trick required to keep new
-  // performance data consistent with the original columns that were
-  // set up when this performance test was established.  To remove it,
-  // our best option would be to rename this test and its supporting
-  // files to do_smu_aos.chpl...
-  //
-  if isPerf then writeln("Time to SOA: 0.0");
 }
 
 record WeightedParticle3D {
