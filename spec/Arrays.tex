@@ -651,7 +651,7 @@ receive arrays are aliases of the actual arguments.
 % the function intents section.
 %
 %  The ordinary rule
-%that disallows assignment to formal arguments of blank intent does not
+%that disallows assignment to formal arguments of default intent does not
 %apply to arrays.
 
 When a formal argument has array type, the element type of the array
@@ -913,7 +913,7 @@ index set (causing all array elements to be deallocated) and then
 re-assigning the new index set to the domain.
 
 An array's domain can only be modified directly, via the domain's name
-or an alias created by passing it to a function via blank intent.  In
+or an alias created by passing it to a function via default intent.  In
 particular, the domain may not be modified via the array's
 \chpl{.domain} method, nor by using the domain query syntax on a
 function's formal array

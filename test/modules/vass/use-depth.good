@@ -1,0 +1,2 @@
+use-depth.chpl:21: error: Symbol x multiply defined
+use-depth.chpl:37: error: Symbol x multiply defined
