@@ -84,11 +84,11 @@ size_t chpl_getHeapPageSize(void) {
     else {
       int scanCnt;
       size_t tmpPageSize;
-      char units;
+      char units[4]; // leave room for terminating null byte
 
-      if ((scanCnt = sscanf(ev, "%zd%1[kKmMgG]", &tmpPageSize, &units)) > 0) {
+      if ((scanCnt = sscanf(ev, "%zd%1[kKmMgG]", &tmpPageSize, units)) > 0) {
         if (scanCnt == 2) {
-          switch (units) {
+          switch (units[0]) {
           case 'k': case 'K': tmpPageSize <<= 10; break;
           case 'm': case 'M': tmpPageSize <<= 20; break;
           case 'g': case 'G': tmpPageSize <<= 30; break;
@@ -98,6 +98,9 @@ size_t chpl_getHeapPageSize(void) {
       else
         chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
       pageSize = tmpPageSize;
+
+      if (pageSize <= 0L)
+        chpl_internal_error("heap page size must be positive");
     }
 #else
     pageSize = chpl_getSysPageSize();
