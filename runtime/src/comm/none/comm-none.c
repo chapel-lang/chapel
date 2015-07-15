@@ -55,8 +55,8 @@ static int mysystem(const char* command, const char* description,
 
 // Chapel interface
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       int32_t elemSize, int32_t typeIndex,
-                                       int32_t len,
+                                       size_t elemSize, int32_t typeIndex,
+                                       size_t len,
                                        int ln, c_string fn)
 {
   assert(node == 0);
@@ -65,8 +65,8 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 }
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       int32_t elemSize, int32_t typeIndex,
-                                       int32_t len,
+                                       size_t elemSize, int32_t typeIndex,
+                                       size_t len,
                                        int ln, c_string fn)
 {
   assert(node == 0);
@@ -139,7 +139,7 @@ void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
 
 void chpl_comm_broadcast_global_vars(int numGlobals) { }
 
-void chpl_comm_broadcast_private(int id, int32_t sizee, int32_t tid) { }
+void chpl_comm_broadcast_private(int id, size_t sizee, int32_t tid) { }
 
 void chpl_comm_barrier(const char *msg) { }
 
@@ -148,7 +148,7 @@ void chpl_comm_pre_task_exit(int all) { }
 void chpl_comm_exit(int all, int status) { }
 
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
-                    int32_t size, int32_t typeIndex, int32_t len,
+                    size_t size, int32_t typeIndex, size_t len,
                     int ln, c_string fn) {
   assert(locale==0);
 
@@ -156,7 +156,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
 }
 
 void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
-                    int32_t size, int32_t typeIndex, int32_t len,
+                    size_t size, int32_t typeIndex, size_t len,
                     int ln, c_string fn) {
   assert(locale==0);
 
@@ -165,7 +165,7 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
 
 void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
                          void* srcaddr_arg, void* srcstrides, void* count,
-                         int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
+                         size_t stridelevels, size_t elemSize, int32_t typeIndex,
                          int ln, c_string fn)
 {
   const size_t strlvls = (size_t)stridelevels;
@@ -183,16 +183,16 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
   assert(dstlocale==0);
 
   //Only count[0] and strides are meassured in number of bytes.
-  cnt[0] = ((int32_t*)count)[0] * elemSize;
+  cnt[0] = ((size_t*)count)[0] * elemSize;
   if (strlvls>0) {
-    srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+    srcstr[0] = ((size_t*)srcstrides)[0] * elemSize;
+    dststr[0] = ((size_t*)dststrides)[0] * elemSize;
     for (i=1;i<strlvls;i++) {
-      srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((int32_t*)count)[i];
+      srcstr[i] = ((size_t*)srcstrides)[i] * elemSize;
+      dststr[i] = ((size_t*)dststrides)[i] * elemSize;
+      cnt[i] = ((size_t*)count)[i];
     }
-    cnt[strlvls] = ((int32_t*)count)[strlvls];
+    cnt[strlvls] = ((size_t*)count)[strlvls];
   }
 
   switch(strlvls) {
@@ -319,7 +319,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
 
 void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
                          void* srcaddr_arg, void* srcstrides, void* count,
-                         int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
+                         size_t stridelevels, size_t elemSize, int32_t typeIndex,
                          int ln, c_string fn)
 {
   const size_t strlvls = (size_t)stridelevels;
@@ -336,16 +336,16 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
   assert(srclocale==0);
 
   //Only count[0] and strides are meassured in number of bytes.
-  cnt[0] = ((int32_t*)count)[0] * elemSize;
+  cnt[0] = ((size_t*)count)[0] * elemSize;
   if (strlvls>0) {
-    srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+    srcstr[0] = ((size_t*)srcstrides)[0] * elemSize;
+    dststr[0] = ((size_t*)dststrides)[0] * elemSize;
     for (i=1;i<strlvls;i++) {
-      srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((int32_t*)count)[i];
+      srcstr[i] = ((size_t*)srcstrides)[i] * elemSize;
+      dststr[i] = ((size_t*)dststrides)[i] * elemSize;
+      cnt[i] = ((size_t*)count)[i];
       }
-    cnt[strlvls] = ((int32_t*)count)[strlvls];
+    cnt[strlvls] = ((size_t*)count)[strlvls];
   }
 
   switch(strlvls) {
@@ -477,7 +477,7 @@ typedef struct {
 } fork_t;
 
 void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
-                    chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+                    chpl_fn_int_t fid, void *arg, size_t arg_size) {
   assert(node==0);
 
   chpl_ftable_call(fid, arg);
@@ -492,7 +492,7 @@ static void fork_nb_wrapper(fork_t* f) {
 }
 
 void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
-                       chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+                       chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
   int     info_size;
 
@@ -511,7 +511,7 @@ void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
 
 // Same as chpl_comm_fork()
 void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
-                         chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+                         chpl_fn_int_t fid, void *arg, size_t arg_size) {
   assert(node==0);
 
   chpl_ftable_call(fid, arg);
