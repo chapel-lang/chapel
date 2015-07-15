@@ -1,0 +1,3 @@
+bug: although it makes sense to not pass in an iterator var as a ref, the error message doesn't make much sense.
+
+for_var_ref.chpl:6: error: non-lvalue actual is passed to 'ref' formal 'x' of doit()
