@@ -14,6 +14,7 @@ import shutil
 import tempfile
 import fnmatch
 import glob
+import contextlib
 
 
 args = None
@@ -139,41 +140,37 @@ def test_file(test):
 	pathtotest = os.path.relpath(test)
 	testname = os.path.basename(test)
 	
-	path = os.getcwd()
-	os.chdir(os.path.dirname("./" + test))
-	
-	# clean executables, etc
-	print
-	print "[Cleaning file %s]" % test
-	# clean and run test
-	clean(testname)
+	with cd(os.path.dirname("./" + test)): # cd into dir, and cd out later
+		# clean executables, etc
+		print
+		print "[Cleaning file %s]" % test
+		# clean and run test
+		clean(testname)
 
-	error = 0
-	if not args.cleanonly:
-		if args.performance or not args.gengraphs:
-			error = run(test)
-	
-		# check for errors - 173 is an internal sub_test error that would have 
-		# already reported.
-		if error != 0 and error != 173:
-			print "[Error running sub_test for %s]" % pathtotest
-
-		if args.progress:
-			sys.stderr.writeln("[done]")
-
-		del os.environ["CHPL_ONETEST"]
+		error = 0
+		if not args.cleanonly:
+			if args.performance or not args.gengraphs:
+				error = run(test)
 		
-		if args.gengraphs:
-			generate_graphs(test)
-	
-	os.chdir(path) # go back to previous dir
+			# check for errors - 173 is an internal sub_test error that would
+			# have already reported.
+			if error != 0 and error != 173:
+				print "[Error running sub_test for %s]" % pathtotest
+
+			if args.progress:
+				sys.stderr.writeln("[done]")
+
+			del os.environ["CHPL_ONETEST"]
+			
+			if args.gengraphs:
+				generate_graphs(test)
 
 
 def test_directory(test, testtype):
 	print "[Working from directory %s]" % test
 
 	# recurse through directory
-	for root, dirs, files in os.walk(test, followlinks=True):
+	for root, dirs, files in os.walk(test):
 		if not os.access(root, os.X_OK):
 			print "[Warning: Cannot cd into %s skipping directory]" % dir
 			continue
@@ -189,45 +186,43 @@ def test_directory(test, testtype):
 
 		# ignore skipifs for --clean-only run
 		if not args.cleanonly:
-			path = os.getcwd()
-			os.chdir(dir)
-
-			# SKIP IF IMPLEMENTATIONS
-			testenv = os.path.join(utildir, "test/testEnv")
-			
-			# Skip the directory if there is a SKIPIF file that evaluates true
-			skiptest = False
-			skipifpath = os.path.join(root, "SKIPIF")
-			if os.path.isfile("SKIPIF") :
-				# if executable
-				if os.access("./SKIPIF", os.X_OK):
-					skiptest = getOutput(["./SKIPIF"])
-				else: # if not, run a script to check SKIPIF condition
-					skiptest = getOutput([testenv, "SKIPIF"]) 
-				# check output and skip if true
-				if skiptest == "1" or skiptest == "True" :
-					print ("[Skipping directory based on SKIPIF environment" 
-						"settings]")
-					continue
-			
-			# Skip this directory if there is a <dir>.skipif file returning true
-			pruneif = False
-			skipfilename = os.path.join(root, 
-					"%s.skipif" % os.path.basename(root))
-			if os.path.isfile(skipfilename) :
-				# if executable
-				if os.access(skipfilename, os.X_OK):
-					pruneif = getOutput([skipfilename])
-				else: # if not, run a script to check SKIPIF condition
-					pruneif = getOutput([testenv, skipfilename])
-				# check output and skip if true
-				if pruneif == "1" or pruneif == "True" :
-					print ("[Skipping directory and children based on .skipif" 
-					"environment settings in %s]") % skipfilename
-					del dirs[:]
-					continue
-
-			os.chdir(path) # cd back to starting dir
+			with cd(dir): # cd into dir, and cd out later
+				# SKIP IF IMPLEMENTATIONS
+				testenv = os.path.join(utildir, "test/testEnv")
+				
+				# Skip the directory if there is a SKIPIF file that 
+				# evaluates true
+				skiptest = False
+				skipifpath = os.path.join(root, "SKIPIF")
+				if os.path.isfile("SKIPIF") :
+					# if executable
+					if os.access("./SKIPIF", os.X_OK):
+						skiptest = getOutput(["./SKIPIF"])
+					else: # if not, run a script to check SKIPIF condition
+						skiptest = getOutput([testenv, "SKIPIF"]) 
+					# check output and skip if true
+					if skiptest == "1" or skiptest == "True" :
+						print ("[Skipping directory based on SKIPIF environment" 
+							"settings]")
+						continue
+				
+				# Skip this directory if there is a <dir>.skipif file 
+				# returning true
+				pruneif = False
+				skipfilename = os.path.join(root, 
+						"%s.skipif" % os.path.basename(root))
+				if os.path.isfile(skipfilename) :
+					# if executable
+					if os.access(skipfilename, os.X_OK):
+						pruneif = getOutput([skipfilename])
+					else: # if not, run a script to check SKIPIF condition
+						pruneif = getOutput([testenv, skipfilename])
+					# check output and skip if true
+					if pruneif == "1" or pruneif == "True" :
+						print ("[Skipping directory and children based on "
+						".skipif environment settings in %s]") % skipfilename
+						del dirs[:]
+						continue
 
 		# run tests in directory
 		# don't run if only doing performance graphs
@@ -252,32 +247,26 @@ def test_directory(test, testtype):
 					"NOEXEC")) and not os.path.isfile(os.path.join(root,
 					"EXECOPTS")))) :
 				# cd to dir for clean and run, saving current location 
-				path = os.getcwd()
-				os.chdir(dir)
-				# clean dir
-				clean()
+				with cd(dir):
+					# clean dir
+					clean()
 
-				if not args.cleanonly:
-					# run all tests in dir
-					error = run()
-					# check for errors - 173 is an internal sub_test error that 
-					# would have already reported.
-					if error != 0 and error != 173:
-						print "[Error running sub_test in %s (%i)]" % (root, 
-								error)
-				# return to original dir
-				os.chdir(path)
+					if not args.cleanonly:
+						# run all tests in dir
+						error = run()
+						# check for errors - 173 is an internal sub_test error  
+						# that would have already reported.
+						if error != 0 and error != 173:
+							print "[Error running sub_test in %s (%i)]" % (root,
+									error)
 			# let user know no tests were found
 			else:
 				print "[No tests in directory %s]" % root
 		# generate graphs
 		else:
-			path = os.getcwd()
-			os.chdir(dir)
-			# generate graphs for all testsin dir
-			generate_graphs()
-
-			os.chdir(path)
+			with cd(dir):
+				# generate graphs for all testsin dir
+				generate_graphs()
 
 
 def summarize():
@@ -935,58 +924,56 @@ def set_up_executables():
 
 
 def auto_generate_tests():
-	path = os.getcwd()
-	os.chdir(home)
-	if path == home or path == testdir and not args.cleanonly:
-		if args.performance:
-			# track the number of examples being tested
-			print "[Generating tests from the Chapel spec in %s/spec]" % home
-			tempfilepath = os.path.join(home, "test/spectests.exec.out.tmp")
-			tempfile = open(tempfilepath, "w")
-			p = subprocess.Popen(["make", "spectests"], stdout=subprocess.PIPE)
-			tempfile.write(p.stdout.read())
-			p.wait()
-			tempfile.close()
-			if p.returncode != 0:
-				print ("[Error: Failed to generate Spec tests.  Log file: %s]"
-						% tempfilepath)
-				finish()
+	with cd(home):
+		if path == home or path == testdir and not args.cleanonly:
+			if args.performance:
+				# track the number of examples being tested
+				print ("[Generating tests from the Chapel spec in %s/spec]" 
+					% home)
+				tempfilepath = os.path.join(home, "test/spectests.exec.out.tmp")
+				tempfile = open(tempfilepath, "w")
+				p = subprocess.Popen(["make", "spectests"], 
+					stdout=subprocess.PIPE)
+				tempfile.write(p.stdout.read())
+				p.wait()
+				tempfile.close()
+				if p.returncode != 0:
+					print ("[Error: Failed to generate Spec tests.  "
+						"Log file: %s]") % tempfilepath
+					finish()
 
-			os.chdir(testdir)
+				with cd(testdir):
+					if not os.path.isdir(perfdir):
+						os.mkdir(prefdir)
 
-			if not os.path.isdir(perfdir):
-				os.mkdir(prefdir)
+					print "[Computing stats for spec examples]"
+					tempperfpath = os.path.join(home,
+						"test/spectests.perfStats.out.tmp")
+					tempperffile = open(tempperfpath, "w")
+					cmd = os.path.join(utildir, "test/computePerfStats")
+					p = subprocess.Popen([cmd, "spectests", perfdir, 
+						os.path.join(home, "test/spectests.perfkeys"), 
+						tempfilepath],stdout = subprocess.PIPE)
+					tempperffile.write(p.stdout.read())
+					p.wait()
+					tempperffile.close()
+					if p.returncode != 0:
+						print ("[Error: Failed to compute perf stats for Spec"
+								"tests. Log file: %s]" % tempperfpath)
+						finish()
 
-			print "[Computing stats for spec examples]"
-			tempperfpath = os.path.join(home,
-				"test/spectests.perfStats.out.tmp")
-			tempperffile = open(tempperfpath, "w")
-			cmd = os.path.join(utildir, "test/computePerfStats")
-			p = subprocess.Popen([cmd, "spectests", perfdir, 
-				os.path.join(home, "test/spectests.perfkeys"), tempfilepath],
-				stdout = subprocess.PIPE)
-			tempperffile.write(p.stdout.read())
-			p.wait()
-			tempperffile.close()
-			if p.returncode != 0:
-				print ("[Error: Failed to compute perf stats for Spec tests."
-						"Log file: %s]" % tempperfpath)
-				finish()
+					os.remove(tempfilepath)
+					os.remove(tempperfpath)
 
-			os.remove(tempfilepath)
-			os.remove(tempperfpath)
-			os.chdir(home)
-
-		elif not args.gengraphs: 		
-			print "[Generating tests from the Chapel Spec in %s/spec" % home
-			p = subprocess.Popen(["make", "spectests"], stdout=subprocess.PIPE)
-			autogen = p.stdout.read()
-			if p.returncode != 0:
-				print ("[Error: Failed to generate Spec tests. Run 'make"
-						"spectests' in %s for more info]" % home)
-				finish()
-		
-		os.chdir(path) # go back to our original directory
+			elif not args.gengraphs: 		
+				print "[Generating tests from the Chapel Spec in %s/spec" % home
+				p = subprocess.Popen(["make", "spectests"], 
+					stdout=subprocess.PIPE)
+				autogen = p.stdout.read()
+				if p.returncode != 0:
+					print ("[Error: Failed to generate Spec tests. Run 'make"
+							"spectests' in %s for more info]" % home)
+					finish()
 
 
 def print_chapel_environment():
@@ -1258,6 +1245,18 @@ def getOutput(cmd):
 	p.wait()
 	return p.stdout.readline().rstrip()
 
+@contextlib.contextmanager
+def cd(path):
+	old_dir = os.getcwd()
+	os.chdir(path)
+	os.environ["PWD"] = path
+	try: yield
+	finally:
+		os.chdir(old_dir)
+		os.environ["PWD"] = old_dir
 
 
-main()
+try:
+	main()
+except KeyboardInterrupt:
+	sys.exit(1);
