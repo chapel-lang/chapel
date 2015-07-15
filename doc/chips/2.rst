@@ -610,10 +610,10 @@ compilation unit. All of the formal arguments in a function signature must have
 type annotations.
 
 If a function declaration includes at least one implements clause or type
-equality constraint in its where clause, then the function is type checked
-at its point of definition. The rules for functional visibility in generic
-functions (Section 22.2 of the Chapel Language Specification 0.796) do not
-apply to such functions.
+equality constraint in its where clause, and no unconstrained generic
+arguments, then the function is type checked at its point of definition.
+The rules for functional visibility in generic functions (Section 22.2 of
+the Chapel Language Specification 0.796) do not apply to such functions.
 
 Open issue. Previous versions of this proposal also added a checked
 keyword to request type checking at the point of definition. Current
@@ -1023,6 +1023,7 @@ that the required behavior is occuring. For example:
 
   // Types implementing this interface are asserting
   // that addition is associative
+  // This example is for discussion, not part of the plan
   interface AssociativeAddition(T) {
     proc __behavior_associative_addition(T);
   }
@@ -1037,7 +1038,38 @@ is an arbitrary name that really should be unique for AssociativeAddition.
 So, it would be better to have the compiler generate a unique name - that
 cannot collide with any other declaration - for such cases.
 
-Here are some possible improvements:
+The best approach is to explicitly support nominal interfaces.
+When an interface is marked with a special keyword, explicit, it
+will require an explicit implements statement to be implemented.
+
+
+.. code-block:: chapel
+
+  // Types implementing this interface are asserting
+  // that addition is associative
+  explicit interface AssociativeAddition(T) {
+  }
+
+  interface AdditiveSemigroup(T) : AssociativeAddition {
+    proc +(T,T) : T;
+  }
+
+  // We can make int implement AdditiveSemigroup in two ways:
+  // Way 1: implement AssociativeAddition and rely on
+  //        inferred implements statements to get AdditiveSemigroup
+  int implements AssociativeAddition;
+
+  // Way 2: implement AdditiveSemigroup directly, which checks for
+  //        the required methods, but asserts that AssociativeAddition
+  //        is implemented (since it has no interfaces).
+  int implements AdditiveSemigroup;
+
+Note that interfaces that refine an explicit interface will also require
+an implement statement - either that the relevant type implements the
+explicit interface, or that it implements the sub-interface (Way 1
+and Way 2 in the example above).
+
+Here are some possible alternatives to this design:
 
 .. code-block:: chapel
 
@@ -1048,12 +1080,6 @@ Here are some possible improvements:
   satisfies AssociativeAddition(int);
 
   // Idea 2:
-  // explicitly support nominal interfaces
-  explicit interface AssociativeAddition(T) {
-    // this interface is nominal
-  }
-
-  // Idea 3:
   // syntax to create a unique placeholder
   interface AssociativeAddition(T) {
     unique;
@@ -1115,22 +1141,42 @@ the example
 Note that in simple cases, such functions can be implemented as separate
 overloads of the same function.
 
-Open Questions
---------------
+Resolved Questions
+------------------
 
 Should implements statements be required (= nominal typing) or inferred (=
-structural typing). If they are inferred, should we use a tag/behavior
-strategy like the one outline above in "Semantics Requirements"? Should we
-default to nominal and opt-in to structural? Or vice versa?
+structural typing). Should we default to nominal and opt-in to structural?
+Or vice versa?
+
+* We plan to default to structural and have a way to make an 'explicit'
+  or nominal interface
 
 What syntax should we use for implements clauses in where clauses? Should 
 we use 'require' or some other keyword different from 'where'?
 
-What is the final syntax for interfaces? Do we want 'Self' to refer to the
-first type in an interface?
+* Plans to perform constrained generic checking after generic function
+  instantiation will allow us to combine constrained generics with
+  totally generic types or other sorts of where clauses. For that reason,
+  we should keep 'implements' as part of where clauses, but also we will
+  support things like ! implements. Such more complicated examples will
+  fall back on theh existing generics machinery and will not be fully
+  type checked apart from how they can be instantiated.
 
 How can functions with some unconstrained generic parameters and some
 constrained generic parameters be type checked?
+
+* By doing the constrained generics checking after function instantiation.
+  This approach adds extra type checking for constrained generics.
+
+Open Questions
+--------------
+
+What is the final syntax for interfaces? Do we want 'Self' to refer to the
+first type in an interface?
+
+* There is some support for Self, but we have not yet decided if it
+  still needs to be mentioned explicitly in the type list for the
+  interface.
 
 Implementation
 --------------
