@@ -5,3 +5,7 @@ proc main() {
   writeln(foo);
   writeln(bar);
 }
+
+proc printFoo() {
+  writeln(foo);
+}
