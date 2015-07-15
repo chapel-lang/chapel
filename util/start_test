@@ -202,8 +202,7 @@ def test_directory(test, testtype):
 						skiptest = getOutput([testenv, "SKIPIF"]) 
 					# check output and skip if true
 					if skiptest == "1" or skiptest == "True" :
-						print ("[Skipping directory based on SKIPIF environment" 
-							"settings]")
+						print ("[Skipping directory based on SKIPIF environment" 							" settings]")
 						continue
 				
 				# Skip this directory if there is a <dir>.skipif file 
@@ -240,12 +239,8 @@ def test_directory(test, testtype):
 						break;
 			
 			# check a lot of stuff before continuing
-			if (not os.path.isfile(os.path.join(root, "NOTEST")) and 
-					(aretests or os.access(os.path.join(root, "sub_test"), 
-					os.X_OK)) and (not os.path.isfile(os.path.join(root,
-					"NOINTERP")) and not os.path.isfile(os.path.join(root,
-					"NOEXEC")) and not os.path.isfile(os.path.join(root,
-					"EXECOPTS")))) :
+			if (not os.path.isfile(os.path.join(dir, "NOTEST")) and	(aretests 
+				or os.access(os.path.join(dir, "sub_test"), os.X_OK))):
 				# cd to dir for clean and run, saving current location 
 				with cd(dir):
 					# clean dir
