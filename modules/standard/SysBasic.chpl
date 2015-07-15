@@ -82,7 +82,7 @@ extern proc chpl_cnullfile():_file;
      if !err then do writeln("err does not contain an error; err == ENOERR");
 
 
-   When a :type:`syserr` formal has blank intent, the actual is copied to the
+   When a :type:`syserr` formal has default intent, the actual is copied to the
    formal upon a function call and the formal cannot be assigned within the
    function.
 
@@ -169,6 +169,21 @@ pragma "no doc"
 inline proc _cast(type t, x) where t:c_void_ptr && x.type:c_ptr {
   return __primitive("cast", t, x);
 }
+
+
+pragma "compiler generated"
+pragma "no doc"
+inline proc _defaultOf(type t) where t == c_void_ptr {
+    return __primitive("cast", t, nil);
+}
+
+pragma "compiler generated"
+pragma "no doc"
+inline proc _defaultOf(type t) where t:c_ptr {
+    return __primitive("cast", t, nil);
+}
+
+
 
 /* Allocate memory that is filled with zeros. This memory should eventually be
    freed with c_free.

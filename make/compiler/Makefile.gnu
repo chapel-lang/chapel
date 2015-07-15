@@ -93,11 +93,6 @@ COMP_GEN_LFLAGS += -maix64
 endif
 
 #
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS = -std=gnu89
-
-#
 # query gcc version
 #
 ifndef GNU_GPP_MAJOR_VERSION

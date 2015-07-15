@@ -42,7 +42,6 @@ $compperformancedescription = "";
 $syncsuffix = "";
 $componly = 0;
 $futuresMode = 3;
-$suppressions = "";
 $parnodefile = "";
 $baseline = 0;
 $fast = 0;
@@ -123,8 +122,6 @@ while (@ARGV) {
         $fast = 1;
     } elsif ($flag eq "-memleaks") {
         $memleaks = shift @ARGV;
-    } elsif ($flag eq "-suppress") {
-        $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
 	$componly = 1;
     } elsif ($flag eq "-futures") {
@@ -656,9 +653,6 @@ if ($verify == 1) {
 }
 if ($llvm == 1) {
     $testflags = "$testflags -compopts --llvm";
-}
-if (!($suppressions eq "")) {
-    $testflags = "$testflags -suppress $suppressions";
 }
 if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";
