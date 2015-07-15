@@ -2426,6 +2426,7 @@ void lowerIterators() {
   reconstructIRautoCopyAutoDestroy();
 
   insertDerefTemps();
+  insertReferenceTemps();
 
   cleanupTemporaryVectors();
 }
