@@ -1,0 +1,2 @@
+use-depth.chpl:23: error: Symbol z multiply defined
+use-depth.chpl:33: error: Symbol z multiply defined
