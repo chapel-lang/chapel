@@ -49,7 +49,9 @@ if ($@) {
 
     # Otherwise, try to halt the running process
     if ($@ eq "alarm\n") {
-        system("ps aux | sort -r -k 3 | head");  # any interference?
+        $myPS = "ps";
+        if ("$^O" eq "cygwin") { $myPS = "procps"; }
+        system("$myPS aux | sort -r -k 3 | head");  # any interference?
         print "timedexec Alarm Clock\n";
     }
     if ($@ eq "abort\n") {
@@ -62,7 +64,7 @@ if ($@) {
         print "timedexec sending SIGTERM\n";
         kill SIGTERM, -$child_pid;
         # also call cygwin's kill since perl's doesn't always work
-        if ("$^O" eq "cygwin") { exec "/bin/kill -s SIGTERM -f $child_pid"; }
+        if ("$^O" eq "cygwin") { system("/bin/kill -s SIGTERM -f $child_pid"); }
         waitpid($child_pid, 0);
         alarm 0;
     };
@@ -72,7 +74,7 @@ if ($@) {
         print "timedexec sending SIGKILL\n";
         kill SIGKILL, -$child_pid;
         # also call cygwin's kill since perl's doesn't always work
-        if ("$^O" eq "cygwin") { exec "/bin/kill -s SIGKILL -f $child_pid"; }
+        if ("$^O" eq "cygwin") { system("/bin/kill -s SIGKILL -f $child_pid"); }
     }
     # Because they share the same return code, Ctrl-C will look like a timeout.
     # This is OK, because the test timed out due to operator impatience.
