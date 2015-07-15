@@ -587,8 +587,16 @@ static void addKnownWides() {
     forv_Vec(CallExpr, call, *fn->calledBy) {
       if (!isAlive(call)) continue;
       if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        debug(arg, "formal in virtual method call to fn %s (%d) must be wide\n", fn->cname, fn->id);
         setWide(arg);
       }
+    }
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_VIRTUAL)) {
+      debug(fn->getReturnSymbol(), "must be wide, is returned from virtual fn %s (%d)\n", fn->cname, fn->id);
+      setWide(fn->getReturnSymbol());
     }
   }
 
@@ -608,6 +616,10 @@ static void addKnownWides() {
             }
           }
         }
+        else if (rhs->isPrimitive(PRIM_STRING_FROM_C_STRING)) {
+          // We seem to avoid memory leaks by making the LHS wide
+          setWide(lhs);
+        }
         else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                  rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
           //
@@ -625,11 +637,6 @@ static void addKnownWides() {
             }
           }
         }
-      }
-    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
-      if (typeCanBeWide(fn->getReturnSymbol())) {
-        setWide(fn->getReturnSymbol());
       }
     }
     else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
@@ -713,7 +720,6 @@ static void propagateVar(Symbol* sym) {
               case PRIM_DEREF:
               case PRIM_GET_SVEC_MEMBER:
               case PRIM_GET_SVEC_MEMBER_VALUE:
-              case PRIM_STRING_FROM_C_STRING:
               case PRIM_VIRTUAL_METHOD_CALL:
                 debug(sym, "Setting %s (%d) to wide\n", LHS->cname, LHS->id);
                 setWide(LHS);
@@ -1503,10 +1509,20 @@ static void fixAST() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (!isAlive(call)) continue;
 
-    if (call->isResolved() || call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+    if (call->isResolved()) {
       for_formals_actuals(formal, actual, call) {
         if (SymExpr* act = toSymExpr(actual)) {
           makeMatch(formal, act);
+        }
+      }
+    }
+    else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      for_actuals(actual, call) {
+        SymExpr* act = toSymExpr(actual);
+        if (Type* wide = wideClassMap.get(act->typeInfo())) {
+          insertWideTemp(wide, act);
+        } else if (Type* wide = wideRefMap.get(act->typeInfo())) {
+          insertWideTemp(wide, act);
         }
       }
     } else {
