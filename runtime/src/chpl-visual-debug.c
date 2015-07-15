@@ -199,4 +199,137 @@ void chpl_vdebug_pause (void) {
   }
 }
 
-// End Visual Debug Support
+// Routines to log data ... put here so other places can
+// just call this code to get things logged.
+
+void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
+                            int32_t elemSize, int32_t typeIndex,
+                            int32_t len, int ln, c_string fn)
+{
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
+                  (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
+  }
+}
+
+void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
+                            int32_t elemSize, int32_t typeIndex,
+                            int32_t len, int ln, c_string fn)
+{
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
+                  (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
+  }
+}
+
+void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
+                         int32_t elemSize, int32_t typeIndex, int32_t len,
+                         int ln, c_string fn)
+{
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
+                  (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
+  }
+}
+
+void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
+                         int32_t elemSize, int32_t typeIndex, int32_t len,
+                         int ln, c_string fn)
+{
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
+                  (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
+  }
+}
+
+
+void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
+                               void* srcaddr, void* srcstrides, void* count,
+                               int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
+                               int ln, c_string fn)
+{
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %ld 0x%lx 0x%lx %d %d %d %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, (long)dstnode_id,
+                  (long) dstaddr, (long) srcaddr, elemSize, typeIndex, ln, fn);
+    // printout srcstrides and dststrides and stridelevels?
+  }
+
+}
+
+void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
+                              void* srcaddr, void* srcstrides, void* count,
+                              int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
+                              int ln, c_string fn)
+{
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %ld 0x%lx 0x%lx %d %d %d %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, (long)srcnode_id,
+                  (long) dstaddr, (long) srcaddr, elemSize, typeIndex, ln, fn);
+    // print out the srcstrides and dststrides and stridelevels?
+  }
+}
+
+
+void chpl_vdebug_log_fork(c_nodeid_t node, c_sublocid_t subloc,
+                          chpl_fn_int_t fid, void *arg, int32_t arg_size)
+{
+  // Visual Debug Support                                                                   
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
+                  fid, (long) arg, arg_size);
+  }
+}
+
+
+void  chpl_vdebug_log_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+                              chpl_fn_int_t fid, void *arg, int32_t arg_size)
+{
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
+                  fid, (long) arg, arg_size);
+  }
+}
+
+void chpl_vdebug_log_fast_fork(c_nodeid_t node, c_sublocid_t subloc,
+                               chpl_fn_int_t fid, void *arg, int32_t arg_size)
+{
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
+                  fid, (long) arg, arg_size);
+  }
+}

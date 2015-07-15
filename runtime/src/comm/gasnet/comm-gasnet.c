@@ -439,15 +439,8 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
   size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
 
-  // Visual Debug Support
-  if (chpl_vdebug) {
-    struct timeval tv;
-    struct timezone tz = {0,0};
-    (void)gettimeofday(&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
-             (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
-             (long) raddr, elemSize, typeIndex, len, ln, fn);
-  }
+  // Should be in the compiler macros file?
+  chpl_vdebug_log_put_nb(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
 
   ret = gasnet_put_nb_bulk(node, raddr, addr, nbytes);
 
@@ -469,14 +462,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   gasnet_handle_t ret;
 
   // Visual Debug Support
-  if (chpl_vdebug) {
-    struct timeval tv;
-    struct timezone tz = {0,0};
-    (void)gettimeofday(&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
-             (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
-             (long) raddr, elemSize, typeIndex, len, ln, fn);
-  }
+  chpl_vdebug_log_get_nb(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
 
   ret = gasnet_get_nb_bulk(addr, node, raddr, nbytes);
 
@@ -904,14 +890,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
     memmove(raddr, addr, size);
   } else {
     // Visual Debug support
-    if (chpl_vdebug) {
-      struct timeval tv;
-      struct timezone tz = {0,0};
-      (void)gettimeofday(&tv, &tz);
-      chpl_dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
-                    (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-                    (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
-    }
+    chpl_vdebug_log_put(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", chpl_nodeID, fn, ln, node);
@@ -988,14 +967,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
     memmove(addr, raddr, size);
   } else {
     // Visual Debug support
-    if (chpl_vdebug) {
-      struct timeval tv;
-      struct timezone tz = {0,0};
-      (void)gettimeofday(&tv, &tz);
-      chpl_dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
-                    (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-                    (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
-    }
+    chpl_vdebug_log_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
     
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, node);
@@ -1151,15 +1123,8 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
   }
 
   // Visual Debug Support
-  if (chpl_vdebug) {
-    struct timeval tv;
-    struct timezone tz = {0,0};
-    (void)gettimeofday(&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %s\n",
-             (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, srcnode, (long) dstaddr,
-             (long) srcaddr, elemSize, typeIndex, ln, fn);
-    // print out the srcstr and dststr?
-  }
+  chpl_vdebug_log_get_strd(dstaddr, dststrides, srcnode_id, srcaddr, srcstrides, count,
+                           stridelevels, elemSize, typeIndex, ln, fn);
 
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
@@ -1214,14 +1179,8 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
   }
 
   // Visual Debug Support
-  if (chpl_vdebug) {
-    struct timeval tv;
-    struct timezone tz = {0,0};
-    (void)gettimeofday(&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %s\n",
-             (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, dstnode, (long) dstaddr,
-             (long) srcaddr, elemSize, typeIndex, ln, fn);
-  }
+  chpl_vdebug_log_put_strd(dstaddr, dststrides, dstnode_id, srcaddr, srcstrides,
+                           count, stridelevels, elemSize, typeIndex, ln, fn);
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
@@ -1250,14 +1209,8 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
     chpl_ftable_call(fid, arg);
   } else {
     // Visual Debug Support
-    if (chpl_vdebug) {
-      struct timeval tv;
-      struct timezone tz = {0,0};
-      (void)gettimeofday(&tv, &tz);
-      chpl_dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
-                    (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                    fid, (long) arg, arg_size);
-    }
+    chpl_vdebug_log_fork(node, subloc, fid, arg, arg_size);
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -1348,14 +1301,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
                                info->serial_state);
   } else {
     // Visual Debug Support
-    if (chpl_vdebug) {
-      struct timeval tv;
-      struct timezone tz = {0,0};
-      (void)gettimeofday(&tv, &tz);
-      chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d\n",
-                    (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                    fid, (long) arg, arg_size);
-    }
+    chpl_vdebug_log_fork_nb(node, subloc, fid, arg, arg_size);
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
@@ -1386,14 +1332,8 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
     chpl_ftable_call(fid, arg);
   } else {
     // Visual Debug Support
-    if (chpl_vdebug) {
-      struct timeval tv;
-      struct timezone tz = {0,0};
-      (void)gettimeofday(&tv, &tz);
-      chpl_dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
-                    (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                    fid, (long) arg, arg_size);
-    }
+    chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
+
     if (passArg) {
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)
         printf("%d: remote (no-fork) task created on %d\n",
