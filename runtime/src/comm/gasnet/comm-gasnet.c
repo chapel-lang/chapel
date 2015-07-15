@@ -741,8 +741,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
     }
     chpl_mem_free(pbp, 0, 0);
   } else {
-    int maxpayloadsize = gasnet_AMMaxMedium();
-    int maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
+    size_t maxpayloadsize = gasnet_AMMaxMedium();
+    size_t maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
     priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
     pblp->id = id;
     numOffsets = (size+maxsize)/maxsize;
@@ -751,7 +751,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
         init_done_obj(&done[node], numOffsets);
     }
     for (offset = 0; offset < size; offset += maxsize) {
-      int thissize = size - offset;
+      size_t thissize = size - offset;
       if (thissize > maxsize)
         thissize = maxsize;
       pblp->offset = offset;
@@ -877,7 +877,7 @@ void chpl_comm_exit(int all, int status) {
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     size_t elemSize, int32_t typeIndex, size_t len,
                     int ln, c_string fn) {
-  const int size = elemSize*len;
+  const size_t size = elemSize*len;
   int remote_in_segment;
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
@@ -950,7 +950,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     size_t elemSize, int32_t typeIndex, size_t len,
                     int ln, c_string fn) {
-  const int size = elemSize*len;
+  const size_t size = elemSize*len;
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -1178,7 +1178,7 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
 void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t* info;
-  int     info_size;
+  size_t  info_size;
   done_t  done;
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
@@ -1235,7 +1235,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
 void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
                         chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
-  int     info_size;
+  size_t  info_size;
   int     passArg = (chpl_nodeID == node
                      || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium());
 
@@ -1294,7 +1294,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid, void *arg, size_t arg_size) {
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
-  int     info_size = sizeof(fork_t) + arg_size;
+  size_t  info_size = sizeof(fork_t) + arg_size;
   done_t  done;
   int     passArg = info_size <= gasnet_AMMaxMedium();
 

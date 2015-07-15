@@ -169,7 +169,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
                          int ln, c_string fn)
 {
   const size_t strlvls = (size_t)stridelevels;
-  int i,j,k,l,m,t,total,off,x,carry;
+  size_t i,j,k,l,m,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1,*dstaddr2,*dstaddr3;
   int8_t* srcaddr,*srcaddr1,*srcaddr2,*srcaddr3;
@@ -323,7 +323,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
                          int ln, c_string fn)
 {
   const size_t strlvls = (size_t)stridelevels;
-  int i,j,k,l,m,t,total,off,x,carry;
+  size_t i,j,k,l,m,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1,*dstaddr2,*dstaddr3;
   int8_t* srcaddr,*srcaddr1,*srcaddr2,*srcaddr3;
@@ -472,7 +472,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
 
 typedef struct {
   chpl_fn_int_t fid;
-  int           arg_size;
+  size_t        arg_size;
   char          arg[0];       // variable-sized data here
 } fork_t;
 
@@ -494,7 +494,7 @@ static void fork_nb_wrapper(fork_t* f) {
 void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
                        chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
-  int     info_size;
+  size_t  info_size;
 
   assert(node==0);
 
