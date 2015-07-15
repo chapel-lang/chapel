@@ -704,18 +704,11 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
-    // Visual Debug -- should be protected by an #ifdef VISUALDEBUG?
-    if (chpl_vdebug) {
-      struct timeval tv;
-      struct timezone tz = {0,0};
-      (void)gettimeofday(&tv, &tz);
-      chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06d %d %d %s %d %s\n",
-               (long long) tv.tv_sec, tv.tv_usec,
-               chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
-               lineno, filename);
-    }
+    // Visual Debug
+    chpl_vdebug_log_task_queue(fid, arg, subloc, task_list, task_list_locale,
+                               is_begin_stmt, lineno, filename);
 
-  if (serial_state) {
+    if (serial_state) {
         // call the function directly.
         (chpl_ftable[fid])(arg);
     } else if (subloc == c_sublocid_any) {
