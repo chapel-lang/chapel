@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# A make file for this demo tool
+# chplvis -- a tool to visualize communication and tasks across locales.
 
 # Chapel config
 
@@ -77,3 +77,4 @@ DataModel.o: DataModel.h Event.h
 InfoBar.o: InfoBar.h ViewField.h
 LocaleWin.o: LocaleWin.h
 CommWin.o: CommWin.h
+Event.o: Event.h
