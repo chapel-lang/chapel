@@ -30,8 +30,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/resource.h>
-
 int32_t chpl_nodeID = -1;
 int32_t chpl_numNodes = -1;
 
