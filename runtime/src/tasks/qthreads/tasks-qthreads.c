@@ -40,6 +40,7 @@
 #include "chpl-comm.h"
 #include "chpl-locale-model.h"
 #include "chpl-tasks.h"
+#include "chpl-visual-debug.h"
 #include "config.h"
 #include "error.h"
 #include "arg.h"
