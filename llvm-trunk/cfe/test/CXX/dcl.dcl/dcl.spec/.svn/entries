@@ -1,46 +1,0 @@
-10
-
-dir
-239086
-http://user@llvm.org/svn/llvm-project/cfe/trunk/test/CXX/dcl.dcl/dcl.spec
-http://user@llvm.org/svn/llvm-project
-
-
-
-2015-05-22T05:49:41.410910Z
-237999
-majnemer
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-dcl.stc
-dir
-
-dcl.typedef
-dir
-
-dcl.type
-dir
-
-dcl.constexpr
-dir
-
-dcl.fct.spec
-dir
-
-dcl.friend
-dir
-

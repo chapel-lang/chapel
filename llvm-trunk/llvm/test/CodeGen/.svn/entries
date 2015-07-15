@@ -1,88 +1,0 @@
-10
-
-dir
-239069
-https://user@llvm.org/svn/llvm-project/llvm/trunk/test/CodeGen
-https://user@llvm.org/svn/llvm-project
-
-
-
-2015-06-04T16:17:42.400331Z
-239053
-arsenm
-has-props
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-XCore
-dir
-
-Inputs
-dir
-
-CPP
-dir
-
-X86
-dir
-
-MSP430
-dir
-
-MIR
-dir
-
-R600
-dir
-
-AArch64
-dir
-
-Hexagon
-dir
-
-Thumb2
-dir
-
-BPF
-dir
-
-Mips
-dir
-
-SPARC
-dir
-
-WinEH
-dir
-
-Generic
-dir
-
-SystemZ
-dir
-
-Thumb
-dir
-
-PowerPC
-dir
-
-NVPTX
-dir
-
-ARM
-dir
-

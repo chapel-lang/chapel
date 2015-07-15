@@ -1,37 +1,0 @@
-10
-
-dir
-239086
-http://user@llvm.org/svn/llvm-project/cfe/trunk/test/Driver/Inputs/basic_android_tree/arm-linux-androideabi
-http://user@llvm.org/svn/llvm-project
-
-
-
-2014-06-26T14:38:46.300782Z
-211786
-logan
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-include
-dir
-
-lib
-dir
-
-bin
-dir
-

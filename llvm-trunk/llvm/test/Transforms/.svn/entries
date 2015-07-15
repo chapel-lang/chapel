@@ -1,271 +1,0 @@
-10
-
-dir
-239069
-https://user@llvm.org/svn/llvm-project/llvm/trunk/test/Transforms
-https://user@llvm.org/svn/llvm-project
-
-
-
-2015-06-04T07:21:42.054118Z
-239017
-majnemer
-has-props
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-LowerExpectIntrinsic
-dir
-
-LoopSimplify
-dir
-
-ConstProp
-dir
-
-LoopIdiom
-dir
-
-NaryReassociate
-dir
-
-ConstantHoisting
-dir
-
-LoopUnswitch
-dir
-
-LoopVectorize
-dir
-
-Util
-dir
-
-MemCpyOpt
-dir
-
-PlaceSafepoints
-dir
-
-IPConstantProp
-dir
-
-StructurizeCFG
-dir
-
-Internalize
-dir
-
-CorrelatedValuePropagation
-dir
-
-LowerBitSets
-dir
-
-LoopRotate
-dir
-
-InstSimplify
-dir
-
-PhaseOrdering
-dir
-
-BDCE
-dir
-
-DeadArgElim
-dir
-
-Mem2Reg
-dir
-
-Reg2Mem
-dir
-
-BranchFolding
-dir
-
-SeparateConstOffsetFromGEP
-dir
-
-FunctionAttrs
-dir
-
-SROA
-dir
-
-Sink
-dir
-
-LowerInvoke
-dir
-
-LCSSA
-dir
-
-CodeExtractor
-dir
-
-EarlyCSE
-dir
-
-AlignmentFromAssumptions
-dir
-
-SpeculativeExecution
-dir
-
-GCOVProfiling
-dir
-
-LoopDistribute
-dir
-
-InstCombine
-dir
-
-StripSymbols
-dir
-
-AtomicExpand
-dir
-
-GlobalOpt
-dir
-
-LICM
-dir
-
-LowerAtomic
-dir
-
-ScalarRepl
-dir
-
-ArgumentPromotion
-dir
-
-ADCE
-dir
-
-TailCallElim
-dir
-
-InstMerge
-dir
-
-LoopDeletion
-dir
-
-IndVarSimplify
-dir
-
-AddDiscriminators
-dir
-
-ObjCARC
-dir
-
-AtomicExpandLoadLinked
-dir
-
-LoopUnroll
-dir
-
-PartiallyInlineLibCalls
-dir
-
-ConstantMerge
-dir
-
-LowerSwitch
-dir
-
-SLPVectorizer
-dir
-
-BBVectorize
-dir
-
-LoopStrengthReduce
-dir
-
-LoopInterchange
-dir
-
-IRCE
-dir
-
-CodeGenPrepare
-dir
-
-SCCP
-dir
-
-LoopReroll
-dir
-
-GVN
-dir
-
-Scalarizer
-dir
-
-RewriteStatepointsForGC
-dir
-
-MetaRenamer
-dir
-
-JumpThreading
-dir
-
-TailDup
-dir
-
-Reassociate
-dir
-
-Float2Int
-dir
-
-SampleProfile
-dir
-
-DeadStoreElimination
-dir
-
-StraightLineStrengthReduce
-dir
-
-PruneEH
-dir
-
-MergeFunc
-dir
-
-GlobalDCE
-dir
-
-SimplifyCFG
-dir
-
-LoadCombine
-dir
-
-Inline
-dir
-

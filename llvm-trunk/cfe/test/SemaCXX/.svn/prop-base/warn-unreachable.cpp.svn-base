@@ -1,6 +1,0 @@
-K 13
-svn:mergeinfo
-V 133
-/cfe/branches/type-system-rewrite/test/SemaCXX/warn-unreachable.cpp:134693-134817
-/cfe/trunk/test/SemaCXX/warn-unreachable.cpp:121961
-END

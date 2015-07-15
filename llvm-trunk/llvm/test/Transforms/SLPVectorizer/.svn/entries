@@ -1,43 +1,0 @@
-10
-
-dir
-239069
-https://user@llvm.org/svn/llvm-project/llvm/trunk/test/Transforms/SLPVectorizer
-https://user@llvm.org/svn/llvm-project
-
-
-
-2015-05-06T23:54:14.624951Z
-236677
-ahatanak
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-ARM
-dir
-
-XCore
-dir
-
-X86
-dir
-
-R600
-dir
-
-AArch64
-dir
-

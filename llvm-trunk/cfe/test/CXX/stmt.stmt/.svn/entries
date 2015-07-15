@@ -1,55 +1,0 @@
-10
-
-dir
-239086
-http://user@llvm.org/svn/llvm-project/cfe/trunk/test/CXX/stmt.stmt
-http://user@llvm.org/svn/llvm-project
-
-
-
-2015-02-18T18:34:59.815979Z
-229716
-meadori
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-stmt.late
-dir
-
-stmt.block
-dir
-
-stmt.jump
-dir
-
-stmt.expr
-dir
-
-stmt.ambig
-dir
-
-stmt.label
-dir
-
-stmt.select
-dir
-
-stmt.dcl
-dir
-
-stmt.iter
-dir
-

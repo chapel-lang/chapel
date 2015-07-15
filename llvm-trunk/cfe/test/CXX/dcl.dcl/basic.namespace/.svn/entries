@@ -1,40 +1,0 @@
-10
-
-dir
-239086
-http://user@llvm.org/svn/llvm-project/cfe/trunk/test/CXX/dcl.dcl/basic.namespace
-http://user@llvm.org/svn/llvm-project
-
-
-
-2014-12-17T02:41:36.377204Z
-224411
-majnemer
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-namespace.alias
-dir
-
-namespace.udecl
-dir
-
-namespace.def
-dir
-
-namespace.udir
-dir
-

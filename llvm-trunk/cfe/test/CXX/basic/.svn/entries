@@ -1,61 +1,0 @@
-10
-
-dir
-239086
-http://user@llvm.org/svn/llvm-project/cfe/trunk/test/CXX/basic
-http://user@llvm.org/svn/llvm-project
-
-
-
-2015-04-18T04:55:51.552393Z
-235251
-majnemer
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-basic.lookup
-dir
-
-basic.scope
-dir
-
-basic.stc
-dir
-
-basic.align
-dir
-
-basic.link
-dir
-
-basic.start
-dir
-
-basic.def
-dir
-
-basic.lval
-dir
-
-basic.life
-dir
-
-basic.def.odr
-dir
-
-basic.types
-dir
-

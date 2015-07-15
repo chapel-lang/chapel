@@ -1,61 +1,0 @@
-10
-
-dir
-239086
-http://user@llvm.org/svn/llvm-project/cfe/trunk/test/CXX/basic/basic.scope
-http://user@llvm.org/svn/llvm-project
-
-
-
-2014-06-02T13:10:07.220812Z
-210026
-aaronballman
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-91177308-0d34-0410-b5e6-96231b3b80d8
-
-basic.scope.hiding
-dir
-
-basic.scope.declarative
-dir
-
-basic.scope.proto
-dir
-
-basic.scope.enum
-dir
-
-basic.scope.class
-dir
-
-basic.scope.pdecl
-dir
-
-basic.scope.req
-dir
-
-basic.funscope
-dir
-
-basic.scope.local
-dir
-
-basic.scope.concept
-dir
-
-basic.scope.namespace
-dir
-
