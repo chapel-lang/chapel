@@ -15,6 +15,8 @@ import tempfile
 import fnmatch
 import glob
 import contextlib
+import test.convert_start_test_log_to_junit_xml
+from chplenv import *
 
 
 args = None
@@ -553,9 +555,8 @@ def check_environment():
 
 	# save host and target platforms, and configure environment appropriately
 	global host_platform, tgt_platform
-	platformfinder = os.path.join(utildir, "chplenv/chpl_platform.py")
-	host_platform = getOutput([platformfinder, "--host"]) 
-	tgt_platform = getOutput([platformfinder, "--target"]) 
+	host_platform = chpl_platform.get("host")
+	tgt_platform = chpl_platform.get("target") 
 	if tgt_platform != "sunos":
 		os.environ["LC_ALL"] = "C"
 		os.environ["LANG"] = "en_US"
@@ -860,14 +861,13 @@ def set_up_executables():
 	print '[launchcmd: "%s"]' % args.launchcmd
 	os.environ['LAUNCHCMD'] = args.launchcmd
 
-	comm = getOutput(os.path.join(utildir, "chplenv/chpl_comm.py"))
-	launcher = getOutput(os.path.join(utildir, "chplenv/chpl_launcher.py"))
-	locMod = getOutput(os.path.join(utildir, "chplenv/chpl_locale_model.py"))
+	comm = chpl_comm.get()
+	launcher = chpl_launcher.get()
+	locMod = chpl_locale_model.get()
 	
 	print '[comm: "%s"]' % comm
 	os.environ["CHPL_COMM"] = comm
-	os.environ["CHPL_GASNET_SEGMENT"] = os.path.join(utildir, ("chplenv/"
-		"chpl_comm_segment.py"))
+	os.environ["CHPL_GASNET_SEGMENT"] = chpl_comm_segment.get()
 	os.environ["CHPL_LAUNCHER"] = launcher
 
 	print '[localeModel: "%s"]' % locMod
@@ -1075,7 +1075,7 @@ def jUnit():
 		# if --test-root was thrown, remove it from junit report
 		junit_args += " --remove-prefix=%s" % args.testrootdir
 
-	cmd = os.path.join(utildir, "test/conver_start_test_log_to_junit_xml.py")
+	cmd = os.path.join(utildir, "test/convert_start_test_log_to_junit_xml.py")
 	return getOutput([cmd, junit_args])
 
 
