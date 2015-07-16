@@ -1066,11 +1066,9 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 // This is an adaptor from Chapel code to GASNet's gasnet_gets_bulk. It does:
 // * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
 //   to counts of bytes,
-// * convert the element types of the above C arrays from int32_t to size_t.
-// Maybe this can be done in Chapel, but would it be as efficient?
 //
-void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id, 
-                         void* srcaddr, void* srcstrides, void* count,
+void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_id, 
+                         void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                          int ln, c_string fn) {
   int i;
@@ -1082,17 +1080,17 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
   size_t cnt[strlvls+1];
 
   // Only count[0] and strides are measured in number of bytes.
-  cnt[0] = ((size_t*)count)[0] * elemSize;
+  cnt[0] = count[0] * elemSize;
 
   if (strlvls>0) {
-    srcstr[0] = ((size_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((size_t*)dststrides)[0] * elemSize;
+    srcstr[0] = srcstrides[0] * elemSize;
+    dststr[0] = dststrides[0] * elemSize;
     for (i=1; i<strlvls; i++) { 
-      srcstr[i] = ((size_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((size_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((size_t*)count)[i];
+      srcstr[i] = srcstrides[i] * elemSize;
+      dststr[i] = dststrides[i] * elemSize;
+      cnt[i] = count[i];
     }
-    cnt[strlvls] = ((size_t*)count)[strlvls];
+    cnt[strlvls] = count[strlvls];
   }
 
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
@@ -1122,8 +1120,8 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
 }
 
 // See the comment for cmpl_comm_gets().
-void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id, 
-                         void* srcaddr, void* srcstrides, void* count,
+void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id, 
+                         void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                          int ln, c_string fn) {
   int i;
@@ -1135,16 +1133,16 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
   size_t cnt[strlvls+1];
 
   // Only count[0] and strides are measured in number of bytes.
-  cnt[0] = ((size_t*)count)[0] * elemSize;
+  cnt[0] = count[0] * elemSize;
   if (strlvls>0) {
-    srcstr[0] = ((size_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((size_t*)dststrides)[0] * elemSize;
+    srcstr[0] = srcstrides[0] * elemSize;
+    dststr[0] = dststrides[0] * elemSize;
     for (i=1; i<strlvls; i++) { 
-      srcstr[i] = ((size_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((size_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((size_t*)count)[i];
+      srcstr[i] = srcstrides[i] * elemSize;
+      dststr[i] = dststrides[i] * elemSize;
+      cnt[i] = count[i];
     }
-    cnt[strlvls] = ((size_t*)count)[strlvls];
+    cnt[strlvls] = count[strlvls];
   }
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
     printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n", chpl_nodeID, fn, ln, dstnode,(long)strlvls,(long)elemSize,(long)sizeof(size_t),(long)sizeof(gasnet_node_t));

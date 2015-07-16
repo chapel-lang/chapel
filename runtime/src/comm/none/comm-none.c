@@ -163,8 +163,8 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
   memmove(addr, raddr, size*len);
 }
 
-void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
-                         void* srcaddr_arg, void* srcstrides, void* count,
+void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
+                         void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex,
                          int ln, c_string fn)
 {
@@ -183,16 +183,16 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
   assert(dstlocale==0);
 
   //Only count[0] and strides are meassured in number of bytes.
-  cnt[0] = ((size_t*)count)[0] * elemSize;
+  cnt[0] = count[0] * elemSize;
   if (strlvls>0) {
-    srcstr[0] = ((size_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((size_t*)dststrides)[0] * elemSize;
+    srcstr[0] = srcstrides[0] * elemSize;
+    dststr[0] = dststrides[0] * elemSize;
     for (i=1;i<strlvls;i++) {
-      srcstr[i] = ((size_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((size_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((size_t*)count)[i];
+      srcstr[i] = srcstrides[i] * elemSize;
+      dststr[i] = dststrides[i] * elemSize;
+      cnt[i] = count[i];
     }
-    cnt[strlvls] = ((size_t*)count)[strlvls];
+    cnt[strlvls] = count[strlvls];
   }
 
   switch(strlvls) {
@@ -317,8 +317,8 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
   }
 }
 
-void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
-                         void* srcaddr_arg, void* srcstrides, void* count,
+void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
+                         void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex,
                          int ln, c_string fn)
 {
@@ -336,16 +336,16 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
   assert(srclocale==0);
 
   //Only count[0] and strides are meassured in number of bytes.
-  cnt[0] = ((size_t*)count)[0] * elemSize;
+  cnt[0] = count[0] * elemSize;
   if (strlvls>0) {
-    srcstr[0] = ((size_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((size_t*)dststrides)[0] * elemSize;
+    srcstr[0] = srcstrides[0] * elemSize;
+    dststr[0] = dststrides[0] * elemSize;
     for (i=1;i<strlvls;i++) {
-      srcstr[i] = ((size_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((size_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((size_t*)count)[i];
+      srcstr[i] = srcstrides[i] * elemSize;
+      dststr[i] = dststrides[i] * elemSize;
+      cnt[i] = count[i];
       }
-    cnt[strlvls] = ((size_t*)count)[strlvls];
+    cnt[strlvls] = count[strlvls];
   }
 
   switch(strlvls) {
