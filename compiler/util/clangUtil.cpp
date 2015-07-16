@@ -980,6 +980,7 @@ void finishCodegenLLVM() {
     bool problems;
 #if HAVE_LLVM_VER >= 35
     problems = verifyModule(*info->module, &errs());
+    //problems = false;
 #else
     problems = verifyModule(*info->module, PrintMessageAction);
 #endif
@@ -1734,7 +1735,7 @@ void setupForGlobalToWide(void) {
   }
   ginfo->builder->CreateRet(ret);
 
-#if HAVE_LLVM_VERS >= 35
+#if HAVE_LLVM_VER >= 35
   llvm::verifyFunction(*fn, &errs());
 #endif
 

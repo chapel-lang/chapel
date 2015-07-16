@@ -104,6 +104,10 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
+  ////////////////Added by Hui/////////////////////////
+  if (strstr(defFile, "/modules/")!=NULL || strcmp(defFile, "<internal>")==0)
+    return NULL;
+  /////////////////////////////////////////////////////
   int defLine = type->symbol->linenum();
   
   if(!ty) {
@@ -298,7 +302,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
     const llvm::StructLayout* slayout = NULL;
     llvm::StructType* struct_type = llvm::cast<llvm::StructType>(ty);
     slayout = layout->getStructLayout(struct_type);
-    
+   
     N = this->dibuilder.createForwardDecl(
       llvm::dwarf::DW_TAG_structure_type, 
       name,
@@ -340,6 +344,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
     }
 
     if(this_class->aggregateTag == AGGREGATE_RECORD) {
+        ////////////////////////////////////////
+        //printf("Here: %s  %d  %s\n",name,defLine,defFile);
       N = this->dibuilder.createStructType(
         get_module_scope(defModule),
         name,
@@ -623,6 +629,7 @@ LLVM_DIVARIABLE debug_data::construct_variable(VarSymbol *varSym)
       ); //omit the  Flags and ArgNo
   else {
     //Empty dbg node if the symbol type is unresolved
+    printf("varSym_type is NULL for lv: %s\n",name);
     LLVM_DIVARIABLE ret;
 #if HAVE_LLVM_VER >= 37
     ret = NULL;
@@ -683,5 +690,17 @@ LLVM_DIVARIABLE debug_data::get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo
   }
   return toDIVARIABLE(argSym->llvmDIFormal);
 }
+/*
+void debug_data::createDeclare(llvm::Value* Storage, LLVM_DIVARIABLE VarInfo)
+{
+  GenInfo* info = gGenInfo; //info is universal across whole project
 
+  if (Storage && VarInfo) 
+  //llvm::Instruction *declareCall = 
+    this->dibuilder.insertDeclare(Storage,VarInfo,info->builder->GetInsertBlock());
+  //declareCall->setDebugLoc();
+  else 
+    printf("CreateDeclare failed !\n");
+}
+*/
 #endif
