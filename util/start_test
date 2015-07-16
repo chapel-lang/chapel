@@ -204,7 +204,8 @@ def test_directory(test, testtype):
 						skiptest = getOutput([testenv, "SKIPIF"]) 
 					# check output and skip if true
 					if skiptest == "1" or skiptest == "True" :
-						print ("[Skipping directory based on SKIPIF environment" 							" settings]")
+						print ("[Skipping directory based on SKIPIF "		
+								"environment settings]")
 						continue
 				
 				# Skip this directory if there is a <dir>.skipif file 
