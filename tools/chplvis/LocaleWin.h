@@ -25,6 +25,8 @@
 #include <FL/Fl_Multiline_Output.H>
 struct localeInfo;
 
+// Window for showing Locale information.
+
 class LocaleWin : public Fl_Double_Window {
 
  private:

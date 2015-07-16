@@ -31,11 +31,9 @@
 
 #include "DataModel.h"
 
+// Information stored for each locale
+
 struct localeInfo {
-  int x;
-  int y;
-  int w;
-  int h;
   int numTasks;
   double userCpu;
   double sysCpu;
@@ -44,9 +42,16 @@ struct localeInfo {
   double refSysCpu;
   double clockTime;
   double refTime;
+  // Locale Window information.
   LocaleWin *win;
-  // Fl_Color heat;
+  int x;  // Window location
+  int y;
+  int w;
+  int h;
 };
+
+// Information stored for every comm direction
+// X -> Y and Y -> X for all X & Y.  (2d array)
 
 struct commInfo {
   int numComms;
@@ -56,10 +61,16 @@ struct commInfo {
   CommWin *win;
 };
 
+// Tag names may appear multiple times in the data,
+// Associates unique tag number with name.
+
 struct tagInfo {
   int tagNo;
   char *tagName;
 };
+
+// Utility routine for computing colors for display,
+// Needed by other classes that draw colors.
 
 Fl_Color heatColor ( double val, double max );
 
@@ -71,19 +82,21 @@ class ViewField : public Fl_Box {
   private:
 
     int numlocales;
-    int cx, cy; // center of the ViewField
-    double rx, ry; // Radius of the locales
-    double angle;
-    double start;
+    int cx, cy;     // center of the ViewField
+    double rx, ry;  // Radius of the locales, for elliptical view
+    double angle;   // Angle between locale
+    double start;   // Angle of locale 0
 
-    localeInfo *theLocales;
-    int getSize; // need this to deallocate after changing numlocales
-    commInfo **comms;
+    // Data arrays for the locales (1D) and communication (2D)
+    localeInfo *theLocales; // Need to de/reallocate after changing numlocales
+    int getSize;            // size used for doing deallocate after changeing numlocales
+    commInfo **comms;       // Also need to de/reallocate after changing numlocales
 
-    tagInfo *tags;
+    tagInfo *tags;    // Information for creating the tag menu
     int tagsSize;
     int tagMenu;
 
+    // Keep track of what is being displayed
     enum show_what {show_Tasks, show_CPU, show_Clock} infoTop;
     int maxTasks;
     double maxCpu;

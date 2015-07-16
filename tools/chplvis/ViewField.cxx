@@ -17,12 +17,18 @@
  * limitations under the License.
  */
 
+// This class is the primary view field for chplvis.   Most of the visualization
+// is done by special drawing done by this class
+
+
 #include "chplvis.h"
 #include "ViewField.h"
 #include "math.h"
 #include <FL/fl_draw.H>
 
 // Local utility functions
+
+// Computation of color for use in displays
 
 Fl_Color heatColor ( double val, double max ) {
   if (val == 0) return FL_WHITE;

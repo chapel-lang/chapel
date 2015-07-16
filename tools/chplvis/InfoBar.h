@@ -24,6 +24,8 @@
 #include <FL/Fl_Box.H>
 #include <string.h>
 
+// Top bar of display showing Max values and reference colors.
+
 class InfoBar : public Fl_Box {
 
  private:

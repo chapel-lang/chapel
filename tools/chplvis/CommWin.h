@@ -25,6 +25,8 @@
 #include <FL/Fl_Multiline_Output.H>
 struct commInfo;
 
+// Window for showing communication details.
+
 class CommWin : public Fl_Double_Window {
 
  private:
