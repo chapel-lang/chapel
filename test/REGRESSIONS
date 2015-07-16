@@ -368,13 +368,21 @@ https://chapel.atlassian.net/browse/CHAPEL-8
   (gasnet.fifo:       2015-03-24, 2015-03-31, 2015-04-04..2015-04-05,
                       2015-04-12, 2015-04-26..2015-04-27, 2015-04-30, 
                       2015-05-02, 2015-05-03..2015-05-05, 2015-05-14,
-                      2015-05-25, 2015-06-16, 2015-07-07)
+                      2015-05-25, 2015-06-16, 2015-07-07, 2015-07-13,
+                      2015-07-15..)
   (gasnet-fast:       2015-04-30, ..2015-05-03, 2015-06-30..)
   (gasnet-everything: 2015-05-11)
 [Error matching program output for types/string/StringImpl/memLeaks/substring]
   (gasnet.fifo: 2015-06-25)
+
+
+sporadic segfaults
+https://chapel.atlassian.net/browse/CHAPEL-78
+---------------------------------------------
 [Error matching program output for types/string/StringImpl/stress/plusEquals]
-  (gasnet.fifo: 2015-07-09  -- note that this one may be different)
+  (gasnet.fifo: 2015-07-09)
+[Error matching program output for types/string/StringImpl/memLeaks/relational]
+  (gasnet.fifo: 2015-07-12)
 
 
 
@@ -417,7 +425,7 @@ sporadic execution timeouts
 https://chapel.atlassian.net/browse/CHAPEL-13
 ---------------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
-  (2015-03-24, 2015-03-28, 2015-04-08, 2015-04-24)
+  (2015-03-24, 2015-03-28, 2015-04-08, 2015-04-24, 2015-07-11)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest]
   (2015-04-15, 2015-06-02)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (2015-07-02)
@@ -773,57 +781,6 @@ Inherits 'xe.*'
 Reviewed 2015-05-20
 ===================
 
-=== sporadic failures below ===
-
-sporadic execution timeouts
----------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra]
-  (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26, 2015-05-20, 2015-05-23,
-                          2015-05-26)
-  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18, 2015-06-07,
-                          2015-06-27..?, 2015-07-10..)
-  (xe.ugni.intel          2015-03-24, 2015-03-30, 2015-04-01..2015-04-02, 
-                          2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22,
-                          2015-06-09, 2015-06-19, 2015-06-24, 2015-06-28,
-                          2015-07-03..?, 2015-07-09)
-  (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
-                          2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
-                          2015-05-05..2015-05-06, 2015-05-10,
-                          2015-05-14..2015-05-16, 2015-05-23..2015-05-24,
-                          2015-05-28, 2015-06-09, 2015-06-18, 
-                          2015-07-06..2015-07-07)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
-  (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
-                           2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
-                           2015-05-11, 2015-05-17, 2015-05-21..2015-05-22,
-                           2015-05-26, 2015-06-05..2015-06-06, 2015-06-10,
-                           2015-06-13, 2015-06-26, 2015-07-02, 
-                           2015-07-04..2015-07-06, 2015-07-09)
-  (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 2015-05-26..)
-                           2015-05-03..2015-05-04, 2015-05-06..??
-                           2015-05-13..2015-05-17, 2015-06-05, 
-                           2015-06-14..2015-06-15, 2015-06-22, 2015-06-24,
-                           2015-06-26, 2015-06-29)
-  (xe.ugni-qthreads.intel: ??..2015-03-22, 2015-06-26)
-  (xe.ugni-qthreads.gnu:   2015-05-05, 2015-05-17, 2015-05-22, 2015-06-15)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
-  (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
-                          2015-05-05..2015-05-06, 2015-05-18, 2015-05-21,
-                          2015-06-09..2015-06-10, 2015-06-24..2015-06-26,
-                          2015-07-01..2015-07-02, 2015-07-09)
-  (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
-                          2015-05-18, 2015-05-24..2015-05-25, 2015-05-28,
-                          2015-06-12, 2015-06-18, 2015-07-07)
-  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18, 
-                          2015-06-05..2015-06-06, 2015-06-10, 2015-06-13,
-                          2015-06-17, 2015-06-23, 2015-06-30..)
-  (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21, 
-                          2015-05-23..2015-05-24, 2015-05-26, 2015-06-06,
-                          2015-06-13, 2015-06-21, 2015-06-23..2015-06-24,
-                          2015-06-30, 2015-07-04, 2015-07-06)
-[Error: Timed out executing program release/examples/hello4-datapar-dist]
-  (xe.ugni.gnu 2015-06-25)
-
 
 ==========================================
 xc.knc
@@ -968,6 +925,17 @@ Inherits 'general'
 Reviewed 2015-05-19
 ===================
 
+getting permission denied rather than SYS_ERR (2015-07-14 -- first run in awhile, ???)
+--------------------------------------------------------------------------------------
+[Error matching program output for modules/standard/FileSystem/fsouza/chown/permission_error]
+
+execution timeouts (2015-07-15 -- first run in awhile, ???)
+-----------------------------------------------------------
+[Error: Timed out executing program npb/cg/bradc/cg-sparse]
+[Error: Timed out executing program reductions/diten/testSerialReductions]
+[Error: Timed out executing program users/aroonsharma/2mm]
+[Error: Timed out executing program users/aroonsharma/syr2k]
+
 === sporadic failures below ===
 
 sporadic execution timeout (lydia)
@@ -975,14 +943,15 @@ sporadic execution timeout (lydia)
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
 (cygwin64: ..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06, 
                 2015-03-10, 2015-03-12..2015-03-28, 2015-03-30..2015-04-04, 
-                2015-04-07..2015-05-04, 2015-05-07..2015-05-14, 2015-05-17)
+                2015-04-07..2015-05-04, 2015-05-07..2015-05-14, 2015-05-17,
+                2015-07-15..)
  cygwin32: ..., 2015-03-11, 2015-03-13..2015-03-20, 2015-03-22..)
 [Error: Timed out executing program release/examples/primers/fileIO]
   (cygwin64: 2015-06-02, 2015-06-06, 2015-07-08..)
   (cygwin32: 2015-06-08, 2015-06-11, 2015-06-14..2015-06-15, 
              2015-06-17..2015-06-21, 2015-06-23..2015-06-25,
-             2015-06-27..2015-06-29, 2015-07-02..2015-07-05, 2015-07-08)
-
+             2015-06-27..2015-06-29, 2015-07-02..2015-07-05, 2015-07-08,
+             2015-07-11..2015-07-14)
 
 
 ===========================
@@ -991,29 +960,46 @@ Inherits 'cygwin*' and '*32'
 Reviewed 2015-05-19
 ===========================
 
+memory counts are incorrect (2015-07-14 -- first run in awhile, ???)
+---------------------------------------------
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+[Error matching program output for studies/hpcc/common/testProbSize]
+
+calculation incorrect (2015-07-14 -- first run in awhile, ???)
+
 errors/timeouts due to sync freeing? (2015-05-21, lydia)
-(currently squashed due to running examples only)
 --------------------------------------------------------
 [Error matching program output for parallel/forall/vass/ri-3-stress]
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp]
-[Error: Timed out executing program reductions/diten/testSerialReductions]
 [Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky]
 [Error: Timed out executing program studies/sort/radix]
 [Error: Timed out executing program users/jglewis/cholesky_version_1/test_cholesky]
+
+execution timeouts (2015-07-15 -- first run in awhile, ???)
+-----------------------------------------------------------
+[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky]
+[Error: Timed out executing program studies/cholesky/jglewis/test_dataflow_cholesky]
+[Error: Timed out executing program studies/cholesky/jglewis/version2/elemental/block_distribution/test_elemental_cholesky_block]
+[Error: Timed out executing program studies/cholesky/jglewis/version2/elemental/unsymmetric_indices/test_elemental_cholesky_unsymmetric_ranges]
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
 
 === sporadic failures below ===
 
 sporadic segfault 
 -----------------
 [Error matching program output for release/examples/primers/fileIO] (2015-07-01)
-
+[Error matching program output for parallel/forall/vass/ri-3-stress] (2015-07-15)
 
 ================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
 Reviewed 2015-05-19
 ================================
+
+execution timeouts (2015-07-16 -- first run in awhile, ???)
+-----------------------------------------------------------
+[Error: Timed out executing program npb/is/diten/is]
+[Error: Timed out executing program parallel/forall/vass/ri-3-stress]
 
 === sporadic failures below ===
 
