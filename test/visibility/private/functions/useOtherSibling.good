@@ -1,0 +1,4 @@
+useOtherSibling.chpl:12: In function 'main':
+useOtherSibling.chpl:13: warning: A visible 'foo' is an inaccessible private symbol, defined at:
+ useOtherSibling.chpl:2
+useOtherSibling.chpl:13: error: unresolved call 'foo(6)'
