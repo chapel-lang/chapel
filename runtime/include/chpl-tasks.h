@@ -303,6 +303,135 @@ size_t chpl_task_getDefaultCallStackSize(void);
 extern void chpl_taskRunningCntInc(int64_t _ln, c_string _fn);
 extern void chpl_taskRunningCntDec(int64_t _ln, c_string _fn);
 
+//
+// Tasking callback support.
+//
+// NAME
+//
+//   chpl_task_install_callback   - install tasking callback function
+//   chpl_task_uninstall_callback - remove tasking callback function
+//
+//
+// SYNOPSIS
+//
+//     #include "chpl-tasks.h"
+//
+//     int chpl_task_install_callback(chpl_task_cb_kind_t kind,
+//                                    chpl_task_cb_fn_t cb_fn);
+//     int chpl_task_uninstall_callback(chpl_task_cb_kind_t kind,
+//                                      chpl_task_cb_fn_t cb_fn);
+//
+//
+// DESCRIPTION
+//
+//   These runtime functions are used to install and remove functions
+//   called when certain events occur in the runtime tasking layer.
+//
+//   The 'kind' argument specifies the tasking layer event that is of
+//   interest.  The 'cb_fn' argument is a pointer to a callback function
+//   for that event.  The callback functions installed for each event
+//   will be called, in the order in which they were installed, each
+//   time the corresponding event occurs in the tasking layer of the
+//   runtime.
+//
+//   The type of 'kind', chpl_task_cb_kind_t, is defined something like
+//   this:
+//
+//     typedef enum {
+//       chpl_task_cb_kind_task_begin,
+//       chpl_task_cb_kind_task_end
+//     } chpl_task_cb_kind_t;
+//
+//   The type of a tasking layer callback function pointer is:
+//
+//     typedef void (*chpl_task_cb_fn_t)(chpl_task_cb_kind_t kind,
+//                                       chpl_task_cb_info_t* info);
+//
+//   The first argument tells the kind of event the callback represents.
+//   The second is a pointer to more information about the event, held in a
+//   value of this type:
+//
+//     typedef union {
+//       struct {                  // for chpl_task_cb_kind_task_begin:
+//         int version;            //   version of this info: 1
+//         char* filename;         //   task is defined in this source file
+//         int lineno;             //   task is defined at this source line
+//         chpl_taskID_t id;       //   unique (within top-level locale) ID
+//         bool is_executeOn;      //   true: task is for executeOn body
+//       } begin_info;
+//       struct {                  // for chpl_task_cb_kind_task_end:
+//         int version;            //   version of this info: 1
+//         chpl_taskID_t id;       //   unique (within top-level locale) ID
+//       } end_info;
+//     } chpl_task_cb_info_t;
+//
+//
+// RETURN VALUE
+//
+//   The returned value is 0 if no errors occurred and some other value
+//   (with errno set) if any errors did occur.
+//
+//
+// ERRORS
+//
+//   The following errors can occur with chpl_task_install_callback():
+//
+//     ENOMEM:  No room to install another callback function for this
+//              event.  At present there is a static limit of 10 installed
+//              callback functions for each event.
+//     ERANGE:  The specified 'kind' is too large.
+//
+//   The following errors can occur with chpl_task_uninstall_callback():
+//
+//     ENOENT:  The given pointer was not found in the list of installed
+//              callback functions for the given event.
+//     ERANGE:  The specified 'kind' is too large.
+//
+//
+// NOTES
+//
+//   The callback function should not depend upon the allocation status of
+//   the pointed-to info or any member within it, past the point when it
+//   returns.  In particular, it should not store a copy of the pointer
+//   passed to it when kind==chpl_task_cb_kind_task_begin, for use when
+//   the corresponding chpl_task_cb_kind_task_end call is made.  It should
+//   also not store a copy of the filename pointer from a 'begin' call, to
+//   be used in the 'end' call.  If the info as a whole or the filename are
+//   wanted later, the callback function must allocate memory to hold a
+//   copy of the pointed-to data and duplicate it itself.
+//
+//   These functions are not thread safe.  Calling them simultaneously from
+//   more than one thread can corrupt internal data structures and lead to
+//   chaos.
+//
+typedef enum {
+  chpl_task_cb_kind_task_begin,
+  chpl_task_cb_kind_task_end,
+  chpl_task_num_cb_kinds
+} chpl_task_cb_kind_t;
+
+typedef union {
+  struct {                  // for chpl_task_cb_kind_task_begin:
+    int version;            //   version of this info: 1
+    const char* filename;   //   task is defined in this source file
+    int lineno;             //   task is defined at this source line
+    chpl_taskID_t id;       //   unique (within top-level locale) ID
+    chpl_bool is_executeOn; //   true: task is for executeOn body
+  } begin_info;
+  struct {                  // for chpl_task_cb_kind_task_end:
+    int version;            //   version of this info: 1
+    chpl_taskID_t id;       //   unique (within top-level locale) ID
+  } end_info;
+} chpl_task_cb_info_t;
+
+typedef void (*chpl_task_cb_fn_t)(chpl_task_cb_kind_t,
+                                  const chpl_task_cb_info_t*);
+
+int chpl_task_install_callback(chpl_task_cb_kind_t,
+                               chpl_task_cb_fn_t);
+int chpl_task_uninstall_callback(chpl_task_cb_kind_t,
+                                 chpl_task_cb_fn_t);
+
 #else // LAUNCHER
 
 typedef void chpl_sync_aux_t;
