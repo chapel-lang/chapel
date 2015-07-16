@@ -110,7 +110,7 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
-                       void *srcstr, void *count, size_t strlevels, 
+                       void *srcstr, void *count, int32_t strlevels, 
                        size_t elemSize, int32_t typeIndex,
                        int ln, c_string fn)
 {
@@ -130,7 +130,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
 
 static inline
 void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
-                       void *srcstr, void *count, size_t strlevels, 
+                       void *srcstr, void *count, int32_t strlevels, 
                        size_t elemSize, int32_t typeIndex,
                        int ln, c_string fn)
 {

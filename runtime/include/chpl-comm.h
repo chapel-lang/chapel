@@ -289,7 +289,7 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //
 void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale, 
                      void* srcaddr, void* srcstrides, void* count,
-                     size_t stridelevels, size_t elemSize, int32_t typeIndex, 
+                     int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                      int ln, c_string fn);
 
 //
@@ -297,7 +297,7 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale,
 //
 void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale, 
                      void* srcaddr, void* srcstrides, void* count,
-                     size_t stridelevels, size_t elemSize, int32_t typeIndex, 
+                     int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                      int ln, c_string fn);
 
 //

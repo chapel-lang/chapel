@@ -165,7 +165,7 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
 
 void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
                          void* srcaddr_arg, void* srcstrides, void* count,
-                         size_t stridelevels, size_t elemSize, int32_t typeIndex,
+                         int32_t stridelevels, size_t elemSize, int32_t typeIndex,
                          int ln, c_string fn)
 {
   const size_t strlvls = (size_t)stridelevels;
@@ -319,7 +319,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
 
 void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
                          void* srcaddr_arg, void* srcstrides, void* count,
-                         size_t stridelevels, size_t elemSize, int32_t typeIndex,
+                         int32_t stridelevels, size_t elemSize, int32_t typeIndex,
                          int ln, c_string fn)
 {
   const size_t strlvls = (size_t)stridelevels;
