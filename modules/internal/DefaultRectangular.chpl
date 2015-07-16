@@ -1581,11 +1581,10 @@ module DefaultRectangular {
   proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*size_t where rank >1
   {
     var c: (rank+1)*size_t ;
-    var init:size_t=1;
+    var init:int(32)=1;
   //var dim is used to point to the analyzed dimension at each iteration
   //due to the same stride can be valid across two contiguous dimensions
     var dim:int =rank;
-    var tmp:size_t=1;
     if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1
       ||(blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 2
       {c[1]=1; init=2;}
@@ -1647,7 +1646,7 @@ module DefaultRectangular {
   {
     var c: rank*size_t; 
     var h=1; //Stride array index
-    var cum=1; //cumulative variable
+    var cum:size_t=1; //cumulative variable
     
     if (cnt[h]==1 && dom.dsiDim(rank).length>1)
     {//To understand the blk[rank]==1 condition,
@@ -1659,13 +1658,14 @@ module DefaultRectangular {
     for param i in 2..rank by -1:size_t{
       if (levels>=h)
       {
-        if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1) //CASE 2
+        const dimILength = dom.dsiDim(i).length.safeCast(size_t);
+        if (cnt[h]==dimILength*cum && dom.dsiDim(i-1).length>1) //CASE 2
         {//now, we are in the right dimension (i dimension) to obtain the stride value
           c[h]=blk(i-1).safeCast(size_t);
           h+=1; //Increment the index
           cum=1; //reset the cumulative variable
         }
-        else cum=cum*dom.dsiDim(i).length;
+        else cum *= dimILength;
       }
       
     }
