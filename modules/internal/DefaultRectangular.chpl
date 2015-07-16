@@ -1297,7 +1297,7 @@ module DefaultRectangular {
     
     var dstWholeDim = isWholeDim(A),
         srcWholeDim = isWholeDim(B);
-    var stridelevels:size_t;
+    var stridelevels:int(32);
     
     /* If the stridelevels in source and destination arrays are different, we take the larger*/
     stridelevels=max(A.computeBulkStrideLevels(dstWholeDim),B.computeBulkStrideLevels(srcWholeDim));
@@ -1380,7 +1380,7 @@ module DefaultRectangular {
   // we are on vs. where the source and destination are.
   // The logic mimics that in doiBulkTransfer().
   //
-  proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, count, Alo, Blo)
+  proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels:int(32), dstStride, srcStride, count, Alo, Blo)
    {
     if debugDefaultDistBulkTransfer then
       writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", count, " dst.Blk: ",blk, " src.Blk: ",B.blk);
@@ -1490,7 +1490,7 @@ module DefaultRectangular {
            -- for exameple, whole rows --
        - Stridelevels == rank if there is a "by X" whith X>1 in the range description for 
            the rightmost dimension)*/
-  proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):size_t where rank == 1
+  proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank == 1
   {//To understand the blk(1)==1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 4)
     if (dom.dsiStride==1 && blk(1)==1)|| dom.dsiDim(1).length==1 then return 0;
@@ -1520,9 +1520,9 @@ module DefaultRectangular {
   //   is 3 positions([1,3,1],[1,3,4]), so the checkStrideDistance(i) for i=2 
   //   will return false, therefore, stridelevels +=1
   //More in test/optimizations/bulkcomm/alberto/2dDRtoBDTest.chpl (example 4)
-  proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):size_t where rank > 1 
+  proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank > 1 
   {
-    var stridelevels:size_t = 0;
+    var stridelevels:int(32) = 0;
     if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1 
     || (blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 2   
     then stridelevels+=1; //In many tests, both cases are true
@@ -1535,7 +1535,7 @@ module DefaultRectangular {
   }
   
   /* This function returns the count array for the default rectangular array. */
-  proc DefaultRectangularArr.computeBulkCount(stridelevels:size_t, rankcomp, aux = false):(rank+1)*size_t where rank ==1
+  proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*size_t where rank ==1
   {
     var c: (rank+1)*size_t;
     //To understand the blk(1)>1 condition,
@@ -1578,7 +1578,7 @@ module DefaultRectangular {
   //        join to dimension 1, and the value of count[3] will be the number 
   //        of elements in dimension 2 x number of elements in dimesion 1 (1 x 4).
   //More in test/optimizations/bulkcomms/alberto/3dAgTestStride.chpl (example 6 and 7)
-  proc DefaultRectangularArr.computeBulkCount(stridelevels:size_t, rankcomp, aux = false):(rank+1)*size_t where rank >1
+  proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*size_t where rank >1
   {
     var c: (rank+1)*size_t ;
     var init:size_t=1;
@@ -1643,7 +1643,7 @@ module DefaultRectangular {
   //        is part of a BD array.
   //More in test/optimizations/bulkcomm/alberto/perfTest_v2.chpl (BD <- BD Example 13)
   
-  proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:size_t/*, aFromBD=false*/)
+  proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32)/*, aFromBD=false*/)
   {
     var c: rank*size_t; 
     var h=1; //Stride array index
