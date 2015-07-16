@@ -23,11 +23,20 @@
 // See notes at the top of parallel.cpp for background on heap
 // allocation in this pass
 //
+// The entry point for this pass is the function 'insertWideReferences'
+// located at the bottom of this file.
+//
 // This pass inserts the wide pointers required for communication across
 // locales.
 //
+// Note: Prior to ~July 2015 there were two passes that performed the same
+// duties of this single pass:
+//   - insertWideReferences: Simply widened everything by default
+//   - narrowWideReferences: Selectively narrowed variables
+//
 // --------------------------------------------------
-// Some simple terminology you may find in this pass:
+//
+// Some simple terminology used in this pass:
 //
 // - "wide" : Something that may be remote, type will differ from local vars.
 //
@@ -37,14 +46,24 @@
 //
 // --------------------------------------------------
 //
-// Note: Prior to ~June 2015 there were two passes that performed the same
-// duties of this single pass:
-//   - insertWideReferences: Simply widened everything by default
-//   - narrowWideReferences: Selectively narrowed variables
+// A remote variable is represented by a simple struct with two fields:
+//   - A chpl_localeID_t representing the locale where the data lives
+//   - A pointer to data on the locale
 //
-// This pass begins by identifying variables that we currently are unable to
-// keep local, and widens those variables. From this small set, we then
-// propagate wideness throughout the AST. Here are a couple of simple cases:
+// Runtime calls are inserted by the compiler to read and write such variables.
+//
+// This pass is responsible for the creation of these types.
+// See buildWideClasses and buildWideRefMap.
+//
+// --------------------------------------------------
+//
+// We start by identifying variables that are assumed to be remote. These
+// variables are usually used in ways where it's currently hard to tell if they
+// can ever be local, so for correctness' sake we assume wideness.
+// See addKnownWides() for more.
+//
+// From this small set, we then propagate wideness throughout the AST. Here are
+// a couple of simple cases:
 //
 // - move A, B
 //   # A must match B's wideness.
@@ -55,20 +74,33 @@
 // - move DEST, (get_member_value BASE, MEMBER)
 //   # If BASE or MEMBER are wide, DEST must be wide
 //
-// There are many other corner cases. The general idea is that if data may be
-// remote, references or moves of that data have to be remote as well.
+// There are many other cases. The general idea is that if data may be remote,
+// references or moves of that data have to preserve that property. See both
+// propagateVar() and propagateField() for more.
 //
 // When a variable is widened, we'll put it into a queue and propagate it later.
-// Variables may re-enter the queue, but generally won't.
+// Variables may re-enter the queue, but usually won't. A better strategy in
+// the future would likely be to keep a queue of Exprs, instead of Symbols.
 //
-// Once this propagation has completed, we'll do some more walking of the AST
-// to insert temporaries and some other minor tasks to make sure the program
-// will compile.
-//
-// The 'local' block is implemented in this pass, and occurs after propagation.
-//
+// Once this propagation has completed, the AST isn't quite in the right state
+// for codegen. We'll still need to insert a number of temporaries, both wide
+// and local, for certain primitives. See fixAST() for more.
 //
 // --------------------------------------------------
+//
+// The 'local' block is also implemented in this pass. We duplicate functions
+// within the 'local' block, and insert narrow temporaries for expressions
+// using wide variables. Runtime checks are inserted to ensure that the user's
+// assertion is valid. See handleLocalBlocks().
+//
+// --------------------------------------------------
+//
+// The "local field" pragma is also implemented in this pass. Instead of
+// widening the LHS of PRIM_GET_MEMBER_VALUE, we leave it narrow. Later
+// we'll insert some runtime checks and temporaries to make it all work.
+//
+// --------------------------------------------------
+//
 // Concerning References:
 //
 // There are currently three states of wideness for references:
@@ -78,8 +110,55 @@
 //
 //   - _wide_ref_wide_T : a wide pointer to a reference to a wide class.
 //
-// A references can be widened twice. Once for the _val field, and once more
-// for the actual _ref.
+// A reference can be widened in two ways. If the actual _ref is widened, then
+// the _val is also widened. The _val can also be widened on its own without
+// modifying the containing _ref.
+//
+// --------------------------------------------------
+//
+// Future Work:
+//
+// There's a lot of work that could be done to reduce the number of wide
+// pointers that are inserted.
+//
+// - Fields with class types:
+//   Currently we assume that all fields with a class type are wide (except for
+//   a few compiler-managed types). We make this assumption because one of
+//   the following cases is almost always present:
+//     - The base of PRIM_SET_MEMBER is wide
+//     - The RHS of PRIM_SET_MEMBER is wide
+//
+//   So far it's been easier to simply assume that all fields are wide.
+//   My (benharsh) hope is that this new implementation will allow for some
+//   fields to stay narrow (e.g. if they are only assigned to once).
+//   Some types that would benefit from narrow fields:
+//     - tuples
+//     - runtime types
+//     - arg bundles
+//
+// - Function arguments:
+//   If one call to a function passes in a wide argument, then that function's
+//   corresponding formal must be wide. This is particularly problematic for
+//   these cases:
+//     - The "this" formal on methods
+//     - Internal module utility functions for arrays/domains/dists
+//
+//   I (benharsh) think that duplicating some of these functions may result
+//   in fewer wide variables, at the cost of a larger code size.
+//
+// - Const global and const member forwarding
+//
+// - On-statements:
+//   Given a statement like "on expr do", based on chapel semantics there are
+//   a couple of optimizations we could perform:
+//     - If 'expr' is narrow/local, then the body of the on-statement will
+//       execute on the current locale. This means that we can avoid
+//       allocating the bundled args and avoid calling into the runtime.
+//       This may be beneficial for atomic operations.
+//
+//     - Under certain circumstances, 'expr' can be local within the body
+//       of the on-statement.
+//
 //
 
 #include "expr.h"
@@ -93,8 +172,6 @@
 #include "view.h"
 #include <set>
 #include <queue>
-#include <string>
-#include <sstream>
 #include "timer.h"
 
 //
@@ -136,10 +213,12 @@ AggregateType* wideStringType = NULL;
 static Map<Symbol*,Vec<SymExpr*>*> defMap;
 static Map<Symbol*,Vec<SymExpr*>*> useMap;
 
-static std::map<Type*, Type*> narrowToWideVal, wideToNarrowVal;
+// Used to convert between wide and narrow ref types
+static std::map<Type*, Type*> narrowToWideVal;
 
 static std::map<FnSymbol*, bool> downstreamFromOn;
 
+// Various mini-passes to manipulate the AST into something functional
 static void convertNilToObject();
 static void buildWideClasses();
 static void buildWideRefMap();
@@ -271,9 +350,8 @@ static bool queueEmpty() {
 static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
   if (isFullyWide(sym) || !typeCanBeWide(sym)) return;
 
-  DefExpr* def = sym->defPoint;
   if ((isObj(sym) || sym->type == dtString) && mustBeWide) {
-    if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
+    if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol)) {
       if (isFullyWide(ts)) return; // Don't widen a field in a wide type.
 
       if (sym->hasFlag(FLAG_LOCAL_FIELD) && !isClass(sym->type)) {
@@ -283,7 +361,7 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
     } else if (sym->hasFlag(FLAG_LOCAL_FIELD)) {
       USR_WARN("\"local field\" pragma applied to non-field %s\n", sym->cname);
     }
-  
+
     if (Type* wide = wideClassMap.get(sym->type)) {
       sym->type = wide;
     } else {
@@ -294,10 +372,10 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
   else if (isRef(sym)) {
     if (mustBeWide) {
       if (Type* wide = wideRefMap.get(sym->type))
-        def->sym->type = wide;
+        sym->type = wide;
     } else if (wideVal) {
       if (Type* wide = narrowToWideVal[sym->type])
-        def->sym->type = wide;
+        sym->type = wide;
     }
   }
 }
@@ -470,7 +548,7 @@ static void buildWideRefMap()
       Type* inner = ts->getValType();
 
       if (inner->symbol->hasFlag(FLAG_WIDE_CLASS)) continue;
-      
+
       AggregateType* refToWideClass = NULL;
 
       // Make a ref to a wide class: _ref__wide_T
@@ -547,7 +625,7 @@ defaultFieldWideness(Symbol* field) {
 
 
 //
-// Widen variables that we are completely unable to keep narrow.
+// Widen variables that we don't know how to keep narrow.
 //
 static void addKnownWides() {
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -709,7 +787,7 @@ static void propagateVar(Symbol* sym) {
                 debug(sym, "_val of ref %s (%d) needs to be wide\n", LHS->cname, LHS->id);
                 setValWide(LHS);
                 break;
-              
+
               case PRIM_ARRAY_GET:
               case PRIM_GET_MEMBER: // ??
               case PRIM_GET_MEMBER_VALUE:
@@ -730,7 +808,8 @@ static void propagateVar(Symbol* sym) {
             }
           }
         }
-      } else if ((call->isPrimitive(PRIM_MOVE) ||
+      }
+      else if ((call->isPrimitive(PRIM_MOVE) ||
                  call->isPrimitive(PRIM_ASSIGN)) &&
                   use == call->get(2)) {
         Symbol* LHS = toSymExpr(call->get(1))->var;
@@ -754,6 +833,7 @@ static void propagateVar(Symbol* sym) {
       else if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) {
         SymExpr* field = toSymExpr(call->get(2));
         SymExpr* base = toSymExpr(call->get(1));
+        // TODO: simply check for a narrow field?
         if (strcmp(base->var->type->symbol->cname, "_class_localscoforall_fn") == 0) {
           DEBUG_PRINTF("Handling coforall field set_member\n");
           if (isRef(sym)) {
@@ -855,12 +935,12 @@ static void propagateField(Symbol* sym) {
           if (call->primitive) {
             switch (call->primitive->tag) {
               case PRIM_GET_MEMBER:
-                // Currently we have to keep a 'local field' wide for 
+                // Currently we have to keep a 'local field' wide for
                 // compatibility with some codegen stuff.
                 debug(sym, "field causes _val of %s (%d) to be wide\n", LHS->cname, LHS->id);
                 setValWide(LHS);
                 break;
-              
+
               case PRIM_GET_MEMBER_VALUE:
                 if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
                   DEBUG_PRINTF("\t"); debug(LHS, "widened gmv\n");
@@ -884,7 +964,8 @@ static void propagateField(Symbol* sym) {
       }
       else if (call->primitive) {
         DEBUG_PRINTF("Unhandled primitive for fields: %s\n", call->primitive->name);
-      } else {
+      }
+      else {
         DEBUG_PRINTF("Unhandled field use\n");
       }
     }
@@ -1008,12 +1089,11 @@ static void narrowWideClassesThroughCalls()
         if (isFullyWide(sym)) {
           Type* narrowType = getNarrowType(sym);
 
-          // Copy 
+          // Copy
           VarSymbol* var = newTemp(narrowType);
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
 
-          
           if ((narrowType->symbol->hasFlag(FLAG_EXTERN)) ||
               isRefWideString(narrowType)) {
 
@@ -1025,7 +1105,7 @@ static void narrowWideClassesThroughCalls()
             // If we pass an extern class to an extern/export function,
             // we must treat it like a reference (this is by definition)
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
-          } 
+          }
           else if (narrowType->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
             // Also if the narrow type is a ref or data class type,
             // we must treat it like a (narrow) reference.
@@ -1232,7 +1312,7 @@ static void localizeCall(CallExpr* call) {
             }
           }
           break;
-        } 
+        }
         else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                    rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                    rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
@@ -1436,7 +1516,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
                                     Vec<Symbol*> heapVars)
 {
   SET_LINENO(baseModule);
-  
+
   SymExpr* nodeID = new SymExpr(gNodeID);
   VarSymbol* tmp = newTemp(gNodeID->type);
   VarSymbol* tmpBool = newTemp(dtBool);
@@ -1521,7 +1601,8 @@ static void fixAST() {
         SymExpr* act = toSymExpr(actual);
         if (Type* wide = wideClassMap.get(act->typeInfo())) {
           insertWideTemp(wide, act);
-        } else if (Type* wide = wideRefMap.get(act->typeInfo())) {
+        }
+        else if (Type* wide = wideRefMap.get(act->typeInfo())) {
           insertWideTemp(wide, act);
         }
       }
@@ -1630,8 +1711,7 @@ static void moveAddressSourcesToTemp()
 }
 
 //
-// change all classes into wide classes
-// change all references into wide references
+// Widen variables that may be remote.
 //
 void
 insertWideReferences(void) {
@@ -1684,12 +1764,13 @@ insertWideReferences(void) {
     DEBUG_PRINTF("Heap var %s (%d) is wide\n", sym->cname, sym->id);
     setWide(sym);
   }
+
   addKnownWides();
 
   if (queueEmpty()) {
     DEBUG_PRINTF("WARNING: No known wide things...?\n");
   }
-  
+
   debugTimer.start();
   while (!queueEmpty()) {
     Symbol* sym = queuePop();
