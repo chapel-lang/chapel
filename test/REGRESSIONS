@@ -168,11 +168,6 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-sporadic failure to build chpldoc due to python download timeout (mike, ben)
-----------------------------------------------------------------------------
-*all chpldoc tests*
-  (memleaks: 2015-05-28)
-
 sporadic segfault (one-off?)
 ----------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
@@ -405,6 +400,7 @@ sporadic amudp slave got an xsocket: connection closed on recv() in recvAll()
 -----------------------------------------------------------------------------
 [Error matching .bad file for distributions/dm/hplx] (2015-06-28)
 
+
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
@@ -434,7 +430,7 @@ sporadic segfault (one-off)
 ---------------------------
 [Error matching .bad file for parallel/forall/vass/memleaks2-BlockDist] (2015-06-02)
 
-spoardic(?) glibc invalid next size (one-off?)
+sporadic(?) glibc invalid next size (one-off?)
 ----------------------------------------------
 [Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug] (2015-06-29..)
 
@@ -534,63 +530,6 @@ Reviewed 2015-05-20
 Reviewed 2015-05-20
 ===================
 
-=== sporadic failures below ===
-
-sporadic dropping of output
----------------------------
-[Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass]
-  (2015-01-12..2015-01-19)
-[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith]
-  (2014-12-25..2015-01-08)
-[Error matching program output for classes/deitz/test_dynamic_dispatch2]
-  (2015-04-07)
-[Error matching program output for distributions/dm/t5a]
-  (2015-01-23)
-[Error matching program output for distributions/deitz/exBlockExample/block2D]
-  (2015-01-21..2015-01-29, 2015-05-03..2015-05-04, 2015-05-12..2015-05-17)
-[Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1]
-  (2014-10-24)
-[Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)]
-  (2014-11-13)
-[Error matching program output for functions/diten/refIntents]
-  (2014-09-30)
-[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)]
-  (2014-10-07)
-[Error matching program output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember]
-  (2014-12-16)
-[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)]
-  (2014-10-10)
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
-  (???: 2014-10-03, 2015-03-04
-   xc.mpi.cray.slurm: 2015-03-01, 2015-05-07
-   xc-wb.prgenv-cray: 2015-03-26
-   xc.none.cray.aprun: 2015-04-13
-   xe.mpi.cray: 2015-05-09)
-[Error matching program output for release/examples/primers/arrays]
-  (2014-10-03)
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
-  (2015-01-14)
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)]
-  (2014-12-19)
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-slice (compopts: 1)]
-  (2015-02-08, 2015-04-05)
-[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local (compopts: 1)]
-  (2015-01-26..2015-02-01)
-[Error matching program output for studies/shootout/nbody/sidelnik/nbody_orig_1]
-  (2014-12-16)
-[Error matching program output for modules/vass/SSCA2-with-Private-2]
-  (2015-02-19)
-[Error matching program output for reductions/waynew/reductions]
-  (2015-02-19, 2015-02-22..2015-02-28)
-[Error matching program output for users/hilde/refcnt]
-  (2015-02-20..2015-02-28)
-[Error matching program output for studies/590o/alaska/graph]
-  (2015-02-25)
-[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)]
-  (host testing 2015-03-01)
-[Error matching program output for release/examples/primers/procedures]
-  (2015-06-11)
-
 
 ======================================
 xc-wb.prgenv-cray
@@ -605,19 +544,13 @@ Inherits 'xc-wb.prgenv-cray'
 Reviewed 2015-05-19
 ============================
 
-=== sporadic failures below ===
-
-sporadic unresolved call on ||(0,0) in Types.chpl and related errors (michael)
-https://chapel.atlassian.net/browse/CHAPEL-42
-------------------------------------------------------------------------------
-All tests fail to compile. (2015-02-15..2015-02-16, 2015-02-19, 2015-03-10, 2015-03-12, 2015-04-09..2015-05-03)
-
 
 ===================
 *pgi*
 Inherits 'general'
 Reviewed 2015-05-19
 ===================
+
 
 ===================
 xc-wb.*pgi
@@ -683,16 +616,6 @@ Reviewed 2015-05-20
 ===================
 
 === sporadic failures below ===
-
-sporadic execution timeouts (one-offs?)
----------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
-  (xc.aries.pgi.slurm: 2015-05-21)
-[Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 1)]
-  (xc.ugni.gnu.aprun: 2015-05-28)
-[Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 2)]
-  (xc.ugni.gnu.aprun:   2015-05-28, 2015-06-11)
-  (xc.ugni.intel.aprun: 2015-06-09)
 
 sporadic Jira 17 -- Missing output file
 https://chapel.atlassian.net/browse/CHAPEL-17
@@ -925,8 +848,8 @@ Inherits 'general'
 Reviewed 2015-05-19
 ===================
 
-getting permission denied rather than SYS_ERR (2015-07-14 -- first run in awhile, ???)
---------------------------------------------------------------------------------------
+permission denied rather than SYS_ERR (2015-07-14 -- first run in awhile, ???)
+------------------------------------------------------------------------------
 [Error matching program output for modules/standard/FileSystem/fsouza/chown/permission_error]
 
 execution timeouts (2015-07-15 -- first run in awhile, ???)
@@ -961,11 +884,13 @@ Reviewed 2015-05-19
 ===========================
 
 memory counts are incorrect (2015-07-14 -- first run in awhile, ???)
----------------------------------------------
+--------------------------------------------------------------------
 [Error matching program output for modules/standard/memory/countMemory/countMemory]
 [Error matching program output for studies/hpcc/common/testProbSize]
 
 calculation incorrect (2015-07-14 -- first run in awhile, ???)
+--------------------------------------------------------------
+[Error matching program output for users/aroonsharma/covariance]
 
 errors/timeouts due to sync freeing? (2015-05-21, lydia)
 --------------------------------------------------------
