@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+$(make -f $CHPL_HOME/runtime/etc/Makefile.include \
+       CHPL_MAKE_HOME=$CHPL_HOME printcompileline) \
+  -c -o $1-c.o $1-c.c

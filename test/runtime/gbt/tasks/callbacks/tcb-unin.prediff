@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+
+sed 's/^\(CB.* task\) [0-9]* /\1 N /' < $2 | sort > $2.prediff.tmp && \
+  mv $2.prediff.tmp $2
