@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+
+sed -e 's/^\(CB.* ([0-9*]) \(create\|begin\|end\) task\) [0-9]*/\1 N/' \
+    -e 's/@.*[0-9]\+, /@filename:lineno, /' < $2 | \
+  sort > $2.prediff.tmp && \
+  mv $2.prediff.tmp $2
