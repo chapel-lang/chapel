@@ -1068,6 +1068,14 @@ makeHeapAllocations() {
       }
     }
 
+    // Special case for string literals: Do not heap-allocate them.
+    // Instead, string literal values are moved into local temporaries that are
+    // widened.
+    if (var->type == dtString)
+      if (VarSymbol* v = toVarSymbol(var))
+        if (v->immediate)
+          continue;
+
     SET_LINENO(var);
 
     if (ArgSymbol* arg = toArgSymbol(var)) {
