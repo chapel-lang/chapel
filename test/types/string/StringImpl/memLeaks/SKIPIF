@@ -1,0 +1,3 @@
+# Skip this directory for comm!=none for now, because it's noisy.  We
+# can turn it back on when the string-as-rec implementation arrives.
+CHPL_COMM != none
