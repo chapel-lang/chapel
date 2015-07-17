@@ -67,13 +67,13 @@ pragma "no doc"
          /* left */
          if child < numLocales then
              on Locales[child] do VDebugTree (what, name, time, child);
-	 /* right */
+         /* right */
          if child+1 < numLocales then
              on Locales[child+1] do VDebugTree (what, name, time, child+1);
      }
-	 /* Do the op at the root  */
-	 select what {
-	    when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
+         /* Do the op at the root  */
+         select what {
+            when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
             when vis_op.v_stop     do chpl_vdebug_stop ();
             when vis_op.v_tag      do chpl_vdebug_tag (name.c_str());
             when vis_op.v_pause    do chpl_vdebug_pause ();
