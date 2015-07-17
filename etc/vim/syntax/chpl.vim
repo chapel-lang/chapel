@@ -251,7 +251,7 @@ syn keyword chplType            locale sync atomic single dmapped
 syn keyword chplOperator	on reduce scan by
 syn keyword chplStructure	class record union enum
 syn keyword chplStructure	proc iter cobegin begin local sync let select where
-syn keyword chplStructure	pragma inline with
+syn keyword chplStructure	pragma inline with private public
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil

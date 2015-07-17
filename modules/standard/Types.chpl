@@ -92,7 +92,7 @@ proc isVoidType(type t) param return t == void;
 
 pragma "no instantiation limit"
 proc isBoolType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
+  (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
 
 pragma "no instantiation limit"
 proc isIntType(type t) param return
@@ -111,15 +111,15 @@ proc isEnumType(type t) param {
 
 pragma "no instantiation limit"
 proc isComplexType(type t) param return
-  (t == complex(64)) | (t == complex(128));
+  (t == complex(64)) || (t == complex(128));
 
 pragma "no instantiation limit"
 proc isRealType(type t) param return
-  (t == real(32)) | (t == real(64));
+  (t == real(32)) || (t == real(64));
 
 pragma "no instantiation limit"
 proc isImagType(type t) param return
-  (t == imag(32)) | (t == imag(64));
+  (t == imag(32)) || (t == imag(64));
 
 // Here is a single doc comment for the above.
 /*
@@ -349,81 +349,6 @@ pragma "no doc"
 proc isProperSubtype(type sub, type super) param
   return false;
 
-// What follows are the type _defaultOf methods, used to initialize types
-// Booleans
-pragma "no doc"
-inline proc _defaultOf(type t) param where (isBoolType(t)) return false:t;
-
-// ints, reals, imags, complexes
-pragma "no doc"
-inline proc _defaultOf(type t) param where (isIntegralType(t)) return 0:t;
-// TODO: In order to make _defaultOf param for reals and imags we had to split
-// the cases into their default size and a non-param case.  It is hoped that
-// in the future, floating point numbers may be castable whilst param.  In that
-// world, we can again shrink these calls into the size-ignorant case.
-pragma "no doc"
-inline proc _defaultOf(type t) param where t == real return 0.0;
-pragma "no doc"
-inline proc _defaultOf(type t) where (isRealType(t) && t != real) return 0.0:t;
-pragma "no doc"
-inline proc _defaultOf(type t) param where t == imag return 0.0i;
-pragma "no doc"
-inline proc _defaultOf(type t) where (isImagType(t) && t != imag) return 0.0i:t;
-// Also, complexes cannot yet be parametized
-pragma "no doc"
-inline proc _defaultOf(type t): t where (isComplexType(t)) {
-  var ret:t = noinit;
-  param floatwidth = numBits(t)/2;
-  ret.re = 0.0:real(floatwidth);
-  ret.im = 0.0:real(floatwidth);
-  return ret;
-}
-
-// Enums
-pragma "no doc"
-inline proc _defaultOf(type t) param where (isEnumType(t)) {
-  return chpl_enum_first(t);
-}
-
-// Classes
-pragma "no doc"
-inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
-
-// Various types whose default value is known
-pragma "no doc"
-inline proc _defaultOf(type t) param where t: void return _void;
-pragma "no doc"
-inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
-pragma "no doc"
-inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
-pragma "no doc"
-inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
-pragma "no doc"
-inline proc _defaultOf(type t) where t: _single_aux_t return _nullSingleVarAuxFields;
-pragma "no doc"
-inline proc _defaultOf(type t) where t: _task_list return _nullTaskList;
-
-
-// When I finish removing PRIM_INIT before initialization to a known value, then
-// this method should work.  Until then, my stopgap will be an external function
-// in the runtime.
-//inline proc _defaultOf(type t) where t: memory_order return memory_order_seq_cst;
-pragma "no doc"
-extern proc _defaultOfMemoryOrder(): memory_order;
-
-pragma "no instantiation limit"
-pragma "compiler generated"
-pragma "no doc"
-inline proc _defaultOf(type t) {
-  select t {
-    when memory_order {
-      return _defaultOfMemoryOrder();
-    }
-    otherwise {
-      return nil:t;
-    }
-  }
-}
 
 
 

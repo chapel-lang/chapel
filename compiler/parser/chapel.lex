@@ -151,10 +151,11 @@ on               return processToken(yyscanner, TON);
 otherwise        return processToken(yyscanner, TOTHERWISE);
 out              return processToken(yyscanner, TOUT);
 param            return processToken(yyscanner, TPARAM);
-zip              return processToken(yyscanner, TZIP);
 pragma           return processToken(yyscanner, TPRAGMA);
 __primitive      return processToken(yyscanner, TPRIMITIVE);
+private          return processToken(yyscanner, TPRIVATE);
 proc             return processToken(yyscanner, TPROC);
+public           return processToken(yyscanner, TPUBLIC);
 record           return processToken(yyscanner, TRECORD);
 reduce           return processToken(yyscanner, TREDUCE);
 ref              return processToken(yyscanner, TREF);
@@ -176,6 +177,7 @@ where            return processToken(yyscanner, TWHERE);
 while            return processToken(yyscanner, TWHILE);
 with             return processToken(yyscanner, TWITH);
 yield            return processToken(yyscanner, TYIELD);
+zip              return processToken(yyscanner, TZIP);
 
 "_"              return processToken(yyscanner, TUNDERSCORE);
 
@@ -260,7 +262,7 @@ yield            return processToken(yyscanner, TYIELD);
 
 \n               return processNewline(yyscanner);
 
-[ \t\r]          processWhitespace(yyscanner);
+[ \t\r\f]        processWhitespace(yyscanner);
 .                processInvalidToken(yyscanner);
 
 %%
@@ -379,7 +381,7 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE*    yyLval = yyget_lval(scanner);
 
-  yyLval->pch = eatStringLiteral(scanner, q);
+  yyLval->pch = astr(eatStringLiteral(scanner, q));
 
   countToken(astr(q, yyLval->pch, q));
 

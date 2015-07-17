@@ -2053,7 +2053,7 @@ The following binary operators are defined on :type:`iohints`:
 * ``==`` for set equality
 * ``1=`` for set inequality
 
-When an :type:`iohints` formal has blank intent, the
+When an :type:`iohints` formal has default intent, the
 actual is copied to the formal upon a function call and
 the formal cannot be assigned within the function.
 
@@ -2080,7 +2080,7 @@ The :record:`file` type is implementation-defined.  A value of the
 :record:`file` type refers to the state that is used by the implementation to
 identify and interact with the OS file.
 
-When a :record:`file` formal argument has blank intent, the
+When a :record:`file` formal argument has default intent, the
 actual is copied to the formal upon a function call and
 the formal cannot be assigned within the function.
 
@@ -2691,7 +2691,7 @@ The :record:`channel` type is implementation-defined.
 A value of the :record:`channel` type refers to the state that is used
 to implement the channel operations.
 
-When a :record:`channel` formal has blank intent, the
+When a :record:`channel` formal has default intent, the
 actual is copied to the formal upon a function call and
 the formal cannot be assigned within the function.
 
@@ -3756,9 +3756,30 @@ pragma "no doc"
 inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr {
   var reader = new ChannelReader(_channel_internal=_channel_internal);
   var err:syserr = ENOERR;
+  var save_style:iostyle;
+  var saved_style = false;
+
+  // Adjust the style to use Chapel strings in quotes
+  // unless the string style was already overridden
+  // (that way, writef("%j") will still use JSON-style strings)
+  if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
+    qio_channel_get_style(_channel_internal, save_style);
+    var mystyle = save_style;
+    mystyle.string_format = QIO_STRING_FORMAT_CHPL;
+    qio_channel_set_style(_channel_internal, mystyle);
+    saved_style = true;
+  }
+
   reader.read(x);
+
+  // Put the style back
+  if saved_style {
+    qio_channel_set_style(_channel_internal, save_style);
+  }
+
   err = reader.err;
   delete reader;
+
   return err;
 }
 
@@ -3766,9 +3787,30 @@ pragma "no doc"
 inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
   var writer = new ChannelWriter(_channel_internal=_channel_internal);
   var err:syserr = ENOERR;
+  var save_style:iostyle;
+  var saved_style = false;
+
+  // Adjust the style to use Chapel strings in quotes
+  // unless the string style was already overridden
+  // (that way, writef("%j") will still use JSON-style strings)
+  if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
+    qio_channel_get_style(_channel_internal, save_style);
+    var mystyle = save_style;
+    mystyle.string_format = QIO_STRING_FORMAT_CHPL;
+    qio_channel_set_style(_channel_internal, mystyle);
+    saved_style = true;
+  }
+
   writer.write(x);
+
+  // Put the style back
+  if saved_style {
+    qio_channel_set_style(_channel_internal, save_style);
+  }
+
   err = writer.err;
   delete writer;
+
   return err;
 }
 

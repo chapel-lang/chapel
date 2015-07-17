@@ -1,3 +1,0 @@
-#Because the Mac's gdb version is < 6.4 which is required for our --gdb flag
-execflags/bradc/gdbddash/declint2
-execflags/bradc/gdbddash/gdbSetConfig

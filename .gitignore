@@ -262,6 +262,8 @@ tags
 /test/modules/standard/FileSystem/lydia/exists/file
 /test/modules/standard/FileSystem/lydia/exists/file_link
 /test/modules/standard/FileSystem/lydia/exists/going_away
+/test/modules/standard/FileSystem/lydia/isLink/broken_dir_link
+/test/modules/standard/FileSystem/lydia/isLink/broken_file_link
 /test/modules/standard/FileSystem/lydia/isLink/my_dir
 /test/modules/standard/FileSystem/lydia/isLink/my_file
 /test/modules/standard/FileSystem/lydia/isLink/my_link_dir
@@ -420,7 +422,11 @@ tags
 /third-party/gmp/gmp-6.0.0
 /third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
-/third-party/re2/re2
+/third-party/re2/re2/**/*.orig
+/third-party/re2/re2/core
+/third-party/re2/re2/obj
+/third-party/re2/re2/.git
+
 /third-party/qthread/qthread-1.10/autom4te.cache/
 /third-party/qthread/qthread-1.10/config.h.in
 
