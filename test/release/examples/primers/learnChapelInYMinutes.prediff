@@ -1,0 +1,143 @@
+#!/usr/bin/env python
+import os, sys
+
+
+
+good_serial = ["learnChapelInYMinutes.chpl:342: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)",'This goes to standard error','Hello, World!','There are 3 commas (",") in this line of code','This goes to standard output (just like plain writeln( ) does)','-123, 777, false','10 == 10','-123 == -123','99999999 == 99999999','true','(10,-1)','(5, 1.928, -1000.0 + 5.0i)','true','(276813856, false, 5678, 1234, false, true)','All is well','Continuing to believe reality','276813856 is even.','276813856 is divided by 3 with a remainder of 1.','Chose \'anOption\'','500500','50005000','1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ','500500','(1, 1)	(1, 2)	(1, 3)	(1, 4)	(1, 5)	(1, 6)	(1, 7)	(1, 8)	(1, 9)	(1, 10)	','(2, 1)	(2, 2)	(2, 3)	(2, 4)	(2, 5)	(2, 6)	(2, 7)	(2, 8)	(2, 9)	(2, 10)	','(3, 1)	(3, 2)	(3, 3)	(3, 4)	(3, 5)	(3, 6)	(3, 7)	(3, 8)	(3, 9)	(3, 10)	','(4, 1)	(4, 2)	(4, 3)	(4, 4)	(4, 5)	(4, 6)	(4, 7)	(4, 8)	(4, 9)	(4, 10)	','(5, 1)	(5, 2)	(5, 3)	(5, 4)	(5, 5)	(5, 6)	(5, 7)	(5, 8)	(5, 9)	(5, 10)	','(6, 1)	(6, 2)	(6, 3)	(6, 4)	(6, 5)	(6, 6)	(6, 7)	(6, 8)	(6, 9)	(6, 10)	','(7, 1)	(7, 2)	(7, 3)	(7, 4)	(7, 5)	(7, 6)	(7, 7)	(7, 8)	(7, 9)	(7, 10)	','(8, 1)	(8, 2)	(8, 3)	(8, 4)	(8, 5)	(8, 6)	(8, 7)	(8, 8)	(8, 9)	(8, 10)	','(9, 1)	(9, 2)	(9, 3)	(9, 4)	(9, 5)	(9, 6)	(9, 7)	(9, 8)	(9, 9)	(9, 10)	','(10, 1)	(10, 2)	(10, 3)	(10, 4)	(10, 5)	(10, 6)	(10, 7)	(10, 8)	(10, 9)	(10, 10)	','-5..6 by 2','(-5, 5, 6, 2, false)','-5, -3, -1, 1, 3, 5','(-2, 0), (-2, 1), (-2, 2), (-1, 0), (-1, 1), (-1, 2), (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2), ','(-2, 0), (-2, 1), (-2, 2), (-1, 0), (-1, 1), (-1, 2), (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2), ','{a, b}','-1 -2 -3 -4 -5 -6 -7 -8 -9 -10','0.89443 1.61804 8.47242 -2.61801 -1.13383 -0.723605 -0.531358','0.365489 0.447215 0.576017 0.809022 1.35858 4.23621 -3.78874','0.229669 0.259465 0.298143 0.350374 0.424793 0.539348 0.738503','0.167445 0.182745 0.201121 0.223608 0.251755 0.288008 0.33646','0.13175 0.141041 0.151742 0.1642 0.178886 0.196458 0.217858','15.6553','0.89443 2.51247 10.9849 8.36689 7.23307 6.50946 5.9781','6.34359 6.79081 7.36682 8.17585 9.53443 13.7706 9.9819','10.2116 10.471 10.7692 11.1196 11.5443 12.0837 12.8222','12.9896 13.1724 13.3735 13.5971 13.8489 14.1369 14.4733','14.6051 14.7461 14.8979 15.0621 15.241 15.4374 15.6553','2','1','3','6768 6768','20001','1 2 3 4 5 6 7 8 9 10','(10, 1.2634)','(11, 1.2634)','(12, 5.432)','(13, 9.876)','Outside Before: (1, 2, 3, 4)','Inside Before: (1, 0, 3, 4)','Inside After: (101, 100, 103, 104)','Outside After: (1, 100, 103, 104)','1 2 3 4 5','5','-2','1 2 3 4 -2','1 and 2 are ints','1.2 and 2.3 are reals','1.0 + 2.0i and 3.0 + 4.0i are somethings!','N is greater than 0','N is less than 0','false','true','true','false','(1, a)','2','1, 3, 5, 7, 9, 2, 4, 6, 8, 10, ','10','{memberInt = -1, memberBool = true}','2','{memberInt = 9, memberBool = true}','MyClass Destructor called (10, true)','MyClass Destructor called (-1, true)','MyClass Destructor called (2, true)','MyClass Destructor called (9, true)','2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, ','2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, ','2, 3, 4, 5, 6, 7, 8, 9, 10, 11, ']
+good_parallel_1 = [ 'spun off a task!', 'Done: 1000','Back together']
+good_parallel_2 = ['fibonacci(10) = 55','this gets','executed as','a whole','fibonacci(20) = 6765','fibonacci(5) = 5']
+
+remove_empty = lambda a: a != ''
+
+outfile=sys.argv[2];
+
+fh = open(outfile)
+input = fh.read()
+fh.close()
+
+def writeOutput( value ):
+  fh = open(outfile, 'w')
+  fh.write(value+'\n')
+  print value 
+  fh.close()
+
+[test_serial_input, test_parallel_input] = input.split( "PARALLELISM START" )
+[test_serial, test_parallel] = [ filter( remove_empty, test_serial_input.split("\n")), \
+                                 filter( remove_empty, test_parallel_input.split("\n") )]
+
+# Check Serial section as a whole
+# Should be a 1:1 mapping of each other
+for i in range( min( len(test_serial), len( good_serial ) ) ):
+    if test_serial[i] != good_serial[i]:
+        writeOutput( "FAILED! Line " + str( i+1 ) + " " + str( test_serial[i] ) + " != " + str( good_serial[i] ) )
+        exit( -1-i )
+if len( test_serial ) != len( good_serial):
+  writeOutput( "FAILED! Test and Expected serial sections are different lengths " + str( len( test_serial ) ) +" and " + str( len( good_serial) ) + " lines respectively" )
+  exit( 1 )
+  
+# Check Parallel section in stages
+# test_parallel is modified through the running. 
+# save entier length before-hand
+len_test_parallel = len( test_parallel ) 
+
+# 'Begin task, work, sync' section
+try:
+  # pop first 3 lines
+  test_parallel_1 = [ test_parallel.pop(0) for i in range(3) ]
+  for value in good_parallel_1:
+    count = test_parallel_1.count( value )
+    if count != 1:
+      writeOutput( "Failed! Section 1 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      exit( -1-len(test_serial)-5 )
+
+except IndexError:
+  writeOutput( "FAILED! Section 1 of parallel test: Missing lines." )
+  exit( 1 )
+  
+# Fibonacci section
+try:
+  # pop first 6 lines
+  test_parallel_2 = [ test_parallel.pop(0) for i in range(6) ]
+  for value in good_parallel_2:
+    count = test_parallel_2.count( value )
+    if count != 1:
+      writeOutput( "Failed! Section 2 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      exit( -1-len(test_serial)-5 )
+
+except IndexError:
+  writeOutput( "FAILED! Section 2 of parallel test: Missing lines." )
+  exit( 1 )
+
+# 'Hello from Task ##' section
+try:
+  # pop first 10 lines
+  test_parallel_3 = [ test_parallel.pop(0) for i in range(10) ]
+  for value in [ "Hello from task# "+str(i) for i in range(1,11) ]:
+    count = test_parallel_3.count( value )
+    if count != 1:
+      writeOutput( "Failed! Section 3 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      exit( -1-len(test_serial)-6 )
+
+except IndexError:
+  writeOutput( "FAILED! Section 3 of parallel test: Missing lines." )
+  exit( 1 )
+
+# list 1..100 section
+try:
+  # pop one, split the line into a list by the separator
+  test_parallel_4 = test_parallel.pop(0).split(', ') 
+  # in the separation process, there will be exacty one empty element at the end
+  # because of the output's terminating ', ', add and empty element to the good 
+  # list to account for this
+  for value in  ([ str(v) for v in range(1,101)]+[ '' ] ):
+    count =test_parallel_4.count( value )
+    if count != 1:
+      writeOutput( "Failed! Section 4 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      exit( -1-len(test_serial)-7 )
+
+except IndexError:
+  writeOutput( "FAILED! Section 4 of parallel test: Missing lines." )
+  exit( 1 )
+
+# Serial and Parallel experiments
+try:
+  # pop of lines corresponding to serial and parallel times
+  # hence the janky naming
+  test_parallel_serial   = test_parallel.pop(0)
+  test_parallel_parallel = test_parallel.pop(0)
+  if not test_parallel_serial.startswith( "Serial: " ):
+    writeOutput( "FAILED! Section 4 of parallel test: Supposed serial experiment line does not begin with \"Serial: \": "+ str( test_parallel_serial ) )
+    exit( -1-len(test_serial)-8 )
+  
+  serial_time = float( test_parallel_serial.replace( "Serial: ", "").strip() )
+  if serial_time <= 0.0 :
+    writeOutput( "FAILED! Section 4 of parallel test: Serial experiment ran for a non-positive amount of time: "+ str( serial_time ) )
+    exit( -1-len(test_serial)-9  )
+  
+  if not test_parallel_parallel.startswith( "Parallel: " ):
+    writeOutput( "FAILED! Section 4 of parallel test: Supposed parallel experiment line does not begin with \"Parallel: \": "+ str( test_parallel_parallel ) )
+    exit( -1-len(test_serial)-10 )
+   
+  parallel_time = float( test_parallel_parallel.replace( "Parallel: ", "").strip() )
+  if parallel_time <= 0.0 :
+    writeOutput( "FAILED! Section 4 of parallel test: Parallel experiment ran for a non-positive amount of time: " + str( parallel_time ) )
+    exit( -1-len(test_serial)-9  )
+   
+except IndexError:
+  writeOutput( "FAILED! Section 4 of parallel test: Missing lines." )
+  exit( 1 )
+
+except ValueError:
+  writeOutput( "FAILED! Section 5 of parallel test: Could not convert supposed floating point value to floating point. " + str( test_parallel_serial ) + str( test_parallel_parallel ) )
+  exit( 2 )
+
+
+writeOutput( "SUCCESS!" )
+exit( 0 )
+
+
+
+
+
+
+
