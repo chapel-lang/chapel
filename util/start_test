@@ -783,19 +783,20 @@ def set_up_performance_testing_B():
 		combineCompPerf = os.path.join(utildir, "test/combineCompPerfData")
 	
 	# for any performance testing
-	if args.performance or args.compperformance:
+	if args.performance or args.compperformance or args.gengraphs:
 		global startdate_t, createGraphs
 
 		if args.startdate:
 			startdate_t = "-s" + startdate_t;
 		else:
 			startdate_t = ""
-		
+
 		createGraphs = os.path.join(utildir, "test/genGraphs")
 
 		if not args.gengraphopts:
 			args.gengraphopts = ""
 
+	if args.performance or args.compperformance:
 		# SHA for current run, in order to track dates to commits
 		if args.performance:
 			datdir = perfdir
@@ -834,9 +835,6 @@ def set_up_performance_testing_B():
 
 
 def set_up_executables():
-	# initial environment checks, including finding logfile
-	check_environment()
-
 	# check for compiler
 	global compiler
 	if os.path.isfile(compiler) and os.access(compiler, os.X_OK):
