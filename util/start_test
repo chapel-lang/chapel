@@ -564,7 +564,7 @@ def check_environment():
 
 def set_up_environment():
 	if args.memleakslog:
-		os.environ["CHPL_MEM_LEAK_TESTING"] = True
+		os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
 		args.execopts += " --memLeaksLog=" + os.path.abspath(args.memleakslog)
 
 	# pre-
@@ -596,24 +596,24 @@ def set_up_environment():
 
 	# compiler only
 	if args.componly:
-		os.environ["CHPL_COMPONLY"] = True
+		os.environ["CHPL_COMPONLY"] = "true"
 
 	# stdin redirection
 	if args.nostdinredirect or args.stdinredirect:
-		os.environ["CHPL_NO_STDIN_REDIRECT"] = True
+		os.environ["CHPL_NO_STDIN_REDIRECT"] = "true"
 		if args.stdinredirect:
-			os.environ["CHPL_TEST_FORCE_STDIN_REDIRECT"] = True
+			os.environ["CHPL_TEST_FORCE_STDIN_REDIRECT"] = "true"
 
 	# launcher timeout
 	if args.launchertimeout:
-		os.environ["CHPL_LAUNCHER_TIMEOUT"] = args.launchertimeout
+		os.environ["CHPL_LAUNCHER_TIMEOUT"] = str(args.launchertimeout)
 	
 	# num trials
-	os.environ["CHPL_TEST_NUM_TRIALS"] = args.numtrials
+	os.environ["CHPL_TEST_NUM_TRIALS"] = str(args.numtrials)
 
 	# test root dir
 	if args.testrootdir:
-		os.environ["CHPL_TEST_ROOT_DIR"] = args.testrootdir
+		os.environ["CHPL_TEST_ROOT_DIR"] = str(args.testrootdir)
 
 	# jUnit
 	if args.junit_xml_file:
@@ -894,7 +894,7 @@ def set_up_executables():
 	else:
 		print '[numlocales: "%s"]' % args.numlocales
 	
-	os.environ["NUMLOCALES"] = args.numlocales
+	os.environ["NUMLOCALES"] = str(args.numlocales)
 
 	# pre-exec
 	if args.preexec:
