@@ -5,5 +5,6 @@ outfile=$2
 cat $outfile | \
     sed 's/Operation not permitted/SYS_ERR/' | \
     sed 's/Invalid argument/SYS_ERR/' > \
+    sed 's/Permission denied/SYS_ERR/' > \
     $outfile.tmp
 mv $outfile.tmp $outfile
