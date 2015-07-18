@@ -21,6 +21,8 @@
 // Visual Debug Support file
 //
 
+#define __USE_BSD
+
 #include "chpl-visual-debug.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
@@ -32,6 +34,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
 
