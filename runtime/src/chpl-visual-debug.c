@@ -31,7 +31,9 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
@@ -99,7 +101,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   struct rusage ru;
   struct timeval tv;
   struct timezone tz = {0,0};
-  (void)gettimeofday (&tv, &tz);
+  (void) gettimeofday (&tv, &tz);
 
   chpl_vdebug = 0;
 
@@ -137,7 +139,7 @@ void chpl_vdebug_stop (void) {
   struct timeval tv;
   struct timezone tz = {0,0};
   if (chpl_vdebug_fd >= 0) {
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     if ( getrusage (RUSAGE_SELF, &ru) < 0) {
       ru.ru_utime.tv_sec = 0;
       ru.ru_utime.tv_usec = 0;
@@ -162,7 +164,7 @@ void chpl_vdebug_tag (const char *str) {
   struct timeval tv;
   struct timezone tz = {0,0};
 
-  (void)gettimeofday (&tv, &tz);
+  (void) gettimeofday (&tv, &tz);
   if ( getrusage (RUSAGE_SELF, &ru) < 0) {
     ru.ru_utime.tv_sec = 0;
     ru.ru_utime.tv_usec = 0;
@@ -182,7 +184,7 @@ void chpl_vdebug_pause (void) {
   struct timeval tv;
   struct timezone tz = {0,0};
   if (chpl_vdebug_fd >=0 && chpl_vdebug == 0) {
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     if ( getrusage (RUSAGE_SELF, &ru) < 0) {
       ru.ru_utime.tv_sec = 0;
       ru.ru_utime.tv_usec = 0;
@@ -207,7 +209,7 @@ void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
                   (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
@@ -220,7 +222,7 @@ void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
                   (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
@@ -233,7 +235,7 @@ void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
                   (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
@@ -246,7 +248,7 @@ void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
                   (long) addr, (long) raddr, elemSize, typeIndex, len, ln, fn);
@@ -261,7 +263,7 @@ void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstno
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %ld 0x%lx 0x%lx %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, (long) dstnode_id,
                   (long) dstaddr, (long) srcaddr, elemSize, typeIndex, ln, fn);
@@ -277,7 +279,7 @@ void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnod
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %ld 0x%lx 0x%lx %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, (long) srcnode_id,
                   (long) dstaddr, (long) srcaddr, elemSize, typeIndex, ln, fn);
@@ -292,7 +294,7 @@ void chpl_vdebug_log_fork(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
                   fid, (long) arg, arg_size);
@@ -305,7 +307,7 @@ void  chpl_vdebug_log_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
                   fid, (long) arg, arg_size);
@@ -317,7 +319,7 @@ void chpl_vdebug_log_fast_fork(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
                   fid, (long) arg, arg_size);
@@ -336,7 +338,7 @@ void chpl_vdebug_log_task_queue(chpl_fn_int_t     fid,
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void)gettimeofday (&tv, &tz);
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06d %d %d %s %d %s\n",
                   (long long) tv.tv_sec, tv.tv_usec,
                   chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
