@@ -21,6 +21,7 @@
 #include "chpl-comm.h"
 #include "chpl-locale-model.h"
 #include "chpl-tasks.h"
+#include "chpl-visual-debug.h"
 #include "config.h"
 #include "error.h"
 #include "arg.h"
@@ -702,6 +703,10 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     assert(subloc != c_sublocid_none);
 
     PROFILE_INCR(profile_task_addToTaskList,1);
+
+    // Visual Debug
+    chpl_vdebug_log_task_queue(fid, arg, subloc, task_list, task_list_locale,
+                               is_begin_stmt, lineno, filename);
 
     if (serial_state) {
         // call the function directly.
