@@ -889,10 +889,8 @@ Symbol* getSvecSymbol(CallExpr* call) {
 }
 
 /*
-* Collect all of the function symbols that belong to function calls
-* and nested function calls that occur from baseAST. In other words
-* look through the baseAST and find all the function and nested function
-* calls and collect their fnsymbols.
+* Collect all of the functions in the call graph at and below the function
+* call.
 */
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
   AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
