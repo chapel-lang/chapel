@@ -918,6 +918,7 @@ def set_up_executables():
 
 
 def auto_generate_tests():
+	path = os.getcwd()
 	with cd(home):
 		if path == home or path == testdir and not args.cleanonly:
 			if args.performance:
