@@ -75,7 +75,7 @@ not the type face."
          "export" "extern"
          "inline" "iter"
          "module"
-         "param" "proc"
+         "param" "private" "proc" "public"
          "type"
          "use"
          "var"))

@@ -157,7 +157,7 @@ config param useSleep = true;
 use Time;
 
 //
-// Normal (blank) intent means that a formal argument cannot be modified
+// Normal (default) intent means that a formal argument cannot be modified
 // in the body of a procedure.
 // To allow changing the formal (but not the actual), use the "in" intent.
 //

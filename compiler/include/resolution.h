@@ -46,6 +46,10 @@ const char* toString(FnSymbol* fn);
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
+FnSymbol* getTheIteratorFn(Symbol* ic);
+FnSymbol* getTheIteratorFn(CallExpr* call);
+FnSymbol* getTheIteratorFn(Type* icType);
+
 // forall intents
 void implementForallIntents1(DefExpr* defChplIter);
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);

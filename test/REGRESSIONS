@@ -168,11 +168,6 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-sporadic failure to build chpldoc due to python download timeout (mike, ben)
-----------------------------------------------------------------------------
-*all chpldoc tests*
-  (memleaks: 2015-05-28)
-
 sporadic segfault (one-off?)
 ----------------------------
 [Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
@@ -361,16 +356,29 @@ Reviewed 2015-05-20
 
 === sporadic failures below ===
 
-sporadic failures even after Sung quieted it down (gbt)
+sporadic failures even after Sung quieted it down (gbt, elliot)
 https://chapel.atlassian.net/browse/CHAPEL-8
--------------------------------------------------------
+---------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] 
   (gasnet.fifo:       2015-03-24, 2015-03-31, 2015-04-04..2015-04-05,
                       2015-04-12, 2015-04-26..2015-04-27, 2015-04-30, 
                       2015-05-02, 2015-05-03..2015-05-05, 2015-05-14,
-                      2015-05-25, 2015-06-16)
-  (gasnet-fast:       2015-04-30, ..2015-05-03)
+                      2015-05-25, 2015-06-16, 2015-07-07, 2015-07-13,
+                      2015-07-15..)
+  (gasnet-fast:       2015-04-30, ..2015-05-03, 2015-06-30..)
   (gasnet-everything: 2015-05-11)
+[Error matching program output for types/string/StringImpl/memLeaks/substring]
+  (gasnet.fifo: 2015-06-25)
+
+
+sporadic segfaults
+https://chapel.atlassian.net/browse/CHAPEL-78
+---------------------------------------------
+[Error matching program output for types/string/StringImpl/stress/plusEquals]
+  (gasnet.fifo: 2015-07-09)
+[Error matching program output for types/string/StringImpl/memLeaks/relational]
+  (gasnet.fifo: 2015-07-12)
+
 
 
 ===================
@@ -386,6 +394,12 @@ Inherits 'gasnet*'
 Reviewed 2015-05-24
 ===================
 
+=== sporadic failures below ===
+
+sporadic amudp slave got an xsocket: connection closed on recv() in recvAll()
+-----------------------------------------------------------------------------
+[Error matching .bad file for distributions/dm/hplx] (2015-06-28)
+
 
 ===============================
 gasnet.darwin
@@ -400,10 +414,6 @@ Inherits 'gasnet*' and 'fifo'
 Reviewed 2015-05-20
 =============================
 
-memory leak information printed out (2015-06-25, ???)
------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/substring]
-
 
 === sporadic failures below ===
 
@@ -411,13 +421,18 @@ sporadic execution timeouts
 https://chapel.atlassian.net/browse/CHAPEL-13
 ---------------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
-  (2015-03-24, 2015-03-28, 2015-04-08, 2015-04-24)
+  (2015-03-24, 2015-03-28, 2015-04-08, 2015-04-24, 2015-07-11)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest]
   (2015-04-15, 2015-06-02)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (2015-07-02)
 
 sporadic segfault (one-off)
 ---------------------------
 [Error matching .bad file for parallel/forall/vass/memleaks2-BlockDist] (2015-06-02)
+
+sporadic(?) glibc invalid next size (one-off?)
+----------------------------------------------
+[Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug] (2015-06-29..)
 
 
 
@@ -468,6 +483,12 @@ Inherits 'xc-wb.*' and '*gnu*'
 Reviewed 2015-05-19
 ==============================
 
+=== sporadic failures below ===
+
+sporadic test prints timeout rather than completing
+---------------------------------------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace] (2015-06-29)
+
 
 ===========================
 xc-wb.host.prgenv-gnu
@@ -509,63 +530,6 @@ Reviewed 2015-05-20
 Reviewed 2015-05-20
 ===================
 
-=== sporadic failures below ===
-
-sporadic dropping of output
----------------------------
-[Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass]
-  (2015-01-12..2015-01-19)
-[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith]
-  (2014-12-25..2015-01-08)
-[Error matching program output for classes/deitz/test_dynamic_dispatch2]
-  (2015-04-07)
-[Error matching program output for distributions/dm/t5a]
-  (2015-01-23)
-[Error matching program output for distributions/deitz/exBlockExample/block2D]
-  (2015-01-21..2015-01-29, 2015-05-03..2015-05-04, 2015-05-12..2015-05-17)
-[Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1]
-  (2014-10-24)
-[Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)]
-  (2014-11-13)
-[Error matching program output for functions/diten/refIntents]
-  (2014-09-30)
-[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)]
-  (2014-10-07)
-[Error matching program output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember]
-  (2014-12-16)
-[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)]
-  (2014-10-10)
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
-  (???: 2014-10-03, 2015-03-04
-   xc.mpi.cray.slurm: 2015-03-01, 2015-05-07
-   xc-wb.prgenv-cray: 2015-03-26
-   xc.none.cray.aprun: 2015-04-13
-   xe.mpi.cray: 2015-05-09)
-[Error matching program output for release/examples/primers/arrays]
-  (2014-10-03)
-[Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
-  (2015-01-14)
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)]
-  (2014-12-19)
-[Error matching program output for studies/hpcc/STREAMS/bradc/stream-slice (compopts: 1)]
-  (2015-02-08, 2015-04-05)
-[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local (compopts: 1)]
-  (2015-01-26..2015-02-01)
-[Error matching program output for studies/shootout/nbody/sidelnik/nbody_orig_1]
-  (2014-12-16)
-[Error matching program output for modules/vass/SSCA2-with-Private-2]
-  (2015-02-19)
-[Error matching program output for reductions/waynew/reductions]
-  (2015-02-19, 2015-02-22..2015-02-28)
-[Error matching program output for users/hilde/refcnt]
-  (2015-02-20..2015-02-28)
-[Error matching program output for studies/590o/alaska/graph]
-  (2015-02-25)
-[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)]
-  (host testing 2015-03-01)
-[Error matching program output for release/examples/primers/procedures]
-  (2015-06-11)
-
 
 ======================================
 xc-wb.prgenv-cray
@@ -580,13 +544,6 @@ Inherits 'xc-wb.prgenv-cray'
 Reviewed 2015-05-19
 ============================
 
-=== sporadic failures below ===
-
-sporadic unresolved call on ||(0,0) in Types.chpl and related errors (michael)
-https://chapel.atlassian.net/browse/CHAPEL-42
-------------------------------------------------------------------------------
-All tests fail to compile. (2015-02-15..2015-02-16, 2015-02-19, 2015-03-10, 2015-03-12, 2015-04-09..2015-05-03)
-
 
 ===================
 *pgi*
@@ -595,21 +552,42 @@ Reviewed 2015-05-19
 ===================
 
 
+===================
+xc-wb.*pgi
+Inherits 'general'
+Reviewed 2015-05-19
+===================
+
+=== sporadic failures below ===
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program parallel/forall/vass/ri-3-stress] 
+  (xc-wb.pgi: 2015-06-28)
+  (xc-wb.prgenv-pgi: 2015-06-29..2015-07-01)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
+  (xc-wb.pgi: 2015-06-28)
+  (xc-wb.prgenv-pgi: 2015-07-01)
+
+
 ==============================
 xc-wb.pgi
 Inherits 'xc-wb.*' and '*pgi*'
 Reviewed 2015-05-19
 ==============================
 
-all tests fail with internal error (2015-05-24, lydia)
-------------------------------------------------------
-*all*
 
 ==============================
 xc-wb.prgenv-pgi
 Inherits 'xc-wb.*' and '*pgi*'
 Reviewed 2015-05-19
 ==============================
+
+=== sporadic failures below ===
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (2015-06-29)
 
 
 ===========================
@@ -638,16 +616,6 @@ Reviewed 2015-05-20
 ===================
 
 === sporadic failures below ===
-
-sporadic execution timeouts (one-offs?)
----------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
-  (xc.aries.pgi.slurm: 2015-05-21)
-[Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 1)]
-  (xc.ugni.gnu.aprun: 2015-05-28)
-[Error: Timed out executing program release/examples/benchmarks/shootout/threadring (execopts: 2)]
-  (xc.ugni.gnu.aprun:   2015-05-28, 2015-06-11)
-  (xc.ugni.intel.aprun: 2015-06-09)
 
 sporadic Jira 17 -- Missing output file
 https://chapel.atlassian.net/browse/CHAPEL-17
@@ -699,6 +667,8 @@ sporadic slurmstepd 'Expired slurm credential' problem after termination
   (perf.xc.local.cray: 2015-06-12)
 [Error: Jira 18 -- Expired slurm credential for users/npadmana/twopt/do_smu_soa]
   (perf.xc.no-local.gnu: 2015-06-12..2015-06-13)
+[Error: Jira 18 -- Expired slurm credential for release/examples/hello]
+  (xc.llvm: 2015-06-29)
 
 sporadic slurm 'job has expired id has expired' during PE update
 ----------------------------------------------------------------
@@ -734,50 +704,6 @@ Inherits 'xe.*'
 Reviewed 2015-05-20
 ===================
 
-=== sporadic failures below ===
-
-sporadic execution timeouts
----------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra]
-  (xe.ugni-qthreads.gnu   2015-03-24, 2015-04-26, 2015-05-20, 2015-05-23,
-                          2015-05-26)
-  (xe.ugni-qthreads.intel 2015-05-09..2015-05-10, 2015-05-18, 2015-06-07)
-  (xe.ugni.intel          2015-03-24, 2015-03-30, 2015-04-01..2015-04-02, 
-                          2015-04-24, 2015-05-03, 2015-05-13, 2015-05-22,
-                          2015-06-09, 2015-06-19, 2015-06-24)
-  (xe.ugni.gnu            2015-03-24..2015-04-01, 2015-04-24, 
-                          2015-04-28..2015-04-30..2015-05-01, 2015-05-03, 
-                          2015-05-05..2015-05-06, 2015-05-10,
-                          2015-05-14..2015-05-16, 2015-05-23..2015-05-24,
-                          2015-05-28, 2015-06-09, 2015-06-18)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop]
-  (xe.ugni.gnu:            2015-03-25, 2015-03-27, 2015-04-01, 2015-04-20, 
-                           2015-04-26, 2015-05-02, 2015-05-05..2015-05-06,
-                           2015-05-11, 2015-05-17, 2015-05-21..2015-05-22,
-                           2015-05-26, 2015-06-05..2015-06-06, 2015-06-10,
-                           2015-06-13)
-  (xe.ugni.intel:          2015-03-30, 2015-04-24, 2015-04-29, 2015-05-26..)
-                           2015-05-03..2015-05-04, 2015-05-06..??
-                           2015-05-13..2015-05-17, 2015-06-05, 
-                           2015-06-14..2015-06-15, 2015-06-22, 2015-06-24)
-  (xe.ugni-qthreads.intel: ??..2015-03-22)
-  (xe.ugni-qthreads.gnu:   2015-05-05, 2015-05-17, 2015-05-22, 2015-06-15)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
-  (xe.ugni.intel          2015-04-24, 2015-04-27, 2015-04-29..?, 
-                          2015-05-05..2015-05-06, 2015-05-18, 2015-05-21,
-                          2015-06-09..2015-06-10, 2015-06-24..)
-  (xe.ugni.gnu            2015-04-24, ??..2015-04-30, 2015-05-04..2015-05-06,
-                          2015-05-18, 2015-05-24..2015-05-25, 2015-05-28,
-                          2015-06-12, 2015-06-18)
-  (xe.ugni-qthreads.gnu   2015-04-25, 2015-05-02, 2015-05-18, 
-                          2015-06-05..2015-06-06, 2015-06-10, 2015-06-13,
-                          2015-06-17, 2015-06-23)
-  (xe.ugni-qthreads.intel 2015-05-09, 2015-05-20..2015-05-21, 
-                          2015-05-23..2015-05-24, 2015-05-26, 2015-06-06,
-                          2015-06-13, 2015-06-21, 2015-06-23..2015-06-24)
-[Error: Timed out executing program release/examples/hello4-datapar-dist]
-  (xe.ugni.gnu 2015-06-25)
-
 
 ==========================================
 xc.knc
@@ -785,9 +711,11 @@ Inherits 'xc.*'
 Reviewed 2015-05-20
 ==========================================
 
-execvp() failed: No such file or directory (2015-06-16, gbt)
-------------------------------------------------------------
-* pretty much all *
+=== sporadic failures below ===
+
+sporadic SIGBUS
+---------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (2015-07-03)
 
 
 ==========================
@@ -889,6 +817,11 @@ sporadic 'config attempted to be looked up with empty module name' (lydia)
 --------------------------------------------------------------------------
 [Error matching performance keys for release/examples/benchmarks/hpcc/hpl] (2015-05-23..2015-06-04)
 
+sporadic fasta-printf output mismatch
+-------------------------------------
+[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-printf] (2015-06-28)
+
+
 
 ================================
 perf.xc.local.pgi
@@ -915,6 +848,17 @@ Inherits 'general'
 Reviewed 2015-05-19
 ===================
 
+permission denied rather than SYS_ERR (2015-07-14 -- first run in awhile, ???)
+------------------------------------------------------------------------------
+[Error matching program output for modules/standard/FileSystem/fsouza/chown/permission_error]
+
+execution timeouts (2015-07-15 -- first run in awhile, ???)
+-----------------------------------------------------------
+[Error: Timed out executing program npb/cg/bradc/cg-sparse]
+[Error: Timed out executing program reductions/diten/testSerialReductions]
+[Error: Timed out executing program users/aroonsharma/2mm]
+[Error: Timed out executing program users/aroonsharma/syr2k]
+
 === sporadic failures below ===
 
 sporadic execution timeout (lydia)
@@ -922,13 +866,15 @@ sporadic execution timeout (lydia)
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
 (cygwin64: ..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06, 
                 2015-03-10, 2015-03-12..2015-03-28, 2015-03-30..2015-04-04, 
-                2015-04-07..2015-05-04, 2015-05-07..2015-05-14, 2015-05-17)
+                2015-04-07..2015-05-04, 2015-05-07..2015-05-14, 2015-05-17,
+                2015-07-15..)
  cygwin32: ..., 2015-03-11, 2015-03-13..2015-03-20, 2015-03-22..)
 [Error: Timed out executing program release/examples/primers/fileIO]
-  (cygwin64: 2015-06-02, 2015-06-06)
+  (cygwin64: 2015-06-02, 2015-06-06, 2015-07-08..)
   (cygwin32: 2015-06-08, 2015-06-11, 2015-06-14..2015-06-15, 
-             2015-06-17..2015-06-21, 2015-06-23..)
-
+             2015-06-17..2015-06-21, 2015-06-23..2015-06-25,
+             2015-06-27..2015-06-29, 2015-07-02..2015-07-05, 2015-07-08,
+             2015-07-11..2015-07-14)
 
 
 ===========================
@@ -937,22 +883,48 @@ Inherits 'cygwin*' and '*32'
 Reviewed 2015-05-19
 ===========================
 
+memory counts are incorrect (2015-07-14 -- first run in awhile, ???)
+--------------------------------------------------------------------
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+[Error matching program output for studies/hpcc/common/testProbSize]
+
+calculation incorrect (2015-07-14 -- first run in awhile, ???)
+--------------------------------------------------------------
+[Error matching program output for users/aroonsharma/covariance]
+
 errors/timeouts due to sync freeing? (2015-05-21, lydia)
-(currently squashed due to running examples only)
 --------------------------------------------------------
 [Error matching program output for parallel/forall/vass/ri-3-stress]
-[Error: Timed out executing program npb/cg/bradc/cg-sparse]
 [Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp]
-[Error: Timed out executing program reductions/diten/testSerialReductions]
 [Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky]
 [Error: Timed out executing program studies/sort/radix]
 [Error: Timed out executing program users/jglewis/cholesky_version_1/test_cholesky]
+
+execution timeouts (2015-07-15 -- first run in awhile, ???)
+-----------------------------------------------------------
+[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky]
+[Error: Timed out executing program studies/cholesky/jglewis/test_dataflow_cholesky]
+[Error: Timed out executing program studies/cholesky/jglewis/version2/elemental/block_distribution/test_elemental_cholesky_block]
+[Error: Timed out executing program studies/cholesky/jglewis/version2/elemental/unsymmetric_indices/test_elemental_cholesky_unsymmetric_ranges]
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
+
+=== sporadic failures below ===
+
+sporadic segfault 
+-----------------
+[Error matching program output for release/examples/primers/fileIO] (2015-07-01)
+[Error matching program output for parallel/forall/vass/ri-3-stress] (2015-07-15)
 
 ================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
 Reviewed 2015-05-19
 ================================
+
+execution timeouts (2015-07-16 -- first run in awhile, ???)
+-----------------------------------------------------------
+[Error: Timed out executing program npb/is/diten/is]
+[Error: Timed out executing program parallel/forall/vass/ri-3-stress]
 
 === sporadic failures below ===
 

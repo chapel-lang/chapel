@@ -2053,7 +2053,7 @@ The following binary operators are defined on :type:`iohints`:
 * ``==`` for set equality
 * ``1=`` for set inequality
 
-When an :type:`iohints` formal has blank intent, the
+When an :type:`iohints` formal has default intent, the
 actual is copied to the formal upon a function call and
 the formal cannot be assigned within the function.
 
@@ -2080,7 +2080,7 @@ The :record:`file` type is implementation-defined.  A value of the
 :record:`file` type refers to the state that is used by the implementation to
 identify and interact with the OS file.
 
-When a :record:`file` formal argument has blank intent, the
+When a :record:`file` formal argument has default intent, the
 actual is copied to the formal upon a function call and
 the formal cannot be assigned within the function.
 
@@ -2691,7 +2691,7 @@ The :record:`channel` type is implementation-defined.
 A value of the :record:`channel` type refers to the state that is used
 to implement the channel operations.
 
-When a :record:`channel` formal has blank intent, the
+When a :record:`channel` formal has default intent, the
 actual is copied to the formal upon a function call and
 the formal cannot be assigned within the function.
 
