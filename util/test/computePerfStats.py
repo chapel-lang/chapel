@@ -19,6 +19,18 @@ def main():
 	setup()
 
 
+def open_files():
+	global errors, keys
+	if not os.access(error_file, os.W_OK):
+		print "can't open %s for creating." % error_file
+		exit()
+	errors = open(error_file, "w")
+
+	if not os.access(key_file, os.R_OK):
+		print "can't open %s." % key_file
+	keys = open(key_file, "r")
+
+
 def setup():
 	if not args.key_file:
 		args.key_file = "%s.perfkeys" % args.testname;
@@ -37,14 +49,6 @@ def setup():
 
 	if os.isfile(error_file):
 		os.remove(error_file)
-	if not os.access(error_file, os.W_OK):
-		print "can't open %s for creating." % error_file
-		exit()
-	errors = open(error_file, "w")
-
-	if not os.access(key_file, os.R_OK):
-		print "can't open %s." % key_file
-	keys = open(key_file, "r")
 
 
 def parser_setup():
