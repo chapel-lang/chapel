@@ -303,9 +303,6 @@ size_t chpl_task_getDefaultCallStackSize(void);
 extern void chpl_taskRunningCntInc(int64_t _ln, c_string _fn);
 extern void chpl_taskRunningCntDec(int64_t _ln, c_string _fn);
 
-//
-// Tasking callback support.
-//
 #include "chpl-tasks-callbacks.h"
 
 #else // LAUNCHER

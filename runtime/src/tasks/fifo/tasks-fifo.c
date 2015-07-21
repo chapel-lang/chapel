@@ -148,11 +148,11 @@ static chpl_fn_p comm_task_fn;
 //
 // Tasking callback support.
 //
-#define MAX_CBs_PER_EVENT 10
+#define MAX_CBS_PER_EVENT 10
 
 static struct cb_info {
-  chpl_task_cb_fn_t fns[MAX_CBs_PER_EVENT];
-  chpl_task_cb_info_kind_t info_kinds[MAX_CBs_PER_EVENT];
+  chpl_task_cb_fn_t fns[MAX_CBS_PER_EVENT];
+  chpl_task_cb_info_kind_t info_kinds[MAX_CBS_PER_EVENT];
   int count;
 } cb_info[chpl_task_cb_num_event_kinds];
 
@@ -1552,7 +1552,7 @@ int chpl_task_install_callback(chpl_task_cb_event_kind_t event_kind,
 
   i = cb_info[event_kind].count;
 
-  if (i >= MAX_CBs_PER_EVENT) {
+  if (i >= MAX_CBS_PER_EVENT) {
     errno = ENOMEM;
     return -1;
   }
@@ -1568,25 +1568,28 @@ int chpl_task_install_callback(chpl_task_cb_event_kind_t event_kind,
 int chpl_task_uninstall_callback(chpl_task_cb_event_kind_t event_kind,
                                  chpl_task_cb_fn_t cb_fn) {
   int i;
+  int found_i;
 
   if (event_kind >= chpl_task_cb_num_event_kinds) {
     errno = ERANGE;
     return -1;
   }
 
-  for (i = 0; i < cb_info[event_kind].count; i++) {
-    if (cb_info[event_kind].fns[i] == cb_fn)
+  for (i = 0, found_i = -1; i < cb_info[event_kind].count; i++) {
+    if (cb_info[event_kind].fns[i] == cb_fn) {
+      found_i = i;
       break;
+    }
   }
 
-  if (i >= cb_info[event_kind].count) {
+  if (found_i < 0) {
     errno = ENOENT;
     return -1;
   }
 
-  for ( ; i < cb_info[event_kind].count - 1; i++) {
-    cb_info[event_kind].fns[i] = cb_info[event_kind].fns[i + 1];
-    cb_info[event_kind].info_kinds[i] = cb_info[event_kind].info_kinds[i + 1];
+  for (i = found_i + 1; i < cb_info[event_kind].count; i++) {
+    cb_info[event_kind].fns[i - 1] = cb_info[event_kind].fns[i];
+    cb_info[event_kind].info_kinds[i - 1] = cb_info[event_kind].info_kinds[i];
   }
 
   cb_info[event_kind].count--;
