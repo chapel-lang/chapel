@@ -831,7 +831,7 @@ def set_up_performance_testing_B():
 		printout(p.stdout)
 		p.wait()
 		if p.returncode != 0:
-			print "[Error: Fa iled to save current sha to %s]" % shaDatFilePath
+			print "[Error: Failed to save current sha to %s]" % shaDatFilePath
 
 
 def set_up_executables():
