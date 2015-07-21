@@ -965,7 +965,7 @@ static void propagateField(Symbol* sym) {
         SymExpr* rhs = toSymExpr(call->get(3));
         if (isRef(sym)) {
           DEBUG_PRINTF("Widening ref rhs of set_member\n");
-          widenRef(sym, rhs->var);
+          setValWide(rhs);
         }
       }
       else if (call->primitive) {
