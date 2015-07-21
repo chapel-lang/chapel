@@ -29,7 +29,8 @@ def main():
 	# set up the parser and parse command-line arguments
 	parser = parser_setup()
 	global args
-	args = parser.parse_args()
+	(args, opts) = parser.parse_known_args()
+	parse_passthrough_opts()
 	
 	invocationDir = os.getcwd()
 
@@ -575,7 +576,7 @@ def set_up_environment():
 		os.environ["CHPL_SYSTEM_PREDIFF"] = args.sysprediff
 
 	# compopts
-	if args.compopts != "":
+	if args.compopts:
 		args.compopts = "--cc-warnings " + args.compopts
 	else:
 		args.compopts = "--cc-warnings"
@@ -850,7 +851,7 @@ def set_up_executables():
 	os.environ['COMPOPTS'] = args.compopts
 
 	print '[execopts: "%s"]' % args.execopts
-	os.environ['EXECTOPS'] = args.execopts
+	os.environ['EXECOPTS'] = args.execopts
 
 	print '[launchcmd: "%s"]' % args.launchcmd
 	os.environ['LAUNCHCMD'] = args.launchcmd
@@ -1081,7 +1082,7 @@ def parser_setup():
 	# main args
 	parser.add_argument("tests", nargs="*", help="test files or directories")
 	# executing options
-	parser.add_argument("-execopts", "--execopts", action="store", default="",
+	parser.add_argument("-execopts", "--execopts", action="store_true",	
 			dest="execopts", help="set options for executing tests")
 	# compiler
 	parser.add_argument("-compiler", "--compiler", action="store",
@@ -1091,7 +1092,7 @@ def parser_setup():
 			dest="launchcmd", default="",
 			help="set a program to launch generated executables")
 	# compiler options
-	parser.add_argument("-compopts", "--compopts", action="store", default="",
+	parser.add_argument("-compopts", "--compopts", action="store_true",
 			dest="compopts", help="set options for the compiler")
 	# logfile
 	parser.add_argument("-logfile", "--logfile", action="store",
@@ -1213,6 +1214,35 @@ def parser_setup():
 	parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
 
 	return parser 
+
+
+def parse_passthrough_opts():
+	if args.compopts:
+		getting = False
+		for arg in sys.argv:
+			if not "-compopts" in arg and not getting: continue
+			if not getting:
+				getting = True
+				args.compopts = []
+				continue
+			if not arg[0:2] == "--":
+				break
+			args.compopts.append(arg)
+		args.compopts = " ".join(args.compopts)
+	if args.execopts:
+		getting = False
+		for arg in sys.argv:
+			if not "-execopts" in arg and not getting: continue
+			if not getting:
+				getting = True
+				args.execopts = []
+				continue
+			if not arg[0:2] == "--":
+				break
+			args.execopts.append(arg)
+		args.execopts = " ".join(args.execopts)
+	else:
+		args.execopts = ""
 
 
 # UTILITY ROUTINES AND CLASSES
