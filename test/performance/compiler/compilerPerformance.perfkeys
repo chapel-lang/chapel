@@ -45,6 +45,7 @@ loopInvariantCodeMotion :
 prune2 :
 returnStarTuplesByRefArgs :
 insertWideReferences :
+narrowWideReferences :
 optimizeOnClauses :
 addInitCalls :
 insertLineNumbers :
