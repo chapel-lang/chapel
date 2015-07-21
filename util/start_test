@@ -160,7 +160,7 @@ def test_file(test):
 				print "[Error running sub_test for %s]" % pathtotest
 
 			if args.progress:
-				sys.stderr.writeln("[done]")
+				sys.stderr.write("[done]\n")
 
 			del os.environ["CHPL_ONETEST"]
 			
@@ -388,7 +388,7 @@ def run(test = False):
 		sub_test = os.path.join(utildir, "test/sub_test")
 
 	if args.progress and test:
-		sys.stderr.writeln("Testing %s ... " % test)
+		sys.stderr.write("Testing %s ... \n" % test)
 
 	print "[Starting %s %s]" % (sub_test, datestr)
 	p = subprocess.Popen([sub_test, compiler], stdout=subprocess.PIPE)
