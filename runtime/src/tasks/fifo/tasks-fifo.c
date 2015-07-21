@@ -522,8 +522,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06d %d %d %s %d %s\n",
-             (long long) tv.tv_sec, tv.tv_usec,
+    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %d %d %s %d %s\n",
+             (long long) tv.tv_sec, (long)tv.tv_usec,
              chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
              lineno, filename);
   }
