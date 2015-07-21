@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+#
+# We can't just mention this .c file on the chpl command line because we
+# need to -I the runtime include path to get chpl-tasks-callbacks.h.
+#
+$(make -f $CHPL_HOME/runtime/etc/Makefile.include \
+       CHPL_MAKE_HOME=$CHPL_HOME printcompileline) \
+  -c -o $1-c.o $1-c.c
