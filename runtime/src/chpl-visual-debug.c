@@ -69,10 +69,8 @@ static int chpl_make_vdebug_file (const char *rootname) {
     // Make sure the directory is made.
     if (mkdir (rootname,0777) < 0) {
       if (stat (rootname, &sb) < 0) {
-        if (errno == ENOENT) {
-          fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
-          return -1;
-        }
+        fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
+        return -1;
       }
       if ((sb.st_mode & S_IFMT) != S_IFDIR) {
         fprintf (stderr, "%s: not a directory.\n", rootname);
