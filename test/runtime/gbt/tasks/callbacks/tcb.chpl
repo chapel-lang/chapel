@@ -1,11 +1,13 @@
 proc main {
-  extern proc tcb_install_callbacks();
+  extern proc tcb_install_callbacks_1();
+  extern proc tcb_install_callbacks_2();
   extern proc tcb_wait_for_nCallbacks(nCallbacks: c_int);
   extern proc tcb_report();
 
   var counter: sync int = 0;
 
-  tcb_install_callbacks();
+  tcb_install_callbacks_1();
+  tcb_install_callbacks_2();
 
   cobegin {
     counter = counter + 1;
