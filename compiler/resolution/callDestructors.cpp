@@ -928,9 +928,38 @@ void insertReferenceTemps(CallExpr* call)
 
 
 void insertReferenceTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    // Do not insert reference temps on _toLeader and _toFollower calls before
+    // iterator lowering is complete.
+    // A certain structure for these calls is expected in
+    // cleanupLeaderFollowerIteratorCalls() and inserting deref temps disturbs
+    // that form.
+    // TODO: The design for LeaderFollower 2.0 should avoid these nonconforming
+    // modifications of the AST.
+    if (! iteratorsLowered)
+    {
+      // These tests are copied verbatim from the tests that select the calls
+      // of interest in cleanupLeaderFollowerIteratorCalls().
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+            (isDefExpr(fn->formals.tail) &&
+             !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
+             toDefExpr(fn->formals.tail)->sym->getValType() &&
+             toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
+          if (!strcmp(call->parentSymbol->name, "_toLeader") ||
+              !strcmp(call->parentSymbol->name, "_toFollower") ||
+              !strcmp(call->parentSymbol->name, "_toFastFollower") ||
+              !strcmp(call->parentSymbol->name, "_toStandalone")) {
+            continue;
+          }
+        }
+      }
+    }
+
     if ((call->parentSymbol && call->isResolved()) ||
-        call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+    {
       insertReferenceTemps(call);
     }
   }

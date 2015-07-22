@@ -22,11 +22,14 @@
 
 #include "symbol.h"
 
+//
+// Global symbols set to true after the corresponding class is complete
+//
 extern bool parsed;
 extern bool normalized;
 extern bool resolved;
 extern bool intentsResolved;
-
+extern bool iteratorsLowered;
 
 //
 // prototypes of functions that are called as passes (alphabetical)

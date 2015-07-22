@@ -33,6 +33,12 @@
 #include "symbol.h"
 
 
+//#
+//# Global Variables
+//#
+bool iteratorsLowered = false;
+
+
 // This consistency check should probably be moved earlier in the compilation.
 // It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
 // Does it need to be recursive? (Currently, it is not.)
@@ -2424,6 +2430,8 @@ void lowerIterators() {
   handlePolymorphicIterators();
 
   reconstructIRautoCopyAutoDestroy();
+
+  iteratorsLowered = true;
 
   insertDerefTemps();
   insertReferenceTemps();
