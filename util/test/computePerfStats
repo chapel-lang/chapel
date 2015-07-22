@@ -7,6 +7,7 @@
 # by searchign athe output of the run for values of performance keys specified
 # in .perfkeys. It then writes these valeus to the .dat for every run.
 
+from __future__ import print_function
 import argparse;
 import os;
 import time;
@@ -32,36 +33,40 @@ def main():
 		found_everything = find_keys(keys)
 		stats_file.close()
 	
-	if (valid_output or found_everything) and not args.exec_time_out:
+	if not (valid_output and found_everything) and not args.exec_time_out:
 		cleanup()
 
 
 def find_keys(keys):
+	found_everything = True
 	stats_file.write("%s " % args.perfdate)
 	for key in keys:
 		sys.stdout.write("Looking for %s..." % key)
 		stats_file.write("\t")
 		found = False
-		regex = key + r"\s*(\S*)"
+		regex = re.escape(key) + r"\s*(\S*)"
 		# scan through output, looking for key
 		for line in test_output:
 			m = re.match(regex, line)
 			if m:
-				print "found it: %s" % m.group(1)
+				print("found it: %s" % m.group(1))
 				found = True
 				break
 
 		if not found:
 			stats_file.write("-")
-			print "didn't find it"
+			print("didn't find it")
 			found_everything = False
 	
 	stats_file.write("\n")
+
+	return found_everything
 
 
 def log_timeouts(keys): # if we timed out
 	errors_file.write("appending %s\n" % data_file)
 	if args.exec_time_out:
+		print("ERROR")
 		stats_file.write("#%s " % args.perfdate)
 		for key in keys:
 			stats_file.write("\t-")
@@ -83,16 +88,16 @@ def validate_output(verify_keys):
 		# match verify keys
 		m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
 		if not m:
-			print "Error: invalid verify/reject line '%s'" % key
+			print("Error: invalid verify/reject line '%s'" % key)
 			exit()
 		# set parts of match to variables
 		type = m.group(1)
 		num = m.group(2)
 		regex = m.group(3)
-		num_real = num;
-		if num >= 1 : --num_real
+		num_real = int(num);
+		if num >= 1 : num_real -= 1
 		regex_real = regex
-		is_reject = type == reject
+		is_reject = type == "reject"
 
 		# depending on whether we're asked to verify or reject
 		if not is_reject:
@@ -106,28 +111,28 @@ def validate_output(verify_keys):
 		
 		# MATCH
 		if num: # if there's a line number
-			print "%s /%s/ on line %s... " % (search_msg, regex, num)
+			print("%s /%s/ on line %s... " % (search_msg, regex, num))
 			if re.match(regex_real, test_output[num_real]):
 				valid_output &= not is_reject
-				print found_msg
+				print(found_msg)
 			else:
 				valid_output &= is_reject
-				print not_found_msg
+				print(not_found_msg)
 		else: # no line number
-			print "%s /%s/ on any line... " % (search_msg, regex)
+			print("%s /%s/ on any line... " % (search_msg, regex))
 			found = False
 			for line in test_output:
 				if re.match(regex_real, line):
 					fount = True
-					print found_msg
+					print(found_msg)
 					valid_output &= not is_reject
 					break
 			if not found:
 				valid_output &= is_reject
-				print not_found_msg
+				print(not_found_msg)
 
 		if not valid_output:
-			print "Error: Invalid output found in %s" % args.test_output_file
+			print("Error: Invalid output found in %s" % args.test_output_file)
 	
 	return valid_output
 
@@ -159,11 +164,11 @@ def open_files(): # open various files for reading and writing
 	errors_file = open(errors_file_path, "w")
 
 	if not os.access(args.key_file_path, os.R_OK):
-		print "can't open %s." % args.key_file_path
+		print("can't open %s." % args.key_file_path)
 	keys_file = open(args.key_file_path, "r")
 
 	if not os.access(args.test_output_file, os.R_OK):
-		print "can't open %s." % args.test_output_file
+		print("can't open %s." % args.test_output_file)
 	test_output_file = open(args.test_output_file, "r")
 
 
@@ -189,9 +194,14 @@ def setup():
 		args.test_output_file = "%s.exec.out.tmp" % args.testname;
 	if not args.perfdate:
 		args.perfdate = time.strftime("%m/%d/%y");
-		print "Using default date %s" % args.perfdate;
+		print("Using default date %s" % args.perfdate);
 	else:
-		print "Using set date %s" % args.perfdate;
+		print("Using set date %s" % args.perfdate);
+
+	if args.exec_time_out == "True":
+		args.exec_time_out == True
+	else:
+		args.exec_time_out == False
 	
 	global data_file, errors_file_path, fatal_errors;
 	data_file = "%s/%s.dat" % (args.outputdir, args.testname)
@@ -206,12 +216,12 @@ def cleanup():
 	sys.stdout.write("output was: ")
 	# if test output was too long, only print first and last 1000 characters
 	if len(test_output_raw) > 2000: 
-		print test_output_raw[:1000]
-		print test_output_raw[-1000:]
+		print(test_output_raw[:1000].strip())
+		print(test_output_raw[-1000:].strip())
 	else:
-		print test_output_raw
+		print(test_output_raw.strip())
 
-	exit(0)
+	exit(1)
 
 
 def parser_setup():
@@ -221,10 +231,17 @@ def parser_setup():
 	parser.add_argument("outputdir");
 	parser.add_argument("key_file_path", nargs="?", default=False);
 	parser.add_argument("test_output_file", nargs="?", default=False);
-	parser.add_argument("exec_time_out", nargs="?", default=False);
+	parser.add_argument("exec_time_out", nargs="?", default=False, type=t_or_f);
 	parser.add_argument("perfdate", nargs="?", default=False);
 
 	return parser
+
+# UTILITY FUNCTION FOR ARGUMENT PARSING
+def t_or_f(arg):
+	ua = str(arg).upper()
+	if "TRUE" in ua: return True
+	elif "FALSE" in ua: return False
+	else: return False
 
 if __name__ == "__main__":
 	main()
