@@ -1,11 +1,12 @@
 proc main {
-  extern proc install_callbacks();
-  extern proc uninstall_one_callback(nCallbacks: c_int);
-  extern proc report_callbacks(nCallbacks: c_int);
+  extern proc tcb_install_callbacks();
+  extern proc tcb_uninstall_one_callback();
+  extern proc tcb_wait_for_nCallbacks(nCallbacks: c_int);
+  extern proc tcb_report();
 
   var counter: sync int = 0;
 
-  install_callbacks();
+  tcb_install_callbacks();
 
   cobegin {
     counter = counter + 1;
@@ -16,7 +17,8 @@ proc main {
     counter = counter + 1;
   }
 
-  uninstall_one_callback((if numLocales == 1 then 8 else 16): c_int);
+  tcb_wait_for_nCallbacks((if numLocales == 1 then 12 else 24): c_int);
+  tcb_uninstall_one_callback();
 
   cobegin {
     counter = counter + 1;
@@ -27,5 +29,6 @@ proc main {
     counter = counter + 1;
   }
 
-  report_callbacks((if numLocales == 1 then 12 else 24): c_int);
+  tcb_wait_for_nCallbacks((if numLocales == 1 then 18 else 36): c_int);
+  tcb_report();
 }

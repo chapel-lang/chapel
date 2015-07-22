@@ -43,7 +43,7 @@ static void cb_any_2(const chpl_task_cb_info_t* info) {
  * Public interface
  */
 
-void install_callbacks(void) {
+void tcb_install_callbacks(void) {
   if (chpl_task_install_callback(chpl_task_cb_event_kind_create,
                                  chpl_task_cb_info_kind_full,
                                  cb_create_1)
@@ -91,10 +91,4 @@ void install_callbacks(void) {
     fprintf(stderr, "Cannot install cb_any_2 for end!\n");
     exit(1);
   }
-}
-
-
-void report_callbacks(int nCallbacks) {
-  tcb_wait_for_nCallbacks(nCallbacks);
-  tcb_report();
 }
