@@ -1,3 +1,4 @@
-void install_callbacks(void);
-void uninstall_one_callback(int);
-void report_callbacks(int);
+void tcb_install_callbacks(void);
+void tcb_wait_for_nCallbacks(int);
+void tcb_uninstall_one_callback(void);
+void tcb_report(void);
