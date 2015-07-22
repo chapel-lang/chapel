@@ -2,6 +2,7 @@
 #
 # CHAPEL TESTING
 
+from __future__ import print_function
 import argparse
 import sys
 import time
@@ -43,8 +44,8 @@ def main():
 
 	finish()
 
-	print
-	print
+	print()
+	print()
 
 
 def run_tests(tests):
@@ -56,7 +57,7 @@ def run_tests(tests):
 		elif os.path.isfile(i): # a file
 			files.append(i)
 		else:
-			print "[Error: %s is not a valid file or directory]" % i
+			print("[Error: %s is not a valid file or directory]" % i)
 
 	# set up
 	set_up_environment()
@@ -73,11 +74,11 @@ def run_tests(tests):
 			dirs = [os.getcwd()]
 	
 	# print out flags
-	print '[tests: "%s"]' % " ".join(files)
+	print('[tests: "%s"]' % " ".join(files))
 	if args.recurse:
-		print '[directories: "%s"]' % " ".join(dirs) 
+		print('[directories: "%s"]' % " ".join(dirs)) 
 	else:
-		print '[directories: (nonrecursive): "%s"]' % " ".join(dirs)
+		print('[directories: (nonrecursive): "%s"]' % " ".join(dirs))
 
 	# check for duplicate .graph and .dat files
 	check_for_duplicates()
@@ -127,8 +128,8 @@ def finish():
 	if not args.cleanonly:
 		summarize()
 	else:
-		print "[Summary: CLEAN ONLY]"
-	print
+		print("[Summary: CLEAN ONLY]")
+	print()
 
 	# exit, returning 0 if no failures and 2 if there were some
 	if failures == 0:
@@ -145,8 +146,8 @@ def test_file(test):
 	
 	with cd(os.path.dirname("./" + test)): # cd into dir, and cd out later
 		# clean executables, etc
-		print
-		print "[Cleaning file %s]" % test
+		print()
+		print("[Cleaning file %s]" % test)
 		# clean and run test
 		clean(testname)
 
@@ -158,7 +159,7 @@ def test_file(test):
 			# check for errors - 173 is an internal sub_test error that would
 			# have already reported.
 			if error != 0 and error != 173:
-				print "[Error running sub_test for %s]" % pathtotest
+				print("[Error running sub_test for %s]" % pathtotest)
 
 			if args.progress:
 				sys.stderr.write("[done]\n")
@@ -170,18 +171,18 @@ def test_file(test):
 
 
 def test_directory(test, testtype):
-	print "[Working from directory %s]" % test
+	print("[Working from directory %s]" % test)
 
 	# recurse through directory
 	for root, dirs, files in os.walk(test):
 		if not os.access(root, os.X_OK):
-			print "[Warning: Cannot cd into %s skipping directory]" % dir
+			print("[Warning: Cannot cd into %s skipping directory]" % dir)
 			continue
 		else:
 			dir = os.path.abspath(root)
 
-		print
-		print "[Working on directory %s]" % root
+		print()
+		print("[Working on directory %s]" % root)
 
 		# stop recursing if flag is set 
 		if not args.recurse:
@@ -222,8 +223,8 @@ def test_directory(test, testtype):
 						pruneif = getOutput([testenv, skipfilename])
 					# check output and skip if true
 					if pruneif == "1" or pruneif == "True" :
-						print ("[Skipping directory and children based on "
-						".skipif environment settings in %s]") % skipfilename
+						print(("[Skipping directory and children based on "
+						".skipif environment settings in %s]") % skipfilename)
 						del dirs[:]
 						continue
 
@@ -256,11 +257,11 @@ def test_directory(test, testtype):
 						# check for errors - 173 is an internal sub_test error  
 						# that would have already reported.
 						if error != 0 and error != 173:
-							print "[Error running sub_test in %s (%i)]" % (root,
-									error)
+							print("[Error running sub_test in %s (%i)]" % (root,
+									error))
 			# let user know no tests were found
 			else:
-				print "[No tests in directory %s]" % root
+				print("[No tests in directory %s]" % root)
 		# generate graphs
 		else:
 			with cd(dir):
@@ -270,9 +271,9 @@ def test_directory(test, testtype):
 
 def summarize():
 	datestr = time.strftime("%y%m%d.%H%M%S");
-	print "[Done with tests - %s]" % datestr
-	print "[Log file: %s ]" % os.path.abspath(logfile)
-	print
+	print("[Done with tests - %s]" % datestr)
+	print("[Log file: %s ]" % os.path.abspath(logfile))
+	print()
 	sys.stdout.flush()
 	# setup regular expressions for searching
 	futuremarker = r"^Future"
@@ -338,7 +339,7 @@ def summarize():
 	summary += warning_summary
 	
 	if skipstdinredirs > 0:
-		print "[Skipped %s tests with .stdin input]" % skipstdinredirs
+		print("[Skipped %s tests with .stdin input]" % skipstdinredirs)
 
 	summary += ("[Summary: #Successes = %i | #Failures = %i | #Futures = %i | " 			 "#Warnings = %i ]\n") % (successes, failures, futures, warnings)
 	summary += ("[Summary: #Passing Suppressions = %i | #Passing Futures "
@@ -352,7 +353,7 @@ def summarize():
 	summary += "\n[END]"
 
 	# log summary, and write it to its own .summary file
-	print summary
+	print(summary)
 
 	logsummary = open(logfile + ".summary", "w")	
 	logsummary.write(summary)
@@ -365,7 +366,7 @@ def clean(test = False):
 	# clean executables, tmps, etc.
 	sub_clean = os.path.join(utildir, "test/sub_clean")
 	if test: # single test
-		print "[Starting %s %s %s]" % (sub_clean, test, datestr)
+		print("[Starting %s %s %s]" % (sub_clean, test, datestr))
 		p = subprocess.Popen([sub_clean, test], stdout=subprocess.PIPE)
 	else:
 		p = subprocess.Popen([sub_clean], stdout=subprocess.PIPE)
@@ -378,9 +379,9 @@ def run(test = False):
 	os.environ["CHPL_TEST_UTIL_DIR"] = utildir
 	
 	# run test
-	print
+	print()
 	if test: # single test
-		print "[Working on file %s]" % os.path.relpath(test)
+		print("[Working on file %s]" % os.path.relpath(test))
 		os.environ["CHPL_ONETEST"] = os.path.basename(test)
 
 	if os.access("sub_test", os.X_OK):
@@ -391,7 +392,7 @@ def run(test = False):
 	if args.progress and test:
 		sys.stderr.write("Testing %s ... \n" % test)
 
-	print "[Starting %s %s]" % (sub_test, datestr)
+	print("[Starting %s %s]" % (sub_test, datestr))
 	p = subprocess.Popen([sub_test, compiler], stdout=subprocess.PIPE)
 	printout(p.stdout)
 	p.wait()
@@ -413,8 +414,8 @@ def generate_graphs(test = False):
 		if len(graphfiles) == 0 or os.environ.get("CHPL_TEST_PERF_DIR"):
 			return
 
-	print "[Executing genGraphs for graphfiles in %s in %s" % (basedir,
-			perfhtmldir)
+	print("[Executing genGraphs for graphfiles in %s in %s" % (basedir,
+			perfhtmldir))
 
 	p = subprocess.Popen([createGraphs, args.gengraphopts,
 		"-p", perfdir, "-o", perfhtmldir, "-n", perftestname +
@@ -426,11 +427,11 @@ def generate_graphs(test = False):
 	status = p.returncode
 	
 	if status == 0:
-		print "[Success generating graphs for graphfiles in %s in %s" % (
-				basedir, perfhtmldir)
+		print("[Success generating graphs for graphfiles in %s in %s" % (
+				basedir, perfhtmldir))
 	else:
-		print "[Error generating graphs for graphfiles in %s in %s" % (
-				basedir, perfhtmldir)
+		print("[Error generating graphs for graphfiles in %s in %s" % (
+				basedir, perfhtmldir))
 
 
 def compiler_performance():
@@ -440,20 +441,20 @@ def compiler_performance():
 	compGraphList = os.path.join(testdir, "COMPGRAPHFILES")
 
 	# combine smaller .dat files
-	print "[Combining dat files now]"
+	print("[Combining dat files now]")
 	p = subprocess.Popen([combineCompPerf, "--tempDatDir", tempDatFilesDir,
 		"--elapsedTestTime", str(elapsed), "--outdir", compperfdir],
 		stdout=subprocess.PIPE)
 	printout(p.stdout)
 	p.wait()
 	if p.returncode == 0:
-		print "[Success combining compiler performance dat files]"
+		print("[Success combining compiler performance dat files]")
 	else:
-		print "[Error combining compiler performance dat files]"
+		print("[Error combining compiler performance dat files]")
 
 	# create the graphs
 	atitle = "Chapel Compiler Performance Graphs"
-	print "[Creating compiler perforamce graphs now]"
+	print("[Creating compiler perforamce graphs now]")
 	p = subprocess.Popen([createGraphs, args.gengraphopts, "-p", compperfdir, 
 		"-o", compperfhtmldir, "-a", atitle, "-n", (compperftestname + 
 		startdate_t), "-g", compGraphList, "-t", testdir, 
@@ -461,11 +462,11 @@ def compiler_performance():
 	printout(p.stdout)
 	p.wait()
 	if p.returncode == 0:
-		print ("[Success generating compiler perfrommance graphs from %s in %s]"
-			% (compGraphList, compperfhtmldir))
+		print(("[Success generating compiler perfrommance graphs from %s in %s]"
+			% (compGraphList, compperfhtmldir)))
 	else:
-		print ("[Error generating compiler perfrommance graphs from %s in %s]"
-			% (compGraphList, compperfhtmldir))
+		print(("[Error generating compiler perfrommance graphs from %s in %s]"
+			% (compGraphList, compperfhtmldir)))
 	
 	# delete temp files
 	shutil.rmtree(tempDatFilesDir)
@@ -474,7 +475,7 @@ def compiler_performance():
 def generate_graphfiles_graphs():
 	execGraphList = os.path.join(testdir, "GRAPHFILES")
 
-	print "[Executing genGraphs for %s in %s" % (execGraphList,	perfhtmldir)
+	print("[Executing genGraphs for %s in %s" % (execGraphList,	perfhtmldir))
 
 	p = subprocess.Popen([createGraphs, args.gengraphopts,
 		"-p", perfdir, "-o", perfhtmldir, "-t", testdir, "-n", (perftestname +
@@ -485,11 +486,11 @@ def generate_graphfiles_graphs():
 	status = p.returncode
 	
 	if status == 0:
-		print "[Success generating graphs from %s in %s" % (
-				execGraphList, perfhtmldir)
+		print("[Success generating graphs from %s in %s" % (
+				execGraphList, perfhtmldir))
 	else:
-		print "[Error generating graphs from %s in %s" % (
-				execGraphList, perfhtmldir)
+		print("[Error generating graphs from %s in %s" % (
+				execGraphList, perfhtmldir))
 
 
 # SET UP ROUTINES
@@ -503,7 +504,7 @@ def check_environment():
 	if os.environ.get("CHPL_HOME") != None :
 		home = os.environ["CHPL_HOME"]
 		if not os.path.isdir(home):
-			print "Error: CHPL_HOME must be a legal directory."
+			print("Error: CHPL_HOME must be a legal directory.")
 			sys.exit(1)
 	
 	# Allow for utility directory override. 
@@ -516,7 +517,7 @@ def check_environment():
 		utildir = os.path.normpath(os.path.join(home, "util"))
 		os.environ["CHPL_TEST_UTIL_DIR"] = utildir
 		if not os.path.isdir(utildir) :
-			print "Error: Cannot find %s." % utildir
+			print("Error: Cannot find %s." % utildir)
 			sys.exit(1)
 
 	# create temporary directory
@@ -538,7 +539,7 @@ def check_environment():
 			testdir = os.getcwd()
 	if (not os.access(testdir, os.F_OK) or not os.access(testdir, os.W_OK)
 		or not os.access (testdir, os.X_OK)):
-		print "Cannot write to test directory %s" % testdir
+		print("Cannot write to test directory %s" % testdir)
 		sys.exit(-1)
 
 	# find Logs directory and check for access
@@ -547,7 +548,7 @@ def check_environment():
 	if not os.path.isdir(logsdir):
 		os.mkdir(logsdir)
 	if not os.access(logsdir, os.W_OK):
-		print "Cannot write to Logs directory %s" % logsdir
+		print("Cannot write to Logs directory %s" % logsdir)
 		sys.exit(-1)
 
 	# save host and target platforms, and configure environment appropriately
@@ -628,11 +629,11 @@ def set_up_general():
 		logfile = os.path.abspath(args.logfile)
 	logfiledir = os.path.dirname(logfile)
 	if not os.access(logfiledir, os.X_OK):
-		print "[Permission denied for logfile directory: %s]" % logfiledir
+		print("[Permission denied for logfile directory: %s]" % logfiledir)
 		sys.exit(1)
 	if os.path.isfile(logfile):
-		print
-		print "[Removing log file with duplicate name %s" % logfile
+		print()
+		print("[Removing log file with duplicate name %s" % logfile)
 		os.remove(logfile)
 	
 	## START LOGGING TO FILE ##
@@ -643,8 +644,8 @@ def set_up_general():
 	if args.compperformance:
 		start_time = int(time.time())
 
-	print ("[Starting Chapel regression tests - %s]" % 
-		time.strftime("%y%m%d.%H%M%S") )
+	print(("[Starting Chapel regression tests - %s]" % 
+		time.strftime("%y%m%d.%H%M%S") ))
 
 	# check to see if we are in subdir of CHPL_HOME 
 	if args.chplhomewarn and os.getcwd().find(home) < 0: 
@@ -652,36 +653,36 @@ def set_up_general():
 				"$CHPL_HOME]")
 
 	# log some messages
-	print '[starting directory: "%s"]' % os.getcwd()
-	print '[Logs directory: "%s"]' % logsdir
-	print '[logfile: "%s"]' % logfile
-	print "[CHPL_HOME: %s]" % home
-	print "[host platform: %s]" % host_platform
-	print "[target platform: %s]" % tgt_platform
+	print('[starting directory: "%s"]' % os.getcwd())
+	print('[Logs directory: "%s"]' % logsdir)
+	print('[logfile: "%s"]' % logfile)
+	print("[CHPL_HOME: %s]" % home)
+	print("[host platform: %s]" % host_platform)
+	print("[target platform: %s]" % tgt_platform)
 
 	# valgrind
 	if args.valgrind:
-		print "[valgrind: ON]"
+		print("[valgrind: ON]")
 		p = subprocess.Popen("which valgrind", stdout=subprocess.PIPE)
 		binary = p.stdout.readline()
 		p.wait()
 		if p.returncode != 0:
-			print "[Error: Could not find valgrind.]"
+			print("[Error: Could not find valgrind.]")
 			finish()
 		p = subprocess.Popen("valgrind --version", stdout=subprocess.PIPE)
 		version = p.stdout.readline()
 		p.wait()
-		print "[valgrind binary: %s]" % binary
-		print "[valgrind version: %s]" % version
+		print("[valgrind binary: %s]" % binary)
+		print("[valgrind version: %s]" % version)
 		os.environ["CHPL_TEST_VGRND_COMP"] = "on"
 		os.environ["CHPL_TEST_VGRND_EXE"] = "on"
 	else:
 		os.environ["CHPL_TEST_VGRND_COMP"] = "off"
 		if args.valgrindexe:
-			print "[valgrind: EXE only]"
+			print("[valgrind: EXE only]")
 			os.environ["CHPL_TEST_VGRND_EXE"] = "on"
 		else:
-			print "[valgrind: OFF]"
+			print("[valgrind: OFF]")
 			os.environ["CHPL_TEST_VGRND_EXE"] = "off"
 	
 	# compiler
@@ -695,36 +696,36 @@ def set_up_general():
 def set_up_performance_testing_A():
 	# performance 
 	if args.performance:  
-		print "[performance tests: ON]"
+		print("[performance tests: ON]")
 		os.environ["CHPL_TEST_PERF"] = "on"
 		if args.perflabel != "perf":
-			print "[performance label: %s]" % args.perflabel
+			print("[performance label: %s]" % args.perflabel)
 		os.environ["CHPL_TEST_PERF_LABEL"] = args.perflabel
 	else:
-		print "[performance tests: OFF]"
+		print("[performance tests: OFF]")
 
 	# compiler performance
 	if args.compperformance:
-		print "[compiler performance tests: ON]"
+		print("[compiler performance tests: ON]")
 		os.environ["CHPL_TEST_COMP_PERF"] = "on"
 	else:
-		print "[compiler performance tests: OFF]"
+		print("[compiler performance tests: OFF]")
 
 	# this is here and not in setupexecutables for legacy compatibility reasons
-	print "[number of trials: %s]" % os.environ["CHPL_TEST_NUM_TRIALS"]
+	print("[number of trials: %s]" % os.environ["CHPL_TEST_NUM_TRIALS"])
 
 	# graphs
 	if args.gengraphs:
-		print "[performance graph generation: ON]"
+		print("[performance graph generation: ON]")
 		if args.graphsdisprange:
-			print "[performance graph ranges: ON]"
+			print("[performance graph ranges: ON]")
 			args.graphsdisprange = ""
 		else:
-			print "[performance graph ranges: OFF]"
+			print("[performance graph ranges: OFF]")
 			args.graphsdisprange = "--no-bounds"
-		print "[performance graph data reduction: %s]" % args.graphsgendefault
+		print("[performance graph data reduction: %s]" % args.graphsgendefault)
 	else:
-		print "[performance graph generation: OFF]"
+		print("[performance graph generation: OFF]")
 
 
 def set_up_performance_testing_B():
@@ -739,8 +740,8 @@ def set_up_performance_testing_B():
 			perfdir = os.path.expandvars("$CHPL_HOME/test/perfdat/" 
 					+ perftestname)
 			os.environ["CHPL_TEST_PERF_DIR"] = perfdir
-			print ("[Warning: CHPL_TEST_PERF_DIR must be set for generating "
-					"performance graphs, using default %s]") % perfdir
+			print(("[Warning: CHPL_TEST_PERF_DIR must be set for generating "
+					"performance graphs, using default %s]") % perfdir)
 		else:
 			perfdir = os.environ["CHPL_TEST_PERF_DIR"]
 
@@ -767,9 +768,9 @@ def set_up_performance_testing_B():
 		else:
 			compperfdir = os.path.join(home, ("test/compperfdat/%s/" %
 					compperftestname))
-			print ("[Warning: CHPL_COMP_TEST_PERF DIR must be set for "
+			print(("[Warning: CHPL_COMP_TEST_PERF DIR must be set for "
 					"generating compiler performance graphs, using default %s]"
-					% compperfdir)
+					% compperfdir))
 
 		compperftestname += args.compperformancedescription
 
@@ -825,14 +826,14 @@ def set_up_performance_testing_B():
 		shaDatFilePath = os.path.join(datdir, "%s.dat" % shaDatFileName)
 		os.environ["CHPL_TEST_SHA_DAT_FILE"] = shaDatFilePath
 
-		print "[Saving current git sha to %s]" % shaDatFilePath
+		print("[Saving current git sha to %s]" % shaDatFilePath)
 		cmd = os.path.join(utildir, "test/computePerfStats")
 		p = subprocess.Popen([cmd, shaDatFileName, datdir, shaPerfKeysName,
 			shaOutName], stdout=subprocess.PIPE)
 		printout(p.stdout)
 		p.wait()
 		if p.returncode != 0:
-			print "[Error: Failed to save current sha to %s]" % shaDatFilePath
+			print("[Error: Failed to save current sha to %s]" % shaDatFilePath)
 
 
 def set_up_executables():
@@ -841,31 +842,31 @@ def set_up_executables():
 	if os.path.isfile(compiler) and os.access(compiler, os.X_OK):
 		compiler = os.path.abspath(compiler)
 
-		print '[compiler: "%s"]' % compiler
+		print('[compiler: "%s"]' % compiler)
 	else:
-		print "[Error: Cannot find or execute compiler: %s]" % compiler
+		print("[Error: Cannot find or execute compiler: %s]" % compiler)
 		finish()
 	
 	# log more options
-	print '[compopts: "%s"]' % args.compopts
+	print('[compopts: "%s"]' % args.compopts)
 	os.environ['COMPOPTS'] = args.compopts
 
-	print '[execopts: "%s"]' % args.execopts
+	print('[execopts: "%s"]' % args.execopts)
 	os.environ['EXECOPTS'] = args.execopts
 
-	print '[launchcmd: "%s"]' % args.launchcmd
+	print('[launchcmd: "%s"]' % args.launchcmd)
 	os.environ['LAUNCHCMD'] = args.launchcmd
 
 	comm = chpl_comm.get()
 	launcher = chpl_launcher.get()
 	locMod = chpl_locale_model.get()
 	
-	print '[comm: "%s"]' % comm
+	print('[comm: "%s"]' % comm)
 	os.environ["CHPL_COMM"] = comm
 	os.environ["CHPL_GASNET_SEGMENT"] = chpl_comm_segment.get()
 	os.environ["CHPL_LAUNCHER"] = launcher
 
-	print '[localeModel: "%s"]' % locMod
+	print('[localeModel: "%s"]' % locMod)
 	os.environ["CHPL_LOCALE_MODEL"] = locMod
 
 	# skip stdin tests for most custom launchers, except for amdprun and slurm
@@ -889,9 +890,9 @@ def set_up_executables():
 		args.numlocales = 1
 	
 	if args.numlocales == "0" :
-		print '[numlocales: "(default)"]'
+		print('[numlocales: "(default)"]')
 	else:
-		print '[numlocales: "%s"]' % args.numlocales
+		print('[numlocales: "%s"]' % args.numlocales)
 	
 	os.environ["NUMLOCALES"] = str(args.numlocales)
 
@@ -899,10 +900,10 @@ def set_up_executables():
 	if args.preexec:
 		if os.path.isfile(args.preexec) and os.access(args.preexec, os.X_OK):
 			args.preexec = os.path.abspath(args.preexec)
-			print "[system-wide preexec: %s]" % args.preexec
+			print("[system-wide preexec: %s]" % args.preexec)
 		else:
-			print ("[Error: Cannot find or execute system-wide preexec: %s" %
-				args.preexec)
+			print(("[Error: Cannot find or execute system-wide preexec: %s" %
+				args.preexec))
 			finish()
 		os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
 
@@ -910,10 +911,10 @@ def set_up_executables():
 	if args.prediff:
 		if os.path.isfile(args.prediff) and os.access(args.prediff, os.X_OK):
 			args.prediff = os.path.abspath(args.prediff)
-			print "[system-wide prediff: %s]" % args.prediff
+			print("[system-wide prediff: %s]" % args.prediff)
 		else:
-			print ("[Error: Cannot find or execute system-wide prediff: %s" %
-				args.prediff)
+			print(("[Error: Cannot find or execute system-wide prediff: %s" %
+				args.prediff))
 			finish()
 		os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
 
@@ -924,8 +925,8 @@ def auto_generate_tests():
 		if path == home or path == testdir and not args.cleanonly:
 			if args.performance:
 				# track the number of examples being tested
-				print ("[Generating tests from the Chapel spec in %s/spec]" 
-					% home)
+				print(("[Generating tests from the Chapel spec in %s/spec]" 
+					% home))
 				tempfilepath = os.path.join(home, "test/spectests.exec.out.tmp")
 				tempfile = open(tempfilepath, "w")
 				p = subprocess.Popen(["make", "spectests"], 
@@ -934,15 +935,15 @@ def auto_generate_tests():
 				p.wait()
 				tempfile.close()
 				if p.returncode != 0:
-					print ("[Error: Failed to generate Spec tests.  "
-						"Log file: %s]") % tempfilepath
+					print(("[Error: Failed to generate Spec tests.  "
+						"Log file: %s]") % tempfilepath)
 					finish()
 
 				with cd(testdir):
 					if not os.path.isdir(perfdir):
 						os.mkdir(prefdir)
 
-					print "[Computing stats for spec examples]"
+					print("[Computing stats for spec examples]")
 					tempperfpath = os.path.join(home,
 						"test/spectests.perfStats.out.tmp")
 					tempperffile = open(tempperfpath, "w")
@@ -954,46 +955,46 @@ def auto_generate_tests():
 					p.wait()
 					tempperffile.close()
 					if p.returncode != 0:
-						print ("[Error: Failed to compute perf stats for Spec"
-								"tests. Log file: %s]" % tempperfpath)
+						print(("[Error: Failed to compute perf stats for Spec"
+								"tests. Log file: %s]" % tempperfpath))
 						finish()
 
 					os.remove(tempfilepath)
 					os.remove(tempperfpath)
 
 			elif not args.gengraphs: 		
-				print "[Generating tests from the Chapel Spec in %s/spec" % home
+				print("[Generating tests from the Chapel Spec in %s/spec" % home)
 				p = subprocess.Popen(["make", "spectests"], 
 					stdout=subprocess.PIPE)
 				autogen = p.stdout.read()
 				if p.returncode != 0:
-					print ("[Error: Failed to generate Spec tests. Run 'make"
-							"spectests' in %s for more info]" % home)
+					print(("[Error: Failed to generate Spec tests. Run 'make"
+							"spectests' in %s for more info]" % home))
 					finish()
 
 
 def print_chapel_environment():
-	print
-	print "### Chapel Environment ###"
+	print()
+	print("### Chapel Environment ###")
 	cmd = os.path.join(utildir, "printchplenv")
 	p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 	printout(p.stdout)
 	p.wait()
-	print "##########################"
+	print("##########################")
 
 
 def check_for_duplicates():
 	# check for .dat duplicates
 	if args.performance:
-		print "[Checking for duplicate performance data filenames]"
+		print("[Checking for duplicate performance data filenames]")
 		
 		dat_files = []
 		error = False
 		for root, dirnames, filenames in os.walk(testdir):
 			for filename in fnmatch.filter(filenames, "*." + args.perflabel):
 				if filename in dat_files: # duplicate
-					print ("[Error: Duplicate performance data filenames ("
-							"%s)" % filename)
+					print(("[Error: Duplicate performance data filenames ("
+							"%s)" % filename))
 					error = True
 				else:
 					dat_files.append(filename)
@@ -1003,8 +1004,8 @@ def check_for_duplicates():
 	
 	# check for .graph files, and GRAPHFILES
 	if args.gengraphs or args.compperformance:
-		print ("[Checking for duplicate .graph files and that all .graph files "
-				"appear in %s/test/.*GRAPHFILES]" % home)
+		print(("[Checking for duplicate .graph files and that all .graph files "
+				"appear in %s/test/.*GRAPHFILES]" % home))
 
 		# find GRAPHFILES
 		graphfiles = [f for f in os.listdir(testdir) if
@@ -1031,23 +1032,23 @@ def check_for_duplicates():
 		for g in actual_graph_files:
 			filename = g
 			if filename not in graphfiles_graph_files:
-				print "[Warning: %s is missing from GRAPHFILES]" % filename
+				print("[Warning: %s is missing from GRAPHFILES]" % filename)
 
 		# check that all .graph files in GRAPHFILES actually exist
 		for g in graphfiles_graph_files:
 			filename = g
 			if filename not in actual_graph_files:
-				print ("[Warning: %s listed in GRAPHFILES does not exist]" %
-						filename)
+				print(("[Warning: %s listed in GRAPHFILES does not exist]" %
+						filename))
 
 		# check for duplicates
 		graphset = {}
 		for g in actual_graph_files:
 			filename = os.path.basename(g).lower()
 			if filename in graphset:
-				print ("[Warning: graph files must have unique, case "
+				print(("[Warning: graph files must have unique, case "
 						"insensitive names: %s and %s do not]" %
-						(g, graphset[filename]))
+						(g, graphset[filename])))
 			else:
 				graphset[filename] = g
 
@@ -1056,7 +1057,7 @@ def check_for_duplicates():
 
 def cleanup():
 	if os.path.isdir(chpltesttmpdir):
-		print "[Removing %s directory]" % chpltesttmpdir
+		print("[Removing %s directory]" % chpltesttmpdir)
 		shutil.rmtree(chpltesttmpdir)
 
 
