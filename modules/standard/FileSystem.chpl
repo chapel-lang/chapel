@@ -959,7 +959,8 @@ proc isMount(name: string): bool {
    :yield: The names of the specified directory's contents, as strings
 */
 iter listdir(const in path: string = ".", hidden: bool = false, dirs: bool = true, 
-              files: bool = true, listlinks: bool = true): string {
+             files: bool = true, listlinks: bool = true) // : string
+  {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
