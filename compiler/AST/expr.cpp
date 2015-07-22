@@ -5517,7 +5517,7 @@ GenRet CallExpr::codegen() {
       if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
                   "_ref(_EndCount)")
           || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "__wide__ref__EndCount")
+                     "__wide__ref__wide__EndCount")
           || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
                      "_EndCount")
           || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
