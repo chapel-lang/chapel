@@ -283,7 +283,7 @@ std::string generateSphinxProject(std::string dirpath) {
   const char * sphinxDir = dirpath.c_str();
 
   // Copy the sphinx template into the output dir.
-  const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
+  const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpl-venv/chpldoc-sphinx-project/*");
   const char * cmd = astr("cp -r ", sphinxTemplate, " ", sphinxDir, "/");
   if( printSystemCommands ) {
     printf("%s\n", cmd);
@@ -301,11 +301,11 @@ std::string generateSphinxProject(std::string dirpath) {
  */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
-  // based on the install path in the third-party/chpldoc-venv/ dir.
+  // based on the install path in the third-party/chpl-venv/ dir.
 
   const char * venvDir = astr(
-    CHPL_HOME, "/third-party/chpldoc-venv/install/",
-    CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
+    CHPL_HOME, "/third-party/chpl-venv/install/",
+    CHPL_TARGET_PLATFORM, "/chpl-virtualenv");
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
 
