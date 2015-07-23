@@ -32,12 +32,12 @@ $(FLTK_BUILD_DIR):
 	@mv fltk-$(FLTK_VERSION) $(FLTK_BUILD_DIR)
 
 clean:
-	-cd $(FLTK_BUILD_DIR) && $(MAKE) clean
+	if [ -d $(FLTK_BUILD_DIR) ] ; then \
+	   cd $(FLTK_BUILD_DIR) && $(MAKE) clean ;\
+	fi
 	rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
 
-cleanall:
-	-cd $(FLTK_BUILD_DIR) && $(MAKE) cleanall
-	rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
+cleanall: clean
 
 clobber:
 	rm -rf $(FLTK_BUILD_DIR) $(FLTK_INSTALL_DIR)
