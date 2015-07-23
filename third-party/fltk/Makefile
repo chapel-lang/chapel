@@ -33,14 +33,14 @@ $(FLTK_BUILD_DIR):
 
 clean:
 	-cd $(FLTK_BUILD_DIR) && $(MAKE) clean
-	-rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
+	rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
 
 cleanall:
 	-cd $(FLTK_BUILD_DIR) && $(MAKE) cleanall
-	-rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
+	rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
 
 clobber:
-	-rm -rf $(FLTK_BUILD_DIR) $(FLTK_INSTALL_DIR) *~
-	-rm -rf build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
+	rm -rf $(FLTK_BUILD_DIR) $(FLTK_INSTALL_DIR)
+	rm -f build.$(CHPL_HOST_PLATFORM) install.$(CHPL_HOST_PLATFORM)
 
 FORCE:
