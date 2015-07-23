@@ -220,8 +220,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
     // Data for tasks and comm and fork
     int nid;    // Node id
-    int ntll;   // Node task list locale
-    char nbstr[10];  // "begin" or "nb"
+    char onstr[10];  // "O" or "L" for onExecute or local
     int nlineno; // line number starting the task
     char nfilename[512];  // File name starting the task
 
@@ -236,6 +235,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
     // fork
     int fid;
+
+    // task
+    int taskid;
 
     // Tags
     int tagId;
@@ -264,12 +266,13 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         break;
 
       case 't':  // new task line
-        //  task: s.u nodeID task_list_locale begin/nb lineno filename
+        printf ("Task line: %s\n", linedata);
+        //  task: s.u nodeID taskID O/L lineno filename
         if (sscanf (&linedata[nextCh], "%d %d %9s %d %511s",
-                    &nid, &ntll, nbstr, &nlineno, nfilename) != 5) {
+                    &nid, &taskid, onstr, &nlineno, nfilename) != 5) {
           fprintf (stderr, "Bad task line: %s\n", filename);
-          fprintf (stderr, "nid = %d, ntll = %d, nbstr = '%s', nlineno = %d"
-                   " nfilename = '%s'\n", nid, ntll, nbstr, nlineno, nfilename);
+          fprintf (stderr, "nid = %d, taskid = %d, nbstr = '%s', nlineno = %d"
+                   " nfilename = '%s'\n", nid, taskid, onstr, nlineno, nfilename);
           nErrs++;
         } else {
           //int nfnLen = strlen(nfilename);
@@ -280,7 +283,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             //printf ("Found VisualDebug task line\n");
           //  break;
           // }
-          newEvent = new E_task (sec, usec, ntll);
+          newEvent = new E_task (sec, usec, taskid);
         }
         break;
 
@@ -367,22 +370,45 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         }
         break;
 
-      case 'E':  // end of the file
-        if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d",
-                    &u_sec, &u_usec, &s_sec, &s_usec, &nid) != 5 ) {
-          fprintf (stderr, "Bad 'End' line: %s\n", filename);
-          nErrs++;
+      case 'E':  // end of the file or End of task
+        if (line[1] == 'n') {
+          // End of file
+          if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d",
+                      &u_sec, &u_usec, &s_sec, &s_usec, &nid) != 5 ) {
+            fprintf (stderr, "Bad 'End' line: %s\n", filename);
+            nErrs++;
+          } else {
+            newEvent = new E_end(sec, usec, nid, u_sec, u_usec, s_sec, s_usec);
+          }
         } else {
-          newEvent = new E_end(sec, usec, nid, u_sec, u_usec, s_sec, s_usec);
+          // End of task
+          // printf("E");
+          if (sscanf (&linedata[nextCh], "%d %d",
+                      &nid, &taskid ) != 2) {
+            fprintf (stderr, "Bad Etask line: %s\n", filename);
+            nErrs++;
+          } else {
+            newEvent = new E_end_task(sec, usec, nid, taskid);
+          }
         }
         break;
 
-
+      case 'B':  // Begin of task
+        // printf ("B");
+        if (sscanf (&linedata[nextCh], "%d %d",
+                    &nid, &taskid ) != 2) {
+          fprintf (stderr, "Bad Etask line: %s\n", filename);
+          nErrs++;
+        } else {
+          newEvent = new E_begin_task(sec, usec, nid, taskid);
+        }
+        break;
       
       default:
         /* Do nothing */ ;
         //printf ("d");
     }
+    fflush(stdout);
     //  Add the newEvent to the list, group Starts, Tags, Resumes and Ends together.
     if (newEvent) {
       if (theEvents.empty()) {

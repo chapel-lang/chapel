@@ -26,6 +26,8 @@
 #include "chpl-visual-debug.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-tasks.h"
+#include "chpl-tasks-callbacks.h"
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -38,6 +40,14 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include <sys/param.h>
+
+extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, 
+
+int install_callbacks(void);
+int uninstall_callbacks(void);
+
+static void cb_task_create_begin(const chpl_task_cb_info_t *info);
+static void cb_task_end(const chpl_task_cb_info_t *info);
 
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
@@ -101,6 +111,8 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   struct timezone tz = {0,0};
   (void) gettimeofday (&tv, &tz);
 
+  install_callbacks();
+
   chpl_vdebug = 0;
 
   // Close any open files.
@@ -153,6 +165,7 @@ void chpl_vdebug_stop (void) {
     close (chpl_vdebug_fd);
   }
   chpl_vdebug = 0;
+  uninstall_callbacks();
 }
 
 static int tag_no = 0;  // A unique tag number for sorting tags
@@ -342,5 +355,64 @@ void chpl_vdebug_log_task_queue(chpl_fn_int_t     fid,
                   chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
                   lineno, filename);
   }
+}
 
+// Task layer callbacks
+
+int install_callbacks(void) {
+  if (chpl_task_install_callback(chpl_task_cb_event_kind_create, 
+                                 chpl_task_cb_info_kind_full, cb_task_create_begin) != 0)
+    return 1;
+  if (chpl_task_install_callback(chpl_task_cb_event_kind_begin, 
+                                 chpl_task_cb_info_kind_full, cb_task_create_begin) != 0) {
+    (void) chpl_task_uninstall_callback(chpl_task_cb_event_kind_create, cb_task_create_begin);
+    return 1;
+  }
+  if (chpl_task_install_callback(chpl_task_cb_event_kind_end,
+                                 chpl_task_cb_info_kind_id_only, cb_task_end) != 0) {
+    (void) chpl_task_uninstall_callback(chpl_task_cb_event_kind_create, cb_task_create_begin);
+    (void) chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin, cb_task_create_begin);
+    return 1;
+  }
+  return 0;
+}
+
+int uninstall_callbacks(void) {
+  int rv = 0;
+  rv = chpl_task_uninstall_callback(chpl_task_cb_event_kind_create, cb_task_create_begin);
+  rv = chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin, cb_task_create_begin);
+  rv += chpl_task_uninstall_callback(chpl_task_cb_event_kind_end, cb_task_end);
+  return rv;
+}
+
+void cb_task_create_begin(const chpl_task_cb_info_t *info) {
+  struct timeval tv;
+  struct timezone tz = {0,0};
+  printf ("C%d", (int) info->info_kind);
+  if (!chpl_vdebug) return;
+  if (chpl_vdebug_fd >= 0) {
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "%s: %lld.%06ld %lld %ld %s %ld %s\n",
+                  (info->info_kind == chpl_task_cb_event_kind_create ? "task" : "Btask"),
+                  (long long) tv.tv_sec, (long) tv.tv_usec,
+                  (long long) info->nodeID, (long int) info->iu.full.id,
+                  (info->iu.full.is_executeOn ? "O" : "L"),
+                  (long int) info->iu.full.lineno,
+                  (info->iu.full.filename ? info->iu.full.filename : ""));
+   }
+}
+
+
+void cb_task_end(const chpl_task_cb_info_t *info) {
+  struct timeval tv;
+  struct timezone tz = {0,0};
+  printf ("E%d", (int) info->info_kind);
+  if (!chpl_vdebug) return;
+  if (chpl_vdebug_fd >= 0) {
+    (void)gettimeofday(&tv, &tz);
+    chpl_dprintf (chpl_vdebug_fd, "Etask: %lld.%06ld %lld %ld\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,
+                  (long long) info->nodeID, (long int) info->iu.id_only.id);
+ 
+  }
 }

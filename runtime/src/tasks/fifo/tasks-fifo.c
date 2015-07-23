@@ -30,7 +30,7 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chplsys.h"
-#include "chpl-visual-debug.h"  // May disappear shortly
+// #include "chpl-visual-debug.h"  // May disappear shortly
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
@@ -517,6 +517,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
 
   assert(subloc == 0 || subloc == c_sublocid_any);
 
+#if 0
   // Visual Debug -- should be protected by an #ifdef VISUALDEBUG?
   if (chpl_vdebug) {
     struct timeval tv;
@@ -527,6 +528,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
              chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
              lineno, filename);
   }
+#endif
 
   if (task_list_locale == chpl_nodeID) {
     chpl_task_list_p ltask;
@@ -1625,6 +1627,8 @@ static void do_callbacks(chpl_task_cb_event_kind_t event_kind,
     info.nodeID = chpl_nodeID;
     info.event_kind = event_kind;
 
+    printf ("[%d", (int)info.event_kind);
+
     for (i = 0; i < cbp->count; i++) {
       info.info_kind = cbp->info_kinds[i];
 
@@ -1647,8 +1651,11 @@ static void do_callbacks(chpl_task_cb_event_kind_t event_kind,
         break;
       }
 
+      printf ("%d", (int)info.event_kind);
       (*cbp->fns[i])((const chpl_task_cb_info_t*) &info);
+      printf (".%d", (int)info.event_kind);
     }
+    printf("]"); fflush(stdout);
   }
 }
 
