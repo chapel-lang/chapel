@@ -37,6 +37,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
+#include <sys/param.h>
 
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
@@ -59,24 +60,18 @@ int chpl_dprintf (int fd, const char * format, ...) {
 }
 
 static int chpl_make_vdebug_file (const char *rootname) {
-    char fname[2048]; // fixed size ..
+    char fname[MAXPATHLEN]; 
     struct stat sb;
 
     chpl_vdebug = 0;
     chpl_vdebug_fd = -1;
 
     // Make sure the directory is made.
-    if (stat (rootname, &sb) < 0) {
-      if (errno == ENOENT) {
-        if (mkdir (rootname,0777) < 0 && (errno != EEXIST)) {
-          fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
-          return -1;
-        }
-      } else {
+    if (mkdir (rootname,0777) < 0) {
+      if (stat (rootname, &sb) < 0) {
         fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
         return -1;
       }
-    } else {
       if ((sb.st_mode & S_IFMT) != S_IFDIR) {
         fprintf (stderr, "%s: not a directory.\n", rootname);
         return -1;

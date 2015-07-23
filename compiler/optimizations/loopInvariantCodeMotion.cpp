@@ -1014,28 +1014,6 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
 }
 
 
- /*
- * Collect all of the function symbols that belong to function calls 
- * and nested function calls that occur from baseAST. In other words
- * look through the baseAST and find all the function and nested function
- * calls and collect their fnsymbols. 
- */
-static void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
-  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
-  //if there is a function call, get the FnSymbol associated with it 
-  //and look through that FnSymbol for other function calls. Do not 
-  //look through an already visited FnSymbol, or you'll have an infinite
-  //loop in the case of recursion. 
-  if (CallExpr* call = toCallExpr(ast)) {
-    if (FnSymbol* fnSymbol = call->isResolved()) {
-      if(fnSymbols.count(fnSymbol) == 0) {
-        fnSymbols.insert(fnSymbol);
-        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbols, fnSymbols);
-      }
-    }
-  }
-}
-
 
 /*
  * Collects the uses and defs of symbols the baseAST
