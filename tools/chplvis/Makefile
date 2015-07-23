@@ -54,7 +54,7 @@ all: chplvis
 
 chplvis: $(GENSRCS) $(OFILES) 
 	$$($(FLTK_CONFIG) --cxx)  -o chplvis $(OFILES) \
-	$$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
+	        $$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
 
 
 chplvis.cxx chplvis.h: chplvis.fl
