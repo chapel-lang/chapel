@@ -833,6 +833,9 @@ static void propagateVar(Symbol* sym) {
           setValWide(lhs);
         }
         else if (lhs->type == dtString) {
+          // isObj doesn't handle dtStrings. This case handles a previously
+          // overlooked case of string assignment from a wide string to a
+          // narrow string.
           setWide(lhs);
         }
         else {
