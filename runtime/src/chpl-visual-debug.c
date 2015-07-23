@@ -388,12 +388,11 @@ int uninstall_callbacks(void) {
 void cb_task_create_begin(const chpl_task_cb_info_t *info) {
   struct timeval tv;
   struct timezone tz = {0,0};
-  printf ("C%d", (int) info->info_kind);
   if (!chpl_vdebug) return;
   if (chpl_vdebug_fd >= 0) {
     (void)gettimeofday(&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "%s: %lld.%06ld %lld %ld %s %ld %s\n",
-                  (info->info_kind == chpl_task_cb_event_kind_create ? "task" : "Btask"),
+                  (info->event_kind == chpl_task_cb_event_kind_create ? "task" : "Btask"),
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long long) info->nodeID, (long int) info->iu.full.id,
                   (info->iu.full.is_executeOn ? "O" : "L"),
@@ -406,7 +405,6 @@ void cb_task_create_begin(const chpl_task_cb_info_t *info) {
 void cb_task_end(const chpl_task_cb_info_t *info) {
   struct timeval tv;
   struct timezone tz = {0,0};
-  printf ("E%d", (int) info->info_kind);
   if (!chpl_vdebug) return;
   if (chpl_vdebug_fd >= 0) {
     (void)gettimeofday(&tv, &tz);
