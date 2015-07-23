@@ -887,3 +887,23 @@ Symbol* getSvecSymbol(CallExpr* call) {
     return NULL;
   }
 }
+
+/*
+* Collect all of the functions in the call graph at and below the function
+* call.
+*/
+void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
+  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
+  //if there is a function call, get the FnSymbol associated with it
+  //and look through that FnSymbol for other function calls. Do not
+  //look through an already visited FnSymbol, or you'll have an infinite
+  //loop in the case of recursion.
+  if (CallExpr* call = toCallExpr(ast)) {
+    if (FnSymbol* fnSymbol = call->isResolved()) {
+      if(fnSymbols.count(fnSymbol) == 0) {
+        fnSymbols.insert(fnSymbol);
+        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbols, fnSymbols);
+      }
+    }
+  }
+}
