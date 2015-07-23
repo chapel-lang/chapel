@@ -31,19 +31,16 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 FLTK_CONFIG=$(FLTK_INSTALL_DIR)/bin/fltk-config
 FLTK_FLUID=$(FLTK_INSTALL_DIR)/bin/fluid
 
-CXX= $(shell $(FLTK_CONFIG) --cxx)
-CXXFLAGS= $(shell $(FLTK_CONFIG) --cxxflags) -Wall -I. -g
-
-LDFLAGS= $(shell $(FLTK_CONFIG) --ldflags)
-LIBS= $(shell $(FLTK_CONFIG) --libs)
-
 CHPL_HOME= $(shell printenv CHPL_HOME)
 CHPL_HOST_PLATFORM= $(shell printenv CHPL_HOST_PLATFORM)
+
+CXXFLAGS=  -Wall -I. -g
 
 # Suffix rule for compiling .cxx files
 .SUFFIXES: .o .h .cxx
 .cxx.o:
-	$(CXX) -c $(CXXFLAGS) $<
+	$$($(FLTK_CONFIG) --cxx) -c $$($(FLTK_CONFIG) --cxxflags) $(CXXFLAGS) $<
+
 
 SRCS= ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx  CommWin.cxx
 HFILES= ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h
@@ -56,7 +53,9 @@ OFILES= $(SRCS:.cxx=.o) $(GENSRCS:.cxx=.o)
 all: chplvis
 
 chplvis: $(GENSRCS) $(OFILES) 
-	$(CXX) -o chplvis $(OFILES) $(LDFLAGS) $(LIBS)
+	$$($(FLTK_CONFIG) --cxx)  -o chplvis $(OFILES) \
+	$$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
+
 
 chplvis.cxx chplvis.h: chplvis.fl
 	$(FLTK_FLUID) -c chplvis.fl
