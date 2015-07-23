@@ -266,7 +266,6 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         break;
 
       case 't':  // new task line
-        printf ("Task line: %s\n", linedata);
         //  task: s.u nodeID taskID O/L lineno filename
         if (sscanf (&linedata[nextCh], "%d %d %9s %d %511s",
                     &nid, &taskid, onstr, &nlineno, nfilename) != 5) {
@@ -275,20 +274,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
                    " nfilename = '%s'\n", nid, taskid, onstr, nlineno, nfilename);
           nErrs++;
         } else {
-          //int nfnLen = strlen(nfilename);
-          //printf ("task line from %s\n", nfilename);
-          //if (ignoreTask && nfnLen >= 34
-          //    && (strcmp(&nfilename[nfnLen-34], "localeModels/flat/LocaleModel.chpl") == 0)) {
-          //  ignoreTask--;
-            //printf ("Found VisualDebug task line\n");
-          //  break;
-          // }
-          newEvent = new E_task (sec, usec, taskid);
+          // printf ("Task: node %d, task %d, onCmd %c\n", nid, taskid, onstr[0]);
+          newEvent = new E_task (sec, usec, nid, taskid);
         }
-        break;
-
-      case 'e':  // end task (not generated yet)
-        //printf ("z");
         break;
 
       case 'n':  // non-blocking put or get

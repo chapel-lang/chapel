@@ -86,13 +86,15 @@ class  E_task : public Event {
 
   private:
     int nodeid;
+    int taskid;
   
   public:
-    E_task (long esec, long eusec, int nid) : Event(esec,eusec, nid) {};
+    E_task (long esec, long eusec, int nid, int taskId)
+      : Event(esec,eusec, nid), taskid(taskId) {};
 
     virtual int Ekind() {return Ev_task;}
-    virtual void print() { printf ("Task: id %d time %ld.%06ld\n",
-                                   nodeid, sec, usec); }
+    virtual void print() { printf ("Task: id %d time %ld.%06ld taskId %d\n",
+                                   nodeid, sec, usec, taskid); }
 
 };
 
