@@ -652,10 +652,10 @@ def set_up_general():
     global log_file
     if args.log_file:
         log_file = os.path.abspath(args.log_file)
-    log_filedir = os.path.dirname(log_file)
-    if not os.access(log_filedir, os.X_OK):
+    log_file_dir = os.path.dirname(log_file)
+    if not os.access(log_file_dir, os.X_OK):
         print("[Permission denied for log_file directory: {}]"
-                .format(log_filedir))
+                .format(log_file_dir))
         sys.exit(1)
     if os.path.isfile(log_file):
         print()
