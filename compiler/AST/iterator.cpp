@@ -1531,6 +1531,8 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   if (local) {
     type = local->type;
 
+  // As an experiment, let's just store references if they are passed in.
+#if 0
     // If the iterator is a method and the local variable is _this and the
     // iterator method is a var method, we store it by reference.
     // In all other cases, ref arguments to the iterator method are converted
@@ -1551,8 +1553,10 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
     {
       // In all other cases, we dereference the type of the field, to force the
       // "value" of the field to be captured in the iterator record.
+      // Except, I think we do not want to do this anymore.
       type = type->getValType();
     }
+#endif
   }
 
   // Add a field to the class
