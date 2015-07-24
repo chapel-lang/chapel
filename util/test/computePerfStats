@@ -186,11 +186,21 @@ def create_data_file(keys):
 
 def verify_data_file(keys_exp):
     with open(data_file, "r") as file:
-        header = file.readline()
-        if "# Date" not in header:
+        header = file.readline().strip().split("\t")
+        columns = len(header)
+        if "# Date" not in header[0]:
             print("[Error: {} has no header.]".format(data_file))
-            exit(1)
-        keys_actual = header.split("\t")[1:] # get keys in header
+            exit(2)
+        keys_actual = header[1:] # get keys in header
+
+        for l in file:
+            parsed = l.strip().split("\t")
+            if len(parsed) != columns:
+                print("[Error: {} entry for {} doesn't match header length.]"
+                        .format(data_file, parsed[0]))
+                exit(2)
+
+
     
     keys_actual = [k.strip() for k in keys_actual]
     keys_exp = [k.strip() for k in keys_exp]
@@ -222,7 +232,7 @@ def verify_data_file(keys_exp):
                         ", ".join(keys_actual[d[1]:d[2]]), 
                         ", ".join(keys_exp[d[3]:d[4]])))
 
-        exit(1)
+        exit(2)
 
 
 def setup():
