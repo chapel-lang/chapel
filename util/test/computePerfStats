@@ -4,8 +4,8 @@
 # This is used by sub_test if start_test is called with the -performance flag.
 # 
 # For every performance run on a particular file, this script maintains a .dat
-# by searchign athe output of the run for values of performance keys specified
-# in .perfkeys. It then writes these valeus to the .dat for every run.
+# by searching the output of the run for values of performance keys specified
+# in .perfkeys. It then writes these values to the .dat for every run.
 
 from __future__ import print_function
 import argparse;
