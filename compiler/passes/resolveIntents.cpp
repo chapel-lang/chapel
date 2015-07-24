@@ -23,23 +23,7 @@
 bool intentsResolved = false;
 
 static IntentTag constIntentForType(Type* t) {
-#if 1
-  // TODO: After some discussion, we are leaning toward reverting this change
-  // and instead changing the specified intent on extern procs to "in" for
-  // structs passed by value to extern routines written in C.
-  if (t->symbol->hasFlag(FLAG_EXTERN)) {
-    // Now that we respect ref, we don't want to convert
-    //  extern record S { var x,y : int; }
-    //  extern proc foo(s:S) : void ;
-    // into
-    //  void foo(S const * s);
-    // We put this case first, so instead we get
-    //  void foo(S const s);
-    // by avoiding the case for "isRecord(t)" below.
-    return INTENT_CONST_IN;
-  }
-#endif
-  else if (isSyncType(t) ||
+  if (isSyncType(t) ||
       isRecordWrappedType(t) ||  // domain, array, or distribution
       isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
