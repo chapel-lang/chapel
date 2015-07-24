@@ -17,6 +17,7 @@ import fnmatch
 import glob
 import contextlib
 import logging
+import atexit
 from chplenv import *
 
 
@@ -1094,6 +1095,7 @@ def check_for_duplicates():
 
 # END STUFF
 
+@atexit.register
 def cleanup():
     if os.path.isdir(chpl_test_tmp_dir):
         logger.write("[Removing {} directory]".format(chpl_test_tmp_dir))
@@ -1345,7 +1347,4 @@ def cd(path):
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        sys.exit(1)
+    main()
