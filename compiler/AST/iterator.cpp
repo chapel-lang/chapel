@@ -1531,19 +1531,16 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   if (local) {
     type = local->type;
 
-  // As an experiment, let's just store references if they are passed in.
-#if 0
     // If the iterator is a method and the local variable is _this and the
     // iterator method is a var method, we store it by reference.
-    // In all other cases, ref arguments to the iterator method are converted
-    // to value arguments, to force the capture of local variables that may be
-    // created in the calling context.  See Note #4.
-    if (local == fn->_this &&
-        fn->thisTag & INTENT_FLAG_REF)
+    // Otherwise, we want to capture its value in the iterator class, so we
+    // force the type of the field to be the value type.
+    if (local == fn->_this && ! (fn->thisTag & INTENT_FLAG_REF))
     {
-      // Allow a reference to _this to be stored in the IR only for "var" ==
-      // "ref" iterators.
+      // not tagged as ref this, store 'this' by value.
+      type = type->getValType();
     }
+#if 0
     else if (isValueField && fn->retType->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS))
     {
       // Allow the value field to store a reference if the iterator is declared
