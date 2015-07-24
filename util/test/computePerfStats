@@ -13,235 +13,274 @@ import os;
 import time;
 import re;
 import sys;
+import difflib;
 
 args = None
 
 def main():
-	parser = parser_setup()
-	global args
-	args = parser.parse_args()
+    parser = parser_setup()
+    global args
+    args = parser.parse_args()
 
-	setup()
-	open_files()
-	(keys, verify_keys) = read_key_file()
-	valid_output = validate_output(verify_keys)
+    setup()
+    (keys, verify_keys) = read_key_file()
+    valid_output = validate_output(verify_keys)
 
-	found_everything = True
-	if (valid_output):
-		create_data_file(keys)
-		log_timeouts(keys)
-		found_everything = find_keys(keys)
-		stats_file.close()
-	
-	if not (valid_output and found_everything) and not args.exec_time_out:
-		cleanup()
+    found_everything = True
+    if (valid_output):
+        create_data_file(keys)
+        log_timeouts(keys)
+        found_everything = find_keys(keys)
+    
+    if not (valid_output and found_everything) and not args.exec_time_out:
+        cleanup()
 
 
 def find_keys(keys):
-	found_everything = True
-	stats_file.write("%s " % args.perfdate)
-	for key in keys:
-		sys.stdout.write("Looking for %s..." % key)
-		stats_file.write("\t")
-		found = False
-		regex = re.escape(key) + r"\s*(\S*)"
-		# scan through output, looking for key
-		for line in test_output:
-			m = re.match(regex, line)
-			if m:
-				print("found it: %s" % m.group(1))
-				found = True
-				break
+    found_everything = True
+    with open(data_file, "a") as file:
+        file.write("%s " % args.perfdate)
+        for key in keys:
+            sys.stdout.write("Looking for %s..." % key)
+            file.write("\t")
+            found = False
+            regex = re.escape(key) + r"\s*(\S*)"
+            # scan through output, looking for key
+            for line in test_output:
+                m = re.match(regex, line)
+                if m:
+                    print("found it: %s" % m.group(1))
+                    file.write(m.group(1))
+                    found = True
+                    break
 
-		if not found:
-			stats_file.write("-")
-			print("didn't find it")
-			found_everything = False
-	
-	stats_file.write("\n")
+            if not found:
+                file.write("-")
+                print("didn't find it")
+                found_everything = False
+        
+        file.write("\n")
 
-	return found_everything
+    return found_everything
 
 
 def log_timeouts(keys): # if we timed out
-	errors_file.write("appending %s\n" % data_file)
-	if args.exec_time_out:
-		print("ERROR")
-		stats_file.write("#%s " % args.perfdate)
-		for key in keys:
-			stats_file.write("\t-")
-		stats_file.write(" ### EXECUTION TIMED OUT ###\n")
-		exit(1)
+    with open(errors_file, "w") as file:
+        file.write("appending %s\n" % data_file)
+
+    if args.exec_time_out:
+        print("ERROR")
+        with open(data_file, "a") as file:
+            file.write("#%s " % args.perfdate)
+            for key in keys:
+                file.write("\t-")
+            file.write(" ### EXECUTION TIMED OUT ###\n")
+        exit(1)
 
 
 def validate_output(verify_keys):
-	# read output from file
-	global test_output, test_output_raw
-	test_output_raw = test_output_file.read()
-	test_output = test_output_raw.split("\n")
-	test_output_file.close()
-	errors_file.write("processed %s\n" % args.test_output_file)
+    # read output from file
+    global test_output, test_output_raw
+    with open(args.test_output_file, "r") as file:
+        test_output_raw = file.read()
+        test_output = test_output_raw.split("\n")
+    with open(errors_file, "a") as file:
+        file.write("processed %s\n" % args.test_output_file)
 
-	# check for valid output
-	valid_output = True
-	for key in verify_keys:
-		# match verify keys
-		m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
-		if not m:
-			print("Error: invalid verify/reject line '%s'" % key)
-			exit()
-		# set parts of match to variables
-		type = m.group(1)
-		num = m.group(2)
-		regex = m.group(3)
-		num_real = int(num);
-		if num >= 1 : num_real -= 1
-		regex_real = regex
-		is_reject = type == "reject"
+    # check for valid output
+    valid_output = True
+    for key in verify_keys:
+        # match verify keys
+        m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
+        if not m:
+            print("Error: invalid verify/reject line '%s'" % key)
+            exit()
+        # set parts of match to variables
+        type = m.group(1)
+        num = m.group(2)
+        regex = m.group(3)
+        if num:
+            num_real = int(num)
+            if num >= 1:
+                num_real -= 1
 
-		# depending on whether we're asked to verify or reject
-		if not is_reject:
-			search_msg = "Checking for"
-			found_msg = "SUCCESS"
-			not_found_msg = "FAILURE"
-		else:
-			search_msg = "Checking for absence of"
-			found_msg = "FAILURE"
-			not_found_msg = "SUCCESS"
-		
-		# MATCH
-		if num: # if there's a line number
-			print("%s /%s/ on line %s... " % (search_msg, regex, num))
-			if re.match(regex_real, test_output[num_real]):
-				valid_output &= not is_reject
-				print(found_msg)
-			else:
-				valid_output &= is_reject
-				print(not_found_msg)
-		else: # no line number
-			print("%s /%s/ on any line... " % (search_msg, regex))
-			found = False
-			for line in test_output:
-				if re.match(regex_real, line):
-					fount = True
-					print(found_msg)
-					valid_output &= not is_reject
-					break
-			if not found:
-				valid_output &= is_reject
-				print(not_found_msg)
+        regex_real = regex
+        is_reject = type == "reject"
 
-		if not valid_output:
-			print("Error: Invalid output found in %s" % args.test_output_file)
-	
-	return valid_output
+        # depending on whether we're asked to verify or reject
+        if not is_reject:
+            search_msg = "Checking for"
+            found_msg = "SUCCESS"
+            not_found_msg = "FAILURE"
+        else:
+            search_msg = "Checking for absence of"
+            found_msg = "FAILURE"
+            not_found_msg = "SUCCESS"
+        
+        # MATCH
+        if num: # if there's a line number
+            print("%s /%s/ on line %s... " % (search_msg, regex, num))
+            if re.match(regex_real, test_output[num_real]):
+                valid_output &= not is_reject
+                print(found_msg)
+            else:
+                valid_output &= is_reject
+                print(not_found_msg)
+        else: # no line number
+            print("%s /%s/ on any line... " % (search_msg, regex))
+            found = False
+            for line in test_output:
+                if re.match(regex_real, line):
+                    found = True
+                    print(found_msg)
+                    valid_output &= not is_reject
+                    break
+            if not found:
+                valid_output &= is_reject
+                print(not_found_msg)
+
+        if not valid_output:
+            print("Error: Invalid output found in %s" % args.test_output_file)
+    
+    return valid_output
 
 
 def read_key_file():
-	# read keys from .perfkeys (or other) file
-	verify_keys = []
-	keys = []
-	for line in keys_file:
-		key = line.strip()
-		if not key[0] == "#": # not a comment
-			if "verify" in key or "reject" in key:
-				verify_keys.append(key)
-			else:
-				keys.append(key)
-		else: # ignore comments unless they specify .dat
-			comment = key[1:].strip()
-			if comment[0:5] == "file:":
-				global data_file
-				data_file = "%s/%s" % (args.outputdir, comment.split()[1])
-	keys_file.close()
-	errors_file.write("processed %s\n" % args.key_file_path)
+    # read keys from .perfkeys (or other) file
+    verify_keys = []
+    keys = []
+    with open(args.keys_file, "r") as file:
+        for line in file:
+            key = line.strip()
+            if not key[0] == "#": # not a comment
+                if "verify" in key or "reject" in key:
+                    verify_keys.append(key)
+                else:
+                    keys.append(key)
+            else: # ignore comments unless they specify .dat
+                comment = key[1:].strip()
+                if comment[0:5] == "file:":
+                    global data_file
+                    data_file = "%s/%s" % (args.outputdir, comment.split()[1])
 
-	return (keys, verify_keys)
+    with open(errors_file, "a") as file:
+        file.write("processed %s\n" % args.keys_file)
 
-
-def open_files(): # open various files for reading and writing
-	global errors_file, keys_file, test_output_file
-	errors_file = open(errors_file_path, "w")
-
-	if not os.access(args.key_file_path, os.R_OK):
-		print("can't open %s." % args.key_file_path)
-	keys_file = open(args.key_file_path, "r")
-
-	if not os.access(args.test_output_file, os.R_OK):
-		print("can't open %s." % args.test_output_file)
-	test_output_file = open(args.test_output_file, "r")
+    return (keys, verify_keys)
 
 
 def create_data_file(keys):
-	global stats_file
-	# create and setup .dat file if not done already
-	if not os.path.isfile(data_file):
-		stats_file = open(data_file, "a")
-		errors_file.write("created %s\n" % data_file)
-		stats_file.write("# Date")
-		for key in keys:
-			stats_file.write("\t" + key)
-		stats_file.write("\n")
-	else:
-		stats_file = open(data_file, "a")
+    # create and setup .dat file if not done already
+    if not os.path.isfile(data_file):
+        with open(errors_file, "a") as file:
+            file.write("created %s\n" % data_file)
+
+        with open(data_file, "a") as file:
+            file.write("# Date")
+            for key in keys:
+                file.write("\t" + key)
+            file.write("\n")
+    else:
+        verify_data_file(keys)
+
+
+def verify_data_file(keys_exp):
+    with open(data_file, "r") as file:
+        header = file.readline()
+        if "# Date" not in header:
+            print("[Error: {} has no header.]".format(data_file))
+            exit(1)
+        keys_actual = header.split("\t")[1:] # get keys in header
+    
+    keys_actual = [k.strip() for k in keys_actual]
+    keys_exp = [k.strip() for k in keys_exp]
+
+    s = difflib.SequenceMatcher(None, keys_actual, keys_exp)
+    diff = s.get_opcodes()
+
+    # the two aren't equal
+    if len(diff) > 1 or (len(diff) == 1 and diff[0][0] != "equal"):        
+        print("[Error: key mismatch between {} and {}]"
+                .format(args.keys_file, data_file))
+        print("Changes since creation of .dat file:")
+        for d in diff:
+            type = d[0]
+            if type == "equal":
+                continue
+            elif type == "delete":
+                for i in range(d[1], d[2]):
+                    print("\t'{}' has been removed.".format(keys_actual[i]))
+            elif type == "insert":
+                for i in range(d[3], d[4]):
+                    print("\t'{}' has been added.".format(keys_exp[i]))
+            elif type == "replace":
+                if d[2] - d[1] == 1: # singlular
+                    print("\t'{}' has been replaced with '{}'.".format(
+                            keys_actual[d[1]], ", ".join(keys_exp[d[3]:d[4]])))
+                else: # plural
+                    print("\t'{}' have been replaced with '{}'.".format(
+                        ", ".join(keys_actual[d[1]:d[2]]), 
+                        ", ".join(keys_exp[d[3]:d[4]])))
+
+        exit(1)
 
 
 def setup():
-	# finish setting up command line args
-	if not args.key_file_path:
-		args.key_file_path = "%s.perfkeys" % args.testname;
-	if not args.test_output_file:
-		args.test_output_file = "%s.exec.out.tmp" % args.testname;
-	if not args.perfdate:
-		args.perfdate = time.strftime("%m/%d/%y");
-		print("Using default date %s" % args.perfdate);
-	else:
-		print("Using set date %s" % args.perfdate);
+    # finish setting up command line args
+    if not args.keys_file:
+        args.keys_file = "%s.perfkeys" % args.testname;
+    if not args.test_output_file:
+        args.test_output_file = "%s.exec.out.tmp" % args.testname;
+    if not args.perfdate:
+        args.perfdate = time.strftime("%m/%d/%y");
+        print("Using default date %s" % args.perfdate);
+    else:
+        print("Using set date %s" % args.perfdate);
 
-	if args.exec_time_out == "True":
-		args.exec_time_out == True
-	else:
-		args.exec_time_out == False
-	
-	global data_file, errors_file_path, fatal_errors;
-	data_file = "%s/%s.dat" % (args.outputdir, args.testname)
-	errors_file_path = "%s/%s.errors" % (args.outputdir, args.testname)
-	fatal_errors = 0;
+    if args.exec_time_out == "True":
+        args.exec_time_out == True
+    else:
+        args.exec_time_out == False
+    
+    global data_file, errors_file, fatal_errors;
+    data_file = "%s/%s.dat" % (args.outputdir, args.testname)
+    errors_file = "%s/%s.errors" % (args.outputdir, args.testname)
+    fatal_errors = 0;
 
-	if os.path.isfile(errors_file_path):
-		os.remove(errors_file_path)
-	
+    if os.path.isfile(errors_file):
+        os.remove(errors_file)
+    
 
 def cleanup():
-	sys.stdout.write("output was: ")
-	# if test output was too long, only print first and last 1000 characters
-	if len(test_output_raw) > 2000: 
-		print(test_output_raw[:1000].strip())
-		print(test_output_raw[-1000:].strip())
-	else:
-		print(test_output_raw.strip())
+    sys.stdout.write("output was: ")
+    # if test output was too long, only print first and last 1000 characters
+    if len(test_output_raw) > 2000: 
+        print(test_output_raw[:1000].strip())
+        print(test_output_raw[-1000:].strip())
+    else:
+        print(test_output_raw.strip())
 
-	exit(1)
+    exit(1)
 
 
 def parser_setup():
-	parser = argparse.ArgumentParser(description="Compute performance"
-			"statistics");
-	parser.add_argument("testname");
-	parser.add_argument("outputdir");
-	parser.add_argument("key_file_path", nargs="?", default=False);
-	parser.add_argument("test_output_file", nargs="?", default=False);
-	parser.add_argument("exec_time_out", nargs="?", default=False, type=t_or_f);
-	parser.add_argument("perfdate", nargs="?", default=False);
+    parser = argparse.ArgumentParser(description="Compute performance"
+            "statistics");
+    parser.add_argument("testname");
+    parser.add_argument("outputdir");
+    parser.add_argument("keys_file", nargs="?", default=False);
+    parser.add_argument("test_output_file", nargs="?", default=False);
+    parser.add_argument("exec_time_out", nargs="?", default=False, type=t_or_f);
+    parser.add_argument("perfdate", nargs="?", default=False);
 
-	return parser
+    return parser
 
 # UTILITY FUNCTION FOR ARGUMENT PARSING
 def t_or_f(arg):
-	ua = str(arg).upper()
-	if "TRUE" in ua: return True
-	elif "FALSE" in ua: return False
-	else: return False
+    ua = str(arg).upper()
+    if "TRUE" in ua: return True
+    elif "FALSE" in ua: return False
+    else: return False
 
 if __name__ == "__main__":
-	main()
+    main()
