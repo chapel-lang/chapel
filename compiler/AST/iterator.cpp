@@ -1540,20 +1540,6 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
       // not tagged as ref this, store 'this' by value.
       type = type->getValType();
     }
-#if 0
-    else if (isValueField && fn->retType->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS))
-    {
-      // Allow the value field to store a reference if the iterator is declared
-      // with "ref" return intent.
-    }
-    else
-    {
-      // In all other cases, we dereference the type of the field, to force the
-      // "value" of the field to be captured in the iterator record.
-      // Except, I think we do not want to do this anymore.
-      type = type->getValType();
-    }
-#endif
   }
 
   // Add a field to the class
