@@ -490,7 +490,7 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
 }
 
 pragma "no doc"
-proc locale.cwd(out error: syserr): string {
+proc locale.cwd(out error: syserr)/*: string*/ {
   extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
 
   var ret:string;
@@ -522,7 +522,7 @@ proc locale.cwd(out error: syserr): string {
    :return: The current working directory for the locale in question.
    :rtype: string
 */
-proc locale.cwd(): string {
+proc locale.cwd()/*: string*/ {
   var err: syserr = ENOERR;
   var ret = cwd(err);
   if err != ENOERR then ioerror(err, "in cwd");
@@ -577,8 +577,8 @@ proc exists(name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
-iter findfiles(startdir: string = ".", recursive: bool = false, 
-               hidden: bool = false): string {
+iter findfiles(const in startdir: string = ".", recursive: bool = false, 
+               hidden: bool = false)/*: string*/ {
   if (recursive) then
     for subdir in walkdirs(startdir, hidden=hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
@@ -589,8 +589,8 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
-iter findfiles(startdir: string = ".", recursive: bool = false, 
-               hidden: bool = false, param tag: iterKind): string 
+iter findfiles(const in startdir: string = ".", recursive: bool = false, 
+               hidden: bool = false, param tag: iterKind)/*: string */
        where tag == iterKind.standalone {
   if (recursive) then
     forall subdir in walkdirs(startdir, hidden=hidden) do
@@ -740,7 +740,7 @@ module chpl_glob_c_interface {
 
    :yield: The matching filenames as strings
 */
-iter glob(pattern: string = "*"): string {
+iter glob(const in pattern: string = "*")/*: string*/ {
   var glb : chpl_glob_c_interface.glob_t;
 
   const err = chpl_glob_c_interface.chpl_glob(pattern.c_str(), 0, glb);
@@ -761,7 +761,7 @@ iter glob(pattern: string = "*"): string {
 
 
 pragma "no doc"
-iter glob(pattern: string = "*", param tag: iterKind): string
+  iter glob(const in pattern: string = "*", param tag: iterKind)/*: string*/
        where tag == iterKind.standalone {
   var glb : chpl_glob_c_interface.glob_t;
 
@@ -786,7 +786,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 // the state at the end of the call).
 //
 pragma "no doc"
-iter glob(pattern: string = "*", param tag: iterKind)
+iter glob(const in pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   var glb : chpl_glob_c_interface.glob_t;
 
@@ -808,7 +808,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
-iter glob(pattern: string = "*", followThis, param tag: iterKind): string 
+iter glob(const in pattern: string = "*", followThis, param tag: iterKind)/*: string */
        where tag == iterKind.follower {
   var glb : chpl_glob_c_interface.glob_t;
   if (followThis.size != 1) then
@@ -987,8 +987,9 @@ proc isMount(name: string): bool {
 
    :yield: The names of the specified directory's contents, as strings
 */
-iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true, 
-              files: bool = true, listlinks: bool = true): string {
+iter listdir(const in path: string = ".", hidden: bool = false, dirs: bool = true, 
+             files: bool = true, listlinks: bool = true) // : string
+  {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
@@ -1278,9 +1279,9 @@ proc locale.umask(mask: int): int {
 
    :yield: The directory names encountered, relative to `path`, as strings
 */
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+iter walkdirs(const in path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false, 
-              sort: bool = false): string {
+              sort: bool = false)/*: string*/ {
 
   if (topdown) then
     yield path;
@@ -1309,9 +1310,9 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
 // Here's a parallel version
 //
 pragma "no doc"
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int), 
+iter walkdirs(const in path: string = ".", topdown: bool = true, depth: int =max(int), 
               hidden: bool = false, followlinks: bool = false, 
-              sort: bool = false, param tag: iterKind): string 
+              sort: bool = false, param tag: iterKind)//: string 
        where tag == iterKind.standalone {
 
   if (sort) then

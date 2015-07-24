@@ -464,7 +464,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
             (!parent || !parent->isPrimitive(PRIM_MOVE))) {
           replacementHelper(move, ret, arg, useFn);
         } else {
-          Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
+          Symbol* tmp = newTemp("ret_to_arg_derefTmp", useFn->retType);
           se->getStmtExpr()->insertBefore(new DefExpr(tmp));
           se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
           se->var = tmp;
@@ -928,11 +928,170 @@ void insertReferenceTemps(CallExpr* call)
 
 
 void insertReferenceTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    // Do not insert reference temps on _toLeader and _toFollower calls before
+    // iterator lowering is complete.
+    // A certain structure for these calls is expected in
+    // cleanupLeaderFollowerIteratorCalls() and inserting deref temps disturbs
+    // that form.
+    // TODO: The design for LeaderFollower 2.0 should avoid these nonconforming
+    // modifications of the AST.
+    if (! iteratorsLowered)
+    {
+      // These tests are copied verbatim from the tests that select the calls
+      // of interest in cleanupLeaderFollowerIteratorCalls().
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+            (isDefExpr(fn->formals.tail) &&
+             !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
+             toDefExpr(fn->formals.tail)->sym->getValType() &&
+             toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
+          if (!strcmp(call->parentSymbol->name, "_toLeader") ||
+              !strcmp(call->parentSymbol->name, "_toFollower") ||
+              !strcmp(call->parentSymbol->name, "_toFastFollower") ||
+              !strcmp(call->parentSymbol->name, "_toStandalone")) {
+            continue;
+          }
+        }
+      }
+    }
+
     if ((call->parentSymbol && call->isResolved()) ||
-        call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+    {
       insertReferenceTemps(call);
     }
+  }
+}
+
+
+//
+// Insert dereference temps as needed to make reference arguments and variables
+// match formals that expect their arguments by value
+// (This should be rare, except for fundamental types, small records and
+//  task arguments passed using remote value forwarding.)
+//
+
+static inline void
+insertDerefTemp(Expr* expr)
+{
+  Expr* stmt = expr->getStmtExpr();
+  SET_LINENO(stmt);
+
+  Type* t = expr->typeInfo();
+  INT_ASSERT(t->symbol->hasFlag(FLAG_REF));
+
+  VarSymbol* tmp = newTemp("derefTmp", t->getValType());
+  stmt->insertBefore(new DefExpr(tmp));
+
+  expr->replace(new SymExpr(tmp));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                  new CallExpr(PRIM_DEREF, expr)));
+}
+
+void insertDerefTemps(CallExpr* call)
+{
+  if ((call->isResolved()) ||
+      call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+  {
+    // This is a function call (not a primitive).
+    for_formals_actuals(formal, actual, call)
+    {
+      if (actual->typeInfo() == formal->type->refType)
+      {
+        // A deref temp is needed.
+        insertDerefTemp(actual);
+      }
+    }
+  }
+
+  if (call->primitive)
+  {
+    // A primitive.
+    // Do nothing in the general case.
+    // In specific cases, insert a deref temp if required.
+    switch (call->primitive->tag)
+    {
+     default:
+      // Default: Do not insert a deref temp.
+      break;
+
+     case PRIM_ADDR_OF:
+      {
+        Expr* actual = call->get(1);
+        if (isReferenceType(actual->typeInfo()))
+        {
+          // Can't take the address of a reference, so just remove this call.
+          call->replace(actual->remove());
+        }
+      }
+      break;
+
+     case PRIM_MOVE:
+      {
+        Expr* actual = call->get(2);
+        // If the RHS of the move is an addr-of call, we skip it.
+        //  - It will be removed by the PRIM_ADDR_OF clause if its operand is
+        //    already a reference, and
+        //  - Calling typeInfo on an 'addr of' primitive whose argument is
+        //    already of ref cause a compiler error.  (Chapel only supports one
+        //    level of references.)
+        if (CallExpr* aoc = toCallExpr(actual))
+          if (aoc->isPrimitive(PRIM_ADDR_OF))
+            break;
+
+        Expr* lhs = call->get(1);
+        if (actual->typeInfo() == lhs->typeInfo()->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+
+     case PRIM_RETURN:
+      {
+        // The type of the argument to the return primitive should match the
+        // return type of the function that contains it.
+        Expr* actual = call->get(1);
+        FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(fn);
+        if (actual->typeInfo() == fn->retType->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+
+     case PRIM_SET_MEMBER:
+      {
+        Expr* actual = call->get(3);
+        Expr* field = call->get(2);
+        Type* target = field->typeInfo();
+        if (actual->typeInfo() == target->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+    }
+  }
+
+  // String literals are represented as DefExpr(CallExpr('_construct_string',
+  // string_literal)), so they are niether primitives nor resolved calls.
+}
+
+
+void insertDerefTemps(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+  collectCallExprs(fn, callExprs);
+  for_vector(CallExpr, call, callExprs)
+    insertDerefTemps(call);
+}
+
+
+void insertDerefTemps() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (! call->parentSymbol)
+      // Not in tree, so skip
+      continue;
+
+    insertDerefTemps(call);
   }
 }
 

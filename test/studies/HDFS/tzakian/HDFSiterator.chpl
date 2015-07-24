@@ -41,7 +41,7 @@ use Sys,
     BlockDist;
 
 // ============== Serial iterator ========================
-iter HDFSmap(dataFile: string, namenode: string = "default", port: int(32) = 0) {
+iter HDFSmap(dataFile: string, const in namenode: string = "default", port: int(32) = 0) {
 
 
   // use const instead of var -- better optimizations this way
@@ -83,7 +83,7 @@ iter HDFSmap(dataFile: string, namenode: string = "default", port: int(32) = 0) 
 }
 
 // ======= Leader-follower iterator that should implement the above in parallel ====
-iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default",
+iter HDFSmap(param tag: iterKind, dataFile: string, const in namenode: string = "default",
     port: int(32) = 0)
   where tag == iterKind.leader {
 
@@ -207,7 +207,7 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
 
 
 // ======== Follower iterator =========================
-iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default",
+iter HDFSmap(param tag: iterKind, dataFile: string, const in namenode: string = "default",
     port: int(32) = 0, followThis)
   where tag == iterKind.follower {
     yield followThis;

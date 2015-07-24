@@ -849,7 +849,7 @@ static void derefWideRefsToWideClasses()
           // This should be removed when string_rec is the default string type
           call->get(1)->getValType() != wideStringType) {
         SET_LINENO(call);
-        VarSymbol* tmp = newTemp(call->get(1)->getValType());
+        VarSymbol* tmp = newTemp("wideDerefTmp", call->get(1)->getValType());
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, call->get(1)->remove())));
         call->insertAtHead(tmp);

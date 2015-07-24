@@ -228,7 +228,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                 call->replace(new SymExpr(arg));
               } else {
                 SET_LINENO(se);
-                VarSymbol* tmp = newTemp(sym->type);
+                VarSymbol* tmp = newTemp("derefTmp", sym->type);
                 se->getStmtExpr()->insertBefore(new DefExpr(tmp));
                 se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
                 se->var = tmp;
@@ -380,4 +380,8 @@ void flattenFunctions(void) {
   }
 
   flattenNestedFunctions(nestedFunctions);
+
+  // Insert dereference and reference temporaries as needed.
+  insertReferenceTemps();
+  insertDerefTemps();
 }

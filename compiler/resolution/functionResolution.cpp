@@ -3972,7 +3972,7 @@ static void resolveMove(CallExpr* call) {
         // type information earlier
         SymExpr* castVar = toSymExpr(rhsCall->get(1));
         INT_ASSERT(castVar);
-        VarSymbol* derefTmp = newTemp("castDeref", castVar->typeInfo()->getValType());
+        VarSymbol* derefTmp = newTemp("castDerefTmp", castVar->typeInfo()->getValType());
         call->insertBefore(new DefExpr(derefTmp));
         call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
                                         new CallExpr(PRIM_DEREF,
@@ -4169,7 +4169,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, defaultExpr->body.tail->remove()));
         fn->insertAtHead(defaultExpr);
       } else {
-        VarSymbol* refTmp = newTemp("_formal_ref_tmp_");
+        VarSymbol* refTmp = newTemp("_formal_derefTmp");
         VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
         typeTmp->addFlag(FLAG_MAYBE_TYPE);
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTmp)));
@@ -5721,7 +5721,7 @@ static void
 insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
     if (!se->var->type->refType) {
-      VarSymbol* tmp = newTemp("_value_tmp_", se->var->getValType());
+      VarSymbol* tmp = newTemp("derefTmp", se->var->getValType());
       insertPoint->insertBefore(new DefExpr(tmp));
       insertPoint->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, se->var)));
       se->var = tmp;
@@ -6828,18 +6828,18 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (!isSubType(fn->retType->defaultInitializer->iteratorInfo->getValue->retType,
-                  pfn->retType->defaultInitializer->iteratorInfo->getValue->retType)) {
+              if (!isSubType(fn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType,
+                             pfn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType)) {
                 USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
-                               pfn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
+                               pfn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
-                               fn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
+                               fn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_STOP();
               } else {
                 pfn->retType->dispatchChildren.add_exclusive(fn->retType);
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
-                Type* pic = pfn->retType->defaultInitializer->iteratorInfo->iclass;
-                Type* ic = fn->retType->defaultInitializer->iteratorInfo->iclass;
+                Type* pic = pfn->retType->getValType()->defaultInitializer->iteratorInfo->iclass;
+                Type* ic = fn->retType->getValType()->defaultInitializer->iteratorInfo->iclass;
                 INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 
                 // Iterator classes are created as normal top-level classes (inheriting

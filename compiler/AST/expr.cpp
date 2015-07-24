@@ -4542,7 +4542,13 @@ GenRet CallExpr::codegen() {
       ret = codegenXor(get(1), get(2));
       break;
     case PRIM_ASSIGN:
-      // The original, simplistic implementation.  Works but may be slow.
+      // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
+      // objects.
+      // PRIM_MOVE can be used to copy a pointer (i.e. reference) into another
+      // pointer, but if you try this with PRIM_ASSIGN, instead it will
+      // overwrite what the LHS points to with what the RHS points to.
+
+      // TODO:  Works but may be slow.
       // (See the implementation of PRIM_MOVE above for several peephole
       // optimizations depending on specifics of the RHS expression.)
 
@@ -4556,7 +4562,10 @@ GenRet CallExpr::codegen() {
       } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(codegenDeref(get(1)), get(2));
+        if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
+          codegenAssign(codegenDeref(get(1)), codegenDeref(get(2)));
+        else
+          codegenAssign(codegenDeref(get(1)), get(2));
       } else {
         codegenAssign(get(1), get(2));
       }

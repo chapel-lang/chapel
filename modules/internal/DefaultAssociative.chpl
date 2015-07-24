@@ -482,13 +482,14 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
-    iter _lookForSlots(idx: idxType, numSlots = tableSize) {
+    iter _lookForSlots(idx: idxType, const in numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(idx);
       for probe in 0..numSlots/2 {
         yield (baseSlot + probe**2)%numSlots;
       }
     }
   
+    // TODO: This may cause problems if the assignment goes through a deref temp.
     iter _fullSlots(tab = table) {
       for slot in tab.domain {
         if tab[slot].status == chpl__hash_status.full then

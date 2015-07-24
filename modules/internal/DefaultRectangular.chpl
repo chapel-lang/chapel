@@ -157,7 +157,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, idxType, 0:idxType)) {
+               const in offset=createTuple(rank, idxType, 0:idxType)) {
       if rank == 1 {
         for i in ranges(1) do
           yield i;
@@ -171,7 +171,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, idxType, 0:idxType))
+               const in offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.standalone && !localeModelHasSublocales {
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain standalone invoked on ", ranges);
@@ -258,7 +258,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, idxType, 0:idxType))
+               const in offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.leader {
 
       const numSublocs = here.getChildCount();
@@ -405,7 +405,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, idxType, 0:idxType))
+               const in offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.follower {
 
       proc anyStridable(rangeTuple, param i: int = 1) param

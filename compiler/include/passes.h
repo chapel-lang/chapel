@@ -22,11 +22,14 @@
 
 #include "symbol.h"
 
+//
+// Global symbols set to true after the corresponding class is complete
+//
 extern bool parsed;
 extern bool normalized;
 extern bool resolved;
 extern bool intentsResolved;
-
+extern bool iteratorsLowered;
 
 //
 // prototypes of functions that are called as passes (alphabetical)
@@ -109,8 +112,12 @@ void deadBlockElimination();
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 // callDestructors.cpp
-void insertReferenceTemps();
 void insertReferenceTemps(CallExpr* call);
+void insertReferenceTemps();
+
+void insertDerefTemps(CallExpr* call);
+void insertDerefTemps(FnSymbol* fn);
+void insertDerefTemps();
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

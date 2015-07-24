@@ -58,7 +58,7 @@ module LocaleModel {
   // a correct one for a record type whose members are not known to it.
   pragma "init copy fn"
   extern chpl__initCopy_chpl_rt_localeID_t
-  proc chpl__initCopy(initial: chpl_localeID_t): chpl_localeID_t;
+  proc chpl__initCopy(in initial: chpl_localeID_t): chpl_localeID_t;
 
   extern var chpl_nodeID: chpl_nodeID_t;
 
@@ -68,10 +68,10 @@ module LocaleModel {
                                subloc: chpl_sublocID_t): chpl_localeID_t;
 
   extern
-    proc chpl_rt_nodeFromLocaleID(loc: chpl_localeID_t): chpl_nodeID_t;
+    proc chpl_rt_nodeFromLocaleID(in loc: chpl_localeID_t): chpl_nodeID_t;
 
   extern
-    proc chpl_rt_sublocFromLocaleID(loc: chpl_localeID_t): chpl_sublocID_t;
+    proc chpl_rt_sublocFromLocaleID(in loc: chpl_localeID_t): chpl_sublocID_t;
 
   // Compiler (and module code) interface for manipulating global locale IDs..
   pragma "insert line file info"

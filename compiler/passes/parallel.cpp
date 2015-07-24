@@ -330,7 +330,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       {
         // For internally reference-counted types, this punches through
         // references to bump the reference count.
-        VarSymbol* derefTmp = newTemp(baseType);
+        VarSymbol* derefTmp = newTemp("derefTmp", baseType);
         fcall->insertBefore(new DefExpr(derefTmp));
         fcall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
                                          new CallExpr(PRIM_DEREF, var)));
@@ -362,7 +362,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         Symbol* formal = actual_to_formal(arg);
         if (arg->typeInfo() != baseType)
         {
-          VarSymbol* derefTmp = newTemp(baseType);
+          VarSymbol* derefTmp = newTemp("derefTmp", baseType);
           fn->insertBeforeDownEndCount(new DefExpr(derefTmp));
           fn->insertBeforeDownEndCount(
             new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF,  formal)));
@@ -1067,6 +1067,14 @@ makeHeapAllocations() {
         continue;
       }
     }
+
+    // Special case for string literals: Do not heap-allocate them.
+    // Instead, string literal values are moved into local temporaries that are
+    // widened.
+    if (var->type == dtString)
+      if (VarSymbol* v = toVarSymbol(var))
+        if (v->immediate)
+          continue;
 
     SET_LINENO(var);
 
