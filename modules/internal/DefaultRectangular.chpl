@@ -70,8 +70,17 @@ module DefaultRectangular {
   // model initialization
   //
   pragma "locale private" var defaultDist = new dmap(new DefaultDist());
-  inline proc chpl_defaultDistInitPrivate() {
-    if defaultDist._value==nil then defaultDist = new dmap(new DefaultDist());
+   proc chpl_defaultDistInitPrivate() {
+    if defaultDist._value==nil {
+      // FIXME benharsh: Here's what we want to do:
+      //   defaultDist = new dmap(new DefaultDist());
+      // The problem is that the LHS of the "proc =" for _distributions
+      // loses its ref intent in the removeWrapRecords pass.
+      //
+      // The code below is copied from the contents of the "proc =".
+      const nd = new dmap(new DefaultDist());
+      __primitive("move", defaultDist, chpl__autoCopy(nd.clone()));
+    }
   }
   
   class DefaultRectangularDom: BaseRectangularDom {
