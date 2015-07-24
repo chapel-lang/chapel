@@ -40,14 +40,20 @@ CLEAN_TARGS += \
 
 endif
 
+# Don't create rules for bison-chapel.cpp or flex-chapel.cpp since we don't
+# want them to be rebuilt automatically. (This is because of the bison version
+# 2.5 requirement)
 parser: FORCE
 	@rm -f bison-chapel.output bison-chapel.cpp flex-chapel.cpp
 	@rm -f ../include/bison-chapel.h ../include/flex-chapel.h
 	bison chapel.ypp
-	@if grep -q "conflicts:" bison-chapel.output; then echo "PROBLEM: chapel.ypp contains conflicts"; exit 1; fi;
+	@if grep -q "conflicts:" bison-chapel.output; \
+		then echo "PROBLEM: chapel.ypp contains conflicts"; \
+		rm -f bison-chapel.cpp; \
+		exit 1; \
+	fi;
 	flex chapel.lex
 
-FORCE:
 
 #
 # standard footer

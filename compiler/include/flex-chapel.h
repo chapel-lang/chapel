@@ -338,7 +338,7 @@ extern int yylex \
 #undef YY_DECL
 #endif
 
-#line 269 "chapel.lex"
+#line 271 "chapel.lex"
 
 
 #line 345 "../include/flex-chapel.h"

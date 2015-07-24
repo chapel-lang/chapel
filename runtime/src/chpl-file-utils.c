@@ -111,6 +111,15 @@ qioerr chpl_fs_exists(int* ret, const char* name) {
   return err;
 }
 
+qioerr chpl_fs_get_size(int64_t* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = buf.st_size;
+  return 0;
+}
+
 qioerr chpl_fs_get_uid(int* ret, const char* name) {
   struct stat buf;
   int exitStatus = stat(name, &buf);

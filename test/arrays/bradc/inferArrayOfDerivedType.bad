@@ -1,0 +1,1 @@
+inferArrayOfDerivedType.chpl:15: error: Array literal element 2 expected to be of type D but is of type E

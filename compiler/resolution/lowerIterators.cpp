@@ -39,6 +39,37 @@
 bool iteratorsLowered = false;
 
 
+// getTheIteratorFn(): get the corresponding original iterator's FnSymbol.
+
+// 'ic' must be an instance of _iteratorClass
+FnSymbol* getTheIteratorFn(Symbol* ic) {
+  return getTheIteratorFn(ic->type);
+}
+
+FnSymbol* getTheIteratorFn(CallExpr* call) {
+  return getTheIteratorFn(call->get(1)->typeInfo());
+}
+
+// getTheIteratorFn() - was:
+//   ...->defaultInitializer->getFormal(1)->type->defaultInitializer
+//
+// * _iteratorClass's defaultInitializer's first arg type is _iteratorRecord
+// * _iteratorRecord type's defaultInitializer gives us the iterator
+//
+FnSymbol* getTheIteratorFn(Type* icType) {
+  // either an IC or a tuple thereof
+  // the asserts document the current state
+  bool gotTuple = icType->symbol->hasFlag(FLAG_TUPLE);
+  INT_ASSERT(gotTuple || icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
+  Type* irType = icType->defaultInitializer->getFormal(1)->type;
+  INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+             (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
+  FnSymbol* result = irType->defaultInitializer;
+  INT_ASSERT(gotTuple || result->hasFlag(FLAG_ITERATOR_FN));
+  return result;
+}
+
+
 // This consistency check should probably be moved earlier in the compilation.
 // It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
 // Does it need to be recursive? (Currently, it is not.)
@@ -1103,7 +1134,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   // passed to it when this function is flattened)
   //
   Symbol*    ic             = forLoop->iteratorGet()->var;
-  FnSymbol*  iterator       = ic->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer;
+  FnSymbol*  iterator       = getTheIteratorFn(ic);
   CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
 
   // replace function in iteratorFnCall with iterator function once that is created
@@ -1188,7 +1219,7 @@ static bool
 // the tree); false otherwise.
 expandIteratorInline(ForLoop* forLoop) {
   Symbol*   ic       = forLoop->iteratorGet()->var;
-  FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer;
+  FnSymbol* iterator = getTheIteratorFn(ic);
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
@@ -1448,7 +1479,7 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
   getRecursiveIterators(iterators, gIterator);
 
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol*      iterator = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer;
+    FnSymbol*      iterator = getTheIteratorFn(iterators.v[i]);
     BlockStmt*     block    = iterator->body;
     Vec<CallExpr*> calls;
     int            numYields = 0;
@@ -1559,7 +1590,7 @@ getIteratorChildren(Vec<Type*>& children, Type* type) {
 
 static void
 buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator) {
-  IteratorInfo* ii = iterator->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer->iteratorInfo;
+  IteratorInfo* ii = getTheIteratorFn(iterator)->iteratorInfo;
   FnSymbol* fn = NULL;
   switch (fnid) {
   case ZIP1: fn = ii->zip1; break;
@@ -1631,7 +1662,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
   forLoop->insertAtHead(noop);
 
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol*     iterator   = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer;
+    FnSymbol*     iterator   = getTheIteratorFn(iterators.v[i]);
     BlockStmt*    ibody      = iterator->body->copy();
     bool          afterYield = false;
     int           count      = 1;
@@ -1705,8 +1736,8 @@ expandForLoop(ForLoop* forLoop) {
 
   if (!fNoInlineIterators)
   {
-    if (iterator->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer->iteratorInfo &&
-        canInlineIterator(iterator->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer) &&
+    FnSymbol* iterFn = getTheIteratorFn(iterator->type);
+    if (iterFn->iteratorInfo && canInlineIterator(iterFn) &&
         (iterator->type->dispatchChildren.n == 0 ||
          (iterator->type->dispatchChildren.n == 1 &&
           iterator->type->dispatchChildren.v[0] == dtObject))) {
@@ -1802,7 +1833,7 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAtTail(buildIteratorCall(NULL, ZIP3, iterators.v[i], children));
       forLoop->insertAfter (buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
 
-      FnSymbol* iterFn = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->getValType()->defaultInitializer;
+      FnSymbol* iterFn = getTheIteratorFn(iterators.v[i]);
       if (isBoundedIterator(iterFn)) {
         if (testBlock == NULL) {
           if (isNotDynIter) {

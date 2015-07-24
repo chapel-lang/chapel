@@ -544,7 +544,7 @@ specified by \chpl{IntegerTuple} is a generic type.
 
 If a \chpl{var} or \chpl{const} field in a class or record has no specified type or
 initialization expression, the class or record is generic over the
-type of that field.  The field becomes an argument with blank intent to
+type of that field.  The field becomes an argument with default intent to
 the compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors}).
 That argument has no specified type and no default
 value. This makes the compiler-generated constructor generic.
@@ -660,7 +660,7 @@ parameter for a parameter field. It accepts the type to be bound
 to the type alias and the value to be bound to the parameter, respectively.
 This is the same as for the type constructor.
 For a generic \chpl{var} or \chpl{const} field, the corresponding
-formal argument has the blank intent and accepts the value
+formal argument has the default intent and accepts the value
 for the field to be initialized with. The type of the field
 is inferred automatically to be the type of the initialization value.
 

@@ -544,10 +544,13 @@ buildExternBlockStmt(const char* c_code) {
   return buildChapelStmt(new ExternBlockStmt(c_code));
 }
 
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, const char* docs) {
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, bool priv, const char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
   if (currentFileNamedOnCommandLine) {
     mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+  }
+  if (priv) {
+    mod->addFlag(FLAG_PRIVATE);
   }
 
   mod->filename = astr(filename);
@@ -1765,7 +1768,7 @@ buildClassDefExpr(const char* name,
 // If an argument has intent 'INTENT_TYPE', this function sets up the
 // ArgSymbol the way downstream passes expect it to be.
 //
-static void setupTypeIntentArg(ArgSymbol* arg) {
+void setupTypeIntentArg(ArgSymbol* arg) {
   arg->intent = INTENT_BLANK;
   arg->addFlag(FLAG_TYPE_VARIABLE);
   arg->type = dtAny;

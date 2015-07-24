@@ -24,8 +24,6 @@ def get():
         elif (arch_val == 'knc' or
                 platform_val.startswith('cygwin') or
                 platform_val.startswith('netbsd') or
-                compiler_val == 'pgi'             or
-                compiler_val == 'cray-prgenv-pgi' or
                 compiler_val == 'cray-prgenv-cray'):
             tasks_val = 'fifo'
         else:

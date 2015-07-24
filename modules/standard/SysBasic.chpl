@@ -82,7 +82,7 @@ extern proc chpl_cnullfile():_file;
      if !err then do writeln("err does not contain an error; err == ENOERR");
 
 
-   When a :type:`syserr` formal has blank intent, the actual is copied to the
+   When a :type:`syserr` formal has default intent, the actual is copied to the
    formal upon a function call and the formal cannot be assigned within the
    function.
 

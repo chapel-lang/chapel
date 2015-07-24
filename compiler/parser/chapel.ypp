@@ -274,7 +274,7 @@
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TON TOTHERWISE TOUT
-%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPROC
+%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
 %token TRECORD TREDUCE TREF TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
@@ -326,6 +326,7 @@
 %nonassoc TPRAGMA
 
 %type <flag> opt_config
+%type <b> access_control
 
 %type <pt> opt_intent_tag opt_this_intent_tag
 
@@ -451,14 +452,16 @@ stmt:
 ;
 
 module_decl_stmt:
-  module ident TLCBR TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($2, new BlockStmt(), yyfilename, @1.comment))); }
-| module ident TLCBR stmt_ls TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($2, $4, yyfilename, @1.comment))); }
+  access_control TMODULE ident TLCBR TRCBR
+    { $$ = buildChapelStmt(new DefExpr(buildModule($3, new BlockStmt(), yyfilename, $1, @1.comment))); }
+| access_control TMODULE ident TLCBR stmt_ls TRCBR
+    { $$ = buildChapelStmt(new DefExpr(buildModule($3, $5, yyfilename, $1, @1.comment))); }
 ;
 
-module:
-  TMODULE                              { @$.comment = context->latestComment; context->latestComment = NULL; }
+access_control:
+        { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // public
+| TPUBLIC { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // also public
+| TPRIVATE { $$ = true; @$.comment = context->latestComment; context->latestComment = NULL; } // private
 ;
 
 

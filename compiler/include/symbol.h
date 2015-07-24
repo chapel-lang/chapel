@@ -327,7 +327,8 @@ class FnSymbol : public Symbol {
   BlockStmt* body;
   IntentTag thisTag;
   RetTag retTag;
-  IteratorInfo* iteratorInfo;
+  IteratorInfo* iteratorInfo; // Attached only to iterators, specifically to
+                              // original (user) iterators before lowering.
   Symbol* _this;
   Symbol* _outer;
   FnSymbol *instantiatedFrom;
@@ -467,6 +468,8 @@ public:
   void                 addDefaultUses();
   void                 moduleUseAdd(ModuleSymbol* module);
   void                 moduleUseRemove(ModuleSymbol* module);
+
+  bool                 isVisible(BaseAST* scope) const;
 
   ModTag               modTag;
 
