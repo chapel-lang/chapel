@@ -1,0 +1,241 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0303 
+header_name {.h} 
+code_name {.cxx}
+comment {/*
+ * Copyright 2015 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+} {in_source in_header
+} 
+
+decl {\#include <FL/Fl_File_Chooser.H>} {private local
+} 
+
+decl {\#include <FL/Fl_Multiline_Output.H>} {public local
+} 
+
+decl {\#include <FL/Fl_Sys_Menu_Bar.H>} {public local
+} 
+
+decl {\#include <FL/fl_ask.H>} {private local
+} 
+
+decl {\#include <unistd.h>} {public local
+} 
+
+decl {\#include "ViewField.h"} {public global
+} 
+
+decl {\#include "DataModel.h"} {public global
+} 
+
+decl {\#include "InfoBar.h"} {public local
+} 
+
+decl {\#include "LocaleWin.h"} {public global
+} 
+
+decl {\#include "CommWin.h"} {public local
+} 
+
+decl {DataModel VisData;} {public local
+} 
+
+Function {mainWinCallback(Fl_Widget *)} {return_type void
+} {
+  code {exit(1);} {}
+} 
+
+Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
+} {
+  Fl_Window {} {open
+    xywh {1037 56 180 120} type Double color 7 hide resizable
+    class LocaleWin size_range {180 120 0 0}
+  } {
+    Fl_Box Locale_Title {
+      label {Locale }
+      private xywh {0 0 180 25}
+    }
+    Fl_Output cpuInfo {
+      label { }
+      xywh {0 25 180 95} labeltype NO_LABEL resizable
+      class Fl_Multiline_Output
+    }
+  }
+  code {w->setMembers(Locale_Title,cpuInfo,locInfo,locnum);
+w->updateWin();} {}
+} 
+
+Function {make_comm_window(int fromLn, int toLn, struct commInfo *commData)} {open
+} {
+  Fl_Window {} {open
+    xywh {1039 205 180 120} type Double color 7 hide resizable
+    class CommWin
+  } {
+    Fl_Box Comm_Title {
+      label Comm
+      private xywh {0 0 180 25}
+    }
+    Fl_Output commInfo {
+      label { }
+      xywh {0 25 180 95} labeltype NO_LABEL resizable
+      class Fl_Multiline_Output
+    }
+  }
+  code {w->setMembers(Comm_Title, commInfo, commData, fromLn, toLn);
+w->updateWin();} {}
+} 
+
+Function {} {open
+} {
+  Fl_Window MainWindow {
+    label chplvis open
+    xywh {1278 56 500 590} type Double color 7 hide resizable size_range {500 590 0 0}
+  } {
+    Fl_Menu_Bar MainMenuBar {open
+      xywh {0 0 500 20} color 55
+      class Fl_Sys_Menu_Bar
+    } {
+      Submenu {} {
+        label File open
+        xywh {0 0 70 21}
+      } {
+        MenuItem {} {
+          label Open
+          callback {char *selfile = fl_file_chooser("Open File", "*-0", "", 0);
+
+if (selfile) {
+   // User didn't cancel
+   if (!VisData.LoadData(selfile)) {
+      return;
+   }
+   DbgView->setNumLocales(VisData.NumLocales());
+   DbgView->processData(-3);
+   Info->setFileName(selfile);
+   Info->clearTagName();
+   MainWindow->redraw();
+}}
+          xywh {0 0 34 21} shortcut 0x4006f
+        }
+        MenuItem {} {
+          label Quit
+          callback {exit(0);}
+          xywh {0 0 34 21} shortcut 0x40071
+        }
+      }
+      Submenu {} {
+        label Layout open
+        xywh {0 0 70 21} hide deactivate
+      } {
+        MenuItem {} {
+          label Ellipse
+          tooltip {Only choice at this time} xywh {0 0 34 21}
+        }
+      }
+      Submenu {} {
+        label Windows open selected
+        xywh {0 0 62 20}
+      } {
+        MenuItem {} {
+          label {Show All Comm}
+          callback {DbgView->showAllCommWindows();}
+          xywh {0 0 31 20}
+        }
+        MenuItem {} {
+          label {Hide All Comm}
+          callback {DbgView->hideAllCommWindows();}
+          xywh {0 0 31 20}
+        }
+        MenuItem {} {
+          label {Show All Locale}
+          callback {DbgView->showAllLocaleWindows();}
+          xywh {0 0 31 20}
+        }
+        MenuItem {} {
+          label {Hide All Locale}
+          callback {DbgView->hideAllLocaleWindows();}
+          xywh {0 0 31 20}
+        }
+      }
+      Submenu {} {
+        label Data open
+        xywh {0 0 70 21}
+      } {
+        MenuItem {} {
+          label {Show Tasks}
+          callback {DbgView->showTasks();
+MainWindow->redraw();}
+          xywh {0 0 36 21}
+        }
+        MenuItem {} {
+          label {Show CPU}
+          callback {DbgView->showCpu();
+MainWindow->redraw();}
+          xywh {0 0 36 21}
+        }
+        MenuItem {} {
+          label {Show Clock}
+          callback {DbgView->showClock();
+MainWindow->redraw();}
+          xywh {0 0 31 20}
+        }
+        MenuItem {} {
+          label {Show Communication Count}
+          callback {DbgView->showComms();
+MainWindow->redraw();}
+          xywh {0 0 36 21}
+        }
+        MenuItem {} {
+          label {Show Communation Size}
+          callback {DbgView->showDsize();
+MainWindow->redraw();}
+          xywh {0 0 36 21}
+        }
+      }
+    }
+    Fl_Box Info {
+      xywh {0 20 500 70} box FLAT_BOX color 7
+      class InfoBar
+    }
+    Fl_Box DbgView {
+      xywh {0 90 500 500} box FLAT_BOX color 55 selection_color 48 resizable
+      class ViewField
+    }
+  }
+  code {if (argc > 1 && argv[1][1] != '-') {
+    if (!VisData.LoadData(argv[1])) {
+       exit(1);
+    }
+    if (DbgView) {
+      DbgView->setNumLocales(VisData.NumLocales());
+      DbgView->processData(-3); // -3 is new open
+      Info->setFileName(argv[1]);
+    }
+    argc--;
+    argv++;
+} else {
+   // look for .Vdebug/.Vdebug-0
+   if (access(".Vdebug/.Vdebug-0", R_OK) == 0 &&
+       VisData.LoadData(".Vdebug/.Vdebug-0")) {
+      DbgView->setNumLocales(VisData.NumLocales());
+      DbgView->processData(-3); // -3 is new open
+      Info->setFileName(".Vdebug (default)");
+   }
+}
+MainWindow->callback(mainWinCallback);} {}
+} 

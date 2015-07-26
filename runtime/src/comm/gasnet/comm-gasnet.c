@@ -33,6 +33,7 @@
 #include "error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-cache.h" // to call chpl_cache_init()
+#include "chpl-visual-debug.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -74,7 +75,6 @@ void* get_ptr_from_args(gasnet_handlerarg_t a0, gasnet_handlerarg_t a1 )
            (((uint64_t) (uint32_t) a0)
             | (((uint64_t) (uint32_t) a1) << 32UL));
 }
-
 
 //
 // Build acknowledgement address arguments for gasnetAMRequest*() calls.
@@ -439,6 +439,9 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
   size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
 
+  // Should be in the compiler macros file?
+  chpl_vdebug_log_put_nb(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+
   ret = gasnet_put_nb_bulk(node, raddr, addr, nbytes);
 
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -457,6 +460,9 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
 {
   size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
+
+  // Visual Debug Support
+  chpl_vdebug_log_get_nb(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
 
   ret = gasnet_get_nb_bulk(addr, node, raddr, nbytes);
 
@@ -879,9 +885,13 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     int ln, c_string fn) {
   const int size = elemSize*len;
   int remote_in_segment;
+
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
   } else {
+    // Visual Debug support
+    chpl_vdebug_log_put(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", chpl_nodeID, fn, ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -956,6 +966,9 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
   } else {
+    // Visual Debug support
+    chpl_vdebug_log_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -1108,6 +1121,11 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
     for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
     printf("\n");                     
   }
+
+  // Visual Debug Support
+  chpl_vdebug_log_get_strd(dstaddr, dststrides, srcnode_id, srcaddr, srcstrides, count,
+                           stridelevels, elemSize, typeIndex, ln, fn);
+
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, srcnode);
@@ -1160,6 +1178,10 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
     printf("\n");                     
   }
 
+  // Visual Debug Support
+  chpl_vdebug_log_put_strd(dstaddr, dststrides, dstnode_id, srcaddr, srcstrides,
+                           count, stridelevels, elemSize, typeIndex, ln, fn);
+
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, dstnode);
@@ -1182,9 +1204,13 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
   done_t  done;
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
+
   if (chpl_nodeID == node) {
     chpl_ftable_call(fid, arg);
   } else {
+    // Visual Debug Support
+    chpl_vdebug_log_fork(node, subloc, fid, arg, arg_size);
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -1266,6 +1292,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
   }
 
   if (chpl_nodeID == node) {
+    // Visual Debug?  Should we generate a task here???
     if (info->serial_state)
       fork_nb_wrapper(info);
     else
@@ -1273,6 +1300,9 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
                                subloc, chpl_nullTaskID,
                                info->serial_state);
   } else {
+    // Visual Debug Support
+    chpl_vdebug_log_fork_nb(node, subloc, fid, arg, arg_size);
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -1301,6 +1331,9 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
   if (chpl_nodeID == node) {
     chpl_ftable_call(fid, arg);
   } else {
+    // Visual Debug Support
+    chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
+
     if (passArg) {
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)
         printf("%d: remote (no-fork) task created on %d\n",

@@ -345,13 +345,6 @@ void check_insertWideReferences()
   check_afterLowerIterators();
 }
 
-void check_narrowWideReferences()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterCallDestructors();
-}
-
 void check_optimizeOnClauses()
 {
   check_afterEveryPass();

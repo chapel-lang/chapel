@@ -56,7 +56,6 @@ void inlineFunctions();
 void insertAutoCopyAutoDestroy();
 void insertLineNumbers();
 void insertWideReferences();
-void narrowWideReferences();
 void localizeGlobals();
 void loopInvariantCodeMotion();
 void lowerIterators();
