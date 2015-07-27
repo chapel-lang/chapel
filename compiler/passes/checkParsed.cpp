@@ -109,12 +109,25 @@ static void checkPrivateDecls(DefExpr* def) {
       } else if (ModuleSymbol *mod = toModuleSymbol(def->parentSymbol)) {
         // The parent symbol is a module symbol.  Could still be invalid.
         if (mod->block != def->parentExpr) {
-          // The block in which we are defined is not the top level module
-          // block.  Private symbols at this scope are meaningless, so warn
-          // the user.
-          USR_WARN(def,
-                   "Private declarations within nested blocks are meaningless");
-          def->sym->removeFlag(FLAG_PRIVATE);
+          if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
+            // Scopeless blocks are used to define multiple symbols, for
+            // instance.  Those are valid "nested" blocks for private symbols.
+            if (block->blockTag != BLOCK_SCOPELESS) {
+              // The block in which we are defined is not the top level module
+              // block.  Private symbols at this scope are meaningless, so warn
+              // the user.
+              USR_WARN(def,
+                       "Private declarations within nested blocks are meaningless");
+              def->sym->removeFlag(FLAG_PRIVATE);
+            }
+          } else {
+            // There are many situations which could lead to this else branch.
+            // Most of them will not reach here due to being banned at parse
+            // time.  However, those that aren't excluded by syntax errors will
+            // be caught here.
+            USR_WARN(def, "Private declarations are meaningless outside of module level declarations");
+            def->sym->removeFlag(FLAG_PRIVATE);
+          }
         }
       } else if (TypeSymbol *t = toTypeSymbol(def->parentSymbol)) {
         if (toAggregateType(t->type)) {
