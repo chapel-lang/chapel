@@ -522,12 +522,12 @@ def generate_graph_files_graphs():
 # SET UP ROUTINES
 
 def check_environment():
-    if os.environ.get("CHPL_DEVELOPER"): # unset CHPL_DEVELOPER
+    if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
         del os.environ["CHPL_DEVELOPER"]
 
     # Check for $CHPL_HOME
     global home
-    if os.environ.get("CHPL_HOME"):
+    if "CHPL_HOME" in os.environ:
         home = os.environ["CHPL_HOME"]
         if not os.path.isdir(home):
             print("Error: CHPL_HOME must be a legal directory.")
@@ -537,7 +537,7 @@ def check_environment():
     # Useful when running more recent testing system on an older version of
     # Chapel.
     global util_dir
-    if os.environ.get("CHPL_TEST_UTIL_DIR"):
+    if "CHPL_TEST_UTIL_DIR" in os.environ:
         util_dir = os.environ["CHPL_TEST_UTIL_DIR"]
     else:
         util_dir = os.path.normpath(os.path.join(home, "util"))
@@ -548,7 +548,7 @@ def check_environment():
 
     # create temporary directory
     global chpl_test_tmp_dir
-    if os.environ.get("CHPL_TEST_TMP_DIR"):
+    if "CHPL_TEST_TMP_DIR" in os.environ:
         chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
     else:
         chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
@@ -797,7 +797,7 @@ def set_up_performance_testing_B():
 
         compperf_test_name = platform.node().split(".")[0].lower()
 
-        if os.environ.get("CHPL_TEST_COMP_PERF_DIR"):
+        if "CHPL_TEST_COMP_PERF_DIR" in os.environ:
             comp_perf_dir = os.environ["CHPL_TEST_COMP_PERF_DIR"]
         else:
             comp_perf_dir = os.path.join(home, ("test", "compperfdat", 
