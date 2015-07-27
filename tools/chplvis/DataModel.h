@@ -83,28 +83,24 @@ class DataModel {
   Event * getTagNo(int n)
       {
         //printf ("getTagNo %d: ", n);
-        curEvent = theEvents.begin();
-        // sequential search ... ugg
-        while (curEvent != theEvents.end()
-               && (((*curEvent)->Ekind() != Ev_tag)
-                   || ((E_tag *)(*curEvent))->tagNo() != n)) {
-          curEvent++;
-          //printf (".");
-        }
-        //printf ("\n");
-        return *curEvent;
+	if (n >= 0 && n < numTags) {
+	  curEvent = tagList[n];
+	}
+	//(*curEvent)->print();
+	return *curEvent;
       }
 
  private:
 
+  typedef std::list<Event*>::iterator evItr;
+
   int numLocales;
   int numTags;
+  evItr *tagList;
 
-  typedef std::list<Event*>::iterator evItr;
   std::list<Event*> theEvents;
   std::list<Event*>::iterator curEvent;
 
 };
-
 
 #endif

@@ -85,7 +85,6 @@ class  E_start : public Event {
 class  E_task : public Event {
 
   private:
-    int nodeid;
     int taskid;
   
   public:

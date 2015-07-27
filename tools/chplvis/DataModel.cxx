@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <assert.h>
 
 void DataModel::newList()
 {
@@ -123,17 +124,23 @@ int DataModel::LoadData(const char * filename)
 
   // printf (" done.\n");
   
-  /*
-  // Debug
-  printf ("list has %ld items\n", (long)theEvents.size());
+  // Build a tag inventory
+
+  tagList = new evItr[numTags];
+  int nextTag = 0;
+      
+  //printf ("List has %ld items\n", (long)theEvents.size());
+  //printf ("List has %d tags\n", numTags);
+  
   itr = theEvents.begin();
   while (itr != theEvents.end()) {
-    (*itr)->print();
+    if ((*itr)->Ekind() == Ev_tag && (*itr)->nodeId() == 0) {
+      tagList[nextTag] = itr;
+      // (*itr)->print();
+      nextTag++;
+    }
     itr++;
   }
-
-  // End debug
-  */
 
   return 1;
 }
@@ -274,7 +281,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
                    " nfilename = '%s'\n", nid, taskid, onstr, nlineno, nfilename);
           nErrs++;
         } else {
-          // printf ("Task: node %d, task %d, onCmd %c\n", nid, taskid, onstr[0]);
+          //printf ("Task: node %d, task %d, onCmd %c\n", nid, taskid, onstr[0]);
           newEvent = new E_task (sec, usec, nid, taskid);
         }
         break;
