@@ -269,10 +269,10 @@ void ViewField::processData(int tagNum)
         comms[fp->srcId()][fp->dstId()].commSize += fp->argSize();
         if (comms[fp->srcId()][fp->dstId()].commSize > maxDatasize)
           maxDatasize = comms[fp->srcId()][fp->dstId()].commSize;
-        if (!fp->fast()) {
-          if (++theLocales[fp->dstId()].numTasks > maxTasks)
-            maxTasks = theLocales[fp->dstId()].numTasks;
-        }
+        //if (!fp->fast()) {
+        //  if (++theLocales[fp->dstId()].numTasks > maxTasks)
+        //    maxTasks = theLocales[fp->dstId()].numTasks;
+        //}
         break;
 
       case Ev_start:
@@ -583,9 +583,17 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
   float slope;
   float newy;
   float ydiff;
+
+  // Quick checks not between locations
+  if ((x < loc1->x-3 && x < loc2->x-3)
+      || (x > loc1->x+3 && x > loc2->x+3)
+      || (y < loc1->y-3 && y < loc2->y-3)
+      || (y > loc1->y+3 && y > loc2->y+3)) {
+    return 0;
+  }
+
   int ylen = loc2->y - loc1->y;
   int xlen = loc2->x - loc1->x;
-
 
   if (xlen == 0) {
     // Vertically above each other
@@ -603,7 +611,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
       newy  = (float)loc2->y - slope * (loc2->x - x);
       ydiff = fabs(y - newy);
       // printf ("slope: %f ydiff = %f\n", slope, ydiff);
-      if (ydiff < 3) {
+      if (ydiff < 5) {
         // assumed on the line
         if (abs(loc2->x - x) < abs(xlen)/2)
           return 2;
@@ -614,7 +622,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
       float newx  = (float)loc2->x - (loc2->y - y)/slope;
       float xdiff = fabs(x - newx);
       // printf ("slope: %f xdiff = %f\n", slope, xdiff);
-      if (xdiff < 3) {
+      if (xdiff < 5) {
         // assumed on the line
         if (abs(loc2->y - y) < abs(ylen)/2)
           return 2;
@@ -670,7 +678,7 @@ int ViewField::handle(int event)
       loci = &theLocales[i];
       for (j = i+1; j < numlocales; j++) {
         locj = &theLocales[j];
-        // printf ("link: %d->%d -- ", i, j);
+        // printf ("link: %d->%d:\n", i, j);
         if (comms[i][j].numComms != 0
             || comms[j][i].numComms != 0) {
           int OnComm = isOnCommLink(x,y,loci,locj);

@@ -86,14 +86,15 @@ class  E_task : public Event {
 
   private:
     int taskid;
+    bool isOn;
   
   public:
-    E_task (long esec, long eusec, int nid, int taskId)
-      : Event(esec,eusec, nid), taskid(taskId) {};
+    E_task (long esec, long eusec, int nid, int taskId, bool ison)
+      : Event(esec,eusec, nid), taskid(taskId), isOn(ison) {};
 
     virtual int Ekind() {return Ev_task;}
-    virtual void print() { printf ("Task: id %d time %ld.%06ld taskId %d\n",
-                                   nodeid, sec, usec, taskid); }
+    virtual void print() { printf ("Task: id %d time %ld.%06ld taskId %d %s\n",
+                                   nodeid, sec, usec, taskid, isOn ? "OnExe" : "local"); }
 
 };
 

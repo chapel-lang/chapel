@@ -46,8 +46,22 @@ class DataModel {
 
  public:
 
-  // 
-   DataModel() { numLocales = -1; curEvent = theEvents.begin(); }
+  // Constructor
+
+  DataModel() {
+     numLocales = -1;
+     numTags = 0;
+     tagList = NULL;
+     curEvent = theEvents.begin();
+  }
+
+  // Destructor
+  ~DataModel() {
+    if (tagList != NULL)
+      delete [] tagList;
+  }
+
+
 
   //  LoadData loads data from a collection of files
   //  filename of the form  basename-n, where n can

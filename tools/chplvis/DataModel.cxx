@@ -125,18 +125,20 @@ int DataModel::LoadData(const char * filename)
   // printf (" done.\n");
   
   // Build a tag inventory
+  if (tagList != NULL)
+    delete [] tagList;
 
   tagList = new evItr[numTags];
   int nextTag = 0;
       
-  //printf ("List has %ld items\n", (long)theEvents.size());
-  //printf ("List has %d tags\n", numTags);
+  printf ("List has %ld items\n", (long)theEvents.size());
+  printf ("List has %d tags\n", numTags);
   
   itr = theEvents.begin();
   while (itr != theEvents.end()) {
+    (*itr)->print();
     if ((*itr)->Ekind() == Ev_tag && (*itr)->nodeId() == 0) {
       tagList[nextTag] = itr;
-      // (*itr)->print();
       nextTag++;
     }
     itr++;
@@ -282,7 +284,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
           nErrs++;
         } else {
           //printf ("Task: node %d, task %d, onCmd %c\n", nid, taskid, onstr[0]);
-          newEvent = new E_task (sec, usec, nid, taskid);
+          newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O');
         }
         break;
 
