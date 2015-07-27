@@ -140,7 +140,7 @@ module FFTW {
       var error = false;
 
       for i in 1..input.rank do
-        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft()");
+        error |= FFTW_Checks.checkDimMismatch(Din, Dout, i, "plan_dft()");
 
       if error then
         halt("Incorrect array sizes in plan_dft()");
@@ -218,9 +218,9 @@ module FFTW {
       var error = false;
 
       for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
+        error |= FFTW_Checks.checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
 
-      error |= Private_FFTW.checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
+      error |= FFTW_Checks.checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
 
       if (error) then
         halt("Incorrect array sizes in plan_dft_r2c()");
@@ -252,7 +252,7 @@ module FFTW {
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
-      if Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real) then
+      if FFTW_Checks.checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real) then
         halt("Incorrect array sizes in plan_dft_r2c()");
         
     param rank = realDom.rank: c_int;
@@ -294,9 +294,9 @@ module FFTW {
       var error = false;
 
       for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
+        error |= FFTW_Checks.checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
 
-      error |= Private_FFTW.checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
+      error |= FFTW_Checks.checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
 
       if (error) then
         halt("Incorrect array sizes in plan_dft_c2r()");
@@ -327,7 +327,7 @@ module FFTW {
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
-      if Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real) then
+      if FFTW_Checks.checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real) then
         halt("Incorrect array sizes in plan_dft_c2r()");
 
     param rank = realDom.rank: c_int;
@@ -459,7 +459,7 @@ module FFTW {
   // and labeled private.
   //
   pragma "no doc"
-  module Private_FFTW {
+  private module FFTW_Checks {
     //
     // Check for a mismatch in size between two domain dimensions,
     // print an error if they don't, and return whether or not a

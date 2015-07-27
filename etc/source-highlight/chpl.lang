@@ -12,7 +12,7 @@ number =
 string delim "\"" "\"" escape "\\"
 
 # double-quotes mean that parens are interpreted literally
-keyword = "atomic|begin|break|by|class|cobegin|coforall|config|const|continue|proc|iter|delete|dmapped|do|domain|else|enum|export|extern|false|for|forall|if|in|index|inline|inout|label|lambda|let|local|module|new|nil|noinit|on|otherwise|out|param|record|reduce|ref|return|scan|select|serial|single|sparse|subdomain|sync|then|true|type|union|use|var|when|where|while|with|yield|zip"
+keyword = "atomic|begin|break|by|class|cobegin|coforall|config|const|continue|proc|iter|delete|dmapped|do|domain|else|enum|export|extern|false|for|forall|if|in|index|inline|inout|label|lambda|let|local|module|new|nil|noinit|on|otherwise|out|param|private|public|record|reduce|ref|return|scan|select|serial|single|sparse|subdomain|sync|then|true|type|union|use|var|when|where|while|with|yield|zip"
 
 
 # double-quotes mean that parens are interpreted literally

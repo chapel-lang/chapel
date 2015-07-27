@@ -430,6 +430,15 @@ tags
 /third-party/qthread/qthread-1.10/autom4te.cache/
 /third-party/qthread/qthread-1.10/config.h.in
 
+/third-party/fltk/build.*
+/third-party/fltk/install.*
+
+# Tools ignores.
+
+/tools/chplvis/chplvis
+/tools/chplvis/chplvis.cxx
+/tools/chplvis/chplvis.h
+
 # Util ignores.
 /util/pastPerformance/ra.dat
 /util/pastPerformance/stream.dat
