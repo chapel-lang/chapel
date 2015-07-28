@@ -108,7 +108,11 @@ static void checkPrivateDecls(DefExpr* def) {
         def->sym->removeFlag(FLAG_PRIVATE);
       } else if (ModuleSymbol *mod = toModuleSymbol(def->parentSymbol)) {
         // The parent symbol is a module symbol.  Could still be invalid.
-        if (mod->block != def->parentExpr) {
+        if (def->sym->hasFlag(FLAG_METHOD)) {
+          USR_FATAL_CONT(def, "Can't apply private to the fields or methods of a class or record yet");
+          // Private secondary methods require further discussion before they
+          // are implemented.
+        } else if (mod->block != def->parentExpr) {
           if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
             // Scopeless blocks are used to define multiple symbols, for
             // instance.  Those are valid "nested" blocks for private symbols.
