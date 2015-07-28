@@ -1477,13 +1477,12 @@ static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) 
 
         SET_LINENO(call);
 
-        SymbolTableEntry* entry    = NULL;
         Symbol*           sym      = NULL;
         const char*       mbr_name = get_string(call->get(2));
 
-        // Is it a variable or a method?
+        // Can the identifier be mapped to something at this scope?
         if (symbolTable.count(mod->block) != 0) {
-          entry = symbolTable[mod->block];
+          SymbolTableEntry* entry = symbolTable[mod->block];
 
           if (entry->count(mbr_name) != 0) {
             sym = (*entry)[mbr_name];
