@@ -38,6 +38,7 @@
  *
  */
 
+//TODO: I dont think this module is overly useful anymore
 module BaseStringType {
   use CString;
   use SysCTypes;
@@ -142,6 +143,7 @@ module String {
       this.reinitString(localBuff, sLen, sLen+1, needToCopy=sRemote);
     }
 
+    // This constructor can cause a leak if owned = false and needToCopy = true
     proc string(buff: bufferType, length: int, size: int,
                 owned: bool = true, needToCopy: bool = true) {
       this.owned = owned;
@@ -258,11 +260,11 @@ module String {
       return ret;
     }
 
-    // TODO: I wasn't very good about caching variables locally in this one.
-    proc this(r: range(?)) /*: string*/ {
-      var ret: string;
-      if this.isEmptyString() then return ret;
-
+    // Checks to see if r is inside the bounds of this and returns a finite
+    // range that can be used to iterate over a section of the string
+    // TODO: move into the public interface in some form? better name if so?
+    proc _getView(r:range(?)) {
+      //TODO: don't use halt here, or at least wrap in a bounds checks param
       //TODO: halt()s should use string.writef at some point.
       if r.hasLowBound() {
         if r.low <= 0 then
@@ -270,39 +272,50 @@ module String {
           //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       }
       if r.hasHighBound() {
-        if r.high < 0 || r.high:int > this.len then
+        if (r.high < 0) || (r.high:int > this.len) then
           halt("range out of bounds of string");
           //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       }
+      var ret = r[1:r.idxType..#(this.len:r.idxType)];
+      return ret;
+    }
 
-      var r2 = r[1:r.idxType..#(this.len:r.idxType)];
+    // TODO: I wasn't very good about caching variables locally in this one.
+    proc this(r: range(?)) /*: string*/ {
+      var ret: string;
+      if this.isEmptyString() then return ret;
+
+      var r2 = this._getView(r);
       if r2.size <= 0 {
-        halt("tring to slice a string with a range of size 0");
-        //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+        // TODO: I can't just return "" (ret var gets freed for some reason)
+        ret = "";
       } else {
         ret.len = r2.size:int;
-      }
-      ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
-      ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
-                                CHPL_RT_MD_STR_COPY_DATA): bufferType;
+        ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
+        // FIXME: I was dumb here, just copy the correct region over in
+        // multi-locale and use that as the string buffer. No need to copy stuff
+        // about after pulling it across.
+        ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
+                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
 
-      var thisBuff: bufferType;
-      var remoteThis = this.locale.id != chpl_nodeID;
-      if remoteThis {
-        // TODO: Could to an optimization here and only pull down the data
-        // between r2.low and r2.high. Indexing for the copy below gets a bit
-        // more complex when that is performed though.
-        thisBuff = copyRemoteBuffer(this.locale.id, this.buff, this.len);
-      } else {
-        thisBuff = this.buff;
-      }
+        var thisBuff: bufferType;
+        var remoteThis = this.locale.id != chpl_nodeID;
+        if remoteThis {
+          // TODO: Could to an optimization here and only pull down the data
+          // between r2.low and r2.high. Indexing for the copy below gets a bit
+          // more complex when that is performed though.
+          thisBuff = copyRemoteBuffer(this.locale.id, this.buff, this.len);
+        } else {
+          thisBuff = this.buff;
+        }
 
-      for (r2_i, i) in zip(r2, 0..) {
-        ret.buff[i] = thisBuff[r2_i-1];
-      }
-      ret.buff[ret.len] = 0;
+        for (r2_i, i) in zip(r2, 0..) {
+          ret.buff[i] = thisBuff[r2_i-1];
+        }
+        ret.buff[ret.len] = 0;
 
-      if remoteThis then chpl_mem_free(thisBuff);
+        if remoteThis then chpl_mem_free(thisBuff);
+      }
 
       return ret;
     }
@@ -355,32 +368,123 @@ module String {
       return false;
     }
 
-    // Returns the index of the first occurrence of a substring within a
-    // string or 0 if the substring is not in the string.
+    // Helper function that uses a param bool to toggle between count and find
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
-    proc find(needle: string) : int {
-      const nlen = needle.len;
-      const thisLen = this.len;
-      if nlen == 0 then return 1; //TODO: should this always be 0?
-      if thisLen == 0 then return 0;
-      if nlen > thisLen then return 0;
-
-      var ret: int = 0;
+    //
+    //TOOD: Add support for rfind, may just be flipping the sign on the region.step?
+    inline proc _search_helper(needle: string, region: range(?), param count: bool) {
       // needle.len is <= than this.len, so go to the home locale
+      var ret: int = 0;
       on this {
-        var localNeedle: string = if needle.locale.id != chpl_nodeID
-        then needle // assignment makes it local
-        else new string(needle, owned=false);
+        // any value > 0 means we have a solution
+        // used because we cant break out of an on-clause early
+        var localRet: int = -1;
+        const nLen = needle.len;
+        const view = this._getView(region);
+        const thisLen = view.size;
 
-        const lastPossible = (this.len-localNeedle.len)+1;
-        for i in 0..#lastPossible {
-          for j in 0..#localNeedle.len {
-            if this.buff[i+j] != localNeedle.buff[j] then break;
-            if j == localNeedle.len-1 then ret = i+1;
-          }
-          if ret != 0 then break;
+        // Edge cases
+        if count {
+          if nLen == 0 then
+            localRet = thisLen+1;
+        } else { // find
+          //TODO: should this always be 0?
+          //      python returns 1, but you can not index into the string with 1
+          if nLen == 0 then
+            localRet = 1;
         }
+
+        if nLen > thisLen {
+          localRet = 0;
+        }
+
+
+        if localRet == -1 {
+          localRet = 0;
+          const localNeedle: string = if needle.locale.id != chpl_nodeID
+            then needle // assignment makes it local
+            else new string(needle, owned=false);
+
+          // i *is not* an index into anything, it is the order of the element
+          // of view we are searching from. We only need
+          const numPossible = thisLen - nLen + 1;
+          for i in 0..#(numPossible) {
+            // j *is* the index into the localNeedle's buffer
+            for j in 0..#nLen {
+              const idx = view.orderToIndex(i+j); // 1s based idx
+              if this.buff[idx-1] != localNeedle.buff[j] then break;
+
+              if j == nLen-1 {
+                if count {
+                  localRet += 1;
+                } else { // find
+                  localRet = view.orderToIndex(i);
+                }
+              }
+            }
+            if !count && localRet != 0 then break;
+          }
+        }
+        ret = localRet;
+      }
+      return ret;
+    }
+
+    // Returns the index of the first occurrence of a substring within a
+    // string or 0 if the substring is not in the string.
+    // TODO: better name than region?
+    proc find(needle: string, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=false);
+    }
+
+    proc count(needle: string, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=true);
+    }
+
+    //TODO: Add support for ignoreEmpty
+    // TODO: broken, seems like it may be on the side of AMM?
+    proc split(sep: string, count: int = -1, ignoreEmpty: bool = false) /*: [] string*/ {
+      var ret: [1..0] string;
+
+      if count == 0 {
+        if ignoreEmpty && this.isEmptyString() {
+          return ret;
+        } else {
+          return [this];
+        }
+      }
+
+      // TODO: better way to do this that doesnt take a ton of lines?
+      const localThis: string = if this.locale.id != chpl_nodeID
+        then this // assignment makes it local
+        else new string(this, owned=false);
+
+      const localSep: string = if sep.locale.id != chpl_nodeID
+        then sep // assignment makes it local
+        else new string(sep, owned=false);
+
+      var splitCount: int = 0;
+
+      var start: int = 1;
+      var done: bool = false;
+      while !done && (count < 0) || (splitCount < count) {
+        var end = localThis.find(localSep, start..);
+        var chunk: string;
+
+        if(end == 0) {
+          // Seperator not found
+          chunk = localThis[start..];
+          done = true;
+        } else {
+          chunk = localThis[start..end-1];
+        }
+
+        if !(ignoreEmpty && chunk.isEmptyString()) {
+          ret.push_back(chunk);
+          splitCount += 1;
+        }
+        start = end+1;
       }
       return ret;
     }
@@ -752,14 +856,15 @@ module String {
   //
   // Relational operators
   // TODO: all relational ops other than == and != are broken for unicode
-  // TODO: It may be faster to work on a.locale or b.locale if a or b is large
+  // TODO: It probably will be faster to work on a.locale or b.locale rather
+  //       than here. Especially if a or b is large
   //
   // When strings are compared, they compare equal up to the point the
   // characters in the string differ.   At that point, if the encoding of the
   // next character is numerically smaller it will compare less, otherwise
   // greater.  If the encoding of one character uses fewer bits, the smaller
-  // one is zero-extended to match the langth of the longer one.
-  // For purposes of comparison, if one comparand is shorter than the
+  // one is zero-extended to match the length of the longer one.
+  // For purposes of comparison, if one compared is shorter than the
   // other, we fake in a NUL (character code 0x0).  Thus, for example:
   //  "1000" < "101" < "1010".
   //
@@ -780,6 +885,9 @@ module String {
 
   proc ==(a: string, b: string) : bool {
     inline proc doEq(a: string, b:string) {
+      // TODO: is it better to have these outside of the do* fns?
+      //       probably would be 2 extra gets worst case, but avoids doing a
+      //       local copy if b is remote
       if a.len != b.len then return false;
       return _strcmp(a, b) == 0;
     }
@@ -793,6 +901,7 @@ module String {
       if a.locale.id != chpl_nodeID {
         localA = a; // assignment makes it local
       } else {
+        // Temp "copy" of a so we can unify the code paths for local vs remote
         localA = new string(a.buff, a.len, a._size,
                             owned = false, needToCopy=false);
       }
