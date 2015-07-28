@@ -4967,6 +4967,10 @@ GenRet CallExpr::codegen() {
         if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
           localAddr = codegenDeref(localAddr);
         }
+        // c_ptr thingies are already addresses, so we need to dereference by
+        // one level.
+        if (!strncmp(dt->name, "c_ptr(", 6))
+          localAddr = codegenValue(localAddr);
       }
 
       GenRet locale;
@@ -4983,7 +4987,9 @@ GenRet CallExpr::codegen() {
       if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ) {
         remoteAddr = codegenRaddr(remoteAddr);
       } else {
-        if( !sym->typeInfo()->symbol->hasFlag(FLAG_REF) ) {
+        if (!strncmp(sym->typeInfo()->symbol->name, "c_ptr(", 6))
+          remoteAddr = codegenValue(remoteAddr);
+        else if( !sym->typeInfo()->symbol->hasFlag(FLAG_REF) ) {
           remoteAddr = codegenAddrOf(remoteAddr);
         }
       }
@@ -4992,7 +4998,13 @@ GenRet CallExpr::codegen() {
       } else {
         remoteAddr = codegenValuePtr(remoteAddrArg);
       }*/
-      GenRet eltSize = codegenSizeof(dt->typeInfo());
+
+      GenRet eltSize;
+      if (!strncmp(dt->name, "c_ptr(", 6))
+        eltSize = codegenSizeof(dt->cname + 6);
+      else
+        eltSize = codegenSizeof(dt->typeInfo());
+
       GenRet len;
       if( get(4)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
         len = codegenValue(codegenDeref(get(4)));
