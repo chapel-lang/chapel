@@ -240,14 +240,14 @@ class RandomStream {
     } else {
       RandomStreamPrivate_count += 1;
     }
-    return RandomPrivate_randlc(eltType, RandomStreamPrivate_cursor);
+    return randlc(eltType, RandomStreamPrivate_cursor);
   }
 
   pragma "no doc"
   proc RandomStreamPrivate_skipToNth_noLock(in n: integral) {
     if eltType == complex then n = n*2 - 1;
     RandomStreamPrivate_count = n;
-    RandomStreamPrivate_cursor = RandomPrivate_randlc_skipto(seed, n);
+    RandomStreamPrivate_cursor = randlc_skipto(seed, n);
   }
 
   /*
@@ -333,7 +333,7 @@ class RandomStream {
     RandomStreamPrivate_skipToNth_noLock(RandomStreamPrivate_count);
     if parSafe then
       RandomStreamPrivate_lock$;
-    return RandomPrivate_iterate(resultType, D, seed, start);
+    return iterate(resultType, D, seed, start);
   }
 
   pragma "no doc"
@@ -374,48 +374,48 @@ class RandomStream {
 // NPB-defined constants for linear congruential generator
 //
 pragma "no doc"
-const RandomPrivate_r23   = 0.5**23,
-      RandomPrivate_t23   = 2.0**23,
-      RandomPrivate_r46   = 0.5**46,
-      RandomPrivate_t46   = 2.0**46,
-      RandomPrivate_arand = 1220703125.0; // TODO: Is arand something that a
-                                          // user might want to set on a
-                                          // case-by-case basis?
+private const r23   = 0.5**23,
+              t23   = 2.0**23,
+              r46   = 0.5**46,
+              t46   = 2.0**46,
+              arand = 1220703125.0; // TODO: Is arand something that a
+                                    // user might want to set on a
+                                    // case-by-case basis?
 
 //
 // NPB-defined randlc routine
 //
 pragma "no doc"
-proc RandomPrivate_randlc(inout x: real, a: real = RandomPrivate_arand) {
-  var t1 = RandomPrivate_r23 * a;
+private proc randlc(inout x: real, a: real = arand) {
+  var t1 = r23 * a;
   const a1 = floor(t1),
-    a2 = a - RandomPrivate_t23 * a1;
-  t1 = RandomPrivate_r23 * x;
+    a2 = a - t23 * a1;
+  t1 = r23 * x;
   const x1 = floor(t1),
-    x2 = x - RandomPrivate_t23 * x1;
+    x2 = x - t23 * x1;
   t1 = a1 * x2 + a2 * x1;
-  const t2 = floor(RandomPrivate_r23 * t1),
-    z  = t1 - RandomPrivate_t23 * t2,
-    t3 = RandomPrivate_t23 * z + a2 * x2,
-    t4 = floor(RandomPrivate_r46 * t3),
-    x3 = t3 - RandomPrivate_t46 * t4;
+  const t2 = floor(r23 * t1),
+    z  = t1 - t23 * t2,
+    t3 = t23 * z + a2 * x2,
+    t4 = floor(r46 * t3),
+    x3 = t3 - t46 * t4;
   x = x3;
-  return RandomPrivate_r46 * x3;
+  return r46 * x3;
 }
 
 // Wrapper that takes a result type (two calls for complex types)
 pragma "no doc"
-proc RandomPrivate_randlc(type resultType, inout x: real) {
+private proc randlc(type resultType, inout x: real) {
   if resultType == complex then
-    return (RandomPrivate_randlc(x), RandomPrivate_randlc(x)):complex;
+    return (randlc(x), randlc(x)):complex;
   else
     if resultType == imag then
       //
       // BLC: I thought that casting real to imag did this automatically?
       //
-      return _r2i(RandomPrivate_randlc(x));
+      return _r2i(randlc(x));
     else
-      return RandomPrivate_randlc(x);
+      return randlc(x);
  }
 
 //
@@ -423,20 +423,20 @@ proc RandomPrivate_randlc(type resultType, inout x: real) {
 // return the same value as the nth call to randlc
 //
 pragma "no doc"
-proc RandomPrivate_randlc_skipto(seed: int(64), in n: integral): real {
+private proc randlc_skipto(seed: int(64), in n: integral): real {
   var cursor = seed:real;
   n -= 1;
-  var t = RandomPrivate_arand;
-  RandomPrivate_arand;
+  var t = arand;
+  arand;
   while (n != 0) {
     const i = n / 2;
     if (2 * i != n) then
-      RandomPrivate_randlc(cursor, t);
+      randlc(cursor, t);
     if i == 0 then
       break;
     else
       n = i;
-    RandomPrivate_randlc(t, t);
+    randlc(t, t);
     n = i;
   }
   return cursor;
@@ -446,13 +446,13 @@ proc RandomPrivate_randlc_skipto(seed: int(64), in n: integral): real {
 // iterate over outer ranges in tuple of ranges
 //
 pragma "no doc"
-iter RandomPrivate_outer(ranges, param dim: int = 1) {
+private iter outer(ranges, param dim: int = 1) {
   if dim + 1 == ranges.size {
     for i in ranges(dim) do
       yield (i,);
   } else if dim + 1 < ranges.size {
     for i in ranges(dim) do
-      for j in RandomPrivate_outer(ranges, dim+1) do
+      for j in outer(ranges, dim+1) do
         yield (i, (...j));
   } else {
     yield 0; // 1D case is a noop
@@ -463,44 +463,44 @@ iter RandomPrivate_outer(ranges, param dim: int = 1) {
 // RandomStream iterator implementation
 //
 pragma "no doc"
-iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                          start: int(64)) {
-  var cursor = RandomPrivate_randlc_skipto(seed, start);
+private iter iterate(type resultType, D: domain, seed: int(64),
+                     start: int(64)) {
+  var cursor = randlc_skipto(seed, start);
   for i in D do
-    yield RandomPrivate_randlc(resultType, cursor);
+    yield randlc(resultType, cursor);
 }
 
 pragma "no doc"
-iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                          start: int(64), param tag: iterKind)
+private iter iterate(type resultType, D: domain, seed: int(64),
+                     start: int(64), param tag: iterKind)
       where tag == iterKind.leader {
   for block in D._value.these(tag=iterKind.leader) do
     yield block;
 }
 
 pragma "no doc"
-iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                          start: int(64), param tag: iterKind, followThis)
+iter iterate(type resultType, D: domain, seed: int(64),
+             start: int(64), param tag: iterKind, followThis)
       where tag == iterKind.follower {
   param multiplier = if resultType == complex then 2 else 1;
   const ZD = computeZeroBasedDomain(D);
   const innerRange = followThis(ZD.rank);
   var cursor: real;
-  for outer in RandomPrivate_outer(followThis) {
+  for outer in outer(followThis) {
     var myStart = start;
     if ZD.rank > 1 then
       myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
     else
       myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
     if !innerRange.stridable {
-      cursor = RandomPrivate_randlc_skipto(seed, myStart);
+      cursor = randlc_skipto(seed, myStart);
       for i in innerRange do
-        yield RandomPrivate_randlc(resultType, cursor);
+        yield randlc(resultType, cursor);
     } else {
       myStart -= innerRange.low.safeCast(int(64));
       for i in innerRange {
-        cursor = RandomPrivate_randlc_skipto(seed, myStart + i.safeCast(int(64)) * multiplier);
-        yield RandomPrivate_randlc(resultType, cursor);
+        cursor = randlc_skipto(seed, myStart + i.safeCast(int(64)) * multiplier);
+        yield randlc(resultType, cursor);
       }
     }
   }
