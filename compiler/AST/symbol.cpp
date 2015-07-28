@@ -1083,6 +1083,10 @@ bool ArgSymbol::isParameter() const {
   return (intent == INTENT_PARAM);
 }
 
+bool ArgSymbol::isVisible(BaseAST* scope) const {
+  return true;
+}
+
 
 const char* retTagDescrString(RetTag retTag) {
   switch (retTag) {
