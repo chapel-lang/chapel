@@ -80,21 +80,6 @@ module Math {
     return result;
   }
 
-  pragma "no doc"
-  private proc logBasePow2(in val: int(?w), baseLog2) {
-    if (val < 1) {
-      halt("Can't take the log() of a non-positive integer");
-    }
-    return _logBasePow2Help(val, baseLog2);
-  }
-
-  pragma "no doc"
-  private proc logBasePow2(in val: uint(?w), baseLog2) {
-    if (val < 1) {
-      halt("Can't take the log() of a non-positive integer");
-    }
-    return _logBasePow2Help(val, baseLog2);
-  }
   // 
   //////////////////////////////////////////////////////////////////////////
 
@@ -531,6 +516,32 @@ module Math {
   inline proc log1p(x : real(32)): real(32) {
     extern proc log1pf(x: real(32)): real(32);
     return log1pf(x);
+  }
+
+
+  /* Returns the log to the base `2**baseLog2` of the given `in` value.
+     If `baseLog2` is `1`, then returns the log to the base `2`;
+     if `baseLog2` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(in val: int(?w), baseLog2) {
+    if (val < 1) {
+      halt("Can't take the log() of a non-positive integer");
+    }
+    return _logBasePow2Help(val, baseLog2);
+  }
+
+  /* Returns the log to the base `2**baseLog2` of the given `in` value.
+     If `baseLog2` is `1`, then returns the log to the base `2`;
+     if `baseLog2` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(in val: uint(?w), baseLog2) {
+    return _logBasePow2Help(val, baseLog2);
   }
 
 
