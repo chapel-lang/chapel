@@ -864,21 +864,50 @@ static void insertYieldTemps()
 }
 
 
+static bool actualNeedsReferenceTemp(Type* formalType, Type* actualType) {
+  if( formalType == actualType->refType ) return true;
+  // everything below this point is a workaround to
+  // make calling a method in a parant record work right.
+  if( ! isReferenceType(formalType) ) return false;
+  Type* formalValType = formalType->getValType();
+  if( isRecord(formalValType) && isSubClass(actualType, formalValType) )
+    return true;
+
+  return false;
+}
+
 //
 // Insert reference temps for function arguments that expect them.
 //
 void insertReferenceTemps(CallExpr* call)
 {
   for_formals_actuals(formal, actual, call) {
-    if (formal->type == actual->typeInfo()->refType) {
+    if( actualNeedsReferenceTemp(formal->type, actual->typeInfo())) {
       SET_LINENO(call);
       Expr* stmt = call->getStmtExpr();
-      VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
-      tmp->addFlag(FLAG_REF_TEMP);
-      stmt->insertBefore(new DefExpr(tmp));
-      actual->replace(new SymExpr(tmp));
-      stmt->insertBefore(
-        new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+
+      if( formal->type == actual->typeInfo()->refType ) {
+        VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
+        tmp->addFlag(FLAG_REF_TEMP);
+        stmt->insertBefore(new DefExpr(tmp));
+        actual->replace(new SymExpr(tmp));
+        stmt->insertBefore( new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+      } else {
+        // handle adding a cast for record method calls to parent method
+        VarSymbol* tmp = newTemp("_ref_tmp_", actual->typeInfo()->refType);
+        tmp->addFlag(FLAG_REF_TEMP);
+        stmt->insertBefore(new DefExpr(tmp));
+
+        VarSymbol* castTmp = newTemp("_cast_ref_tmp_", formal->type);
+        castTmp->addFlag(FLAG_REF_TEMP);
+        stmt->insertBefore(new DefExpr(castTmp));
+        actual->replace(new SymExpr(castTmp));
+        stmt->insertBefore( new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+        stmt->insertBefore(
+          new CallExpr(PRIM_MOVE, castTmp,
+                       new CallExpr(PRIM_CAST, castTmp->type->symbol, tmp)));
+      }
+
     }
   }
 }
