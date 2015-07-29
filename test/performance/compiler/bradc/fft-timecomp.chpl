@@ -160,7 +160,15 @@ proc butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
 }
 
 
-proc log4(x) return logBasePow2(x, 2);
+proc log4(in x) {
+  // Assumes passed val >= 1, of type int or uint
+  var result = -1;
+  while (x != 0) {
+    x >>= 2; // base 4 in log 2
+    result += 1;
+  }
+  return result;
+}
 
 
 proc verifyResults(z, Z, Twiddles) {
