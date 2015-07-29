@@ -1,0 +1,9 @@
+bug: record inheritance from specific parent
+
+fails in scope resolve discoverParentAndCheck because
+storesName is a CallExpr and not an UnresolvedSymExpr.
+(first 3 lines of that function).
+
+This should hopefully be easier to get working when
+scopeResolve and function resolution are merged.
+

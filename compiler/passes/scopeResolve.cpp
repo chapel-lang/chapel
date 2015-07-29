@@ -487,6 +487,8 @@ static void addClassToHierarchy(AggregateType*       ct,
 static AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child) {
   UnresolvedSymExpr* se  = toUnresolvedSymExpr(storesName);
 
+  // Note that this assert fails with a specific generic parent
+  // (e.g. MyRecord(true) ) -- see test/types/records/ferguson/t4.chpl
   INT_ASSERT(se);
 
   Symbol*            sym = lookup(storesName, se->unresolved);
