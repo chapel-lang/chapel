@@ -135,7 +135,9 @@ module ChapelIO {
             var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
             var eq:ioLiteral;
             if st == QIO_AGGREGATE_FORMAT_JSON {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+              eq = new ioLiteral('"'+
+                                 __primitive("field num to name", t, i) +
+                                 '":');
             } else {
               eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
             }
@@ -316,28 +318,85 @@ module ChapelIO {
   
       if !isUnionType(t) {
         // read all fields for classes and records
-  
-        for param i in 1..num_fields {
-          if !isBinary {
-            var comma = new ioLiteral(",", true);
-            if !first then reader.readwrite(comma);
-  
-            var fname = new ioLiteral(__primitive("field num to name", t, i), true);
-            reader.readwrite(fname);
-  
-            var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-            var eq:ioLiteral;
-            if st == QIO_AGGREGATE_FORMAT_JSON {
-              eq = new ioLiteral(":", true);
-            } else {
-              eq = new ioLiteral("=", true);
-            }
-            reader.readwrite(eq);
+        if isBinary {
+          for param i in 1..num_fields {
+            reader.readwrite(__primitive("field value by num", x, i));
           }
-  
-          reader.readwrite(__primitive("field value by num", x, i));
-  
-          first = false;
+        } else {
+          var gotcomma = false;
+          // the order should not matter.
+          while true {
+            if !first && !gotcomma {
+              // read a comma
+              var comma = new ioLiteral(",", true);
+              reader.readwrite(comma);
+              // clear the error if we didn't get a comma
+              if error() == EFORMAT {
+                clearError();
+                break;
+              }
+            }
+
+            // find a field name that matches.
+            // TODO: this is not particularly efficient. If we
+            // have a lot of fields, this is O(n**2), and there
+            // are other potential problems with string reallocation.
+            var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+            var skip_unk = styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
+
+            // the field name
+            var fname:ioLiteral;
+
+            var read_field_name = false;
+
+            for param i in 1..num_fields {
+              if !read_field_name {
+                if st == QIO_AGGREGATE_FORMAT_JSON {
+                  fname = new ioLiteral('"' +
+                                        __primitive("field num to name", t, i)
+                                        + '"',
+                                        true);
+                } else {
+                  fname = new ioLiteral(__primitive("field num to name", t, i),
+                                        true);
+                }
+
+                reader.readwrite(fname);
+                if error() == EFORMAT {
+                  // Try reading again with a different field name.
+                  clearError();
+                } else {
+                  read_field_name = true;
+
+                  var eq:ioLiteral;
+                  if st == QIO_AGGREGATE_FORMAT_JSON {
+                    eq = new ioLiteral(":", true);
+                  } else {
+                    eq = new ioLiteral("=", true);
+                  }
+                  reader.readwrite(eq);
+        
+                  reader.readwrite(__primitive("field value by num", x, i));
+        
+                  first = false;
+                }
+              }
+            }
+
+            // Stop with an error if we didn't read a field name
+            // ... unless we skip unknown fields...
+            if !read_field_name {
+              if skip_unk && st == QIO_AGGREGATE_FORMAT_JSON {
+                // Skip an unknown JSON field.
+
+                //TODO;
+                gotcomma = true;
+              } else {
+                setError(EFORMAT:syserr);
+                break;
+              }
+            }
+          }
         }
       } else {
         // Handle unions.
@@ -352,22 +411,47 @@ module ChapelIO {
           }
         } else {
           // Read the field name = part until we get one that worked.
+          var found_field = false;
           for param i in 1..num_fields {
             var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
             var eq:ioLiteral;
+            
+            // the field name
+            var fname:ioLiteral;
+
             if st == QIO_AGGREGATE_FORMAT_JSON {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+              fname = new ioLiteral('"' +
+                                    __primitive("field num to name", t, i)
+                                    + '"',
+                                    true);
             } else {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+              fname = new ioLiteral(__primitive("field num to name", t, i),
+                                    true);
             }
 
-            reader.readwrite(eq);
+            reader.readwrite(fname);
+  
+            // Read : or = if there was no error reading field name.
             if error() == EFORMAT {
+              // Try reading again with a different union element.
               clearError();
             } else {
+              found_field = true;
+              var eq:ioLiteral;
+              if st == QIO_AGGREGATE_FORMAT_JSON {
+                eq = new ioLiteral(":", true);
+              } else {
+                eq = new ioLiteral("=", true);
+              }
+              readIt(eq);
+
               // We read the 'name = ', so now read the value!
               reader.readwrite(__primitive("field value by num", x, i));
             }
+          }
+          // Create an error if we never found a field in our union.
+          if !found_field {
+            setError(EFORMAT:syserr);
           }
         }
       }

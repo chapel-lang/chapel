@@ -1481,6 +1481,7 @@ module ChapelBase {
   extern const QIO_STYLE_ELEMENT_TUPLE:int;
   extern const QIO_STYLE_ELEMENT_BYTE_ORDER:int;
   extern const QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER:int;
+  extern const QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS:int;
 
   extern const QIO_ARRAY_FORMAT_SPACE:int;
   extern const QIO_ARRAY_FORMAT_CHPL:int;
