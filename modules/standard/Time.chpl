@@ -32,7 +32,7 @@ module Time {
 pragma "no doc"
 // Returns the number of seconds since midnight.  Has the potential for
 // microsecond resolution if supported by the runtime platform
-extern proc chpl_now_time():real;
+private extern proc chpl_now_time():real;
 
 
 
@@ -44,29 +44,29 @@ extern type _timevalue;
 
 
 pragma "no doc"
-extern proc chpl_null_timevalue(): _timevalue;
+private extern proc chpl_null_timevalue(): _timevalue;
 
 
 
 pragma "no doc"
 // The number of seconds/microseconds since Jan 1, 1970 in UTC
-extern proc chpl_now_timevalue():  _timevalue;
+private extern proc chpl_now_timevalue():  _timevalue;
 
 
 
 pragma "no doc"
 // The components of time in the local time zone
-extern proc chpl_timevalue_parts(t:           _timevalue,
+private extern proc chpl_timevalue_parts(t:           _timevalue,
 
-                                 out seconds: int(32),
-                                 out minutes: int(32),
-                                 out hours:   int(32),
-                                 out mday:    int(32),
-                                 out month:   int(32),
-                                 out year:    int(32),
-                                 out wday:    int(32),
-                                 out yday:    int(32),
-                                 out isdst:   int(32));
+                                         out seconds: int(32),
+                                         out minutes: int(32),
+                                         out hours:   int(32),
+                                         out mday:    int(32),
+                                         out month:   int(32),
+                                         out year:    int(32),
+                                         out wday:    int(32),
+                                         out yday:    int(32),
+                                         out isdst:   int(32));
 
 /* Specifies the units to be used when certain functions return a time */
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
@@ -205,7 +205,7 @@ record Timer {
 
 // returns diff of two time values in microseconds
 pragma "no doc"
-inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
+private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   extern proc chpl_timevalue_seconds(t:_timevalue):      int(64);
   extern proc chpl_timevalue_microseconds(t:_timevalue): int(64);
 
@@ -220,7 +220,7 @@ inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
 
 // converts microseconds to another unit
 pragma "no doc"
-proc _convert_microseconds(unit: TimeUnits, us: real) {
+private proc _convert_microseconds(unit: TimeUnits, us: real) {
   select unit {
     when TimeUnits.microseconds do return us;
     when TimeUnits.milliseconds do return us /    1.0e+3;
