@@ -343,11 +343,11 @@ pragma "no doc"
 extern type char_ptr_ptr;             // char**
 
 pragma "no doc"
-extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
+private extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
 pragma "no doc"
-extern const hdfs_function_struct:qio_file_functions_t;
+private extern const hdfs_function_struct:qio_file_functions_t;
 pragma "no doc"
-extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
+private extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
 
 pragma "no doc"
 extern record hdfs_block_byte_map_t {
@@ -358,29 +358,29 @@ extern record hdfs_block_byte_map_t {
 
 // Connect to HDFS
 pragma "no doc"
-extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr; 
+private extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr;
 
 // Disconnect from HDFS
 pragma "no doc"
-extern proc hdfs_disconnect(fs: c_void_ptr): syserr;
+private extern proc hdfs_disconnect(fs: c_void_ptr): syserr;
 
 // Allocate an array for our locale mappings
 pragma "no doc"
-extern proc hdfs_alloc_array(n: int): char_ptr_ptr;
+private extern proc hdfs_alloc_array(n: int): char_ptr_ptr;
 
 // Create a mapping locale_name -> locale_id (need this due to hdfs and since
 // we cant pass strings inside extern records when multilocale)
 pragma "no doc"
-extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name: c_string);
+private extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name: c_string);
 
 // Return arr[i]
 pragma "no doc"
-extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
+private extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
 
 // Get block owners.
 // Returns an array of hdfs_block_byte_map_t's
 pragma "no doc"
-extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
+private extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
 
 // ********* For multilocale ************
 /* Holds a file per locale */
