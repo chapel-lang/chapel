@@ -333,7 +333,7 @@ class RandomStream {
     RandomStreamPrivate_skipToNth_noLock(RandomStreamPrivate_count);
     if parSafe then
       RandomStreamPrivate_lock$;
-    return iterate(resultType, D, seed, start);
+    return RandomPrivate_iterate(resultType, D, seed, start);
   }
 
   pragma "no doc"
@@ -463,7 +463,7 @@ private iter outer(ranges, param dim: int = 1) {
 // RandomStream iterator implementation
 //
 pragma "no doc"
-private iter iterate(type resultType, D: domain, seed: int(64),
+iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                      start: int(64)) {
   var cursor = randlc_skipto(seed, start);
   for i in D do
@@ -471,7 +471,7 @@ private iter iterate(type resultType, D: domain, seed: int(64),
 }
 
 pragma "no doc"
-private iter iterate(type resultType, D: domain, seed: int(64),
+iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                      start: int(64), param tag: iterKind)
       where tag == iterKind.leader {
   for block in D._value.these(tag=iterKind.leader) do
@@ -479,7 +479,7 @@ private iter iterate(type resultType, D: domain, seed: int(64),
 }
 
 pragma "no doc"
-iter iterate(type resultType, D: domain, seed: int(64),
+iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
              start: int(64), param tag: iterKind, followThis)
       where tag == iterKind.follower {
   param multiplier = if resultType == complex then 2 else 1;
