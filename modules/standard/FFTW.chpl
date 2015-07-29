@@ -177,8 +177,8 @@ module FFTW {
   // the code minimal.  -BLC
   // 
   pragma "no doc"
-  proc plan_dft_help(input: [] complex(128), output: [] complex(128), 
-                 sign: c_int, flags: c_uint) : fftw_plan
+  private proc plan_dft_help(input: [] complex(128), output: [] complex(128),
+                             sign: c_int, flags: c_uint) : fftw_plan
   {
     param rank = input.rank;
 
