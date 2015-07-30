@@ -1528,7 +1528,7 @@ module GMP {
   }
 
 
-  proc BigInt.writeThis(writer:Writer) {
+  proc BigInt.writeThis(writer) {
     var (acopy,a_) = this.maybeCopy();
     var s:string = a_.get_str();
     //gmp_asprintf(s, "%Zd", a_.mpz);

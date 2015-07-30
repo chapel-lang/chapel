@@ -168,7 +168,7 @@ proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockCyclic.writeThis(x:Writer) {
+proc BlockCyclic.writeThis(x) {
   x.writeln("BlockCyclic");
   x.writeln("-------");
   x.writeln("distributes: ", lowIdx, "...");
@@ -307,7 +307,7 @@ class LocBlockCyclic {
 }
 
 
-proc LocBlockCyclic.writeThis(x:Writer) {
+proc LocBlockCyclic.writeThis(x) {
   var localeid: int;
   on this {
     localeid = here.id;
@@ -423,7 +423,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
 //
 // output domain
 //
-proc BlockCyclicDom.dsiSerialWrite(x:Writer) {
+proc BlockCyclicDom.dsiSerialWrite(x) {
   x.write(whole);
 }
 
@@ -574,7 +574,7 @@ proc LocBlockCyclicDom.computeFlatInds() {
 //
 // output local domain piece
 //
-proc LocBlockCyclicDom.writeThis(x:Writer) {
+proc LocBlockCyclicDom.writeThis(x) {
   x.write(myStarts);
 }
 
@@ -751,7 +751,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
 //
 // output array
 //
-proc BlockCyclicArr.dsiSerialWrite(f: Writer) {
+proc BlockCyclicArr.dsiSerialWrite(f) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
@@ -930,7 +930,7 @@ proc LocBlockCyclicArr.this(i) ref {
 //
 // output local array piece
 //
-proc LocBlockCyclicArr.writeThis(x: Writer) {
+proc LocBlockCyclicArr.writeThis(x) {
   // note on this fails; see writeThisUsingOn.chpl
   x.write(myElems);
 }

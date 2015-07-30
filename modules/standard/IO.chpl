@@ -2784,7 +2784,7 @@ record ioChar {
   /* The code point value */
   var ch:int(32);
   pragma "no doc"
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     halt("ioChar.writeThis must be written in Writer subclasses");
   }
 }
@@ -2818,7 +2818,7 @@ record ioNewline {
    */
   var skipWhitespaceOnly: bool = false;
   pragma "no doc"
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
     f.write("\n");
   }
@@ -2851,7 +2851,7 @@ record ioLiteral {
      whitespace before the literal?
    */
   var ignoreWhiteSpace: bool = true;
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
     f.write(val);
   }
@@ -2879,7 +2879,7 @@ record ioBits {
   /* How many of the low-order bits of ``v`` should we read or write? */
   var nbits:int(8);
   pragma "no doc"
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
     f.write(v);
   }
@@ -3756,7 +3756,10 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
 
 pragma "no doc"
 inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr {
-  var reader = new ChannelReader(_channel_internal=_channel_internal);
+  //var reader = new ChannelReader(_channel_internal=_channel_internal);
+  var reader = new channel(writing=false, kind=iokind, locking=false,
+                           home=here, _channel_internal=_channel_internal,
+                           err=ENOERR);
   var err:syserr = ENOERR;
   var save_style:iostyle;
   var saved_style = false;
@@ -3772,7 +3775,8 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
     saved_style = true;
   }
 
-  reader.read(x);
+  //reader.read(x);
+  x.readThis(reader);
 
   // Put the style back
   if saved_style {
@@ -3787,7 +3791,11 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
 
 pragma "no doc"
 inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
-  var writer = new ChannelWriter(_channel_internal=_channel_internal);
+  //var writer = new ChannelWriter(_channel_internal=_channel_internal);
+  var writer = new channel(writing=true, kind=iokind, locking=false,
+                           home=here, _channel_internal=_channel_internal,
+                           err=ENOERR);
+
   var err:syserr = ENOERR;
   var save_style:iostyle;
   var saved_style = false;
@@ -3803,7 +3811,20 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
     saved_style = true;
   }
 
-  writer.write(x);
+  //writer.write(x);
+  if (isClassType(t) || chpl_isDdata(t)) && x == nil {
+    // future - write class IDs, have serialization format
+    var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+    var iolit:ioLiteral;
+    if st == QIO_AGGREGATE_FORMAT_JSON {
+      iolit = new ioLiteral("null", !binary());
+    } else {
+      iolit = new ioLiteral("nil", !binary());
+    }
+    _write_one_internal(_channel_internal, iokind.dynamic, iolit);
+  } else {
+    x.writeThis(writer);
+  }
 
   // Put the style back
   if saved_style {
@@ -3866,6 +3887,24 @@ inline proc channel.readwrite(ref x) {
     this.readwrite(ionl);
   }
 
+  proc channel.styleElement(element:int):int {
+    var ret:int = 0;
+    on this {
+      ret = qio_channel_style_element(_channel_internal, element);
+    }
+    return ret;
+  }
+
+  proc channel.error():syserr {
+    return err;
+  }
+  proc channel.setError(e:syserr) {
+    err = e;
+  }
+  proc channel.clearError() {
+    err = 0;
+  }
+ 
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
@@ -3889,6 +3928,54 @@ inline proc channel.read(ref args ...?k,
     this.unlock();
   }
   return !error;
+}
+
+proc stringify(args ...?k):string {
+  var all_primitive = true;
+  
+  for param i in 1..k {
+    if !isPrimitiveType(args[i].type) then all_primitive = false;
+  }
+
+  if all_primitive {
+    // As an optimization, use string concatenation for
+    // all primitive type stringify...
+
+    var str = "";
+
+    for param i in 1..k {
+      str += args[i]:string;
+    }
+
+    return str;
+  } else {
+    // otherwise, write it using the I/O system.
+
+    // Open a memory buffer to store the result
+    var f = openmem();
+
+    var w = f.writer(locking=false);
+
+    w.write((...args));
+
+    var offset = w.offset();
+
+    var buf = c_calloc(int(8), offset+1);
+
+    // you might need a flush here if
+    // close went away
+    w.close();
+
+    var r = f.reader(locking=false);
+
+    r.readBytes(buf, offset:ssize_t);
+    r.close();
+
+    f.close();
+
+    var cstrcopy = __primitive("cast", c_string_copy, buf);
+    return toString(cstrcopy);
+  }
 }
 
 pragma "no doc"

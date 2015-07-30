@@ -281,7 +281,7 @@ proc Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
   return new Cyclic(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
 }
 
-proc Cyclic.writeThis(x: Writer) {
+proc Cyclic.writeThis(x) {
   x.writeln(typeToString(this.type));
   x.writeln("------");
   for locid in targetLocDom do
@@ -427,7 +427,7 @@ proc CyclicDom.dsiSetIndices(x) {
   setup();
 }
 
-proc CyclicDom.dsiSerialWrite(x: Writer) {
+proc CyclicDom.dsiSerialWrite(x) {
   if verboseCyclicDistWriters {
     x.writeln(typeToString(this.type));
     x.writeln("------");
@@ -877,7 +877,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   }
 }
 
-proc CyclicArr.dsiSerialWrite(f: Writer) {
+proc CyclicArr.dsiSerialWrite(f) {
   if verboseCyclicDistWriters {
     writeln(typeToString(this.type));
     writeln("------");

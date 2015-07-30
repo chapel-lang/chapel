@@ -868,8 +868,13 @@ module DefaultRectangular {
   
     inline proc dsiAccess(ind : rank*idxType) ref {
       if boundsChecking then
-        if !dom.dsiMember(ind) then
-          halt("array index out of bounds: ", ind);
+        if !dom.dsiMember(ind) {
+          // Note -- because of module load order dependency issues,
+          // the multiple-arguments implementation of halt cannot
+          // be called at this point. So we call a special routine
+          // that does the right thing here.
+          halt("array index out of bounds: " + _stringify_index(ind));
+        }
       var dataInd = getDataIndex(ind);
       //assert(dataInd >= 0);
       //assert(numelm >= 0); // ensure it has been initialized

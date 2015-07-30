@@ -29,7 +29,26 @@ module ChapelIO {
     proc helper(o)         return false;
     return helper(val);
   }
-  
+ 
+  // This routine is called in DefaultRectangular in order
+  // to report an out of bounds access for a halt. A normal
+  // call to halt with a tuple can't be made because of module
+  // order issues.
+  proc _stringify_index(tup:?t) where isTuple(t)
+  {
+    var str = "(";
+
+    for param i in 1..tup.size {
+      if i != 1 then str += ",";
+      str += tup[i]:string;
+    }
+
+   str += ")";
+
+    return str;
+
+  }
+
   use IO;
   class Writer {
     proc writing param return true;
@@ -492,8 +511,7 @@ module ChapelIO {
   }
   
   proc halt(args ...?numArgs) {
-    var tmpstring: c_string;
-    tmpstring.write((...args));
+    var tmpstring = stringify((...args));
     __primitive("chpl_error", "halt reached - " + tmpstring);
   }
   
@@ -527,6 +545,7 @@ module ChapelIO {
     this = tmp : chpl_taskID_t;
   }
   
+  /*
   class StringWriter: Writer {
     var s: c_string_copy; // Should be initialized to NULL.
     proc StringWriter(x:c_string) {
@@ -542,8 +561,9 @@ module ChapelIO {
       chpl_free_c_string_copy(this.s);
       __primitive("=", this.s, _nullString);
     }
-  }
-  
+  }*/
+ 
+
   // Convert 'x' to a string just the way it would be written out.
   // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
   proc _cast(type t, x) where t == c_string_copy {
@@ -559,8 +579,13 @@ module ChapelIO {
     return result;
   }
   
-  pragma "dont disable remote value forwarding"
+  // Removing this causes a compiler error.
+  // unable to resolve AbstractRootLocale.chpl_initOnLocales(tag=iterKind)
+  // in _toLeader
+  // candidates are AbstractRootLocale.chpl_initOnLocales(param tag: iterKind) 
+  /*pragma "dont disable remote value forwarding"
   proc ref c_string.write(args ...?n) {
+    compilerError("HERE");
     var sc = new StringWriter(this);
     sc.write((...args));
     // We need to copy this string because the destructor call below frees it
@@ -568,8 +593,9 @@ module ChapelIO {
     // This is required to prevent double-deletion.
     __primitive("=", sc.s, _nullString);
     delete sc;
-  }
-  
+  }*/
+ 
+  /*
   pragma "dont disable remote value forwarding"
   proc ref string.write(args ...?n) {
     var sc = new StringWriter(this.c_str());
@@ -578,8 +604,7 @@ module ChapelIO {
     // This is required to prevent double-deletion.
     __primitive("=", sc.s, _nullString);
     delete sc;
-  }
-  
+  }*/
  
   proc _getoutputformat(s: c_string):c_string {
     var sn = s.length;
