@@ -3839,12 +3839,12 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
   //writer.write(x);
   if (isClassType(t) || chpl_isDdata(t)) && x == nil {
     // future - write class IDs, have serialization format
-    var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+    var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
     var iolit:ioLiteral;
     if st == QIO_AGGREGATE_FORMAT_JSON {
-      iolit = new ioLiteral("null", !binary());
+      iolit = new ioLiteral("null");
     } else {
-      iolit = new ioLiteral("nil", !binary());
+      iolit = new ioLiteral("nil");
     }
     _write_one_internal(_channel_internal, iokind.dynamic, iolit);
   } else {
@@ -3990,6 +3990,18 @@ inline proc channel.readwrite(ref x) where !this.writing {
       this.unlock();
     }
   }
+
+  proc channel.writeBytes(x, len:ssize_t) {
+    // TODO -- do nothing if error in channel?
+    on this.home {
+      this.lock();
+      var err:syserr;
+      err = qio_channel_write_amt(false, _channel_internal, x, len);
+      _qio_channel_set_error_unlocked(_channel_internal, err);
+      this.unlock();
+    }
+  }
+
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
