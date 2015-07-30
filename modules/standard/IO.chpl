@@ -1361,11 +1361,11 @@ pragma "no doc"
 private extern const QIO_FDFLAG_SEEKABLE:c_int;
 
 pragma "no doc"
-private extern const QIO_CH_ALWAYS_UNBUFFERED:c_int;
+extern const QIO_CH_ALWAYS_UNBUFFERED:c_int;
 pragma "no doc"
-private extern const QIO_CH_ALWAYS_BUFFERED:c_int;
+extern const QIO_CH_ALWAYS_BUFFERED:c_int;
 pragma "no doc"
-private extern const QIO_CH_BUFFERED:c_int;
+extern const QIO_CH_BUFFERED:c_int;
 
 pragma "no doc"
 private extern const QIO_METHOD_DEFAULT:c_int;
@@ -1448,17 +1448,17 @@ pragma "no doc"
 extern type style_char_t = uint(8);
 
 pragma "no doc"
-private extern const QIO_STRING_FORMAT_WORD:uint(8);
+extern const QIO_STRING_FORMAT_WORD:uint(8);
 pragma "no doc"
-private extern const QIO_STRING_FORMAT_BASIC:uint(8);
+extern const QIO_STRING_FORMAT_BASIC:uint(8);
 pragma "no doc"
 extern const QIO_STRING_FORMAT_CHPL:uint(8);
 pragma "no doc"
-private extern const QIO_STRING_FORMAT_JSON:uint(8);
+extern const QIO_STRING_FORMAT_JSON:uint(8);
 pragma "no doc"
-private extern const QIO_STRING_FORMAT_TOEND:uint(8);
+extern const QIO_STRING_FORMAT_TOEND:uint(8);
 pragma "no doc"
-private extern const QIO_STRING_FORMAT_TOEOF:uint(8);
+extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 
 /*
 
