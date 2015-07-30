@@ -321,16 +321,11 @@ module Curl {
 pragma "no doc"
 extern type chpl_slist;
 
-pragma "no doc"
 private extern proc chpl_curl_set_opt(fl:qio_file_ptr_t, opt:c_int, arg...):syserr;
-pragma "no doc"
 private extern proc chpl_curl_perform(fl:qio_file_ptr_t):syserr;
-pragma "no doc"
 private extern proc chpl_curl_slist_append(ref list:chpl_slist, str:c_string):syserr;
-pragma "no doc"
 private extern proc chpl_curl_slist_free(list:chpl_slist);
 
-pragma "no doc"
 private extern const CHPL_CURL_SLIST_NULL:chpl_slist;
 
 /* This function is the equivalent to the 
