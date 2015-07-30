@@ -430,6 +430,7 @@ module ChapelIO {
   // since they don't change when read anyway
   // and it's much more convenient to be able to do e.g.
   //   reader & new ioLiteral("=")
+  /*
   inline proc <~>(r: Reader, lit:ioLiteral):Reader {
     var litCopy = lit;
     r.readwrite(litCopy);
@@ -477,7 +478,7 @@ module ChapelIO {
     var ionl = new ioNewline();
     this.readwrite(ionl);
   }
-  
+  */
   proc halt() {
     __primitive("chpl_error", "halt reached");
   }
@@ -511,16 +512,16 @@ module ChapelIO {
     chpl_free_c_string_copy(tmpstring);
   }
   
-  proc _ddata.writeThis(f: Writer) {
+  proc _ddata.writeThis(f) {
     compilerWarning("printing _ddata class");
     f.write("<_ddata class cannot be printed>");
   }
 
-  proc chpl_taskID_t.writeThis(f: Writer) {
+  proc chpl_taskID_t.writeThis(f) {
     var tmp : uint(64) = this : uint(64);
     f.write(tmp);
   }
-  proc chpl_taskID_t.readThis(f: Reader) {
+  proc chpl_taskID_t.readThis(f) {
     var tmp : uint(64);
     f.read(tmp);
     this = tmp : chpl_taskID_t;

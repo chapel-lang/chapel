@@ -2722,6 +2722,8 @@ record channel {
   var home:locale;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+  pragma "no doc"
+  var err:syserr = ENOERR;  // used in readWriteThis context
 }
 
 // TODO -- shouldn't have to write this this way!
@@ -3813,6 +3815,57 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
 
   return err;
 }
+inline proc channel.readwrite(ref x) {
+  if err then return;
+  if this.type.writing then write(x, error=err);
+  else read(x, error=err);
+}
+
+  inline proc <~>(w: channel, x) {
+    w.readwrite(x);
+    return w;
+  }
+  inline proc <~>(r: channel, ref x) {
+    r.readwrite(x);
+    return r;
+  }
+
+  // these are overridden to not be inout
+  // since they don't change when read anyway
+  // and it's much more convenient to be able to do e.g.
+  //   reader & new ioLiteral("=")
+  inline proc <~>(r: channel, lit:ioLiteral) where ! r.type.writing {
+    var litCopy = lit;
+    r.readwrite(litCopy);
+    return r;
+  }
+  inline proc <~>(r: channel, nl:ioNewline) where !r.type.writing {
+    var nlCopy = nl;
+    r.readwrite(nlCopy);
+    return r;
+  }
+
+  // Move to IO.chpl ?
+  inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+  {
+    /***
+    var iolit = new ioLiteral(lit.c_str(), ignoreWhiteSpace);
+    this.readwrite(iolit);
+    ***/
+    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
+  }
+  inline proc channel.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
+  {
+    var iolit = new ioLiteral(lit, ignoreWhiteSpace);
+    this.readwrite(iolit);
+  }
+
+  inline proc channel.readWriteNewline()
+  {
+    var ionl = new ioNewline();
+    this.readwrite(ionl);
+  }
+
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
