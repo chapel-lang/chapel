@@ -1352,13 +1352,13 @@ proc stringStyleWithLength(lengthBytes:int) {
 }
 
 pragma "no doc"
-private extern const QIO_FDFLAG_UNK:c_int;
+extern const QIO_FDFLAG_UNK:c_int;
 pragma "no doc"
-private extern const QIO_FDFLAG_READABLE:c_int;
+extern const QIO_FDFLAG_READABLE:c_int;
 pragma "no doc"
-private extern const QIO_FDFLAG_WRITEABLE:c_int;
+extern const QIO_FDFLAG_WRITEABLE:c_int;
 pragma "no doc"
-private extern const QIO_FDFLAG_SEEKABLE:c_int;
+extern const QIO_FDFLAG_SEEKABLE:c_int;
 
 pragma "no doc"
 extern const QIO_CH_ALWAYS_UNBUFFERED:c_int;
@@ -1368,33 +1368,33 @@ pragma "no doc"
 extern const QIO_CH_BUFFERED:c_int;
 
 pragma "no doc"
-private extern const QIO_METHOD_DEFAULT:c_int;
+extern const QIO_METHOD_DEFAULT:c_int;
 pragma "no doc"
-private extern const QIO_METHOD_READWRITE:c_int;
+extern const QIO_METHOD_READWRITE:c_int;
 pragma "no doc"
-private extern const QIO_METHOD_PREADPWRITE:c_int;
+extern const QIO_METHOD_PREADPWRITE:c_int;
 pragma "no doc"
-private extern const QIO_METHOD_FREADFWRITE:c_int;
+extern const QIO_METHOD_FREADFWRITE:c_int;
 pragma "no doc"
-private extern const QIO_METHOD_MMAP:c_int;
+extern const QIO_METHOD_MMAP:c_int;
 pragma "no doc"
-private extern const QIO_METHODMASK:c_int;
+extern const QIO_METHODMASK:c_int;
 pragma "no doc"
-private extern const QIO_HINT_RANDOM:c_int;
+extern const QIO_HINT_RANDOM:c_int;
 pragma "no doc"
-private extern const QIO_HINT_SEQUENTIAL:c_int;
+extern const QIO_HINT_SEQUENTIAL:c_int;
 pragma "no doc"
-private extern const QIO_HINT_LATENCY:c_int;
+extern const QIO_HINT_LATENCY:c_int;
 pragma "no doc"
-private extern const QIO_HINT_BANDWIDTH:c_int;
+extern const QIO_HINT_BANDWIDTH:c_int;
 pragma "no doc"
-private extern const QIO_HINT_CACHED:c_int;
+extern const QIO_HINT_CACHED:c_int;
 pragma "no doc"
-private extern const QIO_HINT_PARALLEL:c_int;
+extern const QIO_HINT_PARALLEL:c_int;
 pragma "no doc"
-private extern const QIO_HINT_DIRECT:c_int;
+extern const QIO_HINT_DIRECT:c_int;
 pragma "no doc"
-private extern const QIO_HINT_NOREUSE:c_int;
+extern const QIO_HINT_NOREUSE:c_int;
 
 /*  IOHINT_NONE means normal operation, nothing special
     to hint. Expect to use NONE most of the time.
