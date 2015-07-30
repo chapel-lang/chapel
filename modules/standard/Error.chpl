@@ -41,13 +41,13 @@ use SysBasic;
 
 // here's what we need from Sys
 pragma "no doc"
-extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:err_t):c_string;
+private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:err_t):c_string;
 
 /* This function takes in a string and returns it in double-quotes,
    with internal double-quotes escaped with backslash.
    */
 pragma "no doc"
-proc quote_string(s:string, len:ssize_t) {
+private proc quote_string(s:string, len:ssize_t) {
   extern const QIO_STRING_FORMAT_CHPL: uint(8);
   extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
                                ptr: c_string, len:ssize_t,
