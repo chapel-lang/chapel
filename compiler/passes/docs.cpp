@@ -91,8 +91,7 @@ void docs(void) {
 
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
-      if (!mod->hasFlag(FLAG_NO_DOC) && !mod->hasFlag(FLAG_PRIVATE) &&
-          !devOnlyModule(mod)) {
+      if (!mod->noDocGen() && !devOnlyModule(mod)) {
         if (isNotSubmodule(mod)) {
           std::ofstream *file = openFileFromMod(mod, docsRstDir);
 
@@ -138,8 +137,7 @@ void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
 }
 
 void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
-  if (!cl->symbol->hasFlag(FLAG_NO_DOC) && cl->symbol->hasFlag(FLAG_PRIVATE) &&
-      !cl->isUnion()) {
+  if (!cl->symbol->noDocGen() && !cl->isUnion()) {
     cl->printDocs(file, tabs);
 
     printFields(file, cl, tabs + 1);
@@ -181,7 +179,7 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
-  if (!mod->hasFlag(FLAG_NO_DOC) && !mod->hasFlag(FLAG_PRIVATE)) {
+  if (!mod->noDocGen()) {
     mod->printDocs(file, tabs);
 
     Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
