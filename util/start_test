@@ -474,7 +474,6 @@ def compiler_performance():
         logger.write(out)
         logger.write("[Success combining compiler performance dat files]")
     except:
-        logger.write(out)
         logger.write("[Error combining compiler performance dat files]")
 
     # create the graphs
