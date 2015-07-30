@@ -1120,8 +1120,95 @@ module DefaultRectangular {
       }
 
     }
-    const zeroTup: rank*idxType;
-    recursiveArrayWriter(zeroTup);
+
+    if !f.writing && !f.binary() && rank == 1 && dom.ranges(1).stride == 1
+        && dom._arrs.length == 1 {
+
+      // Special handling for reading 1-D stride-1 arrays in order
+      // to read them without requiring that the array length be
+      // specified ahead of time.
+
+      var binary = f.binary();
+      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+      var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+      if isjson || ischpl {
+        f <~> new ioLiteral("[");
+      }
+
+      var first = true;
+
+      var offset = dom.ranges(1).low;
+      var i = 0;
+
+      var read_end = false;
+
+      while ! f.error() {
+        // read a comma
+        if first {
+          first = false;
+          // but check for a ]
+          if isjson || ischpl {
+            f <~> new ioLiteral("]");
+          } else if isspace {
+            f <~> new ioNewline(skipWhitespaceOnly=true);
+          }
+          if f.error() == EFORMAT {
+            f.clearError();
+          } else {
+            read_end = true;
+            break;
+          }
+        } else {
+          if isspace then f <~> new ioLiteral(" ");
+          else if isjson || ischpl then f <~> new ioLiteral(",");
+
+          if f.error() == EFORMAT {
+            f.clearError();
+            // No comma.
+            break;
+          }
+        }
+
+        if i >= dom.ranges(1).size {
+          // Create more space.
+          var sz = dom.ranges(1).size;
+          if sz < 4 then sz = 4;
+          sz = 2 * sz;
+
+          // like push_back
+          const newDom = {offset..#sz};
+
+          dsiReallocate( newDom );
+          dom.dsiSetIndices( newDom.getIndices() );
+          dsiPostReallocate();
+        }
+
+        f <~> dsiAccess(offset + i);
+
+        i += 1;
+      }
+
+      if ! read_end {
+        if isjson || ischpl {
+          f <~> new ioLiteral("]");
+        }
+      }
+
+      {
+        // trim down to actual size read.
+        const newDom = {offset..#i};
+        dsiReallocate( newDom );
+        dom.dsiSetIndices( newDom.getIndices() );
+        dsiPostReallocate();
+      }
+
+    } else {
+      const zeroTup: rank*idxType;
+      recursiveArrayWriter(zeroTup);
+    }
   }
 
   proc DefaultRectangularArr.dsiSerialWrite(f) {
