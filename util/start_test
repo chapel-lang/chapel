@@ -866,7 +866,6 @@ def set_up_performance_testing_B():
                 sha_pef_keys_name, sha_out_name])
             logger.write(out)
         except:
-            logger.write(out)
             logger.write("[Error: Failed to save current sha to {}]"
                     .format(sha_dat_file_path))
 
@@ -1238,7 +1237,7 @@ def parser_setup():
     # launcher timeout
     parser.add_argument("-launchertimeout", "--launchertimeout", 
             action="store", dest="launcher_timeout",
-            help="rely on the luancher to enforce the timeout, not timedexec")
+            help="rely on the launcher to enforce the timeout, not timedexec")
     # no chpl home warning
     parser.add_argument("-no-chpl-home-warn", "--no-chpl-home-warn",
             action="store_false", dest="chpl_home_warn",
