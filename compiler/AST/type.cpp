@@ -150,7 +150,8 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
   // Only print extern types.
-  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (this->symbol->hasFlag(FLAG_NO_DOC) ||
+      this->symbol->hasFlag(FLAG_PRIVATE)) {
     return;
   }
 
@@ -502,7 +503,8 @@ void EnumType::accept(AstVisitor* visitor) {
 
 
 void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (this->symbol->hasFlag(FLAG_NO_DOC) ||
+      this->symbol->hasFlag(FLAG_PRIVATE)) {
     return;
   }
 
@@ -1261,7 +1263,8 @@ Symbol* AggregateType::getField(int i) {
 
 void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
   // TODO: Include unions... (thomasvandoren, 2015-02-25)
-  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
+  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion() ||
+      this->symbol->hasFlag(FLAG_PRIVATE)) {
     return;
   }
 

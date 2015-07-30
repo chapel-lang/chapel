@@ -344,7 +344,8 @@ std::string VarSymbol::docsDirective() {
 
 
 void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_SUPER_CLASS)) {
+  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_PRIVATE) ||
+      this->hasFlag(FLAG_SUPER_CLASS)) {
       return;
   }
 
@@ -2400,7 +2401,7 @@ std::string FnSymbol::docsDirective() {
 
 
 void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_PRIVATE)) {
     return;
   }
 
@@ -2647,7 +2648,7 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 
 
 void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_PRIVATE)) {
     return;
   }
 
