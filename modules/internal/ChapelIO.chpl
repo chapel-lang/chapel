@@ -39,7 +39,7 @@ module ChapelIO {
     var str = "(";
 
     for param i in 1..tup.size {
-      if i != 1 then str += ",";
+      if i != 1 then str += ", ";
       str += tup[i]:string;
     }
 
