@@ -455,7 +455,7 @@ where tag == iterKind.follower
 
 //************************* Helper functions
 pragma "no doc"
-proc defaultNumTasks(nTasks:int)
+private proc defaultNumTasks(nTasks:int)
 {
   var dnTasks=nTasks;
   if nTasks==0 then {
@@ -468,7 +468,7 @@ proc defaultNumTasks(nTasks:int)
 }
 
 pragma "no doc"
-proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:bool, ref lock : vlock, splitTail:bool=false)
+private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:bool, ref lock : vlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
   type lenType=rangeToSplit.length.type;
