@@ -157,7 +157,7 @@ module BitOps {
  * module to hide the extern procedures
  */
 pragma "no doc"
-module BitOps_internal {
+private module BitOps_internal {
   extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
   extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);
 
