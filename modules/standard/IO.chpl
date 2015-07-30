@@ -3529,7 +3529,10 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     return qio_channel_print_string(false, _channel_internal, x, x.length:ssize_t);
   } else if t == string {
     // handle string
-    return qio_channel_print_string(false, _channel_internal, x.c_str(), x.length:ssize_t);
+    const local_x: string = if x.locale.id != chpl_nodeID
+        then x // assignment makes it local
+        else new string(x, owned=false);
+    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
   } else if isEnumType(t) {
     var s = x:string;
     return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
