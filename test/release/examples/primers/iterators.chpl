@@ -119,7 +119,7 @@ iter postorder(tree: Tree): Tree {
 // This visits the nodes of the tree in postorder and prints them out.
 // It uses the "first" flag to avoid printing a leading space.
 //
-proc Tree.writeThis(x: Writer)
+proc Tree.writeThis(x)
 {
   var first = true;
   for node in postorder(tree) {
