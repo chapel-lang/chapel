@@ -25,7 +25,7 @@ record foo {
   }
 }
 
-proc foo.writeThis(fp: Writer) {
+proc foo.writeThis(fp) {
   fp.write("(/");
   var tmp = first;
   while tmp != nil {

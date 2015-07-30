@@ -63,7 +63,7 @@ module Rosslyn
         }
 
 
-        proc writeThis(w : Writer)
+        proc writeThis(w )
         {
             assert(false,"BenchmarkFactory.writeThis() should be",
                          "overridden in the subclass");

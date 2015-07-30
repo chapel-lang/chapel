@@ -22,7 +22,7 @@ proc stack.pop() : eltType {
   return v;
 }
 
-proc stack.writeThis(f : Writer) {
+proc stack.writeThis(f) {
   var tmp = top;
   while tmp != nil {
     f.write(tmp.value, " ");
