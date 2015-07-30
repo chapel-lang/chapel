@@ -1077,10 +1077,10 @@ module ChapelArray {
     proc getIndices()
       return _value.dsiGetIndices();
   
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
   
@@ -1510,10 +1510,10 @@ module ChapelArray {
       return newAlias();
     }
   
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
   

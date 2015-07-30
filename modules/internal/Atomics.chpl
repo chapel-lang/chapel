@@ -336,7 +336,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -438,7 +438,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -540,7 +540,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -642,7 +642,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -744,7 +744,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -846,7 +846,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -948,7 +948,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -1049,7 +1049,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -1151,7 +1151,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
 
@@ -1230,7 +1230,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -1308,7 +1308,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }

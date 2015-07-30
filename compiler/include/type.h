@@ -250,8 +250,8 @@ extern AggregateType* wideStringType;
 
 // Well-known types
 TYPE_EXTERN AggregateType* dtArray;
-TYPE_EXTERN AggregateType* dtReader;
-TYPE_EXTERN AggregateType* dtWriter;
+//TYPE_EXTERN AggregateType* dtReader;
+//TYPE_EXTERN AggregateType* dtWriter;
 TYPE_EXTERN AggregateType* dtBaseArr;
 TYPE_EXTERN AggregateType* dtBaseDom;
 TYPE_EXTERN AggregateType* dtDist;

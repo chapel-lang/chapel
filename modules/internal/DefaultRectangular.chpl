@@ -1047,8 +1047,8 @@ module DefaultRectangular {
     f <~> new ioLiteral("}");
   }
   
-  proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-  proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
     proc writeSpaces(dim:int) {
@@ -1119,7 +1119,7 @@ module DefaultRectangular {
     recursiveArrayWriter(zeroTup);
   }
 
-  proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
+  proc DefaultRectangularArr.dsiSerialWrite(f) {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     if _isSimpleIoType(this.eltType) && f.binary() &&
@@ -1141,7 +1141,7 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularArr.dsiSerialRead(f: Reader) {
+  proc DefaultRectangularArr.dsiSerialRead(f) {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     if _isSimpleIoType(this.eltType) && f.binary() &&

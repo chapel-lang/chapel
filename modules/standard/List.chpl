@@ -147,7 +147,7 @@ record list {
   }
 
   pragma "no doc"
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     var first: bool = true;
     for e in this {
       if !first then

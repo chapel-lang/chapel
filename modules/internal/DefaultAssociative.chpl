@@ -107,8 +107,8 @@ module DefaultAssociative {
       }
       f <~> new ioLiteral("}");
     }
-    proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface
@@ -616,8 +616,8 @@ module DefaultAssociative {
         f <~> val;
       }
     }
-    proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
   
     //

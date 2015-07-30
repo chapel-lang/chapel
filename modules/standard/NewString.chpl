@@ -300,7 +300,7 @@ module NewString {
       else return this.len==0; // this should be enough of a check
     }
 
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       if !this.isEmptyString() {
         if (this.home.id != here.id) {
           var tcs = remoteStringCopy(this.home.id, this.base, this.len);

@@ -370,7 +370,7 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseDom.dsiSerialWrite(f: Writer) {
+  proc DefaultSparseDom.dsiSerialWrite(f) {
     if (rank == 1) {
       f.write("{");
       if (nnz >= 1) {
@@ -399,7 +399,7 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseArr.dsiSerialWrite(f: Writer) {
+  proc DefaultSparseArr.dsiSerialWrite(f) {
     if (rank == 1) {
       if (dom.nnz >= 1) {
         f.write(data(1));

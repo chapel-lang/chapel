@@ -55,8 +55,7 @@ static WellKnownType sWellKnownTypes[] = {
   { "BaseArr",            &dtBaseArr,      true  },
   { "BaseDom",            &dtBaseDom,      true  },
   { "BaseDist",           &dtDist,         true  },
-  { "Writer",             &dtWriter,       true  },
-  { "Reader",             &dtReader,       true  },
+  //{ "Reader",             &dtReader,       true  },
   { "chpl_main_argument", &dtMainArgument, false }
 };
 

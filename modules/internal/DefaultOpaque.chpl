@@ -81,18 +81,18 @@ module DefaultOpaque {
     }
   }
   
-  proc DefaultOpaqueDom.dsiSerialWrite(f: Writer) {
+  proc DefaultOpaqueDom.dsiSerialWrite(f) {
     adomain.dsiSerialWrite(f);
   }
   
-  proc DefaultOpaqueDom.dsiSerialRead(f: Reader) {
+  proc DefaultOpaqueDom.dsiSerialRead(f) {
     adomain.dsiSerialRead(f);
   }
   
-  proc DefaultOpaqueArr.dsiSerialWrite(f: Writer) {
+  proc DefaultOpaqueArr.dsiSerialWrite(f) {
     anarray.dsiSerialWrite(f);
   }
-  proc DefaultOpaqueArr.dsiSerialRead(f: Reader) {
+  proc DefaultOpaqueArr.dsiSerialRead(f) {
     anarray.dsiSerialRead(f);
   }
   
