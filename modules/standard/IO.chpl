@@ -1617,6 +1617,14 @@ pragma "no doc"
 extern proc qio_channel_release(ch:qio_channel_ptr_t);
 
 pragma "no doc"
+extern proc qio_channel_clear_error(ch:qio_channel_ptr_t);
+pragma "no doc"
+extern proc _qio_channel_set_error_unlocked(ch:qio_channel_ptr_t, err:syserr);
+pragma "no doc"
+extern proc qio_channel_error(ch:qio_channel_ptr_t):syserr;
+
+
+pragma "no doc"
 extern proc qio_channel_lock(ch:qio_channel_ptr_t):syserr;
 pragma "no doc"
 extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
@@ -2722,8 +2730,6 @@ record channel {
   var home:locale;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
-  pragma "no doc"
-  var err:syserr = ENOERR;  // used in readWriteThis context
 }
 
 // TODO -- shouldn't have to write this this way!
@@ -3757,12 +3763,16 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
 pragma "no doc"
 inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr {
   //var reader = new ChannelReader(_channel_internal=_channel_internal);
-  var reader = new channel(writing=false, kind=iokind, locking=false,
-                           home=here, _channel_internal=_channel_internal,
-                           err=ENOERR);
+  var reader = new channel(writing=false, iokind.dynamic, locking=false,
+                           home=here,
+                           _channel_internal=_channel_internal);
   var err:syserr = ENOERR;
   var save_style:iostyle;
   var saved_style = false;
+
+  // Clear the channel error so we can use the error
+  // to stop reading if there was an error.
+  qio_channel_clear_error(_channel_internal);
 
   // Adjust the style to use Chapel strings in quotes
   // unless the string style was already overridden
@@ -3783,22 +3793,23 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
     qio_channel_set_style(_channel_internal, save_style);
   }
 
-  err = reader.err;
-  delete reader;
-
-  return err;
+  return qio_channel_error(_channel_internal);
 }
 
 pragma "no doc"
 inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
   //var writer = new ChannelWriter(_channel_internal=_channel_internal);
-  var writer = new channel(writing=true, kind=iokind, locking=false,
-                           home=here, _channel_internal=_channel_internal,
-                           err=ENOERR);
+  var writer = new channel(writing=true, iokind.dynamic, locking=false,
+                           home=here,
+                           _channel_internal=_channel_internal);
 
   var err:syserr = ENOERR;
   var save_style:iostyle;
   var saved_style = false;
+
+  // Clear the channel error so we can use the error
+  // to stop writing if there was an error.
+  qio_channel_clear_error(_channel_internal);
 
   // Adjust the style to use Chapel strings in quotes
   // unless the string style was already overridden
@@ -3831,23 +3842,53 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
     qio_channel_set_style(_channel_internal, save_style);
   }
 
-  err = writer.err;
-  delete writer;
-
-  return err;
-}
-inline proc channel.readwrite(ref x) {
-  if err then return;
-  if this.type.writing then write(x, error=err);
-  else read(x, error=err);
+  return qio_channel_error(_channel_internal);
 }
 
-  inline proc <~>(w: channel, x) {
-    w.readwrite(x);
+pragma "no doc"
+proc channel.readIt(ref x) {
+  if writing then compilerError("read on write-only channel");
+  on this.home {
+    this.lock();
+    var error:syserr;
+    error = qio_channel_error(_channel_internal);
+    if ! error {
+      error = _read_one_internal(_channel_internal, kind, x);
+      _qio_channel_set_error_unlocked(_channel_internal, error);
+    }
+    this.unlock();
+  }
+}
+
+pragma "no doc"
+proc channel.writeIt(x) {
+  if !writing then compilerError("write on read-only channel");
+  on this.home {
+    this.lock();
+    var error:syserr;
+    error = qio_channel_error(_channel_internal);
+    if ! error {
+      error = _write_one_internal(_channel_internal, kind, x);
+      _qio_channel_set_error_unlocked(_channel_internal, error);
+    }
+    this.unlock();
+  }
+}
+
+
+inline proc channel.readwrite(x) where this.writing {
+  this.writeIt(x);
+}
+inline proc channel.readwrite(ref x) where !this.writing {
+  this.readIt(x);
+}
+
+  inline proc <~>(w: channel, x) where w.writing {
+    w.writeIt(x);
     return w;
   }
-  inline proc <~>(r: channel, ref x) {
-    r.readwrite(x);
+  inline proc <~>(r: channel, ref x) where !r.writing {
+    r.readIt(x);
     return r;
   }
 
@@ -3855,12 +3896,12 @@ inline proc channel.readwrite(ref x) {
   // since they don't change when read anyway
   // and it's much more convenient to be able to do e.g.
   //   reader & new ioLiteral("=")
-  inline proc <~>(r: channel, lit:ioLiteral) where ! r.type.writing {
+  inline proc <~>(r: channel, lit:ioLiteral) where !r.writing {
     var litCopy = lit;
     r.readwrite(litCopy);
     return r;
   }
-  inline proc <~>(r: channel, nl:ioNewline) where !r.type.writing {
+  inline proc <~>(r: channel, nl:ioNewline) where !r.writing {
     var nlCopy = nl;
     r.readwrite(nlCopy);
     return r;
@@ -3887,6 +3928,15 @@ inline proc channel.readwrite(ref x) {
     this.readwrite(ionl);
   }
 
+  proc channel.binary():bool {
+    var ret:uint(8);
+    on this {
+      ret = qio_channel_binary(_channel_internal);
+    }
+    return ret != 0;
+  }
+
+
   proc channel.styleElement(element:int):int {
     var ret:int = 0;
     on this {
@@ -3896,15 +3946,31 @@ inline proc channel.readwrite(ref x) {
   }
 
   proc channel.error():syserr {
-    return err;
+    var ret:syserr;
+    on this.home {
+      var local_error:syserr;
+      this.lock();
+      local_error = qio_channel_error(_channel_internal);
+      this.unlock();
+      ret = local_error;
+    }
+    return ret;
   }
   proc channel.setError(e:syserr) {
-    err = e;
+    on this.home {
+      var error = e;
+      this.lock();
+      _qio_channel_set_error_unlocked(_channel_internal, error);
+      this.unlock();
+    }
   }
   proc channel.clearError() {
-    err = 0;
+    on this.home {
+      this.lock();
+      qio_channel_clear_error(_channel_internal);
+      this.unlock();
+    }
   }
- 
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
