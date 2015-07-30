@@ -422,7 +422,7 @@ proc copyMode(src: string, dest: string) {
 }
 
 pragma "no doc"
-proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
+private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
   var oldMode = getMode(src);
   mkdir(error, dest, mode=oldMode, parents=true);
   if error != ENOERR then return;
@@ -716,7 +716,7 @@ proc getUID(name: string): int {
 // to access the C-level routines, types, and values
 //
 pragma "no doc"
-module chpl_glob_c_interface {
+private module chpl_glob_c_interface {
   extern type glob_t;
 
   extern const GLOB_NOMATCH: c_int;
