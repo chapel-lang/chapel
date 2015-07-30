@@ -3,7 +3,7 @@ class myclass {
   var y: real;
 }
 
-proc myclass.writeThis(f:Writer) {
+proc myclass.writeThis(f) {
   f.write(x, " ", y);
 }
 
