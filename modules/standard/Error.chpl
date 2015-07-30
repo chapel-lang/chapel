@@ -47,7 +47,7 @@ private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:er
    with internal double-quotes escaped with backslash.
    */
 pragma "no doc"
-private proc quote_string(s:string, len:ssize_t) {
+proc quote_string(s:string, len:ssize_t) {
   extern const QIO_STRING_FORMAT_CHPL: uint(8);
   extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
                                ptr: c_string, len:ssize_t,
