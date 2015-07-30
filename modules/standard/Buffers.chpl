@@ -18,7 +18,7 @@
  */
 
 pragma "no doc"
-module BufferInternals {
+private module BufferInternals {
   use SysBasic;
   use Error;
 
@@ -155,7 +155,7 @@ module Buffers {
 
 
   pragma "no doc"
-  proc create_iobuf(out error:syserr):bytes {
+  private proc create_iobuf(out error:syserr):bytes {
     var ret:bytes;
     error = qbytes_create_iobuf(ret._bytes_internal);
     // The buffer is "retained" internally on creation, but only on success.
@@ -163,7 +163,7 @@ module Buffers {
     return ret;
   }
   pragma "no doc"
-  proc create_iobuf():bytes {
+  private proc create_iobuf():bytes {
     var err:syserr = ENOERR; 
     var ret = create_iobuf(err);
     if err then ioerror(err, "in create_iobuf");
