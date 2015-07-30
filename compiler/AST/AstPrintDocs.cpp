@@ -49,8 +49,7 @@ AstPrintDocs::~AstPrintDocs() {
 bool AstPrintDocs::enterAggrType(AggregateType* node) {
   // If class/record is not supposed to be documented, do not traverse into it
   // (and skip the documentation).
-  if (node->symbol->hasFlag(FLAG_NO_DOC) ||
-      node->symbol->hasFlag(FLAG_PRIVATE)) {
+  if (node->symbol->noDocGen()) {
     return false;
   }
 
@@ -63,8 +62,7 @@ bool AstPrintDocs::enterAggrType(AggregateType* node) {
 void AstPrintDocs::exitAggrType(AggregateType* node) {
   // If class/record is not supposed to be documented, it was not traversed
   // into or documented, so exit early from this method.
-  if (node->symbol->hasFlag(FLAG_NO_DOC) ||
-      node->symbol->hasFlag(FLAG_PRIVATE)) {
+  if (node->symbol->noDocGen()) {
     return;
   }
 
@@ -95,8 +93,7 @@ bool AstPrintDocs::enterFnSym(FnSymbol* node) {
 bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
   // If a module is not supposed to be documented, do not traverse into it (and
   // skip the documentation).
-  if (node->hasFlag(FLAG_NO_DOC) ||
-      node->hasFlag(FLAG_PRIVATE)) {
+  if (node->noDocGen()) {
       return false;
   }
 
@@ -122,8 +119,7 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
 void AstPrintDocs::exitModSym(ModuleSymbol* node) {
   // If module is not supposed to be documented, it was not traversed into or
   // documented, so exit early from this method.
-  if (node->hasFlag(FLAG_NO_DOC) ||
-      node->hasFlag(FLAG_PRIVATE)) {
+  if (node->noDocGen()) {
     return;
   }
 
