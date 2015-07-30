@@ -50,28 +50,28 @@ module Math {
   // Helper constants and functions (not included in chpldocs).
   //
   pragma "no doc"
-  extern proc chpl_macro_INFINITY():real(64);
+  private extern proc chpl_macro_INFINITY():real(64);
   pragma "no doc"
-  extern proc chpl_macro_NAN():real(64);
+  private extern proc chpl_macro_NAN():real(64);
 
   pragma "no doc"
-  extern proc chpl_macro_double_isinf(x: real(64)): c_int;
+  private extern proc chpl_macro_double_isinf(x: real(64)): c_int;
   pragma "no doc"
-  extern proc chpl_macro_float_isinf(x: real(32)): c_int;
+  private extern proc chpl_macro_float_isinf(x: real(32)): c_int;
   pragma "no doc"
-  extern proc chpl_macro_double_isfinite(x: real(64)): c_int;
+  private extern proc chpl_macro_double_isfinite(x: real(64)): c_int;
   pragma "no doc"
-  extern proc chpl_macro_float_isfinite(x: real(32)): c_int;
+  private extern proc chpl_macro_float_isfinite(x: real(32)): c_int;
   pragma "no doc"
-  extern proc chpl_macro_double_isnan(x: real(64)): c_int;
+  private extern proc chpl_macro_double_isnan(x: real(64)): c_int;
   pragma "no doc"
-  extern proc chpl_macro_float_isnan(x: real(32)): c_int;
+  private extern proc chpl_macro_float_isnan(x: real(32)): c_int;
 
   pragma "no doc"
-  extern proc fabs(x: real(64)): real(64);
+  private extern proc fabs(x: real(64)): real(64);
 
   pragma "no doc"
-  proc _logBasePow2Help(in val, baseLog2) {
+  private proc _logBasePow2Help(in val, baseLog2) {
     var result = -1;
     while (val != 0) {
       val >>= baseLog2;
@@ -80,21 +80,6 @@ module Math {
     return result;
   }
 
-  pragma "no doc"
-  proc logBasePow2(in val: int(?w), baseLog2) {
-    if (val < 1) {
-      halt("Can't take the log() of a non-positive integer");
-    }
-    return _logBasePow2Help(val, baseLog2);
-  }
-
-  pragma "no doc"
-  proc logBasePow2(in val: uint(?w), baseLog2) {
-    if (val < 1) {
-      halt("Can't take the log() of a non-positive integer");
-    }
-    return _logBasePow2Help(val, baseLog2);
-  }
   // 
   //////////////////////////////////////////////////////////////////////////
 
@@ -531,6 +516,32 @@ module Math {
   inline proc log1p(x : real(32)): real(32) {
     extern proc log1pf(x: real(32)): real(32);
     return log1pf(x);
+  }
+
+
+  /* Returns the log to the base `2**baseLog2` of the given `in` value.
+     If `baseLog2` is `1`, then returns the log to the base `2`;
+     if `baseLog2` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(in val: int(?w), baseLog2) {
+    if (val < 1) {
+      halt("Can't take the log() of a non-positive integer");
+    }
+    return _logBasePow2Help(val, baseLog2);
+  }
+
+  /* Returns the log to the base `2**baseLog2` of the given `in` value.
+     If `baseLog2` is `1`, then returns the log to the base `2`;
+     if `baseLog2` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(in val: uint(?w), baseLog2) {
+    return _logBasePow2Help(val, baseLog2);
   }
 
 
