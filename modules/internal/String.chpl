@@ -395,17 +395,26 @@ module String {
     if debugStrings then
       chpl_debug_string_print("in autoCopy()");
 
+    // This pragma may be unnecessary.
     pragma "no auto destroy"
     var ret: string;
-
-    if !s.isEmptyString() {
-      ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
-                                CHPL_RT_MD_STR_COPY_DATA): bufferType;
-      memmove(ret.buff, s.buff, s.len.safeCast(size_t));
-      ret.len = s.len;
-      ret.owned = true; // I now own my data.
-      ret._size = s.len+1;
-      ret.buff[ret.len] = 0;
+    const slen = s.len; // cache the remote copy of len
+    if slen != 0 {
+      if s.locale.id == chpl_nodeID {
+        if debugStrings then
+          chpl_debug_string_print("  local initCopy");
+        ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
+                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
+        memmove(ret.buff, s.buff, s.len.safeCast(size_t));
+        ret.buff[s.len] = 0;
+      } else {
+        if debugStrings then
+          chpl_debug_string_print("  remote initCopy: "+s.locale.id:c_string);
+        ret.buff = copyRemoteBuffer(s.locale.id, s.buff, slen);
+      }
+      ret.len = slen;
+      ret._size = slen+1;
+      ret.owned = true;
     }
 
     if debugStrings then
@@ -423,6 +432,7 @@ module String {
    * do it by putting some sort of flag in the string record that is
    * used by initCopy().
    * TODO: Check if ^ is still true w/ the new AMM
+   * TODO: Do we need an initCopy for strings?  If not, this clause can be removed.
    */
   pragma "init copy fn"
   proc chpl__initCopy(s: string) {
