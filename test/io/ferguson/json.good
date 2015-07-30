@@ -1,0 +1,34 @@
+testing json stdout: {"a":1, "b":2}
+Writing JSON: 
+got is false
+Read: (a = 0, b = 0)
+Writing JSON:  
+got is false
+Read: (a = 0, b = 0)
+Writing JSON: {"c":3}
+got is false error is bad format
+Read: (a = 0, b = 0)
+Writing JSON: {"b":1, "a":2}
+
+Read: (a = 2, b = 1)
+Writing JSON: {"junk":3,"b":1, "a":2}
+
+Read: (a = 2, b = 1)
+Writing JSON: {"b":1, "junk":3, "a":2}
+
+Read: (a = 2, b = 1)
+Writing JSON: {"b":2, "a":1, "junk":3}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":2, "junk":3, "other junk" : "bla\"rg", "a":1}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":2, "junk":[],"junk1":[1], "junk2" : [ 2,3 ],"junk3":["a","b","c"], "a":1}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":2, "junk":{}, "junk1" : {"a":-1}, "junk2":{"a":-1,"b":-1},  "a":1}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":1, "record":{"a":-1, "b":-2, "c":[{"a":"-3", "b":"-4"},-5, "d"]}, "a":2}
+
+Read: (a = 2, b = 1)

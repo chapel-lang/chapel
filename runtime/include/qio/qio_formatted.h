@@ -779,6 +779,8 @@ int32_t qio_skip_json_value_unlocked(qio_channel_t* restrict ch);
 int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch);
 int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch);
 
+qioerr qio_channel_skip_json_field(const int threadsafe, qio_channel_t* ch);
+
 enum {
   QIO_CONV_UNK = 0,
   QIO_CONV_ARG_TYPE_NUMERIC,

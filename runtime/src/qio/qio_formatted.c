@@ -1523,6 +1523,9 @@ int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch)
 {
   int32_t c;
 
+  //printf("in qio_skip_json_object_unlocked offset=%i\n",
+  //       (int) qio_channel_offset_unlocked(ch));
+         
   while( true ) {
     // Read a field.
     c = qio_skip_json_field_unlocked(ch);
@@ -1540,6 +1543,9 @@ int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch)
         }
       }
     }
+
+    //printf("in qio_skip_json_object_unlocked offset=%i c=%c\n",
+    //       (int) qio_channel_offset_unlocked(ch), c);
 
     if( c == ',' ) {
       // OK, move on to the next value.
@@ -1669,34 +1675,45 @@ int32_t qio_skip_json_value_unlocked(qio_channel_t* restrict ch)
   } else if( c == 't' ) {
     // read true
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'r' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'r' ) return -EFORMAT;
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'u' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'u' ) return -EFORMAT;
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'e' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'e' ) return -EFORMAT;
     return 0;
   } else if( c == 'f' ) {
     // read false
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'a' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'a' ) return -EFORMAT;
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'l' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 's' ) return c;
+    if( c < 0  ) return c;
+    if( c != 's' ) return -EFORMAT;
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'e' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'e' ) return -EFORMAT;
     return 0;
   } else if( c == 'n' ) {
     // read null
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'u' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'u' ) return -EFORMAT;
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'l' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
     c = qio_channel_read_byte(false, ch);
-    if( c < 0 || c != 'l' ) return c;
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
     return 0;
   } else {
-    return -EFORMAT;
+    // some other character - it could be ] } , after a value.
+    return c;
   }
 }
 
@@ -1706,11 +1723,13 @@ int32_t qio_skip_json_value_unlocked(qio_channel_t* restrict ch)
 int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
 {
   int32_t c;
-  int i;
 
   while( true ) {
     c = qio_channel_read_byte(false, ch);
     if( c < 0 ) return c;
+
+    //printf("in qio_skip_json_string_unlocked offset=%i c=%c\n",
+    //       (int) qio_channel_offset_unlocked(ch), c);
 
     // quote: end of string.
     if( c == '\"' ) return 0;
@@ -1720,10 +1739,14 @@ int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
       c = qio_channel_read_byte(false, ch);
       if( c < 0 ) return c;
 
-      if( c == '\"' || c == '\\' || c == '/' || c == '\b' ||
-          c == '\f' || c == '\n' || c == '\r' || c == '\t' ) {
+      // As long as we handle \" correctly, there is
+      // no need to validate the JSON in the string.
+      /*
+      if( c == '"' || c == '\\' || c == '/' || c == 'b' ||
+          c == 'f' || c == 'n' || c == 'r' || c == 't' ) {
         // OK, continue.
       } else if( c == 'u' ) {
+        int i;
         // read an escaped unicode symbol \uXXXX
         for( i = 0; i < 4; i++ ) {
           c = qio_channel_read_byte(false, ch);
@@ -1740,6 +1763,7 @@ int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
         // bad \ escape sequence
         return -EFORMAT;
       }
+      */
     }
   }
 }
@@ -1750,7 +1774,26 @@ int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
 int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch)
 {
   int32_t c;
-  
+ 
+  // Read a whitespace followed by " or '}'
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( is_json_whitespace(c) ) {
+      // continue reading whitespace.
+    } else {
+      break;
+    }
+  }
+ 
+  if( c == '"' ) {
+    // OK, move on to reading the value.
+  } else if( c == '}' ) {
+    return c;
+  } else {
+    return -EFORMAT;
+  }
+
   c = qio_skip_json_string_unlocked(ch);
   if( c < 0 ) return c;
 
@@ -1773,6 +1816,55 @@ int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch)
 
   c = qio_skip_json_value_unlocked(ch);
   return c;
+}
+
+qioerr qio_channel_skip_json_field(const int threadsafe, qio_channel_t* ch)
+{
+  qioerr err;
+  int32_t got;
+  int64_t start_offset;
+  int64_t offset;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  start_offset = qio_channel_offset_unlocked(ch);
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  got = qio_skip_json_field_unlocked(ch);
+  if( got < 0 ) {
+    err = qio_int_to_err(-got);
+    qio_channel_revert_unlocked(ch);
+  } else {
+    offset = qio_channel_offset_unlocked(ch);
+    // if there was a last character, we need to un-get it.
+    if( got > 0 ) {
+      if( offset > start_offset ) {
+        offset--;
+      }
+    }
+
+    // now actually commit the skip.
+    qio_channel_revert_unlocked(ch);
+
+    qio_channel_advance_unlocked(ch, offset - start_offset);
+
+    //printf("SKIPPING %i bytes of json field from %i to %i\n",
+    //       (int) (offset - start_offset), (int) start_offset, (int) offset);
+  }
+
+
+unlock:
+  _qio_channel_set_error_unlocked(ch, err);
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+  return err;
+
 }
 
 // only support floating point numbers in
@@ -4390,7 +4482,7 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->string_format = QIO_STRING_FORMAT_CHPL;
 
       if( sloppy_flag ) {
-        style_out->skip_unknown_fields = 0;
+        style_out->skip_unknown_fields = 1;
       }
 
       if( base_flag == 'j' ) {

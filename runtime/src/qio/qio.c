@@ -3978,6 +3978,8 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
             ch->style.byteorder == QIO_NATIVE) ? 1 : 0;
   }
 #endif // __BYTE_ORDER
+  if( element == QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS )
+    return ch->style.skip_unknown_fields;
   return 0;
 }
 

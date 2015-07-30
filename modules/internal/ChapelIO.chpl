@@ -323,31 +323,44 @@ module ChapelIO {
             reader.readwrite(__primitive("field value by num", x, i));
           }
         } else {
-          var gotcomma = false;
+          // track whether or not we've read all of the fields.
+
+          // +1 here to get tuple to have >0 size
+          var read_field:(num_fields+1)*bool;
+
           // the order should not matter.
           while true {
-            if !first && !gotcomma {
+            //writeln("IN LOOP");
+
+            if !first {
               // read a comma
               var comma = new ioLiteral(",", true);
               reader.readwrite(comma);
+                  
+              //writeln("READING COMMA");
               // clear the error if we didn't get a comma
-              if error() == EFORMAT {
-                clearError();
+              if reader.error() == EFORMAT {
+                //writeln("NO COMMA");
+                reader.clearError();
                 break;
               }
             }
+
+            first = false;
 
             // find a field name that matches.
             // TODO: this is not particularly efficient. If we
             // have a lot of fields, this is O(n**2), and there
             // are other potential problems with string reallocation.
-            var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-            var skip_unk = styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
+            var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+            var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
 
             // the field name
             var fname:ioLiteral;
 
             var read_field_name = false;
+
+            //writeln("BEFORE PARAM FOR");
 
             for param i in 1..num_fields {
               if !read_field_name {
@@ -361,12 +374,19 @@ module ChapelIO {
                                         true);
                 }
 
+                //writeln("ERROR IS ", reader.error():int);
+                //writeln("OFFSET IS ", reader.offset());
+                //writeln("TRYING TO READ ", fname);
                 reader.readwrite(fname);
-                if error() == EFORMAT {
-                  // Try reading again with a different field name.
-                  clearError();
+                //writeln("POST FNAME ERROR IS ", reader.error():int);
+ 
+                if reader.error() == EFORMAT || reader.error() == EEOF {
+                  // Try reading again with a different union element.
+                  reader.clearError();
                 } else {
                   read_field_name = true;
+
+                  //writeln("DID     FIND ", fname);
 
                   var eq:ioLiteral;
                   if st == QIO_AGGREGATE_FORMAT_JSON {
@@ -377,25 +397,41 @@ module ChapelIO {
                   reader.readwrite(eq);
         
                   reader.readwrite(__primitive("field value by num", x, i));
-        
-                  first = false;
+                  if !reader.error() {
+                    read_field[i] = true;
+                  }
                 }
               }
             }
 
+            //writeln("AFTER PARAM FOR");
+
             // Stop with an error if we didn't read a field name
             // ... unless we skip unknown fields...
             if !read_field_name {
-              if skip_unk && st == QIO_AGGREGATE_FORMAT_JSON {
-                // Skip an unknown JSON field.
+              if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
 
-                //TODO;
-                gotcomma = true;
-              } else {
-                setError(EFORMAT:syserr);
+                //writeln("SKIPPING FIELD");
+
+                // Skip an unknown JSON field.
+                var e:syserr;
+                reader.skipJsonField(error=e);
+                reader.setError(e);
+              } else if num_fields > 0 {
+                reader.setError(EFORMAT:syserr);
                 break;
               }
             }
+          }
+
+          // check that we've read all fields, return error if not.
+          if ! reader.error() {
+            var ok = true;
+            for param i in 1..num_fields {
+              ok &= read_field[i];
+            }
+
+            if !ok then reader.setError(EFORMAT:syserr);
           }
         }
       } else {
@@ -432,9 +468,9 @@ module ChapelIO {
             reader.readwrite(fname);
   
             // Read : or = if there was no error reading field name.
-            if error() == EFORMAT {
+            if reader.error() == EFORMAT || reader.error() == EEOF {
               // Try reading again with a different union element.
-              clearError();
+              reader.clearError();
             } else {
               found_field = true;
               var eq:ioLiteral;
@@ -451,7 +487,7 @@ module ChapelIO {
           }
           // Create an error if we never found a field in our union.
           if !found_field {
-            setError(EFORMAT:syserr);
+            reader.setError(EFORMAT:syserr);
           }
         }
       }
@@ -476,7 +512,9 @@ module ChapelIO {
       var first = true;
   
       var obj = x; // make obj point to x so ref works
-      readThisFieldsDefaultImpl(reader, t, obj, first);
+      if ! reader.error() {
+        readThisFieldsDefaultImpl(reader, t, obj, first);
+      }
   
       if !reader.binary() {
         var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
@@ -501,12 +539,18 @@ module ChapelIO {
         } else {
           start = new ioLiteral("(");
         }
+        //writeln("BEFORE READING START");
+        //writeln("ERROR IS ", reader.error():int);
         reader.readwrite(start);
+        //writeln("POST ERROR IS ", reader.error():int);
       }
   
       var first = true;
   
-      readThisFieldsDefaultImpl(reader, t, x, first);
+      if ! reader.error() {
+        //writeln("READING FIELDS\n");
+        readThisFieldsDefaultImpl(reader, t, x, first);
+      }
   
       if !reader.binary() {
         var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
@@ -516,7 +560,10 @@ module ChapelIO {
         } else {
           end = new ioLiteral(")");
         }
+        //writeln("BEFORE READING END ERROR IS ", reader.error():int);
+        //writeln("BEFORE READING END OFFSET IS ", reader.offset());
         reader.readwrite(end);
+        //writeln("AFTER READING END ERROR IS ", reader.error():int);
       }
     }
   
