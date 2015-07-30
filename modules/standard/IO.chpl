@@ -3762,6 +3762,11 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
 
 pragma "no doc"
 inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr {
+  
+  // Create a new channel that borrows the pointer in the
+  // existing channel so we can avoid locking (because we
+  // already have the lock)
+
   //var reader = new ChannelReader(_channel_internal=_channel_internal);
   var reader = new channel(writing=false, iokind.dynamic, locking=false,
                            home=here,
@@ -3793,12 +3798,21 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
     qio_channel_set_style(_channel_internal, save_style);
   }
 
+  // Set the channel pointer to NULL to make the
+  // destruction of the local writer record safe
+  // (it shouldn't release anything since it's a local copy).
+  reader._channel_internal = QIO_CHANNEL_PTR_NULL;
+
   return qio_channel_error(_channel_internal);
 }
 
 pragma "no doc"
 inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
   //var writer = new ChannelWriter(_channel_internal=_channel_internal);
+
+  // Create a new channel that borrows the pointer in the
+  // existing channel so we can avoid locking (because we
+  // already have the lock)
   var writer = new channel(writing=true, iokind.dynamic, locking=false,
                            home=here,
                            _channel_internal=_channel_internal);
@@ -3841,6 +3855,11 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
   if saved_style {
     qio_channel_set_style(_channel_internal, save_style);
   }
+
+  // Set the channel pointer to NULL to make the
+  // destruction of the local writer record safe
+  // (it shouldn't release anything since it's a local copy).
+  writer._channel_internal = QIO_CHANNEL_PTR_NULL;
 
   return qio_channel_error(_channel_internal);
 }
