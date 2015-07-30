@@ -4,4 +4,4 @@ const-ref-lvalue-error.chpl:10: error: non-lvalue actual is passed to 'inout' fo
 const-ref-lvalue-error.chpl:14: error: illegal lvalue in assignment
 const-ref-lvalue-error.chpl:15: error: non-lvalue actual is passed to a 'ref' formal of <=>
 const-ref-lvalue-error.chpl:16: error: non-lvalue actual is passed to a 'ref' formal of <=>
-const-ref-lvalue-error.chpl:17: error: non-lvalue actual is passed to a 'ref' formal of readPrimitive()
+const-ref-lvalue-error.chpl:19: error: non-lvalue actual is passed to a 'ref' formal of readIt()
