@@ -840,7 +840,7 @@ def set_up_performance_testing_B():
             dat_dir = comp_perf_dir
 
         if not os.path.isdir(dat_dir):
-            os.mkdir(dat_dir)
+            os.makedirs(dat_dir)
 
         sha_pef_keys_name = os.path.join(chpl_test_tmp_dir, "sha.perf_keys")
         with open(sha_pef_keys_name, "w") as shaPerfKeys:
