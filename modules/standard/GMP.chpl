@@ -422,11 +422,9 @@ module GMP {
 
 
 
-  pragma "no doc"
   // Initialize GMP to use Chapel's allocator
   private extern proc chpl_gmp_init();
   /* Get an MPZ value stored on another locale */
-  pragma "no doc"
   private extern proc chpl_gmp_get_mpz(ref ret:mpz_t,src_local:int,from:__mpz_struct);
   /* Get a randstate value stored on another locale */
   private extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);

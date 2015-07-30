@@ -374,7 +374,6 @@ proc chpl__legalIntCoerce(type t1, type t2) param
 
 // Returns the type with which both s and t are compatible
 // That is, both s and t can be coerced to the returned type.
-pragma "no doc"
 private proc chpl__commonType(type s, type t) type
 {
   if ! isIntegralType(s) then
@@ -539,11 +538,9 @@ iter chpl_enumerate(type t: enumerated) {
 }
 
 // TODO add chpl_ to these functions' names - they are not intended for user.
-pragma "no doc"
 private proc enum_minbits(type t: enumerated) param {
   return __primitive( "enum min bits", t);
 }
-pragma "no doc"
 private proc enum_issigned(type t: enumerated) param {
   return __primitive( "enum is signed", t);
 }

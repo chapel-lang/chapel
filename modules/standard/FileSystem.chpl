@@ -421,7 +421,6 @@ proc copyMode(src: string, dest: string) {
   if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
 }
 
-pragma "no doc"
 private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
   var oldMode = getMode(src);
   mkdir(error, dest, mode=oldMode, parents=true);
@@ -715,7 +714,6 @@ proc getUID(name: string): int {
 // This is a helper module used by the various glob() overloads
 // to access the C-level routines, types, and values
 //
-pragma "no doc"
 private module chpl_glob_c_interface {
   extern type glob_t;
 
