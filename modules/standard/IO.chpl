@@ -4820,6 +4820,7 @@ proc read(type t ...?numTypes) {
   return stdin.read((...t));
 }
 
+/*
 // used to make readThis/writeThis work
 pragma "no doc"
 class ChannelWriter : Writer {
@@ -4923,6 +4924,7 @@ class ChannelReader : Reader {
   // writeThis + no readThis -> ChannelReader itself cannot be read
 }
 
+*/
 
 /* Delete a file. This function is likely to be replaced
    by :proc:`FileSystem.remove`.

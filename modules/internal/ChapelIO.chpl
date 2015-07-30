@@ -50,6 +50,8 @@ module ChapelIO {
   }
 
   use IO;
+
+  /*
   class Writer {
     proc writing param return true;
     // if it's binary, we don't decorate class/record fields and values
@@ -109,7 +111,7 @@ module ChapelIO {
       var nl = new ioNewline();
       writeIt(nl);
     }
-  }
+  }*/
  
     proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) {
       param num_fields = __primitive("num fields", t);
@@ -220,7 +222,7 @@ module ChapelIO {
       }
     }
  
-  class Reader {
+  /*class Reader {
     proc writing param return false;
     // if it's binary, we don't decorate class/record fields and values
     proc binary():bool { return false; }
@@ -296,7 +298,7 @@ module ChapelIO {
         return true;
       }
     }
-  }
+  }*/
 
     proc readThisFieldsDefaultImpl(reader, type t, ref x, inout first:bool) {
       param num_fields = __primitive("num fields", t);
@@ -434,6 +436,7 @@ module ChapelIO {
       }
     }
   
+    /*
   inline proc <~>(w: Writer, x):Writer {
     w.readwrite(x);
     return w;
@@ -441,7 +444,7 @@ module ChapelIO {
   inline proc <~>(r: Reader, ref x):Reader {
     r.readwrite(x);
     return r;
-  }
+  } */
   
   //use IO;
   
