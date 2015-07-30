@@ -231,34 +231,34 @@ module CommDiagnostics
   type commDiagnostics = chpl_commDiagnostics;
 
   pragma "no doc"
-  extern proc chpl_startVerboseComm();
+  private extern proc chpl_startVerboseComm();
 
   pragma "no doc"
-  extern proc chpl_stopVerboseComm();
+  private extern proc chpl_stopVerboseComm();
 
   pragma "no doc"
-  extern proc chpl_startVerboseCommHere();
+  private extern proc chpl_startVerboseCommHere();
 
   pragma "no doc"
-  extern proc chpl_stopVerboseCommHere();
+  private extern proc chpl_stopVerboseCommHere();
 
   pragma "no doc"
-  extern proc chpl_gen_startCommDiagnostics();
+  private extern proc chpl_gen_startCommDiagnostics();
 
   pragma "no doc"
-  extern proc chpl_gen_stopCommDiagnostics();
+  private extern proc chpl_gen_stopCommDiagnostics();
 
   pragma "no doc"
-  extern proc chpl_gen_startCommDiagnosticsHere();
+  private extern proc chpl_gen_startCommDiagnosticsHere();
 
   pragma "no doc"
-  extern proc chpl_gen_stopCommDiagnosticsHere();
+  private extern proc chpl_gen_stopCommDiagnosticsHere();
 
   pragma "no doc"
-  extern proc chpl_resetCommDiagnosticsHere();
+  private extern proc chpl_resetCommDiagnosticsHere();
 
   pragma "no doc"
-  extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
+  private extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
 
   /*
     Start on-the-fly reporting of communication initiated on any locale.
@@ -325,34 +325,34 @@ module CommDiagnostics
 
   // See note above regarding extern records
   pragma "no doc"
-  extern proc chpl_numCommGets(): uint(64);
+  private extern proc chpl_numCommGets(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommNBGets(): uint(64);
+  private extern proc chpl_numCommNBGets(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommPuts(): uint(64);
+  private extern proc chpl_numCommPuts(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommNBPuts(): uint(64);
+  private extern proc chpl_numCommNBPuts(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommTestNB(): uint(64);
+  private extern proc chpl_numCommTestNB(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommWaitNB(): uint(64);
+  private extern proc chpl_numCommWaitNB(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommTryNB(): uint(64);
+  private extern proc chpl_numCommTryNB(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommForks(): uint(64);
+  private extern proc chpl_numCommForks(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommFastForks(): uint(64);
+  private extern proc chpl_numCommFastForks(): uint(64);
 
   pragma "no doc"
-  extern proc chpl_numCommNBForks(): uint(64);
+  private extern proc chpl_numCommNBForks(): uint(64);
 
   /*
     Retrieve aggregate communication counts for the whole program.
