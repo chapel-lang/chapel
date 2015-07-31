@@ -31,26 +31,20 @@ module VisualDebug
 
   use String;
 
-  pragma "no doc"
   private extern proc chpl_now_time():real;
 
   //
   // Data Generation for the Visual Debug tool  (offline)
   //
 
-  pragma "no doc"
   private extern proc chpl_vdebug_start ( rootname: c_string, time:real);
 
-  pragma "no doc"
   private extern proc chpl_vdebug_stop ();
 
-  pragma "no doc"
   private extern proc chpl_vdebug_tag ( tagname: c_string);
 
-  pragma "no doc"
   private extern proc chpl_vdebug_pause ();
 
-  pragma "no doc"
   private extern proc chpl_vdebug_nolog ();
 
 
@@ -59,7 +53,6 @@ module VisualDebug
 pragma "no doc"
   enum vis_op {v_start, v_stop, v_tag, v_pause};
 
-pragma "no doc"
   private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0) {
       var child = id * 2 + 1;
       chpl_vdebug_nolog();
