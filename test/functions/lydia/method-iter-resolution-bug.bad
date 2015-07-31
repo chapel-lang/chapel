@@ -1,0 +1,4 @@
+method-iter-resolution-bug.chpl:4: In function 'iTerate':
+method-iter-resolution-bug.chpl:7: error: unresolved call 'C.iTerate(int(64), int(64))'
+method-iter-resolution-bug.chpl:4: note: candidates are: C.iTerate(x: int)
+method-iter-resolution-bug.chpl:11: note:                 iTerate(start: int, end: int)
