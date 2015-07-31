@@ -4,7 +4,7 @@ config const initval: myType = 71:myType;
 record myR {
   var x: myType;
   var sx: single myType;
-  proc writeThis(wri: Writer) {
+  proc writeThis(wri) {
     wri.write("(x = ", x, ", sx = ", sx.readFF(), ")");
   }
 }

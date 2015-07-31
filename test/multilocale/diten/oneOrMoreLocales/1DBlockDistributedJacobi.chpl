@@ -64,7 +64,7 @@ class DistribArray {
     }
   }
 
-  proc writeThis(w: Writer) {
+  proc writeThis(w) {
     on Locales(0) {
       for i in 0..arrSize-1 {
         w.writeln(element(i));

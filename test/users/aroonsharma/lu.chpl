@@ -41,7 +41,7 @@ proc print_matrix(A: [], n_dim: int) {
 
 proc within_epsilon(a: real, b: real)
 {
-  return fabs(a-b) < 0.00001;
+  return abs(a-b) < 0.00001;
 }
 
 /* The process which runs the benchmark */
