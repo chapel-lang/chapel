@@ -665,19 +665,28 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
   
+  config param parallelInitElts=false;
   proc init_elts(x, s, type t) {
-    for i in 1..s {
-      //
-      // Q: why is the following declaration of 'y' in the loop?
-      //
-      // A: so that if the element type is something like an array,
-      // the element can 'steal' the array rather than copying it.
-      // One effect of having it in the loop is that the reference
-      // count for an array element's domain gets bumped once per
-      // element.  Is this good, bad, necessary?  Unclear.
-      //
-      pragma "no auto destroy" var y: t;  
-      __primitive("array_set_first", x, i-1, y);
+    //
+    // Q: why is the following declaration of 'y' in the loop?
+    //
+    // A: so that if the element type is something like an array,
+    // the element can 'steal' the array rather than copying it.
+    // One effect of having it in the loop is that the reference
+    // count for an array element's domain gets bumped once per
+    // element.  Is this good, bad, necessary?  Unclear.
+    //
+    if parallelInitElts {
+      forall i in 1..s {
+        pragma "no auto destroy" var y: t;
+        __primitive("array_set_first", x, i-1, y);
+      }
+
+    } else {
+      for i in 1..s {
+        pragma "no auto destroy" var y: t;
+        __primitive("array_set_first", x, i-1, y);
+      }
     }
   }
   
