@@ -1,0 +1,4 @@
+noAllowPrivateAccess.chpl:15: In function 'main':
+noAllowPrivateAccess.chpl:16: warning: A visible 'c' is an inaccessible private symbol, defined at:
+ noAllowPrivateAccess.chpl:6
+noAllowPrivateAccess.chpl:16: error: 'c' undeclared (first use this function)
