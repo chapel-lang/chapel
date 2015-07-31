@@ -57,6 +57,13 @@ record list {
   var length: int;
 
   /*
+     Synonym for length.
+   */
+  proc size {
+    return length;
+  }
+
+  /*
     Iterate over the list, yielding each element.
 
     :ytype: eltType
@@ -82,6 +89,12 @@ record list {
     }
     length += 1;
   }
+  /*
+     Synonym for append.
+   */
+  inline proc push_back(e : eltType) {
+    append(e);
+  }
 
   /*
     Append all of the supplied arguments to the list.
@@ -102,6 +115,14 @@ record list {
       last = first;
     length += 1;
   }
+
+  /*
+     Synonym for prepend.
+   */
+  inline proc push_front(e : eltType) {
+    prepend(e);
+  }
+
 
   /*
     Append all the elements in `l` to the end of the list.
@@ -134,6 +155,21 @@ record list {
   }
 
   /*
+     Remove the first element from the list and return it.
+     It is an error to call this function on an empty list.
+   */
+ proc pop_front():eltType {
+   if length < 1 then halt("pop_front on empty list");
+   var oldfirst = first;
+   var newfirst = first.next;
+   var ret = oldfirst.data;
+   first = newfirst;
+   if last == oldfirst then last = newfirst;
+   length -= 1;
+   return ret;
+ }
+
+  /*
     Delete every node in the list.
    */
   // TODO: call from a destructor?
@@ -148,13 +184,109 @@ record list {
 
   pragma "no doc"
   proc writeThis(f) {
-    var first: bool = true;
+    var binary = f.binary();
+    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+    var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+ 
+    if binary {
+      // Write the number of elements.
+      f <~> length;
+    }
+    if isjson || ischpl {
+      f <~> new ioLiteral("[");
+    }
+
+    var first = true;
     for e in this {
-      if !first then
-        f.write(" ");
-      else
-        first = false;
-      f.write(e);
+      if first then first = false;
+      else {
+        if isspace then f <~> new ioLiteral(" ");
+        else if isjson || ischpl then f <~> new ioLiteral(",");
+      }
+
+      f <~> e;
+    }
+
+    if isjson || ischpl {
+      f <~> new ioLiteral("]");
+    }
+
+  }
+  
+  pragma "no doc"
+  proc readThis(f) {
+    // Special handling for reading in order to handle
+    // reading an arbitrary length.
+    var binary = f.binary();
+    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+    var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+    // How many elements should we read (for binary mode)?
+    var num = 0;
+
+    if binary {
+      // Read the number of elements.
+      f <~> num;
+    }
+    if isjson || ischpl {
+      f <~> new ioLiteral("[");
+    }
+
+    var first = true;
+    var i = 0;
+    var read_end = false;
+
+    while ! f.error() {
+      if binary {
+        // Read only num elements.
+        if i >= num then break;
+      } else {
+        if first {
+          first = false;
+          // but check for a ]
+          if isjson || ischpl {
+            f <~> new ioLiteral("]");
+          } else if isspace {
+            f <~> new ioNewline(skipWhitespaceOnly=true);
+          }
+          if f.error() == EFORMAT {
+            f.clearError();
+          } else {
+            read_end = true;
+            break;
+          }
+        } else {
+          // read a comma or a space.
+          if isspace then f <~> new ioLiteral(" ");
+          else if isjson || ischpl then f <~> new ioLiteral(",");
+
+          if f.error() == EFORMAT {
+            f.clearError();
+            // No comma.
+            break;
+          }
+        }
+      }
+
+      var elt:eltType;
+
+      // read the element
+      f <~> elt;
+      
+      // add it to the list
+      append(elt);
+
+      i += 1;
+    }
+
+    if ! read_end {
+      if isjson || ischpl {
+        f <~> new ioLiteral("]");
+      }
     }
   }
 }
