@@ -531,8 +531,8 @@ module FFTW {
     return true;
   }
 
-
-  private module C_FFTW {
+  pragma "no doc"
+  module C_FFTW {
     extern proc fftw_plan_dft(rank: c_int, 
                               n,  // BLC: having trouble being specific
                                   // This is a const int* in C
