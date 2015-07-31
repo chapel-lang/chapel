@@ -84,7 +84,6 @@
  */
 module Memory {
 
-pragma "no doc"
 pragma "insert line file info" private extern proc chpl_memoryUsed(): uint(64);
 
 /*
