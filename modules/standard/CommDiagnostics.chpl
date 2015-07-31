@@ -230,34 +230,24 @@ module CommDiagnostics
    */
   type commDiagnostics = chpl_commDiagnostics;
 
-  pragma "no doc"
   private extern proc chpl_startVerboseComm();
 
-  pragma "no doc"
   private extern proc chpl_stopVerboseComm();
 
-  pragma "no doc"
   private extern proc chpl_startVerboseCommHere();
 
-  pragma "no doc"
   private extern proc chpl_stopVerboseCommHere();
 
-  pragma "no doc"
   private extern proc chpl_gen_startCommDiagnostics();
 
-  pragma "no doc"
   private extern proc chpl_gen_stopCommDiagnostics();
 
-  pragma "no doc"
   private extern proc chpl_gen_startCommDiagnosticsHere();
 
-  pragma "no doc"
   private extern proc chpl_gen_stopCommDiagnosticsHere();
 
-  pragma "no doc"
   private extern proc chpl_resetCommDiagnosticsHere();
 
-  pragma "no doc"
   private extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
 
   /*
@@ -324,34 +314,24 @@ module CommDiagnostics
   }
 
   // See note above regarding extern records
-  pragma "no doc"
   private extern proc chpl_numCommGets(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommNBGets(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommPuts(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommNBPuts(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommTestNB(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommWaitNB(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommTryNB(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommForks(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommFastForks(): uint(64);
 
-  pragma "no doc"
   private extern proc chpl_numCommNBForks(): uint(64);
 
   /*
