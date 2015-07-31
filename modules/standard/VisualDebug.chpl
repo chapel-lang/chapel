@@ -31,30 +31,24 @@ module VisualDebug
 
   use String;
 
-  pragma "no doc"
-  extern proc chpl_now_time():real;
+  private extern proc chpl_now_time():real;
 
   //
   // Data Generation for the Visual Debug tool  (offline)
   //
 
-  pragma "no doc"
-  extern proc chpl_vdebug_start ( rootname: c_string, time:real);
+  private extern proc chpl_vdebug_start ( rootname: c_string, time:real);
 
-  pragma "no doc"
-  extern proc chpl_vdebug_stop ();
+  private extern proc chpl_vdebug_stop ();
 
-  pragma "no doc"
-  extern proc chpl_vdebug_tag ( tagname: c_string);
+  private extern proc chpl_vdebug_tag ( tagname: c_string);
 
-  pragma "no doc"
-  extern proc chpl_vdebug_pause ();
+  private extern proc chpl_vdebug_pause ();
 
-  pragma "no doc"
-  extern proc chpl_vdebug_nolog ();
+  private extern proc chpl_vdebug_nolog ();
 
 
-/* Tree "coforall procedure .... calls one of the above rotunes */
+/* Tree "coforall procedure .... calls one of the above routines */
 
 pragma "no doc"
   enum vis_op {v_start, v_stop, v_tag, v_pause};
@@ -70,8 +64,7 @@ iter hc_id2com ( id: int, off: int ) {
    }
 }
   
-pragma "no doc"
-proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
+private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
                    n: int = numLocales, off: int = -1) {
       var offset = 1;
       if off < 0 then

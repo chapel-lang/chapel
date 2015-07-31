@@ -59,7 +59,7 @@ proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
           a += ((.125)*(b+c+d+e) + (.25)*(f));
       }
 
-      const delta = max reduce fabs(B - A);
+      const delta = max reduce abs(B - A);
 
       B <=> A;
 
@@ -103,7 +103,7 @@ proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
 	          a += ((.125)*(b+c+d+e) + (.25)*(f));
 	      }
 
-	      const delta = max reduce fabs(Btest - Atest);
+	      const delta = max reduce abs(Btest - Atest);
 
 	      Btest <=> Atest;
 
