@@ -239,6 +239,11 @@ record list {
       f <~> new ioLiteral("[");
     }
 
+    if ! f.error() {
+      // Clear out existing elements in the list
+      destroy();
+    }
+
     var first = true;
     var i = 0;
     var read_end = false;
