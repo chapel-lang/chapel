@@ -44,6 +44,8 @@
 #include "timer.h"
 #include "version.h"
 
+//#include "debug.h"
+
 #include <inttypes.h>
 #include <string>
 #include <sstream>

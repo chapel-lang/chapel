@@ -29,6 +29,14 @@
 #include <iostream>
 #include <vector>
 
+#ifdef HAVE_LLVM
+// Forward declare MDNode.
+namespace llvm
+{
+  class MDNode;
+}
+#endif
+
 //
 // The function that represents the compiler-generated entry point
 //
@@ -220,6 +228,13 @@ private:
 
   virtual std::string docsDirective();
   bool isField;
+
+public:
+#ifdef HAVE_LLVM
+  llvm::MDNode *llvmDIGlobalVariable;
+  llvm::MDNode *llvmDIVariable;
+#endif
+
 };
 
 /******************************** | *********************************
@@ -235,6 +250,7 @@ public:
             Expr*       iTypeExpr     = NULL,
             Expr*       iDefaultExpr  = NULL,
             Expr*       iVariableExpr = NULL);
+
 
   // Interface for BaseAST
   virtual GenRet  codegen();
@@ -265,6 +281,11 @@ public:
   BlockStmt*      variableExpr;
   Type*           instantiatedFrom;
 
+public:
+#ifdef HAVE_LLVM
+  llvm::MDNode *llvmDIFormal;
+#endif
+ 
 };
 
 /******************************** | *********************************
@@ -283,14 +304,7 @@ class TypeSymbol : public Symbol {
   llvm::MDNode* llvmConstTbaaNode;
   llvm::MDNode* llvmTbaaStructNode;
   llvm::MDNode* llvmConstTbaaStructNode;
-#else
-  // Keep same layout so toggling HAVE_LLVM
-  // will not lead to build errors without make clean
-  void* llvmType;
-  void* llvmTbaaNode;
-  void* llvmConstTbaaNode;
-  void* llvmTbaaStructNode;
-  void* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmDIType;
 #endif
 
   TypeSymbol(const char* init_name, Type* init_type);
@@ -349,6 +363,11 @@ class FnSymbol : public Symbol {
   Symbol* retSymbol;
   /// Number of formals before tuple type constructor formals are added.
   int numPreTupleFormals;
+
+#ifdef HAVE_LLVM
+  llvm::MDNode* llvmDISubprogram;
+#endif
+
 
                   FnSymbol(const char* initName);
                  ~FnSymbol();
@@ -479,7 +498,10 @@ public:
   const char*          doc;
 
   // LLVM uses this for extern C blocks.
+#ifdef HAVE_LLVM
   ExternBlockInfo*     extern_info;
+  llvm::MDNode* llvmDINameSpace;
+#endif
 
   virtual void         printDocs(std::ostream *file, unsigned int tabs);
           void         addPrefixToName(std::string prefix);

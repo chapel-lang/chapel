@@ -964,6 +964,9 @@ fix_def_expr(VarSymbol* var) {
   // insert temporary for constants to assist constant checking
   //
   if (var->hasFlag(FLAG_CONST) && !var->hasEitherFlag(FLAG_EXTERN, FLAG_REF_VAR)) {
+    //char tmpname[1024];
+    //snprintf(tmpname, sizeof tmpname, "hui_tmp_%s", var->name);
+    //constTemp = newTemp(tmpname);
     constTemp = newTemp("const_tmp");
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));

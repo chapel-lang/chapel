@@ -101,7 +101,7 @@ struct GenInfo {
   std::string moduleName;
   llvm::LLVMContext llvmContext;
   clang::ASTContext *Ctx;
-  LLVM_TARGET_DATA *targetData;
+  LLVM_TARGET_DATA *targetData; //used in llvmDebug.cpp: construct_type
   clang::CodeGen::CodeGenModule *cgBuilder;
   CCodeGenAction *cgAction;
 
@@ -125,7 +125,7 @@ struct GenInfo {
   GlobalToWideInfo globalToWideInfo;
 
   // Optimizations to apply immediately after code-generating a fn
-  llvm::FunctionPassManager* FPM_postgen;
+  LEGACY_FUNCTION_PASS_MANAGER* FPM_postgen;
 
   // When using a function, just use cgModule->GetAddrOfFunction,
   // which will cause cgModule to emit it on Builder->Release.

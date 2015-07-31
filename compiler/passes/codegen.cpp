@@ -37,6 +37,8 @@
 
 #include <inttypes.h>
 
+#include "llvmDebug.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -456,7 +458,7 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
 }
 
 
-static void codegen_aggregate_def(AggregateType* ct) {
+static void codegen_aggregate_def(AggregateType* ct) { //DFS, check visited 
   if (!shouldCodegenAggregate(ct)) return;
   if (ct->symbol->hasFlag(FLAG_CODEGENNED)) return;
   ct->symbol->addFlag(FLAG_CODEGENNED);
@@ -1172,7 +1174,11 @@ codegen_config() {
     info->builder->SetInsertPoint(createConfigBlock);
 
     llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
+#if HAVE_LLVM_VER >= 37
+    info->builder->CreateCall(initConfigFunc, {} );
+#else
     info->builder->CreateCall(initConfigFunc);
+#endif
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
@@ -1213,6 +1219,11 @@ codegen_config() {
   }
 }
 
+extern bool printCppLineno;
+debug_data *debug_info=NULL;
+
+const char *current_dir = "./";
+const char *empty_string = "";
 
 void codegen(void) {
   if (no_codegen)
@@ -1273,6 +1284,23 @@ void codegen(void) {
 #ifdef HAVE_LLVM
     if( fHeterogeneous )
       INT_FATAL("fHeretogeneous not yet supported with LLVM");
+
+    if(printCppLineno || debugCCode)
+    {
+      debug_info = new debug_data(*info->module);
+    }
+    if(debug_info) {
+      // first find the main module, this will be the compile unit.
+      forv_Vec(ModuleSymbol, currentModule, allModules) {
+        if(currentModule->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
+          //So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
+          // and no compile flags, since I can't figure out how to get that either.
+          printf("Making a compile unit\n");
+          debug_info->create_compile_unit(currentModule->astloc.filename, current_dir, false, empty_string);
+          break;
+        }
+      }
+    }
 
     prepareCodegenLLVM();
 #endif

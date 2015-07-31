@@ -26,9 +26,11 @@
 
 #include "llvm/Config/llvm-config.h"
 
-#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=6 )
+#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=7 )
+#define HAVE_LLVM_VER 37
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=6 )
 #define HAVE_LLVM_VER 36
-#elif  LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=5 )
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=5 )
 #define HAVE_LLVM_VER 35
 #elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=4 )
 #define HAVE_LLVM_VER 34
@@ -92,6 +94,17 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
   return f->paramHasAttr(idx, v);
 }
 
+#endif
+
+// PassManager also changed names..
+#if HAVE_LLVM_VER >= 37
+#include "llvm/IR/LegacyPassManager.h"
+#define LEGACY_FUNCTION_PASS_MANAGER llvm::legacy::FunctionPassManager
+#define LEGACY_PASS_MANAGER llvm::legacy::PassManagerBase
+#else
+#include "llvm/PassManager.h"
+#define LEGACY_FUNCTION_PASS_MANAGER llvm::FunctionPassManager
+#define LEGACY_PASS_MANAGER llvm::PassManagerBase
 #endif
 
 struct PromotedPair {
