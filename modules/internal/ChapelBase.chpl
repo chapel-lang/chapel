@@ -676,13 +676,32 @@ module ChapelBase {
     // count for an array element's domain gets bumped once per
     // element.  Is this good, bad, necessary?  Unclear.
     //
-    if parallelInitElts {
+    const pagesizeInBytes = 4096; // TODO: query this from the runtime
+    // TODO: improve the heuristic below for non-numeric types
+    const elemsizeInBytes = if (isNumericType(t)) then numBytes(t) else 8;
+    const arrsizeInBytes = s*elemsizeInBytes;
+    const heuristicWantsPar = arrsizeInBytes > pagesizeInBytes;
+    //
+    // TODO: Note that we could do even better if the range had
+    // an iterator that supported local overrides of
+    // dataParTasksPerLocale or MinGranularity.  The current heuristic
+    // will always try to use dataParTasksPerLocale even if, say,
+    // arrsize is pagesize+1, where we'd really only want to use 2
+    // tasks there or set minGranularity to pagesize.  But at the very
+    // least, the current approach differentiates between larger
+    // and smaller arrays.
+    //
+    //    extern proc printf(x...);
+
+    if parallelInitElts && heuristicWantsPar {
+      //      printf("%s\n", "Using parallel array initialization");
       forall i in 1..s {
         pragma "no auto destroy" var y: t;
         __primitive("array_set_first", x, i-1, y);
       }
 
     } else {
+      //      printf("%s\n", "Using serial array initialization");
       for i in 1..s {
         pragma "no auto destroy" var y: t;
         __primitive("array_set_first", x, i-1, y);
