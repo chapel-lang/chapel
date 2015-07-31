@@ -186,7 +186,7 @@ def print_mode(mode='list'):
 
 def print_var(env_var, value, mode, short_name='', filters=None):
     if mode == 'list' or mode == 'debug':
-        user_set = os.environ.get(env_var, '')
+        user_set = os.environ.get(env_var.strip(), '')
         if user_set:
           user_set = ' *'
         stdout.write("{1}: {2}{0}\n".format(user_set, env_var, value))
