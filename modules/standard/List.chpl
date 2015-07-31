@@ -180,6 +180,9 @@ record list {
       delete current;
       current = next;
     }
+    first = nil;
+    last = nil;
+    length = 0;
   }
 
   pragma "no doc"
