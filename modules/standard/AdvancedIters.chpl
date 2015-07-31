@@ -454,7 +454,6 @@ where tag == iterKind.follower
 }
 
 //************************* Helper functions
-pragma "no doc"
 private proc defaultNumTasks(nTasks:int)
 {
   var dnTasks=nTasks;
@@ -467,7 +466,6 @@ private proc defaultNumTasks(nTasks:int)
   return dnTasks;
 }
 
-pragma "no doc"
 private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:bool, ref lock : vlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
