@@ -28,6 +28,7 @@ clean: FORCE
 	cd qthread && $(MAKE) clean
 	cd re2 && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
+	cd fltk && $(MAKE) clean
 
 cleanall: FORCE
 	cd chpldoc-venv && $(MAKE) cleanall
@@ -40,6 +41,7 @@ cleanall: FORCE
 	cd qthread && $(MAKE) cleanall
 	cd re2 && $(MAKE) cleanall
 	cd tcmalloc && $(MAKE) cleanall
+	cd fltk && $(MAKE) cleanall
 
 clobber: FORCE
 	cd chpldoc-venv && $(MAKE) clobber
@@ -52,6 +54,7 @@ clobber: FORCE
 	cd qthread && $(MAKE) clobber
 	cd re2 && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
+	cd fltk && $(MAKE) clobber
 
 depend:
 

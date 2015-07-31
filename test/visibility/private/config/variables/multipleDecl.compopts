@@ -1,0 +1,2 @@
+ # multipleDecl.good
+-sfoo=12 -sbar=13 -sbaz=14 # multipleDecl.set.good

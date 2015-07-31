@@ -355,6 +355,7 @@
 %type <pblockstmt> do_stmt
 %type <pblockstmt> if_stmt loop_stmt
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
+%type <pblockstmt> private_decl
 %type <pblockstmt> extern_block_stmt
 %type <pblockstmt> type_select_stmt return_stmt
 
@@ -534,10 +535,16 @@ return_stmt:
 
 class_level_stmt:
   TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
-| fn_decl_stmt
-| class_decl_stmt
+| private_decl
+| TPUBLIC private_decl  { $$ = $2; }
+| TPRIVATE private_decl { applyPrivateToBlock($2); $$ = $2; }
 | enum_decl_stmt
 | type_alias_decl_stmt
+| class_decl_stmt
+;
+
+private_decl:
+  fn_decl_stmt
 | var_decl_stmt
 ;
 

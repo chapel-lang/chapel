@@ -305,7 +305,7 @@ proc bitReverse(val: ?valType, revBits = 64) {
 //
 // Compute the log base 4 of x
 //
-proc log4(x) return logBasePow2(x, 2);  
+proc log4(x) return logBasePow2(x, 2);
 
 //
 // verify that the results are correct by reapplying the dfft and then

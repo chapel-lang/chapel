@@ -1,2 +1,0 @@
-accessPrivateUsedNephew3.chpl:17: In function 'main':
-accessPrivateUsedNephew3.chpl:18: error: unresolved call 'secretFunction(11)'
