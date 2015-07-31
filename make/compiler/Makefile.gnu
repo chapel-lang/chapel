@@ -121,7 +121,7 @@ WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4; echo "$$?"),1)
 WARN_GEN_CFLAGS += -Wno-pointer-sign
-else
+endif
 
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations
