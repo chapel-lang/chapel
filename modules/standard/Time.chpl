@@ -29,7 +29,6 @@
 
 module Time {
 
-pragma "no doc"
 // Returns the number of seconds since midnight.  Has the potential for
 // microsecond resolution if supported by the runtime platform
 private extern proc chpl_now_time():real;
@@ -43,18 +42,15 @@ extern type _timevalue;
 
 
 
-pragma "no doc"
 private extern proc chpl_null_timevalue(): _timevalue;
 
 
 
-pragma "no doc"
 // The number of seconds/microseconds since Jan 1, 1970 in UTC
 private extern proc chpl_now_timevalue():  _timevalue;
 
 
 
-pragma "no doc"
 // The components of time in the local time zone
 private extern proc chpl_timevalue_parts(t:           _timevalue,
 
@@ -204,7 +200,6 @@ record Timer {
 }
 
 // returns diff of two time values in microseconds
-pragma "no doc"
 private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   extern proc chpl_timevalue_seconds(t:_timevalue):      int(64);
   extern proc chpl_timevalue_microseconds(t:_timevalue): int(64);
@@ -219,7 +214,6 @@ private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
 }
 
 // converts microseconds to another unit
-pragma "no doc"
 private proc _convert_microseconds(unit: TimeUnits, us: real) {
   select unit {
     when TimeUnits.microseconds do return us;

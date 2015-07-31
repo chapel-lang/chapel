@@ -49,28 +49,18 @@ module Math {
   //////////////////////////////////////////////////////////////////////////
   // Helper constants and functions (not included in chpldocs).
   //
-  pragma "no doc"
   private extern proc chpl_macro_INFINITY():real(64);
-  pragma "no doc"
   private extern proc chpl_macro_NAN():real(64);
 
-  pragma "no doc"
   private extern proc chpl_macro_double_isinf(x: real(64)): c_int;
-  pragma "no doc"
   private extern proc chpl_macro_float_isinf(x: real(32)): c_int;
-  pragma "no doc"
   private extern proc chpl_macro_double_isfinite(x: real(64)): c_int;
-  pragma "no doc"
   private extern proc chpl_macro_float_isfinite(x: real(32)): c_int;
-  pragma "no doc"
   private extern proc chpl_macro_double_isnan(x: real(64)): c_int;
-  pragma "no doc"
   private extern proc chpl_macro_float_isnan(x: real(32)): c_int;
 
-  pragma "no doc"
   private extern proc fabs(x: real(64)): real(64);
 
-  pragma "no doc"
   private proc _logBasePow2Help(in val, baseLog2) {
     var result = -1;
     while (val != 0) {
