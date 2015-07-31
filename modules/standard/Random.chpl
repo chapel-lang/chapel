@@ -373,7 +373,6 @@ class RandomStream {
 //
 // NPB-defined constants for linear congruential generator
 //
-pragma "no doc"
 private const r23   = 0.5**23,
               t23   = 2.0**23,
               r46   = 0.5**46,
@@ -385,7 +384,6 @@ private const r23   = 0.5**23,
 //
 // NPB-defined randlc routine
 //
-pragma "no doc"
 private proc randlc(inout x: real, a: real = arand) {
   var t1 = r23 * a;
   const a1 = floor(t1),
@@ -404,7 +402,6 @@ private proc randlc(inout x: real, a: real = arand) {
 }
 
 // Wrapper that takes a result type (two calls for complex types)
-pragma "no doc"
 private proc randlc(type resultType, inout x: real) {
   if resultType == complex then
     return (randlc(x), randlc(x)):complex;
@@ -422,7 +419,6 @@ private proc randlc(type resultType, inout x: real) {
 // Return a value for the cursor so that the next call to randlc will
 // return the same value as the nth call to randlc
 //
-pragma "no doc"
 private proc randlc_skipto(seed: int(64), in n: integral): real {
   var cursor = seed:real;
   n -= 1;
@@ -445,7 +441,6 @@ private proc randlc_skipto(seed: int(64), in n: integral): real {
 //
 // iterate over outer ranges in tuple of ranges
 //
-pragma "no doc"
 private iter outer(ranges, param dim: int = 1) {
   if dim + 1 == ranges.size {
     for i in ranges(dim) do

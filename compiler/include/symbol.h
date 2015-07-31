@@ -123,6 +123,7 @@ public:
   void               copyFlags(const Symbol* other);
 
   virtual bool       isVisible(BaseAST* scope)                 const;
+  bool               noDocGen()                                const;
 
   Type*              type;
   FlagSet            flags;
