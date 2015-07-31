@@ -17,68 +17,8 @@
  * limitations under the License.
  */
 
-pragma "no doc"
-private module BufferInternals {
-  use SysBasic;
-  use Error;
-
-  extern type qbytes_ptr_t;
-  extern type qbuffer_ptr_t;
-  extern type qbuffer_iter_t;
-  extern const QBYTES_PTR_NULL:qbytes_ptr_t;
-  extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
-
-
-  extern proc qbytes_retain(qb:qbytes_ptr_t);
-  extern proc qbytes_release(qb:qbytes_ptr_t);
-  extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
-  extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
-
-  extern proc qbytes_create_iobuf(out ret:qbytes_ptr_t):syserr;
-  extern proc qbytes_create_calloc(out ret:qbytes_ptr_t, len:int(64)):syserr;
-
-  extern proc qbuffer_iter_null():qbuffer_iter_t;
-
-  extern proc qbuffer_create(out buf:qbuffer_ptr_t):syserr;
-  extern proc qbuffer_retain(buf:qbuffer_ptr_t);
-  extern proc qbuffer_release(buf:qbuffer_ptr_t);
-
-  extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
-  extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):syserr;
-  extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
-  extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out bytes_out):syserr;
-  extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
-  extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
-
-  extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
-  extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
-  extern proc qbuffer_iter_next_part(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t);
-  extern proc qbuffer_iter_prev_part(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t);
-  extern proc qbuffer_iter_advance(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t, amt:int(64));
-
-  extern proc qbuffer_iter_get(it: qbuffer_iter_t, end:qbuffer_iter_t, 
-                                out bytes_out:qbytes_ptr_t,
-                                out skip_out:int(64),
-                                out len_out:int(64));
-  extern proc qbuffer_iter_num_bytes(start:qbuffer_iter_t, end:qbuffer_iter_t):int(64);
-
-  extern proc qbuffer_len(buf:qbuffer_ptr_t):int(64);
-
-  extern proc debug_print_qbuffer_iter(/*const*/ ref it:qbuffer_iter_t);
-
-
-  extern proc qbuffer_start_offset(buf:qbuffer_ptr_t):int(64);
-  extern proc qbuffer_end_offset(buf:qbuffer_ptr_t):int(64);
-  extern proc qbuffer_reposition(buf:qbuffer_ptr_t, new_offset_start:int(64));
-
-  extern proc bulk_get_bytes(src_locale:int, src_addr:qbytes_ptr_t):qbytes_ptr_t;
-
-  extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_void_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):syserr;
-
-}
-
 /* Support for buffers - regions of memory without a particular interpretation.
-   
+
    This module provides :record:`bytes` and :record:`buffer` types which
    can be used to manage memory regions.
 
@@ -88,7 +28,7 @@ private module BufferInternals {
 
    A :record:`buffer` consists of a sequence views into :record:`bytes`
    objects. A :record:`bytes` object might be shared by several
-   :record:`buffer` objects. 
+   :record:`buffer` objects.
 
    These types should be safe to use in a multi-locale context. These types
    should free their memory after the last user of that memory goes out of
@@ -97,7 +37,64 @@ private module BufferInternals {
 
  */
 module Buffers {
-  use BufferInternals; // TODO -- non-exporting use
+  use SysBasic;
+  use Error;
+
+  pragma "no doc"
+  extern type qbytes_ptr_t;
+  pragma "no doc"
+  extern type qbuffer_ptr_t;
+  pragma "no doc"
+  extern type qbuffer_iter_t;
+  private extern const QBYTES_PTR_NULL:qbytes_ptr_t;
+  private extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
+
+
+  private extern proc qbytes_retain(qb:qbytes_ptr_t);
+  private extern proc qbytes_release(qb:qbytes_ptr_t);
+  private extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
+  private extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
+
+  private extern proc qbytes_create_iobuf(out ret:qbytes_ptr_t):syserr;
+  private extern proc qbytes_create_calloc(out ret:qbytes_ptr_t, len:int(64)):syserr;
+
+  private extern proc qbuffer_iter_null():qbuffer_iter_t;
+
+  private extern proc qbuffer_create(out buf:qbuffer_ptr_t):syserr;
+  private extern proc qbuffer_retain(buf:qbuffer_ptr_t);
+  private extern proc qbuffer_release(buf:qbuffer_ptr_t);
+
+  private extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
+  private extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):syserr;
+  private extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
+  private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out bytes_out):syserr;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
+
+  private extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
+  private extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
+  private extern proc qbuffer_iter_next_part(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t);
+  private extern proc qbuffer_iter_prev_part(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t);
+  private extern proc qbuffer_iter_advance(buf:qbuffer_ptr_t, ref it:qbuffer_iter_t, amt:int(64));
+
+  private extern proc qbuffer_iter_get(it: qbuffer_iter_t, end:qbuffer_iter_t,
+                                out bytes_out:qbytes_ptr_t,
+                                out skip_out:int(64),
+                                out len_out:int(64));
+  private extern proc qbuffer_iter_num_bytes(start:qbuffer_iter_t, end:qbuffer_iter_t):int(64);
+
+  private extern proc qbuffer_len(buf:qbuffer_ptr_t):int(64);
+
+  private extern proc debug_print_qbuffer_iter(/*const*/ ref it:qbuffer_iter_t);
+
+
+  private extern proc qbuffer_start_offset(buf:qbuffer_ptr_t):int(64);
+  private extern proc qbuffer_end_offset(buf:qbuffer_ptr_t):int(64);
+  private extern proc qbuffer_reposition(buf:qbuffer_ptr_t, new_offset_start:int(64));
+
+  private extern proc bulk_get_bytes(src_locale:int, src_addr:qbytes_ptr_t):qbytes_ptr_t;
+
+  private extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_void_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):syserr;
 
   // Now define the Chapel types using the originals..
 
