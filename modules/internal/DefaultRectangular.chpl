@@ -1072,6 +1072,9 @@ module DefaultRectangular {
       type strType = chpl__signedType(idxType);
       var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
 
+      // TODO -- should binary reads start out with a length?
+      // It's not necessarily possible to change the shape of the array...
+
       if isjson || ischpl {
         if dim != rank {
           f <~> new ioLiteral("[\n");
@@ -1146,7 +1149,6 @@ module DefaultRectangular {
       var read_end = false;
 
       while ! f.error() {
-        // read a comma
         if first {
           first = false;
           // but check for a ]
@@ -1162,6 +1164,7 @@ module DefaultRectangular {
             break;
           }
         } else {
+          // read a comma or a space.
           if isspace then f <~> new ioLiteral(" ");
           else if isjson || ischpl then f <~> new ioLiteral(",");
 
@@ -1182,6 +1185,9 @@ module DefaultRectangular {
           const newDom = {offset..#sz};
 
           dsiReallocate( newDom );
+          // This is different from how push_back does it
+          // because push_back might lead to a call to
+          // _reprivatize but I don't see how to do that here.
           dom.dsiSetIndices( newDom.getIndices() );
           dsiPostReallocate();
         }
