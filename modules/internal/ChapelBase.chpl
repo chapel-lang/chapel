@@ -698,10 +698,10 @@ module ChapelBase {
     //
 
     extern proc chpl_getSysPageSize():size_t;
-    const pagesizeInBytes = chpl_getSysPageSize():int;
+    const pagesizeInBytes = chpl_getSysPageSize().safeCast(int);
 
     const elemsizeInBytes = if (isNumericType(t)) then numBytes(t) else 8;
-    const arrsizeInBytes = s*elemsizeInBytes;
+    const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
     const heuristicThresh = pagesizeInBytes * here.maxTaskPar;
     const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
 
