@@ -927,9 +927,35 @@ void insertReferenceTemps(CallExpr* call)
 }
 
 
+static bool isLeaderFollowerIteratorCall(CallExpr* call)
+{
+  // These tests are copied verbatim from the tests that select the calls
+  // of interest in cleanupLeaderFollowerIteratorCalls().
+  if (FnSymbol* fn = call->isResolved()) {
+    if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+        (isDefExpr(fn->formals.tail) &&
+         !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
+         toDefExpr(fn->formals.tail)->sym->getValType() &&
+         toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
+      if (!strcmp(call->parentSymbol->name, "_toLeader") ||
+          !strcmp(call->parentSymbol->name, "_toFollower") ||
+          !strcmp(call->parentSymbol->name, "_toFastFollower") ||
+          !strcmp(call->parentSymbol->name, "_toStandalone")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
 void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs)
   {
+    // Skip calls that are not in the tree.
+    if (! call->parentSymbol)
+      continue;
+
     // Do not insert reference temps on _toLeader and _toFollower calls before
     // iterator lowering is complete.
     // A certain structure for these calls is expected in
@@ -938,26 +964,10 @@ void insertReferenceTemps() {
     // TODO: The design for LeaderFollower 2.0 should avoid these nonconforming
     // modifications of the AST.
     if (! iteratorsLowered)
-    {
-      // These tests are copied verbatim from the tests that select the calls
-      // of interest in cleanupLeaderFollowerIteratorCalls().
-      if (FnSymbol* fn = call->isResolved()) {
-        if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
-            (isDefExpr(fn->formals.tail) &&
-             !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
-             toDefExpr(fn->formals.tail)->sym->getValType() &&
-             toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
-          if (!strcmp(call->parentSymbol->name, "_toLeader") ||
-              !strcmp(call->parentSymbol->name, "_toFollower") ||
-              !strcmp(call->parentSymbol->name, "_toFastFollower") ||
-              !strcmp(call->parentSymbol->name, "_toStandalone")) {
-            continue;
-          }
-        }
-      }
-    }
+      if (isLeaderFollowerIteratorCall(call))
+        continue;
 
-    if ((call->parentSymbol && call->isResolved()) ||
+    if (call->isResolved() ||
         call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
     {
       insertReferenceTemps(call);
