@@ -1,0 +1,22 @@
+bug: #count should preserve the type of count, otherwise it creates an inconstent developer experience
+
+count_type.chpl:16: error: unresolved access of '[domain(1,int(64),false)] int(64)' by '[uint(64)]'
+
+//
+// Alernate way of doing the same as #count, but for-loop works as expected
+//
+class Bar {
+  var count: uint;
+  var buffer: [0..count-1] int;
+}
+
+var bar = new Bar(3);
+
+// true
+writeln(bar.count.type == bar.buffer.domain.high.type);
+
+// i.type == bar.buffer.domain.high.type
+for i in 0..bar.count-1 {
+  writeln(i.type == bar.buffer.domain.high.type);
+  writeln(bar.buffer[i]);
+}

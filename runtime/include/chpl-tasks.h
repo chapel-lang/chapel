@@ -116,10 +116,10 @@ void chpl_task_callMain(void (*chpl_main)(void));
 //
 // The following is an optional callback into the tasking layer from
 // the main task indicating that the standard internal modules have
-// been initialized.  It gives the tasking layer the ability to make
-// use of functionality in the internal modules (like the task
-// tracking table) which are not yet available in
-// chpl_task_callMain().
+// been initialized.  It gives the tasking layer the ability to wait
+// to make use of functionality in the internal modules (like the task
+// tracking table) which are not yet available at the time of the call
+// to chpl_task_callMain().
 //
 #ifndef CHPL_TASK_STD_MODULES_INITIALIZED
 #define CHPL_TASK_STD_MODULES_INITIALIZED()
@@ -302,6 +302,8 @@ size_t chpl_task_getDefaultCallStackSize(void);
 //
 extern void chpl_taskRunningCntInc(int64_t _ln, c_string _fn);
 extern void chpl_taskRunningCntDec(int64_t _ln, c_string _fn);
+
+#include "chpl-tasks-callbacks.h"
 
 #else // LAUNCHER
 

@@ -150,7 +150,7 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
   // Only print extern types.
-  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (this->symbol->noDocGen()) {
     return;
   }
 
@@ -502,7 +502,7 @@ void EnumType::accept(AstVisitor* visitor) {
 
 
 void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (this->symbol->noDocGen()) {
     return;
   }
 
@@ -623,8 +623,12 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
          "Type binding clauses ('%s.' in this case) are not supported in "
          "declarations within a class, record or union", name);
     } else {
-      fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
-      fn->_this->addFlag(FLAG_ARG_THIS);
+      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
+      fn->_this = arg;
+      if (fn->thisTag == INTENT_TYPE) {
+        setupTypeIntentArg(arg);
+      }
+      arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtHead(new DefExpr(fn->_this));
       fn->insertFormalAtHead(
           new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
@@ -1257,7 +1261,7 @@ Symbol* AggregateType::getField(int i) {
 
 void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
   // TODO: Include unions... (thomasvandoren, 2015-02-25)
-  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
+  if (this->symbol->noDocGen() || this->isUnion()) {
     return;
   }
 
@@ -1620,6 +1624,7 @@ DefExpr* defineObjectClass() {
   dtObject = new AggregateType(AGGREGATE_CLASS);
 
   retval   = buildClassDefExpr("object",
+                               NULL,
                                dtObject,
                                NULL,
                                new BlockStmt(),

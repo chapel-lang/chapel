@@ -9,9 +9,10 @@ and types, is associated with some module.
 Module definitions are described in~\rsec{Module_Definitions}.  The
 relation between files and modules is described
 in~\rsec{Implicit_Modules}.  Nested modules are described
-in~\rsec{Nested_Modules}.  Module uses and explicit naming of symbols
-are described in~\rsec{Using_Modules}.  The execution of a program and
-module initialization is described in~\rsec{Program_Execution}.
+in~\rsec{Nested_Modules}.  The visibility of a module's symbols by
+users of the module is described in~\rsec{Visibility_Of_Symbols}.  The execution
+of a program and module initialization is described
+in~\rsec{Program_Execution}.
 
 \section{Module Definitions}
 \label{Module_Definitions}
@@ -21,7 +22,11 @@ module initialization is described in~\rsec{Program_Execution}.
 A module is declared with the following syntax:
 \begin{syntax}
 module-declaration-statement:
-  `module' module-identifier block-statement
+  privacy-specifier[OPT] `module' module-identifier block-statement
+
+privacy-specifier:
+  `private'
+  `public'
 
 module-identifier:
   identifier
@@ -30,7 +35,8 @@ module-identifier:
 A module's name is specified after the \chpl{module} keyword.
 The \sntx{block-statement} opens the module's scope.  Symbols defined
 in this block statement are defined in the module's scope and are
-called \emph{top-level module symbols}.
+called \emph{top-level module symbols}.  The visibility of a module is
+defined by its \sntx{privacy-specifier}~(\rsec{Visibility_Of_A_Module}).
 
 Module declaration statements must be top-level statements within a
 module.  A module that is declared within another module is called a
@@ -182,21 +188,49 @@ printY();
 \end{chapelexample}
 
 
-\section{Using Modules}
-\label{Using_Modules}
-\index{modules!using}
+\section{Access of Module Contents}
+\label{Access_Of_Module_Contents}
+\index{modules!access}
 
-A module can be used by code outside of that module.  This allows
-access to the top-level module symbols without the need for explicit
-naming~(\rsec{Explicit_Naming}).  Using modules is accomplished via
-the use statement as defined in~\rsec{The_Use_Statement}.
+A module's contents can be accessed by code outside of that module
+depending on the visibility of the module
+itself~(\rsec{Visibility_Of_A_Module}) and the visibility of each
+individual symbol~(\rsec{Visibility_Of_Symbols}).  This can be done
+via explicit naming~(\rsec{Explicit_Naming}) or the use
+statement~(\rsec{Using_Modules}).
+
+\subsection{Visibility Of A Module}
+\label{Visibility_Of_A_Module}
+\index{modules!access}
+
+A top-level module is visible anywhere if the \sntx{privacy-specifier}
+of its declaration is \chpl{public} or is omitted (i.e. by default).
+A top-level module declared \chpl{private} is visible only within that
+module.  The visibility of a nested module is subject to the rules
+of~\rsec{Visibility_Of_Symbols}. There, the nested module is
+considered a "symbol defined at the top level scope" of its outer
+module.
+
+\subsection{Visibility Of Module's Symbols}
+\label{Visibility_Of_Symbols}
+\index{modules!access}
+
+A symbol defined at the top level scope of a module is \emph{visible}
+from outside the module when the \sntx{privacy-specifier} of its
+definition is \chpl{public} or is omitted (i.e. by default).  A
+symbol's visibility inside its module is controlled by normal lexical
+scoping and is not affected by its \sntx{privacy-specifier}.  A
+module's visible symbols are accessible via explicit
+naming~(\rsec{Explicit_Naming}) or the use
+statement~(\rsec{Using_Modules}) only where the module's symbol is
+visible~(\rsec{Visibility_Of_A_Module}).
 
 \subsection{Explicit Naming}
 \label{Explicit_Naming}
 \index{modules!explicitly named}
 
-All top-level module symbols can be named explicitly with the
-following syntax:
+All publicly visible top-level module symbols can be named explicitly
+with the following syntax:
 \begin{syntax}
 module-access-expression:
   module-identifier-list . identifier
@@ -274,6 +308,84 @@ that of M1.  On the other hand, the call to printY() is ambiguous
 because it is defined in both M1 and M3.  This will result in a
 compiler error.
 \end{chapelexample}
+
+\subsection{Using Modules}
+\label{Using_Modules}
+\index{modules!using}
+
+If a module is visible to where accessing its symbols is desirable,
+then a use statement on that module may be employed.  Use statements
+make a module's visible symbols available without requiring them to be
+prefixed by the module's name.  The syntax of the use statement is
+given by:
+
+\begin{syntax}
+use-statement:
+  `use' module-name-list ;
+
+module-name-list:
+  module-name
+  module-name , module-name-list
+
+module-name:
+  identifier
+  module-name . module-name
+\end{syntax}
+
+Symbols made available by a use statement are at an outer scope from those
+defined directly in the scope where the use statement occurs, but at a
+nearer scope than symbols defined in the scope containing the scope where
+the use statement occurs.
+
+Use statements are transitive by default: if a module A used by
+another module B also contains a use of a further module C, C's
+symbols will also be considered visible within B, at a further scope
+than the symbols of other modules immediately used by B.
+
+% We would like to provide a way to specify that a use should not be
+% transitive
+
+It is an error for two public variables, types, or modules to be
+defined at the same depth.
+
+\begin{openissue}
+There is an expectation that this statement will be extended to allow
+the programmer to restrict which symbols are 'used' as well as to
+rename symbols that are 'used.'
+\end{openissue}
+
+\begin{chapelexample}{use.chpl}
+  The following example illustrates how the use statement makes
+  symbols declared in \chpl{M1}'s scope (like procedure
+  \chpl{foo()}) visible within the scope of \chpl{M2}'s \chpl{main}
+  function.  Without the \chpl{use} statement, the procedure call to
+  \chpl{foo} could not be resolved since \chpl{M2} would not have
+  access to symbols in \chpl{M1}.
+
+  When executed, the program
+\begin{chapel}
+module M1 {
+  proc foo() {
+    writeln("In M1's foo.");
+  }
+}
+
+module M2 {
+  proc main() {
+    use M1;
+
+    writeln("In M2's main.");
+    foo();
+  }
+}
+\end{chapel}
+prints out
+\begin{chapelprintoutput}{}
+In M2's main.
+In M1's foo.
+\end{chapelprintoutput}
+\end{chapelexample}
+
 
 
 \subsection{Module Initialization}

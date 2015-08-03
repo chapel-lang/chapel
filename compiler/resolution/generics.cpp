@@ -232,7 +232,7 @@ instantiate_tuple_initCopy(FnSymbol* fn) {
     INT_FATAL(fn, "tuple initCopy function has more than one argument");
   ArgSymbol  *arg = fn->getFormal(1);
   AggregateType  *ct = toAggregateType(arg->type);
-  CallExpr *call = new CallExpr("_build_tuple_always");
+  CallExpr *call = new CallExpr("_build_tuple");
   BlockStmt* block = new BlockStmt();
   for (int i=1; i<ct->fields.length; i++) {
     call->insertAtTail(new CallExpr("chpl__initCopy", new CallExpr(arg, new_IntSymbol(i))));

@@ -25,7 +25,6 @@
 #endif
 
 #include "resolution.h"
-
 #include "astutil.h"
 #include "stlUtil.h"
 #include "build.h"
@@ -43,12 +42,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "WhileStmt.h"
-
 #include "../ifa/prim_data.h"
-
-
 #include "view.h"
-
 
 #include <inttypes.h>
 #include <map>
@@ -304,7 +299,8 @@ static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited);
+                    Vec<BlockStmt*>& visited,
+                    CallExpr* callOrigin);
 static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static void resolveDefaultGenericType(CallExpr* call);
@@ -2413,6 +2409,12 @@ printResolutionErrorUnresolved(
                      Vec<FnSymbol*>& visibleFns,
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
+
+  if( developer ) {
+    // Should this be controled another way?
+    USR_FATAL_CONT(call, "failed to resolve call with id %i", call->id);
+  }
+
   if (!strcmp("_cast", info->name)) {
     if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal cast to non-type",
@@ -2693,7 +2695,8 @@ static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited) {
+                    Vec<BlockStmt*>& visited,
+                    CallExpr* callOrigin) {
   //
   // all functions in standard modules are stored in a single block
   //
@@ -2716,7 +2719,15 @@ getVisibleFunctions(BlockStmt* block,
     canSkipThisBlock = false; // cannot skip if this block defines functions
     Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
     if (fns) {
-      visibleFns.append(*fns);
+      forv_Vec(FnSymbol, fn, *fns) {
+        if (fn->isVisible(callOrigin)) {
+          // isVisible checks if the function is private to its defining
+          // module (and in that case, if we are under its defining module)
+          // This ensures that private functions will not be used outside
+          // of their proper scope.
+          visibleFns.add(fn);
+        }
+      }
     }
   }
 
@@ -2727,7 +2738,9 @@ getVisibleFunctions(BlockStmt* block,
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
       canSkipThisBlock = false; // cannot skip if this block uses modules
-      getVisibleFunctions(mod->block, name, visibleFns, visited);
+      if (mod->isVisible(callOrigin)) {
+        getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+      }
     }
   }
 
@@ -2735,13 +2748,13 @@ getVisibleFunctions(BlockStmt* block,
   // visibilityBlockCache contains blocks that can be skipped
   //
   if (BlockStmt* next = visibilityBlockCache.get(block)) {
-    getVisibleFunctions(next, name, visibleFns, visited);
+    getVisibleFunctions(next, name, visibleFns, visited, callOrigin);
     return (canSkipThisBlock) ? next : block;
   }
 
   if (block != rootModule->block) {
     BlockStmt* next = getVisibilityBlock(block);
-    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited);
+    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited, callOrigin);
     if (cache)
       visibilityBlockCache.put(block, cache);
     return (canSkipThisBlock) ? cache : block;
@@ -3273,6 +3286,9 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
          info.call->id == explainCallID))
     {
       USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+      if( info.call->id == breakOnResolveID ) {
+        gdbShouldBreakHere();
+      }
     }
 
     filterCandidate(candidates, visibleFn, info);
@@ -3300,6 +3316,9 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
          info.call->id == explainCallID))
     {
       USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+      if( info.call->id == breakOnResolveID ) {
+        gdbShouldBreakHere();
+      }
     }
 
     filterCandidate(candidates, visibleFn, info);
@@ -3334,6 +3353,12 @@ resolveCall(CallExpr* call)
 
 void resolveNormalCall(CallExpr* call) {
 
+  if( call->id == breakOnResolveID ) {
+    printf("breaking on call:\n");
+    print_view(call);
+    gdbShouldBreakHere();
+  }
+
   resolveDefaultGenericType(call);
 
   CallInfo info(call);
@@ -3350,7 +3375,7 @@ void resolveNormalCall(CallExpr* call) {
   if (!call->isResolved()) {
     if (!info.scope) {
       Vec<BlockStmt*> visited;
-      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited);
+      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited, call);
     } else {
       if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
         if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
@@ -4390,7 +4415,7 @@ createFunctionAsValue(CallExpr *call) {
 
   Vec<FnSymbol*> visibleFns;
   Vec<BlockStmt*> visited;
-  getVisibleFunctions(getVisibilityBlock(call), flname, visibleFns, visited);
+  getVisibleFunctions(getVisibilityBlock(call), flname, visibleFns, visited, call);
 
   if (visibleFns.n > 1) {
     USR_FATAL(call, "%s: can not capture overloaded functions as values",
@@ -4546,7 +4571,7 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
       Vec<FnSymbol*> visibleFns;
       Vec<BlockStmt*> visited;
 
-      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited);
+      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited, call);
 
       forv_Vec(FnSymbol, called_fn, visibleFns) {
         bool seen_this_fn = false;
@@ -4969,7 +4994,7 @@ preFold(Expr* expr) {
             }
           }
           if (!nowarn)
-            USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
+            USR_WARN(type->symbol, "type %s does not currently support noinit, using default initialization", type->symbol->name);
           result = new CallExpr(PRIM_INIT, call->get(1)->remove());
           call->replace(result);
           inits.add((CallExpr *)result);
@@ -5256,8 +5281,8 @@ preFold(Expr* expr) {
         call->insertAtTail(tmp);
       }
     } else if (call->isPrimitive(PRIM_TO_STANDALONE)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
-     CallExpr* standaloneCall = new CallExpr(iterator->name);
+      FnSymbol* iterator = getTheIteratorFn(call);
+      CallExpr* standaloneCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
         standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
@@ -5267,7 +5292,7 @@ preFold(Expr* expr) {
       call->replace(standaloneCall);
       result = standaloneCall;
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* leaderCall;
       if (FnSymbol* leader = iteratorLeaderMap.get(iterator))
         leaderCall = new CallExpr(leader);
@@ -5282,7 +5307,7 @@ preFold(Expr* expr) {
       call->replace(leaderCall);
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* followerCall;
       if (FnSymbol* follower = iteratorFollowerMap.get(iterator))
         followerCall = new CallExpr(follower);
@@ -8119,6 +8144,14 @@ static void replaceTypeArgsWithFormalTypeTemps()
         }
       }
       formal->defPoint->remove();
+      //
+      // If we're removing the formal representing 'this' (if it's a
+      // type, say), we need to nullify the 'this' pointer in the
+      // function as well to avoid assumptions that it's legal later.
+      //
+      if (formal == fn->_this) {
+        fn->_this = NULL;
+      }
     }
   }
 }
