@@ -1,11 +1,11 @@
-chpldoc-venv
+chpl-venv
 ============
+
+The Makefile in this third-party directory creates a Python virtualenv and
+installs the python packages required by `chpldoc` and `start_test` inside it.
 
 `chpldoc` uses several python packages to parse RST files and render them in
 the various formats.
-
-The Makefile in this third-party directory creates a Python virtualenv and
-installs the python packages required by `chpldoc` inside it.
 
 To re-install the packages, e.g. to pick up updates to the
 sphinxcontrib-chapeldomain package, use this command:
@@ -24,6 +24,9 @@ The primary packages required by `chpldoc` are: `Sphinx`,
 `sphinxcontrib-chapeldomain`, `sphinx_rtd_theme`, and `virtualenv` (for
 installation). The dependencies for these packages are listed in the next
 section.
+
+The primary packages required by `start_test` are: `subprocess32`,
+`argparse`, and `virtualenv` (for installation).
 
 ### Sphinx
 
@@ -57,6 +60,23 @@ Use with Sphinx as theme for html documentation.
 
 **Website**: https://pypi.python.org/pypi/sphinx_rtd_theme
 
+### argparse
+
+Command line argument parsing library, backported from Python 2.7.
+
+**License**: Python Software Foundation License
+
+**Website**: https://pypi.python.org/pypi/argparse
+
+### subprocess32
+
+Enhanced version of the subprocess standard library module, backported from
+Python 3.
+
+**License**: Python Software Foundation License
+
+**Website**: https://pypi.python.org/pypi/subprocess32
+
 ### virtualenv
 
 Virtual Python Environment builder
@@ -64,7 +84,7 @@ Virtual Python Environment builder
 Used to create isolated environment to install other python packages, without
 interfering with system ppython packages.
 
-**License**: MIT
+**License**: Python Software Foundation License
 
 **Website**: https://pypi.python.org/pypi/virtualenv
 
