@@ -101,10 +101,10 @@ def validate_output(verify_keys):
         regex = m.group(3)
         if num:
             num_real = int(num)
-            if num >= 1:
+            if num >= 1: i # line numbers are 1-indexed
                 num_real -= 1
 
-        regex_real = regex
+        regex_real = r"\s*" + regex
         is_reject = type == "reject"
 
         # depending on whether we're asked to verify or reject
@@ -268,7 +268,7 @@ def setup():
     
 
 def cleanup():
-    sys.stdout.write("output was: ")
+    print("output was: ")
     # if test output was too long, only print first and last 1000 characters
     if len(test_output_raw) > 2000: 
         print(test_output_raw[:1000].strip())
