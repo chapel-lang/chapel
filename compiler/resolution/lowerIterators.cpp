@@ -61,7 +61,7 @@ FnSymbol* getTheIteratorFn(Type* icType) {
   // the asserts document the current state
   bool gotTuple = icType->symbol->hasFlag(FLAG_TUPLE);
   INT_ASSERT(gotTuple || icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-  Type* irType = icType->defaultInitializer->getFormal(1)->type;
+  Type* irType = icType->defaultInitializer->getFormal(1)->type->getValType();
   INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
              (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
   FnSymbol* result = irType->defaultInitializer;
