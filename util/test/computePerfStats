@@ -44,13 +44,13 @@ def find_keys(keys):
             sys.stdout.write("Looking for %s..." % key)
             file.write("\t")
             found = False
-            regex = r"\s*" + re.escape(key) + r"\s*(\S*)"
+            regex = r"(\s|\S)*" + re.escape(key) + r"\s*(\S*)"
             # scan through output, looking for key
             for line in test_output:
                 m = re.match(regex, line)
                 if m and not found:
-                    print("found it: %s" % m.group(1))
-                    file.write(m.group(1))
+                    print("found it: %s" % m.group(2))
+                    file.write(m.group(2))
                     found = True
                     break
 
@@ -104,7 +104,7 @@ def validate_output(verify_keys):
             if num >= 1: # line numbers are 1-indexed
                 num_real -= 1
 
-        regex_real = r"\s*" + regex
+        regex_real = r"(\s|\S)*" + regex
         is_reject = type == "reject"
 
         # depending on whether we're asked to verify or reject
