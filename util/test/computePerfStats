@@ -24,16 +24,23 @@ def main():
 
     setup()
     (keys, verify_keys) = read_key_file()
-    valid_output = validate_output(verify_keys)
 
-    found_everything = True
-    if (valid_output):
-        create_data_file(keys)
-        log_timeouts(keys)
-        found_everything = find_keys(keys)
+    if not args.verify_keys:
+        valid_output = validate_output(verify_keys)
+
+        found_everything = True
+        if (valid_output):
+            create_data_file(keys)
+            verify_data_file(keys)
+            log_timeouts(keys)
+            found_everything = find_keys(keys)
     
-    if not (valid_output and found_everything) and not args.exec_time_out:
-        cleanup()
+        if not (valid_output and found_everything) and not args.exec_time_out:
+            cleanup()
+    else:
+        create_data_file(keys)
+        verify_data_file(keys)
+        print("Valid data file.")
 
 
 def find_keys(keys):
@@ -180,8 +187,6 @@ def create_data_file(keys):
             for key in keys:
                 file.write("\t" + key)
             file.write("\n")
-    else:
-        verify_data_file(keys)
 
 
 def verify_data_file(keys_exp):
@@ -288,6 +293,8 @@ def parser_setup():
     parser.add_argument("test_output_file", nargs="?", default=False);
     parser.add_argument("exec_time_out", nargs="?", default=False, type=t_or_f);
     parser.add_argument("perfdate", nargs="?", default=False);
+    parser.add_argument("-verify-keys", "--verify-keys", action="store_true",
+            dest="verify_keys")
 
     return parser
 
