@@ -189,11 +189,9 @@ def verify_data_file(keys_exp):
         header = None;
         for line in file:
             parsed = line.strip().split("\t")
-            print(parsed)
             if header == None and "# Date" in parsed[0]: # look for header line
                 header = parsed
                 columns = len(header)
-                print(header)
                 keys_actual = header[1:]
                 continue
             if header == None: # for all lines after the header
@@ -212,9 +210,6 @@ def verify_data_file(keys_exp):
     
     keys_actual = [k.strip() for k in keys_actual]
     keys_exp = [k.strip() for k in keys_exp]
-
-    print(keys_actual)
-    print(keys_exp)
 
     s = difflib.SequenceMatcher(None, keys_actual, keys_exp)
     diff = s.get_opcodes()
