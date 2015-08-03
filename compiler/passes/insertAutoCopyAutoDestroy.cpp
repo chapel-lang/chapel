@@ -403,8 +403,9 @@ void insertAutoCopyAutoDestroy()
     insertAutoCopyAutoDestroy(fn);
   }
 
-  // Re-run insertReferenceTemps, to cover autoDestroy calls that may have been
-  // inserted by this pass.
+  // Re-run replaceValArgsWithRefArgs and insertReferenceTemps, to cover
+  // autoDestroy calls that may have been inserted by this pass.
+  replaceValArgsWithRefArgs();
   insertReferenceTemps();
 }
 

@@ -223,7 +223,11 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                   (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
                   (fnc && arg->type == actual_to_formal(se)->type)) {
                 se->var = arg; // do not dereference argument in these cases
-              } else if (call->isPrimitive(PRIM_ADDR_OF)) {
+              } 
+              // The following two clauses may be redundant, since
+              // insertReferenceTemps() and insertDerefTemps() now do the same
+              // thing.
+              else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
                 call->replace(new SymExpr(arg));
               } else {
