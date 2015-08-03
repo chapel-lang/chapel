@@ -101,7 +101,7 @@ def validate_output(verify_keys):
         regex = m.group(3)
         if num:
             num_real = int(num)
-            if num >= 1: i # line numbers are 1-indexed
+            if num >= 1: # line numbers are 1-indexed
                 num_real -= 1
 
         regex_real = r"\s*" + regex
