@@ -15,8 +15,6 @@ import re;
 import sys;
 import difflib;
 
-args = None
-
 test_output = None
 test_output_raw = None
 data_file = None
