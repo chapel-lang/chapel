@@ -162,14 +162,20 @@ instantiate_tuple_body(FnSymbol* fn) {
 
 
 static void
+getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
+  INT_ASSERT(fn->numFormals() == 1); // expected of the original function
+  arg = fn->getFormal(1);
+  ct = toAggregateType(arg->type);
+  INT_ASSERT(!isReferenceType(ct));
+}
+
+static void
 instantiate_tuple_hash( FnSymbol* fn) {
-  if (fn->numFormals() != 1) {
-    INT_FATAL(fn, "tuple hash function has more than one argument");
-  }
-  ArgSymbol* arg = fn->getFormal(1);
-  AggregateType* ct = toAggregateType(arg->type);
+  ArgSymbol* arg;
+  AggregateType* ct;
+  getTupleArgAndType(fn, arg, ct);
+
   CallExpr* call = NULL;
-  
   bool first = true;
   for (int i=1; i<ct->fields.length; i++) {
     CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
@@ -196,12 +202,12 @@ instantiate_tuple_hash( FnSymbol* fn) {
 
 static void
 instantiate_tuple_init(FnSymbol* fn) {
-  if (fn->numFormals() != 1)
-    INT_FATAL(fn, "tuple _defaultOf function has more than one argument");
-  ArgSymbol* arg = fn->getFormal(1);
+  ArgSymbol* arg;
+  AggregateType* ct;
+  getTupleArgAndType(fn, arg, ct);
   if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
     INT_FATAL(fn, "_defaultOf function not provided a type argument");
-  AggregateType* ct = toAggregateType(arg->type);
+
   // Similar to build_record_init_function in buildDefaultFunctions, we need
   // to call the type specified default initializer
   CallExpr* call = new CallExpr(ct->defaultInitializer);
@@ -227,49 +233,46 @@ instantiate_tuple_init(FnSymbol* fn) {
 }
 
 static void
-instantiate_tuple_initCopy(FnSymbol* fn) {
-  if (fn->numFormals() != 1)
-    INT_FATAL(fn, "tuple initCopy function has more than one argument");
-  ArgSymbol  *arg = fn->getFormal(1);
-  AggregateType  *ct = toAggregateType(arg->type);
-  CallExpr *call = new CallExpr("_build_tuple");
+instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
+                                       const char* build_tuple_fun,
+                                       const char* copy_fun)
+{
+  ArgSymbol* arg;
+  AggregateType* ct;
+  getTupleArgAndType(fn, arg, ct);
+
+  CallExpr *call = new CallExpr(build_tuple_fun);
   BlockStmt* block = new BlockStmt();
+  
   for (int i=1; i<ct->fields.length; i++) {
-    call->insertAtTail(new CallExpr("chpl__initCopy", new CallExpr(arg, new_IntSymbol(i))));
+    CallExpr* member = new CallExpr(arg, new_IntSymbol(i));
+    DefExpr* def = toDefExpr(ct->fields.get(i+1));
+    INT_ASSERT(def);
+    if (isReferenceType(def->sym->type))
+      // If it is a reference, pass it through.
+      call->insertAtTail(member);
+    else
+      // Otherwise, construct it.
+      call->insertAtTail(new CallExpr(copy_fun, member));
   }
+  
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
   fn->body->replace(block);
   normalize(fn);
 }
 
+static void
+instantiate_tuple_initCopy(FnSymbol* fn) {
+  instantiate_tuple_initCopy_or_autoCopy(fn,
+                                         "_build_tuple",
+                                         "chpl__initCopy");
+}
 
 static void
 instantiate_tuple_autoCopy(FnSymbol* fn) {
-  if (fn->numFormals() != 1) {
-    INT_FATAL(fn, "tuple autoCopy function has more than one argument");
-  }
-  
-  ArgSymbol  *arg = fn->getFormal(1);
-  AggregateType  *ct = toAggregateType(arg->type);
-  CallExpr *call = new CallExpr("_build_tuple_always_allow_ref");
-  BlockStmt* block = new BlockStmt();
-  
-  for (int i=1; i<ct->fields.length; i++) {
-    Symbol* tmp = newTemp();
-    block->insertAtTail(new DefExpr(tmp));
-    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(astr("x", istr(i))))));
-    // If it is a reference, pass it through.
-    DefExpr* def = toDefExpr(ct->fields.get(i+1));
-    INT_ASSERT(def);
-    if (isReferenceType(def->sym->type))
-      call->insertAtTail(tmp);
-    else
-      call->insertAtTail(new CallExpr("chpl__autoCopy", tmp));
-  }
-  
-  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
-  fn->body->replace(block);
-  normalize(fn);
+  instantiate_tuple_initCopy_or_autoCopy(fn,
+                                         "_build_tuple_always_allow_ref",
+                                         "chpl__autoCopy");
 }
 
 
