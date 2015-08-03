@@ -44,11 +44,11 @@ def find_keys(keys):
             sys.stdout.write("Looking for %s..." % key)
             file.write("\t")
             found = False
-            regex = re.escape(key) + r"\s*(\S*)"
+            regex = r"\s*" + re.escape(key) + r"\s*(\S*)"
             # scan through output, looking for key
             for line in test_output:
                 m = re.match(regex, line)
-                if m:
+                if m and not found:
                     print("found it: %s" % m.group(1))
                     file.write(m.group(1))
                     found = True
@@ -186,24 +186,35 @@ def create_data_file(keys):
 
 def verify_data_file(keys_exp):
     with open(data_file, "r") as file:
-        header = file.readline().strip().split("\t")
-        columns = len(header)
-        if "# Date" not in header[0]:
+        header = None;
+        for line in file:
+            parsed = line.strip().split("\t")
+            print(parsed)
+            if header == None and "# Date" in parsed[0]: # look for header line
+                header = parsed
+                columns = len(header)
+                print(header)
+                keys_actual = header[1:]
+                continue
+            if header == None: # for all lines after the header
+                # ignore comments and empty lines
+                if parsed[0] == "" or "#" in parsed[0]:
+                    continue
+                if len(parsed) != columns:
+                    print("[Error: {} entry for {} doesn't match header length.]"
+                            .format(data_file, parsed[0]))
+                    exit(2)
+
+        if header == None: # not found
             print("[Error: {} has no header.]".format(data_file))
             exit(2)
-        keys_actual = header[1:] # get keys in header
-
-        for l in file:
-            parsed = l.strip().split("\t")
-            if len(parsed) != columns:
-                print("[Error: {} entry for {} doesn't match header length.]"
-                        .format(data_file, parsed[0]))
-                exit(2)
-
 
     
     keys_actual = [k.strip() for k in keys_actual]
     keys_exp = [k.strip() for k in keys_exp]
+
+    print(keys_actual)
+    print(keys_exp)
 
     s = difflib.SequenceMatcher(None, keys_actual, keys_exp)
     diff = s.get_opcodes()
