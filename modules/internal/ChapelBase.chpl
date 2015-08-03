@@ -697,26 +697,34 @@ module ChapelBase {
     // larger and smaller arrays.
     //
 
-    extern proc chpl_getSysPageSize():size_t;
-    const pagesizeInBytes = chpl_getSysPageSize().safeCast(int);
+    if parallelInitElts {
+      extern proc chpl_getSysPageSize():size_t;
+      const pagesizeInBytes = chpl_getSysPageSize().safeCast(int);
 
-    const elemsizeInBytes = if (isNumericType(t)) then numBytes(t) else 8;
-    const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
-    const heuristicThresh = pagesizeInBytes * here.maxTaskPar;
-    const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+      const elemsizeInBytes = if (isNumericType(t)) then numBytes(t) else 8;
+      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+      const heuristicThresh = pagesizeInBytes * here.maxTaskPar;
+      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
 
-    if parallelInitElts && heuristicWantsPar {
-      forall i in 1..s {
-        pragma "no auto destroy" var y: t;
-        __primitive("array_set_first", x, i-1, y);
+      if heuristicWantsPar {
+        forall i in 1..s {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i-1, y);
+        }
+
+      } else {
+        for i in 1..s {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i-1, y);
+        }
       }
-
     } else {
       for i in 1..s {
         pragma "no auto destroy" var y: t;
         __primitive("array_set_first", x, i-1, y);
       }
     }
+
   }
   
   // dynamic data block class
