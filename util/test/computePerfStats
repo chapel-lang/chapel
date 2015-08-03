@@ -17,33 +17,38 @@ import difflib;
 
 args = None
 
+test_output = None
+test_output_raw = None
+data_file = None
+errors_file = None
+fatal_errors = None
+
 def main():
     parser = parser_setup()
-    global args
     args = parser.parse_args()
 
-    setup()
-    (keys, verify_keys) = read_key_file()
+    setup(args)
+    (keys, verify_keys) = read_key_file(args)
 
     if not args.verify_keys:
-        valid_output = validate_output(verify_keys)
+        valid_output = validate_output(verify_keys, args)
 
         found_everything = True
         if (valid_output):
-            create_data_file(keys)
-            verify_data_file(keys)
-            log_timeouts(keys)
-            found_everything = find_keys(keys)
+            create_data_file(keys, args)
+            verify_data_file(keys, args)
+            log_timeouts(keys, args)
+            found_everything = find_keys(keys, args)
     
         if not (valid_output and found_everything) and not args.exec_time_out:
             cleanup()
     else:
-        create_data_file(keys)
-        verify_data_file(keys)
+        create_data_file(keys, args)
+        verify_data_file(keys, args)
         print("Valid data file.")
 
 
-def find_keys(keys):
+def find_keys(keys, args):
     found_everything = True
     with open(data_file, "a") as file:
         file.write("%s " % args.perfdate)
@@ -71,7 +76,7 @@ def find_keys(keys):
     return found_everything
 
 
-def log_timeouts(keys): # if we timed out
+def log_timeouts(keys, args): # if we timed out
     with open(errors_file, "w") as file:
         file.write("appending %s\n" % data_file)
 
@@ -85,7 +90,7 @@ def log_timeouts(keys): # if we timed out
         exit(1)
 
 
-def validate_output(verify_keys):
+def validate_output(verify_keys, args):
     # read output from file
     global test_output, test_output_raw
     with open(args.test_output_file, "r") as file:
@@ -152,7 +157,7 @@ def validate_output(verify_keys):
     return valid_output
 
 
-def read_key_file():
+def read_key_file(args):
     # read keys from .perfkeys (or other) file
     verify_keys = []
     keys = []
@@ -176,7 +181,7 @@ def read_key_file():
     return (keys, verify_keys)
 
 
-def create_data_file(keys):
+def create_data_file(keys, args):
     # create and setup .dat file if not done already
     if not os.path.isfile(data_file):
         with open(errors_file, "a") as file:
@@ -189,7 +194,7 @@ def create_data_file(keys):
             file.write("\n")
 
 
-def verify_data_file(keys_exp):
+def verify_data_file(keys_exp, args):
     with open(data_file, "r") as file:
         header = None;
         for line in file:
@@ -246,7 +251,7 @@ def verify_data_file(keys_exp):
         exit(2)
 
 
-def setup():
+def setup(args):
     # finish setting up command line args
     if not args.keys_file:
         args.keys_file = "%s.perfkeys" % args.testname;
