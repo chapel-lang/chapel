@@ -650,7 +650,10 @@ static void addKnownWides() {
     if (!typeCanBeWide(var)) continue;
 
     if (isField(var)) {
-      // ?
+      TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol);
+      if (strcmp(ts->name, "_class_localson_fn") == 0) {
+        setWide(var);
+      }
     } else {
       Symbol* defParent = var->defPoint->parentSymbol;
 
@@ -1606,6 +1609,8 @@ static void insertWideTemp(Type* type, SymExpr* src) {
     stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, wideThing)));
     RHS = new SymExpr(tmp);
   }
+  
+  // Now make the fully wide thing
   VarSymbol* tmp = newTemp(type);
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, RHS->copy()));
