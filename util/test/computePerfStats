@@ -33,7 +33,7 @@ def main():
 
         found_everything = True
         if (valid_output):
-            create_data_file(keys, args)
+            create_data_file(keys)
             verify_data_file(keys, args)
             log_timeouts(keys, args)
             found_everything = find_keys(keys, args)
@@ -179,7 +179,7 @@ def read_key_file(args):
     return (keys, verify_keys)
 
 
-def create_data_file(keys, args):
+def create_data_file(keys):
     # create and setup .dat file if not done already
     if not os.path.isfile(data_file):
         with open(errors_file, "a") as file:
