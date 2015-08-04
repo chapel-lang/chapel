@@ -289,6 +289,13 @@ module Subprocess {
       if stderr_pipe then stderr._channel_internal else
       QIO_CHANNEL_PTR_NULL);*/
   }
+  proc subprocess.communicate() {
+    var err:syserr = ENOERR;
+
+    this.wait(error=err);
+    if err then halt("Error in subprocess.communicate: " + errorToString(err));
+  }
+
 
 // send_signal
 // terminate
