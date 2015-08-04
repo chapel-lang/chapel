@@ -56,8 +56,8 @@ struct localeData {
   long    numTasks;
   std::map<long,taskData> tasks;
 
-  localeData() : userCpu(0), sysCpu(0), Cpu(0), refUserCpu(0), refSysCpu(0), clockTime(0), refTime(0),
-    numTasks(0) {};
+  localeData() : userCpu(0), sysCpu(0), Cpu(0), refUserCpu(0), refSysCpu(0),
+                 clockTime(0), refTime(0), numTasks(0) {};
 };
 
 struct commData {
@@ -82,6 +82,8 @@ class DataModel {
 
  public:
 
+  static const int TagALL = -2, TagStart = -1;
+
   // Constructor
 
   DataModel() {
@@ -96,8 +98,6 @@ class DataModel {
     if (tagList != NULL)
       delete [] tagList;
   }
-
-
 
   //  LoadData loads data from a collection of files
   //  filename of the form  basename-n, where n can
@@ -128,24 +128,7 @@ class DataModel {
         return *curEvent;
       }
 
-  int NumTags () { return numTags; }
-
-  Event * getTagNo(int n)
-      {
-        printf ("getTagNo %d: ", n);
-
-        printf ("maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-                tagList[n+2]->maxComms, tagList[n+2]->maxSize, tagList[n+2]->maxTasks,
-                tagList[n+2]->maxClock, tagList[n+2]->maxCpu);
-
-	if (n >= 0 && n < numTags) {
-	  curEvent = tagList[n+2]->firstTag;
-	} else {
-          curEvent = theEvents.begin();
-        }
-	//(*curEvent)->print();
-	return *curEvent;
-      }
+  // Tags and manipulation of them
 
   struct tagData {
     friend class DataModel;
@@ -188,12 +171,38 @@ class DataModel {
 
   };
 
+  int NumTags () { return numTags; }
+
+  Event * getTagNo(int n)
+      {
+        printf ("getTagNo %d: ", n);
+
+        printf ("maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
+                tagList[n+2]->maxComms, tagList[n+2]->maxSize, tagList[n+2]->maxTasks,
+                tagList[n+2]->maxClock, tagList[n+2]->maxCpu);
+
+	if (n >= 0 && n < numTags) {
+	  curEvent = tagList[n+2]->firstTag;
+	} else {
+          curEvent = theEvents.begin();
+        }
+	//(*curEvent)->print();
+	return *curEvent;
+      }
+
+  tagData * getTagData(int tagno)
+      {
+        if (tagno < TagALL || tagno > numLocales) 
+          return NULL;
+        return tagList[tagno-TagALL];
+      }
+
  private:
 
   int numLocales;
   int numTags;
   
-  // Includes entries for -2 (All), and -1 (Start->0),  size is numTags+2
+  // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
   tagData **tagList;  
 
   std::list<Event*> theEvents;
