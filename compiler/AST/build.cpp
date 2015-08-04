@@ -782,7 +782,8 @@ static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
-  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  // See Note #1
+  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
   stmt = new CallExpr(PRIM_YIELD, expr);
@@ -834,7 +835,8 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
   ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
                                      new CallExpr(PRIM_TYPEOF, tag));
   lifn->insertFormalAtTail(lifnTag);
-  ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  // See Note #1
+  ArgSymbol* lifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
 
   lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
@@ -868,9 +870,10 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
   ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
                                      new CallExpr(PRIM_TYPEOF, tag));
   fifn->insertFormalAtTail(fifnTag);
-  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
+  // See Note #1
+  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_CONST_IN, iterFollowthisArgname, dtAny);
   fifn->insertFormalAtTail(fifnFollower);
-  ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  ArgSymbol* fifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
   fifn->insertFormalAtTail(fifnIterator);
 
   fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
@@ -2284,3 +2287,23 @@ static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
 
   return retval;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+// NOTES
+//
+// Note #1
+//  A range (record) created in the calling context of _iterator_for_loopexpr is a
+//  temporary that will vanish when the loop expression goes away.  Either the
+//  iterator argument needs to be created in an outer context so it will
+//  outlast the loop, or it needs to be copied verbatim.  We chose the latter
+//  method here, forcing a copy by using CONST_IN intent.
+//  TODO: A more efficient implementation would in fact push the variable
+//  holding the iterator into an outer scope, so it coult be passed by
+//  reference.  However, that is not easy to do in the current architecture:
+//  The code for building the parse tree is fairly context-free (bottom-up) so
+//  enclosing scopes are not available as the parse tree is being built.  The
+//  code for converting forall expressions into loops on iterators needs to be
+//  moved into a later pass, so that the scope that is appropriate to hold the
+//  iterator can be found by traversing the fully-parsed tree.
+//
