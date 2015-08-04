@@ -128,7 +128,7 @@ module unitTest {
     const m0 = allMemoryUsed();
     proc cast_to_c_string_help(type t, useExpr=false)
     {
-      const x: t = "cs";
+      const x: t = c"cs";
       if useExpr {
         writeMe(x.c_str());
       } else {
