@@ -2,6 +2,7 @@
 a.out
 a.out_real
 *.bak
+*~
 output
 gen
 *.ntoks
@@ -10,8 +11,6 @@ gen
 *.tmp
 TAGS
 tags
-#for emacs users
-*~
 
 # Top level ignores.
 /BUILD_VERSION
