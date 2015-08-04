@@ -98,6 +98,9 @@ third-party-try-gmp: FORCE
 	fi \
 	fi
 
+third-party-test-venv: FORCE
+	cd third-party && $(MAKE) test-venv
+
 third-party-chpldoc-venv: FORCE
 	cd third-party && $(MAKE) chpldoc-venv
 
@@ -153,7 +156,7 @@ clobber: FORCE
 depend:
 	@echo "make depend has been deprecated for the time being"
 
-check: all
+check: all third-party-test-venv
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 check-chpldoc: chpldoc

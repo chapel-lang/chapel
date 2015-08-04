@@ -10,7 +10,7 @@ EASY_INSTALL = $(shell which easy_install)
 
 default: all
 
-all: $(CHPLDOC_VENV_SPHINX_BUILD)
+all: test-venv chpldoc-venv
 
 clean: FORCE
 
@@ -22,34 +22,34 @@ clobber: FORCE
 check-python:
 ifeq ($(wildcard $(PYTHON)),)
 	$(error python and easy_install are required to install chpldoc \
-	        dependencies. See https://www.python.org/)
+	        and start_test dependencies. See https://www.python.org/)
 endif
 
 check-easy-install:
 ifeq ($(wildcard $(EASY_INSTALL)),)
 	$(error python and easy_install are required to install chpldoc \
-	        dependencies. See https://www.python.org/)
+	        and start_test dependencies. See https://www.python.org/)
 endif
 
 check-exes: check-python check-easy-install
 
-$(CHPLDOC_VENV_INSTALL_DIR):
+$(CHPL_VENV_INSTALL_DIR):
 	mkdir -p $@
 
 # Install virtualenv program.
-$(CHPLDOC_VENV_VIRTUALENV): $(CHPLDOC_VENV_INSTALL_DIR) check-exes
-	export PYTHONPATH=$(CHPLDOC_VENV_INSTALL_DIR):$$PYTHONPATH && \
-	$(EASY_INSTALL) --install-dir=$(CHPLDOC_VENV_INSTALL_DIR) $(shell cat virtualenv.txt)
+$(CHPL_VENV_VIRTUALENV): $(CHPL_VENV_INSTALL_DIR) check-exes
+	export PYTHONPATH=$(CHPL_VENV_INSTALL_DIR):$$PYTHONPATH && \
+	$(EASY_INSTALL) --install-dir=$(CHPL_VENV_INSTALL_DIR) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
-virtualenv: $(CHPLDOC_VENV_VIRTUALENV)
+virtualenv: $(CHPL_VENV_VIRTUALENV)
 
 # Create the virtualenv.
-$(CHPLDOC_VENV_VIRTUALENV_DIR): $(CHPLDOC_VENV_VIRTUALENV)
-	$(CHPLDOC_VENV_VIRTUALENV) --python=$(PYTHON) $@
+$(CHPL_VENV_VIRTUALENV_DIR): $(CHPL_VENV_VIRTUALENV)
+	$(CHPL_VENV_VIRTUALENV) --python=$(PYTHON) $@
 
 # Phony convenience target for creating virtualenv.
-create-virtualenv: $(CHPLDOC_VENV_VIRTUALENV_DIR)
+create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR)
 
 # Install requirements.txt inside virtualenv. Use sphinx-build executable to
 # indicate success or failure. Call virtualenv --relocatable <virtualenv_dir>
@@ -63,19 +63,36 @@ create-virtualenv: $(CHPLDOC_VENV_VIRTUALENV_DIR)
 #   /bin/sh: .../path/to/bin/pip: <truncated hash bang>: bad interpreter: No such file or directory.
 #
 # By calling `python .../path/to/pip ...`, this issue is circumvented.
-$(CHPLDOC_VENV_SPHINX_BUILD): $(CHPLDOC_VENV_VIRTUALENV_DIR)
-	export PATH=$(CHPLDOC_VENV_VIRTUALENV_BIN):$$PATH && \
-	export VIRTUAL_ENV=$(CHPLDOC_VENV_VIRTUALENV_DIR) && \
-	python $(CHPLDOC_VENV_VIRTUALENV_BIN)/pip install \
-	-U --force-reinstall -r requirements.txt && \
-	$(CHPLDOC_VENV_VIRTUALENV) --relocatable $(CHPLDOC_VENV_VIRTUALENV_DIR)
+$(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
+	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
+	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
+	-U --force-reinstall -r test-requirements.txt && \
+	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
+	touch $(CHPL_VENV_TEST_REQS)
+
+$(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_VIRTUALENV_DIR)
+	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
+	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
+	-U --force-reinstall -r chpldoc-requirements.txt && \
+	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR)
+
+test-venv: $(CHPL_VENV_TEST_REQS)
+
+chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
 
 # Phony convenience target for install python packages.
-install-requirements: rm-sphinx-build $(CHPLDOC_VENV_SPHINX_BUILD)
+install-requirements: rm-test-reqs rm-sphinx-build $(CHPL_VENV_TEST_REQS) $(CHPL_VENV_SPHINX_BUILD)
+
+# Remove chpl-test-reqs, forcing install-requirements to be rebuilt.
+rm-test-reqs: FORCE
+	@rm -f $(CHPL_VENV_TEST_REQS)
 
 # Remove sphinx-build, forcing install-requirements to be rebuilt.
 rm-sphinx-build: FORCE
-	@rm -f $(CHPLDOC_VENV_SPHINX_BUILD)
+	@rm -f $(CHPL_VENV_SPHINX_BUILD)
+
 
 FORCE:
 

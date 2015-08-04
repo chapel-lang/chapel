@@ -1,0 +1,16 @@
+# Virtualenv is sensitive to ../../ in the path. Specifically, they are
+# recorded all the way down to the hash bangs in scripts. Removing them here
+# avoids any potential issues when paths are compared (e.g. some things
+# consider a/b/../../a/b/ equal to a/b/, while string matching does not).
+CHPL_VENV_DIR=$(shell cd $(THIRD_PARTY_DIR)/chpl-venv && pwd)
+
+CHPL_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_TARGET_PLATFORM)
+CHPL_VENV_INSTALL_SUBDIR=install/$(CHPL_VENV_UNIQUE_SUBDIR)
+CHPL_VENV_INSTALL_DIR=$(CHPL_VENV_DIR)/$(CHPL_VENV_INSTALL_SUBDIR)
+CHPL_VENV_VIRTUALENV=$(CHPL_VENV_INSTALL_SUBDIR)/virtualenv
+CHPL_VENV_VIRTUALENV_NAME=chpl-virtualenv
+CHPL_VENV_VIRTUALENV_SUBDIR=$(CHPL_VENV_INSTALL_SUBDIR)/$(CHPL_VENV_VIRTUALENV_NAME)
+CHPL_VENV_VIRTUALENV_DIR=$(CHPL_VENV_DIR)/$(CHPL_VENV_VIRTUALENV_SUBDIR)
+CHPL_VENV_VIRTUALENV_BIN=$(CHPL_VENV_VIRTUALENV_DIR)/bin
+CHPL_VENV_SPHINX_BUILD=$(CHPL_VENV_VIRTUALENV_BIN)/sphinx-build
+CHPL_VENV_TEST_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-test-reqs

@@ -668,7 +668,7 @@ module ChapelBase {
   config param parallelInitElts=false;
   proc init_elts(x, s, type t) {
     //
-    // Q: why is the following declaration of 'y' in the loop?
+    // Q: why is the declaration of 'y' in the following loops?
     //
     // A: so that if the element type is something like an array,
     // the element can 'steal' the array rather than copying it.
@@ -676,18 +676,55 @@ module ChapelBase {
     // count for an array element's domain gets bumped once per
     // element.  Is this good, bad, necessary?  Unclear.
     //
-    if parallelInitElts {
-      forall i in 1..s {
-        pragma "no auto destroy" var y: t;
-        __primitive("array_set_first", x, i-1, y);
-      }
 
+    //
+    // Heuristically determine if we should do parallel initialization. We want
+    // each task to "own" at least a page in order to get good first-touch
+    // behavior and to avoid false-sharing. We naively assume the parallel
+    // range iterator will create maxTaskPar tasks so we want the array to be
+    // at least (maxTaskPar * pagesizes) big. For non-numeric element types we
+    // guess that each element is at least 8 bytes with the assumption that
+    // most record/classes/arrays will be at least 8 bytes.
+    //
+    // TODO: improve the heuristic for non-numeric types
+    //
+    // TODO: Note that we could do even better if the range had an iterator
+    // that supported local overrides of dataParTasksPerLocale or
+    // MinGranularity. The current heuristic will always try to use
+    // dataParTasksPerLocale even if, say, arrsize is pagesize+1, where we'd
+    // really only want to use 2 tasks there or set minGranularity to pagesize.
+    // But at the very least, the current approach differentiates between
+    // larger and smaller arrays.
+    //
+
+    if parallelInitElts {
+      extern proc chpl_getSysPageSize():size_t;
+      const pagesizeInBytes = chpl_getSysPageSize().safeCast(int);
+
+      const elemsizeInBytes = if (isNumericType(t)) then numBytes(t) else 8;
+      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+      const heuristicThresh = pagesizeInBytes * here.maxTaskPar;
+      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+
+      if heuristicWantsPar {
+        forall i in 1..s {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i-1, y);
+        }
+
+      } else {
+        for i in 1..s {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i-1, y);
+        }
+      }
     } else {
       for i in 1..s {
         pragma "no auto destroy" var y: t;
         __primitive("array_set_first", x, i-1, y);
       }
     }
+
   }
   
   // dynamic data block class
