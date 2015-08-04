@@ -34,6 +34,7 @@ module Subprocess {
 
     // the channels
     var stdin_pipe:bool;
+    var stdin_buffering:bool;
     var stdin_file:file;
     var stdin:channel(writing=true, kind=kind, locking=locking);
     var stdout_pipe:bool;
@@ -130,6 +131,8 @@ module Subprocess {
       }
     }
 
+    pid = -1;
+
     err = qio_openproc(use_args, use_env, executable.c_str(),
                        stdin_fd, stdout_fd, stderr_fd, pid);
 
@@ -144,8 +147,6 @@ module Subprocess {
     }
     c_free(use_args);
     c_free(use_env);
-
-    pid = -1;
 
     var ret = new subprocess(kind=kind, locking=locking,
                              pid=pid,
@@ -178,12 +179,15 @@ module Subprocess {
         ret.spawn_error = err; return ret;
       }
 
-      // mark stdin so that we don't actually send any data
-      // communicate() is called.
+      if stdout_pipe || stderr_pipe {
+        // mark stdin so that we don't actually send any data
+        // until communicate() is called.
 
-      err = ret.stdin._mark();
-      if err {
-        ret.spawn_error = err; return ret;
+        err = ret.stdin._mark();
+        if err {
+          ret.spawn_error = err; return ret;
+        }
+        ret.stdin_buffering = true;
       }
     }
 
@@ -244,6 +248,8 @@ module Subprocess {
     
     // Close stdin.
     if this.stdin_pipe {
+      // send data to stdin
+      if this.stdin_buffering then this.stdin._commit();
       this.stdin.close(error=error);
       this.stdin_file.close(error=error);
     }
