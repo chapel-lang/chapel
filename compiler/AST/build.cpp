@@ -179,33 +179,13 @@ static const char* toImmediateString(Expr* expr) {
 }
 
 
-static Expr* convertStringLiteral(Expr *e) {
-  if (SymExpr* s = toSymExpr(e)) {
-    VarSymbol *v = toVarSymbol(s->var);
-    INT_ASSERT(v);
-    if (v->immediate &&
-        v->immediate->const_kind==CONST_KIND_STRING) {
-      return new CallExpr("_cast", new SymExpr(dtString->symbol), s);
-    }
-  }
-  return e;
-}
-
-static void convertStringLiteralArgList(CallExpr* call) {
-  // Automatically convert string literals into Chapel strings
-  for (int i = 1; i <= call->numActuals(); i++) {
-    call->argList.insertAtTail(convertStringLiteral(call->argList.head->remove()));
-  }
-}
-
 CallExpr* buildOneTuple(Expr* elem) {
-  return new CallExpr("_build_tuple", convertStringLiteral(elem));
+  return new CallExpr("_build_tuple", elem);
 }
 
 CallExpr* buildTuple(CallExpr* call) {
   // The call is expected to be a PRIM_ACTUALS_LIST.
   INT_ASSERT(call->isPrimitive(PRIM_ACTUALS_LIST));
-  convertStringLiteralArgList(call);
   return new CallExpr("_build_tuple", call);
 }
 

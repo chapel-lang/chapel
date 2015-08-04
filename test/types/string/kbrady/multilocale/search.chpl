@@ -1,14 +1,18 @@
 proc test(hay, needle) {
-  writeln("count: ", hay.count(needle));
-  writeln("find: ", hay.find(needle));
-  writeln("rfind: ", hay.rfind(needle));
-  writeln();
+  on Locales[numLocales-1] {
+    writeln("count: ", hay.count(needle));
+    writeln("find: ", hay.find(needle));
+    writeln("rfind: ", hay.rfind(needle));
+    writeln();
+  }
 }
 proc test(hay, needle, r) {
-  writeln("count: ", hay.count(needle, r));
-  writeln("find: ", hay.find(needle, r));
-  writeln("rfind: ", hay.rfind(needle, r));
-  writeln();
+  on Locales[numLocales-1] {
+    writeln("count: ", hay.count(needle, r));
+    writeln("find: ", hay.find(needle, r));
+    writeln("rfind: ", hay.rfind(needle, r));
+    writeln();
+  }
 }
 
 var x = "Hello, hello, hello";

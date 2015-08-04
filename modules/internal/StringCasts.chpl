@@ -86,7 +86,7 @@ module StringCasts {
   //
   // real & imag
   //
-  inline proc _real_cast_helper(x: real(64), param isImag: bool) : string {
+  inline proc _real_cast_helper(x: real(64), param isImag: bool) /*: string*/ {
     extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy;
     extern proc strlen(const str: c_string_copy) : size_t;
 
