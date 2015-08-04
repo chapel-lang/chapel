@@ -2,6 +2,7 @@
 #
 # CHAPEL TESTING
 
+from __future__ import print_function
 import subprocess as tmp_subprocess
 import os
 from chplenv import *
@@ -21,7 +22,6 @@ activate_this_file = os.path.join(third_party, rel_venv_path)
 execfile(activate_this_file, dict(__file__=activate_this_file))
 
 
-from __future__ import print_function
 import argparse
 import sys
 import time
