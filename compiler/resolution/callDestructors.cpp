@@ -802,7 +802,7 @@ static void insertDestructorCalls()
 {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
-      Type* type = call->get(1)->typeInfo();
+      Type* type = call->get(1)->typeInfo()->getValType();
       if (!type->destructor) {
         call->remove();
       } else {
