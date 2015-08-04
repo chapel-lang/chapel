@@ -188,7 +188,7 @@
 //
 
 //#define PRINT_WIDEN_SUMMARY
-#define PRINT_WIDE_ANALYSIS
+//#define PRINT_WIDE_ANALYSIS
 
 #ifdef PRINT_WIDE_ANALYSIS
   #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -429,6 +429,16 @@ static void widenRef(Symbol* src, Symbol* dest) {
   else if (valIsWideClass(src)) {
     debug(src, "Ref %s (%d) must have a wide _val\n", dest->cname, dest->id);
     setValWide(dest);
+  }
+}
+
+// Abstract special casing for refs away if we just want an easy
+// way to say that two variables need to have the same wideness.
+static void matchWide(Symbol* src, Symbol* dest) {
+  if (isRef(src)) {
+    widenRef(src, dest);
+  } else {
+    setWide(dest);
   }
 }
 
@@ -719,23 +729,6 @@ static void addKnownWides() {
           // We seem to avoid memory leaks by making the lhs wide
           setWide(lhs);
         }
-        else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                 rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
-          //
-          // TODO: Tuples fields can be accessed with an int, so we can't
-          // currently rely on propagateField to widen for us.
-          //
-          Symbol* field = getTupleField(rhs);
-
-          // If the field of the tuple is wide, so is the lhs
-          if (isFullyWide(field)) {
-            if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
-              setValWide(lhs);
-            } else {
-              setWide(lhs);
-            }
-          }
-        }
       }
     }
     else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
@@ -746,25 +739,6 @@ static void addKnownWides() {
           if (typeCanBeWide(se->var)) {
             setWide(se->var);
           }
-        }
-      }
-    }
-    else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-      //
-      // If the field is a reference to a wide thing, then the rhs also has
-      // to be able to reference a wide thing. Better reasoning about tuples
-      // should eliminate the need for this.
-      //
-
-      Symbol* field = getTupleField(call);
-      Symbol* rhs = toSymExpr(call->get(3))->var;
-
-      if (isRef(rhs) && valIsWideClass(field)) {
-        if (field->type->symbol->hasFlag(FLAG_REF)) {
-          setValWide(toSymExpr(call->get(3)));
-        }
-        else if (field->type->symbol->hasFlag(FLAG_WIDE_REF)) {
-          setWide(toSymExpr(call->get(3)));
         }
       }
     }
@@ -856,24 +830,18 @@ static void propagateVar(Symbol* sym) {
         //SymExpr* base = toSymExpr(call->get(1));
         // TODO: simply check for a narrow field?
         if (!isFullyWide(field)) {
-          if (isRef(sym)) {
-            widenRef(sym, field->var);
-          } else {
-            debug(sym, "narrow field %s (%d) must be wide\n", field->var->cname, field->var->id);
-            setWide(field->var);
-          }
+          debug(sym, "narrow field %s (%d) must be wide\n", field->var->cname, field->var->id);
+          matchWide(sym, field->var);
         }
       }
       else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-        // TODO: widen tuple members
         Symbol* field = getSvecSymbol(call);
         if (field) {
-          setWide(field);
+          matchWide(sym, field);
         } else {
           AggregateType* ag = toAggregateType(call->get(1)->getValType());
-          INT_ASSERT(ag->symbol->hasFlag(FLAG_STAR_TUPLE));
           for_fields(field, ag) {
-            setWide(field);
+            matchWide(sym, field);
           }
         }
       }
@@ -917,8 +885,7 @@ static void propagateVar(Symbol* sym) {
         // TODO: Duplicate functions here.
         ArgSymbol* arg = actual_to_formal(use);
         debug(sym, "Default widening of arg %s (%d)\n", arg->cname, arg->id);
-        if (isRef(sym)) widenRef(sym, arg);
-        else setWide(arg);
+        matchWide(sym, arg);
       }
     }
   }
@@ -929,8 +896,7 @@ static void propagateVar(Symbol* sym) {
       if (call->isResolved()) {
         debug(sym, "Widening def arg\n");
         ArgSymbol* arg = actual_to_formal(def);
-        if (isRef(sym)) widenRef(sym, arg);
-        else setWide(arg);
+        matchWide(sym, arg);
       }
       else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
@@ -943,15 +909,37 @@ static void propagateVar(Symbol* sym) {
             debug(sym, "ref has a wide _val, src %s (%d) of addr_of must be wide\n", se->var->cname, se->var->id);
             setWide(se);
           }
-          else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) && isRef(sym)) {
-            SymExpr* se = toSymExpr(rhs->get(2));
-            widenRef(sym, se->var);
-          }
-          else if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
-            if (isRef(sym)) {
+          else if (isRef(sym)) {
+            if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+              widenRef(sym, toSymExpr(rhs->get(2))->var);
+            }
+            else if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
               // We're a ref to a wide thing, so the field we're accessing
               // also has to be wide.
               setWide(toSymExpr(rhs->get(2)));
+            }
+            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+              Symbol* field = getSvecSymbol(rhs);
+              if (field) {
+                setWide(field);
+              } else {
+                // If we don't know for sure which field is being accessed,
+                // play it safe and widen all of them.
+                for_fields(fi, toAggregateType(rhs->get(1)->getValType())) {
+                  setWide(fi);
+                }
+              }
+            }
+            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+              Symbol* field = getSvecSymbol(rhs);
+              if (field) {
+                widenRef(sym, field);
+              } else {
+                // See get_svec_member branch above
+                for_fields(fi, toAggregateType(rhs->get(1)->getValType())) {
+                  widenRef(sym, fi);
+                }
+              }
             }
           }
         }
@@ -984,8 +972,7 @@ static void propagateField(Symbol* sym) {
               case PRIM_GET_MEMBER_VALUE:
                 if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
                   DEBUG_PRINTF("\t"); debug(lhs, "widened gmv\n");
-                  if (isRef(sym)) widenRef(sym, lhs);
-                  else setWide(lhs);
+                  matchWide(sym, lhs);
                 }
                 break;
               default:
@@ -1000,6 +987,24 @@ static void propagateField(Symbol* sym) {
         if (isRef(sym)) {
           DEBUG_PRINTF("Widening ref rhs of set_member\n");
           setValWide(rhs);
+        }
+      }
+      else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+        //
+        // If the field is a reference to a wide thing, then the rhs also has
+        // to be able to reference a wide thing.
+        //
+
+        Symbol* field = getTupleField(call);
+        Symbol* rhs = toSymExpr(call->get(3))->var;
+
+        if (isRef(rhs) && valIsWideClass(field)) {
+          if (field->type->symbol->hasFlag(FLAG_REF)) {
+            setValWide(toSymExpr(call->get(3)));
+          }
+          else if (field->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+            setWide(toSymExpr(call->get(3)));
+          }
         }
       }
       else if (call->primitive) {
