@@ -15,8 +15,6 @@ import re;
 import sys;
 import difflib;
 
-args = None
-
 test_output = None
 test_output_raw = None
 data_file = None
@@ -39,7 +37,7 @@ def main():
             verify_data_file(keys, args.keys_file)
             log_timeouts(keys, args.exec_time_out, args.perf_date)
             found_everything = find_keys(keys, args.perf_date)
-    
+
         if not (valid_output and found_everything) and not args.exec_time_out:
             cleanup()
     else:
