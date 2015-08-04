@@ -30,4 +30,5 @@
 #include "sys.h"
 #include "qio_plugin_hdfs.h"
 #include "qio_plugin_curl.h"
+#include "qio_popen.h"
 
