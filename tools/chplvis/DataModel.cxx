@@ -79,6 +79,7 @@ int DataModel::LoadData(const char * filename)
   }
 
   // The configuration data
+  int oldNumTags = numTags;
   int nlocales;
   int fnum;
   double seq;
@@ -121,29 +122,213 @@ int DataModel::LoadData(const char * filename)
     */
     
   }
-
-  // printf (" done.\n");
   
-  // Build a tag inventory
-  if (tagList != NULL)
-    delete [] tagList;
+  // Build data structures, taglist: comms/tag
 
-  tagList = new evItr[numTags];
-  int nextTag = 0;
+  if (tagList != NULL) {
+    for (int i = 0 ; i < oldNumTags+2; i++ )
+      delete tagList[i];
+    delete [] tagList;
+  }
+
+  tagList = new tagData *[numTags+2];
+  for (int i = 0 ; i < numTags+2; i++ ) {
+    tagList[i] = new tagData(numLocales);
+    // Special case ... Count one task for all locales[0].
+    tagList[i]->maxTasks = tagList[i]->locales[0].numTasks = 1;
+  }
+
+  int cTagNo = -1;
+  tagData *curTag = tagList[1];
       
-  printf ("List has %ld items\n", (long)theEvents.size());
-  printf ("List has %d tags\n", numTags);
+  // printf ("List has %ld items\n", (long)theEvents.size());
+  // printf ("List has %d tags\n", numTags);
   
   itr = theEvents.begin();
   while (itr != theEvents.end()) {
-    (*itr)->print();
-    if ((*itr)->Ekind() == Ev_tag && (*itr)->nodeId() == 0) {
-      tagList[nextTag] = itr;
-      nextTag++;
+
+    // Data for processing events
+    E_start  *sp = NULL;
+    E_pause  *pp = NULL;
+    E_tag    *gp = NULL;
+    E_end    *ep = NULL;
+    E_comm   *cp = NULL;
+    E_fork   *fp = NULL;
+    E_task   *tp = NULL;
+    E_begin_task *btp = NULL;
+    E_end_task   *etp = NULL;
+
+    Event *ev = *itr;
+    int curNodeId = ev->nodeId();
+    curTag = tagList[cTagNo+2];
+
+    ev->print();                                          // Debug prints
+    switch (ev->Ekind()) {
+
+      case Ev_start:  // Update both -2 and -1 records (0 and 1)
+        sp = (E_start *)ev;
+        tagList[0]->locales[curNodeId].refUserCpu = 
+            tagList[1]->locales[curNodeId].refUserCpu = sp->user_time();
+        tagList[0]->locales[curNodeId].refSysCpu = 
+            tagList[1]->locales[curNodeId].refSysCpu = sp->sys_time();
+        tagList[0]->locales[curNodeId].refTime = 
+            tagList[1]->locales[curNodeId].refTime = sp->clock_time();
+        break;
+
+      case Ev_tag:
+        gp = (E_tag *)ev;
+        if (curNodeId == 0) {
+          cTagNo++;
+          curTag = tagList[cTagNo+2];
+          curTag->firstTag = itr;
+          curTag->name = gp->tagName();
+        }
+        // Set ref times on current tag
+        curTag->locales[curNodeId].refUserCpu = gp->user_time();
+        curTag->locales[curNodeId].refSysCpu = gp->sys_time();
+        curTag->locales[curNodeId].refTime = gp->clock_time();
+        // Set ref times on -2 (All) if needed
+        if (tagList[0]->locales[curNodeId].refTime == 0) {
+          tagList[0]->locales[curNodeId].refUserCpu = gp->user_time();
+          tagList[0]->locales[curNodeId].refSysCpu = gp->sys_time();
+          tagList[0]->locales[curNodeId].refTime = gp->clock_time();
+        }
+        // Update times on previous tag
+        curTag = tagList[cTagNo+1];
+        if (curTag->locales[curNodeId].refTime != 0) {
+          curTag->locales[curNodeId].userCpu += gp->user_time() -
+            curTag->locales[curNodeId].refUserCpu;
+          curTag->locales[curNodeId].sysCpu += gp->sys_time() -
+            curTag->locales[curNodeId].refSysCpu;
+          curTag->locales[curNodeId].Cpu = curTag->locales[curNodeId].userCpu +
+             	                           curTag->locales[curNodeId].sysCpu;
+          curTag->locales[curNodeId].clockTime += gp->clock_time() -
+            curTag->locales[curNodeId].refTime;
+          curTag->locales[curNodeId].refTime = 0;   // Reset for 
+          // Update current tag maxes
+          if (curTag->maxCpu < curTag->locales[curNodeId].Cpu) {
+            curTag->maxCpu = curTag->locales[curNodeId].Cpu;
+          }
+          if (curTag->maxClock < curTag->locales[curNodeId].clockTime) {
+            curTag->maxClock = curTag->locales[curNodeId].clockTime;
+          }
+        }
+        break;
+
+      case Ev_pause:    // Update information for current tag and All
+        pp = (E_pause *)ev;
+        for (int i = 0; i < 2; i++) {
+          curTag->locales[curNodeId].userCpu += pp->user_time() -
+            curTag->locales[curNodeId].refUserCpu;
+          curTag->locales[curNodeId].sysCpu += pp->sys_time() -
+            curTag->locales[curNodeId].refSysCpu;
+          curTag->locales[curNodeId].Cpu = curTag->locales[curNodeId].userCpu +
+            curTag->locales[curNodeId].sysCpu;
+          curTag->locales[curNodeId].clockTime += pp->clock_time() -
+            curTag->locales[curNodeId].refTime;
+          curTag->locales[curNodeId].refTime = 0;   // Reset for 
+          // Update current tag maxes
+          if (curTag->maxCpu < curTag->locales[curNodeId].Cpu) {
+            curTag->maxCpu = curTag->locales[curNodeId].Cpu;
+          }
+          if (curTag->maxClock < curTag->locales[curNodeId].clockTime) {
+            curTag->maxClock = curTag->locales[curNodeId].clockTime;
+          }
+          // For 2nd time through loop, do the same thing for All
+          curTag = tagList[0];
+        }
+        break;
+
+      case Ev_end:   // Update both -2 and last tag
+        ep = (E_end *)ev;
+        for (int i = 0; i < 2; i++) {
+          curTag->locales[curNodeId].userCpu += ep->user_time() -
+            curTag->locales[curNodeId].refUserCpu;
+          curTag->locales[curNodeId].sysCpu += ep->sys_time() -
+            curTag->locales[curNodeId].refSysCpu;
+          curTag->locales[curNodeId].Cpu = curTag->locales[curNodeId].userCpu +
+            curTag->locales[curNodeId].sysCpu;
+          curTag->locales[curNodeId].clockTime += ep->clock_time() -
+            curTag->locales[curNodeId].refTime;
+          curTag->locales[curNodeId].refTime = 0;   // Reset for 
+          // Update current tag maxes
+          if (curTag->maxCpu < curTag->locales[curNodeId].Cpu) {
+            curTag->maxCpu = curTag->locales[curNodeId].Cpu;
+          }
+          if (curTag->maxClock < curTag->locales[curNodeId].clockTime) {
+            curTag->maxClock = curTag->locales[curNodeId].clockTime;
+          }
+          // For 2nd time through loop, do the same thing for All
+          curTag = tagList[0];
+        }
+        break;
+
+      case Ev_comm:
+        cp = (E_comm *)ev;
+        for (int i = 0; i < 2; i++) {
+          if (++(curTag->comms[cp->srcId()][cp->dstId()].numComms) > curTag->maxComms)
+            curTag->maxComms = curTag->comms[cp->srcId()][cp->dstId()].numComms;
+          curTag->comms[cp->srcId()][cp->dstId()].commSize += cp->totalLen();
+          if (curTag->comms[cp->srcId()][cp->dstId()].commSize > curTag->maxSize)
+            curTag->maxSize = curTag->comms[cp->srcId()][cp->dstId()].commSize;
+          if (cp->isGet())
+            curTag->comms[cp->srcId()][cp->dstId()].numGets++;
+          else
+            curTag->comms[cp->srcId()][cp->dstId()].numPuts++;
+          // For 2nd time through loop, do the same thing for All
+          curTag = tagList[0];
+        }
+        break;
+
+      case Ev_fork:
+        fp = (E_fork *)ev;
+        for (int i = 0; i < 2; i++) {
+          if (++(curTag->comms[fp->srcId()][fp->dstId()].numComms) > curTag->maxComms)
+            curTag->maxComms = curTag->comms[fp->srcId()][fp->dstId()].numComms;
+          curTag->comms[fp->srcId()][fp->dstId()].commSize += fp->argSize();
+          if (curTag->comms[fp->srcId()][fp->dstId()].commSize > curTag->maxSize)
+            curTag->maxSize = curTag->comms[fp->srcId()][fp->dstId()].commSize;
+          curTag->comms[fp->srcId()][fp->dstId()].numForks++;
+          // For 2nd time through loop, do the same thing for All
+          curTag = tagList[0];
+        }
+        break;
+
+      case Ev_task:
+        tp = (E_task *)ev;
+        if (++(curTag->locales[curNodeId].numTasks) > curTag->maxTasks)
+          curTag->maxTasks = curTag->locales[curNodeId].numTasks;
+        if (++(tagList[0]->locales[curNodeId].numTasks) > tagList[0]->maxTasks)
+          tagList[0]->maxTasks = tagList[0]->locales[curNodeId].numTasks;
+        // Insert tag into task map for this locale (No work for global)
+        break;
+
+      case Ev_begin_task:
+        btp = (E_begin_task *)ev;
+        // Find task in task map
+        // Update the begin record
+        break;
+
+      case Ev_end_task:
+        etp = (E_end_task *)ev;
+        // Find task in task map
+        // Update the end record
+        break;
+
+      default:
+        // Shouldn't get here
+        assert(false);
     }
     itr++;
   }
 
+  printf ("0: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
+          tagList[0]->maxComms, tagList[0]->maxSize, tagList[0]->maxTasks, tagList[0]->maxClock,
+          tagList[0]->maxCpu);
+  printf ("1: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
+          tagList[1]->maxComms, tagList[1]->maxSize, tagList[1]->maxTasks, tagList[1]->maxClock,
+          tagList[1]->maxCpu);
+    
   return 1;
 }
 

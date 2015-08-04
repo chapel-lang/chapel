@@ -23,6 +23,7 @@
 #include "Event.h"
 #include <list>
 #include <vector>
+#include <map>
 
 // This class builds a list of events 
 //   Start, Stop, Pause, and Tag events are grouped together 
@@ -36,9 +37,44 @@
 // both this class and runtime/src/chpl-visual-debug.c need to be modified to
 // write (chpl-visual-debug.c) and read (this class) in binary.
 
+struct taskData {
+  E_task *taskRec;
+  E_begin_task *beginRec;
+  E_end_task *endRec;
+
+  taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL) {};
+};
+
+struct localeData {
+  double userCpu;
+  double sysCpu;
+  double Cpu;
+  double refUserCpu;
+  double refSysCpu;
+  double clockTime;
+  double refTime;
+  long    numTasks;
+  std::map<long,taskData> tasks;
+
+  localeData() : userCpu(0), sysCpu(0), Cpu(0), refUserCpu(0), refSysCpu(0), clockTime(0), refTime(0),
+    numTasks(0) {};
+};
+
+struct commData {
+  long numComms;
+  long numGets;
+  long numPuts;
+  long numForks;
+  long commSize;
+  
+  commData() :  numComms(0), numGets(0), numPuts(0), numForks(0), commSize(0) {};
+};
+
 class DataModel {
 
  private:
+
+   typedef std::list<Event*>::iterator evItr;
 
    int LoadFile (const char *filename, int index, double seq);
 
@@ -86,7 +122,7 @@ class DataModel {
   
   Event * getNextEvent()
       {
-        curEvent++;
+        curEvent++; 
         if (curEvent == theEvents.end())
           return NULL;
         return *curEvent;
@@ -96,21 +132,69 @@ class DataModel {
 
   Event * getTagNo(int n)
       {
-        //printf ("getTagNo %d: ", n);
+        printf ("getTagNo %d: ", n);
+
+        printf ("maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
+                tagList[n+2]->maxComms, tagList[n+2]->maxSize, tagList[n+2]->maxTasks,
+                tagList[n+2]->maxClock, tagList[n+2]->maxCpu);
+
 	if (n >= 0 && n < numTags) {
-	  curEvent = tagList[n];
-	}
+	  curEvent = tagList[n+2]->firstTag;
+	} else {
+          curEvent = theEvents.begin();
+        }
 	//(*curEvent)->print();
 	return *curEvent;
       }
 
- private:
+  struct tagData {
+    friend class DataModel;
+    const long numLocales;
+    std::string name;
+    localeData *locales;
+    commData **comms;
 
-  typedef std::list<Event*>::iterator evItr;
+    // Local Maxes
+    double maxCpu;
+    double maxClock;
+    long   maxTasks;
+    long   maxComms;
+    long   maxSize;
+    
+  tagData(long numLoc) : numLocales(numLoc), name(""),
+                         maxCpu(0), maxClock(0), maxTasks(0), maxComms(0), maxSize(0) {
+    printf ("Running tagData constructor.\n");
+      locales = new localeData[numLocales];
+      comms = new  commData * [numLocales];
+      for (int i = 0; i < numLocales; i++ )
+        comms[i] = new commData[numLocales];
+      printf ("end of tagData constructor.\n");
+    }
+    
+    ~tagData() {
+    printf ("Running tagData constructor.\n");
+      delete [] locales;
+      locales = NULL;
+      for (int i = 0; i < numLocales; i++) {
+        delete [] comms[i];
+        comms[i] = NULL;
+      }
+      delete [] comms;
+      comms = NULL;
+    }
+
+    private:
+    evItr firstTag;
+
+  };
+
+ private:
 
   int numLocales;
   int numTags;
-  evItr *tagList;
+  
+  // Includes entries for -2 (All), and -1 (Start->0),  size is numTags+2
+  tagData **tagList;  
 
   std::list<Event*> theEvents;
   std::list<Event*>::iterator curEvent;

@@ -180,7 +180,7 @@ void ViewField::processData(int tagNum)
 {
   int ix1, ix2;  // For processing the arrays
 
-  // printf ("ViewField::processData(%d)\n", tagNum);
+  //printf ("ViewField::processData(%d)\n", tagNum);
 
   // Initialize ... in case data has changed.
   for (ix1 = 0; ix1 < numlocales; ix1++) {
@@ -373,9 +373,11 @@ void ViewField::processData(int tagNum)
   }
 
   Info->setMaxes(maxTasks, maxComms, maxDatasize, maxCpu, maxClock);
-  //printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
+  // printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
 
   if (tagNum == -3)  makeTagsMenu();
+
+  // printf ("After Makeing Tags Menu.\n");
 
  }
 
