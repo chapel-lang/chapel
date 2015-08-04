@@ -2,11 +2,29 @@
 #
 # CHAPEL TESTING
 
+import subprocess as tmp_subprocess
+import os
+from chplenv import *
+
+# find third-party
+chpl_home = os.getenv('CHPL_HOME')
+third_party = os.path.join(chpl_home, 'third-party')
+
+# get relative path from third-party to the venv activate_this.py
+host_platform = chpl_platform.get('host')
+rel_venv_path = os.path.join('chpl-venv', 'install', host_platform,
+                                     'chpl-virtualenv', 'bin',
+                                     'activate_this.py')
+activate_this_file = os.path.join(third_party, rel_venv_path)
+
+# activate the virtualenv
+execfile(activate_this_file, dict(__file__=activate_this_file))
+
+
 from __future__ import print_function
 import argparse
 import sys
 import time
-import os
 import subprocess32 as subprocess
 import platform
 import re
@@ -18,7 +36,6 @@ import glob
 import contextlib
 import logging
 import atexit
-from chplenv import *
 
 
 # PROGRAM ENTRY POINT
