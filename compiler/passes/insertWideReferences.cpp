@@ -570,6 +570,8 @@ static void buildWideRefMap()
         // _ref_T -> _ref__wide_T
         // Later we'll use this map to widen variables
         narrowToWideVal[ts->type] = refToWideClass;
+
+        wide->refType = refToWideClass;
       }
 
       // Create wide refs for each ref type.
@@ -636,8 +638,7 @@ static bool fieldCanBeWide(Symbol* field) {
 
   return !(isFullyWide(ts) ||
            field->hasFlag(FLAG_SUPER_CLASS) ||
-           isRef(ts) ||
-           stcmp(ts->name, "_class_localscoforall_fn") == 0);
+           isRef(ts));
 }
 
 
@@ -649,7 +650,7 @@ static void addKnownWides() {
     if (!typeCanBeWide(var)) continue;
 
     if (isField(var)) {
-      //defaultFieldWideness(var);
+      // ?
     } else {
       Symbol* defParent = var->defPoint->parentSymbol;
 
@@ -1584,9 +1585,30 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
 static void insertWideTemp(Type* type, SymExpr* src) {
   SET_LINENO(src);
   Expr* stmt = src->getStmtExpr();
+  SymExpr* RHS = src;
+
+
+  Type* refToWide = narrowToWideVal[src->typeInfo()];
+  if (isRef(src) && refToWide) {
+    // ref_wide_T = ref_T
+
+    VarSymbol* narrowThing = newTemp(src->getValType());
+    stmt->insertBefore(new DefExpr(narrowThing));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, narrowThing, new CallExpr(PRIM_DEREF, RHS->copy())));
+
+    VarSymbol* wideThing = newTemp(refToWide->getValType());
+    stmt->insertBefore(new DefExpr(wideThing));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, wideThing, narrowThing));
+
+
+    VarSymbol* tmp = newTemp(refToWide);
+    stmt->insertBefore(new DefExpr(tmp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, wideThing)));
+    RHS = new SymExpr(tmp);
+  }
   VarSymbol* tmp = newTemp(type);
   stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, src->copy()));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, RHS->copy()));
   src->replace(new SymExpr(tmp));
 }
 
@@ -1680,6 +1702,7 @@ static void fixAST() {
         makeMatch(field, toSymExpr(call->get(3)));
       }
       else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+        // TODO: Local checks for references from GET_MEMBER_VALUE
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_ADDR_OF)) {
             Type* val = toSymExpr(call->get(1))->getValType();
@@ -1691,21 +1714,31 @@ static void fixAST() {
           else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* field = toSymExpr(rhs->get(2));
             SymExpr* lhs = toSymExpr(call->get(1));
-            if (field->var->hasFlag(FLAG_LOCAL_FIELD) && !isFullyWide(lhs)) {
+            if (!isFullyWide(lhs)) {
               SET_LINENO(lhs);
               VarSymbol* tmp = newTemp(field->var->type);
 
               call->insertBefore(new DefExpr(tmp));
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
 
-              if (!fNoLocalChecks) {
+              if (field->var->hasFlag(FLAG_LOCAL_FIELD) && !fNoLocalChecks) {
                 call->insertAfter(new CallExpr(PRIM_LOCAL_CHECK, tmp));
               }
 
               lhs->replace(new SymExpr(tmp));
             }
           }
-          // TODO: Local checks for references from GET_MEMBER_VALUE
+          else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+            SymExpr* lhs = toSymExpr(call->get(1));
+            if (!isFullyWide(lhs)) {
+              SET_LINENO(lhs);
+
+              VarSymbol* tmp = newTemp(getTupleField(rhs)->type);
+              call->insertBefore(new DefExpr(tmp));
+              call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
+              lhs->replace(new SymExpr(tmp));
+            }
+          }
         }
       }
       else if (call->isPrimitive(PRIM_PTR_EQUAL) || call->isPrimitive(PRIM_PTR_NOTEQUAL)) {
@@ -1818,6 +1851,15 @@ insertWideReferences(void) {
     }
   }
   debugTimer.stop();
+
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (!typeCanBeWide(var)) continue;
+
+    if (isField(var) && fieldCanBeWide(var)) {
+      fixType(var, true, true);
+    }
+  }
+
 
   // IWR
   insertStringLiteralTemps();

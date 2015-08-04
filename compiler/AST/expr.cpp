@@ -1178,6 +1178,7 @@ GenRet codegenRaddr(GenRet wide)
  
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
    ret = codegenWideThingField(wide, WIDE_GEP_ADDR);
+
    ret.chplType = dtString;
    return ret;
   }
@@ -3301,6 +3302,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       }
     } else {
       // not a homogeneous tuple copy
+      // FOOBAR HERE
       if( info->cfile ) {
         std::string stmt = codegenValue(to_ptr).c + " = ";
         stmt += codegenValue(from).c;
@@ -4046,6 +4048,7 @@ GenRet CallExpr::codegen() {
          case PRIM_GET_MEMBER:
          {
           /* Get a pointer to a member */
+          if (this->id == 887352) gdbShouldBreakHere();
           SymExpr* se = toSymExpr(call->get(2));
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
@@ -4053,6 +4056,10 @@ GenRet CallExpr::codegen() {
           {
             codegenAssign(
                 get(1), codegenAddrOf(codegenFieldPtr(call->get(1), se))); 
+          }
+          else if (get(1)->getValType() != call->get(2)->typeInfo()) {
+            GenRet getField = codegenFieldPtr(call->get(1), se);
+            codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR)));
           }
           else
             handled = false;
@@ -4256,6 +4263,8 @@ GenRet CallExpr::codegen() {
        }
       } // End of special-case handling for primitives in the RHS of MOVE.
 
+      if (this->id == 1154766) gdbShouldBreakHere();
+
       // Handle general cases of PRIM_MOVE.
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -4268,6 +4277,10 @@ GenRet CallExpr::codegen() {
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        if (get(1)->getValType() != get(2)->getValType()) {
+          gdbShouldBreakHere();
+          printf("problem for %d\n", this->id);
+        }
         codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
         break;
       }
@@ -4280,8 +4293,16 @@ GenRet CallExpr::codegen() {
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        // get(1) = Raddr(get(2));
-        codegenAssign(get(1), codegenRaddr(get(2))); 
+        if (get(1)->getValType() != get(2)->getValType()) {
+          // ref_T = wide_ref_wide_T
+          GenRet narrowRef = codegenRaddr(get(2));
+          GenRet wideThing = codegenDeref(narrowRef);
+          GenRet narrowThing = codegenWideThingField(wideThing, WIDE_GEP_ADDR);
+          codegenAssign(get(1), codegenAddrOf(narrowThing));
+        } else {
+          // get(1) = Raddr(get(2));
+          codegenAssign(get(1), codegenRaddr(get(2)));
+        }
         break;
       }
       if (!get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
