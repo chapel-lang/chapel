@@ -325,6 +325,7 @@ tags
 
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
+/test/runtime/kbrady/goodAllocSize.good
 
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output
