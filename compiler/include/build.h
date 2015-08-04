@@ -131,6 +131,7 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              Expr*       optWhere,
                              BlockStmt*  optFnBody,
                              const char* docs);
+void applyPrivateToBlock(BlockStmt* block);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);

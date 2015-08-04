@@ -91,7 +91,7 @@ void docs(void) {
 
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
-      if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
+      if (!mod->noDocGen() && !devOnlyModule(mod)) {
         if (isNotSubmodule(mod)) {
           std::ofstream *file = openFileFromMod(mod, docsRstDir);
 
@@ -137,7 +137,7 @@ void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
 }
 
 void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
-  if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
+  if (!cl->symbol->noDocGen() && !cl->isUnion()) {
     cl->printDocs(file, tabs);
 
     printFields(file, cl, tabs + 1);
@@ -179,7 +179,7 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
-  if (!mod->hasFlag(FLAG_NO_DOC)) {
+  if (!mod->noDocGen()) {
     mod->printDocs(file, tabs);
 
     Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
@@ -283,7 +283,7 @@ std::string generateSphinxProject(std::string dirpath) {
   const char * sphinxDir = dirpath.c_str();
 
   // Copy the sphinx template into the output dir.
-  const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
+  const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpl-venv/chpldoc-sphinx-project/*");
   const char * cmd = astr("cp -r ", sphinxTemplate, " ", sphinxDir, "/");
   if( printSystemCommands ) {
     printf("%s\n", cmd);
@@ -301,11 +301,11 @@ std::string generateSphinxProject(std::string dirpath) {
  */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
-  // based on the install path in the third-party/chpldoc-venv/ dir.
+  // based on the install path in the third-party/chpl-venv/ dir.
 
   const char * venvDir = astr(
-    CHPL_HOME, "/third-party/chpldoc-venv/install/",
-    CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
+    CHPL_HOME, "/third-party/chpl-venv/install/",
+    CHPL_TARGET_PLATFORM, "/chpl-virtualenv");
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
 

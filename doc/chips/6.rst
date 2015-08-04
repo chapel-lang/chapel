@@ -144,15 +144,18 @@ This CHIP also clarifies the default behavior of
 constructing a copy of a record with a `ref` field.
 Namely, the corresponding field of the copy
 references the same variable as that field of the source.
+The contents of the referenced variable is not copied.
 
 Such a copy is constructed in the following cases,
 unless optimized away by the compiler:
 
 * declaring a variable or a field or (in the future) array element whose initialization expression is the source record
 
-* passing the source record into a function by `in`, `const in`, `inout`, or `out` intent
+* passing the source record into a function via an `in` or `const in` or `inout` argument
 
-* returned the source record from a function by value
+* returning the source record from a function by value via a `return` or `yield` statement
+
+* returning the source record from a function via an `out` or `inout` argument
 
 
 Corner Cases and Open Issues

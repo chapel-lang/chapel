@@ -27,8 +27,7 @@
  */
 module Sort {
 
-pragma "no doc"
-inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
+private inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
   if eq {
     if reverse then return a >= b;
     else return a <= b;
@@ -172,8 +171,7 @@ proc MergeSort(Data: [?Dom], minlen=16, doublecheck=false, param reverse=false) 
 }
 
 
-pragma "no doc"
-proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.rank == 1 {
+private proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   if hi-lo < minlen {
@@ -192,8 +190,7 @@ proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.rank == 
 }
 
 
-pragma "no doc"
-iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) {
+private iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) {
   var a1 = A1.domain.dim(1).low;
   const a1hi = A1.domain.dim(1).high;
   var a2 = A2.domain.dim(1).low;
