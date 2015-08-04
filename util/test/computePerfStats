@@ -14,6 +14,7 @@ import time;
 import re;
 import sys;
 import difflib;
+import string;
 
 test_output = None
 test_output_raw = None
@@ -279,10 +280,16 @@ def cleanup():
     print("output was: ")
     # if test output was too long, only print first and last 1000 characters
     if len(test_output_raw) > 2000: 
-        print(test_output_raw[:1000].strip())
-        print(test_output_raw[-1000:].strip())
+        head = test_output_raw[:1000].strip()
+        tail = test_output_raw[-1000:].strip()
+        head = ''.join(x if x in string.printable else "~" for x in head)
+        tail = ''.join(x if x in string.printable else "~" for x in tail)
+        print(head)
+        print(tail)
     else:
-        print(test_output_raw.strip())
+        out = test_output_raw.strip()
+        out = ''.join(x if x in string.printable else "~" for x in out)
+        print(out)
 
     exit(1)
 
