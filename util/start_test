@@ -37,6 +37,8 @@ import contextlib
 import logging
 import atexit
 
+# suppression of atexit handler
+RUNNING = False
 
 # PROGRAM ENTRY POINT
 def main():
@@ -47,6 +49,9 @@ def main():
     global args
     (args, _) = parser.parse_known_args()
     parse_passthrough_opts()
+    
+    global RUNNING
+    RUNNING = True
 
     invocation_dir = os.getcwd()
 
@@ -1112,7 +1117,7 @@ def check_for_duplicates():
 
 @atexit.register
 def cleanup():
-    if os.path.isdir(chpl_test_tmp_dir):
+    if os.path.isdir(chpl_test_tmp_dir) and RUNNING:
         logger.write("[Removing {} directory]".format(chpl_test_tmp_dir))
         shutil.rmtree(chpl_test_tmp_dir)
 
