@@ -3,14 +3,12 @@ Initializing a RefCount
 Done making global
 Before scope (begin)
 Initializing a RefCount
-In R initCopy {count = 1}
-In ~R() 2
-Starting test_one {count = 1}
-In R.routine {count = 1}
-In test_two {count = 1}
-Done test_one {count = 1}
 In ~R() 1
 Destroying a RefCount
+Starting test_one nil
+In R.routine nil
+In test_two nil
+Done test_one nil
 After scope (begin)
 In ~R() 1
 Destroying a RefCount
