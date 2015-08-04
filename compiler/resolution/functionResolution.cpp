@@ -2719,7 +2719,15 @@ getVisibleFunctions(BlockStmt* block,
     canSkipThisBlock = false; // cannot skip if this block defines functions
     Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
     if (fns) {
-      visibleFns.append(*fns);
+      forv_Vec(FnSymbol, fn, *fns) {
+        if (fn->isVisible(callOrigin)) {
+          // isVisible checks if the function is private to its defining
+          // module (and in that case, if we are under its defining module)
+          // This ensures that private functions will not be used outside
+          // of their proper scope.
+          visibleFns.add(fn);
+        }
+      }
     }
   }
 
@@ -6524,7 +6532,9 @@ resolveFns(FnSymbol* fn) {
     if (!ct)
       INT_FATAL(fn, "Constructor has no class type");
     setScalarPromotionType(ct);
-    fixTypeNames(ct);
+    if (!developer) {
+      fixTypeNames(ct);
+    }
   }
 
   resolveReturnType(fn);

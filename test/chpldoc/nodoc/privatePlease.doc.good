@@ -1,0 +1,4 @@
+Module: Bar
+   config var blah3: int
+   proc c()
+cat: docs/toBeIgnored.txt: No such file or directory

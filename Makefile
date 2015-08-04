@@ -98,6 +98,9 @@ third-party-try-gmp: FORCE
 	fi \
 	fi
 
+third-party-test-venv: FORCE
+	cd third-party && $(MAKE) test-venv
+
 third-party-chpldoc-venv: FORCE
 	cd third-party && $(MAKE) chpldoc-venv
 
@@ -117,6 +120,13 @@ module-docs: chpldoc
 	$(MAKE) module-docs-only
 
 docs: module-docs
+
+chplvis: compiler third-party-fltk FORCE 
+	cd tools/chplvis && $(MAKE)
+	cd tools/chplvis && $(MAKE) install
+
+third-party-fltk: FORCE
+	cd third-party/fltk && $(MAKE)
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
@@ -139,13 +149,14 @@ clobber: FORCE
 	cd modules && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
+	cd tools/chplvis && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
 
 depend:
 	@echo "make depend has been deprecated for the time being"
 
-check: all
+check: all third-party-test-venv
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 check-chpldoc: chpldoc
