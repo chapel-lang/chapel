@@ -1531,10 +1531,19 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   if (local) {
     type = local->type;
 
+    // If the local is an argument bound to an actual that is marked with
+    // FLAG_TEMP_IN_ITERATOR, then we use its value type to ensure that we
+    // capture a copy of it.
+    if (local->hasFlag(FLAG_TEMP_IN_ITERATOR))
+    {
+      type = type->getValType();
+    }
+
     // If the iterator is a method and the local variable is _this and the
-    // iterator method is a var method, we store it by reference.
-    // Otherwise, we want to capture its value in the iterator class, so we
-    // force the type of the field to be the value type.
+    // iterator method is not a ref iterator, we store the local by value.
+    // TODO: This case might be absorbed in the above is applying the "temp in
+    // iterator" flag at the point of creation of the iterator is more
+    // convenient.
     if (local == fn->_this && ! (fn->thisTag & INTENT_FLAG_REF))
     {
       // not tagged as ref this, store 'this' by value.
@@ -1584,6 +1593,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
   ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_DEFAULT])));
 
   if (!valField) {
+    // TODO: Inline createICField here and simplify.
     valField = createICField(i, NULL, yieldedType, true, fn);
   }
   *valFieldRef = valField;
