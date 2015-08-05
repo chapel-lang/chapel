@@ -1,1 +1,0 @@
--g -I$CRAY_LIBSCI_PREFIX_DIR/include -lgfortran -lsci_gnu -L$CRAY_LIBSCI_PREFIX_DIR/lib --module-dir ../shared
