@@ -1,6 +1,4 @@
 /*
-    // use reinitString directly if that is not the case
-    // buff must be local
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,15 +20,7 @@
 /*
  * NOTES:
  *
- * - An empty string is represented by the default bufferType value
- *   which is always considered to be a string literal.  It will never
- *   be freed or reference counted.  Another option would be to use a
- *   special NULL extern symbol.  Unfortunately, since _defaultOf()
- *   currently does not work for types with "ignore noinit", we'd
- *   still have to handle the default bufferType value, so it would not
- *   be worth it to use NULL.  If the situation changes, it might be
- *   worth reconsidering (also taking into consideration the runtime
- *   functions that back this).
+ * - An empty string is represted by len == 0 and buff == nil.
  *
  * - It is assumed the bufferType is a local-only type, so we never
  *   make a remote copy of one passed in by the user, though remote
@@ -38,6 +28,7 @@
  *
  */
 
+//TODO: I dont think this module is overly useful anymore
 module BaseStringType {
   use CString;
   use SysCTypes;
@@ -111,6 +102,9 @@ module String {
     }
   }
 
+  // TODO: We should be able to remove "ignore noinit", but doing so causes
+  // memory leaks in various places. Investigate why later and add noinit back
+  // in when possible.
   pragma "string record"
   pragma "ignore noinit"
   pragma "no default functions"
@@ -142,6 +136,7 @@ module String {
       this.reinitString(localBuff, sLen, sLen+1, needToCopy=sRemote);
     }
 
+    // This constructor can cause a leak if owned = false and needToCopy = true
     proc string(buff: bufferType, length: int, size: int,
                 owned: bool = true, needToCopy: bool = true) {
       this.owned = owned;
@@ -220,6 +215,17 @@ module String {
     inline proc length return len;
     //inline proc size return len;
 
+    // Localize gets a version of this that is on the currently executing
+    // locale. If this is already on the current locale we return a shallow
+    // copy, otherwise a remote copy is performed.
+    inline proc localize() /*: string*/ {
+        const ret: string = if this.locale.id != chpl_nodeID
+          then this // assignment makes it local
+          else new string(this, owned=false);
+        return ret;
+    }
+
+
     // Steals ownership of string.buff. This is unsafe and you probably don't
     // want to use it. I'd like to figure out how to get rid of it entirely.
     proc _steal_buffer() /*: bufferType*/ {
@@ -239,15 +245,16 @@ module String {
     }
 
     proc this(i: int) /*: string*/ {
-      var ret: string;
       if i <= 0 || i > this.len then halt("index out of bounds of string");
 
+      var ret: string;
       ret._size = min_alloc_size;
       ret.len = 1;
       ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                                 CHPL_RT_MD_STR_COPY_DATA): bufferType;
+      ret.owned = true;
 
-      var remoteThis = this.locale.id != chpl_nodeID;
+      const remoteThis = this.locale.id != chpl_nodeID;
       if remoteThis {
         chpl_string_comm_get(ret.buff, this.locale.id, this.buff, this.len.safeCast(size_t));
       } else {
@@ -258,11 +265,11 @@ module String {
       return ret;
     }
 
-    // TODO: I wasn't very good about caching variables locally in this one.
-    proc this(r: range(?)) /*: string*/ {
-      var ret: string;
-      if this.isEmptyString() then return ret;
-
+    // Checks to see if r is inside the bounds of this and returns a finite
+    // range that can be used to iterate over a section of the string
+    // TODO: move into the public interface in some form? better name if so?
+    proc _getView(r:range(?)) {
+      //TODO: don't use halt here, or at least wrap in a bounds checks param
       //TODO: halt()s should use string.writef at some point.
       if r.hasLowBound() {
         if r.low <= 0 then
@@ -270,39 +277,50 @@ module String {
           //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       }
       if r.hasHighBound() {
-        if r.high < 0 || r.high:int > this.len then
+        if (r.high < 0) || (r.high:int > this.len) then
           halt("range out of bounds of string");
           //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       }
+      const ret = r[1:r.idxType..#(this.len:r.idxType)];
+      return ret;
+    }
 
-      var r2 = r[1:r.idxType..#(this.len:r.idxType)];
+    // TODO: I wasn't very good about caching variables locally in this one.
+    proc this(r: range(?)) /*: string*/ {
+      var ret: string;
+      if this.isEmptyString() then return ret;
+
+      const r2 = this._getView(r);
       if r2.size <= 0 {
-        halt("tring to slice a string with a range of size 0");
-        //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+        // TODO: I can't just return "" (ret var gets freed for some reason)
+        ret = "";
       } else {
         ret.len = r2.size:int;
-      }
-      ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
-      ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
-                                CHPL_RT_MD_STR_COPY_DATA): bufferType;
+        ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
+        // FIXME: I was dumb here, just copy the correct region over in
+        // multi-locale and use that as the string buffer. No need to copy stuff
+        // about after pulling it across.
+        ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
+                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
 
-      var thisBuff: bufferType;
-      var remoteThis = this.locale.id != chpl_nodeID;
-      if remoteThis {
-        // TODO: Could to an optimization here and only pull down the data
-        // between r2.low and r2.high. Indexing for the copy below gets a bit
-        // more complex when that is performed though.
-        thisBuff = copyRemoteBuffer(this.locale.id, this.buff, this.len);
-      } else {
-        thisBuff = this.buff;
-      }
+        var thisBuff: bufferType;
+        const remoteThis = this.locale.id != chpl_nodeID;
+        if remoteThis {
+          // TODO: Could to an optimization here and only pull down the data
+          // between r2.low and r2.high. Indexing for the copy below gets a bit
+          // more complex when that is performed though.
+          thisBuff = copyRemoteBuffer(this.locale.id, this.buff, this.len);
+        } else {
+          thisBuff = this.buff;
+        }
 
-      for (r2_i, i) in zip(r2, 0..) {
-        ret.buff[i] = thisBuff[r2_i-1];
-      }
-      ret.buff[ret.len] = 0;
+        for (r2_i, i) in zip(r2, 0..) {
+          ret.buff[i] = thisBuff[r2_i-1];
+        }
+        ret.buff[ret.len] = 0;
 
-      if remoteThis then chpl_mem_free(thisBuff);
+        if remoteThis then chpl_mem_free(thisBuff);
+      }
 
       return ret;
     }
@@ -319,7 +337,7 @@ module String {
       compilerError("substring removed: use string[range]");
     }
 
-    inline proc isEmptyString() {
+    inline proc isEmptyString() : bool {
       return this.len == 0; // this should be enough of a check
     }
 
@@ -342,49 +360,492 @@ module String {
     // TODO: could use a multi-pattern search or some variant when there are
     // multiple needles. Probably wouldnt be worth the overhead for small
     // needles though
-    proc startsWith(needles: string ...) : bool {
+    inline proc _startsEndsWith(needles: string ..., param fromLeft: bool) : bool {
       for needle in needles {
         if needle.isEmptyString() then return true;
         if needle.len > this.len then continue;
 
-        for i in 0:int..#needle.len {
-          if needle.buff[i] != this.buff[i] then break;
-          if i == needle.len-1 then return true;
+        const localNeedle: string = needle.localize();
+
+        const needleR = 0:int..#localNeedle.len;
+        if fromLeft {
+          for n in needleR {
+            if localNeedle.buff[n] != this.buff[n] then break;
+            if n == localNeedle.len-1 then return true;
+          }
+        } else {
+          const thisR = (this.len-localNeedle.len):int..this.len-1;
+          for (n, t) in zip(needleR, thisR) {
+            if localNeedle.buff[n] != this.buff[t] then break;
+            if n == localNeedle.len-1 then return true;
+          }
         }
       }
       return false;
     }
 
-    // Returns the index of the first occurrence of a substring within a
-    // string or 0 if the substring is not in the string.
+    proc startsWith(needles: string ...) : bool {
+      return _startsEndsWith((...needles), fromLeft=true);
+    }
+
+    proc endsWith(needles: string ...) : bool {
+      return _startsEndsWith((...needles), fromLeft=false);
+    }
+
+
+    // Helper function that uses a param bool to toggle between count and find
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
-    proc find(needle: string) : int {
-      const nlen = needle.len;
-      const thisLen = this.len;
-      if nlen == 0 then return 1; //TODO: should this always be 0?
-      if thisLen == 0 then return 0;
-      if nlen > thisLen then return 0;
-
-      var ret: int = 0;
+    //
+    inline proc _search_helper(needle: string, region: range(?),
+                               param count: bool, param fromLeft: bool = true) {
       // needle.len is <= than this.len, so go to the home locale
+      var ret: int = 0;
       on this {
-        var localNeedle: string = if needle.locale.id != chpl_nodeID
-        then needle // assignment makes it local
-        else new string(needle, owned=false);
+        // any value > 0 means we have a solution
+        // used because we cant break out of an on-clause early
+        var localRet: int = -1;
+        const nLen = needle.len;
+        const view = this._getView(region);
+        const thisLen = view.size;
 
-        const lastPossible = (this.len-localNeedle.len)+1;
-        for i in 0..#lastPossible {
-          for j in 0..#localNeedle.len {
-            if this.buff[i+j] != localNeedle.buff[j] then break;
-            if j == localNeedle.len-1 then ret = i+1;
+        // Edge cases
+        if count {
+          if nLen == 0 then
+            localRet = thisLen+1;
+        } else { // find
+          if nLen == 0 { // Empty needle
+            if fromLeft {
+              localRet = 0;
+            } else {
+              localRet = if thisLen == 0
+                then 0
+                else thisLen+1;
+            }
           }
-          if ret != 0 then break;
         }
+
+        if nLen > thisLen {
+          localRet = 0;
+        }
+
+        if localRet == -1 {
+          localRet = 0;
+          const localNeedle: string = needle.localize();
+
+          // i *is not* an index into anything, it is the order of the element
+          // of view we are searching from.
+          const numPossible = thisLen - nLen + 1;
+          const searchSpace = if fromLeft
+              then 0..#(numPossible)
+              else 0..#(numPossible) by -1;
+          for i in searchSpace {
+            // j *is* the index into the localNeedle's buffer
+            for j in 0..#nLen {
+              const idx = view.orderToIndex(i+j); // 1s based idx
+              if this.buff[idx-1] != localNeedle.buff[j] then break;
+
+              if j == nLen-1 {
+                if count {
+                  localRet += 1;
+                } else { // find
+                  localRet = view.orderToIndex(i);
+                }
+              }
+            }
+            if !count && localRet != 0 then break;
+          }
+        }
+        ret = localRet;
       }
       return ret;
     }
-  }
+
+    // Returns the index of the first occurrence of a substring within a
+    // string or 0 if the substring is not in the string.
+    // TODO: better name than region?
+    proc find(needle: string, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=false);
+    }
+
+    proc count(needle: string, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=true);
+    }
+
+    proc rfind(needle: string, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=false, fromLeft=false);
+    }
+
+    // TODO: not ideal - count and single allocation probably faster
+    //                 - can special case on replacement|needle.length (0, 1)
+    proc replace(needle: string, replacement: string, count: int = -1) /*: string*/ {
+      var result: string = this;
+      var found: int = 0;
+      var startIdx: int = 1;
+      const localNeedle: string = needle.localize();
+      const localReplacement: string = replacement.localize();
+
+      while (count < 0) || (found < count) {
+        const idx = result.find(localNeedle, startIdx..);
+        if !idx then break;
+
+        found += 1;
+        result = result[..idx-1] + localReplacement + result[(idx + localNeedle.length)..];
+        startIdx = idx + localReplacement.length;
+      }
+      return result;
+    }
+
+    //TODO: Add support for ignoreEmpty
+    // TODO: broken, seems like it may be on the side of AMM?
+    proc split(sep: string, count: int = -1, ignoreEmpty: bool = false) /*: [] string*/ {
+      var ret: [1..0] string;
+
+      if count == 0 {
+        if ignoreEmpty && this.isEmptyString() {
+          return ret;
+        } else {
+          return [this];
+        }
+      }
+
+      const localThis: string = this.localize();
+      const localSep: string = sep.localize();
+
+      var splitCount: int = 0;
+
+      var start: int = 1;
+      var done: bool = false;
+      while !done && (count < 0) || (splitCount < count) {
+        var end = localThis.find(localSep, start..);
+        var chunk: string;
+
+        if(end == 0) {
+          // Separator not found
+          chunk = localThis[start..];
+          done = true;
+        } else {
+          chunk = localThis[start..end-1];
+        }
+
+        if !(ignoreEmpty && chunk.isEmptyString()) {
+          ret.push_back(chunk);
+          splitCount += 1;
+        }
+        start = end+1;
+      }
+      return ret;
+    }
+
+    // TODO: could rewrite to have cleaner logic / more efficient for edge cases
+    proc join(S: [] string) /*: string*/ {
+      var newSize: int = 0;
+      var ret: string;
+      if S.size > 1 {
+        for s in S {
+          newSize += s.length;
+        }
+        newSize += this.len*(S.size-1);
+        ret.len = newSize;
+        ret._size = ret.len+1;
+        ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
+                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
+        var offset = 0;
+        var first = true;
+        for s in S {
+          if !first && this.len != 0 {
+            memmove(ret.buff+offset, this.buff, this.len.safeCast(size_t));
+            offset += this.len;
+          }
+          var sLen = s.len;
+          if sLen != 0 {
+            if s.locale.id == chpl_nodeID {
+              memmove(ret.buff+offset, s.buff, sLen.safeCast(size_t));
+            } else {
+              chpl_string_comm_get(ret.buff+offset, s.locale.id,
+                                  s.buff, sLen.safeCast(size_t));
+            }
+            offset += sLen;
+          }
+          first = false;
+        }
+      } else if S.size == 1 {
+        ret = S[0];
+      }
+      return ret;
+    }
+
+    proc strip(chars: string, leading=true, trailing=true) /*: string*/ {
+      if this.isEmptyString() then return "";
+      if chars.isEmptyString() then return this;
+
+      const localThis: string = this.localize();
+      const localChars: string = chars.localize();
+
+      var start = 1;
+      var end = localThis.len;
+
+      if leading {
+        label outer for i in 0..#localThis.len {
+          for j in 0..#localChars.len {
+            if localThis.buff[i] == localChars.buff[j] {
+              start += 1;
+              continue outer;
+            }
+          }
+          break;
+        }
+      }
+
+      if trailing {
+        label outer for i in 0..#localThis.len by -1 {
+          for j in 0..#localChars.len {
+            if localThis.buff[i] == localChars.buff[j] {
+              end -= 1;
+              continue outer;
+            }
+          }
+          break;
+        }
+      }
+
+      return localThis[start..end];
+    }
+
+    inline proc strip(leading=true, trailing=true) /*: string*/ {
+      return this.strip(" \t\r\n", leading, trailing);
+    }
+
+    // TODO: I could make this and other routines that use find faster by
+    // making a version of search helper that only takes in local strings and
+    // localizing in the calling function
+    proc partition(sep: string) /*: 3*string*/ {
+      const idx = this.find(sep);
+      if idx != 0 {
+        return (this[..idx-1], sep, this[idx+sep.length..]);
+      } else {
+        return (this, "", "");
+      }
+    }
+
+    proc isUpper() : bool {
+      var result: bool = false;
+      if this.isEmptyString() then return false;
+
+      on this {
+        for i in 0..#this.len {
+          const b = buff[i];
+          if _byte_isLower(b) {
+            result = false;
+            break;
+          } else if !result && _byte_isUpper(b) {
+            result = true;
+          }
+        }
+      }
+      return result;
+    }
+
+    proc isLower() : bool {
+      if this.isEmptyString() then return false;
+      var result: bool = false;
+
+      on this {
+        for i in 0..#this.len {
+          const b = buff[i];
+          if _byte_isUpper(b) {
+            result = false;
+            break;
+          } else if !result && _byte_isLower(b) {
+            result = true;
+          }
+        }
+      }
+      return result;
+    }
+
+    proc isSpace() : bool {
+      if this.isEmptyString() then return false;
+      var result: bool = true;
+
+      on this {
+        for i in 0..#this.len {
+          const b = buff[i];
+          // TODO: (escaped chars seem to break ascii...)
+          if !((b == ascii(' ')) ||
+               (b == 0x09) || // \t
+               (b >= 0x0A && b <= 0x0D)) { // \n \v \f \r
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
+    }
+
+    proc isAlpha() : bool {
+      if this.isEmptyString() then return false;
+      var result: bool = true;
+
+      on this {
+        for i in 0..#this.len {
+          const b = buff[i];
+          if !_byte_isAlpha(b) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
+    }
+
+    proc isDigit() : bool {
+      if this.isEmptyString() then return false;
+      var result: bool = true;
+
+      on this {
+        for i in 0..#this.len {
+          const b = buff[i];
+          if !_byte_isDigit(b) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
+    }
+
+    proc isAlnum() : bool {
+      if this.isEmptyString() then return false;
+      var result: bool = true;
+
+      on this {
+        for i in 0..#this.len {
+          const b = buff[i];
+          if !(_byte_isAlpha(b) || _byte_isDigit(b)) {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
+    }
+
+    proc isPrintable() : bool {
+      if this.isEmptyString() then return false;
+      var result: bool = true;
+
+      on this {
+        for i in 0..#this.len {
+          const char = buff[i];
+          if char < 0x1f  || char == 0x7f {
+            result = false;
+            break;
+          }
+        }
+      }
+      return result;
+    }
+
+    proc isTitle() : bool {
+      if this.isEmptyString() then return false;
+      var result: bool = true;
+
+      on this {
+        param UN = 0, UPPER = 1, LOWER = 2;
+        var last = UN;
+        for i in 0..#this.len {
+          const b = buff[i];
+          if _byte_isLower(b) {
+            if last == UPPER || last == LOWER {
+              last = LOWER;
+            } else { // last == UN
+              result = false;
+              break;
+            }
+          }
+          else if _byte_isUpper(b) {
+            if last == UN {
+              last = UPPER;
+            } else { // last == UPPER || last == LOWER
+              result = false;
+              break;
+            }
+          } else {
+            // Uncased elements
+            last = UN;
+          }
+        }
+      }
+      return result;
+    }
+
+    proc toLower() /*: string*/ {
+      var result: string = this;
+      if result.isEmptyString() then return result;
+
+      for i in 0..#result.len {
+        const b = result.buff[i];
+        if _byte_isUpper(b) {
+          result.buff[i] = b + 0x20;
+        }
+      }
+      return result;
+    }
+
+    proc toUpper() /*: string*/ {
+      var result: string = this;
+      if result.isEmptyString() then return result;
+
+      for i in 0..#result.len {
+        const b = result.buff[i];
+        if _byte_isLower(b) {
+          result.buff[i] = b - 0x20;
+        }
+      }
+      return result;
+    }
+
+    proc toTitle() /*: string*/ {
+      var result: string = this;
+      if result.isEmptyString() then return result;
+
+      param UN = 0, LETTER = 1;
+      var last = UN;
+      for i in 0..#result.len {
+        const b = result.buff[i];
+        if _byte_isAlpha(b) {
+          if last == UN {
+            last = LETTER;
+            if _byte_isLower(b) {
+              result.buff[i] = b - 0x20;
+            }
+          } else { // last == LETTER
+            if _byte_isUpper(b) {
+              result.buff[i] = b + 0x20;
+            }
+          }
+        } else {
+          // Uncased elements
+          last = UN;
+        }
+      }
+      return result;
+    }
+
+    proc capitalize() /*: string*/ {
+      var result: string = this.toLower();
+      if result.isEmptyString() then return result;
+
+      var b = result.buff[0];
+      if _byte_isLower(b) { // Only change alpha
+        result.buff[0] = b - 0x20;
+      }
+      return result;
+    }
+
+  } // end record string
+
 
   // We'd like this to be by ref, but doing so leads to an internal
   // compiler error.  See
@@ -506,9 +967,8 @@ module String {
     if debugStrings then
       chpl_debug_string_print("in proc =() c_string");
 
-    const hereId = chpl_nodeID;
     // Make this some sort of local check once we have local types/vars
-    if (rhs_c.locale.id != hereId) || (lhs.locale.id != hereId) then
+    if (rhs_c.locale.id != chpl_nodeID) || (lhs.locale.id != chpl_nodeID) then
       halt("Cannot assign a remote c_string to a string.");
 
     const len = rhs_c.length;
@@ -537,9 +997,9 @@ module String {
     ret._size = ret.len+1;
     ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                               CHPL_RT_MD_STR_COPY_DATA): bufferType;
+    ret.owned = true;
 
-    const hereId = chpl_nodeID;
-    const s0remote = s0.locale.id != hereId;
+    const s0remote = s0.locale.id != chpl_nodeID;
     if s0remote {
       chpl_string_comm_get(ret.buff, s0.locale.id,
                            s0.buff, s0len.safeCast(size_t));
@@ -547,7 +1007,7 @@ module String {
       memmove(ret.buff, s0.buff, s0len.safeCast(size_t));
     }
 
-    const s1remote = s1.locale.id != hereId;
+    const s1remote = s1.locale.id != chpl_nodeID;
     if s1remote {
       chpl_string_comm_get(ret.buff+s0len, s1.locale.id,
                            s1.buff, s1len.safeCast(size_t));
@@ -565,8 +1025,7 @@ module String {
     if debugStrings then
       chpl_debug_string_print("in proc +() string+c_string");
 
-    const hereId = chpl_nodeID;
-    if cs.locale.id != hereId then
+    if cs.locale.id != chpl_nodeID then
       halt("Cannot concatenate a remote c_string.");
 
     if cs == _defaultOf(c_string) then return s;
@@ -578,7 +1037,9 @@ module String {
     ret._size = ret.len+1;
     ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                               CHPL_RT_MD_STR_COPY_DATA): bufferType;
-    const sremote = s.locale.id != hereId;
+    ret.owned = true;
+
+    const sremote = s.locale.id != chpl_nodeID;
     var sbuff = if sremote
                   then copyRemoteBuffer(s.locale.id, s.buff, slen)
                   else s.buff;
@@ -645,7 +1106,9 @@ module String {
   inline proc +(s: string, x: bool) return concatHelp(s, x);
   inline proc +(x: bool, s: string) return concatHelp(x, s);
 
+  //
   // Param procs
+  //
   proc typeToString(type t) param {
     return __primitive("typeToString", t);
   }
@@ -708,8 +1171,6 @@ module String {
     return __primitive("string_contains", a, b);
 
 
-
-
   //
   // Append
   //
@@ -736,8 +1197,7 @@ module String {
 
         lhs._size = newSize;
       }
-      const hereId = chpl_nodeID;
-      const rhsRemote = rhs.locale.id != hereId;
+      const rhsRemote = rhs.locale.id != chpl_nodeID;
       if rhsRemote {
         chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale.id,
                               rhs.buff, rhsLen.safeCast(size_t));
@@ -752,14 +1212,15 @@ module String {
   //
   // Relational operators
   // TODO: all relational ops other than == and != are broken for unicode
-  // TODO: It may be faster to work on a.locale or b.locale if a or b is large
+  // TODO: It probably will be faster to work on a.locale or b.locale rather
+  //       than here. Especially if a or b is large
   //
   // When strings are compared, they compare equal up to the point the
   // characters in the string differ.   At that point, if the encoding of the
   // next character is numerically smaller it will compare less, otherwise
   // greater.  If the encoding of one character uses fewer bits, the smaller
-  // one is zero-extended to match the langth of the longer one.
-  // For purposes of comparison, if one comparand is shorter than the
+  // one is zero-extended to match the length of the longer one.
+  // For purposes of comparison, if one compared is shorter than the
   // other, we fake in a NUL (character code 0x0).  Thus, for example:
   //  "1000" < "101" < "1010".
   //
@@ -780,30 +1241,20 @@ module String {
 
   proc ==(a: string, b: string) : bool {
     inline proc doEq(a: string, b:string) {
+      // TODO: is it better to have these outside of the do* fns?
+      //       probably would be 2 extra gets worst case, but avoids doing a
+      //       local copy if b is remote
       if a.len != b.len then return false;
       return _strcmp(a, b) == 0;
     }
-    if a.locale.id == b.locale.id {
-      return doEq(a, b);
-    } else {
-      // TODO: any away to do something like this?
-      //       var localA = makeLocal(a);
-      //       var localB = makeLocal(b);
-      var localA: string;
-      if a.locale.id != chpl_nodeID {
-        localA = a; // assignment makes it local
-      } else {
-        localA = new string(a.buff, a.len, a._size,
-                            owned = false, needToCopy=false);
-      }
 
-      var localB: string;
-      if b.locale.id != chpl_nodeID {
-        localB = b; // assignment makes it local
-      } else {
-        localB = new string(b.buff, b.len, b._size,
-                            owned = false, needToCopy=false);
-      }
+    if a.locale.id == b.locale.id {
+      var ret: bool = false;
+      on a do ret = doEq(a, b);
+      return ret;
+    } else {
+      var localA: string = a.localize();
+      var localB: string = b.localize();
 
       return doEq(localA, localB);
     }
@@ -817,24 +1268,14 @@ module String {
     inline proc doLt(a: string, b:string) {
       return _strcmp(a, b) < 0;
     }
-    if a.locale.id == b.locale.id {
-      return doLt(a, b);
-    } else {
-      var localA: string;
-      if a.locale.id != chpl_nodeID {
-        localA = a; // assignment makes it local
-      } else {
-        localA = new string(a.buff, a.len, a._size,
-                            owned = false, needToCopy=false);
-      }
 
-      var localB: string;
-      if b.locale.id != chpl_nodeID {
-        localB = b; // assignment makes it local
-      } else {
-        localB = new string(b.buff, b.len, b._size,
-                            owned = false, needToCopy=false);
-      }
+    if a.locale.id == b.locale.id {
+      var ret: bool = false;
+      on a do ret = doLt(a, b);
+      return ret;
+    } else {
+      var localA: string = a.localize();
+      var localB: string = b.localize();
 
       return doLt(localA, localB);
     }
@@ -844,24 +1285,14 @@ module String {
     inline proc doGt(a: string, b:string) {
       return _strcmp(a, b) > 0;
     }
-    if a.locale.id == b.locale.id {
-      return doGt(a, b);
-    } else {
-      var localA: string;
-      if a.locale.id != chpl_nodeID {
-        localA = a; // assignment makes it local
-      } else {
-        localA = new string(a.buff, a.len, a._size,
-                            owned = false, needToCopy=false);
-      }
 
-      var localB: string;
-      if b.locale.id != chpl_nodeID {
-        localB = b; // assignment makes it local
-      } else {
-        localB = new string(b.buff, b.len, b._size,
-                            owned = false, needToCopy=false);
-      }
+    if a.locale.id == b.locale.id {
+      var ret: bool = false;
+      on a do ret = doGt(a, b);
+      return ret;
+    } else {
+      var localA: string = a.localize();
+      var localB: string = b.localize();
 
       return doGt(localA, localB);
     }
@@ -873,6 +1304,27 @@ module String {
   inline proc >=(a: string, b: string) : bool {
     return !(a < b);
   }
+
+
+  //
+  // Helper routines
+  //
+  inline proc _byte_isUpper(b: uint(8)) : bool {
+    return b >= ascii('A') && b <= ascii('Z');
+  }
+
+  inline proc _byte_isLower(b: uint(8)) : bool {
+    return b >= ascii('a') && b <= ascii('z');
+  }
+
+  inline proc _byte_isAlpha(b: uint(8)) : bool {
+    return b >= ascii('A')  && b <= ascii('z');
+  }
+
+  inline proc _byte_isDigit(b: uint(8)) : bool {
+    return b >= ascii('0')  && b <= ascii('9');
+  }
+
 
   //
   // ascii
@@ -889,12 +1341,14 @@ module String {
   // Casts (casts to & from other primitive types are in StringCasts)
   //
 
+  // TODO: remove this and fix the folding out of string casts
   // Yes this is invoked sometimes. In the long run, however,
   // we'd like the compiler to eliminate casts to the same type instead.
   inline proc _cast(type t, x: c_string) where t == c_string {
     return x;
   }
 
+  // TODO:7-29-2015: check if these can be removed
   // :(
   inline proc _cast(type t, cs: c_string) where t == bufferType {
     return __primitive("cast", t, cs);
@@ -913,7 +1367,7 @@ module String {
   // Cast from c_string to string
   // TODO: I don't like this, but cant get rid of it without doing something
   //       with making dtString the type for literals I think...
-  inline proc _cast(type t, cs: c_string) where t == string {
+  proc _cast(type t, cs: c_string) where t == string {
     if debugStrings then
       chpl_debug_string_print("in _cast() c_string->string");
 
@@ -923,7 +1377,10 @@ module String {
     var ret: string;
     ret.len = cs.length;
     ret._size = ret.len+1;
-    if !ret.isEmptyString() then ret.buff = __primitive("string_copy", cs): bufferType;
+    ret.buff = if ret.len > 0
+      then __primitive("string_copy", cs): bufferType
+      else nil;
+    ret.owned = true;
 
     if debugStrings then
       chpl_debug_string_print("leaving _cast() c_string->string");
