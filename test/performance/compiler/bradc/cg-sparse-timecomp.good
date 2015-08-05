@@ -1,2 +1,5 @@
+cg-sparse-timecomp.chpl:87: In function 'conjGrad':
+cg-sparse-timecomp.chpl:100: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+cg-sparse-timecomp.chpl:115: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
 Verification successful
 Zeta is: 8.59718

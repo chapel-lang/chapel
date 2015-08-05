@@ -34,7 +34,7 @@ for (_ic__F3_i_chpl = INT64(1),_ic__F3_i_chpl2 = INT64(10); (tmp_chpl = (_ic__F3
 
 # var r = 1..10 by 2; for (i, j) in zip(1..10 by 2, r) do write(i, j); writeln();
 _ic__F1_high_chpl6 = INT64(10);
-for (_ic__F3_i_chpl3 = INT64(1),_ic__value_chpl = tmp_chpl5; (tmp_chpl6 = (_ic__F3_i_chpl3 <= _ic__F1_high_chpl6),tmp_chpl6); tmp_chpl7 = _ic__F3_i_chpl3,tmp_chpl7 += INT64(2),_ic__F3_i_chpl3 = tmp_chpl7,tmp_chpl8 = _ic__value_chpl,tmp_chpl8 += ret_chpl19,_ic__value_chpl = tmp_chpl8)
+for (_ic__F3_i_chpl3 = INT64(1),_ic__value_chpl = tmp_chpl6; (tmp_chpl9 = (_ic__F3_i_chpl3 <= _ic__F1_high_chpl6),tmp_chpl9); tmp_chpl10 = _ic__F3_i_chpl3,tmp_chpl10 += INT64(2),_ic__F3_i_chpl3 = tmp_chpl10,tmp_chpl11 = _ic__value_chpl,tmp_chpl11 += ret_chpl26,_ic__value_chpl = tmp_chpl11) {
 
 # coforall i in 5..5 do write(i); writeln();
 _ic__F1_high_chpl7 = INT64(5);
