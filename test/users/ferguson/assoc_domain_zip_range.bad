@@ -1,0 +1,1 @@
+assoc_domain_zip_range.chpl:11: error: iteration over a range with multi-dimensional iterator
