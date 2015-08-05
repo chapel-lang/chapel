@@ -1,0 +1,3 @@
+# only run on applicable XC machines
+CHPL_TARGET_PLATFORM != cray-xc
+CHPL_HOST_COMPILER != gnu
