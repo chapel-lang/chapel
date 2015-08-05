@@ -1,9 +1,0 @@
- Unfortunately the Chapel compiler has encountered
- an internal error. Please file a bug report that
- includes a program reproducing the problem as well
- as this output. See http://chapel.cray.com/getinvolved.html for
- further instructions on filing bug reports.
-
- The error may be related to this location:
- extern_const_error.chpl:3
-extern_const_error.chpl:3: internal error: EXP3244 chpl Version 1.11.0.4a2f955
