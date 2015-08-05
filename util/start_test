@@ -223,10 +223,11 @@ def test_directory(test, test_type):
                     try:
                         # if executable
                         if os.access("./SKIPIF", os.X_OK):
-                            skip_test = subprocess.check_output(["./SKIPIF"])
+                            skip_test = subprocess.check_output(
+                                    ["./SKIPIF"]).strip()
                         else: # if not, run a script to check SKIPIF condition
                             skip_test = subprocess.check_output(
-                                    [test_env, "SKIPIF"])
+                                    [test_env, "SKIPIF"]).strip()
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
                             print ("[Skipping directory based on SKIPIF "
@@ -244,10 +245,11 @@ def test_directory(test, test_type):
                     try:
                         # if executable
                         if os.access(skip_file_name, os.X_OK):
-                            prune_if = subprocess.check_output([skip_file_name])
+                            prune_if = subprocess.check_output(
+                                    [skip_file_name]).strip()
                         else: # if not, run a script to check SKIPIF condition
                             prune_if = subprocess.check_output(
-                                    [test_env, skip_file_name])
+                                    [test_env, skip_file_name]).strip()
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
                             logger.write("[Skipping directory and children bas"
