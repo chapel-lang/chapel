@@ -617,13 +617,15 @@ def set_up_environment():
 
     # compopts
     if args.compopts:
-        args.compopts = "--cc-warnings " + args.compopts[1:-1]
+        args.compopts = [x[1:-1] for x in args.compopts]
+        args.compopts = "--cc-warnings " + " ".join(args.compopts)
     else:
         args.compopts = "--cc-warnings"
 
     # execopts
     if args.execopts:
-        args.execopts = args.execopts[1:-1]
+        args.execopts = [x[1:-1] for x in args.execopts]
+        args.execopts = " ".join(args.execopts)
     else:
         args.execopts = ""
 
@@ -1154,7 +1156,7 @@ def parser_setup():
     # main args
     parser.add_argument("tests", nargs="*", help="test files or directories")
     # executing options
-    parser.add_argument("-execopts", "--execopts", 
+    parser.add_argument("-execopts", "--execopts", action="append", 
             dest="execopts", help="set options for executing tests")
     # compiler
     parser.add_argument("-compiler", "--compiler", action="store",
@@ -1164,7 +1166,7 @@ def parser_setup():
             dest="launch_cmd", default="",
             help="set a program to launch generated executables")
     # compiler options
-    parser.add_argument("-compopts", "--compopts",
+    parser.add_argument("-compopts", "--compopts", action="append",
             dest="compopts", help="set options for the compiler")
     # log_file
     parser.add_argument("-logfile", "--logfile", action="store",
@@ -1292,7 +1294,8 @@ def parser_setup():
 def preprocess_options():
     index = 0
     for arg in sys.argv:
-        if "-compopts" in arg or "-execopts" in arg:
+        if (arg == "-compopts" or arg == "--compopts" 
+                or arg == "-execopts" or arg == "--execopts"):
             escape_next_argument(sys.argv, index)
         index += 1
 
