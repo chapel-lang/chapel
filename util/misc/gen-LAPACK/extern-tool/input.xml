@@ -119,82 +119,52 @@ Types, Constants, and Enumerations
     <substitution find="lapack_complex_float" replace="complex(64)" />
   </pass>
   <pass name="ImportTypeDefinesPass">
-    <!--
-	  <define external="yes" alias="lapack_int" base-type="c_int" />
-	  <define external="yes" alias="lapack_logical" base-type="c_int" />
-	  <define external="yes" alias="lapack_complex_double" base-type="complex(128)" />
-	  <define external="yes" alias="lapack_complex_float" base-type="complex(64)" />
-	  -->
 	  <define external="yes" alias="LAPACK_C_SELECT1" >
 	  <description>External function pointer type LAPACK_C_SELECT1.
-
-Defined in C by lapacke.h as::
-
- typedef lapack_logical (*LAPACK_C_SELECT1) ( const lapack_complex_float* )
- 
+    
+See Netlibs or Intel documentation for the C declaration.
 </description> 
 </define>
     <define external="yes" alias="LAPACK_Z_SELECT1" >
     <description>External function pointer type LAPACK_Z_SELECT1.
-
-Defined in C by lapacke.h as::
-
- typedef lapack_logical (*LAPACK_Z_SELECT1) ( const lapack_complex_double* )
-
+    
+See lapacke.h, Netlibs, or Intel documentation for the C declaration.
 </description>
  </define>
     <define external="yes" alias="LAPACK_C_SELECT2" >
     <description>External function pointer type LAPACK_C_SELECT2.
-
-Defined in C by lapacke.h as::
-
- typedef lapack_logical (*LAPACK_C_SELECT2) ( const lapack_complex_float*, const lapack_complex_float* )
-
+    
+See Netlibs or Intel documentation for the C declaration.
 </description>
 </define>
     <define external="yes" alias="LAPACK_D_SELECT2" >
     <description>External function pointer type LAPACK_D_SELECT2.
-
-Defined in C by lapacke.h as::
-
- typedef lapack_logical (*LAPACK_D_SELECT2) ( const double*, const double* )
-
+    
+See Netlibs or Intel documentation for the C declaration.
 </description> 
  </define>
 	  <define external="yes" alias="LAPACK_S_SELECT2" >
 	  <description>External function pointer type LAPACK_S_SELECT2.
-
-Defined in C by lapacke.h as::
-
- typedef lapack_logical (*LAPACK_S_SELECT2) ( const float*, const float* )
-
+	  
+See Netlibs or Intel documentation for the C declaration.
 </description> 
 </define>
     <define external="yes" alias="LAPACK_Z_SELECT2" >
     <description>External function pointer type LAPACK_Z_SELECT2.
-
-Defined in C by lapacke.h as::
-
- typedef lapack_logical (*LAPACK_Z_SELECT2) ( const lapack_complex_double*, const lapack_complex_double* )
-
+    
+See Netlibs or Intel documentation for the C declaration.
 </description> 
 </define>
     <define external="yes" alias="LAPACK_S_SELECT3" >
     <description>External function pointer type LAPACK_S_SELECT3.
-
-Defined in C by lapacke.h as::
-
- typedef lapack_logical (*LAPACK_S_SELECT3) ( const float*, const float*, const float* )
-
+    
+See Netlibs or Intel documentation for the C declaration.
 </description> 
 </define>
     <define external="yes" alias="LAPACK_D_SELECT3" >
     <description>External function pointer typeLAPACK_D_SELECT3.
-
-Defined in C by lapacke.h as::
-
- typedef lapack_logical (*LAPACK_D_SELECT3) ( const double*, const double*, const double* )
-
+    
+See Netlibs or Intel documentation for the C declaration.
 </description>  
 </define>
   </pass>
@@ -210,39 +180,27 @@ The enum values values are the same as the const value such that ``lapack_memory
   </pass>
   <pass name="ImportExternConstDefinesPass">
 	  <define external="yes" symbol="LAPACK_ROW_MAJOR" type="c_int" >
-	  <description>
-External const LAPACK_ROW_MAJOR.
-
-Defined in C by lapacke.h as::
-
- #define LAPACK_ROW_MAJOR 101
- 
+	  <description>External const LAPACK_ROW_MAJOR.
+	  
+See Netlibs or Intel documentation for the C declaration.
 </description>
     </define>
 	  <define external="yes" symbol="LAPACK_COL_MAJOR" type="c_int" >
 	    <description>External const LAPACK_COL_MAJOR.
-
-Defined in C by lapacke.h as::
-
- #define LAPACK_COL_MAJOR 102
+	    
+See Netlibs or Intel documentation for the C declaration.
 </description>
     </define>
 	  <define external="yes" symbol="LAPACK_WORK_MEMORY_ERROR" type="c_int" >
   	  <description>External const LAPACK_WORK_MEMORY_ERROR.
-
-Defined in C by lapacke.h as::
-
- #define LAPACK_WORK_MEMORY_ERROR -1010
- 
+  	  
+See Netlibs or Intel documentation for the C declaration.
 </description>
     </define>
 	  <define external="yes" symbol="LAPACK_TRANSPOSE_MEMORY_ERROR" type="c_int" >
 	    <description>External const LAPACK_TRANSPOSE_MEMORY_ERROR.
-
-Defined in C by lapacke.h as::
-
- #define LAPACK_TRANSPOSE_MEMORY_ERROR -1011
- 
+	    
+See Netlibs or Intel documentation for the C declaration.
 </description>
     </define>
   </pass>

@@ -1031,8 +1031,6 @@ class BaseAssociatePass ( Pass ):
 '''
 class FoldLAPACKtoLAPACKEPass ( Pass ):
 
-NON FUNCTIONING
-
 Purpose:
 take the semantics derived from FuncArgsTypePass and 
 FuncArgumentDocToSemanticsPass over the LAPACK information
@@ -1765,11 +1763,14 @@ class ChapelModuleExternProcPass ( Pass ):
       basename = proc_name.replace( "LAPACK_", "" ).replace( "LAPACKE_", "" ).upper()
       
       lapack_node = xml_tree.find( "./LAPACK/procedures/procedure/[@name='" + basename + "']" )
+      
+      purpose = "For more information, see the documentation for :proc:`" + proc_name + "`, or consult the Netlibs or Intel documentation.\n"
+      ''' #TODO get legal approval for Documentation inclusion.
       if lapack_node == None or lapack_node.find( "./purpose" ) == None or lapack_node.find( "./purpose" ).text == None:
         purpose = ""
       else:
         purpose = re.sub( r"[ \t]+", " ", lapack_node.find( "./purpose" ).text )
-        
+      '''  
       proc_args = proc.findall( "./arguments-list/argument" )
       ordered_args = [None] * len( proc_args )
       
@@ -1791,8 +1792,8 @@ class ChapelModuleExternProcPass ( Pass ):
       return_code = LineProducer( " : " + proc.get( "return-type" ) + ";" )
       
       
-      doc_comment = CommentProducer( "\nExternal Procedure to " + proc_name + "\n" + ("\nOriginal Fortran LAPACK documentation for " + basename + "::\n\n " + purpose + "\n\n" if purpose != "" else "") )
-      
+      #doc_comment = CommentProducer( "\nExternal Procedure to " + proc_name + "\n" + ("\nOriginal Fortran LAPACK documentation for " + basename + "::\n\n " + purpose + "\n\n" if purpose != "" else "") )
+      doc_comment = CommentProducer( "\nExternal Procedure to " + proc_name + "\n" + purpose + "\n" )
       
       
       code = SequenceOfProducers()
@@ -1937,13 +1938,16 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
         code = SequenceOfProducers()
         purpose = ""     
         lapack_node = xml_tree.find( "./LAPACK/procedures/procedure/[@name='" + base_name.upper() + "']" )
+        purpose = "For more information, see the documentation for :proc:`" + proc_name + "`, or consult the Netlibs or Intel documentation.\n"
+        
+        ''' #TODO get legal approval for Documentation inclusion.
         if proc_name in no_repeat:
           purpose = "For more information, see the documentation for :proc:`" + proc_name + "`, or consult the Netlibs or Intel documentation.\n"
         elif lapack_node == None or lapack_node.find( "./purpose" ) == None or lapack_node.find( "./purpose" ).text == None:
           prupose = ""
         else:
           purpose = ("Original Fortran LAPACK purpose documentation for " + base_name.upper() + "::\n\n " + re.sub( r"[ \t]+", " ", lapack_node.find( "./purpose" ).text ) + "\n\n" )
-          
+        '''  
           
         proc_args = proc.findall( "./arguments-list/argument" )
         ordered_args = [None] * len( proc_args )
@@ -1978,7 +1982,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
               continue
               
             #prettyprintxml( lapack_arg_node )
-            
+            ''' #TODO get legal approval for Documentation inclusion.
             if (not proc_name in no_repeat) and lapack_arg_node.find( "./documentation" ) != None:
               #arg_doc = " " + arg.get(arg.get("name").upper() + " : " + arg.get("type") + ( "" if arg.get("intent") == "none" else arg.get("intent").strip() ) + "\n"
               text = re.sub( r"\n", "\n ", re.sub( r"[ \t]+", " ", lapack_node.find( "./arguments-list/argument/[@name='" + arg.get("name").upper() + "']/documentation" ).text ) )
@@ -1988,7 +1992,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
                 args_doc = "Original Fortran LAPACK argument documentation for " + base_name.upper() + "::\n\n"
               
               args_doc += arg_doc
-            
+            '''
         #args_doc += "\n\n"      
         code.prepend( CommentProducer( "\n" + ("Polymorphic " if category_name == "untyped chapelerrific" else "" ) + "Chapel idiomatic procedure of " + proc.get("name") + " for the type " + typeToTypeString[type] + ".\n\n" + purpose + args_doc ) )
         
