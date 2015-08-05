@@ -54,7 +54,7 @@ def main():
     RUNNING = True
 
     invocation_dir = os.getcwd()
-
+    
     run_tests(args.tests)
 
     # in case we've changed directories
@@ -74,7 +74,7 @@ def run_tests(tests):
         elif os.path.isfile(i): # a file
             files.append(i)
         else:
-            logger.write("[Error: {} is not a valid file or directory]"
+            print("[Error: {} is not a valid file or directory]"
                     .format(i))
 
     # set up
@@ -84,6 +84,10 @@ def run_tests(tests):
                                    # output the same from old start_test
     set_up_executables()
     set_up_performance_testing_B()
+
+    logger.write("|" + " ".join(tests) + "|")
+#    logger.write(str(args))
+
     # autogenerate tests from spec if no tests were given
     if len(files) == 0 and len(dirs) == 0: # no tests specified
         auto_generate_tests()
@@ -593,7 +597,7 @@ def check_environment():
     global logs_dir
     logs_dir = os.path.join(test_dir, "Logs")
     if not os.path.isdir(logs_dir):
-        os.mkdir(logs_dir)
+        os.makedirs(logs_dir)
     if not os.access(logs_dir, os.W_OK):
         print("Cannot write to Logs directory {}".format(logs_dir))
         sys.exit(-1)
@@ -976,7 +980,7 @@ def set_up_executables():
 
 
 def auto_generate_tests():
-    path = os.getcwd()
+    logger.write(path)
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
             if args.performance:
@@ -996,7 +1000,7 @@ def auto_generate_tests():
 
                 with cd(test_dir):
                     if not os.path.isdir(perf_dir):
-                        os.mkdir(perf_dir)
+                        os.makedirs(perf_dir)
 
                     logger.write("[Computing stats for spec examples]")
                     temp_perf_path = os.path.join(home,
