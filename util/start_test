@@ -37,9 +37,6 @@ import contextlib
 import logging
 import atexit
 
-# suppression of atexit handler
-RUNNING = False
-
 # PROGRAM ENTRY POINT
 def main():
     check_environment()
@@ -47,11 +44,11 @@ def main():
     # set up the parser and parse command-line arguments
     parser = parser_setup()
     global args
-    (args, _) = parser.parse_known_args()
-    parse_passthrough_opts()
+    preprocess_options()
+    args = parser.parse_args()
     
-    global RUNNING
-    RUNNING = True
+    # register atexit handler
+    atexit.register(cleanup)
 
     invocation_dir = os.getcwd()
     
@@ -84,9 +81,6 @@ def run_tests(tests):
                                    # output the same from old start_test
     set_up_executables()
     set_up_performance_testing_B()
-
-    logger.write("|" + " ".join(tests) + "|")
-#    logger.write(str(args))
 
     # autogenerate tests from spec if no tests were given
     if len(files) == 0 and len(dirs) == 0: # no tests specified
@@ -571,14 +565,6 @@ def check_environment():
             print("Error: Cannot find {}.".format(util_dir))
             sys.exit(1)
 
-    # create temporary directory
-    global chpl_test_tmp_dir
-    if "CHPL_TEST_TMP_DIR" in os.environ:
-        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
-    else:
-        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
-        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
-
     # find test dir and check for access
     global test_dir
     test_dir = os.path.join(home, "test")
@@ -629,9 +615,23 @@ def set_up_environment():
 
     # compopts
     if args.compopts:
-        args.compopts = "--cc-warnings " + args.compopts
+        args.compopts = "--cc-warnings " + args.compopts[1:-1]
     else:
         args.compopts = "--cc-warnings"
+
+    # execopts
+    if args.execopts:
+        args.execopts = args.execopts[1:-1]
+    else:
+        args.execopts = ""
+
+    # create temporary directory
+    global chpl_test_tmp_dir
+    if "CHPL_TEST_TMP_DIR" in os.environ:
+        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
+    else:
+        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
+        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
 
     # performance (linking flags to each other)
     if args.performance or args.performance_description:
@@ -1119,9 +1119,8 @@ def check_for_duplicates():
 
 # END STUFF
 
-@atexit.register
 def cleanup():
-    if os.path.isdir(chpl_test_tmp_dir) and RUNNING:
+    if os.path.isdir(chpl_test_tmp_dir):
         logger.write("[Removing {} directory]".format(chpl_test_tmp_dir))
         shutil.rmtree(chpl_test_tmp_dir)
 
@@ -1153,7 +1152,7 @@ def parser_setup():
     # main args
     parser.add_argument("tests", nargs="*", help="test files or directories")
     # executing options
-    parser.add_argument("-execopts", "--execopts", action="store_true",
+    parser.add_argument("-execopts", "--execopts", 
             dest="execopts", help="set options for executing tests")
     # compiler
     parser.add_argument("-compiler", "--compiler", action="store",
@@ -1163,7 +1162,7 @@ def parser_setup():
             dest="launch_cmd", default="",
             help="set a program to launch generated executables")
     # compiler options
-    parser.add_argument("-compopts", "--compopts", action="store_true",
+    parser.add_argument("-compopts", "--compopts",
             dest="compopts", help="set options for the compiler")
     # log_file
     parser.add_argument("-logfile", "--logfile", action="store",
@@ -1288,35 +1287,19 @@ def parser_setup():
     return parser
 
 
-def parse_passthrough_opts():
-    if args.compopts:
-        getting = False
-        for arg in sys.argv:
-            if not "-compopts" in arg and not getting:
-                continue
-            if not getting:
-                getting = True
-                args.compopts = []
-                continue
-            if not arg[0:2] == "--":
-                break
-            args.compopts.append(arg)
-        args.compopts = " ".join(args.compopts)
-    if args.execopts:
-        getting = False
-        for arg in sys.argv:
-            if not "-execopts" in arg and not getting:
-                continue
-            if not getting:
-                getting = True
-                args.execopts = []
-                continue
-            if not arg[0:2] == "--":
-                break
-            args.execopts.append(arg)
-        args.execopts = " ".join(args.execopts)
-    else:
-        args.execopts = ""
+def preprocess_options():
+    index = 0
+    for arg in sys.argv:
+        if "-compopts" in arg or "-execopts" in arg:
+            escape_next_argument(sys.argv, index)
+        index += 1
+
+
+def escape_next_argument(args, index):
+    next = args[index + 1]
+    if next and next[0] == "-": # single argument, not escaped
+        args[index + 1] = "'{}'".format(next)
+    print(args)
 
 
 # UTILITY ROUTINES AND CLASSES
