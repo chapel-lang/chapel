@@ -1,232 +1,319 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 #
-# computePerfStats is called by sub_test which is called by 
-# start_test, if run with -performance.
-#
-# For every performance run on a particular file, this script 
-# maintains a .dat by searching the output of the run for values 
-# of performance keys specified in .perfkeys. It then writes 
-# these values to the .dat for every run.  
-use strict;
-use Text::ParseWords;
-#use strict;
-my $testname = $ARGV[0];
-my $outputdir = $ARGV[1];
+# COMPUTE PERFORMANCE STATISTTICS
+# This is used by sub_test if start_test is called with the -performance flag.
+# 
+# For every performance run on a particular file, this script maintains a .dat
+# by searching the output of the run for values of performance keys specified
+# in .perfkeys. It then writes these values to the .dat for every run.
 
-my $argc = @ARGV+1;
-my $key_file;
-if ($argc >= 4) {
-    $key_file = $ARGV[2];
-} else {
-    $key_file = "$testname.perfkeys";
-}
+from __future__ import print_function
+import argparse;
+import os;
+import time;
+import re;
+import sys;
+import difflib;
+import string;
 
-my $test_output_file;
-if ($argc >= 5) {
-    $test_output_file = $ARGV[3];
-} else {
-    $test_output_file = "$testname.exec.out.tmp";
-}
+test_output = None
+test_output_raw = None
+data_file = None
+errors_file = None
+fatal_errors = None
 
-my $exec_time_out;
-if ($argc >= 6) {
-    $exec_time_out = $ARGV[4];
-} else {
-    $exec_time_out = "False";
-}
+def main():
+    parser = parser_setup()
+    args = parser.parse_args()
 
-my $perfdate;
-if ($argc >= 7) {
-    $perfdate = $ARGV[5];
-    print "Using set date $perfdate\n";
-} else {
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
+    setup(args)
+    (keys, verify_keys) = read_key_file(args.keys_file, args.output_dir)
 
-    $mon += 1;
-    $year -= 100;
+    if not args.verify_keys:
+        valid_output = validate_output(verify_keys, args.test_output_file)
 
-    $perfdate = sprintf("%.2d/%.2d/%.2d", $mon, $mday, $year);
-    print "Using default date $perfdate\n";
-}
+        found_everything = True
+        if (valid_output):
+            create_data_file(keys)
+            verify_data_file(keys, args.keys_file)
+            log_timeouts(keys, args.exec_time_out, args.perf_date)
+            found_everything = find_keys(keys, args.perf_date)
+
+        if not (valid_output and found_everything) and not args.exec_time_out:
+            cleanup()
+    else:
+        create_data_file(keys)
+        verify_data_file(keys, args.keys_file)
+        print("Valid data file.")
 
 
-my $data_file = "$outputdir/$testname.dat";
-my $errors_file = "$outputdir/$testname.errors";
-my $fatal_errors = 0;
+def find_keys(keys, date):
+    found_everything = True
+    with open(data_file, "a") as file:
+        file.write("%s " % date)
+        for key in keys:
+            sys.stdout.write("Looking for %s..." % key)
+            file.write("\t")
+            found = False
+            regex = r"(\s|\S)*" + re.escape(key) + r"\s*(\S*)"
+            # scan through output, looking for key
+            for line in test_output:
+                m = re.match(regex, line)
+                if m and not found:
+                    print("found it: %s" % m.group(2))
+                    file.write(m.group(2))
+                    found = True
+                    break
 
-# open a fresh .errors file for writing ..
-if (-e "$errors_file") {
-    system("rm $errors_file");
-}
-open ERRORS, ">$errors_file" or die "can't open $errors_file for creating: $!";
+            if not found:
+                file.write("-")
+                print("didn't find it")
+                found_everything = False
+        
+        file.write("\n")
 
-# get keys from .perfkeys
-open KEYS, "$key_file" or die "can't open $key_file: $!";
-my @keys;
-my @verify_keys;
-my @tmp_keys = <KEYS>;
-close (KEYS);
-foreach my $key (@tmp_keys) {
-    my $real_key = &trim($key);
-    if (substr($real_key,0,1) ne "#") {
-        if ($key =~ m/^(verify|reject):/) {
-          push(@verify_keys, $real_key);
-        } else {
-          push(@keys, $real_key);
-        }
-    } else {
-        # ignore comments unless they specify a .dat file
-        my $comment = &trim(substr($real_key,1));
-        if (index($comment,"file:") == 0) {
-            my @crap = split(/\s+/, $comment);
-            $data_file = $outputdir."/".@crap[1];
-        }
-    }
-}
-print ERRORS "processed $key_file\n";
+    return found_everything
 
-# get lines from output file
-my @file_lines;
-# if ($exec_time_out eq "False") {
-    open TEST, "$test_output_file" or die "can't open $test_output_file: $!";
-    @file_lines = <TEST>;
-    close (TEST);
-    print ERRORS "processed $test_output_file\n";
-# } else {
-#     print ERRORS "timed out executing $testname, no $test_output_file to process\n";
-# }
 
-# make sure the output is valid.
-my $valid_output = 1;
-if ($exec_time_out eq "False") {
-  foreach my $key (@verify_keys) {
-      # Looks for a key of the form:
-      # (verify|reject): <regex>
-      # (verify|reject):linenum: <regex>
-      # (verify|reject):-linenum: <regex>
-      $key =~ /(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)/ ||
-              die "Error: invalid verify/reject line '$key'";
-      my ($type, $num, $regex) = ($1, $2, $3);
-      my $num_real = $num;
-      if ($num >= 1) {
-          --$num_real;
-      }
-      my $regex_real = $regex;
-      my $is_reject = ($type eq "reject") ? 1 : 0;
-      my $search_message = "Checking for";
-      my $found_message = "SUCCESS";
-      my $not_found_message = "FAILURE";
-      if ($is_reject) {
-        $search_message = "Checking for absence of";
-        $found_message = "FAILURE";
-        $not_found_message = "SUCCESS";
-      }
+def log_timeouts(keys, time_out, date): # if we timed out
+    with open(errors_file, "w") as file:
+        file.write("appending %s\n" % data_file)
 
-      if (defined $num) {
-          print "$search_message /$regex/ on line $num... ";
-          if ($file_lines[$num_real] =~ m/$regex_real/) {
-              $valid_output = $valid_output && !$is_reject;
-              print "$found_message.\n";
-          } else {
-              $valid_output = $valid_output && $is_reject;
-              print "$not_found_message.\n";
-          }
-      } else {
-          print "$search_message /$regex/ on any line... ";
-          my $found = 0;
-          foreach my $line (@file_lines) {
-              if ($line =~ m/$regex_real/) {
-                  $found = 1;
-                  print "$found_message.\n";
-                  $valid_output = $valid_output && !$is_reject;
-                  last;
-              }
-          }
-          if (!$found) {
-              $valid_output = $valid_output && $is_reject;
-              print "$not_found_message.\n";
-          }
-      }
-  }
-  if (!$valid_output) {
-      print "Error: Invalid output found in $test_output_file\n";
-  }
-}
+    if time_out:
+        print("ERROR")
+        with open(data_file, "a") as file:
+            file.write("#%s " % date)
+            for key in keys:
+                file.write("\t-")
+            file.write(" ### EXECUTION TIMED OUT ###\n")
+        exit(1)
 
-my $foundEverything = 1;
-if ($valid_output) {
-  # if this is first performance run, create the .dat
-  if (! -e "$data_file") {
-  # } else {
-      open STATS, ">$data_file" or die "can't open $data_file for creating: $!";
-      print ERRORS "created $data_file\n";
-      print STATS "# Date";
-      foreach my $key (@keys) {
-          print STATS "\t$key";
-      }
-      print STATS "\n";
-      close (STATS);
-  }
 
-  #
-  # write new data to the .dat
-  open STATS, ">>$data_file" or die "can't open $data_file for appending: $!";
-  print ERRORS "appending $data_file\n";
+def validate_output(verify_keys, output_file):
+    # read output from file
+    global test_output, test_output_raw
+    with open(output_file, "r") as file:
+        test_output_raw = file.read()
+        test_output = test_output_raw.split("\n")
+    with open(errors_file, "a") as file:
+        file.write("processed %s\n" % output_file)
 
-  # check all output lines for values following keys, values get written to the .dat
-  if ($exec_time_out eq "True") {
-      # Timed out executions will be comments
-      printf STATS "#%s ", $perfdate;
-      foreach my $key (@keys) {
-          print STATS "\t-";
-      }
-      print STATS " ### EXECUTION TIMED OUT ###\n";
-      exit 1;
-  }
+    # check for valid output
+    valid_output = True
+    for key in verify_keys:
+        # match verify keys
+        m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
+        if not m:
+            print("Error: invalid verify/reject line '%s'" % key)
+            exit()
+        # set parts of match to variables
+        type = m.group(1)
+        num = m.group(2)
+        regex = m.group(3)
+        if num:
+            num_real = int(num)
+            if num >= 1: # line numbers are 1-indexed
+                num_real -= 1
 
-  printf STATS "%s ", $perfdate;
-  foreach my $key (@keys) {
-      print "Looking for $key...";
-      print STATS "\t";
-      my $found = 0;
-      foreach my $line (@file_lines) {
-          if ($line =~ m/\Q$key\E(\s*)(\S*)/ && $found == 0) {
-              print "found it: $2\n";
-              print STATS "$2";
-              $found = 1;
-          }
-      }
-      if ($found == 0) {
-          print STATS "-";
-          print "didn't find it\n";
-          $foundEverything = 0;
+        regex_real = r"(\s|\S)*" + regex
+        is_reject = type == "reject"
 
-      }
-  }
-  print STATS "\n";
-}
+        # depending on whether we're asked to verify or reject
+        if not is_reject:
+            search_msg = "Checking for"
+            found_msg = "SUCCESS"
+            not_found_msg = "FAILURE"
+        else:
+            search_msg = "Checking for absence of"
+            found_msg = "FAILURE"
+            not_found_msg = "SUCCESS"
+        
+        # MATCH
+        if num: # if there's a line number
+            print("%s /%s/ on line %s... " % (search_msg, regex, num))
+            if re.match(regex_real, test_output[num_real]):
+                valid_output &= not is_reject
+                print(found_msg)
+            else:
+                valid_output &= is_reject
+                print(not_found_msg)
+        else: # no line number
+            print("%s /%s/ on any line... " % (search_msg, regex))
+            found = False
+            for line in test_output:
+                if re.match(regex_real, line):
+                    found = True
+                    print(found_msg)
+                    valid_output &= not is_reject
+                    break
+            if not found:
+                valid_output &= is_reject
+                print(not_found_msg)
 
-if (($valid_output != 1 or $foundEverything != 1) and $exec_time_out eq "False") {
-    print "output was:\n";
-    # if a test output file is too long we clamp it down the first and last
-    # 1000 characters. Any non-printable characters are translated to '~' (for
-    # tests with binary output)
-    system(
-        "if [ \$(wc -c $test_output_file | awk \'{print \$1}\') -ge 2000 ]; then ".
-            "head -c 1000 $test_output_file | tr -C '[:alnum:][:space:][:punct:]' '~'; ".
-            "tail -c 1000 $test_output_file | tr -C '[:alnum:][:space:][:punct:]' '~'; ".
-        "else ".
-            "cat $test_output_file | tr -C '[:alnum:][:space:][:punct:]' '~'; ".
-        "fi");
-    # we can't be sure if we end on a new line when limiting by characters
-    print "\n";
-    exit 1;
-}
+        if not valid_output:
+            print("Error: Invalid output found in %s" % output_file)
+    
+    return valid_output
 
-# remove white space surrounding a string
-sub trim($) {
-    my $string = shift;
-    $string =~ s/^\s+//;
-    $string =~ s/\s+$//;
-    return $string;
-}
+
+def read_key_file(keys_file, output_dir):
+    # read keys from .perfkeys (or other) file
+    verify_keys = []
+    keys = []
+    with open(keys_file, "r") as file:
+        for line in file:
+            key = line.strip()
+            if not key[0] == "#": # not a comment
+                if "verify" in key or "reject" in key:
+                    verify_keys.append(key)
+                else:
+                    keys.append(key)
+            else: # ignore comments unless they specify .dat
+                comment = key[1:].strip()
+                if comment[0:5] == "file:":
+                    global data_file
+                    data_file = "%s/%s" % (output_dir, comment.split()[1])
+
+    with open(errors_file, "a") as file:
+        file.write("processed %s\n" % keys_file)
+
+    return (keys, verify_keys)
+
+
+def create_data_file(keys):
+    # create and setup .dat file if not done already
+    if not os.path.isfile(data_file):
+        with open(errors_file, "a") as file:
+            file.write("created %s\n" % data_file)
+
+        with open(data_file, "a") as file:
+            file.write("# Date")
+            for key in keys:
+                file.write("\t" + key)
+            file.write("\n")
+
+
+def verify_data_file(keys_exp, keys_file):
+    with open(data_file, "r") as file:
+        header = None;
+        for line in file:
+            parsed = line.strip().split("\t")
+            if header == None and "# Date" in parsed[0]: # look for header line
+                header = parsed
+                columns = len(header)
+                keys_actual = header[1:]
+                continue
+            if header == None: # for all lines after the header
+                # ignore comments and empty lines
+                if parsed[0] == "" or "#" in parsed[0]:
+                    continue
+                if len(parsed) != columns:
+                    print("[Error: {} entry for {} doesn't match header length.]"
+                            .format(data_file, parsed[0]))
+                    exit(2)
+
+        if header == None: # not found
+            print("[Error: {} has no header.]".format(data_file))
+            exit(2)
+
+    
+    keys_actual = [k.strip() for k in keys_actual]
+    keys_exp = [k.strip() for k in keys_exp]
+
+    s = difflib.SequenceMatcher(None, keys_actual, keys_exp)
+    diff = s.get_opcodes()
+
+    # the two aren't equal
+    if len(diff) > 1 or (len(diff) == 1 and diff[0][0] != "equal"):        
+        print("[Error: key mismatch between {} and {}]"
+                .format(keys_file, data_file))
+        print("Changes since creation of .dat file:")
+        for d in diff:
+            type = d[0]
+            if type == "equal":
+                continue
+            elif type == "delete":
+                for i in range(d[1], d[2]):
+                    print("\t'{}' has been removed.".format(keys_actual[i]))
+            elif type == "insert":
+                for i in range(d[3], d[4]):
+                    print("\t'{}' has been added.".format(keys_exp[i]))
+            elif type == "replace":
+                if d[2] - d[1] == 1: # singlular
+                    print("\t'{}' has been replaced with '{}'.".format(
+                            keys_actual[d[1]], ", ".join(keys_exp[d[3]:d[4]])))
+                else: # plural
+                    print("\t'{}' have been replaced with '{}'.".format(
+                        ", ".join(keys_actual[d[1]:d[2]]), 
+                        ", ".join(keys_exp[d[3]:d[4]])))
+
+        exit(2)
+
+
+def setup(args):
+    # finish setting up command line args
+    if not args.keys_file:
+        args.keys_file = "%s.perfkeys" % args.test_name;
+    if not args.test_output_file:
+        args.test_output_file = "%s.exec.out.tmp" % args.test_name;
+    if not args.perf_date:
+        args.perf_date = time.strftime("%m/%d/%y");
+        print("Using default date %s" % args.perf_date);
+    else:
+        print("Using set date %s" % args.perf_date);
+
+    if args.exec_time_out == "True":
+        args.exec_time_out == True
+    else:
+        args.exec_time_out == False
+    
+    global data_file, errors_file, fatal_errors;
+    data_file = "%s/%s.dat" % (args.output_dir, args.test_name)
+    errors_file = "%s/%s.errors" % (args.output_dir, args.test_name)
+    fatal_errors = 0;
+
+    if os.path.isfile(errors_file):
+        os.remove(errors_file)
+    
+
+def cleanup():
+    print("output was: ")
+    # if test output was too long, only print first and last 1000 characters
+    if len(test_output_raw) > 2000: 
+        head = test_output_raw[:1000].strip()
+        tail = test_output_raw[-1000:].strip()
+        head = ''.join(x if x in string.printable else "~" for x in head)
+        tail = ''.join(x if x in string.printable else "~" for x in tail)
+        print(head)
+        print(tail)
+    else:
+        out = test_output_raw.strip()
+        out = ''.join(x if x in string.printable else "~" for x in out)
+        print(out)
+
+    exit(1)
+
+
+def parser_setup():
+    parser = argparse.ArgumentParser(description="Compute performance"
+            "statistics");
+    parser.add_argument("test_name");
+    parser.add_argument("output_dir");
+    parser.add_argument("keys_file", nargs="?", default=False);
+    parser.add_argument("test_output_file", nargs="?", default=False);
+    parser.add_argument("exec_time_out", nargs="?", default=False, type=t_or_f);
+    parser.add_argument("perf_date", nargs="?", default=False);
+    parser.add_argument("-verify-keys", "--verify-keys", action="store_true",
+            dest="verify_keys")
+
+    return parser
+
+# UTILITY FUNCTION FOR ARGUMENT PARSING
+def t_or_f(arg):
+    ua = str(arg).upper()
+    if "TRUE" in ua: return True
+    elif "FALSE" in ua: return False
+    else: return False
+
+if __name__ == "__main__":
+    main()
