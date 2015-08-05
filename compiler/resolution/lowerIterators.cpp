@@ -132,6 +132,37 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 }
 
 
+static void propagateTempInIteratorFlag(FnSymbol* iter)
+{
+  // At each call site, traverse the actual arguments and propagate the "temp
+  // in iterator" flag to the corresponding formal.  If the iterator has
+  // several callers, this will be conservative, causing the flag to be set in
+  // some cases where it need not be.
+  forv_Vec(CallExpr, call, *iter->calledBy)
+  {
+    for_formals_actuals(formal, actual, call)
+    {
+      if (SymExpr* se = toSymExpr(actual))
+        if (se->var->hasFlag(FLAG_TEMP_IN_ITERATOR))
+          formal->addFlag(FLAG_TEMP_IN_ITERATOR);
+    }
+  }
+}
+
+
+// Requires compute_call_sites() to be called soon before.
+static void propagateTempInIteratorFlag()
+{
+  // Traverse all iterators
+  forv_Vec(FnSymbol, iter, gFnSymbols)
+  {
+    if (! iter->isIterator())
+      continue;
+
+    propagateTempInIteratorFlag(iter);
+  }
+}
+
 // Traverse all callers of this function, to see if it calls the base iterator recursively.
 // Return true if so; false otherwise.
 // This version uses a depth-first search.
@@ -183,8 +214,8 @@ static Vec<Symbol*> taskFunInRecursiveIteratorSet;
 // not the iterator as a whole.
 // Also mark the task functions in those iterators.
 //
+// Requires compute_call_sites() to be called soon before.
 static void computeRecursiveIteratorSet() {
-  compute_call_sites();
 
   // Walk all functions
   forv_Vec(FnSymbol, iter, gFnSymbols)
@@ -2385,6 +2416,10 @@ static void removeUncalledIterators()
 void lowerIterators() {
   nonLeaderParCheck();
 
+  compute_call_sites();
+  // propagateTempInIteratorFlag() does not change the call tree,
+  propagateTempInIteratorFlag();
+  // so compute_call_sites() does *not* have to be called again here.
   computeRecursiveIteratorSet();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
