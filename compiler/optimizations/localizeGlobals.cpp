@@ -36,7 +36,35 @@
 // see the intended value.
 
 void localizeGlobals() {
-  if (fNoGlobalConstOpt) return;
+  // This pass is not implemented correctly, so disabled for now.  
+  // Generally, it is safe to pass a global (module-level) variable by
+  // reference, because its lifetime equals that of the program.  But this
+  // localization makes a copy whose lifetime is only as long as the containing
+  // routine.
+  // With code such as:
+  //  proc foo() : ref string {
+  //    return "my_literal_string";
+  //  }
+  // we are in trouble, because the (localized) object being returned is
+  // deleted before it is returned.
+  // This would be true for any localized global, but is especially a problem
+  // for strings, because all string literals are stored as globals.
+  //
+  // I think the reason for this optimization in the first place is to reduce
+  // communication costs.  In which case, remote value forwarding or
+  // replicating globals on each locale is a better approach.  Since the
+  // globals being copied here are const, caching them (as locale-private data)
+  // on each network node will work fine and the potential for references to
+  // freed memory.
+  // 
+  // Under the new AMM, many arguments -- including those passed into routines
+  // that create iterator records -- are passed by reference.  To avoid
+  // creating an iterator that points to freed (stack() memory, disabling this
+  // optimization is necessary.  The test case of interest is
+  // beer-promoted-infer-explicit.  As of this writing there were other issues,
+  // but once it works, re-enabling this optimization in its current form
+  // should expose the error readily.
+  if (fNoGlobalConstOpt || true) return;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     Map<Symbol*,VarSymbol*> globals;
     std::vector<BaseAST*> asts;
