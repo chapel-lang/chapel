@@ -767,6 +767,9 @@ buildPromotionWrapper(FnSymbol* fn,
       if (!ts)
         INT_FATAL(fn, "error building promotion wrapper");
       new_formal->type = ts->type;
+      if (new_formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+        // Force IRs to be sored by value in promotion iterators.
+        new_formal->addFlag(FLAG_TEMP_IN_ITERATOR);
       wrapper->insertFormalAtTail(new_formal);
       iteratorCall->insertAtTail(new_formal);
       VarSymbol* index = newTemp(astr("p_i_", istr(i)));
@@ -814,6 +817,7 @@ buildPromotionWrapper(FnSymbol* fn,
     VarSymbol* leaderIndex = newTemp("p_leaderIndex");
     VarSymbol* leaderIterator = newTemp("p_leaderIterator");
     leaderIterator->addFlag(FLAG_EXPR_TEMP);
+    leaderIterator->addFlag(FLAG_TEMP_IN_ITERATOR);
     lifn->insertAtTail(new DefExpr(leaderIterator));
 
     if( !zippered ) {
