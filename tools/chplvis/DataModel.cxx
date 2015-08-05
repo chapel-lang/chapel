@@ -36,9 +36,7 @@ void DataModel::newList()
   //printf ("newList ...\n");
   curEvent = theEvents.begin();
   while (curEvent != theEvents.end()) {
-    //Event *e = *curEvent;
     curEvent = theEvents.erase(curEvent);
-    //if (e) delete e;
   }
 }
 
@@ -112,6 +110,7 @@ int DataModel::LoadData(const char * filename)
     }
     // Debug
     /* 
+
     printf ("\nAfter file %s\n", fname);
     itr = theEvents.begin();
     while (itr != theEvents.end()) {
@@ -162,7 +161,7 @@ int DataModel::LoadData(const char * filename)
     int curNodeId = ev->nodeId();
     curTag = tagList[cTagNo+2];
 
-    ev->print();                                          // Debug prints
+    // ev->print();                                          // Debug prints
     switch (ev->Ekind()) {
 
       case Ev_start:  // Update both -2 and -1 records (0 and 1)
@@ -322,12 +321,12 @@ int DataModel::LoadData(const char * filename)
     itr++;
   }
 
-  printf ("0: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-          tagList[0]->maxComms, tagList[0]->maxSize, tagList[0]->maxTasks, tagList[0]->maxClock,
-          tagList[0]->maxCpu);
-  printf ("1: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-          tagList[1]->maxComms, tagList[1]->maxSize, tagList[1]->maxTasks, tagList[1]->maxClock,
-          tagList[1]->maxCpu);
+  //printf ("0: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
+  //        tagList[0]->maxComms, tagList[0]->maxSize, tagList[0]->maxTasks,
+  //        tagList[0]->maxClock, tagList[0]->maxCpu);
+  //printf ("1: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
+  //        tagList[1]->maxComms, tagList[1]->maxSize, tagList[1]->maxTasks,
+  //        tagList[1]->maxClock, tagList[1]->maxCpu);
     
   return 1;
 }

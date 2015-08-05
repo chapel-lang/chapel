@@ -146,16 +146,13 @@ class DataModel {
     
   tagData(long numLoc) : numLocales(numLoc), name(""),
                          maxCpu(0), maxClock(0), maxTasks(0), maxComms(0), maxSize(0) {
-    printf ("Running tagData constructor.\n");
       locales = new localeData[numLocales];
       comms = new  commData * [numLocales];
       for (int i = 0; i < numLocales; i++ )
         comms[i] = new commData[numLocales];
-      printf ("end of tagData constructor.\n");
     }
     
     ~tagData() {
-    printf ("Running tagData constructor.\n");
       delete [] locales;
       locales = NULL;
       for (int i = 0; i < numLocales; i++) {
@@ -172,6 +169,14 @@ class DataModel {
   };
 
   int NumTags () { return numTags; }
+
+  std::string getTagName (const int tagNo) 
+      {
+        if (tagNo < 0 || tagNo >= numLocales) 
+          return "";
+        else
+          return tagList[tagNo-TagALL]->name;
+      }
 
   Event * getTagNo(int n)
       {
@@ -192,7 +197,7 @@ class DataModel {
 
   tagData * getTagData(int tagno)
       {
-        if (tagno < TagALL || tagno > numLocales) 
+        if (tagno < TagALL || tagno >= numLocales) 
           return NULL;
         return tagList[tagno-TagALL];
       }

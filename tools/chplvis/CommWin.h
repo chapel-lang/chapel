@@ -23,7 +23,7 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Multiline_Output.H>
-struct commInfo;
+struct commData;
 
 // Window for showing communication details.
 
@@ -32,13 +32,13 @@ class CommWin : public Fl_Double_Window {
  private:
   Fl_Box *title;
   Fl_Multiline_Output *info;
-  commInfo *comm;
+  commData *comm;
   int fromLoc, toLoc;
 
  public:
   CommWin (int x, int y, int W, int H, const char *l=0);
 
-  void setMembers (Fl_Box *t, Fl_Multiline_Output *i, commInfo *c, int fromLn, int toLn) {
+  void setMembers (Fl_Box *t, Fl_Multiline_Output *i, commData *c, int fromLn, int toLn) {
     title = t;
     info = i;
     comm = c;
@@ -46,7 +46,7 @@ class CommWin : public Fl_Double_Window {
     toLoc = toLn;
   }
 
-  void updateWin ();
+  void updateWin (commData *c);
     
 };
 
