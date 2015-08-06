@@ -1392,7 +1392,7 @@ static void handleLocalBlocks() {
       if (block->isLoopStmt() == true) {
 
       } else if (block->blockInfoGet()) {
-        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
+        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) && false) {
           queue.add(block);
         }
       }
