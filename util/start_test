@@ -1299,7 +1299,7 @@ class Logger():
         self.logger = logging.getLogger("start_test")
         self.logger.setLevel(logging.DEBUG)
         # console stdout handlers
-        self.console_out = logging.StreamHandler(stream=sys.stdout)
+        self.console_out = logging.StreamHandler(sys.stdout)
         # file handlers
         self.file_out = logging.FileHandler(log_file, mode="w")
         # add them
