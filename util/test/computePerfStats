@@ -164,7 +164,7 @@ def read_key_file(keys_file, output_dir):
         for line in file:
             key = line.strip()
             if not key[0] == "#": # not a comment
-                st_key = key[0:6].strip()
+                st_key = key.strip()[0:6]
                 if "verify" == st_key or "reject" == st_key:
                     verify_keys.append(key)
                 else:
