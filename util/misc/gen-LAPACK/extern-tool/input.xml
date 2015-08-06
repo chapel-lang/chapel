@@ -145,7 +145,7 @@ See Netlibs or Intel documentation for the C declaration.
  </define>
 	  <define external="yes" alias="LAPACK_S_SELECT2" >
 	  <description>External function pointer type LAPACK_S_SELECT2.
-	  
+  
 See Netlibs or Intel documentation for the C declaration.
 </description> 
 </define>
@@ -181,25 +181,25 @@ The enum values values are the same as the const value such that ``lapack_memory
   <pass name="ImportExternConstDefinesPass">
 	  <define external="yes" symbol="LAPACK_ROW_MAJOR" type="c_int" >
 	  <description>External const LAPACK_ROW_MAJOR.
-	  
+  
 See Netlibs or Intel documentation for the C declaration.
 </description>
     </define>
 	  <define external="yes" symbol="LAPACK_COL_MAJOR" type="c_int" >
 	    <description>External const LAPACK_COL_MAJOR.
-	    
+    
 See Netlibs or Intel documentation for the C declaration.
 </description>
     </define>
 	  <define external="yes" symbol="LAPACK_WORK_MEMORY_ERROR" type="c_int" >
   	  <description>External const LAPACK_WORK_MEMORY_ERROR.
-  	  
+    
 See Netlibs or Intel documentation for the C declaration.
 </description>
     </define>
 	  <define external="yes" symbol="LAPACK_TRANSPOSE_MEMORY_ERROR" type="c_int" >
 	    <description>External const LAPACK_TRANSPOSE_MEMORY_ERROR.
-	    
+    
 See Netlibs or Intel documentation for the C declaration.
 </description>
     </define>

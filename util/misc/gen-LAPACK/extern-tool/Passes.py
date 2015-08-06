@@ -769,7 +769,7 @@ class ArgumentSemanticsBucketingPass ( Pass ):
       if len( variables[ arg ] ) > 2:
         print arg
         for semantic in variables[ arg ]:
-          print "\t\"" + semantic + "\"", ":",variables[ arg ][ semantic ]
+          print "  \"" + semantic + "\"", ":",variables[ arg ][ semantic ]
 
     selfname.complete = True
     print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
@@ -3208,7 +3208,7 @@ class BucketArgumentsSemanticsPass ( Pass ):
       if len( variables[ arg ] ) > 2:
         print arg
         for semantic in variables[ arg ]:
-          print "\t\"" + semantic + "\"", ":", len( variables[ arg ][ semantic ] )
+          print "  \"" + semantic + "\"", ":", len( variables[ arg ][ semantic ] )
 
     selfname.complete = True
     print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"

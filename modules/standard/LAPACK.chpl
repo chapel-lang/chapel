@@ -89,7 +89,7 @@ See Netlibs or Intel documentation for the C declaration.
 */
 extern type LAPACK_D_SELECT2 ;
 /*External function pointer type LAPACK_S_SELECT2.
-	  
+  
 See Netlibs or Intel documentation for the C declaration.
 */
 extern type LAPACK_S_SELECT2 ;
@@ -111,22 +111,22 @@ extern type LAPACK_D_SELECT3 ;
 
 
 /*External const LAPACK_ROW_MAJOR.
-	  
+  
 See Netlibs or Intel documentation for the C declaration.
 */
 extern const LAPACK_ROW_MAJOR : c_int ;
 /*External const LAPACK_COL_MAJOR.
-	    
+    
 See Netlibs or Intel documentation for the C declaration.
 */
 extern const LAPACK_COL_MAJOR : c_int ;
 /*External const LAPACK_WORK_MEMORY_ERROR.
-  	  
+    
 See Netlibs or Intel documentation for the C declaration.
 */
 extern const LAPACK_WORK_MEMORY_ERROR : c_int ;
 /*External const LAPACK_TRANSPOSE_MEMORY_ERROR.
-	    
+    
 See Netlibs or Intel documentation for the C declaration.
 */
 extern const LAPACK_TRANSPOSE_MEMORY_ERROR : c_int ;
