@@ -144,8 +144,6 @@ Types, Constants, and Enumerations
 </define>
     <define external="yes" alias="LAPACK_Z_SELECT1" >
     <description>External function pointer type LAPACK_Z_SELECT1.
-    
-See lapacke.h, Netlibs, or Intel documentation for the C declaration.
 </description>
  </define>
     <define external="yes" alias="LAPACK_C_SELECT2" >
@@ -164,7 +162,7 @@ See lapacke.h, Netlibs, or Intel documentation for the C declaration.
     <description>External function pointer type LAPACK_S_SELECT3.</description> 
 </define>
     <define external="yes" alias="LAPACK_D_SELECT3" >
-    <description>External function pointer typeLAPACK_D_SELECT3.</description>  
+    <description>External function pointer type LAPACK_D_SELECT3.</description>  
 </define>
   </pass>
   <pass name="ImportEnumeratedTypeDefinesPass">

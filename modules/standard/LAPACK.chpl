@@ -90,8 +90,6 @@ use ChaLAPACK;
 /*External function pointer type LAPACK_C_SELECT1.*/
 extern type LAPACK_C_SELECT1 ;
 /*External function pointer type LAPACK_Z_SELECT1.
-    
-See lapacke.h, Netlibs, or Intel documentation for the C declaration.
 */
 extern type LAPACK_Z_SELECT1 ;
 /*External function pointer type LAPACK_C_SELECT2.*/
@@ -104,7 +102,7 @@ extern type LAPACK_S_SELECT2 ;
 extern type LAPACK_Z_SELECT2 ;
 /*External function pointer type LAPACK_S_SELECT3.*/
 extern type LAPACK_S_SELECT3 ;
-/*External function pointer typeLAPACK_D_SELECT3.*/
+/*External function pointer type LAPACK_D_SELECT3.*/
 extern type LAPACK_D_SELECT3 ;
 
 
