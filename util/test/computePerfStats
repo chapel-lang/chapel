@@ -104,8 +104,8 @@ def validate_output(verify_keys, output_file):
         # match verify keys
         m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
         if not m:
-            print("Error: invalid verify/reject line '%s'" % key)
-            exit()
+            print("[Error: invalid verify/reject line '%s']" % key)
+            exit(1)
         # set parts of match to variables
         type = m.group(1)
         num = m.group(2)
@@ -151,7 +151,7 @@ def validate_output(verify_keys, output_file):
                 print(not_found_msg)
 
         if not valid_output:
-            print("Error: Invalid output found in %s" % output_file)
+            print("[Error: Invalid output found in %s]" % output_file)
     
     return valid_output
 
