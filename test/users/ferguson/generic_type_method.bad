@@ -1,0 +1,2 @@
+generic_type_method.chpl:5: In function 'firstElement':
+generic_type_method.chpl:5: error: 'myTuple' undeclared (first use this function)

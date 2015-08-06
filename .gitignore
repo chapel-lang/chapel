@@ -2,6 +2,7 @@
 a.out
 a.out_real
 *.bak
+*~
 output
 gen
 *.ntoks
@@ -104,6 +105,13 @@ tags
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
+
+/test/chplvis/TREEvis
+/test/chplvis/benchmarks-hpcc/FFTvis
+/test/chplvis/benchmarks-hpcc/HPLvis
+/test/chplvis/benchmarks-hpcc/RAvis
+/test/chplvis/overhead/OH
+/test/chplvis/overhead/OH2
 
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
@@ -325,6 +333,7 @@ tags
 
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
+/test/runtime/kbrady/goodAllocSize.good
 
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output

@@ -7,6 +7,8 @@ source $CWD/common-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-fast"
 
+export GASNET_QUIET=Y
+
 # Test a GASNet compile using the fast segment
 export CHPL_GASNET_SEGMENT=fast
 
