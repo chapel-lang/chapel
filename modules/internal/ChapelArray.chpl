@@ -1466,6 +1466,18 @@ module ChapelArray {
       var x = _value;
       return _newArray(x);
     }
+
+    proc chpl_checkDomMatch(d: domain) {
+      if (d != this.domain) then
+        halt("Domain mismatch in reindex:\n  Formal domain is: ", d,
+             "\n  Actual domain is: ", this.domain);
+      if (d.type != this.domain.type) then
+        warning("Domain type mismatch in reindex");
+      /*
+      writeln("Formal domain: ", d);
+      writeln("Actual domain: ", this.domain);
+      */
+    }
   
     proc reindex(d: domain)
       where isRectangularDom(this.domain) && isRectangularDom(d)
