@@ -1115,20 +1115,22 @@ def cleanup():
 
 
 def jUnit():
-    junit_args = "--start-test-log={0}".format(log_file)
+    junit_args = ["--start-test-log={0}".format(log_file)]
     if args.junit_xml_file:
-        junit_args += " --junit-xml={0}".format(args.junit_xml_file)
+        junit_args.append(" --junit-xml={0}".format(args.junit_xml_file))
 
     if args.junit_remove_prefix:
-        junit_args += " --remove-prefix={0}".format(args.junit_remove_prefix)
+        junit_args.append(
+                " --remove-prefix={0}".format(args.junit_remove_prefix))
     elif args.test_root_dir:
         # if --test-root was thrown, remove it from junit report
-        junit_args += " --remove-prefix={0}".format(args.test_root_dir)
+        junit_args.append(" --remove-prefix={0}".format(args.test_root_dir))
 
-    cmd = os.path.join(util_dir, "test", 
-            "convert_start_test_log_to_junit_xml.py")
+    cmd = [os.path.join(util_dir, "test", 
+            "convert_start_test_log_to_junit_xml.py")]
+
     try:
-        out = subprocess.check_output([cmd, junit_args])
+        out = subprocess.check_output(cmd + junit_args)
         return output
     except:
         return ""
