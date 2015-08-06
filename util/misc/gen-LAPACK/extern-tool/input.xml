@@ -28,7 +28,7 @@
 Chapel idiomatic wrappers for the LAPACK library.
 
 Consult the :mod:`LAPACK` module, which defines all the types and enumerations that this module uses, and demonstrates compiling with LAPACK binaries.
-Also consult the :mod:`LAPACK` module for details pertaining to the pure LAPACK procedures that it provides.
+Also consult the :mod:`LAPACK` module for details pertaining the use and function of all LAPACK procedures, including both pure LAPACK and these ChaLAPACK wrappers.
 
 Differences from LAPACK
 -----------------------
@@ -62,13 +62,13 @@ ChaLAPACK Procedures
       <description>
 Chapel module for the LAPACK library.
 
-This module defines all the external types, enum types, and defines external procedures for all procedures found in the Netlibs LAPACK C interface (LAPACKE) header file (lapacke.h).
+This module defines all the external types, enum types, and defines external procedures for all procedures found in the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ C interface (LAPACKE) header file (`lapacke.h &lt;http://www.netlib.org/lapack/explore-html/dir_18a139fd87bbd81b4018e3e4658878a2.html&gt;`_).
 
 .. note::
 
   Because of the volume of procedures provided, and because the behavior and signatures of the procedures are virtually unchanged, no documentation about them is given here.
   
-  Consult the documentation from `Netlibs &lt;http://www.netlib.org/lapack/&gt;`_, and `Intel LAPACK &lt;https://software.intel.com/en-us/node/501008&gt;`_ (provided by their MKL product) for those details.
+  Consult the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ site, and the `Netlibs &lt;http://www.netlib.org/lapack/explore-html/globals_func.html&gt;`_ and `Intel &lt;https://software.intel.com/en-us/node/501008&gt;`_ LAPACK documents for the procedures and their use.
 
 Type Adjustments
 ----------------
@@ -140,10 +140,7 @@ Types, Constants, and Enumerations
   </pass>
   <pass name="ImportTypeDefinesPass">
 	  <define external="yes" alias="LAPACK_C_SELECT1" >
-	  <description>External function pointer type LAPACK_C_SELECT1.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description> 
+	  <description>External function pointer type LAPACK_C_SELECT1.</description> 
 </define>
     <define external="yes" alias="LAPACK_Z_SELECT1" >
     <description>External function pointer type LAPACK_Z_SELECT1.
@@ -152,40 +149,22 @@ See lapacke.h, Netlibs, or Intel documentation for the C declaration.
 </description>
  </define>
     <define external="yes" alias="LAPACK_C_SELECT2" >
-    <description>External function pointer type LAPACK_C_SELECT2.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description>
+    <description>External function pointer type LAPACK_C_SELECT2.</description>
 </define>
     <define external="yes" alias="LAPACK_D_SELECT2" >
-    <description>External function pointer type LAPACK_D_SELECT2.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description> 
+    <description>External function pointer type LAPACK_D_SELECT2.</description> 
  </define>
 	  <define external="yes" alias="LAPACK_S_SELECT2" >
-	  <description>External function pointer type LAPACK_S_SELECT2.
-  
-See Netlibs or Intel documentation for the C declaration.
-</description> 
+	  <description>External function pointer type LAPACK_S_SELECT2.</description> 
 </define>
     <define external="yes" alias="LAPACK_Z_SELECT2" >
-    <description>External function pointer type LAPACK_Z_SELECT2.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description> 
+    <description>External function pointer type LAPACK_Z_SELECT2.</description> 
 </define>
     <define external="yes" alias="LAPACK_S_SELECT3" >
-    <description>External function pointer type LAPACK_S_SELECT3.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description> 
+    <description>External function pointer type LAPACK_S_SELECT3.</description> 
 </define>
     <define external="yes" alias="LAPACK_D_SELECT3" >
-    <description>External function pointer typeLAPACK_D_SELECT3.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description>  
+    <description>External function pointer typeLAPACK_D_SELECT3.</description>  
 </define>
   </pass>
   <pass name="ImportEnumeratedTypeDefinesPass">
@@ -200,28 +179,16 @@ The enum values values are the same as the const value such that ``lapack_memory
   </pass>
   <pass name="ImportExternConstDefinesPass">
 	  <define external="yes" symbol="LAPACK_ROW_MAJOR" type="c_int" >
-	  <description>External const LAPACK_ROW_MAJOR.
-  
-See Netlibs or Intel documentation for the C declaration.
-</description>
+	  <description>External const LAPACK_ROW_MAJOR.</description>
     </define>
 	  <define external="yes" symbol="LAPACK_COL_MAJOR" type="c_int" >
-	    <description>External const LAPACK_COL_MAJOR.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description>
+	    <description>External const LAPACK_COL_MAJOR.</description>
     </define>
 	  <define external="yes" symbol="LAPACK_WORK_MEMORY_ERROR" type="c_int" >
-  	  <description>External const LAPACK_WORK_MEMORY_ERROR.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description>
+  	  <description>External const LAPACK_WORK_MEMORY_ERROR.</description>
     </define>
 	  <define external="yes" symbol="LAPACK_TRANSPOSE_MEMORY_ERROR" type="c_int" >
-	    <description>External const LAPACK_TRANSPOSE_MEMORY_ERROR.
-    
-See Netlibs or Intel documentation for the C declaration.
-</description>
+	    <description>External const LAPACK_TRANSPOSE_MEMORY_ERROR.</description>
     </define>
   </pass>
   <pass name="ImportArgumentTypePass">

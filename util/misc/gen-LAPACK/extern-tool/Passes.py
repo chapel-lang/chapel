@@ -1764,7 +1764,7 @@ class ChapelModuleExternProcPass ( Pass ):
       
       lapack_node = xml_tree.find( "./LAPACK/procedures/procedure/[@name='" + basename + "']" )
       
-      purpose = "For more information, see the documentation for :proc:`" + proc_name + "`, or consult the Netlibs or Intel documentation.\n"
+      purpose = "" #"For more information, see the documentation for :proc:`" + proc_name + "`, or consult the Netlibs or Intel documentation.\n"
       ''' #TODO get legal approval for Documentation inclusion.
       if lapack_node == None or lapack_node.find( "./purpose" ) == None or lapack_node.find( "./purpose" ).text == None:
         purpose = ""
@@ -1938,7 +1938,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
         code = SequenceOfProducers()
         purpose = ""     
         lapack_node = xml_tree.find( "./LAPACK/procedures/procedure/[@name='" + base_name.upper() + "']" )
-        purpose = "For more information, see the documentation for :proc:`" + proc_name + "`, or consult the Netlibs or Intel documentation.\n"
+        purpose = "" #"For more information, see the documentation for :proc:`" + proc_name + "`, or consult the Netlibs or Intel documentation.\n"
         
         ''' #TODO get legal approval for Documentation inclusion.
         if proc_name in no_repeat:
