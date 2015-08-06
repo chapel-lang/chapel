@@ -1,2 +1,1 @@
-test_illegal_rank_change.chpl:1: In function 'foo':
-test_illegal_rank_change.chpl:1: error: illegal implicit rank change
+test_illegal_rank_change.chpl:6: error: rank mismatch: cannot reindex() from 2 dimension(s) to 1
