@@ -437,7 +437,7 @@ static void widenRef(Symbol* src, Symbol* dest) {
 // Abstract special casing for refs away if we just want an easy
 // way to say that two variables need to have the same wideness.
 static void matchWide(Symbol* src, Symbol* dest) {
-  if (isRef(src)) {
+  if (isRef(src) && isRef(dest)) {
     widenRef(src, dest);
   } else {
     setWide(dest);
