@@ -11,9 +11,9 @@ var A: [D] int;
 
 A = 1..10;
 writeln(A);
-foo(A[D1].reindex({1..5}));
+foo(=>A[D1]);
 writeln(A);
-foo(A[D2].reindex({1..5}));
+foo(=>A[D2]);
 writeln(A);
-foo(A[D3].reindex({1..5}));
+foo(=>A[D3]);
 writeln(A);

@@ -8,4 +8,4 @@ var A: [1..3, 1..3] int;
 for i in 1..3 do
   A(i,i) = i;
 
-foo(A.reindex({2..4, 0..2}));
+foo(=>A);
