@@ -184,7 +184,9 @@
 //   and prints those numbers.
 //
 //   PRINT_WIDE_ANALYSIS provides debugging information about why a
-//   variable was required to be wide.
+//   variable was required to be wide. While developing this pass, please
+//   add your own debugging information when using utils like 'setWide'
+//   and 'setValWide'.
 //
 
 //#define PRINT_WIDEN_SUMMARY
@@ -677,6 +679,8 @@ static void addKnownWides() {
       if (strcmp(ts->name, "_class_localson_fn") == 0) {
         // TODO: Do we need to do this with records as well?
         // TODO: Do we need to do this for refs to a record/tuple?
+        //
+        // GET VAL TYPE???type
         if (var->type->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE)) {
           // If an aggregate type is passed in and is not wide, then we
           // have to make its fields wide. If such a type also has non-wide
@@ -939,21 +943,27 @@ static void propagateVar(Symbol* sym) {
           }
           else if (isRef(sym)) {
             if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-              widenRef(sym, toSymExpr(rhs->get(2))->var);
+              SymExpr* field = toSymExpr(rhs->get(2));
+              debug(sym, "widening field ref %s (%d)\n", field->var->cname, field->var->id);
+              widenRef(sym, field->var);
             }
             else if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
               // We're a ref to a wide thing, so the field we're accessing
               // also has to be wide.
-              setWide(toSymExpr(rhs->get(2)));
+              SymExpr* field = toSymExpr(rhs->get(2));
+              debug(sym, "widening field ref %s (%d)\n", field->var->cname, field->var->id);
+              setWide(field);
             }
             else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
               Symbol* field = getSvecSymbol(rhs);
               if (field) {
+                debug(sym, "widening tuple member %s (%d)\n", field->cname, field->id);
                 setWide(field);
               } else {
                 // If we don't know for sure which field is being accessed,
                 // play it safe and widen all of them.
                 for_fields(fi, toAggregateType(rhs->get(1)->getValType())) {
+                  debug(sym, "widening tuple member %s (%d)\n", fi->cname, fi->id);
                   setWide(fi);
                 }
               }
@@ -961,10 +971,12 @@ static void propagateVar(Symbol* sym) {
             else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               Symbol* field = getSvecSymbol(rhs);
               if (field) {
+                debug(sym, "widening tuple member value %s (%d)\n", field->cname, field->id);
                 widenRef(sym, field);
               } else {
                 // See get_svec_member branch above
                 for_fields(fi, toAggregateType(rhs->get(1)->getValType())) {
+                  debug(sym, "widening tuple member value %s (%d)\n", fi->cname, fi->id);
                   widenRef(sym, fi);
                 }
               }
@@ -1019,7 +1031,18 @@ static void propagateField(Symbol* sym) {
           setValWide(rhs);
         }
       }
-      else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+      else if (call->primitive) {
+        DEBUG_PRINTF("Unhandled primitive for fields: %s\n", call->primitive->name);
+      }
+      else {
+        DEBUG_PRINTF("Unhandled field use\n");
+      }
+    }
+  }
+
+  for_defs(def, defMap, sym) {
+    if (CallExpr* call = toCallExpr(def->parentExpr)) {
+      if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
         //
         // If the field is a reference to a wide thing, then the rhs also has
         // to be able to reference a wide thing.
@@ -1035,19 +1058,13 @@ static void propagateField(Symbol* sym) {
         Symbol* rhs = toSymExpr(call->get(3))->var;
 
         if (isRef(rhs) && valIsWideClass(field)) {
-          if (field->type->symbol->hasFlag(FLAG_REF)) {
-            setValWide(toSymExpr(call->get(3)));
-          }
-          else if (field->type->symbol->hasFlag(FLAG_WIDE_REF)) {
-            setWide(toSymExpr(call->get(3)));
+          debug(field, " set_svec_member widens rhs %s (%d)\n", rhs->cname, rhs->id);
+          if (isRef(rhs)) {
+            setValWide(rhs);
+          } else {
+            setWide(rhs);
           }
         }
-      }
-      else if (call->primitive) {
-        DEBUG_PRINTF("Unhandled primitive for fields: %s\n", call->primitive->name);
-      }
-      else {
-        DEBUG_PRINTF("Unhandled field use\n");
       }
     }
   }
