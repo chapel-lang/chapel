@@ -2177,6 +2177,7 @@ class DumpCodePass ( Pass ):
     module_name = ChaLAPACK_info.get( "name" )
     module_file = open( ChaLAPACK_info.get( "file-name" ), "w" )
     
+    module_file.write( pass_input.find("copyright").text )
     
     module_file.write( "/*\n" + ChaLAPACK_info.find("./description").text + "\n*/\n" )
     module_file.write( "module " + module_name + " {\n" )
@@ -2200,6 +2201,8 @@ class DumpCodePass ( Pass ):
     helper_info = pass_input.find( "./helper-module" )
     
     module_file = open( helper_info.get("file-name"), "w" )
+    
+    module_file.write( pass_input.find("copyright").text )
     
     if helper_info.get("no-doc") == "all":
       module_file.write( "pragma \"no doc\"\n" )
