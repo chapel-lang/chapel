@@ -1,4 +1,4 @@
-proc foo(X: [1..3] int) {
+proc foo(X: [?XD] int) {
   writeln("X is: ", X);
 }
 
