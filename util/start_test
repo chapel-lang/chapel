@@ -5,10 +5,10 @@
 from __future__ import print_function
 from test import activate_chpl_test_venv
 import os
-import argparse
 import sys
 import time
 import subprocess32 as subprocess
+import argparse
 import platform
 import re
 import getpass
@@ -55,7 +55,7 @@ def run_tests(tests):
         elif os.path.isfile(i): # a file
             files.append(i)
         else:
-            print("[Error: {} is not a valid file or directory]"
+            print("[Error: {0} is not a valid file or directory]"
                     .format(i))
 
     # set up
@@ -75,11 +75,11 @@ def run_tests(tests):
             dirs = [os.getcwd()]
 
     # print out flags
-    logger.write('[tests: "{}"]'.format(" ".join(files)))
+    logger.write('[tests: "{0}"]'.format(" ".join(files)))
     if args.recurse:
-        logger.write('[directories: "{}"]'.format(" ".join(dirs)))
+        logger.write('[directories: "{0}"]'.format(" ".join(dirs)))
     else:
-        logger.write('[directories: (nonrecursive): "{}"]'
+        logger.write('[directories: (nonrecursive): "{0}"]'
                 .format(" ".join(dirs)))
 
     # check for duplicate .graph and .dat files
@@ -151,7 +151,7 @@ def test_file(test):
     with cd(os.path.dirname("./" + test)): # cd into dir, and cd out later
         # clean executables, etc
         logger.write()
-        logger.write("[Cleaning file {}]".format(test))
+        logger.write("[Cleaning file {0}]".format(test))
         # clean and run test
         clean(test_name)
 
@@ -163,7 +163,7 @@ def test_file(test):
             # check for errors - 173 is an internal sub_test error that would
             # have already reported.
             if error != 0 and error != 173:
-                logger.write("[Error running sub_test for {}]"
+                logger.write("[Error running sub_test for {0}]"
                         .format(path_to_test))
 
             if args.progress:
@@ -176,19 +176,19 @@ def test_file(test):
 
 
 def test_directory(test, test_type):
-    logger.write("[Working from directory {}]".format(test))
+    logger.write("[Working from directory {0}]".format(test))
 
     # recurse through directory
     for root, dirs, files in os.walk(test):
         if not os.access(root, os.X_OK):
-            logger.write("[Warning: Cannot cd into {} skipping directory]"
+            logger.write("[Warning: Cannot cd into {0} skipping directory]"
                     .format(root))
             continue
         else:
             dir = os.path.abspath(root)
 
         logger.write()
-        logger.write("[Working on directory {}]".format(root))
+        logger.write("[Working on directory {0}]".format(root))
 
         # stop recursing if flag is set
         if not args.recurse:
@@ -224,7 +224,7 @@ def test_directory(test, test_type):
                 # returning true
                 prune_if = False
                 skip_file_name = os.path.join(root,
-                        "{}.skipif".format(os.path.basename(root)))
+                        "{0}.skipif".format(os.path.basename(root)))
                 if os.path.isfile(skip_file_name):
                     try:
                         # if executable
@@ -237,7 +237,7 @@ def test_directory(test, test_type):
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
                             logger.write("[Skipping directory and children bas"
-                                    "ed on .skipif environment settings in {}]"
+                                    "ed on .skipif environment settings in {0}]"
                                     .format(skip_file_name))
                             del dirs[:]
                             continue
@@ -278,12 +278,12 @@ def test_directory(test, test_type):
                         # check for errors - 173 is an internal sub_test 
                         # error that would have already reported.
                         if not error == 0 and not error == 173:
-                            logger.write("[Error running sub_test in {} {}]"
+                            logger.write("[Error running sub_test in {0} {1}]"
                                     .format(root, e.returncode))
                                 
             # let user know no tests were found
             else:
-                logger.write("[No tests in directory {}]".format(root))
+                logger.write("[No tests in directory {0}]".format(root))
         # generate graphs
         else:
             with cd(dir):
@@ -293,8 +293,8 @@ def test_directory(test, test_type):
 
 def summarize():
     date_str = time.strftime("%y%m%d.%H%M%S")
-    logger.write("[Done with tests - {}]".format(date_str))
-    logger.write("[Log file: {} ]".format(os.path.abspath(log_file)))
+    logger.write("[Done with tests - {0}]".format(date_str))
+    logger.write("[Log file: {0} ]".format(os.path.abspath(log_file)))
     logger.write()
     logger.stop()
     # setup regular expressions for searching
@@ -309,9 +309,9 @@ def summarize():
         else:
             success_marker = r"\[Success matching"
     warning_marker = r"^\[Warning"
-    passing_suppressions_marker = ("{}.*{}"
+    passing_suppressions_marker = ("{0}.*{1}"
             .format(suppress_marker, success_marker))
-    passing_futures_marker = "{}.*{}".format(future_marker, success_marker)
+    passing_futures_marker = "{0}.*{1}".format(future_marker, success_marker)
     success_marker = "^" + success_marker
     skip_stdin_redirect_marker = r"^\[Skipping test with .stdin input"
 
@@ -328,7 +328,7 @@ def summarize():
     suppression_summary = ""
     future_summary = ""
     warning_summary = ""
-    summary = "[Test Summary - {}]\n".format(date_str)
+    summary = "[Test Summary - {0}]\n".format(date_str)
 
     # scan line-by-line, logging failures, warnings, etc.. and updating counts
     with open(log_file, "r") as log:
@@ -360,14 +360,14 @@ def summarize():
     summary += warning_summary
 
     if skip_stdin_redirects > 0:
-        logger.write("[Skipped {} tests with .stdin input]"
+        logger.write("[Skipped {0} tests with .stdin input]"
                 .format(skip_stdin_redirects))
 
-    summary += ("[Summary: #Successes = {} | #Failures = {} | #Futures = {} "
-            "| #Warnings = {} ]\n"
+    summary += ("[Summary: #Successes = {0} | #Failures = {1} | #Futures = {2} "
+            "| #Warnings = {3} ]\n"
             .format(successes, failures, futures, warnings))
-    summary += ("[Summary: #Passing Suppressions = {} | "
-            "#Passing Futures = {} ]\n"
+    summary += ("[Summary: #Passing Suppressions = {0} | "
+            "#Passing Futures = {1} ]\n"
             .format(passing_suppressions, passing_futures))
     # the actual running is done later, but in order to include it in
     # the summary file we print it out here.  It all happens within
@@ -392,7 +392,7 @@ def clean(test=False):
     sub_clean = os.path.join(util_dir, "test", "sub_clean")
     try:
         if test: # single test
-            logger.write("[Starting {} {} {}]"
+            logger.write("[Starting {0} {1} {2}]"
                     .format(sub_clean, test, date_str))
             out = subprocess.check_output([sub_clean, test])
         else:
@@ -409,7 +409,7 @@ def run(test=False):
     # run test
     logger.write()
     if test: # single test
-        logger.write("[Working on file {}]".format(os.path.relpath(test)))
+        logger.write("[Working on file {0}]".format(os.path.relpath(test)))
         os.environ["CHPL_ONETEST"] = os.path.basename(test)
 
     if os.access("sub_test", os.X_OK):
@@ -418,12 +418,12 @@ def run(test=False):
         sub_test = os.path.join(util_dir, "test", "sub_test")
 
     if args.progress and test:
-        sys.stderr.write("Testing {} ... \n".format(test))
+        sys.stderr.write("Testing {0} ... \n".format(test))
 
     # sub_test and create_graphs use a Popen() call in order to give real-time
     # output to the command line, instead of logging all output in one huge
     # block.
-    logger.write("[Starting {} {}]".format(sub_test, date_str))
+    logger.write("[Starting {0} {1}]".format(sub_test, date_str))
     p = subprocess.Popen([sub_test, compiler], stdout=subprocess.PIPE)
     printout(p.stdout)
     p.wait()
@@ -445,7 +445,7 @@ def generate_graphs(test=False):
         if len(graph_files) == 0 or os.environ.get("CHPL_TEST_PERF_DIR"):
             return
 
-    logger.write("[Executing genGraphs for graph_files in {} in {}"
+    logger.write("[Executing genGraphs for graph_files in {0} in {1}"
             .format(basedir, perf_html_dir))
 
     p = subprocess.Popen([create_graphs, args.gen_graph_opts,
@@ -458,10 +458,10 @@ def generate_graphs(test=False):
     status = p.returncode
 
     if status == 0:
-        logger.write("[Success generating graphs for graph_files in {} in {}"
+        logger.write("[Success generating graphs for graph_files in {0} in {1}"
                 .format(basedir, perf_html_dir))
     else:
-        logger.write("[Error generating graphs for graph_files in {} in {}"
+        logger.write("[Error generating graphs for graph_files in {0} in {1}"
                 .format(basedir, perf_html_dir))
 
 
@@ -493,10 +493,10 @@ def compiler_performance():
     p.wait()
     if p.returncode == 0:
         logger.write("[Success generating compiler perfrommance graphs from "
-                "{} in {}]".format(comp_graph_list, comp_perf_html_dir))
+                "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
     else:
         logger.write("[Error generating compiler perfrommance graphs from "
-            "{} in {}]".format(comp_graph_list, comp_perf_html_dir))
+            "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
 
     # delete temp files
     shutil.rmtree(temp_dat_files_dir)
@@ -505,7 +505,7 @@ def compiler_performance():
 def generate_graph_files_graphs():
     exec_graph_list = os.path.join(test_dir, "GRAPHFILES")
 
-    logger.write("[Executing genGraphs for {} in {}"
+    logger.write("[Executing genGraphs for {0} in {1}"
             .format(exec_graph_list, perf_html_dir))
 
     p = subprocess.Popen([create_graphs, args.gen_graph_opts,
@@ -517,10 +517,10 @@ def generate_graph_files_graphs():
     status = p.returncode
 
     if status == 0:
-        logger.write("[Success generating graphs from {} in {}"
+        logger.write("[Success generating graphs from {0} in {1}"
                 .format(exec_graph_list, perf_html_dir))
     else:
-        logger.write("[Error generating graphs from {} in {}"
+        logger.write("[Error generating graphs from {0} in {1}"
                 .format(exec_graph_list, perf_html_dir))
 
 
@@ -548,7 +548,7 @@ def check_environment():
         util_dir = os.path.normpath(os.path.join(home, "util"))
         os.environ["CHPL_TEST_UTIL_DIR"] = util_dir
         if not os.path.isdir(util_dir):
-            print("Error: Cannot find {}.".format(util_dir))
+            print("Error: Cannot find {0}.".format(util_dir))
             sys.exit(1)
 
     # find test dir and check for access
@@ -562,7 +562,7 @@ def check_environment():
             test_dir = os.getcwd()
     if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
         or not os.access(test_dir, os.X_OK)):
-        print("Cannot write to test directory {}".format(test_dir))
+        print("Cannot write to test directory {0}".format(test_dir))
         sys.exit(-1)
 
     # find Logs directory and check for access
@@ -571,7 +571,7 @@ def check_environment():
     if not os.path.isdir(logs_dir):
         os.makedirs(logs_dir)
     if not os.access(logs_dir, os.W_OK):
-        print("Cannot write to Logs directory {}".format(logs_dir))
+        print("Cannot write to Logs directory {0}".format(logs_dir))
         sys.exit(-1)
 
     # save host and target platforms, and configure environment appropriately
@@ -583,7 +583,7 @@ def check_environment():
         os.environ["LANG"] = "en_US"
 
     global log_file
-    log_file = os.path.join(logs_dir, "{}.{}.log"
+    log_file = os.path.join(logs_dir, "{0}.{1}.log"
             .format(getpass.getuser(), tgt_platform))
 
 
@@ -668,12 +668,12 @@ def set_up_general():
         log_file = os.path.abspath(args.log_file)
     log_file_dir = os.path.dirname(log_file)
     if not os.access(log_file_dir, os.X_OK):
-        print("[Permission denied for log_file directory: {}]"
+        print("[Permission denied for log_file directory: {0}]"
                 .format(log_file_dir))
         sys.exit(1)
     if os.path.isfile(log_file):
         print()
-        print("[Removing log file with duplicate name {}".format(log_file))
+        print("[Removing log file with duplicate name {0}".format(log_file))
         os.remove(log_file)
 
     ## START LOGGING TO FILE ##
@@ -685,7 +685,7 @@ def set_up_general():
     if args.comp_performance:
         start_time = int(time.time())
 
-    logger.write("[Starting Chapel regression tests - {}]"
+    logger.write("[Starting Chapel regression tests - {0}]"
             .format(time.strftime("%y%m%d.%H%M%S")))
 
     # check to see if we are in subdir of CHPL_HOME
@@ -694,12 +694,12 @@ def set_up_general():
                 "$CHPL_HOME]")
 
     # log some messages
-    logger.write('[starting directory: "{}"]'.format(os.getcwd()))
-    logger.write('[Logs directory: "{}"]'.format(logs_dir))
-    logger.write('[log_file: "{}"]'.format(log_file))
-    logger.write("[CHPL_HOME: {}]".format(home))
-    logger.write("[host platform: {}]".format(host_platform))
-    logger.write("[target platform: {}]".format(tgt_platform))
+    logger.write('[starting directory: "{0}"]'.format(os.getcwd()))
+    logger.write('[Logs directory: "{0}"]'.format(logs_dir))
+    logger.write('[log_file: "{0}"]'.format(log_file))
+    logger.write("[CHPL_HOME: {0}]".format(home))
+    logger.write("[host platform: {0}]".format(host_platform))
+    logger.write("[target platform: {0}]".format(tgt_platform))
 
     # valgrind
     if args.valgrind:
@@ -715,8 +715,8 @@ def set_up_general():
             version = subprocess.check_output("valgrind --version")
         except:
             pass
-        logger.write("[valgrind binary: {}]".format(binary))
-        logger.write("[valgrind version: {}]".format(version))
+        logger.write("[valgrind binary: {0}]".format(binary))
+        logger.write("[valgrind version: {0}]".format(version))
         os.environ["CHPL_TEST_VGRND_COMP"] = "on"
         os.environ["CHPL_TEST_VGRND_EXE"] = "on"
     else:
@@ -731,7 +731,7 @@ def set_up_general():
     # compiler
     global compiler
     if not args.compiler:
-        compiler = os.path.expandvars("$CHPL_HOME/bin/{}/chpl"
+        compiler = os.path.expandvars("$CHPL_HOME/bin/{0}/chpl"
                 .format(host_platform))
     else:
         compiler = args.compiler
@@ -743,7 +743,7 @@ def set_up_performance_testing_A():
         logger.write("[performance tests: ON]")
         os.environ["CHPL_TEST_PERF"] = "on"
         if not args.perflabel == "perf":
-            logger.write("[performance label: {}]".format(args.perflabel))
+            logger.write("[performance label: {0}]".format(args.perflabel))
         os.environ["CHPL_TEST_PERF_LABEL"] = args.perflabel
     else:
         logger.write("[performance tests: OFF]")
@@ -756,7 +756,7 @@ def set_up_performance_testing_A():
         logger.write("[compiler performance tests: OFF]")
 
     # this is here and not in setupexecutables for legacy compatibility reasons
-    logger.write("[number of trials: {}]"
+    logger.write("[number of trials: {0}]"
             .format(os.environ["CHPL_TEST_NUM_TRIALS"]))
 
     # graphs
@@ -768,7 +768,7 @@ def set_up_performance_testing_A():
         else:
             logger.write("[performance graph ranges: OFF]")
             args.graphs_disp_range = "--no-bounds"
-        logger.write("[performance graph data reduction: {}]"
+        logger.write("[performance graph data reduction: {0}]"
                 .format(args.graphs_gen_default))
     else:
         logger.write("[performance graph generation: OFF]")
@@ -787,7 +787,7 @@ def set_up_performance_testing_B():
                     + perf_test_name)
             os.environ["CHPL_TEST_PERF_DIR"] = perf_dir
             logger.write("[Warning: CHPL_TEST_PERF_DIR must be set for gener"
-                    "ating performance graphs, using default {}]"
+                    "ating performance graphs, using default {0}]"
                     .format(perf_dir))
         else:
             perf_dir = os.environ["CHPL_TEST_PERF_DIR"]
@@ -800,7 +800,7 @@ def set_up_performance_testing_B():
                 args.performance_description)
 
     global perf_keys
-    perf_keys = "{}keys".format(args.perflabel)
+    perf_keys = "{0}keys".format(args.perflabel)
 
     # compiler
     if args.comp_performance:
@@ -814,9 +814,9 @@ def set_up_performance_testing_B():
             comp_perf_dir = os.environ["CHPL_TEST_COMP_PERF_DIR"]
         else:
             comp_perf_dir = os.path.join(home, ("test", "compperfdat", 
-                    "{}".format(compperf_test_name)))
+                    "{0}".format(compperf_test_name)))
             logger.write("[Warning: CHPL_COMP_TEST_PERF DIR must be set for "
-                    "generating compiler performance graphs, using default {}]"
+                    "generating compiler performance graphs, using default {0}]"
                     .format(comp_perf_dir))
 
         compperf_test_name += args.comp_performance_description
@@ -868,18 +868,19 @@ def set_up_performance_testing_B():
                 pass
 
         sha_dat_file_name = "perfSha"
-        sha_dat_file_path = os.path.join(dat_dir, "{}.dat"
+        sha_dat_file_path = os.path.join(dat_dir, "{0}.dat"
                 .format(sha_dat_file_name))
         os.environ["CHPL_TEST_SHA_DAT_FILE"] = sha_dat_file_path
 
-        logger.write("[Saving current git sha to {}]".format(sha_dat_file_path))
+        logger.write("[Saving current git sha to {0}]"
+                .format(sha_dat_file_path))
         try:
             cmd = os.path.join(util_dir, "test", "computePerfStats")
             out = subprocess.check_output([cmd, sha_dat_file_name, dat_dir, 
                 sha_pef_keys_name, sha_out_name])
             logger.write(out)
         except:
-            logger.write("[Error: Failed to save current sha to {}]"
+            logger.write("[Error: Failed to save current sha to {0}]"
                     .format(sha_dat_file_path))
 
 
@@ -889,32 +890,32 @@ def set_up_executables():
     if os.path.isfile(compiler) and os.access(compiler, os.X_OK):
         compiler = os.path.abspath(compiler)
 
-        logger.write('[compiler: "{}"]'.format(compiler))
+        logger.write('[compiler: "{0}"]'.format(compiler))
     else:
-        logger.write("[Error: Cannot find or execute compiler: {}]"
+        logger.write("[Error: Cannot find or execute compiler: {0}]"
                 .format(compiler))
         finish()
 
     # log more options
-    logger.write('[compopts: "{}"]'.format(args.compopts))
+    logger.write('[compopts: "{0}"]'.format(args.compopts))
     os.environ['COMPOPTS'] = args.compopts
 
-    logger.write('[execopts: "{}"]'.format(args.execopts))
+    logger.write('[execopts: "{0}"]'.format(args.execopts))
     os.environ['EXECOPTS'] = args.execopts
 
-    logger.write('[launchcmd: "{}"]'.format(args.launch_cmd))
+    logger.write('[launchcmd: "{0}"]'.format(args.launch_cmd))
     os.environ['LAUNCHCMD'] = args.launch_cmd
 
     comm = chpl_comm.get()
     launcher = chpl_launcher.get()
     locale_model = chpl_locale_model.get()
 
-    logger.write('[comm: "{}"]'.format(comm))
+    logger.write('[comm: "{0}"]'.format(comm))
     os.environ["CHPL_COMM"] = comm
     os.environ["CHPL_GASNET_SEGMENT"] = chpl_comm_segment.get()
     os.environ["CHPL_LAUNCHER"] = launcher
 
-    logger.write('[localeModel: "{}"]'.format(locale_model))
+    logger.write('[localeModel: "{0}"]'.format(locale_model))
     os.environ["CHPL_LOCALE_MODEL"] = locale_model
 
     # skip stdin tests for most custom launchers, except for amdprun and slurm
@@ -940,7 +941,7 @@ def set_up_executables():
     if args.num_locales == "0":
         logger.write('[numlocales: "(default)"]')
     else:
-        logger.write('[numlocales: "{}"]'.format(args.num_locales))
+        logger.write('[numlocales: "{0}"]'.format(args.num_locales))
 
     os.environ["NUMLOCALES"] = str(args.num_locales)
 
@@ -948,10 +949,10 @@ def set_up_executables():
     if args.preexec:
         if os.path.isfile(args.preexec) and os.access(args.preexec, os.X_OK):
             args.preexec = os.path.abspath(args.preexec)
-            logger.write("[system-wide preexec: {}]".format(args.preexec))
+            logger.write("[system-wide preexec: {0}]".format(args.preexec))
         else:
             logger.write("[Error: Cannot find or execute system-wide preexec:"
-                    "{}".format(args.preexec))
+                    "{0}".format(args.preexec))
             finish()
         os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
 
@@ -959,10 +960,10 @@ def set_up_executables():
     if args.prediff:
         if os.path.isfile(args.prediff) and os.access(args.prediff, os.X_OK):
             args.prediff = os.path.abspath(args.prediff)
-            logger.write("[system-wide prediff: {}]".format(args.prediff))
+            logger.write("[system-wide prediff: {0}]".format(args.prediff))
         else:
             logger.write("[Error: Cannot find or execute system-wide prediff: "
-                    "{}".format(args.prediff))
+                    "{0}".format(args.prediff))
             finish()
         os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
 
@@ -974,7 +975,7 @@ def auto_generate_tests():
             if args.performance:
                 # track the number of examples being tested
                 logger.write("[Generating tests from the Chapel spec in "
-                        "{}/spec]".format(home))
+                        "{0}/spec]".format(home))
                 tmp_file_path = os.path.join(home, "test", 
                         "spectests.exec.out.tmp")
                 with open(tmp_file_path, "w") as tmp_file:
@@ -983,7 +984,7 @@ def auto_generate_tests():
                         tmp_file.write(out)
                     except:
                         logger.write("[Error: Failed to generate Spec tests.  "
-                            "Log file: {}]".format(tmp_file_path))
+                            "Log file: {0}]".format(tmp_file_path))
                         finish()
 
                 with cd(test_dir):
@@ -1004,7 +1005,7 @@ def auto_generate_tests():
                             p.wait()
                         except:
                             logger.write("[Error: Failed to compute perf stats "
-                                    "for Spectests. Log file: {}]"
+                                    "for Spectests. Log file: {0}]"
                                     .format(temp_perf_path))
                             finish()
 
@@ -1013,11 +1014,11 @@ def auto_generate_tests():
 
             elif not args.gen_graphs:
                 logger.write("[Generating tests from the Chapel Spec in "
-                        "{}/spec".format(home))
+                        "{0}/spec".format(home))
                 returncode = subprocess.call(["make", "spectests"])
                 if returncode != 0:
                     logger.write("[Error: Failed to generate Spec tests. Run "
-                            "'make spectests' in {} for more info]"
+                            "'make spectests' in {0} for more info]"
                             .format(home))
                     finish()
 
@@ -1044,7 +1045,7 @@ def check_for_duplicates():
             for filename in fnmatch.filter(filenames, "*." + args.perflabel):
                 if filename in dat_files: # duplicate
                     logger.write("[Error: Duplicate performance data filenames"
-                            " ({})".format(filename))
+                            " ({0})".format(filename))
                     error = True
                 else:
                     dat_files.append(filename)
@@ -1055,7 +1056,7 @@ def check_for_duplicates():
     # check for .graph files, and GRAPHFILES
     if args.gen_graphs or args.comp_performance:
         logger.write("[Checking for duplicate .graph files and that all .graph"
-                " files appear in {}/test/.*GRAPHFILES]".format(home))
+                " files appear in {0}/test/.*GRAPHFILES]".format(home))
 
         # find GRAPHFILES
         graph_files = [f for f in os.listdir(test_dir) if
@@ -1083,14 +1084,14 @@ def check_for_duplicates():
         for g in actual_graph_files:
             filename = g
             if filename not in GRAPHFILES_graph_files:
-                logger.write("[Warning: {} is missing from GRAPHFILES]"
+                logger.write("[Warning: {0} is missing from GRAPHFILES]"
                         .format(filename))
 
         # check that all .graph files in GRAPHFILES actually exist
         for g in GRAPHFILES_graph_files:
             filename = g
             if filename not in actual_graph_files:
-                logger.write("[Warning: {} listed in GRAPHFILES does not "
+                logger.write("[Warning: {0} listed in GRAPHFILES does not "
                         "exist]".format(filename))
 
         # check for duplicates
@@ -1099,7 +1100,7 @@ def check_for_duplicates():
             filename = os.path.basename(g).lower()
             if filename in graph_set:
                 logger.write("[Warning: graph files must have unique, case "
-                        "insensitive names: {} and {} do not]"
+                        "insensitive names: {0} and {1} do not]"
                         .format(g, graph_set[filename]))
             else:
                 graph_set[filename] = g
@@ -1109,20 +1110,20 @@ def check_for_duplicates():
 
 def cleanup():
     if os.path.isdir(chpl_test_tmp_dir):
-        logger.write("[Removing {} directory]".format(chpl_test_tmp_dir))
+        logger.write("[Removing {0} directory]".format(chpl_test_tmp_dir))
         shutil.rmtree(chpl_test_tmp_dir)
 
 
 def jUnit():
-    junit_args = "--start-test-log={}".format(log_file)
+    junit_args = "--start-test-log={0}".format(log_file)
     if args.junit_xml_file:
-        junit_args += " --junit-xml={}".format(args.junit_xml_file)
+        junit_args += " --junit-xml={0}".format(args.junit_xml_file)
 
     if args.junit_remove_prefix:
-        junit_args += " --remove-prefix={}".format(args.junit_remove_prefix)
+        junit_args += " --remove-prefix={0}".format(args.junit_remove_prefix)
     elif args.test_root_dir:
         # if --test-root was thrown, remove it from junit report
-        junit_args += " --remove-prefix={}".format(args.test_root_dir)
+        junit_args += " --remove-prefix={0}".format(args.test_root_dir)
 
     cmd = os.path.join(util_dir, "test", 
             "convert_start_test_log_to_junit_xml.py")
@@ -1287,7 +1288,7 @@ def preprocess_options():
 def escape_next_argument(args, index):
     next = args[index + 1]
     if next and next[0] == "-": # single argument, not escaped
-        args[index + 1] = "'{}'".format(next)
+        args[index + 1] = "'{0}'".format(next)
     print(args)
 
 
@@ -1298,7 +1299,7 @@ class Logger():
         self.logger = logging.getLogger("start_test")
         self.logger.setLevel(logging.DEBUG)
         # console stdout handlers
-        self.console_out = logging.StreamHandler(stream=sys.stdout)
+        self.console_out = logging.StreamHandler(sys.stdout)
         # file handlers
         self.file_out = logging.FileHandler(log_file, mode="w")
         # add them

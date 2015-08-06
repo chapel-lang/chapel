@@ -28,7 +28,7 @@ import chpl_make
 # wrapper script that activates the virtualenv and just calls start_test.
 
 def error(message):
-    print('[Error: {}]'.format(message))
+    print('[Error: {0}]'.format(message))
     exit(1)
 
 def activate_venv():
@@ -38,7 +38,7 @@ def activate_venv():
 
     # user asserts that system already has the required dependencies installed:
     if custom_venv_dir == 'none':
-        print('[Skipping virtualenv activation because {}={}. test-venv '
+        print('[Skipping virtualenv activation because {0}={1}. test-venv '
               'requirements must be available.]'.format(custom_venv_dir_var,
               custom_venv_dir))
 
@@ -48,7 +48,7 @@ def activate_venv():
         # using custom venv, does not check that our test requirements are met
         if custom_venv_dir:
             venv_dir = custom_venv_dir
-            print('[Using custom  virtualenv because {}={}. test-venv '
+            print('[Using custom  virtualenv because {0}={1}. test-venv '
                   'requirements must be available]'.format(custom_venv_dir_var,
                   custom_venv_dir))
 
@@ -62,12 +62,12 @@ def activate_venv():
                                     target_platform, 'chpl-virtualenv')
             sentinel_file = os.path.join(venv_dir, 'chpl-test-reqs')
             if not os.path.isfile(sentinel_file):
-                error('Chapel test virtualenv is not available, run `{} '
-                      'test-venv` from {}'.format(chpl_make.get(), chpl_home))
+                error('Chapel test virtualenv is not available, run `{0} '
+                      'test-venv` from {1}'.format(chpl_make.get(), chpl_home))
 
         activation_file = os.path.join(venv_dir, 'bin', 'activate_this.py')
         if not os.path.isfile(activation_file):
-            error('Activation file {} is missing'.format(activation_file))
+            error('Activation file {0} is missing'.format(activation_file))
 
         # actually activate
         execfile(activation_file, dict(__file__=activation_file))
