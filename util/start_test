@@ -3,6 +3,7 @@
 # CHAPEL TESTING
 
 from __future__ import print_function
+from test import activate_chpl_test_venv
 import os
 import argparse
 import sys
@@ -19,7 +20,6 @@ import contextlib
 import logging
 import atexit
 from chplenv import *
-from test import activate_chpl_test_venv
 
 # PROGRAM ENTRY POINT
 def main():
