@@ -48,7 +48,12 @@ module VisualDebug
   private extern proc chpl_vdebug_nolog ();
 
 
-/* Tree "coforall procedure .... calls one of the above routines */
+/* Instead of using a "coforall l in Locales" which is an O(n) operation
+   at the present time, vis_op, hc_id2com, and VDebugTree implement
+   a hyper-cube broadcast tree to execute on all locales.  The vis_op
+   is used to select which of the above routine to run at each locale.
+   This code is O(log n), n the number of Locales.
+*/
 
 pragma "no doc"
   enum vis_op {v_start, v_stop, v_tag, v_pause};
