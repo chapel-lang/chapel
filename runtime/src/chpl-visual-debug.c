@@ -380,7 +380,7 @@ int install_callbacks(void) {
 int uninstall_callbacks(void) {
   int rv = 0;
   rv = chpl_task_uninstall_callback(chpl_task_cb_event_kind_create, cb_task_create_begin);
-  rv = chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin, cb_task_create_begin);
+  rv += chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin, cb_task_create_begin);
   rv += chpl_task_uninstall_callback(chpl_task_cb_event_kind_end, cb_task_end);
   return rv;
 }
