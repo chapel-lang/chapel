@@ -1793,11 +1793,11 @@ class ChapelModuleExternProcPass ( Pass ):
       
       
       #doc_comment = CommentProducer( "\nExternal Procedure to " + proc_name + "\n" + ("\nOriginal Fortran LAPACK documentation for " + basename + "::\n\n " + purpose + "\n\n" if purpose != "" else "") )
-      doc_comment = CommentProducer( "\nExternal Procedure to " + proc_name + "\n" + purpose + "\n" )
+      #doc_comment = CommentProducer( "\nExternal Procedure to " + proc_name + "\n" + purpose + "\n" )
       
       
       code = SequenceOfProducers()
-      code.append( doc_comment )
+      #code.append( doc_comment )
       code.append( def_code )
       code.append( args_code )
       code.append( return_code )
@@ -1876,7 +1876,7 @@ class ChapelModuleStringToCharWraperProcPass ( Pass ):
       func_body.append( SegmentProducer( ( "return " if proc.get("return-type") != "void" else "" ) + proc.get("name") ) + call_args_producer + LineProducer( ";" ) )
       code.append( func_body )
       
-      code.prepend( CommentProducer( "\nString wrapped procedure of " + proc_name + "\n" ) )
+      #code.prepend( CommentProducer( "\nString wrapped procedure of " + proc_name + "\n" ) )
       
       code_node = SubElement( proc, "code" )
       code_node.set( "category", "string wrapped" )
@@ -1994,7 +1994,8 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
               args_doc += arg_doc
             '''
         #args_doc += "\n\n"      
-        code.prepend( CommentProducer( "\n" + ("Polymorphic " if category_name == "untyped chapelerrific" else "" ) + "Chapel idiomatic procedure of " + proc.get("name") + " for the type " + typeToTypeString[type] + ".\n\n" + purpose + args_doc ) )
+        #code.prepend( CommentProducer( "\n" + ("Polymorphic " if category_name == "untyped chapelerrific" else "" ) + "Chapel idiomatic procedure of " + proc.get("name") + " for the type " + typeToTypeString[type] + ".\n\n" + purpose + args_doc ) )
+        code.prepend( CommentProducer( "\n" + "Wrapped procedure of " + proc.get("name") + " for the type " + typeToTypeString[type] + ".\n") )
         
         code.append( args_producer )
         code.append( SegmentProducer( ": " + proc.get( "return-type" ) ) )
