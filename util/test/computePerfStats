@@ -104,7 +104,7 @@ def validate_output(verify_keys, output_file):
         # match verify keys
         m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
         if not m:
-            print("[Error: invalid verify/reject line '%s']" % key)
+            print("[Error: invalid verify/reject line '{}']".format(key))
             exit(1)
         # set parts of match to variables
         type = m.group(1)
@@ -164,7 +164,8 @@ def read_key_file(keys_file, output_dir):
         for line in file:
             key = line.strip()
             if not key[0] == "#": # not a comment
-                if "verify" in key or "reject" in key:
+                st_key = key[0:6].strip()
+                if "verify" == st_key or "reject" == st_key:
                     verify_keys.append(key)
                 else:
                     keys.append(key)
