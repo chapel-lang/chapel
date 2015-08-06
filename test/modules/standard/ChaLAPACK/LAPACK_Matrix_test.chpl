@@ -51,13 +51,13 @@ var input_1_5_col: [1..2][1..2] real =
 
 // 2D data
 writeln( "2D row input => row" );
-var input_2_row: [{1..2,1..2}] real;
+var input_2_row: [1..2,1..2] real;
 putInto2D( input_1_5_row, input_2_row );
 var A_2_row = new LAPACK_Matrix( real, 2, 2, lapack_memory_order.row_major, input_array = input_2_row ); 
 writeln( A_2_row.data, "\n", A_2_row.toString(), "\n" );
 
 writeln( "2D col input => col" );
-var input_2_col: [{1..2,1..2}] real;
+var input_2_col: [1..2,1..2] real;
 putInto2D( input_1_5_col, input_2_col );
 var A_2_col = new LAPACK_Matrix( real, 2, 2, lapack_memory_order.column_major, input_array = input_2_col ); 
 writeln( A_2_col.data, "\n", A_2_col.toString(), "\n" );

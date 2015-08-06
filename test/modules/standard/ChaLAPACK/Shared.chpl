@@ -12,11 +12,11 @@ module Shared {
     var epsilon: real = default_epsilon;
     
     proc LAPACK_Matrix( type data_type, rows: int, columns: int, matrix_order: lapack_memory_order, error: real = default_epsilon  ){
-      //assert( matrix_order == LAPACK_ROW_MAJOR || matrix_order == LAPACK_COL_MAJOR );
+    
       this.rows = rows;
       this.columns = columns;
       this.row_major = isLAPACKRowMajor( matrix_order );
-      //this.data_domain = {1..#rows*columns};
+
       if this.row_major then
         this.data_domain = {1..#rows,1..#columns};
       else
