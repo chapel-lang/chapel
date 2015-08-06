@@ -10,6 +10,6 @@ writeln(A);
 
 writeln(A[5..13 by 3]);
 
-foo(A[5..13 by 3]);
+foo(A[5..13 by 3].reindex({1..3}));
 
 writeln(A);
