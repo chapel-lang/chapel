@@ -211,7 +211,7 @@ proc butterfly(wk1, wk2, wk3, X:[?D]) {
   const i0 = D.low,
         i1 = i0 + D.stride,
         i2 = i1 + D.stride,
-       i3 = i2 + D.stride;
+        i3 = i2 + D.stride;
   var x0 = X(i0) + X(i1),
       x1 = X(i0) - X(i1),
       x2 = X(i2) + X(i3),
