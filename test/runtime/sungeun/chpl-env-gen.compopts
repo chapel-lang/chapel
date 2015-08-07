@@ -1,0 +1,1 @@
+-I. -I$CHPL_HOME/runtime/src/gen/`$CHPL_HOME/util/printchplenv --runtime`
