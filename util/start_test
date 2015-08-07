@@ -641,7 +641,7 @@ def set_up_environment():
             args.compopts += " --static"
 
     if args.performance_configs:
-        args.gen_graph_opts += " --configs" + args.gen_graph_opts
+        args.gen_graph_opts += " --configs " + args.gen_graph_opts
 
     if args.comp_performance_description:
         args.comp_performance = True
@@ -849,7 +849,7 @@ def set_up_performance_testing_B():
         global start_date_t, create_graphs
 
         if args.start_date:
-            start_date_t = "-s" + args.start_date
+            start_date_t = "-s " + args.start_date
         else:
             start_date_t = ""
 
