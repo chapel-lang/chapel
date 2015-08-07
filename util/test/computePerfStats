@@ -8,13 +8,13 @@
 # in .perfkeys. It then writes these values to the .dat for every run.
 
 from __future__ import print_function
-import argparse;
-import os;
-import time;
-import re;
-import sys;
-import difflib;
-import string;
+import argparse
+import os
+import time
+import re
+import sys
+import difflib
+import string
 
 test_output = None
 test_output_raw = None
@@ -50,9 +50,9 @@ def main():
 def find_keys(keys, date):
     found_everything = True
     with open(data_file, "a") as file:
-        file.write("%s " % date)
+        file.write("{0} ".format(date))
         for key in keys:
-            sys.stdout.write("Looking for %s..." % key)
+            sys.stdout.write("Looking for {0}...".format(key))
             file.write("\t")
             found = False
             regex = r"(\s|\S)*" + re.escape(key) + r"\s*(\S*)"
@@ -60,7 +60,7 @@ def find_keys(keys, date):
             for line in test_output:
                 m = re.match(regex, line)
                 if m and not found:
-                    print("found it: %s" % m.group(2))
+                    print("found it: {0}".format(m.group(2)))
                     file.write(m.group(2))
                     found = True
                     break
@@ -77,12 +77,12 @@ def find_keys(keys, date):
 
 def log_timeouts(keys, time_out, date): # if we timed out
     with open(errors_file, "w") as file:
-        file.write("appending %s\n" % data_file)
+        file.write("appending {0}\n".format(data_file))
 
     if time_out:
         print("ERROR")
         with open(data_file, "a") as file:
-            file.write("#%s " % date)
+            file.write("#{0} ".format(date))
             for key in keys:
                 file.write("\t-")
             file.write(" ### EXECUTION TIMED OUT ###\n")
@@ -96,7 +96,7 @@ def validate_output(verify_keys, output_file):
         test_output_raw = file.read()
         test_output = test_output_raw.split("\n")
     with open(errors_file, "a") as file:
-        file.write("processed %s\n" % output_file)
+        file.write("processed {0}\n".format(output_file))
 
     # check for valid output
     valid_output = True
@@ -130,7 +130,7 @@ def validate_output(verify_keys, output_file):
         
         # MATCH
         if num: # if there's a line number
-            print("%s /%s/ on line %s... " % (search_msg, regex, num))
+            print("{0} /{1}/ on line {2}... ".format(search_msg, regex, num))
             if re.match(regex_real, test_output[num_real]):
                 valid_output &= not is_reject
                 print(found_msg)
@@ -138,7 +138,7 @@ def validate_output(verify_keys, output_file):
                 valid_output &= is_reject
                 print(not_found_msg)
         else: # no line number
-            print("%s /%s/ on any line... " % (search_msg, regex))
+            print("{0} /{1}/ on any line... ".format(search_msg, regex))
             found = False
             for line in test_output:
                 if re.match(regex_real, line):
@@ -151,7 +151,7 @@ def validate_output(verify_keys, output_file):
                 print(not_found_msg)
 
         if not valid_output:
-            print("[Error: Invalid output found in %s]" % output_file)
+            print("[Error: Invalid output found in {0}]".format(output_file))
     
     return valid_output
 
@@ -173,10 +173,10 @@ def read_key_file(keys_file, output_dir):
                 comment = key[1:].strip()
                 if comment[0:5] == "file:":
                     global data_file
-                    data_file = "%s/%s" % (output_dir, comment.split()[1])
+                    data_file = os.path.join(output_dir, comment.split()[1])
 
     with open(errors_file, "a") as file:
-        file.write("processed %s\n" % keys_file)
+        file.write("processed {0}\n".format(keys_file))
 
     return (keys, verify_keys)
 
@@ -185,7 +185,7 @@ def create_data_file(keys):
     # create and setup .dat file if not done already
     if not os.path.isfile(data_file):
         with open(errors_file, "a") as file:
-            file.write("created %s\n" % data_file)
+            file.write("created {0}\n".format(data_file))
 
         with open(data_file, "a") as file:
             file.write("# Date")
@@ -196,7 +196,7 @@ def create_data_file(keys):
 
 def verify_data_file(keys_exp, keys_file):
     with open(data_file, "r") as file:
-        header = None;
+        header = None
         for line in file:
             parsed = line.strip().split("\t")
             if header == None and "# Date" in parsed[0]: # look for header line
@@ -254,24 +254,24 @@ def verify_data_file(keys_exp, keys_file):
 def setup(args):
     # finish setting up command line args
     if not args.keys_file:
-        args.keys_file = "%s.perfkeys" % args.test_name;
+        args.keys_file = "{0}.perfkeys".format(args.test_name)
     if not args.test_output_file:
-        args.test_output_file = "%s.exec.out.tmp" % args.test_name;
+        args.test_output_file = "{0}.exec.out.tmp".format(args.test_name)
     if not args.perf_date:
-        args.perf_date = time.strftime("%m/%d/%y");
-        print("Using default date %s" % args.perf_date);
+        args.perf_date = time.strftime("%m/%d/%y")
+        print("Using default date {0}".format(args.perf_date))
     else:
-        print("Using set date %s" % args.perf_date);
+        print("Using set date {0}".format(args.perf_date))
 
     if args.exec_time_out == "True":
         args.exec_time_out == True
     else:
         args.exec_time_out == False
     
-    global data_file, errors_file, fatal_errors;
-    data_file = "%s/%s.dat" % (args.output_dir, args.test_name)
-    errors_file = "%s/%s.errors" % (args.output_dir, args.test_name)
-    fatal_errors = 0;
+    global data_file, errors_file, fatal_errors
+    data_file = "{0}/{1}.dat".format(args.output_dir, args.test_name)
+    errors_file = "{0}/{1}.errors".format(args.output_dir, args.test_name)
+    fatal_errors = 0
 
     if os.path.isfile(errors_file):
         os.remove(errors_file)
@@ -297,13 +297,13 @@ def cleanup():
 
 def parser_setup():
     parser = argparse.ArgumentParser(description="Compute performance"
-            "statistics");
-    parser.add_argument("test_name");
-    parser.add_argument("output_dir");
-    parser.add_argument("keys_file", nargs="?", default=False);
-    parser.add_argument("test_output_file", nargs="?", default=False);
-    parser.add_argument("exec_time_out", nargs="?", default=False, type=t_or_f);
-    parser.add_argument("perf_date", nargs="?", default=False);
+            "statistics")
+    parser.add_argument("test_name")
+    parser.add_argument("output_dir")
+    parser.add_argument("keys_file", nargs="?", default=False)
+    parser.add_argument("test_output_file", nargs="?", default=False)
+    parser.add_argument("exec_time_out", nargs="?", default=False, type=t_or_f)
+    parser.add_argument("perf_date", nargs="?", default=False)
     parser.add_argument("-verify-keys", "--verify-keys", action="store_true",
             dest="verify_keys")
 
