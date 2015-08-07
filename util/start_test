@@ -446,11 +446,13 @@ def generate_graphs(test=False):
     logger.write("[Executing genGraphs for graph_files in {0} in {1}"
             .format(basedir, perf_html_dir))
 
-    p = subprocess.Popen([create_graphs, args.gen_graph_opts,
-        "-p", perf_dir, "-o", perf_html_dir, "-n", perf_test_name +
-        start_date_t, args.graphs_disp_range, "-r",
-        args.graphs_gen_default, " ".join(graph_files)],
-        stdout=subprocess.PIPE)
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-n"]
+    cmd += (perf_test_name + start_date_t).split(" ")
+    cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default]
+    cmd += graph_files
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     printout(p.stdout)
     p.wait()
     status = p.returncode
@@ -483,10 +485,14 @@ def compiler_performance():
     # create the graphs
     title = "Chapel Compiler Performance Graphs"
     logger.write("[Creating compiler perforamce graphs now]")
-    p = subprocess.Popen([create_graphs, args.gen_graph_opts, "-p", 
-        comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n", 
-        compperf_test_name + start_date_t, "-g", comp_graph_list, "-t", 
-        test_dir, "-m all:v,examples:v", "-x"], stdout=subprocess.PIPE)
+
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n"]
+    cmd += (compperf_test_name + start_date_t).split(" ")
+    cmd += ["-g", comp_graph_list, "-t", test_dir]
+    cmd += "-m all:v,examples:v -x".split(" ")
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     printout(p.stdout)
     p.wait()
     if p.returncode == 0:
@@ -506,10 +512,13 @@ def generate_graph_files_graphs():
     logger.write("[Executing genGraphs for {0} in {1}"
             .format(exec_graph_list, perf_html_dir))
 
-    p = subprocess.Popen([create_graphs, args.gen_graph_opts,
-        "-p", perf_dir, "-o", perf_html_dir, "-t", test_dir, "-n", (perf_test_name +
-        start_date_t), args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
-        exec_graph_list], stdout=subprocess.PIPE)
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-t", test_dir, "-n"]
+    cmd += (perf_test_name + start_date_t).split(" ")
+    cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
+        exec_graph_list] 
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     printout(p.stdout)
     p.wait()
     status = p.returncode
