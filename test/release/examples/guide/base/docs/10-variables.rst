@@ -3,8 +3,8 @@
 Variable Declarations
 =====================
 
-Variable Declarations with Explicit Types and Initializers
-----------------------------------------------------------
+Declaring a Variable
+--------------------
 
 Variables are declared in Chapel using the 'var' keyword.  As an
 example, the following statement declares a variable of integer type
