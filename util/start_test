@@ -30,9 +30,6 @@ def main():
     global args
     preprocess_options()
     args = parser.parse_args()
-    
-    # register atexit handler
-    atexit.register(cleanup)
 
     invocation_dir = os.getcwd()
     
@@ -223,8 +220,9 @@ def test_directory(test, test_type):
                 # Skip this directory if there is a <dir>.skipif file
                 # returning true
                 prune_if = False
-                skip_file_name = os.path.join(root,
+                skip_file_name = os.path.join(root, "..", 
                         "{0}.skipif".format(os.path.basename(root)))
+                skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
                         # if executable
@@ -448,11 +446,13 @@ def generate_graphs(test=False):
     logger.write("[Executing genGraphs for graph_files in {0} in {1}"
             .format(basedir, perf_html_dir))
 
-    p = subprocess.Popen([create_graphs, args.gen_graph_opts,
-        "-p", perf_dir, "-o", perf_html_dir, "-n", perf_test_name +
-        start_date_t, args.graphs_disp_range, "-r",
-        args.graphs_gen_default, " ".join(graph_files)],
-        stdout=subprocess.PIPE)
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-n", perf_test_name]
+    cmd += start_date_t.split(" ")
+    cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default]
+    cmd += graph_files
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     printout(p.stdout)
     p.wait()
     status = p.returncode
@@ -485,10 +485,15 @@ def compiler_performance():
     # create the graphs
     title = "Chapel Compiler Performance Graphs"
     logger.write("[Creating compiler perforamce graphs now]")
-    p = subprocess.Popen([create_graphs, args.gen_graph_opts, "-p", 
-        comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n", 
-        compperf_test_name + start_date_t, "-g", comp_graph_list, "-t", 
-        test_dir, "-m all:v,examples:v", "-x"], stdout=subprocess.PIPE)
+
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n", 
+            compperf_test_name]
+    cmd += start_date_t.split(" ")
+    cmd += ["-g", comp_graph_list, "-t", test_dir]
+    cmd += "-m all:v,examples:v -x".split(" ")
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     printout(p.stdout)
     p.wait()
     if p.returncode == 0:
@@ -508,10 +513,14 @@ def generate_graph_files_graphs():
     logger.write("[Executing genGraphs for {0} in {1}"
             .format(exec_graph_list, perf_html_dir))
 
-    p = subprocess.Popen([create_graphs, args.gen_graph_opts,
-        "-p", perf_dir, "-o", perf_html_dir, "-t", test_dir, "-n", (perf_test_name +
-        start_date_t), args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
-        exec_graph_list], stdout=subprocess.PIPE)
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-t", test_dir, "-n",
+            perf_test_name]
+    cmd += start_date_t.split(" ")
+    cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
+        exec_graph_list] 
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     printout(p.stdout)
     p.wait()
     status = p.returncode
@@ -588,10 +597,6 @@ def check_environment():
 
 
 def set_up_environment():
-    if args.mem_leaks_log:
-        os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
-        args.execopts += " --memLeaksLog=" + os.path.abspath(args.mem_leaks_log)
-
     # pre-
     if args.preexec:
         os.environ["CHPL_SYSTEM_PREEXEC"] = args.syspreexec
@@ -613,6 +618,11 @@ def set_up_environment():
     else:
         args.execopts = ""
 
+    # memory leak log
+    if args.mem_leaks_log:
+        os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
+        args.execopts += " --memLeaksLog=" + os.path.abspath(args.mem_leaks_log)
+
     # create temporary directory
     global chpl_test_tmp_dir
     if "CHPL_TEST_TMP_DIR" in os.environ:
@@ -620,6 +630,9 @@ def set_up_environment():
     else:
         chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
         os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
+    
+    # register atexit handler (cleans up temporary directory)
+    atexit.register(cleanup)
 
     # performance (linking flags to each other)
     if args.performance or args.performance_description:
@@ -630,7 +643,7 @@ def set_up_environment():
             args.compopts += " --static"
 
     if args.performance_configs:
-        args.gen_graph_opts += " --configs" + args.gen_graph_opts
+        args.gen_graph_opts += " --configs " + args.performance_configs
 
     if args.comp_performance_description:
         args.comp_performance = True
@@ -706,13 +719,15 @@ def set_up_general():
         logger.write("[valgrind: ON]")
         try: 
             # get first line of output
-            binary = subprocess.check_output("which valgrind").split("\n")[0]
+            binary = subprocess.check_output(
+                    ["which", "valgrind"]).split("\n")[0]
         except:
             logger.write("[Error: Could not find valgrind.]")
             finish()
         # get first line of output
         try:
-            version = subprocess.check_output("valgrind --version")
+            version = subprocess.check_output(
+                    ["valgrind", "--version"]).split("\n")[0]
         except:
             pass
         logger.write("[valgrind binary: {0}]".format(binary))
@@ -836,7 +851,7 @@ def set_up_performance_testing_B():
         global start_date_t, create_graphs
 
         if args.start_date:
-            start_date_t = "-s" + start_date_t
+            start_date_t = "-s " + args.start_date
         else:
             start_date_t = ""
 
@@ -970,7 +985,6 @@ def set_up_executables():
 
 def auto_generate_tests():
     path = os.getcwd()
-    logger.write(path)
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
             if args.performance:
@@ -1001,9 +1015,8 @@ def auto_generate_tests():
                                     "computePerfStats")
                             out = subprocess.check_output([cmd, "spectests", 
                                 perf_dir, os.path.join(home, "test", 
-                                "spectests.perf_keys"), tmp_file_path])
+                                "spectests.perfkeys"), tmp_file_path])
                             temp_perf_file.write(out)
-                            p.wait()
                         except:
                             logger.write("[Error: Failed to compute perf stats "
                                     "for Spectests. Log file: {0}]"
@@ -1111,7 +1124,7 @@ def check_for_duplicates():
 
 def cleanup():
     if os.path.isdir(chpl_test_tmp_dir):
-        logger.write("[Removing {0} directory]".format(chpl_test_tmp_dir))
+        print("[Removing {0} directory]".format(chpl_test_tmp_dir))
         shutil.rmtree(chpl_test_tmp_dir)
 
 
@@ -1235,7 +1248,7 @@ def parser_setup():
             help="set graph start date")
     parser.add_argument("-gengraphopts", "--gengraphopts", "-genGraphOpts",
             "--genGraphOpts", action="store", dest="gen_graph_opts",
-            help="set additional graph generation options")
+            default="", help="set additional graph generation options")
     # only compile
     parser.add_argument("-comp-only", "--comp-only", action="store_true",
             dest="comp_only", help="only compile the tests, don't run")
