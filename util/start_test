@@ -1005,7 +1005,6 @@ def auto_generate_tests():
                                 perf_dir, os.path.join(home, "test", 
                                 "spectests.perf_keys"), tmp_file_path])
                             temp_perf_file.write(out)
-                            p.wait()
                         except:
                             logger.write("[Error: Failed to compute perf stats "
                                     "for Spectests. Log file: {0}]"
@@ -1237,7 +1236,7 @@ def parser_setup():
             help="set graph start date")
     parser.add_argument("-gengraphopts", "--gengraphopts", "-genGraphOpts",
             "--genGraphOpts", action="store", dest="gen_graph_opts",
-            help="set additional graph generation options")
+            default="", help="set additional graph generation options")
     # only compile
     parser.add_argument("-comp-only", "--comp-only", action="store_true",
             dest="comp_only", help="only compile the tests, don't run")
