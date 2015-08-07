@@ -373,7 +373,7 @@ def summarize():
     # the summary file we print it out here.  It all happens within
     # a split second anyway
     if args.junit_xml:
-        summary += "[Generating jUnit XML report]\n"
+        print("[Generating jUnit XML report]")
         summary += jUnit()
     summary += "\n[END]"
 
@@ -969,6 +969,7 @@ def set_up_executables():
 
 
 def auto_generate_tests():
+    path = os.getcwd()
     logger.write(path)
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
