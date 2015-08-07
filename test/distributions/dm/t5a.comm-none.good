@@ -17,7 +17,7 @@
   24  D: aligned (0..6 by 3, 0..6 by 3 align 2)
   24   32 35
   24  
-  40  BlockDim(2, 1) BlockDim(2, 2) BlockDim(2, 3) BlockDim(2, 4) + BlockDim(2, 1) BlockDim(2, 2) BlockDim(2, 3) BlockDim(2, 4)  sel=2
+  40  BlockDim(2, 1..4) + BlockDim(2, 1..4)  sel=2
   40  
   41  A: base
   41   11 12 13 14 15 21 22 23 24 25 31 32 33 34 35
@@ -45,7 +45,7 @@
   64  D: aligned (0..6 by 3, 0..6 by 3 align 2)
   64   32 35
   64  
-  80  ReplicatedDim(2) + BlockDim(2, 1) BlockDim(2, 2) BlockDim(2, 3) BlockDim(2, 4)  sel=4
+  80  ReplicatedDim(2) + BlockDim(2, 1..4)  sel=4
   80  
   81  A: base
   81   11 12 13 14 15 21 22 23 24 25 31 32 33 34 35
@@ -73,7 +73,7 @@
  104  D: aligned (0..6 by 3, 0..6 by 3 align 2)
  104   32 35
  104  
- 120  BlockDim(2, 1) BlockDim(2, 2) BlockDim(2, 3) BlockDim(2, 4) + ReplicatedDim(2)  sel=6
+ 120  BlockDim(2, 1..4) + ReplicatedDim(2)  sel=6
  120  
  121  A: base
  121   11 12 13 14 15 21 22 23 24 25 31 32 33 34 35
@@ -87,7 +87,7 @@
  124  D: aligned (0..6 by 3, 0..6 by 3 align 2)
  124   32 35
  124  
- 140  BlockDim(2, 1) BlockDim(2, 2) BlockDim(2, 3) BlockDim(2, 4) + BlockCyclicDim(2, 2, 3)  sel=7
+ 140  BlockDim(2, 1..4) + BlockCyclicDim(2, 2, 3)  sel=7
  140  
  141  A: base
  141   11 12 13 14 15 21 22 23 24 25 31 32 33 34 35
@@ -115,7 +115,7 @@
  164  D: aligned (0..6 by 3, 0..6 by 3 align 2)
  164   32 35
  164  
- 180  BlockCyclicDim(2, 0, 2) + BlockDim(2, 1) BlockDim(2, 2) BlockDim(2, 3) BlockDim(2, 4)  sel=9
+ 180  BlockCyclicDim(2, 0, 2) + BlockDim(2, 1..4)  sel=9
  180  
  181  A: base
  181   11 12 13 14 15 21 22 23 24 25 31 32 33 34 35
