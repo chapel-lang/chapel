@@ -6147,6 +6147,7 @@ resolveExpr(Expr* expr) {
     // Resolve expressions of the form:  <type> ( args )
     // These will be constructor calls (or type constructor calls) that slipped
     // past normalization due to the use of typedefs.
+    /*
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* ts = toTypeSymbol(se->var)) {
         if (call->numActuals() == 0 ||
@@ -6160,6 +6161,7 @@ resolveExpr(Expr* expr) {
         }
       }
     }
+    */
 
     callStack.add(call);
 
