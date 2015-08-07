@@ -19,7 +19,6 @@ tags
 /SVNLOG
 /.SVNLOG-revnum
 /bin
-/docs
 /lib
 /tar
 
@@ -39,6 +38,8 @@ tags
 # Doc ignores.
 /doc/**/*.aux
 /doc/**/*.log
+/doc/chips/html
+/doc/chips/tmp
 /doc/developer/compilerOverview/compiler.pdf
 /doc/developer/compilerOverview/compiler.dvi
 /doc/developer/compilerOverview/compiler.toc
