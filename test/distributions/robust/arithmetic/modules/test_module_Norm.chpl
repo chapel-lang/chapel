@@ -103,11 +103,11 @@ const TD1D: domain(1) = Space1.translate(-o5);
 const TD2D: domain(2) = Space2.translate(-o5,-o5);
 const TD2D32: domain(2,int(32)) = Space2D32.translate(-o5:int(32),-o5:int(32));
 writeln("\tR1D:");
-foo(TD1D, R1D, 1);
+foo(TD1D, R1D.reindex(TD1D), 1);
 writeln("\tR2D:");
-foo(TD2D, R2D, 2);
+foo(TD2D, R2D.reindex(TD2D), 2);
 writeln("\tR2D32:");
-foo(TD2D32, R2D32, 3);
+foo(TD2D32, R2D32.reindex(TD2D32), 3);
 
 
 writeln("Vector norm rank changed arrays (baseline)");

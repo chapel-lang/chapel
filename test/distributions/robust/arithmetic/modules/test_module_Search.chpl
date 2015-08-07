@@ -52,10 +52,10 @@ proc foo(D: domain, A: [D], useLinear=true) {
 }
 const TD1D: domain(1) = Space1.translate(-o5);
 reset(R1D);
-(found, foundIdx) = foo(TD1D, R1D);
+(found, foundIdx) = foo(TD1D, R1D.reindex(TD1D));
 checkSearch(found, foundIdx+o5, R1D, "LinearSearch");
 reset(R1D);
-(found, foundIdx) = foo(TD1D, R1D, false);
+(found, foundIdx) = foo(TD1D, R1D.reindex(TD1D), false);
 checkSearch(found, foundIdx+o5, R1D, "BinarySearch");
 
 
