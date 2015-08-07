@@ -30,9 +30,6 @@ def main():
     global args
     preprocess_options()
     args = parser.parse_args()
-    
-    # register atexit handler
-    atexit.register(cleanup)
 
     invocation_dir = os.getcwd()
     
@@ -588,10 +585,6 @@ def check_environment():
 
 
 def set_up_environment():
-    if args.mem_leaks_log:
-        os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
-        args.execopts += " --memLeaksLog=" + os.path.abspath(args.mem_leaks_log)
-
     # pre-
     if args.preexec:
         os.environ["CHPL_SYSTEM_PREEXEC"] = args.syspreexec
@@ -613,6 +606,11 @@ def set_up_environment():
     else:
         args.execopts = ""
 
+    # memory leak log
+    if args.mem_leaks_log:
+        os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
+        args.execopts += " --memLeaksLog=" + os.path.abspath(args.mem_leaks_log)
+
     # create temporary directory
     global chpl_test_tmp_dir
     if "CHPL_TEST_TMP_DIR" in os.environ:
@@ -620,6 +618,9 @@ def set_up_environment():
     else:
         chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
         os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
+    
+    # register atexit handler (cleans up temporary directory)
+    atexit.register(cleanup)
 
     # performance (linking flags to each other)
     if args.performance or args.performance_description:
@@ -706,13 +707,15 @@ def set_up_general():
         logger.write("[valgrind: ON]")
         try: 
             # get first line of output
-            binary = subprocess.check_output("which valgrind").split("\n")[0]
+            binary = subprocess.check_output(
+                    ["which", "valgrind"]).split("\n")[0]
         except:
             logger.write("[Error: Could not find valgrind.]")
             finish()
         # get first line of output
         try:
-            version = subprocess.check_output("valgrind --version")
+            version = subprocess.check_output(
+                    ["valgrind", "--version"]).split("\n")[0]
         except:
             pass
         logger.write("[valgrind binary: {0}]".format(binary))
@@ -836,7 +839,7 @@ def set_up_performance_testing_B():
         global start_date_t, create_graphs
 
         if args.start_date:
-            start_date_t = "-s" + start_date_t
+            start_date_t = "-s" + args.start_date
         else:
             start_date_t = ""
 
@@ -969,7 +972,7 @@ def set_up_executables():
 
 
 def auto_generate_tests():
-    logger.write(path)
+    path = os.getcwd()
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
             if args.performance:
