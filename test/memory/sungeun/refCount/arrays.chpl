@@ -118,7 +118,7 @@ proc main() {
   writeln("Calling create_reindex():");
   m1 = memoryUsed();
   serial {
-    create_reindex(A);
+    create_reindex(A.reindex({3..6}));
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
@@ -127,7 +127,7 @@ proc main() {
   writeln("Calling return_reindex():");
   m1 = memoryUsed();
   serial {
-    return_reindex(A);
+    return_reindex(A.reindex({3..6}));
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
@@ -136,7 +136,7 @@ proc main() {
   writeln("Calling return_reindex() with assignment:");
   m1 = memoryUsed();
   serial {
-    var A2 = return_reindex(A);
+    var A2 = return_reindex(A.reindex({3..6}));
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
