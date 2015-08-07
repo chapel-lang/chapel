@@ -1,0 +1,15 @@
+feature: Scoping rules are confusing
+
+Scopes in Chapel appear to correspond to explicit scopes in the user code, so shadowing
+can extend back to the nearest enclosing curly brace.  As a result, an attempt made to
+access a variable in an outer scope before the declaration (and initialization) of the
+variable in the inner scope causes a compile-time error.
+
+This is confusing to programmers because it splits the scope of the variable from its
+initialization.  Specifically, the name of the variable can be referred to anywhere after
+the start of the scope, but it has not been initialized until after (lexically) the
+declaration has been encountered.
+
+This will lead to bad programming style: It discourages placing declarations close to
+where the variables being declared are used, which is common modern coding practice.
+Instead, it encourages the old-fashioned C-style trainwreckofdeclarationsatthestartofthefunction.

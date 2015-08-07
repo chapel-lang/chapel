@@ -1,0 +1,2 @@
+scopes.chpl:5: In function 'foo':
+scopes.chpl:8: error: 'i' used before defined (first used here)
