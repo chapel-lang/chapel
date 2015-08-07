@@ -448,8 +448,8 @@ def generate_graphs(test=False):
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
-    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-n"]
-    cmd += (perf_test_name + start_date_t).split(" ")
+    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-n", perf_test_name]
+    cmd += start_date_t.split(" ")
     cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default]
     cmd += graph_files
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -488,8 +488,9 @@ def compiler_performance():
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
-    cmd += ["-p", comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n"]
-    cmd += (compperf_test_name + start_date_t).split(" ")
+    cmd += ["-p", comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n", 
+            compperf_test_name]
+    cmd += start_date_t.split(" ")
     cmd += ["-g", comp_graph_list, "-t", test_dir]
     cmd += "-m all:v,examples:v -x".split(" ")
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -514,8 +515,9 @@ def generate_graph_files_graphs():
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
-    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-t", test_dir, "-n"]
-    cmd += (perf_test_name + start_date_t).split(" ")
+    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-t", test_dir, "-n",
+            perf_test_name]
+    cmd += start_date_t.split(" ")
     cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
         exec_graph_list] 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -641,7 +643,7 @@ def set_up_environment():
             args.compopts += " --static"
 
     if args.performance_configs:
-        args.gen_graph_opts += " --configs " + args.gen_graph_opts
+        args.gen_graph_opts += " --configs " + args.performance_configs
 
     if args.comp_performance_description:
         args.comp_performance = True
