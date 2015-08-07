@@ -1558,7 +1558,25 @@ module ChapelRange {
   //################################################################################
   //# Utilities
   //#
-  
+
+  proc _cast(type t, x: range(?)) where t == string {
+    var ret: string;
+
+    if x.hasLowBound() then
+      ret += x.low;
+    ret += "..";
+    if x.hasHighBound() then
+      ret += x.high;
+    if x.stride != 1 then
+      ret += " by " + x.stride;
+
+    // Write out the alignment only if it differs from natural alignment.
+    // We take alignment modulo the stride for consistency.
+    if !(x.isNaturallyAligned()) then
+        ret += " align " + chpl__mod(x._alignment, x.stride);
+    return ret;
+  }
+
   // Write implementation for ranges
   proc range.readWriteThis(f)
   {
