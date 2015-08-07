@@ -1112,7 +1112,7 @@ def check_for_duplicates():
 
 def cleanup():
     if os.path.isdir(chpl_test_tmp_dir):
-        logger.write("[Removing {0} directory]".format(chpl_test_tmp_dir))
+        print("[Removing {0} directory]".format(chpl_test_tmp_dir))
         shutil.rmtree(chpl_test_tmp_dir)
 
 
