@@ -211,7 +211,7 @@ def test_directory(test, test_type):
                                     [test_env, "SKIPIF"]).strip()
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
-                            print ("[Skipping directory based on SKIPIF "
+                            logger.write("[Skipping directory based on SKIPIF "
                                     "environment settings]")
                             continue
                     except:
@@ -244,7 +244,6 @@ def test_directory(test, test_type):
 
                 # skip this directory if there is a NOTEST file
                 if os.path.isfile(os.path.join(dir, "NOTEST")):
-                    del dirs[:]
                     continue
 
 
