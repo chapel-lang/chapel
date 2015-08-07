@@ -1468,11 +1468,20 @@ module ChapelArray {
     }
 
     proc chpl_checkDomMatch(d: domain) {
-      if (d != this.domain) then
-        halt("Domain mismatch in reindex:\n  Formal domain is: ", d,
-             "\n  Actual domain is: ", this.domain);
+      //
+      // Start by making sure the ranks match
+      //
+      if (d.rank != this.domain.rank) then
+	compilerError("Rank mismatch passing array argument: expected " + d.rank + " but got " + 
+		      this.domain.rank, errorDepth=2);
+
       if (d.type != this.domain.type) then
-        warning("Domain type mismatch in reindex");
+        compilerWarning("Domain type mismatch in passing array argument");
+
+      if (d != this.domain) then
+        halt("Domain mismatch passing array argument:\n",
+	     "  Formal domain is: ", d, "\n",
+             "  Actual domain is: ", this.domain);
       /*
       writeln("Formal domain: ", d);
       writeln("Actual domain: ", this.domain);
