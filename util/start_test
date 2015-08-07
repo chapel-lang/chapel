@@ -969,6 +969,7 @@ def set_up_executables():
 
 
 def auto_generate_tests():
+    path = os.getcwd()
     logger.write(path)
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
