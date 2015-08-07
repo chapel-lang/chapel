@@ -498,6 +498,11 @@ mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-o
 print "Making $make_vars_opt chpldoc\n";
 mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
 
+# Build test virtualenv. Fail if the build does not succeed as virtualenv is
+# needed for start_test. Send mail on failure
+print "Making $make_var_opt test-venv\n";
+mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+
 if ($buildruntime == 0) {
     $endtime = localtime;
 
