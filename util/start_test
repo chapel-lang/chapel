@@ -372,7 +372,7 @@ def summarize():
     if args.junit_xml:
         print("[Generating jUnit XML report]")
         summary += jUnit()
-    summary += "\n[END]"
+    summary += "[END]"
 
     # log summary, and write it to its own .summary file
     logger.restart()
