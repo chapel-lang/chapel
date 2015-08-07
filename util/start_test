@@ -1013,7 +1013,7 @@ def auto_generate_tests():
                                     "computePerfStats")
                             out = subprocess.check_output([cmd, "spectests", 
                                 perf_dir, os.path.join(home, "test", 
-                                "spectests.perf_keys"), tmp_file_path])
+                                "spectests.perfkeys"), tmp_file_path])
                             temp_perf_file.write(out)
                         except:
                             logger.write("[Error: Failed to compute perf stats "
