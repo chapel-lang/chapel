@@ -52,6 +52,7 @@ ChaLAPACK Procedures
 
 */
 module ChaLAPACK {
+use LAPACK;
 use "lapacke.h";
 use SysCTypes;
 

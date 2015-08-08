@@ -4,6 +4,43 @@ import codetools
 from codetools import *
 import copy
 
+'''
+About this script:
+
+This script was developed to be a magic bullet for taking LAPACK fortran 
+and LAPACKE C code and documentation and turning it into the 
+ChaLAPACK and LAPACK interface modules. 
+
+It is not intended to be 'general puropse' and may break with other (maybe newer)
+versions of LAPACK.
+
+The idea here was to adopt a static-pass pattern that would be applied to an XML tree.
+
+This is the pattern to be adopted by all Pass classes
+
+class GenericPass ( Pass ):
+  dependencies = [] # list of Pass inheriting classes that must 
+                    # be completed before this pass is run
+  complete = False  # static variable signifying that the pass 
+                    # had been successfully completed
+  
+  @staticmethod
+  def apply( xml_tree ):
+    selfname = GenericPass          
+    Pass.resolve( selfname, xml_tree ) # Resolve all of this passes dependencies
+                                       # potentially resolving their dependencies
+    print "[",selfname,"]"
+
+    # Work to be done in this pass
+    
+    selfname.complete = True # Signify that this pass was completed successfully.
+    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
+
+
+Pass is the parent class of all pass classes, and contains the parsed
+input.xml file (input_xml), where pass specific inputs are found
+'''
+
 # Relative paths to LAPACK and its subdirectories.
 lapack_root = "../LAPACK"
 lapack_src = lapack_root + "/SRC"
@@ -169,26 +206,6 @@ class Pass:
     raise NotImplementedError
 
 '''
-This is the pattern to be adopted by all Pass classes
-
-class GenericPass ( Pass ):
-  dependencies = []
-  complete = False
-  
-  @staticmethod
-  def apply( xml_tree ):
-    selfname = GenericPass
-    Pass.resolve( selfname, xml_tree ) 
-    print "[",selfname,"]"
-
-    # Work
-    raise NotImplementedError #REMOVE
-    
-    selfname.complete = True
-    print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
-'''
-
-'''
 class CreateTreePas ( Pass )
 
 Purpose:
@@ -240,7 +257,10 @@ class DocumentSplitPass ( Pass ):
     
     file_count = 1
     for file in src_files:
-      print file," (", file_count, "/", len(src_files),")"
+     
+      sys.stdout.write("%s ( %d : %d )                               \r" % (file, file_count, len(src_files) ) )
+      sys.stdout.flush()
+      
       file_node = SubElement( text_node, "file" )
       file_node.set( "name", file )
       src_node = SubElement( file_node, "source" )
@@ -259,6 +279,8 @@ class DocumentSplitPass ( Pass ):
         src_node.text += src_match.group( "text" ) + "\n"
       
       file_count += 1
+    sys.stdout.write("                                                                           \r")
+    sys.stdout.flush()
       
     selfname.complete = True
     print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
@@ -287,8 +309,9 @@ class LAPACKFunctionDefinePass ( Pass ):
     file_nodes = text_node.findall( "./file" )
     file_count = 1
     for file_node in file_nodes:
-      print file_node.get("name")," (", file_count, "/", len(file_nodes),")"
-      
+
+      sys.stdout.write("%s ( %d : %d )                               \r" % (file_node.get("name"), file_count, len(file_nodes) ) )
+      sys.stdout.flush()
       file_doc = file_node.find( "./documentation" )
       for proc_decl in doc_func_regex.finditer( file_doc.text ):
         proc_node = SubElement( procs_node, "procedure" )
@@ -315,7 +338,8 @@ class LAPACKFunctionDefinePass ( Pass ):
         #SubElement( proc_node, "documentation" )
         
       file_count += 1   
-
+      sys.stdout.write("                                                                           \r")
+      sys.stdout.flush()
     selfname.complete = True
     print "[",selfname,":", "Completed" if selfname.complete else "FAILED", "]\n"
 
@@ -436,7 +460,7 @@ class FuncArgsTypePass ( Pass ):
             arg_node = proc_node.find( "./arguments-list/argument/[@name='" + name + "']" )
           
             if arg_node == None:
-              print "Non-match: argument", name, "of", proc_node.get( "name" ), "in", proc_file_name
+              #print "Non-match: argument", name, "of", proc_node.get( "name" ), "in", proc_file_name
               #prettyprintxml( proc_node.find("./arguments-list") )
               continue
             
@@ -456,7 +480,7 @@ class FuncArgsTypePass ( Pass ):
             arg_node = proc_node.find( "./arguments-list/argument/[@name='" + name + "']" )
           
             if arg_node == None:
-              print "Non-match: argument", name, "of", proc_node.get( "name" ), "in", proc_file_name
+              #print "Non-match: argument", name, "of", proc_node.get( "name" ), "in", proc_file_name
               continue
             
             dimensions = name_match.group( "dimensions") if name_match.group( "dimensions") != None else ""
@@ -482,7 +506,7 @@ class FuncArgsTypePass ( Pass ):
             arg_node = proc_node.find( "./arguments-list/argument/[@name='" + name + "']" )
           
             if arg_node == None:
-              print "Non-match: argument", name, "of", proc_node.get( "name" ), "in", proc_file_name
+              #print "Non-match: argument", name, "of", proc_node.get( "name" ), "in", proc_file_name
               #prettyprintxml( proc_node.find("./arguments-list") )
               continue
             
@@ -562,7 +586,7 @@ class AssociateArgsToArrayPass ( Pass ):
               break
           
           if nameHasSpace:
-            print names, " contains non names. Skipping."
+            #print names, " contains non names. Skipping."
             continue
           
           removes = []
@@ -574,7 +598,7 @@ class AssociateArgsToArrayPass ( Pass ):
             names_list.remove( rm )
 
           if len( names_list ) == 0:
-            print "Names list had no argument names. Skipping" 
+            #print "Names list had no argument names. Skipping" 
             continue
           
           what.append( m.group( "what" ) )
@@ -651,7 +675,7 @@ class LAPACKEFunctionDefinePass ( Pass ):
       #if func_decl.group( "name" ).lower().startswith( "lapacke_" ): continue
       
       if procs_node.find( "./procedure/[@name='" + func_decl.group( "name" ) + "']" ) != None:
-        print "proc", func_decl.group( "name" ), "redefined. Skipping"
+        #print "proc", func_decl.group( "name" ), "redefined. Skipping"
         continue
       
       proc_node = SubElement( procs_node, "procedure" )
@@ -931,7 +955,7 @@ class EasyAssociateArgsPass ( Pass ):
       
       supposed_f_ana_node = c_proc.find( "./analogues/analogue" )
       if supposed_f_ana_node == None:
-        print "Proc", c_proc.get( "name" ), "has no Fortran analogues. Skipping"
+        #print "Proc", c_proc.get( "name" ), "has no Fortran analogues. Skipping"
         continue
         
       f_proc = xml_tree.find( supposed_f_ana_node.text )
@@ -1055,9 +1079,10 @@ class FoldLAPACKSemanticsIntentsToLAPACKEPass ( Pass ):
     for c_proc in lapack_c_procs.findall( "./procedure" ):
       analogues = c_proc.findall( "./analogues/analogue" )
       if len( analogues ) > 1:
-        print "proc", c_proc.get( "name" ), "has", len( analogues ), "analogues. skipping"
+        #print "proc", c_proc.get( "name" ), "has", len( analogues ), "analogues. skipping"
+        continue
       elif len( analogues ) == 0:
-        print "skipping", c_proc.get( "name" )
+        #print "skipping", c_proc.get( "name" )
         continue
             
       f_proc = xml_tree.find( analogues[0].text )
@@ -1065,8 +1090,9 @@ class FoldLAPACKSemanticsIntentsToLAPACKEPass ( Pass ):
       for c_arg in c_proc.findall( "./arguments-list/argument" ):
         analogues = c_arg.findall( "./analogues/analogue" )
         if len( analogues ) > 1:
-          print "arg", c_arg.get( "name" ), "has", len( analogues ), "analogues. skipping"
-          prettyprintxml( c_proc )
+          #print "arg", c_arg.get( "name" ), "has", len( analogues ), "analogues. skipping"
+          #prettyprintxml( c_proc )
+          continue
         elif len( analogues ) == 0:
           continue
         
@@ -1464,7 +1490,7 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
       match = func_name_group_regex.search( base_name );
       
       if match == None:
-        print proc_name, "(", base_name, ") does not match regex"
+        #print proc_name, "(", base_name, ") does not match regex"
         continue
       
       func = match.group( "function" )
@@ -1507,10 +1533,11 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
             if removeVar != None:
               remove_list.add( removeVar.get("name") )
               pass_through[ dimension ] = "(" + arg.get("name") + ".domain.dim("+str(2-i)+").size) : c_int"
-              
+            
+            '''
             else:
               print ( dimension + " is not described in the arguments of "+proc.get( "name" ) + " for argument " + arg.get("name") )
-              
+            '''  
         if arg.get( "matrix-size" ) != None: 
           matrix_size = arg.get( "matrix-size" ).lower()
           rows = matrix_size.split(",")[0].strip()
@@ -1530,10 +1557,10 @@ class ChapelerrificLAPACKEFunctionsPass ( Pass ):
 
             remove_list.add( removeRows.get("name") )
             remove_list.add( removeCols.get("name") )
-          
+          '''
           else:
             print ( rows + " and " + cols + " are not described in the arguments of "+proc.get( "name" ) )
-      
+          '''
       for arg in args_list:
         if arg.get( "semantic" ) != "scalar" :
           continue 
@@ -1917,7 +1944,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
       
       match = func_name_group_regex.search( base_name );
       if match == None:
-        print proc.get("name"), "(", base_name, ") does not match regex"
+        #print proc.get("name"), "(", base_name, ") does not match regex"
         continue
       
       func = match.group( "function" )

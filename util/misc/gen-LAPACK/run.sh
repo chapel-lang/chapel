@@ -24,7 +24,9 @@ cd $PATCHROOM
 
 echo "Downloading lapack-3.5.0.tgz"
 wget http://www.netlib.org/lapack/lapack-3.5.0.tgz
-tar -xvf lapack-3.5.0.tgz
+
+echo "Extracting lapack-3.5.0.tgz"
+tar -xzf lapack-3.5.0.tgz
 
 echo "Patching "
 mv lapack-3.5.0 $LAPACK

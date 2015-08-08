@@ -85,7 +85,8 @@ Types, Constants, and Enumerations
       
 */
 module LAPACK {
-use ChaLAPACK;
+use "lapacke.h";
+use SysCTypes;
 
 /*External function pointer type LAPACK_C_SELECT1.*/
 extern type LAPACK_C_SELECT1 ;

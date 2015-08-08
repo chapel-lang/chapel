@@ -22,8 +22,10 @@
  */
     </copyright>
     <main-module name="ChaLAPACK" file-name="ChaLAPACK.chpl" > 
+      <use>LAPACK</use>
       <use>"lapacke.h"</use>
       <use>SysCTypes</use>
+      
       <description>
 Chapel idiomatic wrappers for the LAPACK library.
 
@@ -58,7 +60,8 @@ ChaLAPACK Procedures
 </description>
     </main-module>
     <helper-module file-name="LAPACK.chpl" name="LAPACK" no-doc="procedures">  
-      <use>ChaLAPACK</use>
+      <use>"lapacke.h"</use>
+      <use>SysCTypes</use>
       <description>
 Chapel module for the LAPACK library.
 
