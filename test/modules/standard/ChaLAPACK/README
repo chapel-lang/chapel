@@ -36,5 +36,5 @@ for fields that were required by LAPACK.
 
 It is not meant to be used outside of the test framework.
 
-See example.chpl for a 'real world' example of how to use ChaLAPACK.
+See ChaLAPACK_example.chpl for a 'real world' example of how to use ChaLAPACK.
   
