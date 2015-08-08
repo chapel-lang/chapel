@@ -586,14 +586,20 @@ insertEndCount(FnSymbol* fn,
 static void
 replicateGlobalRecordWrappedVars(DefExpr *def) {
   ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
-  Expr* stmt = mod->initFn->body->body.head;
+  Expr* found_stmt = NULL;
   Expr* useFirst = NULL;
   Symbol *currDefSym = def->sym;
   bool found = false;
   // Try to find the first definition of this variable in the
   //   module initialization function
-  while (stmt && !found)
+  std::vector<Expr*> stmts;
+  collect_stmts(mod->initFn->body, stmts);
+  for_vector(Expr, stmt, stmts)
   {
+    // Ignore all but CallExprs.
+    if (! isCallExpr(stmt))
+      continue;
+
     std::vector<SymExpr*> symExprs;
     collectSymExprs(stmt, symExprs);
     for_vector(SymExpr, se, symExprs) {
@@ -603,6 +609,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
         if (result & 1) {
           // first use/def of the variable is a def (normal case)
           INT_ASSERT(useFirst==NULL);
+          found_stmt = stmt;
           found = true;
           break;
         } else if (result & 2) {
@@ -630,6 +637,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
             // depending on how we add array literals to the language
             INT_ASSERT(toCallExpr(stmt));
             INT_ASSERT(toCallExpr(stmt)->primitive==NULL);
+            found_stmt = stmt;
             found = true;
             break;
           }
@@ -638,11 +646,10 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
     }
     if (found)
       break;
-
-    stmt = stmt->next;
   }
+
   if (found)
-    stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+    found_stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
   else
     mod->initFn->insertBeforeReturn(new CallExpr
                                     (PRIM_PRIVATE_BROADCAST, def->sym));
