@@ -3,23 +3,31 @@
 # CHAPEL TESTING
 
 from __future__ import print_function
-from test import activate_chpl_test_venv
+
+import atexit
+import contextlib
+import fnmatch
+import getpass
+import glob
+import logging
 import os
-import sys
-import time
-import subprocess32 as subprocess
-import argparse
 import platform
 import re
-import getpass
 import shutil
+import sys
 import tempfile
-import fnmatch
-import glob
-import contextlib
-import logging
-import atexit
+import time
+
+# need to be able to find the util directory even when start_test doesn't live
+# in $CHPL_HOME/util (such as for the release tarball)
+util_dir = os.path.join(os.path.dirname(__file__), '..', 'util')
+sys.path.insert(0, os.path.abspath(util_dir))
+
 from chplenv import *
+
+from test import activate_chpl_test_venv
+import argparse
+import subprocess32 as subprocess
 
 # PROGRAM ENTRY POINT
 def main():
