@@ -474,7 +474,7 @@ def compiler_performance():
     try:
         logger.write("[Combining dat files now]")
         out = subprocess.check_output([combine_comp_perf, "--tempDatDir", 
-            temp_dat_files_dir,"--elapsedTestTime", str(elapsed), "--outdir", 
+            temp_dat_dir,"--elapsedTestTime", str(elapsed), "--outDir",
             comp_perf_dir])
         logger.write(out)
         logger.write("[Success combining compiler performance dat files]")
@@ -503,7 +503,7 @@ def compiler_performance():
             "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
 
     # delete temp files
-    shutil.rmtree(temp_dat_files_dir)
+    shutil.rmtree(temp_dat_dir)
 
 
 def generate_graph_files_graphs():
@@ -819,7 +819,7 @@ def set_up_performance_testing_B():
     # compiler
     if args.comp_performance:
         # set global variables
-        global compperf_test_name, comp_perf_dir, temp_dat_files_dir, comp_perf_html_dir
+        global compperf_test_name, comp_perf_dir, temp_dat_dir, comp_perf_html_dir
         global combine_comp_perf
 
         compperf_test_name = platform.node().split(".")[0].lower()
@@ -835,15 +835,15 @@ def set_up_performance_testing_B():
 
         compperf_test_name += args.comp_performance_description
 
-        temp_dat_files_dir = os.path.join(comp_perf_dir, "tempCompPerfDatFiles")
-        os.environ["CHPL_TEST_COMP_PERF_TEMP_DAT_DIR"] = temp_dat_files_dir
+        temp_dat_dir = os.path.join(comp_perf_dir, "tempCompPerfDatFiles", "")
+        os.environ["CHPL_TEST_COMP_PERF_TEMP_DAT_DIR"] = temp_dat_dir
         #remove it if it wasn't cleaned up last time
-        if os.path.isdir(temp_dat_files_dir):
-            shutil.rmtree(temp_dat_files_dir)
+        if os.path.isdir(temp_dat_dir):
+            shutil.rmtree(temp_dat_dir)
 
         comp_perf_html_dir = os.path.join(comp_perf_dir, "html")
 
-        combine_comp_perf = os.path.join(util_dir, "test", "combine_comp_perfData")
+        combine_comp_perf = os.path.join(util_dir, "test", "combineCompPerfData")
 
     # for any performance testing
     if args.performance or args.comp_performance or args.gen_graphs:
