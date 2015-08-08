@@ -606,10 +606,10 @@ def check_environment():
 def set_up_environment():
     # pre-
     if args.preexec:
-        os.environ["CHPL_SYSTEM_PREEXEC"] = args.syspreexec
+        os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
 
     if args.prediff:
-        os.environ["CHPL_SYSTEM_PREDIFF"] = args.sysprediff
+        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
 
     # compopts
     if args.compopts:
