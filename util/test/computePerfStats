@@ -151,7 +151,7 @@ def validate_output(verify_keys, output_file):
                 print(not_found_msg)
 
         if not valid_output:
-            print("[Error: Invalid output found in {0}]".format(output_file))
+            print("Error: Invalid output found in {0}".format(output_file))
     
     return valid_output
 
