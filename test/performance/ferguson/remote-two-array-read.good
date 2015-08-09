@@ -1,4 +1,4 @@
 0
 1 -1
 1 -1
-(get = 9, get_nb = 0, put = 4, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 200024, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 11, fork_fast = 0, fork_nb = 0)
+(get = 9, get_nb = 0, put = 6, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 200024, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 13, fork_fast = 0, fork_nb = 0)
