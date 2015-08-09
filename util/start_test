@@ -951,9 +951,9 @@ def set_up_executables():
     # launcher timeout
     if (not os.environ.get("CHPL_LAUNCHER_TIMEOUT")
         and not os.environ.get("CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT")):
-        if launcher.find("slurm") > 0:
+        if "slurm" in launcher:
             os.environ["CHPL_LAUNCHER_TIMEOUT"] = "slurm"
-        if launcher.find("pbs") > 0 or launcher.find("qsub") > 0:
+        if "pbs" in launcher or "qsub" in launcher:
             os.environ["CHPL_LAUNCHER_TIMEOUT"] = "pbs"
 
     # comm
