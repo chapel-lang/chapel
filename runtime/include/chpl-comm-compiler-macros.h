@@ -198,7 +198,7 @@ void chpl_check_nil(void* ptr, int32_t lineno, const char* filename)
 
 static inline
 void* chpl_array_alloc(size_t nmemb, size_t eltSize, int32_t lineno, const char* filename) {
-  return chpl_mem_allocManyZero(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename);
+  return chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename);
 }
 
 static inline
