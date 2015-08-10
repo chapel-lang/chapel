@@ -1015,6 +1015,39 @@ module String {
     return ret;
   }
 
+  proc *(s: string, n: integral) {
+    if n <= 0 then return "";
+
+    const sLen = s.length;
+    if sLen == 0 then return "";
+
+    var ret: string;
+    ret.len = sLen * n; // TODO: check for overflow
+    ret._size = ret.len+1;
+    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
+                              CHPL_RT_MD_STR_COPY_DATA): bufferType;
+    ret.owned = true;
+
+    const sRemote = s.locale.id != chpl_nodeID;
+    if sRemote {
+      chpl_string_comm_get(ret.buff, s.locale.id,
+                           s.buff, sLen.safeCast(size_t));
+    } else {
+      memmove(ret.buff, s.buff, sLen.safeCast(size_t));
+    }
+
+    var iterations = n-1;
+    var offset = sLen;
+    for i in 1..iterations {
+      memmove(ret.buff+offset, ret.buff, sLen.safeCast(size_t));
+      offset += sLen;
+    }
+    ret.buff[ret.len] = 0;
+
+    return ret;
+  }
+
+  /*
   inline proc _concat_helper(s: string, cs: c_string, param stringFirst: bool) {
     if debugStrings then
       chpl_debug_string_print("in proc +() string+c_string");
@@ -1058,7 +1091,6 @@ module String {
   //TODO: figure out how to remove the concats between
   //      string and c_string[_copy]
   // promotion of c_string to string is masking this issue I think.
-  /*
   proc +(s: string, cs: c_string) where isParam(cs) {
     //compilerWarning("adding c_string to string");
     return _concat_helper(s, cs, stringFirst=true);
