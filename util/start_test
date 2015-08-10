@@ -1,1920 +1,1370 @@
-#!/bin/csh -f
+#!/usr/bin/env python
 #
-#
-# Main test script for Chapel compiler -- based on testing system from
-# the ZPL testing system, originally developed by Jason Secosky with
-# later mods by Brad Chamberlain, Sung-Eun Choi, Steve Deitz, and
-# E Christopher Lewis.
-#
-# DIRECTORY STRUCTURE
-#
-# $CHPL_HOME/util/
-#   test     -- contains binary files/scripts required by the testing
-#               system, such as the timedexec script which kills a
-#               test if it takes too long
-#
-# $CHPL_HOME/test/
-#   Logs/    -- logs of testing runs go here by default
-#   Samples/ -- sample tests go here; these are for illustration
-#               purposes and are intended to complement the
-#               TestSystem.txt best practices documentation.
-#   Share/   -- a place to put codes to share with other developers.
-#               These will not be run by default.
-#   */       -- all other directories will contain tests
-#
-#
-# EXECUTIVE SUMMARY
-#
-# The overall flow of the testing system is that by default it will
-# recursively descend into subdirectories looking for Chapel programs
-# to compile and run (*.chpl).  The output of these runs will
-# typically be logged in a file stored in the Logs/ subdirectory of
-# the testing directory, along with a summary of the errors reported
-# (determined by grepping for the string "[Error", so don't have your
-# program print this out) and the status of "future tests" -- those
-# that are not expected to work, but are checked in for the purpose of
-# sharing and staking out future work.
-#
-# The main arguments to start_test are a list of directories and/or
-# list of files that should be tested.  The test system will test all
-# of the files listed and then all of the directories, including their
-# children (unless the -norecurse flag is used).  If no list of
-# directories or files is provided, the starting directory is either:
-#
-#   * "test" if start_test is invoked from $CHPL_HOME
-#
-#   * "."  otherwise (i.e., all subdirectories of the current
-#                     directory will be tested).
-#
-# In addition to source-based tests (*.chpl), tests can also execute
-# arbitrary commands (see sub_test below).
-#
-#
-# EXIT CODE
-#
-# start_test will return with exit code 0 if there were no failures
-# and return with code 2 if the test system ran correctly but
-# some tests failed. Any other code means that there was an
-# error running the test system.
-#
-# COMMAND-LINE OPTIONS
-#
-# The '-h' option lists the options that the script accepts and the
-# default values.  Current options are:
-#
-#   option     argument               default value
-#   ---------  ---------------------  -------------
-#              [list of directories]  "test" if in $CHPL_HOME, "." otherwise
-#              [list of tests]        ""
-#   -clean-only
-#   -compiler  <compiler executable>  $CHPL_HOME/bin/<host-platform>/chpl
-#   -compopts  <option list>          "--cc-warnings"
-#   -execopts  <option list>          ""
-#   -numlocales <number>              1 (when CHPL_COMM is not "none")
-#   -launchcmd <launcher command>     ""
-#   -norecurse
-#   -comp-only
-#   -performance
-#   -num-trials <number>             1
-#   -generate-graphs
-#   -no-display-graph-range
-#   -graphs-gen-default <avg|min|max|med> avg
-#   -startdate <MM/DD/YY>
-#   -futures
-#   -futuresonly
-#   -valgrind
-#   -valgrindexe
-#   -syspreexec <path>
-#   -sysprediff <path>
-#   -nostdinredirect
-#   -launchertimeout <queueing system>
-#   -logfile   <log filename>         $testdir/Logs/<username>.<tgt-platform>.log
-#                                     (where $testdir is $CHPL_HOME/test if
-#                                     it exists, $CHPL_HOME/examples, if it
-#                                     exists, . otherwise)
-#   -memleaks
-#   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
-#   -progress                         Print pass/fail to stderr for each test. Does not work for directories.
-#   -test-root                        Absolute path to test dir. Set when test dir is not under CHPL_HOME.
-#   -junit-xml                        Create jUnit XML style report.
-#   -junit-xml-file <file>            Path to store jUnit XML report. When set, -junit-xml is implied.
-#   -junit-remove-prefix <prefix>     Remove <prefix> from all tests in jUnit report.
-#
-# All options can be used with a double-dash format as well 
-# (e.g. --compopts).
-#
-# The -compiler option allows the user to specify the compiler to test
-# if it is something other than the obvious one in the current git
-# structure.  This lets one run other people's compilers, old copies
-# of compilers, etc.
-#
-# The -compopts option allows the user to specify a set of compiler
-# options that should be used on every invocation to the compiler.
-# Additional compiler options can be specified on a directory-by-
-# directory basis using mechanisms described below (COMPOPTS/.compopts).
-# By default, -compopts is set to --cc-warnings, and additional
-# -compopts arguments will append to this list.  If, for some reason,
-# one wants to disable the --cc-warnings flag, currently the only
-# way to do so is by specifying "-compopts --no-cc-warnings" to
-# reverse the effects of that flag.
-#
-# The -comp-only option specifies that this testing run should only
-# be compiled and not executed; this causes success of a test to
-# be related to the success or failure of the compile step, not to
-# its execution.
-#
-# The -execopts option allows the user to specify a set of execution
-# options that should be used on every invocation of a program.  As
-# with compiler options, these can be ammended in each subdirectory.
-#
-# The -launchcmd option allows the user to specify a program launch
-# utility to use to start generated executables. When tests are
-# executed, the launchcmd is prepended to the command line used. This
-# allows, for example, for a binary generated by a cross compiler to
-# be copied over to the target machine before it is executed.
-#
-# The -numlocales option sets the number of locales that is used
-# in the absence of an applicable numlocales/NUMLOCALES file.
-#
-# The -norecurse flag requests that the base directory/ies be tested
-# but that no subdirectories be visited recursively.  This is useful
-# for pinpointing the testing of a single directory when you do not
-# want to test any of its subdirectories.
-#
-# The -logfile option indicates where the log of the test run should
-# be kept.  By default it's based on the user's name and the target
-# platform you're testing.  At the end of the run, a second log file
-# named <logfile>.summary will be generated containing only the Errors
-# and future tests that were logged.
-#
-# The -valgrind option specifies that the compiler and generated
-# executable should be run using valgrind in order to find errors.
-# The -valgrindexe option specifies that the generated executable
-# should be run using valgrind, but not the compiler.
-#
-# The -futures option specifies that the testing system should test
-# both future and non-future tests.  By default, future tests are
-# skipped over.  The -futuresonly option specifies that the testing
-# system should test only the future tests and not the others.
-#
-# The -performance flag specifies that the testing system should
-# search for and execute performance tests within the testing
-# system.  A test foo.chpl is considered a performance test if a
-# file "foo.perfkeys" exists.  This file contains a string per
-# line that is used to read performance-related cues from the
-# test's compiler+execution output file.  For example, if a test
-# generates a line "Time: x.yz seconds", putting the key "Time:"
-# into its .perfkeys file would cause the testing system to grab
-# the value "x.yz" out of the output file (all non-whitespace 
-# characters after the key string until the next whitespace 
-# character).  These data values will then be written to a file
-# named $CHPL_TEST_PERF_DIR/foo.dat (where by default
-# $CHPL_TEST_PERF_DIR is "$CHPL_HOME/test/perfdat/<machine name>") in a
-# TAB-separated manner for graphing or display using gnuplot or Excel.
-#
-# When running with the -performance flag, compiler and executable
-# options are specified in files with .perfcompopts and 
-# .perfexecopts since they will most likely require different
-# compiler options (to specify optimization, turn off bounds
-# checking) and execution options (to request timings and other
-# unpredictable values to be printed out, whereas they're likely
-# to be squelched in the correctness run).  These can also be
-# set at the directory level using PERFCOMPOPTS / PERFEXECOPTS.
-#
-# Success/failure summaries after a performance run indicate
-# whether all the performance keys for a test were matched or not.
-# In particular, a failure indicates that a test's performance
-# keys couldn't all be found.
-#
-# Performance tests can also be timed via a user specifiable timer by
-# supplying a PERFTIMEEXEC or .perftimeexec file (whose contents are
-# only a single non-comment line that is the name of a timer to use
-# (must be located in util/test/timers/.) For example a PERFTIMEEXEC
-# file may contain the line 'defaultTimer' which has the effect of
-# running "defaultTimer ./executable" where defaultTimer is
-# essentailly a wrapper that is responsible for running the executable
-# and adding timing information to the .exec.out.tmp file. A
-# .perfkeys entry can then be read to read these values as with any
-# other key/value pair in performance testing. The intent of this
-# feature is to time the whole Chapel program externally rather than
-# using Chapel-level timing mechanisms, either to time
-# startup/shutdown code that's normally outside of the user's ability
-# to time; or to avoid cluttering the sources with timing-related
-# code. If desired, we can also add a PERFTIMECOMP/.perftimecomp
-# capability
-#
-# If the -perflabel <label> option is given, the label is used
-# instead of "perf" in file name suffixes, and its all-caps version
-# is used instead of "PERF" in directory-wide files. E.g upon
-# -perflabel multiloc-, the testing system will be checking for the files
-# testname.multiloc-keys, testname.multiloc-compopts, MULTILOC-COMPOPTS, etc.
-# -perflabel matters only when the -performance option is given.
-#
-# After all the performance tests are run, a second pass is taken
-# through the list of files or directories to generate graphs.  You
-# can use the -generate-graphs flag to only generate graphs (no building
-# or executing test programs).  Graphs are generated using a .graph file
-# where the contents of the .graph specify what data should be graphed,
-# and basic information about the format of the graph. The graphs are
-# generated using gnuplot (gnuplot must be in your path) and dumped out
-# in .gif format, and you must have updated your $CHPL_HOME/test/GRAPHFILES
-# file to include it.  In each $CHPL_TEST_PERF_DIR, an html index is created
-# that includes all the .gif files in that directory.
-#
-# The graphing is performed in a second pass so that a single .graph file
-# can use data from more than one test (thus avoiding dependences).  A caveat
-# with this dual pass design is that the graphing step is executed even if
-# the test fails (due to compilation, execution, etc.).  In such case,
-# there may be a Success counted for the graphing step in the test Summary
-# in addition to the test Failure.
-#
-# If a foo.chpl and foo.perfkeys are accompanied by a foo.graph, and
-# foo.graph is empty, the testing system will by default graph all
-# columns in foo.dat, with a y-axis labeled "Performance", where the 
-# x-axis represents time in the format of MM/DD/YY.  The start date 
-# if not set as a flag to start_test, will be the earliest date of all
-# the data files the .graph must read from.
-#
-# The user can also choose the graph settings by writing to the
-# .graph the format desired, as follows:
-#
-# -- to specify which performance keys are to be graphed,
-#    in .graph should be the line:
-#
-#    perfkeys: key1, key2, key3
-#
-#    where key1, key2 and key3 are all keys in a .perfkeys.  if not all keys
-#    specified come from the same .perfkeys, the .dat files they should be 
-#    extracted from should be listed (see below).  The .graph file may
-#    contain comments formatted by starting a line with '#'.
-#
-# -- if the performance keys specified above come from more than one 
-#    .perfkey, or come from a .perfkey that has its root name different
-#    than its .graph (e.g. foo.graph's listed perfkeys don't come from
-#    foo.perfkey, but from baz.perfkey etc.), specify the different files
-#    where the data should come from.
-#     
-#    For example,
-#
-#    files: file1.dat, file2.dat, file3.dat
-#
-#    where file1.dat has key1's data, file2.dat has key2's data, etc.
-#
-#    The .perfkeys file may contain comments formatted by starting a line
-#    with '#'.
-#
-# -- if you want the .dat file to be written to a file other than the
-#    the default file name (e.g., in foo.perfkeys, write the performance
-#    data to myfoo.dat), in the .perfkeys file, use the 'file: <filename>'
-#    in a comment.  For example,
-#
-#    # file: myfoo.dat
-#
-#    The filename must end in .dat.
-#
-# -- if you would like to specify the name of the key to be different
-#    on the graph than it is in .perfkeys, specify the name it should
-#    have:
-#
-#    graphkeys: key11, key12, key13
-#
-#    (this can be useful if you are graphing data across different 
-#    files which have the same keys in .perfkeys, and you want to distinguish
-#    them when viewing the graph.)
-#
-# -- to specify the name of the output graph,
-#    in .graph should be the line:
-#
-#    graphname: foo
-# 
-#    such that foo.gif will be put in $CHPL_TEST_PERF_DIR at end of a
-#    performance run
-#  
-# -- to specify the start date of the graph (the earliest date on the x-axis)
-#    in .graph should be the line:
-#
-#    startdate: 07/08/10
-#   
-#    Format is MM/DD/YY.  If no start date specified, the start date will be
-#    the earliest start date of all data files specified.  The start date
-#    specified in the .graph file will override the start date specified by
-#    the -startdate flag to start_test.
-#
-# -- to specify the title of the graph,
-#    in .graph should be the line:
-#
-#    graphtitle: Title
-#
-# -- to specify the y-axis label of the graph,
-#    in .graph should be the line:
-#
-#    ylabel: Performance
-#
-# -- to specify the method that is used to reduce multiple trials of
-#    performance data:
-#
-#    generate: min,avg,med,,
-#
-#    the options are 'min', 'max', 'med', and 'avg' and blank. If the option is
-#    left out or blank, the global default will be used. This line should have
-#    an entry for each perfkey
-#
-# -- if you would like the trial range envelopes to be displayed (or not):
-#
-#    displayrange: true|false
-#
-# If want to specify more than one set of keys per .graph, such that
-# each set of keys corresponds to its own graph, please specify the perfkeys
-# first, followed by any lines pertaining to the above keys. Then
-# the next set of lines to specify any other set of keys, and so on.
-#
-# Sets of keys can be line separated from another set of keys, but no line separation
-# within a set of keys and its own attributes.
-#
-# The -startdate option allows the user to specify a date that all
-# graphs should start with (having a common start date for all graphs 
-# unifies the x-axis).  if in a .graph, there is a specified start date
-# for a particular graph, that graph will use the date in the .graph
-# and not the date by the -startdate option.  
-#
-# Additional options to genGraphs can be passed via -genGraphOpts.
-# For example, when using revision numbers instead of dates and
-# setting CHPL_TEST_PERF_DATE to revision numbers, you might want
-# -genGraphOpts "-u -s23131 -e23332"
-#
-# The -nostdinredirect option makes the tests (but not the compiler)
-# run without redirecting stdin from /dev/null.  This is intended to
-# be used e.g. with qsub-based launchers, which at present do not
-# support stdin redirect.  The tests that have .stdin files are skipped
-# (because this would not be supported with those launchers).
-#
-# The -launchertimeout option makes start_test rely on the launcher
-# to enforce the timeout, instead of using 'timedexec'. This works
-# only if the launcher supports an appropriate option, whose format
-# is determined by the argument after -launchertimeout. Currently,
-# '-launchertimeout pbs' passes the option '--walltime=HH:MM:SS' .
-#
-# The -memleaks=<filename> option requests that the executable run
-# with --memLeaksLog=<filename> option.
-#
-# DEPRECATED The -interpret option requests that the compiler be executed in
-# DEPRECATED interpreter mode.  This will cause the test system to invoke the
-# DEPRECATED compiler to interpret the program rather than compile and run it.
-# DEPRECATED Future tests, those utilizing executable options (execopts), and
-# DEPRECATED those that are not executed (noexec) tests are skipped when this
-# DEPRECATED flag is invoked.  In addition, a directory can be requested to
-# DEPRECATED be skipped by dropping a NOINTERP file into it.  Because the
-# DEPRECATED Chapel compiler's interpreter feature is currently disabled, this
-# DEPRECATED flags is currenty deprecated.
-#
-#
-# STRUCTURE OF TEST DIRECTORIES
-#
-# By default, setting up a subdirectory for testing simply consists
-# of creating the directory, putting Chapel (.chpl) source files
-# into it and an expected output file (.good) for each source file
-# (using the same base name).  Upon reaching such a directory, the
-# testing system will run the specified compiler on each Chapel
-# source file using the specified compiler options, then (assuming
-# the compile completed successfully, execute the resulting program 
-# using the specified execution options.  The output from both the
-# compilation and the execution are concatenated and diff'd against
-# the .good file.  This allows programs that are supposed to generate
-# errors, warnings, and correct programs to all be tested using the
-# same mechanisms.  
-#
-# If a test generates files that should be cleaned up before running
-# the test again the next time (to start with a blank slate), these
-# files can be listed in a .cleanfiles or a directory-level file
-# called CLEANFILES.  Before each file or directory is tested (or when
-# the --clean-only flag is specified) the files listed in .cleanfiles
-# and/or CLEANFILES will be removed.  If a particular Chapel file is
-# specified, only the files listed in the .cleanfiles for that Chapel
-# file will be removed.  Both .cleanfiles and CLEANFILES will accept
-# the UNIX shell wildcard character '*', but not all shell expansions
-# (e.g., ~).  See the Python documentation for the glob module for
-# more info.
-#
-# If the output for a test varies by machine, communication layer, or
-# target platform name, files named <testname>.<machname>.good,
-# <testname>.comm-<commlayer>.good, or <testname>.<platform>.good can
-# be used to specify the output for such tests, where "machname" is
-# the output of "uname -n" with any "." qualifiers after the machine
-# name stripped off, commlayer is the communication layer being tested
-# (e.g., "none", "gasnet", etc.) and "platform" is the value of
-# $CHPL_TARGET_PLATFORM.  In addition, if "--no-local" is selected as
-# a compiler option, the file <testname>.no-local.good may be used.
-# The most specific good file will be used, in this order:
-# machname, "no-local", commlayer, platform, generic.
-#
-# Tests that are not yet expected to work can be marked as such
-# by creating a <testname>.future file.  The presence of the
-# .future file will prevent the test from counting toward our
-# nightly successes and regressions, and is intended to allow
-# tests to be checked in to share them between multiple developers
-# in-line with other tests that work.  In general, once a test
-# is working and stable, its future file should be removed and 
-# should not be re-added (for future failures of the test should
-# be counted as regressions).  The .future file should contain
-# the userid of the developer whose court it's in on the first
-# line (this will appear in the test system's summaries), or some
-# other categorization of what the future is dependent on to pass.
-# Subsequent lines can contain notes and will be ignored by the
-# testing system.
-#
-# [Deprecated feature: The interpreter has long since been retired]:
-# As mentioned above, running the test system in interpreter mode
-# does not attempt to execute tests with .future files.  The
-# interpreter mode of the testing system has a parallel mechanism
-# for creating future tests using a .ifuture file (the "i"
-# stands for interpreter)
-#
-# .future tests may also have optional .bad files that express the
-# current, undesired behavior of the test.  The advantage of filing a
-# .bad file is that it ensures that the test will continue failing in
-# the same mode or generate an Error if it doesn't.  This is designed
-# to guard against cases in which a .future starts failing for
-# different reasons that mask the original intent of the future.  For
-# example, if the syntax of the language changes, and the future test
-# is not updated, it will fail forever with "Syntax Error" and never
-# pass.
-#
-# .suppressif files work like a combination of .skipif and .future.
-# The .suppressif file is meant to indicate that a test fails in
-# some configurations for reasons outside of the control of the Chapel
-# compiler.
-# The first line of a .suppressif should be a comment (starting with #)
-# describing the issue. The rest of the file should indicate the
-# configuration in which the error is to be suppressed. A .bad
-# file can be provided.
-#
-# If the test-writer wants to redirect standard input from a file,
-# they may do so by supplying a .stdin file with the same base
-# name as the test itself (e.g., if mytest.stdin exists, it will
-# be piped into stdin when running the executable created from
-# mytest.chpl).  If no such file exists, standard input is piped
-# from /dev/null (i.e., tests can't read from the console...)
-#
-# Particular subdirectories can also be customized if necessary.
-# Note that such customizations are not inherited recursively by
-# further subdirectories, but apply only to the directory in
-# question (we might consider changing this in future versions).
-# The customizations are as follows:
-#
-#   - if the subdirectory contains an executable sub_test script, that
-#     script will be used to run the tests in that directory rather
-#     than the default sub_test script (located in the
-#     $CHPL_HOME/util/test/ directory).  A sub_test script may take
-#     whatever actions it wants, and is simply expected to generate
-#     any errors using the "[Error ...]" format so that it will show
-#     up in the summary.  Similarly, the script should generate any
-#     warnings or successful tests using "[Warning ...]" "[Success
-#     ...]"  messages for consistency.  The sub_test script will be
-#     sent two arguments: (1) the compiler to use, and (2) the
-#     location of this main test/ directory.  The compiler and
-#     execution options will be stored in environment variables named
-#     COMPOPTS and EXECOPTS, respectively.
-#
-#  - if the subdirectory contains a NOTEST file, that directory
-#    will not be considered for testing.  This can be useful for
-#    disabling subdirectories containing tests that don't work
-#    yet, or subdirectories that contain input files for other
-#    tests (though they will also be ignored if they fail to
-#    contain any .chpl files...).  This may also be selected for
-#    a single test, foo.chpl, by creating a foo.notest file.
-#
-#  - if the subdirectory contains a SKIPIF file, the contents of
-#    the file will be checked to determine whether or not the
-#    directory's tests should be skipped.  The current format of
-#    the SKIPIF file is as follows:
-#      # ...          : a line starting with a # is a comment
-#      <blank>        : a blank line is skipped
-#      <var> == <val> : checks to see if envvar "var" is "val"
-#      <var> != <val> : checks to see if envvar "var" is not "val"
-#      <var> <= <val> : true if <var> contains the substring "val".
-#      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
-#    All of the lines of containing conditional expressions are logically
-#    or'd together, and if any of them are true, the test is
-#    skipped.  As with other options, a SKIPIF condition can
-#    be placed on a file-by-file basis using a <testname>.skipif
-#    file.  Tests that are explicitly named on the start_test
-#    command line will be tested regardless of any .skipif files.
-#    If -- for a given subdirectory <dir> -- there is a <dir>.skipif
-#    file and the condition in the file evaluates to true, then
-#    that directory and all of its descendents are skipped.
-#    The condition is ignored if the <dir>.skipif file corresponds
-#    to the current working directory, or if <dir> is explicitly named
-#    on the start_test command line.
-#
-#    Planned extensions to this capability:
-#    - ability to logically-and filters together
-#
-#  - if the subdirectory contains a NOEXEC file, any executables
-#    built in that directory will not attempt to be executed.
-#    Rather, only the compiler output will be diffed against the
-#    expected output (note that when a compile fails, this will
-#    also happen automatically).  This may also be selected for
-#    a single test, foo.chpl, by creating a foo.noexec file.
-#
-#  - if the subdirectory contains a NOVGRBIN file and the -valgrind
-#    flag was used, the generated binary will not be run using 
-#    valgrind (the compiler still would be).
-#
-#  - if the subdirectory contains a COMPOPTS or EXECOPTS file,
-#    the options listed in that file will be added to the compiler
-#    and execution options for that subdirectory.  In addition, 
-#    a test named foo.chpl can add its own compilation and execution
-#    options by specifying them in foo.compopts and foo.execopts.
-#
-#    The .compopts and .execopts files may contain multiple lines
-#    where each line specifies a different set of compilation or
-#    execution options.  All such files also support single line
-#    comments via the '#' character.  In addition, for the .compopts
-#    and .execopts files, if a line of options is followed by a
-#    '#' the first token following the '#' is treated as the .good file
-#    for the test using those options (.execopts .good files override
-#    .compopts ones).  If no .good file name is specified, the .good file
-#    will be assumed to be
-#         <testname>.<compopts line no>-<execopts line no>.good
-#    A '0' will be used if there is no appropriate line number.
-#    In addition to execution options, a file can be specified to
-#    be piped in via stdin. The format for this feature is:
-#      <execution options> < foo.txt
-#    Where 'foo.txt' is the desired file to be piped into stdin. An
-#    error occurs if a .stdin file exists for the test, or if the
-#    desired file does not exist.
-#
-#  - also added support for a LASTCOMPOPTS file that contains
-#    compiler options to be added after the source file.  Thus:
-#    ./chpl <COMPOPTS> <-compopts> source.chpl <LASTCOMPOPTS>.
-#    This can be specified on a test by test basis using foo.lastcompopts.
-# 
-#  - also added support for a LASTEXECOPTS file that contains
-#    program options to be added after the other execopts.  Thus:
-#    ./a.out <EXECOPTS> <-execopts> <LASTEXECOPTS>.
-#    This can be specified on a test by test basis using foo.lastexecopts.
-# 
-#  - if the subdirectory contains a COMPSTDIN file, the contents of
-#    COMPSTDIN will be piped into the execution of the compile step as
-#    stdin.  I can add a similar feature for the execution step as
-#    soon as there's need for it.
-#
-#  - if the subdirectory contains a CATFILES file, then the files
-#    listed in that file will be concatenated to the end of the
-#    compiler/execution output for each test.  For tests that
-#    generate files (either as a result of the compilation or
-#    as part of the executable's behavior), this can be used to
-#    ensure that the generated file's contents are correct without
-#    writing a specialized sub_test script.  Again, this file should
-#    be a single line with no linefeeds.  In addition, a test named 
-#    foo.chpl can add its own concatenation files by specifying them 
-#    in foo.catfiles.
-#
-#  - if the subdirectory contains an executable PREDIFF file, that
-#    file will be executed prior to running any diff command and
-#    will be sent five arguments:
-#      1) the name of the current test
-#      2) the name of the output file that the diff is going to
-#         be taken against
-#      3) the compiler being used
-#      4) the compiler options used
-#      5) the execution options used
-#    A test-specific PREDIFF script can be added  by using a foo.prediff
-#    script. Arguments 1 and 2 do not include any path components
-#    (regardless of how start_test is invoked). Argument 3 gives
-#    the absolute path to the compiler.
-#    A system-wide PREDIFF script, to be run on on the compiled executable's
-#    output for *all* tests, can be provided via the -sysprediff option.
-#    It is invoked with the same five arguments listed above,
-#    prior to invoking the two other PREDIFFs.
-#
-#  - similarly, actions desired before running the generated
-#    executable can be specified using a PREEXEC or foo.preexec
-#    script.  (other such commands can be added to various
-#    stages of the sub_test script on request).
-#    A system-wide PREEXEC script, to be run on the compiler output for *all*
-#    tests, can be provided via the -syspreexec option.
-#
-#  - it is also possible to add a PRECOMP file which is run prior to
-#    running the main test.  This can be used to set up certain files
-#    which are used in the test itself.
-#
-#  - if the subdirectory contains a TIMEOUT file, then that file
-#    will be read to determine the number of seconds that the tests
-#    in the directory should be allowed to run before being killed.
-#    The default is currently 5 minutes.  A test foo.chpl can also
-#    override the timeout just for itself by supplying a timeout
-#    value in a foo.timeout file.
-#
-#  - using the .gitignore file in the root of repo can also be
-#    very helpful so that files generated during testing won't
-#    clutter the results of a git status command.
-#
-# Again, to see a sample run of the testing system, look through
-# the Samples/ directory, then run:
-#
-#     ./start_test Samples
-#
-# and inspect the Samples/ and Logs/ subdirectories to see what
-# was generated.
-#
+# CHAPEL TESTING
 
-set user = `whoami`
+from __future__ import print_function
 
-#
-# unset things that users may have set in their environment
-#
-unsetenv CHPL_DEVELOPER
+import atexit
+import contextlib
+import fnmatch
+import getpass
+import glob
+import logging
+import os
+import platform
+import re
+import shutil
+import sys
+import tempfile
+import time
 
-# Commented this out, because it only seems useful in shared environments:
-## Make sure that other testers can modify what another 
-## tester does
-#umask 002
+# need to be able to find the util directory even when start_test doesn't live
+# in $CHPL_HOME/util (such as for the release tarball)
+util_dir = os.path.join(os.path.dirname(__file__), '..', 'util')
+sys.path.insert(0, os.path.abspath(util_dir))
 
-#
-if ($?CHPL_HOME) then
-    if (! -d $CHPL_HOME || ! -x $CHPL_HOME) then
-        echo "Error: CHPL_HOME must be a legal directory"
-        exit 1
-    endif
-else
-    echo "Error: CHPL_HOME must be set in order to run start_test"
-    exit 1
-endif
+from chplenv import *
 
-#
-# Permit someone running the test system to optionally specify a
-# utility directory other than $CHPL_HOME/util/test.  This can be
-# useful when running a more recent version of the testing system on
-# an older snapshot of Chapel that does not support the current set of
-# testing capabilities.
-#
-if ($?CHPL_TEST_UTIL_DIR) then
-    set utildir = "$CHPL_TEST_UTIL_DIR"
-else
-    set start_test_dir = `dirname $0`
-    set utildir = `cd $start_test_dir/../util && pwd`
-    setenv CHPL_TEST_UTIL_DIR $utildir
-endif
-if (! -d $utildir || ! -x $utildir) then
-    echo "Error: Cannot find $utildir"
-    exit 1
-endif
+from test import activate_chpl_test_venv
+import argparse
+import subprocess32 as subprocess
 
-# A temporary directory for use during a test. It is removed 
-# at the end of every test.
-if ($?CHPL_TEST_TMP_DIR) then
-  set chplTestTmpDir = "$CHPL_TEST_TMP_DIR"
-else
-  set chplTestTmpDir = `mktemp -d -t chplTestTmpDir.XXXXX`
-  setenv CHPL_TEST_TMP_DIR $chplTestTmpDir
-endif
+# PROGRAM ENTRY POINT
+def main():
+    check_environment()
 
-set testdir = "$CHPL_HOME/test"
-if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
-    set testdir = "$CHPL_HOME/examples"
-    if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
-        set testdir = "."
-    endif
-endif
-if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
-    echo "Cannot write test directory '$testdir'"
-    exit -1
-endif
+    # set up the parser and parse command-line arguments
+    parser = parser_setup()
+    global args
+    preprocess_options()
+    args = parser.parse_args()
 
-if (! -e $testdir/Logs) then
-   mkdir $testdir/Logs
-endif
-set logsdir = "$testdir/Logs"
-if (! -d $logsdir || ! -x $logsdir || ! -w $logsdir) then
-    echo "Cannot write Logs directory '$testdir'"
-    exit -1
-endif
-
-set datestr = `date +"%y%m%d.%H%M%S"`
-
-set host_platform = `$utildir/chplenv/chpl_platform.py --host`
-set tgt_platform = `$utildir/chplenv/chpl_platform.py --target`
-
-#
-# some sets to get locale, environment reasonable
-#
-if ($tgt_platform != "sunos") then
-    setenv LC_ALL C
-    setenv LANG en_US
-endif
-
-
-set clean_only = 0
-set execopts = ""
-set compiler = ""
-set compopts = "--cc-warnings"
-set launchcmd = ""
-set dirlist = ""
-set testlist = ""
-set logfile = "$logsdir/$user.$tgt_platform.log"
-set valgrind = 0
-set valgrindexe = 0
-set interpret = 0
-set performance = 0
-set performancedescription = ""
-set perflabel = ""
-set perfkeys  = ""
-set compperformance = 0
-set compperformancedescription = ""
-set gengraphs = 0
-set graphsdisprange = 1
-set graphsgendefault = "avg"
-set startdate = ""
-set genGraphOpts = ""
-set futuresMode = 0
-set testnotests = 0
-set recurse = 1
-set tee = "tee"
-set numlocales = 0
-set comm = `$utildir/chplenv/chpl_comm.py`
-set launcher = `$utildir/chplenv/chpl_launcher.py`
-set locMod = `$utildir/chplenv/chpl_locale_model.py`
-set optionerr = 0
-set chplHomeWarn = 1
-set progress = 0
-set testRootDir = ""
-set junit_xml = 0
-set junit_xml_file = 0
-set junit_remove_prefix = 0
-
-while ( $#argv > 0 )
-    switch ( "$argv[1]" )
-    case -execopts:
-    case --execopts:
-        shift
-        set execopts = "$execopts $argv[1]"
-        shift
-        breaksw
-    case -compiler:
-    case --compiler:
-        shift
-        set compiler = $argv[1]
-        shift
-        breaksw
-    case -launchcmd:
-    case --launchcmd:
-        shift
-        set launchcmd = "$argv[1]"
-        shift
-        breaksw
-    case -cleanonly:
-    case --cleanonly:
-    case -clean-only:
-    case --clean-only:
-        shift
-        set clean_only = 1
-        breaksw
-    case -compopts:
-    case --compopts:
-        shift
-        set compopts = "$compopts $argv[1]"
-        shift
-        breaksw
-    case -logfile:
-    case --logfile:
-        shift
-        set logfile = $argv[1]
-        shift
-        breaksw
-    case -memleaks:
-    case --memleaks:
-        shift
-        if ($argv[1] =~ "/*") then
-            set execopts = "$execopts --memLeaksLog=$argv[1]"
-        else
-            set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
-        endif
-        setenv CHPL_MEM_LEAK_TESTING true
-        shift
-        breaksw
-    case -valgrind:
-    case --valgrind:
-        shift
-        set valgrind = 1
-        breaksw
-    case -syspreexec:
-    case --syspreexec:
-        shift
-        setenv CHPL_SYSTEM_PREEXEC "$argv[1]"
-        shift
-        breaksw
-    case -sysprediff:
-    case --sysprediff:
-        shift
-        setenv CHPL_SYSTEM_PREDIFF "$argv[1]"
-        shift
-        breaksw
-    case -futures:
-    case --futures:
-        shift
-        set futuresMode = 1
-        breaksw
-    case -futures-only
-    case --futures-only
-    case -futuresonly
-    case --futuresonly
-        shift
-        set futuresMode = 2
-        breaksw
-    case -futures-skipif
-    case --futures-skipif
-    case -futuresskipif
-    case --futuresskipif
-        shift
-        set futuresMode = 3
-        breaksw
-    # "undocumented" option, only meant to be used by other scripts
-    case -futures-mode:
-    case --futures-mode:
-        shift
-        set futuresMode = "$argv[1]"
-        shift
-        breaksw
-    case -i:
-    case --interpret:
-    case -interpret:
-        shift
-        set interpret = 1
-        breaksw
-    case --performance:
-    case -performance:
-        shift
-        set compopts = "$compopts --fast"
-        if ("$tgt_platform" != "darwin") then
-            set compopts = "$compopts --static"
-        endif
-        set performance = 1
-        set gengraphs = 1
-        breaksw
-    case --performance-description:
-    case -performance-description:
-        shift
-        set compopts = "$compopts --fast"
-        if ("$tgt_platform" != "darwin") then
-            set compopts = "$compopts --static"
-        endif
-        set performance = 1
-        set gengraphs = 1
-        set performancedescription = $argv[1]
-        shift
-        breaksw
-    case --performance-configurations:
-    case -performance-configurations:
-    case --performance-configs:
-    case -performance-configs:
-        shift
-        set genGraphOpts = "$genGraphOpts --configs $argv[1]"
-        shift
-        breaksw
-    case --compperformance:
-    case -compperformance:
-        shift 
-        set compperformance = 1;
-        breaksw
-    case --compperformance-description:
-    case -compperformance-description:
-        shift 
-        set compperformance = 1;
-        set compperformancedescription = $argv[1]
-        shift
-        breaksw
-    case --numtrials:
-    case -numtrials:
-    case --num-trials:
-    case -num-trials:
-        shift
-        setenv CHPL_TEST_NUM_TRIALS $argv[1]
-        shift
-        breaksw
-    case --perflabel:
-    case -perflabel:
-        shift
-        set perflabel = $argv[1]
-        shift
-        breaksw
-    case --gen-graphs:
-    case -gen-graphs:
-    case --generate-graphs:
-    case -generate-graphs:
-        shift
-        set gengraphs = 1
-        breaksw
-    case --nodisplaygraphrange:
-    case -nodisplaygraphrange:
-    case --no-display-graph-range:
-    case -no-display-graph-range:
-        shift
-        set graphsdisprange = 0
-        breaksw
-    case --graphsgendefault:
-    case -graphsgendefault:
-    case --graphs-gen-default:
-    case -graphs-gen-default:
-        shift
-        set graphsgendefault = $argv[1]
-        shift
-        breaksw
-    case --startdate:
-    case -startdate:
-        shift
-        set startdate = $argv[1]
-        shift
-        breaksw
-    case --genGraphOpts:
-    case -genGraphOpts:
-    case --gengraphopts:
-    case -gengraphopts:
-        shift
-        set genGraphOpts = "$genGraphOpts $argv[1]"
-        shift
-        breaksw
-    case -norecurse:
-    case --norecurse:
-    case -no-recurse:
-    case --no-recurse:
-        shift
-        set recurse = 0
-        breaksw
-    case -comp-only:
-    case --comp-only:
-        shift
-        setenv CHPL_COMPONLY true
-        breaksw
-    case -valgrindexe:
-    case --valgrindexe:
-        shift
-        set valgrindexe = 1
-        breaksw
-    case --numlocales:
-    case -numlocales:
-        shift
-        set numlocales = $argv[1]
-        shift
-        breaksw
-    case -nostdinredirect:
-    case --nostdinredirect:
-        shift
-        setenv CHPL_NO_STDIN_REDIRECT true
-        breaksw
-    case -stdinredirect:
-    case --stdinredirect:
-        shift
-        unset CHPL_NO_STDIN_REDIRECT true
-        setenv CHPL_TEST_FORCE_STDIN_REDIRECT true
-        breaksw
-    case -launchertimeout:
-    case --launchertimeout:
-        shift
-        setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
-        shift
-        breaksw
-    case -no-chpl-home-warn:
-    case --no-chpl-home-warn:
-        shift
-        set chplHomeWarn = 0
-        breaksw
-    case -progress:
-    case --progress:
-        shift
-        set progress = 1
-        breaksw
-    case -test-root:
-    case --test-root:
-        shift
-        set testRootDir = $argv[1]
-        shift
-        breaksw
-    case -junit-xml:
-    case --junit-xml:
-        shift
-        set junit_xml = 1
-        breaksw
-    case -junit-xml-file:
-    case --junit-xml-file:
-        shift
-        set junit_xml = 1
-        set junit_xml_file = $argv[1]
-        shift
-        breaksw
-    case -junit-remove-prefix
-    case --junit-remove-prefix
-        shift
-        set junit_remove_prefix = $argv[1]
-        shift
-        breaksw
-    case -h:
-    case -help:
-    case --help:
-        echo Usage and defaults\:
-        echo "     start_test <options> <files> <directories>"
-        echo "          -clean-only"
-        echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$host_platform/chpl)"
-        echo "          -compopts <options>   (currently: '--cc-warnings')"
-        echo "          -execopts <options>   (currently: '')"
-        echo "          -launchcmd <command>  (currently: '')"
-        echo "          -norecurse"
-        echo "          -comp-only"
-        echo "          -performance"
-        echo "          -performance-description"
-        echo "          -performance-configurations"
-        echo "          -compperformance"
-        echo "          -compperformance-description <description>"
-        echo "          -num-trials <number>"
-        echo "          -perflabel <label>"
-        echo "          -generate-graphs"
-        echo "          -no-display-graph-range"
-        echo "          -graphs-gen-default <avg|min|max|med>"
-        echo "          -startdate <MM/DD/YY> (currently: '')"
-        echo "          -genGraphOpts OPT or -genGraphOpts 'OPT1 OPT2 ...'"
-        echo "          -futures"
-        echo "          -futures-only"
-        echo "          -futures-skipif"
-        echo "          -valgrind"
-        echo "          -valgrindexe"
-        echo "          -syspreexec <path>"
-        echo "          -sysprediff <path>"
-        echo "          -numlocales <number>"
-        echo "          -[no]stdinredirect"
-        echo "          -launchertimeout <queueing system>"
-#       echo "          -interpret (or -i)"
-        echo "          -logfile <file>      (currently: $logfile)"
-        echo "          -memleaks <file>"
-        echo "          -no-chpl-home-warn"
-        echo "          -progress"
-        echo "          -test-root"
-        echo "          -junit-xml"
-        echo "          -junit-xml-file <file>  (implies -junit-xml)"
-        echo "          -junit-remove-prefix <prefix>"
-        echo "          -h, -help"
-        exit 1
-        breaksw
-    default:
-        if ( -d "$argv[1]" && -x "$argv[1]") then
-#            echo "$argv[1] is a directory"
-            set dirlist = "$dirlist $argv[1]"
-            shift
-            breaksw
-        else if ( -r "$argv[1]") then
-#            echo "$argv[1] is a file"
-            set testlist = "$testlist $argv[1]"
-            shift
-            breaksw
-        else
-            echo \[ERROR: Unknown command line parameter \"$argv[1]\", aborting.\]
-            shift
-        set optionerr = 1
-        breaksw
-    endsw
-end
-
-if ($optionerr == 1) then
-    exit 1
-endif
-
-if ($testRootDir != "") then
-    setenv CHPL_TEST_ROOT_DIR "$testRootDir"
-endif
-
-set invocationDir = "$cwd"
-
-#if logfile directory exists, then get absolute path for it
-set logfiledir = `dirname $logfile`
-if ( -d $logfiledir && -x $logfiledir && -w $logfiledir ) then
-    pushd $logfiledir >& /dev/null
-    set logfile = $PWD/`basename $logfile`
-    popd >& /dev/null
-else
-    echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
-    exit 1
-endif
-
-if ( -w $logfile ) then
-    echo ""
-    echo \[Removing log file with duplicate name \"$logfile\"\]
-    rm -f $logfile
-endif
-
-if ($compperformance) then   
-    @ startTime = `date +"%s"`
-endif 
-
-echo \[Starting Chapel regression tests - $datestr\] |& $tee $logfile
-# Check to see if we are running in a subdirectory of $CHPL_HOME
-if ($chplHomeWarn == 1 && $PWD !~ $CHPL_HOME*) then
-    echo \[Warning: start_test not invoked from a subdirectory of \$CHPL_HOME\] |& $tee -a $logfile
-endif
-
-echo \[starting directory: \"$invocationDir\"] |& $tee -a $logfile
-echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logfile
-echo \[logfile: \"$logfile\"\] |& $tee -a $logfile
-
-echo \[CHPL_HOME: $CHPL_HOME\] |& $tee -a $logfile
-echo \[host platform: $host_platform\] |& $tee -a $logfile
-echo \[target platform: $tgt_platform\] |& $tee -a $logfile
-# see if valgrind is on.  If it is, reset the compiler
-if ($valgrind) then
-    echo \[valgrind: ON\] |& $tee -a $logfile
-    which valgrind > /dev/null
-    if ( $status != 0 ) then
-       echo "[Error: Could not find valgrind]" |& $tee -a $logfile
-       goto err_exit
-    endif
-    echo \[valgrind binary: `which valgrind` \] |& $tee -a $logfile
-    echo \[valgrind version: `valgrind --version` \] |& $tee -a $logfile
-    setenv CHPL_TEST_VGRND_COMP on
-    setenv CHPL_TEST_VGRND_EXE on
-else
-    setenv CHPL_TEST_VGRND_COMP off
-    if ($valgrindexe) then
-        echo \[valgrind: EXE only\] |& $tee -a $logfile
-        setenv CHPL_TEST_VGRND_EXE on
-    else
-        echo \[valgrind: OFF\] |& $tee -a $logfile
-        setenv CHPL_TEST_VGRND_EXE off
-    endif
-endif
-
-if ($compiler == "") then
-  set compiler = "$CHPL_HOME/bin/$host_platform/chpl"
-endif
-
-if ($interpret) then
-#     echo \[interpreter: ON\] |& $tee -a $logfile
-#    set compopts = "-i $compopts"
-    setenv CHPL_TEST_INTERP on
-else
-#    echo \[interpreter: OFF\] |& $tee -a $logfile
-    setenv CHPL_TEST_INTERP off
-endif
-
-if ($performance) then
-    echo \[performance tests: ON\] |& $tee -a $logfile
-    setenv CHPL_TEST_PERF on
-    if ($perflabel == "") then
-        set perflabel = "perf"
-    endif
-    if ($perflabel != "perf") then
-        echo "[performance label: $perflabel]" |& $tee -a $logfile
-    endif
-    setenv CHPL_TEST_PERF_LABEL "$perflabel"
-    set perfkeys = "${perflabel}keys"
-else
-    echo \[performance tests: OFF\] |& $tee -a $logfile
-endif
-
-if($compperformance) then 
-    echo \[compiler performance tests: ON\] |& tee -a $logfile
-    setenv CHPL_TEST_COMP_PERF on
-else
-    echo \[compiler performance tests: OFF\] |& tee -a $logfile
-endif
-
-if (! $?CHPL_TEST_NUM_TRIALS) then
-    setenv CHPL_TEST_NUM_TRIALS "1"
-endif
-
-echo \[number of trials: "$CHPL_TEST_NUM_TRIALS"\] |& $tee -a $logfile
-
-if ($gengraphs) then
-    echo \[performance graph generation: ON\] |& $tee -a $logfile
-
-    if ($graphsdisprange) then
-        echo \[performance graph ranges: ON\] |& $tee -a $logfile
-        set graphsdisprange = ''
-    else
-        echo \[performance graph ranges: OFF\] |& $tee -a $logfile
-        set graphsdisprange = "--no-bounds"
-    endif
-
-    if ($graphsgendefault == "avg" || \
-        $graphsgendefault == "med" || \
-        $graphsgendefault == "min" || \
-        $graphsgendefault == "max") then
-        echo \[performance graph data reduction: "$graphsgendefault"\] |& $tee -a $logfile
-    else
-        echo \[performance graph data reduction: avg\] |& $tee -a $logfile
-        set graphsgendefault = "avg"
-    endif
-else
-    echo \[performance graph generation: OFF\] |& $tee -a $logfile
-endif
-
-# if compiler exists then get absolute path name for
-if ( -f $compiler && -x $compiler ) then
-    pushd `dirname $compiler` >& /dev/null
-    set compiler = $cwd/`basename $compiler`
-    popd >& /dev/null
-
-    echo \[compiler: \"$compiler\"\] |& $tee -a $logfile
-else
-    echo "[Error: Cannot find or execute compiler: $compiler]" |& $tee -a $logfile
-    goto err_exit
-endif
-
-echo \[compopts: \"$compopts\"\] |& $tee -a $logfile
-setenv COMPOPTS "$compopts"
-
-echo \[execopts: \"$execopts\"\] |& $tee -a $logfile
-setenv EXECOPTS "$execopts"
-
-echo \[launchcmd: \"$launchcmd\"\] |& $tee -a $logfile
-setenv LAUNCHCMD "$launchcmd"
-
-echo \[comm: \"$comm\"\] |& $tee -a $logfile
-setenv CHPL_COMM $comm
-setenv CHPL_GASNET_SEGMENT `$utildir/chplenv/chpl_comm_segment.py`
-setenv CHPL_LAUNCHER $launcher
-
-echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
-setenv CHPL_LOCALE_MODEL $locMod
-
-# we know that stdin redirection doesn't work for most launchers. only do
-# redirection when there's no launcher, or we know the launcher supports stdin
-# redirection (amudprun and slurm currently.) Set and alert user unless they
-# threw -nostdinredirect or -stdinredirect
-if ($launcher != "none" && $launcher != "amudprun" && $launcher != "slurm-srun") then
-    if (! $?CHPL_NO_STDIN_REDIRECT && ! $?CHPL_TEST_FORCE_STDIN_REDIRECT ) then
-        echo "[Info: assuming stdin redirection is not supported, skipping tests with stdin]" |& $tee -a $logfile
-        setenv CHPL_NO_STDIN_REDIRECT true
-    endif
-endif
-
-# sub_test supports using slurm and pbs/qsub to handle timeouts instead of
-# managing timeouts itself. Use the launcher timeout by default if the
-# supported launcher is detected.
-if (! $?CHPL_LAUNCHER_TIMEOUT && ! $?CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT) then
-    if ($launcher =~ *slurm*) then
-        setenv CHPL_LAUNCHER_TIMEOUT slurm
-    endif
-
-    if ($launcher =~ *pbs* || $launcher =~ *qsub*) then
-        setenv CHPL_LAUNCHER_TIMEOUT pbs
-    endif
-endif
-
-
-if ($comm != "none" && $numlocales == 0) then
-    set numlocales = "1"
-endif
-
-if ($numlocales == "0") then
-    echo \[numlocales: \"\(default\)\"\] |& $tee -a $logfile
-else
-    echo \[numlocales: \"$numlocales\"\] |& $tee -a $logfile
-endif
-setenv NUMLOCALES "$numlocales"
-
-# if system-wide preexec is requested, get absolute path name for it
-if ($?CHPL_SYSTEM_PREEXEC) then
-    if ( -f $CHPL_SYSTEM_PREEXEC && -x $CHPL_SYSTEM_PREEXEC ) then
-        pushd `dirname $CHPL_SYSTEM_PREEXEC` >& /dev/null
-        setenv CHPL_SYSTEM_PREEXEC $cwd/`basename $CHPL_SYSTEM_PREEXEC`
-        popd >& /dev/null
-
-        echo "[system-wide preexec: $CHPL_SYSTEM_PREEXEC]" |& $tee -a $logfile
-    else
-        echo "[Error: Cannot find or execute system-wide preexec: $CHPL_SYSTEM_PREEXEC]" |& $tee -a $logfile
-        goto err_exit
-    endif
-endif
-
-# if system-wide prediff is requested,  get absolute path name for it
-if ($?CHPL_SYSTEM_PREDIFF) then
-    if ( -f $CHPL_SYSTEM_PREDIFF && -x $CHPL_SYSTEM_PREDIFF ) then
-        pushd `dirname $CHPL_SYSTEM_PREDIFF` >& /dev/null
-        setenv CHPL_SYSTEM_PREDIFF  $cwd/`basename $CHPL_SYSTEM_PREDIFF`
-        popd >& /dev/null
-
-        echo "[system-wide prediff: $CHPL_SYSTEM_PREDIFF]" |& $tee -a $logfile
-    else
-        echo "[Error: Cannot find or execute system-wide prediff: $CHPL_SYSTEM_PREDIFF]" |& $tee -a $logfile
-        goto err_exit
-    endif
-endif
-
-# Set up vars for performance testing/graphing
-if ($performance || $gengraphs) then
-    set perftestname = `uname -n | sed 's@\..*@@'`
-    if (! $?CHPL_TEST_PERF_DIR) then
-        setenv CHPL_TEST_PERF_DIR $CHPL_HOME/test/perfdat/$perftestname
-        echo \[Warning: CHPL_TEST_PERF_DIR must be set for generating performance graphs, using default $CHPL_TEST_PERF_DIR\] |& $tee -a $logfile
-    endif
-    if ($performancedescription != "" && $performancedescription != "default") then
-        setenv CHPL_TEST_PERF_DESCRIPTION $performancedescription
-    endif
-    set perfdir = $CHPL_TEST_PERF_DIR
-    set perfhtmldir = $perfdir/html
-    if ($startdate != "") then
-        set startdate_t = "-s"$startdate
-    else
-        set startdate_t = ""
-    endif
-    set createCoolerGraphs = ($utildir/test/genGraphs $genGraphOpts)
-    set viewGraphs = $utildir/test/viewGraphs
-endif
-
-
-# Set up vars for compiler performance testing / graphing 
-if ($compperformance) then
-
-    # get the machine name 
-    set compperftestname = `uname -n | sed 's@\..*@@'`
+    invocation_dir = os.getcwd()
     
-    # check for a specified main directory 
-    if ($?CHPL_TEST_COMP_PERF_DIR) then
-        set compperfdir = $CHPL_TEST_COMP_PERF_DIR
-    else
-        set compperfdir = "$CHPL_HOME/test/compperfdat/$compperftestname"
-        echo \[Warning: CHPL_COMP_TEST_PERF_DIR must be set for generating compiler performance graphs, using default $compperfdir\] |& $tee -a $logfile
-    endif
-   
-    # add the additional compperf description to the name if there was one
-    set compperftestname = "$compperftestname $compperformancedescription"
-        
-    # set the location to store temporary dat files at 
-    set tempDatFilesDir = $compperfdir/tempCompPerfDatFiles/
-    setenv CHPL_TEST_COMP_PERF_TEMP_DAT_DIR $tempDatFilesDir
-    
-    # in case the temp dat files were not cleaned up from last
-    # time, delete them. 
-    rm -rf $tempDatFilesDir
+    run_tests(args.tests)
 
-    # set the html directory
-    set compperfhtmldir = $compperfdir/html   
-       
-    # Set the startdate if one was specified 
-    if ($startdate != "") then
-        set startdate_t = "-s"$startdate
-    else
-        set startdate_t = ""
-    endif
-     
-    set createCoolerGraphs = ($utildir/test/genGraphs $genGraphOpts)
-    set combineCompPerf = $utildir/test/combineCompPerfData
-endif
+    # in case we've changed directories
+    os.chdir(invocation_dir)
 
-# save the sha for the current run so we can map dates to shas in the
-# performance and compiler performance graphs
-if ($performance || $compperformance) then
+    cleanup()
 
-  set datdir = ""
-  if ($performance) then
-    set datdir = $perfdir
-  else
-    set datdir = $compperfdir
-  endif
-
-  if (! -e $datdir) then
-      mkdir -p $datdir
-  endif
-
-  # output the key to a temp .perfkeys file for computePerfStats to use
-  set shaKey = "sha"
-  set shaPerfKeys = "$chplTestTmpDir/sha.perfkeys"
-  echo "$shaKey " > "$shaPerfKeys"
-
-  # output the shaKey and current sha to a temp file for computePerfStats to use
-  set shaOut = "$chplTestTmpDir/sha.exec.out.tmp"
-  echo "$shaKey `git rev-parse HEAD`" > "$shaOut"
-
-  # the name of the .dat file to store the sha (store in env var for gengraphs)
-  set shaDatFileName = "perfSha"
-  set shaDatFilePath = "$datdir/$shaDatFileName.dat"
-  setenv CHPL_TEST_SHA_DAT_FILE "$shaDatFilePath"
-
-  echo "[Saving current git sha to $shaDatFilePath]" |& $tee -a $logfile
-  "$utildir/test/computePerfStats" "$shaDatFileName" "$datdir" "$shaPerfKeys" "$shaOut"
-
-  if ( $status != 0 ) then
-      echo "[Error: Failed to save current sha to $shaDatFilePath]" |& $tee -a $logfile
-  endif
-endif
+    finish()
 
 
-# Auto-generate tests from the spec
-if ("$dirlist" == "" && "$testlist" == "") then
-    pushd $CHPL_HOME >& /dev/null
-    set chplhome = $cwd
-    if (("$invocationDir" == "$CHPL_HOME" || "$invocationDir" == "$CHPL_HOME/test") && ($clean_only == 0)) then
-        if ($performance) then
-            # Track the number of spec examples being tested
-            echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
-            make spectests >& $chplhome/test/spectests.exec.out.tmp
-            set exitval = $status            
-            if ( $exitval != 0 ) then
-                echo "[Error: Failed to generate Spec tests.  Log file: $chplhome/test/spectests.exec.out.tmp]" |& $tee -a $logfile
-                goto err_exit
-            endif
-            pushd $CHPL_HOME/test >& /dev/null
-            if (! -e $perfdir) then
-                mkdir -p $perfdir
-            endif
-            echo \[Computing stats for spec examples\] |& $tee -a $logfile
-            $utildir/test/computePerfStats spectests "$perfdir" "$chplhome/test/spectests.perfkeys" "$chplhome/test/spectests.exec.out.tmp" >& $chplhome/test/spectests.perfStats.out.tmp
-            set exitval = $status
-            if ( $exitval != 0 ) then
-                echo "[Error: Failed to compute perf stats for Spec tests.  Log file: $chplhome/test/spectests.perfStats.out.tmp]" |& $tee -a $logfile
-                goto err_exit
-            endif
-            rm $chplhome/test/spectests.exec.out.tmp $chplhome/test/spectests.perfStats.out.tmp
-            popd >& /dev/null
-        else
-            if ("$gengraphs" == 0) then
-                echo \[Generating tests from the Chapel Spec in $chplhome/spec\] |& $tee -a $logfile
-                set autogen=`make spectests` # capture output to keep it quiet
-                set exitval = $status
-                if ( $exitval != 0 ) then
-                    echo "[Error: Failed to generate Spec tests.  Run 'make spectests' in $chplhome for more info]" |& $tee -a $logfile
-                    goto err_exit
-                endif
-            endif
-        endif
-    endif
-    popd >& /dev/null
-    if ("$cwd" == "$chplhome") then
-        set dirlist = "test"
-    else
-        set dirlist = "."
-    endif
-endif
+def run_tests(tests):
+    files = []
+    dirs = []
+    for i in tests:
+        if os.path.isdir(i): # a directory (also get absolute path)
+            dirs.append(os.path.abspath(i))
+        elif os.path.isfile(i): # a file
+            files.append(i)
+        else:
+            print("[Error: {0} is not a valid file or directory]"
+                    .format(i))
 
-# get absolute path for each directory
-set absdirs = ""
-foreach dir ($dirlist)
-    pushd "$dir" >& /dev/null
-    set currentdir = "$cwd"
-    popd >& /dev/null
+    # set up
+    set_up_environment()
+    set_up_general()
+    set_up_performance_testing_A() # A and B are separate in order to keep
+                                   # output the same from old start_test
+    set_up_executables()
+    set_up_performance_testing_B()
 
-    set absdirs = "$absdirs $currentdir"
-end
+    # autogenerate tests from spec if no tests were given
+    if len(files) == 0 and len(dirs) == 0: # no tests specified
+        auto_generate_tests()
+        if os.getcwd() == home:
+            dirs = [test_dir]
+        else:
+            dirs = [os.getcwd()]
 
+    # print out flags
+    logger.write('[tests: "{0}"]'.format(" ".join(files)))
+    if args.recurse:
+        logger.write('[directories: "{0}"]'.format(" ".join(dirs)))
+    else:
+        logger.write('[directories: (nonrecursive): "{0}"]'
+                .format(" ".join(dirs)))
 
-echo \[tests: \"$testlist\"] |& $tee -a $logfile
+    # check for duplicate .graph and .dat files
+    check_for_duplicates()
 
-if ($recurse == 1) then
-    echo \[directories: \"$absdirs\"] |& $tee -a $logfile
-else
-    echo \[directories: \(nonrecursive\): \"$absdirs\"] |& $tee -a $logfile
-endif
+    # print out Chapel environment
+    print_chapel_environment()
 
-# If we are running the performance tests, then check for unique .dat
-#  filenames.  Issue an error and exit if we have specified the data
-#  directory via CHPL_TEST_PERF_DIR, otherwise issue a warning.
-# NOTE: I am not proud of having written the following.
-if ($performance) then
-    echo ""
-    echo "[Checking for duplicate performance data filenames]" |& $tee -a $logfile
-    # NOTE: this logic is currently repeated in sub_test
+    # when the user specifies specific files, run them, even if they are
+    # futures or notests
+    os.environ["CHPL_TEST_FUTURES"] = "1"
+    os.environ["CHPL_TEST_NOTESTS"] = "1"
+    os.environ["CHPL_TEST_SINGLES"] = "1"
 
-    # find all the .perfkeys files and grep any .dat files names from them
-    set perffiles = `find . -name \*.$perfkeys -print -exec grep "^#[[:space:]]*file:" {} \;`
-    # dummy element at the end to handle the last file
-    set perffiles = ($perffiles "file:")
-    set lastfile = "#"
-    set yucktmpfile = /tmp/$user-start_test-$$
-    touch $yucktmpfile
-    foreach pfline ($perffiles)
-        set thisfile = `basename $pfline`
-        # NOTE: this doesn't handle the case where these is no space after the :
-        if ($lastfile != "#" && $lastfile != "#file:" && $lastfile != "file:") then
-            if ($thisfile != "#" && $thisfile != "#file:") then
-                set dotdatfile = `basename $lastfile .$perfkeys`
-                set basefilename = `basename $dotdatfile .dat`
-                echo $basefilename >> $yucktmpfile
-            endif
-        endif
-        set lastfile = $thisfile
-    end
+    for test in files:
+        test_file(test)
 
-    set perfcount = `sort $yucktmpfile | uniq -d`
-    set duperror = 0
-    foreach token ($perfcount)
-        if ($?CHPL_TEST_PERF_DIR) then
-            echo "[Error: Duplicate performance data filenames ($token.dat)]" |& $tee -a $logfile
-            set duperror = 1
-        else
-            echo "[Warning: Duplicate performance data filenames ($token.dat)]" |& $tee -a $logfile
-        endif
-    end
-    rm $yucktmpfile
-    if ($duperror != 0) then
-        goto err_exit
-    endif
-    echo ""
-endif
+    os.environ["CHPL_TEST_FUTURES"] = str(args.futures_mode)
+    os.environ["CHPL_TEST_NOTESTS"] = "0"
+    os.environ["CHPL_TEST_SINGLES"] = "0"
 
-#
-# I put this in a separate script b/c it would be too
-# painful/ugly/slow to do in csh.  Maybe the above code that checks
-# the .dat file names should be rolled into this script also.  Or
-# maybe start_test should just be re-written in a more modern
-# scripting language.
-#
-if ($gengraphs || $compperformance) then
-    echo ""
-    echo "[Checking for duplicate .graph files and that all .graph files appear in $CHPL_HOME/test/.*GRAPHFILES]" |& $tee -a $logfile
-    $utildir/test/checkGraphfiles |& tee -a $logfile
-endif
+    # set up multiple passes/runs through the directories
+    if args.performance:
+        testruns = ["performance", "graph"]
+    else:
+        if args.gen_graphs:
+            testruns = ["graph"]
+        else:
+            testruns = ["run"]
 
-#
-# Environment setup complete, print out the current Chapel environment
-#
-echo "" | & $tee -a $logfile
-echo "### Chapel Environment ###" | & $tee -a $logfile
-$utildir/printchplenv | & $tee -a $logfile
-echo "##########################" | & $tee -a $logfile
+    for tests in dirs:
+        for t in testruns:
+            test_directory(tests, t)
 
-#
-# Utility functions
-#
-set gsub_test = $utildir/test/sub_test
+    # test and graph compiler performance
+    if args.comp_performance:
+        compiler_performance()
+
+    # generate GRAPHFILES graphs
+    if args.gen_graphs:
+        generate_graph_files_graphs()
 
 
-#####################################################
-#
-# test all of the tests that the user listed (if any)
-#
+# ESCAPE ROUTINES AND CLEAN-UP
 
-# For this mode, test futures, non-futures, and notests
-setenv CHPL_TEST_FUTURES 1
-setenv CHPL_TEST_NOTESTS 1
-setenv CHPL_TEST_SINGLES 1
+def finish():
+    # summarize
+    if not args.clean_only:
+        summarize()
+    else:
+        logger.write("[Summary: CLEAN ONLY]")
 
-foreach test ($testlist)
-    set basedir = `dirname $test`
-    set testname = `basename $test`
+    logger.write()
+    logger.stop()
 
-    pushd $basedir >& /dev/null
-    echo " " |& $tee -a $logfile
-    echo "[Cleaning file $test]" |& $tee -a $logfile
-
-    set sub_clean = $utildir/test/sub_clean
-    echo "[Starting $sub_clean $testname `date`]" |& $tee -a $logfile
-
-    $sub_clean $testname |& $tee -a $logfile
-
-    if ($clean_only == 0) then
-        # run the test
-        if ($performance || ($performance == 0 && $gengraphs == 0)) then
-            echo " " |& $tee -a $logfile
-            echo "[Working on file $test]" |& $tee -a $logfile
-
-            if (-x ./sub_test) then
-                set sub_test = ./sub_test
-            else
-                set sub_test = $gsub_test
-            endif
-
-            setenv CHPL_ONETEST "$testname"
-            echo "[Starting $sub_test `date`]" |& $tee -a $logfile
-
-            if ($progress == 1) then
-                echo -n "  Testing $test ... " >> /dev/stderr
-            endif
-
-            $sub_test "$compiler" |& $tee -a $logfile
-            set errcode = $status
-            # $errcode of 173 is special sub_test error code that
-            # indicates sub_test failed and already reported an
-            # error.
-            #
-            # 173 = reduce(operator.add, map(ord, 'CHAPEL')) % 256
-            if ($errcode != 0 && $errcode != 173) then
-                echo "[Error running sub_test for $test]" |& $tee -a $logfile
-            endif
-            if ($progress == 1) then
-                echo "[done]" >> /dev/stderr
-            endif
-
-            unsetenv CHPL_ONETEST
-        endif
-
-        # generate performance graphs
-        if ($gengraphs) then
-            # For single tests, we only look for a $testname.graph file
-            set graphfile = `basename $testname | sed -e 's/\.chpl$//' -e 's/\.test\.c$//'`.graph
-            if (-e $graphfile) then
-                # new performance graph stuff
-                echo "[Executing genGraphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
-                $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" "$graphsdisprange" -r "$graphsgendefault" "$graphfile" |& $tee -a $logfile
-                if ($status == 0) then
-                    echo "[Success generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
-                 else
-                    echo "[Error generating graphs for $basedir/$graphfile in $perfhtmldir]" |& $tee -a $logfile
-                 endif
-            endif
-        endif
-    endif
-
-    popd >& /dev/null
-end
+    # exit, returning 0 if no failures and 2 if there were some
+    if failures == 0:
+        sys.exit(0)
+    else:
+        sys.exit(2)
 
 
-#####################################################
-#
-# test all of the directories that the user specified
-#
+# MAIN ROUTINES AND TESTING
 
-setenv CHPL_TEST_SINGLES 0
+def test_file(test):
+    path_to_test = os.path.relpath(test)
+    test_name = os.path.basename(test)
 
-# for this mode, test only futures that were specified on the command-line
-# (defaults to no futures)
-setenv CHPL_TEST_FUTURES $futuresMode
+    with cd(os.path.dirname("./" + test)): # cd into dir, and cd out later
+        # clean executables, etc
+        logger.write()
+        logger.write("[Cleaning file {0}]".format(test))
+        # clean and run test
+        clean(test_name)
 
-if ($testnotests == 1) then
-    setenv CHPL_TEST_NOTESTS 1
-else
-    setenv CHPL_TEST_NOTESTS 0
-endif
+        error = 0
+        if not args.clean_only:
+            if args.performance or not args.gen_graphs:
+                error = run(test)
 
-# set up for multiple passes through the directories
-if ($performance) then
-    set testTypes = "performance graph"
-else
-    if ($gengraphs) then
-        set testTypes = "graph"
-    else
-        set testTypes = "run"
-    endif
-endif
+            # check for errors - 173 is an internal sub_test error that would
+            # have already reported.
+            if error != 0 and error != 173:
+                logger.write("[Error running sub_test for {0}]"
+                        .format(path_to_test))
 
-foreach testType ($testTypes)
-    # run the tests
-    foreach absdir ($absdirs)
-        # if specified to start in a specific directory, start there
-        set basedir = $absdir
-        cd $basedir
-        echo "[Working from directory $absdir]" |& $tee -a $logfile
+            if args.progress:
+                sys.stderr.write("[done]\n")
 
-        # Recursively list all directories, ignoring some (should we really do
-        # this?  Maybe add NOTEST files instead?)
-        if ($recurse == 1) then
-            set dirs = `find . -name ".svn" -prune -o -name ".git" -prune -o -name Logs -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
-        else
-            set dirs = (./)
-        endif
+            del os.environ["CHPL_ONETEST"]
 
-        foreach dir ($dirs)
-            cd $basedir
-            if ( -x $dir ) then
-                pushd $dir >& /dev/null
-                set dir = $cwd
-                popd >& /dev/null
-            else
-                echo \["Warning: Cannot cd into" $dir "skipping directory"\]|&\
-                    $tee -a $logfile
-                continue
-            endif
+            if args.gen_graphs:
+                generate_graphs(test)
 
-            echo " " |& $tee -a $logfile
-            echo "[Working on directory $dir]" |& $tee -a $logfile
 
-            if ($clean_only == 0) then
-                cd $dir
-                # Skip this directory if there is a SKIPIF file
-                # and the condition it contains evaluates to true.
-                if (-e ./SKIPIF) then
-                    if (-x ./SKIPIF) then
-                        set skiptest = `./SKIPIF`
-                    else
-                        set skiptest = `$utildir/test/testEnv ./SKIPIF`
-                    endif
-                    if ( $skiptest == "1" || $skiptest == "True" ) then
-                        echo "[Skipping directory based on SKIPIF environment settings]" |& $tee -a $logfile
-                        continue
-                    endif
-                endif
+def test_directory(test, test_type):
+    logger.write("[Working from directory {0}]".format(test))
 
-                # Skip this directory if there is any matching
-                # <dir>.skipif file returning true, where <dir> is the
-                # current directory up to $basedir.
-                set pruneif = 0
-                while (! $pruneif && $cwd != $basedir)
-                    set skipfilen = $cwd.skipif
-                    if (-e $skipfilen) then
-                        if (-x $skipfilen) then
-                            set pruneif = `$skipfilen`
-                            if ( $pruneif == "1" || $pruneif == "True" ) then
-                                set pruneif = "1"
-                            else
-                                set pruneif = "0"
-                            endif
-                        else
-                            set pruneif = `$utildir/test/testEnv $skipfilen`
-                        endif
-                    endif
-                    cd ..
-                end
-                if ( $pruneif == "1" ) then
-                    echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
+    # recurse through directory
+    for root, dirs, files in os.walk(test):
+        if not os.access(root, os.X_OK):
+            logger.write("[Warning: Cannot cd into {0} skipping directory]"
+                    .format(root))
+            continue
+        else:
+            dir = os.path.abspath(root)
+
+        logger.write()
+        logger.write("[Working on directory {0}]".format(root))
+
+        # stop recursing if flag is set
+        if not args.recurse:
+            del dirs[:]
+
+        # ignore skipifs for --clean-only run
+        if not args.clean_only:
+            with cd(dir): # cd into dir, and cd out later
+                # SKIP IF IMPLEMENTATIONS
+                test_env = os.path.join(util_dir, "test", "testEnv")
+
+                # Skip the directory if there is a SKIPIF file that
+                # evaluates true
+                skip_test = False
+                if os.path.isfile("SKIPIF"):
+                    try:
+                        # if executable
+                        if os.access("./SKIPIF", os.X_OK):
+                            skip_test = subprocess.check_output(
+                                    ["./SKIPIF"]).strip()
+                        else: # if not, run a script to check SKIPIF condition
+                            skip_test = subprocess.check_output(
+                                    [test_env, "SKIPIF"]).strip()
+                        # check output and skip if true
+                        if skip_test == "1" or skip_test == "True":
+                            logger.write("[Skipping directory based on SKIPIF "
+                                    "environment settings]")
+                            continue
+                    except:
+                        logger.write("[Warning: SKIPIF error.]")
+
+                # Skip this directory if there is a <dir>.skipif file
+                # returning true
+                prune_if = False
+                skip_file_name = os.path.join(root, "..", 
+                        "{0}.skipif".format(os.path.basename(root)))
+                skip_file_name = os.path.normpath(skip_file_name)
+                if os.path.isfile(skip_file_name):
+                    try:
+                        # if executable
+                        if os.access(skip_file_name, os.X_OK):
+                            prune_if = subprocess.check_output(
+                                    [skip_file_name]).strip()
+                        else: # if not, run a script to check SKIPIF condition
+                            prune_if = subprocess.check_output(
+                                    [test_env, skip_file_name]).strip()
+                        # check output and skip if true
+                        if prune_if == "1" or prune_if == "True":
+                            logger.write("[Skipping directory and children bas"
+                                    "ed on .skipif environment settings in {0}]"
+                                    .format(skip_file_name))
+                            del dirs[:]
+                            continue
+                    except:
+                        logger.write("[Warning: .skipif error.]")
+
+                # skip this directory if there is a NOTEST file
+                if os.path.isfile(os.path.join(dir, "NOTEST")):
                     continue
-                endif
-            endif
 
-            cd $dir
-            if ($testType != "graph") then
-                # run tests
-                if ($performance) then
-                    set areTests = `find . -maxdepth 1 -name \*.$perfkeys`
-                else
-                    set areTests = `find . -maxdepth 1 -name \*.chpl -or -name \*.test.c`
-                endif
-                # should be the same test as chpl_files() in paratest.server
-                if ((! -e ./NOTEST && ("$areTests" != "" || -x ./sub_test) && \
-                    (($CHPL_TEST_INTERP == "off") || \
-                    (! -e ./NOINTERP && ! -e ./NOEXEC && ! -e ./EXECOPTS)))) then
-                    # clean up
-                    set sub_clean = $utildir/test/sub_clean
-                    $sub_clean |& $tee -a $logfile
 
-                    if ($clean_only == 0)  then
-                        if (-x ./sub_test) then
-                            set sub_test = ./sub_test
-                        else
-                            set sub_test = $gsub_test
-                        endif
-                        echo "[Starting $sub_test `date`]" |& $tee -a $logfile
-                    
-                        $sub_test "$compiler" |& $tee -a $logfile
-                        set errcode = $status
-                        # $errcode of 173 is special sub_test error code that
-                        # indicates sub_test failed and already reported an
-                        # error.
-                        #
-                        # 173 = reduce(operator.add, map(ord, 'CHAPEL')) % 256
-                        if ($errcode != 0 && $errcode != 173) then
-                            echo "[Error running sub_test in $dir ($errcode)]" |& $tee -a $logfile
-                        endif
-                    endif
-                else
-                    echo \["No tests in directory" $dir\] |& $tee -a $logfile
-                endif
-            else
-                # generate performance graphs
-                # do this in a somewhat kludgy way to avoid stderr output
-                set graphfiles = `find . -maxdepth 1 -name \*.graph`
-                # new performance graph stuff
-                if (! $?CHPL_TEST_PERF_DIR && "$graphfiles" != "") then
-                    echo "[Executing genGraphs for graphfiles in $dir in $perfhtmldir]" |& $tee -a $logfile
-                    $createCoolerGraphs -p "$perfdir" -o "$perfhtmldir" -n "$perftestname" "$startdate_t" "$graphsdisprange" -r "$graphsgendefault" $graphfiles |& $tee -a $logfile
-                    if ($status == 0) then
-                        echo "[Success generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
-                    else
-                        echo "[Error generating graphs for $graphfile in $perfhtmldir]" |& $tee -a $logfile
-                    endif
-                endif
-                set graphfiles = ""
-            endif
-        end
-    end
-end
+        # run tests in directory
+        # don't run if only doing performance graphs
+        if not test_type == "graph":
+            # check for .chpl or .test.c files, and for NOTEST
+            are_tests = False
+            for f in files:
+                if not test_type == "performance":
+                    if f.endswith(".chpl") or f.endswith(".test.c"):
+                        are_tests = True
+                        break
+                else:
+                    if f.endswith("." + perf_keys):
+                        are_tests = True
+                        break
 
-if ($compperformance) then   
-    # get the total elapsed time (running time for all of testing)              
-    @ endTime = `date +"%s"`
-    @ elapsed = $endTime - $startTime
-    set compGraphList = "$CHPL_HOME/test/COMPGRAPHFILES"
- 
-    #combine all of the smaller .dat files into an averaged one 
-    echo "[Combining dat files now]" 
-    $combineCompPerf --tempDatDir "$tempDatFilesDir" --elapsedTestTime "$elapsed" --outDir "$compperfdir/" |& $tee -a $logfile
-    if ($status == 0) then
-        echo "[Success combining compiler performance dat files]" |& $tee -a $logfile
-    else
-        echo "[Error combining compiler performance dat files]" |& $tee -a $logfile
-    endif
+            # check a lot of stuff before continuing
+            if are_tests or os.access(os.path.join(dir, "sub_test"), os.X_OK):
+                # cd to dir for clean and run, saving current location
+                with cd(dir):
+                    # clean dir
+                    clean()
 
-    set atitle = "Chapel Compiler Performance Graphs"
-    #now actually create the graphs
-    echo "[Creating compiler performance graphs now]"
-    $createCoolerGraphs -p "$compperfdir" -o "$compperfhtmldir" -a "$atitle" -n"$compperftestname" "$startdate_t" -g "$compGraphList" -t "$CHPL_HOME/test" -m all:v,examples:v -x |& $tee -a $logfile
+                    if not args.clean_only:
+                        # run all tests in dir
+                        error = run()
+                        # check for errors - 173 is an internal sub_test 
+                        # error that would have already reported.
+                        if not error == 0 and not error == 173:
+                            logger.write("[Error running sub_test in {0} {1}]"
+                                    .format(root, e.returncode))
+                                
+            # let user know no tests were found
+            else:
+                logger.write("[No tests in directory {0}]".format(root))
+        # generate graphs
+        else:
+            with cd(dir):
+                # generate graphs for all testsin dir
+                    generate_graphs()
 
-    if ($status == 0) then
-        echo "[Success generating compiler performance graphs for $compGraphList in $compperfhtmldir]" |& $tee -a $logfile
-    else
-        echo "[Error generating compiler performance graphs for $compGraphList in $compperfhtmldir]" |& $tee -a $logfile
-    endif
 
-    # delete temp files 
-    rm -rf $tempDatFilesDir
-endif
+def summarize():
+    date_str = time.strftime("%y%m%d.%H%M%S")
+    logger.write("[Done with tests - {0}]".format(date_str))
+    logger.write("[Log file: {0} ]".format(os.path.abspath(log_file)))
+    logger.write()
+    logger.stop()
+    # setup regular expressions for searching
+    future_marker = r"^Future"
+    suppress_marker = r"^Suppress"
+    error_marker = r"^\[Error"
+    if not args.performance and args.gen_graphs:
+        success_marker = r"\[Success generating"
+    else:
+        if args.comp_only:
+            success_marker = r"\[Success compiling"
+        else:
+            success_marker = r"\[Success matching"
+    warning_marker = r"^\[Warning"
+    passing_suppressions_marker = ("{0}.*{1}"
+            .format(suppress_marker, success_marker))
+    passing_futures_marker = "{0}.*{1}".format(future_marker, success_marker)
+    success_marker = "^" + success_marker
+    skip_stdin_redirect_marker = r"^\[Skipping test with .stdin input"
 
-if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
-    # new performance graph stuff
-    set execGraphList = $CHPL_HOME/test/GRAPHFILES
-    echo "[Executing genGraphs for $execGraphList in $perfhtmldir]" |& $tee -a $logfile
-    $createCoolerGraphs  -p "$perfdir" -o "$perfhtmldir" -t "$CHPL_HOME/test" -n "$perftestname" "$startdate_t" "$graphsdisprange" -r "$graphsgendefault" -g "$execGraphList" |& $tee -a $logfile
-    if ($status == 0) then
-        echo "[Success generating graphs from $execGraphList in $perfhtmldir]" |& $tee -a $logfile
-    else
-        echo "[Error generating graphs from $execGraphList in $perfhtmldir]" |& $tee -a $logfile
-    endif
-endif
+    # setup counts and blank strings to hold summaries
+    global failures # for exit codes later
+    failures = 0
+    successes = 0
+    futures = 0
+    warnings = 0
+    passing_suppressions = 0
+    passing_futures = 0
+    skip_stdin_redirects = 0
+    failure_summary = ""
+    suppression_summary = ""
+    future_summary = ""
+    warning_summary = ""
+    summary = "[Test Summary - {0}]\n".format(date_str)
 
-if ( -d $chplTestTmpDir ) then
-  echo "[Removing $chplTestTmpDir directory]"
-  rm -rf $chplTestTmpDir
-endif
+    # scan line-by-line, logging failures, warnings, etc.. and updating counts
+    with open(log_file, "r") as log:
+        for line in log:
+            if re.search(error_marker, line, flags=re.M):
+                failure_summary += line
+                failures += 1
+            elif re.search(suppress_marker, line, flags=re.M):
+                suppression_summary += line
+            elif re.search(future_marker, line, flags=re.M):
+                future_summary += line
+                futures += 1
+            elif re.search(warning_marker, line, flags=re.M):
+                warning_summary += line
+                warnings += 1
+            elif re.search(success_marker, line, flags=re.M):
+                successes += 1
+            if re.search(passing_suppressions_marker, line, flags=re.M):
+                passing_suppressions += 1
+            elif re.search(passing_futures_marker, line, flags=re.M):
+                passing_futures += 1
+            elif re.search(skip_stdin_redirect_marker, line, flags=re.M):
+                skip_stdin_redirects += 1
 
-# exit here if there were errors before running the tests
-err_exit:
+    # compile summary
+    summary += failure_summary
+    summary += suppression_summary
+    summary += future_summary
+    summary += warning_summary
 
-# return to where we started
-cd $invocationDir
+    if skip_stdin_redirects > 0:
+        logger.write("[Skipped {0} tests with .stdin input]"
+                .format(skip_stdin_redirects))
 
-echo \[Done with tests - `date +"%y%m%d.%H%M%S"`\] |& $tee -a $logfile
-echo \[Log file: $logfile \] |& $tee -a $logfile
-echo " " |& $tee -a $logfile
+    summary += ("[Summary: #Successes = {0} | #Failures = {1} | #Futures = {2} "
+            "| #Warnings = {3} ]\n"
+            .format(successes, failures, futures, warnings))
+    summary += ("[Summary: #Passing Suppressions = {0} | "
+            "#Passing Futures = {1} ]\n"
+            .format(passing_suppressions, passing_futures))
+    # the actual running is done later, but in order to include it in
+    # the summary file we print it out here.  It all happens within
+    # a split second anyway
+    if args.junit_xml:
+        print("[Generating jUnit XML report]")
+        summary += jUnit()
+    summary += "[END]\n"
 
-# Output grep to a temp file, don't want to infinite loop
-set futuremarker = "^Future"
-set suppressmarker = "^Suppress"
-set errormarker = "^\[Error"
-set warningmarker = "^\[Warning"
-if ($performance == 0 && $gengraphs) then
-    set successmarker = "\[Success generating"
-else
-    if ($?CHPL_COMPONLY) then
-        set successmarker = "\[Success compiling"
-    else
-        set successmarker = "\[Success matching"
-    endif
-endif
+    # log summary, and write it to its own .summary file
+    logger.restart()
+    logger.write(summary)
 
-set passingSuppresionsMarker = "$suppressmarker.*$successmarker"
-set passingFuturesMarker = "$futuremarker.*$successmarker"
+    with open(log_file + ".summary", "w") as log_summary:
+        log_summary.write(summary)
 
-set successmarker = "^$successmarker"
 
-set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
+def clean(test=False):
+    date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
 
-set failures = 0
+    # clean executables, tmps, etc.
+    sub_clean = os.path.join(util_dir, "test", "sub_clean")
+    try:
+        if test: # single test
+            logger.write("[Starting {0} {1} {2}]"
+                    .format(sub_clean, test, date_str))
+            out = subprocess.check_output([sub_clean, test])
+        else:
+            out = subprocess.check_output([sub_clean])
+        logger.write(out)
+    except:
+        logger.write("[Error: sub_clean error]")
 
-echo \[Test Summary - $datestr\] |& $tee $logfile.summary
-if ($clean_only == 0) then
-    grep "$errormarker" $logfile |& $tee -a $logfile.summary >/dev/null
-    grep "$errormarker" $logfile.summary
 
-    grep "$suppressmarker" $logfile |& $tee -a $logfile.summary
-    grep "$futuremarker" $logfile |& $tee -a $logfile.summary
-    grep "$warningmarker" $logfile |& $tee -a $logfile.summary
+def run(test=False):
+    date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
+    os.environ["CHPL_TEST_UTIL_DIR"] = util_dir
 
-    set successes = `grep -c "$successmarker" $logfile`
-    set skipstdinredirs = `grep -c "$skipstdinredirectmarker" $logfile`
+    # run test
+    logger.write()
+    if test: # single test
+        logger.write("[Working on file {0}]".format(os.path.relpath(test)))
+        os.environ["CHPL_ONETEST"] = os.path.basename(test)
 
-    # count failures from the summary file rather than the log file because
-    # it's already have its suppressions removed => better count (plus
-    # the summary file is smaller, so do it for the others too)
-    set failures = `grep -c "$errormarker" $logfile.summary`
-    set futures = `grep -c "$futuremarker" $logfile.summary`
-    set warnings = `grep -c "$warningmarker" $logfile.summary`
+    if os.access("sub_test", os.X_OK):
+        sub_test = os.path.abspath("sub_test")
+    else:
+        sub_test = os.path.join(util_dir, "test", "sub_test")
 
-    set passingsuppress = `grep -c "$passingSuppresionsMarker" $logfile.summary`
-    set passingfutures = `grep -c "$passingFuturesMarker" $logfile.summary`
+    if args.progress and test:
+        sys.stderr.write("Testing {0} ... \n".format(test))
 
-    if ($skipstdinredirs != 0) echo \[Skipped $skipstdinredirs tests with .stdin input\]
-    echo "[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures | #Warnings = $warnings ]" |& $tee -a $logfile.summary
-    echo "[Summary: #Passing Suppressions = $passingsuppress | #Passing Futures = $passingfutures ]" |& $tee -a $logfile.summary
-else
-    echo \[Summary: CLEAN ONLY\] |& $tee $logfile.summary
-endif
+    # sub_test and create_graphs use a Popen() call in order to give real-time
+    # output to the command line, instead of logging all output in one huge
+    # block.
+    logger.write("[Starting {0} {1}]".format(sub_test, date_str))
+    p = subprocess.Popen([sub_test, compiler], stdout=subprocess.PIPE)
+    printout(p.stdout)
+    p.wait()
+    return p.returncode
 
-echo ''
 
-set junit_args = "--start-test-log=$logfile"
-if ($junit_xml_file != 0) then
-    set junit_args = "$junit_args --junit-xml=$junit_xml_file"
-endif
-if ($junit_remove_prefix != 0) then
-    set junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
-else if ($testRootDir != "") then
-    # If --test-root was thrown, also remove it from the junit report (in case
-    # something slipped through in sub_test).
-    set junit_args = "$junit_args --remove-prefix=$testRootDir"
-endif
-endif
-if ($junit_xml == 1) then
-    echo "[Generating jUnit XML report]"
-    $utildir/test/convert_start_test_log_to_junit_xml.py $junit_args
-endif
+def generate_graphs(test=False):
+    if test:
+        basedir = os.path.dirname(test)
+        graph_files = [(test.replace(".chpl", "").replace(".test.c", "")
+                + ".graph")]
+        # exit if it isn't actually a file
+        if not os.path.isfile(graph_files[0]):
+            return
+    else:
+        basedir = os.getcwd()
+        graph_files = glob.glob("*.graph")
+        # exit if no files matched
+        if len(graph_files) == 0 or os.environ.get("CHPL_TEST_PERF_DIR"):
+            return
 
-echo \[END\] |& $tee -a $logfile.summary
-cat $logfile.summary >> $logfile
+    logger.write("[Executing genGraphs for graph_files in {0} in {1}"
+            .format(basedir, perf_html_dir))
 
-echo ''
-echo
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-n", perf_test_name]
+    cmd += start_date_t.split(" ")
+    cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default]
+    cmd += graph_files
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    printout(p.stdout)
+    p.wait()
+    status = p.returncode
 
-if ($failures == 0) then
-  # return 0 if there were no failed tests
-  exit 0
-else
-  # return 2 if there were some failures
-  exit 2
-endif
+    if status == 0:
+        logger.write("[Success generating graphs for graph_files in {0} in {1}"
+                .format(basedir, perf_html_dir))
+    else:
+        logger.write("[Error generating graphs for graph_files in {0} in {1}"
+                .format(basedir, perf_html_dir))
 
+
+def compiler_performance():
+    end_time = int(time.time())
+    elapsed = end_time - start_time
+
+    comp_graph_list = os.path.join(test_dir, "COMPGRAPHFILES")
+
+    # combine smaller .dat files
+    try:
+        logger.write("[Combining dat files now]")
+        out = subprocess.check_output([combine_comp_perf, "--tempDatDir", 
+            temp_dat_dir,"--elapsedTestTime", str(elapsed), "--outDir",
+            comp_perf_dir])
+        logger.write(out)
+        logger.write("[Success combining compiler performance dat files]")
+    except:
+        logger.write("[Error combining compiler performance dat files]")
+
+    # create the graphs
+    title = "Chapel Compiler Performance Graphs"
+    logger.write("[Creating compiler perforamce graphs now]")
+
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", comp_perf_dir, "-o", comp_perf_html_dir, "-a", title, "-n", 
+            compperf_test_name]
+    cmd += start_date_t.split(" ")
+    cmd += ["-g", comp_graph_list, "-t", test_dir]
+    cmd += "-m all:v,examples:v -x".split(" ")
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    printout(p.stdout)
+    p.wait()
+    if p.returncode == 0:
+        logger.write("[Success generating compiler perfrommance graphs from "
+                "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
+    else:
+        logger.write("[Error generating compiler perfrommance graphs from "
+            "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
+
+    # delete temp files
+    shutil.rmtree(temp_dat_dir)
+
+
+def generate_graph_files_graphs():
+    exec_graph_list = os.path.join(test_dir, "GRAPHFILES")
+
+    logger.write("[Executing genGraphs for {0} in {1}"
+            .format(exec_graph_list, perf_html_dir))
+
+    cmd = [create_graphs]
+    cmd += args.gen_graph_opts.split(" ")
+    cmd += ["-p", perf_dir, "-o", perf_html_dir, "-t", test_dir, "-n",
+            perf_test_name]
+    cmd += start_date_t.split(" ")
+    cmd += [args.graphs_disp_range, "-r", args.graphs_gen_default, "-g",
+        exec_graph_list] 
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    printout(p.stdout)
+    p.wait()
+    status = p.returncode
+
+    if status == 0:
+        logger.write("[Success generating graphs from {0} in {1}"
+                .format(exec_graph_list, perf_html_dir))
+    else:
+        logger.write("[Error generating graphs from {0} in {1}"
+                .format(exec_graph_list, perf_html_dir))
+
+
+# SET UP ROUTINES
+
+def check_environment():
+    if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
+        del os.environ["CHPL_DEVELOPER"]
+
+    # Check for $CHPL_HOME
+    global home
+    if "CHPL_HOME" in os.environ:
+        home = os.environ["CHPL_HOME"]
+        if not os.path.isdir(home):
+            print("Error: CHPL_HOME must be a legal directory.")
+            sys.exit(1)
+
+    # Allow for utility directory override.
+    # Useful when running more recent testing system on an older version of
+    # Chapel.
+    global util_dir
+    if "CHPL_TEST_UTIL_DIR" in os.environ:
+        util_dir = os.environ["CHPL_TEST_UTIL_DIR"]
+    else:
+        util_dir = os.path.normpath(os.path.join(home, "util"))
+        os.environ["CHPL_TEST_UTIL_DIR"] = util_dir
+        if not os.path.isdir(util_dir):
+            print("Error: Cannot find {0}.".format(util_dir))
+            sys.exit(1)
+
+    # find test dir and check for access
+    global test_dir
+    test_dir = os.path.join(home, "test")
+    if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
+        or not os.access(test_dir, os.X_OK)):
+        test_dir = os.path.join(home, "examples")
+        if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
+            or not os.access(test_dir, os.X_OK)):
+            test_dir = os.getcwd()
+    if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
+        or not os.access(test_dir, os.X_OK)):
+        print("Cannot write to test directory {0}".format(test_dir))
+        sys.exit(-1)
+
+    # find Logs directory and check for access
+    global logs_dir
+    logs_dir = os.path.join(test_dir, "Logs")
+    if not os.path.isdir(logs_dir):
+        os.makedirs(logs_dir)
+    if not os.access(logs_dir, os.W_OK):
+        print("Cannot write to Logs directory {0}".format(logs_dir))
+        sys.exit(-1)
+
+    # save host and target platforms, and configure environment appropriately
+    global host_platform, tgt_platform
+    host_platform = chpl_platform.get("host")
+    tgt_platform = chpl_platform.get("target")
+    if not tgt_platform == "sunos":
+        os.environ["LC_ALL"] = "C"
+        os.environ["LANG"] = "en_US"
+
+    global log_file
+    log_file = os.path.join(logs_dir, "{0}.{1}.log"
+            .format(getpass.getuser(), tgt_platform))
+
+
+def set_up_environment():
+    # pre-
+    if args.preexec:
+        os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
+
+    if args.prediff:
+        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
+
+    # compopts
+    if args.compopts:
+        args.compopts = [x[1:-1] for x in args.compopts]
+        args.compopts = "--cc-warnings " + " ".join(args.compopts)
+    else:
+        args.compopts = "--cc-warnings"
+
+    # execopts
+    if args.execopts:
+        args.execopts = [x[1:-1] for x in args.execopts]
+        args.execopts = " ".join(args.execopts)
+    else:
+        args.execopts = ""
+
+    # memory leak log
+    if args.mem_leaks_log:
+        os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
+        args.execopts += " --memLeaksLog=" + os.path.abspath(args.mem_leaks_log)
+
+    # create temporary directory
+    global chpl_test_tmp_dir
+    if "CHPL_TEST_TMP_DIR" in os.environ:
+        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
+    else:
+        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
+        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
+    
+    # register atexit handler (cleans up temporary directory)
+    atexit.register(cleanup)
+
+    # performance (linking flags to each other)
+    if args.performance or args.performance_description:
+        args.performance = True
+        args.gen_graphs = True
+        args.compopts += " --fast"
+        if not tgt_platform == "darwin":
+            args.compopts += " --static"
+
+    if args.performance_configs:
+        args.gen_graph_opts += " --configs " + args.performance_configs
+
+    if args.comp_performance_description:
+        args.comp_performance = True
+
+    # compiler only
+    if args.comp_only:
+        os.environ["CHPL_COMPONLY"] = "true"
+
+    # stdin redirection
+    if args.no_stdin_redirect or args.stdin_redirect:
+        os.environ["CHPL_NO_STDIN_REDIRECT"] = "true"
+        if args.stdin_redirect:
+            os.environ["CHPL_TEST_FORCE_STDIN_REDIRECT"] = "true"
+
+    # launcher timeout
+    if args.launcher_timeout:
+        os.environ["CHPL_LAUNCHER_TIMEOUT"] = str(args.launcher_timeout)
+
+    # num trials
+    os.environ["CHPL_TEST_NUM_TRIALS"] = str(args.num_trials)
+
+    # test root dir
+    if args.test_root_dir:
+        os.environ["CHPL_TEST_ROOT_DIR"] = str(args.test_root_dir)
+
+    # jUnit
+    if args.junit_xml_file:
+        args.junit_xml = True
+
+
+def set_up_general():
+    # log_file
+    global log_file
+    if args.log_file:
+        log_file = os.path.abspath(args.log_file)
+    log_file_dir = os.path.dirname(log_file)
+    if not os.access(log_file_dir, os.X_OK):
+        print("[Permission denied for log_file directory: {0}]"
+                .format(log_file_dir))
+        sys.exit(1)
+    if os.path.isfile(log_file):
+        print()
+        print("[Removing log file with duplicate name {0}".format(log_file))
+        os.remove(log_file)
+
+    ## START LOGGING TO FILE ##
+    global logger
+    logger = Logger()
+
+    # start time
+    global start_time
+    if args.comp_performance:
+        start_time = int(time.time())
+
+    logger.write("[Starting Chapel regression tests - {0}]"
+            .format(time.strftime("%y%m%d.%H%M%S")))
+
+    # check to see if we are in subdir of CHPL_HOME
+    if args.chpl_home_warn and os.getcwd().find(home) < 0:
+        print ("[Warning: start_test not invoked from a subdirectory of "
+                "$CHPL_HOME]")
+
+    # log some messages
+    logger.write('[starting directory: "{0}"]'.format(os.getcwd()))
+    logger.write('[Logs directory: "{0}"]'.format(logs_dir))
+    logger.write('[log_file: "{0}"]'.format(log_file))
+    logger.write("[CHPL_HOME: {0}]".format(home))
+    logger.write("[host platform: {0}]".format(host_platform))
+    logger.write("[target platform: {0}]".format(tgt_platform))
+
+    # valgrind
+    if args.valgrind:
+        logger.write("[valgrind: ON]")
+        try: 
+            # get first line of output
+            binary = subprocess.check_output(
+                    ["which", "valgrind"]).split("\n")[0]
+        except:
+            logger.write("[Error: Could not find valgrind.]")
+            finish()
+        # get first line of output
+        try:
+            version = subprocess.check_output(
+                    ["valgrind", "--version"]).split("\n")[0]
+        except:
+            pass
+        logger.write("[valgrind binary: {0}]".format(binary))
+        logger.write("[valgrind version: {0}]".format(version))
+        os.environ["CHPL_TEST_VGRND_COMP"] = "on"
+        os.environ["CHPL_TEST_VGRND_EXE"] = "on"
+    else:
+        os.environ["CHPL_TEST_VGRND_COMP"] = "off"
+        if args.valgrind_exe:
+            logger.write("[valgrind: EXE only]")
+            os.environ["CHPL_TEST_VGRND_EXE"] = "on"
+        else:
+            logger.write("[valgrind: OFF]")
+            os.environ["CHPL_TEST_VGRND_EXE"] = "off"
+
+    # compiler
+    global compiler
+    if not args.compiler:
+        compiler = os.path.expandvars("$CHPL_HOME/bin/{0}/chpl"
+                .format(host_platform))
+    else:
+        compiler = args.compiler
+
+
+def set_up_performance_testing_A():
+    # performance
+    if args.performance:
+        logger.write("[performance tests: ON]")
+        os.environ["CHPL_TEST_PERF"] = "on"
+        if not args.perflabel == "perf":
+            logger.write("[performance label: {0}]".format(args.perflabel))
+        os.environ["CHPL_TEST_PERF_LABEL"] = args.perflabel
+    else:
+        logger.write("[performance tests: OFF]")
+
+    # compiler performance
+    if args.comp_performance:
+        logger.write("[compiler performance tests: ON]")
+        os.environ["CHPL_TEST_COMP_PERF"] = "on"
+    else:
+        logger.write("[compiler performance tests: OFF]")
+
+    # this is here and not in setupexecutables for legacy compatibility reasons
+    logger.write("[number of trials: {0}]"
+            .format(os.environ["CHPL_TEST_NUM_TRIALS"]))
+
+    # graphs
+    if args.gen_graphs:
+        logger.write("[performance graph generation: ON]")
+        if args.graphs_disp_range:
+            logger.write("[performance graph ranges: ON]")
+            args.graphs_disp_range = ""
+        else:
+            logger.write("[performance graph ranges: OFF]")
+            args.graphs_disp_range = "--no-bounds"
+        logger.write("[performance graph data reduction: {0}]"
+                .format(args.graphs_gen_default))
+    else:
+        logger.write("[performance graph generation: OFF]")
+
+
+def set_up_performance_testing_B():
+    # common to performance and graphs
+    if args.performance or args.gen_graphs:
+        # set global variables for later access and use
+        global perf_dir, perf_html_dir, perf_test_name
+
+        perf_test_name = platform.node().split(".")[0].lower()
+
+        if not os.environ.get("CHPL_TEST_PERF_DIR"):
+            perf_dir = os.path.expandvars("$CHPL_HOME/test/perfdat/"
+                    + perf_test_name)
+            os.environ["CHPL_TEST_PERF_DIR"] = perf_dir
+            logger.write("[Warning: CHPL_TEST_PERF_DIR must be set for gener"
+                    "ating performance graphs, using default {0}]"
+                    .format(perf_dir))
+        else:
+            perf_dir = os.environ["CHPL_TEST_PERF_DIR"]
+
+        perf_html_dir = os.path.join(perf_dir, "html")
+
+        if (args.performance_description != "" 
+                and args.performance_description != "default"):
+            os.environ["CHPL_TEST_PERF_DESCRIPTION"] = (
+                args.performance_description)
+
+    global perf_keys
+    perf_keys = "{0}keys".format(args.perflabel)
+
+    # compiler
+    if args.comp_performance:
+        # set global variables
+        global compperf_test_name, comp_perf_dir, temp_dat_dir, comp_perf_html_dir
+        global combine_comp_perf
+
+        compperf_test_name = platform.node().split(".")[0].lower()
+
+        if "CHPL_TEST_COMP_PERF_DIR" in os.environ:
+            comp_perf_dir = os.environ["CHPL_TEST_COMP_PERF_DIR"]
+        else:
+            comp_perf_dir = os.path.join(home, ("test", "compperfdat", 
+                    "{0}".format(compperf_test_name)))
+            logger.write("[Warning: CHPL_COMP_TEST_PERF DIR must be set for "
+                    "generating compiler performance graphs, using default {0}]"
+                    .format(comp_perf_dir))
+
+        compperf_test_name += args.comp_performance_description
+
+        temp_dat_dir = os.path.join(comp_perf_dir, "tempCompPerfDatFiles", "")
+        os.environ["CHPL_TEST_COMP_PERF_TEMP_DAT_DIR"] = temp_dat_dir
+        #remove it if it wasn't cleaned up last time
+        if os.path.isdir(temp_dat_dir):
+            shutil.rmtree(temp_dat_dir)
+
+        comp_perf_html_dir = os.path.join(comp_perf_dir, "html")
+
+        combine_comp_perf = os.path.join(util_dir, "test", "combineCompPerfData")
+
+    # for any performance testing
+    if args.performance or args.comp_performance or args.gen_graphs:
+        global start_date_t, create_graphs
+
+        if args.start_date:
+            start_date_t = "-s " + args.start_date
+        else:
+            start_date_t = ""
+
+        create_graphs = os.path.join(util_dir, "test", "genGraphs")
+
+        if not args.gen_graph_opts:
+            args.gen_graph_opts = ""
+
+    if args.performance or args.comp_performance:
+        # SHA for current run, in order to track dates to commits
+        if args.performance:
+            dat_dir = perf_dir
+        else:
+            dat_dir = comp_perf_dir
+
+        if not os.path.isdir(dat_dir):
+            os.makedirs(dat_dir)
+
+        sha_pef_keys_name = os.path.join(chpl_test_tmp_dir, "sha.perf_keys")
+        with open(sha_pef_keys_name, "w") as shaPerfKeys:
+            shaPerfKeys.write("sha ")
+
+        sha_out_name = os.path.join(chpl_test_tmp_dir, "sha.exec.out.tmp")
+        with open(sha_out_name, "w") as sha_out:
+            try:
+                output = subprocess.check_output(["git", "rev-parse", "HEAD"])
+                sha_out.write("sha " + output)
+            except:
+                pass
+
+        sha_dat_file_name = "perfSha"
+        sha_dat_file_path = os.path.join(dat_dir, "{0}.dat"
+                .format(sha_dat_file_name))
+        os.environ["CHPL_TEST_SHA_DAT_FILE"] = sha_dat_file_path
+
+        logger.write("[Saving current git sha to {0}]"
+                .format(sha_dat_file_path))
+        try:
+            cmd = os.path.join(util_dir, "test", "computePerfStats")
+            out = subprocess.check_output([cmd, sha_dat_file_name, dat_dir, 
+                sha_pef_keys_name, sha_out_name])
+            logger.write(out)
+        except:
+            logger.write("[Error: Failed to save current sha to {0}]"
+                    .format(sha_dat_file_path))
+
+
+def set_up_executables():
+    # check for compiler
+    global compiler
+    if os.path.isfile(compiler) and os.access(compiler, os.X_OK):
+        compiler = os.path.abspath(compiler)
+
+        logger.write('[compiler: "{0}"]'.format(compiler))
+    else:
+        logger.write("[Error: Cannot find or execute compiler: {0}]"
+                .format(compiler))
+        finish()
+
+    # log more options
+    logger.write('[compopts: "{0}"]'.format(args.compopts))
+    os.environ['COMPOPTS'] = args.compopts
+
+    logger.write('[execopts: "{0}"]'.format(args.execopts))
+    os.environ['EXECOPTS'] = args.execopts
+
+    logger.write('[launchcmd: "{0}"]'.format(args.launch_cmd))
+    os.environ['LAUNCHCMD'] = args.launch_cmd
+
+    comm = chpl_comm.get()
+    launcher = chpl_launcher.get()
+    locale_model = chpl_locale_model.get()
+
+    logger.write('[comm: "{0}"]'.format(comm))
+    os.environ["CHPL_COMM"] = comm
+    os.environ["CHPL_GASNET_SEGMENT"] = chpl_comm_segment.get()
+    os.environ["CHPL_LAUNCHER"] = launcher
+
+    logger.write('[localeModel: "{0}"]'.format(locale_model))
+    os.environ["CHPL_LOCALE_MODEL"] = locale_model
+
+    # skip stdin tests for most custom launchers, except for amdprun and slurm
+    if (launcher != "none" and launcher != "amudprun" and launcher !=
+        "slurm-srun" and not os.environ.get("CHPL_NO_STDIN_REDIRECT")
+        and not os.environ.get("CHPL_TEST_FORCE_STDIN_REDIRECT")):
+        print ("[Info: assuming stdin redirection is not supported, skipping "
+            "tests with stdin]")
+        os.environ["CHPL_NO_STDIN_REDIRECT"] = "true"
+
+    # launcher timeout
+    if (not os.environ.get("CHPL_LAUNCHER_TIMEOUT")
+        and not os.environ.get("CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT")):
+        if "slurm" in launcher:
+            os.environ["CHPL_LAUNCHER_TIMEOUT"] = "slurm"
+        if "pbs" in launcher or "qsub" in launcher:
+            os.environ["CHPL_LAUNCHER_TIMEOUT"] = "pbs"
+
+    # comm
+    if comm != "none" and args.num_locales == "0":
+        args.num_locales = 1
+
+    if args.num_locales == "0":
+        logger.write('[numlocales: "(default)"]')
+    else:
+        logger.write('[numlocales: "{0}"]'.format(args.num_locales))
+
+    os.environ["NUMLOCALES"] = str(args.num_locales)
+
+    # pre-exec
+    if args.preexec:
+        if os.path.isfile(args.preexec) and os.access(args.preexec, os.X_OK):
+            args.preexec = os.path.abspath(args.preexec)
+            logger.write("[system-wide preexec: {0}]".format(args.preexec))
+        else:
+            logger.write("[Error: Cannot find or execute system-wide preexec:"
+                    "{0}".format(args.preexec))
+            finish()
+        os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
+
+    # pre-diff
+    if args.prediff:
+        if os.path.isfile(args.prediff) and os.access(args.prediff, os.X_OK):
+            args.prediff = os.path.abspath(args.prediff)
+            logger.write("[system-wide prediff: {0}]".format(args.prediff))
+        else:
+            logger.write("[Error: Cannot find or execute system-wide prediff: "
+                    "{0}".format(args.prediff))
+            finish()
+        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
+
+
+def auto_generate_tests():
+    path = os.getcwd()
+    with cd(home):
+        if path == home or path == test_dir and not args.clean_only:
+            if args.performance:
+                # track the number of examples being tested
+                logger.write("[Generating tests from the Chapel spec in "
+                        "{0}/spec]".format(home))
+                tmp_file_path = os.path.join(home, "test", 
+                        "spectests.exec.out.tmp")
+                with open(tmp_file_path, "w") as tmp_file:
+                    try:
+                        out = subprocess.check_output(["make", "spectests"])
+                        tmp_file.write(out)
+                    except:
+                        logger.write("[Error: Failed to generate Spec tests.  "
+                            "Log file: {0}]".format(tmp_file_path))
+                        finish()
+
+                with cd(test_dir):
+                    if not os.path.isdir(perf_dir):
+                        os.makedirs(perf_dir)
+
+                    logger.write("[Computing stats for spec examples]")
+                    temp_perf_path = os.path.join(home,
+                        "test", "spectests.perfStats.out.tmp")
+                    with open(temp_perf_path, "w") as temp_perf_file:
+                        try:
+                            cmd = os.path.join(util_dir, "test", 
+                                    "computePerfStats")
+                            out = subprocess.check_output([cmd, "spectests", 
+                                perf_dir, os.path.join(home, "test", 
+                                "spectests.perfkeys"), tmp_file_path])
+                            temp_perf_file.write(out)
+                        except:
+                            logger.write("[Error: Failed to compute perf stats "
+                                    "for Spectests. Log file: {0}]"
+                                    .format(temp_perf_path))
+                            finish()
+
+                    os.remove(tmp_file_path)
+                    os.remove(temp_perf_path)
+
+            elif not args.gen_graphs:
+                logger.write("[Generating tests from the Chapel Spec in "
+                        "{0}/spec".format(home))
+                returncode = subprocess.call(["make", "spectests"])
+                if returncode != 0:
+                    logger.write("[Error: Failed to generate Spec tests. Run "
+                            "'make spectests' in {0} for more info]"
+                            .format(home))
+                    finish()
+
+
+def print_chapel_environment():
+    logger.write()
+    logger.write("### Chapel Environment ###")
+    try:
+        out = subprocess.check_output(os.path.join(util_dir, "printchplenv"))
+        logger.write(out)
+    except:
+        pass
+    logger.write("##########################")
+
+
+def check_for_duplicates():
+    # check for .dat duplicates
+    if args.performance:
+        logger.write("[Checking for duplicate performance data filenames]")
+
+        dat_files = []
+        error = False
+        for root, dirnames, filenames in os.walk(test_dir):
+            for filename in fnmatch.filter(filenames, "*." + args.perflabel):
+                if filename in dat_files: # duplicate
+                    logger.write("[Error: Duplicate performance data filenames"
+                            " ({0})".format(filename))
+                    error = True
+                else:
+                    dat_files.append(filename)
+
+        if error:
+            finish()
+
+    # check for .graph files, and GRAPHFILES
+    if args.gen_graphs or args.comp_performance:
+        logger.write("[Checking for duplicate .graph files and that all .graph"
+                " files appear in {0}/test/.*GRAPHFILES]".format(home))
+
+        # find GRAPHFILES
+        graph_files = [f for f in os.listdir(test_dir) if
+                f.endswith("GRAPHFILES")]
+
+        # read .graph files from GRAPHFILES
+        GRAPHFILES_graph_files = []
+        for file in graph_files:
+            with open(os.path.join(test_dir, file), "r") as f:
+                for line in f:
+                    if line == "":
+                        continue
+                    if line.strip() == "" or line.strip()[0] == "#":
+                        continue
+                    GRAPHFILES_graph_files.append(line.rstrip())
+
+        # get absolute paths of actual .graph files
+        actual_graph_files = []
+        for root, dirnames, filenames in os.walk(test_dir):
+            for filename in fnmatch.filter(filenames, "*.graph"):
+                actual_graph_files.append(os.path.relpath(
+                    os.path.join(root, filename), test_dir))
+
+        # check that actual .graph files are listed in GRAPHFILES
+        for g in actual_graph_files:
+            filename = g
+            if filename not in GRAPHFILES_graph_files:
+                logger.write("[Warning: {0} is missing from GRAPHFILES]"
+                        .format(filename))
+
+        # check that all .graph files in GRAPHFILES actually exist
+        for g in GRAPHFILES_graph_files:
+            filename = g
+            if filename not in actual_graph_files:
+                logger.write("[Warning: {0} listed in GRAPHFILES does not "
+                        "exist]".format(filename))
+
+        # check for duplicates
+        graph_set = {}
+        for g in actual_graph_files:
+            filename = os.path.basename(g).lower()
+            if filename in graph_set:
+                logger.write("[Warning: graph files must have unique, case "
+                        "insensitive names: {0} and {1} do not]"
+                        .format(g, graph_set[filename]))
+            else:
+                graph_set[filename] = g
+
+
+# END STUFF
+
+def cleanup():
+    if os.path.isdir(chpl_test_tmp_dir):
+        print("[Removing {0} directory]".format(chpl_test_tmp_dir))
+        shutil.rmtree(chpl_test_tmp_dir)
+
+
+def jUnit():
+    junit_args = ["--start-test-log={0}".format(log_file)]
+    if args.junit_xml_file:
+        junit_args.append("--junit-xml={0}".format(args.junit_xml_file))
+
+    if args.junit_remove_prefix:
+        junit_args.append(
+                "--remove-prefix={0}".format(args.junit_remove_prefix))
+    elif args.test_root_dir:
+        # if --test-root was thrown, remove it from junit report
+        junit_args.append("--remove-prefix={0}".format(args.test_root_dir))
+
+    cmd = [os.path.join(util_dir, "test", 
+            "convert_start_test_log_to_junit_xml.py")]
+
+    try:
+        out = subprocess.check_output(cmd + junit_args)
+        return output
+    except:
+        return ""
+
+
+# PARSER
+
+def parser_setup():
+    parser = argparse.ArgumentParser(description="Test Chapel code.")
+    # main args
+    parser.add_argument("tests", nargs="*", help="test files or directories")
+    # executing options
+    parser.add_argument("-execopts", "--execopts", action="append", 
+            dest="execopts", help="set options for executing tests")
+    # compiler
+    parser.add_argument("-compiler", "--compiler", action="store",
+            dest="compiler", help="set alternate compiler")
+    # program launch utility
+    parser.add_argument("-launchcmd", "--launchcmd", action="store",
+            dest="launch_cmd", default="",
+            help="set a program to launch generated executables")
+    # compiler options
+    parser.add_argument("-compopts", "--compopts", action="append",
+            dest="compopts", help="set options for the compiler")
+    # log_file
+    parser.add_argument("-logfile", "--logfile", action="store",
+            dest="log_file", help="set alternate log file")
+    # mem leaks log
+    parser.add_argument("-memleaks", "--memleaks", action="store",
+            dest="mem_leaks_log", help=("set location for memLeaks log, "
+                "and run with the --memLeaksLog flag"))
+    # valgrind
+    parser.add_argument("-valgrind", "--valgrind", action="store_true",
+            dest="valgrind", help="run everything using valgrind")
+    parser.add_argument("-valgrindexe", "--valgrindexe", action="store_true",
+            dest="valgrind_exe", help="execute tests using valgrind")
+    # pre exec, pre- etc....
+    parser.add_argument("-syspreexec", "--syspreexec", action="store",
+            dest="preexec", 
+            help="set a PREEXEC script to run before execution")
+    parser.add_argument("-sysprediff", "--sysprediff", action="store",
+            dest="prediff", help="set a PREDIFF script to run on test output")
+    # future mode args
+    futures_mode = 0
+    parser.add_argument("-futures", "--futures", action="store_const", const=1,
+            default=futures_mode, dest="futures_mode", help="run future tests")
+    parser.add_argument("-futuresonly", "--futuresonly", "-futures-only",
+            "--futures-only", action="store_const", const=2, default=
+            futures_mode, dest="futures_mode", help="only run future tests")
+    parser.add_argument("-futuresskipif", "--futuresskipif", "-futures-skipif",
+            "--futures-skipif", action="store_const", const=3, default=
+            futures_mode, dest="futures_mode", help="run future-skipif tests")
+    parser.add_argument("-futures-mode", "--futures-mode", action="store",
+            default=futures_mode, dest="futures_mode",
+            help=argparse.SUPPRESS)
+    # cleaning
+    parser.add_argument("-clean-only", "-cleanonly", "--clean-only",
+            "--cleanonly", action="store_true", dest="clean_only",
+            help="only clean files specified in CLEANFILES")
+    # recurse
+    parser.add_argument("-norecurse", "-no-recurse", "--norecurse",
+            "--no-recurse", action="store_false", dest="recurse",
+            help="don't recurse down through directories")
+    # performance
+    parser.add_argument("-performance", "--performance", action="store_true",
+            dest="performance", help="run performance tests")
+    parser.add_argument("-perflabel", "--perflabel", action="store",
+            default="perf", dest="perflabel",
+            help="set alternate performance test label")
+    parser.add_argument("-performance-description",
+            "--performance-description", action="store", default="",
+            dest="performance_description")
+    parser.add_argument("-performance-configs", "--performance-configs",
+            "-performance-configurations", "--performance-configurations",
+            action="store", dest="performance_configs",
+            help="set performance configurations")
+    parser.add_argument("-compperformance", "--compperformance",
+            action="store_true", dest="comp_performance",
+            help="test compiler performance")
+    parser.add_argument("-compperformance-description",
+            "--compperformance-description", action="store", default="",
+            dest="comp_performance_description")
+    parser.add_argument("-numtrials", "--numtrials", "-num-trials",
+        "--num-trials", action="store", dest="num_trials", default="1",
+        help="the number of times to run the performance tests")
+    # graphing
+    parser.add_argument("-gen-graphs", "--gen-graphs", "-generate-graphs",
+            "--generate-graphs", action="store_true", dest="gen_graphs",
+            help="only generate graphs, don't run tests")
+    parser.add_argument("-nodisplaygraphrange", "--nodisplaygraphrange",
+            "-no-display-graph-range", "--no-display-graph-range",
+            action="store_false", dest="graphs_disp_range",
+            help="don't display trial range envelopes on the graphs")
+    parser.add_argument("-graphsgendefault", "--graphsgendefault",
+            "-graphs-gen-default", "--graphs-gen-default", action="store",
+            choices=["avg", "min", "max", "med"], default="avg",
+            dest="graphs_gen_default",
+            help="set default method to reduce multiple trials")
+    parser.add_argument("-startdate", "--startdate", action="store",
+            dest="start_date", metavar="<MM/DD/YY>", 
+            help="set graph start date")
+    parser.add_argument("-gengraphopts", "--gengraphopts", "-genGraphOpts",
+            "--genGraphOpts", action="store", dest="gen_graph_opts",
+            default="", help="set additional graph generation options")
+    # only compile
+    parser.add_argument("-comp-only", "--comp-only", action="store_true",
+            dest="comp_only", help="only compile the tests, don't run")
+    # num locales
+    parser.add_argument("-numlocales", "--numlocales", action="store",
+            dest="num_locales", default="0",
+            help="set the number of locales to run on")
+    # stdin redirect
+    parser.add_argument("-nostdinredirect", "--nostdinredirect",
+            action="store", dest="no_stdin_redirect",
+            help="run the tests without redirecting stdin from /dev/null")
+    parser.add_argument("-stdinredirect", "--stdinredirect", action="store",
+            dest="stdin_redirect",
+            help="force stdin redirection from /dev/null")
+    # launcher timeout
+    parser.add_argument("-launchertimeout", "--launchertimeout", 
+            action="store", dest="launcher_timeout",
+            help="rely on the launcher to enforce the timeout, not timedexec")
+    # no chpl home warning
+    parser.add_argument("-no-chpl-home-warn", "--no-chpl-home-warn",
+            action="store_false", dest="chpl_home_warn",
+            help="don't warn about not starting in CHPL_HOME")
+    # progress
+    parser.add_argument("-progress", "--progress", action="store_true",
+            dest="progress", help="Log pass/fail for each test to stderr")
+    # test root
+    parser.add_argument("-test-root", "--test-root", action="store",
+        dest="test_root_dir", help="set absolute path to test directory")
+    # jUnit
+    parser.add_argument("-junit-xml", "--junit-xml", action="store_true",
+            dest="junit_xml", help="create jUnit XML report")
+    parser.add_argument("-junit-xml-file", "--junit-xml-file", action="store",
+            dest="junit_xml_file", metavar="<file>",
+            help="set the path to store the jUnit XML report")
+    parser.add_argument("-junit-remove-prefix", "--junit-remove-prefix",
+            action="store", dest="junit_remove_prefix", metavar="<prefix>",
+            help="set the <prefix> to remove from tests in the jUnit report")
+    # extra help
+    parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
+
+    return parser
+
+
+def preprocess_options():
+    index = 0
+    for arg in sys.argv:
+        if (arg == "-compopts" or arg == "--compopts" 
+                or arg == "-execopts" or arg == "--execopts"):
+            escape_next_argument(sys.argv, index)
+        index += 1
+
+
+def escape_next_argument(args, index):
+    next = args[index + 1]
+    if next and next[0] == "-": # single argument, not escaped
+        args[index + 1] = "'{0}'".format(next)
+    print(args)
+
+
+# UTILITY ROUTINES AND CLASSES
+
+class Logger():
+    def __init__(self):
+        self.logger = logging.getLogger("start_test")
+        self.logger.setLevel(logging.DEBUG)
+        # console stdout handlers
+        self.console_out = logging.StreamHandler(sys.stdout)
+        # file handlers
+        self.file_out = logging.FileHandler(log_file, mode="w")
+        # add them
+        self.logger.addHandler(self.console_out)
+        self.logger.addHandler(self.file_out)
+
+    def write(self, msg=" "):
+        self.logger.info(msg.strip())
+
+    def flush(self):
+        self.console_out.flush()
+        self.file_out.flush()
+
+    def stop(self):
+        self.file_out.flush()
+        self.file_out.close()
+        self.logger.removeHandler(self.file_out)
+
+    def restart(self):
+        self.file_out = logging.FileHandler(log_file, mode="a")
+        self.logger.addHandler(self.file_out)
+
+
+def printout(so):
+    while True:
+        line = so.readline()
+        if not line:
+            break
+        logger.write(line) # strip default newline
+        logger.flush()
+
+@contextlib.contextmanager
+def cd(path):
+    old_dir = os.getcwd()
+    os.chdir(path)
+    os.environ["PWD"] = path
+    try:
+        yield
+    finally:
+        os.chdir(old_dir)
+        os.environ["PWD"] = old_dir
+
+
+if __name__ == "__main__":
+    main()
