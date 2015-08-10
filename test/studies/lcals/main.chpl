@@ -6,6 +6,9 @@ module main {
   use LCALSLoops;
   use LCALSStatic;
 
+  use RunARawLoops;
+  use RunBRawLoops;
+  use RunCRawLoops;
   proc allocateLoopData() {
     const num_aligned_segments =
       (s_loop_data.max_loop_length + 20)/LCALS_DATA_ALIGN + 1;
@@ -37,7 +40,7 @@ module main {
     for i in 0..#s_loop_data.s_num_3D_2xNx4_Real_arrays {
       initData(s_loop_data.RealArray_3D_2xNx4[i], i+1);
     }
-
+    initData(s_loop_data.scalar_Real, 21);
     // ?? s_loop_data->RealArray_scalars;
   }
 
@@ -51,9 +54,42 @@ module main {
     var run_variants = new vector(LoopVariantID);
 
     run_loop[LoopKernelID.REF_LOOP] = true;
-    run_loop[LoopKernelID.PRESSURE_CALC] = true;
-    //run_loop[LoopKernelID.PRESSURE_CALC_ALT] = true;
-    run_loop[LoopKernelID.ENERGY_CALC] = true;
+
+    // Loop Subset A: Loops extracted from LLNL app codes.
+    run_loop[LoopKernelID.PRESSURE_CALC ] = false; //true; // M and S have bad checksums
+    run_loop[LoopKernelID.ENERGY_CALC   ] = true;
+    run_loop[LoopKernelID.VOL3D_CALC    ] = true;
+    run_loop[LoopKernelID.DEL_DOT_VEC_2D] = true;
+    run_loop[LoopKernelID.COUPLE        ] = true;
+    run_loop[LoopKernelID.FIR           ] = false; //true; // bad checksums
+
+    // Loop Subset B: "Basic" Loops.
+    run_loop[LoopKernelID.INIT3         ] = true;
+    run_loop[LoopKernelID.MULADDSUB     ] = true;
+    run_loop[LoopKernelID.IF_QUAD       ] = true;
+    run_loop[LoopKernelID.TRAP_INT      ] = true;
+
+    // Loop Subset C: Loops from older Livermore Loops in "C" suite.
+    run_loop[LoopKernelID.HYDRO_1D      ] = true;
+    run_loop[LoopKernelID.ICCG          ] = false; //true; // segfaults
+    run_loop[LoopKernelID.INNER_PROD    ] = true;
+    run_loop[LoopKernelID.BAND_LIN_EQ   ] = false; //true; // bad checksums
+    run_loop[LoopKernelID.TRIDIAG_ELIM  ] = false; //true; // bad checksums
+    run_loop[LoopKernelID.EOS           ] = false; //true; // bad checksums
+    run_loop[LoopKernelID.ADI           ] = false; // not implemented
+    run_loop[LoopKernelID.INT_PREDICT   ] = false; // not implemented
+    run_loop[LoopKernelID.DIFF_PREDICT  ] = false; // not implemented
+    run_loop[LoopKernelID.FIRST_SUM     ] = false; //true; ???
+    run_loop[LoopKernelID.FIRST_DIFF    ] = false; //true; bad checksums
+    run_loop[LoopKernelID.PIC_2D        ] = false; // not implemented
+    run_loop[LoopKernelID.PIC_1D        ] = false; //true; // bad checksums
+    run_loop[LoopKernelID.HYDRO_2D      ] = false; // not implemented
+    run_loop[LoopKernelID.GEN_LIN_RECUR ] = false; //true; // bad checksums
+    run_loop[LoopKernelID.DISC_ORD      ] = false; //true; // bad checksums
+    run_loop[LoopKernelID.MAT_X_MAT     ] = false; // not implemented
+    run_loop[LoopKernelID.PLANCKIAN     ] = false; //true; // bad checksums
+    run_loop[LoopKernelID.IMP_HYDRO_2D  ] = false; // not implemented
+    run_loop[LoopKernelID.FIND_FIRST_MIN] = true;
 
     mkdir(output_dirname, parents=true);
 
@@ -274,7 +310,7 @@ module main {
     var len_id = new vector(string);
     len_id.resize(suite_run_info.loop_length_names.size());
     for ilen in 0..#len_id.size() {
-      len_id[ilen] = suite_run_info.loop_length_names[ilen].substring(0);
+      len_id[ilen] = suite_run_info.loop_length_names[ilen].substring(1);
     }
 
     var ver_info = buildVersionInfo();
@@ -416,7 +452,7 @@ module main {
 
     len_id.resize(suite_run_info.loop_length_names.size());
     for ilen in 0..#len_id.size() {
-      len_id[ilen] = suite_run_info.loop_length_names[ilen].substring(0);
+      len_id[ilen] = suite_run_info.loop_length_names[ilen].substring(1);
     }
 
 
@@ -478,7 +514,8 @@ module main {
               if stat.loop_run_count[ilen] > 0 {
                 var var_string = run_loop_variants[ilv] + "(" + len_id[ilen] + ")";
                 outchannel.writef("%-*s", var_field_len+1, var_string);
-                outchannel.writef("%*s", prec_buf, stat.loop_chksum[ilen]);
+                //outchannel.writef("%*s", prec_buf, stat.loop_chksum[ilen]);
+                outchannel.writef("#########.#######################", stat.loop_chksum[ilen]);
                 if ilv > 0 {
                   var chksum_diff = abs(stat.loop_chksum[ilen] - ref_chksum[ilen]);
                   outchannel.writef("%*r\n", prec_buf, chksum_diff);
@@ -525,8 +562,8 @@ module main {
     select lvid {
       when LoopVariantID.RAW {
         runARawLoops(loop_stats, run_loop, ilength);
-        //runBRawLoops(loop_stats, run_loop, ilength);
-        //runCRawLoops(loop_stats, run_loop, ilength);
+        runBRawLoops(loop_stats, run_loop, ilength);
+        runCRawLoops(loop_stats, run_loop, ilength);
       }
 /*
       when LoopVariantID.FORALL_LAMBDA {
@@ -756,91 +793,368 @@ module main {
 
           }
           when LoopKernelID.ENERGY_CALC_ALT {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
           }
           when LoopKernelID.VOL3D_CALC {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            const ndims = 3;
+
+            var Ldomain = new ADomain(LoopLength.LONG, ndims);
+            loop_stat.loop_length[LoopLength.LONG]   = Ldomain.lpz - Ldomain.fpz + 1;
+            var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
+            loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.lpz - Mdomain.fpz + 1;
+            var Sdomain = new ADomain(LoopLength.SHORT, ndims);
+            loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.lpz - Sdomain.fpz + 1;
+
+            max_loop_indx = Ldomain.lpn;
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 6500;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 800000;
           }
           when LoopKernelID.DEL_DOT_VEC_2D {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+
+            const ndims = 2;
+
+            var Ldomain = new ADomain(LoopLength.LONG, ndims);
+            loop_stat.loop_length[LoopLength.LONG]   = Ldomain.n_real_zones;
+            var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
+            loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.n_real_zones;
+            var Sdomain = new ADomain(LoopLength.SHORT, ndims);
+            loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.n_real_zones;
+
+            max_loop_indx = Ldomain.lrn;
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 25000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 2000000;
           }
           when LoopKernelID.COUPLE {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.TRANSCENDENTAL];
+
+            const ndims = 3;
+
+            var Ldomain = new ADomain(LoopLength.LONG, ndims);
+            loop_stat.loop_length[LoopLength.LONG]   = Ldomain.lpz - Ldomain.fpz + 1;
+            var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
+            loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.lpz - Mdomain.fpz + 1;
+            var Sdomain = new ADomain(LoopLength.SHORT, ndims);
+            loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.lpz - Sdomain.fpz + 1;
+
+            max_loop_indx = Ldomain.lrn;
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 10000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 600000;
           }
           when LoopKernelID.FIR {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 80000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 3000000;
           }
           when LoopKernelID.INIT3 {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 110000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 12000000;
           }
           when LoopKernelID.MULADDSUB {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 12000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 140000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 15000000;
           }
           when LoopKernelID.IF_QUAD {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
           }
           when LoopKernelID.TRAP_INT {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 32000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
           }
           when LoopKernelID.HYDRO_1D {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 320000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 15000000;
           }
           when LoopKernelID.ICCG {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 20000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 200000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 6000000;
           }
           when LoopKernelID.INNER_PROD {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 50000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 600000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 30000000;
           }
           when LoopKernelID.BAND_LIN_EQ {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 40000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 600000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 20000000;
           }
           when LoopKernelID.TRIDIAG_ELIM {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 100000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 3000000;
           }
           when LoopKernelID.EOS {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 18000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 140000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 5000000;
           }
           when LoopKernelID.ADI {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 1000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 9000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 300000;
           }
           when LoopKernelID.INT_PREDICT {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.POINTER_NEST];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 2000000;
           }
           when LoopKernelID.DIFF_PREDICT {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.POINTER_NEST];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 22000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1800000;
           }
           when LoopKernelID.FIRST_SUM {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 250000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000000;
           }
           when LoopKernelID.FIRST_DIFF {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 500000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 30000000;
           }
           when LoopKernelID.PIC_2D {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 18000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 700000;
           }
           when LoopKernelID.PIC_1D {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 24000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
           }
           when LoopKernelID.HYDRO_2D {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 300;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 2000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 50000;
           }
           when LoopKernelID.GEN_LIN_RECUR {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 36000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
           }
           when LoopKernelID.DISC_ORD {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 1000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 8000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 200000;
           }
           when LoopKernelID.MAT_X_MAT {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 8;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 70;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000;
           }
           when LoopKernelID.PLANCKIAN {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.TRANSCENDENTAL];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
           }
           when LoopKernelID.IMP_HYDRO_2D {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 800;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 6000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 150000;
           }
           when LoopKernelID.FIND_FIRST_MIN {
-            halt("Not available: ", loop_name);
+            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+
+            for i in 0..#LoopLength.NUM_LENGTHS {
+              loop_stat.loop_length[i] = shared_loop_length[i];
+            }
+            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+            loop_stat.samples_per_pass[LoopLength.LONG]   = 50000;
+            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 330000;
+            loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000000;
           }
           otherwise {
             halt("Unknown loop id: ", iloop);

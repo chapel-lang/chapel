@@ -52,24 +52,141 @@ module LCALSLoops {
 
         initData(loop_data.RealArray_scalars, 1);
       }
+      when LoopKernelID.PRESSURE_CALC_ALT {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
+
+        initData(loop_data.RealArray_scalars, 1);
+      }
       when LoopKernelID.ENERGY_CALC {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
+        initData(loop_data.RealArray_1D[5], 6);
+        initData(loop_data.RealArray_1D[6], 7);
+        initData(loop_data.RealArray_1D[7], 8);
+        initData(loop_data.RealArray_1D[8], 9);
+        initData(loop_data.RealArray_1D[9], 10);
+        initData(loop_data.RealArray_1D[10], 11);
+        initData(loop_data.RealArray_1D[11], 12);
+        initData(loop_data.RealArray_1D[12], 13);
+        initData(loop_data.RealArray_1D[13], 14);
+        initData(loop_data.RealArray_1D[14], 15);
+
+        initData(loop_data.RealArray_scalars, 1);
+      }
+      when LoopKernelID.ENERGY_CALC {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
+        initData(loop_data.RealArray_1D[5], 6);
+        initData(loop_data.RealArray_1D[6], 7);
+        initData(loop_data.RealArray_1D[7], 8);
+        initData(loop_data.RealArray_1D[8], 9);
+        initData(loop_data.RealArray_1D[9], 10);
+        initData(loop_data.RealArray_1D[10], 11);
+        initData(loop_data.RealArray_1D[11], 12);
+        initData(loop_data.RealArray_1D[12], 13);
+        initData(loop_data.RealArray_1D[13], 14);
+        initData(loop_data.RealArray_1D[14], 15);
+
+        initData(loop_data.RealArray_scalars, 1);
+      }
+      when LoopKernelID.VOL3D_CALC {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+      }
+      when LoopKernelID.DEL_DOT_VEC_2D {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
+      }
+      when LoopKernelID.COUPLE {
+        initData(loop_data.ComplexArray_1D[0], 1);
+        initData(loop_data.ComplexArray_1D[1], 2);
+        initData(loop_data.ComplexArray_1D[2], 3);
+        initData(loop_data.ComplexArray_1D[3], 4);
+        initData(loop_data.ComplexArray_1D[4], 5);
+      }
+      when LoopKernelID.FIR {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+      }
+      when LoopKernelID.INIT3 {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
+      }
+      when LoopKernelID.MULADDSUB {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
+      }
+      when LoopKernelID.IF_QUAD {
          initData(loop_data.RealArray_1D[0], 1);
          initData(loop_data.RealArray_1D[1], 2);
          initData(loop_data.RealArray_1D[2], 3);
          initData(loop_data.RealArray_1D[3], 4);
          initData(loop_data.RealArray_1D[4], 5);
-         initData(loop_data.RealArray_1D[5], 6);
-         initData(loop_data.RealArray_1D[6], 7);
-         initData(loop_data.RealArray_1D[7], 8);
-         initData(loop_data.RealArray_1D[8], 9);
-         initData(loop_data.RealArray_1D[9], 10);
-         initData(loop_data.RealArray_1D[10], 11);
-         initData(loop_data.RealArray_1D[11], 12);
-         initData(loop_data.RealArray_1D[12], 13);
-         initData(loop_data.RealArray_1D[13], 14);
-         initData(loop_data.RealArray_1D[14], 15);
-
-         initData(loop_data.RealArray_scalars, 1);
+      }
+      when LoopKernelID.TRAP_INT {
+        initData(loop_data.IndxArray_1D[0], 1);
+        initData(loop_data.RealArray_scalars, 1);
+      }
+      when LoopKernelID.HYDRO_1D {
+      }
+      when LoopKernelID.ICCG {
+      }
+      when LoopKernelID.INNER_PROD {
+      }
+      when LoopKernelID.BAND_LIN_EQ {
+      }
+      when LoopKernelID.TRIDIAG_ELIM {
+      }
+      when LoopKernelID.EOS {
+      }
+      when LoopKernelID.ADI {
+      }
+      when LoopKernelID.INT_PREDICT {
+      }
+      when LoopKernelID.DIFF_PREDICT {
+      }
+      when LoopKernelID.FIRST_SUM {
+      }
+      when LoopKernelID.FIRST_DIFF {
+      }
+      when LoopKernelID.PIC_2D {
+      }
+      when LoopKernelID.PIC_1D {
+      }
+      when LoopKernelID.HYDRO_2D {
+      }
+      when LoopKernelID.GEN_LIN_RECUR {
+      }
+      when LoopKernelID.DISC_ORD {
+      }
+      when LoopKernelID.MAT_X_MAT {
+      }
+      when LoopKernelID.PLANCKIAN {
+      }
+      when LoopKernelID.IMP_HYDRO_2D {
+      }
+      when LoopKernelID.FIND_FIRST_MIN {
       }
       otherwise {
         halt("Unhandled loop type: ", (iloop:LoopKernelID):string);
@@ -204,157 +321,61 @@ module LCALSLoops {
       }
     }
   }
+  extern proc printf(fmt: c_string, args...);
+  extern proc printf(fmt: c_string);
+  config var printCnt = 0;
+  var numprinted = 0;
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: [] real, scale_factor: real = 1.0) {
     var data => ra;
     var len = ra.numElements;
     var tchk = stat.loop_chksum[ilength];
-    for (j,dat) in zip(0..#len,data) {
+    if printCnt > 0 {
+      for i in 1..20 do
+        printf("%ld", numprinted%10);
+      printf("\n%f, %ld\n", tchk, len);
+    }
+    for (j, dat) in zip(0..#len, data) {
       tchk += (j+1)*dat*scale_factor;
+    }
+    if printCnt > 0 {
+      printf("%f\n", tchk);
+      for i in 1..20 do
+        printf("%ld", numprinted%10);
+      printf("\n");
+      printCnt -= 1;
+      numprinted += 1;
     }
     stat.loop_chksum[ilength] = tchk;
   }
+
   proc updateChksum(stat: LoopStat, ilength: LoopLength, val: real) {
     stat.loop_chksum[ilength] += val;
   }
+  var cplxCnt = 0;
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ca: [] complex, scale_factor: real = 1.0) {
     var data => ca;
     var len = ca.numElements;
     var tchk = stat.loop_chksum[ilength];
+    if printCnt > 0 {
+      for i in 1..20 {
+        printf("%ld", cplxCnt % 10);
+      }
+      printf("\nComplex\n");
+      printf("%f, %ld\n", tchk, len);
+    }
     for (j,dat) in zip(0..#len,data) {
       tchk += (j+1)*(dat.re + dat.im)*scale_factor;
     }
+    if printCnt > 0 {
+      printf("%f\n", tchk);
+      for i in 1..20 {
+        printf("%ld", cplxCnt % 10);
+      }
+      printf("\n");
+      cplxCnt =+ 1;
+    }
     stat.loop_chksum[ilength] = tchk;
   }
-
-  proc runARawLoops(loop_stats: vector(LoopStat), run_loop:[] bool, ilength: LoopLength) {
-    var loop_suite_run_info = getLoopSuiteRunInfo();
-    var loop_data = getLoopData();
-
-    for iloop in 0..#loop_suite_run_info.num_loops {
-      if run_loop[iloop] {
-        var stat = loop_stats[iloop];
-        var len = stat.loop_length[ilength];
-        var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new LoopTimer();
-        select iloop {
-          when LoopKernelID.PRESSURE_CALC {
-            loopInit(iloop, stat);
-            var compression => loop_data.RealArray_1D[0];
-            var bvc => loop_data.RealArray_1D[1];
-            var p_new => loop_data.RealArray_1D[2];
-            var e_old => loop_data.RealArray_1D[3];
-            var vnewc => loop_data.RealArray_1D[4];
-
-            const cls = loop_data.scalar_Real[0];
-            const p_cut = loop_data.scalar_Real[1];
-            const pmin = loop_data.scalar_Real[2];
-            const eosvmax = loop_data.scalar_Real[3];
-            ltimer.start();
-            for isamp in 0..#num_samples {
-              for i in 0..#len {
-                bvc[i] = cls * (compression[i] + 1.0);
-              }
-              for i in 0..#len {
-                p_new[i] = bvc[i] * e_old[i];
-                if ( abs(p_new[i]) <  p_cut ) then p_new[i] = 0.0;
-                if ( vnewc[i] >= eosvmax ) then p_new[i] = 0.0;
-                if ( p_new[i]  <  pmin ) then p_new[i] = pmin;
-              }
-            }
-            ltimer.stop();
-            loopFinalize(iloop, stat, ilength);
-          }
-          when LoopKernelID.ENERGY_CALC {
-            loopInit(iloop, stat);
-            var e_new = loop_data.RealArray_1D[0];
-            var e_old = loop_data.RealArray_1D[1];
-            var delvc = loop_data.RealArray_1D[2];
-            var p_new = loop_data.RealArray_1D[3];
-            var p_old = loop_data.RealArray_1D[4];
-            var q_new = loop_data.RealArray_1D[5];
-            var q_old = loop_data.RealArray_1D[6];
-            var work = loop_data.RealArray_1D[7];
-            var compHalfStep = loop_data.RealArray_1D[8];
-            var pHalfStep = loop_data.RealArray_1D[9];
-            var bvc = loop_data.RealArray_1D[10];
-            var pbvc = loop_data.RealArray_1D[11];
-            var ql_old = loop_data.RealArray_1D[12];
-            var qq_old = loop_data.RealArray_1D[13];
-            var vnewc = loop_data.RealArray_1D[14];
-
-            const rho0 = loop_data.scalar_Real[0];
-            const e_cut = loop_data.scalar_Real[1];
-            const emin = loop_data.scalar_Real[2];
-            const q_cut = loop_data.scalar_Real[3];
-
-            ltimer.start();
-            for isamp in 0..#num_samples {
-              for i in 0..#len {
-                e_new[i] = e_old[i] - 0.5 * delvc[i] *
-                           (p_old[i] + q_old[i]) + 0.5 * work[i];
-              }
-              for i in 0..#len {
-                if delvc[i] > 0.0 {
-                  q_new[i] = 0.0;
-                } else {
-                  var vhalf = 1.0 / (1.0 + compHalfStep[i]);
-                  var ssc = (pbvc[i] * e_new[i]
-                    + vhalf * vhalf * bvc[i] * pHalfStep[i]) / rho0;
-                  if ssc <= 0.1111111e-36 {
-                    ssc = 0.3333333e-18;
-                  } else {
-                    ssc = ssc ** 0.5;
-                  }
-                  q_new[i] = ssc*ql_old[i] + qq_old[i];
-                }
-              }
-              for i in 0..#len {
-                e_new[i] = e_new[i] + 0.5 * delvc[i] * (3.0*(p_old[i] + q_old[i]) - 4.0*(pHalfStep[i] + q_new[i]));
-              }
-              for i in 0..#len {
-                e_new[i] += 0.5 * work[i];
-                if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
-                if e_new[i] < emin then e_new[i] = emin;
-              }
-              for i in 0..#len {
-                var q_tilde = 0.0;
-                if delvc[i] > 0.0 {
-                  q_tilde = 0;
-                } else {
-                  var ssc = (pbvc[i] * e_new[i]
-                           + vnewc[i] * vnewc[i] * bvc[i] * p_new[i]) / rho0;
-                  if ssc <= 0.1111111e-36 then ssc = 0.3333333e-18;
-                                          else ssc = ssc ** 0.5;
-                  q_tilde = (ssc*ql_old[i] + qq_old[i]);
-                }
-                e_new[i] = e_new[i] - (7.0*(p_old[i] + q_old[i])
-                                       - 8.0*(pHalfStep[i] + q_new[i])
-                                       + (p_new[i] + q_tilde)) * delvc[i] / 6.0;
-                if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
-                if e_new[i] < emin then e_new[i] = emin;
-              }
-              for i in 0..#len {
-                if delvc[i] <= 0.0 {
-                  var ssc = (pbvc[i] * e_new[i]
-                             + vnewc[i] * vnewc[i] * bvc[i] * p_new[i]) / rho0;
-                  if ssc <= 0.1111111e-36 then ssc = 0.3333333e-18;
-                                          else ssc = ssc ** 0.5;
-                  q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
-                  if abs(q_new[i]) < q_cut then q_new[i] = 0.0;
-                }
-              }
-            }
-            ltimer.stop();
-            loopFinalize(iloop, stat, ilength);
-          }
-          otherwise {
-          }
-        }
-        copyTimer(stat, ilength, ltimer);
-      }
-    }
-  }
-
 
   proc runReferenceLoop0(lstat: LoopStat, ilen: int) {
     var loop_data = getLoopData();
@@ -408,7 +429,7 @@ module LCALSLoops {
     // RDH added this. Without it compiler may optimize out
     // outer sampling loop because value of q was not used.
     //
-    loop_data.scalar_Real[0] = (val + 0.00123) / (val - 0.00123);
+    loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
 
     copyTimer(lstat, ilen, ltimer);
   }

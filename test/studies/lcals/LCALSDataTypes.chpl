@@ -1,5 +1,7 @@
 module LCALSDataTypes {
   use LCALSParams;
+  use LCALSEnums;
+  config const printLoopKernelIDs = false;
 
   class vector {
     type eltType;
@@ -100,6 +102,126 @@ module LCALSDataTypes {
       loop_chksum.resize(num_loop_lengths);
     }
   }
+
+  record ADomain {
+    /*static*/ var loop_length_factor: real = 1.0;
+
+    var ndims: int;
+    var NPNL: int;
+    var NPNR: int;
+
+    var imin: int;
+    var jmin: int;
+    var kmin: int;
+    var imax: int;
+    var jmax: int;
+    var kmax: int;
+
+    var jp: int;
+    var kp: int;
+    var nnalls: int;
+
+    var fpn: int;
+    var lpn: int;
+    var frn: int;
+    var lrn: int;
+
+    var fpz: int;
+    var lpz: int;
+
+    var zoneDom = {0..-1};
+    var real_zones: [zoneDom] int;
+    var n_real_zones: int;
+
+    proc ADomain(ilen: LoopLength, ndims: int) {
+      var rzmax: int;
+      this.ndims = ndims;
+      NPNL = 2;
+      NPNR = 1;
+      select ilen {
+        when LoopLength.LONG {
+          if ndims == 2 {
+            rzmax = (loop_length_factor*156):int;
+          } else if ndims == 3 {
+            rzmax = (loop_length_factor*28):int;
+          }
+        }
+        when LoopLength.MEDIUM {
+          if ndims == 2 {
+            rzmax = (loop_length_factor*64):int;
+          } else if ndims == 3 {
+            rzmax = (loop_length_factor*16):int;
+          }
+        }
+        when LoopLength.SHORT {
+          if ndims == 2 {
+            rzmax = (loop_length_factor*8):int;
+          } else if ndims == 3 {
+            rzmax = (loop_length_factor*4):int;
+          }
+        }
+        otherwise {
+          halt("bad LoopLength");
+          // error
+        }
+      }
+
+      imin = NPNL;
+      jmin = NPNL;
+      imax = rzmax + NPNR;
+      jmax = rzmax + NPNR;
+      jp = imax - imin + 1 + NPNL + NPNR;
+      if ndims == 2 {
+        kmin = 0;
+        kmax = 0;
+        kp = 0;
+        nnalls = jp * (jmax - jmin + 1 + NPNL + NPNR);
+      } else if ndims == 3 {
+        kmin = NPNL;
+        kmax = rzmax + NPNR;
+        kp = jp * (jmax - jmin + 1 + NPNL + NPNR);
+        nnalls = kp * (kmax - kmin + 1 + NPNL + NPNR);
+      }
+
+      fpn = 0;
+      lpn = nnalls - 1;
+      frn = fpn + NPNL * (kp + jp) + NPNL;
+      lrn = lpn - NPNR * (kp + jp) - NPNR;
+
+      fpz = frn - jp - kp - 1;
+      lpz = lrn;
+
+      zoneDom = {0..#nnalls};
+      for i in 0..#nnalls do real_zones[i] = -1;
+
+      n_real_zones = 0;
+
+      if ndims == 2 {
+        for j in jmin..jmax-1 {
+          for i in imin..imax-1 {
+            var ip = i + j*jp ;
+
+            var id = n_real_zones;
+            real_zones[id] = ip;
+            n_real_zones += 1;
+          }
+        }
+      } else if ndims == 3 {
+        for k in kmin..kmax-1 {
+          for j in jmin..jmax-1 {
+            for i in imin..imax-1 {
+              var ip = i + j*jp + kp*k ;
+
+              var id = n_real_zones;
+              real_zones[id] = ip;
+              n_real_zones += 1;
+            }
+          }
+        }
+      }
+    }
+  }
+
 
   record RealArray {
     const id: int;
