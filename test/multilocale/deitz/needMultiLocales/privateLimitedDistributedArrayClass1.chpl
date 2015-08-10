@@ -26,7 +26,7 @@ proc DistributedArray.writeThis(W: Writer) {
   }
 }
 
-pragma "private" var A: DistributedArray;
+pragma "locale private" var A: DistributedArray;
 
 //
 // set up DistributedArray

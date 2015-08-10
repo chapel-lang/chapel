@@ -18,22 +18,35 @@
  */
 
 /* tcmalloc memory function implementation */
+#ifndef _chpl_mem_impl_H_
+#define _chpl_mem_impl_H_
+
 
 #include "tcmalloc.h"
+#include "malloc_extension_c.h"
 
-static ___always_inline void* chpl_calloc(size_t n, size_t size) {
+static inline void* chpl_calloc(size_t n, size_t size) {
   return tc_calloc(n,size);
 }
 
-static ___always_inline void* chpl_malloc(size_t size) {
+static inline void* chpl_malloc(size_t size) {
   return tc_malloc(size);
 }
 
-static ___always_inline void* chpl_realloc(void* ptr, size_t size) {
+static inline void* chpl_memalign(size_t boundary, size_t size) {
+  return tc_memalign(boundary, size);
+}
+
+static inline void* chpl_realloc(void* ptr, size_t size) {
   return tc_realloc(ptr, size);
 }
 
-static ___always_inline void chpl_free(void* ptr) {
+static inline void chpl_free(void* ptr) {
   tc_free(ptr);
 }
 
+static inline size_t chpl_goodAllocSize(size_t minSize) {
+  return MallocExtension_GetEstimatedAllocatedSize(minSize);
+}
+
+#endif

@@ -20,6 +20,13 @@
 #ifndef _IPE_EVALUATE_H_
 #define _IPE_EVALUATE_H_
 
-void ipeEvaluate();
+class Expr;
+class IpeEnv;
+class IpeValue;
+
+
+IpeValue evaluate    (Expr* untypedExpr,     IpeEnv* env);
+
+IpeValue evaluateExpr(Expr* streamlinedExpr, IpeEnv* env);
 
 #endif

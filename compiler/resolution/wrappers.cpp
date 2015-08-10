@@ -94,7 +94,7 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
     wrapper->addFlag(FLAG_FIELD_ACCESSOR);
   if (fn->hasFlag(FLAG_REF_TO_CONST))
     wrapper->addFlag(FLAG_REF_TO_CONST);
-  if (!fn->hasFlag(FLAG_ITERATOR_FN)) { // getValue is var, not iterator
+  if (!fn->isIterator()) { // getValue is var, not iterator
     wrapper->retTag = fn->retTag;
     if (fn->setter)
       wrapper->setter = fn->setter->copy();
@@ -169,7 +169,7 @@ buildDefaultWrapper(FnSymbol* fn,
   wrapper->cname = astr("_default_wrap_", fn->cname);
 
   // Mimic return type.
-  if (!fn->hasFlag(FLAG_ITERATOR_FN))
+  if (!fn->isIterator())
     wrapper->retType = fn->retType;
 
   SymbolMap copy_map;
@@ -558,6 +558,13 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     //
     checkAgain = true;
     castCall = new CallExpr(PRIM_DEREF, prevActual);
+
+    if (SymExpr* prevSE = toSymExpr(prevActual))
+      if (prevSE->var->hasFlag(FLAG_REF_TO_CONST)) {
+        castTemp->addFlag(FLAG_CONST);
+        if (prevSE->var->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
+          castTemp->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+      }
 
   } else {
     // There was code to handle the case when the flag *is* present.

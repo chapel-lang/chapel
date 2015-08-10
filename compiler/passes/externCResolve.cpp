@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "scopeResolve.h"
+#include "externCResolve.h"
 
 #include "astutil.h"
 #include "build.h"
@@ -99,7 +99,9 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
           fields->insertAtTail(buildVarDecls(stmt, flags, NULL));
         }
 
-        DefExpr* strct = buildClassDefExpr(tmp_name, new AggregateType(AGGREGATE_RECORD), NULL, fields, FLAG_EXTERN, NULL);
+        DefExpr* strct = buildClassDefExpr(tmp_name, NULL,
+                                           new AggregateType(AGGREGATE_RECORD),
+                                           NULL, fields, FLAG_EXTERN, NULL);
 
         //...and patch up the resulting struct so that its cname is
         //  correct and codegen can find it.       
@@ -264,11 +266,16 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
     
   //functions
   } else if (clang::FunctionDecl *fd = llvm::dyn_cast<clang::FunctionDecl>(cdecl)) { 
+#if HAVE_LLVM_VER >= 35
+    clang::QualType resultType = fd->getReturnType();
+#else
+    clang::QualType resultType = fd->getResultType();
+#endif
     FnSymbol* f = new FnSymbol(name);
     f->addFlag(FLAG_EXTERN);
     f->addFlag(FLAG_LOCAL_ARGS);
     f->addFlag(FLAG_FUNCTION_PROTOTYPE);
-    Expr* chpl_type = convertToChplType(module, fd->getResultType().getTypePtr(), results);
+    Expr* chpl_type = convertToChplType(module, resultType.getTypePtr(), results);
     BlockStmt* result = buildFunctionDecl(
        f, RET_VALUE, chpl_type, NULL, NULL, NULL);
 

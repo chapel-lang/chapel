@@ -1,9 +1,0 @@
-Module: parenthesesLess
-   proc foo
-   proc bar: bool
-   proc foo2
-      Check to make sure they keep comments 
-
-   proc bar2: bool
-      Check to make sure this also keeps its comment 
-

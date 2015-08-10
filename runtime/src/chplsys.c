@@ -52,9 +52,61 @@
 #include <unistd.h>
 
 
-#ifndef chplGetPageSize
-#define chplGetPageSize() sysconf(_SC_PAGE_SIZE)
+size_t chpl_getSysPageSize(void) {
+  static size_t pageSize = 0;
+
+  if (pageSize == 0) {
+    long int ps;
+#if defined _SC_PAGESIZE
+    ps = sysconf(_SC_PAGESIZE);
+#elif defined _SC_PAGE_SIZE
+    ps = sysconf(_SC_PAGE_SIZE);
+#else
+    chpl_internal_error("cannot determine page size");
 #endif
+    if (ps <= 0L)
+      chpl_internal_error("system page size must be positive");
+    pageSize = (size_t) ps;
+  }
+
+  return pageSize;
+}
+
+
+size_t chpl_getHeapPageSize(void) {
+  static size_t pageSize = 0;
+
+  if (pageSize == 0) {
+#if defined __linux__
+    char* ev;
+    if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
+      pageSize = chpl_getSysPageSize();
+    else {
+      int scanCnt;
+      size_t tmpPageSize;
+      char units;
+
+      if ((scanCnt = sscanf(ev, "%zd%1[kKmMgG]", &tmpPageSize, &units)) > 0) {
+        if (scanCnt == 2) {
+          switch (units) {
+          case 'k': case 'K': tmpPageSize <<= 10; break;
+          case 'm': case 'M': tmpPageSize <<= 20; break;
+          case 'g': case 'G': tmpPageSize <<= 30; break;
+          }
+        }
+      }
+      else
+        chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+      pageSize = tmpPageSize;
+    }
+#else
+    pageSize = chpl_getSysPageSize();
+#endif
+  }
+
+  return pageSize;
+}
+
 
 uint64_t chpl_bytesPerLocale(void) {
 #ifdef NO_BYTES_PER_LOCALE
@@ -90,7 +142,7 @@ uint64_t chpl_bytesPerLocale(void) {
   numPages = sysconf(_SC_PHYS_PAGES);
   if (numPages < 0)
     chpl_internal_error("query of physical memory failed");
-  pageSize = chplGetPageSize();
+  pageSize = chpl_getSysPageSize();
   if (pageSize < 0)
     chpl_internal_error("query of physical memory failed");
   return (uint64_t)numPages * (uint64_t)pageSize;
@@ -361,7 +413,7 @@ c_string chpl_nodeName(void) {
     uname(&utsinfo);
     namelen = strlen(utsinfo.nodename)+1;
     namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
-                                 CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
+                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, NULL);
     strcpy(namespace, utsinfo.nodename);
   }
   return namespace;

@@ -2,53 +2,112 @@
 // For now, I'm not using the release fields
 var branchInfo = [
                   { "release" : "0.9",
+                    "releaseDate": "2009-04-16",
                     "branchDate" : "2009-04-08", // no actual branch
                     "revision" : 15461 },
                   { "release" : "1.0",
+                    "releaseDate": "2009-10-15",
                     "branchDate" : "2009-10-16",
                     "revision" : 16229 },
                   { "release" : "1.01",
+                    "releaseDate": "2009-10-30",
                     "branchDate" : "2009-10-30",
                     "revision" : 16330 },
                   { "release" : "1.02",
+                    "releaseDate": "2009-11-12",
                     "branchDate" : "2009-11-13",
                     "revision" : 16423 },
                   { "release" : "1.1",
+                    "releaseDate": "2010-04-15",
                     "branchDate" : "2010-04-09",
                     "revision" : 17087},
+                  { "release" : "1.1.1",
+                    "releaseDate": "2010-07-08",
+                    // TODO: Remove this branchDate; there was no branch for
+                    //       1.1.1. (thomasvandoren, 2015-04-09)
+                    "branchDate" : "2010-04-09",
+                    "revision" : -1},
                   { "release" : "1.2",
+                    "releaseDate": "2010-10-21",
                     "branchDate" : "2010-10-14",
                     "revision" : 17926},
                   { "release" : "1.3",
+                    "releaseDate": "2011-04-21",
                     "branchDate" : "2011-04-12",
                     "revision" : 18701},
                   { "release" : "1.4",
+                    "releaseDate": "2011-10-20",
                     "branchDate" : "2011-10-11",
                     "revision" : 19320},
                   { "release" : "1.5",
+                    "releaseDate": "2012-04-19",
                     "branchDate" : "2012-04-10",
                     "revision" : 19961},
                   { "release" : "1.6",
+                    "releaseDate": "2012-10-18",
                     "branchDate" : "2012-10-08",
                     "revision" : 20667},
                   { "release" : "1.7",
+                    "releaseDate": "2013-04-18",
                     "branchDate" : "2013-04-05",
                     "revision" : 21260},
                   { "release" : "1.8",
+                    "releaseDate": "2013-10-17",
                     "branchDate" : "2013-10-04",
                     "revision" : 22086},
                   { "release" : "1.9",
+                    "releaseDate": "2014-04-17",
                     "branchDate" : "2014-04-07",
                     "revision" : 23144},
                   { "release" : "1.10",
+                    "releaseDate": "2014-10-02",
                     "branchDate" : "2014-09-22",
-                    "revision" : -1}  // TODO: This was a git commit.
+                    "revision" : -1},
+                  { "release" : "1.11",
+                    "releaseDate": "2015-04-02",
+                    "branchDate" : "2015-03-25",
+                    "revision" : -1}
                   ];
+
+var rebootDates = [
+    "2014-06-21",
+    "2014-07-19",
+    "2014-08-16",
+    "2014-09-20",
+    "2014-10-18",
+    "2014-11-15",
+    "2014-12-20",
+    "2015-01-17",
+    "2015-02-21",
+    "2015-03-21",
+];
+
+// NOTE: I wonder if it makes sense to calculate these rebootDates using
+//       something like Datejs. (thomasvandoren, 2015-04-08)
+//
+//  https://cdnjs.com/libraries/datejs
+//
+/* E.g.
+// Find the third Saturday of every month starting with rebootStartMonth and
+// ending with today.
+var rebootDates = [],
+
+    // Starting with June 2014 (months are 0 based in JS).
+    rebootStartMonth = new Date(2014, 5, 1),
+
+    // Set curThirdDate to the third Saturday of the starting month.
+    curThirdDate = rebootStartMonth.moveToNthOccurrence(6, 3);
+
+while (curThirdDate.isBefore(Date.today())) {
+    rebootDates.push(curThirdDate.toString("yyyy-MM-dd"));
+    curThirdDate.addMonths(1).moveToNthOccurrence(6, 3);
+}
+*/
 
 // array of currently displayed graphs
 var gs = [];
 // used to prevent multiple redraws of graphs when syncing x-axis zooms
-var blockRedraw = false;
+var globalBlockRedraw = false;
 
 // The main elements that all the graphs and graph legends will be put in
 var parent = document.getElementById('graphdisplay');
@@ -59,6 +118,9 @@ var multiConfs = configurations.length != 0;
 if (!multiConfs) { configurations = ['']; }
 var defaultConfiguration = configurations[0];
 
+// Experimental: used to toggle how stroke pattern and line colors are used for
+// multi-configs
+var diffColorForEachConfig = false;
 
 // This is used to get the next div for the graph and legend. This is important
 // for graph expansion because we need to be able to add the expanded graphs
@@ -72,9 +134,9 @@ function getNextDivs(afterDiv, afterLDiv) {
   var beforeLDiv = null;
   if (afterDiv && afterLDiv &&
       afterDiv.nextSibling && afterLDiv.nextSibling) {
-        beforeDiv = afterDiv.nextSibling.nextSibling;
-        beforeLDiv = afterLDiv.nextSibling.nextSibling;
-      }
+    beforeDiv = afterDiv.nextSibling.nextSibling;
+    beforeLDiv = afterLDiv.nextSibling.nextSibling;
+  }
 
   // create the graph/legend divs and spacers
   var div = document.createElement('div');
@@ -109,11 +171,20 @@ function getNextDivs(afterDiv, afterLDiv) {
   annToggle.style.visibility = 'hidden';
   gspacer.appendChild(annToggle);
 
+  // create a screenshot button and put it next to the annotation button
+  var screenshotToggle = document.createElement('input');
+  screenshotToggle.type = 'button';
+  screenshotToggle.className = 'toggle';
+  screenshotToggle.value = 'screenshot';
+  screenshotToggle.style.visibility = 'hidden';
+  gspacer.appendChild(screenshotToggle);
+
   return {
     div: div,
       ldiv: ldiv,
       logToggle: logToggle,
-      annToggle: annToggle
+      annToggle: annToggle,
+      screenshotToggle: screenshotToggle
   }
 }
 
@@ -126,6 +197,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   var ldiv = graphDivs.ldiv;
   var logToggle = graphDivs.logToggle;
   var annToggle = graphDivs.annToggle;
+  var screenshotToggle = graphDivs.screenshotToggle;
 
   var startdate = getDateFromURL(OptionsEnum.STARTDATE, graphInfo.startdate);
   var enddate = getDateFromURL(OptionsEnum.ENDDATE, graphInfo.enddate);
@@ -180,7 +252,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     // each configuration of a series. e.g. 'series (conf1) series(conf2)' are
     // the same color and have the same stroke pattern
     graphOptions.colors = genSeriesColors(graphSeries);
-    graphOptions.series = genPerSeriesStrokePattern(graphSeries);
+    graphOptions.series = genPerSeriesStrokePattern(graphSeries, configurations);
 
     // set the initial visibility based on which configs are selected
     var disabledConfs = getCheckedConfigurations(false);
@@ -209,6 +281,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
 
     setupLogToggle(g, graphInfo, logToggle);
     setupAnnToggle(g, graphInfo, annToggle);
+    setupScreenshotToggle(g, graphInfo, screenshotToggle);
 
     g.isReady = true;
 
@@ -259,7 +332,7 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
       if (confIndex >= 0) {
         newLabels.push(graphLabels[confIndex]);
         newData = newData.concat(transposedData.slice(confIndex, confIndex+1));
-        newColors.push(graph.getPropertiesForSeries(graphLabels[i]).color);
+        newColors.push(graph.getPropertiesForSeries(graphLabels[confIndex]).color);
       } else {
         console.log('Warning: expected to find label "' + confLabel + '" for ' +
                     'graph "' + graphInfo.title + '" but it was missing');
@@ -293,12 +366,118 @@ function setupAnnToggle(g, graphInfo, annToggle) {
 
   annToggle.onclick = function() {
     if (g.annotations().length === 0) {
-      g.setAnnotations(graphInfo.annotations);
+      updateAnnotationsSeries(g);
+      g.setAnnotations(g.graphInfo.annotations);
     } else {
       g.setAnnotations([]);
     }
   }
 }
+
+
+// Setup the screenshot button
+function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
+  screenshotToggle.style.visibility = 'visible';
+
+  screenshotToggle.onclick = function() {
+    captureScreenshot(g, graphInfo);
+  }
+}
+
+
+// Function to capture a screenshot of a graph and open the image in a new
+// window.
+//
+// TODO: A nicer alternative would be to open a new window, and have that
+// window create and render the screenshot and also have boxes to change the
+// size of the rendered image. Right now it just defaults to making an image
+// that is the same size as the actual graph.
+//
+// TODO: right now our graph and legend are in 2 separate divs so this is a
+// little clunky because it renders each div separately and then combines them
+// into a single canvas. It would be cleaner to have a div that wraps the graph
+// and legend and just render that one.
+function captureScreenshot(g, graphInfo) {
+
+  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth;
+  var gHeight = g.divs.div.clientHeight;
+
+  var captureCanvas = document.createElement('canvas');
+  captureCanvas.width = gWidth;
+  captureCanvas.height = gHeight;
+  var ctx = captureCanvas.getContext('2d');
+
+  // html2canvas doesn't render transformed ccs3 text (like our ylabel.) We
+  // make the label inivisible and we also hide the roll button box since
+  // theres no point in capturing it in a screenshot
+  g.updateOptions({showRoller: false, ylabel:''});
+  var label = graphInfo.ylabel;
+
+  // generate the graph
+  html2canvas(g.divs.div, {
+    // once the graph is rendered
+    onrendered: function(graphCanvas) {
+      // genenerate the legend
+       html2canvas(g.divs.ldiv, {
+        // once the legend is rendered
+        onrendered: function(legendCanvas) {
+          // draw the graph and legend canvas on a combined canvas.
+          ctx.drawImage(graphCanvas, 0, 0);
+          ctx.drawImage(legendCanvas, g.divs.div.clientWidth, 0);
+
+          // get the graphs ylabel font properties
+          var fontSize = g.getOption('axisLabelFontSize');
+          ctx.font = '16px Arial';
+
+          // rotate the canvas and draw the title
+          ctx.translate(0, gHeight/2);
+          ctx.rotate(-0.5*Math.PI);
+          ctx.textAlign = 'center';
+          ctx.fillText(label, 0, fontSize);
+
+          // open the screenshot in a new window
+          window.open(captureCanvas.toDataURL());
+
+          // restore the roll box and ylabel
+          g.updateOptions({showRoller: true, ylabel:label});
+        }
+      });
+    }
+  });
+}
+
+
+// Update which series the annotations for a graph are attached to based on the
+// current configurations. Checks against disabled configs so we don't change
+// annotations for graphs that aren't using multi-configs. This only changes
+// the annotations in graphInfo, it does _not_ update the graph annotations
+function updateAnnotationsSeries(g) {
+  // if only one config or there's no annotations, nothing to update
+  var annotations = g.graphInfo.annotations;
+  var annLength = annotations.length;
+  if (multiConfs === false || annLength === 0) return;
+
+  // if all configs are hidden or all configs are visible, nothing to update
+  var enabledConfs = getCheckedConfigurations();
+  var disabledConfs = getCheckedConfigurations(false);
+  if (enabledConfs.length === 0 || disabledConfs.length == 0) return;
+
+  // note that all annotations attach themselves to the same series
+  var firstAnn = annotations[0].series;
+
+  // if ann series is a disabled config, replace it with an enabled one
+  for (var i = 0, len = disabledConfs.length; i < len; i++) {
+    if (firstAnn.endsWith(disabledConfs[i])) {
+      var newSeries = firstAnn.replace(disabledConfs[i], enabledConfs[0]);
+      for (var j = 0; j < annLength; j++) {
+        annotations[j].series = newSeries;
+      }
+      break; // replaced the series, break out of disabledConfigs loop
+    }
+  }
+}
+
+
 
 
 // generate an object with an element for each series whose value is the stroke
@@ -307,19 +486,41 @@ function setupAnnToggle(g, graphInfo, annToggle) {
 // pattern for each configuration, but wraps around if there are more
 // configurations than patterns. There's no need to use this function if
 // multi-confs aren't being used, but it will work (all solid lines) if it is.
-function genPerSeriesStrokePattern(graphSeries) {
+function genPerSeriesStrokePattern(graphSeries, configs) {
 
   // available stroke patterns for multi-conf, null means solid line
   var SOLID_LINE = null;
   var strokePatterns = [SOLID_LINE, Dygraph.DASHED_LINE, Dygraph.DOT_DASH_LINE, Dygraph.DOTTED_LINE ];
 
   var seriesOptions = {};
-  for (var i = 0; i < graphSeries.length; i++) {
-    seriesOptions[graphSeries[i]] = {'strokePattern': SOLID_LINE};
-    for (var j = 0; j < configurations.length; j++) {
-      if (graphSeries[i].endsWith(configurations[j])) {
-        var strokePattern = strokePatterns[j%strokePatterns.length];
-        seriesOptions[graphSeries[i]] = {'strokePattern': strokePattern};
+  // generate per series options
+  if (multiConfs) {
+    // same stroke pattern for each series (color differentiates configs)
+    if (diffColorForEachConfig) {
+      var counter = 0;
+      for (var i = 0; i < graphSeries.length; i++) {
+        if (configs.length > 0 && graphSeries[i].endsWith(configs[0])) {
+          for (var j = 0; j < configs.length; j++) {
+            var confLabel = graphSeries[i].replace(configs[0], configs[j]);
+            var confIndex = graphSeries.indexOf(confLabel);
+            if (confIndex >= 0) {
+              var strokePattern = strokePatterns[counter%strokePatterns.length];
+              seriesOptions[confLabel] = {'strokePattern': strokePattern};
+            } else {console.log(confLabel);}
+          }
+          counter++
+        }
+      }
+    // different stroke pattern for each config (color differentiates series)
+    } else {
+      for (var i = 0; i < graphSeries.length; i++) {
+        seriesOptions[graphSeries[i]] = {'strokePattern': SOLID_LINE};
+        for (var j = 0; j < configs.length; j++) {
+          if (graphSeries[i].endsWith(configs[j])) {
+            var strokePattern = strokePatterns[j%strokePatterns.length];
+            seriesOptions[graphSeries[i]] = {'strokePattern': strokePattern};
+          }
+        }
       }
     }
   }
@@ -329,8 +530,6 @@ function genPerSeriesStrokePattern(graphSeries) {
 
 // generate a list of colors to use for multi-conf graphs. Takes graphsSeries
 // which is the list of series for the graph and should not contain the 'Date'.
-// Note that this function does NOT work correctly if multi-confs aren't being
-// used. It will return an empty list in that case
 function genSeriesColors(graphSeries) {
   var colors = [];
 
@@ -360,19 +559,33 @@ function genSeriesColors(graphSeries) {
 
   // generate colors for multi-conf graphs
   if (multiConfs) {
-    var counter = 0;
-    for (var i = 0; i < graphSeries.length; i++) {
-      if (graphSeries[i].endsWith(defaultConfiguration)) {
-        var numColors = Math.ceil(graphSeries.length / configurations.length);
-        var colorStr = calcColor(counter, numColors);
+    // Give each config a unique color (stroke pattern differentiates series)
+    if (diffColorForEachConfig) {
+      var configColors = [];
+      for (var i = 0; i < graphSeries.length; i++) {
         for (var j = 0; j < configurations.length; j++) {
-          var confLabel = graphSeries[i].replace(defaultConfiguration, configurations[j]);
-          var confIndex = graphSeries.indexOf(confLabel);
-          if (confIndex >= 0) {
-            colors[confIndex] = colorStr;
+          if (graphSeries[i].endsWith(configurations[j])) {
+            var colorStr = calcColor(j, configurations.length);
+            colors[i] = colorStr
           }
         }
-        counter++
+      }
+    // same color for all configs (stroke pattern differentiates configs)
+    } else {
+      var counter = 0;
+      for (var i = 0; i < graphSeries.length; i++) {
+        if (graphSeries[i].endsWith(defaultConfiguration)) {
+          var numColors = Math.ceil(graphSeries.length / configurations.length);
+          var colorStr = calcColor(counter, numColors);
+          for (var j = 0; j < configurations.length; j++) {
+            var confLabel = graphSeries[i].replace(defaultConfiguration, configurations[j]);
+            var confIndex = graphSeries.indexOf(confLabel);
+            if (confIndex >= 0) {
+              colors[confIndex] = colorStr;
+            }
+          }
+          counter++
+        }
       }
     }
   }
@@ -421,9 +634,8 @@ function customAxisLabelFormatter(val, granularity, opts, dygraph) {
 
 // synchronize our graphs along the x-axis and check if we should warn that
 // using a log scale will result in wonky behavior.
-function customDrawCallback(g, initial) {
-  if (blockRedraw) return;
-  blockRedraw = true;
+function customDrawCallback(graph, initial) {
+  if (globalBlockRedraw) return;
 
   // if a user has explicitly zoomed in on zero or negative value and they
   // attempt to take the log the graph will not render. This is a known
@@ -432,31 +644,30 @@ function customDrawCallback(g, initial) {
   // requested a range, it will keep the same range for the log scale and
   // will attempt to take the log of zero.
   if (!initial) {
-    var yRange = g.yAxisRange();
-    if (yRange[0] <= 0 && g.isZoomed('y')) {
-      g.divs.logToggle.style.color = 'red';
+    var yRange = graph.yAxisRange();
+    if (yRange[0] <= 0 && graph.isZoomed('y')) {
+      graph.divs.logToggle.style.color = 'red';
     } else {
-      g.divs.logToggle.style.color = 'black';
+      graph.divs.logToggle.style.color = 'black';
     }
   }
 
   // if this isn't the initial draw, and this graph is fully rendered then
   // sync this graphs x-axis with all other ready graphs along the x-axis
-  if (!initial && g.isReady) {
-    var range = g.xAxisRange().slice();
+  if (!initial && graph.isReady) {
+    var range = graph.xAxisRange().slice();
     range[0] = roundDate(range[0], false);
     range[1] = roundDate(range[1], true);
 
     setURLFromDate(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
     setURLFromDate(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
 
-    for (var j = 0; j < gs.length; j++) {
-      if (gs[j].isReady && differentDateRanges(range, gs[j].xAxisRange())) {
-        gs[j].updateOptions({ dateWindow: range });
+    applyFnToAllGraphs(function(g) {
+      if (g.isReady && differentDateRanges(range, g.xAxisRange())) {
+        g.updateOptions({ dateWindow: range });
       }
-    }
+    });
   }
-  blockRedraw = false;
 }
 
 
@@ -471,6 +682,10 @@ function markReleaseDates (canvas, area, g) {
     canvas.stroke();
   }
   for (var i = 0; i < branchInfo.length; i++) {
+    // TODO: Check that branchDate is a member of the object. (thomasvandoren, 2015-04-09)
+    // E.g. with lodash.js or Underscore.js:
+    //
+    // if (_.has(branchInfo[i], "branchDate")) { ...
     markReleaseDate(parseDate(branchInfo[i].branchDate));
   }
 }
@@ -539,14 +754,26 @@ function perfGraphInit() {
         checkBox.checked = false;
       }
       checkBox.onchange = function() {
-        var configsURL = normalizeForURL(getCheckedConfigurations().join());
+        // even if the checked configs match the 'default' configs put them in
+        // the URL since the default configs could change over time.
+        var configsURL = normalizeArrayForURL(getCheckedConfigurations());
         setQueryStringFromOption(OptionsEnum.CONFIGURATIONS, configsURL);
 
-        for (var i = 0; i < gs.length; i++) {
-          setConfigurationVisibility(gs[i], false);
-        }
+        applyFnToAllGraphs(function(g) {
+          // attach annotations to visible series, if not already.
+          // suppressDraw, setConfigurationVisibility will draw the graph
+          if (g.annotations().length > 0) {
+            updateAnnotationsSeries(g)
+            g.setAnnotations(g.graphInfo.annotations, true);
+          }
+          setConfigurationVisibility(g);
+        });
       };
     }
+
+    // Experimental: Add buttons to reset stroke patters and to invert stroke
+    // pattern / colors
+    addExperimentalButtons(toggleConf);
   } else {
     toggleConf.textContent = '';
   }
@@ -566,8 +793,13 @@ function perfGraphInit() {
   fselect.appendChild(o);
   for (var i = 0; i < perfSuites.length; i++) {
     var o = document.createElement('option');
-    o.innerHTML = perfSuites[i].suite;
-    o.setAttribute('value', perfSuites[i].suite);
+    var suiteName = perfSuites[i].suite;
+    if (suiteName.trim() === '<empty>') {
+      suiteName = '';
+      o.disabled = true;
+    }
+    o.innerHTML = suiteName.replace(/ /g, '&nbsp');
+    o.setAttribute('value', suiteName);
     fselect.appendChild(o);
   }
   suiteMenu.appendChild(f);
@@ -599,28 +831,44 @@ function setupGraphSelectionPane() {
   });
 
   $(window).ready(function(){
-    // we don't know the width of the graph selection pane until the graphs are
-    // added ot the graphlist. Once that is done figure out where to position
-    // the graph display. This is needed since the graph selection pane is
-    // 'fixed' meaning it's outside the normal flow and other elements act like
-    // it doesn't exist so we have to manualy move the graph display to avoid
-    // overlap. This doesn't change after page load.
-    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
-    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
-
+    setDygraphPanePos();
     setGraphListHeight();
     setGraphSelectionPanePos();
   });
 
   $(window).resize(function(){
+    setDygraphPanePos();
     setGraphListHeight();
     setGraphSelectionPanePos();
   });
 
-  // set the selection panes horizontal positional based on the scroll so the
-  // selection pane isn't always visible when scrolling horizontally
+  // We don't know the width of the graph selection pane until the list of
+  // graph names are added. Once that is done figure out the position of pane
+  // that holds the dygraphs. This is needed since the graph selection pane
+  // is 'fixed' meaning it's outside the normal flow and other elements act
+  // like it doesn't exist so we have to manually move the graph display to
+  // avoid overlap. After the page is setup, the graph selection pane size
+  // only changes if the browser zoom changes.
+  function setDygraphPanePos() {
+    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
+    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
+  }
+
+  // set the selection pane's horizontal positional based on the scroll so the
+  // selection pane isn't always visible when scrolling horizontally. Some
+  // browsers allow scrolling past the edge of the screen so we limit the
+  // scroll amount to prevent weird overlaps.
   function setGraphSelectionPanePos() {
-    $('#graphSelectionPane').css({ 'left': -$(window).scrollLeft() });
+    // number of pixels hidden from view to the left visible window
+    var scrollLeft = $(window).scrollLeft();
+    // number of pixels hidden from view ('true' page size - visible amount)
+    var numHiddenPixels = $(document).width() - $(window).width();
+
+    scrollLeft = Math.max(0, scrollLeft);
+    scrollLeft = Math.min(numHiddenPixels, scrollLeft);
+
+    // move pane the opposite of scrolling so it moves out of view
+    $('#graphSelectionPane').css({ 'left': -scrollLeft });
   }
 
   // determine the height to use for the graphlist. We want it to use most of
@@ -638,11 +886,11 @@ function setupGraphSelectionPane() {
 
 // Sets which configurations should be visible when there are multiple
 // configurations available. e.g. --local vs --no-local
-function setConfigurationVisibility(graph, blockRedraw) {
+function setConfigurationVisibility(graph) {
   var labels = graph.getLabels().slice();
   var disabledConfs = getCheckedConfigurations(false);
   var visibility = getVisibilityForConfigurations(labels, disabledConfs);
-  graph.updateOptions({visibility: visibility}, blockRedraw);
+  graph.updateOptions({visibility: visibility});
 }
 
 function getCheckedConfigurations(checked_status) {
@@ -753,28 +1001,23 @@ function setURLFromGraphs(suite) {
   suite = normalizeForURL(suite);
   // if no suite was selected, mark individual graphs
   if (suite === normalizeForURL(NO_SUITE)) {
-    var curGraphs = '';
-    var allChecked = true;
+    var curGraphs = [];
     for (var i = 0; i < allGraphs.length; i++) {
       var checkBox = document.getElementById('graph' + i);
       if (checkBox.checked) {
-        curGraphs += normalizeForURL(allGraphs[i].title) + ',';
-      } else {
-        allChecked = false;
+        curGraphs.push(allGraphs[i].title);
       }
     }
-
-    // remove the trailing ',' from the list of checked graphs
-    curGraphs = curGraphs.removeTrailingChar();
 
     // special case for if all graphs are selected. probably not needed
     // but this is the most common case where a lot of graphs are selected
     // and for some browsers we might be exceeding a url length limit
-    if (allChecked) {
-      curGraphs = 'all';
+    if (allGraphs.length === curGraphs.length) {
+      curGraphs = ['all'];
     }
 
-    setQueryStringFromOption(OptionsEnum.GRAPHS, curGraphs);
+    var curGraphsURL = normalizeArrayForURL(curGraphs);
+    setQueryStringFromOption(OptionsEnum.GRAPHS, curGraphsURL);
     setQueryStringFromOption(OptionsEnum.SUITE, '');
   }
   // if a suite was selected
@@ -791,18 +1034,15 @@ function clearDates() {
   setURLFromDate(OptionsEnum.STARTDATE, '');
   setURLFromDate(OptionsEnum.ENDDATE, '');
 
-  // Reset the display range for each graph, blocking extra redraws
-  blockRedraw = true;
-  for (var i = 0; i < gs.length; i++) {
-    var curGraph = gs[i];
-    var start = parseDate(curGraph.graphInfo.startdate);
-    var end = parseDate(curGraph.graphInfo.enddate);
+  // Reset the display range for each graph
+  applyFnToAllGraphs(function(g) {
+    var start = parseDate(g.graphInfo.startdate);
+    var end = parseDate(g.graphInfo.enddate);
     var range = [start, end];
-    if (differentDateRanges(range, curGraph.xAxisRange)) {
-      curGraph.updateOptions({ dateWindow: range });
+    if (differentDateRanges(range, g.xAxisRange)) {
+      g.updateOptions({ dateWindow: range });
     }
-  }
-  blockRedraw = false;
+  });
 }
 
 
@@ -845,8 +1085,7 @@ function getSuites() {
 }
 
 
-function selectSuite(suite, display) {
-  display = defaultFor(display, true);
+function selectSuite(suite) {
   for (var i = 0; i < allGraphs.length; i++) {
     var elem = document.getElementById('graph' + i);
     if (allGraphs[i].suites.indexOf(suite) >= 0) {
@@ -939,6 +1178,9 @@ function findSelectedSuite() {
     }
   }
 
+  // if no graphs were selected, return no suite sentinel
+  if (displayedGraphs.length === 0) { return NO_SUITE; }
+
   // see if the currently selected representation  matches any of the suites
   for (var suite in graphsInSuite) {
     if (displayedGraphs === graphsInSuite[suite]) {
@@ -949,7 +1191,6 @@ function findSelectedSuite() {
   // if not, no suite was selected
   return NO_SUITE;
 }
-
 
 
 
@@ -1036,6 +1277,22 @@ function setQueryStringFromOption(option, optionValue) {
 //////////////////////
 // Helper functions //
 //////////////////////
+
+
+// Apply an arbitrary function to all graphs. The function being applied can
+// only have a single graph as it's argument. Redraws are blocked by default.
+// Useful so you don't forget to block redraws, which can kill performance.
+function applyFnToAllGraphs(fnToApply, blockRedraw) {
+  blockRedraw = defaultFor(blockRedraw, true);
+  var oldGlobalBlockRedraw = globalBlockRedraw;
+
+  globalBlockRedraw = blockRedraw;
+  var gsLength = gs.length;
+  for (var i = 0; i < gsLength; i++) {
+    fnToApply(gs[i]);
+  }
+  globalBlockRedraw = oldGlobalBlockRedraw;
+}
 
 
 // Transpose a 2 dimensional array
@@ -1130,11 +1387,81 @@ function defaultFor(arg, defaultVal) {
 }
 
 
-// removes all characters that are not alphanumeric or commas and convert to
-// lowercase
+// normalizes each element of the array and converts the array to a comma
+// separated string. Does not modify original array
+function normalizeArrayForURL(arr) {
+  // slice, don't modify original array
+  var copy = arr.slice()
+  for (var i = 0 ; i < copy.length; i++) {
+    copy[i] = normalizeForURL(copy[i]);
+  }
+  return copy.toString();
+}
+
+
+// removes all characters that are not alphanumeric and converts to lowercase
 function normalizeForURL(str) {
   // pull regex out of replace so it gets precompiled
-  var unwantedURLCharsRegex = /[^a-z0-9,]/g;
+  var nonAlphaNumRegex = /[^a-z0-9]/g;
   // convert to lower case first so regex doesn't have to be case insensitive
-  return str.toLowerCase().replace(unwantedURLCharsRegex, '');
+  return str.toLowerCase().replace(nonAlphaNumRegex, '');
+}
+
+
+
+////////////////////////////
+// Experimental functions //
+////////////////////////////
+
+
+// Experimental: Swap how color and stroke pattern are used to differentiate
+// different configs vs. different series on a graph
+function invertMultiConfigStrokeAndColor() {
+
+  diffColorForEachConfig = !diffColorForEachConfig;
+
+  var curConfigs = getCheckedConfigurations();
+  applyFnToAllGraphs(function(g) {
+    var graphSeries = g.getLabels().slice(1);
+    var seriesOpts = genPerSeriesStrokePattern(graphSeries, curConfigs);
+    var colors = genSeriesColors(graphSeries);
+    g.updateOptions({ series: seriesOpts, colors: colors });
+  });
+}
+
+
+// Experimental: reset the stoke pattern for all graphs based on the currently
+// displayed configurations
+function resetStrokePattern() {
+  var curConfigs = getCheckedConfigurations();
+  applyFnToAllGraphs(function(g) {
+    var graphSeries = g.getLabels().slice(1);
+    var seriesOpts = genPerSeriesStrokePattern(graphSeries, curConfigs);
+    g.updateOptions({ series: seriesOpts });
+  });
+}
+
+// Experimental: Add buttons to reset stroke patters and to invert stroke
+// pattern / colors
+function addExperimentalButtons(toggleConf) {
+  if (configurations.length >= 3) {
+    var strokePatternToggle = document.createElement('input');
+    strokePatternToggle.type = 'button';
+    strokePatternToggle.value = 'Reset Stoke Patterns';
+    toggleConf.appendChild(strokePatternToggle);
+    strokePatternToggle.onclick = function() {
+      resetStrokePattern();
+    }
+
+    var linebreak = document.createElement("br");
+    toggleConf.appendChild(linebreak);
+
+    var invertStrokeColorToggle = document.createElement('input');
+    invertStrokeColorToggle.type = 'button';
+    invertStrokeColorToggle.value = 'Invert Line Stroke/Color';
+    toggleConf.appendChild(invertStrokeColorToggle);
+    invertStrokeColorToggle.onclick = function() {
+      invertMultiConfigStrokeAndColor();
+    }
+  }
 }

@@ -1,0 +1,13 @@
+Module: multipleInheritance.doc
+   Class: Mother
+      proc eyes()
+         One of Mother's methods 
+
+   Class: Father
+      proc hair()
+         One of Father's methods 
+
+   Class: Child : Mother, Father
+      proc nose()
+         A method all its own 
+

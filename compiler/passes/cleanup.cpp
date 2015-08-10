@@ -25,6 +25,7 @@
 //
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "build.h"
 #include "expr.h"
 #include "passes.h"
@@ -156,8 +157,16 @@ static void flatten_primary_methods(FnSymbol* fn) {
     DefExpr* def = fn->defPoint;
     def->remove();
     insertPoint->insertBefore(def);
-    if (fn->userString && fn->name != ts->name)
-      fn->userString = astr(ts->name, ".", fn->userString);
+    if (fn->userString && fn->name != ts->name) {
+      if (strncmp(fn->userString, "ref ", 4) == 0) {
+        // fn->userString of "ref foo()"
+        // Move "ref " before the type name so we end up with "ref Type.foo()"
+        // instead of "Type.ref foo()"
+        fn->userString = astr("ref ", ts->name, ".", fn->userString+4);
+      } else {
+        fn->userString = astr(ts->name, ".", fn->userString);
+      }
+    }
     if (ts->hasFlag(FLAG_SYNC))
       fn->addFlag(FLAG_SYNC);
     if (ts->hasFlag(FLAG_SINGLE))
@@ -170,9 +179,9 @@ static void flatten_primary_methods(FnSymbol* fn) {
 
 static void change_cast_in_where(FnSymbol* fn) {
   if (fn->where) {
-    Vec<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
     collect_asts(fn->where, asts);
-    forv_Vec(BaseAST, ast, asts) {
+    for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed("_cast")) {
           call->primitive = primitives[PRIM_IS_SUBTYPE];
@@ -185,25 +194,25 @@ static void change_cast_in_where(FnSymbol* fn) {
 
 
 void cleanup(void) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   collect_asts(rootModule, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     SET_LINENO(ast);
     if (DefExpr* def = toDefExpr(ast)) {
       normalize_nested_function_expressions(def);
     }
   }
 
-  forv_Vec(BaseAST, ast, asts) {
-    SET_LINENO(ast);
-    if (BlockStmt* block = toBlockStmt(ast)) {
+  for_vector(BaseAST, ast1, asts) {
+    SET_LINENO(ast1);
+    if (BlockStmt* block = toBlockStmt(ast1)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list)
         flatten_scopeless_block(block);
-    } else if (CallExpr* call = toCallExpr(ast)) {
+    } else if (CallExpr* call = toCallExpr(ast1)) {
       if (call->isNamed("_build_tuple"))
         destructureTupleAssignment(call);
-    } else if (DefExpr* def = toDefExpr(ast)) {
+    } else if (DefExpr* def = toDefExpr(ast1)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
         change_cast_in_where(fn);

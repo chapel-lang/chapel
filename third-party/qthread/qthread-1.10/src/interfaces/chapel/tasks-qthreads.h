@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#include "chpltypes.h" // for chpl_bool
-#include "chpl-tasks-prvdata.h" // for chpl_task_prvData_t
+#include "chpltypes.h"
+#include "chpl-tasks-prvdata.h"
 
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);
@@ -269,20 +269,26 @@ volatile int chpl_qthread_done_initializing;
 #endif
 
 typedef struct {
-  c_sublocid_t requestedSubloc;  // requested sublocal for task
-  chpl_task_prvData_t prvdata;
+    c_string task_filename;
+    int task_lineno;
+    chpl_taskID_t id;
+    chpl_bool is_executeOn;
+    c_sublocid_t requestedSubloc;  // requested sublocal for task
+    chpl_task_prvData_t prvdata;
 } chpl_task_prvDataImpl_t;
 
 // Define PRV_DATA_IMPL_VAL to set up a chpl_task_prvData_t.
-#define PRV_DATA_IMPL_VAL(subloc, serial) \
-        { .requestedSubloc = subloc, \
-          .prvdata = { .serial_state = serial } }
+#define PRV_DATA_IMPL_VAL(_fn, _ln, _id, _is_execOn, _subloc, _serial) \
+        { .task_filename = _fn, \
+          .task_lineno = _ln, \
+          .id = _id, \
+          .is_executeOn = _is_execOn, \
+          .requestedSubloc = _subloc, \
+          .prvdata = { .serial_state = _serial } }
 
 typedef struct {
     void                     *fn;
     void                     *args;
-    c_string                 task_filename;
-    int                      lineno;
     chpl_bool                countRunning;
     chpl_task_prvDataImpl_t  chpl_data;
 } chpl_qthread_wrapper_args_t;
@@ -294,8 +300,6 @@ typedef struct chpl_qthread_tls_s {
     /* Reports */
     c_string    lock_filename;
     size_t      lock_lineno;
-    const char *task_filename;
-    size_t      task_lineno;
 } chpl_qthread_tls_t;
 
 extern pthread_t chpl_qthread_process_pthread;
@@ -337,12 +341,12 @@ static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
 #endif
 static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
 {
-  chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-  if (data) {
-      return &data->chpl_data.prvdata;
-  }
-  assert(data);
-  return NULL;
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+    if (data) {
+        return &data->chpl_data.prvdata;
+    }
+    assert(data);
+    return NULL;
 }
 
 #ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL

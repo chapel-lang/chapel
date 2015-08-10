@@ -21,6 +21,7 @@
 //
 
 module ChapelBase {
+  // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
 
@@ -417,8 +418,14 @@ module ChapelBase {
   inline proc *(param a: int(?w), param b: int(w)) param return __primitive("*", a, b);
   inline proc *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
   
-  inline proc /(param a: int(?w), param b: int(w)) param return __primitive("/", a, b);
-  inline proc /(param a: uint(?w), param b: uint(w)) param return __primitive("/", a, b);
+  inline proc /(param a: int(?w), param b: int(w)) param {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline proc /(param a: uint(?w), param b: uint(w)) param {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
   
   //
   // % on primitive types
@@ -658,20 +665,66 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
   
+  config param parallelInitElts=false;
   proc init_elts(x, s, type t) {
-    for i in 1..s {
-      //
-      // Q: why is the following declaration of 'y' in the loop?
-      //
-      // A: so that if the element type is something like an array,
-      // the element can 'steal' the array rather than copying it.
-      // One effect of having it in the loop is that the reference
-      // count for an array element's domain gets bumped once per
-      // element.  Is this good, bad, necessary?  Unclear.
-      //
-      pragma "no auto destroy" var y: t;  
-      __primitive("array_set_first", x, i-1, y);
+    //
+    // Q: why is the declaration of 'y' in the following loops?
+    //
+    // A: so that if the element type is something like an array,
+    // the element can 'steal' the array rather than copying it.
+    // One effect of having it in the loop is that the reference
+    // count for an array element's domain gets bumped once per
+    // element.  Is this good, bad, necessary?  Unclear.
+    //
+
+    //
+    // Heuristically determine if we should do parallel initialization. We want
+    // each task to "own" at least a page in order to get good first-touch
+    // behavior and to avoid false-sharing. We naively assume the parallel
+    // range iterator will create maxTaskPar tasks so we want the array to be
+    // at least (maxTaskPar * pagesizes) big. For non-numeric element types we
+    // guess that each element is at least 8 bytes with the assumption that
+    // most record/classes/arrays will be at least 8 bytes.
+    //
+    // TODO: improve the heuristic for non-numeric types
+    //
+    // TODO: Note that we could do even better if the range had an iterator
+    // that supported local overrides of dataParTasksPerLocale or
+    // MinGranularity. The current heuristic will always try to use
+    // dataParTasksPerLocale even if, say, arrsize is pagesize+1, where we'd
+    // really only want to use 2 tasks there or set minGranularity to pagesize.
+    // But at the very least, the current approach differentiates between
+    // larger and smaller arrays.
+    //
+
+    if parallelInitElts {
+      extern proc chpl_getSysPageSize():size_t;
+      const pagesizeInBytes = chpl_getSysPageSize().safeCast(int);
+
+      const elemsizeInBytes = if (isNumericType(t)) then numBytes(t) else 8;
+      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+      const heuristicThresh = pagesizeInBytes * here.maxTaskPar;
+      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+
+      if heuristicWantsPar {
+        forall i in 1..s {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i-1, y);
+        }
+
+      } else {
+        for i in 1..s {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i-1, y);
+        }
+      }
+    } else {
+      for i in 1..s {
+        pragma "no auto destroy" var y: t;
+        __primitive("array_set_first", x, i-1, y);
+      }
     }
+
   }
   
   // dynamic data block class
@@ -999,10 +1052,6 @@ module ChapelBase {
     compilerError("illegal assignment of type to value");
   }
   
-  pragma "ref"
-  pragma "init copy fn"
-  inline proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("deref", r));
-  
   pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
@@ -1054,11 +1103,6 @@ module ChapelBase {
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
-  
-  pragma "ref" 
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(r: _ref) ref return r;
   
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
@@ -1317,7 +1361,14 @@ module ChapelBase {
   inline proc /(a: int(64), b: uint(64)) { _throwOpError("/"); }
   
   // non-param/param and param/non-param
+  // The int version is only defined so we can catch the divide by zero error
+  // at compile time
+  inline proc /(a: int(64), param b: int(64)) {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
   inline proc /(a: uint(64), param b: uint(64)) {
+    if b == 0 then compilerError("param divide by zero");
     return __primitive("/", a, b);
   }
   inline proc /(param a: uint(64), b: uint(64)) {
@@ -1488,5 +1539,64 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_CHPL:int;
   extern const QIO_TUPLE_FORMAT_SPACE:int;
   extern const QIO_TUPLE_FORMAT_JSON:int;
+
+  // What follows are the type _defaultOf methods, used to initialize types
+  // Booleans
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where (isBoolType(t)) return false:t;
+
+  // ints, reals, imags, complexes
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where (isIntegralType(t)) return 0:t;
+  // TODO: In order to make _defaultOf param for reals and imags we had to split
+  // the cases into their default size and a non-param case.  It is hoped that
+  // in the future, floating point numbers may be castable whilst param.  In that
+  // world, we can again shrink these calls into the size-ignorant case.
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where t == real return 0.0;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where (isRealType(t) && t != real) return 0.0:t;
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where t == imag return 0.0i;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where (isImagType(t) && t != imag) return 0.0i:t;
+  // Also, complexes cannot yet be parametized
+  pragma "no doc"
+  inline proc _defaultOf(type t): t where (isComplexType(t)) {
+    var ret:t = noinit;
+    param floatwidth = numBits(t)/2;
+    ret.re = 0.0:real(floatwidth);
+    ret.im = 0.0:real(floatwidth);
+    return ret;
+  }
+
+  // Enums
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where (isEnumType(t)) {
+    return chpl_enum_first(t);
+  }
+
+  // Classes
+  pragma "no doc"
+  inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
+
+  // Various types whose default value is known
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where t: void return _void;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t == _task_list return _nullTaskList;
+
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t: _ddata
+    return __primitive("cast", t, nil);
+
+  // There used to be a catch-all _defaultOf that return nil:t, but that
+  // was the nexus of several tricky resolution bugs.
 
 }

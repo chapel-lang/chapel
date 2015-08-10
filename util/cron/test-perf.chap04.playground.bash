@@ -6,10 +6,12 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap04.playground"
 
-# do a performance run with assertNoSlicing set to true to see the performance
-# impact of removing the inner mult for non-strided 1D array accesses. Graph the
-# default config and this config side by side and sync to a no-slice directory
-# so the regular chap04 graphs don't have multiple configurations.
-perf_args="-performance-description no-slice -performance-configs default:v,no-slice:v -sync-dir-suffix no-slice"
-perf_args="${perf_args} -numtrials 5 -startdate 07/28/12"
-$CWD/nightly -cron -compopts -sassertNoSlicing=true ${perf_args}
+# Test performance of parallel init_elts
+#
+# Graph the default config and this config side by side to make comparison
+# easy, but sync to a different direction so the default chap04 graphs don't
+# have multiple configurations.
+
+perf_args="-performance-description par-init -performance-configs default:v,par-init:v -sync-dir-suffix par-init"
+perf_args="${perf_args} -numtrials 5 -startdate 07/30/15 -compopts -sparallelInitElts"
+$CWD/nightly -cron ${perf_args} ${nightly_args}

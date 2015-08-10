@@ -123,6 +123,8 @@ class argument_map(object):
             return cls.intel.get(arch, '')
         elif compiler == 'clang':
             return cls.clang.get(arch, '')
+        elif compiler == 'clang-included':
+            return cls.clang.get(arch, '')
         else:
             stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler))
             return ''
@@ -279,7 +281,9 @@ def get(location, map_to_compiler=False, get_lcd=False):
     compiler_val = chpl_compiler.get(location)
     platform_val = chpl_platform.get(location)
 
-    if compiler_val.startswith('cray-prgenv'):
+    isprgenv = utils.compiler_is_prgenv(compiler_val)
+
+    if isprgenv:
         if arch and (arch != 'none' or arch != 'unknown'):
             stderr.write("Warning: Setting the processor type through "
                          "environment variables is not supported for "

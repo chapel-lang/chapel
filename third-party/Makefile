@@ -15,10 +15,10 @@ endif
 
 default: all
 
-all: chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
+all: test-venv chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
 
 clean: FORCE
-	cd chpldoc-venv && $(MAKE) clean
+	cd chpl-venv && $(MAKE) clean
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
@@ -28,9 +28,10 @@ clean: FORCE
 	cd qthread && $(MAKE) clean
 	cd re2 && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
+	cd fltk && $(MAKE) clean
 
 cleanall: FORCE
-	cd chpldoc-venv && $(MAKE) cleanall
+	cd chpl-venv && $(MAKE) cleanall
 	cd dlmalloc && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
@@ -40,9 +41,10 @@ cleanall: FORCE
 	cd qthread && $(MAKE) cleanall
 	cd re2 && $(MAKE) cleanall
 	cd tcmalloc && $(MAKE) cleanall
+	cd fltk && $(MAKE) cleanall
 
 clobber: FORCE
-	cd chpldoc-venv && $(MAKE) clobber
+	cd chpl-venv && $(MAKE) clobber
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
@@ -52,12 +54,17 @@ clobber: FORCE
 	cd qthread && $(MAKE) clobber
 	cd re2 && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
+	cd fltk && $(MAKE) clobber
 
 depend:
 
-chpldoc-venv: $(CHPLDOC_VENV_SPHINX_BUILD)
-$(CHPLDOC_VENV_SPHINX_BUILD):
-	cd chpldoc-venv && $(MAKE)
+test-venv: $(CHPL_VENV_TEST_REQS)
+$(CHPL_VENV_TEST_REQS):
+	cd chpl-venv && $(MAKE) test-venv
+
+chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
+$(CHPL_VENV_SPHINX_BUILD):
+	cd chpl-venv && $(MAKE) chpldoc-venv
 
 dlmalloc: $(DLMALLOC_INSTALL_DIR)
 $(DLMALLOC_INSTALL_DIR):
@@ -71,11 +78,9 @@ $(GASNET_INSTALL_DIR):
 try-gmp: FORCE
 ifeq ($(wildcard $(GMP_BUILD_DIR)),)
 	@echo "Speculatively attempting to build gmp"
-	-@$(MAKE) gmp
-else
-ifeq ($(wildcard $(GMP_H_FILE)),)
+	-@$(MAKE) GMP_SPECULATIVE=yes gmp
+else ifeq ($(wildcard $(GMP_H_FILE)),)
 	$(info Speculative build of gmp squashed due to previous failures.)
-endif
 endif
 
 gmp: $(GMP_H_FILE)

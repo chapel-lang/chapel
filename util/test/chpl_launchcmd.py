@@ -115,6 +115,17 @@ class AbstractJob(object):
         :returns: command to run in qsub with changedir call
         """
         full_test_command = ['cd', '$PBS_O_WORKDIR', '&&']
+
+        # If the first argument of the test command is a file (it should
+        # always be the executable), then add a "test -f ./execname" call
+        # before running the command. This works around some potential nfs
+        # configuration issues that can happen when running from lustre
+        # mounted over nfs.
+        if os.path.exists(self.test_command[0]):
+            logging.debug('Adding "test -f {0}" to launcher command.'.format(
+                self.test_command[0]))
+            full_test_command += ['test', '-f', self.test_command[0], '&&']
+
         full_test_command.extend(self.test_command)
         return full_test_command
 
@@ -165,6 +176,7 @@ class AbstractJob(object):
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
+    target_arch = chpl_arch.get('target')
     @property
     def knc(self):
         """Returns True when testing KNC (Xeon Phi).
@@ -172,7 +184,22 @@ class AbstractJob(object):
         :rtype: bool
         :returns: True when testing KNC
         """
-        return chpl_arch.get('target') == 'knc'
+        return self.target_arch == 'knc'
+
+    def work_around_knc_module_bug(self):
+        """Hack to unload the knc module before calling qsub in order to work
+        around a module bug. Note that this unloading of knc here is why the
+        above 'knc' method doesn't just return `chpl_arch.get('target') == knc`
+        but instead caches the value since unloading knc module means chpl_arch
+        will no longer return 'knc'
+        """
+        if self.knc:
+	    unload_knc_proc = subprocess.Popen(
+                ['modulecmd', 'python', 'unload', 'craype-intel-knc'],
+                stdout=subprocess.PIPE
+            )
+	    stdout, stderr = unload_knc_proc.communicate()
+	    exec stdout
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
@@ -286,8 +313,8 @@ class AbstractJob(object):
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
                     exec_start_time = time.time()
-                status = job_status(job_id, output_file)
                 time.sleep(.5)
+                status = job_status(job_id, output_file)
 
             exec_time = time.time() - exec_start_time
             # Note that this time isn't very accurate as we don't get the exact
@@ -412,6 +439,8 @@ class AbstractJob(object):
         """
         if self.submit_bin != 'qsub':
             raise RuntimeError('_launch_qsub called for non-pbs job type!')
+
+        self.work_around_knc_module_bug()
 
         logging.info(
             'Starting {0} job "{1}" on {2} nodes with walltime {3} '

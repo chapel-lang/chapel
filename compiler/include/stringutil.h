@@ -21,6 +21,7 @@
 #define _STRINGUTIL_H_
 
 #include <stdint.h>
+#include <string>
 
 const char* astr(const char* s1,
                  const char* s2 = 0,
@@ -49,5 +50,13 @@ uint64_t    str2uint64(const char* str);
 uint64_t    binStr2uint64(const char* str);
 uint64_t    octStr2uint64(const char* str);
 uint64_t    hexStr2uint64(const char* str);
+
+// std::string utilities
+       std::string erasePrefix(std::string s, int count);
+       std::string firstNonEmptyLine(std::string s);
+inline bool        isEmpty(std::string s);
+inline std::string ltrim(std::string s);
+       std::string ltrimAllLines(std::string s);
+       int         minimumPrefix(std::string s);
 
 #endif

@@ -45,6 +45,7 @@ extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
+extern bool fNoCastChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
@@ -54,6 +55,7 @@ extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
 extern bool fNoOptimizeLoopIterators;
+extern bool fNoVectorize;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
@@ -103,6 +105,7 @@ extern bool widePointersStruct;
 
 extern char fExplainCall[256];
 extern int  explainCallID;
+extern int  breakOnResolveID;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
@@ -116,8 +119,9 @@ extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fGenIDS;
 extern bool fLocal;
+extern bool fIgnoreLocalClasses;
 extern bool fHeterogeneous;
-extern bool fieeefloat;
+extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 
 extern bool llvmCodegen;
@@ -144,11 +148,6 @@ extern bool fVerify;
 extern int  num_constants_per_variable;
 extern bool printCppLineno;
 
-extern bool fDocs;
-extern bool fDocsAlphabetize;
-extern char fDocsCommentLabel[256];
-extern char fDocsFolder[256];
-extern bool fDocsTextOnly;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;
@@ -160,6 +159,7 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
 extern bool fReportOptimizedLoopIterators;
+extern bool fReportOrderIndependentLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
 extern bool fReportScalarReplace;

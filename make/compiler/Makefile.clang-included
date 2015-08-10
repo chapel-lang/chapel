@@ -1,0 +1,37 @@
+# Copyright 2004-2015 Cray Inc.
+# Other additional copyright holders may be indicated within.
+# 
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# 
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ifneq (, $(filter cray-prgenv-%,$(CHPL_ORIG_TARGET_COMPILER)))
+  #if we're clang-included for a cray-prgenv-* build, 
+  #grab some extra library paths.
+
+  # only run gather-cray-prgenv-argumenst.bash once, as an optimization
+  ifndef CHPL_MAKE_SETTINGS_PRGENV_COMPOPTS
+    export CHPL_MAKE_SETTINGS_PRGENV_COMPOPTS = $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments.bash compile)
+  endif
+  ifndef CHPL_MAKE_SETTINGS_PRGENV_LINKOPTS
+    export CHPL_MAKE_SETTINGS_PRGENV_LINKOPTS = $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments.bash link)
+  endif
+
+  # add the gathered arguments to the compiler settings
+  CHPL_MAKE_BASE_CFLAGS += $(CHPL_MAKE_SETTINGS_PRGENV_COMPOPTS)
+  CHPL_MAKE_BASE_LFLAGS += $(CHPL_MAKE_SETTINGS_PRGENV_LINKOPTS)
+endif
+
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.clang
+
+

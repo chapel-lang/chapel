@@ -43,7 +43,6 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
 
-
 #
 # Flags for compiler, runtime, and generated code
 #
@@ -67,6 +66,10 @@ SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
 endif
 endif
 
+# Set flag for lax or IEEE floating point
+FAST_FLOAT_GEN_CFLAGS = -ffast-math
+IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
+
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
@@ -88,11 +91,6 @@ RUNTIME_GEN_CFLAGS += -maix64
 GEN_CFLAGS += -maix64
 COMP_GEN_LFLAGS += -maix64
 endif
-
-#
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS = -std=gnu89
 
 #
 # query gcc version

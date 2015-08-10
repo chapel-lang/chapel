@@ -342,13 +342,6 @@ void check_insertWideReferences()
   check_afterLowerIterators();
 }
 
-void check_narrowWideReferences()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterCallDestructors();
-}
-
 void check_optimizeOnClauses()
 {
   check_afterEveryPass();
@@ -637,7 +630,7 @@ checkRetTypeMatchesRetVarType()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (fn->hasFlag(FLAG_ITERATOR_FN))
+    if (fn->isIterator())
       // Iterators break this rule.
       // retType is the type of the iterator record
       // The return value type is the type of the index the iterator returns.

@@ -53,9 +53,7 @@ static void cullAutoDestroyFlags()
       // for internally reference-counted types. (sandboxing)
       TypeSymbol* ts = ret->type->symbol;
       if (ts->hasFlag(FLAG_ARRAY) ||
-          ts->hasFlag(FLAG_DOMAIN) ||
-          ts->hasFlag(FLAG_SYNC) ||
-          ts->hasFlag(FLAG_SINGLE))
+          ts->hasFlag(FLAG_DOMAIN))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
       // Do we need to add other record-wrapped types here?  Testing will tell.
 
@@ -72,7 +70,7 @@ static void cullAutoDestroyFlags()
         buildDefUseMaps(fn, defMap, useMap);
 
         std::vector<DefExpr*> defs;
-        collectDefExprsSTL(fn, defs);
+        collectDefExprs(fn, defs);
 
         for_vector(DefExpr, def, defs)
         {
@@ -121,7 +119,7 @@ static void cullExplicitAutoDestroyFlags()
     buildDefUseMaps(fn, defMap, useMap);
 
     std::vector<DefExpr*> defs;
-    collectDefExprsSTL(fn, defs);
+    collectDefExprs(fn, defs);
 
     Symbol* retVar = fn->getReturnSymbol();
 
@@ -238,7 +236,7 @@ static bool stmtDefinesAnAutoDestroyedVariable(Expr* stmt) {
         // flag, presumably before the type was known, that should not in
         // fact be auto-destroyed.  Don't gum things up by collecting them.
         if (autoDestroyMap.get(var->type) != 0) {
-          if (var->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+          if (var->isType() == false) {
             retval = true;
           }
         }
@@ -267,11 +265,11 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
       isSymExpr(stmt)  == false &&
       isCallExpr(stmt) == false &&
       isGotoStmt(stmt) == false) {
-    Vec<GotoStmt*> gotoStmts;
+    std::vector<GotoStmt*> gotoStmts;
 
     collectGotoStmts(stmt, gotoStmts);
 
-    forv_Vec(GotoStmt, gotoStmt, gotoStmts) {
+    for_vector(GotoStmt, gotoStmt, gotoStmts) {
       if (gotoExitsBlock(gotoStmt, block)) {
         forv_Vec(VarSymbol, var, vars) {
           if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
@@ -438,7 +436,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   newFn->retType = dtVoid;
   fn->defPoint->insertBefore(new DefExpr(newFn));
 
-  Vec<SymExpr*> symExprs;
+  std::vector<SymExpr*> symExprs;
   collectSymExprs(newFn, symExprs);
 
   // In the body of the function, replace references to the original
@@ -446,7 +444,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   // deref temp is inserted if needed.  The result is fed through a
   // call to the useFn -- effectively sucking the use function call
   // inside the clone function.
-  forv_Vec(SymExpr, se, symExprs) {
+  for_vector(SymExpr, se, symExprs) {
     if (se->var == ret) {
       CallExpr* move = toCallExpr(se->parentExpr);
       if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
@@ -623,9 +621,9 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
     use = *useMap.get(lhs);
   } else {
     for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
-      Vec<SymExpr*> symExprs;
+      std::vector<SymExpr*> symExprs;
       collectSymExprs(stmt, symExprs);
-      forv_Vec(SymExpr, se, symExprs) {
+      for_vector(SymExpr, se, symExprs) {
         if (se->var == lhs) {
           use.add(se);
         }
@@ -680,8 +678,8 @@ fixupDestructors() {
         if (field->type->destructor) {
           AggregateType* fct = toAggregateType(field->type);
           INT_ASSERT(fct);
-          if (!isClass(fct) || isSyncType(fct)) {
-            bool useRefType = !isRefCountedType(fct) && !isSyncType(fct);
+          if (!isClass(fct)) {
+            bool useRefType = !isRefCountedType(fct);
             VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
@@ -690,35 +688,7 @@ fixupDestructors() {
             if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY))
               fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
             else
-              fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp)); 
-
-            // WORKAROUND:
-            // This is a temporary bug fix that results in leaked memory
-            //  for sync and single vars in user defined records.
-            //
-            // We can only free a sync or single field that is part of a
-            //  reference counted type because they are currently
-            //  implemented as classes and thus can be copied as references.
-            //  i.e.,
-            //    isArrayClass(ct) || isDomainClass(ct) || isDistClass(ct)
-            // We'll also will allow syncs that are declared in the standard
-            //  and internal modules to be freed, assuming this will be okay.
-            //  Since the reference counted types are declared within the
-            //  standard and internal modules, we don't need to to the above
-            //  check unless the assumptions proves incorrect.
-            //
-            // The problem is related to that of records with classes 
-            //  described in insertFormalTemps() in functionResolution.cpp.
-            //  Specifically, we do not call constructors for records,
-            //  so if a record has sync or single fields, the memory
-            //  for the fields is not allocated and the pointer to the
-            //  field is copied in the autocopy.  The corresponding
-            //  autodestroys may delete the data twice.
-            //
-            if (isSyncType(fct) &&
-                ((ct->getModule()->modTag==MOD_INTERNAL) ||
-                 (ct->getModule()->modTag==MOD_STANDARD)))
-              fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
+              fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);
@@ -774,7 +744,7 @@ static void insertGlobalAutoDestroyCalls() {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)
         if (VarSymbol* var = toVarSymbol(def->sym))
-          if (!var->isParameter() && !var->hasFlag(FLAG_TYPE_VARIABLE))
+          if (!var->isParameter() && !var->isType())
             if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
               if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
                 SET_LINENO(var);

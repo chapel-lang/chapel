@@ -78,7 +78,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
   if (CallExpr* call = toCallExpr(iteratorExpr))
   {
     // grab the stride if we have a strided range
-    if (call->isNamed("by"))
+    if (call->isNamed("chpl_by"))
     {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
@@ -129,7 +129,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   VarSymbol*   iterator      = newTemp("_iterator");
   CallExpr*    iterInit      = 0;
   CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(index, iterator, body);
+  ForLoop*     loop          = new ForLoop(index, iterator, body, zippered);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
@@ -190,14 +190,17 @@ ForLoop::ForLoop() : LoopStmt(0)
 {
   mIndex    = 0;
   mIterator = 0;
+  mZippered = false;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
-                 BlockStmt* initBody) : LoopStmt(initBody)
+                 BlockStmt* initBody,
+                 bool       zippered) : LoopStmt(initBody)
 {
   mIndex    = new SymExpr(index);
   mIterator = new SymExpr(iterator);
+  mZippered = zippered;
 }
 
 ForLoop::~ForLoop()
@@ -208,17 +211,19 @@ ForLoop::~ForLoop()
 ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
-  SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  ForLoop*   retval    = new ForLoop();
+  SymbolMap* map            = (mapRef != 0) ? mapRef : &localMap;
+  ForLoop*   retval         = new ForLoop();
 
-  retval->astloc         = astloc;
-  retval->blockTag       = blockTag;
+  retval->astloc            = astloc;
+  retval->blockTag          = blockTag;
 
-  retval->mBreakLabel    = mBreakLabel;
-  retval->mContinueLabel = mContinueLabel;
+  retval->mBreakLabel       = mBreakLabel;
+  retval->mContinueLabel    = mContinueLabel;
+  retval->mOrderIndependent = mOrderIndependent;
 
-  retval->mIndex         = mIndex->copy(map, true),
-  retval->mIterator      = mIterator->copy(map, true);
+  retval->mIndex            = mIndex->copy(map, true),
+  retval->mIterator         = mIterator->copy(map, true);
+  retval->mZippered         = mZippered;
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -256,6 +261,16 @@ bool ForLoop::isForLoop() const
   return true;
 }
 
+// TODO (Elliot 03/03/15): coforall loops are currently represented
+// as ForLoops in the compiler. This is a start at distinguishing
+// them. Note that for coforall loops, this method and isForLoop
+// with both return true. Eventually CoforallLoop should become it's
+// own class that shares a common parent with ForLoop.
+bool ForLoop::isCoforallLoop() const
+{
+  return mIndex->var->hasFlag(FLAG_COFORALL_INDEX_VAR);
+}
+
 SymExpr* ForLoop::indexGet() const
 {
   return mIndex;
@@ -264,6 +279,11 @@ SymExpr* ForLoop::indexGet() const
 SymExpr* ForLoop::iteratorGet() const
 {
   return mIterator;
+}
+
+bool ForLoop::zipperedGet() const
+{
+  return mZippered;
 }
 
 CallExpr* ForLoop::blockInfoGet() const

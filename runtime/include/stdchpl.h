@@ -59,6 +59,8 @@
 #include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
+#include "chpl-vector-marcos.h"
+#include "chpl-visual-debug.h"
 #include "error.h"
 
 #include "chplgmp.h"

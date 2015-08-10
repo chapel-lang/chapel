@@ -134,21 +134,24 @@ class SetChplEnvTests(unittest.TestCase):
         path_parts = get_path_var('PATH')
         self.assertTrue(len(path_parts) >= 2)
 
-        path_chpl = path_parts[0].replace(self.chpl_home, 'CHPL_HOME').replace(
-            self.chpl_platform, 'CHPL_PLATFORM')
-        path_util = path_parts[1].replace(self.chpl_home, 'CHPL_HOME')
+        expected_path_chpl = os.path.join(self.chpl_home, 'bin', self.chpl_platform)
+        expected_path_util = os.path.join(self.chpl_home, 'util')
 
-        self.assertEqual('CHPL_HOME/bin/CHPL_PLATFORM', path_chpl)
-        self.assertEqual('CHPL_HOME/util', path_util)
+        actual_path_chpl = path_parts[0]
+        actual_path_util = path_parts[1]
+
+        self.assertEqual(os.stat(expected_path_chpl), os.stat(actual_path_chpl))
+        self.assertEqual(os.stat(expected_path_util), os.stat(actual_path_util))
 
         manpath_parts = get_path_var('MANPATH')
         self.assertTrue(len(manpath_parts) >= 1)
 
-        manpath_chpl = manpath_parts[0].replace(self.chpl_home, 'CHPL_HOME')
-        self.assertEqual('CHPL_HOME/man', manpath_chpl)
+        expected_manpath_chpl = os.path.join(self.chpl_home, 'man')
+        manpath_chpl = manpath_parts[0]
+        self.assertEqual(os.stat(expected_manpath_chpl), os.stat(manpath_chpl))
 
         actual_chpl_home = get_var('CHPL_HOME')
-        self.assertEqual(self.chpl_home, actual_chpl_home)
+        self.assertEqual(os.stat(self.chpl_home), os.stat(actual_chpl_home))
 
         actual_platform = get_var('CHPL_HOST_PLATFORM')
         self.assertEqual(self.chpl_platform, actual_platform)
@@ -158,6 +161,7 @@ class SetChplEnvTests(unittest.TestCase):
             self.assertEqual('fifo', get_var('CHPL_TASKS'))
             self.assertEqual('none', get_var('CHPL_GMP'))
             self.assertEqual('none', get_var('CHPL_REGEXP'))
+            self.assertEqual('none', get_var('CHPL_LLVM'))
 
             # TODO: Re-add this check when/if tcmalloc becomes
             #       default. (thomasvandoren, 2015-01-13)

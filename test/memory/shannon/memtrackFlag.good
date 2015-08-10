@@ -1,1 +1,2 @@
-./freedMalloc.chpl:12: error: The printMemTable function only works with the --memTrack flag
+./freedMalloc.chpl:12: warning: invalid call to printMemAllocs(); rerun with --memTrack
+./freedMalloc.chpl:14: warning: invalid call to printMemAllocs(); rerun with --memTrack

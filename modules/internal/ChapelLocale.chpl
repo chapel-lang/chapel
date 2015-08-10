@@ -165,7 +165,7 @@ module ChapelLocale {
   // The rootLocale is private to each locale.  It cannot be
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
-  pragma "private" var rootLocale : locale = nil;
+  pragma "locale private" var rootLocale : locale = nil;
   config param replicateRootLocale = true;
 
   // The rootLocale needs to be initalized on all locales prior to
@@ -208,7 +208,7 @@ module ChapelLocale {
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
-    iter initOnLocales() {
+    iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
       for locIdx in (origRootLocale:RootLocale).getDefaultLocaleSpace() {
@@ -221,8 +221,8 @@ module ChapelLocale {
     // opportunity to initialize any global private variables we
     // either need (e.g., defaultDist) or can do at this point in
     // initialization (e.g., rootLocale).
-    iter initOnLocales(param tag: iterKind)
-      where tag==iterKind.leader {
+    iter chpl_initOnLocales(param tag: iterKind)
+      where tag==iterKind.standalone {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
       var flags: [1..#numLocales-1] localesSignal;
@@ -236,11 +236,6 @@ module ChapelLocale {
           chpl_rootLocaleInitPrivate(locIdx);
         }
       }
-    }
-
-    iter initOnLocales(param tag: iterKind, followThis)
-      where tag==iterKind.follower {
-      yield followThis;
     }
   }
 
@@ -303,7 +298,7 @@ module ChapelLocale {
   // the rootLocale.  It sets up the origRootLocale and also includes
   // set up of the each locale's LocaleModel via RootLocale:init().
   //
-  // The init() function must use the initOnLocales() iterator above
+  // The init() function must use the chpl_initOnLocales() iterator above
   // to iterate in parallel over the locales to set up the LocaleModel
   // object.
   proc chpl_init_rootLocale() {
@@ -336,7 +331,8 @@ module ChapelLocale {
       __primitive("chpl_comm_get",
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
-                  __primitive("array_get", origRL, 0), numLocales);
+                  __primitive("array_get", origRL, 0), 
+                  numLocales.safeCast(size_t));
       // Set the rootLocale to the local copy
       rootLocale = newRootLocale;
     }

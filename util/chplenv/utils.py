@@ -23,6 +23,13 @@ def get_chpl_home():
     return chpl_home
 
 @memoize
+def using_chapel_module():
+    chpl_home = os.environ.get('CHPL_HOME', '')
+    if chpl_home != '':
+        return chpl_home == os.environ.get('CHPL_MODULE_HOME', '')
+    return False
+
+@memoize
 def get_compiler_version(compiler):
     CompVersion = namedtuple('CompVersion', ['major', 'minor'])
     if 'gnu' in compiler:
@@ -58,3 +65,9 @@ def run_command(command, stdout=True, stderr=False):
             return output[1]
         else:
             return ''
+
+def compiler_is_prgenv(compiler_val):
+  return (compiler_val.startswith('cray-prgenv') or
+     os.environ.get('CHPL_ORIG_TARGET_COMPILER','').startswith('cray-prgenv'))
+
+

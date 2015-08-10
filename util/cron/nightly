@@ -20,8 +20,8 @@ use lib "$FindBin::Bin";
 use nightlysubs;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
 $replymail = "chapel-developers\@lists.sourceforge.net";
 
 $valgrind = 0;
@@ -42,7 +42,6 @@ $compperformancedescription = "";
 $syncsuffix = "";
 $componly = 0;
 $futuresMode = 3;
-$suppressions = "";
 $parnodefile = "";
 $baseline = 0;
 $fast = 0;
@@ -123,8 +122,6 @@ while (@ARGV) {
         $fast = 1;
     } elsif ($flag eq "-memleaks") {
         $memleaks = shift @ARGV;
-    } elsif ($flag eq "-suppress") {
-        $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
 	$componly = 1;
     } elsif ($flag eq "-futures") {
@@ -431,11 +428,6 @@ if ($parnodefile eq "") {
   $permsum = "<invalid use of permsum>";
 }
 
-#
-# make "prev" logs if they don't already exist
-#
-ensureSummaryExists($prevsummary);
-
 
 $somethingfailed = 0;
 
@@ -501,6 +493,16 @@ if ($makestat != 0) {
 print "Making $make_vars_opt third-party-try-opt\n";
 mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
 
+# Build chpldoc. Do not fail the build if it does not succeed. Do not send
+# mail either.
+print "Making $make_vars_opt chpldoc\n";
+mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
+
+# Build test virtualenv. Fail if the build does not succeed as virtualenv is
+# needed for start_test. Send mail on failure
+print "Making $make_var_opt test-venv\n";
+mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+
 if ($buildruntime == 0) {
     $endtime = localtime;
 
@@ -529,7 +531,7 @@ if ($makestat != 0) {
 }
 
 print "Making modules\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", 1, 1);
 
 
 #
@@ -656,9 +658,6 @@ if ($verify == 1) {
 }
 if ($llvm == 1) {
     $testflags = "$testflags -compopts --llvm";
-}
-if (!($suppressions eq "")) {
-    $testflags = "$testflags -suppress $suppressions";
 }
 if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";

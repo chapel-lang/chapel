@@ -298,14 +298,14 @@ proc bitReverseShuffle(Vect: [?Dom]) {
 proc bitReverse(val: ?valType, revBits = 64) {
   param mask = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask)),
-        valReverse = bitRotLeft(valReverse64, revBits);
+        valReverse = rotl(valReverse64, revBits);
   return valReverse: valType;
 }
 
 //
 // Compute the log base 4 of x
 //
-proc log4(x) return logBasePow2(x, 2);  
+proc log4(x) return logBasePow2(x, 2);
 
 //
 // verify that the results are correct by reapplying the dfft and then

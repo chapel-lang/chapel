@@ -1,7 +1,6 @@
 use IO;
-use AdvancedIters;
 
-extern proc memcpy(x : [], b, len:int);
+extern proc memcpy(x : [], b:c_string , len:int);
 
 config const tableSize = 1 << 16;
 config const lineSize = 61;
@@ -41,14 +40,13 @@ proc calculate(data : [] uint(8), size : int) {
   var freqDom : domain(uint);
   var freqs : [freqDom] int;
 
-  const ntasks = defaultNumTasks(0);
   var lock : sync bool;
   lock = true;
   const sizeRange = 0..size-1;
-  coforall tid in 1..ntasks {
+  coforall tid in 1..here.maxTaskPar {
     var curDom : domain(uint);
     var curArr : [curDom] int;
-    for i in tid .. data.size-size by ntasks {
+    for i in tid .. data.size-size by here.maxTaskPar {
       curArr[hash(data, i, sizeRange)] += 1;
     }
     lock; // acquire lock
@@ -81,7 +79,7 @@ proc write_count(data : [] uint(8), str : string) {
 
 proc string.toBytes() ref {
    var b : [1..this.length] uint(8);
-   memcpy(b, this, this.length);
+   memcpy(b, this.c_str(), this.length);
    return b;
 }
 

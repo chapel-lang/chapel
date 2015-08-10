@@ -47,13 +47,13 @@ void chpl_cache_exit(void);
 void chpl_cache_fence(int acquire, int release, int ln, c_string fn);
 
 // "acquire" barrier or fence -> discard pre-fetched GET values
-static ___always_inline
+static inline
 void chpl_cache_acquire(int ln, c_string fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(1, 0, ln, fn);
 }
 // "release" barrier or fence -> complete pending PUTs
-static ___always_inline
+static inline
 void chpl_cache_release(int ln, c_string fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(0, 1, ln, fn);
@@ -63,23 +63,23 @@ void chpl_cache_release(int ln, c_string fn)
 // These are the functions that the generated code should be eventually
 // calling on a put or a get.
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                         int32_t elemSize, int32_t typeIndex, int32_t len,
+                         size_t elemSize, int32_t typeIndex, size_t len,
                          int ln, c_string fn);
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                         int32_t elemSize, int32_t typeIndex, int32_t len,
+                         size_t elemSize, int32_t typeIndex, size_t len,
                          int ln, c_string fn);
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              int32_t elemSize, int32_t typeIndex, int32_t len,
+                              size_t elemSize, int32_t typeIndex, size_t len,
                               int ln, c_string fn);
 void  chpl_cache_comm_get_strd(
                    void *addr, void *dststr, c_nodeid_t node, void *raddr,
                    void *srcstr, void *count, int32_t strlevels,
-                   int32_t elemSize, int32_t typeIndex,
+                   size_t elemSize, int32_t typeIndex,
                    int ln, c_string fn);
 void  chpl_cache_comm_put_strd(
                       void *addr, void *dststr, c_nodeid_t node, void *raddr,
                       void *srcstr, void *count, int32_t strlevels,
-                      int32_t elemSize, int32_t typeIndex,
+                      size_t elemSize, int32_t typeIndex,
                       int ln, c_string fn);
 
 // For debugging.

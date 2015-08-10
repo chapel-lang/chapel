@@ -475,7 +475,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
   while (stmt && !found)
   {
     std::vector<SymExpr*> symExprs;
-    collectSymExprsSTL(stmt, symExprs);
+    collectSymExprs(stmt, symExprs);
     for_vector(SymExpr, se, symExprs) {
       if (se->var == currDefSym) {
         INT_ASSERT(se->parentExpr);
@@ -569,10 +569,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   }
 
   Vec<Symbol*> symSet;
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   Vec<SymExpr*> symExprs;
   collect_asts(rootModule, asts);
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (def->parentSymbol) {
         if (isLcnSymbol(def->sym)) {
@@ -591,7 +591,11 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
     // find out if a variable that was put on the heap could be passed in as an
     // argument to a function created from a begin, cobegin, or coforall statement;
     // if not, free the heap memory just allocated at the end of the block
-    if (defMap.get(var)->n == 1) {
+    Vec<SymExpr*>* defs = defMap.get(var);
+    if (defs == NULL) {
+      INT_FATAL(var, "Symbol is never defined.");
+    }
+    if (defs->n == 1) {
       bool freeVar = true;
       Vec<Symbol*> varsToTrack;
       varsToTrack.add(var);
@@ -618,7 +622,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
       }
       if (freeVar) {
-        CallExpr* move = toCallExpr(defMap.get(var)->v[0]->parentExpr);
+        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
         INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
         Expr* innermostBlock = NULL;
         // find the innermost block that contains all uses of var
@@ -674,6 +678,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
       }
     }
+    // else ... 
+    // TODO: After the new constructor story is implemented, every declaration
+    // should have exactly one definition associated with it, so the
+    // (defs-> == 1) test above can be replaced by an assertion.
   }
 }
 
@@ -754,7 +762,7 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                isModuleSymbol(def->parentSymbol) &&
                def->parentSymbol != rootModule &&
                isVarSymbol(def->sym) &&
-               !def->sym->hasFlag(FLAG_PRIVATE) &&
+               !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
                !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
           (is_bool_type(def->sym->type) ||
@@ -809,6 +817,10 @@ makeHeapAllocations() {
           if (formal == arg)
             se = toSymExpr(actual);
         }
+        INT_ASSERT(se);
+        // Previous passes mean that we should always get a formal SymExpr
+        // to match the ArgSymbol.  And that formal should have the
+        // ref flag, since we obtained it through the refVec.
         INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
         if (!refSet.set_in(se->var)) {
           refSet.set_add(se->var);
@@ -1183,7 +1195,7 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
       // Now we can remove the dummy locale arg from the on_fn
       DefExpr* localeArg = toDefExpr(fn->formals.get(1));
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(fn->body, symExprs);
+      collectSymExprs(fn->body, symExprs);
       for_vector(SymExpr, sym, symExprs)
       {
         if (sym->var->defPoint == localeArg)

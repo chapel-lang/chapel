@@ -293,7 +293,7 @@ void set_valids_for_skip_len(uint64_t* valid, uintptr_t skip, uintptr_t len, int
       // entirely after the region -- nothing valid
     } else if( skip <= offset && offset + 64 <= skip+len ) {
       // entirely within the region -- totally valid
-      valid[i] = (uintptr_t) -1;
+      valid[i] = (uint64_t) -1;
     } else {
       use_start = skip - offset;
       if( use_start < 0 ) use_start = 0;

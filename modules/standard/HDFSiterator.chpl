@@ -17,9 +17,27 @@
  * limitations under the License.
  */
 
+/*
+   Iterators for distributed iteration over Hadoop Distributed Filesystem
+
+   Iterators that can iterate over distributed data in an HDFS filesystem
+   in a distributed manner. See :mod:`HDFS`.
+ */
+module HDFSiterator {
+
 use HDFS, UtilReplicatedVar, RecordParser;
 
+/* Iterate through an HDFS file (available in the default configured
+   HDFS server) and yield records matching a regular expression.
 
+   Serial and leader-follower versions of this iterator are available.
+
+   :arg path: the path to the file within the HDFS server
+   :arg rec: the type of the records to return
+   :arg regexp: a regular expression with the same number of captures as
+                the number of fields in the record type ``rec``
+
+   */
 iter HDFSiter(path: string, type rec, regex: string) {
 
   var hdfs = hdfs_chapel_connect("default", 0);
@@ -40,12 +58,11 @@ iter HDFSiter(path: string, type rec, regex: string) {
   hdfs.hdfs_chapel_disconnect();
 }
 
-// Lame use of a L/F, so it won't support zippering (so we would really like to have
-// a standalone parallel iterator for this).
-
-// Parallel IO and zippering will probably not play nice with each, due to nt having
-// a priori knowledge of how records map to positions in the file.
-
+// Lame use of a L/F, so it won't support zippering (so we would really like
+// to have a standalone parallel iterator for this).
+// Parallel IO and zippering will probably not play nice with each, due to not
+// having a priori knowledge of how records map to positions in the file.
+pragma "no doc"
 iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
   where tag == iterKind.leader {
 
@@ -98,6 +115,7 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
     hdfs.hdfsChapelDisconnect();
   }
 
+pragma "no doc"
 iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string, followThis)
   where tag == iterKind.follower {
     yield followThis;
@@ -118,3 +136,6 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string, follow
      | File 1 | File2 | ...       File numLocales
      +--------+-------+------
    */
+
+
+} /* end of module */

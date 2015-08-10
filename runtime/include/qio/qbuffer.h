@@ -152,7 +152,6 @@ void qbytes_free_null(qbytes_t* b);
 // unmap the data
 void qbytes_free_munmap(qbytes_t* b);
 // free the data
-void qbytes_free_sys_free(qbytes_t* b);
 void qbytes_free_qio_free(qbytes_t* b);
 
 void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_free_t free_function);
@@ -462,6 +461,7 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
 #define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
 #define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
+#define qio_valloc(size) chpl_valloc(size)
 #define qio_free(ptr) chpl_mem_free(ptr, __LINE__, __FILE__)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 
@@ -479,8 +479,8 @@ typedef chpl_bool qio_bool;
 #define qio_malloc(size) malloc(size)
 #define qio_calloc(nmemb, size) calloc(nmemb,size)
 #define qio_realloc(ptr, size) realloc(ptr, size)
+#define qio_valloc(size) valloc(size)
 #define qio_free(ptr) free(ptr)
-#define sys_free(ptr) free(ptr)
 #define qio_strdup(ptr) strdup(ptr)
 #define qio_memcpy(dest, src, num) memcpy(dest, src, num)
 
@@ -488,8 +488,8 @@ typedef bool qio_bool;
 
 #endif
 
-// Declare MAX_ON_STACK bytes. We declare it as uint64_t to
-// make sure it's aligned as well as malloc would be.
+// Declare MAX_ON_STACK bytes. We declare it with the original
+// type to make sure it's aligned as well as malloc would be.
 #define MAYBE_STACK_SPACE(type,onstack) \
   type onstack[MAX_ON_STACK/sizeof(type)]
 
@@ -497,16 +497,17 @@ typedef bool qio_bool;
 { \
   /* check for integer overflow or negative count */ \
   if( count >= 0 && \
-      (size_t) count <= (SIZE_MAX / sizeof(type)) ) { \
-    size_t size = count * sizeof(type); \
-    if( size <= sizeof(onstack) ) { \
+      (uint64_t) count <= (SIZE_MAX / sizeof(type)) ) { \
+    /* check that count is positive and small enough to go on the stack */ \
+    if( (size_t) count <= (sizeof(onstack)/sizeof(type)) ) { \
       ptr = onstack; \
     } else { \
-      ptr = (type*) qio_malloc(size); \
+      ptr = (type*) qio_malloc(count*sizeof(type)); \
     } \
   } else { \
     /* handle integer overflow */ \
     ptr = NULL; \
+    assert(0 && "size overflow in MAYBE_STACK_ALLOC"); \
   } \
 }
 
@@ -518,9 +519,38 @@ typedef bool qio_bool;
   } \
 }
 
-#define VOID_PTR_DIFF(a,b) (((intptr_t) (a)) - ((intptr_t) (b)))
-#define VOID_PTR_ADD(ptr,amt) ((void*)(((char*) (ptr)) + (amt)))
-#define VOID_PTR_ALIGN(ptr,align) (((uintptr_t)ptr) & (align - 1))
+/* Returns the difference between two pointers,
+   but returns 0 if either pointer is NULL.
+ */
+static inline intptr_t qio_ptr_diff(void* a, void* b)
+{
+  if( a == NULL || b == NULL ) return 0;
+  return ((intptr_t)a) - ((intptr_t)b);
+}
+
+/* Returns 1 if there is space for nbytes between cur and end
+   (cur might represent a current buffer position and end might
+    represent the boundary.)
+   Takes into account the possibility that cur or end might be NULL;
+   returns 0 if either is NULL and nbytes > 0.
+    */
+static inline int qio_space_in_ptr_diff(intptr_t nbytes, void* end, void* cur)
+{
+  return nbytes <= qio_ptr_diff(end,cur);
+}
+
+static inline void* qio_ptr_add(void* ptr, intptr_t amt)
+{
+  return ((void*)(((char*) (ptr)) + (amt)));
+}
+
+/* Returns the number of bytes between ptr and its alignment.
+   align must be a power of 2.
+ */
+static inline uintptr_t qio_ptr_align(void* ptr, uintptr_t align)
+{
+ return (((uintptr_t)ptr) & (align - 1));
+}
 
 #ifdef __cplusplus
 } // end extern "C"

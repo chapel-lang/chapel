@@ -271,7 +271,8 @@ if generating {
     var v : v3;
     var a : int;
     dataReader.readln(a, v(1),v(2),v(3));
-    addatom(new atom(v), x, coord2bin(x));
+    var ta = new atom(v);
+    addatom(ta, x, coord2bin(x));
   }
 
   // cleanup
@@ -390,12 +391,12 @@ proc printSim() {
   write("\t# System size: ");
   writef("%.2dr %.2dr %.2dr (unit cells: %i %i %i)\n", 
       box(1), box(2), box(3), problemSize(1), problemSize(2), problemSize(3));
-  writef("\t%# density: %.6dr\n", density);
-  writef("\t%# Force cutoff: %.6dr\n", force_cut);
-  writef("\t%# neigh cutoff: %.6dr\n", cutneigh);
+  writef("\t# density: %.6dr\n", density);
+  writef("\t# Force cutoff: %.6dr\n", force_cut);
+  writef("\t# neigh cutoff: %.6dr\n", cutneigh);
   writeln("\t# Neighbor bins: ", numBins(1), " ", numBins(2), " ", numBins(3));
   writeln("\t# neighbor frequency ", neigh_every);
-  writef("\t%# timestep size: %.6dr\n", dt );
+  writef("\t# timestep size: %.6dr\n", dt );
   writeln("\t# thermo frequency: ", thermoEvery);
 }
 
@@ -446,7 +447,8 @@ proc create_atoms() {
           for m in 1..5 { pmrand(n); }
           v(i) = pmrand(n);
         }
-        addatom(new atom(v), temp, coord2bin(temp));
+        var ta = new atom(v);
+        addatom(ta, temp, coord2bin(temp));
       }
     }
 

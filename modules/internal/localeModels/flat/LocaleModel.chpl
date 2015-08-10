@@ -192,7 +192,7 @@ module LocaleModel {
   class RootLocale : AbstractRootLocale {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
-    const myLocales: [myLocaleSpace] locale;
+    var myLocales: [myLocaleSpace] locale;
 
     proc RootLocale() {
       parent = nil;
@@ -200,11 +200,11 @@ module LocaleModel {
       maxTaskPar = 0;
     }
 
-    // The init() function must use initOnLocales() to iterate (in
+    // The init() function must use chpl_initOnLocales() to iterate (in
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
     proc init() {
-      forall locIdx in initOnLocales() {
+      forall locIdx in chpl_initOnLocales() {
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
         numCores += node.numCores;
@@ -313,11 +313,11 @@ module LocaleModel {
   // runtime interface
   //
   extern proc chpl_comm_fork(loc_id: int, subloc_id: int,
-                             fn: int, args: c_void_ptr, arg_size: int(32));
+                             fn: int, args: c_void_ptr, arg_size: size_t);
   extern proc chpl_comm_fork_fast(loc_id: int, subloc_id: int,
-                                  fn: int, args: c_void_ptr, args_size: int(32));
+                                  fn: int, args: c_void_ptr, args_size: size_t);
   extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
-                                fn: int, args: c_void_ptr, args_size: int(32));
+                                fn: int, args: c_void_ptr, args_size: size_t);
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   //
   // regular "on"
@@ -327,7 +327,7 @@ module LocaleModel {
   proc chpl_executeOn(loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: c_void_ptr,     // function args
-                      args_size: int(32)    // args size
+                      args_size: size_t     // args size
                      ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
@@ -348,7 +348,7 @@ module LocaleModel {
   proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: c_void_ptr,     // function args
-                          args_size: int(32)    // args size
+                          args_size: size_t     // args size
                          ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
@@ -368,7 +368,7 @@ module LocaleModel {
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: c_void_ptr,     // function args
-                        args_size: int(32)    // args size
+                        args_size: size_t     // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than

@@ -19,668 +19,813 @@
 
 #include "ipeResolve.h"
 
+#include "IpeBlockStmt.h"
+#include "IpeCallExpr.h"
+#include "IpeDefExpr.h"
+#include "IpeEnv.h"
+#include "IpeMethod.h"
+#include "IpeModuleRoot.h"
+#include "IpeProcedure.h"
+#include "IpeSequence.h"
+#include "IpeScopeBlock.h"
+#include "IpeValue.h"
+
+#include "ipeDriver.h"
+#include "ipeEvaluate.h"
+#include "ipeUtils.h"
+
 #include "AstDumpToNode.h"
 #include "expr.h"
-#include "ipe.h"
-#include "IpeSymbol.h"
-#include "ScopeBlock.h"
-#include "ScopeFunction.h"
-#include "ScopeModule.h"
 #include "stmt.h"
-#include "symbol.h"
-#include "VisibleSymbol.h"
 #include "WhileDoStmt.h"
 
-static void  resolve(ModuleSymbol*      module);
+#include <cstdio>
 
-static Expr* resolve(Expr*              expr,   const ScopeBase* scope);
+static SymExpr*     resolveSymExpr    (SymExpr*           expr, IpeEnv* env);
+static SymExpr*     resolveUnresExpr  (UnresolvedSymExpr* expr, IpeEnv* env);
 
-static Expr* resolve(FnSymbol*          fn,     const ScopeBase* scope);
+static IpeDefExpr*  resolveDefExpr    (DefExpr*           expr, IpeEnv* env);
 
-static Expr* resolve(BlockStmt*         expr,   const ScopeBase* scope);
-static Expr* resolve(CondStmt*          expr,   const ScopeBase* scope);
-static Expr* resolve(WhileDoStmt*       expr,   const ScopeBase* scope);
+static CondStmt*    resolveCondStmt   (CondStmt*          expr, IpeEnv* env);
+static WhileDoStmt* resolveWhileDoStmt(WhileDoStmt*       expr, IpeEnv* env);
 
-static Expr* resolve(DefExpr*           expr,   const ScopeBase* scope);
-static Expr* resolve(SymExpr*           expr,   const ScopeBase* scope);
-static Expr* resolve(UnresolvedSymExpr* expr,   const ScopeBase* scope);
-static Expr* resolve(CallExpr*          expr,   const ScopeBase* scope);
+static IpeSequence* resolveBlockStmt  (BlockStmt*         expr, IpeEnv* env);
 
-static Type* typeForExpr(Expr* expr);
+static IpeCallExpr* resolveCallExpr   (CallExpr*          expr, IpeEnv* env);
 
-static Expr* selectFunc(Expr*               funName,
-                        std::vector<Type*>& actualTypes,
-                        const ScopeBase*    scope);
-
-static void resolveFuncFormals(FnSymbol*        fn,
-                               const ScopeBase* scope);
-
-/************************************ | *************************************
-*                                                                           *
-* The entry point for the IPE's stripped down version of type and function  *
-* resolution.                                                               *
-*                                                                           *
-************************************* | ************************************/
-
-void ipeResolve()
+Expr* resolveExpr(Expr* expr, IpeEnv* env)
 {
-  // Scan the Root Module Declaration
-  //   Every expression should be a DefExpr.
-  //   Process every User module
-  for_alist(stmt, rootModule->block->body)
-  {
-    if (DefExpr* defExpr = toDefExpr(stmt))
-    {
-      if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
-      {
-        if (module->modTag == MOD_USER)
-          resolve(module);
-      }
-    }
-    else
-      INT_ASSERT(false);
-  }
-}
+  Expr* retval = NULL;
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+#if 0
+  AstDumpToNode logger(stdout, 3);
 
-static void resolve(ModuleSymbol* module)
-{
-  ScopeModule* scope = new ScopeModule(module);
+  printf("\n\nresolveExpr Enter\n");
+  printf("   ");
+  expr->accept(&logger);
+  printf("\n\n");
+#endif
 
-  for_alist(stmt, module->block->body)
-    resolve(stmt, scope);
-
-  delete scope;
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-static Expr* resolve(Expr* expr, const ScopeBase* scope)
-{
-  Expr* retval = 0;
-
-  if (false)
-    ;
+  if      (SymExpr*           sel = toSymExpr(expr))
+    retval = resolveSymExpr(sel, env);
 
   else if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
-    retval = resolve(sel, scope);
-
-  else if (SymExpr*           sel = toSymExpr(expr))
-    retval = resolve(sel, scope);
+    retval = resolveUnresExpr(sel, env);
 
   else if (DefExpr*           sel = toDefExpr(expr))
-    retval = resolve(sel, scope);
-
-  else if (CallExpr*          sel = toCallExpr(expr))
-    retval = resolve(sel, scope);
-
-  else if (FnSymbol*          sel = toFnSymbol(expr))
-    retval = resolve(sel, scope);
-
-  else if (WhileDoStmt*       sel = toWhileDoStmt(expr))
-    retval = resolve(sel, scope);
+    retval = resolveDefExpr(sel, env);
 
   else if (CondStmt*          sel = toCondStmt(expr))
-    retval = resolve(sel, scope);
+    retval = resolveCondStmt(sel, env);
 
-  // This must come after WhileDoStmt etc
+  else if (WhileDoStmt*       sel = toWhileDoStmt(expr))
+    retval = resolveWhileDoStmt(sel, env);
+
   else if (BlockStmt*         sel = toBlockStmt(expr))
-    retval = resolve(sel, scope);
+    retval = resolveBlockStmt(sel, env);
+
+  else if (CallExpr*          sel = toCallExpr(expr))
+    retval = resolveCallExpr(sel, env);
 
   else
   {
     AstDumpToNode logger(stdout, 3);
 
-    printf("resolve Unhandled expr\n");
-    printf("   ");
-    expr->accept(&logger);
-    printf("\n\n\n");
-
-    INT_ASSERT(false);
-  }
-
-  return retval;
-}
-
-static Expr* resolve(FnSymbol* fn, const ScopeBase* parent)
-{
-  ScopeFunction* scope = new ScopeFunction(fn, parent);
-
-  resolveFuncFormals(fn, scope);
-
-  if (fn->body)
-    resolve(fn->body,        scope);
-
-  if (fn->retExprType)
-    resolve(fn->retExprType, scope);
-
-  delete scope;
-
-  return 0;
-}
-
-static Expr* resolve(BlockStmt* blockStmt, const ScopeBase* parent)
-{
-  ScopeBase*       frame =   NULL;
-  const ScopeBase* scope = parent;
-
-  if ((blockStmt->blockTag & BLOCK_SCOPELESS) == 0)
-  {
-    frame = new ScopeBlock(blockStmt, parent);
-    scope = frame;
-  }
-
-  for_alist(stmt, blockStmt->body)
-  {
-    Expr* resolvedExpr = resolve(stmt, scope);
-
-    if (resolvedExpr == 0)
-    {
-      AstDumpToNode logger(stdout, 3);
-
-      printf("\n\n\n\n");
-      printf("\n\n\n\n");
-      printf("Internal error.  Failed to resolve\n");
-
-      printf("   ");
-      stmt->accept(&logger);
-      printf("\n\n");
-
-      printf("in\n\n");
-
-      printf("   ");
-      blockStmt->accept(&logger);
-      printf("\n\n");
-
-      INT_ASSERT(false);
-    }
-
-    if (resolvedExpr != stmt)
-      stmt->replace(resolvedExpr);
-  }
-
-  if (frame != NULL)
-    delete frame;
-
-  return blockStmt;
-}
-
-static Expr* resolve(CondStmt* stmt, const ScopeBase* scope)
-{
-  resolve(stmt->condExpr, scope);
-  resolve(stmt->thenStmt, scope);
-
-  if (stmt->elseStmt != 0)
-    resolve(stmt->elseStmt, scope);
-
-  return stmt;
-}
-
-static Expr* resolve(WhileDoStmt* expr, const ScopeBase* scope)
-{
-  resolve(expr->condExprGet(), scope);
-
-  for_alist(stmt, expr->body)
-  {
-    Expr* resolvedExpr = resolve(stmt, scope);
-
-    INT_ASSERT(resolvedExpr);
-
-    if (resolvedExpr != stmt)
-      stmt->replace(resolvedExpr);
-  }
-
-  return expr;
-}
-
-static Expr* resolve(DefExpr* defExpr, const ScopeBase* scope)
-{
-  Type* typeType = 0;
-  Type* initType = 0;
-
-  if (defExpr->sym      != 0)
-  {
-    if (FnSymbol* fnSymbol = toFnSymbol(defExpr->sym))
-      resolve(fnSymbol, scope);
-  }
-
-  if (defExpr->exprType != 0)
-  {
-    Expr* resolvedExpr = resolve(defExpr->exprType, scope);
-
-    INT_ASSERT(resolvedExpr);
-
-    if (resolvedExpr != defExpr->exprType)
-      defExpr->exprType->replace(resolvedExpr);
-
-    typeType = typeForExpr(defExpr->exprType);
-
-    INT_ASSERT(typeType);
-  }
-
-  if (defExpr->init     != 0)
-  {
-    Expr* resolvedExpr = resolve(defExpr->init, scope);
-
-    INT_ASSERT(resolvedExpr);
-
-    if (resolvedExpr != defExpr->init)
-      defExpr->init->replace(resolvedExpr);
-
-    initType = typeForExpr(defExpr->init);
-
-    INT_ASSERT(initType);
-  }
-
-  if (typeType == 0 && initType == 0)
-  {
-    // It would be a surprise if the parser generated this case
-    if (isFnSymbol(defExpr->sym) == false)
-    {
-      AstDumpToNode logger(stdout, 3);
-
-      printf("resolve DefExpr.  Unexpected\n   ");
-      defExpr->accept(&logger);
-      printf("\n\n");
-
-      INT_ASSERT(false);
-    }
-  }
-
-  else if (typeType == 0 && initType != 0)
-    defExpr->sym->type = initType;
-
-  else if (typeType != 0 && initType == 0)
-    defExpr->sym->type = typeType;
-
-  else
-  {
-    if (typeType == initType)
-      defExpr->sym->type = typeType;
-    else
-      INT_ASSERT(false);
-  }
-
-  if (defExpr->exprType != 0)
-    defExpr->exprType->remove();
-
-  return defExpr;
-}
-
-static Expr* resolve(SymExpr* expr, const ScopeBase* scope)
-{
-  return expr;
-}
-
-static Expr* resolve(UnresolvedSymExpr* expr, const ScopeBase* scope)
-{
-  std::vector<VisibleSymbol> symbols;
-  Expr*                      retval = 0;
-
-  scope->visibleSymbols(expr, symbols);
-
-  if (symbols.size() == 0)
-  {
-    AstDumpToNode logger(stdout, 3);
-
-    printf("resolve UnresolvedSymExpr. Failed to find a definition\n");
+    printf("   resolveExpr(Expr*, IpeEnv* env)  unsupported\n");
     printf("   ");
     expr->accept(&logger);
     printf("\n\n");
 
     INT_ASSERT(false);
   }
-  else
+
+#if 0
+  printf("\n\nresolveExpr Exit\n");
+  printf("   ");
+  expr->accept(&logger);
+  printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+#endif
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static SymExpr* resolveSymExpr(SymExpr* expr, IpeEnv* env)
+{
+  return expr->copy();
+}
+
+static SymExpr* resolveUnresExpr(UnresolvedSymExpr* expr, IpeEnv* env)
+{
+  SymExpr* retval = NULL;
+
+  if (LcnSymbol* varSym = env->findVariable(expr->unresolved))
   {
     SET_LINENO(expr);
 
-    retval = new SymExpr(symbols[0].symbol());
-  }
-
-  return retval;
-}
-
-static Expr* resolve(CallExpr* expr, const ScopeBase* scope)
-{
-  bool               isUseStmt = expr->isPrimitive(PRIM_USE);
-  int                count     = expr->numActuals();
-  std::vector<Type*> actualTypes;
-
-  // Resolve the actuals
-  for (int i = 1; i <= count; i++)
-  {
-    Expr* actual = expr->get(i);
-    Expr* res    = resolve(actual, scope);
-    Type* type   = typeForExpr(res);
-
-    // Do not currently have a type for Module
-    if (res == 0 || (isUseStmt == false && type == 0))
-    {
-      AstDumpToNode logger(stdout, 3);
-
-      printf("Failed to handle actual %2d\n   ", i);
-      actual->accept(&logger);
-      printf("\n\n");
-
-      printf("in\n\n   ");
-      expr->accept(&logger);
-      printf("\n\n\n");
-
-      if (expr->typeInfo() != 0)
-      {
-        printf("expr->typeInfo()\n\n   ");
-        expr->typeInfo()->accept(&logger);
-        printf("\n\n\n");
-      }
-
-      if (res != 0)
-      {
-        printf("res:\n   ");
-        res->accept(&logger);
-        printf("\n\n\n");
-      }
-
-      if (type != 0)
-      {
-        printf("type:\n   ");
-        type->accept(&logger);
-        printf("\n\n\n");
-      }
-
-      INT_ASSERT(false);
-    }
-
-    actualTypes.push_back(type);
-
-    if (res != actual)
-      actual->replace(res);
-  }
-
-  // Select the function
-  if (UnresolvedSymExpr* baseExpr = toUnresolvedSymExpr(expr->baseExpr))
-  {
-    Expr*     funcRef = selectFunc(baseExpr, actualTypes, scope);
-    FnSymbol* func    = 0;
-
-    INT_ASSERT(funcRef);
-    baseExpr->replace(funcRef);
-
-    if (SymExpr* symExpr = toSymExpr(funcRef))
-      func = toFnSymbol(symExpr->var);
-
-    INT_ASSERT(func);
-    INT_ASSERT(func->formals.length == count);
-  }
-
-  // Remove Use Statements from the tree
-  if (isUseStmt == true)
-  {
-    expr->remove();
-    expr = 0;
-  }
-
-  return expr;
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-static Type* typeForExpr(Expr* expr)
-{
-  Type* retval = 0;
-
-  if (expr == 0)
-  {
-    retval = 0;
-  }
-
-  else if (SymExpr* value = toSymExpr(expr))
-  {
-    if (false)
-      ;
-
-    else if (TypeSymbol* type = toTypeSymbol(value->var))
-      retval = type->type;
-
-    // Var/Arg in user level modules
-    else if (IpeSymbol*  sym  = toIpeSymbol(value->var))
-      retval = sym->type;
-
-    // Immediates
-    else if (VarSymbol*  var  = toVarSymbol(value->var))
-      retval = var->type;
-
-    // Formals for internal functions
-    else if (ArgSymbol*  arg  = toArgSymbol(value->var))
-      retval = arg->type;
-  }
-
-  else if (CallExpr* callExpr = toCallExpr(expr))
-  {
-    if (callExpr->primitive)
-      retval = callExpr->primitive->returnInfo(callExpr);
-    else
-    {
-      SymExpr* funExpr = toSymExpr(callExpr->baseExpr);
-      INT_ASSERT(funExpr);
-
-      FnSymbol*  fnSym = toFnSymbol(funExpr->var);
-      INT_ASSERT(fnSym);
-
-      BlockStmt* bs    = fnSym->retExprType;
-      INT_ASSERT(bs);
-      INT_ASSERT(bs->length() == 1);
-
-      retval = typeForExpr(bs->body.only());
-    }
+    retval = new SymExpr(varSym);
   }
 
   else
-    retval = 0;
+  {
+    printf("   resolveExpr(UnresolvedSymExpr*, IpeEnv* env) "
+           "Failed to find a variable for %s\n",
+           expr->unresolved);
+  }
 
   return retval;
 }
 
 /************************************ | *************************************
 *                                                                           *
-* A drastically simplified form of Function Resolution for IPE.             *
+*                                                                           *
 *                                                                           *
 ************************************* | ************************************/
 
-static void resolveFormalType (IpeSymbol* formal, const ScopeBase* scope);
-static void resolveFormalType (ArgSymbol* formal, const ScopeBase* scope);
+static IpeDefExpr* resolveDefVar   (DefExpr*      expr, IpeEnv* env);
+static IpeDefExpr* resolveDefModule(ModuleSymbol* mod,  IpeEnv* env);
+static IpeDefExpr* resolveDefProc  (FnSymbol*     fn,   IpeEnv* env);
 
-static bool ipeFunctionExactMatch(FnSymbol*           fn,
-                                  std::vector<Type*>& actualTypes);
-
-static Expr* selectFunc(Expr*               funName,
-                        std::vector<Type*>& actualTypes,
-                        const ScopeBase*    scope)
+static IpeDefExpr* resolveDefExpr(DefExpr* defExpr, IpeEnv* env)
 {
-  Expr* retval = 0;
+  SET_LINENO(defExpr);
 
-  if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(funName))
+  IpeDefExpr* retval = 0;
+
+  if      (isVarSymbol(defExpr->sym))
   {
-    std::vector<VisibleSymbol> visibleSymbols;
-
-    scope->visibleSymbols(sel, visibleSymbols);
-
-    // Ensure we know the type of every formal
-    for (size_t i = 0; i < visibleSymbols.size(); i++)
-    {
-      if (FnSymbol* fn = toFnSymbol(visibleSymbols[i].symbol()))
-      {
-        resolveFuncFormals(fn, scope);
-      }
-    }
-
-    // Select a function if there is an exact match
-    for (size_t i = 0; i < visibleSymbols.size() && retval == 0; i++)
-    {
-      if (FnSymbol* fn = toFnSymbol(visibleSymbols[i].symbol()))
-      {
-        if (ipeFunctionExactMatch(fn, actualTypes) == true)
-        {
-          SET_LINENO(funName);
-
-          retval = new SymExpr(fn);
-
-          resolve(fn, visibleSymbols[i].scope());
-        }
-      }
-    }
-
-    if (retval == 0)
-    {
-      AstDumpToNode logger(stdout, 3);
-
-      printf("resolve.selectFunc.  Failed to find a function\n");
-      printf("   ");
-      funName->accept(&logger);
-      printf("\n\n\n");
-
-      INT_ASSERT(false);
-    }
+    retval = resolveDefVar(defExpr, env);
   }
+
+  else if (ModuleSymbol* mod = toModuleSymbol(defExpr->sym))
+    retval = resolveDefModule(mod, env);
+
+  else if (FnSymbol*     fn  = toFnSymbol(defExpr->sym))
+    retval = resolveDefProc(fn, env);
 
   else
   {
     AstDumpToNode logger(stdout, 3);
 
-    printf("selectFunc   Unhandled\n");
+    printf("   resolveDefExpr(DefExpr*, IpeEnv* env)  unsupported\n");
     printf("   ");
-    funName->accept(&logger);
-    printf("\n\n\n");
+    defExpr->accept(&logger);
+    printf("\n\n");
+
+    INT_ASSERT(false);
   }
 
   return retval;
 }
 
-static void resolveFuncFormals(FnSymbol* fn, const ScopeBase* scope)
+static IpeDefExpr* resolveDefVar(DefExpr* defExpr, IpeEnv* env)
 {
-  for_alist(formal, fn->formals)
+  int         depth  = env->depth();
+  VarSymbol*  var    = toVarSymbol(defExpr->sym);
+  const char* name   = var->name;
+  IpeDefExpr* retval = NULL;
+
+  if (depth == 0 && env->findLocal(name) !=  NULL)
   {
-    DefExpr*   def = toDefExpr(formal);
+    printf("   Attempt to redefine \"%s\" in\n", name);
+    env->describe(3);
+    printf("\n\n\n");
+    INT_ASSERT(false);
+  }
 
-    if (IpeSymbol* ipe = toIpeSymbol(def->sym))
+  else
+  {
+    Expr* exprTypeExpr = NULL;
+    Type* exprTypeType = NULL;
+
+    Expr* initExpr     = NULL;
+    Type* initType     = NULL;
+
+    if (defExpr->exprType != NULL)
     {
-      if (ipe->type == 0)
-      {
-        resolveFormalType(ipe, scope);
+      Expr* expr = resolveExpr(defExpr->exprType, env);
 
-        INT_ASSERT(ipe->type);
-      }
+      INT_ASSERT(expr->typeInfo() == gIpeTypeType);
+
+      exprTypeExpr = expr;
+      exprTypeType = evaluateExpr(exprTypeExpr, env).typeGet();
     }
 
-    else if (ArgSymbol* arg = toArgSymbol(def->sym))
+    if (defExpr->init     != NULL)
     {
-      if (arg->type == 0)
-      {
-        resolveFormalType(arg, scope);
+      initExpr = resolveExpr(defExpr->init, env);
 
-        INT_ASSERT(arg->type);
+      if (CallExpr* callExpr = toCallExpr(initExpr))
+      {
+        IpeCallExpr* ipeCall = (IpeCallExpr*) callExpr;
+
+        initType = ipeCall->typeGet();
       }
+      else
+        initType = initExpr->typeInfo();
+
+      INT_ASSERT(initType);
     }
+
+    if      (exprTypeType == NULL && initType != NULL)
+      var->type = initType;
+
+    else if (exprTypeType != NULL && initType == NULL)
+      var->type = exprTypeType;
+
+    else if (exprTypeType != NULL && initType == exprTypeType)
+      var->type = exprTypeType;
 
     else
     {
+      AstDumpToNode logger(stdout, 3);
+
+      if (initExpr != NULL)
+      {
+        printf("   initExpr\n");
+        printf("   ");
+        initExpr->accept(&logger);
+        printf("\n\n");
+      }
+
+      if (initType != NULL)
+      {
+        printf("   initType\n");
+        printf("   ");
+        initType->accept(&logger);
+        printf("\n\n");
+      }
+
       INT_ASSERT(false);
     }
+
+    if (env->depth() == 0)
+      env->varAdd(var);
+
+    retval = new IpeDefExpr(var, initExpr, exprTypeExpr);
   }
+
+  return retval;
 }
 
-static void resolveFormalType(IpeSymbol* formal, const ScopeBase* scope)
+static IpeDefExpr* resolveDefModule(ModuleSymbol* mod,  IpeEnv* env)
 {
-  if (ArgSymbol* arg = toArgSymbol(formal->symbol()))
+  LcnSymbol* procLcn = env->findLocal(mod->name);
+
+  if (procLcn == NULL)
   {
-    resolveFormalType(arg, scope);
-    formal->type = arg->type;
+    VarSymbol* modVar = new VarSymbol(mod->name);
+    IpeModule* module = IpeModuleRoot::create(mod);
+    int        offset = env->allocateValue(module);
+
+    modVar->addFlag(FLAG_CONST);
+    modVar->type = gIpeTypeModule;
+    modVar->locationSet(env->depth(), offset);
+
+    env->varAdd(modVar);
+
+    procLcn = modVar;
   }
   else
   {
-    INT_ASSERT(false);
+    INT_ASSERT(procLcn->type == gIpeTypeModule);
   }
+
+  return new IpeDefExpr(procLcn, mod);
 }
 
-static void resolveFormalType(ArgSymbol* formal, const ScopeBase* scope)
+static IpeDefExpr* resolveDefProc(FnSymbol* fn, IpeEnv* env)
 {
-  BlockStmt*                 bs    = formal->typeExpr;
+  LcnSymbol* procLcn = env->findLocal(fn->name);
 
-  INT_ASSERT(bs);
-  INT_ASSERT(bs->body.length == 1);
-
-  UnresolvedSymExpr*         unres = toUnresolvedSymExpr(bs->body.get(1));
-
-  INT_ASSERT(unres);
-
-  std::vector<VisibleSymbol> symbols;
-
-  scope->visibleSymbols(unres, symbols);
-
-  if (symbols.size() == 0)
+  if (procLcn == NULL)
   {
-    AstDumpToNode logger(stdout);
+    VarSymbol*    procVar   = new VarSymbol(fn->name);
+    IpeProcedure* procedure = new IpeProcedure(fn->name);
+    int           offset    = env->allocateValue(procedure);
 
-    printf("resolveFormalType Failed to find a definition\n");
-    unres->accept(&logger);
-    printf("\n\n");
-    INT_ASSERT(false);
+    INT_ASSERT(env->isEnvForModule() == true);
+
+    procVar->type = gIpeTypeProcedure;
+    procVar->locationSet(env->depth(), offset);
+
+    env->varAdd(procVar);
+
+    procLcn = procVar;
   }
   else
   {
-    TypeSymbol* typeSym = toTypeSymbol(symbols[0].symbol());
-
-    INT_ASSERT(typeSym);
-
-    formal->type = typeSym->type;
-    formal->typeExpr->remove();
+    INT_ASSERT(procLcn->type == gIpeTypeProcedure);
   }
+
+  return new IpeDefExpr(procLcn, fn);
 }
 
-static bool ipeFunctionExactMatch(FnSymbol*           fn,
-                                  std::vector<Type*>& actualsTypes)
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static CondStmt* resolveCondStmt(CondStmt* stmt, IpeEnv* env)
+{
+  SET_LINENO(stmt);
+
+  CondStmt* retval = NULL;
+
+  if (stmt->elseStmt == NULL)
+    retval = new CondStmt(resolveExpr(stmt->condExpr, env),
+                          resolveExpr(stmt->thenStmt, env),
+                          NULL);
+  else
+    retval = new CondStmt(resolveExpr(stmt->condExpr, env),
+                          resolveExpr(stmt->thenStmt, env),
+                          resolveExpr(stmt->elseStmt, env));
+
+  return retval;
+}
+
+static WhileDoStmt* resolveWhileDoStmt(WhileDoStmt* stmt, IpeEnv* env)
+{
+#if 0
+  AstDumpToNode logger(stdout, 3);
+
+  printf("\n\n\n\nresolveWhileDoStmt Enter\n");
+
+  printf("   ");
+  stmt->accept(&logger);
+  printf("\n\n");
+
+  env->describe(3);
+  printf("\n\n");
+#endif
+
+  SET_LINENO(stmt);
+
+  Expr*        cond   = stmt->condExprGet();
+  Expr*        body   = stmt->body.get(1);
+  WhileDoStmt* retval = NULL;
+
+  INT_ASSERT(stmt->body.length == 1);
+  INT_ASSERT(isBlockStmt(body));
+
+  retval = new WhileDoStmt(resolveExpr(cond, env),
+                           toBlockStmt(resolveExpr(body, env)));
+
+
+#if 0
+  printf("\n\n\n\nresolveWhileDoStmt Exit\n");
+  printf("   ");
+  retval->accept(&logger);
+  printf("\n\n");
+#endif
+
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static bool         blockRequiresScope(BlockStmt* stmt);
+
+static int          blockEstimateFrameSize(BlockStmt* stmt);
+static IpeSequence* blockResolve(BlockStmt* stmt,
+                                 IpeEnv*    env,
+                                 bool       genBlockStmt);
+static bool         blockCollectLocals  (BlockStmt* stmt, IpeEnv* env);
+static bool         blockProcessUseStmts(BlockStmt* stmt, IpeEnv* env);
+
+static bool         blockCollectResolved(BlockStmt*          stmt,
+                                         IpeEnv*             env,
+                                         std::vector<Expr*>& resolved);
+
+IpeSequence* blockResolve(BlockStmt* stmt, IpeEnv* env)
+{
+  return blockResolve(stmt, env, false);
+}
+
+static IpeSequence* resolveBlockStmt(BlockStmt* stmt, IpeEnv* env)
+{
+  static int sCount = 0;
+  int        count  = sCount;
+
+  sCount = sCount + 1;
+
+  IpeSequence* retval = NULL;
+
+  SET_LINENO(stmt);
+
+  AstDumpToNode logger(stdout, 3);
+
+#if 0
+  printf("\n\n\n\n\n\n\n");
+  printf("   resolveBlockStmt           00100 %3d\n", count);
+  printf("   ");
+  stmt->accept(&logger);
+  printf("\n\n");
+#else
+  (void) count;
+#endif
+
+  if (blockRequiresScope(stmt) == true)
+  {
+    int            frameSize = blockEstimateFrameSize(stmt);
+    IpeScopeBlock* scope     = new IpeScopeBlock(env->scopeGet());
+    IpeEnv*        blockEnv  = new IpeEnv(env, scope, frameSize);
+
+    retval = blockResolve(stmt, blockEnv, true);
+
+    INT_ASSERT(retval != NULL);
+  }
+
+  else
+  {
+    std::vector<Expr*> resolved;
+
+    if (blockCollectResolved(stmt, env, resolved) == false)
+      retval = NULL;
+    else
+      retval = new IpeSequence(resolved);
+  }
+
+#if 0
+  printf("   resolveBlockStmt           00900 %3d\n", count);
+  retval->describe(3);
+  printf("\n\n");
+#endif
+
+  return retval;
+}
+
+static bool blockRequiresScope(BlockStmt* stmt)
 {
   bool retval = false;
 
-  if (fn->formals.length == (int) actualsTypes.size())
+  if (stmt->isScopeless() == false)
   {
-    bool match = true;
-
-    for (size_t i = 0; i < actualsTypes.size() && match == true; i++)
+    for (int i = 1; i <= stmt->body.length && retval == false; i++)
     {
-      DefExpr*   expr = toDefExpr(fn->formals.get(i + 1));
-      INT_ASSERT(expr);
+      Expr* expr = stmt->body.get(i);
 
-      ArgSymbol* arg  = toArgSymbol(expr->sym);
+      retval = (isDefExpr(expr) == true || isUseStmt(expr)) ? true : false;
+    }
+  }
 
-      if (arg == 0)
-      {
-        IpeSymbol* ipe = toIpeSymbol(expr->sym);
+  return retval;
+}
 
-        INT_ASSERT(ipe);
+static int blockEstimateFrameSize(BlockStmt* stmt)
+{
+  int delta  = 8;   // NOAKES: Currently all variables are 8 bytes
+  int retval = 0;
 
-        arg = toArgSymbol(ipe->symbol());
-      }
+  for (int i = 1; i <= stmt->body.length; i++)
+  {
+    Expr* expr = stmt->body.get(i);
 
-      INT_ASSERT(arg);
-
-      match = (actualsTypes[i] == arg->type) ? true : false;
+    if (isDefExpr(expr) == true)
+    {
+      retval = retval + delta;
     }
 
-    retval = match;
+    else if (BlockStmt* bs = toBlockStmt(expr))
+    {
+      if (bs->isScopeless() == true)
+        retval = retval + blockEstimateFrameSize(bs);
+    }
   }
+
+  return retval;
+}
+
+static IpeSequence* blockResolve(BlockStmt* stmt,
+                                 IpeEnv*    env,
+                                 bool       genBlockStmt)
+{
+  static int sCount = 0;
+  int count = sCount;
+
+  sCount = sCount + 1;
+
+  std::vector<Expr*> resolved;
+  IpeSequence*       retval = NULL;
+
+#if 0
+  AstDumpToNode logger(stdout, 3);
+
+  printf("\n\n\n\n\n");
+  printf("   blockResolve(stmt, env, %s)           00100 %5d\n",
+         (genBlockStmt) ? "true" : "false",
+         count);
+
+  printf("   ");
+  stmt->accept(&logger);
+  printf("\n\n");
+#else
+  (void) count;
+#endif
+
+  if      (blockCollectLocals(stmt, env)             == false)
+    retval = NULL;
+
+  else if (blockProcessUseStmts(stmt, env)           == false)
+    retval = NULL;
+
+  else if (blockCollectResolved(stmt, env, resolved) == false)
+    retval = NULL;
+
+  else if (genBlockStmt == false)
+    retval = new IpeSequence(resolved);
+
+  else
+    retval = new IpeBlockStmt(resolved, env);
+
+#if 0
+  printf("   blockResolve(stmt, env, %s)           00900 %5d\n",
+         (genBlockStmt) ? "true" : "false",
+         count);
+  retval->describe(3);
+  printf("\n");
+#endif
+
+  return retval;
+}
+
+// Return false if an error occurs while collecting definitions
+static bool blockCollectLocals(BlockStmt* stmt, IpeEnv* env)
+{
+  bool retval = true;
+
+  for (int i = 1; i <= stmt->body.length && retval == true; i++)
+  {
+    Expr* expr = stmt->body.get(i);
+
+    if (DefExpr* defExpr = toDefExpr(expr))
+    {
+      Symbol*     sym  = defExpr->sym;
+      const char* name = sym->name;
+
+      if      (VarSymbol* varSym = toVarSymbol(sym))
+      {
+        if (env->findLocal(name) == NULL)
+        {
+          env->varAdd(varSym);
+        }
+        else
+        {
+          printf("Attempt to redefine %s\n", name);
+          retval = false;
+        }
+      }
+
+      else if (FnSymbol*  fnSym  = toFnSymbol(sym))
+      {
+        LcnSymbol*    lcn  = env->findLocal(name);
+        VarSymbol*    var  = toVarSymbol(lcn);
+        IpeProcedure* proc = NULL;
+
+        if (lcn == NULL)
+        {
+          proc      = new IpeProcedure(name);
+
+          var       = new VarSymbol(name);
+          var->type = gIpeTypeProcedure;
+          var->locationSet(env->depth(), env->allocateValue(proc));
+
+          env->varAdd(var);
+        }
+
+        if (var->type == gIpeTypeProcedure)
+        {
+          if (proc == NULL)
+            proc = (IpeProcedure*) env->fetchPtr(var);
+
+          proc->methodAdd(new IpeMethod(fnSym, env));
+        }
+        else
+        {
+          printf("Attempt to redefine %s\n", name);
+          retval = false;
+        }
+      }
+
+      else
+      {
+        AstDumpToNode logger(stdout, 3);
+
+        printf("   blockCollectLocals(BLockStmt*, IpeEnv*)  incomplete\n");
+        printf("   ");
+        defExpr->accept(&logger);
+        printf("\n\n");
+        INT_ASSERT(false);
+      }
+    }
+
+    else if (BlockStmt* bs = toBlockStmt(expr))
+    {
+      if (bs->isScopeless() == true)
+        blockCollectLocals(bs, env);
+    }
+  }
+
+  return retval;
+}
+
+static bool blockProcessUseStmts(BlockStmt* stmt, IpeEnv* env)
+{
+  bool retval = true;
+
+  for (int i = 1; i <= stmt->body.length && retval == true; i++)
+  {
+    Expr* expr = stmt->body.get(i);
+
+    if (isUseStmt(expr) == true)
+    {
+      Expr*              modName = toCallExpr(expr)->get(1);
+      UnresolvedSymExpr* sel     = toUnresolvedSymExpr(modName);
+      LcnSymbol*         sym     = env->findVariable(sel->unresolved);
+
+      if (sym != NULL && sym->type == gIpeTypeModule && sym->offset() >= 0)
+      {
+        IpeModule* module = (IpeModule*) env->fetchPtr(sym);
+
+        module->moduleResolve();
+        env->useAdd(module);
+      }
+      else
+      {
+        INT_ASSERT(sym           != NULL);
+        INT_ASSERT(sym->type     == gIpeTypeModule);
+        INT_ASSERT(sym->offset() >= 0);
+
+        retval = false;
+      }
+    }
+  }
+
+  return retval;
+}
+
+static bool blockCollectResolved(BlockStmt*          stmt,
+                                 IpeEnv*             env,
+                                 std::vector<Expr*>& resolved)
+{
+  bool retval = true;
+
+  for (int i = 1; i <= stmt->body.length && retval == true; i++)
+  {
+    Expr* expr = stmt->body.get(i);
+
+    if (isUseStmt(expr) == false)
+    {
+      if (Expr* exprRes = resolveExpr(expr, env))
+        resolved.push_back(exprRes);
+      else
+        retval = false;
+    }
+  }
+
+  return retval;
+}
+
+#if 0
+static void fooBarExpr(ModuleSymbol* modSym, IpeEnv* env)
+{
+  BlockStmt* block = modSym->block;
+
+  for_alist(expr, block->body)
+  {
+    if (DefExpr* defExpr = toDefExpr(expr))
+    {
+      const char* identifier = defExpr->sym->name;
+
+      if (env->findLocal(identifier) == NULL)
+        env->varAdd(new VarSymbol(identifier));
+    }
+  }
+
+  for_alist(expr, block->body)
+  {
+    if (isUseStmt(expr) == true)
+    {
+      Expr*              modName = toCallExpr(expr)->get(1);
+      UnresolvedSymExpr* sel     = toUnresolvedSymExpr(modName);
+      LcnSymbol*         modSym  = env->findVariable(sel);
+      IpeModule*         module  = NULL;
+
+      INT_ASSERT(modSym->type     == gIpeTypeModule);
+      INT_ASSERT(modSym->offset() >= 0);
+
+      module = (IpeModule*) env->fetchPtr(modSym);
+      module->moduleResolve();
+      env->useAdd(module);
+    }
+  }
+
+  for_alist(expr, block->body)
+  {
+    if (DefExpr* defExpr = toDefExpr(expr))
+    {
+      Symbol*    sym = defExpr->sym;
+      LcnSymbol* var = env->findLocal(sym->name);
+
+      if (FnSymbol* fnSymbol = toFnSymbol(sym))
+      {
+        if (var->type == dtUnknown)
+        {
+          INT_ASSERT(env->findVariable(sym->name) == var);
+
+          IpeProcedure* procedure = new IpeProcedure(sym->name);
+          int           offset    = env->allocateValue(procedure);
+
+          var->type = gIpeTypeProcedure;
+          var->locationSet(env->depth(), offset);
+        }
+
+        if (var->type == gIpeTypeProcedure)
+        {
+          IpeProcedure* procedure = (IpeProcedure*) env->fetchPtr(var);
+          IpeMethod*    method    = new IpeMethod(fnSymbol, env);
+
+          procedure->methodAdd(method);
+        }
+        else
+          printf("Error: The variable %s is already defined as a non-procedure\n", sym->name);
+      }
+
+      else
+        printf("Error: The variable %s is already defined\n", sym->name);
+    }
+  }
+}
+#endif
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static IpeCallExpr* resolveCallExpr(CallExpr* callExpr, IpeEnv* env)
+{
+  IpeCallExpr* retval = NULL;
+
+  if      (callExpr->baseExpr  != NULL)
+  {
+    if (SymExpr* procSymExpr = toSymExpr(resolveExpr(callExpr->baseExpr, env)))
+    {
+      if (procSymExpr->typeInfo() == gIpeTypeProcedure)
+      {
+        IpeValue           procValue = env->fetch(toLcnSymbol(procSymExpr->var));
+        IpeProcedure*      procPtr   = procValue.procedureGet();
+        std::vector<Expr*> resolvedActuals;
+
+        for (int i = 1; i <= callExpr->numActuals(); i++)
+          resolvedActuals.push_back(resolveExpr(callExpr->get(i), env));
+
+        retval = procPtr->resolve(procSymExpr, resolvedActuals);
+
+        if (retval == NULL)
+        {
+          INT_ASSERT(false);
+        }
+      }
+      else
+        INT_ASSERT(false);
+    }
+    else
+      INT_ASSERT(false);
+  }
+
+  else if (callExpr->primitive != NULL)
+  {
+    retval = new IpeCallExpr(callExpr->primitive);
+
+    for (int i = 1; i <= callExpr->numActuals(); i++)
+    {
+      Expr* expr     = callExpr->get(i);
+      Expr* resolved = resolveExpr(expr, env);
+
+      retval->insertAtTail(resolved);
+    }
+  }
+
+  else
+  {
+    INT_ASSERT(false);
+  }
+
+  INT_ASSERT(retval);
+  INT_ASSERT(dynamic_cast<IpeCallExpr*>(retval));
 
   return retval;
 }

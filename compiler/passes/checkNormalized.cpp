@@ -23,6 +23,7 @@
 
 #include "expr.h"
 #include "astutil.h"
+#include "stlUtil.h"
 
 
 static void checkFunctionSignatures();
@@ -39,7 +40,7 @@ checkNormalized(void) {
 static void checkFunctionSignatures()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (fn->isIterator()) {
       if (fn->retTag == RET_TYPE)
         USR_FATAL_CONT(fn, "iterators may not yield or return types");
       if (fn->retTag == RET_PARAM)
@@ -49,9 +50,9 @@ static void checkFunctionSignatures()
       if (fn->retExprType)
         USR_FATAL_CONT(fn, "constructors may not declare a return type");
       for_formals(formal, fn) {
-        Vec<SymExpr*> symExprs;
+        std::vector<SymExpr*> symExprs;
         collectSymExprs(formal, symExprs);
-        forv_Vec(SymExpr, se, symExprs) {
+        for_vector(SymExpr, se, symExprs) {
           if (se->var == fn->_this) {
             USR_FATAL_CONT(se, "invalid access of class member in constructor header");
             break;

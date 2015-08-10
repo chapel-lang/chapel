@@ -236,7 +236,7 @@ within the forall statement or expression implicitly refer
 to the corresponding formal argument of the task function
 or the leader iterator.
 
-Each formal argument of a task function or iterator has the blank
+Each formal argument of a task function or iterator has the default
 intent by default.  For variables of primitive, enum, class, record
 and union types, this has the effect of capturing the value of the
 variable at task creation time.  Within the lexical scope of the
@@ -257,15 +257,14 @@ Forall intents affect those tasks in the same way that task intents
 affect the behavior of a task construct such as a \chpl{coforall} loop.
 \end{rationale}
 
-\begin{future}
-We would like to introduce "reduction" intents
-that will let us implement reductions using forall intents.
-\end{future}
-
-\begin{future}
-As with task intents, we may want to disallow some intents,
-for example \chpl{inout} and \chpl{out}.
-\end{future}
+\begin{craychapel}
+An initial implementation of "reduce" intents is also available,
+which permits users to reduce values across iterations of a forall loop.
+They are described in:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+\chpl{doc/technotes/README.reduceIntents}
+\end{craychapel}
 
 
 \section{Promotion}

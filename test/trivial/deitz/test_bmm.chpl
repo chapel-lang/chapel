@@ -59,19 +59,19 @@ proc newBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
   var result:uint(64) = 0;
   var yTranspose = bitMatTrans(y);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x8040201008040201;
-  yTranspose = bitRotLeft(yTranspose, 8);
+  yTranspose = rotl(yTranspose, 8);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x4020100804020180;
-  yTranspose = bitRotLeft(yTranspose, 8);
+  yTranspose = rotl(yTranspose, 8);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x2010080402018040;
-  yTranspose = bitRotLeft(yTranspose, 8);
+  yTranspose = rotl(yTranspose, 8);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x1008040201804020;
-  yTranspose = bitRotLeft(yTranspose, 8);
+  yTranspose = rotl(yTranspose, 8);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x0804020180402010;
-  yTranspose = bitRotLeft(yTranspose, 8);
+  yTranspose = rotl(yTranspose, 8);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x0402018040201008;
-  yTranspose = bitRotLeft(yTranspose, 8);
+  yTranspose = rotl(yTranspose, 8);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x0201804020100804;
-  yTranspose = bitRotLeft(yTranspose, 8);
+  yTranspose = rotl(yTranspose, 8);
   result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x0180402010080402;
   return result;
 }

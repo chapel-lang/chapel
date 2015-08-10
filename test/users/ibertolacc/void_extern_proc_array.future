@@ -1,0 +1,13 @@
+bug: better error message for extern procs declared to take an array who return
+     the Chapel void type.
+
+The function voidArrayFunction returns void (on the C end), and a user would be
+inclined to declare (on the Chapel end) the extern proc to return Chapel void
+(literally 'void'), when nothing should be specified.
+
+While the error message is correct, it does not make it clear that the issue is
+on the users end, and gives the appearance that the compiler is at fault.
+
+message:
+void_extern_proc_array.chpl:3: error: illegal use of function that does not
+return a value: 'chpl__extern_array_voidArrayFunction'

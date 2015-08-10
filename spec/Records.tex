@@ -97,6 +97,12 @@ by a library or the execution environment.  See the chapter on interoperability
 (\rsec{Interoperability}) for more information on external records.
 % External record inheritance is not currently supported.
 
+\begin{future}
+Privacy controls for classes and records are currently not specified,
+as discussion is needed regarding its impact on inheritance, for
+instance.
+\end{future}
+
 \subsection{Record Types}
 \label{Record_Types}
 \index{records!record types}
@@ -342,6 +348,74 @@ they are used.
 As with classes, the user can provide his own constructors
 (\rsec{User_Defined_Constructors}).  If any user-defined constructors are
 supplied, the default initializer cannot be called directly.  
+
+\subsection{Record Destructor}
+\label{Record_Destructor}
+\index{records!destructor}
+\index{destructor!records}
+
+A record author may specify addditional actions to be performed before record storage is
+reclaimed by defining a record destructor.  A record destructor is a method that has the
+same name as the record prefixed by a tilde.  A record destructor takes no arguments
+(aside from the implicit \chpl{this} argument).  If defined, the destructor is called
+on a record object after it goes out of scope and before its memory is reclaimed.
+
+% TODO: The above ambiguous language is intended to allow optimizations involving extending
+% the lifetime of an object.  However, we leave unspecified the means by which a user may
+% demand avid running of the destructor and reclamation of memory (as in C\#).  We need to
+% specify this so the above language can be tightened up for that case.
+
+% For now, the actual lifetime of a record object is under the control of the compiler.  For
+% example, as an optimization, ownership of an object may be transferred between variables with
+% non-overlapping lifetimes.  When this happens, there will be no observable destruction of
+% one of those variables.  The compiler may also choose to insert temporary copies e.g. of
+% record formals or of a record return value.
+
+% The compiler guarantees that every record constructor call will have exactly one
+% corresponding record destructor call.  However, the exact number of constructor-destructor
+% pairs is determined by the compiler, and may also be influenced by various compiler
+% options.
+
+\begin{chapelexample}{recordDestructor.chpl}
+\begin{chapel}
+class C { var x: int; } // A class with nonzero size.
+// If the class were empty, whether or not its memory was reclaimed 
+// would not be observable.
+
+// Defines a record implementing simple memory management.
+record R {
+  var c: C;
+  proc R() { c = new C(0); }
+  proc ~R() { delete c; c = nil; }
+}
+
+proc foo()
+{
+  var r: R; // Initialized using default constructor.
+  writeln(r);
+  // r will go out of scope here.
+  // Its destructor will be called to free the C object it contains.
+}
+
+foo();
+\end{chapel}
+\begin{chapeloutput}
+(c = {x = 0})
+
+====================
+Leaked Memory Report
+==============================================================
+Number of leaked allocations
+           Total leaked memory (bytes)
+                      Description of allocation
+==============================================================
+==============================================================
+\end{chapeloutput}
+\begin{chapelexecopts}
+--memLeaksByType
+\end{chapelexecopts}
+\end{chapelexample}
+
 
 \section{Record Arguments}
 \label{Record_Arguments}

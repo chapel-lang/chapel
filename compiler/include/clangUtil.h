@@ -32,6 +32,8 @@
 #include "clangSupport.h"
 #endif
 
+void cleanupExternC();
+
 #include "files.h"
 #include "genret.h"
 
@@ -103,6 +105,7 @@ class LayeredValueTable
     void addGlobalValue(llvm::StringRef name, GenRet gend);
     void addGlobalType(llvm::StringRef name, llvm::Type *type);
     void addGlobalCDecl(clang::NamedDecl* cdecl);
+    void addGlobalCDecl(llvm::StringRef name, clang::NamedDecl* cdecl);
     void addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var);
     void addBlock(llvm::StringRef name, llvm::BasicBlock *block);
     GenRet getValue(llvm::StringRef name);

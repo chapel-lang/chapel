@@ -20,826 +20,716 @@
 #include "ipeEvaluate.h"
 
 #include "AstDumpToNode.h"
-#include "IpeEnvironment.h"
-#include "IpeSymbol.h"
+#include "expr.h"
+#include "IpeEnv.h"
+
+IpeEnv* sFooEnv = NULL;
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 #include "IpeValue.h"
 
-#include "alist.h"
+#include "ipeDriver.h"
+#include "ipeResolve.h"
+
+IpeValue evaluate(Expr* untypedExpr, IpeEnv* env)
+{
+  AstDumpToNode logger(stdout, 3);
+  Expr*         exprRes = NULL;
+  IpeValue      retval;
+
+  if (gDebugLevelResolve > 0 || gDebugLevelEvaluate > 0)
+  {
+    printf("\n\n\n\nevaluate\n");
+
+    printf("   untyped expr\n");
+    printf("   ");
+    untypedExpr->accept(&logger);
+    printf("\n\n");
+
+    printf("   env\n");
+    env->describe(3);
+    printf("\n\n");
+  }
+
+  exprRes = resolveExpr(untypedExpr, env);
+
+  if (gDebugLevelResolve > 0 || gDebugLevelEvaluate > 0)
+  {
+    printf("   resolved expr\n");
+    printf("   ");
+    exprRes->accept(&logger);
+    printf("\n\n");
+  }
+
+  if (exprRes != NULL)
+    retval = evaluateExpr(exprRes, env);
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+#include "IpeDefExpr.h"
+#include "IpeCallExpr.h"
+#include "IpeMethod.h"
+#include "IpeProcedure.h"
+#include "ipeDriver.h"
+#include "misc.h"
 #include "stmt.h"
-#include "symbol.h"
 #include "WhileDoStmt.h"
 
-static IpeEnvironment* createRootEnvironment();
-static int             environmentSize(FnSymbol* symbol);
+static bool     isImmediate   (Expr*      expr);
+static bool     isImmediate   (VarSymbol* var);
+static IpeValue immediateValue(VarSymbol* var);
 
-static void            execute(IpeEnvironment* env);
+static IpeValue evaluateImmediate  (Expr*        expr);
+static IpeValue evaluateDefExpr    (IpeDefExpr*  expr, IpeEnv* env);
+static IpeValue evaluateCondStmt   (CondStmt*    expr, IpeEnv* env);
+static IpeValue evaluateWhileDoStmt(WhileDoStmt* expr, IpeEnv* env);
+static IpeValue evaluateBlockStmt  (BlockStmt*   expr, IpeEnv* env);
+static IpeValue evaluateCallExpr   (IpeCallExpr* expr, IpeEnv* env);
 
-static IpeValue        evaluate(Expr*         expr,    IpeEnvironment* env);
-
-static IpeValue        evaluate(Symbol*       sym,     IpeEnvironment* env);
-static IpeValue        evaluate(VarSymbol*    sym,     IpeEnvironment* env);
-static IpeValue        evaluate(ModuleSymbol* module,  IpeEnvironment* env);
-
-static IpeValue        evaluate(WhileDoStmt*  expr,    IpeEnvironment* env);
-static IpeValue        evaluate(BlockStmt*    expr,    IpeEnvironment* env);
-static IpeValue        evaluate(CondStmt*     expr,    IpeEnvironment* env);
-
-static IpeValue        evaluate(SymExpr*      expr,    IpeEnvironment* env);
-static IpeValue        evaluate(DefExpr*      expr,    IpeEnvironment* env);
-static IpeValue        evaluate(CallExpr*     expr,    IpeEnvironment* env);
-
-static IpeValue        evaluateCall  (CallExpr* callExpr, IpeEnvironment* env);
-static IpeValue        evaluatePrimop(CallExpr* callExpr, IpeEnvironment* env);
-
-void ipeEvaluate()
+IpeValue evaluateExpr(Expr* expr, IpeEnv* env)
 {
-  IpeEnvironment* rootEnv = createRootEnvironment();
+  static int sCount = 0;
+  int        count  = sCount;
+  bool       debug  = (count >= 9) ? true : false;
 
-  execute(rootEnv);
+  sCount = sCount + 1;
 
-  rootEnv->describe();
+  IpeValue retval;
 
-  delete rootEnv;
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-static void collectTopLevelVariables(std::vector<IpeSymbol*>& variables);
-
-static IpeEnvironment* createRootEnvironment()
-{
-  std::vector<IpeSymbol*> variables;
-
-  collectTopLevelVariables(variables);
-
-  return new IpeEnvironment(0, variables);
-}
-
-static void collectTopLevelVariables(std::vector<IpeSymbol*>& variables)
-{
-  for_alist(rootStmt, rootModule->block->body)
+#if 0
+  if (debug == true)
   {
-    if (DefExpr* rootDefExpr = toDefExpr(rootStmt))
-    {
-      if (ModuleSymbol* module = toModuleSymbol(rootDefExpr->sym))
-      {
-        if (module->modTag == MOD_USER)
-        {
-          for_alist(stmt, module->block->body)
-          {
-            if (DefExpr* defExpr = toDefExpr(stmt))
-            {
-              if (IpeSymbol* symbol = toIpeSymbol(defExpr->sym))
-              {
-                variables.push_back(symbol);
-              }
-            }
-          }
-        }
-      }
-    }
+    AstDumpToNode logger(stdout, 3);
+
+    printf("\n\n\n\n\n\n\n\n\n");
+    printf("   evaluateExpr(Expr*, IpeEnv*)        %6d Enter\n", count);
+
+    printf("   Expr\n");
+    printf("   ");
+    expr->accept(&logger);
+    printf("\n\n");
+
+    printf("   Env before\n");
+    env->describe(3);
+    printf("\n\n");
   }
-}
+#endif
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+  if (isImmediate(expr) == true)
+    retval = evaluateImmediate(expr);
 
-static void execute(IpeEnvironment* env)
-{
-  for_alist(rootStmt, rootModule->block->body)
+  else if (SymExpr*     sel = toSymExpr(expr))
   {
-    if (DefExpr* rootDefExpr = toDefExpr(rootStmt))
-    {
-      if (ModuleSymbol* module = toModuleSymbol(rootDefExpr->sym))
-      {
-        if (module->modTag == MOD_USER)
-          evaluate(module, env);
-      }
-    }
+    LcnSymbol* sym = toLcnSymbol(sel->var);
+
+    INT_ASSERT(sym);
+
+    retval = env->fetch(sym);
   }
+
+  else if (DefExpr*     sel = toDefExpr(expr))
+  {
+    IpeDefExpr* sel2 = (IpeDefExpr*) sel;
+
+    retval = evaluateDefExpr(sel2, env);
+  }
+
+  else if (CallExpr*    sel = toCallExpr(expr))
+  {
+    IpeCallExpr* sel2 = (IpeCallExpr*) sel;
+
+    INT_ASSERT(sel2);
+
+    retval = evaluateCallExpr(sel2, env);
+  }
+
+  else if (CondStmt*    sel = toCondStmt(expr))
+    retval = evaluateCondStmt(sel, env);
+
+  else if (WhileDoStmt* sel = toWhileDoStmt(expr))
+    retval = evaluateWhileDoStmt(sel, env);
+
+  else if (BlockStmt*   sel = toBlockStmt(expr))
+    retval = evaluateBlockStmt(sel, env);
+
+  else
+  {
+    AstDumpToNode logger(stdout, 3);
+
+    printf("   evaluateExpr(Expr*, Env*)  unsupported\n");
+    printf("   ");
+    expr->accept(&logger);
+    printf("\n\n");
+
+    INT_ASSERT(false);
+  }
+
+#if 0
+  if (debug == true)
+  {
+    printf("   evaluateExpr(Expr*, IpeEnv*)        %6d\n", count);
+    printf("   Env after\n");
+    env->describe(3);
+    printf("\n\n");
+  }
+#else
+  (void) debug;
+#endif
+
+  return retval;
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+static bool isImmediate(Expr* expr)
+{
+  bool retval = false;
 
-static IpeValue evaluate(Expr* expr, IpeEnvironment* env)
+  if (SymExpr* symExpr = toSymExpr(expr))
+  {
+    if (VarSymbol* var = toVarSymbol(symExpr->var))
+      retval = var->isImmediate();
+  }
+
+  return retval;
+}
+
+static bool isImmediate(VarSymbol* var)
+{
+  return var->isImmediate();
+}
+
+static IpeValue evaluateImmediate(Expr* expr)
 {
   IpeValue retval;
 
   if (SymExpr* symExpr = toSymExpr(expr))
-    retval = evaluate(symExpr, env);
-
-  else if (DefExpr*     defExpr     = toDefExpr(expr))
-    retval = evaluate(defExpr, env);
-
-  else if (CallExpr*    callExpr    = toCallExpr(expr))
-    retval = evaluate(callExpr, env);
-
-  else if (WhileDoStmt* whileDoStmt = toWhileDoStmt(expr))
-    retval = evaluate(whileDoStmt, env);
-
-  else if (BlockStmt*   blockStmt   = toBlockStmt(expr))
-    retval = evaluate(blockStmt, env);
-
-  else if (CondStmt*    condStmt    = toCondStmt(expr))
-    retval = evaluate(condStmt, env);
-
-  else
   {
-    AstDumpToNode logger(stdout);
-
-    printf("evaluate(Expr, Env)\n\n");
-    printf("Failed to handle\n");
-
-    expr->accept(&logger);
-    printf("\n\n\n");
-
-    retval.iValue = 0;
-
-    INT_ASSERT(false);
+    if (VarSymbol* var = toVarSymbol(symExpr->var))
+      retval = immediateValue(var);
   }
 
   return retval;
 }
 
-static IpeValue evaluate(Symbol* sym, IpeEnvironment* env)
+static IpeValue immediateValue(VarSymbol* var)
 {
-  IpeValue retval;
+  INT_ASSERT(var->isImmediate());
 
-  if (VarSymbol* varSym = toVarSymbol(sym))
-  {
-    retval = evaluate(varSym, env);
-  }
+  Immediate* imm    = var->immediate;
+  Type*      type   = var->type;
+  IpeValue   retval;
+
+  INT_ASSERT(type);
+  INT_ASSERT(type->symbol);
+  INT_ASSERT(type->symbol->name);
+
+  if      (strcmp(type->symbol->name, "bool")     == 0)
+    retval.boolSet(imm->v_bool);
+
+  else if (strcmp(type->symbol->name, "int")      == 0)
+    retval.integerSet(imm->v_int64);
+
+  else if (strcmp(type->symbol->name, "real")     == 0)
+    retval.realSet(imm->v_float64);
+
+  else if (strcmp(type->symbol->name, "c_string") == 0)
+    retval.cstringSet(imm->v_string);
 
   else
-  {
-    AstDumpToNode logger(stdout);
-
-    printf("evaluate(Symbol, Env)\n\n");
-    printf("Failed to handle\n");
-
-    sym->accept(&logger);
-    printf("\n\n\n");
-
     INT_ASSERT(false);
-
-    retval.iValue = 0;
-  }
 
   return retval;
 }
 
-static IpeValue evaluate(VarSymbol* sym, IpeEnvironment* env)
+static IpeValue evaluateDefExpr(IpeDefExpr* defExpr, IpeEnv* env)
 {
   IpeValue retval;
 
-  if (Immediate* imm = sym->immediate)
+  if      (defExpr->moduleSymbolGet() != NULL)
   {
-    Type* type = sym->type;
 
-    INT_ASSERT(type);
-    INT_ASSERT(type->symbol);
-    INT_ASSERT(type->symbol->name);
+  }
 
-    if (strcmp(type->symbol->name, "bool") == 0)
-      retval.bValue = imm->v_bool;
+  else if (FnSymbol*  fnSym = defExpr->fnSymbolGet())
+  {
+    VarSymbol*    var       = toVarSymbol(defExpr->sym);
 
-    else if (strcmp(type->symbol->name, "int")  == 0)
+    INT_ASSERT(var);
+    INT_ASSERT(var->type == gIpeTypeProcedure);
+
+    IpeProcedure* procedure = (IpeProcedure*) env->fetchPtr(var);
+    IpeMethod*    method    = new IpeMethod(fnSym, env);
+
+    procedure->methodAdd(method);
+  }
+
+  else if (VarSymbol* var   = toVarSymbol(defExpr->sym))
+  {
+    IpeValue value;
+
+#if 0
+  AstDumpToNode logger(stdout, 3);
+
+  printf("\n\n\n\n\n\n\n\n\n");
+  printf("   evaluateDefExpr\n");
+  printf("   defExpr\n");
+  printf("   ");
+  defExpr->accept(&logger);
+  printf("\n");
+  printf("   env\n");
+  env->describe(3);
+  printf("\n");
+#endif
+
+    if (defExpr->init == NULL)
     {
-      retval.iValue = imm->v_int64;
-    }
+      VarSymbol* defaultValue = toVarSymbol(var->type->defaultValue);
 
-    else if (strcmp(type->symbol->name, "real") == 0)
-      retval.rValue = imm->v_float64;
+      if (isImmediate(defaultValue) == true)
+        value = immediateValue(defaultValue);
+      else
+        value = env->fetch(defaultValue);
+    }
 
     else
+      value = evaluateExpr(defExpr->init, env);
+
+    if (var->offset() < 0)
     {
-      retval.iValue = 0;
-      INT_ASSERT(false);
+      INT_ASSERT(env->depth() == 0);
+      env->allocate(var, value);
     }
+    else
+    {
+      env->store(var, value);
+    }
+
+#if 0
+  printf("   env after\n");
+  env->describe(3);
+  printf("\n");
+#endif
+
+
   }
+
   else
   {
-    retval.iValue = 0;
+    AstDumpToNode logger(stdout, 3);
+
+    printf("\n\n");
+    printf("   evaluateDefExpr(DefExpr*, Env*)  unsupported\n");
+    printf("   ");
+    defExpr->accept(&logger);
+    printf("\n\n");
+
     INT_ASSERT(false);
   }
 
   return retval;
 }
 
-static IpeValue evaluate(ModuleSymbol* module, IpeEnvironment* env)
+static IpeValue evaluateCondStmt(CondStmt* expr, IpeEnv* env)
 {
+  IpeValue condValue = evaluateExpr(expr->condExpr, env);
   IpeValue retval;
 
-  for_alist(stmt, module->block->body)
-    evaluate(stmt, env);
+  if      (condValue.boolGet() == true)
+    retval = evaluateExpr(expr->thenStmt, env);
 
-  retval.iValue = 0;
+  else if (expr->elseStmt      != NULL)
+    retval = evaluateExpr(expr->elseStmt, env);
 
   return retval;
 }
 
-static IpeValue evaluate(WhileDoStmt* whileDoStmt, IpeEnvironment* env)
+static IpeValue evaluateWhileDoStmt(WhileDoStmt* whileDoStmt, IpeEnv* env)
 {
   bool     proceed = true;
   IpeValue retval;
 
   while (proceed == true)
   {
-    IpeValue cond = evaluate(whileDoStmt->condExprGet(), env);
+    IpeValue cond = evaluateExpr(whileDoStmt->condExprGet(), env);
 
-    proceed = cond.bValue;
+    proceed = cond.boolGet();
 
     if (proceed == true)
     {
-      for_alist(expr, whileDoStmt->body)
-        evaluate(expr, env);
+      for (int i = 1; i <= whileDoStmt->body.length; i++)
+        evaluateExpr(whileDoStmt->body.get(i), env);
     }
   }
 
-  retval.iValue = 0;
+  return retval;
+}
+
+static IpeValue evaluateBlockStmt(BlockStmt* expr, IpeEnv* env)
+{
+  IpeValue retval;
+
+  for (int i = 1; i <= expr->body.length; i++)
+    retval = evaluateExpr(expr->body.get(i), env);
 
   return retval;
 }
 
-static IpeValue evaluate(BlockStmt* blockStmt, IpeEnvironment* env)
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static IpeValue evaluateCall(IpeCallExpr* callExpr, IpeEnv* env);
+static IpeValue evaluatePrim(IpeCallExpr* callExpr, IpeEnv* env);
+
+static IpeValue evaluateCallExpr(IpeCallExpr* callExpr, IpeEnv* env)
 {
   IpeValue retval;
 
-  // NOAKES 2015/01/30.  Needs to be updated to track RETURN state
-  for_alist(expr, blockStmt->body)
-  {
-    retval = evaluate(expr, env);
-  }
-
-  return retval;
-}
-
-static IpeValue evaluate(CondStmt* expr, IpeEnvironment* env)
-{
-  IpeValue condValue = evaluate(expr->condExpr, env);
-  IpeValue retval;
-
-  if (condValue.bValue == 1)
-    retval = evaluate(expr->thenStmt, env);
-
-  else if (expr->elseStmt != 0)
-    retval = evaluate(expr->elseStmt, env);
-
-  else
-    retval.iValue = 0;
-
-  return retval;
-}
-
-static IpeValue evaluate(SymExpr* expr, IpeEnvironment* env)
-{
-  IpeValue retval;
-
-  if (VarSymbol* symbol = toVarSymbol(expr->var))
-    retval = evaluate(symbol, env);
-
-  else if (IpeSymbol* variable = toIpeSymbol(expr->var))
-    retval = env->lookup(variable);
-
-  else
-  {
-    AstDumpToNode logger(stdout);
-
-    printf("evaluate(SymExpr, Env)\n\n");
-    printf("Failed to handle\n");
-
-    expr->accept(&logger);
-    printf("\n\n\n");
-
-    retval.iValue = 0;
-    INT_ASSERT(false);
-  }
-
-  return retval;
-}
-
-static IpeValue evaluate(DefExpr* defExpr, IpeEnvironment* env)
-{
-  IpeValue retval;
-
-  if (IpeSymbol* sym = toIpeSymbol(defExpr->sym))
-  {
-    IpeValue value;
-
-    if (defExpr->init == 0)
-      value = evaluate(sym->type->defaultValue, env);
-
-    else
-      value = evaluate(defExpr->init,      env);
-
-    env->bind(sym);
-    env->assign(sym, value);
-  }
-
-  // Must be a param
-  else if (isVarSymbol(defExpr->sym) == true)
-  {
-
-  }
-
-  else if (isFnSymbol(defExpr->sym)  == true)
-  {
-
-  }
-
-  else
-  {
-    AstDumpToNode logger(stdout);
-
-    printf("evaluate(DefExpr, Env)\n\n");
-    printf("Failed to handle\n");
-
-    defExpr->accept(&logger);
-    printf("\n\n\n");
-
-    INT_ASSERT(false);
-  }
-
-  retval.iValue = 0;
-
-  return retval;
-}
-
-static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
-{
-  IpeValue retval;
-
-  if (callExpr->primitive == 0)
+  if (callExpr->baseExpr != NULL)
     retval = evaluateCall(callExpr, env);
   else
-    retval = evaluatePrimop(callExpr, env);
+    retval = evaluatePrim(callExpr, env);
 
   return retval;
 }
 
-static IpeValue evaluateCall(CallExpr* callExpr, IpeEnvironment* env)
+static IpeValue evaluateCall(IpeCallExpr* callExpr, IpeEnv* env)
 {
+  SymExpr* symExpr = toSymExpr(callExpr->baseExpr);
   IpeValue retval;
 
-  if (FnSymbol* fnSymbol = callExpr->isResolved())
+  INT_ASSERT(symExpr);
+
+  if (VarSymbol* var = toVarSymbol(symExpr->var))
   {
-    int                     newEnvSize = environmentSize(fnSymbol);
-    IpeEnvironment*         newEnv     = NULL;
+    INT_ASSERT(var->type == gIpeTypeProcedure);
 
-    std::vector<IpeSymbol*> formals;
-    std::vector<IpeValue>   actuals;
+    IpeProcedure* ipeProcedure = (IpeProcedure*) env->fetchPtr(var);
 
-    for (int i = 0; i < callExpr->numActuals(); i++)
+    INT_ASSERT(ipeProcedure);
+
+    if (ipeProcedure->isValid(callExpr->procedureGeneration()) == true)
     {
-      DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(i + 1));
-      IpeSymbol* formal  = toIpeSymbol(defExpr->sym);
+      int        methodId  = callExpr->methodId();
+      IpeMethod* ipeMethod = ipeProcedure->methodGet(methodId);
 
-      INT_ASSERT(formal);
+      INT_ASSERT(ipeMethod);
 
-      formals.push_back(formal);
-      actuals.push_back(evaluate(callExpr->get(i + 1), env));
+      retval = ipeMethod->apply(callExpr, env);
     }
 
-    newEnv = new IpeEnvironment(env,
-                                formals,
-                                actuals,
-                                newEnvSize / 8,
-                                newEnvSize);
+    else
+    {
+      AstDumpToNode logger(stdout, 3);
 
-    retval = evaluate(fnSymbol->body, newEnv);
+      printf("\n\n");
+      printf("   evaluateCallExpr(IpeCallExpr*, Env*)  incomplete\n");
+      printf("   ");
+      callExpr->accept(&logger);
+      printf("\n\n");
+
+      ipeProcedure->describe(3);
+      printf("\n");
+
+      INT_ASSERT(false);
+    }
   }
+
   else
   {
-    AstDumpToNode logger(stdout);
+    AstDumpToNode logger(stdout, 3);
 
-    printf("evaluateCall(CallExpr, Env)\n\n");
-    printf("Function has not been resolved\n");
-
+    printf("\n\n");
+    printf("   evaluateCallExpr(IpeCallExpr*, Env*)  unexpected\n");
+    printf("   ");
     callExpr->accept(&logger);
-    printf("\n\n\n");
-
+    printf("\n\n");
     INT_ASSERT(false);
-    retval.iValue = 0;
   }
 
   return retval;
 }
 
-static IpeValue evaluatePrimop(CallExpr* callExpr, IpeEnvironment* env)
+static IpeValue evaluatePrim(IpeCallExpr* callExpr, IpeEnv* env)
 {
-  bool     handled = false;
   IpeValue retval;
 
-  if (false)
+  if      (callExpr->isPrimitive(PRIM_ADDR_OF) == true)
   {
+    SymExpr* sym = toSymExpr(callExpr->get(1));
 
+    retval = env->addrOf(toVarSymbol(sym->var));
   }
 
   else if (callExpr->isPrimitive(PRIM_ASSIGN) == true)
   {
-    SymExpr*   dstSymExpr = toSymExpr(callExpr->get(1));
-    IpeSymbol* variable   = toIpeSymbol(dstSymExpr->var);
-    IpeValue   value      = evaluate(callExpr->get(2), env);
+    SymExpr* dstExpr  = toSymExpr(callExpr->get(1));
+    IpeValue value;
 
-    INT_ASSERT(variable);
+    Expr*    srcExpr  = callExpr->get(2);
+    IpeValue srcValue = evaluateExpr(srcExpr, env);
 
-    env->assign(variable, value);
+    if      (ArgSymbol* dstSym = toArgSymbol(dstExpr->var))
+    {
+      value = env->fetch(dstSym);
+    }
 
-    retval.iValue = 0;
-    handled       = true;
+    else if (VarSymbol* dstSym = toVarSymbol(dstExpr->var))
+    {
+      value = env->fetch(dstSym);
+    }
+
+    else
+      INT_ASSERT(false);
+
+    *(value.refGet()) = srcValue;
+  }
+
+  else if (callExpr->isPrimitive(PRIM_UNARY_MINUS) == true)
+  {
+    if (gDebugLevelCalls > 1)
+    {
+      AstDumpToNode logger(stdout, 3);
+
+      printf("   PRIM_UNARY_MINUS\n");
+      printf("   ");
+      callExpr->accept(&logger);
+      printf("\n\n");
+    }
+
+    Type*    type = callExpr->typeInfo();
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(-1 * arg1.integerGet());
+
+    else if (strcmp(type->symbol->name, "real") == 0)
+      retval.realSet(-1.0 * arg1.realGet());
   }
 
   else if (callExpr->isPrimitive(PRIM_ADD) == true)
   {
-    Type*    type = callExpr->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
-
-    if (strcmp(type->symbol->name, "int") == 0)
+    if (gDebugLevelCalls > 1)
     {
-      retval.iValue = arg1.iValue + arg2.iValue;
+      AstDumpToNode logger(stdout, 3);
+
+      printf("   PRIM_ADD\n");
+      printf("   ");
+      callExpr->accept(&logger);
+      printf("\n\n");
     }
+
+    Type*    type = callExpr->typeInfo();
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
+
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(arg1.integerGet() + arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.rValue = arg1.rValue + arg2.rValue;
-    }
-
-    handled       = true;
+      retval.realSet(arg1.realGet() + arg2.realGet());
   }
 
   else if (callExpr->isPrimitive(PRIM_SUBTRACT) == true)
   {
-    Type*    type = callExpr->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
-
-    if (strcmp(type->symbol->name, "int") == 0)
+    if (gDebugLevelCalls > 1)
     {
-      retval.iValue = arg1.iValue - arg2.iValue;
+      AstDumpToNode logger(stdout, 3);
+
+      printf("   PRIM_SUBTRACT\n");
+      printf("   ");
+      callExpr->accept(&logger);
+      printf("\n\n");
     }
+
+    Type*    type = callExpr->typeInfo();
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
+
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(arg1.integerGet() - arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.rValue = arg1.rValue - arg2.rValue;
-    }
-
-    handled       = true;
+      retval.realSet(arg1.realGet() - arg2.realGet());
   }
 
   else if (callExpr->isPrimitive(PRIM_MULT) == true)
   {
-    Type*    type = callExpr->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
-
-    if (strcmp(type->symbol->name, "int") == 0)
+    if (gDebugLevelCalls > 1)
     {
-      retval.iValue = arg1.iValue * arg2.iValue;
+      AstDumpToNode logger(stdout, 3);
+
+      printf("   PRIM_MULT\n");
+      printf("   ");
+      callExpr->accept(&logger);
+      printf("\n\n");
     }
+
+    Type*    type = callExpr->typeInfo();
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
+
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(arg1.integerGet() * arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.rValue = arg1.rValue * arg2.rValue;
-    }
-
-    handled       = true;
+      retval.realSet(arg1.realGet() * arg2.realGet());
   }
 
   else if (callExpr->isPrimitive(PRIM_DIV) == true)
   {
-    Type*    type = callExpr->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
-
-    if (strcmp(type->symbol->name, "int") == 0)
+    if (gDebugLevelCalls > 1)
     {
-      retval.iValue = arg1.iValue / arg2.iValue;
+      AstDumpToNode logger(stdout, 3);
+
+      printf("   PRIM_DIV\n");
+      printf("   ");
+      callExpr->accept(&logger);
+      printf("\n\n");
     }
+
+    Type*    type = callExpr->typeInfo();
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
+
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(arg1.integerGet() / arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.rValue = arg1.rValue / arg2.rValue;
-    }
-
-    handled       = true;
+      retval.realSet(arg1.realGet() / arg2.realGet());
   }
+
+  //
+  //
+  //
 
   else if (callExpr->isPrimitive(PRIM_EQUAL) == true)
   {
     Type*    type = callExpr->get(1)->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "bool") == 0)
-    {
-      retval.bValue = arg1.bValue == arg2.bValue;
-    }
+    if      (strcmp(type->symbol->name, "bool") == 0)
+      retval.boolSet(arg1.boolGet()    == arg2.boolGet());
 
-    else if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.bValue = arg1.iValue == arg2.iValue;
-    }
+    else if (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() == arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.bValue = arg1.rValue == arg2.rValue;
-    }
-
-    handled = true;
+      retval.boolSet(arg1.realGet()    == arg2.realGet());
   }
 
   else if (callExpr->isPrimitive(PRIM_NOTEQUAL) == true)
   {
     Type*    type = callExpr->get(1)->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
 
     if (strcmp(type->symbol->name, "bool") == 0)
-    {
-      retval.bValue = arg1.bValue != arg2.bValue;
-    }
+      retval.boolSet(arg1.boolGet()    != arg2.boolGet());
 
     else if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.bValue = arg1.iValue != arg2.iValue;
-    }
+      retval.boolSet(arg1.integerGet() != arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.bValue = arg1.rValue != arg2.rValue;
-    }
-
-    handled = true;
+      retval.boolSet(arg1.realGet()    != arg2.realGet());
   }
+
+  //
+  //
+  //
 
   else if (callExpr->isPrimitive(PRIM_GREATER) == true)
   {
     Type*    type = callExpr->get(1)->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.bValue = arg1.iValue > arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() >  arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.bValue = arg1.rValue > arg2.rValue;
-    }
-
-    handled = true;
+      retval.boolSet(arg1.realGet()    >  arg2.realGet());
   }
 
   else if (callExpr->isPrimitive(PRIM_LESS) == true)
   {
     Type*    type = callExpr->get(1)->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.bValue = arg1.iValue < arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() <  arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.bValue = arg1.rValue < arg2.rValue;
-    }
-
-    handled = true;
+      retval.boolSet(arg1.realGet()    <  arg2.realGet());
   }
 
   else if (callExpr->isPrimitive(PRIM_GREATEROREQUAL) == true)
   {
     Type*    type = callExpr->get(1)->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.bValue = arg1.iValue >= arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() >= arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.bValue = arg1.rValue >= arg2.rValue;
-    }
-
-    handled = true;
+      retval.boolSet(arg1.realGet()    >= arg2.realGet());
   }
 
   else if (callExpr->isPrimitive(PRIM_LESSOREQUAL) == true)
   {
     Type*    type = callExpr->get(1)->typeInfo();
-    IpeValue arg1 = evaluate(callExpr->get(1), env);
-    IpeValue arg2 = evaluate(callExpr->get(2), env);
+    IpeValue arg1 = evaluateExpr(callExpr->get(1), env);
+    IpeValue arg2 = evaluateExpr(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.bValue = arg1.iValue <= arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() <= arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.bValue = arg1.rValue <= arg2.rValue;
-    }
-
-    handled = true;
+      retval.boolSet(arg1.realGet()    <= arg2.realGet());
   }
 
-  // NOAKES 2015/01/30 This version only supports return of
-  // value.  It does not handle flow of control
+  //
+  //
+  //
+
+  // NOAKES 2015/01/30 This version only supports return of value
+  // It does not handle flow of control
   else if (callExpr->isPrimitive(PRIM_RETURN) == true)
   {
     // This case implies a structured goto
     if (callExpr->numActuals() == 0)
-    {
       INT_ASSERT(false);
-    }
     else
-    {
-      retval  = evaluate(callExpr->get(1), env);
-      handled = true;
-    }
+      retval = evaluateExpr(callExpr->get(1), env);
   }
 
   else
   {
-    retval.iValue = 0;
-  }
-
-  if (handled == false)
-  {
     AstDumpToNode logger(stdout, 3);
 
-    printf("evaluatePrimop(CallExpr, Env)\n\n");
-    printf("Failed to handle\n");
-
+    printf("   IpeMethod::evaluate(CallExpr*, IpeEnv*)  unsupported\n");
     printf("   ");
     callExpr->accept(&logger);
-    printf("\n\n\n");
+    printf("\n\n");
 
     INT_ASSERT(false);
   }
 
   return retval;
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-static int environmentSize(Symbol*       symbol,    int currMax);
-static int environmentSize(IpeSymbol*    symbol,    int currMax);
-
-static int environmentSize(Expr*         expr,      int currMax);
-
-static int environmentSize(WhileDoStmt*  blockStmt, int currMax);
-static int environmentSize(BlockStmt*    blockStmt, int currMax);
-static int environmentSize(CondStmt*     condStmt,  int currMax);
-
-static int environmentSize(DefExpr*      defExpr,   int currMax);
-static int environmentSize(CallExpr*     callExpr,  int currMax);
-
-static int environmentSize(FnSymbol* symbol)
-{
-  // NOAKES 2015/01/27 Values are currently fixed size
-  int currMax = 8 * symbol->numFormals();
-
-  return environmentSize(symbol->body, currMax);
-}
-
-static int environmentSize(Symbol* symbol, int currMax)
-{
-  if (false)
-    ;
-
-  else if (IpeSymbol*    sym = toIpeSymbol(symbol))
-    currMax = environmentSize(sym, currMax);
-
-  else if (FnSymbol*     sym = toFnSymbol(symbol))
-    currMax = environmentSize(sym, currMax);
-
-  else
-  {
-    AstDumpToNode logger(stdout, 3);
-
-    printf("environmentSize unhandled symbol\n");
-    printf("   ");
-    symbol->accept(&logger);
-    printf("\n\n\n");
-
-    INT_ASSERT(false);
-  }
-
-  return currMax;
-}
-
-// NOAKES 2015/01/26: IpeSymbol is currently of fixed size 8
-static int environmentSize(IpeSymbol* symbol, int currMax)
-{
-  return symbol->offset() + 8;
-}
-
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-static int environmentSize(Expr* expression, int currMax)
-{
-  if (false)
-    ;
-
-  else if (isSymExpr(expression) == true)
-    ;
-
-  else if (FnSymbol*    expr = toFnSymbol(expression))
-    currMax = environmentSize(expr, currMax);
-
-  else if (WhileDoStmt* expr = toWhileDoStmt(expression))
-    currMax = environmentSize(expr, currMax);
-
-  // This must appear after WhileDoStmt etc
-  else if (BlockStmt*   expr = toBlockStmt(expression))
-    currMax = environmentSize(expr, currMax);
-
-  else if (CondStmt*    expr = toCondStmt(expression))
-    currMax = environmentSize(expr, currMax);
-
-  else if (DefExpr*     expr = toDefExpr(expression))
-    currMax = environmentSize(expr, currMax);
-
-  else if (CallExpr*    expr = toCallExpr(expression))
-    currMax = environmentSize(expr, currMax);
-
-  else
-  {
-    AstDumpToNode logger(stdout, 3);
-
-    printf("environmentSize unhandled expr\n");
-    printf("   ");
-    expression->accept(&logger);
-    printf("\n\n\n");
-
-    INT_ASSERT(false);
-  }
-
-  return currMax;
-}
-
-static int environmentSize(WhileDoStmt* whileDoStmt, int currMax)
-{
-  for_alist(expr, whileDoStmt->body)
-    currMax = environmentSize(expr, currMax);
-
-  return currMax;
-}
-
-static int environmentSize(BlockStmt* blockStmt, int currMax)
-{
-  for_alist(expr, blockStmt->body)
-    currMax = environmentSize(expr, currMax);
-
-  return currMax;
-}
-
-static int environmentSize(CondStmt* condStmt, int currMax)
-{
-  currMax = environmentSize(condStmt->thenStmt, currMax);
-
-  if (condStmt->elseStmt != 0)
-    currMax = environmentSize(condStmt->elseStmt, currMax);
-
-  return currMax;
-}
-
-static int environmentSize(DefExpr* defExpr, int currMax)
-{
-  if (IpeSymbol* ipe = toIpeSymbol(defExpr->sym))
-    currMax = environmentSize(ipe, currMax);
-
-  return currMax;
-}
-
-static int environmentSize(CallExpr* callExpr, int currMax)
-{
-  return currMax;
 }

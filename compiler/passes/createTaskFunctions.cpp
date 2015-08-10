@@ -145,11 +145,11 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 
 static void
 findOuterVars(FnSymbol* fn, SymbolMap& uses) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
 
   collect_asts(fn, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
@@ -164,25 +164,35 @@ findOuterVars(FnSymbol* fn, SymbolMap& uses) {
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
 void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
-  ArgSymbol* tiMarker = NULL;
-  // the actuals alternate: tiMark arg, task-intent variable [, repeat]
+  Symbol* marker = NULL;
+
+  // Keep in sync with setupForallIntents() - the actuals alternate:
+  //  (tiMark arg | reduce opExpr), task-intent variable [, repeat]
   for_actuals(actual, byrefVars) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se); // comes as an UnresolvedSymExpr from the parser,
                     // should have been resolved in ScopeResolve
                     // or it is a SymExpr over a tiMark ArgSymbol
+                    //                 or over chpl__reduceGlob
     Symbol* var = se->var;
-    if (tiMarker) {
+    if (marker) {
       SymbolMapElem* elem = uses.get_record(var);
-      if (elem)
-        elem->value = tiMarker;
-      tiMarker = NULL;
+      if (elem) {
+        elem->value = marker;
+      } else {
+        if (isVarSymbol(marker)) {
+          // this is a globalOp created in setupOneReduceIntent()
+          INT_ASSERT(!strcmp(marker->name, "chpl__reduceGlob"));
+          USR_WARN(byrefVars, "the variable '%s' is given a reduce intent and not mentioned in the loop body - it will have the unit value after the loop", var->name);
+        }
+      }
+      marker = NULL;
     } else {
-      tiMarker =  toArgSymbol(var);
-      INT_ASSERT(tiMarker);
+      marker = var;
+      INT_ASSERT(marker);  // otherwise the alternation logic will not work
     }
   }
-  INT_ASSERT(!tiMarker);
+  INT_ASSERT(!marker);
 }
 
 // 'this' (the receiver) should *always* be passed by reference - because
@@ -224,7 +234,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap& vars) {
 void replaceVarUses(Expr* topAst, SymbolMap& vars) {
   if (vars.n == 0) return;
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(topAst, symExprs);
+  collectSymExprs(topAst, symExprs);
   form_Map(SymbolMapElem, e, vars) {
     Symbol* oldSym = e->key;
     if (e->value != markPruned) {
@@ -286,7 +296,7 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
 // functions to pass in values or references from the context which
 // are used in the body of the block.
 //
-// As a special case, the target locale is prepended to the arguments passed 
+// As a special case, the target locale is prepended to the arguments passed
 // to the "on" function.
 //
 void createTaskFunctions(void) {
@@ -426,7 +436,7 @@ void createTaskFunctions(void) {
           // Join barrier (acquire) is needed for a blocking on, and it
           // will make sure that writes in the on statement are available
           // to the caller. Nonblocking on or begin don't block so it
-          // doesn't make sense to acquire barrier after running them. 
+          // doesn't make sense to acquire barrier after running them.
           // coforall, cobegin, and sync blocks do this in waitEndCount.
           if( needsMemFence && isBlockingOn )
             block->insertBefore(new CallExpr("chpl_rmem_consist_acquire"));
@@ -462,7 +472,7 @@ void createTaskFunctions(void) {
           if( isBlockingOn )
             fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
         }
-        
+
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 
@@ -475,7 +485,9 @@ void createTaskFunctions(void) {
 
           markOuterVarsWithIntents(block->byrefVars, uses);
           pruneThisArg(call->parentSymbol, uses);
-          block->byrefVars->remove();
+
+          if (block->byrefVars != NULL)
+            block->byrefVars->remove();
 
           addVarsToActuals(call, uses);
           addVarsToFormals(fn, uses);

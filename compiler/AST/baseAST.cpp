@@ -17,13 +17,16 @@
  * limitations under the License.
  */
 
+#include <ostream>
+#include <sstream>
+#include <string>
+
 #include "baseAST.h"
 
 #include "astutil.h"
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
-#include "IpeSymbol.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -74,8 +77,8 @@ void printStatistics(const char* pass) {
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kExternBlockStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
-  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nIpeSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
-  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kIpeSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
+  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
+  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
   int kType = kPrimitiveType+kEnumType+kAggregateType;
 
@@ -279,15 +282,19 @@ BaseAST::BaseAST(AstTag type) :
   }
 }
 
-BaseAST::~BaseAST() { 
+
+const std::string BaseAST::tabText = "   ";
+
+
+BaseAST::~BaseAST() {
 }
 
 int BaseAST::linenum() const {
-  return astloc.lineno; 
+  return astloc.lineno;
 }
 
 const char* BaseAST::fname() const {
-  return astloc.filename; 
+  return astloc.filename;
 }
 
 const char* BaseAST::stringLoc(void) const {
@@ -300,25 +307,32 @@ const char* BaseAST::stringLoc(void) const {
 
 
 ModuleSymbol* BaseAST::getModule() {
-  if (!this)
-    return NULL;
-  if (ModuleSymbol* x = toModuleSymbol(this))
-    return x;
-  else if (Type* x = toType(this))
-    return x->symbol->getModule();
-  else if (Symbol* x = toSymbol(this))
-    return x->defPoint->getModule();
-  else if (Expr* x = toExpr(this))
-    return x->parentSymbol->getModule();
-  else
+  ModuleSymbol* retval = NULL;
+
+  if (ModuleSymbol* x = toModuleSymbol(this)) {
+    retval = x;
+
+  } else if (Type* x = toType(this)) {
+    if (x->symbol != NULL)
+      retval = x->symbol->getModule();
+
+  } else if (Symbol* x = toSymbol(this)) {
+    if (x->defPoint != NULL)
+      retval = x->defPoint->getModule();
+
+  } else if (Expr* x = toExpr(this)) {
+    if (x->parentSymbol != NULL)
+      retval = x->parentSymbol->getModule();
+
+  } else {
     INT_FATAL(this, "Unexpected case in BaseAST::getModule()");
-  return NULL;
+  }
+
+  return retval;
 }
 
 
 FnSymbol* BaseAST::getFunction() {
-  if (!this)
-    return NULL;
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x->initFn;
   else if (FnSymbol* x = toFnSymbol(this))
@@ -430,10 +444,6 @@ const char* BaseAST::astTagAsString() const {
       retval = "ArgSymbol";
       break;
 
-    case E_IpeSymbol:
-      retval = "IpeSymbol";
-      break;
-
     case E_TypeSymbol:
       retval = "TypeSymbol";
       break;
@@ -464,6 +474,34 @@ const char* BaseAST::astTagAsString() const {
   }
 
   return retval;
+}
+
+
+void BaseAST::printTabs(std::ostream *file, unsigned int tabs) {
+  for (unsigned int i = 0; i < tabs; i++) {
+    *file << this->tabText;
+  }
+}
+
+
+// This method is the same for several subclasses of BaseAST, so it is defined
+// her on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
+// taken as an argument here.
+//
+// TODO: Can BaseAST define a 'doc' member? What if `chpl --doc` went away and
+//       `chpldoc` was compiled with a special #define (e.g. -DCHPLDOC) so the
+//       'doc' member and all doc-related methods would only be available to
+//       chpldoc? (thomasvandoren, 2015-02-21)
+void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs) {
+  if (doc != NULL) {
+    std::stringstream sStream(ltrimAllLines(doc));
+    std::string line;
+    while (std::getline(sStream, line)) {
+      this->printTabs(file, tabs);
+      *file << line;
+      *file << std::endl;
+    }
+  }
 }
 
 
@@ -602,6 +640,13 @@ bool isForLoop(const BaseAST* a)
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isForLoop()) ? true : false;
+}
+
+bool isCoforallLoop(const BaseAST* a)
+{
+  const BlockStmt* stmt = toConstBlockStmt(a);
+
+  return (stmt != 0 && stmt->isCoforallLoop()) ? true : false;
 }
 
 bool isCForLoop(const BaseAST* a)

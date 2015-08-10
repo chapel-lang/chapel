@@ -17,25 +17,37 @@
 
 IPE_SRCS =                           \
            ipeDriver.cpp             \
-           ipeReplaceVariables.cpp   \
+                                     \
+           IpeValue.cpp              \
+                                     \
+           IpeEnv.cpp                \
+           IpeScope.cpp              \
+           IpeScopeModule.cpp        \
+           IpeScopeMethod.cpp        \
+           IpeScopeBlock.cpp         \
+                                     \
+           IpeModule.cpp             \
+           IpeModuleRoot.cpp         \
+           IpeModuleInternal.cpp     \
+           IpeModuleStandard.cpp     \
+                                     \
+           IpeProcedure.cpp          \
+           IpeMethod.cpp             \
+           IpeSequence.cpp           \
+           IpeBlockStmt.cpp          \
+           IpeCallExpr.cpp           \
+           IpeDefExpr.cpp            \
+                                     \
+           IpeReader.cpp             \
+           IpeReaderFile.cpp         \
+           IpeReaderTerminal.cpp     \
+                                     \
            ipeResolve.cpp            \
-           ipeCheckReturn.cpp        \
-           ipeInlinePrimitives.cpp   \
-           ipeAssignLocations.cpp    \
            ipeEvaluate.cpp           \
-                                     \
-           IpeEnvironment.cpp        \
-           IpeSymbol.cpp             \
-           VisibleSymbol.cpp         \
-                                     \
-           ScopeBase.cpp             \
-           ScopeModule.cpp           \
-           ScopeFunction.cpp         \
-           ScopeBlock.cpp
+           ipeUtils.cpp
 
 
 SVN_SRCS = $(IPE_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS     = $(SVN_SRCS)
 
-IPE_OBJS = \
-	$(IPE_SRCS:%.cpp=$(IPE_OBJDIR)/%.$(OBJ_SUFFIX))
+IPE_OBJS = $(IPE_SRCS:%.cpp=$(IPE_OBJDIR)/%.$(OBJ_SUFFIX))

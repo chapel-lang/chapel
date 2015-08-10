@@ -1,4 +1,2 @@
 --fast # lulesh.default.perfkeys
--suseBlockDist --no-local  # lulesh.block.perfkeys
 -suseSparseMaterials=false    # lulesh.default-dense.perfkeys
--suseBlockDist --no-local -suseSparseMaterials=false    # lulesh.block-dense.perfkeys

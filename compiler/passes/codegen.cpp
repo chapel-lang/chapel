@@ -24,6 +24,7 @@
 #include "codegen.h"
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
@@ -36,10 +37,11 @@
 
 #include <inttypes.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <cstdio>
-
+#include <vector>
 
 // Global so that we don't have to pass around
 // to all of the codegen() routines
@@ -359,6 +361,29 @@ compareSymbol(const void* v1, const void* v2) {
   return result;
 }
 
+static bool
+compareSymbol2(void* v1, void* v2) {
+  Symbol* s1 = (Symbol*)v1;
+  Symbol* s2 = (Symbol*)v2;
+  ModuleSymbol* m1 = s1->getModule();
+  ModuleSymbol* m2 = s2->getModule();
+  if (m1 != m2) {
+    if (m1->modTag < m2->modTag)
+      return 1;
+    if (m1->modTag > m2->modTag)
+      return 0;
+    return strcmp(m1->cname, m2->cname) < 0;
+  }
+
+  if (s1->linenum() != s2->linenum())
+    return s1->linenum() < s2->linenum();
+
+  int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
+  if (!result)
+    result = strcmp(s1->cname, s2->cname);
+
+  return result < 0;
+}
 
 //
 // given a name and up to two sets of names, return a name that is in
@@ -616,7 +641,7 @@ static void codegen_header() {
   GenInfo* info = gGenInfo;
   Vec<const char*> cnames;
   Vec<TypeSymbol*> types;
-  Vec<FnSymbol*> functions;
+  std::vector<FnSymbol*> functions;
   Vec<VarSymbol*> globals;
 
   // reserved symbol names that require renaming to compile
@@ -650,9 +675,9 @@ static void codegen_header() {
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     legalizeName(fn);
-    functions.add(fn);
+    functions.push_back(fn);
   }
-  qsort(functions.v, functions.n, sizeof(functions.v[0]), compareSymbol);
+  std::sort(functions.begin(), functions.end(), compareSymbol2);
 
 
   //
@@ -741,7 +766,7 @@ static void codegen_header() {
   // mangle function names if they clash with types, enum constants,
   // global variables, or other functions
   //
-  forv_Vec(FnSymbol, fn, functions) {
+  for_vector(FnSymbol, fn, functions) {
     if (fn->isRenameable())
       fn->cname = uniquifyName(fn->cname, &cnames);
   }
@@ -773,9 +798,9 @@ static void codegen_header() {
       local.set_add(formal->cname);
     }
 
-    Vec<DefExpr*> defs;
+    std::vector<DefExpr*> defs;
     collectDefExprs(fn->body, defs);
-    forv_Vec(DefExpr, def, defs) {
+    for_vector(DefExpr, def, defs) {
       legalizeName(def->sym);
       // give temps cnames
       if (def->sym->hasFlag(FLAG_TEMP)) {
@@ -816,6 +841,8 @@ static void codegen_header() {
     //include generated extern C header file
     if (externC && gAllExternCode.filename != NULL) {
       fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
+      // If we wanted to, here is where we would re-enable
+      // the memory warning macros.
     }
 #endif
   }
@@ -889,17 +916,17 @@ static void codegen_header() {
 
 
   genComment("Function Prototypes");
-  forv_Vec(FnSymbol, fnSymbol, functions) {
+  for_vector(FnSymbol, fnSymbol, functions) {
     fnSymbol->codegenPrototype();
   }
     
   genComment("Function Pointer Table");
-  forv_Vec(FnSymbol, fn, functions) {
-    if (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
-        fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
-        fn->hasFlag(FLAG_ON_BLOCK)) {
-    ftableVec.add(fn);
-    ftableMap.put(fn, ftableVec.n-1);
+  for_vector(FnSymbol, fn2, functions) {
+    if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
+        fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+        fn2->hasFlag(FLAG_ON_BLOCK)) {
+    ftableVec.add(fn2);
+    ftableMap.put(fn2, ftableVec.n-1);
     }
   }
 
@@ -1097,7 +1124,7 @@ codegen_config() {
     fprintf(outfile, "initConfigVarTable();\n");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1150,7 +1177,7 @@ codegen_config() {
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (3);
         args[0] = info->builder->CreateLoad(
             new_StringSymbol(var->name)->codegen().val);
@@ -1181,7 +1208,7 @@ codegen_config() {
       }
     }
     info->builder->CreateRetVoid();
-    llvm::verifyFunction(*createConfigFunc);
+    //llvm::verifyFunction(*createConfigFunc);
 #endif
   }
 }
@@ -1277,73 +1304,72 @@ void codegen(void) {
 
     finishCodegenLLVM();
 #endif 
-    return;
-  }
-
-  if (fHeterogeneous) {
-    codegenTypeStructureInclude(mainfile.fptr);
-    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-      if ((ts->type != dtOpaque) &&
-          (!toPrimitiveType(ts->type) ||
-           !toPrimitiveType(ts->type)->isInternalType)) {
-        registerTypeToStructurallyCodegen(ts);
+  } else {
+    if (fHeterogeneous) {
+      codegenTypeStructureInclude(mainfile.fptr);
+      forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+        if ((ts->type != dtOpaque) &&
+            (!toPrimitiveType(ts->type) ||
+             !toPrimitiveType(ts->type)->isInternalType)) {
+          registerTypeToStructurallyCodegen(ts);
+        }
       }
     }
+
+    ChainHashMap<char*, StringHashFns, int> filenames;
+    forv_Vec(ModuleSymbol, currentModule, allModules) {
+      mysystem(astr("# codegen-ing module", currentModule->name),
+               "generating comment for --print-commands option");
+
+      // Macs are case-insensitive when it comes to files, so
+      // the following bit of code creates a unique filename
+      // with case-insensitivity taken into account
+
+      // create the lowercase filename
+      char lowerFilename[FILENAME_MAX];
+      sprintf(lowerFilename, "%s", currentModule->name);
+      for (unsigned int i=0; i<strlen(lowerFilename); i++) {
+        lowerFilename[i] = tolower(lowerFilename[i]);
+      }
+
+      // create a filename by bumping a version number until we get a
+      // filename we haven't seen before
+      char filename[FILENAME_MAX];
+      sprintf(filename, "%s", lowerFilename);
+      int version = 1;
+      while (filenames.get(filename)) {
+        version++;
+        sprintf(filename, "%s%d", lowerFilename, version);
+      }
+      filenames.put(filename, 1);
+
+      // build the real filename using that version number -- preserves
+      // case by default by going back to currentModule->name rather
+      // than using the lowercase filename
+      if (version == 1) {
+        sprintf(filename, "%s", currentModule->name);
+      } else {
+        sprintf(filename, "%s%d", currentModule->name, version);
+      }
+
+      fileinfo modulefile;
+      openCFile(&modulefile, filename, "c");
+      info->cfile = modulefile.fptr;
+
+      currentModule->codegenDef();
+      closeCFile(&modulefile);
+      fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
+    }
+
+    if (fHeterogeneous)
+      codegenTypeStructures(hdrfile.fptr);
+
+    info->cfile = hdrfile.fptr;
+    codegen_header_addons();
+
+    closeCFile(&hdrfile);
+    closeCFile(&mainfile);
   }
-
-  ChainHashMap<char*, StringHashFns, int> filenames;
-  forv_Vec(ModuleSymbol, currentModule, allModules) {
-    mysystem(astr("# codegen-ing module", currentModule->name),
-             "generating comment for --print-commands option");
-
-    // Macs are case-insensitive when it comes to files, so
-    // the following bit of code creates a unique filename
-    // with case-insensitivity taken into account
-
-    // create the lowercase filename
-    char lowerFilename[FILENAME_MAX];
-    sprintf(lowerFilename, "%s", currentModule->name);
-    for (unsigned int i=0; i<strlen(lowerFilename); i++) {
-      lowerFilename[i] = tolower(lowerFilename[i]);
-    }
-
-    // create a filename by bumping a version number until we get a
-    // filename we haven't seen before
-    char filename[FILENAME_MAX];
-    sprintf(filename, "%s", lowerFilename);
-    int version = 1;
-    while (filenames.get(filename)) {
-      version++;
-      sprintf(filename, "%s%d", lowerFilename, version);
-    }
-    filenames.put(filename, 1);
-
-    // build the real filename using that version number -- preserves
-    // case by default by going back to currentModule->name rather
-    // than using the lowercase filename
-    if (version == 1) {
-      sprintf(filename, "%s", currentModule->name);
-    } else {
-      sprintf(filename, "%s%d", currentModule->name, version);
-    }
-    
-    fileinfo modulefile;
-    openCFile(&modulefile, filename, "c");
-    info->cfile = modulefile.fptr;
-    
-    currentModule->codegenDef();
-    closeCFile(&modulefile);
-    fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
-  }
-
-  if (fHeterogeneous) 
-    codegenTypeStructures(hdrfile.fptr);
-
-  info->cfile = hdrfile.fptr;
-  codegen_header_addons();
-
-  closeCFile(&hdrfile);
-  closeCFile(&mainfile);
 
   if (fPrintEmittedCodeSize)
   {
@@ -1438,14 +1464,14 @@ std::string numToString(int64_t num)
 std::string int64_to_string(int64_t i)
 {
   char buf[32];
-  sprintf(buf, "%"PRId64, i);
+  sprintf(buf, "%" PRId64, i);
   std::string ret(buf);
   return ret;
 }
 std::string uint64_to_string(uint64_t i)
 {
   char buf[32];
-  sprintf(buf, "%"PRIu64, i);
+  sprintf(buf, "%" PRIu64, i);
   std::string ret(buf);
   return ret;
 }

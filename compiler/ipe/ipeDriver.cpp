@@ -19,51 +19,188 @@
 
 #include "ipe.h"
 
-#include "ipeReplaceVariables.h"
-#include "ipeResolve.h"
-#include "ipeCheckReturn.h"
-#include "ipeInlinePrimitives.h"
-#include "ipeAssignLocations.h"
+#include "IpeEnv.h"
+#include "IpeModule.h"
+#include "IpeModuleRoot.h"
+#include "IpeModuleInternal.h"
+#include "IpeModuleStandard.h"
+#include "IpeReaderFile.h"
+#include "IpeReaderTerminal.h"
+#include "IpeValue.h"
+
 #include "ipeEvaluate.h"
 
 #include "AstDumpToNode.h"
-#include "log.h"
-#include "passes.h"
-#include "stmt.h"
+#include "expr.h"
+#include "files.h"
+#include "type.h"
 
-struct PassInfo
-{
-  const char* name;
-  void        (*function)();
-};
+PrimitiveType*        gIpeTypeType        = NULL;
+PrimitiveType*        gIpeTypeModule      = NULL;
+PrimitiveType*        gIpeTypeProcedure   = NULL;
+PrimitiveType*        gIpeTypeMethod      = NULL;
 
-static PassInfo sPassList[] =
-{
-  { "parse",            parse               },
+int                   gDebugLevelResolve  =    0;
+int                   gDebugLevelEvaluate =    0;
+int                   gDebugLevelCalls    =    0;
+int                   gDebugLevelVars     =    0;
 
-  { "replaceVariables", ipeReplaceVariables },
-  { "resolve",          ipeResolve          },
-  { "inlinePrimitives", ipeInlinePrimitives },
-  { "checkReturn",      ipeCheckReturn      },
-  { "assignLocations",  ipeAssignLocations  },
-
-  { "evaluate",         ipeEvaluate         }
-};
+static PrimitiveType* createType(const char* name);
+static void           commandLineScripts(IpeModule* moduleRepl);
+static void           readEvalPrintLoop (IpeModule* moduleRepl);
 
 void ipeRun()
 {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
+  astlocMarker   markAstLoc(0, "<repl>");
+  IpeModuleRoot* rootModule = NULL;
+  IpeModule*     replModule = NULL;
 
-  setupLogfiles();
+  //
+  // Initialize IPE faux-types
+  //
 
-  for (size_t i = 0; i < passListSize; i++)
+  gIpeTypeType      = createType("type");
+
+  gIpeTypeModule    = createType("module");
+
+  gIpeTypeProcedure = createType("procedure");
+  gIpeTypeMethod    = createType("method");
+
+
+
+  //
+  // Initialize the Modules
+  //
+
+  if (IpeEnv::globalsAllocate(16 * 1024) == false)
   {
-    sPassList[i].function();
-
-    AstDumpToNode::view(sPassList[i].name, i + 1);
+    printf("Failed to allocate the Root Environment\n");
+    INT_ASSERT(false);
   }
 
+  if ((rootModule = IpeModuleRoot::allocate()) ==  NULL)
+  {
+    printf("Failed to allocate the Root Module\n");
+    INT_ASSERT(false);
+  }
+
+  if (rootModule->loadSystemModules() == false)
+  {
+    printf("Failed to load the system modules\n");
+    INT_ASSERT(false);
+  }
+
+#if 0
+  printf("\n\n\n\n");
+  printf("After loading system modules\n");
+  rootModule->describeAllModules(0);
+  printf("\n\n\n\n");
+#endif
+
+  replModule = rootModule->moduleByName("ChapelRepl");
+  replModule->moduleEvaluate();
+
+#if 0
+  printf("\n\n\n\n");
+  printf("After REPL moduleEvaluate\n");
+  rootModule->describeAllModules(0);
+  printf("\n\n\n\n");
+#endif
+
+  commandLineScripts(replModule);
+
+#if 0
+  printf("\n\nAfter command line script\n");
+  printf("\n\n");
+  rootModule->describeAllModules(0);
+  printf("\n\n\n\n");
+#endif
+
+#if 1
+  readEvalPrintLoop(replModule);
+#else
+  (void) readEvalPrintLoop;
+#endif
+
+  if (replModule != NULL)
+    delete replModule;
+
+  if (rootModule != NULL)
+    delete rootModule;
+
+#if 0
+  // NOAKES 2015/02/23 These will seg-fault for some reason
   cleanAst();
   destroyAst();
-  teardownLogfiles();
+#endif
+}
+
+static PrimitiveType* createType(const char* name)
+{
+  PrimitiveType* pt = new PrimitiveType(NULL, true);
+  TypeSymbol*    ts = new TypeSymbol(name, pt);
+
+  ts->cname = name;
+
+  // This prevents cleanAST() from sweeping these
+  ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
+
+  return pt;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static void commandLineScripts(IpeModule* moduleRepl)
+{
+  astlocMarker  markAstLoc(0, "<repl>");
+  int           filenum       = 0;
+  const char*   inputFilename = 0;
+
+  while ((inputFilename = nthFilename(filenum++)))
+  {
+    if (isChplSource(inputFilename))
+    {
+      IpeReaderFile reader;
+
+      if (reader.open(inputFilename) == true)
+      {
+        while (Expr* expr = reader.readStmt())
+        {
+          evaluate(expr, moduleRepl->environment());
+
+          if (gDebugLevelResolve > 2 || gDebugLevelEvaluate > 2)
+            printf("\n\n\n\n\n\n\n\n");
+        }
+
+        reader.close();
+      }
+    }
+  }
+}
+
+static void readEvalPrintLoop(IpeModule* moduleRepl)
+{
+  astlocMarker      markAstLoc(0, "<repl>");
+  IpeReaderTerminal reader;
+  int               cmdCount = 1;
+
+  printf("\n\n\n");
+  printf("IPE 0.1\n");
+  printf("\n");
+
+  printf("%2d > ", cmdCount);
+
+  while (Expr* expr = reader.readStmt())
+  {
+    IpeValue value = evaluate(expr, moduleRepl->environment());
+
+    (void) value;
+
+    cmdCount = cmdCount + 1;
+    printf("%2d > ", cmdCount);
+  }
 }
