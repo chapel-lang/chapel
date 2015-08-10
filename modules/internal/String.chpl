@@ -496,45 +496,47 @@ module String {
       return result;
     }
 
-    //TODO: Add support for ignoreEmpty
-    // TODO: broken, seems like it may be on the side of AMM?
-    proc split(sep: string, count: int = -1, ignoreEmpty: bool = false) /*: [] string*/ {
-      var ret: [1..0] string;
+    iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /*: string*/ {
+      if !(maxsplit == 0 && ignoreEmpty && this.isEmptyString()) {
+        const localThis: string = this.localize();
+        const localSep: string = sep.localize();
 
-      if count == 0 {
-        if ignoreEmpty && this.isEmptyString() {
-          return ret;
-        } else {
-          return [this];
+        // really should be <, but we need to avoid returns and extra yields so
+        // the iterator gets inlined
+        var splitAll: bool = maxsplit <= 0;
+        var splitCount: int = 0;
+
+        var start: int = 1;
+        var done: bool = false;
+        while !done && (splitAll || splitCount < maxsplit) {
+          var chunk: string;
+          var end: int;
+
+          if (maxsplit == 0) {
+            chunk = this;
+            done = true;
+          } else {
+            end = localThis.find(localSep, start..);
+
+            if(end == 0) {
+              // Separator not found
+              chunk = localThis[start..];
+              done = true;
+            } else {
+              chunk = localThis[start..end-1];
+            }
+          }
+
+          if !(ignoreEmpty && chunk.isEmptyString()) {
+            // Putting the yield inside the if prevents us from being inlined
+            // in the zippered case, but I don't think there is any way to avoid
+            // that easily
+            yield chunk;
+            splitCount += 1;
+          }
+          start = end+1;
         }
       }
-
-      const localThis: string = this.localize();
-      const localSep: string = sep.localize();
-
-      var splitCount: int = 0;
-
-      var start: int = 1;
-      var done: bool = false;
-      while !done && (count < 0) || (splitCount < count) {
-        var end = localThis.find(localSep, start..);
-        var chunk: string;
-
-        if(end == 0) {
-          // Separator not found
-          chunk = localThis[start..];
-          done = true;
-        } else {
-          chunk = localThis[start..end-1];
-        }
-
-        if !(ignoreEmpty && chunk.isEmptyString()) {
-          ret.push_back(chunk);
-          splitCount += 1;
-        }
-        start = end+1;
-      }
-      return ret;
     }
 
     // TODO: could rewrite to have cleaner logic / more efficient for edge cases
@@ -1021,6 +1023,39 @@ module String {
     return ret;
   }
 
+  proc *(s: string, n: integral) {
+    if n <= 0 then return "";
+
+    const sLen = s.length;
+    if sLen == 0 then return "";
+
+    var ret: string;
+    ret.len = sLen * n; // TODO: check for overflow
+    ret._size = ret.len+1;
+    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
+                              CHPL_RT_MD_STR_COPY_DATA): bufferType;
+    ret.owned = true;
+
+    const sRemote = s.locale.id != chpl_nodeID;
+    if sRemote {
+      chpl_string_comm_get(ret.buff, s.locale.id,
+                           s.buff, sLen.safeCast(size_t));
+    } else {
+      memmove(ret.buff, s.buff, sLen.safeCast(size_t));
+    }
+
+    var iterations = n-1;
+    var offset = sLen;
+    for i in 1..iterations {
+      memmove(ret.buff+offset, ret.buff, sLen.safeCast(size_t));
+      offset += sLen;
+    }
+    ret.buff[ret.len] = 0;
+
+    return ret;
+  }
+
+  /*
   inline proc _concat_helper(s: string, cs: c_string, param stringFirst: bool) {
     if debugStrings then
       chpl_debug_string_print("in proc +() string+c_string");
@@ -1064,7 +1099,6 @@ module String {
   //TODO: figure out how to remove the concats between
   //      string and c_string[_copy]
   // promotion of c_string to string is masking this issue I think.
-  /*
   proc +(s: string, cs: c_string) where isParam(cs) {
     //compilerWarning("adding c_string to string");
     return _concat_helper(s, cs, stringFirst=true);
