@@ -1851,6 +1851,19 @@ bool isAtomicType(Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
 
+bool isRefIterType(Type* t) {
+  Symbol* iteratorRecord = NULL;
+
+  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+    iteratorRecord = t->defaultInitializer->getFormal(1)->type->symbol;
+  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    iteratorRecord = t->symbol;
+
+  if (iteratorRecord)
+    return iteratorRecord->hasFlag(FLAG_REF_ITERATOR_CLASS);
+  return false;
+}
+
 bool isSubClass(Type* type, Type* baseType)
 {
   if (type == baseType)
