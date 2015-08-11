@@ -1879,12 +1879,10 @@ static Symbol* inType(BaseAST* scope, const char* name) {
 
 // Returns true if the symbol is already present in the vector, false otherwise
 static bool isRepeat(std::vector<Symbol* >& symbols, Symbol* toAdd) {
-  if (symbols.size() > 0) {
-    for (std::vector<Symbol* >::iterator it = symbols.begin();
-         it != symbols.end(); ++it) {
-      if (*it == toAdd) {
-        return true;
-      }
+  for (std::vector<Symbol* >::iterator it = symbols.begin();
+       it != symbols.end(); ++it) {
+    if (*it == toAdd) {
+      return true;
     }
   }
   return false;
