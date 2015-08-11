@@ -962,6 +962,9 @@ makeHeapAllocations() {
     if (ArgSymbol* arg = toArgSymbol(ref)) {
       FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
       forv_Vec(CallExpr, call, *fn->calledBy) {
+        if (! call->parentSymbol)
+          continue;
+
         SymExpr* se = NULL;
         for_formals_actuals(formal, actual, call) {
           if (formal == arg)
