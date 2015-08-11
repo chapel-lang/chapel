@@ -1178,7 +1178,6 @@ GenRet codegenRaddr(GenRet wide)
  
   if( wide.isLVPtr != GEN_WIDE_PTR && isWideString(wide.chplType)) {
    ret = codegenWideThingField(wide, WIDE_GEP_ADDR);
-
    ret.chplType = dtString;
    return ret;
   }
@@ -3302,7 +3301,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       }
     } else {
       // not a homogeneous tuple copy
-      // FOOBAR HERE
       if( info->cfile ) {
         std::string stmt = codegenValue(to_ptr).c + " = ";
         stmt += codegenValue(from).c;
@@ -4048,7 +4046,6 @@ GenRet CallExpr::codegen() {
          case PRIM_GET_MEMBER:
          {
           /* Get a pointer to a member */
-          if (this->id == 887352) gdbShouldBreakHere();
           SymExpr* se = toSymExpr(call->get(2));
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
@@ -4263,8 +4260,6 @@ GenRet CallExpr::codegen() {
        }
       } // End of special-case handling for primitives in the RHS of MOVE.
 
-      if (this->id == 1154766) gdbShouldBreakHere();
-
       // Handle general cases of PRIM_MOVE.
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -4277,10 +4272,6 @@ GenRet CallExpr::codegen() {
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        if (get(1)->getValType() != get(2)->getValType()) {
-          gdbShouldBreakHere();
-          printf("problem for %d\n", this->id);
-        }
         codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
         break;
       }
