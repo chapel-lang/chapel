@@ -5,12 +5,13 @@
 
 import os, sys, time, glob, shutil
 
-# return True if f has .chpl extension
-def IsChplSource(f):
-    if ((f.count('.') !=0) and (len(f) >= 6) and (len(f)-f.find('.chpl')==5)):
-        return True
-    else:
-        return False
+# return True if f has .chpl or test.c extension
+def getExecname(f):
+    if ((f.count('.') != 0) and (len(f) >= 6) and (len(f)-f.find('.chpl')==5)):
+        return f[:len(f)-5]
+    elif ((f.count('.') > 1) and (len(f) >= 8) and (len(f)-f.find('.test.c')==7)):
+        return f[:len(f)-7]
+    return None
 
 # read a cleanfiles file (with comments)
 def ReadCleanfiles(f, ignoreLeadingSpace=True):
@@ -36,8 +37,8 @@ def ReadCleanfiles(f, ignoreLeadingSpace=True):
 
 # Clean the files associated with a Chapel test program
 def cleanChapelTest(f):
-    if IsChplSource(f):
-        execname=f[:len(f)-5]
+    execname = getExecname(f)
+    if execname:
         print 'Cleaning test: '+execname
         globfiles = glob.glob(execname+'.*.out.tmp')
         for g in globfiles:
@@ -92,7 +93,7 @@ else:
 for f in clean:
     if os.path.isdir(f):
         print 'Cleaning directory: '+f
-        dirlist = glob.glob(f+'/*.chpl')
+        dirlist = glob.glob(f+'/*.chpl')+glob.glob(f+'/*.test.c')
         for file in dirlist:
             cleanChapelTest(file)
         cleanCleanfiles(f, 'CLEANFILES', True)
