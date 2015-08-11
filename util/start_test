@@ -141,7 +141,7 @@ def finish():
     logger.stop()
 
     # exit, returning 0 if no failures and 2 if there were some
-    if failures == 0:
+    if args.clean_only or failures == 0:
         sys.exit(0)
     else:
         sys.exit(2)
