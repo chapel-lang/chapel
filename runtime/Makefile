@@ -21,7 +21,10 @@ endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-all: third-party-pkgs all.helpme
+CHPL_ENV_HEADER_DIR=$(CHPL_MAKE_HOME)/runtime/src/$(RUNTIME_OBJDIR)
+CHPL_ENV_HEADER=$(CHPL_ENV_HEADER_DIR)/chpl-env-gen.h
+
+all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
 
 depend:
 
@@ -38,6 +41,17 @@ clobber: clobber.helpme
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=1 CHPL_MAKE_RULE=$* $*
 endif
+
+$(CHPL_ENV_HEADER):
+	@mkdir -p $(CHPL_ENV_HEADER_DIR)
+	@echo $(CHPL_ENV_HEADER)
+	@echo "/*" > $(CHPL_ENV_HEADER)
+	@cat $(CHPL_MAKE_HOME)/util/buildRelease/license_text_for_comment.txt >> $(CHPL_ENV_HEADER)
+	@echo "*/" >> $(CHPL_ENV_HEADER)
+	@echo "#ifndef _CHPL_ENV_H_" >> $(CHPL_ENV_HEADER)
+	@echo "#define _CHPL_ENV_H_" >> $(CHPL_ENV_HEADER)
+	@$(CHPL_MAKE_HOME)/util/printchplenv --simple | sed s/\=/' '/ | awk '{ print "#define " $$1 "_" toupper($$2) }' >> $(CHPL_ENV_HEADER)
+	@echo "#endif /* _CHPL_ENV_H_ */" >> $(CHPL_ENV_HEADER)
 
 THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
 # NOTE: If any of these builds fail, we won't stop building
