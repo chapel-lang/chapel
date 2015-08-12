@@ -1,8 +1,15 @@
 1,'abc foo',1.00,$123,,baz:
 "1" "'abc foo'" "1.00" "$123" "" "baz" 
 "1" "'abc foo'" "1.00" "$123" "baz" 
-"1" "'abc foo'" "1.00" "$123" 
+"1" "'abc foo'" "1.00" "$123" ",baz" 
+"1" "'abc foo',1.00,$123,,baz" 
 The quick brown fox jumps over the lazy dog:
 "The" "quick" "brown" "fox" "jumps" "over" "the" "lazy" "dog" 
 "The" "quick" "brown" "fox" "jumps" "over" "the" "lazy" "dog" 
-"The" "quick" "brown" "fox" 
+"The" "quick" "brown" "fox" "jumps over the lazy dog" 
+"The" "quick brown fox jumps over the lazy dog" 
+1 | 2 | :
+"1" "2" "" 
+"1" "2" 
+"1" "2" "" 
+"1" "2 | " 
