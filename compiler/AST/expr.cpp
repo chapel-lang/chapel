@@ -4055,6 +4055,7 @@ GenRet CallExpr::codegen() {
                 get(1), codegenAddrOf(codegenFieldPtr(call->get(1), se))); 
           }
           else if (get(1)->getValType() != call->get(2)->typeInfo()) {
+            // get a narrow reference to the actual 'addr' field of the wide pointer
             GenRet getField = codegenFieldPtr(call->get(1), se);
             codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR)));
           }

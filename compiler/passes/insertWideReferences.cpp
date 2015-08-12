@@ -620,31 +620,6 @@ static void buildWideRefMap()
   }
 }
 
-
-//
-// Handle default wideness of fields.
-//
-// Note that we do actually widen fields marked with FLAG_LOCAL_FIELD.
-// This simplifies the codegen implementation. We'll eventually insert
-// temps so that we end up with local variables.
-//
-/*
-static void
-defaultFieldWideness(Symbol* field) {
-  TypeSymbol* ts = toTypeSymbol(field->defPoint->parentSymbol);
-
-  if (isFullyWide(ts) || // don't widen fields in a wide struct
-      field->hasFlag(FLAG_SUPER_CLASS) ||
-      isRef(ts) || // we duplicate ref types with wide and narrow _vals
-      strcmp(ts->name, "_class_localscoforall_fn") == 0) {
-    return;
-  }
-
-  debug(field, "is a wide field in %s\n", ts->cname);
-  setWide(field);
-}
-*/
-
 static bool fieldCanBeWide(Symbol* field) {
   TypeSymbol* ts = toTypeSymbol(field->defPoint->parentSymbol);
 
@@ -653,9 +628,12 @@ static bool fieldCanBeWide(Symbol* field) {
            isRef(ts));
 }
 
-
-static void widenSubAggregateTypes(Type* rec) {
-  for_fields(fi, toAggregateType(rec)) {
+//
+// Widen all fields in the type 'parent'. If the field is a record, then
+// we will recursively widen the fields in that record.
+//
+static void widenSubAggregateTypes(Type* parent) {
+  for_fields(fi, toAggregateType(parent)) {
     if (isRecord(fi->type)) {
       widenSubAggregateTypes(fi->type);
     } else {
@@ -679,8 +657,6 @@ static void addKnownWides() {
       if (strcmp(ts->name, "_class_localson_fn") == 0) {
         // TODO: Do we need to do this with records as well?
         // TODO: Do we need to do this for refs to a record/tuple?
-        //
-        // GET VAL TYPE???type
         if (var->type->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE)) {
           // If an aggregate type is passed in and is not wide, then we
           // have to make its fields wide. If such a type also has non-wide
@@ -692,7 +668,6 @@ static void addKnownWides() {
           setWide(var);
         }
       }
-      //if (ts->hasFlag(FLAG_STAR_TUPLE) && isRef(var)) setWide(var);
     } else {
       if (!typeCanBeWide(var)) continue;
       Symbol* defParent = var->defPoint->parentSymbol;
@@ -857,8 +832,6 @@ static void propagateVar(Symbol* sym) {
       }
       else if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) {
         SymExpr* field = toSymExpr(call->get(2));
-        //SymExpr* base = toSymExpr(call->get(1));
-        // TODO: simply check for a narrow field?
         if (!isFullyWide(field)) {
           debug(sym, "narrow field %s (%d) must be wide\n", field->var->cname, field->var->id);
           matchWide(sym, field->var);
@@ -942,42 +915,24 @@ static void propagateVar(Symbol* sym) {
             setWide(se);
           }
           else if (isRef(sym)) {
-            if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+            if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) || 
+                rhs->isPrimitive(PRIM_GET_MEMBER)) {
               SymExpr* field = toSymExpr(rhs->get(2));
               debug(sym, "widening field ref %s (%d)\n", field->var->cname, field->var->id);
-              widenRef(sym, field->var);
+              matchWide(sym, field->var);
             }
-            else if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
-              // We're a ref to a wide thing, so the field we're accessing
-              // also has to be wide.
-              SymExpr* field = toSymExpr(rhs->get(2));
-              debug(sym, "widening field ref %s (%d)\n", field->var->cname, field->var->id);
-              setWide(field);
-            }
-            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) || 
+                     rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               Symbol* field = getSvecSymbol(rhs);
               if (field) {
                 debug(sym, "widening tuple member %s (%d)\n", field->cname, field->id);
-                setWide(field);
+                matchWide(sym, field);
               } else {
                 // If we don't know for sure which field is being accessed,
                 // play it safe and widen all of them.
                 for_fields(fi, toAggregateType(rhs->get(1)->getValType())) {
                   debug(sym, "widening tuple member %s (%d)\n", fi->cname, fi->id);
-                  setWide(fi);
-                }
-              }
-            }
-            else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
-              Symbol* field = getSvecSymbol(rhs);
-              if (field) {
-                debug(sym, "widening tuple member value %s (%d)\n", field->cname, field->id);
-                widenRef(sym, field);
-              } else {
-                // See get_svec_member branch above
-                for_fields(fi, toAggregateType(rhs->get(1)->getValType())) {
-                  debug(sym, "widening tuple member value %s (%d)\n", fi->cname, fi->id);
-                  widenRef(sym, fi);
+                  matchWide(sym, fi);
                 }
               }
             }
@@ -1047,23 +1002,12 @@ static void propagateField(Symbol* sym) {
         // If the field is a reference to a wide thing, then the rhs also has
         // to be able to reference a wide thing.
         //
-        // TODO: We'd like to be able to do this in propagateField, but currently
-        // cannot do this easily. Usually we see this call in this format:
-        //     'set svec member' this 1 rhs
-        // The problem is that the field is not registered as a 'use' in this
-        // case, so this branch would never be executed.
-        //
-
         Symbol* field = getTupleField(call);
         Symbol* rhs = toSymExpr(call->get(3))->var;
 
         if (isRef(rhs) && valIsWideClass(field)) {
-          debug(field, " set_svec_member widens rhs %s (%d)\n", rhs->cname, rhs->id);
-          if (isRef(rhs)) {
-            setValWide(rhs);
-          } else {
-            setWide(rhs);
-          }
+          debug(field, " set_svec_member widens rhs ref %s (%d)\n", rhs->cname, rhs->id);
+          setValWide(rhs);
         }
       }
     }
@@ -1842,8 +1786,11 @@ static void moveAddressSourcesToTemp()
   }
 }
 
-// Nearly the same as addUseOrDef, but we needed a way to manually choose the
-// symbol whose vector we will append to.
+//
+// Nearly the same as addUseOrDef, but 'exp' may not be a SymExpr representing
+// 'field'. It may instead be a literal or a runtime value as we sometimes see
+// in star tuples.
+//
 static void addTupleDefOrUse(Map<Symbol*, Vec<SymExpr*>*>& ses, Symbol* field, Expr* exp) {
   SymExpr* se = toSymExpr(exp);
   INT_ASSERT(se);
@@ -1858,7 +1805,13 @@ static void addTupleDefOrUse(Map<Symbol*, Vec<SymExpr*>*>& ses, Symbol* field, E
   }
 }
 
+//
+// buildDefUseMaps does not handle tuple fields correctly, star tuples
+// especially. This function tries to do a better job.
+//
 static void buildTupleDefsUses() {
+  // TODO: The incorrect defs/uses from buildDefUseMaps may still
+  // exist, can we do anything about that?
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
         call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
@@ -1920,7 +1873,6 @@ insertWideReferences(void) {
   compute_call_sites();
   buildDefUseMaps(defMap, useMap);
   buildTupleDefsUses();
-  // TODO: unable to correctly handle svec gets/sets as uses and defs...
 
   //
   // Track functions downstream in the call-chain from a wrapon_fn
@@ -1960,6 +1912,11 @@ insertWideReferences(void) {
   }
   debugTimer.stop();
 
+  //
+  // For codegen purposes, it's easier to represent fields as a wide type.
+  // fixAST() will insert local temps in the case that a field is always
+  // local.
+  //
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (!typeCanBeWide(var)) continue;
 
