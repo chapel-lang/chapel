@@ -35,9 +35,10 @@ module BaseStringType {
 
   type bufferType = c_ptr(uint(8));
   //param bufferTypeString: c_string = "c_ptr(uint(8))";
-  param min_alloc_size: int = 16;
+  param chpl_string_min_alloc_size: int = 16;
   // Growth factor to use when extending the buffer for appends
   config param chpl_stringGrowthFactor = 1.5;
+  extern proc chpl_mem_goodAllocSize(minSize: size_t) : size_t;
 
   extern type chpl_mem_descInt_t;
 
@@ -169,20 +170,20 @@ module String {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
             if this.owned && !this.isEmptyString() then
-              on this do chpl_mem_free(this.buff);
-            // TODO: should I just allocate 'size' bytes rather than the minimum
-            //       of s_len+1?
-            this.buff = chpl_mem_alloc((s_len+1).safeCast(size_t),
+              chpl_mem_free(this.buff);
+            // TODO: should I just allocate 'size' bytes?
+            const allocSize = chpl_mem_goodAllocSize((s_len+1).safeCast(size_t));
+            this.buff = chpl_mem_alloc(allocSize,
                                        CHPL_RT_MD_STR_COPY_DATA):bufferType;
             this.buff[s_len] = 0;
-            this._size = s_len+1;
+            this._size = allocSize.safeCast(int);
             // We just allocaed a buffer, make sure to free it later
             this.owned = true;
           }
           memmove(this.buff, buf, s_len.safeCast(size_t));
         } else {
           if this.owned && !this.isEmptyString() then
-            on this do chpl_mem_free(this.buff);
+            chpl_mem_free(this.buff);
           this.buff = buf;
           this._size = size;
         }
@@ -248,7 +249,8 @@ module String {
       if i <= 0 || i > this.len then halt("index out of bounds of string");
 
       var ret: string;
-      ret._size = min_alloc_size;
+      const newSize = chpl_mem_goodAllocSize(2);
+      ret._size = max(chpl_string_min_alloc_size, newSize.safeCast(int));
       ret.len = 1;
       ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                                 CHPL_RT_MD_STR_COPY_DATA): bufferType;
@@ -296,7 +298,8 @@ module String {
         ret = "";
       } else {
         ret.len = r2.size:int;
-        ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
+        const newSize = chpl_mem_goodAllocSize(ret.len.safeCast(size_t));
+        ret._size = max(chpl_string_min_alloc_size, newSize.safeCast(int));
         // FIXME: I was dumb here, just copy the correct region over in
         // multi-locale and use that as the string buffer. No need to copy stuff
         // about after pulling it across.
@@ -496,6 +499,13 @@ module String {
       return result;
     }
 
+    // TODO: Make this support spliting on whitespace rather than just a space
+    iter split(maxsplit: int = -1, ignoreEmpty: bool = false) /*: string*/ {
+      for s in this.split(" ", maxsplit, ignoreEmpty) {
+        yield s;
+      }
+    }
+
     iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /*: string*/ {
       if !(maxsplit == 0 && ignoreEmpty && this.isEmptyString()) {
         const localThis: string = this.localize();
@@ -508,7 +518,7 @@ module String {
 
         var start: int = 1;
         var done: bool = false;
-        while !done && (splitAll || splitCount < maxsplit) {
+        while !done  {
           var chunk: string;
           var end: int;
 
@@ -516,7 +526,8 @@ module String {
             chunk = this;
             done = true;
           } else {
-            end = localThis.find(localSep, start..);
+            if (splitAll || splitCount < maxsplit) then
+              end = localThis.find(localSep, start..);
 
             if(end == 0) {
               // Separator not found
@@ -534,7 +545,7 @@ module String {
             yield chunk;
             splitCount += 1;
           }
-          start = end+1;
+          start = end+localSep.length;
         }
       }
     }
@@ -549,8 +560,9 @@ module String {
         }
         newSize += this.len*(S.size-1);
         ret.len = newSize;
-        ret._size = ret.len+1;
-        ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
+        const allocSize = chpl_mem_goodAllocSize((ret.len+1).safeCast(size_t));
+        ret._size = allocSize.safeCast(int);
+        ret.buff = chpl_mem_alloc(allocSize,
                                   CHPL_RT_MD_STR_COPY_DATA): bufferType;
         var offset = 0;
         var first = true;
@@ -866,7 +878,7 @@ module String {
       if s.locale.id == chpl_nodeID {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
-        ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
+        ret.buff = chpl_mem_alloc(s._size.safeCast(size_t),
                                   CHPL_RT_MD_STR_COPY_DATA): bufferType;
         memmove(ret.buff, s.buff, s.len.safeCast(size_t));
         ret.buff[s.len] = 0;
@@ -908,7 +920,7 @@ module String {
       if s.locale.id == chpl_nodeID {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
-        ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
+        ret.buff = chpl_mem_alloc(s._size.safeCast(size_t),
                                   CHPL_RT_MD_STR_COPY_DATA): bufferType;
         memmove(ret.buff, s.buff, s.len.safeCast(size_t));
         ret.buff[s.len] = 0;
@@ -996,8 +1008,9 @@ module String {
 
     var ret: string;
     ret.len = s0len + s1len;
-    ret._size = ret.len+1;
-    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
+    const allocSize = chpl_mem_goodAllocSize((ret.len+1).safeCast(size_t));
+    ret._size = allocSize.safeCast(int);
+    ret.buff = chpl_mem_alloc(allocSize,
                               CHPL_RT_MD_STR_COPY_DATA): bufferType;
     ret.owned = true;
 
@@ -1031,8 +1044,9 @@ module String {
 
     var ret: string;
     ret.len = sLen * n; // TODO: check for overflow
-    ret._size = ret.len+1;
-    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
+    const allocSize = chpl_mem_goodAllocSize((ret.len+1).safeCast(size_t));
+    ret._size = allocSize.safeCast(int);
+    ret.buff = chpl_mem_alloc(allocSize,
                               CHPL_RT_MD_STR_COPY_DATA): bufferType;
     ret.owned = true;
 
@@ -1216,7 +1230,9 @@ module String {
       const rhsLen = rhs.len;
       const newLength = lhs.len+rhsLen; //TODO: check for overflow
       if lhs._size <= newLength {
-        var newSize = max(newLength+1, (lhs.len * chpl_stringGrowthFactor):int);
+        const newSize = chpl_mem_goodAllocSize(
+            max(newLength+1,
+                (lhs.len * chpl_stringGrowthFactor):int).safeCast(size_t));
 
         if lhs.owned {
           lhs.buff = chpl_mem_realloc(lhs.buff, newSize.safeCast(size_t),
@@ -1229,7 +1245,7 @@ module String {
           lhs.owned = true;
         }
 
-        lhs._size = newSize;
+        lhs._size = newSize.safeCast(int);
       }
       const rhsRemote = rhs.locale.id != chpl_nodeID;
       if rhsRemote {
