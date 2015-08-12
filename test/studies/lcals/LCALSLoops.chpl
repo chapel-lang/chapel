@@ -2,7 +2,6 @@ module LCALSLoops {
   use LCALSDataTypes;
   use LCALSEnums;
   use LCALSStatic;
-  use LCALSDataTypes;
   use LCALSParams;
   use Timer;
 

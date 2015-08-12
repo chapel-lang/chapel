@@ -472,7 +472,7 @@ module main {
     outchannel.write(equal_line);
 
     var max_name_len = 0;
-    for iloop in 0..loop_names.size() {
+    for iloop in 0..#loop_names.size() {
       max_name_len = max(max_name_len, loop_names[iloop].length);
     }
     var max_var_name_len = 0;
@@ -515,7 +515,7 @@ module main {
                 var var_string = run_loop_variants[ilv] + "(" + len_id[ilen] + ")";
                 outchannel.writef("%-*s", var_field_len+1, var_string);
                 //outchannel.writef("%*s", prec_buf, stat.loop_chksum[ilen]);
-                outchannel.writef("#########.#######################", stat.loop_chksum[ilen]);
+                outchannel.writef("%{#########.#######################}", stat.loop_chksum[ilen]);
                 if ilv > 0 {
                   var chksum_diff = abs(stat.loop_chksum[ilen] - ref_chksum[ilen]);
                   outchannel.writef("%*r\n", prec_buf, chksum_diff);
