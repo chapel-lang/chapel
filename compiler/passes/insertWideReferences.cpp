@@ -262,8 +262,8 @@ static Type* getNarrowType(BaseAST* bs) {
   }
 }
 
-static bool hasSomeWideness(Symbol* sym) {
-  return isFullyWide(sym) || valIsWideClass(sym);
+static bool hasSomeWideness(BaseAST* bs) {
+  return isFullyWide(bs) || valIsWideClass(bs);
 }
 
 static bool isRef(BaseAST* bs) {
@@ -913,6 +913,9 @@ static void propagateVar(Symbol* sym) {
             SymExpr* se = toSymExpr(rhs->get(1));
             debug(sym, "ref has a wide _val, src %s (%d) of addr_of must be wide\n", se->var->cname, se->var->id);
             setWide(se);
+          }
+          else if (rhs->isResolved()) {
+            matchWide(sym, rhs->isResolved()->getReturnSymbol());
           }
           else if (isRef(sym)) {
             if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) || 
