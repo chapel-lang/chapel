@@ -1,0 +1,7 @@
+feature: Deprecate local blocks
+
+Turn off the local block assertion because now that we are passing more things by
+reference, applying the local optimization can get the wrong answer.
+
+There is a plan to deprecate local blocks sooner or later anyway.  They may be reinstated,
+but for now are disabled on the AMM branch.

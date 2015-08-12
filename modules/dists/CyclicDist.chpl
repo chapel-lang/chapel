@@ -350,13 +350,13 @@ class LocCyclic {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: Cyclic) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: Cyclic) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDist();
     if cnt == 0 then
       delete x;
@@ -381,13 +381,13 @@ class CyclicDom : BaseRectangularDom {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: CyclicDom) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: CyclicDom) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDom();
     if cnt == 0 then
       delete x;
@@ -630,13 +630,13 @@ class CyclicArr: BaseArr {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: CyclicArr) {
-  if !noRefCount then
+  if !noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: CyclicArr) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyArr();
     if cnt == 0 then
       delete x;

@@ -802,7 +802,7 @@ static void insertDestructorCalls()
 {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
-      Type* type = call->get(1)->typeInfo();
+      Type* type = call->get(1)->typeInfo()->getValType();
       if (!type->destructor) {
         call->remove();
       } else {
@@ -918,6 +918,9 @@ void insertReferenceTemps(CallExpr* call)
       Expr* stmt = call->getStmtExpr();
       VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
       tmp->addFlag(FLAG_REF_TEMP);
+      if (SymExpr* se = toSymExpr(actual))
+        if (se->var->hasFlag(FLAG_TEMP_IN_ITERATOR))
+          tmp->addFlag(FLAG_TEMP_IN_ITERATOR);
       stmt->insertBefore(new DefExpr(tmp));
       actual->replace(new SymExpr(tmp));
       stmt->insertBefore(

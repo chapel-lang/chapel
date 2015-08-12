@@ -271,13 +271,13 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: BlockCyclic) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: BlockCyclic) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDist();
     if cnt == 0 then
       delete x;
@@ -360,13 +360,13 @@ class BlockCyclicDom: BaseRectangularDom {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: BlockCyclicDom) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: BlockCyclicDom) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDom();
     if cnt == 0 then
       delete x;
@@ -692,13 +692,13 @@ class BlockCyclicArr: BaseArr {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: BlockCyclicArr) {
-  if !noRefCount then
+  if !noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: BlockCyclicArr) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyArr();
     if cnt == 0 then
       delete x;

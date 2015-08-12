@@ -809,7 +809,14 @@ static void propagateVar(Symbol* sym) {
           setWide(lhs);
         }
         else if (isRef(lhs) && isRef(rhs)) {
-          widenRef(sym, lhs);
+          // Here is a place where PRIM_MOVE and PRIM_ASSIGN diverge.
+          // PRIM_MOVE between two references means that one reference is copied
+          // into the other; this is a pointer copy.
+          // PRIM_ASSIGN means that the contents of the value or reference on the
+          // RHS are copied into the object pointed to by the LHS.
+          // Therefore, this clause applies only to PRIM_MOVE.
+          if (call->isPrimitive(PRIM_MOVE))
+            widenRef(sym, lhs);
         }
         else if (isRef(lhs) && isObj(rhs)) {
           debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
@@ -1392,7 +1399,7 @@ static void handleLocalBlocks() {
       if (block->isLoopStmt() == true) {
 
       } else if (block->blockInfoGet()) {
-        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
+        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) && false) {
           queue.add(block);
         }
       }

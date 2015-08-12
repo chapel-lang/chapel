@@ -33,13 +33,13 @@ class Private: BaseDist {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: Private) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: Private) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDist();
     if cnt == 0 then
       delete x;
@@ -98,13 +98,13 @@ class PrivateDom: BaseRectangularDom {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: PrivateDom) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: PrivateDom) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDom();
     if cnt == 0 then
       delete x;
@@ -123,13 +123,13 @@ class PrivateArr: BaseArr {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: PrivateArr) {
-  if !noRefCount then
+  if !noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: PrivateArr) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyArr();
     if cnt == 0 then
       delete x;

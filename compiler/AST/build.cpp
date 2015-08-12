@@ -782,7 +782,9 @@ static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
+  // See Note #1
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+//  sifnIterator->addFlag(FLAG_TEMP_IN_ITERATOR);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
   stmt = new CallExpr(PRIM_YIELD, expr);
@@ -808,6 +810,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
+  iterator->addFlag(FLAG_TEMP_IN_ITERATOR);
   block->insertAtTail(new DefExpr(iterator));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
@@ -834,7 +837,9 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
   ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
                                      new CallExpr(PRIM_TYPEOF, tag));
   lifn->insertFormalAtTail(lifnTag);
+  // See Note #1
   ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+//  lifnIterator->addFlag(FLAG_TEMP_IN_ITERATOR);
   lifn->insertFormalAtTail(lifnIterator);
 
   lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
@@ -868,9 +873,12 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
   ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
                                      new CallExpr(PRIM_TYPEOF, tag));
   fifn->insertFormalAtTail(fifnTag);
+  // See Note #1
   ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
+//  fifnFollower->addFlag(FLAG_TEMP_IN_ITERATOR);
   fifn->insertFormalAtTail(fifnFollower);
   ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+//  fifnIterator->addFlag(FLAG_TEMP_IN_ITERATOR);
   fifn->insertFormalAtTail(fifnIterator);
 
   fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
@@ -901,6 +909,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
+  iterator->addFlag(FLAG_TEMP_IN_ITERATOR);
   block->insertAtTail(new DefExpr(iterator));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
@@ -1482,6 +1491,7 @@ buildReduceScanPreface(FnSymbol* fn, Symbol* data, Symbol* eltType, Symbol* glob
   }
 
   data->addFlag(FLAG_EXPR_TEMP);
+  data->addFlag(FLAG_TEMP_IN_ITERATOR);
   eltType->addFlag(FLAG_MAYBE_TYPE);
 
   fn->insertAtTail(new DefExpr(data));
@@ -2284,3 +2294,23 @@ static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
 
   return retval;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+// NOTES
+//
+// Note #1
+//  A range (record) created in the calling context of _iterator_for_loopexpr is a
+//  temporary that will vanish when the loop expression goes away.  Either the
+//  iterator argument needs to be created in an outer context so it will
+//  outlast the loop, or it needs to be copied verbatim.  We chose the latter
+//  method here, forcing a copy by using CONST_IN intent.
+//  TODO: A more efficient implementation would in fact push the variable
+//  holding the iterator into an outer scope, so it coult be passed by
+//  reference.  However, that is not easy to do in the current architecture:
+//  The code for building the parse tree is fairly context-free (bottom-up) so
+//  enclosing scopes are not available as the parse tree is being built.  The
+//  code for converting forall expressions into loops on iterators needs to be
+//  moved into a later pass, so that the scope that is appropriate to hold the
+//  iterator can be found by traversing the fully-parsed tree.
+//

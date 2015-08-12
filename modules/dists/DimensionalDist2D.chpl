@@ -397,13 +397,13 @@ proc DimensionalDist2D.dsiIndexToLocale(indexx: indexT): locale {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: DimensionalDist2D) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: DimensionalDist2D) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDist();
     if cnt == 0 then
       delete x;
@@ -481,13 +481,13 @@ proc _passLocalLocIDsDom1d(dom1d, dist1d) {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: DimensionalDom) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: DimensionalDom) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDom();
     if cnt == 0 then
       delete x;
@@ -789,13 +789,13 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: DimensionalArr) {
-  if !noRefCount then
+  if !noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: DimensionalArr) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyArr();
     if cnt == 0 then
       delete x;
