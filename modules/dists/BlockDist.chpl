@@ -495,13 +495,13 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: Block) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: Block) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDist();
     if cnt == 0 then
       delete x;
@@ -611,13 +611,13 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: BlockDom) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: BlockDom) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDom();
     if cnt == 0 then
       delete x;
@@ -825,13 +825,13 @@ proc LocBlockDom.member(i) return myBlock.member(i);
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: BlockArr) {
-  if !noRefCount then
+  if !noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: BlockArr) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyArr();
     if cnt == 0 then
       delete x;

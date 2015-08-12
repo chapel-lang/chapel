@@ -192,13 +192,13 @@ proc ReplicatedDist.dsiPrivatize(privatizeData: this.targetLocales.type)
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: ReplicatedDist) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: ReplicatedDist) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDist();
     if cnt == 0 then
       delete x;
@@ -253,13 +253,13 @@ class LocReplicatedDom {
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: ReplicatedDom) {
-  if ! noRefCount then
+  if ! noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: ReplicatedDom) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDom();
     if cnt == 0 then
       delete x;
@@ -558,13 +558,13 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
 
 pragma "auto copy fn"
 proc chpl__autoCopy(x: ReplicatedArr) {
-  if !noRefCount then
+  if !noRefCount && ! _isPrivatized(x) then
     x.incRefCount();
   return x;
 }
 
 proc chpl__autoDestroy(x: ReplicatedArr) {
-  if !noRefCount {
+  if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyArr();
     if cnt == 0 then
       delete x;
