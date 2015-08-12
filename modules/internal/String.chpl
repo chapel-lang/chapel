@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
-
 /*
  * NOTES:
  *
@@ -79,7 +77,7 @@ module BaseStringType {
   }
 
   proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
-      const dest = chpl_mem_alloc((len+1).safeCast(size_t), CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
+      const dest = chpl_mem_alloc((len+1).safeCast(size_t), CHPL_RT_MD_STR_COPY_REMOTE): bufferType;
       chpl_string_comm_get(dest, src_loc_id, src_addr, len.safeCast(size_t));
       dest[len] = 0;
       return dest;
@@ -872,6 +870,7 @@ module String {
     if debugStrings then
       chpl_debug_string_print("in autoCopy()");
 
+    // This pragma may be unnecessary.
     pragma "no auto destroy"
     var ret: string;
     const slen = s.len; // cache the remote copy of len
@@ -908,6 +907,7 @@ module String {
    * do it by putting some sort of flag in the string record that is
    * used by initCopy().
    * TODO: Check if ^ is still true w/ the new AMM
+   * TODO: Do we need an initCopy for strings?  If not, this clause can be removed.
    */
   pragma "init copy fn"
   proc chpl__initCopy(s: string) {
@@ -1278,10 +1278,14 @@ module String {
   inline proc _strcmp(a: string, b:string) : int {
     // Assumes a and b are on same locale and not empty
     var idx: int = 0;
-    while (idx < a.len) && (idx < b.len) {
+    while (idx < a.len && idx < b.len) {
       if a.buff[idx] != b.buff[idx] then return a.buff[idx]:int - b.buff[idx];
       idx += 1;
     }
+    // What if the next character in the longer buffer is 0x0?
+    // I just return +1 or -1 to avoid that question.
+    if (idx < a.len) then return 1;
+    if (idx < b.len) then return -1;
     return 0;
   }
 
@@ -1291,7 +1295,6 @@ module String {
       //       probably would be 2 extra gets worst case, but avoids doing a
       //       local copy if b is remote
       if a.len != b.len then return false;
-      if a.isEmptyString() then return true;
       return _strcmp(a, b) == 0;
     }
 
@@ -1313,8 +1316,6 @@ module String {
 
   inline proc <(a: string, b: string) : bool {
     inline proc doLt(a: string, b:string) {
-      if b.isEmptyString() then return false;
-      if a.isEmptyString() then return true;
       return _strcmp(a, b) < 0;
     }
 
@@ -1332,8 +1333,6 @@ module String {
 
   inline proc >(a: string, b: string) : bool {
     inline proc doGt(a: string, b:string) {
-      if a.isEmptyString() then return false;
-      if b.isEmptyString() then return true;
       return _strcmp(a, b) > 0;
     }
 
