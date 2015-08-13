@@ -1877,6 +1877,17 @@ static Symbol* inType(BaseAST* scope, const char* name) {
   return NULL;
 }
 
+// Returns true if the symbol is already present in the vector, false otherwise
+static bool isRepeat(std::vector<Symbol* >& symbols, Symbol* toAdd) {
+  for (std::vector<Symbol* >::iterator it = symbols.begin();
+       it != symbols.end(); ++it) {
+    if (*it == toAdd) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Assumes that symbols contains nothing before entering this function
 static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
                                    std::vector<Symbol* >& symbols,
@@ -1902,17 +1913,10 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
   }
 
   if (Symbol* sym = inType(scope, name)) {
-    if (symbols.size() == 1) {
-      if (symbols.front() == sym) {
-        // Upon entrance to this function, symbols.size() should be 0
-        // The previous if statement will add at most 1 element
-        // If that element does not match this field/method we just found,
-        // then there is actually a conflict, so it should be added (which
-        // continuing through the if statement will allow).  Otherwise, we're
-        // looking at the exact same Symbol, so there's no need to add it and
-        // we can just return.
-        return true;
-      }
+    if (isRepeat(symbols, sym)) {
+      // If we're looking at the exact same Symbol, there's no need to add it
+      // and we can just return.
+      return true;
     }
     // When methods and fields can be private, need to check against the
     // rejected private symbols here.  But that's in the future.
@@ -1960,11 +1964,15 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
                     rejectedPrivateIds.insert(sym->id);
                     USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, sym->stringLoc());
                   } else {
-                    symbols.push_back(sym);
+                    if (!isRepeat(symbols, sym)) {
+                      symbols.push_back(sym);
+                    }
                   }
                 }
                 // If it was already rejected, we don't want to add it.
-              } else {
+
+              } else if (!isRepeat(symbols, sym)) {
+                // Don't want to add if the symbol itself was already present.
                 symbols.push_back(sym);
               }
             }

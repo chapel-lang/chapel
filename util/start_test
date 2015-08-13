@@ -54,6 +54,7 @@ def main():
 def run_tests(tests):
     files = []
     dirs = []
+    had_invalid_file = False
     for i in tests:
         if os.path.isdir(i): # a directory (also get absolute path)
             dirs.append(os.path.abspath(i))
@@ -62,6 +63,10 @@ def run_tests(tests):
         else:
             print("[Error: {0} is not a valid file or directory]"
                     .format(i))
+            had_invalid_file = True
+
+    if had_invalid_file and len(files) == 0 and len(dirs) == 0:
+        sys.exit(2)
 
     # set up
     set_up_environment()
@@ -141,7 +146,7 @@ def finish():
     logger.stop()
 
     # exit, returning 0 if no failures and 2 if there were some
-    if failures == 0:
+    if args.clean_only or failures == 0:
         sys.exit(0)
     else:
         sys.exit(2)
@@ -1330,7 +1335,7 @@ class Logger():
         self.logger.addHandler(self.file_out)
 
     def write(self, msg=" "):
-        self.logger.info(msg.strip())
+        self.logger.info(msg.rstrip())
 
     def flush(self):
         self.console_out.flush()
