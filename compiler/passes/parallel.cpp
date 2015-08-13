@@ -962,15 +962,22 @@ makeHeapAllocations() {
     if (ArgSymbol* arg = toArgSymbol(ref)) {
       FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
       forv_Vec(CallExpr, call, *fn->calledBy) {
-        if (! call->parentSymbol)
+        if (! call->inTree())
           continue;
 
+        // The way that fn->calledBy is populated, it may list a caller that
+        // actually binds to an instance of a function in a derived class.
+        // It is OK to skip here if we don't get an exact match with the arg we
+        // are looking at, because we are visiting all functions: We will pick
+        // up the child function later.
         SymExpr* se = NULL;
         for_formals_actuals(formal, actual, call) {
           if (formal == arg)
             se = toSymExpr(actual);
         }
-        INT_ASSERT(se);
+        if (se == NULL)
+          continue;
+
         // Previous passes mean that we should always get a formal SymExpr
         // to match the ArgSymbol.  And that formal should have the
         // ref flag, since we obtained it through the refVec.
