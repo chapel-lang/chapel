@@ -103,4 +103,15 @@ c_sublocid_t chpl_task_getRequestedSubloc(void) {
   return c_sublocid_any;
 }
 
+
+#ifdef CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL
+#error "CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL 1
+#endif
+static inline
+int chpl_task_tasksBoundToPthreads(void) {
+  return 1;
+}
+
 #endif

@@ -2734,8 +2734,9 @@ void chpl_cache_init(void) {
     else chpl_warning("unknown setting for CHPL_CACHE_REMOTE, try 0 or 1", 0, NULL);
   }
 
-  // Don't enable the cache for 1-locale runs.
-  if( chpl_numNodes <= 1 ) {
+  // Don't enable the cache for 1-locale runs, or when the tasking layer
+  // may move tasks between pthreads.
+  if( chpl_numNodes <= 1 || !chpl_task_tasksBoundToPthreads() ) {
     CHPL_CACHE_REMOTE = 0;
   }*/
 

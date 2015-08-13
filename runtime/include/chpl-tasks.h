@@ -211,6 +211,16 @@ chpl_task_prvData_t* chpl_task_getPrvData(void);
 #endif
 
 //
+// Are tasks bound to specific pthreads in this tasking implementation?
+// This can be used by other parts of the runtime to tell if, for
+// example, tasks are dependably associated with a particular copy of
+// pthread-specific data or thread local storage (TLS).
+//
+#ifndef CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL
+int chpl_task_tasksBoundToPthreads(void);
+#endif
+
+//
 // Returns the maximum width of parallelism the tasking layer expects
 // to be able to provide on the calling (sub)locale.  With some
 // exceptions for uncommon cases, this is the greatest parallel
