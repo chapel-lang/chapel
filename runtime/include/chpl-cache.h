@@ -23,6 +23,7 @@
 #include "chpltypes.h"
 #include "chpl-atomics.h"
 #include "chpl-comm.h" // to get HAS_CHPL_CACHE_FNS via chpl-comm-task-decls.h
+#include "chpl-tasks.h"
 
 #ifdef HAS_CHPL_CACHE_FNS
 // This is a cache for remote data.
@@ -33,7 +34,7 @@ extern const int CHPL_CACHE_REMOTE;
 static inline
 int chpl_cache_enabled(void)
 {
-  return CHPL_CACHE_REMOTE;
+  return CHPL_CACHE_REMOTE && chpl_task_tasksBoundToPthreads();
 }
 
 

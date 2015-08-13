@@ -2677,7 +2677,7 @@ static pthread_key_t pthread_cache_info_key; // stores struct rdcache_s*
 static
 struct rdcache_s* tls_cache_remote_data(void) {
   struct rdcache_s *cache = CHPL_TLS_GET(cache_remote_data);
-  if( ! cache && CHPL_CACHE_REMOTE ) {
+  if( ! cache && chpl_cache_enabled() ) {
     cache = cache_create();
     CHPL_TLS_SET(cache_remote_data, cache);
     pthread_setspecific(pthread_cache_info_key, cache);
@@ -2739,14 +2739,8 @@ void chpl_cache_init(void) {
     CHPL_CACHE_REMOTE = 0;
   }*/
 
-  // Don't enable the cache when the tasking layer may move tasks
-  // between pthreads.
-  if( ! chpl_task_tasksBoundToPthreads() ) {
-    CHPL_CACHE_REMOTE = 0;
-  }
-
   // Don't initialize TLS if the cache is not enabled.
-  if( ! CHPL_CACHE_REMOTE ) {
+  if( ! chpl_cache_enabled() ) {
     return;
   }
 
@@ -2763,7 +2757,7 @@ void chpl_cache_exit(void)
 void chpl_cache_fence(int acquire, int release, int ln, c_string fn)
 {
   if( acquire == 0 && release == 0 ) return;
-  if( CHPL_CACHE_REMOTE ) {
+  if( chpl_cache_enabled() ) {
     struct rdcache_s* cache = tls_cache_remote_data();
     chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
     
