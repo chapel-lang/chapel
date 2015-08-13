@@ -2230,7 +2230,7 @@ class DumpCodePass ( Pass ):
       module_file.write( "use " + use.text + ";\n" )
     module_file.write( "\n" )
     
-    module_file.write( "use LAPACK;\n" )
+    #module_file.write( "use LAPACK;\n" )
 
     for proc in module_root.findall( "./procedures/procedure" ):
       code = proc.find( "./code/[@category='untyped chapelerrific']" )
@@ -2239,8 +2239,6 @@ class DumpCodePass ( Pass ):
     
     module_file.write("} // ChaLAPACK\n")
     module_file.close();
-    
-    
     
     helper_info = pass_input.find( "./helper-module" )
     

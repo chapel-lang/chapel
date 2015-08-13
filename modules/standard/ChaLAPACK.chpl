@@ -111,7 +111,6 @@ use LAPACK;
 use "lapacke.h";
 use SysCTypes;
 
-use LAPACK;
 /* 
 Wrapped procedure of LAPACKE_sbdsdc for the type c_float.
  */
