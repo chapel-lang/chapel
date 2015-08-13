@@ -32,6 +32,14 @@ Chapel idiomatic wrappers for the LAPACK library.
 Consult the :mod:`LAPACK` module, which defines all the types and enumerations that this module uses, and demonstrates compiling with LAPACK binaries.
 Also consult the :mod:`LAPACK` module for details pertaining the use and function of all LAPACK procedures, including both pure LAPACK and these ChaLAPACK wrappers.
 
+.. note::
+
+  Because of the volume of procedures provided, and because their behavior is virtually unchanged, in-depth documentation on each procedure's purpose and use is not given here.
+  
+  Consult the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ site, and the `Netlibs &lt;http://www.netlib.org/lapack/explore-html/globals_func.html&gt;`_ and `Intel &lt;https://software.intel.com/en-us/node/501008&gt;`_ LAPACK documents for that information.
+  
+  Additionally, only a small set of ChaLAPACK procedures have been tested for correctness.
+
 Differences from LAPACK
 -----------------------
 
@@ -55,6 +63,53 @@ the arguments n, nrhs, lda, and ldb can be encapsulated by properties of Chapel 
 
 This requires that your matrices are stored in a two dimensional form.
 
+Compiling with LAPACK
+------------------------
+
+Using the :mod:`ChaLAPACK` or :mod:`LAPACK` modules require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
+
+You can download and build the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
+You must also have libgfortran installed on your system (typically installed along with gcc).
+
+To compile with LAPACK, Chapel needs to know:
+
+1. Where the LAPACKE header (lapacke.h) is.
+
+2. Where the libgfortran binary is (sometimes it is not to be found by ``ld``).
+
+3. Where the various LAPACK binaries (lapacke, lapack, and refblas) are.
+
+Once the details are worked out, compiling is quite simple and nearly identical to how one would compile a C program to work with LAPACK.
+
+.. code-block:: sh
+
+  chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
+       -L$PATH_TO_LIBGFORTRAN -lgfortran \
+       -L$PATH_TO_LAPACK_BINARIES -llapacke -lapack -lrefblas \
+       source.chpl
+
+As an example,
+
+.. code-block:: sh
+
+  chpl -I$HOME/LAPACK/lapacke/include \
+       -L/usr/lib/gcc/stuff -lgfortran \
+       -L$HOME/LAPACK -llapacke -lapack -lrefblas \
+       source.chpl
+
+would be the command to use if Netlibs LAPACK had been built in ``$HOME/LAPACK``, and the libgfortran binary found to be located in ``/usr/lib/gcc/stuff``
+
+Future Work
+-----------
+
+We anticipate the following additions:
+
+1. Better documentation on each individual procedure, mostly derived from the original Fortran documentation.
+
+2. Larger test coverage of the provided procedures.
+
+3. Enumerated values for arguments of procedures that currently take strings to denote different options.
+
 ChaLAPACK Procedures
 --------------------
 </description>
@@ -67,12 +122,16 @@ Chapel module for the LAPACK library.
 
 This module defines all the external types, enum types, and defines external procedures for all procedures found in the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ C interface (LAPACKE) header file (`lapacke.h &lt;http://www.netlib.org/lapack/explore-html/dir_18a139fd87bbd81b4018e3e4658878a2.html&gt;`_).
 
+See the :mod:`ChaLAPACK` module for the Chapel idiomatic LAPACK wrappers.
+
 .. note::
 
   Because of the volume of procedures provided, and because the behavior and signatures of the procedures are virtually unchanged, no documentation about them is given here.
   
   Consult the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ site, and the `Netlibs &lt;http://www.netlib.org/lapack/explore-html/globals_func.html&gt;`_ and `Intel &lt;https://software.intel.com/en-us/node/501008&gt;`_ LAPACK documents for the procedures and their use.
-
+  
+  Additionally, only a small set of LAPACK procedures have been tested for correctness. 
+  
 Type Adjustments
 ----------------
 
@@ -85,13 +144,13 @@ The :enum:`lapack_memory_order` enumeration is a replacement for the :type:`c_in
 The value of each enumeration is equivalent (both in type and value) of the LAPACK constants.
 However the constants are also provided and can be used as well.
 
-The ``LAPACK_SELECT`` types are function pointer types, whose functions need to be declared and implemented in C, then be declared as ``extern var`` on the Chapel side. 
+The ``LAPACK_SELECT`` types are function pointer types, whose procedures need to be declared and implemented in C, then be declared as ``extern var`` on the Chapel side. 
 See the :mod:`ChaLAPACK` dgees test for a concrete example.
 
 Compiling with LAPACK
----------------------
+------------------------
 
-You must have LAPACK on your system, as it is not bundled with Chapel. 
+Using the :mod:`ChaLAPACK` or :mod:`LAPACK` modules require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
 
 You can download and build the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
 You must also have libgfortran installed on your system (typically installed along with gcc).
@@ -100,7 +159,7 @@ To compile with LAPACK, Chapel needs to know:
 
 1. Where the LAPACKE header (lapacke.h) is.
 
-2. Where the libgfortran binary is (it tends not to be found by ``ld``).
+2. Where the libgfortran binary is (sometimes it is not to be found by ``ld``).
 
 3. Where the various LAPACK binaries (lapacke, lapack, and refblas) are.
 

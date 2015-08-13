@@ -24,6 +24,14 @@ Chapel idiomatic wrappers for the LAPACK library.
 Consult the :mod:`LAPACK` module, which defines all the types and enumerations that this module uses, and demonstrates compiling with LAPACK binaries.
 Also consult the :mod:`LAPACK` module for details pertaining the use and function of all LAPACK procedures, including both pure LAPACK and these ChaLAPACK wrappers.
 
+.. note::
+
+  Because of the volume of procedures provided, and because their behavior is virtually unchanged, in-depth documentation on each procedure's purpose and use is not given here.
+  
+  Consult the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ site, and the `Netlibs <http://www.netlib.org/lapack/explore-html/globals_func.html>`_ and `Intel <https://software.intel.com/en-us/node/501008>`_ LAPACK documents for that information.
+  
+  Additionally, only a small set of ChaLAPACK procedures have been tested for correctness.
+
 Differences from LAPACK
 -----------------------
 
@@ -46,6 +54,53 @@ the arguments n, nrhs, lda, and ldb can be encapsulated by properties of Chapel 
   gesv(matrix_order : lapack_memory_order, a : [] c_float, ipiv : [] c_int, b : [] c_float): c_int;
 
 This requires that your matrices are stored in a two dimensional form.
+
+Compiling with LAPACK
+------------------------
+
+Using the :mod:`ChaLAPACK` or :mod:`LAPACK` modules require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
+
+You can download and build the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
+You must also have libgfortran installed on your system (typically installed along with gcc).
+
+To compile with LAPACK, Chapel needs to know:
+
+1. Where the LAPACKE header (lapacke.h) is.
+
+2. Where the libgfortran binary is (sometimes it is not to be found by ``ld``).
+
+3. Where the various LAPACK binaries (lapacke, lapack, and refblas) are.
+
+Once the details are worked out, compiling is quite simple and nearly identical to how one would compile a C program to work with LAPACK.
+
+.. code-block:: sh
+
+  chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
+       -L$PATH_TO_LIBGFORTRAN -lgfortran \
+       -L$PATH_TO_LAPACK_BINARIES -llapacke -lapack -lrefblas \
+       source.chpl
+
+As an example,
+
+.. code-block:: sh
+
+  chpl -I$HOME/LAPACK/lapacke/include \
+       -L/usr/lib/gcc/stuff -lgfortran \
+       -L$HOME/LAPACK -llapacke -lapack -lrefblas \
+       source.chpl
+
+would be the command to use if Netlibs LAPACK had been built in ``$HOME/LAPACK``, and the libgfortran binary found to be located in ``/usr/lib/gcc/stuff``
+
+Future Work
+-----------
+
+We anticipate the following additions:
+
+1. Better documentation on each individual procedure, mostly derived from the original Fortran documentation.
+
+2. Larger test coverage of the provided procedures.
+
+3. Enumerated values for arguments of procedures that currently take strings to denote different options.
 
 ChaLAPACK Procedures
 --------------------
@@ -1222,14 +1277,14 @@ inline proc gesv(matrix_order : lapack_memory_order, a : [] complex(128), ipiv :
 /* 
 Wrapped procedure of LAPACKE_dsgesv for the type c_double.
  */
-inline proc sgesv(matrix_order : lapack_memory_order, a : [] c_double, ipiv : [] c_int, b : [] c_double, x : [] c_double, ref chlapack_iter : c_int): c_int{
+inline proc gesv(matrix_order : lapack_memory_order, a : [] c_double, ipiv : [] c_int, b : [] c_double, x : [] c_double, ref chlapack_iter : c_int): c_int{
   return LAPACKE_dsgesv(matrix_order, (a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(2).size else b.domain.dim(1).size) : c_int, a, (a.domain.dim(2).size) : c_int, ipiv, b, (b.domain.dim(2).size) : c_int, x, (x.domain.dim(2).size) : c_int, chlapack_iter);
 }
 
 /* 
 Wrapped procedure of LAPACKE_zcgesv for the type lapack_complex_double.
  */
-inline proc cgesv(matrix_order : lapack_memory_order, a : [] complex(128), ipiv : [] c_int, b : [] complex(128), x : [] complex(128), ref chlapack_iter : c_int): c_int{
+inline proc gesv(matrix_order : lapack_memory_order, a : [] complex(128), ipiv : [] c_int, b : [] complex(128), x : [] complex(128), ref chlapack_iter : c_int): c_int{
   return LAPACKE_zcgesv(matrix_order, (a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(2).size else b.domain.dim(1).size) : c_int, a, (a.domain.dim(2).size) : c_int, ipiv, b, (b.domain.dim(2).size) : c_int, x, (x.domain.dim(2).size) : c_int, chlapack_iter);
 }
 
@@ -3896,14 +3951,14 @@ inline proc posv(matrix_order : lapack_memory_order, uplo : string, a : [] compl
 /* 
 Wrapped procedure of LAPACKE_dsposv for the type c_double.
  */
-inline proc sposv(matrix_order : lapack_memory_order, uplo : string, a : [] c_double, b : [] c_double, x : [] c_double, ref chlapack_iter : c_int): c_int{
+inline proc posv(matrix_order : lapack_memory_order, uplo : string, a : [] c_double, b : [] c_double, x : [] c_double, ref chlapack_iter : c_int): c_int{
   return LAPACKE_dsposv(matrix_order, ascii(uplo) : c_char, (a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(2).size else b.domain.dim(1).size) : c_int, a, (a.domain.dim(2).size) : c_int, b, (b.domain.dim(2).size) : c_int, x, (x.domain.dim(2).size) : c_int, chlapack_iter);
 }
 
 /* 
 Wrapped procedure of LAPACKE_zcposv for the type lapack_complex_double.
  */
-inline proc cposv(matrix_order : lapack_memory_order, uplo : string, a : [] complex(128), b : [] complex(128), x : [] complex(128), ref chlapack_iter : c_int): c_int{
+inline proc posv(matrix_order : lapack_memory_order, uplo : string, a : [] complex(128), b : [] complex(128), x : [] complex(128), ref chlapack_iter : c_int): c_int{
   return LAPACKE_zcposv(matrix_order, ascii(uplo) : c_char, (a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(2).size else b.domain.dim(1).size) : c_int, a, (a.domain.dim(2).size) : c_int, b, (b.domain.dim(2).size) : c_int, x, (x.domain.dim(2).size) : c_int, chlapack_iter);
 }
 

@@ -23,12 +23,16 @@ Chapel module for the LAPACK library.
 
 This module defines all the external types, enum types, and defines external procedures for all procedures found in the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ C interface (LAPACKE) header file (`lapacke.h <http://www.netlib.org/lapack/explore-html/dir_18a139fd87bbd81b4018e3e4658878a2.html>`_).
 
+See the :mod:`ChaLAPACK` module for the Chapel idiomatic LAPACK wrappers.
+
 .. note::
 
   Because of the volume of procedures provided, and because the behavior and signatures of the procedures are virtually unchanged, no documentation about them is given here.
   
   Consult the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ site, and the `Netlibs <http://www.netlib.org/lapack/explore-html/globals_func.html>`_ and `Intel <https://software.intel.com/en-us/node/501008>`_ LAPACK documents for the procedures and their use.
-
+  
+  Additionally, only a small set of LAPACK procedures have been tested for correctness. 
+  
 Type Adjustments
 ----------------
 
@@ -41,13 +45,13 @@ The :enum:`lapack_memory_order` enumeration is a replacement for the :type:`c_in
 The value of each enumeration is equivalent (both in type and value) of the LAPACK constants.
 However the constants are also provided and can be used as well.
 
-The ``LAPACK_SELECT`` types are function pointer types, whose functions need to be declared and implemented in C, then be declared as ``extern var`` on the Chapel side. 
+The ``LAPACK_SELECT`` types are function pointer types, whose procedures need to be declared and implemented in C, then be declared as ``extern var`` on the Chapel side. 
 See the :mod:`ChaLAPACK` dgees test for a concrete example.
 
 Compiling with LAPACK
----------------------
+------------------------
 
-You must have LAPACK on your system, as it is not bundled with Chapel. 
+Using the :mod:`ChaLAPACK` or :mod:`LAPACK` modules require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
 
 You can download and build the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
 You must also have libgfortran installed on your system (typically installed along with gcc).
@@ -56,7 +60,7 @@ To compile with LAPACK, Chapel needs to know:
 
 1. Where the LAPACKE header (lapacke.h) is.
 
-2. Where the libgfortran binary is (it tends not to be found by ``ld``).
+2. Where the libgfortran binary is (sometimes it is not to be found by ``ld``).
 
 3. Where the various LAPACK binaries (lapacke, lapack, and refblas) are.
 
