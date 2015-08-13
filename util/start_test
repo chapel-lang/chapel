@@ -54,6 +54,7 @@ def main():
 def run_tests(tests):
     files = []
     dirs = []
+    had_invalid_file = False
     for i in tests:
         if os.path.isdir(i): # a directory (also get absolute path)
             dirs.append(os.path.abspath(i))
@@ -62,6 +63,10 @@ def run_tests(tests):
         else:
             print("[Error: {0} is not a valid file or directory]"
                     .format(i))
+            had_invalid_file = True
+
+    if had_invalid_file and len(files) == 0 and len(dirs) == 0:
+        sys.exit(2)
 
     # set up
     set_up_environment()
