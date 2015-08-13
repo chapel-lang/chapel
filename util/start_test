@@ -52,6 +52,8 @@ def main():
 
 
 def run_tests(tests):
+    set_up_logger()
+
     files = []
     dirs = []
     had_invalid_file = False
@@ -61,7 +63,7 @@ def run_tests(tests):
         elif os.path.isfile(i): # a file
             files.append(os.path.abspath(i))
         else:
-            print("[Error: {0} is not a valid file or directory]"
+            logger.write("[Error: {0} is not a valid file or directory]"
                     .format(i))
             had_invalid_file = True
 
@@ -686,7 +688,7 @@ def set_up_environment():
         args.junit_xml = True
 
 
-def set_up_general():
+def set_up_logger():
     # log_file
     global log_file
     if args.log_file:
@@ -705,7 +707,8 @@ def set_up_general():
     global logger
     logger = Logger()
 
-    # start time
+
+def set_up_general():
     global start_time
     if args.comp_performance:
         start_time = int(time.time())
