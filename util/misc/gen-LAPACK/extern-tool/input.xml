@@ -635,4 +635,8 @@ The enum values values are the same as the const value such that ``lapack_memory
     <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_lsame']/arguments-list/argument/[@name='lca']" semantic="scalar" intent="in" />
     <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_lsame']/arguments-list/argument/[@name='lcb']" semantic="scalar" intent="in" />
   </pass>
+  <pass name="ChapelModuleChapelerrificProcPass">
+    <case name="gesv" />
+    <case name="posv" />
+  </pass>
 </pass-input>

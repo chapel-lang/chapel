@@ -106,7 +106,7 @@ doc_purpose_regex = re.compile( r"\\par\s+Purpose:\s+=+\s+\\verbatim\s+(?P<body>
 # Parses function names
 # Captures: [1,type] literal type of matrix, [2,config] configuration type of matrix, [3,function] function group
 #func_name_group_regex = re.compile( r"^(?P<type>[dszc]|(?:ds)|(?:zc))(?P<config>(?:bd)|(?:di)|(?:gb)|(?:ge)|(?:gg)|(?:gt)|(?:hb)|(?:he)|(?:hg)|(?:hp)|(?:hs)|(?:op)|(?:or)|(?:pb)|(?:po)|(?:pp)|(?:pt)|(?:sb)|(?:sp)|(?:st)|(?:sy)|(?:tb)|(?:tg)|(?:tp)|(?:tr)|(?:tz)|(?:un)|(?:up))(?P<function>.+)" )
-func_name_group_regex = re.compile( r"^(?P<type>[dszc]|(?:ds)|(?:zc))(?P<config>\w\w)(?P<function>\w\w\w*)" )
+func_name_group_regex = re.compile( r"^(?P<type>(?:(?:ds)|(?:zc)|[dszc]))(?P<config>\w\w)(?P<function>\w\w\w*)" )
 
 '''
 class ResolutionFailure ( Exception )
@@ -1936,6 +1936,12 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
     module_procs = module_root.find( "./procedures" )
     proc_count = 0
     no_repeat = set()
+    
+    iterative_functions = set()
+    
+    for case in Pass.input_xml.findall( "./pass/[@name='ChapelModuleChapelerrificProcPass']/case" ):
+      iterative_functions.add( case.get("name") )
+    
     for proc in module_procs.findall( "./procedure" ):
       if proc.find( "./pass-through-arguments-list" ) == None:
         continue
@@ -1954,9 +1960,19 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
       typeToTypeString = { "s" : "c_float", 
                            "d" : "c_double",
                            "c" : "lapack_complex_float",
-                           "z" : "lapack_complex_double"
+                           "z" : "lapack_complex_double",
+                           "ds" : "c_double",
+                           "zc" : "lapack_complex_double"
                           }
-      
+      if (type == "ds" or type == "zc") and not config+func in iterative_functions:
+        temp_type = type[0]
+        temp_config = type[1]+config[0]
+        temp_func = config[1] + func
+        type = temp_type
+        config = temp_config
+        func = temp_func
+        
+        
       for name_category in [ (config+func, "untyped chapelerrific") ]: # (type+config+func, "chapelerrific")
       
         [proc_name, category_name] = name_category
