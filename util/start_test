@@ -157,8 +157,7 @@ def finish():
 def test_file(test):
     path_to_test = os.path.relpath(test)
     test_name = os.path.basename(test)
-
-    with cd(os.path.dirname("./" + test)): # cd into dir, and cd out later
+    with cd(os.path.dirname(test)): # cd into dir, and cd out later
         # clean executables, etc
         logger.write()
         logger.write("[Cleaning file {0}]".format(test))
