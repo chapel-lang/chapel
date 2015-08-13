@@ -873,9 +873,10 @@ OwnershipFlowManager::forwardFlowOwnership()
 // TODO: This is selfish code.  It ought to be a service provided by the
 // BasicBlock module, but is currently not.  Any significant change to
 // BasicBlock::buildBasicBlocks should be reflected here.
-static Expr* getLastExprInBB(Expr* stmt)
+static Expr* getLastStmtInBB(Expr* stmt)
 {
   Expr* curr = stmt;
+  Expr* last = stmt;
   while (curr)
   {
     Expr* next = curr->getFirstChild();
@@ -889,8 +890,8 @@ static Expr* getLastExprInBB(Expr* stmt)
       if (curr == stmt->parentExpr)
       {
         // We ran out of candidates without finding a valid successor, so just
-        // return the original statment.
-        return stmt;
+        // return the last statment visited.
+        return last->getStmtExpr();
       }
       next = curr->next;
     }
@@ -906,11 +907,14 @@ static Expr* getLastExprInBB(Expr* stmt)
       if (isLabelSymbol(def->sym))
         break;
 
+    last = curr;
     curr = next;
   }
+
   // We always expect a valid expression to be returned.
   // This is also an assert that the caller did not pass in stmt == NULL.
   INT_ASSERT(curr);
+  INT_ASSERT(curr == curr->getStmtExpr());
   return curr;
 }
 
@@ -963,7 +967,7 @@ static void insertAutoDestroyAfterStmt(SymExpr* se)
   // members of temporary variables, so we are not able to see the last use
   // (since we do not track references).  As a workaround, we march forward to
   // the end of the current basic block and use that as the insertion point.
-  Expr* lastStmtInBB = getLastExprInBB(stmt);
+  Expr* lastStmtInBB = getLastStmtInBB(stmt);
 
   SET_LINENO(sym->defPoint);
   CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
