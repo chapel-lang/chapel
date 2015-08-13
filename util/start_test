@@ -3,23 +3,31 @@
 # CHAPEL TESTING
 
 from __future__ import print_function
-from test import activate_chpl_test_venv
+
+import atexit
+import contextlib
+import fnmatch
+import getpass
+import glob
+import logging
 import os
-import sys
-import time
-import subprocess32 as subprocess
-import argparse
 import platform
 import re
-import getpass
 import shutil
+import sys
 import tempfile
-import fnmatch
-import glob
-import contextlib
-import logging
-import atexit
+import time
+
+# need to be able to find the util directory even when start_test doesn't live
+# in $CHPL_HOME/util (such as for the release tarball)
+util_dir = os.path.join(os.path.dirname(__file__), '..', 'util')
+sys.path.insert(0, os.path.abspath(util_dir))
+
 from chplenv import *
+
+from test import activate_chpl_test_venv
+import argparse
+import subprocess32 as subprocess
 
 # PROGRAM ENTRY POINT
 def main():
@@ -138,7 +146,7 @@ def finish():
     logger.stop()
 
     # exit, returning 0 if no failures and 2 if there were some
-    if failures == 0:
+    if args.clean_only or failures == 0:
         sys.exit(0)
     else:
         sys.exit(2)
@@ -479,7 +487,7 @@ def compiler_performance():
     try:
         logger.write("[Combining dat files now]")
         out = subprocess.check_output([combine_comp_perf, "--tempDatDir", 
-            temp_dat_files_dir,"--elapsedTestTime", str(elapsed), "--outdir", 
+            temp_dat_dir,"--elapsedTestTime", str(elapsed), "--outDir",
             comp_perf_dir])
         logger.write(out)
         logger.write("[Success combining compiler performance dat files]")
@@ -508,7 +516,7 @@ def compiler_performance():
             "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
 
     # delete temp files
-    shutil.rmtree(temp_dat_files_dir)
+    shutil.rmtree(temp_dat_dir)
 
 
 def generate_graph_files_graphs():
@@ -603,10 +611,10 @@ def check_environment():
 def set_up_environment():
     # pre-
     if args.preexec:
-        os.environ["CHPL_SYSTEM_PREEXEC"] = args.syspreexec
+        os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
 
     if args.prediff:
-        os.environ["CHPL_SYSTEM_PREDIFF"] = args.sysprediff
+        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
 
     # compopts
     if args.compopts:
@@ -824,7 +832,7 @@ def set_up_performance_testing_B():
     # compiler
     if args.comp_performance:
         # set global variables
-        global compperf_test_name, comp_perf_dir, temp_dat_files_dir, comp_perf_html_dir
+        global compperf_test_name, comp_perf_dir, temp_dat_dir, comp_perf_html_dir
         global combine_comp_perf
 
         compperf_test_name = platform.node().split(".")[0].lower()
@@ -840,15 +848,15 @@ def set_up_performance_testing_B():
 
         compperf_test_name += args.comp_performance_description
 
-        temp_dat_files_dir = os.path.join(comp_perf_dir, "tempCompPerfDatFiles")
-        os.environ["CHPL_TEST_COMP_PERF_TEMP_DAT_DIR"] = temp_dat_files_dir
+        temp_dat_dir = os.path.join(comp_perf_dir, "tempCompPerfDatFiles", "")
+        os.environ["CHPL_TEST_COMP_PERF_TEMP_DAT_DIR"] = temp_dat_dir
         #remove it if it wasn't cleaned up last time
-        if os.path.isdir(temp_dat_files_dir):
-            shutil.rmtree(temp_dat_files_dir)
+        if os.path.isdir(temp_dat_dir):
+            shutil.rmtree(temp_dat_dir)
 
         comp_perf_html_dir = os.path.join(comp_perf_dir, "html")
 
-        combine_comp_perf = os.path.join(util_dir, "test", "combine_comp_perfData")
+        combine_comp_perf = os.path.join(util_dir, "test", "combineCompPerfData")
 
     # for any performance testing
     if args.performance or args.comp_performance or args.gen_graphs:
@@ -948,9 +956,9 @@ def set_up_executables():
     # launcher timeout
     if (not os.environ.get("CHPL_LAUNCHER_TIMEOUT")
         and not os.environ.get("CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT")):
-        if launcher.find("slurm") > 0:
+        if "slurm" in launcher:
             os.environ["CHPL_LAUNCHER_TIMEOUT"] = "slurm"
-        if launcher.find("pbs") > 0 or launcher.find("qsub") > 0:
+        if "pbs" in launcher or "qsub" in launcher:
             os.environ["CHPL_LAUNCHER_TIMEOUT"] = "pbs"
 
     # comm
@@ -1135,14 +1143,14 @@ def cleanup():
 def jUnit():
     junit_args = ["--start-test-log={0}".format(log_file)]
     if args.junit_xml_file:
-        junit_args.append(" --junit-xml={0}".format(args.junit_xml_file))
+        junit_args.append("--junit-xml={0}".format(args.junit_xml_file))
 
     if args.junit_remove_prefix:
         junit_args.append(
-                " --remove-prefix={0}".format(args.junit_remove_prefix))
+                "--remove-prefix={0}".format(args.junit_remove_prefix))
     elif args.test_root_dir:
         # if --test-root was thrown, remove it from junit report
-        junit_args.append(" --remove-prefix={0}".format(args.test_root_dir))
+        junit_args.append("--remove-prefix={0}".format(args.test_root_dir))
 
     cmd = [os.path.join(util_dir, "test", 
             "convert_start_test_log_to_junit_xml.py")]
@@ -1327,7 +1335,7 @@ class Logger():
         self.logger.addHandler(self.file_out)
 
     def write(self, msg=" "):
-        self.logger.info(msg.strip())
+        self.logger.info(msg.rstrip())
 
     def flush(self):
         self.console_out.flush()

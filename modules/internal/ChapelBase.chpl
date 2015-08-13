@@ -1517,6 +1517,8 @@ module ChapelBase {
   proc isUnionType(type t) param return __primitive("is union type", t);
 
   proc isAtomicType(type t) param return __primitive("is atomic type", t);
+
+  proc isRefIterType(type t) param return __primitive("is ref iter type", t);
   
   // These style element #s are used in the default Writer and Reader.
   // and in e.g. implementations of those in Tuple.
