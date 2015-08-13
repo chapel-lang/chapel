@@ -5878,6 +5878,129 @@ void NamedExpr::accept(AstVisitor* visitor) {
 *                                                                           *
 ************************************* | ************************************/
 
+// Will destroy "args" argument when finished with it.
+UseExpr::UseExpr(BaseAST* mod, Vec<const char*>* args, bool exclude) :
+  Expr(E_UseExpr),
+  includes(),
+  excludes(),
+  mod(NULL)
+{
+  if (Symbol* b = toSymbol(mod)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(mod)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseExpr constructor");
+  }
+
+  if (exclude) {
+    // Symbols to exclude when searching this module's scope from an outside
+    // scope
+    if ((*args)->n == 0) {
+      INT_FATAL(this, "In UseExpr constructor, exclude should not be true without names to exclude!");
+    }
+    forv_Vec(const char, str, args) {
+      excludes.push_back(str);
+    }
+  } else if (args->n > 0) {
+    // Symbols to search when going through this module's scope from an outside
+    // scope
+    forv_Vec(const char, str, args) {
+      includes.push_back(str);
+    }
+  }
+  delete args;
+  // args shouldn't be needed any more, it has served its purpose
+}
+
+// This should only be used when copying UseExprs, so the args value will be
+// deleted when the original UseExpr is deleted.
+UseExpr::UseExpr(BaseAST* mod, std::vector<const char*>* args, bool exclude) :
+  Expr(E_UseExpr),
+  mod(NULL),
+  includes(),
+  excludes()
+{
+  if (Symbol* b = toSymbol(mod)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(mod)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseExpr constructor");
+  }
+
+  if (exclude) {
+    // Symbols to exclude when searching this module's scope from an outside
+    // scope
+    if (args.size() == 0) {
+      INT_FATAL(this, "In UseExpr constructor, exclude should not be true without names to exclude!");
+    }
+    for_vector(const char, str, args) {
+      excludes.push_back(str);
+    }
+  } else if (args.size() > 0) {
+    // Symbols to search when going through this module's scope from an outside
+    // scope
+    for_vector(const char, str, args) {
+      includes.push_back(str);
+    }
+  }
+}
+
+UseExpr* UseExpr::copyInner(SymbolMap* map) {
+  UseExpr *_this = 0;
+  if (excludes.size() > 0) {
+    _this = new UseExpr(COPY_INT(mod), excludes, true);
+  } else if (includes.size() > 0) {
+    _this = new UseExpr(COPY_INT(mod), includes, false);
+  } else {
+    _this = new UseExpr(COPY_INT(mod), NULL, false);
+  }
+  return _this;
+}
+
+void UseExpr::verify() {
+  Expr::verify();
+  if (astTag != E_UseExpr) {
+    INT_FATAL(this, "Bad NamedExpr::astTag");
+  }
+  if (mod == NULL) {
+    INT_FATAL(this, "Bad UseExpr::mod");
+  }
+  if (excludes.size() > 0 && includes.size() > 0) {
+    INT_FATAL(this, "UseExprs shouldn't have both includes and excludes");
+  }
+}
+
+void replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == mod) {
+    mod = new_ast;
+  } else {
+    INT_FATAL(this, "Unexpected case in UseExpr::replaceChild");
+  }
+}
+
+GenRet UseExpr::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "UseExpr::codegen not implemented");
+  return ret;
+}
+
+Expr* UseExpr::getFirstExpr() {
+  return this;
+}
+
+// Don't need to recurse into the symbols known to a UseExpr, their plaintext
+// is sufficient for most purposes
+void UseExpr::accept(AstVisitor* visitor) {
+  visitor->visitUseExpr(this);
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 bool
 get_int(Expr *e, int64_t *i) {
   if (e) {
