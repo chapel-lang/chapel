@@ -59,7 +59,7 @@ def run_tests(tests):
         if os.path.isdir(i): # a directory (also get absolute path)
             dirs.append(os.path.abspath(i))
         elif os.path.isfile(i): # a file
-            files.append(i)
+            files.append(os.path.abspath(i))
         else:
             print("[Error: {0} is not a valid file or directory]"
                     .format(i))
@@ -158,7 +158,7 @@ def test_file(test):
     path_to_test = os.path.relpath(test)
     test_name = os.path.basename(test)
 
-    with cd(os.path.dirname("./" + test)): # cd into dir, and cd out later
+    with cd(os.path.dirname(test)): # cd into dir, and cd out later
         # clean executables, etc
         logger.write()
         logger.write("[Cleaning file {0}]".format(test))
