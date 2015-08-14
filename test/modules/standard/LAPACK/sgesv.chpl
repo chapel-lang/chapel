@@ -1,13 +1,13 @@
-use Shared, ChaLAPACK;
+use Shared, LAPACK, LAPACK.ClassicLAPACK;
 
 config var verbose_test: bool;
 
-proc LAPACK_cgesv_test(){
+proc LAPACK_sgesv_test(){
   if verbose_test then
-    writeln( "LAPACK_cgesv\n===============================" );
+    writeln( "LAPACK_sgesv\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
+  var A = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ) : c_float, ( 2.0 ) : c_float, ( 1.0 ) : c_float, ( 6.0 ) : c_float ], input_array_order = lapack_memory_order.row_major );
+  var X = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ) : c_float, ( 1.0 ) : c_float, ( 4.0 ) : c_float, ( 2.0 ) : c_float ], input_array_order = lapack_memory_order.row_major ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -31,7 +31,7 @@ proc LAPACK_cgesv_test(){
   var ldb: c_int = B_work.leadingDimension : c_int;
   var info: c_int = 0 : c_int;
   
-  LAPACK_cgesv( n, nrhs, a, lda, ipiv, b, ldb, info );
+  LAPACK_sgesv( n, nrhs, a, lda, ipiv, b, ldb, info );
   
   A_work.data = a;
   B_work.data = b;
@@ -48,12 +48,12 @@ proc LAPACK_cgesv_test(){
   return ( info == 0 && isSame, info, "" );
 }
 
-proc LAPACKE_cgesv_row_major_test(){
+proc LAPACKE_sgesv_row_major_test(){
   if verbose_test then
-    writeln( "LAPACKE_cgesv_row_major\n===============================" );
+    writeln( "LAPACKE_sgesv_row_major\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  ); 
+  var A = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 ) : c_float, ( 2.0 ) : c_float, ( 1.0 ) : c_float, ( 6.0 ) : c_float ], input_array_order = lapack_memory_order.row_major  );
+  var X = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 ) : c_float, ( 1.0 ) : c_float, ( 4.0 ) : c_float, ( 2.0 ) : c_float ], input_array_order = lapack_memory_order.row_major  ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -70,7 +70,7 @@ proc LAPACKE_cgesv_row_major_test(){
     writeln( "===============================" );
     
   var info = 
-    LAPACKE_cgesv( A_work.storage_order, // matrix_order
+    LAPACKE_sgesv( A_work.storage_order, // matrix_order
                    A_work.order : c_int, // N
                    B_work.columns : c_int, // NRHS
                    A_work.data, // A
@@ -92,12 +92,12 @@ proc LAPACKE_cgesv_row_major_test(){
   return ( info == 0 && isSame, info, "" );
 }
 
-proc LAPACKE_cgesv_col_major_test(){
+proc LAPACKE_sgesv_col_major_test(){
   if verbose_test then
-    writeln( "LAPACKE_cgesv_col_major\n===============================" );
+    writeln( "LAPACKE_sgesv_col_major\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
+  var A = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ) : c_float, ( 2.0 ) : c_float, ( 1.0 ) : c_float, ( 6.0 ) : c_float ], input_array_order = lapack_memory_order.row_major );
+  var X = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ) : c_float, ( 1.0 ) : c_float, ( 4.0 ) : c_float, ( 2.0 ) : c_float ], input_array_order = lapack_memory_order.row_major ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -114,7 +114,7 @@ proc LAPACKE_cgesv_col_major_test(){
     writeln( "===============================" );
     
   var info = 
-    LAPACKE_cgesv( A_work.storage_order, // matrix_order
+    LAPACKE_sgesv( A_work.storage_order, // matrix_order
                    A_work.order : c_int, // N
                    B_work.columns : c_int, // NRHS
                    A_work.data, // A
@@ -140,8 +140,8 @@ proc gesv_row_major_test(){
   if verbose_test then
     writeln( "gesv_row_major\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6  ); 
+  var A = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 ) : c_float, ( 2.0 ) : c_float, ( 1.0 ) : c_float, ( 6.0 ) : c_float ], input_array_order = lapack_memory_order.row_major  );
+  var X = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 ) : c_float, ( 1.0 ) : c_float, ( 4.0 ) : c_float, ( 2.0 ) : c_float ], input_array_order = lapack_memory_order.row_major  ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -180,8 +180,8 @@ proc gesv_col_major_test(){
   if verbose_test then
     writeln( "gesv_col_major\n===============================" );
 
-  var A = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 6.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 );
-  var X = new LAPACK_Matrix( complex(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 + 1.0i ) : complex(64), ( 1.0 + 1.0i ) : complex(64), ( 4.0 + 1.0i ) : complex(64), ( 2.0 + 1.0i ) : complex(64) ], input_array_order = lapack_memory_order.row_major, error = 10e-6 ); 
+  var A = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ) : c_float, ( 2.0 ) : c_float, ( 1.0 ) : c_float, ( 6.0 ) : c_float ], input_array_order = lapack_memory_order.row_major );
+  var X = new LAPACK_Matrix( c_float, 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ) : c_float, ( 1.0 ) : c_float, ( 4.0 ) : c_float, ( 2.0 ) : c_float ], input_array_order = lapack_memory_order.row_major ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -218,16 +218,17 @@ proc gesv_col_major_test(){
 
 proc main(){
   
-  var LAPACK_cgesv_result = LAPACK_cgesv_test();
-  var LAPACKE_cgesv_row_major_result = LAPACKE_cgesv_row_major_test();
-  var LAPACKE_cgesv_col_major_result = LAPACKE_cgesv_col_major_test();
+  var LAPACK_sgesv_result = LAPACK_sgesv_test();
+  var LAPACKE_sgesv_row_major_result = LAPACKE_sgesv_row_major_test();
+  var LAPACKE_sgesv_col_major_result = LAPACKE_sgesv_col_major_test();
   var gesv_row_major_result = gesv_row_major_test();
   var gesv_col_major_result = gesv_col_major_test();
   
-  writeln( "LAPACK_cgesv ", if LAPACK_cgesv_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_cgesv_row_major ", if LAPACKE_cgesv_row_major_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_cgesv_col_major ", if LAPACKE_cgesv_col_major_result[1] then "passed" else "FAILED!" );
+  writeln( "LAPACK_sgesv ", if LAPACK_sgesv_result[1] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_sgesv_row_major ", if LAPACKE_sgesv_row_major_result[1] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_sgesv_col_major ", if LAPACKE_sgesv_col_major_result[1] then "passed" else "FAILED!" );
   writeln( "gesv_row_major ", if gesv_row_major_result[1] then "passed" else "FAILED!" );
   writeln( "gesv_col_major ", if gesv_col_major_result[1] then "passed" else "FAILED!" );
 
 }
+

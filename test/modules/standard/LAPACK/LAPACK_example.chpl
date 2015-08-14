@@ -1,4 +1,4 @@
-/* This example demonstrates how one would use a ChaLAPACK procedure in Chapel
+/* This example demonstrates how one would use a LAPACK procedure in Chapel
  * using Chapel arrays.
  * The procedure used is the gesv procedure which solves A * X = B for X, 
  * given both A and B, where A is a square matrix.
@@ -7,7 +7,7 @@
  * show that the result the gesv of the procedure give the correct output.
  */
 
-use ChaLAPACK;
+use LAPACK;
 
 var N = 2;
 var K = 1;
@@ -46,7 +46,7 @@ var ipiv : [1..N] c_int; // Output array. Stores pivot indices
 // Our matrices are in row_major order
 var info = gesv( lapack_memory_order.row_major, work_A, ipiv, work_B );
 
-// LAPACK and ChaLAPACK return error codes when they fail.
+// LAPACK and LAPACK return error codes when they fail.
 if info != 0 {
   writeln( "There was an error!" );
   if info < 0 {

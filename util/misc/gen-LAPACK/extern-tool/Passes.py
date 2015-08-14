@@ -1934,12 +1934,15 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
 
     module_root = xml_tree.find( "./chapel-module" )
     module_procs = module_root.find( "./procedures" )
+    pass_info = Pass.input_xml.find( "./pass/[@name='ChapelModuleChapelerrificProcPass']" )
+    
+    helper_use = pass_info.find("./use").text
+    
     proc_count = 0
     no_repeat = set()
-    
     iterative_functions = set()
     
-    for case in Pass.input_xml.findall( "./pass/[@name='ChapelModuleChapelerrificProcPass']/case" ):
+    for case in pass_info.findall("./cases/case" ):
       iterative_functions.add( case.get("name") )
     
     for proc in module_procs.findall( "./procedure" ):
@@ -1957,13 +1960,20 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
       config = match.group( "config" )
       type = match.group( "type" )
       
-      typeToTypeString = { "s" : "c_float", 
-                           "d" : "c_double",
-                           "c" : "lapack_complex_float",
-                           "z" : "lapack_complex_double",
-                           "ds" : "c_double",
-                           "zc" : "lapack_complex_double"
+      typeToTypeString = { "s" : "real(32)", 
+                           "d" : "real(64)",
+                           "c" : "complex(64)",
+                           "z" : "complex(128)",
+                           "ds" : "real(64)",
+                           "zc" : "complex(128)"
                           }
+                          
+      typeMap = {
+        "c_float" : "real(32)",
+        "c_double" : "real(64)",
+        "c_char" : "string"
+      }
+      
       if (type == "ds" or type == "zc") and not config+func in iterative_functions:
         temp_type = type[0]
         temp_config = type[1]+config[0]
@@ -2009,7 +2019,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
                                     ("" if arg.get("intent") == "none" else arg.get("intent") + " ") + \
                                     arg.get("name") + " : " + \
                                     ("[] " if arg.get("semantic") == "array" else "") + \
-                                    ( arg.get("type") if arg.get("type") != "c_char" else "string" ) + \
+                                    ( arg.get("type") if not arg.get("type") in typeMap else typeMap[ arg.get("type") ] ) + \
                                     ( " = " + arg.text if arg.text != None and arg.text.strip() != "" else "" )
                                   )
                                 )
@@ -2049,7 +2059,7 @@ class ChapelModuleChapelerrificProcPass ( Pass ):
         for pass_arg in proc.findall( "./pass-through-arguments-list/argument" ):
           call_args_producer.append( SegmentProducer( pass_arg.text ) )
     
-        func_body.append( SegmentProducer( ( "return " if proc.get("return-type") != "void" else "" ) + proc.get("name") ) + call_args_producer + LineProducer( ";" ) )
+        func_body.append( SegmentProducer( ( "return " if proc.get("return-type") != "void" else "" ) + helper_use + "." + proc.get("name") ) + call_args_producer + LineProducer( ";" ) )
         code.append( func_body )
         
         
@@ -2218,6 +2228,8 @@ class DumpCodePass ( Pass ):
     module_root = xml_tree.find( "./chapel-module" )
 
     ChaLAPACK_info = pass_input.find( "./main-module" )
+    helper_info = pass_input.find( "./helper-module" )
+    
     module_name = ChaLAPACK_info.get( "name" )
     module_file = open( ChaLAPACK_info.get( "file-name" ), "w" )
     
@@ -2225,38 +2237,12 @@ class DumpCodePass ( Pass ):
     
     module_file.write( "/*\n" + ChaLAPACK_info.find("./description").text + "\n*/\n" )
     module_file.write( "module " + module_name + " {\n" )
-   
+    
     for use in ChaLAPACK_info.findall( "./use" ):
       module_file.write( "use " + use.text + ";\n" )
     module_file.write( "\n" )
     
-    #module_file.write( "use LAPACK;\n" )
-
-    for proc in module_root.findall( "./procedures/procedure" ):
-      code = proc.find( "./code/[@category='untyped chapelerrific']" )
-      if code != None:
-        module_file.write( code.text + "\n" )
-    
-    module_file.write("} // ChaLAPACK\n")
-    module_file.close();
-    
-    helper_info = pass_input.find( "./helper-module" )
-    
-    module_file = open( helper_info.get("file-name"), "w" )
-    
-    module_file.write( pass_input.find("copyright").text )
-    
-    if helper_info.get("no-doc") == "all":
-      module_file.write( "pragma \"no doc\"\n" )
-    
-    module_file.write( "/*\n" + helper_info.find( "./description" ).text + "\n*/\n" )
-    module_file.write( "module LAPACK {\n" )
-    
-    for use in helper_info.findall( "./use" ):
-      module_file.write( "use " + use.text + ";\n" )
-    module_file.write( "\n" )
-    
-    nodoc_helper_types = helper_info.get("no-doc") == "internals" or helper_info.get("no-doc") == "types"
+    # inject types, consts, enums
     for defn in module_root.findall( "./type-defines/define" ):
       module_file.write( defn.find("./code").text + "\n" )
     module_file.write( "\n\n" )
@@ -2269,23 +2255,40 @@ class DumpCodePass ( Pass ):
       module_file.write( defn.find("./code").text + "\n" )
     module_file.write( "\n" )
     
-    nodoc_helper_procs = helper_info.get("no-doc") == "internals" or helper_info.get("no-doc") == "procedures"
+    # inject helper module
+    if helper_info.get("no-doc") == "all":
+      module_file.write( "pragma \"no doc\"\n" )
+    
+    module_file.write( "/*\n" + helper_info.find( "./description" ).text + "\n*/\n" )
+    module_file.write( "module " + helper_info.get("name") + " {\n" )
+    
+    for use in helper_info.findall( "./use" ):
+      module_file.write( "use " + use.text + ";\n" )
+    module_file.write( "\n" )
+    
+    nodoc_helper_procs = helper_info.get("no-doc") == "internals" or helper_info.get("no-doc") == "procedures" or helper_info.get("no-doc") == "all"
     
     for proc in module_root.findall( "./procedures/procedure" ):
       code = proc.find( "./code/[@category='extern proc']")
       if code != None:
         if nodoc_helper_procs:
-          module_file.write( "pragma\"no doc\"\n" )
+          module_file.write( "pragma \"no doc\"\n" )
         module_file.write( code.text + "\n" )
       
       code = proc.find( "./code/[@category='string wrapped']")
       if code != None:
         if nodoc_helper_procs:
-          module_file.write( "pragma\"no doc\"\n" )
+          module_file.write( "pragma \"no doc\"\n" )
         module_file.write( code.text + "\n" )
     
-    module_file.write( "} // LAPACK \n" )
+    module_file.write( "} // " + helper_info.get("name") + "\n" )
+    for proc in module_root.findall( "./procedures/procedure" ):
+      code = proc.find( "./code/[@category='untyped chapelerrific']" )
+      if code != None:
+        module_file.write( code.text + "\n" )
     
+    module_file.write("} // " + module_name + "\n")
+   
     module_file.close()
     
     selfname.complete = True

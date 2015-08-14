@@ -21,15 +21,13 @@
  * limitations under the License.
  */
     </copyright>
-    <main-module name="ChaLAPACK" file-name="ChaLAPACK.chpl" > 
-      <use>LAPACK</use>
+    <main-module name="LAPACK" file-name="LAPACK.chpl" > 
+      <!--<use>ClassicLAPACK</use>-->
       <use>"lapacke.h"</use>
       <use>SysCTypes</use>
       
       <description>
 Chapel idiomatic wrappers for the LAPACK library.
-
-Consult the :mod:`LAPACK` module, which defines all the types and enumerations that this module uses.
 
 .. note::
 
@@ -37,7 +35,7 @@ Consult the :mod:`LAPACK` module, which defines all the types and enumerations t
   
   Consult the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ site, and the `Netlibs &lt;http://www.netlib.org/lapack/explore-html/globals_func.html&gt;`_ and `Intel &lt;https://software.intel.com/en-us/node/501008&gt;`_ LAPACK documents for that information.
   
-  Additionally, only a small set of ChaLAPACK procedures have been tested for correctness.
+  Additionally, only a small set of LAPACK procedures have been tested for correctness.
 
 Differences from LAPACK
 -----------------------
@@ -54,18 +52,32 @@ For example, instead of
 
   LAPACKE_sgesv(matrix_order : lapack_memory_order, n : c_int, nrhs : c_int, a : [] c_float, lda : c_int, ipiv : [] c_int, b : [] c_float, ldb : c_int) : c_int;
 
-the arguments n, nrhs, lda, and ldb can be encapsulated by properties of Chapel arrays and their domains, giving the ChaLAPACK procedure:
+the arguments n, nrhs, lda, and ldb can be encapsulated by properties of Chapel arrays and their domains, giving the LAPACK procedure:
 
 .. code-block:: chapel
 
-  gesv(matrix_order : lapack_memory_order, a : [] c_float, ipiv : [] c_int, b : [] c_float): c_int;
+  gesv(matrix_order : lapack_memory_order, a : [] real(32), ipiv : [] c_int, b : [] real(32) ): c_int;
 
 This requires that your matrices are stored in a two dimensional form.
+
+Type Adjustments
+----------------
+
+The LAPACKE types ``lapack_int``, ``lapack_float``, ``lapack_double``, ``lapack_complex_float``, ``lapack_complex_double``, and ``lapack_logical`` are not defined at all, but rather are replaced by the types :type:`c_int`, :type:`real(32)`, :type:`real(64)`, :type:`complex(64)`, :type:`complex(128)`, and :type:`c_int` respectively.
+
+
+
+The :enum:`lapack_memory_order` enumeration is a replacement for the :type:`c_int` constants :data:`LAPACK_ROW_MAJOR` and :data:`LAPACK_COL_MAJOR` defined by LAPACK and used by ``matrix_order`` which is an argument present in essentially all procedures.
+The value of each enumeration is equivalent (both in type and value) of the LAPACK constants.
+However the constants are also provided and can be used as well.
+
+The ``LAPACK_SELECT`` types are function pointer types, whose procedures need to be declared and implemented in C, then be declared as ``extern var`` on the Chapel side. 
+See the dgees test (`$CHPL_HOME/tests/modules/standard/dgees.chpl`) for a concrete example.
 
 Compiling with LAPACK
 ------------------------
 
-Using the :mod:`ChaLAPACK` or :mod:`LAPACK` modules require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
+Using this module require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
 
 You can download and build the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
 You must also have libgfortran installed on your system (typically installed along with gcc).
@@ -109,85 +121,13 @@ We anticipate the following additions:
 
 3. Enumerated values for arguments of procedures that currently take strings to denote different options.
 
-ChaLAPACK Procedures
---------------------
 </description>
     </main-module>
-    <helper-module file-name="LAPACK.chpl" name="LAPACK" no-doc="procedures">  
+    <helper-module name="ClassicLAPACK" no-doc="all">  
       <use>"lapacke.h"</use>
       <use>SysCTypes</use>
-      <description>
-Chapel module for the LAPACK library.
-
-This module defines all the external types, enum types, and defines external procedures for all procedures found in the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ C interface (LAPACKE) header file (`lapacke.h &lt;http://www.netlib.org/lapack/explore-html/dir_18a139fd87bbd81b4018e3e4658878a2.html&gt;`_).
-The names of the procedures are unchanged from that source.
-
-See the :mod:`ChaLAPACK` module for the Chapel idiomatic LAPACK wrappers.
-
-.. note::
-
-  Because of the volume of procedures provided, and because the behavior and signatures of the procedures are virtually unchanged, no documentation about them is given here.
-  
-  Consult the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ site, and the `Netlibs &lt;http://www.netlib.org/lapack/explore-html/globals_func.html&gt;`_ and `Intel &lt;https://software.intel.com/en-us/node/501008&gt;`_ LAPACK documents for the procedures and their use.
-  
-  Additionally, only a small set of LAPACK procedures have been tested for correctness. 
-  
-Type Adjustments
-----------------
-
-The LAPACKE types ``lapack_int``, ``lapack_float``, ``lapack_double``, ``lapack_complex_float``, ``lapack_complex_double``, and ``lapack_logical`` are not defined at all, but rather are replaced by the types :type:`c_int`, :type:`c_float`, :type:`c_double`, :type:`complex(64)`, :type:`complex(128)`, and :type:`c_int` respectively.
-
-Procedures can still take in :type:`c_char` (where applicable), but such procedures also have convenience wrappers (as there is no 'char' equivalent in Chapel) to take Chapel :type:`strings`.
-These strings can be longer than one character, but only the first character is used (as is standard for LAPACK).
-
-The :enum:`lapack_memory_order` enumeration is a replacement for the :type:`c_int` constants :data:`LAPACK_ROW_MAJOR` and :data:`LAPACK_COL_MAJOR` defined by LAPACK and used by ``matrix_order`` which is an argument present in essentially all procedures of LAPACK and :mod:`ChaLAPACK`.
-The value of each enumeration is equivalent (both in type and value) of the LAPACK constants.
-However the constants are also provided and can be used as well.
-
-The ``LAPACK_SELECT`` types are function pointer types, whose procedures need to be declared and implemented in C, then be declared as ``extern var`` on the Chapel side. 
-See the :mod:`ChaLAPACK` dgees test for a concrete example.
-
-Compiling with LAPACK
-------------------------
-
-Using the :mod:`ChaLAPACK` or :mod:`LAPACK` modules require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
-
-You can download and build the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
-You must also have libgfortran installed on your system (typically installed along with gcc).
-
-To compile with LAPACK, Chapel needs to know:
-
-1. Where the LAPACKE header (lapacke.h) is.
-
-2. Where the libgfortran binary is (sometimes it is not to be found by ``ld``).
-
-3. Where the various LAPACK binaries (lapacke, lapack, and refblas) are.
-
-Once the details are worked out, compiling is quite simple and nearly identical to how one would compile a C program to work with LAPACK.
-
-.. code-block:: sh
-
-  chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
-       -L$PATH_TO_LIBGFORTRAN -lgfortran \
-       -L$PATH_TO_LAPACK_BINARIES -llapacke -lapack -lrefblas \
-       source.chpl
-
-As an example,
-
-.. code-block:: sh
-
-  chpl -I$HOME/LAPACK/lapacke/include \
-       -L/usr/lib/gcc/stuff -lgfortran \
-       -L$HOME/LAPACK -llapacke -lapack -lrefblas \
-       source.chpl
-
-would be the command to use if Netlibs LAPACK had been built in ``$HOME/LAPACK``, and the libgfortran binary found to be located in ``/usr/lib/gcc/stuff``
-
-Types, Constants, and Enumerations
-----------------------------------
-      </description>
+      <description> </description>
     </helper-module>
-    
   </pass>
   <pass name="TypeSubstitutionPass">
     <substitution find="int" replace="c_int" />
@@ -695,7 +635,10 @@ The enum values values are the same as the const value such that ``lapack_memory
     <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_lsame']/arguments-list/argument/[@name='lcb']" semantic="scalar" intent="in" />
   </pass>
   <pass name="ChapelModuleChapelerrificProcPass">
-    <case name="gesv" />
-    <case name="posv" />
+    <use>ClassicLAPACK</use>
+    <cases>
+      <case name="gesv" />
+      <case name="posv" />
+    </cases>
   </pass>
 </pass-input>

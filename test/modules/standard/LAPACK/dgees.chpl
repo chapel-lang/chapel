@@ -1,4 +1,4 @@
-use Shared, ChaLAPACK;
+use Shared, LAPACK, LAPACK.ClassicLAPACK;
 
 config var verbose_test: bool;
 config const epsilon = 10e-6;

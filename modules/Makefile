@@ -56,7 +56,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
-	standard/ChaLAPACK.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Curl.chpl \
 	standard/FFTW.chpl \
