@@ -29,8 +29,7 @@
       <description>
 Chapel idiomatic wrappers for the LAPACK library.
 
-Consult the :mod:`LAPACK` module, which defines all the types and enumerations that this module uses, and demonstrates compiling with LAPACK binaries.
-Also consult the :mod:`LAPACK` module for details pertaining the use and function of all LAPACK procedures, including both pure LAPACK and these ChaLAPACK wrappers.
+Consult the :mod:`LAPACK` module, which defines all the types and enumerations that this module uses.
 
 .. note::
 
@@ -121,6 +120,7 @@ ChaLAPACK Procedures
 Chapel module for the LAPACK library.
 
 This module defines all the external types, enum types, and defines external procedures for all procedures found in the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ C interface (LAPACKE) header file (`lapacke.h &lt;http://www.netlib.org/lapack/explore-html/dir_18a139fd87bbd81b4018e3e4658878a2.html&gt;`_).
+The names of the procedures are unchanged from that source.
 
 See the :mod:`ChaLAPACK` module for the Chapel idiomatic LAPACK wrappers.
 
