@@ -98,26 +98,4 @@ c_string chpl_bool64_to_c_string(chpl_bool64 x) {
 }
 
 #include "chpl-string.h"
-
-// Note that this routine returns a reference to the character buffer in the
-// underlying chpl_string, so the chpl_string must last longer than the
-// returned c_string or the caller must make a copy of the result.  The caller
-// should not free the returned string.
-static inline
-c_string chpl_string_to_c_string(chpl_string s, int lineno, c_string filename) {
-  c_string ret;
-  c_string_from_string(&ret, &s, lineno, filename);
-  return ret; // leaky? No. (see above)
-}
-
-// This routine returns a chpl_string containing a verbatim copy of the
-// passed-in C string.  The (chpl_)string destructor will take care of
-// deallocating that memory.
-static inline
-chpl_string c_string_to_chpl_string(c_string s, int lineno, c_string filename) {
-  chpl_string ret;
-  string_from_c_string(&ret, s, 0, -1, lineno, filename);
-  return ret; // leaky? No. (see above)
-}
-
 #endif // _chplcast_h_

@@ -3013,6 +3013,7 @@ std::string unescapeString(const char* const str) {
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
+FnSymbol* initStringLiterals = NULL;
 
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
@@ -3064,28 +3065,30 @@ VarSymbol *new_StringSymbol(const char *str) {
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
+
   DefExpr* stringLitDef = new DefExpr(s);
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
   CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
 
-  if (stringLiteralModule->initFn) {
-    stringLiteralModule->initFn->insertBeforeReturn(new DefExpr(cptrTemp));
-    stringLiteralModule->initFn->insertBeforeReturn(cptrCall);
-    stringLiteralModule->initFn->insertBeforeReturn(new DefExpr(castTemp));
-    stringLiteralModule->initFn->insertBeforeReturn(castCall);
-    stringLiteralModule->initFn->insertBeforeReturn(ctorCall);
-
-  } else {
-    // Modules dont have an initFn until normalization happens
-    // These Exprs will be moved into the initFn when it is created.
-    stringLiteralModule->block->insertAtTail(new DefExpr(cptrTemp));
-    stringLiteralModule->block->insertAtTail(cptrCall);
-    stringLiteralModule->block->insertAtTail(new DefExpr(castTemp));
-    stringLiteralModule->block->insertAtTail(castCall);
-    stringLiteralModule->block->insertAtTail(ctorCall);
+  // We need to initalize strings literals on every locale, so we make this an
+  // exported function that will be called in the runtime
+  if (initStringLiterals == NULL) {
+    initStringLiterals = new FnSymbol("chpl__initStringLiterals");
+    initStringLiterals->addFlag(FLAG_EXPORT);
+    initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
+    initStringLiterals->retType = dtVoid;
+    initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
   }
+
+  initStringLiterals->insertBeforeReturn(new DefExpr(cptrTemp));
+  initStringLiterals->insertBeforeReturn(cptrCall);
+  initStringLiterals->insertBeforeReturn(new DefExpr(castTemp));
+  initStringLiterals->insertBeforeReturn(castCall);
+  initStringLiterals->insertBeforeReturn(ctorCall);
+
   s->immediate = new Immediate;
   *s->immediate = imm;
   stringLiteralsHash.put(s->immediate, s);
