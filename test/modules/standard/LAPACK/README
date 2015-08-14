@@ -12,17 +12,16 @@ Each test file tests:
  2. the C LAPACKE call...
   * in row major order
   * in column major order
- 3. the Chapel ChaLAPACK call...
+ 3. the Chapel LAPACK call...
   * in row major order
   * in column major order
   
 Additionally, dgees tests using a select function and on both sort ("S") and
 no sort ("N") options
 
-
 The types tested are:
-c_float
-c_double
+real(32) ( c_float )
+real(64) ( c_double )
 complex(64) ( complex_float )
 complex(128) ( complex_double )
 LAPACK_D_SELECT2_LESS_THAN ( function pointer f( c_double, c_double )  )
@@ -36,5 +35,5 @@ for fields that were required by LAPACK.
 
 It is not meant to be used outside of the test framework.
 
-See ChaLAPACK_example.chpl for a 'real world' example of how to use ChaLAPACK.
+See LAPACK_example.chpl for a 'real world' example of how to use LAPACK
   

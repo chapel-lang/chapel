@@ -72,7 +72,7 @@ The value of each enumeration is equivalent (both in type and value) of the LAPA
 However the constants are also provided and can be used as well.
 
 The ``LAPACK_SELECT`` types are function pointer types, whose procedures need to be declared and implemented in C, then be declared as ``extern var`` on the Chapel side. 
-See the dgees test (`$CHPL_HOME/tests/modules/standard/dgees.chpl`) for a concrete example.
+See the dgees test (``$CHPL_HOME/test/modules/standard/LAPACK/dgees.chpl``) for a concrete example.
 
 Compiling with LAPACK
 ------------------------
@@ -109,6 +109,8 @@ As an example,
        source.chpl
 
 would be the command to use if Netlibs LAPACK had been built in ``$HOME/LAPACK``, and the libgfortran binary found to be located in ``/usr/lib/gcc/stuff``
+
+You can refer to the COMPOPTS file of the LAPACK test suit (``$CHPL_HOME/test/modules/standard/LAPACK/``) for an example
 
 Future Work
 -----------
