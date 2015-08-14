@@ -243,8 +243,8 @@ class OwnershipFlowManager
                                   BasicBlock* bb);
   void iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons,
                                   SymExprVector& symExprs);
-  void insertAutoDestroy(BitVec* live_somewhere, BitVec* live_on_exit);
-  void insertAutoDestroyAtScopeExit(Symbol* sym, bool isLiveOnExit);
+  void insertAutoDestroy(BitVec* to_cons);
+  void insertAutoDestroyAtScopeExit(Symbol* sym);
   void insertAtOtherExitPoints(Symbol* sym,
                                CallExpr* autoDestroyCall);
 };

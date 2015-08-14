@@ -298,7 +298,7 @@ module String {
         ret = "";
       } else {
         ret.len = r2.size:int;
-        const newSize = chpl_mem_goodAllocSize(ret.len.safeCast(size_t));
+        const newSize = chpl_mem_goodAllocSize((ret.len+1).safeCast(size_t));
         ret._size = max(chpl_string_min_alloc_size, newSize.safeCast(int));
         // FIXME: I was dumb here, just copy the correct region over in
         // multi-locale and use that as the string buffer. No need to copy stuff

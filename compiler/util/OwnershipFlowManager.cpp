@@ -873,9 +873,10 @@ OwnershipFlowManager::forwardFlowOwnership()
 // TODO: This is selfish code.  It ought to be a service provided by the
 // BasicBlock module, but is currently not.  Any significant change to
 // BasicBlock::buildBasicBlocks should be reflected here.
-static Expr* getLastExprInBB(Expr* stmt)
+static Expr* getLastStmtInBB(Expr* stmt)
 {
   Expr* curr = stmt;
+  Expr* last = stmt;
   while (curr)
   {
     Expr* next = curr->getFirstChild();
@@ -889,8 +890,8 @@ static Expr* getLastExprInBB(Expr* stmt)
       if (curr == stmt->parentExpr)
       {
         // We ran out of candidates without finding a valid successor, so just
-        // return the original statment.
-        return stmt;
+        // return the last statment visited.
+        return last->getStmtExpr();
       }
       next = curr->next;
     }
@@ -906,11 +907,14 @@ static Expr* getLastExprInBB(Expr* stmt)
       if (isLabelSymbol(def->sym))
         break;
 
+    last = curr;
     curr = next;
   }
+
   // We always expect a valid expression to be returned.
   // This is also an assert that the caller did not pass in stmt == NULL.
   INT_ASSERT(curr);
+  INT_ASSERT(curr == curr->getStmtExpr());
   return curr;
 }
 
@@ -963,7 +967,7 @@ static void insertAutoDestroyAfterStmt(SymExpr* se)
   // members of temporary variables, so we are not able to see the last use
   // (since we do not track references).  As a workaround, we march forward to
   // the end of the current basic block and use that as the insertion point.
-  Expr* lastStmtInBB = getLastExprInBB(stmt);
+  Expr* lastStmtInBB = getLastStmtInBB(stmt);
 
   SET_LINENO(sym->defPoint);
   CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
@@ -1443,7 +1447,7 @@ OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
 // Find the end of the scope containing the given symbol and insert an
 // autoDestroy on it there.
 void
-OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym, bool isLiveOnExit)
+OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
 {
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
   if (autoDestroy == NULL)
@@ -1461,11 +1465,8 @@ OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym, bool isLiveOnExi
   SET_LINENO(def);
 
   CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
-  if (isLiveOnExit)
-  {
-    BlockStmt* scope = sym->getDeclarationScope();
-    scope->insertAtTail(autoDestroyCall);
-  }
+  BlockStmt* scope = sym->getDeclarationScope();
+  scope->insertAtTail(autoDestroyCall);
 
   // This is a workaround for the fact that structured statements may have more
   // than one exit point.  For each goto in the block whose target label lies
@@ -1496,29 +1497,27 @@ getBestAlias(const SymbolVector& aliasList)
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
 void 
-OwnershipFlowManager::insertAutoDestroy(BitVec* live_somewhere, BitVec* live_on_exit)
+OwnershipFlowManager::insertAutoDestroy(BitVec* to_cons)
 {
   // For each true bit in the bit vector, add an autodestroy call.
   // But destroying one member of an alias list destroys them all.
-  for (size_t j = 0; j < live_somewhere->size(); ++j)
+  for (size_t j = 0; j < to_cons->size(); ++j)
   {
-    if (live_somewhere->get(j))
+    if (to_cons->get(j))
     {
-      bool isLiveOnExit = live_on_exit->get(j);
       Symbol* sym = symbols[j];
 
       // Remove this symbol and all its aliases from the cons set.
       SymbolVector* aliasList = aliases.at(sym);
       Symbol* best = getBestAlias(*aliasList);
-      resetAliasList(live_somewhere, *aliasList, symbolIndex);
-      resetAliasList(live_on_exit, *aliasList, symbolIndex);
+      resetAliasList(to_cons, *aliasList, symbolIndex);
 
       // Use the last named symbol in the alias list (or just the last one if
       // they are all unnamed).
       // This is a workaround because we do not track aliases in this
       // implementation.
       // See Note #1.
-      insertAutoDestroyAtScopeExit(best, isLiveOnExit);
+      insertAutoDestroyAtScopeExit(best);
     }
   }
 }
@@ -1540,26 +1539,16 @@ OwnershipFlowManager::insertAutoDestroys()
 
   // We form the union of all symbols that are live at the end of their
   // respective basic blocks,
-  BitVec live_somewhere(nsyms);
-  // We also track symbols that are live on (fallthrough) exit from their
-  // scope, in case that is different.  In some cases, a variable may be live
-  // when the scope is exited due to a goto, but not live when the scope is
-  // exited by a fallthrough.  We want to insert autodestroys at such gotos but
-  // not at the normal fallthrough exit.
-  BitVec live_on_exit(nsyms);
+  BitVec to_cons(nsyms);
   for (size_t i = 0; i < nbbs; i++)
   {
     // We must insert an autoDestroy for each symbol that is live on exit from
     // its declaration scope.
-    live_on_exit |= *EXIT[i] & *OUT[i];
-    live_on_exit -= *EXIT[i] - *OUT[i];
-
-    // And we also insert autoDestroys for gotos that exit the symbol's scope.
-    live_somewhere |= *EXIT[i] & *OUT[i];
+    to_cons |= *OUT[i] & *EXIT[i];
   }
 
   // and then destroy each symbol at the end of its containing scope.
-  insertAutoDestroy(&live_somewhere, &live_on_exit);
+  insertAutoDestroy(&to_cons);
 }
 
 
