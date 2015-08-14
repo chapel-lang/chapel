@@ -4075,15 +4075,6 @@ formalRequiresTemp(ArgSymbol* formal) {
      //
      ((formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) &&
       (backendRequiresCopyForIn(formal->type) || !fn->hasFlag(FLAG_INLINE)))
-     //
-     // The following case reduces memory leaks for zippered forall
-     // leader/follower pairs where the communicated intermediate
-     // result is a tuple of ranges, but I can't explain why it'd be
-     // needed.  Tom has said that iterators haven't really been
-     // bolted down in terms of memory leaks, so future work would be
-     // to remove this hack and close the leak properly.
-     //
-     || strcmp(formal->name, "followThis") == 0
      );
 }
 
