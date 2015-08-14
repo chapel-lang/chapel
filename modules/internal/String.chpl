@@ -219,7 +219,7 @@ module String {
     // Localize gets a version of this that is on the currently executing
     // locale. If this is already on the current locale we return a shallow
     // copy, otherwise a remote copy is performed.
-    inline proc localize() /*: string*/ {
+    inline proc localize() : string {
         const ret: string = if this.locale.id != chpl_nodeID
           then this // assignment makes it local
           else new string(this, owned=false);
@@ -238,14 +238,14 @@ module String {
     }
 
     // TODO: cant explicitly state return type right now due to a bug in the
-    // compiler. Uncomment this funciton and others when possible.
-    iter these() /*: string*/ {
+    // compiler. Uncomment this function and others when possible.
+    iter these() : string {
       for i in 1..this.len {
         yield this[i];
       }
     }
 
-    proc this(i: int) /*: string*/ {
+    proc this(i: int) : string {
       if i <= 0 || i > this.len then halt("index out of bounds of string");
 
       var ret: string;
@@ -288,7 +288,7 @@ module String {
     }
 
     // TODO: I wasn't very good about caching variables locally in this one.
-    proc this(r: range(?)) /*: string*/ {
+    proc this(r: range(?)) : string {
       var ret: string;
       if this.isEmptyString() then return ret;
 
@@ -481,7 +481,7 @@ module String {
 
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
-    proc replace(needle: string, replacement: string, count: int = -1) /*: string*/ {
+    proc replace(needle: string, replacement: string, count: int = -1) : string {
       var result: string = this;
       var found: int = 0;
       var startIdx: int = 1;
@@ -500,13 +500,13 @@ module String {
     }
 
     // TODO: Make this support spliting on whitespace rather than just a space
-    iter split(maxsplit: int = -1, ignoreEmpty: bool = false) /*: string*/ {
+    iter split(maxsplit: int = -1, ignoreEmpty: bool = false) : string {
       for s in this.split(" ", maxsplit, ignoreEmpty) {
         yield s;
       }
     }
 
-    iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /*: string*/ {
+    iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) : string {
       if !(maxsplit == 0 && ignoreEmpty && this.isEmptyString()) {
         const localThis: string = this.localize();
         const localSep: string = sep.localize();
@@ -551,7 +551,7 @@ module String {
     }
 
     // TODO: could rewrite to have cleaner logic / more efficient for edge cases
-    proc join(S: [] string) /*: string*/ {
+    proc join(S: [] string) : string {
       var newSize: int = 0;
       var ret: string;
       if S.size > 1 {
@@ -589,7 +589,7 @@ module String {
       return ret;
     }
 
-    proc strip(chars: string, leading=true, trailing=true) /*: string*/ {
+    proc strip(chars: string, leading=true, trailing=true) : string {
       if this.isEmptyString() then return "";
       if chars.isEmptyString() then return this;
 
@@ -626,14 +626,14 @@ module String {
       return localThis[start..end];
     }
 
-    inline proc strip(leading=true, trailing=true) /*: string*/ {
+    inline proc strip(leading=true, trailing=true) : string {
       return this.strip(" \t\r\n", leading, trailing);
     }
 
     // TODO: I could make this and other routines that use find faster by
     // making a version of search helper that only takes in local strings and
     // localizing in the calling function
-    proc partition(sep: string) /*: 3*string*/ {
+    proc partition(sep: string) : 3*string {
       const idx = this.find(sep);
       if idx != 0 {
         return (this[..idx-1], sep, this[idx+sep.length..]);
@@ -794,7 +794,7 @@ module String {
       return result;
     }
 
-    proc toLower() /*: string*/ {
+    proc toLower() : string {
       var result: string = this;
       if result.isEmptyString() then return result;
 
@@ -807,7 +807,7 @@ module String {
       return result;
     }
 
-    proc toUpper() /*: string*/ {
+    proc toUpper() : string {
       var result: string = this;
       if result.isEmptyString() then return result;
 
@@ -820,7 +820,7 @@ module String {
       return result;
     }
 
-    proc toTitle() /*: string*/ {
+    proc toTitle() : string {
       var result: string = this;
       if result.isEmptyString() then return result;
 
@@ -847,7 +847,7 @@ module String {
       return result;
     }
 
-    proc capitalize() /*: string*/ {
+    proc capitalize() : string {
       var result: string = this.toLower();
       if result.isEmptyString() then return result;
 
@@ -1222,7 +1222,7 @@ module String {
   //
   // Append
   //
-  proc +=(ref lhs: string, rhs: string) /*: void*/ {
+  proc +=(ref lhs: string, rhs: string) : void {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 
@@ -1441,11 +1441,11 @@ module String {
   // Developer Extras
   //
 
-  proc chpldev_refToString(ref arg) /*: string*/ {
+  proc chpldev_refToString(ref arg) : string {
     // print out the address of class references as well
-    proc chpldev_classToString(x: object) /*: string*/
+    proc chpldev_classToString(x: object) : string
       return " (class = " + __primitive("ref to string", x) + ")";
-    proc chpldev_classToString(x) /*: string*/ return "";
+    proc chpldev_classToString(x) : string return "";
 
     return __primitive("ref to string", arg) + chpldev_classToString(arg);
   }

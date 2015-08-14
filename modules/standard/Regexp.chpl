@@ -406,7 +406,7 @@ extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(6
 // (or any way to use 'nil' in pass-by-ref)
 // This one is documented below.
 pragma "no doc"
-proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false)//:regexp
+proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false) : regexp
 {
   if CHPL_REGEXP == "none" {
     compilerError("Regular expression support not compiled in");
@@ -475,7 +475,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                    ``(?U)``.
 
  */
-proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false)//:regexp
+proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false) : regexp
 {
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
@@ -546,7 +546,7 @@ record reMatch {
 }
 
 pragma "no doc"
-proc _to_reMatch(ref p:qio_regexp_string_piece_t)//:reMatch
+proc _to_reMatch(ref p:qio_regexp_string_piece_t) : reMatch
 {
   if qio_regexp_string_piece_isnull(p) {
     return new reMatch(false, -1, 0); 
@@ -598,7 +598,7 @@ record regexp {
      :returns: a string describing any error encountered when compiling this
                regular expression
    */
-  proc error()//:string
+  proc error() : string
   {
     return qio_regexp_error(_regexp):string;
   }
@@ -647,7 +647,7 @@ record regexp {
                where a match occurred
 
     */
-  proc search(text: ?t, ref captures ...?k)//:reMatch
+  proc search(text: ?t, ref captures ...?k) : reMatch
     where t == string || t == stringPart
   {
     var ret:reMatch;
@@ -679,7 +679,7 @@ record regexp {
 
   // documented in the captures version
   pragma "no doc"
-  proc search(text: ?t)//:reMatch
+  proc search(text: ?t) : reMatch
     where t == string || t == stringPart
   {
     var ret:reMatch;
@@ -727,7 +727,7 @@ record regexp {
      :returns: an :record:`reMatch` object representing the offset in text
                where a match occurred
    */
-  proc match(text: ?t, ref captures ...?k)//:reMatch
+  proc match(text: ?t, ref captures ...?k) : reMatch
     where t == string || t == stringPart
   {
     var ret:reMatch;
@@ -759,7 +759,7 @@ record regexp {
 
   // documented in the version taking captures.
   pragma "no doc"
-  proc match(text: ?t)//:reMatch
+  proc match(text: ?t) : reMatch
     where t == string || t == stringPart
   {
     var ret:reMatch;
@@ -922,7 +922,7 @@ record regexp {
      :returns: a tuple containing (new string, number of substitutions made)
    */
   // TODO -- move subn after sub for documentation clarity
-  proc subn(repl:string, text: ?t, global = true )//:(string, int)
+  proc subn(repl:string, text: ?t, global = true ) : (string, int)
     where t == string || t == stringPart 
   {
     var pos:int;
@@ -1054,7 +1054,7 @@ inline proc _cast(type t, x: string) where t == regexp {
    :returns: an :record:`reMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: string, ignorecase=false)//:reMatch
+proc string.search(needle: string, ignorecase=false) : reMatch
 {
   // Create a regexp matching the literal for needle
   var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
@@ -1063,7 +1063,7 @@ proc string.search(needle: string, ignorecase=false)//:reMatch
 
 // documented in the captures version
 pragma "no doc"
-proc string.search(needle: regexp)//:reMatch
+proc string.search(needle: regexp) : reMatch
 {
   return needle.search(this);
 }
@@ -1077,14 +1077,14 @@ proc string.search(needle: regexp)//:reMatch
    :returns: an :record:`reMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: regexp, ref captures ...?k)//:reMatch
+proc string.search(needle: regexp, ref captures ...?k) : reMatch
 {
   return needle.search(this, (...captures));
 }
 
 // documented in the captures version
 pragma "no doc"
-proc string.match(pattern: regexp)//:reMatch
+proc string.match(pattern: regexp) : reMatch
 {
   return pattern.match(this);
 }
@@ -1100,7 +1100,7 @@ proc string.match(pattern: regexp)//:reMatch
              receiving string where a match occurred
  */
 
-proc string.match(pattern: regexp, ref captures ...?k)//:reMatch
+proc string.match(pattern: regexp, ref captures ...?k) : reMatch
 {
   return pattern.match(this, (...captures));
 }
