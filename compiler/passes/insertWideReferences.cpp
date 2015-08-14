@@ -223,6 +223,8 @@ static std::map<Type*, Type*> narrowToWideVal;
 
 static std::map<FnSymbol*, bool> downstreamFromOn;
 
+static std::set<Symbol*> fieldsToMakeWide;
+
 // Various mini-passes to manipulate the AST into something functional
 static void convertNilToObject();
 static void buildWideClasses();
@@ -806,6 +808,41 @@ static void propagateVar(Symbol* sym) {
                 debug(lhs, "Did not handle use in (move lhs, %s)\n", call->primitive->name);
                 break;
             }
+
+            // When a field's containing type is be wide, we need to make the
+            // type of that field wide. Note: this doesn't cause a field
+            // to propagate it's wideness. The field simply needs to be wide
+            // for codegen to work.
+            //
+            // Because it's currently hard to convert from a ref_T to a
+            // ref_wide_T, we'll take the easy way out and make the field
+            // have wide semantics.
+            if (call->isPrimitive(PRIM_GET_MEMBER) || call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+              SymExpr* field = toSymExpr(call->get(2));
+              if (isRef(field)) {
+                setValWide(field);
+              }
+              fieldsToMakeWide.insert(field->var);
+            }
+            else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                     call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+              Symbol* field = getSvecSymbol(call);
+              if (field) {
+                if (isRef(field)) {
+                  setValWide(field);
+                }
+                fieldsToMakeWide.insert(field);
+              } else {
+                // If we don't know for sure which field is being accessed,
+                // play it safe and widen all of them.
+                for_fields(fi, toAggregateType(call->get(1)->getValType())) {
+                  if (isRef(fi)) {
+                    setValWide(fi);
+                  }
+                  fieldsToMakeWide.insert(fi);
+                }
+              }
+            }
           }
         }
       }
@@ -830,12 +867,12 @@ static void propagateVar(Symbol* sym) {
           DEBUG_PRINTF("Unhandled assign: %s = %s\n", lhs->type->symbol->cname, rhs->type->symbol->cname);
         }
       }
-      else if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) {
+      else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+        // If the base class or RHS is wide, then the field may be assigned to
+        // with a remote value and should be wide.
         SymExpr* field = toSymExpr(call->get(2));
-        if (!isFullyWide(field)) {
-          debug(sym, "narrow field %s (%d) must be wide\n", field->var->cname, field->var->id);
-          matchWide(sym, field->var);
-        }
+        debug(sym, "narrow field %s (%d) must be wide\n", field->var->cname, field->var->id);
+        matchWide(sym, field->var);
       }
       else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
         Symbol* field = getSvecSymbol(call);
@@ -938,6 +975,13 @@ static void propagateVar(Symbol* sym) {
                   matchWide(sym, fi);
                 }
               }
+            }
+          }
+        } else if (isRef(sym)) {
+          // Exposed by: --baseline --inline
+          if (SymExpr* rhs = toSymExpr(call->get(2))) {
+            if (isRef(rhs)) {
+              widenRef(sym, rhs->var);
             }
           }
         }
@@ -1593,32 +1637,11 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
 static void insertWideTemp(Type* type, SymExpr* src) {
   SET_LINENO(src);
   Expr* stmt = src->getStmtExpr();
-  SymExpr* RHS = src;
 
-
-  Type* refToWide = narrowToWideVal[src->typeInfo()];
-  if (isRef(src) && refToWide) {
-    // ref_wide_T = ref_T
-
-    VarSymbol* narrowThing = newTemp(src->getValType());
-    stmt->insertBefore(new DefExpr(narrowThing));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, narrowThing, new CallExpr(PRIM_DEREF, RHS->copy())));
-
-    VarSymbol* wideThing = newTemp(refToWide->getValType());
-    stmt->insertBefore(new DefExpr(wideThing));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, wideThing, narrowThing));
-
-
-    VarSymbol* tmp = newTemp(refToWide);
-    stmt->insertBefore(new DefExpr(tmp));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, wideThing)));
-    RHS = new SymExpr(tmp);
-  }
-  
-  // Now make the fully wide thing
   VarSymbol* tmp = newTemp(type);
+  DEBUG_PRINTF("Created wide temp %d\n", tmp->id);
   stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, RHS->copy()));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, src->copy()));
   src->replace(new SymExpr(tmp));
 }
 
@@ -1724,9 +1747,10 @@ static void fixAST() {
           else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* field = toSymExpr(rhs->get(2));
             SymExpr* lhs = toSymExpr(call->get(1));
-            if (!isFullyWide(lhs)) {
+            if (!isFullyWide(lhs) && lhs->var->type != field->var->type) {
               SET_LINENO(lhs);
               VarSymbol* tmp = newTemp(field->var->type);
+              DEBUG_PRINTF("Temp %d for get_member_value\n", tmp->id);
 
               call->insertBefore(new DefExpr(tmp));
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
@@ -1744,6 +1768,7 @@ static void fixAST() {
               SET_LINENO(lhs);
 
               VarSymbol* tmp = newTemp(getTupleField(rhs)->type);
+              DEBUG_PRINTF("Temp %d for get_svec_member_value\n", tmp->id);
               call->insertBefore(new DefExpr(tmp));
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
               lhs->replace(new SymExpr(tmp));
@@ -1916,11 +1941,10 @@ insertWideReferences(void) {
   debugTimer.stop();
 
   //
-  // For codegen purposes, it's easier to represent fields as a wide type.
+  // For codegen purposes, it's easier to represent some fields as a wide type.
   // fixAST() will insert local temps in the case that a field is always
   // local.
-  //
-  forv_Vec(VarSymbol, var, gVarSymbols) {
+  for_set(Symbol, var, fieldsToMakeWide) {
     if (!typeCanBeWide(var)) continue;
 
     if (isField(var) && fieldCanBeWide(var)) {

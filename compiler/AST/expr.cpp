@@ -4073,6 +4073,10 @@ GenRet CallExpr::codegen() {
             elemPtr = codegenAddrOf(elemPtr);
             codegenAssign(get(1), elemPtr);
           }
+          else if (get(1)->getValType() != call->getValType()) {
+            GenRet getElem = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+            codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getElem, WIDE_GEP_ADDR)));
+          }
           else
             handled = false;
           break;
