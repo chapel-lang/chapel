@@ -57,7 +57,7 @@ module ChapelLocale {
 
     proc id : int return chpl_id();  // just the node part
     proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
-    proc name return chpl_name() : c_string;
+    proc name return chpl_name() : string;
 
     // This many tasks are running on this locale.
     //
@@ -109,7 +109,7 @@ module ChapelLocale {
       return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
-    proc chpl_name() : c_string {
+    proc chpl_name() : string {
       _throwPVFCError();
       return "";
     }
