@@ -49,18 +49,6 @@ module CString {
 
   //inline proc c_string.c_str() return this;
 
-  // These routines consume the c_string_copy argument.  In terms of MM, this
-  // is the same as if the caller had called chpl_free_string_copy()
-  extern proc string_from_c_string_copy(ref cstrc:c_string_copy,
-                                        hasLen:bool, len:int) : string;
-  // TODO
-  //inline proc toString(cstrc:c_string_copy) : string {
-  //  return string_from_c_string_copy(cstrc, false, 0);
-  //}
-  //inline proc toString(cstrc:c_string_copy, len:int) : string {
-  //  return string_from_c_string_copy(cstrc, true, len);
-  //}
-
   // We can't use the catch-all initCopy or autoCopy because of the
   // transformation of c_strings into string for generic parameters
   // TODO: cant specify return type or else we run into a bug were we do an
