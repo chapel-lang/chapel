@@ -1347,6 +1347,7 @@ void initRootModule() {
 void initStringLiteralModule() {
   stringLiteralModule = new ModuleSymbol("ChapelStringLiterals", MOD_INTERNAL, new BlockStmt());
   stringLiteralModule->filename = astr("<internal>");
+  stringLiteralModule->addFlag(FLAG_EXPORT_INIT);
   theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
 }
 

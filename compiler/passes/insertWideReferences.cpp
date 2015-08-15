@@ -281,7 +281,9 @@ static bool typeCanBeWide(Symbol *sym) {
   return !bad &&
          (isObj(sym) ||
           isRef(sym) ||
-          ts->hasFlag(FLAG_DATA_CLASS));
+          ts->hasFlag(FLAG_DATA_CLASS) ||
+          sym->type == dtString); // This clause is now probably redundant,
+                                  // since strings are records.
 }
 
 static Symbol* getTupleField(CallExpr* call) {
@@ -681,6 +683,10 @@ static void addKnownWides() {
             }
           }
         }
+        else if (rhs->isPrimitive(PRIM_STRING_FROM_C_STRING)) {
+          // We seem to avoid memory leaks by making the lhs wide
+          setWide(lhs);
+        }
         else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                  rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
           //
@@ -815,6 +821,13 @@ static void propagateVar(Symbol* sym) {
         else if (isRef(lhs) && isObj(rhs)) {
           debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
           setValWide(lhs);
+        }
+        else if (lhs->type == dtString) {
+          // TODO: Is this clause now redundant?
+          // isObj doesn't handle dtStrings. This case handles a previously
+          // overlooked case of string assignment from a wide string to a
+          // narrow string.
+          setWide(lhs);
         }
         else {
           DEBUG_PRINTF("Unhandled assign: %s = %s\n", lhs->type->symbol->cname, rhs->type->symbol->cname);
@@ -1267,6 +1280,11 @@ static void localizeCall(CallExpr* call) {
         if (rhs->isPrimitive(PRIM_DEREF)) {
           if (isFullyWide(rhs->get(1))) {
             insertLocalTemp(rhs->get(1));
+            if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+              INT_ASSERT(rhs->get(1)->typeInfo() == dtString);
+              // special handling for wide strings
+              rhs->replace(rhs->get(1)->remove());
+            }
           }
           break;
         }
