@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os, sys
 
+DEBUG_MODE = False
+
 remove_empty = lambda a: a != ''
 
 outfile=sys.argv[2];
@@ -12,7 +14,7 @@ fh.close()
 def writeOutput( value ):
   fh = open(outfile, 'w')
   fh.write(value+'\n')
-  print value 
+  if DEBUG_MODE: print value 
   fh.close()
 
 [test_serial_input, test_parallel_input] = input.split( "PARALLELISM START" )
