@@ -1449,6 +1449,13 @@ OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
 void
 OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
 {
+  // If the function is marked "return value is not owned" and this is the
+  // return symbol then ownership, if true, is dropped on the floor.
+  // This means that the pragma may cause memory leaks if abused.  CAVEAT!
+  if (_fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED) &&
+      sym == _fn->getReturnSymbol())
+    return;
+
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
   if (autoDestroy == NULL)
     // This type does not have a destructor, so we don't have a add an
