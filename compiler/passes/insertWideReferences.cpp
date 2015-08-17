@@ -190,7 +190,7 @@
 //
 
 //#define PRINT_WIDEN_SUMMARY
-//#define PRINT_WIDE_ANALYSIS
+#define PRINT_WIDE_ANALYSIS
 
 #ifdef PRINT_WIDE_ANALYSIS
   #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -739,7 +739,6 @@ static void addKnownWides() {
       }
     }
     else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
-             call->isPrimitive(PRIM_FTABLE_CALL) ||
              call->isPrimitive(PRIM_CHPL_COMM_GET)) { // TODO: Is this necessary?
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
@@ -952,6 +951,7 @@ static void propagateVar(Symbol* sym) {
             setWide(se);
           }
           else if (rhs->isResolved()) {
+            debug(sym, "return symbol must be wide\n");
             matchWide(sym, rhs->isResolved()->getReturnSymbol());
           }
           else if (isRef(sym)) {
@@ -1687,7 +1687,8 @@ static void fixAST() {
         }
       }
     }
-    else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+    else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) ||
+        call->isPrimitive(PRIM_FTABLE_CALL)) {
       for_actuals(actual, call) {
         SymExpr* act = toSymExpr(actual);
         if (Type* wide = wideClassMap.get(act->typeInfo())) {
@@ -1949,6 +1950,13 @@ insertWideReferences(void) {
 
     if (isField(var) && fieldCanBeWide(var)) {
       fixType(var, true, true);
+      TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol);
+      if (ts->hasFlag(FLAG_STAR_TUPLE)) {
+        AggregateType* ag = toAggregateType(ts->type);
+        for_fields(fi, ag) {
+          fixType(fi, true, true);
+        }
+      }
     }
   }
 
