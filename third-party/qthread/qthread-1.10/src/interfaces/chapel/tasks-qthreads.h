@@ -416,9 +416,10 @@ c_sublocid_t chpl_task_getRequestedSubloc(void)
 #else
 #define CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL 1
 #endif
+extern int chpl_qthread_tasks_bound_to_pthreads;
 static inline
 int chpl_task_tasksBoundToPthreads(void) {
-  return 1;    // only correct for flat (nemesis); needs further work
+  return chpl_qthread_tasks_bound_to_pthreads;
 }
 
 #endif // ifndef _tasks_qthreads_h_

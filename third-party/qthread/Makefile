@@ -63,6 +63,12 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(SCHEDULER)
 
+ifeq (sherwood,$(SCHEDULER))
+CFLAGS += -DTASKS_BOUND_TO_PTHREADS=0
+else
+CFLAGS += -DTASKS_BOUND_TO_PTHREADS=1
+endif
+
 # spawn-caching has a semantic mismatch with chapel (and leads to deadlock with
 # some applications.) Qthreads team tends to build with spawn cache off too
 CHPL_QTHREAD_CFG_OPTIONS += --disable-spawn-cache
