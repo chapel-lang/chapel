@@ -8,7 +8,7 @@ proc LAPACK_dgees_no_sort_test(){
   if verbose_test then
     writeln( "LAPACK_dgees_no_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -30,13 +30,13 @@ proc LAPACK_dgees_no_sort_test(){
   var a = A.data;
   var lda : c_int = A.leadingDimension : c_int;
   var sdim: c_int;
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order );
   var vs = VS.data;
   var ldvs : c_int = VS.leadingDimension : c_int;
   var lwork : c_int = 3*n : c_int;
-  var work : [1..#lwork] c_double;
+  var work : [1..#lwork] real(64);
   var bwork : [1..#n] c_int;
   var info : c_int;
   
@@ -57,22 +57,22 @@ proc LAPACK_dgees_no_sort_test(){
                bwork,
                info);
   
-  var A_result = new LAPACK_Matrix( c_double, A.rows, A.columns, A.storage_order, epsilon );
+  var A_result = new LAPACK_Matrix( real(64), A.rows, A.columns, A.storage_order, epsilon );
   A_result.populateFromArray( a, lapack_memory_order.column_major );
   
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ 6.60555,   4.49073, 0.826322, 
                                       0.0, -0.605551, -1.07263, 
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] c_double = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_result = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var VS_result = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   VS_result.populateFromArray( vs, lapack_memory_order.column_major );
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
                                    -0.574052, -0.0616275, -0.816497, 
                                     -0.64953,   0.641439,  0.408248 ],
@@ -97,7 +97,7 @@ proc LAPACK_dgees_sort_test(){
   if verbose_test then
     writeln( "LAPACK_dgees_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -119,13 +119,13 @@ proc LAPACK_dgees_sort_test(){
   var a = A.data;
   var lda : c_int = A.leadingDimension : c_int;
   var sdim: c_int;
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order );
   var vs = VS.data;
   var ldvs : c_int = VS.leadingDimension : c_int;
   var lwork : c_int = 3*n : c_int;
-  var work : [1..#lwork] c_double;
+  var work : [1..#lwork] real(64);
   var bwork : [1..#n] c_int;
   var info : c_int;
   
@@ -146,22 +146,22 @@ proc LAPACK_dgees_sort_test(){
                bwork,
                info);
   
-  var A_result = new LAPACK_Matrix( c_double, A.rows, A.columns, A.storage_order, epsilon );
+  var A_result = new LAPACK_Matrix( real(64), A.rows, A.columns, A.storage_order, epsilon );
   A_result.populateFromArray( a, lapack_memory_order.column_major );
   
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ -0.605551, -1.26776,  4.51384, 
                                         0.0,     -1.0, 0.134409, 
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] c_double = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_result = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var VS_result = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   VS_result.populateFromArray( vs, lapack_memory_order.column_major );
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
                                   -0.251146, 0.807183, -0.534211, 
                                   -0.887847, -0.411935, -0.205028 ],
@@ -186,7 +186,7 @@ proc LAPACKE_dgees_row_major_no_sort_test(){
   if verbose_test then
     writeln( "LAPACKE_dgees_row_major_no_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -196,9 +196,9 @@ proc LAPACKE_dgees_row_major_no_sort_test(){
                      );
   
   var A_result = new LAPACK_Matrix( A );
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   
   var sdim: c_int;
   
@@ -225,16 +225,16 @@ proc LAPACKE_dgees_row_major_no_sort_test(){
                    VS.leadingDimension : c_int // ldv
                  );
   
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ 6.60555,   4.49073, 0.826322, 
                                       0.0, -0.605551, -1.07263, 
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] c_double = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
                                    -0.574052, -0.0616275, -0.816497, 
                                     -0.64953,   0.641439,  0.408248 ],
@@ -259,7 +259,7 @@ proc LAPACKE_dgees_col_major_no_sort_test(){
   if verbose_test then
     writeln( "LAPACKE_dgees_col_major_no_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -269,9 +269,9 @@ proc LAPACKE_dgees_col_major_no_sort_test(){
                      );
   
   var A_result = new LAPACK_Matrix( A );
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   
   var sdim: c_int;
   
@@ -298,16 +298,16 @@ proc LAPACKE_dgees_col_major_no_sort_test(){
                    VS.leadingDimension : c_int // ldv
                  );
   
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ 6.60555,   4.49073, 0.826322, 
                                       0.0, -0.605551, -1.07263, 
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] c_double = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
                                    -0.574052, -0.0616275, -0.816497, 
                                     -0.64953,   0.641439,  0.408248 ],
@@ -332,7 +332,7 @@ proc LAPACKE_dgees_row_major_sort_test(){
   if verbose_test then
     writeln( "LAPACKE_dgees_row_major_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -342,9 +342,9 @@ proc LAPACKE_dgees_row_major_sort_test(){
                      );
   
   var A_result = new LAPACK_Matrix( A );
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   
   var sdim: c_int;
   
@@ -371,16 +371,16 @@ proc LAPACKE_dgees_row_major_sort_test(){
                    VS.leadingDimension : c_int // ldv
                  );
   
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ -0.605551, -1.26776,  4.51384, 
                                         0.0,     -1.0, 0.134409, 
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] c_double = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
                                   -0.251146, 0.807183, -0.534211, 
                                   -0.887847, -0.411935, -0.205028 ],
@@ -405,7 +405,7 @@ proc LAPACKE_dgees_col_major_sort_test(){
   if verbose_test then
     writeln( "LAPACKE_dgees_col_major_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -415,9 +415,9 @@ proc LAPACKE_dgees_col_major_sort_test(){
                      );
   
   var A_result = new LAPACK_Matrix( A );
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   
   var sdim: c_int;
   
@@ -444,16 +444,16 @@ proc LAPACKE_dgees_col_major_sort_test(){
                    VS.leadingDimension : c_int // ldv
                  );
   
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ -0.605551, -1.26776,  4.51384, 
                                         0.0,     -1.0, 0.134409, 
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] c_double = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
                                   -0.251146, 0.807183, -0.534211, 
                                   -0.887847, -0.411935, -0.205028 ],
@@ -478,7 +478,7 @@ proc gees_row_major_no_sort_test(){
   if verbose_test then
     writeln( "gees_row_major_no_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -488,9 +488,9 @@ proc gees_row_major_no_sort_test(){
                      );
   
   var A_result = new LAPACK_Matrix( A );
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   
   var sdim: c_int;
   
@@ -514,16 +514,16 @@ proc gees_row_major_no_sort_test(){
            VS.data // vs
          );
 
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ 6.60555,   4.49073, 0.826322, 
                                       0.0, -0.605551, -1.07263, 
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
   
-  var wr_expected : [wr.domain] c_double = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
                                    -0.574052, -0.0616275, -0.816497, 
                                     -0.64953,   0.641439,  0.408248 ],
@@ -548,7 +548,7 @@ proc gees_col_major_no_sort_test(){
   if verbose_test then
     writeln( "gees_col_major_no_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -558,9 +558,9 @@ proc gees_col_major_no_sort_test(){
                      );
   
   var A_result = new LAPACK_Matrix( A );
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   
   var sdim: c_int;
   
@@ -584,16 +584,16 @@ proc gees_col_major_no_sort_test(){
            VS.data // vs
          );
 
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ 6.60555,   4.49073, 0.826322, 
                                       0.0, -0.605551, -1.07263, 
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
   
-  var wr_expected : [wr.domain] c_double = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
                                    -0.574052, -0.0616275, -0.816497, 
                                     -0.64953,   0.641439,  0.408248 ],
@@ -618,7 +618,7 @@ proc gees_row_major_sort_test(){
   if verbose_test then
     writeln( "gees_row_major_sort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -628,9 +628,9 @@ proc gees_row_major_sort_test(){
                      );
   
   var A_result = new LAPACK_Matrix( A );
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   
   var sdim: c_int;
   
@@ -654,16 +654,16 @@ proc gees_row_major_sort_test(){
            VS.data // vs
          );
 
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ -0.605551, -1.26776,  4.51384, 
                                         0.0,     -1.0, 0.134409, 
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] c_double = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
                                   -0.251146, 0.807183, -0.534211, 
                                   -0.887847, -0.411935, -0.205028 ],
@@ -688,7 +688,7 @@ proc gees_col_major_sort_test(){
   if verbose_test then
     writeln( "gees_col_majorsort\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   
   A.populateFromArray( 
                       [ 3.0, 2.0, 1.0,
@@ -698,9 +698,9 @@ proc gees_col_major_sort_test(){
                      );
   
   var A_result = new LAPACK_Matrix( A );
-  var wr: [0..#A.rows] c_double;
-  var wi: [0..#A.rows] c_double;
-  var VS = new LAPACK_Matrix( c_double, A.rows, A.rows, A.storage_order, epsilon );
+  var wr: [0..#A.rows] real(64);
+  var wi: [0..#A.rows] real(64);
+  var VS = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   
   var sdim: c_int;
   
@@ -724,16 +724,16 @@ proc gees_col_major_sort_test(){
            VS.data // vs
          );
 
-  var A_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.column_major, epsilon );
+  var A_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.column_major, epsilon );
   A_expected.populateFromArray( [ -0.605551, -1.26776,  4.51384, 
                                         0.0,     -1.0, 0.134409, 
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] c_double = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] c_double = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
   
-  var VS_expected = new LAPACK_Matrix( c_double, 3, 3, lapack_memory_order.row_major, epsilon );
+  var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
                                   -0.251146, 0.807183, -0.534211, 
                                   -0.887847, -0.411935, -0.205028 ],
