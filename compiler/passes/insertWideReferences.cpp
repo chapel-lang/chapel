@@ -190,7 +190,7 @@
 //
 
 //#define PRINT_WIDEN_SUMMARY
-#define PRINT_WIDE_ANALYSIS
+//#define PRINT_WIDE_ANALYSIS
 
 #ifdef PRINT_WIDE_ANALYSIS
   #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -443,6 +443,30 @@ static void matchWide(Symbol* src, Symbol* dest) {
     widenRef(src, dest);
   } else {
     setWide(dest);
+  }
+}
+
+
+static void widenTupleField(CallExpr* tupleCall, Symbol* wideThing) {
+  Symbol* field = getSvecSymbol(tupleCall);
+  if (field) {
+    debug(wideThing, "tuple field %s (%d) must be wide\n", field->cname, field->id);
+    matchWide(wideThing, field);
+
+    // If a field in a star tuple is wide, then all other fields in that
+    // tuple must also be wide.
+    AggregateType* ag = toAggregateType(tupleCall->get(1)->getValType());
+    if (ag->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+      for_fields(fi, ag) {
+        fieldsToMakeWide.insert(fi);
+      }
+    }
+  } else {
+    AggregateType* ag = toAggregateType(tupleCall->get(1)->getValType());
+    for_fields(field, ag) {
+      debug(wideThing, "tuple field %s (%d) must be wide\n", field->cname, field->id);
+      matchWide(wideThing, field);
+    }
   }
 }
 
@@ -874,17 +898,7 @@ static void propagateVar(Symbol* sym) {
         matchWide(sym, field->var);
       }
       else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-        Symbol* field = getSvecSymbol(call);
-        if (field) {
-          debug(sym, "tuple field %s (%d) must be wide\n", field->cname, field->id);
-          matchWide(sym, field);
-        } else {
-          AggregateType* ag = toAggregateType(call->get(1)->getValType());
-          for_fields(field, ag) {
-            debug(sym, "tuple field %s (%d) must be wide\n", field->cname, field->id);
-            matchWide(sym, field);
-          }
-        }
+        widenTupleField(call, sym);
       }
       else if (call->isPrimitive(PRIM_RETURN)) {
         FnSymbol* fn = toFnSymbol(call->parentSymbol);
@@ -963,18 +977,7 @@ static void propagateVar(Symbol* sym) {
             }
             else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) || 
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
-              Symbol* field = getSvecSymbol(rhs);
-              if (field) {
-                debug(sym, "widening tuple member %s (%d)\n", field->cname, field->id);
-                matchWide(sym, field);
-              } else {
-                // If we don't know for sure which field is being accessed,
-                // play it safe and widen all of them.
-                for_fields(fi, toAggregateType(rhs->get(1)->getValType())) {
-                  debug(sym, "widening tuple member %s (%d)\n", fi->cname, fi->id);
-                  matchWide(sym, fi);
-                }
-              }
+              widenTupleField(rhs, sym);
             }
           }
         } else if (isRef(sym)) {
@@ -1950,6 +1953,8 @@ insertWideReferences(void) {
 
     if (isField(var) && fieldCanBeWide(var)) {
       fixType(var, true, true);
+
+      // members of star tuples have to have the same wideness
       TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol);
       if (ts->hasFlag(FLAG_STAR_TUPLE)) {
         AggregateType* ag = toAggregateType(ts->type);
