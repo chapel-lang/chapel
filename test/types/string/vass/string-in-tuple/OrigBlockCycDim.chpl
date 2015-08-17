@@ -21,7 +21,7 @@
 // Block-cyclic dimension specifier - for use with DimensionalDist2D.
 //
 
-use DimensionalDist2D;
+use OrigDimensionalDist2D;
 
 
 config const BlockCyclicDim_allowParLeader = true;
@@ -84,14 +84,14 @@ class BlockCyclic1locdom {
 proc BlockCyclicDim.dsiSupportsPrivatization1d() param return true;
 
 proc BlockCyclicDim.dsiGetPrivatizeData1d() {
-  return (lowIdx, blockSize, numLocales);
+  return (lowIdx, blockSize, numLocales, name);
 }
 
 proc BlockCyclicDim.dsiPrivatize1d(privatizeData) {
   return new BlockCyclicDim(lowIdx = privatizeData(1),
                    blockSize = privatizeData(2),
                    numLocales = privatizeData(3),
-                   name = "");
+                   name = privatizeData(4));
 }
 
 proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
@@ -99,7 +99,7 @@ proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
 proc BlockCyclic1dom.dsiSupportsPrivatization1d() param return true;
 
 proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
-  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx);
+  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx, name);
 }
 
 proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
@@ -107,7 +107,7 @@ proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
   return new BlockCyclic1dom(idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
-                  name            = "",
+                  name            = privatizeData(5),
                   wholeR          = privatizeData(1),
                   wholeRstrideAbs = privatizeData(2),
                   storagePerCycle = privatizeData(3),

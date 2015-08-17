@@ -305,7 +305,7 @@ proc DimensionalDist2D.dsiGetPrivatizeData() {
     then di2.dsiGetPrivatizeData1d()
     else 0;
 
-  return (targetLocales, dataParTasksPerLocale,
+  return (targetLocales, name, dataParTasksPerLocale,
           dataParIgnoreRunningTasks, dataParMinGranularity,
           di1, di1pd, di2, di2pd);
 }
@@ -322,13 +322,13 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                               ) = pdTargetLocales.domain;
   const privTargetLocales: [privTargetIds] locale = pdTargetLocales;
 
-  proc di1orig return privatizeData(5);
-  proc di1pd   return privatizeData(6);
+  proc di1orig return privatizeData(6);
+  proc di1pd   return privatizeData(7);
   const di1new = if di1.dsiSupportsPrivatization1d()
     then di1orig.dsiPrivatize1d(di1pd) else di1orig;
 
-  proc di2orig  return privatizeData(7);
-  proc di2pd    return privatizeData(8);
+  proc di2orig  return privatizeData(8);
+  proc di2pd    return privatizeData(9);
   const di2new = if di2.dsiSupportsPrivatization1d()
     then di2orig.dsiPrivatize1d(di2pd) else di2orig;
 
@@ -338,13 +338,13 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                        privTargetLocales, false, plliddDummy);
 
   return new DimensionalDist2D(targetLocales = privTargetLocales,
-                             name          = "",
+                             name          = privatizeData(2),
                              idxType       = this.idxType,
                              di1           = di1new,
                              di2           = di2new,
-                             dataParTasksPerLocale     = privatizeData(2),
-                             dataParIgnoreRunningTasks = privatizeData(3),
-                             dataParMinGranularity     = privatizeData(4),
+                             dataParTasksPerLocale     = privatizeData(3),
+                             dataParIgnoreRunningTasks = privatizeData(4),
+                             dataParMinGranularity     = privatizeData(5),
                              dummy = 0);
 }
 
