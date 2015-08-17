@@ -66,8 +66,8 @@ proc LAPACK_dgees_no_sort_test(){
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : real(64), -0.605551 : real(64), -1.0 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_result = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   VS_result.populateFromArray( vs, lapack_memory_order.column_major );
@@ -155,8 +155,8 @@ proc LAPACK_dgees_sort_test(){
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : real(64), -1.0 : real(64), 6.60555 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_result = new LAPACK_Matrix( real(64), A.rows, A.rows, A.storage_order, epsilon );
   VS_result.populateFromArray( vs, lapack_memory_order.column_major );
@@ -231,8 +231,8 @@ proc LAPACKE_dgees_row_major_no_sort_test(){
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : real(64), -0.605551 : real(64), -1.0 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
@@ -304,8 +304,8 @@ proc LAPACKE_dgees_col_major_no_sort_test(){
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : real(64), -0.605551 : real(64), -1.0 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
@@ -377,8 +377,8 @@ proc LAPACKE_dgees_row_major_sort_test(){
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : real(64), -1.0 : real(64), 6.60555 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
@@ -450,8 +450,8 @@ proc LAPACKE_dgees_col_major_sort_test(){
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : real(64), -1.0 : real(64), 6.60555 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
@@ -520,8 +520,8 @@ proc gees_row_major_no_sort_test(){
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
   
-  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : real(64), -0.605551 : real(64), -1.0 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
@@ -590,8 +590,8 @@ proc gees_col_major_no_sort_test(){
                                       0.0,       0.0,     -1.0 ],
                                 lapack_memory_order.row_major );
   
-  var wr_expected : [wr.domain] real(64) = [ 6.60555 : c_double, -0.605551 : c_double, -1.0 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ 6.60555 : real(64), -0.605551 : real(64), -1.0 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ -0.498574,  -0.764694,  0.408248, 
@@ -660,8 +660,8 @@ proc gees_row_major_sort_test(){
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : real(64), -1.0 : real(64), 6.60555 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
@@ -730,8 +730,8 @@ proc gees_col_major_sort_test(){
                                         0.0,      0.0, 6.60555   ],
                                 lapack_memory_order.row_major );
                                 
-  var wr_expected : [wr.domain] real(64) = [ -0.605551 : c_double, -1.0 : c_double, 6.60555 : c_double ];                      
-  var wi_expected : [wi.domain] real(64) = [ 0.0 : c_double, 0.0 : c_double, 0.0 : c_double ];
+  var wr_expected : [wr.domain] real(64) = [ -0.605551 : real(64), -1.0 : real(64), 6.60555 : real(64) ];                      
+  var wi_expected : [wi.domain] real(64) = [ 0.0 : real(64), 0.0 : real(64), 0.0 : real(64) ];
   
   var VS_expected = new LAPACK_Matrix( real(64), 3, 3, lapack_memory_order.row_major, epsilon );
   VS_expected.populateFromArray( [ 0.385555, -0.422805, -0.820111, 
