@@ -373,8 +373,7 @@ static void resolveEnumTypes();
 static void resolveDynamicDispatches();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
-//static void propagateIgnoreNoinit();
-static bool propagateIgnoreNoinit(AggregateType* at);
+static bool propagateIgnoreNoinit(Type* t);
 static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
@@ -5051,9 +5050,9 @@ preFold(Expr* expr) {
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
-      if (isAggregateType(type)) {
+      if (isAggregateType(type) || type == dtStringC || type == dtStringCopy) {
 
-        bool containsNoinit = propagateIgnoreNoinit( (AggregateType*) type);
+        bool containsNoinit = propagateIgnoreNoinit( type);
 
         if (containsNoinit) {
           // These types deal with their uninitialized fields differently than
@@ -5081,9 +5080,15 @@ preFold(Expr* expr) {
           }
           if (!nowarn)
             USR_WARN(type->symbol, "type %s does not currently support noinit, using default initialization", type->symbol->name);
-          result = new CallExpr(PRIM_INIT, call->get(1)->remove());
-          call->replace(result);
-          inits.add((CallExpr *)result);
+
+          if( type->defaultValue ) {
+            result = new SymExpr(type->defaultValue);
+            call->replace(result);
+          } else {
+            result = new CallExpr(PRIM_INIT, call->get(1)->remove());
+            call->replace(result);
+            inits.add((CallExpr *)result);
+          }
         } else {
           result = call;
           inits.add(call);
@@ -7401,16 +7406,18 @@ static void resolveAutoCopies() {
 
    Returns true if FLAG_IGNORE_NOINIT is set, false otherwise.
  */
-static bool propagateIgnoreNoinit(AggregateType* at) {
-  // Move past classes
-  if( isClass(at) )
-    return at->symbol->hasFlag(FLAG_IGNORE_NOINIT);
+static bool propagateIgnoreNoinit(Type* t) {
   // Move past those records we've already handled
-//  if( at->symbol->hasFlag(FLAG_ALLOW_NOINIT) )
+//  if( t->symbol->hasFlag(FLAG_ALLOW_NOINIT) )
 //    return false;
-  if( at->symbol->hasFlag(FLAG_IGNORE_NOINIT) )
+  if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) )
     return true;
+  // Move past classes and non-aggregate types.
+  if( (!isAggregateType(t)) || isClass(t) )
+    return t->symbol->hasFlag(FLAG_IGNORE_NOINIT);
 
+
+  AggregateType *at = (AggregateType*) t;
   bool ignoreNoinit = false;
 
   // setting the flag here avoids recursion problems.
@@ -7418,13 +7425,7 @@ static bool propagateIgnoreNoinit(AggregateType* at) {
 
   for_fields(field, at) {
     Type* ft = field->typeInfo();
-    if (!isAggregateType(ft))
-      continue;
-    if (isClass(at))
-      continue;
-
-    AggregateType* aft = (AggregateType*) ft;
-    ignoreNoinit |= propagateIgnoreNoinit(aft);
+    ignoreNoinit |= propagateIgnoreNoinit(ft);
   }
  
   if (ignoreNoinit) {
