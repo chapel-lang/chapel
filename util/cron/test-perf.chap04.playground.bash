@@ -16,4 +16,4 @@ git checkout string-as-rec
 
 perf_args="-performance-description amm -performance-configs default:v,amm:v -sync-dir-suffix amm"
 perf_args="${perf_args} -numtrials 5 -startdate 08/12/15"
-$CWD/nightly -cron -debug ${perf_args} ${nightly_args}
+$CWD/nightly -cron ${perf_args} ${nightly_args}
