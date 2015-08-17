@@ -158,7 +158,7 @@ int DataModel::LoadData(const char * filename)
     tagList[i]->maxTasks = tagList[i]->locales[0].numTasks = 1;
   }
 
-  int cTagNo = -1;
+  int cTagNo = TagStart;
   tagData *curTag = tagList[1];
       
   // printf ("List has %ld items\n", (long)theEvents.size());
@@ -193,6 +193,8 @@ int DataModel::LoadData(const char * filename)
             tagList[1]->locales[curNodeId].refSysCpu = sp->sys_time();
         tagList[0]->locales[curNodeId].refTime = 
             tagList[1]->locales[curNodeId].refTime = sp->clock_time();
+        tagList[0]->name = "ALL";
+        tagList[1]->name = "Start";
         break;
 
       case Ev_tag:
@@ -321,18 +323,67 @@ int DataModel::LoadData(const char * filename)
         if (++(tagList[0]->locales[curNodeId].numTasks) > tagList[0]->maxTasks)
           tagList[0]->maxTasks = tagList[0]->locales[curNodeId].numTasks;
         // Insert tag into task map for this locale (No work for global)
+        { 
+          taskData newTask;
+          newTask.taskRec = tp;
+          std::pair<long,taskData> insPair(tp->taskId(), newTask);
+          std::pair<std::map<long,taskData>::iterator,bool>
+            rv = curTag->locales[curNodeId].tasks.insert(insPair);
+          if (!rv.second) {
+            fprintf (stderr, "Duplicate task! nodeId %d, taskId %ld\n",
+                     curNodeId, tp->taskId());
+          }
+          //printf ("Created task %ld, tag %s node %d. %s\n", tp->taskId(),
+          //        curTag->name.c_str(), curNodeId, tp->isLocal() ? "(local)": "");
+        }
         break;
 
       case Ev_begin_task:
         btp = (E_begin_task *)ev;
-        // Find task in task map
-        // Update the begin record
+        {
+          std::map<long,taskData>::iterator it;
+          // Find task in task map
+          it = curTag->locales[curNodeId].tasks.find(btp->getTaskId());
+          if (it != curTag->locales[curNodeId].tasks.end()) {
+            // Update the begin record
+            (*it).second.beginRec = btp;
+            //printf ("Begin task %d, node %d\n", btp->getTaskId(), curNodeId);
+          } else {
+            printf ("(Begin task) No such task %d in tag %s nodeid %d.\n",
+                    btp->getTaskId(), curTag->name.c_str(), curNodeId);
+          }
+        }
         break;
 
       case Ev_end_task:
         etp = (E_end_task *)ev;
-        // Find task in task map
-        // Update the end record
+        {
+          std::map<long,taskData>::iterator it;
+          // Find task in task map
+          it = curTag->locales[curNodeId].tasks.find(etp->getTaskId());
+          if (it != curTag->locales[curNodeId].tasks.end()) {
+            // Update the end record
+            (*it).second.endRec = etp;
+            //printf ("End task %d, node %d\n", etp->getTaskId(), curNodeId);
+          } else {
+            // No found task
+            if (cTagNo > TagStart) {
+              it = tagList[cTagNo+1]->locales[curNodeId].tasks.find(etp->getTaskId());
+              if (it == tagList[cTagNo+1]->locales[curNodeId].tasks.end()) {
+                //printf ("(End task) No such task %d in tag %s nodeid %d.\n",
+                //        etp->getTaskId(), curTag->name.c_str(), curNodeId);
+              } else {
+                // Found it in the previous one, it points at it
+                /*printf ("Task %d: Begin Tag %s, End Tag %s, nodeId %d %s\n",
+                        etp->getTaskId(), tagList[cTagNo+1]->name.c_str(),
+                        curTag->name.c_str(), curNodeId, 
+                        (*it).second.taskRec->isLocal() ? "(Local)" : ""); */
+                // Remove it from consideration because it crosses tags.
+                tagList[cTagNo+1]->locales[curNodeId].tasks.erase(it);
+              }
+            }
+          }
+        }
         break;
 
       default:
@@ -489,7 +540,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
           nErrs++;
         } else {
           //printf ("Task: node %d, task %d, onCmd %c\n", nid, taskid, onstr[0]);
-          newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O');
+          // lookup / insert or use nfilename ....
+          newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O', nlineno, NULL);
         }
         break;
 
