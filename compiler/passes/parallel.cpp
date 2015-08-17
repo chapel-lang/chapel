@@ -187,18 +187,30 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 // Given a (cobegin or coforall) task function call, find the correponding call
 // to _upEndCount().  We assume that the _upEndCount() call is at the same
 // level as the task function call and precedes it in the tree.
+// Or it could be inside a sibling 'local' block.
 // TODO: This general utility can be moved to expr.cpp.
+static CallExpr*
+containsSiblingCall(const char* name, Expr* aExp) {
+  if (CallExpr* call = toCallExpr(aExp)) {
+    if (call->isNamed(name))
+      return call;
+  } else if (BlockStmt* block = toBlockStmt(aExp)) {
+    if (CallExpr* blockInfo = block->blockInfoGet())
+      if (blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+        for (Expr* nExp = block->body.head; nExp; nExp = nExp->next)
+          if (CallExpr* foundit = containsSiblingCall(name, nExp))
+            return foundit;
+  }
+  return NULL;
+}
+
 static CallExpr*
 findSiblingCallPreceding(const char* name, CallExpr* taskFnCall)
 {
   Expr* expr = taskFnCall->prev;
   while ((expr = expr->prev))
-  {
-    if (CallExpr* call = toCallExpr(expr))   // expr is a call
-      if (FnSymbol* fn = call->isResolved()) // that calls a function
-        if (strcmp(fn->name, name) == 0)     // named <name>.
-          return call;
-  }
+    if (CallExpr* foundit = containsSiblingCall(name, expr))
+      return foundit;
 
   // Returns NULL if no such call was found.
   return NULL;
