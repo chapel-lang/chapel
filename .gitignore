@@ -407,6 +407,8 @@ tags
 /test/types/file/arr2.out
 /test/types/file/bradc/f.out
 
+/test/types/string/vass/string-in-tuple/*.tmp.orig
+
 /test/users/franzf/**/fft
 /test/users/franzf/**/*.out
 /test/users/franzf/v1/c99/*.sln
