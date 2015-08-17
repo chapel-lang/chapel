@@ -373,6 +373,7 @@ static void resolveEnumTypes();
 static void resolveDynamicDispatches();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
+static void propagateIgnoreNoinit();
 static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
@@ -7094,6 +7095,8 @@ resolve() {
     }
   }
 
+  propagateIgnoreNoinit();
+
   unmarkDefaultedGenerics();
 
   resolveExternVarSymbols();
@@ -7386,6 +7389,39 @@ static void resolveAutoCopies() {
     }
   }
 }
+
+static
+bool containsIgnoreNoinit(AggregateType* at)
+{
+  for_fields(field, at) {
+    Type* ft = field->typeInfo();
+    if (!isAggregateType(ft))
+      continue;
+    AggregateType* aft = (AggregateType*) ft;
+    if (aft->symbol->hasFlag(FLAG_IGNORE_NOINIT) || containsIgnoreNoinit(aft))
+      return true;
+  }
+  return false;
+}
+
+/* In order to correctly initialize records or tuples in which
+   a component has FLAG_IGNORE_NOINIT, we need to propagate that
+   flag to the parent types as well.
+ */
+static void propagateIgnoreNoinit() {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (!ts->defPoint->parentSymbol)
+      continue; // Type is not in tree
+    if (!isAggregateType(ts->type))
+      continue; // not a record or class type
+
+    AggregateType* at = (AggregateType*) ts->type;
+
+    if (containsIgnoreNoinit(at))
+      ts->addFlag(FLAG_IGNORE_NOINIT);
+  }
+}
+
 
 static void resolveRecordInitializers() {
   //
