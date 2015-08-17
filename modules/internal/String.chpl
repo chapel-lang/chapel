@@ -500,13 +500,15 @@ module String {
     }
 
     // TODO: Make this support spliting on whitespace rather than just a space
-    iter split(maxsplit: int = -1, ignoreEmpty: bool = false) : string {
+    // TODO: specifying return type leads to un-inited string?
+    iter split(maxsplit: int = -1, ignoreEmpty: bool = false) /* : string*/ {
       for s in this.split(" ", maxsplit, ignoreEmpty) {
         yield s;
       }
     }
 
-    iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) : string {
+    // TODO: specifying return type leads to un-inited string?
+    iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
       if !(maxsplit == 0 && ignoreEmpty && this.isEmptyString()) {
         const localThis: string = this.localize();
         const localSep: string = sep.localize();
