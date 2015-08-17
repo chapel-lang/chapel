@@ -1449,6 +1449,25 @@ OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
 void
 OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
 {
+  // If the function is marked "return value is not owned" and this is the
+  // return symbol then ownership, if true, is dropped on the floor.
+  // The only ways to create this situation are:
+  //  - The function is marked "return value is not owned" AND
+  //  - One or more return statements return the result of a call that in turn
+  //    returns an owned value.
+  // Autocopies will be inserted to make the ownership state of the return
+  // value variable consistent, but then the RVV will be owned while the
+  // function signature says that the returned value is not.  
+  // Without this clause, an autoDestroy call will be inserted after the return
+  // statement.  The C compiler may complain about this being unreachable code,
+  // and we don't want it anyway, so we just don't insert it.
+  // Note that if all return statements (of a function marked "return value is
+  // not owned") return unowned values, then we do not reach this code, because
+  // the RVV will be unowned (so its corresponding to_cons bit will be false).
+  if (_fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED) &&
+      sym == _fn->getReturnSymbol())
+    return;
+
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
   if (autoDestroy == NULL)
     // This type does not have a destructor, so we don't have a add an
