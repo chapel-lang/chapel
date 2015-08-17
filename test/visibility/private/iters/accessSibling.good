@@ -1,0 +1,2 @@
+accessSibling.chpl:11: In function 'main':
+accessSibling.chpl:12: error: Cannot access 'foo', 'foo' is private to 'M1'

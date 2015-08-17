@@ -54,6 +54,7 @@ typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
   void*            arg;          // argument to the function
+  chpl_bool        is_executeOn; // is this the body of an executeOn?
   chpl_bool        begun;        // whether execution of this task has begun
   chpl_task_list_p ltask;        // points to the task list entry, if there is one
   c_string         filename;
@@ -144,6 +145,20 @@ static c_string idleTaskName = "|idle|";
 
 static chpl_fn_p comm_task_fn;
 
+//
+// Tasking callback support.
+//
+#define MAX_CBS_PER_EVENT 10
+
+static struct cb_info {
+  chpl_task_cb_fn_t fns[MAX_CBS_PER_EVENT];
+  chpl_task_cb_info_kind_t info_kinds[MAX_CBS_PER_EVENT];
+  int count;
+} cb_info[chpl_task_cb_num_event_kinds];
+
+//
+// Internal functions.
+//
 static void                    comm_task_wrapper(void*);
 static void                    movedTaskWrapper(void* a);
 static chpl_taskID_t           get_next_task_id(void);
@@ -166,8 +181,11 @@ static void                    launch_next_task_in_new_thread(void);
 static void                    schedule_next_task(int);
 static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 void*,
+                                                chpl_bool,
                                                 chpl_task_prvDataImpl_t,
                                                 chpl_task_list_p);
+static void                    do_callbacks(chpl_task_cb_event_kind_t,
+                                            const task_pool_p);
 
 //
 // Condition variable methods
@@ -368,6 +386,7 @@ void chpl_task_init(void) {
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
     tp->ptask->arg          = NULL;
+    tp->ptask->is_executeOn = false;
     tp->ptask->ltask        = NULL;
     tp->ptask->begun        = true;
     tp->ptask->filename     = "main program";
@@ -465,6 +484,7 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = comm_task_fn;
   tp->ptask->arg          = arg;
+  tp->ptask->is_executeOn = false;
   tp->ptask->ltask        = NULL;
   tp->ptask->begun        = true;
   tp->ptask->filename     = "communication task";
@@ -574,7 +594,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
 
       do {
         ltask = next_task;
-        ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg,
+        ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg, false,
                                         ltask->chpl_data, ltask);
         assert(ltask->ptask == NULL
                || ltask->ptask->ltask == ltask);
@@ -593,11 +613,14 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     nested_task.id           = get_next_task_id();
     nested_task.fun          = first_task->fun;
     nested_task.arg          = first_task->arg;
+    nested_task.is_executeOn = false;
     nested_task.ltask        = first_task;
     nested_task.begun        = true;
     nested_task.filename     = first_task->filename;
     nested_task.lineno       = first_task->lineno;
     nested_task.chpl_data    = curr_ptask->chpl_data;
+
+    do_callbacks(chpl_task_cb_event_kind_create, &nested_task);
 
     set_current_ptask(&nested_task);
 
@@ -622,7 +645,11 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     if (blockreport)
       initializeLockReportForThread();
 
+    do_callbacks(chpl_task_cb_event_kind_begin, &nested_task);
+
     (*first_task->fun)(first_task->arg);
+
+    do_callbacks(chpl_task_cb_event_kind_end, &nested_task);
 
     // begin critical section
     chpl_thread_mutexLock(&extra_task_lock);
@@ -728,7 +755,11 @@ void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
         if (blockreport)
           initializeLockReportForThread();
 
+        do_callbacks(chpl_task_cb_event_kind_begin, nested_ptask);
+
         (*task_to_run_fun)(task_to_run_arg);
+
+        do_callbacks(chpl_task_cb_event_kind_end, nested_ptask);
 
         if (do_taskReport) {
           chpl_thread_mutexLock(&taskTable_lock);
@@ -797,7 +828,8 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(movedTaskWrapper, pmtwd, pmtwd->chpl_data, NULL);
+  (void) add_to_task_pool(movedTaskWrapper, pmtwd, true,
+                          pmtwd->chpl_data, NULL);
   schedule_next_task(1);
 
   // end critical section
@@ -1176,7 +1208,11 @@ thread_begin(void* ptask_void) {
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
+    do_callbacks(chpl_task_cb_event_kind_begin, ptask);
+
     (*ptask->fun)(ptask->arg);
+
+    do_callbacks(chpl_task_cb_event_kind_end, ptask);
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
@@ -1313,8 +1349,6 @@ static void thread_end(void)
 }
 
 
-
-
 //
 // interface function with begin-statement
 //
@@ -1329,7 +1363,7 @@ void begin_task(chpl_fn_p fp, void* a, chpl_task_prvDataImpl_t chpl_data,
     // begin critical section
     chpl_thread_mutexLock(&threading_lock);
 
-    ptask = add_to_task_pool(fp, a, chpl_data, ltask);
+    ptask = add_to_task_pool(fp, a, false, chpl_data, ltask);
 
     //
     // This task may begin executing before returning from this function,
@@ -1433,6 +1467,7 @@ static void schedule_next_task(int howMany) {
 // assumes threading_lock has already been acquired!
 static task_pool_p add_to_task_pool(chpl_fn_p fp,
                                     void* a,
+                                    chpl_bool is_executeOn,
                                     chpl_task_prvDataImpl_t chpl_data,
                                     chpl_task_list_p ltask) {
   task_pool_p ptask =
@@ -1442,6 +1477,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->id           = get_next_task_id();
   ptask->fun          = fp;
   ptask->arg          = a;
+  ptask->is_executeOn = is_executeOn;
   ptask->ltask        = ltask;
   ptask->begun        = false;
   ptask->chpl_data    = chpl_data;
@@ -1464,6 +1500,8 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   task_pool_tail = ptask;
 
   queued_task_cnt++;
+
+  do_callbacks(chpl_task_cb_event_kind_create, ptask);
 
   if (do_taskReport) {
     chpl_thread_mutexLock(&taskTable_lock);
@@ -1497,3 +1535,108 @@ uint32_t chpl_task_getNumIdleThreads(void) {
   assert(numIdleThreads >= 0);
   return numIdleThreads;
 }
+
+
+//
+// Tasking callback support.
+//
+int chpl_task_install_callback(chpl_task_cb_event_kind_t event_kind,
+                               chpl_task_cb_info_kind_t info_kind,
+                               chpl_task_cb_fn_t cb_fn) {
+  int i;
+
+  if (event_kind >= chpl_task_cb_num_event_kinds) {
+    errno = ERANGE;
+    return -1;
+  }
+
+  i = cb_info[event_kind].count;
+
+  if (i >= MAX_CBS_PER_EVENT) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  cb_info[event_kind].count++;
+  cb_info[event_kind].fns[i]= cb_fn;
+  cb_info[event_kind].info_kinds[i] = info_kind;
+
+  return 0;
+}
+
+
+int chpl_task_uninstall_callback(chpl_task_cb_event_kind_t event_kind,
+                                 chpl_task_cb_fn_t cb_fn) {
+  int i;
+  int found_i;
+
+  if (event_kind >= chpl_task_cb_num_event_kinds) {
+    errno = ERANGE;
+    return -1;
+  }
+
+  for (i = 0, found_i = -1; i < cb_info[event_kind].count; i++) {
+    if (cb_info[event_kind].fns[i] == cb_fn) {
+      found_i = i;
+      break;
+    }
+  }
+
+  if (found_i < 0) {
+    errno = ENOENT;
+    return -1;
+  }
+
+  for (i = found_i + 1; i < cb_info[event_kind].count; i++) {
+    cb_info[event_kind].fns[i - 1] = cb_info[event_kind].fns[i];
+    cb_info[event_kind].info_kinds[i - 1] = cb_info[event_kind].info_kinds[i];
+  }
+
+  cb_info[event_kind].count--;
+
+  return 0;
+}
+
+
+static void do_callbacks(chpl_task_cb_event_kind_t event_kind,
+                         const task_pool_p ptask) {
+  struct cb_info* cbp;
+
+  assert(event_kind < chpl_task_cb_num_event_kinds);
+
+  cbp = &cb_info[event_kind];
+
+  if (cbp->count > 0) {
+    chpl_task_cb_info_t info;
+    int i;
+
+    info.nodeID = chpl_nodeID;
+    info.event_kind = event_kind;
+
+    for (i = 0; i < cbp->count; i++) {
+      info.info_kind = cbp->info_kinds[i];
+
+      switch (cbp->info_kinds[i]) {
+      case chpl_task_cb_info_kind_full:
+        info.iu.full = (struct chpl_task_info_full)
+                       { .filename = ptask->filename,
+                         .lineno = ptask->lineno,
+                         .id = ptask->id,
+                         .is_executeOn = ptask->is_executeOn
+                       };
+        break;
+
+      case chpl_task_cb_info_kind_id_only:
+        info.iu.id_only.id = ptask->id;
+        break;
+
+      default:
+        assert(false);
+        break;
+      }
+
+      (*cbp->fns[i])((const chpl_task_cb_info_t*) &info);
+    }
+  }
+}
+
