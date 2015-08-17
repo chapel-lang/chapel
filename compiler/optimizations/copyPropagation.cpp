@@ -761,6 +761,21 @@ static void extractCopies(Expr* expr,
             !rhs->type->symbol->hasFlag(FLAG_REF))
           return; // Not a pair.
 
+        // Assignment between two references "peels" the RHS, so performs a
+        // copy of the *value* of the RHS into the lvalue pointed to by the
+        // LHS.  In contrast a move between two refs just copies one ref into
+        // the other.
+        // In the PRIM_ASSIGN case, the two references may point to different
+        // objects, so the primitive does not create a pair as far as CP is
+        // concerned.
+        // TODO: Based on the semantics of PRIM_ASSIGN, if both LHS and RHS are
+        // references, we *could* create a pair between the symbols they refer
+        // to.  There might be a neat recursive way to do this....
+        if (lhs->type->symbol->hasFlag(FLAG_REF) &&
+            rhs->type->symbol->hasFlag(FLAG_REF))
+          if (call->isPrimitive(PRIM_ASSIGN))
+            return;
+
         // We can't make substitutions if the lhs or rhs may change at any
         // time.
         if (maybeVolatile(lhe) || maybeVolatile(rhe))
