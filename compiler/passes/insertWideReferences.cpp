@@ -676,37 +676,39 @@ static void widenSubAggregateTypes(Type* parent) {
 // Widen variables that we don't know how to keep narrow.
 //
 static void addKnownWides() {
-  forv_Vec(VarSymbol, var, gVarSymbols) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ON_BLOCK)) {
+      // Get the arg bundle type for an on-stmt. Testing against a name like
+      // "_class_localson_fn" is NOT enough, because sometimes the name is
+      // a bit more complicated. Recursive iterators may introduce this.
+      AggregateType* ag = toAggregateType(fn->getFormal(2)->type);
 
-    if (isField(var) && fieldCanBeWide(var)) {
-      TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol);
-      if (strcmp(ts->name, "_class_localson_fn") == 0) {
-        // TODO: Do we need to do this with records as well?
-        // TODO: Do we need to do this for refs to a record/tuple?
-        if (var->type->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE)) {
+      for_fields(fi, ag) {
+        if (fi->type->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE)) {
           // If an aggregate type is passed in and is not wide, then we
           // have to make its fields wide. If such a type also has non-wide
           // aggregate types within it, we need to widen those. We'll do this
           // recursively all the way down.
-          widenSubAggregateTypes(var->type);
+          widenSubAggregateTypes(fi->type);
         } else {
-          DEBUG_PRINTF("Field %s (%d) is in an on bundle, must be wide\n", var->cname, var->id);
-          setWide(var);
+          DEBUG_PRINTF("Field %s (%d) is in an on bundle, must be wide\n", fi->cname, fi->id);
+          setWide(fi);
         }
       }
-    } else {
-      if (!typeCanBeWide(var)) continue;
-      Symbol* defParent = var->defPoint->parentSymbol;
+    }
+  }
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (!typeCanBeWide(var)) continue;
+    Symbol* defParent = var->defPoint->parentSymbol;
 
-      //
-      // FLAG_LOCALE_PRIVATE variables can be used within an on-statement without
-      // needing to be wide.
-      //
-      if (isModuleSymbol(defParent) && !var->hasFlag(FLAG_LOCALE_PRIVATE)) {
-        if (usedInOn(var)) {
-          debug(var, "Module scope variable used in on-statement\n");
-          setWide(var);
-        }
+    //
+    // FLAG_LOCALE_PRIVATE variables can be used within an on-statement without
+    // needing to be wide.
+    //
+    if (isModuleSymbol(defParent) && !var->hasFlag(FLAG_LOCALE_PRIVATE)) {
+      if (usedInOn(var)) {
+        debug(var, "Module scope variable used in on-statement\n");
+        setWide(var);
       }
     }
   }
