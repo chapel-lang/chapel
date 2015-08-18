@@ -336,10 +336,6 @@ int DataModel::LoadData(const char * filename)
 
       case Ev_task:
         tp = (E_task *)ev;
-        //        if (++(curTag->locales[curNodeId].numTasks) > curTag->maxTasks)
-        //          curTag->maxTasks = curTag->locales[curNodeId].numTasks;
-        //        if (++(tagList[0]->locales[curNodeId].numTasks) > tagList[0]->maxTasks)
-        //          tagList[0]->maxTasks = tagList[0]->locales[curNodeId].numTasks;
         // Insert tag into task map for this locale (No work for global)
         { 
           taskData newTask;
@@ -411,7 +407,7 @@ int DataModel::LoadData(const char * filename)
     itr++;
   }
 
-  // Go back and update task counts and concurrency ...
+  // Go back and update task counts
   tagList[0]->locales[0].numTasks = 1;
   for (int ix_l = 1; ix_l < nlocales; ix_l++) {
     tagList[0]->locales[ix_l].numTasks = 0;
@@ -432,13 +428,6 @@ int DataModel::LoadData(const char * filename)
         tagList[0]->maxTasks = tagList[0]->locales[ix_l].numTasks;
     }
   }  
-
-  //printf ("0: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-  //        tagList[0]->maxComms, tagList[0]->maxSize, tagList[0]->maxTasks,
-  //        tagList[0]->maxClock, tagList[0]->maxCpu);
-  //printf ("1: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-  //        tagList[1]->maxComms, tagList[1]->maxSize, tagList[1]->maxTasks,
-  //        tagList[1]->maxClock, tagList[1]->maxCpu);
     
   return 1;
 }
