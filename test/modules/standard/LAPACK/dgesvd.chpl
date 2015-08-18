@@ -7,10 +7,10 @@ proc LAPACKE_dgesvd_row_major_test(){
     writeln( "LAPACKE_dgesvd_row_major_test\n===============================" );
     
   var order: lapack_memory_order = lapack_memory_order.row_major;
-  var A = new LAPACK_Matrix( c_double, 4, 5, order );
-  var U = new LAPACK_Matrix( c_double, 4, 4, order ); 
-  var S = new LAPACK_Matrix( c_double, 4, 5, order ); 
-  var V = new LAPACK_Matrix( c_double, 5, 5, order );
+  var A = new LAPACK_Matrix( real(64), 4, 5, order );
+  var U = new LAPACK_Matrix( real(64), 4, 4, order ); 
+  var S = new LAPACK_Matrix( real(64), 4, 5, order ); 
+  var V = new LAPACK_Matrix( real(64), 5, 5, order );
   
   A.populateFromArray( 
                       [ 1.0, 0.0, 0.0, 0.0, 2.0,
@@ -58,7 +58,7 @@ proc LAPACKE_dgesvd_row_major_test(){
            );
            
   var ipiv: [0..#A.rows] c_int;
-  var superb: [1..#(min(A.rows,A.columns)-1)] c_double;
+  var superb: [1..#(min(A.rows,A.columns)-1)] real(64);
   
   if verbose_test then
     writeln( "===============================" );
@@ -95,10 +95,10 @@ proc LAPACKE_dgesvd_col_major_test(){
     writeln( "LAPACKE_dgesvd_col_major_test\n===============================" );
     
   var order: lapack_memory_order = lapack_memory_order.column_major;
-  var A = new LAPACK_Matrix( c_double, 4, 5, order );
-  var U = new LAPACK_Matrix( c_double, 4, 4, order ); 
-  var S = new LAPACK_Matrix( c_double, 4, 5, order ); 
-  var V = new LAPACK_Matrix( c_double, 5, 5, order );
+  var A = new LAPACK_Matrix( real(64), 4, 5, order );
+  var U = new LAPACK_Matrix( real(64), 4, 4, order ); 
+  var S = new LAPACK_Matrix( real(64), 4, 5, order ); 
+  var V = new LAPACK_Matrix( real(64), 5, 5, order );
   
   A.populateFromArray( 
                       [ 1.0, 0.0, 0.0, 0.0, 2.0,
@@ -146,7 +146,7 @@ proc LAPACKE_dgesvd_col_major_test(){
            );
            
   var ipiv: [0..#A.rows] c_int;
-  var superb: [1..#(min(A.rows,A.columns)-1)] c_double;
+  var superb: [1..#(min(A.rows,A.columns)-1)] real(64);
   
   if verbose_test then
     writeln( "===============================" );
@@ -184,10 +184,10 @@ proc gesvd_row_major_test(){
     writeln( "gesvd_row_major_test\n===============================" );
     
   var order: lapack_memory_order = lapack_memory_order.row_major;
-  var A = new LAPACK_Matrix( c_double, 4, 5, order );
-  var U = new LAPACK_Matrix( c_double, 4, 4, order ); 
-  var S = new LAPACK_Matrix( c_double, 4, 5, order ); 
-  var V = new LAPACK_Matrix( c_double, 5, 5, order );
+  var A = new LAPACK_Matrix( real(64), 4, 5, order );
+  var U = new LAPACK_Matrix( real(64), 4, 4, order ); 
+  var S = new LAPACK_Matrix( real(64), 4, 5, order ); 
+  var V = new LAPACK_Matrix( real(64), 5, 5, order );
   
   A.populateFromArray( 
                       [ 1.0, 0.0, 0.0, 0.0, 2.0,
@@ -235,7 +235,7 @@ proc gesvd_row_major_test(){
            );
            
   var ipiv: [0..#A.rows] c_int;
-  var superb: [1..#(min(A.rows,A.columns)-1)] c_double;
+  var superb: [1..#(min(A.rows,A.columns)-1)] real(64);
   
   if verbose_test then
     writeln( "===============================" );
@@ -268,10 +268,10 @@ proc gesvd_col_major_test(){
     writeln( "gesvd_col_major_test\n===============================" );
     
   var order: lapack_memory_order = lapack_memory_order.column_major;
-  var A = new LAPACK_Matrix( c_double, 4, 5, order );
-  var U = new LAPACK_Matrix( c_double, 4, 4, order ); 
-  var S = new LAPACK_Matrix( c_double, 4, 5, order ); 
-  var V = new LAPACK_Matrix( c_double, 5, 5, order );
+  var A = new LAPACK_Matrix( real(64), 4, 5, order );
+  var U = new LAPACK_Matrix( real(64), 4, 4, order ); 
+  var S = new LAPACK_Matrix( real(64), 4, 5, order ); 
+  var V = new LAPACK_Matrix( real(64), 5, 5, order );
   
   A.populateFromArray( 
                       [ 1.0, 0.0, 0.0, 0.0, 2.0,
@@ -319,7 +319,7 @@ proc gesvd_col_major_test(){
            );
            
   var ipiv: [0..#A.rows] c_int;
-  var superb: [1..#(min(A.rows,A.columns)-1)] c_double;
+  var superb: [1..#(min(A.rows,A.columns)-1)] real(64);
   
   if verbose_test then
     writeln( "===============================" );

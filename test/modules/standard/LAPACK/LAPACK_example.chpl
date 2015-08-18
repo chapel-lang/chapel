@@ -14,17 +14,17 @@ var K = 1;
 
 // Create our 2-D arrays for out matrices 
 // Our synthesized matrix A
-var A : [1..N,1..N] c_double; 
+var A : [1..N,1..N] real(64); 
 A[1,1..2] = [ 1, 2 ]; // first row of matrix
 A[2,1..2] = [ 3, 4 ]; // second row of matrix
 
 // Our synthesized matrix X
-var X : [1..N,1..K] c_double;
+var X : [1..N,1..K] real(64);
 X[1,1] = 2;
 X[2,1] = 1;
 
 // Our computed matrix B
-var B : [1..N,1..K] c_double;
+var B : [1..N,1..K] real(64);
 
 // Matrix multiply Ax = B
 for i in A.domain.dim(1) do

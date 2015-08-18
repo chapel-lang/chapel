@@ -6,8 +6,8 @@ proc LAPACK_dgesv_test(){
   if verbose_test then
     writeln( "LAPACK_dgesv\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major );
-  var X = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major ); 
+  var A = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major );
+  var X = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -52,8 +52,8 @@ proc LAPACKE_dgesv_row_major_test(){
   if verbose_test then
     writeln( "LAPACKE_dgesv_row_major\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major  );
-  var X = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major  ); 
+  var A = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major  );
+  var X = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major  ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -96,8 +96,8 @@ proc LAPACKE_dgesv_col_major_test(){
   if verbose_test then
     writeln( "LAPACKE_dgesv_col_major\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major );
-  var X = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major ); 
+  var A = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major );
+  var X = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -140,8 +140,8 @@ proc gesv_row_major_test(){
   if verbose_test then
     writeln( "gesv_row_major\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major  );
-  var X = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major  ); 
+  var A = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major  );
+  var X = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.row_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major  ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
@@ -180,8 +180,8 @@ proc gesv_col_major_test(){
   if verbose_test then
     writeln( "gesv_col_major\n===============================" );
 
-  var A = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major );
-  var X = new LAPACK_Matrix( c_double, 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major ); 
+  var A = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 5.0 ), ( 2.0 ), ( 1.0 ), ( 6.0 ) ], input_array_order = lapack_memory_order.row_major );
+  var X = new LAPACK_Matrix( real(64), 2, 2, lapack_memory_order.column_major, input_array = [ ( 3.0 ), ( 1.0 ), ( 4.0 ), ( 2.0 ) ], input_array_order = lapack_memory_order.row_major ); 
   var B = A*X;
   
   var A_work = new LAPACK_Matrix( A );
