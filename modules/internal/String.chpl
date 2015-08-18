@@ -364,27 +364,40 @@ module String {
     // multiple needles. Probably wouldnt be worth the overhead for small
     // needles though
     inline proc _startsEndsWith(needles: string ..., param fromLeft: bool) : bool {
-      for needle in needles {
-        if needle.isEmptyString() then return true;
-        if needle.len > this.len then continue;
-
-        const localNeedle: string = needle.localize();
-
-        const needleR = 0:int..#localNeedle.len;
-        if fromLeft {
-          for n in needleR {
-            if localNeedle.buff[n] != this.buff[n] then break;
-            if n == localNeedle.len-1 then return true;
+      var ret: bool = false;
+      on this {
+        for needle in needles {
+          if needle.isEmptyString() {
+            ret = true;
+            break;
           }
-        } else {
-          const thisR = (this.len-localNeedle.len):int..this.len-1;
-          for (n, t) in zip(needleR, thisR) {
-            if localNeedle.buff[n] != this.buff[t] then break;
-            if n == localNeedle.len-1 then return true;
+          if needle.len > this.len then continue;
+
+          const localNeedle: string = needle.localize();
+
+          const needleR = 0:int..#localNeedle.len;
+          if fromLeft {
+            for n in needleR {
+              if localNeedle.buff[n] != this.buff[n] then break;
+              if n == localNeedle.len-1 {
+                ret = true;
+                break;
+              }
+            }
+          } else {
+            const thisR = (this.len-localNeedle.len):int..this.len-1;
+            for (n, t) in zip(needleR, thisR) {
+              if localNeedle.buff[n] != this.buff[t] then break;
+              if n == localNeedle.len-1 {
+                ret = true;
+                break;
+              }
+            }
           }
+          if ret == true then break;
         }
       }
-      return false;
+      return ret;
     }
 
     proc startsWith(needles: string ...) : bool {
@@ -525,7 +538,7 @@ module String {
           var end: int;
 
           if (maxsplit == 0) {
-            chunk = this;
+            chunk = localThis;
             done = true;
           } else {
             if (splitAll || splitCount < maxsplit) then
