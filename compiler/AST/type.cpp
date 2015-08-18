@@ -1414,6 +1414,7 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  dtStringC->symbol->addFlag(FLAG_IGNORE_NOINIT);
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
 
@@ -1494,6 +1495,7 @@ void initPrimitiveTypes() {
   dtStringCopy = createPrimitiveType( "c_string_copy", "c_string_copy" );
   dtStringCopy->defaultValue = gOpaque;
   dtStringCopy->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtStringCopy->symbol->addFlag(FLAG_IGNORE_NOINIT);
 
   CREATE_DEFAULT_SYMBOL(dtStringCopy, gStringCopy, "_nullString");
   gStringCopy->cname = "NULL";

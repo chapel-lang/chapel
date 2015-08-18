@@ -67,7 +67,7 @@ proc realPath(out error: syserr, name: string): string {
    :return: A canonical version of the argument.
    :rtype: string
 */
-proc realPath(name: string) // : string
+proc realPath(name: string) : string
 {
   var err: syserr = ENOERR;
   var ret = realPath(err, name);
@@ -76,7 +76,7 @@ proc realPath(name: string) // : string
 }
 
 pragma "no doc"
-proc file.realPath(out error: syserr)//: string
+proc file.realPath(out error: syserr) : string
 {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string_copy): syserr;
 
@@ -105,7 +105,7 @@ proc file.realPath(out error: syserr)//: string
             occur
    :rtype: string
 */
-proc file.realPath()// : string 
+proc file.realPath() : string 
 {
   var err: syserr = ENOERR;
   var ret = realPath(err);

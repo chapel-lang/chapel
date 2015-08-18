@@ -373,6 +373,7 @@ static void resolveEnumTypes();
 static void resolveDynamicDispatches();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
+static bool propagateIgnoreNoinit(Type* t);
 static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
@@ -5040,8 +5041,11 @@ preFold(Expr* expr) {
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
-      if (isAggregateType(type)) {
-        if (type->symbol->hasFlag(FLAG_IGNORE_NOINIT)) {
+      if (isAggregateType(type) || type == dtStringC || type == dtStringCopy) {
+
+        bool containsNoinit = propagateIgnoreNoinit( type);
+
+        if (containsNoinit) {
           // These types deal with their uninitialized fields differently than
           // normal records/classes.  They may require special case
           // implementations, but were capable of being isolated from the new
@@ -5067,9 +5071,15 @@ preFold(Expr* expr) {
           }
           if (!nowarn)
             USR_WARN(type->symbol, "type %s does not currently support noinit, using default initialization", type->symbol->name);
-          result = new CallExpr(PRIM_INIT, call->get(1)->remove());
-          call->replace(result);
-          inits.add((CallExpr *)result);
+
+          if( type->defaultValue ) {
+            result = new SymExpr(type->defaultValue);
+            call->replace(result);
+          } else {
+            result = new CallExpr(PRIM_INIT, call->get(1)->remove());
+            call->replace(result);
+            inits.add((CallExpr *)result);
+          }
         } else {
           result = call;
           inits.add(call);
@@ -7376,6 +7386,45 @@ static void resolveAutoCopies() {
       resolveAutoDestroy(ts->type);
     }
   }
+}
+
+/* In order to correctly initialize records or tuples in which
+   a component has FLAG_IGNORE_NOINIT, we need to propagate that
+   flag to the parent types as well.
+
+   After this function is called on a type, that type and any field
+   types must have either FLAG_IGNORE_NOINIT or FLAG_ALLOW_NOINIT set.
+
+   Returns true if FLAG_IGNORE_NOINIT is set, false otherwise.
+ */
+static bool propagateIgnoreNoinit(Type* t) {
+  // Move past those records we've already handled
+//  if( t->symbol->hasFlag(FLAG_ALLOW_NOINIT) )
+//    return false;
+  if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) )
+    return true;
+  // Move past classes and non-aggregate types.
+  if( (!isAggregateType(t)) || isClass(t) )
+    return t->symbol->hasFlag(FLAG_IGNORE_NOINIT);
+
+
+  AggregateType *at = (AggregateType*) t;
+  bool ignoreNoinit = false;
+
+  // setting the flag here avoids recursion problems.
+//  at->symbol->addFlag(FLAG_ALLOW_NOINIT);
+
+  for_fields(field, at) {
+    Type* ft = field->typeInfo();
+    ignoreNoinit |= propagateIgnoreNoinit(ft);
+  }
+ 
+  if (ignoreNoinit) {
+//    at->symbol->removeFlag(FLAG_ALLOW_NOINIT);
+    at->symbol->addFlag(FLAG_IGNORE_NOINIT);
+  }
+
+  return ignoreNoinit;
 }
 
 static void resolveRecordInitializers() {

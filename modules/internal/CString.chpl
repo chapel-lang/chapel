@@ -53,22 +53,22 @@ module CString {
   //       assignment out of these fuctions, causing acess to uninitalized
   //       memory for c_string_copy
   pragma "init copy fn"
-  inline proc chpl__initCopy(x: c_string) /*: c_string*/ {
+  inline proc chpl__initCopy(x: c_string) : c_string {
     return x;
   }
   pragma "init copy fn"
-  inline proc chpl__initCopy(x: c_string_copy) /*: c_string_copy*/ {
+  inline proc chpl__initCopy(x: c_string_copy) : c_string_copy {
     return x;
   }
 
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: c_string) /*: c_string*/ {
+  inline proc chpl__autoCopy(x: c_string) : c_string {
     return x;
   }
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: c_string_copy) /*: c_string_copy*/ {
+  inline proc chpl__autoCopy(x: c_string_copy) : c_string_copy {
     return x;
   }
 
