@@ -11,6 +11,8 @@ D2.dsiSetIndices({2..10});
 // This is the other way to avoid the problem.
 D1.incRefCount();
 D2.incRefCount();
+_newPrivatizedClass(D1);
+_newPrivatizedClass(D2);
 
 forall (i,j) in zip(D1, D2) do
   writeln("(i,j) is: ", (i,j));
