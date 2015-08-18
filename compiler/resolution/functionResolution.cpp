@@ -7113,12 +7113,12 @@ resolve() {
   resolveRecordInitializers();
   resolveOther();
 
-  // Resolve the string literal constructors after everything else since new
-  // ones may be created during postFold
-  resolveFns(stringLiteralModule->initFn);
-
   insertDynamicDispatchCalls();
   insertReturnTemps();
+
+  // Resolve the string literal constructors after everything else since new
+  // ones may be created during postFold
+  resolveFns(initStringLiterals);
 
   handleRuntimeTypes();
 
@@ -7229,10 +7229,10 @@ static void resolveUses(ModuleSymbol* mod)
 static void resolveExports() {
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn == stringLiteralModule->initFn) {
-      // The string literal module initFn is exported but is explicitly
-      // resolved laast since code may be added to it in postFold calls while
-      // resolving other functions
+    if (fn == initStringLiterals) {
+      // initStringLiterals is exported but is explicitly resolved last since
+      // code may be added to it in postFold calls while resolving other
+      // functions
       continue;
     }
     if (fn->hasFlag(FLAG_EXPORT)) {
