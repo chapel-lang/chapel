@@ -63,10 +63,10 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(SCHEDULER)
 
-ifeq (sherwood,$(SCHEDULER))
-CFLAGS += -DTASKS_BOUND_TO_PTHREADS=0
+ifeq (nemesis,$(SCHEDULER))
+CFLAGS += -DQTHREADS_SUPPORTS_REMOTE_CACHE=1
 else
-CFLAGS += -DTASKS_BOUND_TO_PTHREADS=1
+CFLAGS += -DQTHREADS_SUPPORTS_REMOTE_CACHE=0
 endif
 
 # spawn-caching has a semantic mismatch with chapel (and leads to deadlock with

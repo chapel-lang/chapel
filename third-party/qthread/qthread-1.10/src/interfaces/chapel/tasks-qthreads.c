@@ -139,10 +139,10 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
     NULL, 0 };
 
 //
-// TASKS_BOUND_TO_PTHREADS is set in the Chapel Qthreads Makefile,
-// based on the Qthreads scheduler configuration.
+// QTHREADS_SUPPORTS_REMOTE_CACHE is set in the Chapel Qthreads
+// Makefile, based on the Qthreads scheduler configuration.
 //
-int chpl_qthread_tasks_bound_to_pthreads = TASKS_BOUND_TO_PTHREADS;
+int chpl_qthread_supports_remote_cache = QTHREADS_SUPPORTS_REMOTE_CACHE;
 
 //
 // structs chpl_task_prvDataImpl_t, chpl_qthread_wrapper_args_t and

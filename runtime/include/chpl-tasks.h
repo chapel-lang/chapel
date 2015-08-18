@@ -211,13 +211,17 @@ chpl_task_prvData_t* chpl_task_getPrvData(void);
 #endif
 
 //
-// Are tasks bound to specific pthreads in this tasking implementation?
-// This can be used by other parts of the runtime to tell if, for
-// example, tasks are dependably associated with a particular copy of
-// pthread-specific data or thread local storage (TLS).
+// Can this tasking layer support remote caching?
 //
-#ifndef CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL
-int chpl_task_tasksBoundToPthreads(void);
+// (In practice this answers: "Are tasks bound to specific pthreads
+// or, if not, does the tasking layer make memory consistency calls
+// whenever it might move a task from one pthread to another?"  Remote
+// caching uses pthread-specific data (TLS) extensively, so it turns
+// itself off when it's used with a tasking layer that can't support
+// that.)
+//
+#ifndef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
+int chpl_task_supportsRemoteCache(void);
 #endif
 
 //

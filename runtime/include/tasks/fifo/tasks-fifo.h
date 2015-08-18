@@ -104,13 +104,13 @@ c_sublocid_t chpl_task_getRequestedSubloc(void) {
 }
 
 
-#ifdef CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL
-#error "CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL is already defined!"
+#ifdef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
+#error "CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL is already defined!"
 #else
-#define CHPL_TASK_TASKS_BOUND_TO_PTHREADS_IMPL_DECL 1
+#define CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL 1
 #endif
 static inline
-int chpl_task_tasksBoundToPthreads(void) {
+int chpl_task_supportsRemoteCache(void) {
   return 1;
 }
 

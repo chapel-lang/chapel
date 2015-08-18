@@ -34,7 +34,7 @@ extern const int CHPL_CACHE_REMOTE;
 static inline
 int chpl_cache_enabled(void)
 {
-  return CHPL_CACHE_REMOTE && chpl_task_tasksBoundToPthreads();
+  return CHPL_CACHE_REMOTE && chpl_task_supportsRemoteCache();
 }
 
 
