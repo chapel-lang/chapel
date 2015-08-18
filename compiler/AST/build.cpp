@@ -1729,8 +1729,15 @@ buildClassDefExpr(const char* name,
                   Flag        isExtern,
                   const char* docs) {
   AggregateType* ct = toAggregateType(type);
+  // Hook the string type in the modules
+  // We have to do this here so we can reason about dtString as soon as
+  // possible in the compiler. gatherWellKnownTypes runs too late to be of use
+  // to us.
   if (strcmp("string", name) == 0) {
     *dtString = *ct;
+    // These fields get overwritten with `ct` by the assignment. These fields are
+    // set to `this` by the AggregateType constructor so they should still be
+    // `dtString`. Fix them back up.
     dtString->fields.parent = dtString;
     dtString->inherits.parent = dtString;
     gAggregateTypes.remove(gAggregateTypes.index(ct));

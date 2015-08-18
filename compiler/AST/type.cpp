@@ -1649,11 +1649,9 @@ void initChplProgram(DefExpr* objectDef) {
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  //CallExpr* strLit = new CallExpr(PRIM_USE, new UnresolvedSymExpr("chpl__StringLiterals"));
   CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
   CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
 
-  //theProgram->block->insertAtTail(strLit);
   theProgram->block->insertAtTail(base);
 
   // it may be better to add the following use after parsing

@@ -364,27 +364,40 @@ module String {
     // multiple needles. Probably wouldnt be worth the overhead for small
     // needles though
     inline proc _startsEndsWith(needles: string ..., param fromLeft: bool) : bool {
-      for needle in needles {
-        if needle.isEmptyString() then return true;
-        if needle.len > this.len then continue;
-
-        const localNeedle: string = needle.localize();
-
-        const needleR = 0:int..#localNeedle.len;
-        if fromLeft {
-          for n in needleR {
-            if localNeedle.buff[n] != this.buff[n] then break;
-            if n == localNeedle.len-1 then return true;
+      var ret: bool = false;
+      on this {
+        for needle in needles {
+          if needle.isEmptyString() {
+            ret = true;
+            break;
           }
-        } else {
-          const thisR = (this.len-localNeedle.len):int..this.len-1;
-          for (n, t) in zip(needleR, thisR) {
-            if localNeedle.buff[n] != this.buff[t] then break;
-            if n == localNeedle.len-1 then return true;
+          if needle.len > this.len then continue;
+
+          const localNeedle: string = needle.localize();
+
+          const needleR = 0:int..#localNeedle.len;
+          if fromLeft {
+            for n in needleR {
+              if localNeedle.buff[n] != this.buff[n] then break;
+              if n == localNeedle.len-1 {
+                ret = true;
+                break;
+              }
+            }
+          } else {
+            const thisR = (this.len-localNeedle.len):int..this.len-1;
+            for (n, t) in zip(needleR, thisR) {
+              if localNeedle.buff[n] != this.buff[t] then break;
+              if n == localNeedle.len-1 {
+                ret = true;
+                break;
+              }
+            }
           }
+          if ret == true then break;
         }
       }
-      return false;
+      return ret;
     }
 
     proc startsWith(needles: string ...) : bool {
@@ -525,7 +538,7 @@ module String {
           var end: int;
 
           if (maxsplit == 0) {
-            chunk = this;
+            chunk = localThis;
             done = true;
           } else {
             if (splitAll || splitCount < maxsplit) then
@@ -1070,71 +1083,6 @@ module String {
 
     return ret;
   }
-
-  /*
-  inline proc _concat_helper(s: string, cs: c_string, param stringFirst: bool) {
-    if debugStrings then
-      chpl_debug_string_print("in proc +() string+c_string");
-
-    if cs.locale.id != chpl_nodeID then
-      halt("Cannot concatenate a remote c_string.");
-
-    if cs == _defaultOf(c_string) then return s;
-    const slen = s.len;
-    if slen == 0 then return cs:string;
-
-    var ret: string;
-    ret.len = slen + cs.length;
-    ret._size = ret.len+1;
-    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
-                              CHPL_RT_MD_STR_COPY_DATA): bufferType;
-    ret.owned = true;
-
-    const sremote = s.locale.id != chpl_nodeID;
-    var sbuff = if sremote
-                  then copyRemoteBuffer(s.locale.id, s.buff, slen)
-                  else s.buff;
-
-    if stringFirst {
-      memmove(ret.buff, sbuff, slen.safeCast(size_t));
-      memmove(ret.buff+slen, cs:bufferType, cs.length.safeCast(size_t));
-    } else {
-      memmove(ret.buff, cs:bufferType, cs.length.safeCast(size_t));
-      memmove(ret.buff+cs.length, sbuff, slen.safeCast(size_t));
-    }
-
-    ret.buff[ret.len] = 0;
-
-    if sremote then chpl_mem_free(sbuff);
-
-    if debugStrings then
-      chpl_debug_string_print("leaving proc +() string+c_string");
-    return ret;
-  }
-
-  //TODO: figure out how to remove the concats between
-  //      string and c_string[_copy]
-  // promotion of c_string to string is masking this issue I think.
-  proc +(s: string, cs: c_string) where isParam(cs) {
-    //compilerWarning("adding c_string to string");
-    return _concat_helper(s, cs, stringFirst=true);
-  }
-
-  proc +(cs: c_string, s: string) where isParam(cs) {
-    //compilerWarning("adding string to c_string");
-    return _concat_helper(s, cs, stringFirst=false);
-  }
-
-  // c_string_copy ones dont free right now... should they?
-  proc +(s: string, /*ref*/ cs: c_string_copy) where isParam(cs) {
-    //compilerWarning("adding c_string_copy to string");
-    return _concat_helper(s, cs, stringFirst=true);
-  }
-
-  proc +(/*ref*/ cs: c_string_copy, s: string) where isParam(cs) {
-    //compilerWarning("adding string to c_string_copy");
-    return _concat_helper(s, cs, stringFirst=false);
-  }*/
 
   // Concatenation with other types is done by casting to string
   inline proc concatHelp(s: string, x:?t) where t != string {

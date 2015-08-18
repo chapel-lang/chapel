@@ -124,6 +124,7 @@ class Immediate { public:
   }
   Immediate(bool b) :
     const_kind(NUM_KIND_BOOL),
+    string_kind(STRING_KIND_STRING),
     num_index(BOOL_SIZE_SYS)
   {
     v_bool = b;
@@ -131,7 +132,8 @@ class Immediate { public:
 
   Immediate(const char *s, IF1_string_kind kind) :
     const_kind(CONST_KIND_STRING),
-    string_kind(kind)
+    string_kind(kind),
+    num_index(0)
   {
     v_string = s;
   }
