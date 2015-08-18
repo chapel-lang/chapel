@@ -57,7 +57,6 @@ static void checkAutoCopyMap();
 static void checkFormalActualBaseTypesMatch();
 static void checkRetTypeMatchesRetVarType();
 static void checkFormalActualTypesMatch();
-static void checkSpecifedReturnTypeIsNotARecordType();
 
 
 //
@@ -427,7 +426,6 @@ static void check_afterResolution()
     checkFormalActualBaseTypesMatch();
     checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
-    checkSpecifedReturnTypeIsNotARecordType();
   }
 }
 
@@ -710,33 +708,3 @@ checkFormalActualTypesMatch()
   }
 }
 
-// Iterators with declared return types are not supported because the
-// current implementation implements coercion of the return value
-// expression to the declared return type by declaring a return value
-// variable of the desired target type and then assigning the return
-// value expression to this RVV.  However, initialization code for
-// this RVV is never emitted, so the IR for a function with a
-// declared return type is basically *incorrect* from normalization
-// onward.  It works anyway for fundamental types, because
-// initialization for fundamental types is trivial.  
-// But for record types, the correct behavior will not be observed in general.
-//
-// The workaround is to *not* specify a return type in module code,
-// until the compiler can be fixed to handle this case correctly.
-// Turning on --verify will allow the following code to identify
-// failing cases easily.
-static void checkSpecifedReturnTypeIsNotARecordType()
-{
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
-      if (isRecord(fn->retType))
-      {
-        if (fn->retType->symbol->hasFlag(FLAG_EXTERN))
-          return;
-
-        INT_FATAL(fn, "Functions with explicit return types of record type "
-                  "are not currently supported.");
-      }
-  }
-}
