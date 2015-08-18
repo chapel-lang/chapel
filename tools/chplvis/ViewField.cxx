@@ -470,7 +470,7 @@ int ViewField::handle(int event)
   
   switch (event) {
   case FL_PUSH:
-    //printf ("Push at (%d,%d)\n", x, y);
+    printf ("Push at (%d,%d)\n", x, y);
     break;
   case FL_RELEASE:
     //printf ("Release at (%d,%d)\n", x, y);
@@ -483,7 +483,22 @@ int ViewField::handle(int event)
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
           if (theLocales[ix].win == NULL) {
             // Create the window
-            theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
+            //theLocales[ix].win->y(MainWindow->y()+20);
+            if (x > MainWindow->w()/2) {
+              theLocales[ix].win =
+                make_locale_window(MainWindow->x(),
+                                   MainWindow->y(),
+                                   ix,
+                                   &curTagData->locales[ix]);
+              // theLocales[ix].win->x(MainWindow->x());
+            } else {
+              theLocales[ix].win =
+                make_locale_window(MainWindow->x(),
+                                   MainWindow->y()+MainWindow->w()-loc->w,
+                                   ix,
+                                   &curTagData->locales[ix]);
+            //theLocales[ix].win->x(MainWindow->x()+MainWindow->w()-loc->w);
+            }
           } else {
             theLocales[ix].win->updateWin(&curTagData->locales[ix]);
           }
