@@ -37,4 +37,14 @@ typedef intptr_t chpl_taskID_t;
 #define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
 void chpl_task_stdModulesInitialized(void);
 
+#ifdef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
+#error "CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL 1
+#endif
+static inline
+int chpl_task_supportsRemoteCache(void) {
+  return 0;    // not sure; return safe answer
+}
+
 #endif
