@@ -25,6 +25,10 @@
 #include "ViewField.h"
 #include "math.h"
 #include <FL/fl_draw.H>
+#include <sstream>
+
+#define SSTR( x ) dynamic_cast< std::ostringstream & >( \
+                    ( std::ostringstream() << std::dec << x ) ).str()
 
 // Local utility functions
 
@@ -239,7 +243,7 @@ void ViewField::makeTagsMenu(void)
 
     long ix;
     for (ix = 0; ix < VisData.NumTags(); ix++) {
-      std::string tName = "Tags/tag " + std::to_string(ix) + " ("
+      std::string tName = "Tags/tag " + SSTR(ix) + " ("
                           + VisData.getTagName(ix) + ")";
       MainMenuBar->add(tName.c_str(), 0, selTag, (void *)&tags[ix], 0);
       tags[ix].tagNo = ix;
