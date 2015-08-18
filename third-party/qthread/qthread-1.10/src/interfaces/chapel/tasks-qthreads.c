@@ -824,10 +824,6 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
-    // Visual Debug
-    chpl_vdebug_log_task_queue(fid, arg, subloc, task_list, task_list_locale,
-                               is_begin_stmt, lineno, filename);
-
     if (serial_state) {
         // call the function directly.
         (chpl_ftable[fid])(arg);
