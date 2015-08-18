@@ -241,10 +241,10 @@ void ViewField::makeTagsMenu(void)
     for (ix = 0; ix < VisData.NumTags(); ix++) {
       std::string tName = "Tags/tag " + std::to_string(ix) + " ("
                           + VisData.getTagName(ix) + ")";
-      // printf ("Tag[%d] is '%s'\n", ix, tags[ix].tagName);
       MainMenuBar->add(tName.c_str(), 0, selTag, (void *)&tags[ix], 0);
       tags[ix].tagNo = ix;
       tags[ix].tagName = strdup(tName.c_str());
+      // printf ("Tag[%ld] is '%s'\n", ix, tags[ix].tagName);
     }
     MainMenuBar->redraw();
   }

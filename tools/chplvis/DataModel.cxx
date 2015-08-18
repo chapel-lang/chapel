@@ -256,6 +256,17 @@ int DataModel::LoadData(const char * filename)
           if (curTag->maxClock < curTag->locales[curNodeId].clockTime) {
             curTag->maxClock = curTag->locales[curNodeId].clockTime;
           }
+          // Remove last task to with Begin Rec but no End Rec
+          {
+            std::map<long,taskData>::reverse_iterator it;
+            it = curTag->locales[curNodeId].tasks.rbegin();
+            while (it != curTag->locales[curNodeId].tasks.rend()) {
+              if ((*it).second.endRec == NULL && (*it).second.beginRec != NULL)
+                curTag->locales[curNodeId].tasks.erase((*it).first);
+              else 
+                it++;
+            }
+          }
           // For 2nd time through loop, do the same thing for All
           curTag = tagList[0];
         }
@@ -318,10 +329,10 @@ int DataModel::LoadData(const char * filename)
 
       case Ev_task:
         tp = (E_task *)ev;
-        if (++(curTag->locales[curNodeId].numTasks) > curTag->maxTasks)
-          curTag->maxTasks = curTag->locales[curNodeId].numTasks;
-        if (++(tagList[0]->locales[curNodeId].numTasks) > tagList[0]->maxTasks)
-          tagList[0]->maxTasks = tagList[0]->locales[curNodeId].numTasks;
+        //        if (++(curTag->locales[curNodeId].numTasks) > curTag->maxTasks)
+        //          curTag->maxTasks = curTag->locales[curNodeId].numTasks;
+        //        if (++(tagList[0]->locales[curNodeId].numTasks) > tagList[0]->maxTasks)
+        //          tagList[0]->maxTasks = tagList[0]->locales[curNodeId].numTasks;
         // Insert tag into task map for this locale (No work for global)
         { 
           taskData newTask;
@@ -392,6 +403,28 @@ int DataModel::LoadData(const char * filename)
     }
     itr++;
   }
+
+  // Go back and update task counts and concurrency ...
+  tagList[0]->locales[0].numTasks = 1;
+  for (int ix_l = 1; ix_l < nlocales; ix_l++) {
+    tagList[0]->locales[ix_l].numTasks = 0;
+  }
+  for (int ix_t = -1; ix_t < numTags; ix_t++) {
+    curTag = tagList[ix_t+2];
+    curTag->maxTasks = 0;
+    // printf ("settings max for tag %s\n", getTagName(ix_t).c_str());
+    for (int ix_l = 0; ix_l < nlocales; ix_l++) {
+      //printf ("tag '%s', locale %d tasks %ld\n", curTag->name.c_str(), ix_l,
+      //        (long)curTag->locales[ix_l].tasks.size());
+      curTag->locales[ix_l].numTasks = curTag->locales[ix_l].tasks.size()
+        + (ix_l == 0 ? 1 : 0 );
+      if (curTag->locales[ix_l].numTasks > curTag->maxTasks)
+        curTag->maxTasks = curTag->locales[ix_l].numTasks;
+      tagList[0]->locales[ix_l].numTasks += curTag->locales[ix_l].numTasks;
+      if (tagList[0]->locales[ix_l].numTasks > tagList[0]->maxTasks)
+        tagList[0]->maxTasks = tagList[0]->locales[ix_l].numTasks;
+    }
+  }  
 
   //printf ("0: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
   //        tagList[0]->maxComms, tagList[0]->maxSize, tagList[0]->maxTasks,

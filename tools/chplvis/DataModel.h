@@ -172,7 +172,7 @@ class DataModel {
 
   std::string getTagName (const int tagNo) 
       {
-        if (tagNo < 0 || tagNo >= numLocales) 
+        if (tagNo < 0 || tagNo >= numTags) 
           return "";
         else
           return tagList[tagNo-TagALL]->name;
@@ -197,7 +197,7 @@ class DataModel {
 
   tagData * getTagData(int tagno)
       {
-        if (tagno < TagALL || tagno >= numLocales) 
+        if (tagno < TagALL || tagno >= numTags) 
           return NULL;
         return tagList[tagno-TagALL];
       }
