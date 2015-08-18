@@ -239,7 +239,7 @@ module String {
 
     // TODO: cant explicitly state return type right now due to a bug in the
     // compiler. Uncomment this function and others when possible.
-    iter these() : string {
+    iter these() /*: string*/ {
       for i in 1..this.len {
         yield this[i];
       }
