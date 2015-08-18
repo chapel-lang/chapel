@@ -53,13 +53,20 @@ int DataModel::LoadData(const char * filename)
   struct stat statbuf;
   char fullfilename[MAXPATHLEN];  
 
-  if (stat(filename, &statbuf) < 0) {
+  // Remove trailing / in name
+  int fn_len = strlen(filename);
+  char mfilename[fn_len+1];
+  strcpy(mfilename, filename);
+  if (mfilename[fn_len-1] == '/')
+    mfilename[fn_len-1] = 0;
+
+  if (stat(mfilename, &statbuf) < 0) {
     fl_message ("%s: %s.", filename, strerror(errno));
     return 0;
   }
 
   if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
-    snprintf (fullfilename, MAXPATHLEN, "%s/%s-0", filename, filename);
+    snprintf (fullfilename, MAXPATHLEN, "%s/%s-0", mfilename, mfilename);
   else
     snprintf (fullfilename, MAXPATHLEN, "%s", filename);
   
@@ -158,7 +165,7 @@ int DataModel::LoadData(const char * filename)
     tagList[i]->maxTasks = tagList[i]->locales[0].numTasks = 1;
   }
 
-  int cTagNo = -1;
+  int cTagNo = TagStart;
   tagData *curTag = tagList[1];
       
   // printf ("List has %ld items\n", (long)theEvents.size());
@@ -193,6 +200,8 @@ int DataModel::LoadData(const char * filename)
             tagList[1]->locales[curNodeId].refSysCpu = sp->sys_time();
         tagList[0]->locales[curNodeId].refTime = 
             tagList[1]->locales[curNodeId].refTime = sp->clock_time();
+        tagList[0]->name = "ALL";
+        tagList[1]->name = "Start";
         break;
 
       case Ev_tag:
@@ -253,6 +262,17 @@ int DataModel::LoadData(const char * filename)
           }
           if (curTag->maxClock < curTag->locales[curNodeId].clockTime) {
             curTag->maxClock = curTag->locales[curNodeId].clockTime;
+          }
+          // Remove last task to with Begin Rec but no End Rec
+          {
+            std::map<long,taskData>::reverse_iterator it;
+            it = curTag->locales[curNodeId].tasks.rbegin();
+            while (it != curTag->locales[curNodeId].tasks.rend()) {
+              if ((*it).second.endRec == NULL && (*it).second.beginRec != NULL)
+                curTag->locales[curNodeId].tasks.erase((*it).first);
+              else 
+                it++;
+            }
           }
           // For 2nd time through loop, do the same thing for All
           curTag = tagList[0];
@@ -316,23 +336,68 @@ int DataModel::LoadData(const char * filename)
 
       case Ev_task:
         tp = (E_task *)ev;
-        if (++(curTag->locales[curNodeId].numTasks) > curTag->maxTasks)
-          curTag->maxTasks = curTag->locales[curNodeId].numTasks;
-        if (++(tagList[0]->locales[curNodeId].numTasks) > tagList[0]->maxTasks)
-          tagList[0]->maxTasks = tagList[0]->locales[curNodeId].numTasks;
         // Insert tag into task map for this locale (No work for global)
+        { 
+          taskData newTask;
+          newTask.taskRec = tp;
+          std::pair<long,taskData> insPair(tp->taskId(), newTask);
+          std::pair<std::map<long,taskData>::iterator,bool>
+            rv = curTag->locales[curNodeId].tasks.insert(insPair);
+          if (!rv.second) {
+            fprintf (stderr, "Duplicate task! nodeId %d, taskId %ld\n",
+                     curNodeId, tp->taskId());
+          }
+          //printf ("Created task %ld, tag %s node %d. %s\n", tp->taskId(),
+          //        curTag->name.c_str(), curNodeId, tp->isLocal() ? "(local)": "");
+        }
         break;
 
       case Ev_begin_task:
         btp = (E_begin_task *)ev;
-        // Find task in task map
-        // Update the begin record
+        {
+          std::map<long,taskData>::iterator it;
+          // Find task in task map
+          it = curTag->locales[curNodeId].tasks.find(btp->getTaskId());
+          if (it != curTag->locales[curNodeId].tasks.end()) {
+            // Update the begin record
+            (*it).second.beginRec = btp;
+            //printf ("Begin task %d, node %d\n", btp->getTaskId(), curNodeId);
+          } else {
+            printf ("(Begin task) No such task %d in tag %s nodeid %d.\n",
+                    btp->getTaskId(), curTag->name.c_str(), curNodeId);
+          }
+        }
         break;
 
       case Ev_end_task:
         etp = (E_end_task *)ev;
-        // Find task in task map
-        // Update the end record
+        {
+          std::map<long,taskData>::iterator it;
+          // Find task in task map
+          it = curTag->locales[curNodeId].tasks.find(etp->getTaskId());
+          if (it != curTag->locales[curNodeId].tasks.end()) {
+            // Update the end record
+            (*it).second.endRec = etp;
+            //printf ("End task %d, node %d\n", etp->getTaskId(), curNodeId);
+          } else {
+            // No found task
+            if (cTagNo > TagStart) {
+              it = tagList[cTagNo+1]->locales[curNodeId].tasks.find(etp->getTaskId());
+              if (it == tagList[cTagNo+1]->locales[curNodeId].tasks.end()) {
+                //printf ("(End task) No such task %d in tag %s nodeid %d.\n",
+                //        etp->getTaskId(), curTag->name.c_str(), curNodeId);
+              } else {
+                // Found it in the previous one, it points at it
+                /*printf ("Task %d: Begin Tag %s, End Tag %s, nodeId %d %s\n",
+                        etp->getTaskId(), tagList[cTagNo+1]->name.c_str(),
+                        curTag->name.c_str(), curNodeId, 
+                        (*it).second.taskRec->isLocal() ? "(Local)" : ""); */
+                // Remove it from consideration because it crosses tags.
+                tagList[cTagNo+1]->locales[curNodeId].tasks.erase(it);
+              }
+            }
+          }
+        }
         break;
 
       default:
@@ -342,12 +407,27 @@ int DataModel::LoadData(const char * filename)
     itr++;
   }
 
-  //printf ("0: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-  //        tagList[0]->maxComms, tagList[0]->maxSize, tagList[0]->maxTasks,
-  //        tagList[0]->maxClock, tagList[0]->maxCpu);
-  //printf ("1: maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-  //        tagList[1]->maxComms, tagList[1]->maxSize, tagList[1]->maxTasks,
-  //        tagList[1]->maxClock, tagList[1]->maxCpu);
+  // Go back and update task counts
+  tagList[0]->locales[0].numTasks = 1;
+  for (int ix_l = 1; ix_l < nlocales; ix_l++) {
+    tagList[0]->locales[ix_l].numTasks = 0;
+  }
+  for (int ix_t = -1; ix_t < numTags; ix_t++) {
+    curTag = tagList[ix_t+2];
+    curTag->maxTasks = 0;
+    // printf ("settings max for tag %s\n", getTagName(ix_t).c_str());
+    for (int ix_l = 0; ix_l < nlocales; ix_l++) {
+      //printf ("tag '%s', locale %d tasks %ld\n", curTag->name.c_str(), ix_l,
+      //        (long)curTag->locales[ix_l].tasks.size());
+      curTag->locales[ix_l].numTasks = curTag->locales[ix_l].tasks.size()
+        + (ix_l == 0 ? 1 : 0 );
+      if (curTag->locales[ix_l].numTasks > curTag->maxTasks)
+        curTag->maxTasks = curTag->locales[ix_l].numTasks;
+      tagList[0]->locales[ix_l].numTasks += curTag->locales[ix_l].numTasks;
+      if (tagList[0]->locales[ix_l].numTasks > tagList[0]->maxTasks)
+        tagList[0]->maxTasks = tagList[0]->locales[ix_l].numTasks;
+    }
+  }  
     
   return 1;
 }
@@ -489,7 +569,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
           nErrs++;
         } else {
           //printf ("Task: node %d, task %d, onCmd %c\n", nid, taskid, onstr[0]);
-          newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O');
+          // lookup / insert or use nfilename ....
+          newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O', nlineno, NULL);
         }
         break;
 

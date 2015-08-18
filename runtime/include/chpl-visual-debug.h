@@ -85,15 +85,6 @@ void  chpl_vdebug_log_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
 void chpl_vdebug_log_fast_fork(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid, void *arg, int32_t arg_size);
 
-void chpl_vdebug_log_task_queue(chpl_fn_int_t     fid,
-                                void             *arg,
-                                c_sublocid_t      subloc,
-                                chpl_task_list_p *task_list,
-                                int32_t           task_list_locale,
-                                chpl_bool         is_begin_stmt,
-                                int               lineno,
-                                c_string          filename);
-
 #endif
 
 
