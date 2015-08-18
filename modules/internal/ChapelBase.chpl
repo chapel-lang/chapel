@@ -888,12 +888,21 @@ module ChapelBase {
     // See if we can help with any of the started tasks
     __primitive("execute tasks in list", e.taskList);
 
+    // Remove the task that will just be waiting/yielding in the following
+    // waitFor() from the running task count to let others do real work. It is
+    // re-added after the waitFor().
+    here.runningTaskCntSub(1);
+
     // Wait for all tasks to finish
     e.i.waitFor(0, memory_order_acquire);
 
     if countRunningTasks {
       const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
-      here.runningTaskCntSub(taskDec);  // increment is in _upEndCount()
+      // taskDec-1 to adjust for the task that was waiting for others to finish
+      here.runningTaskCntSub(taskDec-1);  // increment is in _upEndCount()
+    } else {
+      // re-add the task that was waiting for others to finish
+      here.runningTaskCntAdd(1);
     }
   
     // It is now safe to free the task list, because we know that all the
