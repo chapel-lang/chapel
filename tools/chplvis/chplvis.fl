@@ -61,7 +61,7 @@ Function {mainWinCallback(Fl_Widget *)} {return_type void
   code {exit(1);} {}
 } 
 
-Function {make_locale_window(int xx, int yy, int locnum, localeData *locInfo)} {open C
+Function {make_locale_window(int locnum, localeData *locInfo)} {open C
 } {
   Fl_Window {} {open
     xywh {1037 56 180 120} type Double color 7 hide resizable
@@ -78,8 +78,7 @@ Function {make_locale_window(int xx, int yy, int locnum, localeData *locInfo)} {
     }
   }
   code {w->setMembers(Locale_Title,cpuInfo,locInfo,locnum);
-w->updateWin(locInfo);
-w->resize(xx,yy,w->w(),w->h());} {selected
+w->updateWin(locInfo);} {selected
   }
 } 
 
