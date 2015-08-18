@@ -53,13 +53,20 @@ int DataModel::LoadData(const char * filename)
   struct stat statbuf;
   char fullfilename[MAXPATHLEN];  
 
-  if (stat(filename, &statbuf) < 0) {
+  // Remove trailing / in name
+  int fn_len = strlen(filename);
+  char mfilename[fn_len+1];
+  strcpy(mfilename, filename);
+  if (mfilename[fn_len-1] == '/')
+    mfilename[fn_len-1] = 0;
+
+  if (stat(mfilename, &statbuf) < 0) {
     fl_message ("%s: %s.", filename, strerror(errno));
     return 0;
   }
 
   if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
-    snprintf (fullfilename, MAXPATHLEN, "%s/%s-0", filename, filename);
+    snprintf (fullfilename, MAXPATHLEN, "%s/%s-0", mfilename, mfilename);
   else
     snprintf (fullfilename, MAXPATHLEN, "%s", filename);
   

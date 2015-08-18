@@ -338,25 +338,6 @@ void chpl_vdebug_log_fast_fork(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 
-void chpl_vdebug_log_task_queue(chpl_fn_int_t     fid,
-                                void             *arg,
-                                c_sublocid_t      subloc,
-                                chpl_task_list_p *task_list,
-                                int32_t           task_list_locale,
-                                chpl_bool         is_begin_stmt,
-                                int               lineno,
-                                c_string          filename) {
-  if (chpl_vdebug) {
-    struct timeval tv;
-    struct timezone tz = {0,0};
-    (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06d %d %d %s %d %s\n",
-                  (long long) tv.tv_sec, (int) tv.tv_usec,
-                  chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
-                  lineno, filename);
-  }
-}
-
 // Task layer callbacks
 
 int install_callbacks(void) {
