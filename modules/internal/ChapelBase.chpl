@@ -854,7 +854,7 @@ module ChapelBase {
   // statement needed.
   pragma "dont disable remote value forwarding"
   pragma "no remote memory fence"
-  proc _upEndCount(e: _EndCount) {
+  proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
     if useAtomicTaskCnt {
       e.i.add(1, memory_order_release);
       e.taskCnt.add(1, memory_order_release);
@@ -868,7 +868,9 @@ module ChapelBase {
         e.taskCnt += 1;
       }
     }
-    here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
+    if countRunningTasks {
+      here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
+    }
   }
   
   // This function is called once by each newly initiated task.  No on
@@ -882,15 +884,17 @@ module ChapelBase {
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
   pragma "dont disable remote value forwarding"
-  proc _waitEndCount(e: _EndCount) {
+  proc _waitEndCount(e: _EndCount, param countRunningTasks=true) {
     // See if we can help with any of the started tasks
     __primitive("execute tasks in list", e.taskList);
-  
+
     // Wait for all tasks to finish
     e.i.waitFor(0, memory_order_acquire);
 
-    const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
-    here.runningTaskCntSub(taskDec);  // increment is in _upEndCount()
+    if countRunningTasks {
+      const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
+      here.runningTaskCntSub(taskDec);  // increment is in _upEndCount()
+    }
   
     // It is now safe to free the task list, because we know that all the
     // tasks have been completed.  We could free this list when all the
@@ -903,9 +907,9 @@ module ChapelBase {
     __primitive("free task list", e.taskList);
   }
   
-  proc _upEndCount() {
+  proc _upEndCount(param countRunningTasks=true) {
     var e = __primitive("get end count");
-    _upEndCount(e);
+    _upEndCount(e, countRunningTasks);
   }
   
   proc _downEndCount() {
@@ -913,9 +917,9 @@ module ChapelBase {
     _downEndCount(e);
   }
   
-  proc _waitEndCount() {
+  proc _waitEndCount(param countRunningTasks=true) {
     var e = __primitive("get end count");
-    _waitEndCount(e);
+    _waitEndCount(e, countRunningTasks);
   }
   
   pragma "command line setting"

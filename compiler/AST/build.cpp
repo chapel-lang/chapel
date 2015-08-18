@@ -1366,8 +1366,8 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, body, true, zippered);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
-    body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+    body->insertAtHead(new CallExpr("_upEndCount", coforallCount, gFalse));
+    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, gFalse));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
     addByrefVars(onBlock, byref_vars);
@@ -2090,7 +2090,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
   if (onBlock) {
-    body->insertAtHead(new CallExpr("_upEndCount"));
+    body->insertAtHead(new CallExpr("_upEndCount", gFalse));
     onBlock->insertAtTail(new CallExpr("_downEndCount"));
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_BEGIN_ON];
     addByrefVars(onBlock, byref_vars);
