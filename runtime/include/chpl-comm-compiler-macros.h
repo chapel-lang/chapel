@@ -42,7 +42,7 @@
 
 static inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                       int32_t elemSize, int32_t typeIndex, int32_t len,
+                       size_t elemSize, int32_t typeIndex, size_t len,
                        int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
@@ -62,12 +62,12 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
-                            int32_t elemSize, int32_t typeIndex, int32_t len,
+                            size_t elemSize, int32_t typeIndex, size_t len,
                             int ln, c_string fn)
 {
-  const int32_t MAX_BYTES_LOCAL_PREFETCH = 1024;
-  int32_t offset;
-  int32_t size = elemSize*len;
+  const size_t MAX_BYTES_LOCAL_PREFETCH = 1024;
+  size_t offset;
+  size_t size = elemSize*len;
 
   if (chpl_nodeID == node) {
     // Prefetch only the first part since we don't want to blow
@@ -90,7 +90,7 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                       int32_t elemSize, int32_t typeIndex, int32_t len,
+                       size_t elemSize, int32_t typeIndex, size_t len,
                        int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
@@ -111,7 +111,7 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
 static inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
-                       int32_t elemSize, int32_t typeIndex,
+                       size_t elemSize, int32_t typeIndex,
                        int ln, c_string fn)
 {
   if( 0 ) {
@@ -131,7 +131,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
 static inline
 void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
-                       int32_t elemSize, int32_t typeIndex,
+                       size_t elemSize, int32_t typeIndex,
                        int ln, c_string fn)
 {
   if( 0 ) {

@@ -184,7 +184,7 @@ module CString {
   }
 
   inline proc _cast(type t, x:integral) where t == c_string_copy {
-    extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy ;
+    extern proc integral_to_c_string_copy(x:int(64), size:size_t, isSigned: bool) : c_string_copy ;
     return integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
   }
 

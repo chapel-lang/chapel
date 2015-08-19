@@ -334,7 +334,8 @@ module ChapelLocale {
       __primitive("chpl_comm_get",
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
-                  __primitive("array_get", origRL, 0), numLocales);
+                  __primitive("array_get", origRL, 0), 
+                  numLocales.safeCast(size_t));
       // Set the rootLocale to the local copy
       rootLocale = newRootLocale;
     }

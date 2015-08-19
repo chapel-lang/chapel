@@ -59,6 +59,7 @@ symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tupl
 // as indicated by this flag, it launches into enacting forall intents
 // for the forall loop that this variable was created for.
 symbolFlag( FLAG_CHPL__ITER , npr, "chpl__iter", "used as a marker to implement forall intents" )
+symbolFlag( FLAG_VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators" )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL , npr, "cobegin or coforall" , ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL_BLOCK , npr, "cobegin or coforall block" , ncm )
 symbolFlag( FLAG_COERCE_TEMP , npr, "coerce temp" , "a temporary that was stores the result of a coercion" )

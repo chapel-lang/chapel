@@ -854,98 +854,98 @@ iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = f
   const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThis.low));
   if fast {
     if arrSection.locale.id == here.id {
-		//writeln("In fast follower local");
-		local {
-      	  for e in arrSection.myElems(myFollowThis) do
-        	  yield e;
-	  	}
+    //writeln("In fast follower local");
+    local {
+          for e in arrSection.myElems(myFollowThis) do
+            yield e;
+      }
     } else {
-      	for e in arrSection.myElems(myFollowThis) do
-        	yield e;
+        for e in arrSection.myElems(myFollowThis) do
+          yield e;
     }
   } else {
-	  //writeln("In normal follower");
-	  
-	  var nslice:rank*int;
-	  var bufsize = 1;
-
-	  for i in 1..rank {
-		nslice(i) = (t(i).high-t(i).low)/t(i).stride+1;
-		bufsize*=nslice(i);
-	  }
-	  
-	  //writeln(bufsize);
-  	  /*if ((bufsize < minimumForAggregation) || (bufsize > maximumForAggregation)) {
-	    //writeln("not using aggregation optimization because not enough elements");
-	      for i in myFollowThis {
-	        yield accessHelper(i);
-	      }
-	      return;
-      }*/
-	  
-	  //check if all elements in chunk are on the same locale?
-	  for i in 1..rank {
-		  if (followThis(i).stride * dom.whole.dim(i).stride % dom.dist.targetLocDom.dim(i).size != 0) {
-			  //writeln("not using aggregation optimization");
-			  for i in myFollowThis {
-			     yield accessHelper(i);
-			  }
-			  return;
-		  }
-	  }
+    //writeln("In normal follower");
     
-	  //Aroon's code ends here*/
-	
-	var dstStride: [1..rank] int(32);
-	var srcStride: [1..rank] int(32);
-	var count: [1..rank+1] int(32);
-	var stridelevels=rank:int(32);
-	var bufsize3=1;
-	
-	count(1)=1;
-	for i in 1..rank {
-		dstStride(i)=bufsize3:int(32);
-		bufsize3*=nslice(rank-i+1);
-		var v=arrSection.myElems._value;
-		srcStride(i)=(v.blk(rank-i+1)*dom.whole.dim(i).stride):int(32);
-		count(i+1)=nslice(rank-i+1):int(32);
-	}
-	
-	var buf: [1..bufsize] this.eltType;
-	var dest = buf._value.theData;
-	const src = arrSection.myElems._value.theData;
-	const rid=arrSection.locale.id;
-	var dststr=dstStride._value.theData;
-	var srcstr=srcStride._value.theData;
-	var cnt=count._value.theData;
-	
-	__primitive("chpl_comm_get_strd",
-		__primitive("array_get", dest, buf._value.getDataIndex(1)),
-		__primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
-		rid,
-		__primitive("array_get", src, arrSection.myElems._value.getDataIndex(myFollowThis.low)),
-		__primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
-		__primitive("array_get",cnt, count._value.getDataIndex(1)),
-		stridelevels);
-		
-	var changed=false;
-	for i in buf {
-		var old_val=i;
-		yield i;
-		var new_val=i;
-		changed |= (0!=memcmp(old_val, new_val, sizeof(this.eltType)));
-	}	
-	
-	if changed { //copy back incase they modified it
-		__primitive("chpl_comm_put_strd",
-			__primitive("array_get", src, arrSection.myElems._value.getDataIndex(myFollowThis.low)),
-			__primitive("array_get",srcstr,srcStride._value.getDataIndex(1)), 
-			rid,
-			__primitive("array_get", dest, buf._value.getDataIndex(1)),
-			__primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
-			__primitive("array_get",cnt, count._value.getDataIndex(1)),
-			stridelevels);
-	}
+    var nslice:rank*int;
+    var bufsize = 1;
+
+    for i in 1..rank {
+    nslice(i) = (t(i).high-t(i).low)/t(i).stride+1;
+    bufsize*=nslice(i);
+    }
+    
+    //writeln(bufsize);
+      /*if ((bufsize < minimumForAggregation) || (bufsize > maximumForAggregation)) {
+      //writeln("not using aggregation optimization because not enough elements");
+        for i in myFollowThis {
+          yield accessHelper(i);
+        }
+        return;
+      }*/
+    
+    //check if all elements in chunk are on the same locale?
+    for i in 1..rank {
+      if (followThis(i).stride * dom.whole.dim(i).stride % dom.dist.targetLocDom.dim(i).size != 0) {
+        //writeln("not using aggregation optimization");
+        for i in myFollowThis {
+           yield accessHelper(i);
+        }
+        return;
+      }
+    }
+    
+    //Aroon's code ends here*/
+  
+  var dstStride: [1..rank] int(32);
+  var srcStride: [1..rank] int(32);
+  var count: [1..rank+1] int(32);
+  var stridelevels=rank:int(32);
+  var bufsize3=1;
+  
+  count(1)=1;
+  for i in 1..rank {
+    dstStride(i)=bufsize3:int(32);
+    bufsize3*=nslice(rank-i+1);
+    var v=arrSection.myElems._value;
+    srcStride(i)=(v.blk(rank-i+1)*dom.whole.dim(i).stride):int(32);
+    count(i+1)=nslice(rank-i+1):int(32);
+  }
+  
+  var buf: [1..bufsize] this.eltType;
+  var dest = buf._value.theData;
+  const src = arrSection.myElems._value.theData;
+  const rid=arrSection.locale.id;
+  var dststr=dstStride._value.theData;
+  var srcstr=srcStride._value.theData;
+  var cnt=count._value.theData;
+  
+  __primitive("chpl_comm_get_strd",
+    __primitive("array_get", dest, buf._value.getDataIndex(1)),
+    __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
+    rid,
+    __primitive("array_get", src, arrSection.myElems._value.getDataIndex(myFollowThis.low)),
+    __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
+    __primitive("array_get",cnt, count._value.getDataIndex(1)),
+    stridelevels);
+    
+  var changed=false;
+  for i in buf {
+    var old_val=i;
+    yield i;
+    var new_val=i;
+    changed |= (0!=memcmp(old_val, new_val, sizeof(this.eltType)));
+  }  
+  
+  if changed { //copy back incase they modified it
+    __primitive("chpl_comm_put_strd",
+      __primitive("array_get", src, arrSection.myElems._value.getDataIndex(myFollowThis.low)),
+      __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)), 
+      rid,
+      __primitive("array_get", dest, buf._value.getDataIndex(1)),
+      __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
+      __primitive("array_get",cnt, count._value.getDataIndex(1)),
+      stridelevels);
+  }
     /*proc accessHelper(i) var {
       if myLocArr then local {
         if myLocArr.locDom.member(i) then

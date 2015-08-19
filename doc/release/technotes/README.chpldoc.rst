@@ -44,10 +44,10 @@ Prerequisites
 -------------
 
 ``chpldoc`` depends on several Python packages. The full list is available in
-`$CHPL_HOME/third-party/chpldoc-venv/README.md`_ including details on each
+`$CHPL_HOME/third-party/chpl-venv/README.md`_ including details on each
 package.
 
-.. _$CHPL_HOME/third-party/chpldoc-venv/README.md: https://github.com/chapel-lang/chapel/blob/master/third-party/chpldoc-venv/README.md
+.. _$CHPL_HOME/third-party/chpl-venv/README.md: https://github.com/chapel-lang/chapel/blob/master/third-party/chpl-venv/README.md
 
 
 .. _Generating documentation:

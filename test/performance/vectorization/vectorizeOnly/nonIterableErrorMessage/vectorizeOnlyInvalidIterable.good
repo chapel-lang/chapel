@@ -1,0 +1,1 @@
+vectorizeOnlyInvalidIterable.chpl:4: error: cannot iterate over values of type int(64)

@@ -25,6 +25,10 @@
 #include "ViewField.h"
 #include "math.h"
 #include <FL/fl_draw.H>
+#include <sstream>
+
+#define SSTR( x ) dynamic_cast< std::ostringstream & >( \
+                    ( std::ostringstream() << std::dec << x ) ).str()
 
 // Local utility functions
 
@@ -48,16 +52,19 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   theLocales = NULL;
   comms = NULL;
   tags = NULL;
+  curTagData = NULL;
   tagsSize = 0;
   tagMenu = -1;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
+  /*
   maxTasks = 1;
   maxComms = 1;
   maxCpu = 0.000001;
   maxClock = 0;
   maxDatasize = 1;
+  */
   infoTop = show_Tasks;
   showcomms = true;
   
@@ -71,16 +78,19 @@ ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *
   theLocales = NULL;
   comms = NULL;
   tags = NULL;
+  curTagData = NULL;
   tagsSize = 0;
   tagMenu = -1;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
+  /*
   maxTasks = 1;
   maxComms = 1;
   maxCpu = 0.000001;
   maxClock = 0;
   maxDatasize = 1;
+  */
   infoTop = show_Tasks;
   showcomms = true;
 };
@@ -124,8 +134,6 @@ void ViewField::allocArrays()
     fprintf (stderr, "chplvis: out of memory.\n");
     exit(1);
   }
-  for (ix =0; ix < numlocales; ix++)
-    theLocales[ix].numTasks = 0;
   getSize = numlocales;
   for (ix = 0; ix < getSize; ix++) {
     comms[ix] = new struct commInfo[numlocales];
@@ -134,23 +142,11 @@ void ViewField::allocArrays()
       exit(1);
     }
     for (ix2 = 0; ix2 < numlocales; ix2++) {
-      comms[ix][ix2].numComms = 0;
-      comms[ix][ix2].numGets = 0;
-      comms[ix][ix2].numPuts = 0;
-      comms[ix][ix2].commSize = 0;
       comms[ix][ix2].win = NULL;
     }
   }
 
   for (ix = 0; ix < numlocales; ix++) {
-    theLocales[ix].numTasks = 0;
-    theLocales[ix].refUserCpu = 0;
-    theLocales[ix].refSysCpu = 0;
-    theLocales[ix].Cpu = 0;
-    theLocales[ix].userCpu = 0;
-    theLocales[ix].sysCpu = 0;
-    theLocales[ix].clockTime = 0;
-    theLocales[ix].refTime = 0;
     theLocales[ix].win = NULL;
   }
 
@@ -176,206 +172,29 @@ void ViewField::allocArrays()
 //          -1 => Start to first tag (tag 0)
 //          0 and greater => start at tagNo to next tag.
 
-void ViewField::processData(int tagNum)
+void ViewField::selectData(int tagNum)
 {
   int ix1, ix2;  // For processing the arrays
 
-  // printf ("ViewField::processData(%d)\n", tagNum);
+  // if (tagNum < TagALL || tagNum >= numTags) error of some kind
 
-  // Initialize ... in case data has changed.
+  // Close all the windows
   for (ix1 = 0; ix1 < numlocales; ix1++) {
-    theLocales[ix1].numTasks = 0;
-    theLocales[ix1].userCpu = 0;
-    theLocales[ix1].sysCpu = 0;
-    theLocales[ix1].Cpu = 0;
-    theLocales[ix1].refUserCpu = 0;
-    theLocales[ix1].refSysCpu = 0;
-    theLocales[ix1].clockTime = 0;
-    theLocales[ix1].refTime = 0;
     if (theLocales[ix1].win != NULL) {
       theLocales[ix1].win->hide();
     }
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
-      comms[ix1][ix2].numComms = 0;
-      comms[ix1][ix2].numGets = 0;
-      comms[ix1][ix2].numPuts = 0;
-      comms[ix1][ix2].commSize = 0;
       if (comms[ix1][ix2].win != NULL) 
         comms[ix1][ix2].win->hide();
     }
   }
-  theLocales[0].numTasks = 1;
-  maxTasks = 1;
-  maxComms = 0;
-  maxCpu = 0.0000001;
-  maxClock = 0;
-  maxDatasize = 0;
 
-  Event *ev;
-  int stopTag;
+  // Select data to use
+  curTagData = VisData.getTagData(tagNum);
 
-  // Select first event to use:
-  if (tagNum < 0) {
-    ev = VisData.getFirstEvent();
-    stopTag = (tagNum == -1 ? 0 : -1 );
-  } else {
-    ev = VisData.getTagNo(tagNum);
-    stopTag = tagNum + 1;
-  }
-
-  while ( ev != NULL ) {
-
-    E_task   *tp = NULL;
-    E_comm   *cp = NULL;
-    E_fork   *fp = NULL;
-    E_start  *sp = NULL;
-    E_end    *ep = NULL;
-    E_tag    *gp = NULL;
-    E_pause  *pp = NULL;
-
-    int curNodeId = ev->nodeId();
-
-    bool stopProcessing = false;
-
-    // debug:
-    // ev->print();
-    
-    switch (ev->Ekind()) {
-      case Ev_task:
-        //  Task event
-        tp = (E_task *)ev;
-        if (++theLocales[curNodeId].numTasks > maxTasks)
-          maxTasks = theLocales[curNodeId].numTasks;
-        break;
-
-      case Ev_comm:
-        //  Comm event
-        cp = (E_comm *)ev;
-        if (++(comms[cp->srcId()][cp->dstId()].numComms) > maxComms)
-          maxComms = comms[cp->srcId()][cp->dstId()].numComms;
-        comms[cp->srcId()][cp->dstId()].commSize += cp->totalLen();
-        if (comms[cp->srcId()][cp->dstId()].commSize > maxDatasize)
-          maxDatasize = comms[cp->srcId()][cp->dstId()].commSize;
-        if (cp->isGet())
-          comms[cp->srcId()][cp->dstId()].numGets++;
-        else
-          comms[cp->srcId()][cp->dstId()].numPuts++;
-        break;
-
-      case Ev_fork:
-        fp = (E_fork *)ev;
-        if (++(comms[fp->srcId()][fp->dstId()].numComms) > maxComms)
-          maxComms = comms[fp->srcId()][fp->dstId()].numComms;
-        comms[fp->srcId()][fp->dstId()].commSize += fp->argSize();
-        if (comms[fp->srcId()][fp->dstId()].commSize > maxDatasize)
-          maxDatasize = comms[fp->srcId()][fp->dstId()].commSize;
-        if (!fp->fast()) {
-          if (++theLocales[fp->dstId()].numTasks > maxTasks)
-            maxTasks = theLocales[fp->dstId()].numTasks;
-        }
-        break;
-
-      case Ev_start:
-        sp = (E_start *)ev;
-        theLocales[curNodeId].refUserCpu = sp->user_time();
-        theLocales[curNodeId].refSysCpu = sp->sys_time();
-        theLocales[curNodeId].refTime = sp->clock_time();
-        break;
-
-      case Ev_end:
-        ep = (E_end *)ev;
-        theLocales[curNodeId].userCpu += ep->user_time()
-          - theLocales[curNodeId].refUserCpu;
-        theLocales[curNodeId].sysCpu += ep->sys_time()
-          - theLocales[curNodeId].refSysCpu;
-        theLocales[curNodeId].Cpu =  theLocales[curNodeId].userCpu 
-          + theLocales[curNodeId].sysCpu;  
-        if (maxCpu < theLocales[curNodeId].Cpu)
-          maxCpu = theLocales[curNodeId].Cpu;
-        theLocales[curNodeId].clockTime +=
-          ep->clock_time() - theLocales[curNodeId].refTime;
-        if (maxClock < theLocales[curNodeId].clockTime)
-          maxClock = theLocales[curNodeId].clockTime;
-        break;
-
-      case Ev_pause:
-        pp = (E_pause *)ev;
-        // Need to update times for correctness, either for tag->tag or resume
-        theLocales[curNodeId].userCpu += pp->user_time()
-          - theLocales[curNodeId].refUserCpu;
-        theLocales[curNodeId].sysCpu += pp->sys_time()
-          - theLocales[curNodeId].refSysCpu;
-        theLocales[curNodeId].Cpu = theLocales[curNodeId].userCpu 
-          + theLocales[curNodeId].sysCpu;
-        if (maxCpu < theLocales[curNodeId].Cpu)
-            maxCpu = theLocales[curNodeId].Cpu;
-        theLocales[curNodeId].clockTime +=
-          pp->clock_time() - theLocales[curNodeId].refTime;
-        if (maxClock < theLocales[curNodeId].clockTime)
-          maxClock = theLocales[curNodeId].clockTime;
-        // Reset the ref times to zero so the next tag will initialize them
-        theLocales[curNodeId].refTime = 0;  // This is the one tested
-        break;
-         
-      case Ev_tag:
-        // Checking out the tag ...
-        gp = (E_tag *)ev;
-        int tgNo = gp->tagNo();
-        // tagNum == -3 => new open, -2 is All tag, -1 => Start to tag 0.
-        // So this says: new open and tags[] not initialized, initialize it for
-        // the menu system for tags
-        if (tagNum == -3 && tags[tgNo].tagNo < 0) {
-          tags[tgNo].tagNo = tgNo;
-          // printf("processing tag '%s'\n", gp->tagName().c_str());
-          tags[tgNo].tagName = new char [gp->tagName().length()+25];
-          snprintf (tags[tgNo].tagName, gp->tagName().length()+25,
-                    "Tags/Tag %d (%s)", tgNo, gp->tagName().c_str());
-        }
-        if (theLocales[curNodeId].refTime == 0) {
-          //printf ("Tag: setting ref times\n");
-          theLocales[curNodeId].refUserCpu = gp->user_time();
-          theLocales[curNodeId].refSysCpu = gp->sys_time();
-          theLocales[curNodeId].refTime = gp->clock_time();
-        } else if (tgNo == stopTag ) {
-          //printf ("Tag: updating user/sys/cpu times.\n");
-          // Need to update times for correctness, either for tag->tag or resume
-          theLocales[curNodeId].userCpu += gp->user_time()
-            - theLocales[curNodeId].refUserCpu;
-          theLocales[curNodeId].sysCpu += gp->sys_time()
-            - theLocales[curNodeId].refSysCpu;
-          theLocales[curNodeId].Cpu = theLocales[curNodeId].userCpu 
-            + theLocales[curNodeId].sysCpu;
-          if (maxCpu < theLocales[curNodeId].Cpu)
-            maxCpu = theLocales[curNodeId].Cpu;
-          theLocales[curNodeId].clockTime +=
-            gp->clock_time() - theLocales[curNodeId].refTime;
-          if (maxClock < theLocales[curNodeId].clockTime)
-            maxClock = theLocales[curNodeId].clockTime;
-        }
-
-        //printf ("tag: node = %d user = %f, sys = %f, cpu = %f\n",  curNodeId,
-        //        theLocales[curNodeId].userCpu,
-        //      theLocales[curNodeId].sysCpu,
-        //      theLocales[curNodeId].Cpu);
-
-        // Stop here?
-        stopProcessing = (curNodeId == numlocales-1) &&
-                         tgNo == stopTag;
-        break;
-    }
-
-    if (stopProcessing)
-      ev = NULL;
-    else 
-      ev = VisData.getNextEvent();
-    //if (ev == NULL) printf ("ev is NULL.\n");
-
-  }
-
-  Info->setMaxes(maxTasks, maxComms, maxDatasize, maxCpu, maxClock);
-  //printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
-
-  if (tagNum == -3)  makeTagsMenu();
+  // Set the max values in the info bar
+  Info->setMaxes(curTagData->maxTasks, curTagData->maxComms, curTagData->maxSize,
+                 curTagData->maxCpu, curTagData->maxClock);
 
  }
 
@@ -383,18 +202,19 @@ static void selTag(Fl_Widget *w, void *p)
 {
   long ix = (long) p;
   struct tagInfo *ptr = (struct tagInfo *)p;
-  if (ix == -2) {
+  
+  if (ix == DataModel::TagALL) {
     // printf ("selTag called on All\n");
-    DbgView->processData(-2);
     Info->setTagName("All");
-  } else if (ix == -1) {
+    DbgView->selectData(ix);
+  } else if (ix == DataModel::TagStart) {
     // printf ("selTag called on Start\n");
-    DbgView->processData(-1);
     Info->setTagName("Start");
+    DbgView->selectData(ix);
   } else {
     // printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
-    DbgView->processData(ptr->tagNo);
     Info->setTagName(ptr->tagName);
+    DbgView->selectData(ptr->tagNo);
   }
   DbgView->redraw();
   Info->redraw();
@@ -418,13 +238,17 @@ void ViewField::makeTagsMenu(void)
       printf ("Menu problem!\n");
       return;
     }
-    MainMenuBar->add("Tags/All", 0, selTag, (void *)-2);
-    MainMenuBar->add("Tags/Start", 0, selTag, (void *)-1);
+    MainMenuBar->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
+    MainMenuBar->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
 
     long ix;
     for (ix = 0; ix < VisData.NumTags(); ix++) {
-      // printf ("Tag[%d] is '%s'\n", ix, tags[ix].tagName);
-      MainMenuBar->add(tags[ix].tagName, 0, selTag, (void *)&tags[ix], 0);
+      std::string tName = "Tags/tag " + SSTR(ix) + " ("
+                          + VisData.getTagName(ix) + ")";
+      MainMenuBar->add(tName.c_str(), 0, selTag, (void *)&tags[ix], 0);
+      tags[ix].tagNo = ix;
+      tags[ix].tagName = strdup(tName.c_str());
+      // printf ("Tag[%ld] is '%s'\n", ix, tags[ix].tagName);
     }
     MainMenuBar->redraw();
   }
@@ -522,13 +346,13 @@ void ViewField::draw()
   for (ix = 0; ix < numlocales; ix++) {
     switch (infoTop) {
     case show_Tasks:
-      drawLocale(ix, heatColor(theLocales[ix].numTasks, maxTasks));
+      drawLocale(ix, heatColor(curTagData->locales[ix].numTasks, curTagData->maxTasks));
       break;
     case show_CPU:
-      drawLocale(ix, heatColor(theLocales[ix].Cpu, maxCpu));
+      drawLocale(ix, heatColor(curTagData->locales[ix].Cpu, curTagData->maxCpu));
       break;
     case show_Clock:
-      drawLocale(ix, heatColor(theLocales[ix].clockTime, maxClock));
+      drawLocale(ix, heatColor(curTagData->locales[ix].clockTime, curTagData->maxClock));
     }
   }
 
@@ -537,13 +361,13 @@ void ViewField::draw()
     for (iy = ix + 1; iy < numlocales; iy++) {
       int  com2ix, com2iy, comMax; 
       if (showcomms) {
-        com2ix = comms[iy][ix].numComms;
-        com2iy = comms[ix][iy].numComms;
-        comMax = maxComms;
+        com2ix = curTagData->comms[iy][ix].numComms;
+        com2iy = curTagData->comms[ix][iy].numComms;
+        comMax = curTagData->maxComms;
       } else {
-        com2ix = comms[ix][iy].commSize;
-        com2iy = comms[iy][ix].commSize;
-        comMax = maxDatasize;
+        com2ix = curTagData->comms[ix][iy].commSize;
+        com2iy = curTagData->comms[iy][ix].commSize;
+        comMax = curTagData->maxSize;
       }
       if (com2ix || com2iy) {
         // Draw a line ... gray if no communication
@@ -583,9 +407,17 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
   float slope;
   float newy;
   float ydiff;
+
+  // Quick checks not between locations
+  if ((x < loc1->x-3 && x < loc2->x-3)
+      || (x > loc1->x+3 && x > loc2->x+3)
+      || (y < loc1->y-3 && y < loc2->y-3)
+      || (y > loc1->y+3 && y > loc2->y+3)) {
+    return 0;
+  }
+
   int ylen = loc2->y - loc1->y;
   int xlen = loc2->x - loc1->x;
-
 
   if (xlen == 0) {
     // Vertically above each other
@@ -603,7 +435,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
       newy  = (float)loc2->y - slope * (loc2->x - x);
       ydiff = fabs(y - newy);
       // printf ("slope: %f ydiff = %f\n", slope, ydiff);
-      if (ydiff < 3) {
+      if (ydiff < 5) {
         // assumed on the line
         if (abs(loc2->x - x) < abs(xlen)/2)
           return 2;
@@ -614,7 +446,7 @@ static int isOnCommLink ( int x, int y, localeInfo *loc1, localeInfo *loc2) {
       float newx  = (float)loc2->x - (loc2->y - y)/slope;
       float xdiff = fabs(x - newx);
       // printf ("slope: %f xdiff = %f\n", slope, xdiff);
-      if (xdiff < 3) {
+      if (xdiff < 5) {
         // assumed on the line
         if (abs(loc2->y - y) < abs(ylen)/2)
           return 2;
@@ -651,9 +483,9 @@ int ViewField::handle(int event)
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
           if (theLocales[ix].win == NULL) {
             // Create the window
-            theLocales[ix].win = make_locale_window(ix, &theLocales[ix]);
+            theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
           } else {
-            theLocales[ix].win->updateWin();
+            theLocales[ix].win->updateWin(&curTagData->locales[ix]);
           }
           if (theLocales[ix].win->visible()) 
             theLocales[ix].win->hide();
@@ -670,9 +502,9 @@ int ViewField::handle(int event)
       loci = &theLocales[i];
       for (j = i+1; j < numlocales; j++) {
         locj = &theLocales[j];
-        // printf ("link: %d->%d -- ", i, j);
-        if (comms[i][j].numComms != 0
-            || comms[j][i].numComms != 0) {
+        // printf ("link: %d->%d:\n", i, j);
+        if (curTagData->comms[i][j].numComms != 0
+            || curTagData->comms[j][i].numComms != 0) {
           int OnComm = isOnCommLink(x,y,loci,locj);
           if (OnComm) {
             // printf ("Link %d -> %d, nearer locale %d\n", i, j, (OnComm > 1 ? j : i ));
@@ -681,9 +513,9 @@ int ViewField::handle(int event)
               int t = j; j = i; i = t;
             } 
             if (comms[i][j].win == NULL) {
-              comms[i][j].win = make_comm_window(i,j,&comms[i][j]);
+              comms[i][j].win = make_comm_window(i,j,&curTagData->comms[i][j]);
             } else {
-              comms[i][j].win->updateWin();
+              comms[i][j].win->updateWin(&curTagData->comms[i][j]);
             }
             if (comms[i][j].win->visible())
               comms[i][j].win->hide();
