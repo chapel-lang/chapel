@@ -10,7 +10,7 @@ echo epsilon=$epsilon
 #rm jacobi
 if -e jacobi then
 else
-	chpl --fast jacobi.chpl -o jacobi
+  chpl --fast jacobi.chpl -o jacobi
 endif
 
 echo 'Block (B)'
