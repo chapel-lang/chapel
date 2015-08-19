@@ -28,6 +28,10 @@ proc initialize_matrix(distribution, n_dim: int) {
     return matrix;
 }
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 /* Prints out the matrix passed in */
 proc print_matrix(A: [], n_dim: int) {
     for i in 1..n_dim {
@@ -124,7 +128,7 @@ proc kernel_fw(dist_square, n_dim: int) {
     
     for ii in 1..n_dim {
       for jj in 1..n_dim {
-        still_correct &&= path[ii,jj] == pathTest[ii,jj];
+        still_correct &&= within_epsilon(path[ii,jj], pathTest[ii,jj]);
       }
     }
     writeln("Is the calculation correct? ", still_correct);
