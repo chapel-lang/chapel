@@ -332,6 +332,9 @@ tags
 /test/release/examples/primers/varargs
 /test/release/examples/primers/test.bin
 
+/test/release/examples/primers/chplvis/E1
+/test/release/examples/primers/chplvis/E2
+
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
 /test/runtime/kbrady/goodAllocSize.good

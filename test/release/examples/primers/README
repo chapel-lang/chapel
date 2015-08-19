@@ -31,3 +31,5 @@ demonstrate Chapel feature areas in detail.
      timers.chpl            : Time standard module
      varargs.chpl           : Variable argument procedures
      variables.chpl         : Variables, constants, and parameters
+
+     chplvis                : A directory contaning a primer on the chplvis tool
