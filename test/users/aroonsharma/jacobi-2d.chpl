@@ -31,6 +31,10 @@ if dist=='NONE' {
   dobench(mydist, mydom);
 } 
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 proc dobench(mydist, mydom) {
   var still_correct = true;
 
@@ -92,7 +96,8 @@ proc dobench(mydist, mydom) {
         XNewt(ProblemSpace) = (Xt(north) + Xt(south) + Xt(east) + Xt(west))/4.0;
         Xt[ProblemSpace] = XNewt[ProblemSpace];
         for ii in mydom {
-          still_correct &&= Xt[ii]==X[ii] && XNewt[ii]==XNew[ii];
+          still_correct &&= within_epsilon(Xt[ii], X[ii]) &&
+                            within_epsilon(XNewt[ii], XNew[ii]);
         }
       }
 

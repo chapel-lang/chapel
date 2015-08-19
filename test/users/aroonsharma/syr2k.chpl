@@ -37,6 +37,10 @@ proc initialize_2D(distribution, m_dim: int) {
     return matrix;
 }
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 /* Prints out the 2D structure passed in */
 proc print_2D(A: [], m_dim: int, n_dim: int) {
     for i in 1..m_dim {
@@ -123,7 +127,7 @@ proc kernel_syr2k(dist_2D, m_dim: int, n_dim: int) {
     
     for ii in 1..m_dim {
       for jj in 1..n_dim {
-        still_correct &&= (C[ii,jj] == CTest[ii,jj]);
+        still_correct &&= within_epsilon(C[ii,jj], CTest[ii,jj]);
       }
     }
     writeln("Is the computation correct? ", still_correct);

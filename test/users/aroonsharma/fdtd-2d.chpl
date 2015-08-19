@@ -48,6 +48,10 @@ proc initialize_2D(distribution, adder: int, divider: int) {
     return matrix;
 }
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 /* Prints out the 1D structure passed in */
 proc print_1D(A: []) {
     writeln(A);
@@ -152,7 +156,9 @@ proc kernel_fdtd2d(dist_1D, dist_2D, m_dim: int, n_dim: int) {
     
     for ii in 1..m_dim {
       for jj in 1..m_dim {
-        still_correct &&= (Z[ii,jj] == Ztest[ii,jj]) && (Y[ii,jj] == Ytest[ii,jj]) && (X[ii,jj] == Xtest[ii,jj]);
+        still_correct &&= within_epsilon(Z[ii,jj], Ztest[ii,jj]) &&
+                          within_epsilon(Y[ii,jj], Ytest[ii,jj]) &&
+                          within_epsilon(X[ii,jj], Xtest[ii,jj]);
       }
     }
     writeln("Is the computation correct? ", still_correct);

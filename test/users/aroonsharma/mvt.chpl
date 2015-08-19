@@ -49,6 +49,10 @@ proc initialize_array(distribution, dim: int, array_name: string) {
     return array;
 }
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 /* Prints out the matrix passed in */
 proc print_matrix(A: [], dim: int) {
     for i in 1..dim {
@@ -146,7 +150,8 @@ proc kernel_mvt(dist, dim: int) {
       } 
     
     for ii in 1..dim {
-      still_correct &&= (x1[ii] == x1Test[ii]) && (x2[ii] == x2Test[ii]);
+      still_correct &&= within_epsilon(x1[ii], x1Test[ii]) &&
+                        within_epsilon(x2[ii],  x2Test[ii]);
     }
     writeln("Is the calculation correct? ", still_correct);
     writeln("mvt computation complete");

@@ -51,6 +51,10 @@ proc initialize_matrix(distribution, matrix_size: int, adder: int) {
     return matrix;
 }
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 /* The process which runs the benchmark */
 proc kernel_2mm(alpha: int, beta: int, distribution, matrix_size: int) {
   var still_correct = true;
@@ -167,7 +171,7 @@ proc kernel_2mm(alpha: int, beta: int, distribution, matrix_size: int) {
     
     for ii in 1..matrix_size {
       for jj in 1..matrix_size {
-        still_correct &&= E[ii,jj] == Etest[ii,jj];
+        still_correct &&= within_epsilon(E[ii,jj], Etest[ii,jj]);
       }
     }
     writeln("Is the calculation correct? ", still_correct);
