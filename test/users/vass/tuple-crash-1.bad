@@ -5,5 +5,5 @@
  further instructions on filing bug reports.
 
  The error may be related to this location:
- $CHPL_HOME/modules/internal/ChapelBase.chpl:172
-$CHPL_HOME/modules/internal/ChapelBase.chpl:172: internal error: FUN2567 chpl Version 1.11.0.559e3c7
+ $CHPL_HOME/modules/internal/ChapelBase.chpl:180
+$CHPL_HOME/modules/internal/ChapelBase.chpl:180: internal error: FUN2567 chpl Version 1.11.0.559e3c7
