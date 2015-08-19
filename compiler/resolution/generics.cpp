@@ -253,7 +253,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
       call->insertAtTail(member);
     else
 #if HILDE_MM
-      call->insertAtTail(tmp);
+      call->insertAtTail(member);
 #else
 // Not needed (and undesirable) with AMM.
       // Otherwise, construct it.
