@@ -140,8 +140,13 @@ static int32_t _gasnete_strided_helper_nodst = (int32_t)sizeof(_gasnete_strided_
        int const _gasnete_strided_update_addr_init = (update_addr_init);                               \
        static int8_t _gasnete_strided_helper_havepartial = (int8_t)sizeof(_gasnete_strided_helper_havepartial)
 
-static int32_t * const _gasnete_strided_init = 
+#ifdef _CRAYC
+static int32_t * _gasnete_strided_init = NULL;
+#else
+static int32_t * const _gasnete_strided_init =
    (sizeof(_gasnete_strided_init)?NULL:(void*)&_gasnete_strided_init); /* NULL:NULL triggers gcc -O1 bug on sysx */
+#endif
+
 static int32_t _gasnete_strided_chunkcnt = (int32_t)sizeof(_gasnete_strided_chunkcnt);
 static int32_t const _gasnete_strided_addr_already_offset = (int32_t)sizeof(_gasnete_strided_addr_already_offset);
 static int32_t const _gasnete_strided_update_addr_init = (int32_t)sizeof(_gasnete_strided_update_addr_init);
