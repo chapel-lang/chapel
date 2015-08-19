@@ -12,11 +12,11 @@ echo TSTEPS=$TSTEPS
 chpl --fast jacobi-1d.chpl -o jacobi-1d
 
 for b in {2..20..1}
-	do
-		
-		echo "Block Cyclic (BC) bsize=$b"
-		./jacobi-1d -nl $nl --dist=BC --M=$M --TSTEPS=$TSTEPS --bsize=$b --messages --timeit
+  do
+    
+    echo "Block Cyclic (BC) bsize=$b"
+    ./jacobi-1d -nl $nl --dist=BC --M=$M --TSTEPS=$TSTEPS --bsize=$b --messages --timeit
 
-		echo "Block Cyclic with modulo unrolling (BCM) bsize=$b"
-		./jacobi-1d -nl $nl --dist=BCM --M=$M --TSTEPS=$TSTEPS --bsize=$b --messages --timeit
-	done
+    echo "Block Cyclic with modulo unrolling (BCM) bsize=$b"
+    ./jacobi-1d -nl $nl --dist=BCM --M=$M --TSTEPS=$TSTEPS --bsize=$b --messages --timeit
+  done

@@ -1812,7 +1812,7 @@ static FORCEINLINE int win32munmap(void* ptr, size_t size) {
 /* First, define CAS_LOCK and CLEAR_LOCK on ints */
 /* Note CAS_LOCK defined to return 0 on success */
 
-#if defined(__GNUC__)&& (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1))
+#if defined(__GNUC__)&& (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1)) && !defined(_CRAYC)
 #define CAS_LOCK(sl)     __sync_lock_test_and_set(sl, 1)
 #define CLEAR_LOCK(sl)   __sync_lock_release(sl)
 
