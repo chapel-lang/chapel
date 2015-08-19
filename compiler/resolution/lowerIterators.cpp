@@ -824,15 +824,45 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
   //
   Symbol* ret = iteratorFn->getReturnSymbol();
   Map<BlockStmt*,Symbol*> retReplacementMap;
+  Vec<Symbol*> ret_and_addr_ofs;
+
+  ret_and_addr_ofs.set_add(ret);
+
+  // Find any addr_ofs ret
+  for_vector(BaseAST, ast_, asts) {
+    if (SymExpr* se = toSymExpr(ast_)) {
+      if (se->var == ret) {
+        // Make a note of an addr_of call in case it is used in a subsequent
+        // assignment.
+        // This matches an expression like this:
+        //       ('move' _ref_tmp_ ('addr of' newRet))
+        // and extracts _ref_tmp_ and adds it to ret_and_addr_ofs.
+        CallExpr* call = toCallExpr(se->parentExpr);
+        if (call && call->isPrimitive(PRIM_ADDR_OF)) {
+          CallExpr* parentCall = toCallExpr(call->parentExpr);
+          if (parentCall && parentCall->isPrimitive(PRIM_MOVE) ) {
+            Expr* to_add = parentCall->get(1);
+            SymExpr* to_add_se = toSymExpr(to_add);
+            if (to_add_se) {
+              ret_and_addr_ofs.set_add(to_add_se->var);
+            }
+          }
+        }
+      }
+    }
+  }
+
   // Walk all SymExprs in the function and select those that refer to ret (the
   // function return symbol).
   for_vector(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast)) {
-      if (se->var == ret) {
+      if (ret_and_addr_ofs.set_in(se->var)) {
 
         // Find the nearest enclosing block.
         BlockStmt* block = NULL;
-        for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
+        for (Expr* parent = se->parentExpr;
+             parent;
+             parent = parent->parentExpr) {
           block = toBlockStmt(parent);
           if (block)
             break;
@@ -843,32 +873,40 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
         // than) the scope in which the RVV is declared, replace it with a
         // localized variable.
         if (block != ret->defPoint->parentExpr) {
-          // Use a cached symbol if there is one.
-          if (Symbol* repl = retReplacementMap.get(block)) {
-            se->var = repl;
-          }
-          // Otherwise, create a new return symbol and insert it at the head of
-          // the enclosing block.  See Note #1 regarding memory management.
-          else {
-            SET_LINENO(se);
-            Symbol* newRet = newTemp("newRet", ret->type);
-            newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
-            block->insertAtHead(new DefExpr(newRet));
-            se->var = newRet;
-            retReplacementMap.put(block, newRet);
+          // Replace se->var with newRet, but not if se->var is a
+          // result of addr_of.
+          if( se->var == ret ) {
+            // Use a cached symbol if there is one.
+            if (Symbol* repl = retReplacementMap.get(block)) {
+              se->var = repl;
+            }
+            // Otherwise, create a new return symbol and insert it at the head
+            // of the enclosing block.  See Note #1 regarding memory management.
+            else {
+              SET_LINENO(se);
+              Symbol* newRet = newTemp("newRet", ret->type);
+              newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
+              block->insertAtHead(new DefExpr(newRet));
+              se->var = newRet;
+              retReplacementMap.put(block, newRet);
+            }
           }
 
           // If the se is the target of an assignment, then remove the
           // assignment call and replace it with a MOVE.
-          // This does not handle the case where the LHS is already a
-          // reference; is that needed?
+          // This handles LHS already being a reference with the
+          // ret_and_addr_ofs set computed above and by always
+          // using 'repl' as the destination for PRIM_MOVE.
+
           CallExpr* call = toCallExpr(se->parentExpr);
           if (call && call->isResolved() &&
               !strcmp(call->isResolved()->name, "="))
           {
             SET_LINENO(call);
             Expr* rhs = call->get(2);
-            call->replace(new CallExpr(PRIM_MOVE, se->copy(), rhs->copy()));
+            Symbol* repl = retReplacementMap.get(block);
+            INT_ASSERT(repl);
+            call->replace(new CallExpr(PRIM_MOVE, repl, rhs->copy()));
           }
         }
       }
