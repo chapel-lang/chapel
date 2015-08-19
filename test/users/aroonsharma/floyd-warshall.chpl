@@ -5,10 +5,10 @@ use Time;
 use CommDiagnostics;
 
 /****************************
-	printMatrices: Set to false if you don't want to see the matrices printed
-		Default = false
-	N: size (square) of the matrix
-		Default = 128
+  printMatrices: Set to false if you don't want to see the matrices printed
+    Default = false
+  N: size (square) of the matrix
+    Default = 64
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -17,7 +17,7 @@ config var timeit = false;
 config var messages = false;
 config var printMatrices: bool = false;
 config var dist: string = "C";
-config var N: int = 128;
+config var N: int = 64;
 
 /* Initializes a matrix based on a distribution */
 proc initialize_matrix(distribution, n_dim: int) {
@@ -53,20 +53,20 @@ proc print_matrix(A: [], n_dim: int) {
 
 /* The process which runs the benchmark */
 proc kernel_fw(dist_square, n_dim: int) {
-	var still_correct = true;
+  var still_correct = true;
     var t:Timer;
-	
-	if messages {
-		resetCommDiagnostics();
-		startCommDiagnostics();
-	}
-	
+  
+  if messages {
+    resetCommDiagnostics();
+    startCommDiagnostics();
+  }
+  
     /******* Start the timer: this is where we do work *******/
-	if timeit {
-		t = new Timer();
-		t.start();
-	}
-	
+  if timeit {
+    t = new Timer();
+    t.start();
+  }
+  
     var path = initialize_matrix(dist_square, n_dim);
 
     for k in 1..n_dim {
@@ -80,57 +80,57 @@ proc kernel_fw(dist_square, n_dim: int) {
             }
         }
     }
-	
+  
     /******* End the timer *******/
-	if timeit {
-	    t.stop();
-		writeln("took ", t.elapsed(), " seconds");
-	}
-	
-	//Print out communication counts (gets and puts)
-	if messages {
-		stopCommDiagnostics();	
-		var messages=0;
-		var coms=getCommDiagnostics();
-		for i in 0..numLocales-1 {
-			messages+=coms(i).get:int;
-			messages+=coms(i).put:int;
-		}
-		writeln('message count=', messages);	
-	}
+  if timeit {
+      t.stop();
+    writeln("took ", t.elapsed(), " seconds");
+  }
+  
+  //Print out communication counts (gets and puts)
+  if messages {
+    stopCommDiagnostics();  
+    var messages=0;
+    var coms=getCommDiagnostics();
+    for i in 0..numLocales-1 {
+      messages+=coms(i).get:int;
+      messages+=coms(i).put:int;
+    }
+    writeln('message count=', messages);  
+  }
     
     if (printMatrices) {
         writeln("path:");
         print_matrix(path, n_dim);
         writeln();
     }
-	
-	//confirm correctness of calculation
-	if correct {
-		//Matrices and vectors to test correctness of calculation
-	    var pathTest = initialize_matrix({1..n_dim,1..n_dim}, n_dim);
-		
-	    for k in 1..n_dim {
-	        forall (i, j) in {1..n_dim,1..n_dim} {
-	            var temp = pathTest[k, j];
-	            forall (a, b) in zip(pathTest[1..i, k], pathTest[1..i, j]) {
-	                var tempSum = a + temp;
-	                if (tempSum < b) {
-	                    b = tempSum;
-	                }  
-	            }
-	        }
-	    }
-		
-		for ii in 1..n_dim {
-			for jj in 1..n_dim {
-				still_correct &&= path[ii,jj] == pathTest[ii,jj];
-			}
-		}
-		writeln("Is the calculation correct? ", still_correct);
-		writeln("fw computation complete.");
-	}
-	
+  
+  //confirm correctness of calculation
+  if correct {
+    //Matrices and vectors to test correctness of calculation
+      var pathTest = initialize_matrix({1..n_dim,1..n_dim}, n_dim);
+    
+      for k in 1..n_dim {
+          forall (i, j) in {1..n_dim,1..n_dim} {
+              var temp = pathTest[k, j];
+              forall (a, b) in zip(pathTest[1..i, k], pathTest[1..i, j]) {
+                  var tempSum = a + temp;
+                  if (tempSum < b) {
+                      b = tempSum;
+                  }  
+              }
+          }
+      }
+    
+    for ii in 1..n_dim {
+      for jj in 1..n_dim {
+        still_correct &&= path[ii,jj] == pathTest[ii,jj];
+      }
+    }
+    writeln("Is the calculation correct? ", still_correct);
+    writeln("fw computation complete.");
+  }
+  
 }
 
 proc main() {
