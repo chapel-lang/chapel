@@ -851,6 +851,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
       }
     }
   }
+  // TODO - check for multiple definitions for one of the addr_of symbols. 
 
   // Walk all SymExprs in the function and select those that refer to ret (the
   // function return symbol).
