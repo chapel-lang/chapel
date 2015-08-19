@@ -21,7 +21,7 @@
 <p>
 <em>chplvis</em> is a tool to help the Chapel program visualize their
 Chapel program's tasks and communication between locales.  Using the
-standard module <em>VisualDebug</em>, the programer controls what part
+standard module <em>VisualDebug</em>, the programmer controls what part
 of their program generates information for chplvis.  During the run of
 a program using the <em>VisualDebug</em> module, data files are
 created that are used as input for <em>chplvis</em>.  This document
@@ -80,7 +80,7 @@ for each of the locales and named <em>E1-n</em> where <em>n</em> is
 replaced with the locale number, a number from 0 to 5.  Once this
 directory is created, one can run chplvis as <em>chplvis E1</em> or
 simply <em>chplvis</em> and then opening the file <em>E1/E1-0</em>
-from the <em>file/open</em> menu.  The resulting diplay is:
+from the <em>file/open</em> menu.  The resulting display is:
 </p>
 <img src="E1.png" style="margin:10px; border: 2px solid black;">
 <p>
@@ -131,7 +131,7 @@ CPU and clock time overhead.)
 </p>
 <p>
 Clicking on the red part of the line between locale 0 and locale 1
-will procduce a window that looks like:
+will produce a window that looks like:
 </p>
 <img src="E1-C1.0.png" style="margin:10px; border: 2px solid black;">
 <p>
@@ -207,7 +207,7 @@ The initial display of <em>chplvis</em> shows data for the entire run.
 </p>
 <img src="E2-1.png" style="margin:10px; border: 2px solid black;">
 <p>
-There is now a new menu called <em>Tags</em> that refelcts the
+There is now a new menu called <em>Tags</em> that reflects the
 <em>tagVdebug()</em> calls in the program.  Selecting the tags menu
 gives the following display:
 </p>
@@ -219,7 +219,7 @@ different tag.  It is possible that this menu could be very long and
 require scrolling to see all menu options.  There are two special
 tags in this menu, <em>All</em> and <em>Start</em>.   <em>All</em> shows the
 initial display for the entire run and <em>Start</em> shows the tasks and
-communitation only between the <em>startVdebug("E2");</em> call and the
+communication only between the <em>startVdebug("E2");</em> call and the
 first call to <em>tagVdebug()</em>, in this case, <em>tagVdebug("writeln 1")</em>.
 </p>
 <p>
@@ -242,7 +242,7 @@ You should be able to immediately see that
   </li>
 </ul>
 Compare the results of this first <em>forall</em> loop with the loop
-in the second computation step, taged <em>step 2</em>.
+in the second computation step, tagged <em>step 2</em>.
 </p>
 <img src="E2-5.png" style="margin:10px; border: 2px solid black;">
 <p>
