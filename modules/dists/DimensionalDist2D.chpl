@@ -283,7 +283,7 @@ proc DimensionalDist2D.checkInvariants(): void {
 }
 
 proc DimensionalDist2D.dsiClone(): this.type {
-  _traceddd("DimensionalDist2D.dsiClone");
+  //_traceddd("DimensionalDist2D.dsiClone");
   checkInvariants();
 
   // do this simple thing, until we find out that we need something else
@@ -296,7 +296,7 @@ proc DimensionalDist2D.dsiClone(): this.type {
 proc DimensionalDist2D.dsiSupportsPrivatization() param return true;
 
 proc DimensionalDist2D.dsiGetPrivatizeData() {
-  _traceddd(this, ".dsiGetPrivatizeData");
+  //_traceddd(this, ".dsiGetPrivatizeData");
 
   const di1pd = if di1.dsiSupportsPrivatization1d()
     then di1.dsiGetPrivatizeData1d()
@@ -311,7 +311,7 @@ proc DimensionalDist2D.dsiGetPrivatizeData() {
 }
 
 proc DimensionalDist2D.dsiPrivatize(privatizeData) {
-  _traceddd(this, ".dsiPrivatize on ", here.id);
+  //_traceddd(this, ".dsiPrivatize on ", here.id);
 
   // ensure we get a local copy of targetLocales
   // todo - provide the following as utilty functions (for domains, arrays)
@@ -499,7 +499,7 @@ proc chpl__autoDestroy(x: DimensionalDom) {
 proc DimensionalDom.dsiSupportsPrivatization() param return true;
 
 proc DimensionalDom.dsiGetPrivatizeData() {
-  _traceddd(this, ".dsiGetPrivatizeData");
+  //_traceddd(this, ".dsiGetPrivatizeData");
 
   const dom1pd = if dom1.dsiSupportsPrivatization1d()
     then dom1.dsiGetPrivatizeData1d()
@@ -512,7 +512,7 @@ proc DimensionalDom.dsiGetPrivatizeData() {
 }
 
 proc DimensionalDom.dsiPrivatize(privatizeData) {
-  _traceddd(this, ".dsiPrivatize on ", here.id);
+  //_traceddd(this, ".dsiPrivatize on ", here.id);
 
   var privdist = chpl_getPrivatizedCopy(objectType = this.dist.type,
                                         objectPid  = privatizeData(1));
@@ -563,7 +563,7 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
 }
 
 proc DimensionalDom.dsiGetReprivatizeData() {
-  _traceddd(this, ".dsiGetReprivatizeData");
+  //_traceddd(this, ".dsiGetReprivatizeData");
 
   const dom1rpd = if dom1.dsiSupportsPrivatization1d()
     then dom1.dsiGetReprivatizeData1d()
@@ -576,7 +576,7 @@ proc DimensionalDom.dsiGetReprivatizeData() {
 }
 
 proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
-  _traceddd(this, ".dsiReprivatize on ", here.id);
+  //_traceddd(this, ".dsiReprivatize on ", here.id);
 
   compilerAssert(this.rank == other.rank &&
                  this.idxType == other.idxType &&
@@ -626,8 +626,8 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
                                           param stridable: bool)
 //  : DimensionalDom(rank, idxType, stridable, this.type, ...)
 {
-  _traceddd(this, ".dsiNewRectangularDom ",
-           (rank, typeToString(idxType), stridable));
+  //_traceddd(this, ".dsiNewRectangularDom ",
+  //         (rank, typeToString(idxType), stridable));
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank:c_string, " dimensions");
@@ -681,7 +681,7 @@ proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
 
 // not part of DSI
 proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
-  _traceddd(this, ".dsiSetIndices", newRanges);
+  //_traceddd(this, ".dsiSetIndices", newRanges);
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got a domain with ", rank, " dimensions");
@@ -710,14 +710,14 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId)
 
   myStorageDom = {myRange1, myRange2};
 
-  _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId,
-            "  storage ", myStorageDom);
+  //_traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId,
+  //          "  storage ", myStorageDom);
 }
 
 proc DimensionalDom.dsiGetIndices(): rank * range(idxType,
                                                  BoundedRangeType.bounded,
                                                  stridable) {
-  _traceddd(this, ".dsiGetIndices");
+  //_traceddd(this, ".dsiGetIndices");
   return whole.dims();
 }
 
@@ -734,8 +734,8 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
                                                  BoundedRangeType.bounded,
                                                                 stridable))
 {
-  _traceddd(this, ".dsiBuildRectangularDom ",
-           (rank, typeToString(idxType), stridable), ranges);
+  //_traceddd(this, ".dsiBuildRectangularDom ",
+  //         (rank, typeToString(idxType), stridable), ranges);
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
@@ -807,13 +807,13 @@ proc chpl__autoDestroy(x: DimensionalArr) {
 proc DimensionalArr.dsiSupportsPrivatization() param return true;
 
 proc DimensionalArr.dsiGetPrivatizeData() {
-  _traceddd(this, ".dsiGetPrivatizeData");
+  //_traceddd(this, ".dsiGetPrivatizeData");
 
   return (dom.pid, allocDom.pid, localAdescs);
 }
 
 proc DimensionalArr.dsiPrivatize(privatizeData) {
-  _traceddd(this, ".dsiPrivatize on ", here.id);
+  //_traceddd(this, ".dsiPrivatize on ", here.id);
 
   const idDom = privatizeData(1);
   const idAllocDom = privatizeData(2);
@@ -861,7 +861,7 @@ proc DimensionalArr.isAlias
 proc DimensionalDom.dsiBuildArray(type eltType)
   : DimensionalArr(eltType, this.type, this.type)
 {
-  _traceddd(this, ".dsiBuildArray");
+  //_traceddd(this, ".dsiBuildArray");
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
@@ -882,8 +882,8 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 //== dsiAccess
 
 proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
-  _traceddc(traceDimensionalDist || traceDimensionalDistDsiAccess,
-            this, ".dsiAccess", indexx);
+  //_traceddc(traceDimensionalDist || traceDimensionalDistDsiAccess,
+  //          this, ".dsiAccess", indexx);
 
   if !isTuple(indexx) || indexx.size != 2 then
     compilerError("DimensionalDist2D presently supports only indexing with",
@@ -901,8 +901,8 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
 //== writing
 
 proc DimensionalArr.dsiSerialWrite(f: Writer): void {
-  _traceddd(this, ".dsiSerialWrite on ", here.id,
-            if this.isAlias then "  (alias)" else "");
+  //_traceddd(this, ".dsiSerialWrite on ", here.id,
+  //          if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
   iter iHelp(param d) {
@@ -947,7 +947,7 @@ proc DimensionalArr.dsiSerialWrite(f: Writer): void {
 /// slicing, reindexing, rank change, reallocation //////////////////////////
 
 proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
-  _traceddd(this, ".dsiSlice of ", this.dom.whole, " with ", sliceDef.whole);
+  //_traceddd(this, ".dsiSlice of ", this.dom.whole, " with ", sliceDef.whole);
 
 //writeln("slicing DimensionalArr ", this.dom.dsiDims(), "  with DimensionalDom ", sliceDef.dsiDims());
 
@@ -1037,7 +1037,7 @@ proc DimensionalArr.dsiPostReallocate() {
 //== serial iterator - domain
 
 iter DimensionalDom.these() {
-  _traceddd(this, ".serial iterator");
+  //_traceddd(this, ".serial iterator");
   for ix in whole do
     yield ix;
 }
@@ -1046,7 +1046,7 @@ iter DimensionalDom.these() {
 //== leader iterator - domain
 
 iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
-  _traceddd(this, ".leader");
+  //_traceddd(this, ".leader");
   assert(rank == 2);
 
   const maxTasks = dist.dataParTasksPerLocale;
@@ -1123,9 +1123,9 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
              ( (parDim !=1 || !dom1.dsiSingleTaskPerLocaleOnly1d()) &&
                (parDim !=2 || !dom2.dsiSingleTaskPerLocaleOnly1d()) ));
 
-      if numTasks == 0 then
-        _traceddc(traceDimensionalDist || traceDimensionalDistIterators,
-                  "  leader on ", here.id, " ", lls, " - no tasks");
+      //if numTasks == 0 then
+      //  _traceddc(traceDimensionalDist || traceDimensionalDistIterators,
+      //            "  leader on ", here.id, " ", lls, " - no tasks");
 
       const followDummy: (locDdesc.doml1.dsiMyDensifiedRangeType1d(dom1),
                           locDdesc.doml2.dsiMyDensifiedRangeType1d(dom2));
@@ -1139,8 +1139,8 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           for r2 in locDdesc.doml2.dsiMyDensifiedRangeForSingleTask1d(dom2) do
           {
             const follow: followT = (r1, r2);
-            _traceddc(traceDimensionalDistIterators,
-                      "  leader on ", lls, " single task -> ", follow);
+            //_traceddc(traceDimensionalDistIterators,
+            //          "  leader on ", lls, " single task -> ", follow);
             yield follow;
           }
 
@@ -1190,8 +1190,8 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
             for r2 in iter1dCheck(2, dom2, locDdesc.doml2, myDims(2)) do
             {
               const follow: followT = (r1, r2);
-              _traceddc(traceDimensionalDistIterators, "  leader on ", lls,
-                        " task ", taskid, "/", numTasks, " -> ", follow);
+              //_traceddc(traceDimensionalDistIterators, "  leader on ", lls,
+              //          " task ", taskid, "/", numTasks, " -> ", follow);
 
               yield follow;
             }
@@ -1205,7 +1205,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 //== follower iterator - domain
 
 iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  _traceddd(this, ".follower on ", here.id, "  got ", followThis);
+  //_traceddd(this, ".follower on ", here.id, "  got ", followThis);
 
   // This is pre-defined by DSI, so no need to consult
   // the dimension specifiers.
@@ -1219,8 +1219,8 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 
 // note: no 'on' clauses - they not allowed by the compiler
 iter DimensionalArr.these() ref {
-  _traceddd(this, ".serial iterator",
-            if this.isAlias then "  (alias)" else "");
+  //_traceddd(this, ".serial iterator",
+  //          if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
   if this.isAlias {
@@ -1255,8 +1255,8 @@ iter DimensionalArr.these() ref {
           // Could cache locAdesc like for the follower iterator,
           // but that's less needed here.
           const locAdesc = this.localAdescs[l1,l2];
-          _traceddc(traceDimensionalDistIterators,
-                    "  locAdesc", (l1,l2), " on ", locAdesc.locale);
+          //_traceddc(traceDimensionalDistIterators,
+          //          "  locAdesc", (l1,l2), " on ", locAdesc.locale);
           for i2 in r2 do
             yield locAdesc.myStorageArr(i1, i2);
         }
@@ -1274,8 +1274,8 @@ iter DimensionalArr.these(param tag: iterKind) where tag == iterKind.leader {
 //== follower iterator - array   (somewhat similar to the serial iterator)
 
 iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
-  _traceddd(this, ".follower on ", here.id, "  got ", followThis,
-            if this.isAlias then "  (alias)" else "");
+  //_traceddd(this, ".follower on ", here.id, "  got ", followThis,
+  //          if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
   // Convert the followThis ranges to user index space.
@@ -1312,8 +1312,8 @@ iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
           lastl1 = l1;
           lastl2 = l2;
           lastLocAdesc = this.localAdescs[l1,l2];
-          _traceddc(traceDimensionalDistIterators,
-                    "  locAdesc", (l1,l2), " on ", lastLocAdesc.locale);
+          //_traceddc(traceDimensionalDistIterators,
+          //          "  locAdesc", (l1,l2), " on ", lastLocAdesc.locale);
         }
 
 //writeln("DimensionalArr follower on ", here.id, "  l=(", l1, ",", l2, ")  i=(", i1, ",", i2, ")");
