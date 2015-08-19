@@ -8,15 +8,16 @@ proc make(i:int) {
 }
 
 
-var A = for i in 1..4 do make(i);
-
-proc myiter() {
-  for r in A do yield r;
+iter myiter() {
+  yield make(1);
+  yield make(2);
 }
 
 
-for (i,r) in zip(1..4, myiter()) {
+var i = 1;
+for r in myiter() {
   assert(r.x == i);
+  i += 1;
 }
 
 verify();

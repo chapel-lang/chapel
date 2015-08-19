@@ -8,10 +8,8 @@ proc make(i:int) {
 }
 
 
-var A = for i in 1..4 do make(i);
-
-proc myiter() {
-  for r in A do yield r;
+iter myiter() {
+  yield make(1);
 }
 
 

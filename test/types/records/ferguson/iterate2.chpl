@@ -7,11 +7,8 @@ proc make(i:int) {
   return ret;
 }
 
-
-var A = for i in 1..4 do make(i);
-
-proc myiter() : R {
-  for r in A do yield r;
+iter myiter() : R {
+  yield make(1);
 }
 
 
