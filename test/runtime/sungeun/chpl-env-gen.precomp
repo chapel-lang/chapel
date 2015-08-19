@@ -14,7 +14,7 @@ testname = sys.argv[1]
 genfile = testname+'.test.gen.c'
 with open(genfile, 'w') as f:
     for key,val in chpl_env.items():
-        key_val = key+'_'+val.upper()
+        key_val = key+'_'+val.replace('-', '_').upper()
         f.write('#ifndef %s\n'%(key_val))
         f.write('#error "%s undefined or does not match runtime definition"\n'%(val))
         f.write('#endif\n')
