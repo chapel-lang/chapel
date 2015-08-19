@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:678: warning: type domain(1,int(64),false) does not currently support noinit, using default initialization
+$CHPL_HOME/modules/internal/ChapelArray.chpl:672: warning: type domain(1,int(64),false) does not currently support noinit, using default initialization
 {1..5}
