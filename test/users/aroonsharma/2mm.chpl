@@ -13,7 +13,7 @@ use CommDiagnostics;
   beta: contant by which to multiply the E matrix entries by
     Default = 1
   size: size (square) of the matrices
-    Default = 128
+    Default = 32
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -23,7 +23,7 @@ config var messages = false;
 config var printMatrices: bool = false;
 config var alpha: int = 1;
 config var beta: int = 1;
-config var size: int = 128;
+config var size: int = 32;
 config var dist: string = "C";
 
 /* Map the distribution according to user input. Currently not used */

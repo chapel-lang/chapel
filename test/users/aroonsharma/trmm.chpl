@@ -8,7 +8,7 @@ use CommDiagnostics;
   printData: Set to false if you don't want to see the arrays printed
     Default = false
   Dim: dimension (square) of the distribution 
-    Default = 128
+    Default = 64
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -18,7 +18,7 @@ config var messages = false;
 config var printData: bool = false;
 config var dist: string = "C";
 
-config var Dim: int = 128;
+config var Dim: int = 64;
 
 config var alpha: int = 323412;
 

@@ -7,9 +7,9 @@ use CommDiagnostics;
 /****************************
     Dimensions are set up to be M x N. 
     M: 1st dimension
-        Default = 128
+        Default = 32
   N: 2nd dimension 
-    Default = 128
+    Default = 32
 
   printData: Set to false if you don't want to see the data printed
     Default = false
@@ -19,8 +19,8 @@ use CommDiagnostics;
 config var correct = false;
 config var timeit = false;
 config var messages = false;
-config var M: int = 128;
-config var N: int = 128;
+config var M: int = 32;
+config var N: int = 32;
 
 config var printData: bool = false;
 config var dist: string = "C";

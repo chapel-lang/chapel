@@ -8,11 +8,11 @@ use CommDiagnostics;
     Dimensions are set up by M x N x P. If the data structure is 2D, then M x N. 
     If the data structue is 1D, then M.
     M: 1st dimension
-        Default = 128
+        Default = 64
   N: 2nd dimension 
-    Default = 128
+    Default = 64
     P: 3rd dimension
-        Default = 128
+        Default = 64
     
   printData: Set to false if you don't want to see the data printed
     Default = false
@@ -25,9 +25,9 @@ config var messages = false;
 config var printData: bool = false;
 config var dist: string = "C";
 
-config var M: int = 128;
-config var N: int = 128;
-config var P: int = 128;
+config var M: int = 64;
+config var N: int = 64;
+config var P: int = 64;
 
 const mui: int = 2341;
 const ch: int = 42;

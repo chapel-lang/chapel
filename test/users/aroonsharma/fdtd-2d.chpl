@@ -7,9 +7,9 @@ use CommDiagnostics;
 /****************************
     Dimensions are set up to be M x N. 
     M: 1st dimension
-        Default = 128
+        Default = 64
   N: 2nd dimension 
-    Default = 128
+    Default = 64
 
     TMAX: The total number of iterations
         Default = 50
@@ -22,8 +22,8 @@ use CommDiagnostics;
 config var correct = false;
 config var timeit = false;
 config var messages = false;
-config var M: int = 128;
-config var N: int = 128;
+config var M: int = 64;
+config var N: int = 64;
 
 config var TMAX: int = 50;
 

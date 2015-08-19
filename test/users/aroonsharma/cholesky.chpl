@@ -8,7 +8,7 @@ use CommDiagnostics;
   printMatrices: Set to false if you don't want to see the matrices printed
     Default = false
   N: size (square) of the matrix 
-    Default = 128
+    Default = 64
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -17,7 +17,7 @@ config var timeit = false;
 config var messages = false;
 config var printMatrices: bool = false;
 config var dist: string = "C";
-config var N: int = 128;
+config var N: int = 64;
 
 /* Initializes a matrix based on a distribution */
 /* Matrix will be n_dim * identity matrix to make sure 
