@@ -6,7 +6,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="string-as-rec-linux64"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="str-as-rec-linux64"
 
 git checkout string-as-rec
 
