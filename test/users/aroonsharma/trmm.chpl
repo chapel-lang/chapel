@@ -5,10 +5,10 @@ use Time;
 use CommDiagnostics;
 
 /****************************
-	printData: Set to false if you don't want to see the arrays printed
-		Default = false
-	Dim: dimension (square) of the distribution 
-		Default = 128
+  printData: Set to false if you don't want to see the arrays printed
+    Default = false
+  Dim: dimension (square) of the distribution 
+    Default = 128
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -49,21 +49,21 @@ proc within_epsilon(a: real, b: real)
 
 /* The process which runs the benchmark */
 proc kernel_trmm(dist, dim: int) {
-	var still_correct = true;
+  var still_correct = true;
     var t:Timer;
-	
-	if messages {
-		resetCommDiagnostics();
-		startCommDiagnostics();
-	}
-	
+  
+  if messages {
+    resetCommDiagnostics();
+    startCommDiagnostics();
+  }
+  
     /******* Start the timer: this is where we do work *******/
-	if timeit {
-		t = new Timer();
-		t.start();
-	}
-	
-	
+  if timeit {
+    t = new Timer();
+    t.start();
+  }
+  
+  
     var A = initialize_matrix(dist, dim);
     var B = initialize_matrix(dist, dim);
 
@@ -74,46 +74,46 @@ proc kernel_trmm(dist, dim: int) {
         }
         B[i,j] += (+ reduce temp);
     }
-	
+  
     /******* End the timer *******/
-	if timeit {
-	    t.stop();
-		writeln("took ", t.elapsed(), " seconds");
-	}
-	
-	//Print out communication counts (gets and puts)
-	if messages {
-		stopCommDiagnostics();	
-		var messages=0;
-		var coms=getCommDiagnostics();
-		for i in 0..numLocales-1 {
-			messages+=coms(i).get:int;
-			messages+=coms(i).put:int;
-		}
-		writeln('message count=', messages);	
-	}
-	
-	if correct {
-	    var ATest = initialize_matrix({1..dim, 1..dim}, dim);
-	    var BTest = initialize_matrix({1..dim, 1..dim}, dim);
+  if timeit {
+      t.stop();
+    writeln("took ", t.elapsed(), " seconds");
+  }
+  
+  //Print out communication counts (gets and puts)
+  if messages {
+    stopCommDiagnostics();  
+    var messages=0;
+    var coms=getCommDiagnostics();
+    for i in 0..numLocales-1 {
+      messages+=coms(i).get:int;
+      messages+=coms(i).put:int;
+    }
+    writeln('message count=', messages);  
+  }
+  
+  if correct {
+      var ATest = initialize_matrix({1..dim, 1..dim}, dim);
+      var BTest = initialize_matrix({1..dim, 1..dim}, dim);
 
-	    for (i,j) in {1..dim, 1..dim} {
-	        var tempTest: [1..i] real = 0;
-	        forall (a,b,c) in zip(ATest[i,1..i], BTest[j,1..i],1..) {
-	            tempTest[c] = alpha * a * b;
-	        }
-	        BTest[i,j] += (+ reduce tempTest);
-	    }
-		
-		for ii in 1..dim {
-			for jj in 1..dim {
-				still_correct &&=
+      for (i,j) in {1..dim, 1..dim} {
+          var tempTest: [1..i] real = 0;
+          forall (a,b,c) in zip(ATest[i,1..i], BTest[j,1..i],1..) {
+              tempTest[c] = alpha * a * b;
+          }
+          BTest[i,j] += (+ reduce tempTest);
+      }
+    
+    for ii in 1..dim {
+      for jj in 1..dim {
+        still_correct &&=
                                   within_epsilon(B[ii,jj], BTest[ii,jj]);
-			}
-		}
-		writeln("Is the calculation correct? ", still_correct);
-		writeln("trmm computation complete.");
-	}
+      }
+    }
+    writeln("Is the calculation correct? ", still_correct);
+    writeln("trmm computation complete.");
+  }
     
     if (printData) {
         print_matrix(B, dim);

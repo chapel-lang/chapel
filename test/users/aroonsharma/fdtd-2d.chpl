@@ -8,14 +8,14 @@ use CommDiagnostics;
     Dimensions are set up to be M x N. 
     M: 1st dimension
         Default = 128
-	N: 2nd dimension 
-		Default = 128
+  N: 2nd dimension 
+    Default = 128
 
     TMAX: The total number of iterations
         Default = 50
 
-	printData: Set to false if you don't want to see the data printed
-		Default = false
+  printData: Set to false if you don't want to see the data printed
+    Default = false
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -66,21 +66,21 @@ proc print_2D(A: [], m_dim: int, n_dim: int) {
 
 /* The process which runs the benchmark */
 proc kernel_fdtd2d(dist_1D, dist_2D, m_dim: int, n_dim: int) {
-	var still_correct = true;
+  var still_correct = true;
     var t:Timer;
-	
-	if messages {
-		resetCommDiagnostics();
-		startCommDiagnostics();
-	}
-	
+  
+  if messages {
+    resetCommDiagnostics();
+    startCommDiagnostics();
+  }
+  
     /******* Start the timer: this is where we do work *******/
-	if timeit {
-		t = new Timer();
-		t.start();
-	}
-	
-	var X = initialize_2D(dist_2D, 0, m_dim);
+  if timeit {
+    t = new Timer();
+    t.start();
+  }
+  
+  var X = initialize_2D(dist_2D, 0, m_dim);
     var Y = initialize_2D(dist_2D, 1, n_dim);
     var Z = initialize_2D(dist_2D, 2, m_dim);
     
@@ -109,55 +109,55 @@ proc kernel_fdtd2d(dist_1D, dist_2D, m_dim: int, n_dim: int) {
     }
     
     /******* End the timer *******/
-	if timeit {
-	    t.stop();
-		writeln("took ", t.elapsed(), " seconds");
-	}
-	
-	//Print out communication counts (gets and puts)
-	if messages {
-		stopCommDiagnostics();	
-		var messages=0;
-		var coms=getCommDiagnostics();
-		for i in 0..numLocales-1 {
-			messages+=coms(i).get:int;
-			messages+=coms(i).put:int;
-		}
-		writeln('message count=', messages);	
-	}
-	
-	var Xtest = initialize_2D({1..M, 1..M}, 0, m_dim);
+  if timeit {
+      t.stop();
+    writeln("took ", t.elapsed(), " seconds");
+  }
+  
+  //Print out communication counts (gets and puts)
+  if messages {
+    stopCommDiagnostics();  
+    var messages=0;
+    var coms=getCommDiagnostics();
+    for i in 0..numLocales-1 {
+      messages+=coms(i).get:int;
+      messages+=coms(i).put:int;
+    }
+    writeln('message count=', messages);  
+  }
+  
+  var Xtest = initialize_2D({1..M, 1..M}, 0, m_dim);
     var Ytest = initialize_2D({1..M, 1..M}, 1, n_dim);
     var Ztest = initialize_2D({1..M, 1..M}, 2, m_dim);
 
     var fictTest = initialize_1D({1..TMAX});
-	
-	if correct {
-	    for t in 1..TMAX {
-	        Ytest[1,..] = fictTest[t];
+  
+  if correct {
+      for t in 1..TMAX {
+          Ytest[1,..] = fictTest[t];
         
-	        forall(a,b,c) in zip(Xtest(x_stencil), Ztest(x_stencil), Ztest(x_stencil_offset)) {
-	            a -= (0.5 * (b-c));
-	        }
+          forall(a,b,c) in zip(Xtest(x_stencil), Ztest(x_stencil), Ztest(x_stencil_offset)) {
+              a -= (0.5 * (b-c));
+          }
         
-	        forall(a,b,c) in zip (Ytest(y_stencil), Ztest(y_stencil), Ztest(y_stencil_offset)) {
-	            a -= (0.5 * (b-c));
-	        }
+          forall(a,b,c) in zip (Ytest(y_stencil), Ztest(y_stencil), Ztest(y_stencil_offset)) {
+              a -= (0.5 * (b-c));
+          }
         
-	        forall(a,b,c,d,e) in zip(Ztest(z_stencil), Xtest(z_stencil_yOffset), Xtest(z_stencil), 
-	            Ytest(z_stencil_xOffset), Ytest(z_stencil)) {
-	            a -= (0.7 * (b + d - (c + e)));
-	        }
-	    }
-		
-		for ii in 1..m_dim {
-			for jj in 1..m_dim {
-				still_correct &&= (Z[ii,jj] == Ztest[ii,jj]) && (Y[ii,jj] == Ytest[ii,jj]) && (X[ii,jj] == Xtest[ii,jj]);
-			}
-		}
-		writeln("Is the computation correct? ", still_correct);
-		writeln("fd2d-2d computation complete");
-	}
+          forall(a,b,c,d,e) in zip(Ztest(z_stencil), Xtest(z_stencil_yOffset), Xtest(z_stencil), 
+              Ytest(z_stencil_xOffset), Ytest(z_stencil)) {
+              a -= (0.7 * (b + d - (c + e)));
+          }
+      }
+    
+    for ii in 1..m_dim {
+      for jj in 1..m_dim {
+        still_correct &&= (Z[ii,jj] == Ztest[ii,jj]) && (Y[ii,jj] == Ytest[ii,jj]) && (X[ii,jj] == Xtest[ii,jj]);
+      }
+    }
+    writeln("Is the computation correct? ", still_correct);
+    writeln("fd2d-2d computation complete");
+  }
  
     if (printData) {
         writeln("X:");
@@ -166,7 +166,7 @@ proc kernel_fdtd2d(dist_1D, dist_2D, m_dim: int, n_dim: int) {
         print_2D(Y, m_dim, n_dim);
         writeln("Z:");
         print_2D(Z, m_dim, n_dim);
-		
+    
         writeln("Xtest:");
         print_2D(Xtest, m_dim, n_dim);
         writeln("Ytest:");
