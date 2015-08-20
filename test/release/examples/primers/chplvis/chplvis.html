@@ -40,7 +40,7 @@ compile properly.)  To get the most out of this primer, you should
 compile and run the example programs and examine
 the <em>VisualDebug</em> results with <em>chplvis</em>.  The graphics
 in this primer were produced on a system using the <em>fifo</em> package
-instead of <em>qthreads</em> for the tasking layer.   If you use
+instead of the default, <em>qthreads</em>, for the tasking layer.   If you use
 <em>qthreads</em>, your task count may differ from the examples.
 </p>
 
@@ -90,7 +90,7 @@ not show in the main window.)
 </p>
 <h4>chplvis Elements</h4>
 <ul>
-<li><em>Locale</em> is represented by a box.  The initial display
+<li>A <em>Locale</em> is represented by a box.  The initial display
 draws the color of the locale to represent the number of tasks run
 at that locale.   For example 1, we can see that locale 0 has the
 most tasks and we expect that to be 13 since that is the maximum
@@ -107,9 +107,9 @@ communication <em>into locale 1</em> from locale 0.   <em>Note:</em>
 If two locales do not communicate, no line is drawn between them.
 If communication is only one way, the communication color for
 <em>no communication</em> is gray.</li>
-<li><em>Data menu</em> controls what data is used for display
-colors.   This initial data is for number of tasks for locales
-and number of communications for the communication links.
+<li>The <em>Data menu</em> controls what data is used for display
+colors.   This initial data is number of tasks for locales
+and number of communications calls for the communication links.
 For locales, one can select number of tasks, CPU time at the locale
 or clock time at the locale.  Clock time is normally very close to
 equal across all locales.  For the communication links, one can
@@ -136,17 +136,17 @@ will produce a window that looks like:
 <img src="E1-C1.0.png" style="margin:10px; border: 2px solid black;">
 <p>
 It is important to notice the direction of the "arrow" in the header
-for the windows.   This is for communication from locale 1 to locale 0.
-The total communication was 12.  It is further broken out into three
-components:
+for the windows.  This is for communication from locale 1 to locale 0.
+The total number of communication calls was 12.  It is further broken
+out into three components:
 <ul>
-  <li> <em>Gets:</em> This is a communication initiated by locale 0 to
+  <li> <em>Gets:</em> This is a communication call initiated by locale 0 to
 get a data located on locale 1.</li>
-  <li> <em>Puts:</em> This is a communication initiated by <em>locale 1</em>
+  <li> <em>Puts:</em> This is a communication call initiated by <em>locale 1</em>
 to put data from locale 1 onto locale 0.</li>
   <li> <em>Forks:</em> This where <em>locale 1</em> starts a task running
 on locale 0.  As part of the task start, a block of data is sent to locale 0
-as an argument to the task.  This data is considered a communication
+as an argument to the task.  This data is considered a communication call
 by <em>chplvis</em></li>
 </ul>
 
@@ -201,7 +201,7 @@ proc main() {
 }
 </pre>
 <p>
-Note that the <em>startVdebug("E2");</em> is places after the declarations
+Note that the <em>startVdebug("E2");</em> is placed after the declarations
 so that tasks and communication for the declarations are not included.
 The initial display of <em>chplvis</em> shows data for the entire run.
 </p>
@@ -274,18 +274,8 @@ tag.
 
 
 <h4>Final Comments</h4>
-Here is a list of items not covered above:
+The following items are not covered above:
 <ul>
-<li>
-  The <em>Data</em> menu allows you to change the display to show
-different data.  Standard data is the number of tasks and the number
-of communications.  The maximum values are show in the information
-bar.  Instead of task, the <em>Data</em> menu allows one to select
-<em>CPU time</em> or <em>Clock time</em>.   Instead of number of
-communications, the <em>Data</em> menu allows one to select the 
-number of bytes of data sent.
-  </li>
-
 <li>By clicking on the locale box or a communication link, a window
     with more detailed information is presented.  To make it easier
     to close those windows, a second click on the same location will
