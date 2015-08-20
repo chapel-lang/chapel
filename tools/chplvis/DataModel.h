@@ -37,6 +37,9 @@
 // both this class and runtime/src/chpl-visual-debug.c need to be modified to
 // write (chpl-visual-debug.c) and read (this class) in binary.
 
+// Support Structs used by DataModel
+
+// Used to track tasks,  each tag/locale has a map of taskData
 struct taskData {
   E_task *taskRec;
   E_begin_task *beginRec;
@@ -45,6 +48,7 @@ struct taskData {
   taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL) {};
 };
 
+// Used to track a locale,  each tag has an array of locales
 struct localeData {
   double userCpu;
   double sysCpu;
@@ -60,6 +64,7 @@ struct localeData {
                  clockTime(0), refTime(0), numTasks(0) {};
 };
 
+// Used to track communication,  each tag has a 2D array of commData, one for each direction
 struct commData {
   long numComms;
   long numGets;
@@ -70,73 +75,51 @@ struct commData {
   commData() :  numComms(0), numGets(0), numPuts(0), numForks(0), commSize(0) {};
 };
 
+// Primary data structure built by reading the data files dumped by using VisualDebug.chpl
+
 class DataModel {
-
- private:
-
-   typedef std::list<Event*>::iterator evItr;
-
-   int LoadFile (const char *filename, int index, double seq);
-
-   void newList ();
 
  public:
 
-  static const int TagALL = -2, TagStart = -1;
+  // Forward declaration
+  struct tagData;
 
-  // Constructor
+ private:
 
-  DataModel() {
-     numLocales = -1;
-     numTags = 0;
-     tagList = NULL;
-     curEvent = theEvents.begin();
-  }
+  typedef std::list<Event*>::iterator evItr;
 
-  // Destructor
-  ~DataModel() {
-    if (tagList != NULL)
-      delete [] tagList;
-  }
-
-  //  LoadData loads data from a collection of files
-  //  filename of the form  basename-n, where n can
-  //  be a multi-digit number
-  //  Returns 1 if successful, 0 if not
-
-  int LoadData (const char *filename);
-
-  //  Number of locales found in loading files
-
-  int NumLocales () { return numLocales; }
-
-  int NumEvents () { return theEvents.size(); }
-
-  Event * getFirstEvent()
-      {
-        curEvent = theEvents.begin();
-        if (curEvent == theEvents.end())
-          return NULL;
-        return *curEvent;
-      }
+  int numLocales;
+  int numTags;
   
-  Event * getNextEvent()
-      {
-        curEvent++; 
-        if (curEvent == theEvents.end())
-          return NULL;
-        return *curEvent;
-      }
-
+  // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
+  tagData **tagList;  
+  
+  std::list<Event*> theEvents;
+  std::list<Event*>::iterator curEvent;
+  
+  // Utility routines
+  
+  int LoadFile (const char *filename, int index, double seq);
+  
+  void newList ();
+  
+ public:
+  
+  // Tag array has two extra entries, one for "All" and
+  // one for Start (startVdebug() call) to the first tag.
+  // Tags are numbered 0 to numTags-1
+  
+  static const int TagALL = -2, TagStart = -1;
+  
   // Tags and manipulation of them
-
-  struct tagData {
+  
+  struct tagData { // a class with public elements the default
     friend class DataModel;
     const long numLocales;
     std::string name;
     localeData *locales;
     commData **comms;
-
+    
     // Local Maxes
     double maxCpu;
     double maxClock;
@@ -144,8 +127,8 @@ class DataModel {
     long   maxComms;
     long   maxSize;
     
-  tagData(long numLoc) : numLocales(numLoc), name(""),
-                         maxCpu(0), maxClock(0), maxTasks(0), maxComms(0), maxSize(0) {
+    tagData(long numLoc) : numLocales(numLoc), name(""),
+      maxCpu(0), maxClock(0), maxTasks(0), maxComms(0), maxSize(0) {
       locales = new localeData[numLocales];
       comms = new  commData * [numLocales];
       for (int i = 0; i < numLocales; i++ )
@@ -164,55 +147,53 @@ class DataModel {
     }
 
     private:
-    evItr firstTag;
-
+      evItr firstTag;
   };
+  // End of struct tagData
 
-  int NumTags () { return numTags; }
-
-  std::string getTagName (const int tagNo) 
-      {
-        if (tagNo < 0 || tagNo >= numTags) 
-          return "";
-        else
-          return tagList[tagNo-TagALL]->name;
-      }
-
-  Event * getTagNo(int n)
-      {
-        printf ("getTagNo %d: ", n);
-
-        printf ("maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-                tagList[n+2]->maxComms, tagList[n+2]->maxSize, tagList[n+2]->maxTasks,
-                tagList[n+2]->maxClock, tagList[n+2]->maxCpu);
-
-	if (n >= 0 && n < numTags) {
-	  curEvent = tagList[n+2]->firstTag;
-	} else {
-          curEvent = theEvents.begin();
-        }
-	//(*curEvent)->print();
-	return *curEvent;
-      }
-
-  tagData * getTagData(int tagno)
-      {
-        if (tagno < TagALL || tagno >= numTags) 
-          return NULL;
-        return tagList[tagno-TagALL];
-      }
-
- private:
-
-  int numLocales;
-  int numTags;
+  // DataModel methods
   
-  // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
-  tagData **tagList;  
-
-  std::list<Event*> theEvents;
-  std::list<Event*>::iterator curEvent;
-
+  int NumTags () { return numTags; }
+  
+  std::string getTagName (const int tagNo) {
+    if (tagNo < 0 || tagNo >= numTags) 
+      return "";
+    else
+      return tagList[tagNo-TagALL]->name;
+  }
+  
+  tagData * getTagData(int tagno) {
+    if (tagno < TagALL || tagno >= numTags) 
+      return NULL;
+    return tagList[tagno-TagALL];
+  }
+  
+  // Constructor for DataModel
+  
+  DataModel() {
+    numLocales = -1;
+    numTags = 0;
+    tagList = NULL;
+    curEvent = theEvents.begin();
+  }
+  
+  // Destructor for DataModel
+  ~DataModel() {
+    if (tagList != NULL)
+      delete [] tagList;
+  }
+  
+  //  LoadData loads data from a collection of files
+  //  filename of the form  basename-n, where n can
+  //  be a multi-digit number
+  //  Returns 1 if successful, 0 if not
+  
+  int LoadData (const char *filename);
+  
+  //  Number of locales found in loading files
+  
+  int NumLocales () { return numLocales; }
+  
 };
 
 #endif
