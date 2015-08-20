@@ -39,6 +39,10 @@ proc initialize_1D(distribution, adder: int, divider: int) {
     return array;
 }
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 /* Prints out the 1D structure passed in */
 proc print_1D(A: []) {
     writeln(A);
@@ -105,7 +109,7 @@ proc kernel_jacobi1d(dist_1D, m_dim: int) {
       }
     
     for ii in 1..m_dim {
-      still_correct &&= Atest[ii] == A[ii];
+      still_correct &&= within_epsilon(Atest[ii], A[ii]);
     }
     writeln("Is the calculation correct? ", still_correct);
     writeln("jacobi-1d computation complete");

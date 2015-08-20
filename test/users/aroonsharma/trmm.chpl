@@ -41,11 +41,9 @@ proc print_matrix(A: [], dim: int) {
     }
 }
 
-proc within_epsilon(a: real, b: real)
-{
-  return fabs(a-b) < 0.00001;
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
 }
-
 
 /* The process which runs the benchmark */
 proc kernel_trmm(dist, dim: int) {
@@ -107,8 +105,7 @@ proc kernel_trmm(dist, dim: int) {
     
     for ii in 1..dim {
       for jj in 1..dim {
-        still_correct &&=
-                                  within_epsilon(B[ii,jj], BTest[ii,jj]);
+        still_correct &&= within_epsilon(B[ii,jj], BTest[ii,jj]);
       }
     }
     writeln("Is the calculation correct? ", still_correct);
