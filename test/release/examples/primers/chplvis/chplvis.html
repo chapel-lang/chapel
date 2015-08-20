@@ -248,15 +248,19 @@ in the second computation step, tagged <em>step 2</em>.
 <p>
 The difference between the two loops is the domain used.   <em>Domain</em>
 is not a distributed domain, so the computation remains on locale 0. 
-<em>mapDomain</em> is a distributed domain, so the computation is 
-distributed.
+The <em>mapDomain</em> is a distributed domain, so the computation is 
+distributed.  One needs to be careful in specifying these kind of loops
+to make sure you use a distributed domain if you are operating on
+distributed data and you want distributed computation.  This is 
+where <em>chplvis</em> can quickly let you know if you used the wrong
+domain in your <em>forall</em> loop.
 </p>
 <p>
 Now, consider the <em>writeln 1</em> tag display.
 </p>
 <img src="E2-4.png" style="margin:10px; border: 2px solid black;">
 <p>
-Notice the gray communication links.  This means there was not data
+Notice the gray communication links.  This means there was no data
 flow from locale 0 to the other locales.   The gray links was provided
 to make it easy to visually see the corresponding locale.
 </p>
