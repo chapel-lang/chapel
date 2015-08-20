@@ -215,7 +215,7 @@ gives the following display:
 <p>
 Notice that the tag names are in parentheses.  If a <em>tagVdebug()</em>
 call is executed more than once, each execution will end up with a
-different tag.  It is possible that this menu could be very long and
+different tag number.  It is possible that this menu could be very long and
 require scrolling to see all menu options.  There are two special
 tags in this menu, <em>All</em> and <em>Start</em>.   <em>All</em> shows the
 initial display for the entire run and <em>Start</em> shows the tasks and
@@ -225,7 +225,7 @@ first call to <em>tagVdebug()</em>, in this case, <em>tagVdebug("writeln 1")</em
 <p>
 Selecting the tag menu option <em>Start</em> displays data for all
 code between <em>startVdebug("E2")</em> and <em>tagVdebug("writeln 1")</em>.
-<em>chplvis</em> shows the following:
+The display for the <em>Start</em> tag looks like:
 </p>
 <img src="E2-3.png" style="margin:10px; border: 2px solid black;">
 <p>
@@ -242,7 +242,10 @@ You should be able to immediately see that
   </li>
 </ul>
 Compare the results of this first <em>forall</em> loop with the loop
-in the second computation step, tagged <em>step 2</em>.
+in the second computation step, tagged <em>step 2</em>.  Notice,
+<em>step 2</em> does not include the second <em>writeln</em> because
+of the call to <em>pauseVdebug()</em>.   That suspends collecting
+task and communication data until the next <em>tagVdebug()</em> call.
 </p>
 <img src="E2-5.png" style="margin:10px; border: 2px solid black;">
 <p>
