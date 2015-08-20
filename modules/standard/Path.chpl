@@ -88,9 +88,11 @@ proc file.realPath(out error: syserr) : string
     error = EBADF;
     return "";
   }
-  error = chpl_fs_realpath_file(_file_internal, res);
-  var len = res.length;
-  return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
+  else {
+    error = chpl_fs_realpath_file(_file_internal, res);
+    var len = res.length;
+    return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
+  }
 }
 
 /* Determines the canonical path referenced by the :type:`~IO.file` record

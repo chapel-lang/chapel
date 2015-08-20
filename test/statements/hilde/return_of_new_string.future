@@ -1,0 +1,24 @@
+bug: autoDestroy is incorrectly placed when a conditional clause ends in a return and there is an out argument
+
+Summary: Unnamed temporararies should be placed in scopes that are do not encompass the
+target of the goto used to represent a flow-altering statement.
+
+Reaction: What???
+
+Explanation: In the code following the "if" clause in fubar, there is an unnamed temporary
+that receives the result of the call to get_literal().  This unnamed temporary is then
+copied into the return-value variable by assignment (because the return type of fubar is
+stated explicitly and the RVV is therefore default-initialized).  
+
+Since the unnamed temporary owns the value returned by get_literal() and ownership is not
+transferred by assignment, the unnamed temporary must be destroyed before it goes out of
+scope.  In the current implementation, the autoDestroy gets inserted after the _end_fubar:
+label that is used to implement the embedded return.
+
+In the case that cond == true when fubar is invoked, the unnamed temporary is never
+initialized.  (The code that calls get_literal() and moves the result into that unnamed
+temporary is skipped by the goto at the end of the "if" clause.)  The autoDestroy is still
+encountered, so the program crashes.
+
+The basic correctness requirement is that the autoDestroy be inserted at the right place
+-- in this case, before the _end_fubar label and not after it.
