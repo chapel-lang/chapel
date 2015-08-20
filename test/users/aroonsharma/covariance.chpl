@@ -31,6 +31,10 @@ proc initialize_matrix(distribution, m_dim: int) {
     return matrix;
 }
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 /* Prints out the matrix passed in */
 proc print_matrix(A: [], m_dim: int, n_dim: int) {
     for i in 1..m_dim {
@@ -142,7 +146,7 @@ proc kernel_covariance(dist_square, dist_linear, m_dim: int, n_dim: int) {
     
     for ii in 1..m_dim {
       for jj in 1..m_dim {
-        still_correct &&= symmat[ii,jj] == symmatTest[ii,jj];
+        still_correct &&= within_epsilon(symmat[ii,jj], symmatTest[ii,jj]);
       }
     }
     writeln("Is the calculation correct? ", still_correct);

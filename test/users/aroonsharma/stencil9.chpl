@@ -12,6 +12,10 @@ config var timeit = false;
 config var messages = false;
 config var correct = false;
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
   var still_correct = true;
   var t: Timer;
@@ -21,7 +25,7 @@ proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
     const southWest = {2..n+1, 0..n-1}, south = {2..n+1, 1..n}, southEast = {2..n+1, 2..n+1};
 
     var A, B: [dist_big] real;
-  var Atest, Btest: [dom_big] real;
+    var Atest, Btest: [dom_big] real;
 
     A[  n/4+1,   n/4+1] =  1.0;
     A[3*n/4+1, 3*n/4+1] =  1.0;
@@ -110,7 +114,8 @@ proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
        } while (delta > epsilon);
      
       for ii in dom_big {
-        still_correct &&= A[ii]==Atest[ii] && B[ii]==Btest[ii];
+        still_correct &&= within_epsilon(A[ii], Atest[ii]) &&
+                          within_epsilon(B[ii], Btest[ii]);
       }
     writeln("it is correct? ", still_correct);
     writeln("stencil9 computation complete.");

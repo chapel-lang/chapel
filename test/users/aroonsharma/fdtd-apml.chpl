@@ -59,6 +59,10 @@ proc initialize_3D(distribution, adder_1: int, adder_2: int, divider: int) {
     return matrix;
 }
 
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
+}
+
 /* Prints out the 1D structure passed in */
 proc print_1D(A: []) {
     write("     ");
@@ -293,8 +297,10 @@ proc kernel_fdtdapml(dist_1D, dist_2D, dist_3D, m_dim: int, n_dim: int, p_dim: i
     for ii in 1..m_dim {
       for jj in 1..n_dim {
         for kk in 1..p_dim {
-          still_correct &&= (ExTest[ii,jj,kk] == Ex[ii,jj,kk]) && (EyTest[ii,jj,kk] == Ey[ii,jj,kk])
-                    && (HzTest[ii,jj,kk] == Hz[ii,jj,kk]) && (BzaTest[ii,jj,kk] == Bza[ii,jj,kk]);
+          still_correct &&= within_epsilon(ExTest[ii,jj,kk], Ex[ii,jj,kk]) &&
+                            within_epsilon(EyTest[ii,jj,kk], Ey[ii,jj,kk]) &&
+                            within_epsilon(HzTest[ii,jj,kk], Hz[ii,jj,kk]) &&
+                            within_epsilon(BzaTest[ii,jj,kk], Bza[ii,jj,kk]);
         }
       }
     }
