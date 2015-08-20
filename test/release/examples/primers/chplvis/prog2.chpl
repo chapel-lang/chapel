@@ -1,4 +1,6 @@
 // Example 2 of use of VisualDebug module and chplvis tool.
+// Read the file chplvis.html with a browser to understand
+// this program.
 
 use BlockDist;
 use VisualDebug;
