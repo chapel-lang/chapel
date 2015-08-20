@@ -88,6 +88,9 @@ proc file.realPath(out error: syserr) : string
     error = EBADF;
     return "";
   }
+  // There is a bug in how AMM deals with unnamed temporaries.
+  // an explicit "else" clause was inserted as a workaround.
+  // See test/statements/hilde/return_of_new_string.chpl
   else {
     error = chpl_fs_realpath_file(_file_internal, res);
     var len = res.length;
