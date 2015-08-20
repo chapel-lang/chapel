@@ -258,7 +258,7 @@ module String {
 
       const remoteThis = this.locale.id != chpl_nodeID;
       if remoteThis {
-        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, this.len.safeCast(size_t));
+        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, ret.len.safeCast(size_t));
       } else {
         ret.buff[0] = this.buff[i-1];
       }
@@ -893,18 +893,23 @@ module String {
       if s.locale.id == chpl_nodeID {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
-        ret.buff = chpl_mem_alloc(s._size.safeCast(size_t),
-                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
-        memmove(ret.buff, s.buff, s.len.safeCast(size_t));
-        ret.buff[s.len] = 0;
+        if s.owned {
+          ret.buff = chpl_mem_alloc(s._size.safeCast(size_t),
+                                    CHPL_RT_MD_STR_COPY_DATA): bufferType;
+          memmove(ret.buff, s.buff, s.len.safeCast(size_t));
+          ret.buff[s.len] = 0;
+        } else {
+          ret.buff = s.buff;
+        }
+        ret.owned = s.owned;
       } else {
         if debugStrings then
           chpl_debug_string_print("  remote initCopy: "+s.locale.id:c_string);
         ret.buff = copyRemoteBuffer(s.locale.id, s.buff, slen);
+        ret.owned = true;
       }
       ret.len = slen;
       ret._size = slen+1;
-      ret.owned = true;
     }
 
     if debugStrings then
@@ -929,24 +934,31 @@ module String {
     if debugStrings then
       chpl_debug_string_print("in initCopy()");
 
+    // This pragma may be unnecessary.
+    pragma "no auto destroy"
     var ret: string;
     const slen = s.len; // cache the remote copy of len
     if slen != 0 {
       if s.locale.id == chpl_nodeID {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
-        ret.buff = chpl_mem_alloc(s._size.safeCast(size_t),
-                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
-        memmove(ret.buff, s.buff, s.len.safeCast(size_t));
-        ret.buff[s.len] = 0;
+        if s.owned {
+          ret.buff = chpl_mem_alloc(s._size.safeCast(size_t),
+                                    CHPL_RT_MD_STR_COPY_DATA): bufferType;
+          memmove(ret.buff, s.buff, s.len.safeCast(size_t));
+          ret.buff[s.len] = 0;
+        } else {
+          ret.buff = s.buff;
+        }
+        ret.owned = s.owned;
       } else {
         if debugStrings then
           chpl_debug_string_print("  remote initCopy: "+s.locale.id:c_string);
         ret.buff = copyRemoteBuffer(s.locale.id, s.buff, slen);
+        ret.owned = true;
       }
       ret.len = slen;
       ret._size = slen+1;
-      ret.owned = true;
     }
 
     if debugStrings then
