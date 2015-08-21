@@ -4,7 +4,7 @@ proc myfunction() {
 
   var tup: (R,R);
 
-  on Locales[1] {
+  on Locales[numLocales-1] {
     var localTup: (R,R);
     
     localTup(1).init(x = 50);

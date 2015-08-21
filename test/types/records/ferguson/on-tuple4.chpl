@@ -8,7 +8,7 @@ proc myfunction() {
   tup(2).init(x = 40);
   tup(2).verify();
 
-  on Locales[1] {
+  on Locales[numLocales-1] {
     var localTup : (R,R) = tup;
 
     localTup(1).verify();

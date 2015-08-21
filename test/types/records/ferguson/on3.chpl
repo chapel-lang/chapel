@@ -4,7 +4,7 @@ proc myfunction() {
 
   var rec: R;
 
-  on Locales[1] {
+  on Locales[numLocales-1] {
     var localRec: R;
     
     localRec.init(x = 50);

@@ -8,7 +8,7 @@ proc myfunction() {
   tup(2).init(x = 40);
   tup(2).verify();
 
-  on Locales[1] {
+  on Locales[numLocales-1] {
     tup(1).verify();
     tup(2).verify();
     assert(tup(1).x == 20);

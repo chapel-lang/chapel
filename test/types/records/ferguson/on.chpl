@@ -7,9 +7,7 @@ proc myfunction() {
 
   rec.verify();
 
-  on Locales[1] {
-    // This should check that the C pointer
-    // inside rec points to rec.x (on Locale 0)
+  on Locales[numLocales-1] {
     rec.verify();
     assert(rec.x == 20);
   }
