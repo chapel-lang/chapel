@@ -4,6 +4,7 @@ module foo {
   class helper {
     var y: int;
   }
+  pragma "ignore noinit"
   record Zed {
     var x: helper;
 
