@@ -14,7 +14,6 @@ record R {
 proc ref R.init(x) {
   assert(this.home == this.locale);
   this.x = x;
-  assert(canary == 42);
 }
 
 proc ref R.increment() {

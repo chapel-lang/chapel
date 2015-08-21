@@ -2,3 +2,4 @@
 -M must-init-record
 # --no-warnings to avoid whole domain assignment serialized
 -M tracking-record -M tracking  --no-warnings
+-M assert-locale-record
