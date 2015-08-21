@@ -56,7 +56,7 @@ module ChapelLocale {
 
     proc id : int return chpl_id();  // just the node part
     proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
-    proc name return chpl_name();
+    proc name return chpl_name() : string;
 
     // This many tasks are running on this locale.
     //

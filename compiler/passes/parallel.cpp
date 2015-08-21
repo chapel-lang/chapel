@@ -775,7 +775,10 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !isSyncType(def->sym->type)))) {
+            !isSyncType(def->sym->type) &&
+            // Dont try to broadcast string literals, they'll get fixed in
+            // another manner
+            (def->sym->type != dtString)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {
@@ -1258,32 +1261,5 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
     wideRefMap.put(refType, wide);
   }
   return wide;
-}
-
- 
-//
-// Returns true if the type t is a reference to a wide string
-//
-// This is used to handle cases where wide strings are passed to
-// functions that require local arguments.  If strings were a little
-// better behaved, it arguably wouldn't/shouldn't be required.
-//
-bool isRefWideString(Type* t) {
-  if (isReferenceType(t)) {
-    AggregateType* ct = toAggregateType(t);
-    INT_ASSERT(ct);
-    Symbol* valField = ct->getField("_val", false);
-    INT_ASSERT(valField);
-    return isWideString(valField->type);
-  }
-  return false;
-}
-
-bool isWideString(Type* t) {
-  if (!requireWideReferences()) return false; // no wide string type will exist if wide references weren't created
-  INT_ASSERT(wideStringType); // should only be called after it exists!
-  if (t == NULL) return false;
-  if( t == wideStringType ) return true;
-  return false;
 }
 

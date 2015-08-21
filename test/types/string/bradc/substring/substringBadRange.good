@@ -1,2 +1,2 @@
-str.substring(13..14) = m
-str.substring(13..16) = m
+str[12..13] = lm
+substringBadRange.chpl:4: error: halt reached - range out of bounds of string

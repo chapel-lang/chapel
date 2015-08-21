@@ -90,7 +90,7 @@ c_string_copy chpl_gmp_mpz_get_str(int base, mpz_t x)
 {
   size_t len = mpz_sizeinbase(x, base);
 
-  char* str = (char*)chpl_mem_calloc(len+1, CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
+  char* str = (char*)chpl_mem_calloc(1, len+1, CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
 
   mpz_get_str(str, base, x);
 

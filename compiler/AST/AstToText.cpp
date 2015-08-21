@@ -777,6 +777,8 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
         {
           char* ptr = imm;
 
+          if (var->immediate->string_kind == STRING_KIND_C_STRING)
+            *ptr++ = 'c';
           *ptr++ = '"';
           strcpy(ptr, var->immediate->v_string);
           ptr = strchr(ptr, '\0');

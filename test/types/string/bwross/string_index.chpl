@@ -1,38 +1,34 @@
 var s:string = "hello world";
 
-// string_index_of
-write(s.indexOf(" "), " ");
-write(s.indexOf("hello"), " ");
-write(s.indexOf("world"), " ");
-write(s.indexOf("nowhere"), " ");
-write(s.indexOf(s), " ");
-writeln(s.indexOf(""));
+// string.find
+write(s.find(" "), " ");
+write(s.find("hello"), " ");
+write(s.find("world"), " ");
+write(s.find("nowhere"), " ");
+write(s.find(s), " ");
+writeln(s.find(""));
+writeln();
 
-// string_select
-writeln(s.substring(..));
-writeln(s.substring(..5));
-writeln(s.substring(7..));
-writeln(s.substring(4..8));
-writeln(s.substring(-50..50));
-writeln(s.substring(-100..-50));
-writeln(s.substring(50..100));
+// string.this(range)
+writeln(s[..]);
+writeln(s[..5]);
+writeln(s[7..]);
+writeln(s[4..8]);
+writeln();
 
 // with stride
-writeln(s.substring(1..11 by 2));
-writeln(s.substring(1..11 by -1));
-writeln(s.substring(1..11 by -2));
-writeln(s.substring(1.. by 3));
-writeln(s.substring(2.. by 3));
-writeln(s.substring(-3.. by 3));
-writeln(s.substring(-1.. by 3));
-writeln(s.substring(-2.. by 3));
+writeln(s[1..11 by 2]);
+writeln(s[1..11 by -1]);
+writeln(s[1..11 by -2]);
+writeln(s[1.. by 3]);
+writeln(s[2.. by 3]);
+writeln();
 
-// string_index cases
-writeln(s.substring(99));
-writeln(s.substring(3));
-writeln(s.substring(-30));
+// string.this(uint)
+writeln(s[3]);
+writeln();
 
 // all together now!
-writeln(s.substring(1..s.indexOf(" ")),
-        "beautifu", s.substring(3),
-        s.substring(s.indexOf(" ")..));
+writeln(s[1..s.find(" ")],
+        "beautifu", s[3],
+        s[s.find(" ")..]);

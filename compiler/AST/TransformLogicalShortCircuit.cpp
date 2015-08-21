@@ -68,14 +68,14 @@ void TransformLogicalShortCircuit::exitCallExpr(CallExpr* call)
 
           if (isLogicalAnd)
           {
-            eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
+            eMsg = new_CStringSymbol("cannot promote short-circuiting && operator");
             ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                new CallExpr("isTrue", right),
                                new SymExpr(gFalse));
           }
           else
           {
-            eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
+            eMsg = new_CStringSymbol("cannot promote short-circuiting || operator");
             ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
                                new SymExpr(gTrue),
                                new CallExpr("isTrue", right));

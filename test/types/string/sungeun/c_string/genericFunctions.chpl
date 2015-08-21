@@ -11,9 +11,9 @@ var vs: string;
   }
 
   g("bye");
-  g(toString("bye"));
+  g("bye":string);
   g(s="bye");
-  g(s=toString("bye"));
+  g(s="bye":string);
   g(psl);
   g(cs);
   g(vs);
@@ -29,9 +29,9 @@ var vs: string;
   }
 
   f(int, 3, "bye");
-  f(int, 7, toString("bye"));
+  f(int, 7, "bye":string);
   f(s="bye", int, 5);
-  f(s=toString("bye"), int, 9);
+  f(s="bye":string, int, 9);
   f(int, 11, psl);
   f(int, 15, cs);
   f(int, 11, vs);
@@ -47,9 +47,9 @@ var vs: string;
   }
 
   f("bye", real);
-  f(toString("bye"), real);
+  f("bye":string, real);
   f(real, s="bye");
-  f(real, s=toString("bye"));
+  f(real, s="bye":string);
   f(psl, real);
   f(cs, real);
   f(vs, real);
@@ -96,7 +96,7 @@ var vs: string;
 
 {
   proc g(param s) {
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   g("bye");
@@ -104,9 +104,19 @@ var vs: string;
 }
 
 {
+  proc g(param s) {
+    checkType(c_string, s.type);
+  }
+
+  g(c"bye");
+  g(s=c"bye");
+}
+
+
+{
   proc f(type gtype, g, param s) {
     checkType(gtype, g.type);
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   f(int, 3, "bye");
@@ -116,7 +126,7 @@ var vs: string;
 {
   proc f(param s, type gtype, g = 3.14) {
     checkType(gtype, g.type);
-    checkType(c_string, s.type);
+    checkType(string, s.type);
   }
 
   f("bye", real);

@@ -110,6 +110,7 @@ insertLineNumber(CallExpr* call) {
     }
   } else if (fn->hasFlag(FLAG_EXTERN) ||
              !strcmp(fn->name, "chpl__heapAllocateGlobals") ||
+             !strcmp(fn->name, "chpl__initStringLiterals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
              !strcmp(fn->name, "chpl_gen_main") ||
              (mod->modTag == MOD_USER && 
@@ -129,7 +130,7 @@ insertLineNumber(CallExpr* call) {
       INT_ASSERT(var);
       INT_ASSERT(var->immediate);
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
-      call->insertAtTail(new_StringSymbol(astr("<command line setting of '",
+      call->insertAtTail(new_CStringSymbol(astr("<command line setting of '",
                                                var->immediate->v_string,
                                                "'>")));
     } else {
@@ -144,7 +145,7 @@ insertLineNumber(CallExpr* call) {
         call->insertAtTail(gCFile);
       } else {
         call->insertAtTail(new_IntSymbol(call->linenum()));
-        call->insertAtTail(new_StringSymbol(call->fname()));
+        call->insertAtTail(new_CStringSymbol(call->fname()));
       }
     }
   } else if (file) {

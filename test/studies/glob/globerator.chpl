@@ -21,12 +21,12 @@ iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false
             tx = wordexp_index(glb, i);
             if recursive {
                 if chpl_isdir(tx) == 1 {
-                    const pth = toString(tx) + "/";
+                    const pth = tx:string + "/";
                     /*writeln(pth);*/
                     for fl in glob(pattern, flags, expand, recursive, pth) do
                         yield fl;
-                } else yield toString(tx);
-            } else yield toString(tx);
+                } else yield tx:string;
+            } else yield tx:string;
         }
     } else { // else, use glob
         var glb:glob_t;
@@ -35,12 +35,12 @@ iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false
             tx = glob_index(glb, i);
             if recursive {
                 if chpl_isdir(tx) == 1 {
-                    const pth = toString(tx) + "/";
+                    const pth = tx:string + "/";
                     /*writeln(pth);*/
                     for fl in glob(pattern, flags, expand, recursive, pth) do
                         yield fl;
-                } else yield toString(tx);
-            } else yield toString(tx);
+                } else yield tx:string;
+            } else yield tx:string;
         }
     }
 }
@@ -54,13 +54,13 @@ where tag == iterKind.leader {
         err = chpl_wordexp(pattern.c_str(), flags:c_int, glb);
         // Make this spawn a task if we encounter a dir, else yield in parallel
         for i in 0..wordexp_num(glb) - 1 do 
-            yield toString(wordexp_index(glb, i));
+            yield wordexp_index(glb, i):string;
     } else { // else, use glob
         var glb:glob_t;
         // Make this spawn a task if we encounter a dir, else yield in parallel
         err = chpl_study_glob(pattern.c_str(), flags:c_int, glb);
         for i in 0..glob_num(glb) - 1 do 
-            yield toString(glob_index(glb, i));
+            yield glob_index(glb, i):string;
     }
 }
 

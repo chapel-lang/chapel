@@ -1,0 +1,56 @@
+123456890:
+    isUpper: false
+    isLower: false
+    isSpace: false
+    isAlpha: false
+    isDigit: true
+    isAlnum: true
+    isPrintable: true
+abcdefghijklmnopqrstuvwxyz:
+    isUpper: false
+    isLower: true
+    isSpace: false
+    isAlpha: true
+    isDigit: false
+    isAlnum: true
+    isPrintable: true
+ABCDEFGHIJKLMNOPQRSTUVWXYZ:
+    isUpper: true
+    isLower: false
+    isSpace: false
+    isAlpha: true
+    isDigit: false
+    isAlnum: true
+    isPrintable: true
+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:
+    isUpper: false
+    isLower: false
+    isSpace: false
+    isAlpha: true
+    isDigit: false
+    isAlnum: true
+    isPrintable: true
+123456890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:
+    isUpper: false
+    isLower: false
+    isSpace: false
+    isAlpha: false
+    isDigit: false
+    isAlnum: true
+    isPrintable: true
+|whitespace|:
+    isUpper: false
+    isLower: false
+    isSpace: true
+    isAlpha: false
+    isDigit: false
+    isAlnum: false
+    isPrintable: false
+hello, world!:
+    isTitle: false
+Hello, World!:
+    isTitle: true
+H Ello, World!:
+    isTitle: true
+HEllo, World!:
+    isTitle: false

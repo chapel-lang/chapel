@@ -1,7 +1,7 @@
 class C: Writer {
   var data: string;
   proc writeIt(s: string) {
-    data += s.substring(1);
+    data += s[1];
   }
   proc writeThis(x: Writer) {
     x.write(data);

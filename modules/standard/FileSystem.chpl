@@ -498,8 +498,9 @@ proc locale.cwd(out error: syserr): string {
     if (error != ENOERR) {
       ret = "";
     } else {
-      // This version of toString steals its operand.  No need to free.
-      ret = toString(tmp);
+      var tmp_len = tmp.length;
+      ret = new string(tmp:c_ptr(uint(8)), tmp_len, tmp_len,
+                       owned=true, needToCopy=false);
     }
   }
   return ret;
@@ -739,10 +740,9 @@ iter glob(pattern: string = "*"): string {
   use chpl_glob_c_interface;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
-  // TODO: Handle error cases better
+  const err = chpl_glob(pattern.c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   //
   // Use safeCast here, and then back again, in order to avoid conditional
   // in iterator in order to get better generated code, and to support
@@ -765,7 +765,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
   const err = chpl_glob(pattern:c_string, 0, glb);
   // TODO: Handle error cases better
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb).safeCast(int);
   forall i in 0..num-1 do
     yield chpl_glob_index(glb, i.safeCast(size_t)): string;
@@ -788,10 +788,9 @@ iter glob(pattern: string = "*", param tag: iterKind)
   use chpl_glob_c_interface;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
-  // TODO: Handle error cases better
+  const err = chpl_glob(pattern.c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   //
   // cast is used here to ensure we create an int-based leader
   //
@@ -814,10 +813,9 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
     compilerError("glob() iterator can only be zipped with 1D iterators");
   var r = followThis(1);
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
-  // TODO: Handle error cases better
+  const err = chpl_glob(pattern:c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb);
   if (r.high > num.safeCast(int)) then
     halt("glob() iterator zipped with something too big");
@@ -1002,12 +1000,12 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
   var dir: DIRptr;
   var ent: direntptr;
-  dir = opendir(path:c_string);
+  dir = opendir(path.c_str());
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = ent.d_name();
-      if (hidden || filename.substring(1) != '.') {
+      const filename = ent.d_name():string;
+      if (hidden || filename[1] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 

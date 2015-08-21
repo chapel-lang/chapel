@@ -236,7 +236,6 @@ TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtReal[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtImag[FLOAT_SIZE_NUM];
 TYPE_EXTERN Type* dtComplex[COMPLEX_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile;
 TYPE_EXTERN PrimitiveType* dtOpaque;
@@ -245,10 +244,8 @@ TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;
 
-// a fairly special wide type
-extern AggregateType* wideStringType;
-
 // Well-known types
+TYPE_EXTERN AggregateType* dtString;
 TYPE_EXTERN AggregateType* dtArray;
 TYPE_EXTERN AggregateType* dtReader;
 TYPE_EXTERN AggregateType* dtWriter;
@@ -270,6 +267,7 @@ TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 
 void     initRootModule();
+void     initStringLiteralModule();
 void     initPrimitiveTypes();
 DefExpr* defineObjectClass();
 void     initChplProgram(DefExpr* objectDef);
@@ -284,7 +282,6 @@ bool is_real_type(Type*);
 bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
-bool is_string_type(Type*);
 #define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
 int  get_width(Type*);
 bool isClass(Type* t);

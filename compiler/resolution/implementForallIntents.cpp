@@ -444,7 +444,7 @@ static void extractFromLeaderYield(CallExpr* lcCall, int ix,
   char buf[16];  sprintf(buf, "x%d", ix);
 
   lcCall->insertBefore("'move'(%S, '.v'(%S,%S))",
-                       dest, leadIdx, new_StringSymbol(buf));
+                       dest, leadIdx, new_CStringSymbol(buf));
 }
 
 static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,

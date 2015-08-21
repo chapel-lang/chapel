@@ -556,8 +556,8 @@ inline proc _cond_test(m: reMatch) return m.matched;
     :arg m: a match (e.g. returned by :proc:`regexp.search`)
     :returns: the portion of ``this`` referred to by the match
  */
-proc string.substring(m:reMatch) {
-  if m.matched then return this.substring(m.offset+1..#m.length);
+proc string.this(m:reMatch) {
+  if m.matched then return this[m.offset+1..#m.length];
   else return "";
 }
 
@@ -586,7 +586,7 @@ record regexp {
                regular expression
    */
   proc error():string {
-    return toString(qio_regexp_error(_regexp));
+    return qio_regexp_error(_regexp):string;
   }
 
   // note - more = overloads are below.
@@ -605,7 +605,7 @@ record regexp {
         captures[i] = m;
       } else {
         if m.matched {
-          captures[i] = text.substring(m):captures[i].type;
+          captures[i] = text[m]:captures[i].type;
         } else {
           var empty:captures[i].type;
           captures[i] = empty;
@@ -824,9 +824,9 @@ record regexp {
         splitend = endpos;
       }
 
-      if pos < endpos {
+      if pos < splitstart {
         // Yield splitted value
-        yield text.substring(pos+1..splitstart);
+        yield text[pos+1..splitstart];
       } else {
         yield "";
       }
@@ -834,10 +834,10 @@ record regexp {
       if got {
         // Yield capture groups
         for i in 1..ncaptures {
-          yield text.substring(new reMatch(
+          yield text[new reMatch(
                 !qio_regexp_string_piece_isnull(matches[i]),
                 matches[i].offset,
-                matches[i].len));
+                matches[i].len)];
         }
       }
 
@@ -926,14 +926,14 @@ record regexp {
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.c_str(), repl.length, text.c_str(), text.length, pos, endpos, global, replaced, replaced_len);
     }
-    const ret = toString(replaced);
+    const ret = replaced:string;
     return (ret, nreplaced);
   }
 
   /*
      Find matches to this regular expression and create a new string in which
      those matches are replaced by repl.
-     
+
      :arg repl: replace matches with this string
      :arg text: the text to search and replace within
      :type text: string
@@ -1018,7 +1018,7 @@ inline proc _cast(type t, x: regexp) where t == string {
   on x.home {
     var cs: c_string_copy;
     qio_regexp_get_pattern(x._regexp, cs);
-    pattern = toString(cs);
+    pattern = cs:string;
   }
   return pattern;
 }

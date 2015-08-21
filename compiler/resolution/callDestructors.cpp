@@ -53,8 +53,9 @@ static void cullAutoDestroyFlags()
       // for internally reference-counted types. (sandboxing)
       TypeSymbol* ts = ret->type->symbol;
       if (ts->hasFlag(FLAG_ARRAY) ||
-          ts->hasFlag(FLAG_DOMAIN))
+          ts->hasFlag(FLAG_DOMAIN)) {
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
       // Do we need to add other record-wrapped types here?  Testing will tell.
 
       // NOTE 1: When the value of a record field is established in a default
@@ -498,7 +499,7 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
         }
       }
     }
-  }            
+  }
 }
 
 
@@ -697,13 +698,6 @@ fixupDestructors() {
                 new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
-        } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-// Temporary expedient: Leak strings like crazy.
-//          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
-//          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-//          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-//            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-//          fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
         }
       }
 
