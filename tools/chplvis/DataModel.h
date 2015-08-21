@@ -93,7 +93,10 @@ class DataModel {
   
   // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
   tagData **tagList;  
-  
+
+  // Task Event (begin, end) timeline for task concurrency, one linear structure per locale
+  std::list<Event*> *taskTimeline;
+
   std::list<Event*> theEvents;
   std::list<Event*>::iterator curEvent;
   
@@ -126,9 +129,13 @@ class DataModel {
     long   maxTasks;
     long   maxComms;
     long   maxSize;
+
+    // task concurrency
+    long   runConc;
+    long   maxConc;
     
-    tagData(long numLoc) : numLocales(numLoc), name(""),
-      maxCpu(0), maxClock(0), maxTasks(0), maxComms(0), maxSize(0) {
+    tagData(long numLoc) : numLocales(numLoc), name(""),  maxCpu(0), maxClock(0),
+                           maxTasks(0), maxComms(0), maxSize(0), runConc(0), maxConc(0)  {
       locales = new localeData[numLocales];
       comms = new  commData * [numLocales];
       for (int i = 0; i < numLocales; i++ )
@@ -174,6 +181,7 @@ class DataModel {
     numLocales = -1;
     numTags = 0;
     tagList = NULL;
+    taskTimeline = NULL;
     curEvent = theEvents.begin();
   }
   
@@ -181,6 +189,8 @@ class DataModel {
   ~DataModel() {
     if (tagList != NULL)
       delete [] tagList;
+    if (taskTimeline != NULL)
+      delete [] taskTimeline;
   }
   
   //  LoadData loads data from a collection of files

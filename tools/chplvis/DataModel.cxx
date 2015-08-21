@@ -298,6 +298,17 @@ int DataModel::LoadData(const char * filename)
           if (curTag->maxClock < curTag->locales[curNodeId].clockTime) {
             curTag->maxClock = curTag->locales[curNodeId].clockTime;
           }
+          // Remove last task to with Begin Rec but no End Rec
+          {
+            std::map<long,taskData>::reverse_iterator it;
+            it = curTag->locales[curNodeId].tasks.rbegin();
+            while (it != curTag->locales[curNodeId].tasks.rend()) {
+              if ((*it).second.endRec == NULL && (*it).second.beginRec != NULL)
+                curTag->locales[curNodeId].tasks.erase((*it).first);
+              else 
+                it++;
+            }
+          }
           // For 2nd time through loop, do the same thing for All
           curTag = tagList[0];
         }
@@ -443,6 +454,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   int floc;        // Number of locales in the file
   int findex;      // current locale's index
   double fseq;
+  int vdbTid;
 
   int  nErrs = 0;
 
@@ -463,9 +475,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
   // User/System time variables 
   long u_sec, u_usec, s_sec, s_usec;
-  if (sscanf(line, "ChplVdebug: nodes %d id %d seq %lf %ld.%ld %ld.%ld %ld.%ld",
-                     &floc, &findex, &fseq, &e_sec, &e_usec, &u_sec, &u_usec, &s_sec, &s_usec)
-      != 9) {
+  if (sscanf(line, "ChplVdebug: nodes %d nid %d tid %d seq %lf %ld.%ld %ld.%ld %ld.%ld",
+             &floc, &findex, &vdbTdi, &fseq, &e_sec, &e_usec, &u_sec, &u_usec, &s_sec,
+             &s_usec)
+      != 10) {
     fprintf (stderr, "LoadData: incorrect data on first line of %s.\n",
              filename);
     fclose(data);
