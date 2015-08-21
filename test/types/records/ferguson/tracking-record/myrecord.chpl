@@ -20,8 +20,8 @@ record R {
   var c: C;
 }
 
-proc ref R.init(x) {
-  assert(x != 0);
+proc ref R.init(x:int, allow_zero:bool=false) {
+  if !allow_zero then assert(x != 0);
   this.x = x;
   this.c = new C(x = x, id = 1+c_counter.fetchAdd(1));
   trackAllocation(c, c.id);
@@ -82,7 +82,8 @@ proc chpl__autoCopy(arg: R) {
   pragma "no auto destroy"
   var ret: R;
 
-  ret.init(x = arg.x);
+  // allow copies of default initialized record
+  ret.init(x = arg.x, true);
 
   if debug {
     printf("leaving auto copy from arg.c=%p to ret.c=%p ", arg.c, ret.c);

@@ -11,8 +11,8 @@ record R {
 }
 
 
-proc ref R.init(x) {
-  assert(x != 0);
+proc ref R.init(x:int, allow_zero:bool=false) {
+  if !allow_zero then assert(x != 0);
   this.x = x;
   assert(canary == 42);
 }
@@ -50,7 +50,8 @@ proc chpl__autoCopy(arg: R) {
   pragma "no auto destroy"
   var ret: R;
 
-  ret.init(x = arg.x);
+  // allow copies of a default-initialized record.
+  ret.init(x = arg.x, true);
 
   if debug {
     writeln("leaving auto copy");

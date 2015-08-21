@@ -32,7 +32,7 @@ proc checkAllocations() {
   }
 
   if alloc_byid != free_byid {
-    writeln("alloc != free");
+    writeln("alloc != free - possibly a memory leak");
     var alloc_not_freed = alloc_byid - free_byid;
     writeln("allocated and not freed: ", alloc_not_freed);
     var freed_not_allocated = free_byid - alloc_byid;

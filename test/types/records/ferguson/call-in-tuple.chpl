@@ -20,7 +20,7 @@ proc myfunction() {
   var myvar2: R;
   myvar2.init(x = 40);
   myvar2.verify();
-  assert(myvar.x == 40);
+  assert(myvar2.x == 40);
 
 
   foo((myvar,myvar2));

@@ -31,7 +31,8 @@ proc R.R(x:int) {
 }
 */
 
-proc ref R.init(x = 0) {
+proc ref R.init(x:int, allow_zero:bool = false) {
+  if !allow_zero then assert(x != 0);
   this.x = x;
   set_self_ptr();
 }
@@ -66,7 +67,8 @@ proc chpl__autoCopy(arg: R) {
   pragma "no auto destroy"
   var ret: R;
 
-  ret.init(x = arg.x);
+  // allow copies of default initialized record
+  ret.init(x = arg.x, true);
 
   if debug then
     printf("leaving auto copy from %p to %p\n", arg.ptr_to_x, ret.ptr_to_x);

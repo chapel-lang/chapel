@@ -12,23 +12,21 @@ proc foo(inout rec: (R,R)) {
 
 proc myfunction() {
 
-  var myvar: R;
-  myvar.init(x = 20);
-  myvar.verify();
-  assert(myvar.x == 20);
+  var mytup: (R,R);
+  mytup(1).init(x = 20);
+  mytup(1).verify();
+  assert(mytup(1).x == 20);
 
-  var myvar2: R;
-  myvar2.init(x = 40);
-  myvar2.verify();
-  assert(myvar.x == 40);
+  mytup(2).init(x = 40);
+  mytup(2).verify();
+  assert(mytup(2).x == 40);
 
+  foo(mytup);
 
-  foo((myvar,myvar2));
-
-  myvar.verify();
-  assert(myvar.x == 21);
-  myvar2.verify();
-  assert(myvar2.x == 41);
+  mytup(1).verify();
+  assert(mytup(1).x == 21);
+  mytup(2).verify();
+  assert(mytup(2).x == 41);
 }
 
 myfunction();

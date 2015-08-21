@@ -13,12 +13,18 @@ proc myfunction() {
     localTup(2).verify();
 
     tup = localTup;
+
+    /*
+    tup(1).verify();
+    assert(tup(1).x == 50);
+    tup(2).verify();
+    assert(tup(2).x == 60);*/
   }
 
   tup(1).verify();
   assert(tup(1).x == 50);
   tup(2).verify();
-  assert(tup(2).x == 50);
+  assert(tup(2).x == 60);
 }
 
 myfunction();
