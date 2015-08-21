@@ -1,3 +1,0 @@
-bug: Homogenous tuples of arrays declared with a type result in null pointer dereference at runtime.
-
-We are trying to free the arrays, which were never allocated.
