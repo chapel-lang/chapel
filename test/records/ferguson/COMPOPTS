@@ -1,4 +1,0 @@
-#-M self-pointer-record
-#-M self-pointer-record --fast
--M tracking-record -M tracking
--M tracking-record -M tracking --fast
