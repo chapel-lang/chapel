@@ -433,13 +433,8 @@ sub find_subdirs {
         my $skipfilen = "$targetdir/$filen.skipif";
         if (-e "$skipfilen") {
             my $skip;
-            if (-x "$skipfilen") {
-                print "$skipfilen = " . `$skipfilen` if $debug;
-                $skip = `$skipfilen`;
-            } else {
-                print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
-                $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
-            }
+            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+            $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
             next if $skip > '0' or $skip =~ m/true/i;
         }
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
