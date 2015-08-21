@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+use Cwd 'abs_path';
+
 #
 # Set standard CHPL_* environment variables, if they are not already set.
 #
@@ -19,6 +21,19 @@ for my $line (@lines) {
 
 $envfile = $ARGV[0];
 
+#
+# If the envfile is executable, just execute it
+#
+if (-x "$envfile") {
+  $envfile = abs_path($envfile);
+  $execskiptest = `$envfile`;
+  print "$execskiptest";
+  exit("$?");
+}
+
+#
+# otherwise, process using special skipif language
+#
 open ENVFILE, "$envfile" or die "can't open $envfile $!";
 my @envlist = <ENVFILE>;
 close (ENVFILE);
