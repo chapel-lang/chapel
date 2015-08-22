@@ -1380,6 +1380,14 @@ for testname in testsrc:
             complogfile.write('%s'%(output))
             complogfile.close()
 
+            if systemPrediff:
+                sys.stdout.write('[Executing system-wide prediff]\n')
+                sys.stdout.flush()
+                subprocess.Popen([systemPrediff,
+                                  execname,complog,compiler,
+                                  ' '.join(envCompopts)+' '+compopts,
+                                  ' '.join(args)]).wait()
+
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')
                 sys.stdout.flush()
