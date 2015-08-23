@@ -269,20 +269,26 @@ volatile int chpl_qthread_done_initializing;
 #endif
 
 typedef struct {
+    c_string task_filename;
+    int task_lineno;
+    chpl_taskID_t id;
+    chpl_bool is_executeOn;
     c_sublocid_t requestedSubloc;  // requested sublocal for task
     chpl_task_prvData_t prvdata;
 } chpl_task_prvDataImpl_t;
 
 // Define PRV_DATA_IMPL_VAL to set up a chpl_task_prvData_t.
-#define PRV_DATA_IMPL_VAL(subloc, serial) \
-        { .requestedSubloc = subloc, \
-          .prvdata = { .serial_state = serial } }
+#define PRV_DATA_IMPL_VAL(_fn, _ln, _id, _is_execOn, _subloc, _serial) \
+        { .task_filename = _fn, \
+          .task_lineno = _ln, \
+          .id = _id, \
+          .is_executeOn = _is_execOn, \
+          .requestedSubloc = _subloc, \
+          .prvdata = { .serial_state = _serial } }
 
 typedef struct {
     void                     *fn;
     void                     *args;
-    c_string                 task_filename;
-    int                      lineno;
     chpl_bool                countRunning;
     chpl_task_prvDataImpl_t  chpl_data;
 } chpl_qthread_wrapper_args_t;
@@ -294,8 +300,6 @@ typedef struct chpl_qthread_tls_s {
     /* Reports */
     c_string    lock_filename;
     size_t      lock_lineno;
-    const char *task_filename;
-    size_t      task_lineno;
 } chpl_qthread_tls_t;
 
 extern pthread_t chpl_qthread_process_pthread;
@@ -405,6 +409,17 @@ c_sublocid_t chpl_task_getRequestedSubloc(void)
         return data->chpl_data.requestedSubloc;
     }
     return c_sublocid_any;
+}
+
+#ifdef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
+#error "CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL 1
+#endif
+extern int chpl_qthread_supports_remote_cache;
+static inline
+int chpl_task_supportsRemoteCache(void) {
+  return chpl_qthread_supports_remote_cache;
 }
 
 #endif // ifndef _tasks_qthreads_h_

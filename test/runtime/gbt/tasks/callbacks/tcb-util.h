@@ -4,8 +4,9 @@
 //
 
 void tcb_install_callbacks_1(void);
-void tcb_install_callbacks_2(void);
 void tcb_uninstall_callbacks_1(void);
+void tcb_install_callbacks_2(void);
+void tcb_uninstall_callbacks_2(void);
 void tcb_wait_for_nCallbacks(int nCallbacks);
 void tcb_report(void);
 
@@ -143,6 +144,27 @@ void tcb_install_callbacks_1(void) {
 }
 
 
+void tcb_uninstall_callbacks_1(void) {
+  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_create, cb_create_1)
+      != 0) {
+    fprintf(stderr, "Cannot uninstall cb_create_1!\n");
+    exit(1);
+  }
+
+  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin, cb_begin_1)
+      != 0) {
+    fprintf(stderr, "Cannot uninstall cb_begin_1!\n");
+    exit(1);
+  }
+
+  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_end, cb_end_1)
+      != 0) {
+    fprintf(stderr, "Cannot uninstall cb_end_1!\n");
+    exit(1);
+  }
+}
+
+
 void tcb_install_callbacks_2(void) {
   if (chpl_task_install_callback(chpl_task_cb_event_kind_create,
                                  chpl_task_cb_info_kind_full,
@@ -170,26 +192,25 @@ void tcb_install_callbacks_2(void) {
 }
 
 
-void tcb_uninstall_callbacks_1(void) {
-  //
-  // Uninstall the first callback, thus forcing the tasking layer to
-  // compact the list.
-  //
-  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_create, cb_create_1)
+void tcb_uninstall_callbacks_2(void) {
+  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_create,
+                                   cb_any_2)
       != 0) {
-    fprintf(stderr, "Cannot uninstall cb_create_1!\n");
+    fprintf(stderr, "Cannot uninstall cb_any_2 for create!\n");
     exit(1);
   }
 
-  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin, cb_begin_1)
+  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin,
+                                   cb_any_2)
       != 0) {
-    fprintf(stderr, "Cannot uninstall cb_begin_1!\n");
+    fprintf(stderr, "Cannot uninstall cb_any_2 for begin!\n");
     exit(1);
   }
 
-  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_end, cb_end_1)
+  if (chpl_task_uninstall_callback(chpl_task_cb_event_kind_end,
+                                   cb_any_2)
       != 0) {
-    fprintf(stderr, "Cannot uninstall cb_end_1!\n");
+    fprintf(stderr, "Cannot uninstall cb_any_2 for end!\n");
     exit(1);
   }
 }

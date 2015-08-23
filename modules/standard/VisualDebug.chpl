@@ -31,54 +31,65 @@ module VisualDebug
 
   use String;
 
-  pragma "no doc"
-  extern proc chpl_now_time():real;
+  private extern proc chpl_now_time():real;
 
   //
   // Data Generation for the Visual Debug tool  (offline)
   //
 
-  pragma "no doc"
-  extern proc chpl_vdebug_start ( rootname: c_string, time:real);
+  private extern proc chpl_vdebug_start ( rootname: c_string, time:real);
 
-  pragma "no doc"
-  extern proc chpl_vdebug_stop ();
+  private extern proc chpl_vdebug_stop ();
 
-  pragma "no doc"
-  extern proc chpl_vdebug_tag ( tagname: c_string);
+  private extern proc chpl_vdebug_tag ( tagname: c_string);
 
-  pragma "no doc"
-  extern proc chpl_vdebug_pause ();
+  private extern proc chpl_vdebug_pause ();
 
-  pragma "no doc"
-  extern proc chpl_vdebug_nolog ();
+  private extern proc chpl_vdebug_nolog ();
 
 
-/* Tree "coforall procedure .... calls one of the above rotunes */
+/* Instead of using a "coforall l in Locales" which is an O(n) operation
+   at the present time, vis_op, hc_id2com, and VDebugTree implement
+   a hyper-cube broadcast tree to execute on all locales.  The vis_op
+   is used to select which of the above routine to run at each locale.
+   This code is O(log n), n the number of Locales.
+*/
 
 pragma "no doc"
   enum vis_op {v_start, v_stop, v_tag, v_pause};
 
-pragma "no doc"
-  proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0) {
-      var child = id * 2 + 1;
+private iter hc_id2com ( id: int, off: int ) {
+   var offset = off;
+   var ix = 1;
+   while (offset > 0) {
+      yield (id+offset, ix);
+      offset = offset >> 1;
+      ix = ix + 1;
+   }
+}
+  
+private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
+                   n: int = numLocales, off: int = -1) {
+      var offset = 1;
+      if off < 0 then
+         while offset >> 1 + id < n do offset = offset << 1;
+      else
+         offset = off;
+
       chpl_vdebug_nolog();
-      cobegin {
-         /* left */
-         if child < numLocales then
-             on Locales[child] do VDebugTree (what, name, time, child);
-         /* right */
-         if child+1 < numLocales then
-             on Locales[child+1] do VDebugTree (what, name, time, child+1);
+      coforall (rid, shift) in hc_id2com(id, offset) do
+         if rid < n then
+             on Locales[rid] do VDebugTree (what, name, time, rid, n, offset >> shift);
+
+     /* Do the op at the root  */
+     select what {
+         when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
+         when vis_op.v_stop     do chpl_vdebug_stop ();
+         when vis_op.v_tag      do chpl_vdebug_tag (name.c_str());
+         when vis_op.v_pause    do chpl_vdebug_pause ();
      }
-         /* Do the op at the root  */
-         select what {
-            when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
-            when vis_op.v_stop     do chpl_vdebug_stop ();
-            when vis_op.v_tag      do chpl_vdebug_tag (name.c_str());
-            when vis_op.v_pause    do chpl_vdebug_pause ();
-         }
-  }
+}
+
 
 /* 
   Start logging events for VisualDebug.  Open a new set of data

@@ -1,15 +1,19 @@
 language: c
 compiler:
   - gcc
-
-  # TODO: Fix clang build issue and enable for smoke tests.
-  # (thomasvandoren, 2014-09-08)
-  # - clang
-before_script:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq tcsh
+  - clang
 script:
   - ./util/buildRelease/smokeTest
+
+# Set QTHREAD_AFFINITY=no to avoid pinning to processors that we don't actually
+# have access to. This seems to be an artifact caused by the interaction
+# between docker and hwloc on Travis's docker images.
 env:
-  - CHPL_DEVELOPER=true
-  - NIGHTLY_TEST_SETTINGS=true
+  - CHPL_DEVELOPER=true QTHREAD_AFFINITY=no
+  - NIGHTLY_TEST_SETTINGS=true QTHREAD_AFFINITY=no
+
+addons:
+  apt:
+    packages:
+      - tcsh
+sudo: false

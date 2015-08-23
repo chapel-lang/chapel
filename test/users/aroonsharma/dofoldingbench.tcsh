@@ -10,7 +10,7 @@ echo iterations=$iterations
 #rm folding
 if -e folding then
 else
-	chpl --fast folding.chpl -o folding
+  chpl --fast folding.chpl -o folding
 endif
 
 echo 'Block (B)'

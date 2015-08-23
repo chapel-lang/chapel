@@ -1,1 +1,1 @@
-testemptyglob.chpl:15: error: halt reached - glob() iterator zipped with something too big
+testemptyglob.chpl:18: error: halt reached - glob() iterator zipped with something too big

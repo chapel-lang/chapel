@@ -876,7 +876,7 @@ static void propagateVar(Symbol* sym) {
                   use == call->get(2)) {
         Symbol* lhs = toSymExpr(call->get(1))->var;
         Symbol* rhs = toSymExpr(call->get(2))->var;
-        INT_ASSERT(sym == rhs);
+
         if (isObj(lhs) && isObj(rhs)) {
           debug(sym, "Assigning from wide to narrow %s (%d)\n", lhs->cname, lhs->id);
           setWide(lhs);
@@ -887,6 +887,12 @@ static void propagateVar(Symbol* sym) {
         else if (isRef(lhs) && isObj(rhs)) {
           debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
           setValWide(lhs);
+        }
+        else if (lhs->type == dtString) {
+          // isObj doesn't handle dtStrings. This case handles a previously
+          // overlooked case of string assignment from a wide string to a
+          // narrow string.
+          setWide(lhs);
         }
         else {
           DEBUG_PRINTF("Unhandled assign: %s = %s\n", lhs->type->symbol->cname, rhs->type->symbol->cname);
@@ -934,7 +940,7 @@ static void propagateVar(Symbol* sym) {
         }
       }
       else if (call->primitive) {
-        DEBUG_PRINTF("Unhandled primitive %s\n", call->primitive->name);
+        DEBUG_PRINTF("Unhandled primitive %s (call %d in %s)\n", call->primitive->name, call->id, call->getModule()->cname);
       }
       else if (FnSymbol* fn = call->isResolved()) {
         debug(sym, "passed to fn %s (%d)\n", fn->cname, fn->id);

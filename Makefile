@@ -56,6 +56,7 @@ all: comprt
 comprt: FORCE
 	@$(MAKE) compiler
 	@$(MAKE) third-party-try-opt
+	@$(MAKE) always-build-test-venv
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -98,12 +99,22 @@ third-party-try-gmp: FORCE
 	fi \
 	fi
 
+third-party-test-venv: FORCE
+	cd third-party && $(MAKE) test-venv
+
 third-party-chpldoc-venv: FORCE
 	cd third-party && $(MAKE) chpldoc-venv
+
+test-venv: third-party-test-venv
 
 chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
+
+always-build-test-venv: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_TEST_VENV" ]; then \
+	$(MAKE) test-venv; \
+	fi
 
 clean-module-docs:
 	cd modules && $(MAKE) clean-documentation
@@ -153,7 +164,7 @@ clobber: FORCE
 depend:
 	@echo "make depend has been deprecated for the time being"
 
-check: all
+check: all third-party-test-venv
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 check-chpldoc: chpldoc

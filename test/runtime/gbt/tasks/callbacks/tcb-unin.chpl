@@ -1,7 +1,8 @@
 proc main {
   extern proc tcb_install_callbacks_1();
-  extern proc tcb_install_callbacks_2();
   extern proc tcb_uninstall_callbacks_1();
+  extern proc tcb_install_callbacks_2();
+  extern proc tcb_uninstall_callbacks_2();
   extern proc tcb_wait_for_nCallbacks(nCallbacks: c_int);
   extern proc tcb_report();
 
@@ -32,5 +33,6 @@ proc main {
   }
 
   tcb_wait_for_nCallbacks((if numLocales == 1 then 18 else 36): c_int);
+  tcb_uninstall_callbacks_2();
   tcb_report();
 }

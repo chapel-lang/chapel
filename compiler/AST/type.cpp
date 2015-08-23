@@ -150,7 +150,7 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
   // Only print extern types.
-  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (this->symbol->noDocGen()) {
     return;
   }
 
@@ -502,7 +502,7 @@ void EnumType::accept(AstVisitor* visitor) {
 
 
 void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (this->symbol->noDocGen()) {
     return;
   }
 
@@ -1261,7 +1261,7 @@ Symbol* AggregateType::getField(int i) {
 
 void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
   // TODO: Include unions... (thomasvandoren, 2015-02-25)
-  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
+  if (this->symbol->noDocGen() || this->isUnion()) {
     return;
   }
 
@@ -1849,6 +1849,19 @@ bool isSyncType(Type* t) {
 
 bool isAtomicType(Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
+}
+
+bool isRefIterType(Type* t) {
+  Symbol* iteratorRecord = NULL;
+
+  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+    iteratorRecord = t->defaultInitializer->getFormal(1)->type->symbol;
+  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    iteratorRecord = t->symbol;
+
+  if (iteratorRecord)
+    return iteratorRecord->hasFlag(FLAG_REF_ITERATOR_CLASS);
+  return false;
 }
 
 bool isSubClass(Type* type, Type* baseType)
