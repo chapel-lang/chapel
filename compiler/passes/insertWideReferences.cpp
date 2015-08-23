@@ -684,11 +684,11 @@ static void addKnownWides() {
       AggregateType* ag = toAggregateType(fn->getFormal(2)->type);
 
       for_fields(fi, ag) {
-        if (fi->type->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE)) {
-          // If an aggregate type is passed in and is not wide, then we
-          // have to make its fields wide. If such a type also has non-wide
-          // aggregate types within it, we need to widen those. We'll do this
-          // recursively all the way down.
+        if (isRecord(fi->type)) {
+          // Record types won't be widened which means that their fields will
+          // lose all locality information inside the on-stmt. This means that
+          // such fields need to be wide. This may have to be done recursively
+          // if such a field is a record itself.
           widenSubAggregateTypes(fi->type);
         } else {
           DEBUG_PRINTF("Field %s (%d) is in an on bundle, must be wide\n", fi->cname, fi->id);
@@ -972,10 +972,6 @@ static void propagateVar(Symbol* sym) {
             debug(sym, "ref has a wide _val, src %s (%d) of addr_of must be wide\n", se->var->cname, se->var->id);
             setWide(se);
           }
-          else if (rhs->isResolved()) {
-            debug(sym, "return symbol must be wide\n");
-            matchWide(sym, rhs->isResolved()->getReturnSymbol());
-          }
           else if (isRef(sym)) {
             if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) || 
                 rhs->isPrimitive(PRIM_GET_MEMBER)) {
@@ -986,6 +982,10 @@ static void propagateVar(Symbol* sym) {
             else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) || 
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, sym);
+            }
+            else if (rhs->isResolved()) {
+              debug(sym, "return symbol must be wide\n");
+              matchWide(sym, rhs->isResolved()->getReturnSymbol());
             }
           }
         } else if (isRef(sym)) {
