@@ -111,8 +111,8 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   struct rusage ru;
   struct timeval tv;
   struct timezone tz = {0,0};
-  (void) gettimeofday (&tv, &tz);
   chpl_taskID_t startTask = chpl_task_getId();
+  (void) gettimeofday (&tv, &tz);
 
   install_callbacks();
 
