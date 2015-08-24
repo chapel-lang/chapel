@@ -28,6 +28,7 @@
 
 
 static void checkNamedArguments(CallExpr* call);
+static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
@@ -51,6 +52,8 @@ checkParsed() {
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",
                              def->sym->name);
+
+    checkPrivateDecls(def);
   }
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -84,6 +87,59 @@ checkNamedArguments(CallExpr* call) {
       }
 
       names.add(named->name);
+    }
+  }
+}
+
+
+static void checkPrivateDecls(DefExpr* def) {
+  if (def->sym->hasFlag(FLAG_PRIVATE)) {
+    // The symbol has been declared private.
+    if (def->parentSymbol) {
+      if (toFnSymbol(def->parentSymbol)) {
+        // The parent symbol of this definition is a FnSymbol.  Private
+        // symbols at the function scope are meaningless because there is no
+        // way for anything outside the function to access its locals, so warn
+        // the user.
+        USR_WARN(def,
+                 "Private declarations within function bodies are meaningless");
+        // Don't want to waste time treating this symbol as if it could be
+        // accessed from an outer scope, so remove the flag.
+        def->sym->removeFlag(FLAG_PRIVATE);
+      } else if (ModuleSymbol *mod = toModuleSymbol(def->parentSymbol)) {
+        // The parent symbol is a module symbol.  Could still be invalid.
+        if (def->sym->hasFlag(FLAG_METHOD)) {
+          USR_FATAL_CONT(def, "Can't apply private to the fields or methods of a class or record yet");
+          // Private secondary methods require further discussion before they
+          // are implemented.
+        } else if (mod->block != def->parentExpr) {
+          if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
+            // Scopeless blocks are used to define multiple symbols, for
+            // instance.  Those are valid "nested" blocks for private symbols.
+            if (block->blockTag != BLOCK_SCOPELESS) {
+              // The block in which we are defined is not the top level module
+              // block.  Private symbols at this scope are meaningless, so warn
+              // the user.
+              USR_WARN(def,
+                       "Private declarations within nested blocks are meaningless");
+              def->sym->removeFlag(FLAG_PRIVATE);
+            }
+          } else {
+            // There are many situations which could lead to this else branch.
+            // Most of them will not reach here due to being banned at parse
+            // time.  However, those that aren't excluded by syntax errors will
+            // be caught here.
+            USR_WARN(def, "Private declarations are meaningless outside of module level declarations");
+            def->sym->removeFlag(FLAG_PRIVATE);
+          }
+        }
+      } else if (TypeSymbol *t = toTypeSymbol(def->parentSymbol)) {
+        if (toAggregateType(t->type)) {
+          USR_FATAL_CONT(def, "Can't apply private to the fields or methods of a class or record yet");
+          // Private fields and methods require further discussion before they
+          // are implemented.
+        }
+      }
     }
   }
 }

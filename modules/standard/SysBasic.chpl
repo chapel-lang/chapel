@@ -106,14 +106,10 @@ extern type fd_t = c_int;
 
 // error numbers
 
-pragma "no doc"
-extern proc qio_err_eq(a:syserr, b:syserr):c_int;
-pragma "no doc"
-extern proc qio_err_to_int(a:syserr):int(32);
-pragma "no doc"
-extern proc qio_int_to_err(a:int(32)):syserr;
-pragma "no doc"
-extern proc qio_err_iserr(a:syserr):c_int;
+private extern proc qio_err_eq(a:syserr, b:syserr):c_int;
+private extern proc qio_err_to_int(a:syserr):int(32);
+private extern proc qio_int_to_err(a:int(32)):syserr;
+private extern proc qio_err_iserr(a:syserr):c_int;
 
 /* The error code indicating that no error occured (Chapel specific) */
 inline proc ENOERR return 0:err_t;
@@ -169,15 +165,13 @@ inline proc =(ref ret:err_t, x:syserr)
 { __primitive("=", ret, qio_err_to_int(x):err_t); }
 
 // end of file
-pragma "no doc"
-extern proc chpl_macro_int_EEOF():err_t;
+private extern proc chpl_macro_int_EEOF():err_t;
 
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
 inline proc EEOF return chpl_macro_int_EEOF():err_t;
 
-pragma "no doc"
-extern proc chpl_macro_int_ESHORT():err_t;
+private extern proc chpl_macro_int_ESHORT():err_t;
 
 /* An error code indicating that the end of file or the end of the
    input was reached before the requested amount of data could be read.
@@ -185,8 +179,7 @@ extern proc chpl_macro_int_ESHORT():err_t;
   */
 inline proc ESHORT return chpl_macro_int_ESHORT():err_t;
 
-pragma "no doc"
-extern proc chpl_macro_int_EFORMAT():err_t;
+private extern proc chpl_macro_int_EFORMAT():err_t;
 
 /* An error code indicating a format error; for example when reading a quoted
    string literal, this would be returned if we never encountered the

@@ -14,8 +14,8 @@ use CommDiagnostics;
     TSTEPS: The number of iterations to perform
         Default = 100
 
-	printData: Set to false if you don't want to see the data printed
-		Default = false
+  printData: Set to false if you don't want to see the data printed
+    Default = false
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -46,18 +46,18 @@ proc print_1D(A: []) {
 
 /* The process which runs the benchmark */
 proc kernel_jacobi1d(dist_1D, m_dim: int) {
-	var still_correct = true;
-	var t:Timer;
-	
-	if messages {
-	    resetCommDiagnostics();
-	    startCommDiagnostics();
-	}
-	
-	if timeit {
-		t = new Timer();
-		t.start();
-	}
+  var still_correct = true;
+  var t:Timer;
+  
+  if messages {
+      resetCommDiagnostics();
+      startCommDiagnostics();
+  }
+  
+  if timeit {
+    t = new Timer();
+    t.start();
+  }
     var A = initialize_1D(dist_1D, 2, m_dim);
     var B = initialize_1D(dist_1D, 3, m_dim);
     
@@ -71,45 +71,45 @@ proc kernel_jacobi1d(dist_1D, m_dim: int) {
         }
         A(curr_stencil) = B(curr_stencil);
     }
-	
-	if timeit {
-		t.stop();
-		writeln("took ", t.elapsed(), " seconds");
-	}
-	
-	if messages {
-		stopCommDiagnostics();
-		var messages=0;
-		var coms=getCommDiagnostics();
-		for i in 0..numLocales-1 {
-			messages+=coms(i).get:int;
-			messages+=coms(i).put:int;
-		}
-		writeln('message count=', messages);
-	}
+  
+  if timeit {
+    t.stop();
+    writeln("took ", t.elapsed(), " seconds");
+  }
+  
+  if messages {
+    stopCommDiagnostics();
+    var messages=0;
+    var coms=getCommDiagnostics();
+    for i in 0..numLocales-1 {
+      messages+=coms(i).get:int;
+      messages+=coms(i).put:int;
+    }
+    writeln('message count=', messages);
+  }
     
     if (printData) {
         writeln("A:");
         print_1D(A);
     }
-	
-	if correct {
-	    var Atest = initialize_1D({1..m_dim}, 2, m_dim);
-	    var Btest = initialize_1D({1..m_dim}, 3, m_dim);
-		
-	    for t in 1..TSTEPS {
-	        forall (a, b, c, d) in zip(Btest(curr_stencil), Atest(left_stencil), Atest(curr_stencil), Atest(right_stencil)) {
-	            a = (b + c + d) * (0.33333);
-	        }
-	        Atest(curr_stencil) = Btest(curr_stencil);
-	    }
-		
-		for ii in 1..m_dim {
-			still_correct &&= Atest[ii] == A[ii];
-		}
-		writeln("Is the calculation correct? ", still_correct);
-		writeln("jacobi-1d computation complete");
-	}
+  
+  if correct {
+      var Atest = initialize_1D({1..m_dim}, 2, m_dim);
+      var Btest = initialize_1D({1..m_dim}, 3, m_dim);
+    
+      for t in 1..TSTEPS {
+          forall (a, b, c, d) in zip(Btest(curr_stencil), Atest(left_stencil), Atest(curr_stencil), Atest(right_stencil)) {
+              a = (b + c + d) * (0.33333);
+          }
+          Atest(curr_stencil) = Btest(curr_stencil);
+      }
+    
+    for ii in 1..m_dim {
+      still_correct &&= Atest[ii] == A[ii];
+    }
+    writeln("Is the calculation correct? ", still_correct);
+    writeln("jacobi-1d computation complete");
+  }
 }
 
 proc main() {

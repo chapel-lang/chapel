@@ -297,6 +297,7 @@ bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
 bool isSyncType(Type* t);
 bool isAtomicType(Type* t);
+bool isRefIterType(Type* t);
 
 bool isSubClass(Type* type, Type* baseType);
 bool isDistClass(Type* type);

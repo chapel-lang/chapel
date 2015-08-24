@@ -979,7 +979,7 @@ buildFollowLoop(VarSymbol* iter,
                 bool       fast,
                 bool       zippered) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody);
+  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered);
 
   destructureIndices(followBody, indices, new SymExpr(followIdx), false);
 
@@ -1117,7 +1117,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", saIter, iterRec);
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
 
-  ForLoop* SABody = new ForLoop(saIdx, saIter, NULL);
+  ForLoop* SABody = new ForLoop(saIdx, saIter, NULL, false);
   destructureIndices(SABody, indices, new SymExpr(saIdxCopy), false);
   SABody->insertAtHead("'move'(%S, %S)", saIdxCopy, saIdx);
   SABody->insertAtHead(new DefExpr(saIdxCopy));
@@ -1199,7 +1199,7 @@ buildForallLoopStmt(Expr*      indices,
   VarSymbol* leadIter        = newTemp("chpl__leadIter");
   VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
-  ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL);
+  ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL, zippered);
 
   VarSymbol* followIdx       = newTemp("chpl__followIdx");
   VarSymbol* followIter      = newTemp("chpl__followIter");
@@ -1356,8 +1356,8 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, body, true, zippered);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
-    body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+    body->insertAtHead(new CallExpr("_upEndCount", coforallCount, gFalse));
+    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, gFalse));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
     addByrefVars(onBlock, byref_vars);
@@ -1545,7 +1545,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 #endif
 
-  ForLoop* followBody = new ForLoop(followIdx, followIter, NULL);
+  ForLoop* followBody = new ForLoop(followIdx, followIter, NULL, zippered);
 
   followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
 
@@ -1568,7 +1568,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail("'delete'(%S)", localOp);
   followBlock->insertAtTail("_freeIterator(%S)", followIter);
 
-  ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL);
+  ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL, zippered);
 
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
@@ -1971,6 +1971,14 @@ buildFunctionDecl(FnSymbol*   fn,
   return buildChapelStmt(new DefExpr(fn));
 }
 
+void applyPrivateToBlock(BlockStmt* block) {
+  for_alist(stmt, block->body) {
+    if (DefExpr* defExpr = toDefExpr(stmt)) {
+      defExpr->sym->addFlag(FLAG_PRIVATE);
+    }
+  }
+}
+
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
@@ -2090,7 +2098,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
   if (onBlock) {
-    body->insertAtHead(new CallExpr("_upEndCount"));
+    body->insertAtHead(new CallExpr("_upEndCount", gFalse));
     onBlock->insertAtTail(new CallExpr("_downEndCount"));
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_BEGIN_ON];
     addByrefVars(onBlock, byref_vars);

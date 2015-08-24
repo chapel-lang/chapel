@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+import os, sys, subprocess
+
+chpl_home = os.getenv('CHPL_HOME')
+
+printchplenv = os.path.join(chpl_home, 'util', 'printchplenv')
+printchplenv_cmd = [printchplenv, '--simple']
+
+p = subprocess.Popen(printchplenv_cmd, stdout=subprocess.PIPE).communicate()[0]
+chpl_env = dict(map(lambda l: l.split('='), p.splitlines()))
+
+testname = sys.argv[1]
+genfile = testname+'.test.gen.c'
+with open(genfile, 'w') as f:
+    for key,val in chpl_env.items():
+        key_val = key+'_'+val.replace('-', '_').upper()
+        f.write('#ifndef %s\n'%(key_val))
+        f.write('#error "%s undefined or does not match runtime definition"\n'%(val))
+        f.write('#endif\n')
+
+f.close()

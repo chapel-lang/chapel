@@ -226,6 +226,12 @@ bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
   return hasFlag(aflag) || hasFlag(bflag);
 }
 
+// Don't generate documentation for this symbol, either because it is private,
+// or because the symbol should not be documented independent of privacy
+bool Symbol::noDocGen() const {
+  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE);
+}
+
 
 bool Symbol::isImmediate() const {
   return false;
@@ -356,7 +362,7 @@ std::string VarSymbol::docsDirective() {
 
 
 void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_SUPER_CLASS)) {
+  if (this->noDocGen() || this->hasFlag(FLAG_SUPER_CLASS)) {
       return;
   }
 
@@ -1034,6 +1040,10 @@ bool ArgSymbol::isConstValWillNotChange() const {
 
 bool ArgSymbol::isParameter() const {
   return (intent == INTENT_PARAM);
+}
+
+bool ArgSymbol::isVisible(BaseAST* scope) const {
+  return true;
 }
 
 
@@ -2362,7 +2372,7 @@ std::string FnSymbol::docsDirective() {
 
 
 void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->noDocGen()) {
     return;
   }
 
@@ -2609,7 +2619,7 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 
 
 void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->noDocGen()) {
     return;
   }
 

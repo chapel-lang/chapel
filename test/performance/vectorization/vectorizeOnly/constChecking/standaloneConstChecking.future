@@ -1,0 +1,5 @@
+bug: Const checking on the index var of standalone iters is broken
+
+This bug is the same as statements/elliot/loops/modifyIndicesStandalone. This
+test is meant to ensure that vectorizeOnly doesn't break index var const checking,
+but index var const checking is currently broken for standalone itererators.

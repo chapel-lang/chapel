@@ -56,7 +56,6 @@ chplvis: $(GENSRCS) $(OFILES)
 	$$($(FLTK_CONFIG) --cxx)  -o chplvis $(OFILES) \
 	        $$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
 
-
 chplvis.cxx chplvis.h: chplvis.fl
 	$(FLTK_FLUID) -c chplvis.fl
 

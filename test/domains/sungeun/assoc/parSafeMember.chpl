@@ -1,5 +1,5 @@
 config const iters = 300;
-config const trials = 400;
+config const trials = 2000/here.maxTaskPar;
 config const n = 80;
 
 var D: domain(real);

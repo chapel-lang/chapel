@@ -61,7 +61,7 @@ Function {mainWinCallback(Fl_Widget *)} {return_type void
   code {exit(1);} {}
 } 
 
-Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
+Function {make_locale_window(int locnum, localeData *locInfo)} {open C
 } {
   Fl_Window {} {open
     xywh {1037 56 180 120} type Double color 7 hide resizable
@@ -78,10 +78,10 @@ Function {make_locale_window(int locnum, localeInfo *locInfo)} {open C
     }
   }
   code {w->setMembers(Locale_Title,cpuInfo,locInfo,locnum);
-w->updateWin();} {}
+w->updateWin(locInfo);} {}
 } 
 
-Function {make_comm_window(int fromLn, int toLn, struct commInfo *commData)} {open
+Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
 } {
   Fl_Window {} {open
     xywh {1039 205 180 120} type Double color 7 hide resizable
@@ -97,8 +97,8 @@ Function {make_comm_window(int fromLn, int toLn, struct commInfo *commData)} {op
       class Fl_Multiline_Output
     }
   }
-  code {w->setMembers(Comm_Title, commInfo, commData, fromLn, toLn);
-w->updateWin();} {}
+  code {w->setMembers(Comm_Title, commInfo, commdata, fromLn, toLn);
+w->updateWin(commdata);} {}
 } 
 
 Function {} {open
@@ -125,11 +125,12 @@ if (selfile) {
       return;
    }
    DbgView->setNumLocales(VisData.NumLocales());
-   DbgView->processData(-3);
+   DbgView->makeTagsMenu();
+   DbgView->selectData(DataModel::TagALL);
    Info->setFileName(selfile);
    Info->clearTagName();
    MainWindow->redraw();
-}}
+}} selected
           xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
@@ -148,7 +149,7 @@ if (selfile) {
         }
       }
       Submenu {} {
-        label Windows open selected
+        label Windows open
         xywh {0 0 62 20}
       } {
         MenuItem {} {
@@ -223,7 +224,8 @@ MainWindow->redraw();}
     }
     if (DbgView) {
       DbgView->setNumLocales(VisData.NumLocales());
-      DbgView->processData(-3); // -3 is new open
+      DbgView->makeTagsMenu();
+      DbgView->selectData(DataModel::TagALL);
       Info->setFileName(argv[1]);
     }
     argc--;
@@ -233,7 +235,8 @@ MainWindow->redraw();}
    if (access(".Vdebug/.Vdebug-0", R_OK) == 0 &&
        VisData.LoadData(".Vdebug/.Vdebug-0")) {
       DbgView->setNumLocales(VisData.NumLocales());
-      DbgView->processData(-3); // -3 is new open
+      DbgView->makeTagsMenu();
+      DbgView->selectData(DataModel::TagALL);
       Info->setFileName(".Vdebug (default)");
    }
 }

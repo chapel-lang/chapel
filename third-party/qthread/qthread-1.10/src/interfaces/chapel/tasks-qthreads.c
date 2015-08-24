@@ -21,7 +21,6 @@
 #include "chpl-comm.h"
 #include "chpl-locale-model.h"
 #include "chpl-tasks.h"
-#include "chpl-visual-debug.h"
 #include "config.h"
 #include "error.h"
 #include "arg.h"
@@ -137,6 +136,12 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
     PRV_DATA_IMPL_VAL("<comm thread>", 0, chpl_nullTaskID, false,
                       c_sublocid_any_val, false),
     NULL, 0 };
+
+//
+// QTHREADS_SUPPORTS_REMOTE_CACHE is set in the Chapel Qthreads
+// Makefile, based on the Qthreads scheduler configuration.
+//
+int chpl_qthread_supports_remote_cache = QTHREADS_SUPPORTS_REMOTE_CACHE;
 
 //
 // structs chpl_task_prvDataImpl_t, chpl_qthread_wrapper_args_t and
@@ -823,10 +828,6 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     assert(subloc != c_sublocid_none);
 
     PROFILE_INCR(profile_task_addToTaskList,1);
-
-    // Visual Debug
-    chpl_vdebug_log_task_queue(fid, arg, subloc, task_list, task_list_locale,
-                               is_begin_stmt, lineno, filename);
 
     if (serial_state) {
         // call the function directly.
