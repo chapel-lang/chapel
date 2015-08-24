@@ -140,7 +140,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   }
   chpl_dprintf (chpl_vdebug_fd,
                 "ChplVdebug: nodes %d nid %d tid %d seq %.3lf %lld.%06ld %ld.%06ld %ld.%06ld \n",
-                chpl_numNodes, chpl_nodeID, startTask, now,
+                chpl_numNodes, chpl_nodeID, (int) startTask, now,
                 (long long) tv.tv_sec, (long) tv.tv_usec,
                 (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                 (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec  );
@@ -167,7 +167,7 @@ void chpl_vdebug_stop (void) {
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                   (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
-                  chpl_nodeID, stopTask);
+                  chpl_nodeID, (int) stopTask);
     close (chpl_vdebug_fd);
   }
   chpl_vdebug = 0;
@@ -193,7 +193,7 @@ void chpl_vdebug_tag (const char *str) {
                 (long long) tv.tv_sec, (long) tv.tv_usec,
                 (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                 (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
-                chpl_nodeID, tagTask, tag_no++, str);
+                chpl_nodeID, (int) tagTask, tag_no++, str);
   chpl_vdebug = 1;
   chpl_vdebug_task = 0;
 }
@@ -216,7 +216,7 @@ void chpl_vdebug_pause (void) {
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                   (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
-                  chpl_nodeID, pauseTask, tag_no-1);
+                  chpl_nodeID, (int) pauseTask, tag_no-1);
     chpl_vdebug = 0;
   }
 }
@@ -320,7 +320,7 @@ void chpl_vdebug_log_fork(c_nodeid_t node, c_sublocid_t subloc,
     (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d %d \n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                  fid, (long) arg, arg_size, forkTask);
+                  fid, (long) arg, arg_size, (int)forkTask);
   }
 }
 
@@ -334,7 +334,7 @@ void  chpl_vdebug_log_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
     (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                  fid, (long) arg, arg_size, forkTask);
+                  fid, (long) arg, arg_size, (int)forkTask);
   }
 }
 
@@ -347,7 +347,7 @@ void chpl_vdebug_log_fast_fork(c_nodeid_t node, c_sublocid_t subloc,
     (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                  fid, (long) arg, arg_size, forkTask);
+                  fid, (long) arg, arg_size, (int)forkTask);
   }
 }
 
