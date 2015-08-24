@@ -170,7 +170,8 @@ int DataModel::LoadData(const char * filename)
 
   if (taskTimeline != NULL)
     delete [] taskTimeline;
-  taskTimeline = new std::list<Event*>[numLocales];
+  taskTimeline = new std::list<std::pair<Tl_Kind,long> >[numLocales];
+  
 
   int cTagNo = TagStart;
   tagData *curTag = tagList[1];
@@ -209,6 +210,9 @@ int DataModel::LoadData(const char * filename)
             tagList[1]->locales[curNodeId].refTime = sp->clock_time();
         tagList[0]->name = "ALL";
         tagList[1]->name = "Start";
+        tagList[0]->locales[0].maxConc = 1;
+        tagList[1]->locales[0].runConc = 1;
+        tagList[1]->locales[0].maxConc = 1;
         break;
 
       case Ev_tag:
@@ -393,6 +397,7 @@ int DataModel::LoadData(const char * filename)
       case Ev_end_task:
         etp = (E_end_task *)ev;
         {
+          bool validEnd = false;
           std::map<long,taskData>::iterator it;
           // Find task in task map
           it = curTag->locales[curNodeId].tasks.find(etp->getTaskId());
@@ -400,6 +405,7 @@ int DataModel::LoadData(const char * filename)
             // Update the end record
             (*it).second.endRec = etp;
             (*it).second.endTagNo = cTagNo;
+            validEnd = true;
             //printf ("End task %d, node %d\n", etp->getTaskId(), curNodeId);
           } else {
             int tryTagNo = cTagNo-1;
@@ -408,14 +414,15 @@ int DataModel::LoadData(const char * filename)
               if (it != tagList[tryTagNo+2]->locales[curNodeId].tasks.end()) {
                 (*it).second.endRec = etp;
                 (*it).second.endTagNo = cTagNo;
-                printf ("Found end task %d in tag %d started in tag %s (%d), nid %d\n",
-                        etp->getTaskId(), cTagNo, tagList[tryTagNo+2]->name.c_str(),
-                        tryTagNo, curNodeId);
+                //printf ("Found end task %d in tag %d started in tag %s (%d), nid %d\n",
+                //        etp->getTaskId(), cTagNo, tagList[tryTagNo+2]->name.c_str(),
+                //        tryTagNo, curNodeId);
                 break;
               }
               tryTagNo--;
             }
             if (tryTagNo == DataModel::TagALL) {
+              validEnd = true;
               printf ("No task begin found for task %d, nid %d\n", etp->getTaskId(),
                       curNodeId);
             }
@@ -427,6 +434,7 @@ int DataModel::LoadData(const char * filename)
         // Shouldn't get here
         assert(false);
     }
+    // Move to next event record
     itr++;
   }
 
@@ -438,8 +446,10 @@ int DataModel::LoadData(const char * filename)
   for (int ix_t = -1; ix_t < numTags; ix_t++) {
     curTag = tagList[ix_t+2];
     curTag->maxTasks = 0;
+    curTag->maxConc = 0;
     // printf ("settings max for tag %s\n", getTagName(ix_t).c_str());
     for (int ix_l = 0; ix_l < nlocales; ix_l++) {
+      // Total number of tasks
       //printf ("tag '%s', locale %d tasks %ld\n", curTag->name.c_str(), ix_l,
       //        (long)curTag->locales[ix_l].tasks.size());
       curTag->locales[ix_l].numTasks = curTag->locales[ix_l].tasks.size()
@@ -449,9 +459,107 @@ int DataModel::LoadData(const char * filename)
       tagList[0]->locales[ix_l].numTasks += curTag->locales[ix_l].numTasks;
       if (tagList[0]->locales[ix_l].numTasks > tagList[0]->maxTasks)
         tagList[0]->maxTasks = tagList[0]->locales[ix_l].numTasks;
+      // Task concurrency
+      if (curTag->locales[ix_l].maxConc > curTag->maxConc)
+        curTag->maxConc = curTag->locales[ix_l].maxConc;
+      if (curTag->maxConc > tagList[0]->maxConc) 
+        tagList[0]->maxConc = curTag->maxConc;
     }
   }  
+
+  // Build timeline and set concurrency rates
+  itr = theEvents.begin();
+  cTagNo = TagStart;
+  curTag = tagList[1];
+  curTag->locales[0].runConc = 1;
+  curTag->locales[0].maxConc = 1;
+  
+  while (itr != theEvents.end()) {
+    Event *ev = *itr;
+    int curNodeId = ev->nodeId();
+    E_tag *tp;
+    E_begin_task *btp;
+    E_end_task *etp;
     
+    switch (ev->Ekind()) {
+      default: // Do nothing for most of these
+        break;
+
+      case Ev_tag:
+        tp = (E_tag *)ev;
+        if (curNodeId == 0) {
+          cTagNo++;
+          curTag = tagList[cTagNo+2];
+        }
+        assert(cTagNo == tp->tagNo());
+        taskTimeline[curNodeId].push_back(timelineEntry(Tl_Tag,cTagNo));
+        curTag->locales[curNodeId].runConc
+          = tagList[cTagNo+1]->locales[curNodeId].runConc;
+        curTag->locales[curNodeId].maxConc = curTag->locales[curNodeId].runConc;
+        if (curTag->locales[curNodeId].maxConc > curTag->maxConc)
+          curTag->maxConc = curTag->locales[curNodeId].maxConc;
+        //printf ("tag %d, %ld\n", curNodeId, curTag->locales[curNodeId].runConc);
+        break;
+
+      case Ev_begin_task:
+        btp = (E_begin_task *)ev;
+        if (curTag->locales[curNodeId].tasks.find(btp->getTaskId()) != 
+            curTag->locales[curNodeId].tasks.end()) {
+          // Found this task in the tag, it should be in the timeline
+          taskTimeline[curNodeId].push_back(timelineEntry(Tl_Begin,btp->getTaskId()));
+          curTag->locales[curNodeId].runConc++;
+          //printf ("(++%d:%ld[%d])", curNodeId, curTag->locales[curNodeId].runConc,btp->getTaskId());
+          if (curTag->locales[curNodeId].runConc > 
+              curTag->locales[curNodeId].maxConc) {
+            curTag->locales[curNodeId].maxConc = curTag->locales[curNodeId].runConc;
+            if (curTag->locales[curNodeId].maxConc > curTag->maxConc) {
+              curTag->maxConc = curTag->locales[curNodeId].maxConc;
+              if (curTag->maxConc > tagList[0]->locales[curNodeId].maxConc)
+                tagList[0]->locales[curNodeId].maxConc = curTag->maxConc;
+            }
+          }
+        }
+        break;
+
+      case Ev_end_task:
+        etp = (E_end_task *)ev;
+        {
+          std::list< timelineEntry >::reverse_iterator tl_itr;
+          tl_itr = taskTimeline[curNodeId].rbegin();
+          while (tl_itr != taskTimeline[curNodeId].rend()) {
+            if ((*tl_itr).first == Tl_Begin
+                && (*tl_itr).second == etp->getTaskId()) {
+              // Found the begin record in the timeline, add the end record
+              taskTimeline[curNodeId].push_back(timelineEntry(Tl_End,etp->getTaskId()));
+              curTag->locales[curNodeId].runConc--;
+              //printf ("(--%d:%ld)", curNodeId, curTag->locales[curNodeId].runConc);
+              break;
+            }
+            tl_itr++;
+          }
+          if (tl_itr == taskTimeline[curNodeId].rend())
+            printf ("Timeline: did not find task %d\n", etp->getTaskId());
+        }
+        break;
+    }
+
+    // Move to next event record
+    itr++;
+  }
+
+#if 0
+  // Debug -- print out results of concurrency!
+  printf ("\n");
+  for (int ix = -1; ix < numTags; ix++) {
+    printf ("tag %d[%ld]: ", ix, tagList[ix+2]->maxConc);
+    for (int ij = 0; ij < numLocales; ij++) {
+      printf (" %ld/%ld ", tagList[ix+2]->locales[ij].runConc,
+              tagList[ix+2]->locales[ij].maxConc);
+    }
+    printf("\n");
+  }
+#endif 
+
   return 1;
 }
 

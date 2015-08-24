@@ -59,10 +59,13 @@ struct localeData {
   double clockTime;
   double refTime;
   long    numTasks;
+  long    runConc;
+  long    maxConc;
+
   std::map<long,taskData> tasks;
 
   localeData() : userCpu(0), sysCpu(0), Cpu(0), refUserCpu(0), refSysCpu(0),
-                 clockTime(0), refTime(0), numTasks(0) {};
+    clockTime(0), refTime(0), numTasks(0), runConc(0), maxConc(0) {};
 };
 
 // Used to track communication,  each tag has a 2D array of commData, one for each direction
@@ -93,14 +96,17 @@ class DataModel {
   int numTags;
   
   // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
-  tagData **tagList;  
+  tagData **tagList;    // 1D array of pointers to tagData
 
   // Task Event (begin, end) timeline for task concurrency,
   //     one linear structure per locale
-  std::list<Event*> *taskTimeline;
+  //     long => task number or tag number
+  enum Tl_Kind { Tl_Tag, Tl_Begin, Tl_End };
+  typedef std::pair < Tl_Kind, long > timelineEntry;
+  std::list < timelineEntry > *taskTimeline;
 
-  std::list<Event*> theEvents;
-  std::list<Event*>::iterator curEvent;
+  std::list < Event* > theEvents;
+  std::list < Event* >::iterator curEvent;
   
   // Utility routines
   
@@ -131,13 +137,10 @@ class DataModel {
     long   maxTasks;
     long   maxComms;
     long   maxSize;
-
-    // task concurrency
-    long   runConc;
     long   maxConc;
     
     tagData(long numLoc) : numLocales(numLoc), name(""),  maxCpu(0), maxClock(0),
-                           maxTasks(0), maxComms(0), maxSize(0), runConc(0), maxConc(0)  {
+                          maxTasks(0), maxComms(0), maxSize(0), maxConc(0)  {
       locales = new localeData[numLocales];
       comms = new  commData * [numLocales];
       for (int i = 0; i < numLocales; i++ )
