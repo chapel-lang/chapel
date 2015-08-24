@@ -233,7 +233,7 @@ instantiate_tuple_init(FnSymbol* fn) {
 }
 
 static void
-instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
+instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn, bool skip_copy_fun,
                                        const char* build_tuple_fun,
                                        const char* copy_fun)
 {
@@ -245,20 +245,23 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
   BlockStmt* block = new BlockStmt();
   
   for (int i=1; i<ct->fields.length; i++) {
-    CallExpr* member = new CallExpr(arg, new_IntSymbol(i));
+    Symbol* tmp = newTemp();
+    block->insertAtTail(new DefExpr(tmp));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_CStringSymbol(astr("x", istr(i))))));
+
     DefExpr* def = toDefExpr(ct->fields.get(i+1));
     INT_ASSERT(def);
-    if (isReferenceType(def->sym->type))
-      // If it is a reference, pass it through.
-      call->insertAtTail(member);
-    else
 #if HILDE_MM
-      call->insertAtTail(member);
+    // autoCopy is not needed - and is undesirable - with AMM.
 #else
-// Not needed (and undesirable) with AMM.
-      // Otherwise, construct it.
-      call->insertAtTail(new CallExpr(copy_fun, member));
+    skip_copy_fun = false;
 #endif
+    if (skip_copy_fun || isReferenceType(def->sym->type))
+      // If it is a reference, pass it through.
+      call->insertAtTail(tmp);
+    else
+      // Otherwise, construct it.
+      call->insertAtTail(new CallExpr(copy_fun, tmp));
   }
   
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
@@ -268,14 +271,14 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
 
 static void
 instantiate_tuple_initCopy(FnSymbol* fn) {
-  instantiate_tuple_initCopy_or_autoCopy(fn,
+  instantiate_tuple_initCopy_or_autoCopy(fn, false,
                                          "_build_tuple",
                                          "chpl__initCopy");
 }
 
 static void
 instantiate_tuple_autoCopy(FnSymbol* fn) {
-  instantiate_tuple_initCopy_or_autoCopy(fn,
+  instantiate_tuple_initCopy_or_autoCopy(fn, true,
                                          "_build_tuple_always_allow_ref",
                                          "chpl__autoCopy");
 }
