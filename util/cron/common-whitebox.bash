@@ -92,6 +92,11 @@ if [ "${COMPILER}" != "gnu" ] ; then
     module load gcc/${CHPL_GCC_TARGET_VERSION}
 fi
 
+# quiet libu warning about cpuid detection failure until it's fixed in CCE 8.4
+if [ "${COMPILER}" == "cray" ] ; then
+  export RFE_811452_DISABLE=true
+fi
+
 # Then load the selected compiler
 load_target_compiler ${COMPILER}
 
