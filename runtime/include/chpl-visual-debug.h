@@ -39,7 +39,7 @@ extern int chpl_dprintf(int fd, const char * format, ...)
    ;
 
 //  don't log messages/forks associated with a tag.
-extern void chpl_vdebug_nolog(void);
+extern void chpl_vdebug_getTid(void);
 //  start and open file if not NULL
 extern void chpl_vdebug_start(const char *, double now); 
 //  stop collecting data

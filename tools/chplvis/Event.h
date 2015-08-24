@@ -165,12 +165,13 @@ class E_tag : public Event {
      std::string tag_name;
      long u_sec, u_usec;    // getrusage times
      long s_sec, s_usec;
+     int vdbTask;
 
    public:
      E_tag (long esec, long eusec, int nodeid, long u_sec, long u_usec, long s_sec, long s_usec,
-            long tagno, char *tag)
+            long tagno, char *tag, int tid)
        : Event(esec, eusec, nodeid), tag_num(tagno), tag_name(tag), u_sec(u_sec),
-         u_usec(u_usec), s_sec(s_sec), s_usec(s_usec)
+         u_usec(u_usec), s_sec(s_sec), s_usec(s_usec), vdbTask(tid)
        { }
 
      int tagNo() { return tag_num; }
@@ -179,6 +180,7 @@ class E_tag : public Event {
      double cpu_time()  { return u_sec+s_sec + ((double)u_usec+s_usec)/1000000; }
      double user_time() { return u_sec+(double)u_usec/1000000; }
      double sys_time() { return s_sec+(double)s_usec/1000000; }
+     int vdbTid() { return vdbTask; }
 
      virtual int Ekind() {return Ev_tag;}
      virtual void print() {
@@ -194,17 +196,19 @@ class E_pause : public Event {
     long u_sec, u_usec;   // getrusage times
     long s_sec, s_usec;
     int tagid;
+    int vdbTask;
 
   public:
     E_pause (long esec, long eusec, int nodeid, long u_sec, long u_usec,
-              long s_sec, long s_usec, int tagid)
+             long s_sec, long s_usec, int tagid, int tid)
       : Event(esec, eusec, nodeid), u_sec(u_sec), u_usec(u_usec),
-              s_sec(s_sec), s_usec(s_usec), tagid(tagid) {};
+        s_sec(s_sec), s_usec(s_usec), tagid(tagid), vdbTask(tid) {};
 
     double cpu_time()  { return u_sec+s_sec + ((double)u_usec+s_usec)/1000000; }
     double user_time() { return u_sec+(double)u_usec/1000000; }
     double sys_time() { return s_sec+(double)s_usec/1000000; }
     int tagId() { return tagid; }
+    int vdbTid() { return vdbTask; }
     virtual int Ekind() { return Ev_pause; }
     virtual void print() {
       printf ("Pause:  id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld tagNo %d\n",
@@ -217,16 +221,18 @@ class E_end : public Event {
   private:
     long u_sec, u_usec;   // getrusage times
     long s_sec, s_usec;
+    int vdbTask;
 
   public:
     E_end (long esec, long eusec, int nodeid, long u_sec, long u_usec, 
-           long s_sec, long s_usec)
+           long s_sec, long s_usec, int tid)
       : Event(esec, eusec, nodeid), u_sec(u_sec), u_usec(u_usec),
-              s_sec(s_sec), s_usec(s_usec) {};
+        s_sec(s_sec), s_usec(s_usec), vdbTask(tid) {};
 
     double cpu_time()  { return u_sec+s_sec + ((double)u_usec+s_usec)/1000000; }
     double user_time() { return u_sec+(double)u_usec/1000000; }
     double sys_time() { return s_sec+(double)s_usec/1000000; }
+    int vdbTid() { return vdbTask;}
     virtual int Ekind() { return Ev_end; }
     virtual void print() {
       printf ("End: node %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld\n",

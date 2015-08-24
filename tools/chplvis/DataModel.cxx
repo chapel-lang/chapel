@@ -34,6 +34,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+// C++ Libraries
+#include <set>
+
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 2048
 #endif
@@ -110,8 +113,8 @@ int DataModel::LoadData(const char * filename)
   int fnum;
   double seq;
 
-  int ssres = sscanf(configline, "ChplVdebug: nodes %d id %d seq %lf",
-                      &nlocales, &fnum, &seq);
+  int ssres = sscanf(configline, "ChplVdebug: nodes %d nid %d tid %*d seq %lf",
+                     &nlocales, &fnum, &seq);
   if (ssres  != 3) {
     fl_message ("\n  LoadData: incorrect data on first line of %s. (%d)\n",
              fullfilename, ssres);
@@ -164,6 +167,10 @@ int DataModel::LoadData(const char * filename)
     // Special case ... Count one task for all locales[0].
     tagList[i]->maxTasks = tagList[i]->locales[0].numTasks = 1;
   }
+
+  if (taskTimeline != NULL)
+    delete [] taskTimeline;
+  taskTimeline = new std::list<Event*>[numLocales];
 
   int cTagNo = TagStart;
   tagData *curTag = tagList[1];
@@ -241,6 +248,14 @@ int DataModel::LoadData(const char * filename)
           if (curTag->maxClock < curTag->locales[curNodeId].clockTime) {
             curTag->maxClock = curTag->locales[curNodeId].clockTime;
           }
+          { // Remove the task record that started the "end record"
+            std::map<long,taskData>::iterator it;
+            it = curTag->locales[curNodeId].tasks.find(gp->vdbTid());
+            if (it != curTag->locales[curNodeId].tasks.end()) {
+                curTag->locales[curNodeId].tasks.erase((*it).first);
+                // printf ("Removed task %d\n", gp->vdbTid());
+            }
+          }
         }
         break;
 
@@ -264,14 +279,12 @@ int DataModel::LoadData(const char * filename)
             curTag->maxClock = curTag->locales[curNodeId].clockTime;
           }
           // Remove last task to with Begin Rec but no End Rec
-          {
-            std::map<long,taskData>::reverse_iterator it;
-            it = curTag->locales[curNodeId].tasks.rbegin();
-            while (it != curTag->locales[curNodeId].tasks.rend()) {
-              if ((*it).second.endRec == NULL && (*it).second.beginRec != NULL)
+          { // Remove the task record that started the "end record"
+            std::map<long,taskData>::iterator it;
+            it = curTag->locales[curNodeId].tasks.find(pp->vdbTid());
+            if (it != curTag->locales[curNodeId].tasks.end()) {
                 curTag->locales[curNodeId].tasks.erase((*it).first);
-              else 
-                it++;
+                //printf ("Removed task %d\n", pp->vdbTid());
             }
           }
           // For 2nd time through loop, do the same thing for All
@@ -298,15 +311,12 @@ int DataModel::LoadData(const char * filename)
           if (curTag->maxClock < curTag->locales[curNodeId].clockTime) {
             curTag->maxClock = curTag->locales[curNodeId].clockTime;
           }
-          // Remove last task to with Begin Rec but no End Rec
-          {
-            std::map<long,taskData>::reverse_iterator it;
-            it = curTag->locales[curNodeId].tasks.rbegin();
-            while (it != curTag->locales[curNodeId].tasks.rend()) {
-              if ((*it).second.endRec == NULL && (*it).second.beginRec != NULL)
+          { // Remove the task record that started the "end record"
+            std::map<long,taskData>::iterator it;
+            it = curTag->locales[curNodeId].tasks.find(ep->vdbTid());
+            if (it != curTag->locales[curNodeId].tasks.end()) {
                 curTag->locales[curNodeId].tasks.erase((*it).first);
-              else 
-                it++;
+                //printf ("Removed task %d\n", ep->vdbTid());
             }
           }
           // For 2nd time through loop, do the same thing for All
@@ -389,23 +399,25 @@ int DataModel::LoadData(const char * filename)
           if (it != curTag->locales[curNodeId].tasks.end()) {
             // Update the end record
             (*it).second.endRec = etp;
+            (*it).second.endTagNo = cTagNo;
             //printf ("End task %d, node %d\n", etp->getTaskId(), curNodeId);
           } else {
-            // No found task
-            if (cTagNo > TagStart) {
-              it = tagList[cTagNo+1]->locales[curNodeId].tasks.find(etp->getTaskId());
-              if (it == tagList[cTagNo+1]->locales[curNodeId].tasks.end()) {
-                //printf ("(End task) No such task %d in tag %s nodeid %d.\n",
-                //        etp->getTaskId(), curTag->name.c_str(), curNodeId);
-              } else {
-                // Found it in the previous one, it points at it
-                /*printf ("Task %d: Begin Tag %s, End Tag %s, nodeId %d %s\n",
-                        etp->getTaskId(), tagList[cTagNo+1]->name.c_str(),
-                        curTag->name.c_str(), curNodeId, 
-                        (*it).second.taskRec->isLocal() ? "(Local)" : ""); */
-                // Remove it from consideration because it crosses tags.
-                tagList[cTagNo+1]->locales[curNodeId].tasks.erase(it);
+            int tryTagNo = cTagNo-1;
+            while (tryTagNo > DataModel::TagALL) {
+              it = tagList[tryTagNo+2]->locales[curNodeId].tasks.find(etp->getTaskId());
+              if (it != tagList[tryTagNo+2]->locales[curNodeId].tasks.end()) {
+                (*it).second.endRec = etp;
+                (*it).second.endTagNo = cTagNo;
+                printf ("Found end task %d in tag %d started in tag %s (%d), nid %d\n",
+                        etp->getTaskId(), cTagNo, tagList[tryTagNo+2]->name.c_str(),
+                        tryTagNo, curNodeId);
+                break;
               }
+              tryTagNo--;
+            }
+            if (tryTagNo == DataModel::TagALL) {
+              printf ("No task begin found for task %d, nid %d\n", etp->getTaskId(),
+                      curNodeId);
             }
           }
         }
@@ -476,7 +488,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   // User/System time variables 
   long u_sec, u_usec, s_sec, s_usec;
   if (sscanf(line, "ChplVdebug: nodes %d nid %d tid %d seq %lf %ld.%ld %ld.%ld %ld.%ld",
-             &floc, &findex, &vdbTdi, &fseq, &e_sec, &e_usec, &u_sec, &u_usec, &s_sec,
+             &floc, &findex, &vdbTid, &fseq, &e_sec, &e_usec, &u_sec, &u_usec, &s_sec,
              &s_usec)
       != 10) {
     fprintf (stderr, "LoadData: incorrect data on first line of %s.\n",
@@ -494,20 +506,17 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     return 0;
   }
 
+  // Task Ids of tasks know to be part of the VisualDebug workings.  
+  std::set<int> vdbTids;  
+  if (findex != 0)
+    (void)vdbTids.insert(vdbTid);
+
   // Create a start event with starting user/sys times.
   std::list<Event *>::iterator itr = theEvents.begin();
 
   // Other initializations
   numTags = 0;
 
-  // Remove overhead ...
-  //if (findex != 0) {
-  //  ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
-  //  ignoreTask = 3;
-    // printf ("%s: overhead fork %d, task %d\n", filename, ignoreFork, ignoreTask );
-  //}
-
-  
   // Now read the rest of the file
   Event *newEvent = new E_start(e_sec, e_usec, findex, u_sec, u_usec, s_sec, s_usec);
   if (itr == theEvents.end()) {
@@ -581,9 +590,13 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
                    " nfilename = '%s'\n", nid, taskid, onstr, nlineno, nfilename);
           nErrs++;
         } else {
-          //printf ("Task: node %d, task %d, onCmd %c\n", nid, taskid, onstr[0]);
-          // lookup / insert or use nfilename ....
-          newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O', nlineno, NULL);
+          if (nlineno == 0 || strstr(nfilename,"/VisualDebug.chpl") == NULL) {
+            newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O', nlineno, NULL);
+          } else {
+            (void)vdbTids.insert(taskid);
+            // printf ("task is vdbtask: %d\n", taskid);
+          }
+
         }
         break;
 
@@ -618,31 +631,29 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
       case 'f':  // All the forks:
         // s.u nodeID otherNode subloc fid arg arg_size
-        if ((cvt = sscanf (&linedata[nextCh], "%d %d %d %*d 0x%*x %d", 
-                           &nid, &rnid, &fid, &dlen)) != 4) {
+        if ((cvt = sscanf (&linedata[nextCh], "%d %d %d %*d 0x%*x %d %d", 
+                           &nid, &rnid, &fid, &dlen, &vdbTid)) != 5) {
           fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, filename);
           nErrs++;
         } else {
-          //if (ignoreFork && (rnid == nid*2+1 || rnid == nid*2+2)) {
-          //  ignoreFork--;
-            // printf ("Ignoring fork: %s\n", linedata);
-          //  break;
-          // }
-          newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_');
+          if (vdbTids.find(vdbTid) == vdbTids.end()) {
+            newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_');
+          } else {
+            // printf ("fork vdbtid: %d\n", vdbTid);
+          }
         }
         break;
 
       case 'P':  // Pause generating data
-        if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d",
-                    &u_sec, &u_usec, &s_sec, &s_usec, &nid, &tagId) != 6 ) {
+        if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d %d",
+                    &u_sec, &u_usec, &s_sec, &s_usec, &nid, &vdbTid, &tagId) != 7 ) {
           fprintf (stderr, "Bad 'End' line: %s\n", filename);
           nErrs++;
         } else {
-          newEvent = new E_pause(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, tagId);
-          //if (findex != 0) {
-          //  ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
-          //  ignoreTask = 2;
-          //}
+          newEvent = new E_pause(sec, usec, nid, u_sec, u_usec,
+                                 s_sec, s_usec, tagId, vdbTid);
+          if (nid != 0)
+            (void)vdbTids.insert(vdbTid);
         }
         break;
 
@@ -650,31 +661,30 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         slen = strlen(line)-1;
         if (line[slen] == '\n') line[slen] = 0;
         // printf ("TagLine: '%s'\n", &linedata[nextCh]);
-        if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d %ln",
-                          &u_sec, &u_usec, &s_sec, &s_usec, &nid, &tagId, &nameOffset) != 6) {
+        if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d %d %ln",
+                    &u_sec, &u_usec, &s_sec, &s_usec, &nid, &vdbTid, &tagId, &nameOffset)
+            != 7) {
           fprintf (stderr, "Bad 'Tag' line: %s\n", filename);
         } else {
           nextCh += nameOffset;
           newEvent = new E_tag(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, tagId, 
-                               &linedata[nextCh]);
+                               &linedata[nextCh], vdbTid);
           if (tagId >= numTags)
             numTags = tagId+1;
-          //if (findex != 0) {
-          //  ignoreFork = (findex*2+2<floc ? 2 : (findex*2+1<floc ? 1 : 0));
-          //  ignoreTask = 2;
-          //}
+          if (nid != 0)
+            (void)vdbTids.insert(vdbTid);
         }
         break;
 
       case 'E':  // end of the file or End of task
         if (line[1] == 'n') {
           // End of file
-          if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d",
-                      &u_sec, &u_usec, &s_sec, &s_usec, &nid) != 5 ) {
+          if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d",
+                      &u_sec, &u_usec, &s_sec, &s_usec, &nid, &vdbTid) != 6 ) {
             fprintf (stderr, "Bad 'End' line: %s\n", filename);
             nErrs++;
           } else {
-            newEvent = new E_end(sec, usec, nid, u_sec, u_usec, s_sec, s_usec);
+            newEvent = new E_end(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, vdbTid);
           }
         } else {
           // End of task
@@ -684,7 +694,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             fprintf (stderr, "Bad Etask line: %s\n", filename);
             nErrs++;
           } else {
-            newEvent = new E_end_task(sec, usec, nid, taskid);
+            if (vdbTids.find(taskid) == vdbTids.end()) {
+              newEvent = new E_end_task(sec, usec, nid, taskid);
+            } else {
+              //printf ("end vdb tid: %d\n", taskid);
+            }
           }
         }
         break;
@@ -696,7 +710,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
           fprintf (stderr, "Bad Etask line: %s\n", filename);
           nErrs++;
         } else {
-          newEvent = new E_begin_task(sec, usec, nid, taskid);
+          if (vdbTids.find(taskid) == vdbTids.end()) {
+            newEvent = new E_begin_task(sec, usec, nid, taskid);
+          } else {
+            //printf ("begin vdb tid: %d\n", taskid);
+          }
         }
         break;
       
@@ -704,7 +722,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         /* Do nothing */ ;
         //printf ("d");
     }
-    fflush(stdout);
+
     //  Add the newEvent to the list, group Starts, Tags, Resumes and Ends together.
     if (newEvent) {
       if (theEvents.empty()) {
@@ -721,9 +739,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             fprintf (stderr, "Internal error, event mismatch. file '%s'\n", filename); \
             printf ("newEvent: "); newEvent->print();
             if (itr != theEvents.end()) {
-                printf ("itr: "); (*itr)->print();
+               printf ("itr: "); (*itr)->print();
             } else {
-              printf ("At end of list\n");
+               printf ("At end of list\n");
             }
           } else {
             // More complicated ... move past proper kinds ...

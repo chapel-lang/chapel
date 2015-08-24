@@ -44,8 +44,9 @@ struct taskData {
   E_task *taskRec;
   E_begin_task *beginRec;
   E_end_task *endRec;
+  int endTagNo;
 
-  taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL) {};
+  taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL), endTagNo(-2) {};
 };
 
 // Used to track a locale,  each tag has an array of locales
@@ -94,7 +95,8 @@ class DataModel {
   // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
   tagData **tagList;  
 
-  // Task Event (begin, end) timeline for task concurrency, one linear structure per locale
+  // Task Event (begin, end) timeline for task concurrency,
+  //     one linear structure per locale
   std::list<Event*> *taskTimeline;
 
   std::list<Event*> theEvents;
