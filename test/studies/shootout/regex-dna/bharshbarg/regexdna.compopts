@@ -1,3 +1,0 @@
-# Disable bulk transfers.
-# These do not work when the array elements own memory.
--suseBulkTransfer=false

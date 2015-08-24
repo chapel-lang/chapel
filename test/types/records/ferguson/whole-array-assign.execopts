@@ -1,5 +1,0 @@
-#This test fails in the first compilation configuration unless the number of tasks is throttled to 1.
-# This is evidence that in task setup, a reference count on a shared object 
-# (like the array) is not getting bumped, so it can go to zero before  parallel
-# iteration completes.
---dataParTasksPerLocale=1
