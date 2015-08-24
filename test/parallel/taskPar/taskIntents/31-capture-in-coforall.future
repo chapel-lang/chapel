@@ -1,3 +1,0 @@
-bug: Records copied into local args (shadow variables) should be piped through autoCopy.
-
-Duplicate. See 21-capture-in-cobegin.future for details.

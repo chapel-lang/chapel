@@ -1,2 +1,0 @@
-# This test runs fine if we throttle it down to one task per locale (on a single locale).
---dataParTasksPerLocale=1

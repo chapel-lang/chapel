@@ -1,40 +1,28 @@
 === local substring
-
-
 b
+sub
 bst
-
-
+bstring
 === local substring
-
-
 b
+sub
 bst
-
-
+bstring
 === remote substring
-
-
-
-
 b
 b
+sub
+sub
 bst
 bst
-
-
-
-
+bstring
+bstring
 === remote substring
-
-
-
-
 b
 b
+sub
+sub
 bst
 bst
-
-
-
-
+bstring
+bstring
