@@ -55,6 +55,12 @@ static bool isTrivialAssignment(FnSymbol* fn)
   if (lhs->type->getValType() != rhs->type->getValType())
     return false;
 
+  // Don't consider assignment for class types to be trivial.
+  // That is because a class type represents a pointer, so
+  // we don't really track whether or not it is POD.
+  if (isClass(lhs->type->getValType()))
+    return false;
+
   // Both argument types must be POD types
   if (isPOD(lhs->type->getValType()) && isPOD(rhs->type->getValType()))
     return true;
