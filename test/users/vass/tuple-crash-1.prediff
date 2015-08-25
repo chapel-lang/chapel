@@ -1,3 +1,5 @@
 #!/bin/bash
-sed "s/^\(internal error: FUN\).*$/\1/" < $2 > $2.tmp
-mv $2.tmp $2
+
+output=$2
+cat $output | sed 's@ChapelBase.chpl:[0-9]*:@::@' > $output.tmp
+mv $output.tmp $output
