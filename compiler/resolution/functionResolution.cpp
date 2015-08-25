@@ -238,6 +238,7 @@ static bool typeHasRefField(Type *type);
 #endif
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
+static bool hasUserAssign(Type* type);
 static void resolveAutoCopy(Type* type);
 static void resolveAutoDestroy(Type* type);
 static void resolveOther();
@@ -499,6 +500,19 @@ static void makeRefType(Type* type) {
 
   if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     type->refType->symbol->addFlag(FLAG_ATOMIC_TYPE);
+}
+
+static bool
+hasUserAssign(Type* type) {
+  SET_LINENO(type->symbol);
+  Symbol* tmp = newTemp(type);
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+  CallExpr* call = new CallExpr("=", tmp, tmp);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  resolveFns(fn);
+  tmp->defPoint->remove();
+  bool compilerAssign = fn->hasFlag(FLAG_COMPILER_GENERATED);
+  return !compilerAssign;
 }
 
 
@@ -7459,6 +7473,9 @@ static bool propagateNotPOD(Type* t) {
   if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
       autoCopyFn || autoDestroyFn ||
       destructor )
+    notPOD = true;
+
+  if( !notPOD && hasUserAssign(t) )
     notPOD = true;
 
   if (notPOD) {
