@@ -106,8 +106,8 @@ symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an 
 
 // Is this type a Plain-Old Data (POD) type - ie no autocopy/destructor/=
 // need ever be called - bit copies will do.
-symbolFlag( FLAG_POD , npr, "plain old data" , "data can be bit copied")
-symbolFlag( FLAG_NOT_POD , npr, "not plain old data" , "bit copy overridden")
+symbolFlag( FLAG_POD , ypr, "plain old data" , "data can be bit copied")
+symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
 
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
@@ -203,7 +203,7 @@ symbolFlag( FLAG_PRINT_MODULE_INIT_INDENT_LEVEL , ypr, "print module init indent
 symbolFlag( FLAG_PRIVATIZED_CLASS , ypr, "privatized class" , "privatized array or domain class" )
 symbolFlag( FLAG_PRIVATE, npr, "private", ncm )
 symbolFlag( FLAG_PROMOTION_WRAPPER , npr, "promotion wrapper" , ncm )
-symbolFlag( FLAG_RANGE , ypr, "range" , "indicates that this type can be iterated" )
+symbolFlag( FLAG_RANGE , ypr, "range" , "indicates the range type" )
 symbolFlag( FLAG_RECURSIVE_ITERATOR , npr, "recursive iterator" , "iterators which call themselves" )
 symbolFlag( FLAG_REDUCESCANOP , ypr, "ReduceScanOp" , "the ReduceScanOp class" )
 symbolFlag( FLAG_REF , ypr, "ref" , ncm )

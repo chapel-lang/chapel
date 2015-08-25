@@ -55,6 +55,7 @@ module ChapelRange {
   // The _aligned bit can also be set through the application of an explicit alignment.
   //
   
+  pragma "plain old data"
   pragma "range"
   record range
   {
