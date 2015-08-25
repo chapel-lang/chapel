@@ -7398,6 +7398,8 @@ static void resolveAutoCopies() {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
+    // Mark record/tuple types as POD or NOT_POD
+    propagateNotPOD(ts->type);
   }
 }
 
