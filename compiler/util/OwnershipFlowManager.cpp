@@ -957,7 +957,7 @@ static void insertAutoDestroyAfterStmt(SymExpr* se)
 {
   Symbol* sym = se->var;
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
-  if (autoDestroy == NULL)
+  if (isPOD(sym->type) || autoDestroy == NULL)
     // This type does not have a destructor, so we don't have to add an
     // autoDestroy call for it.
     return;
@@ -1184,7 +1184,7 @@ static void insertAutoCopy(SymExpr* se)
   Symbol* sym = se->var;
   FnSymbol* autoCopyFn = autoCopyMap.get(sym->type);
 
-  if (autoCopyFn == NULL)
+  if (isPOD(sym->type) || autoCopyFn == NULL)
     return;
 
   // Prevent autoCopy functions from calling themselves recursively.
@@ -1469,7 +1469,7 @@ OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
     return;
 
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
-  if (autoDestroy == NULL)
+  if (isPOD(sym->type) || autoDestroy == NULL)
     // This type does not have a destructor, so we don't have a add an
     // autoDestroy call for it.
     return;
