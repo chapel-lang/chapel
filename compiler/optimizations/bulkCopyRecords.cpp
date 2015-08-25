@@ -58,6 +58,8 @@ static bool isTrivialAssignment(FnSymbol* fn)
   // Don't consider assignment for class types to be trivial.
   // That is because a class type represents a pointer, so
   // we don't really track whether or not it is POD.
+  // See
+  //   test/classes/hilde/freeAssignment.chpl
   if (isClass(lhs->type->getValType()))
     return false;
 
