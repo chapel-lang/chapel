@@ -780,7 +780,6 @@ static void build_record_assignment_function(AggregateType* ct) {
 
   if (externRecord) {
     fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
-    // instead of marking fn with FLAG_TRIVIAL_ASSIGNMENT, mark the type as POD
     ct->symbol->addFlag(FLAG_POD);
     fn->addFlag(FLAG_INLINE);
   } else {
