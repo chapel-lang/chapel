@@ -446,7 +446,6 @@ int DataModel::LoadData(const char * filename)
   for (int ix_t = -1; ix_t < numTags; ix_t++) {
     curTag = tagList[ix_t+2];
     curTag->maxTasks = 0;
-    curTag->maxConc = 0;
     // printf ("settings max for tag %s\n", getTagName(ix_t).c_str());
     for (int ix_l = 0; ix_l < nlocales; ix_l++) {
       // Total number of tasks
@@ -459,11 +458,6 @@ int DataModel::LoadData(const char * filename)
       tagList[0]->locales[ix_l].numTasks += curTag->locales[ix_l].numTasks;
       if (tagList[0]->locales[ix_l].numTasks > tagList[0]->maxTasks)
         tagList[0]->maxTasks = tagList[0]->locales[ix_l].numTasks;
-      // Task concurrency
-      if (curTag->locales[ix_l].maxConc > curTag->maxConc)
-        curTag->maxConc = curTag->locales[ix_l].maxConc;
-      if (curTag->maxConc > tagList[0]->maxConc) 
-        tagList[0]->maxConc = curTag->maxConc;
     }
   }  
 
@@ -471,8 +465,8 @@ int DataModel::LoadData(const char * filename)
   itr = theEvents.begin();
   cTagNo = TagStart;
   curTag = tagList[1];
-  curTag->locales[0].runConc = 1;
   curTag->locales[0].maxConc = 1;
+  tagList[0]->maxConc = 1;
   
   while (itr != theEvents.end()) {
     Event *ev = *itr;
@@ -512,10 +506,14 @@ int DataModel::LoadData(const char * filename)
           if (curTag->locales[curNodeId].runConc > 
               curTag->locales[curNodeId].maxConc) {
             curTag->locales[curNodeId].maxConc = curTag->locales[curNodeId].runConc;
+            if (curTag->locales[curNodeId].maxConc >
+                tagList[0]->locales[curNodeId].maxConc)
+                tagList[0]->locales[curNodeId].maxConc =
+                  curTag->locales[curNodeId].maxConc;
             if (curTag->locales[curNodeId].maxConc > curTag->maxConc) {
               curTag->maxConc = curTag->locales[curNodeId].maxConc;
-              if (curTag->maxConc > tagList[0]->locales[curNodeId].maxConc)
-                tagList[0]->locales[curNodeId].maxConc = curTag->maxConc;
+              if (curTag->maxConc > tagList[0]->maxConc)
+                tagList[0]->maxConc = curTag->maxConc;
             }
           }
         }
