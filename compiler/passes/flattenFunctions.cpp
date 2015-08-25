@@ -93,6 +93,11 @@ passableByVal(Type* type) {
 // Otherwise passing by value is more efficient.
 static bool
 passByRef(Symbol* sym) {
+
+  // Is it a non-POD record type?
+  if( sym->type->symbol->hasFlag(FLAG_NOT_POD) )
+    return true;
+
   //
   // If it's constant (in the sense that the value will not change),
   // there's no need to pass it by reference
