@@ -45,7 +45,7 @@ module VisualDebug
 
   private extern proc chpl_vdebug_pause ();
 
-  private extern proc chpl_vdebug_nolog ();
+  private extern proc chpl_vdebug_getTid ();
 
 
 /* Instead of using a "coforall l in Locales" which is an O(n) operation
@@ -76,7 +76,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
       else
          offset = off;
 
-      chpl_vdebug_nolog();
+      chpl_vdebug_getTid();
       coforall (rid, shift) in hc_id2com(id, offset) do
          if rid < n then
              on Locales[rid] do VDebugTree (what, name, time, rid, n, offset >> shift);
