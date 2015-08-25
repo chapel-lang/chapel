@@ -244,10 +244,10 @@ checkReturnPaths(FnSymbol* fn) {
   // that to count as a definition of a return value.
   //
   // The only types we still expect initialization code for are those marked
-  // with FLAG_IGNORE_NOINIT, so those are the only cases where a single
+  // with FLAG_NOT_POD, so those are the only cases where a single
   // definition means that the function writer neglected to return a value.
   if (result == 0 || (result == 1 && fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE) &&
-                      fn->retType->symbol->hasFlag(FLAG_IGNORE_NOINIT)))
+                      fn->retType->symbol->hasFlag(FLAG_NOT_POD)))
     USR_FATAL_CONT(fn->body, "control reaches end of function that returns a value");
 }
 

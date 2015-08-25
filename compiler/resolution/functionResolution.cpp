@@ -373,7 +373,7 @@ static void resolveEnumTypes();
 static void resolveDynamicDispatches();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
-static bool propagateIgnoreNoinit(Type* t);
+static bool propagateNotPOD(Type* t);
 static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
@@ -5051,9 +5051,9 @@ preFold(Expr* expr) {
       Type* type = call->get(1)->getValType();
       if (isAggregateType(type) || type == dtStringC || type == dtStringCopy) {
 
-        bool containsNoinit = propagateIgnoreNoinit( type);
+        bool containsNotPOD = propagateNotPOD(type);
 
-        if (containsNoinit) {
+        if (containsNotPOD) {
           // These types deal with their uninitialized fields differently than
           // normal records/classes.  They may require special case
           // implementations, but were capable of being isolated from the new
@@ -5586,7 +5586,13 @@ preFold(Expr* expr) {
       else
         result = new SymExpr(gFalse);
       call->replace(result);
-
+    } else if (call->isPrimitive(PRIM_IS_POD)) {
+      bool notPod = propagateNotPOD(call->get(1)->typeInfo());
+      if( ! notPod )
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_SYNC_TYPE)) {
       Type* syncType = call->get(1)->typeInfo();
       if (syncType->symbol->hasFlag(FLAG_SYNC))
@@ -7397,41 +7403,83 @@ static void resolveAutoCopies() {
 
 /* In order to correctly initialize records or tuples in which
    a component has FLAG_IGNORE_NOINIT, we need to propagate that
-   flag to the parent types as well.
+   flag to the parent types as well. While doing so, we also
+   propagate whether or not that type is not Plain-old-Data
+   (which would mean it does not need auto copies or auto
+    destroys - bit copies will do).
 
-   After this function is called on a type, that type and any field
-   types must have either FLAG_IGNORE_NOINIT or FLAG_ALLOW_NOINIT set.
+   After this function is called on a record type, that type and any field
+   record types must have either FLAG_POD or FLAG_NOT_POD set.
 
-   Returns true if FLAG_IGNORE_NOINIT is set, false otherwise.
+   After setting either FLAG_POD or FLAG_NOT_POD if necessary,
+   returns true if FLAG_NOT_POD is set, false otherwise.
  */
-static bool propagateIgnoreNoinit(Type* t) {
+static bool propagateNotPOD(Type* t) {
   // Move past those records we've already handled
-//  if( t->symbol->hasFlag(FLAG_ALLOW_NOINIT) )
-//    return false;
-  if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) )
+  if (t->symbol->hasFlag(FLAG_POD))
+    return false;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
     return true;
+
   // Move past classes and non-aggregate types.
   if( (!isAggregateType(t)) || isClass(t) )
-    return t->symbol->hasFlag(FLAG_IGNORE_NOINIT);
-
+    return false;
 
   AggregateType *at = (AggregateType*) t;
-  bool ignoreNoinit = false;
-
-  // setting the flag here avoids recursion problems.
-//  at->symbol->addFlag(FLAG_ALLOW_NOINIT);
+  bool notPOD = false;
 
   for_fields(field, at) {
     Type* ft = field->typeInfo();
-    ignoreNoinit |= propagateIgnoreNoinit(ft);
-  }
- 
-  if (ignoreNoinit) {
-//    at->symbol->removeFlag(FLAG_ALLOW_NOINIT);
-    at->symbol->addFlag(FLAG_IGNORE_NOINIT);
+    notPOD |= propagateNotPOD(ft);
   }
 
-  return ignoreNoinit;
+  // make sure we have resolve auto copy/auto destroy.
+  resolveAutoCopy(t);
+  resolveAutoDestroy(t);
+
+  // also check for a non-compiler generated
+  // autocopy/autodestroy.
+  FnSymbol* autoCopyFn = autoCopyMap.get(t);
+  FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
+  FnSymbol* destructor = t->destructor;
+
+  // Ignore invisible (compiler-defined) functions.
+  if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED))
+    autoCopyFn = NULL;
+  if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
+    autoDestroyFn = NULL;
+  if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED))
+    destructor = NULL;
+
+  // if it has flag ignore no-init, it's not pod
+  // if it has a user-specified auto copy / auto destroy, it's not pod 
+  // if it has a user-specified destructor, it's not pod
+  if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
+      autoCopyFn || autoDestroyFn ||
+      destructor )
+    notPOD = true;
+
+  if (notPOD) {
+    at->symbol->addFlag(FLAG_NOT_POD);
+  } else {
+    at->symbol->addFlag(FLAG_POD);
+  }
+
+  return notPOD;
+}
+
+bool isPOD(Type* t)
+{
+  // things that aren't aggregate types and class types are POD
+  if( (!isAggregateType(t)) || isClass(t) )
+    return true;
+  // handle anything already marked
+  if (t->symbol->hasFlag(FLAG_POD))
+    return true;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return false;
+  // otherwise, assume not.
+  return false;
 }
 
 static void resolveRecordInitializers() {

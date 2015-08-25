@@ -780,7 +780,8 @@ static void build_record_assignment_function(AggregateType* ct) {
 
   if (externRecord) {
     fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
-    fn->addFlag(FLAG_TRIVIAL_ASSIGNMENT);
+    // instead of marking fn with FLAG_TRIVIAL_ASSIGNMENT, mark the type as POD
+    ct->symbol->addFlag(FLAG_POD);
     fn->addFlag(FLAG_INLINE);
   } else {
     for_fields(tmp, ct) {
@@ -839,7 +840,8 @@ static void build_extern_assignment_function(Type* type)
 
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
-  fn->addFlag(FLAG_TRIVIAL_ASSIGNMENT);
+  // instead of marking fn with FLAG_TRIVIAL_ASSIGNMENT, mark the type as POD
+  type->symbol->addFlag(FLAG_POD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
 

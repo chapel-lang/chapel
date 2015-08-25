@@ -28,7 +28,6 @@ OPTIMIZATIONS_SRCS = \
 	reachingDefinitionsAnalysis.cpp \
 	remoteValueForwarding.cpp \
 	removeEmptyRecords.cpp \
-	removeUnnecessaryAutoCopyCalls.cpp \
 	removeUnnecessaryGotos.cpp \
 	removeWrapRecords.cpp \
 	scalarReplace.cpp

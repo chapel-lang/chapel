@@ -70,7 +70,6 @@ void prune2();
 void readExternC();
 void refPropagation();
 void removeEmptyRecords();
-void removeUnnecessaryAutoCopyCalls();
 void removeWrapRecords();
 void resolve();
 void resolveIntents();

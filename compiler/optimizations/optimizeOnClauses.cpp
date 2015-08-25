@@ -272,6 +272,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_CREATE_FN_TYPE:
 
   case PRIM_NUM_FIELDS:
+  case PRIM_IS_POD:
   case PRIM_FIELD_NUM_TO_NAME:
   case PRIM_FIELD_VALUE_BY_NUM:
   case PRIM_FIELD_ID_BY_NUM:

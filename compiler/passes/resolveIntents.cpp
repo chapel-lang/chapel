@@ -150,5 +150,6 @@ void resolveIntents() {
   replaceValArgsWithRefArgs();
   insertReferenceTemps();
   insertDerefTemps();
+
   intentsResolved = true;
 }
