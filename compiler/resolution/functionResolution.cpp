@@ -520,7 +520,9 @@ hasUserAssign(Type* type) {
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("=", tmp, tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
-  resolveFns(fn);
+  // Don't think we need to resolve the whole function
+  // since we're just looking for a flag.
+  //resolveFns(fn);
   tmp->defPoint->remove();
   bool compilerAssign = fn->hasFlag(FLAG_COMPILER_GENERATED);
   return !compilerAssign;
@@ -7443,6 +7445,9 @@ static void resolveAutoCopies() {
 
    After setting either FLAG_POD or FLAG_NOT_POD if necessary,
    returns true if FLAG_NOT_POD is set, false otherwise.
+
+   This function should only be called during resolution.
+   Call isPOD (or check FLAG_POD/FLAG_NOT_POD) after resolution.
  */
 static bool propagateNotPOD(Type* t) {
   // Move past those records we've already handled
