@@ -4,7 +4,7 @@ record Wrap {
   var _value;
 }
 
-proc =(ref lhs:Wrap, rhs) {
+proc +=(ref lhs:Wrap, rhs) {
   lhs._value.clearHelp();
 }
 
@@ -65,7 +65,7 @@ var s = new Wrap(_value = new Sparse());
 var a = new Wrap(_value = new Assoc());
 
 if doDense {
-  d = 1;
+  d += 1;
 }
-s = 1;
-a = 1;
+s += 1;
+a += 1;
