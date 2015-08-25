@@ -504,6 +504,17 @@ static void makeRefType(Type* type) {
 
 static bool
 hasUserAssign(Type* type) {
+
+  // Workaround for problems with resolution finding =
+  // for tuples types causing compile failures.
+  // See
+  //  modules/sungeun/no-use-enum
+
+  // In the future, hasUserAssign should just return
+  // false if the = call does not resolve
+  // (instead of causing a compile error).
+  if( type->symbol->hasFlag(FLAG_TUPLE) ) return false;
+
   SET_LINENO(type->symbol);
   Symbol* tmp = newTemp(type);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
@@ -5602,10 +5613,10 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_POD)) {
       bool notPod = propagateNotPOD(call->get(1)->typeInfo());
-      if( ! notPod )
-        result = new SymExpr(gTrue);
-      else
+      if (notPod)
         result = new SymExpr(gFalse);
+      else
+        result = new SymExpr(gTrue);
       call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_SYNC_TYPE)) {
       Type* syncType = call->get(1)->typeInfo();
@@ -7412,8 +7423,11 @@ static void resolveAutoCopies() {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
-    // Mark record/tuple types as POD or NOT_POD
-    propagateNotPOD(ts->type);
+
+    if (isRecord(ts->type) ) {
+      // Mark record/tuple types as POD or NOT_POD
+      propagateNotPOD(ts->type);
+    }
   }
 }
 
@@ -7487,6 +7501,13 @@ static bool propagateNotPOD(Type* t) {
   return notPOD;
 }
 
+/* After resolution, other passes can call isPOD
+   in order to find out if a record type is POD.
+
+   During resolution, one should call propagateNotPOD
+   instead, so that the relevant calls can be resolved
+   and POD fields can be properly handled.
+ */
 bool isPOD(Type* t)
 {
   // things that aren't aggregate types and class types are POD
