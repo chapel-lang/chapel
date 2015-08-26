@@ -1539,13 +1539,6 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
       type = type->getValType();
     }
 
-    // Promotion wrappers end up wrapping iterators that are created on the
-    // stack.  So we also have to force them to be passed by value.
-    if (type->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-    {
-      type = type->getValType();
-    }
-    
     // If the iterator is a method and the local variable is _this and the
     // iterator method is not a ref iterator, we store the local by value.
     // TODO: This case might be absorbed in the above is applying the "temp in
