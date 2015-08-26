@@ -1,13 +1,13 @@
-var ops:[1..0] (int,object,int, int);
+var ops:[1..0] (int,object,int, int, int);
 
 var counter: atomic int;
 
-proc trackAllocation(c: object, id:int) {
-  ops.push_back( (1, c, id, 1+counter.fetchAdd(1)) );
+proc trackAllocation(c: object, id:int, x:int) {
+  ops.push_back( (1, c, id, x, 1+counter.fetchAdd(1)) );
 }
 
-proc trackFree(c: object, id:int) {
-  ops.push_back( (-1, c, id, 1+counter.fetchAdd(1)) );
+proc trackFree(c: object, id:int, x:int) {
+  ops.push_back( (-1, c, id, x, 1+counter.fetchAdd(1)) );
 }
 
 proc checkAllocations() {
@@ -17,28 +17,49 @@ proc checkAllocations() {
 
   var alloc_byid:domain(int);
   var free_byid:domain(int);
+  var x_byid:domain(int);
   var allocated:[alloc_byid] int; // id to op #
   var freed:[free_byid] int; // id to op #
+  var to_x:[x_byid] int;
 
   for op in ops {
-    var (optype, obj, id, counter) = op;
+    var (optype, obj, id, x, counter) = op;
     if optype > 0 {
       allocated[id] = counter;
+      to_x[id] = x;
     }
     if optype < 0 {
       freed[id] = counter;
+      to_x[id] = x;
     }
 
   }
 
+  proc printthem(arr)
+  {
+    for id in arr.sorted() {
+      write("(id=", id, " x=", to_x[id], ") ");
+    }
+  }
+
   if alloc_byid != free_byid {
     writeln("alloc != free - possibly a memory leak");
+
+    write("allocated and not freed: ");
     var alloc_not_freed = alloc_byid - free_byid;
-    writeln("allocated and not freed: ", alloc_not_freed.sorted());
+    printthem(alloc_not_freed);
+    writeln();
+
+    write("freed but not allocated: ");
     var freed_not_allocated = free_byid - alloc_byid;
-    writeln("freed but not allocated: ", freed_not_allocated.sorted());
+    printthem(freed_not_allocated);
+    writeln();
+
+    write("allocated and then freed: ");
     var alloc_freed = free_byid & alloc_byid;
-    writeln("allocated and then freed: ", alloc_freed.sorted());
+    printthem(alloc_freed);
+    writeln();
+
     assert(false);
   }
 
