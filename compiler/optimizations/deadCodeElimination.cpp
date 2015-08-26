@@ -56,7 +56,7 @@ static unsigned int deadModuleCount;
 // remove condStmts  with empty bodies
 // remove jumps to labels that immmediately follow
 //
-// This may require multiple passses to converge e.g.
+// This may require multiple passes to converge e.g.
 //
 // A block statement that contains an empty block statement
 //
@@ -69,15 +69,101 @@ static unsigned int deadModuleCount;
 // never used anywhere.
 //
 static bool isDeadVariable(Symbol* var,
-                           Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                           Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+                           Vec<SymExpr*>* defs,
+                           Vec<SymExpr*>* uses) {
   if (var->type->symbol->hasFlag(FLAG_REF)) {
-    Vec<SymExpr*>* uses = useMap.get(var);
-    Vec<SymExpr*>* defs = defMap.get(var);
     return (!uses || uses->n == 0) && (!defs || defs->n <= 1);
   } else {
-    Vec<SymExpr*>* uses = useMap.get(var);
     return !uses || uses->n == 0;
+  }
+}
+
+//
+// If a variable's uses consist of only a single autoCopy and a single
+// autoDestroy, (and it is only defined once) then it is not needed and can
+// be snipped.
+//
+static void removeAutoCopyDestroyPair(Symbol* var, Vec<SymExpr*>* defs,
+                                    Vec<SymExpr*>* uses) {
+  // Eliminates cases with more than 2 uses, as we only want to remove an
+  // autoCopy/autoDestroy pair if they are the only uses of that variable
+  if (uses && uses->n == 2) {
+    CallExpr* copyCall = NULL;
+    CallExpr* destroyCall = NULL;
+    // Traverse the two uses and save a single autoCopy and autoDestroy.
+    forv_Vec(SymExpr, se, *uses) {
+      if (se->parentExpr) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          if (FnSymbol* fn = call->isResolved()) {
+            if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
+              copyCall = call;
+            } else if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+              destroyCall = call;
+            }
+          }
+        }
+      }
+    }
+    // If both one autoDestroy and one autoCopy are present, we can remove that
+    // pair.  Otherwise, do nothing.
+    if (copyCall && destroyCall) {
+      // Handle only cases with a single def which is definitely still in the
+      // tree
+      if (defs && defs->n == 1 && defs->v[0]->parentExpr) {
+        CallExpr* def = toCallExpr(defs->v[0]->parentExpr);
+        INT_ASSERT(def);
+        // Assumes all defs are callexprs.  If that is not the case, please
+        // update this section to respond appropriately
+        Expr* replacement = NULL;
+        if (def->isPrimitive(PRIM_MOVE) || def->isPrimitive(PRIM_ASSIGN)) {
+          // Based on how these primitives work, we can assume that if they are
+          // in the def list, then var is the first argument and what is being
+          // assigned to it is the second argument.
+          bool wasAuto = false;
+          if (CallExpr* maybeAutoCopy = toCallExpr(def->get(2))) {
+            if (FnSymbol* fn = maybeAutoCopy->isResolved()) {
+              if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
+                // If the second arg to the assignment/move primitive is
+                // actually an autoCopy, skip the autoCopy and remove what
+                // is being copied, as it will be placed in our old autoCopy
+                replacement = maybeAutoCopy->get(1)->remove();
+                def->get(2)->remove();
+                wasAuto = true;
+              }
+            }
+          }
+          if (!wasAuto) {
+            // avoid repeated code.  get(2) wasn't an autoCopy, so replace it
+            // straight
+            replacement = def->get(2)->remove();
+          }
+          def->remove();
+        } else {
+          // In this case, the var is an argument to the function being called
+          // and it has out intent.  We know that it isn't in an opEquals
+          // primitive or defined with ref or inout intent (the other cases
+          // which would insert it into the def list) because those would
+          // have been also inserted into the use list and we know they haven't
+          // been, because all that is present in the use list is one autoCopy
+          // and one autoDestroy (as determined earlier in this function).
+          // The out intent case is a little too complicated, so skip it as
+          // well.
+
+          // NOTE: Alterations of isDefOrUse should be propogated here!
+          replacement = NULL;
+        }
+
+        if (replacement) {
+          // The def was useful, so...
+          // Replace the use of var with a use of what was assigned to var
+          copyCall->get(1)->replace(replacement);
+          // The autoDestroy we will no longer need, so remove it
+          destroyCall->remove();
+          // Remove var's defExpr.
+          var->defPoint->remove();
+        }
+      }
+    }
   }
 }
 
@@ -100,7 +186,10 @@ void deadVariableElimination(FnSymbol* fn) {
     if (sym == fn->_this)
       continue;
 
-    if (isDeadVariable(sym, defMap, useMap)) {
+    Vec<SymExpr*>* defs = defMap.get(sym);
+    Vec<SymExpr*>* uses = useMap.get(sym);
+
+    if (isDeadVariable(sym, defs, uses)) {
       for_defs(se, defMap, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call &&
@@ -113,6 +202,8 @@ void deadVariableElimination(FnSymbol* fn) {
           call->remove();
       }
       sym->defPoint->remove();
+    } else {
+      removeAutoCopyDestroyPair(sym, defs, uses);
     }
   }
 
