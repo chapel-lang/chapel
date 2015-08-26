@@ -78,7 +78,8 @@ Function {make_locale_window(int locnum, localeData *locInfo)} {open C
     }
   }
   code {w->setMembers(Locale_Title,cpuInfo,locInfo,locnum);
-w->updateWin(locInfo);} {}
+w->updateWin(locInfo);} {selected
+  }
 } 
 
 Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
@@ -130,7 +131,7 @@ if (selfile) {
    Info->setFileName(selfile);
    Info->clearTagName();
    MainWindow->redraw();
-}} selected
+}}
           xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
