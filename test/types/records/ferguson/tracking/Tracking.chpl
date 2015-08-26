@@ -34,9 +34,11 @@ proc checkAllocations() {
   if alloc_byid != free_byid {
     writeln("alloc != free - possibly a memory leak");
     var alloc_not_freed = alloc_byid - free_byid;
-    writeln("allocated and not freed: ", alloc_not_freed);
+    writeln("allocated and not freed: ", alloc_not_freed.sorted());
     var freed_not_allocated = free_byid - alloc_byid;
-    writeln("freed but not allocated: ", freed_not_allocated);
+    writeln("freed but not allocated: ", freed_not_allocated.sorted());
+    var alloc_freed = free_byid & alloc_byid;
+    writeln("allocated and then freed: ", alloc_freed.sorted());
     assert(false);
   }
 
