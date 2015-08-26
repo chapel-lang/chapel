@@ -697,7 +697,7 @@ module ChapelBase {
     // larger and smaller arrays.
     //
 
-    if parallelInitElts {
+    if parallelInitElts && here != dummyLocale {
       extern proc chpl_getSysPageSize():size_t;
       const pagesizeInBytes = chpl_getSysPageSize().safeCast(int);
 
