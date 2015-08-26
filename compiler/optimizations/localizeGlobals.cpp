@@ -64,7 +64,8 @@ void localizeGlobals() {
   // beer-promoted-infer-explicit.  As of this writing there were other issues,
   // but once it works, re-enabling this optimization in its current form
   // should expose the error readily.
-  if (fNoGlobalConstOpt || true) return;
+  if (fNoGlobalConstOpt) return;
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     Map<Symbol*,VarSymbol*> globals;
     std::vector<BaseAST*> asts;
@@ -82,6 +83,7 @@ void localizeGlobals() {
         if (parentmod &&
             fn != parentmod->initFn &&
             var->hasFlag(FLAG_CONST) &&
+            !var->type->symbol->hasFlag(FLAG_NOT_POD) &&
             var->defPoint->parentSymbol != rootModule) {
           VarSymbol* local_global = globals.get(var);
           SET_LINENO(se); // Set the se line number for output
