@@ -833,8 +833,8 @@ def set_up_performance_testing_B():
         if "CHPL_TEST_COMP_PERF_DIR" in os.environ:
             comp_perf_dir = os.environ["CHPL_TEST_COMP_PERF_DIR"]
         else:
-            comp_perf_dir = os.path.join(home, ("test", "compperfdat", 
-                    "{0}".format(compperf_test_name)))
+            comp_perf_dir = os.path.join(home, "test", "compperfdat",
+                                         compperf_test_name)
             logger.write("[Warning: CHPL_COMP_TEST_PERF DIR must be set for "
                     "generating compiler performance graphs, using default {0}]"
                     .format(comp_perf_dir))
