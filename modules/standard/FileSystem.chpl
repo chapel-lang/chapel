@@ -153,7 +153,7 @@ proc locale.chdir(out error: syserr, name: string) {
   extern proc chpl_fs_chdir(name: c_string):syserr;
 
   on this {
-    error = chpl_fs_chdir(name.localize().localize().c_str());
+    error = chpl_fs_chdir(name.localize().c_str());
   }
 }
 
@@ -180,7 +180,7 @@ pragma "no doc"
 proc chmod(out error: syserr, name: string, mode: int) {
   extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 
-  error = chpl_fs_chmod(name.localize().localize().c_str(), mode);
+  error = chpl_fs_chmod(name.localize().c_str(), mode);
 }
 
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
@@ -209,7 +209,7 @@ pragma "no doc"
 proc chown(out error: syserr, name: string, uid: int, gid: int) {
   extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 
-  error = chpl_fs_chown(name.localize().localize().c_str(), uid:c_int, gid:c_int);
+  error = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
 }
 
 /* Change one or both of the owner and group id of the named file or directory
