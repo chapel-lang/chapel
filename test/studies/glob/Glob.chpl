@@ -32,7 +32,7 @@ extern const WRDE_DOOFFS : c_int;
 extern const WRDE_NOCMD  : c_int;
 extern const WRDE_REUSE  : c_int;
 
-iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, const in directory:string = "")/*:string*/ {
+iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, const in directory:string = ""):string {
   var err : c_int;
   var tx  : c_string;
   var glb : wordexp_t;
@@ -52,7 +52,7 @@ iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, const in 
 }
 
 iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
-                flags:int = 0, directory:string = "")// : string
+                flags:int = 0, directory:string = ""): string
 where tag == iterKind.leader {
   var err     : c_int;
   var tx      : c_string;
@@ -82,12 +82,12 @@ where tag == iterKind.leader {
 }
 
 iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
-                flags:int = 0, directory:string = "", followThis)/* : string*/
+                flags:int = 0, directory:string = "", followThis): string
   where tag == iterKind.follower {
   yield followThis;
 }
 
-iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, const in directory:string = "")/*:string*/ {
+iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, const in directory:string = ""):string {
   var err : c_int;
   var tx  : c_string;
   var glb : glob_t;
@@ -107,7 +107,7 @@ iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, const in dir
 }
 
 iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
-          flags:int = 0, directory:string = "")/* : string*/ where tag == iterKind.leader {
+          flags:int = 0, directory:string = ""): string where tag == iterKind.leader {
   var err     : c_int;
   var tx      : c_string;
   var dirBuff : domain(string);
@@ -137,7 +137,7 @@ iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
 }
 
 iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
-             flags:int = 0, directory:string = "", followThis)/* : string*/
+             flags:int = 0, directory:string = "", followThis): string
   where tag == iterKind.follower {
   yield followThis;
 }
