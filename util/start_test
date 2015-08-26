@@ -707,9 +707,12 @@ def set_up_general():
             .format(time.strftime("%y%m%d.%H%M%S")))
 
     # check to see if we are in subdir of CHPL_HOME
-    if args.chpl_home_warn and os.getcwd().find(home) < 0:
-        print ("[Warning: start_test not invoked from a subdirectory of "
-                "$CHPL_HOME]")
+    if args.chpl_home_warn:
+        norm_cwd  = os.path.normpath(os.path.realpath(os.getcwd()))
+        norm_home = os.path.normpath(os.path.realpath(home))
+        if norm_cwd.find(norm_home) < 0:
+            print ("[Warning: start_test not invoked from a subdirectory of "
+                    "$CHPL_HOME]")
 
     # log some messages
     logger.write('[starting directory: "{0}"]'.format(os.getcwd()))
