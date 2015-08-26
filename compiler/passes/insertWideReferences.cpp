@@ -1496,7 +1496,16 @@ static void localizeCall(CallExpr* call) {
         insertLocalTemp(call->get(1));
       }
       break;
+    case PRIM_MULT_ASSIGN:
+    case PRIM_ADD_ASSIGN:
+    case PRIM_SUBTRACT_ASSIGN:
+    case PRIM_DIV_ASSIGN:
+      if (isFullyWide(call->get(1))) {
+        insertLocalTemp(call->get(1));
+      }
+      break;
     default:
+      DEBUG_PRINTF("Local block cannot handle primitive: %s\n", call->primitive->name);
       break;
     }
   }
