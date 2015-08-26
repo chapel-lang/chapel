@@ -549,6 +549,7 @@ resolveAutoDestroy(Type* type) {
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
+  fn->addFlag(FLAG_AUTO_DESTROY_FN);
   resolveFns(fn);
   autoDestroyMap.put(type, fn);
   tmp->defPoint->remove();

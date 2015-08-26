@@ -8,6 +8,7 @@ source $CWD/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="str-as-rec-linux64"
 
+git branch -D string-as-rec
 git checkout string-as-rec
 
 nightly_args="-compperformance (default)"

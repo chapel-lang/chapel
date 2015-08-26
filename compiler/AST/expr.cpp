@@ -4032,6 +4032,11 @@ GenRet CallExpr::codegen() {
             codegenAssign(
                 get(1), codegenAddrOf(codegenFieldPtr(call->get(1), se))); 
           }
+          else if (get(1)->getValType() != call->get(2)->typeInfo()) {
+            // get a narrow reference to the actual 'addr' field of the wide pointer
+            GenRet getField = codegenFieldPtr(call->get(1), se);
+            codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR)));
+          }
           else
             handled = false;
           break;
@@ -4045,6 +4050,10 @@ GenRet CallExpr::codegen() {
             INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
             elemPtr = codegenAddrOf(elemPtr);
             codegenAssign(get(1), elemPtr);
+          }
+          else if (get(1)->getValType() != call->getValType()) {
+            GenRet getElem = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+            codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getElem, WIDE_GEP_ADDR)));
           }
           else
             handled = false;
@@ -4214,8 +4223,16 @@ GenRet CallExpr::codegen() {
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        // get(1) = Raddr(get(2));
-        codegenAssign(get(1), codegenRaddr(get(2))); 
+        if (get(1)->getValType() != get(2)->getValType()) {
+          // ref_T = wide_ref_wide_T
+          GenRet narrowRef = codegenRaddr(get(2));
+          GenRet wideThing = codegenDeref(narrowRef);
+          GenRet narrowThing = codegenWideThingField(wideThing, WIDE_GEP_ADDR);
+          codegenAssign(get(1), codegenAddrOf(narrowThing));
+        } else {
+          // get(1) = Raddr(get(2));
+          codegenAssign(get(1), codegenRaddr(get(2)));
+        }
         break;
       }
       if (!get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&

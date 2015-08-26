@@ -12,6 +12,7 @@ export GASNET_QUIET=Y
 # Test a GASNet compile using the default segment (everything for linux64)
 export CHPL_GASNET_SEGMENT=everything
 
+git branch -D string-as-rec
 git checkout string-as-rec
 
 $CWD/nightly -cron -futures
