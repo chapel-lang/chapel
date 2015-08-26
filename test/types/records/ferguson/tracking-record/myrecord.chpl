@@ -7,6 +7,7 @@ use SysBasic;
 use Tracking;
 
 config const debug = false;
+config param allocateAlways = true;
 
 var c_counter: atomic int;
 
@@ -22,8 +23,20 @@ record R {
 
 proc ref R.init(x:int, allow_zero:bool=false) {
   if !allow_zero then assert(x != 0);
+
+  if this.c then trackFree(this.c, this.c.id);
+  delete this.c;
+  this.c = nil;
+
   this.x = x;
   this.c = new C(x = x, id = 1+c_counter.fetchAdd(1));
+  
+  extern proc printf(fmt:c_string, arg:C);
+  if debug {
+    printf("in init allocated c=%p ", c);
+    writeln(c);
+  }
+
   trackAllocation(c, c.id);
 }
 
@@ -48,7 +61,6 @@ proc R.~R() {
     writeln(c);
   }
 
-  if debug then writeln("In record destructor");
   if c then trackFree(c, c.id);
   delete c;
 }
@@ -89,7 +101,9 @@ proc chpl__autoCopy(arg: R) {
   var ret: R;
 
   // allow copies of default initialized record
-  ret.init(x = arg.x, true);
+  if allocateAlways || arg.x!=0 || arg.c!=nil {
+    ret.init(x = arg.x, true);
+  }
 
   if debug {
     printf("leaving auto copy from arg.c=%p to ret.c=%p ", arg.c, ret.c);
