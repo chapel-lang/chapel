@@ -918,9 +918,6 @@ void insertReferenceTemps(CallExpr* call)
       Expr* stmt = call->getStmtExpr();
       VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
       tmp->addFlag(FLAG_REF_TEMP);
-      if (SymExpr* se = toSymExpr(actual))
-        if (se->var->hasFlag(FLAG_TEMP_IN_ITERATOR))
-          tmp->addFlag(FLAG_TEMP_IN_ITERATOR);
       stmt->insertBefore(new DefExpr(tmp));
       actual->replace(new SymExpr(tmp));
       stmt->insertBefore(

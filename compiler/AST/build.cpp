@@ -783,8 +783,7 @@ static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
   // See Note #1
-  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
-//  sifnIterator->addFlag(FLAG_TEMP_IN_ITERATOR);
+  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
   stmt = new CallExpr(PRIM_YIELD, expr);
@@ -810,7 +809,6 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
-  iterator->addFlag(FLAG_TEMP_IN_ITERATOR);
   block->insertAtTail(new DefExpr(iterator));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
@@ -838,8 +836,7 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
                                      new CallExpr(PRIM_TYPEOF, tag));
   lifn->insertFormalAtTail(lifnTag);
   // See Note #1
-  ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
-//  lifnIterator->addFlag(FLAG_TEMP_IN_ITERATOR);
+  ArgSymbol* lifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
 
   lifn->where = new BlockStmt(new CallExpr("==", lifnTag, tag->copy()));
@@ -874,11 +871,9 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
                                      new CallExpr(PRIM_TYPEOF, tag));
   fifn->insertFormalAtTail(fifnTag);
   // See Note #1
-  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
-//  fifnFollower->addFlag(FLAG_TEMP_IN_ITERATOR);
+  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_CONST_IN, iterFollowthisArgname, dtAny);
   fifn->insertFormalAtTail(fifnFollower);
-  ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
-//  fifnIterator->addFlag(FLAG_TEMP_IN_ITERATOR);
+  ArgSymbol* fifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
   fifn->insertFormalAtTail(fifnIterator);
 
   fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
@@ -909,7 +904,6 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
-  iterator->addFlag(FLAG_TEMP_IN_ITERATOR);
   block->insertAtTail(new DefExpr(iterator));
   block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
@@ -1491,7 +1485,6 @@ buildReduceScanPreface(FnSymbol* fn, Symbol* data, Symbol* eltType, Symbol* glob
   }
 
   data->addFlag(FLAG_EXPR_TEMP);
-  data->addFlag(FLAG_TEMP_IN_ITERATOR);
   eltType->addFlag(FLAG_MAYBE_TYPE);
 
   fn->insertAtTail(new DefExpr(data));
