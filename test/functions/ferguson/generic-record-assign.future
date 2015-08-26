@@ -1,0 +1,1 @@
+bug: compiler should generate working assign overloads for generic records

@@ -152,7 +152,6 @@ pragma "no doc"
 inline proc _cast(type t, x: int(64)) where t == syserr
   return qio_int_to_err(x:int(32));
 pragma "no doc"
-pragma "trivial assignment"
 inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
 pragma "no doc"
 inline proc =(ref ret:syserr, x:int(32)) 

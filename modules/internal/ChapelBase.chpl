@@ -222,21 +222,13 @@ module ChapelBase {
   //
   // assignment on primitive types
   //
-  pragma "trivial assignment"
   inline proc =(ref a: bool, b: bool) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: bool(?w), b: bool) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
@@ -1073,6 +1065,7 @@ module ChapelBase {
     compilerError("illegal assignment of type to value");
   }
   
+  pragma "compiler generated" 
   pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
@@ -1114,6 +1107,7 @@ module ChapelBase {
   }
   
 
+  pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
@@ -1127,6 +1121,7 @@ module ChapelBase {
     return ir;
   }
   
+  pragma "compiler generated" 
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
@@ -1142,7 +1137,10 @@ module ChapelBase {
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
+  pragma "compiler generated" 
   pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
+
+  pragma "compiler generated" 
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);

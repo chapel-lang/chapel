@@ -1,0 +1,7 @@
+bug: compiler should generate working assign overloads for generic records
+
+After PR # 2367, this test fails because function resolution
+tries to resolve = for all record types. That triggers the
+bug reported here:
+ test/functions/ferguson/generic-record-assign.chpl
+
