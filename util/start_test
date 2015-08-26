@@ -1300,14 +1300,14 @@ def parser_setup():
 def preprocess_options():
     index = 0
     for arg in sys.argv:
-        if (arg == "-compopts" or arg == "--compopts" 
-                or arg == "-execopts" or arg == "--execopts"):
+        arg = arg.replace('\"', '').replace('\'', '')
+        if arg in ["-compopts", "--compopts", "-execopts", "--execopts"]:
             escape_next_argument(sys.argv, index)
         index += 1
 
 
 def escape_next_argument(args, index):
-    next = args[index + 1]
+    next = args[index + 1].strip()
     if next and next[0] == "-": # single argument, not escaped
         args[index + 1] = "'{0}'".format(next)
     print(args)
