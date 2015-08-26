@@ -3232,7 +3232,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   INT_ASSERT(to_ptr.isLVPtr);
 
   // Both can't be wide
-//  INT_ASSERT(!(to_ptr.isLVPtr == GEN_WIDE_PTR && from.isLVPtr == GEN_WIDE_PTR));
+  INT_ASSERT(!(to_ptr.isLVPtr == GEN_WIDE_PTR && from.isLVPtr == GEN_WIDE_PTR));
 
   Type* type = from.chplType;
   if( ! type ) type = to_ptr.chplType;
@@ -3306,14 +3306,9 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       }
     }
   } else {
-    GenRet narrow_from = from;
-    GenRet narrow_to = to_ptr;
-
+    // both should not be wide
     if (from.isLVPtr == GEN_WIDE_PTR && to_ptr.isLVPtr == GEN_WIDE_PTR){
-      // Get the base type from one or the other (they should be the same).
-      Type* t = getRefTypesForWideThing(from, NULL);
-      GenRet tmp_buf = createTempVar(t);
-      narrow_from = narrow_to = codegenAddrOf(tmp_buf);
+      INT_FATAL("Cannot assign two wide pointers");
     }
 
     // One of the types is a wide pointer type, so we have to
@@ -3331,16 +3326,16 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       // Generate a GET
       if (forceWidePtrsForLocal()) {
         // We're actually doing local compilation, so just do a copy
-        codegenCopy(narrow_to, codegenDeref(codegenRaddr(from)), type);
+        codegenCopy(to_ptr, codegenDeref(codegenRaddr(from)), type);
       } else {
         if (fLLVMWideOpt) {
           // LLVM pass will translate it to a get after some opts
           // We already know to is a pointer (wide or not).
           // Make sure that from is a pointer
-          codegenCopy(narrow_to, from, type);
+          codegenCopy(to_ptr, from, type);
         } else {
           codegenCall("chpl_gen_comm_get",
-                      codegenCastToVoidStar(narrow_to),
+                      codegenCastToVoidStar(to_ptr),
                       codegenRnode(from),
                       codegenRaddr(from),
                       codegenSizeof(type),
@@ -3349,12 +3344,10 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       info->lineno, info->filename );
         }
       }
-    }
-
-    if (to_ptr.isLVPtr == GEN_WIDE_PTR) { // PUT
+    } else { // PUT
       if (forceWidePtrsForLocal()) {
         // We're actually doing local compilation, so just do a copy
-        codegenCopy(codegenDeref(codegenRaddr(to_ptr)), narrow_from, type);
+        codegenCopy(codegenDeref(codegenRaddr(to_ptr)), from, type);
       } else {
         // Generate a PUT
         // to is already a pointer.
@@ -3362,10 +3355,10 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // LLVM pass will translate it to a put after some opts
           // We already know to is a pointer (wide or not).
           // Make sure that from is a pointer
-          codegenCopy(to_ptr, narrow_from, type);
+          codegenCopy(to_ptr, from, type);
         } else {
           codegenCall("chpl_gen_comm_put",
-                      codegenCastToVoidStar(codegenValuePtr(narrow_from)),
+                      codegenCastToVoidStar(codegenValuePtr(from)),
                       codegenRnode(to_ptr),
                       codegenRaddr(to_ptr),
                       codegenSizeof(type),
@@ -4547,8 +4540,7 @@ GenRet CallExpr::codegen() {
       } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-            get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
+        if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
           codegenAssign(codegenDeref(get(1)), codegenDeref(get(2)));
         else
           codegenAssign(codegenDeref(get(1)), get(2));
