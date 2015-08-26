@@ -7,7 +7,7 @@ proc make(i:int) {
   return ret;
 }
 
-proc main() {
+proc run() {
   var A = for i in 1..4 do make(i);
 
   iter myiter() {
@@ -19,5 +19,7 @@ proc main() {
     assert(r.x == i);
   }
 
-  verify();
 }
+
+run();
+verify();

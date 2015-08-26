@@ -11,4 +11,7 @@ global1 = global2;
 global1.verify();
 assert(global1.x == 20);
 
+global1.destroy();
+global2.destroy();
+
 verify();

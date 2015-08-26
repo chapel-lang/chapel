@@ -12,11 +12,13 @@ iter myiter() : R {
   yield make(2);
 }
 
-
-var i = 1;
-for r in myiter() {
-  assert(r.x == i);
-  i += 1;
+proc run() {
+  var i = 1;
+  for r in myiter() {
+    assert(r.x == i);
+    i += 1;
+  }
 }
 
+run();
 verify();

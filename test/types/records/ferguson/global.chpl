@@ -8,4 +8,7 @@ global2.init(x = 20);
 global2.verify();
 assert(global2.x == 20);
 
+global1.destroy();
+global2.destroy();
+
 verify();

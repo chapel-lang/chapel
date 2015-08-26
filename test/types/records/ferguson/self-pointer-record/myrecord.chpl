@@ -37,6 +37,8 @@ proc ref R.init(x:int, allow_zero:bool = false) {
   set_self_ptr();
 }
 
+proc ref R.destroy() { }
+
 proc ref R.verify() {
   extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
 
