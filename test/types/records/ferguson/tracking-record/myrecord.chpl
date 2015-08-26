@@ -24,7 +24,7 @@ record R {
 proc ref R.init(x:int, allow_zero:bool=false) {
   if !allow_zero then assert(x != 0);
 
-  if this.c then trackFree(this.c, this.c.id);
+  if this.c then trackFree(this.c, this.c.id, this.x);
   delete this.c;
   this.c = nil;
 
@@ -37,11 +37,11 @@ proc ref R.init(x:int, allow_zero:bool=false) {
     writeln(c);
   }
 
-  trackAllocation(c, c.id);
+  trackAllocation(c, c.id, this.x);
 }
 
 proc ref R.destroy() {
-  if c then trackFree(c, c.id);
+  if c then trackFree(c, c.id, this.x);
   delete c;
   c = nil;
 }
@@ -61,7 +61,7 @@ proc R.~R() {
     writeln(c);
   }
 
-  if c then trackFree(c, c.id);
+  if c then trackFree(c, c.id, this.x);
   delete c;
 }
 

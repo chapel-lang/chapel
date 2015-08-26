@@ -1,7 +1,5 @@
 use myrecord;
 
-config const verbose = false;
-
 proc make(i:int) {
   var ret: R;
   ret.init(x = i);
@@ -21,7 +19,7 @@ iter myiter() : R {
 
 proc run() {
   for r in myiter() {
-    if verbose then writeln(r);
+    writeln(r.x);
   }
 }
 
