@@ -1122,29 +1122,27 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
-  pragma "auto destroy fn" inline proc chpl__autoDestroy(x: object) { }
-  pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
-  pragma "auto destroy fn"
+  inline proc chpl__autoDestroy(x: object) { }
+  inline proc chpl__autoDestroy(type t)  { }
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
-  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: _distribution) {
+  proc chpl__autoDestroy(x: _distribution) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: domain) {
+  proc chpl__autoDestroy(x: domain) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: []) {
+  proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
   
