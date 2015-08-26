@@ -3312,9 +3312,8 @@ void codegenAssign(GenRet to_ptr, GenRet from)
     if (from.isLVPtr == GEN_WIDE_PTR && to_ptr.isLVPtr == GEN_WIDE_PTR){
       // Get the base type from one or the other (they should be the same).
       Type* t = getRefTypesForWideThing(from, NULL);
-      GenRet tmp_buf = createTempVar(t->getValType());
-      narrow_from = tmp_buf; // Expects a value type.
-      narrow_to = codegenAddrOf(tmp_buf);
+      GenRet tmp_buf = createTempVar(t);
+      narrow_from = narrow_to = codegenAddrOf(tmp_buf);
     }
 
     // One of the types is a wide pointer type, so we have to
