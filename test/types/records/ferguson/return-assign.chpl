@@ -19,3 +19,5 @@ proc myfunction() {
 
 myfunction();
 
+verify();
+

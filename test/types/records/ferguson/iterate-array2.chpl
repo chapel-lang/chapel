@@ -7,7 +7,7 @@ proc make(i:int) {
   return ret;
 }
 
-proc main() {
+proc run() {
   var A = for i in 1..4 do make(i);
 
   iter myiter() : R {
@@ -21,5 +21,7 @@ proc main() {
     i += 1;
   }
 
-  verify();
 }
+
+run();
+verify();

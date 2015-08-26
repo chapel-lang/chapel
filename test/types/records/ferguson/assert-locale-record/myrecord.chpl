@@ -6,8 +6,8 @@ config const debug = false;
 
 pragma "ignore noinit"
 record R {
-  var home:locale = here;
   var x:int;
+  var home:locale = here;
 }
 
 
@@ -16,6 +16,8 @@ proc ref R.init(x:int, allow_zero:bool=false) {
   assert(this.home == this.locale);
   this.x = x;
 }
+
+proc ref R.destroy() { }
 
 proc ref R.increment() {
   assert(this.home == this.locale);

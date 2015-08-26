@@ -27,6 +27,12 @@ proc ref R.init(x:int, allow_zero:bool=false) {
   trackAllocation(c, c.id);
 }
 
+proc ref R.destroy() {
+  if c then trackFree(c, c.id);
+  delete c;
+  c = nil;
+}
+
 proc ref R.increment() {
   assert(x != 0);
   assert(c != nil);
