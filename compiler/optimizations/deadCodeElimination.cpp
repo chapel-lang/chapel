@@ -119,25 +119,22 @@ static void removeAutoCopyDestroyPair(Symbol* var, Vec<SymExpr*>* defs,
           // Based on how these primitives work, we can assume that if they are
           // in the def list, then var is the first argument and what is being
           // assigned to it is the second argument.
-          bool wasAuto = false;
           if (CallExpr* maybeAutoCopy = toCallExpr(def->get(2))) {
             if (FnSymbol* fn = maybeAutoCopy->isResolved()) {
               if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
-                // If the second arg to the assignment/move primitive is
-                // actually an autoCopy, skip the autoCopy and remove what
-                // is being copied, as it will be placed in our old autoCopy
+                // We only want to remove autoDestroy calls on variables that
+                // were created via an autoCopy.  Other autoDestroy calls are
+                // necessary for correctness and avoiding memory leaks.  We
+                // don't want to replace the variable with an autoCopy within
+                // the autoCopy where we were used, that would defeat the
+                // point of this optimization.  We want to peel off the
+                // autoCopy and use its argument to replace ourselves.
                 replacement = maybeAutoCopy->get(1)->remove();
                 def->get(2)->remove();
-                wasAuto = true;
+                def->remove();
               }
             }
           }
-          if (!wasAuto) {
-            // avoid repeated code.  get(2) wasn't an autoCopy, so replace it
-            // straight
-            replacement = def->get(2)->remove();
-          }
-          def->remove();
         } else {
           // In this case, the var is an argument to the function being called
           // and it has out intent.  We know that it isn't in an opEquals
