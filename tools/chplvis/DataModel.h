@@ -88,6 +88,13 @@ class DataModel {
   // Forward declaration
   struct tagData;
 
+  // Task Event (begin, end) timeline for task concurrency,
+  //     one linear structure per locale
+  //     long => task number or tag number
+  enum Tl_Kind { Tl_Tag, Tl_Begin, Tl_End };
+  typedef std::pair < Tl_Kind, long > timelineEntry;
+  std::list < timelineEntry > *taskTimeline;
+
  private:
 
   typedef std::list<Event*>::iterator evItr;
@@ -97,13 +104,6 @@ class DataModel {
   
   // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
   tagData **tagList;    // 1D array of pointers to tagData
-
-  // Task Event (begin, end) timeline for task concurrency,
-  //     one linear structure per locale
-  //     long => task number or tag number
-  enum Tl_Kind { Tl_Tag, Tl_Begin, Tl_End };
-  typedef std::pair < Tl_Kind, long > timelineEntry;
-  std::list < timelineEntry > *taskTimeline;
 
   std::list < Event* > theEvents;
   std::list < Event* >::iterator curEvent;
@@ -179,6 +179,8 @@ class DataModel {
       return NULL;
     return tagList[tagno-TagALL];
   }
+
+  taskData getTaskData (long locale, long taskId, long tagNo = TagALL);
   
   // Constructor for DataModel
   
