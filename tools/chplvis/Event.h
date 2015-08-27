@@ -18,6 +18,7 @@
  */
 
 #include <string>
+#include <string.h>
 #include <stdio.h>
 
 #ifndef _EVENT_H_
@@ -92,7 +93,10 @@ class  E_task : public Event {
   
   public:
     E_task (long esec, long eusec, int nid, int taskId, bool ison, long line, char *file)
-      : Event(esec,eusec, nid), taskid(taskId), isOn(ison), lineNum(line), srcFile(file) {};
+      : Event(esec,eusec, nid), taskid(taskId), isOn(ison), lineNum(line)
+    {
+      srcFile = strdup(file);
+    }
 
     bool isLocal () { return !isOn; }
     long srcLine () { return lineNum; }

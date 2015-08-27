@@ -697,7 +697,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
           nErrs++;
         } else {
           if (nlineno == 0 || strstr(nfilename,"/VisualDebug.chpl") == NULL) {
-            newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O', nlineno, NULL);
+            newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O',
+                                   nlineno, nfilename);
           } else {
             (void)vdbTids.insert(taskid);
             // printf ("task is vdbtask: %d\n", taskid);
@@ -901,4 +902,31 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   if ( !feof(data) ) return 0;
   
   return 1;
+}
+
+// Get the task data by task Id and locale.
+
+taskData DataModel::getTaskData (long locale, long taskId, long tagNo)
+{
+  std::map<long,taskData>::iterator tskItr;
+  taskData retVal;
+  long curTag;
+
+  if (tagNo != TagALL) {
+    tskItr = tagList[tagNo+2]->locales[locale].tasks.find(taskId);
+    if (tskItr != tagList[tagNo+2]->locales[locale].tasks.end())
+      return (*tskItr).second;
+  }
+
+  curTag = TagStart;
+  while (curTag < numTags) {
+    tskItr = tagList[curTag+2]->locales[locale].tasks.find(taskId);
+    if (tskItr != tagList[curTag+2]->locales[locale].tasks.end())
+      return (*tskItr).second;
+    curTag++;
+  }
+  
+  retVal.taskRec = NULL;
+  retVal.endTagNo = -1;
+  return retVal;
 }

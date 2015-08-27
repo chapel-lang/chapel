@@ -106,6 +106,10 @@ void InfoBar::draw(void)
       if (maxClock > 0)
         snprintf (mesg, 150, "max Clock: %f", maxClock);
       break;
+    case show_Concurrent:
+      if (maxClock > 0)
+        snprintf (mesg, 150, "max Concurrent: %ld", maxConcurrent);
+      break;
   }
 
   fl_draw(mesg, x()+CR_Left+105, y_center-20, 120, 20, FL_ALIGN_LEFT, NULL, 0);
