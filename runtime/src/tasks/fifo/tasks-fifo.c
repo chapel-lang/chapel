@@ -332,17 +332,18 @@ void chpl_sync_initAux(chpl_sync_aux_t *s) {
 }
 
 static void chpl_thread_condvar_destroy(chpl_thread_condvar_t* cv) {
-  if(pthread_cond_broadcast((pthread_cond_t*) cv))
-    chpl_internal_error("pthread_cond_broadcast() failed, cv was uninitialized");
+// Leak condvars on cygwin. Some bug results from condvars still being used at
+// this point on cygwin. For now, just leak them to avoid errors as a result of
+// the undefined behavior of trying to destroy an in-use condvar.
+#ifndef __CYGWIN__
   if (pthread_cond_destroy((pthread_cond_t*) cv))
     chpl_internal_error("pthread_cond_destroy() failed");
+#endif
 }
 
 void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
-  chpl_thread_mutexLock(&s->lock);
   chpl_thread_condvar_destroy(&s->signal_full);
   chpl_thread_condvar_destroy(&s->signal_empty);
-  chpl_thread_mutexUnlock(&s->lock);
   chpl_thread_mutexDestroy(&s->lock);
 }
 
