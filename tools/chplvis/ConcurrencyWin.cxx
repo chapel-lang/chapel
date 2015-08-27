@@ -231,7 +231,7 @@ void ConcurrencyData::buildData(void) {
     if (greedy[col] != 0) {
       greedy[curCol] = greedy[col];
       greedyStart[curCol] = 0;
-      b = new Fl_Box::Fl_Box(FL_BORDER_BOX, 15+60*curCol, 40, 60, 20, NULL);
+      b = new Fl_Box(FL_BORDER_BOX, 15+60*curCol, 40, 60, 20, NULL);
       if (parent->localeNum == 0 && greedy[col] == 1)
         snprintf (tmp, sizeof(tmp), "Main");
       else
@@ -264,7 +264,7 @@ void ConcurrencyData::buildData(void) {
         while (greedy[curCol] != 0) curCol++;
         snprintf (tmp, sizeof(tmp), "TAG: %s", 
                   VisData.getTagData(tl_itr->second)->name.c_str());
-        b = new Fl_Box::Fl_Box(FL_BORDER_BOX, 10+60*curCol, 40+25*curLine,
+        b = new Fl_Box(FL_BORDER_BOX, 10+60*curCol, 40+25*curLine,
                                8+7*strlen(tmp), 20, NULL);
         b->copy_label(tmp);
         add(b);
@@ -277,7 +277,7 @@ void ConcurrencyData::buildData(void) {
         greedy[curCol] = tl_itr->second; // store the task id
         greedyStart[curCol] = curLine;
         theTask = VisData.getTaskData(parent->localeNum,tl_itr->second, tmpTagNo);
-        b = new Fl_Box::Fl_Box(FL_ROUNDED_BOX, 10+60*curCol,
+        b = new Fl_Box(FL_ROUNDED_BOX, 10+60*curCol,
                                40+25*curLine, 70, 20, NULL);
         snprintf (tmp, sizeof(tmp), "%c %ld", 
                    theTask.taskRec->isLocal() ? 'L' : 'F', tl_itr->second);
