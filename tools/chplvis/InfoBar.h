@@ -34,7 +34,8 @@ class InfoBar : public Fl_Box {
   long maxSize;
   double maxCpu;
   double maxClock;
-  enum showWhat { show_Tasks, show_CPU, show_Clock} infoTop;
+  long maxConcurrent;
+  enum showWhat { show_Tasks, show_CPU, show_Clock, show_Concurrent} infoTop;
   bool showcomms;
 
   char *fileName;
@@ -61,10 +62,12 @@ class InfoBar : public Fl_Box {
 
   void draw(void);
 
-  void setMaxes(int tasks, int comms, long size, double cpu, double clock) {
+  void setMaxes(int tasks, int comms, long size, long concurrent, double cpu,
+                double clock) {
     maxTasks = tasks;
     maxComms = comms;
     maxSize = size;
+    maxConcurrent = concurrent;
     maxCpu = cpu;
     maxClock = clock;
   }
@@ -75,7 +78,8 @@ class InfoBar : public Fl_Box {
 
   void showTasks() { infoTop = show_Tasks; }
   void showCpu() { infoTop = show_CPU; }
-  void showClock() { infoTop = show_Clock;}
+  void showClock() { infoTop = show_Clock; }
+  void showConcurrency() { infoTop = show_Concurrent; }
   void showComms() { showcomms = true; }
   void showSize() { showcomms = false; }
 
