@@ -41,11 +41,13 @@ void LocaleWin::updateWin(localeData *l)
             "CPU:  User %lf\n"
             "      Sys %lf\n"
             "      Total %lf\n"
-            "Clock: %lf\n",
+            "Clock: %lf\n"
+            "Concurrency: %ld\n",
             loc->numTasks,
             loc->userCpu,
             loc->sysCpu,
             loc->Cpu,
-            loc->clockTime);
+            loc->clockTime,
+            loc->maxConc);
   info->value(mesg);
 }
