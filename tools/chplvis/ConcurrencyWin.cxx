@@ -231,7 +231,7 @@ void ConcurrencyData::buildData(void) {
   curCol = 0;
   for (int col = 0; col < progMaxConc; col++)
     if (greedy[col] != 0) {
-      printf ("Building continuation for col %d\n", col);
+      // printf ("Building continuation for col %d\n", col);
       greedy[curCol] = greedy[col];
       greedyStart[curCol] = 0;
       b = new Fl_Box(FL_BORDER_BOX, 15+60*curCol, 40, 60, 20, NULL);

@@ -403,7 +403,6 @@ int DataModel::LoadData(const char * filename)
       case Ev_end_task:
         etp = (E_end_task *)ev;
         {
-          bool validEnd = false;
           std::map<long,taskData>::iterator it;
           // Find task in task map
           it = curTag->locales[curNodeId].tasks.find(etp->taskId());
@@ -411,9 +410,9 @@ int DataModel::LoadData(const char * filename)
             // Update the end record
             (*it).second.endRec = etp;
             (*it).second.endTagNo = cTagNo;
-            validEnd = true;
             //printf ("End task %d, node %d\n", etp->taskId(), curNodeId);
           } else {
+            bool validEnd = false;
             int tryTagNo = cTagNo-1;
             while (tryTagNo > DataModel::TagALL) {
               it = tagList[tryTagNo+2]->locales[curNodeId].tasks.find(etp->taskId());
@@ -423,14 +422,15 @@ int DataModel::LoadData(const char * filename)
                 //printf ("Found end task %d in tag %d started in tag %s (%d), nid %d\n",
                 //        etp->taskId(), cTagNo, tagList[tryTagNo+2]->name.c_str(),
                 //        tryTagNo, curNodeId);
+                validEnd = true;
                 break;
               }
               tryTagNo--;
             }
-            if (tryTagNo == DataModel::TagALL) {
-              validEnd = true;
-              printf ("No task begin found for task %ld, nid %d\n", etp->taskId(),
-                      curNodeId);
+            if (!validEnd) { // Erase this end record
+              itr = theEvents.erase(itr);
+              if (itr != theEvents.begin())
+                itr--;
             }
           }
         }
@@ -441,7 +441,8 @@ int DataModel::LoadData(const char * filename)
         assert(false);
     }
     // Move to next event record
-    itr++;
+    if (itr != theEvents.end())
+      itr++;
   }
 
   // Go back and update task counts
@@ -461,7 +462,8 @@ int DataModel::LoadData(const char * filename)
         + (ix_l == 0 ? 1 : 0 );
       if (curTag->locales[ix_l].numTasks > curTag->maxTasks)
         curTag->maxTasks = curTag->locales[ix_l].numTasks;
-      tagList[0]->locales[ix_l].numTasks += curTag->locales[ix_l].numTasks;
+      // Calculate total tasks.   Don't count "main" over and over.
+      tagList[0]->locales[ix_l].numTasks += curTag->locales[ix_l].numTasks - (ix_l == 0 ? 1 : 0);
       if (tagList[0]->locales[ix_l].numTasks > tagList[0]->maxTasks)
         tagList[0]->maxTasks = tagList[0]->locales[ix_l].numTasks;
     }
@@ -469,10 +471,11 @@ int DataModel::LoadData(const char * filename)
 
   // Build timeline and set concurrency rates
   itr = theEvents.begin();
+  tagList[0]->maxConc = 1;
   cTagNo = TagStart;
   curTag = tagList[1];
   curTag->locales[0].maxConc = 1;
-  tagList[0]->maxConc = 1;
+  curTag->maxConc = 1;
   
   while (itr != theEvents.end()) {
     Event *ev = *itr;
@@ -542,7 +545,7 @@ int DataModel::LoadData(const char * filename)
             tl_itr++;
           }
           if (tl_itr == taskTimeline[curNodeId].rend())
-            printf ("Timeline: did not find task %ld\n", etp->taskId());
+            printf ("Timeline: did not find task %ld, nid %d\n", etp->taskId(), curNodeId);
         }
         break;
     }
