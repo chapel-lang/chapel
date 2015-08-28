@@ -972,7 +972,7 @@ static void insertAutoDestroyAfterStmt(SymExpr* se)
   SET_LINENO(sym->defPoint);
   CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
   lastStmtInBB->insertAfter(autoDestroyCall);
-//  insertReferenceTemps(autoDestroyCall);
+  insertReferenceTemps(autoDestroyCall);
 }
 
 
@@ -1227,7 +1227,7 @@ static void insertAutoCopy(SymExpr* se)
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
   se->replace(new SymExpr(tmp));
-//  insertReferenceTemps(autoCopyCall);
+  insertReferenceTemps(autoCopyCall);
 }
 
 

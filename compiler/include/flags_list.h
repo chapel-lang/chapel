@@ -232,12 +232,6 @@ symbolFlag( FLAG_SUPPRESS_LVALUE_ERRORS , ypr, "suppress lvalue error" , "do not
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
-// Temporaries that are used to initialize fields in iterators must be handled
-// specially, because the iterator record being produced outlasts the
-// temporary.  This flag tells the code that lays out the iterator record to
-// use the value type for the corresponding field, which forces an autocopy to
-// be inserted at the point where the field is initialized.
-symbolFlag( FLAG_TEMP_IN_ITERATOR , npr, "temp in iterator" , "compiler-inserted temporary that is used to initialize a field in an iterator" )
 symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference temporary" )
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )

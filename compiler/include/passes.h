@@ -117,9 +117,6 @@ void insertDerefTemps(CallExpr* call);
 void insertDerefTemps(FnSymbol* fn);
 void insertDerefTemps();
 
-void replaceValArgsWithRefArgs(FnSymbol* fn);
-void replaceValArgsWithRefArgs();
-
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);

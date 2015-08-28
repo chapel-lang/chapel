@@ -802,7 +802,7 @@ static void insertDestructorCalls()
 {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
-      Type* type = call->get(1)->typeInfo()->getValType();
+      Type* type = call->get(1)->typeInfo();
       if (!type->destructor) {
         call->remove();
       } else {
@@ -918,9 +918,6 @@ void insertReferenceTemps(CallExpr* call)
       Expr* stmt = call->getStmtExpr();
       VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
       tmp->addFlag(FLAG_REF_TEMP);
-      if (SymExpr* se = toSymExpr(actual))
-        if (se->var->hasFlag(FLAG_TEMP_IN_ITERATOR))
-          tmp->addFlag(FLAG_TEMP_IN_ITERATOR);
       stmt->insertBefore(new DefExpr(tmp));
       actual->replace(new SymExpr(tmp));
       stmt->insertBefore(
@@ -1108,128 +1105,6 @@ void insertDerefTemps() {
   }
 }
 
-
-// If the given symbol is a temporary that is defined uniqely as the LHS of a
-// deref primitive, then return the SymExpr that is the operand of the deref;
-// otherwise, return NULL.
-static SymExpr* rhsOfDerefTmp(Symbol* sym,
-                              Map<Symbol*,Vec<SymExpr*>*>& defMap)
-{
-  // Is this symbol a temporary?
-  if (! sym->hasFlag(FLAG_TEMP))
-    // Nope. Fail outright.
-    return NULL;
-
-  // Find the definitions of the given symbol
-  if (Vec<SymExpr*>* defs = defMap.get(sym))
-  {
-    // Ensure that it is uniquely defined.
-    if (defs->n != 1)
-      return NULL;
-
-    SymExpr* def = defs->only();
-    if (CallExpr* move = toCallExpr(def->parentExpr))
-      if (move->isPrimitive(PRIM_MOVE))
-      {
-        // If this is a simple transfer, punch through and see if we get a
-        // deref somewhere back up the def-use chain.
-        if (SymExpr* rhs = toSymExpr(move->get(2)))
-          return rhsOfDerefTmp(rhs->var, defMap);
-
-        if (CallExpr* deref = toCallExpr(move->get(2)))
-          if (deref->isPrimitive(PRIM_DEREF))
-          {
-            SymExpr* ref = toSymExpr(deref->get(1));
-            // We expect the RHS of a deref primitive to be a SymExpr.
-            INT_ASSERT(ref);
-            return ref;
-          }
-        // fall through
-      }
-    // fall through
-  }
-  return NULL;
-}
-
-
-static void replaceValArgsWithRefArgs(CallExpr* call,
-                                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                      Map<Symbol*,Vec<SymExpr*>*>& useMap)
-{
-  for_formals_actuals(/*ArgSymbol*/ formal, /*Expr*/ actual, call)
-  {
-    // Check: Is the formal of ref type?
-    // If not, then there is nothing to do here.
-    if (! formal->type->symbol->hasFlag(FLAG_REF))
-      continue;
-
-    // Check: Is the actual of value type?
-    // If not, there is nothing to do here.
-    SymExpr* actualSE = toSymExpr(actual);
-    // We assume that this actual argument is a SymExpr.
-    INT_ASSERT(actualSE);
-    Symbol* actualSym = actualSE->var;
-    if (actualSym->type->symbol->hasFlag(FLAG_REF))
-      continue;
-
-    // If the argument is a deref temp, use the rhs of the deref primitive to
-    // get an actual argument of ref type.
-    if (SymExpr* refActual = rhsOfDerefTmp(actualSym, defMap))
-    {
-      // Replace the deref temp argument of the autoCopy call
-      // with the reference arg that created the deref temp.
-      SET_LINENO(actualSE);
-      actualSE->replace(new SymExpr(refActual->var));
-
-      // If possible, remove the deref temp creation and the
-      // deref temp itself.
-      Vec<SymExpr*>* uses = useMap.get(refActual->var);
-      if (uses->n == 1 && uses->only() == actual)
-      {
-        // This is the MOVE that defines actualSym.
-        Expr* move = refActual->parentExpr->parentExpr;
-        move->remove();
-        actualSym->defPoint->remove();
-      }
-    }
-  }
-}
-
-
-void replaceValArgsWithRefArgs(FnSymbol* fn)
-{
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(fn, defMap, useMap);
-
-  std::vector<CallExpr*> callExprs;
-  collectCallExprs(fn, callExprs);
-  for_vector(CallExpr, call, callExprs)
-  {
-    // Ignore calls that are not in the tree.
-    if (! call->parentSymbol)
-      continue;
-
-    // Weed out primitives
-    // This probably catches virtual method calls, so we may need a more
-    // precise test later.
-    if (! call->isResolved())
-      continue;
-
-    replaceValArgsWithRefArgs(call, defMap, useMap);
-  }
-
-  freeDefUseMaps(defMap, useMap);
-}
-
-                              
-void replaceValArgsWithRefArgs()
-{
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    replaceValArgsWithRefArgs(fn);
-  }
-}
 
 void
 callDestructors() {

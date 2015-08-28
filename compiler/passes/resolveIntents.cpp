@@ -127,7 +127,11 @@ static void adjustRefLevel(ArgSymbol* arg)
       return;
 
     // Type arguments are always passed by "value".
-    if (arg->hasFlag(FLAG_TYPE_VARIABLE))
+    // TODO: This test should really be:
+    //    if (arg->hasFlag(FLAG_TYPE_VARIABLE))
+    // but this causes many more arguments to be passed by reference, and about
+    // 150 standard test cases fail as a result.
+    if (t->symbol->hasFlag(FLAG_TYPE_VARIABLE))
       return;
 
     // Do not do this for record-wrapped types, because somewhere else we
@@ -147,7 +151,6 @@ void resolveIntents() {
     resolveArgIntent(arg);
     adjustRefLevel(arg);
   }
-  replaceValArgsWithRefArgs();
   insertReferenceTemps();
   insertDerefTemps();
 
