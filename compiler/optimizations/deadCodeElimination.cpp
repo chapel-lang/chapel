@@ -79,9 +79,27 @@ static bool isDeadVariable(Symbol* var,
 }
 
 //
+// 2015/08/27 LydiaD: This code was developed to eliminate one particular
+// pattern of extraneous autoCopy/autoDestroy during a fire-drill to get
+// string-as-rec working for release 1.11.  Please see Lydia if you have any
+// questions about it.  It is intended that this code will be removed or
+// extensively overhauled during 1.12
+//
 // If a variable's uses consist of only a single autoCopy and a single
-// autoDestroy, (and it is only defined once) then it is not needed and can
-// be snipped.
+// autoDestroy, (and it is only defined once in an autoCopy) then it is not
+// needed and can be snipped.  To be specific, it is intended to condense
+// code of the form:
+//
+// a = autoCopy(x);
+// b = autoCopy(a);
+// autoDestroy(a);
+//
+// into:
+//
+// b = autoCopy(x);
+//
+// when a is not otherwise used, the rationale being that no value is added
+// by its existence as an intermediary step.
 //
 static void removeAutoCopyDestroyPair(Symbol* var, Vec<SymExpr*>* defs,
                                     Vec<SymExpr*>* uses) {
@@ -132,32 +150,15 @@ static void removeAutoCopyDestroyPair(Symbol* var, Vec<SymExpr*>* defs,
                 replacement = maybeAutoCopy->get(1)->remove();
                 def->get(2)->remove();
                 def->remove();
+                // Replace the use of var with a use of what was assigned to var
+                copyCall->get(1)->replace(replacement);
+                // The autoDestroy we will no longer need, so remove it
+                destroyCall->remove();
+                // Remove var's defExpr.
+                var->defPoint->remove();
               }
             }
           }
-        } else {
-          // In this case, the var is an argument to the function being called
-          // and it has out intent.  We know that it isn't in an opEquals
-          // primitive or defined with ref or inout intent (the other cases
-          // which would insert it into the def list) because those would
-          // have been also inserted into the use list and we know they haven't
-          // been, because all that is present in the use list is one autoCopy
-          // and one autoDestroy (as determined earlier in this function).
-          // The out intent case is a little too complicated, so skip it as
-          // well.
-
-          // NOTE: Alterations of isDefOrUse should be propogated here!
-          replacement = NULL;
-        }
-
-        if (replacement) {
-          // The def was useful, so...
-          // Replace the use of var with a use of what was assigned to var
-          copyCall->get(1)->replace(replacement);
-          // The autoDestroy we will no longer need, so remove it
-          destroyCall->remove();
-          // Remove var's defExpr.
-          var->defPoint->remove();
         }
       }
     }
