@@ -316,10 +316,13 @@ void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
     struct timezone tz = {0,0};
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
-                  (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-                  (unsigned long) commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
-                  ln, fn);
+    printf ("log_get/%d, fn is 0x%lx\n",chpl_nodeID, (long) fn); fflush(stdout);
+    printf ("log_get/%d, fn length is %lu\n", chpl_nodeID, strlen(fn));
+    chpl_dprintf (chpl_vdebug_fd,
+             "get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
+             (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
+             (unsigned long) commTask, (long) addr, (long) raddr, elemSize,
+             typeIndex, len, ln, fn);
   }
 }
 
@@ -333,8 +336,8 @@ void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstno
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void) gettimeofday (&tv, &tz);
     chpl_taskID_t commTask = chpl_task_getId();
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %ld %lu 0x%lx 0x%lx %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, 
                   (long) dstnode_id, (unsigned long) commTask, (long) srcaddr, (long) dstaddr,
@@ -356,8 +359,8 @@ void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnod
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
-    (void) gettimeofday (&tv, &tz);
     chpl_taskID_t commTask = chpl_task_getId();
+    (void) gettimeofday (&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %ld %lu 0x%lx 0x%lx %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID,
                   (long) srcnode_id, (unsigned long) commTask, (long) dstaddr, (long) srcaddr,
