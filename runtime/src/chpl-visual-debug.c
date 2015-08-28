@@ -188,8 +188,8 @@ void chpl_vdebug_mark(void) {
   struct timezone tz = {0,0};
   chpl_taskID_t tagTask = chpl_task_getId();
   (void) gettimeofday (&tv, &tz);
-  chpl_dprintf (chpl_vdebug_fd, "VdbMark: %lld.%06ld %d %llu\n",
-                (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, tagTask );
+  chpl_dprintf (chpl_vdebug_fd, "VdbMark: %lld.%06ld %d %lu\n",
+                (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, (unsigned long)tagTask );
 }
 
 static int tag_no = 0;  // A unique tag number for sorting tags
@@ -257,9 +257,9 @@ void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
     struct timezone tz = {0,0};
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d %llu 0x%lx 0x%lx %d %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-                  commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
+                  (unsigned long) commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
                   ln, fn);
   }
 }
@@ -277,9 +277,9 @@ void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
     struct timezone tz = {0,0};
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d %llu 0x%lx 0x%lx %d %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-                  commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
+                  (unsigned long)commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
                   ln, fn);
   }
 }
@@ -296,9 +296,9 @@ void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
     struct timezone tz = {0,0};
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d %llu 0x%lx 0x%lx %d %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node,
-                  commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
+                  (unsigned long) commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
                   ln, fn);
   }
 }
@@ -316,9 +316,9 @@ void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
     struct timezone tz = {0,0};
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d %llu 0x%lx 0x%lx %d %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-                  commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
+                  (unsigned long) commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
                   ln, fn);
   }
 }
@@ -335,9 +335,9 @@ void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstno
     struct timezone tz = {0,0};
     (void) gettimeofday (&tv, &tz);
     chpl_taskID_t commTask = chpl_task_getId();
-    chpl_dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %ld %llu 0x%lx 0x%lx %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %ld %lu 0x%lx 0x%lx %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, 
-                  (long) dstnode_id, commTask, (long) srcaddr, (long) dstaddr,
+                  (long) dstnode_id, (unsigned long) commTask, (long) srcaddr, (long) dstaddr,
                   elemSize, typeIndex, ln, fn);
     // printout srcstrides and dststrides and stridelevels?
   }
@@ -358,9 +358,9 @@ void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnod
     struct timezone tz = {0,0};
     (void) gettimeofday (&tv, &tz);
     chpl_taskID_t commTask = chpl_task_getId();
-    chpl_dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %ld %llu 0x%lx 0x%lx %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %ld %lu 0x%lx 0x%lx %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID,
-                  (long) srcnode_id, commTask, (long) dstaddr, (long) srcaddr,
+                  (long) srcnode_id, (unsigned long) commTask, (long) dstaddr, (long) srcaddr,
                   elemSize, typeIndex, ln, fn);
     // print out the srcstrides and dststrides and stridelevels?
   }
@@ -379,9 +379,9 @@ void chpl_vdebug_log_fork(c_nodeid_t node, c_sublocid_t subloc,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d %d \n",
+    chpl_dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d %lu \n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                  fid, (long) arg, arg_size, (int)forkTask);
+                  fid, (long) arg, arg_size, (unsigned long) forkTask);
   }
 }
 
@@ -395,9 +395,9 @@ void  chpl_vdebug_log_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d %lu\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                  fid, (long) arg, arg_size, (int)forkTask);
+                  fid, (long) arg, arg_size, (unsigned long)forkTask);
   }
 }
 
@@ -410,9 +410,9 @@ void chpl_vdebug_log_fast_fork(c_nodeid_t node, c_sublocid_t subloc,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void) gettimeofday (&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d %ld\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
-                  fid, (long) arg, arg_size, (int)forkTask);
+                  fid, (long) arg, arg_size, (unsigned long)forkTask);
   }
 }
 
@@ -457,10 +457,10 @@ void cb_task_create(const chpl_task_cb_info_t *info) {
     //         (int)info->event_kind, (int)info->nodeID,
     //        (info->iu.full.is_executeOn ? "O" : "L"), taskId, info->iu.full.id);
     (void)gettimeofday(&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %lld %ld %ld %s %ld %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %lld %ld %lu %s %ld %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long long) info->nodeID, (long int) info->iu.full.id,
-                  (long) taskId,
+                  (unsigned long) taskId,
                   (info->iu.full.is_executeOn ? "O" : "L"),
                   (long int) info->iu.full.lineno,
                   (info->iu.full.filename ? info->iu.full.filename : ""));
@@ -475,9 +475,9 @@ void cb_task_begin(const chpl_task_cb_info_t *info) {
   if (!chpl_vdebug) return;
   if (chpl_vdebug_fd >= 0) {
     (void)gettimeofday(&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "Btask: %lld.%06ld %lld %ld\n",
+    chpl_dprintf (chpl_vdebug_fd, "Btask: %lld.%06ld %lld %lu\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,
-                  (long long) info->nodeID, (long int) info->iu.full.id);
+                  (long long) info->nodeID, (unsigned long) info->iu.full.id);
  
   }
 }
@@ -490,9 +490,9 @@ void cb_task_end(const chpl_task_cb_info_t *info) {
   if (!chpl_vdebug) return;
   if (chpl_vdebug_fd >= 0) {
     (void)gettimeofday(&tv, &tz);
-    chpl_dprintf (chpl_vdebug_fd, "Etask: %lld.%06ld %lld %ld\n",
+    chpl_dprintf (chpl_vdebug_fd, "Etask: %lld.%06ld %lld %lu\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,
-                  (long long) info->nodeID, (long int) info->iu.id_only.id);
+                  (long long) info->nodeID, (unsigned long) info->iu.id_only.id);
  
   }
 }
