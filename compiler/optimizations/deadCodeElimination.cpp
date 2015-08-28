@@ -56,7 +56,7 @@ static unsigned int deadModuleCount;
 // remove condStmts  with empty bodies
 // remove jumps to labels that immmediately follow
 //
-// This may require multiple passses to converge e.g.
+// This may require multiple passes to converge e.g.
 //
 // A block statement that contains an empty block statement
 //
@@ -69,15 +69,99 @@ static unsigned int deadModuleCount;
 // never used anywhere.
 //
 static bool isDeadVariable(Symbol* var,
-                           Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                           Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+                           Vec<SymExpr*>* defs,
+                           Vec<SymExpr*>* uses) {
   if (var->type->symbol->hasFlag(FLAG_REF)) {
-    Vec<SymExpr*>* uses = useMap.get(var);
-    Vec<SymExpr*>* defs = defMap.get(var);
     return (!uses || uses->n == 0) && (!defs || defs->n <= 1);
   } else {
-    Vec<SymExpr*>* uses = useMap.get(var);
     return !uses || uses->n == 0;
+  }
+}
+
+//
+// 2015/08/27 LydiaD: This code was developed to eliminate one particular
+// pattern of extraneous autoCopy/autoDestroy during a fire-drill to get
+// string-as-rec working for release 1.11.  Please see Lydia if you have any
+// questions about it.  It is intended that this code will be removed or
+// extensively overhauled during 1.12
+//
+// If a variable's uses consist of only a single autoCopy and a single
+// autoDestroy, (and it is only defined once in an autoCopy) then it is not
+// needed and can be snipped.  To be specific, it is intended to condense
+// code of the form:
+//
+// a = autoCopy(x);
+// b = autoCopy(a);
+// autoDestroy(a);
+//
+// into:
+//
+// b = autoCopy(x);
+//
+// when a is not otherwise used, the rationale being that no value is added
+// by its existence as an intermediary step.
+//
+static void removeAutoCopyDestroyPair(Symbol* var, Vec<SymExpr*>* defs,
+                                    Vec<SymExpr*>* uses) {
+  // Eliminates cases with more than 2 uses, as we only want to remove an
+  // autoCopy/autoDestroy pair if they are the only uses of that variable
+  if (uses && uses->n == 2) {
+    CallExpr* copyCall = NULL;
+    CallExpr* destroyCall = NULL;
+    // Traverse the two uses and save a single autoCopy and autoDestroy.
+    forv_Vec(SymExpr, se, *uses) {
+      if (se->parentExpr) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          if (FnSymbol* fn = call->isResolved()) {
+            if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
+              copyCall = call;
+            } else if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+              destroyCall = call;
+            }
+          }
+        }
+      }
+    }
+    // If both one autoDestroy and one autoCopy are present, we can remove that
+    // pair.  Otherwise, do nothing.
+    if (copyCall && destroyCall) {
+      // Handle only cases with a single def which is definitely still in the
+      // tree
+      if (defs && defs->n == 1 && defs->v[0]->parentExpr) {
+        CallExpr* def = toCallExpr(defs->v[0]->parentExpr);
+        INT_ASSERT(def);
+        // Assumes all defs are callexprs.  If that is not the case, please
+        // update this section to respond appropriately
+        Expr* replacement = NULL;
+        if (def->isPrimitive(PRIM_MOVE) || def->isPrimitive(PRIM_ASSIGN)) {
+          // Based on how these primitives work, we can assume that if they are
+          // in the def list, then var is the first argument and what is being
+          // assigned to it is the second argument.
+          if (CallExpr* maybeAutoCopy = toCallExpr(def->get(2))) {
+            if (FnSymbol* fn = maybeAutoCopy->isResolved()) {
+              if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
+                // We only want to remove autoDestroy calls on variables that
+                // were created via an autoCopy.  Other autoDestroy calls are
+                // necessary for correctness and avoiding memory leaks.  We
+                // don't want to replace the variable with an autoCopy within
+                // the autoCopy where we were used, that would defeat the
+                // point of this optimization.  We want to peel off the
+                // autoCopy and use its argument to replace ourselves.
+                replacement = maybeAutoCopy->get(1)->remove();
+                def->get(2)->remove();
+                def->remove();
+                // Replace the use of var with a use of what was assigned to var
+                copyCall->get(1)->replace(replacement);
+                // The autoDestroy we will no longer need, so remove it
+                destroyCall->remove();
+                // Remove var's defExpr.
+                var->defPoint->remove();
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -100,7 +184,10 @@ void deadVariableElimination(FnSymbol* fn) {
     if (sym == fn->_this)
       continue;
 
-    if (isDeadVariable(sym, defMap, useMap)) {
+    Vec<SymExpr*>* defs = defMap.get(sym);
+    Vec<SymExpr*>* uses = useMap.get(sym);
+
+    if (isDeadVariable(sym, defs, uses)) {
       for_defs(se, defMap, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call &&
@@ -113,6 +200,8 @@ void deadVariableElimination(FnSymbol* fn) {
           call->remove();
       }
       sym->defPoint->remove();
+    } else {
+      removeAutoCopyDestroyPair(sym, defs, uses);
     }
   }
 
