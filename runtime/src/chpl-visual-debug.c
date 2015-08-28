@@ -316,8 +316,8 @@ void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
     struct timezone tz = {0,0};
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, &tz);
-    printf ("log_get/%d, fn is 0x%lx\n",chpl_nodeID, (long) fn); fflush(stdout);
-    printf ("log_get/%d, fn length is %lu\n", chpl_nodeID, strlen(fn));
+    //printf ("log_get/%d, fn is 0x%lx\n",chpl_nodeID, (long) fn); fflush(stdout);
+    //printf ("log_get/%d, fn length is %lu\n", chpl_nodeID, strlen(fn));
     chpl_dprintf (chpl_vdebug_fd,
              "get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
              (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
