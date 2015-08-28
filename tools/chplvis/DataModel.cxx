@@ -531,8 +531,8 @@ int DataModel::LoadData(const char * filename)
           std::list< timelineEntry >::reverse_iterator tl_itr;
           tl_itr = taskTimeline[curNodeId].rbegin();
           while (tl_itr != taskTimeline[curNodeId].rend()) {
-            if ((*tl_itr).first == Tl_Begin
-                && (*tl_itr).second == etp->taskId()) {
+            if (tl_itr->first == Tl_Begin
+                && tl_itr->second == etp->taskId()) {
               // Found the begin record in the timeline, add the end record
               taskTimeline[curNodeId].push_back(timelineEntry(Tl_End,etp->taskId()));
               curTag->locales[curNodeId].runConc--;
@@ -550,6 +550,28 @@ int DataModel::LoadData(const char * filename)
     // Move to next event record
     itr++;
   }
+
+#if 0
+  // Debug print of full DB
+  printf ("Final Events DB.\n");
+  itr = theEvents.begin();
+  while (itr != theEvents.end()) {
+    (*itr)->print();
+    itr++;
+  }
+
+  // Timeline debug
+  printf ("\nTimeline for node 0.\n");
+  std::list<timelineEntry>::iterator tl_itr = taskTimeline[0].begin();
+  while (tl_itr != taskTimeline[0].end()) {
+    switch (tl_itr->first) {
+      case Tl_Tag: printf ("Tag: %ld\n", tl_itr->second); break;
+      case Tl_Begin: printf ("Begin: %ld\n", tl_itr->second); break;
+      case Tl_End: printf ("End: %ld\n", tl_itr->second); break;
+    }
+    tl_itr++;
+  }
+#endif 
 
   return 1;
 }
