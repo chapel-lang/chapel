@@ -24,6 +24,8 @@
 #include <FL/fl_draw.H>
 #include <FL/x.H>
 
+#include <string.h>
+
 static const int CR_Left = 220;
 
 #ifdef __APPLE__
@@ -36,15 +38,23 @@ static const int Y_OFF = 0;
 void InfoBar::setFileName(const char *name) {
     const char *sl;
     char *dash;
-    sl = strrchr(name,'/');
+    int nameLen = strlen(name);
+    char tmpNam[nameLen+1];
+
+    strncpy (tmpNam, name, nameLen+1);
+    if (tmpNam[nameLen-1] == '/') {
+      tmpNam[nameLen-1] = 0;
+      nameLen--;
+    }
+    sl = strrchr(tmpNam,'/');
     if (sl == NULL)
-      sl = name;
+      sl = tmpNam;
     else
       sl++;
+    dash = strrchr(sl,'-');
+    if (dash != NULL) *dash = 0;
     if (fileName != NULL) free(fileName);
     fileName = strdup(sl);
-    dash = strrchr(fileName,'-');
-    if (dash != NULL) *dash = 0;
   }
   
 void InfoBar::setTagName(const char *name) {
