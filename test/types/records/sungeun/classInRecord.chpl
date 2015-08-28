@@ -9,7 +9,6 @@ record myR {
   proc ~myR() { delete c; }
 }
 
-pragma "auto copy fn"
 inline proc chpl__autoCopy(x: myR)
 {
   var r:myR;
@@ -17,7 +16,6 @@ inline proc chpl__autoCopy(x: myR)
   return r;
 }
 
-pragma "auto destroy fn"
 inline proc chpl__autoDestroy(x: myR) { }
 
 proc =(ref a: myR, b: myR) {
