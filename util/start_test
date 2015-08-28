@@ -1236,7 +1236,8 @@ def parser_setup():
             "--compperformance-description", action="store", default="",
             dest="comp_performance_description")
     parser.add_argument("-numtrials", "--numtrials", "-num-trials",
-        "--num-trials", action="store", dest="num_trials", default="1",
+        "--num-trials", action="store", dest="num_trials",
+        default=os.getenv("CHPL_TEST_NUM_TRIALS", "1"),
         help="the number of times to run the performance tests")
     # graphing
     parser.add_argument("-gen-graphs", "--gen-graphs", "-generate-graphs",
