@@ -280,6 +280,8 @@ static void hoistReturnBlock(FnSymbol* fn, BlockStmt* block)
   block->insertAtHead(ret->remove());
 
   // See if the statement is preceded by a DefExpr containing a label.
+  // TODO: Convert this to a loop, so we search back to find the return label
+  // even if it does not immediately precede the return primitive.
   DefExpr* label = toDefExpr(stmts[nstmts-2]);
   if (label && isLabelSymbol(label->sym))
   {
@@ -295,7 +297,12 @@ static void hoistReturnIntoItsOwnScope(FnSymbol* fn)
   SET_LINENO(fn);
 
   // Get the declaration of the return-value variable if there is one.
-  // Functions that return void or an immediate to not declare a return-value variable.
+  // Functions that return void or an immediate do not declare a return-value
+  // variable.
+  // TODO: We also need to hoist formal_tmp variables, because their scope
+  // extends for the entire function.  Probably not critical for "in" intent,
+  // but necessary for "out" and "inout" because the write-backs for these must
+  // come after the return_label, and they must therefore still be in scope.
   Symbol* retSym = fn->getReturnSymbol();
 
   DefExpr* def = findSymbolDef(retSym, fn);
@@ -313,6 +320,11 @@ static void hoistReturnIntoItsOwnScope(FnSymbol* fn)
 }
 
 
+// To force autoDestroys for variables declared within the body of a function
+// to be autodestroyed before the return primitive, we move the return-value
+// variable and the return primitive into an outer scope.
+// It is interesting to note that functions have this extra scope after
+// parsing, but it is flattened out (in normalization?) before resolution.
 static void hoistReturnIntoItsOwnScope()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
