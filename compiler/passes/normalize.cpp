@@ -1208,32 +1208,9 @@ static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* 
     if (initCall && initCall->isPrimitive(PRIM_NEW)) {
       stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, init->remove()));
     } else {
-      // Non-param variables initialized with a string literal but
-      // without a type are assumed to be of type string.  This case
-      // must be handled here, rather than in resolution because we
-      // cannot recognize this situtation easily (if at all) during
-      // resolution due to PRIM_INIT handling.
-      //
-      // Note that we have to do a similar thing during scope resolve
-      // when building default type constructors.
-      if ((toSymExpr(init) && (toSymExpr(init)->typeInfo() == dtStringC)) &&
-          !var->hasFlag(FLAG_PARAM)) {
-        // This logic is the same as the case above under 'if (type)',
-        // but simplified for this specific case.
-        SET_LINENO(stmt);
-        VarSymbol* typeTemp = newTemp("type_tmp");
-        stmt->insertBefore(new DefExpr(typeTemp));
-        CallExpr* newInit;
-        newInit = new CallExpr(PRIM_MOVE, typeTemp,
-                               new CallExpr(PRIM_INIT, new SymExpr(dtString->symbol)));
-        stmt->insertBefore(newInit);
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-        stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
-      } else {
-        stmt->insertAfter(
-          new CallExpr(PRIM_MOVE, constTemp,
-            new CallExpr("chpl__initCopy", init->remove())));
-      }
+      stmt->insertAfter(
+        new CallExpr(PRIM_MOVE, constTemp,
+          new CallExpr("chpl__initCopy", init->remove())));
     }
 }
 

@@ -151,6 +151,13 @@ module CPtr {
   inline proc !(x: c_ptr) return x == c_nil;
 
   pragma "no doc"
+  inline proc +(a: c_ptr, b: integral) return __primitive("+", a, b);
+
+  pragma "no doc"
+  inline proc -(a: c_ptr, b: integral) return __primitive("-", a, b);
+
+
+  pragma "no doc"
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
 

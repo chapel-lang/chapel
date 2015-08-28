@@ -21,7 +21,6 @@
 //
 module MemTracking
 {
-  //TODO strings: super broken now
   config const
     memTrack: bool = false,
     memStats: bool = false,
@@ -95,8 +94,8 @@ module MemTracking
       // These c_strings are going to be leaked
       if s_memLeaksByDesc.len != 0 then
         ret_memLeaksByDesc = copyRemoteBuffer(s_memLeaksByDesc.locale.id,
-                                      s_memLeaksByDesc.buff,
-                                      s_memLeaksByDesc.len);
+                                              s_memLeaksByDesc.buff,
+                                              s_memLeaksByDesc.len);
       else ret_memLeaksByDesc = nil;
       if s_memLog.len != 0 then
         ret_memLog = copyRemoteBuffer(s_memLog.locale.id,

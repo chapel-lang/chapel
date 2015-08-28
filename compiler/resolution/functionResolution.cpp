@@ -6351,6 +6351,9 @@ resolveExpr(Expr* expr) {
         !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
       if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
+        // Dont try to resolve the defaultTypeConstructor for string literals
+        // (resolution ordering issue, string literals are encoutred too early
+        // on and we dont know enough to be able to resolve them at that point)
         if (!(ct == dtString && (sym->var->isParameter() || sym->var->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
             !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
