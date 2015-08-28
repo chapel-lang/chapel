@@ -2,6 +2,8 @@
 
 outfile=$2
 
+cp $outfile $outfile.orig
+
 cat $outfile | \
     sed 's/Operation not permitted/SYS_ERR/' | \
     sed 's/Invalid argument/SYS_ERR/' | \
