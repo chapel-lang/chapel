@@ -43,7 +43,7 @@ void InfoBar::setFileName(const char *name) {
       sl++;
     if (fileName != NULL) free(fileName);
     fileName = strdup(sl);
-    dash = strchr(fileName,'-');
+    dash = strrchr(fileName,'-');
     if (dash != NULL) *dash = 0;
   }
   

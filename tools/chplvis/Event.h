@@ -92,7 +92,7 @@ class  E_task : public Event {
     char *srcFile;
   
   public:
-    E_task (long esec, long eusec, int nid, int taskId, bool ison, long line, char *file)
+    E_task (long esec, long eusec, int nid, long taskId, bool ison, long line, char *file)
       : Event(esec,eusec, nid), taskid(taskId), isOn(ison), lineNum(line)
     {
       srcFile = strdup(file);
@@ -247,34 +247,34 @@ class E_end : public Event {
 class E_begin_task : public Event {
 
   private:
-    int taskId;
+    long taskid;
 
   public:
-    E_begin_task (long esec, long eusec, int nodeid, int taskid)
-      : Event(esec, eusec, nodeid), taskId(taskid) {};
+    E_begin_task (long esec, long eusec, int nodeid, long tid)
+      : Event(esec, eusec, nodeid), taskid(tid) {};
 
-    int getTaskId() { return taskId; }
+    long taskId() { return taskid; }
     virtual int Ekind() { return Ev_begin_task; }
     virtual void print() {
-      printf ("Btask: node %d time %ld.%06ld taskId %d\n",
-              nodeid, sec, usec, taskId);
+      printf ("Btask: node %d time %ld.%06ld taskId %ld\n",
+              nodeid, sec, usec, taskid);
     }
 };
 
 class E_end_task : public Event {
 
    private:
-     int taskId;
+     long taskid;
 
    public:
-     E_end_task (long esec, long eusec, int nodeid, int taskid)
-       : Event(esec, eusec, nodeid), taskId(taskid) {};
+     E_end_task (long esec, long eusec, int nodeid, long tid)
+       : Event(esec, eusec, nodeid), taskid(tid) {};
 
-     int getTaskId() { return taskId; }
+     long taskId() { return taskid; }
      virtual int Ekind() { return Ev_end_task; }
      virtual void print() {
-       printf ("Etask: node %d time %ld.%06ld taskId %d\n",
-               nodeid, sec, usec, taskId);
+       printf ("Etask: node %d time %ld.%06ld taskId %ld\n",
+               nodeid, sec, usec, taskid);
      }
 };
 

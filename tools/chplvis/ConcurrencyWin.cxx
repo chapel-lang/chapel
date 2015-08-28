@@ -144,11 +144,12 @@ void ConcurrencyData::buildData(void) {
   if (parent->localeNum == 0)
     greedy[0] = 1;
 
-  // Calculate new height
+  // Calculate new height and width
+  // Default width ... unless we get a more specific one.
+  width = 30 + 60 * VisData.getTagData(DataModel::TagALL)->
+              locales[parent->localeNum].maxConc;
   if (parent->tagNum == DataModel::TagALL) {
     numLines =  VisData.taskTimeline[parent->localeNum].size();
-    width = 30 + 60 * VisData.getTagData(DataModel::TagALL)->
-                      locales[parent->localeNum].maxConc;
     tagStart = VisData.taskTimeline[parent->localeNum].begin();
   } else {
     // Walk the timeline keeping tasks that go past the tag
@@ -166,7 +167,7 @@ void ConcurrencyData::buildData(void) {
 
         case DataModel::Tl_Tag:
           tmpTagNo = tl_itr->second;
-          //tmpTag = VisData.getTagData(tmpTagNo);
+          tmpTag = VisData.getTagData(tmpTagNo);
           if (tmpTagNo == parent->tagNum) {
             tagStart = tl_itr;
             tagStart++; // Move to the first record after the tag
@@ -209,13 +210,13 @@ void ConcurrencyData::buildData(void) {
   if (greedy[0]) numLines++;
   height = 40 + 25 * numLines;
                                    
-  //printf ("data size:  %dx%d\n", width, height);
-  
-  // Start the rebuild by resizing
-  resize (x(), y(), width, height);
-
   // Reset scroll
   parent->scroll->scroll_to(0,0);
+
+  // printf ("resize data size:  %dx%d\n", width, height);
+
+  // Start the rebuild by resizing
+  resize (x(), y(), width, height);
 
   // Build the data
   curLine = 0;
