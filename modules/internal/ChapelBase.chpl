@@ -678,35 +678,45 @@ module ChapelBase {
     //
 
     //
-    // Heuristically determine if we should do parallel initialization. We want
-    // each task to "own" at least a page in order to get good first-touch
-    // behavior and to avoid false-sharing. We naively assume the parallel
-    // range iterator will create maxTaskPar tasks so we want the array to be
-    // at least (maxTaskPar * pagesizes) big. For non-numeric element types we
-    // guess that each element is at least 8 bytes with the assumption that
-    // most record/classes/arrays will be at least 8 bytes.
+    // Heuristically determine if we should do parallel initialization. The
+    // current heuristic really just checks that the array is of numeric types
+    // and is at least 2MB. This value was chosen experimentally. Any smaller
+    // than that and the cost of a forall (mostly the task creation) outweighs
+    // the benefit of using multiple tasks. This was tested on a dual core
+    // laptop, 8 core workstation, and 24 core XC40.
     //
-    // TODO: improve the heuristic for non-numeric types
+    // Ideally we also want to do parallel init for POD types, however the
+    // isPODType is currently on string-as-rec only. The heuristic will
+    // probably have to be slightly updated for POD types since there will also
+    // be the construction cost from the creation of `y: t`
     //
-    // TODO: Note that we could do even better if the range had an iterator
-    // that supported local overrides of dataParTasksPerLocale or
-    // MinGranularity. The current heuristic will always try to use
-    // dataParTasksPerLocale even if, say, arrsize is pagesize+1, where we'd
-    // really only want to use 2 tasks there or set minGranularity to pagesize.
-    // But at the very least, the current approach differentiates between
-    // larger and smaller arrays.
-    //
+    // We do not want to do parallel init for non-POD types for the time being.
+    // Well, really we don't want to do parallel init if `t` is an array or an
+    // aggregate type with at least one field that is an array. Domains keep
+    // track of what arrays belong to them, so that when a domain is updated,
+    // all of its arrays can be updated too. Currently the domain's arrays are
+    // stored in a linked list. When an array is destroyed, it goes to its
+    // domain and tells the domain to remove the array from the list of arrays.
+    // This involves searching through the list of arrays to find the one to
+    // remove. For an array of arrays, if the outer array is initialized
+    // serially, the order or initialization and destruction will be the same.
+    // This means that when initialized serially, no real searching through the
+    // linked list has to be done since the array to remove will be at the
+    // beginning of the linked list effectively resulting in O(1) time. When
+    // the order the arrays are added to the linked list is different than the
+    // order they are removed from you experience the true O(n) time of
+    // searching through a linked list to find the array to remove. To fix
+    // this, the domains list of arrays should really be stored as a BST, or
+    // associative array or something that has < log(n) removal time.
 
-    if parallelInitElts && here != dummyLocale {
-      extern proc chpl_getSysPageSize():size_t;
-      const pagesizeInBytes = chpl_getSysPageSize().safeCast(int);
+    if parallelInitElts && isNumericType(t) {
 
-      const elemsizeInBytes = if (isNumericType(t)) then numBytes(t) else 8;
+      param elemsizeInBytes = numBytes(t);
       const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
-      const heuristicThresh = pagesizeInBytes * here.maxTaskPar;
+      param heuristicThresh = 2 * 1024 * 1024;
       const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
 
-      if heuristicWantsPar {
+      if heuristicWantsPar && here != dummyLocale {
         forall i in 1..s {
           pragma "no auto destroy" var y: t;
           __primitive("array_set_first", x, i-1, y);
