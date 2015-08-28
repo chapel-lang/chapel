@@ -374,7 +374,7 @@ void chpl_vdebug_log_fork(c_nodeid_t node, c_sublocid_t subloc,
   // Visual Debug Support
   chpl_taskID_t forkTask;
   forkTask = chpl_task_getId();
-  printf ("fork: fork task %llu %d->%d\n", forkTask, (int)chpl_nodeID, (int)node);
+  // printf ("fork: fork task %llu %d->%d\n", forkTask, (int)chpl_nodeID, (int)node);
   if (chpl_vdebug) {
     struct timeval tv;
     struct timezone tz = {0,0};
@@ -453,9 +453,9 @@ void cb_task_create(const chpl_task_cb_info_t *info) {
   if (!chpl_vdebug) return;
   if (chpl_vdebug_fd >= 0) {
     chpl_taskID_t taskId = chpl_task_getId();
-    printf ("taskCB: event: %d, node %d proc %s task id: %llu, new task id: %llu\n",
-             (int)info->event_kind, (int)info->nodeID,
-            (info->iu.full.is_executeOn ? "O" : "L"), taskId, info->iu.full.id);
+    //printf ("taskCB: event: %d, node %d proc %s task id: %llu, new task id: %llu\n",
+    //         (int)info->event_kind, (int)info->nodeID,
+    //        (info->iu.full.is_executeOn ? "O" : "L"), taskId, info->iu.full.id);
     (void)gettimeofday(&tv, &tz);
     chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %lld %ld %ld %s %ld %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,
