@@ -24,7 +24,7 @@ record NotPod3 {
   var x:int;
 }
 
-pragma "auto destroy fn" proc chpl__autoDestroy(x:NotPod3) {
+proc chpl__autoDestroy(x:NotPod3) {
   writeln("custom auto destroy");
   return x;
 }

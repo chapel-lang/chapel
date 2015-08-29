@@ -318,7 +318,6 @@ proc chpl__autoCopy(x: DimensionalDist) {
   return x;
 }
 
-pragma "auto destroy fn"
 proc chpl__autoDestroy(x: DimensionalDist) {
   if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDist();
@@ -404,7 +403,6 @@ proc chpl__autoCopy(x: DimensionalDom) {
   return x;
 }
 
-pragma "auto destroy fn"
 proc chpl__autoDestroy(x: DimensionalDom) {
   if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyDom();
@@ -637,7 +635,6 @@ proc chpl__autoCopy(x: DimensionalArr) {
   return x;
 }
 
-pragma "auto destroy fn"
 proc chpl__autoDestroy(x: DimensionalArr) {
   if !noRefCount && ! _isPrivatized(x) {
     var cnt = x.destroyArr();
