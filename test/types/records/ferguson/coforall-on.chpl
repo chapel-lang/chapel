@@ -15,8 +15,10 @@ iter myiter() : R {
 proc run() {
   var tot:atomic int;
   coforall r in myiter() {
-    tot.add(r.x);
-    if verbose then writeln(r);
+    on Locales[numLocales-1] {
+      tot.add(r.x);
+      if verbose then writeln(r);
+    }
   }
   writeln(tot.read());
 }
