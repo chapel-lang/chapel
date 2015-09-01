@@ -80,7 +80,6 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
     call->replace(return_value);
 }
 
-#if 0
 // Ideally we would compute this after inling all nested functions, but that
 // doesn't work due to some cases that explictly expect a ref and have deref
 // calls. Future work would be to find those cases and make change this check
@@ -114,7 +113,6 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
 
   return true;
 }
-#endif
 
 // Search for the first assingment (a PRIM_MOVE) to a ref temp. If found, the
 // CallExpr doing the assignment will be returned, otherwise NULL. This works
@@ -286,13 +284,11 @@ inlineFunctions() {
     Vec<FnSymbol*> canRemoveRefTempSet;
 
     compute_call_sites();
-#if 0
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (canRemoveRefTemps(fn)) {
         canRemoveRefTempSet.set_add(fn);
       }
     }
-#endif
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
         inlineFunction(fn, inlinedSet, canRemoveRefTempSet);
