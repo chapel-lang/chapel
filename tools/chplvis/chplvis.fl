@@ -114,7 +114,7 @@ Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {
       label Concurrency
       private xywh {0 0 500 30}
     }
-    Fl_Scroll ConcScroll {open selected
+    Fl_Scroll ConcScroll {open
       private xywh {0 30 500 570} box DOWN_BOX color 7 resizable
     } {
       Fl_Box scrollData {
@@ -255,12 +255,10 @@ MainWindow->redraw();}
     if (!VisData.LoadData(argv[1])) {
        exit(1);
     }
-    if (DbgView) {
-      DbgView->setNumLocales(VisData.NumLocales());
-      DbgView->makeTagsMenu();
-      DbgView->selectData(DataModel::TagALL);
-      Info->setFileName(argv[1]);
-    }
+    DbgView->setNumLocales(VisData.NumLocales());
+    DbgView->makeTagsMenu();
+    DbgView->selectData(DataModel::TagALL);
+    Info->setFileName(argv[1]);
     argc--;
     argv++;
 } else {
@@ -273,5 +271,6 @@ MainWindow->redraw();}
       Info->setFileName(".Vdebug (default)");
    }
 }
-MainWindow->callback(mainWinCallback);} {}
+MainWindow->callback(mainWinCallback);} {selected
+  }
 } 
