@@ -68,7 +68,7 @@ class TreeNode {
   var nChildren: int = 0;
 
   // Generate this node's children
-  proc genChildren(inout q: DeQueue(TreeNode)): int {
+  proc genChildren(ref q: DeQueue(TreeNode)): int {
     select distrib {
       when NodeDistrib.Geometric do 
         nChildren = numGeoChildren(geoDist);
@@ -197,7 +197,7 @@ proc uts_showSearchParams() {
 }
 
 
-proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
+proc balance_load(ref state: LDBalanceState, ref q: DeQueue(TreeNode)): int {
   if (parallel) {
     // Trade some imbalance here for blocking overhead
     if (q.size > 2*chunkSize && thread_cnt.readXX() < MAX_THREADS) {
@@ -218,7 +218,7 @@ proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int 
       var tmp = thread_cnt; // Lock the access to threads_spawned
       threads_spawned += 1;
       thread_cnt = tmp + 1;
-      begin with (ref work) create_tree(work);
+      begin with (in work) create_tree(work);
       return 1;
     }
   }
@@ -229,7 +229,7 @@ proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int 
 /*
 **  Parallel Tree Creation
 */
-proc create_tree(inout q: DeQueue(TreeNode)) {
+proc create_tree(ref q: DeQueue(TreeNode)) {
   var count, maxDepth: int;
   var ldbal_state = new LDBalanceState();
 
