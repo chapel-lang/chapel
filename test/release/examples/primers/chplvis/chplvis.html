@@ -19,7 +19,7 @@
 <br/>
 <div style="margin:40px">
 <p>
-<em>chplvis</em> is a tool to help the Chapel program visualize their
+<em>chplvis</em> is a tool to help the Chapel programer visualize their
 Chapel program's tasks and communication between locales.  Using the
 standard module <em>VisualDebug</em>, the programmer controls what part
 of their program generates information for chplvis.  During the run of
@@ -31,7 +31,7 @@ will help you understand the <em>VisualDebug</em> module and the
 
 <h3>Setup</h3>
 <p>
-<em>chplvis</em> is built by giving the command <em>"make chplvis"</em>
+<em>chplvis</em> is built by giving the command <strong>make chplvis</strong>
 at the top level of the chapel tree.  This also builds
 the GUI tool, <em>FLTK</em>, required to build and
 run <em>chplvis</em>.  (Note: Some versions of Linux may require the
@@ -39,7 +39,7 @@ standard package <em>libx11-dev</em> to be installed before <em>FLTK</em> will
 compile properly.)  To get the most out of this primer, you should
 compile and run the example programs and examine
 the <em>VisualDebug</em> results with <em>chplvis</em>.  The graphics
-in this primer were produced on a system using the <em>fifo</em> package
+in this primer were produced on a system using the <em>fifo</em> threads
 instead of the default, <em>qthreads</em>, for the tasking layer.   If you use
 <em>qthreads</em>, your task count may differ from the examples.
 </p>
@@ -82,7 +82,7 @@ directory is created, one can run chplvis as <em>chplvis E1</em> or
 simply <em>chplvis</em> and then opening the file <em>E1/E1-0</em>
 from the <em>file/open</em> menu.  The resulting display is:
 </p>
-<img src="E1.png" style="margin:10px; border: 2px solid black;">
+<img src="E1.png" style="margin:10px; border: 2px solid black; align=center;">
 <p>
 (Note: This image is from an X11 display.  On OS-X, the menu bar
 will be on the normal menu bar at the top of the screen and will
@@ -110,8 +110,8 @@ If communication is only one way, the communication color for
 <li>The <em>Data menu</em> controls what data is used for display
 colors.   This initial data is number of tasks for locales
 and number of communications calls for the communication links.
-For locales, one can select number of tasks, CPU time at the locale
-or clock time at the locale.  Clock time is normally very close to
+For locales, one can select number of tasks, CPU time at the locale,
+clock time or concurrency at the locale.  Clock time is normally very close to
 equal across all locales.  For the communication links, one can
 select number of communications or size of data sent.</li>
 </ul>
