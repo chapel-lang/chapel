@@ -1,7 +1,6 @@
-=======
+
 chplvis
 =======
-----------------------------------------------
 A task and communication debug tool for Chapel
 ----------------------------------------------
 
@@ -14,7 +13,7 @@ created that are used as input for *chplvis*.  This document
 will help you understand the *VisualDebug* module and the
 *chplvis* tool.
 
-
+=====
 Setup
 =====
 
@@ -31,6 +30,7 @@ instead of the default, *qthreads*, for the tasking layer.   If you use
 *qthreads*, your task count may differ from the examples.
 
 
+==================
 Chapel Source Code
 ==================
 
@@ -44,6 +44,7 @@ of files, one per locale, are created in a directory with the *name* given
 in *startVdebug(name)*.
 </p>
 
+---------
 Example 1
 ---------
 
@@ -78,6 +79,7 @@ will be on the normal menu bar at the top of the screen and will
 not show in the main window.)
 
 
+================
 chplvis Elements
 ================
 
@@ -108,6 +110,7 @@ chplvis Elements
   equal across all locales.  For the communication links, one can
   select number of communications or size of data sent.</li>
 
+===================
 Display Interaction
 ===================
 
@@ -145,6 +148,7 @@ out into three components:
     as an argument to the task.  This data is considered a communication call
     by *chplvis*
 
+---------
 Example 2
 ---------
 
@@ -275,6 +279,7 @@ tag.
 ..  Give examples of how to find problems. 
 
 
+==============
 Final Comments
 ==============
 
