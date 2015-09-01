@@ -248,45 +248,75 @@ static void addFlagReturnValueNotOwned()
 }
 
 
-// Finds the declaration of the given symbol within the given function.
-// Returns null if no such declaration exists in that scope.
-// (A return value may be an immediate or a global.)
-static DefExpr* findSymbolDef(Symbol* sym, FnSymbol* fn)
+static bool isFormalTempDef(Expr* exp) {
+  if (DefExpr* def = toDefExpr(exp))
+    if (!strncmp(def->sym->name, "_formal_tmp_", 12))
+      return true;
+  return false;
+}
+
+static void hoistFormalTemps(BlockStmt* oldFnBody, BlockStmt* newOuterScope)
 {
-  std::vector<DefExpr*> defExprs;
-  collectDefExprs(fn, defExprs);
-  for_vector(DefExpr, def, defExprs)
-  {
-    // Select only DefExprs referring to the RVV.
-    if (def->sym == sym)
-    {
-      // This is the symbol's declaration.
-      return def;
+  Expr* curr = oldFnBody->body.head;
+  while (curr) {
+    if (!isDefExpr(curr) && !isCallExpr(curr))
+      // do not traverse the rest
+      break;
+    Expr* next = curr->next;
+    if (isFormalTempDef(curr)) {
+      // found it
+      newOuterScope->insertAtTail(curr->remove());
     }
+    curr = next;
   }
+  if (fVerify) {
+    // If formal temp defs are not contiguous, may want to relax
+    // the break condition above.
+    for (; curr; curr = curr->next)
+      INT_ASSERT(!isFormalTempDef(curr));
+  }
+}
+
+static DefExpr* findReturnLabel(FnSymbol* fn, BlockStmt* oldFnBody) {
+  bool label__end_ = true;  // _end_FNNAME
+  if (fn->hasFlag(FLAG_AUTO_II) &&
+      ! strcmp(fn->name, "advance"))
+    label__end_ = false;  // special case: _end
+
+  for (Expr* curr = oldFnBody->body.tail; curr; curr = curr->prev)
+    if (DefExpr* def = toDefExpr(curr))
+      if (LabelSymbol* label = toLabelSymbol(def->sym))
+        if ( (label__end_ && !strncmp(label->name, "_end_", 5)) ||
+             (!label__end_ && !strcmp(label->name, "_end"))     )
+          return def;
+
+  // the return label does not exist e.g. in compiler-generated functions
   return NULL;
 }
 
 
-static void hoistReturnBlock(FnSymbol* fn, BlockStmt* block)
+static void hoistReturnBlock(FnSymbol* fn,
+                             BlockStmt* oldFnBody, BlockStmt* newOuterScope)
 {
-  std::vector<Expr*> stmts;
-  collect_stmts(fn->body, stmts);
-  size_t nstmts = stmts.size();
-
   // Hoist the return statement.
-  CallExpr* ret = toCallExpr(stmts[nstmts-1]);
+  CallExpr* ret = toCallExpr(oldFnBody->body.tail);
   INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
-  block->insertAtHead(ret->remove());
+  ret->remove();
 
   // See if the statement is preceded by a DefExpr containing a label.
-  DefExpr* label = toDefExpr(stmts[nstmts-2]);
-  if (label && isLabelSymbol(label->sym))
-  {
-    // If so, we assume it is the return statement label.
-    // Move that one, too.
-    block->insertAtHead(label->remove());
+  DefExpr* labelDef = findReturnLabel(fn, oldFnBody);
+  if (labelDef) {
+    // Move everything from the return label until the rest of the body.
+    Expr *curr = labelDef;
+    do {
+      Expr* next = labelDef->next;
+      newOuterScope->insertAtTail(curr->remove());
+      curr = next;
+    } while (curr);
   }
+
+  // Finish with the return statement.
+  newOuterScope->insertAtTail(ret);
 }
 
 
@@ -295,21 +325,26 @@ static void hoistReturnIntoItsOwnScope(FnSymbol* fn)
   SET_LINENO(fn);
 
   // Get the declaration of the return-value variable if there is one.
-  // Functions that return void or an immediate to not declare a return-value variable.
+  // Functions that return void or an immediate do not declare a return-value variable.
   Symbol* retSym = fn->getReturnSymbol();
+  DefExpr* def = retSym->defPoint;
+  if (def->parentSymbol != fn)
+    def = NULL;
 
-  DefExpr* def = findSymbolDef(retSym, fn);
+  BlockStmt* newOuterScope = new BlockStmt();
+  BlockStmt* oldFnBody = fn->body;
+  // create and populate a new body block - in this order:
+  // formal temps
+  if (!fn->hasFlag(FLAG_AUTO_II)) // currently not implemented
+    hoistFormalTemps(oldFnBody, newOuterScope);
+  // most of fn->body
+  oldFnBody->replace(newOuterScope);
+  newOuterScope->insertAtTail(oldFnBody);
+  // the return label and everything that follows
+  hoistReturnBlock(fn, oldFnBody, newOuterScope);
+  // and, 'ret' is defined at the very top
   if (def)
-    def->remove();
-
-  // Create and populate a new body block from the end forward.
-  BlockStmt* block = new BlockStmt();
-  BlockStmt* body = fn->body;
-  hoistReturnBlock(fn, block);
-  fn->body->replace(block);
-  block->insertAtHead(body);
-  if (def)
-    block->insertAtHead(def);
+    newOuterScope->insertAtHead(def->remove());
 }
 
 
