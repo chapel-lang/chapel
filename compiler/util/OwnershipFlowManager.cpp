@@ -1512,6 +1512,16 @@ getBestAlias(const SymbolVector& aliasList)
   return aliasList.back();
 }
 
+static CallExpr* removeReturnStmt(FnSymbol* fn) {
+  if (CallExpr* call = toCallExpr(fn->body->body.tail)) {
+    if (call->isPrimitive(PRIM_RETURN)) {
+      call->remove();
+      return call;
+    }
+  }
+  return NULL;
+}
+
 
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
@@ -1566,8 +1576,14 @@ OwnershipFlowManager::insertAutoDestroys()
     to_cons |= *OUT[i] & *EXIT[i];
   }
 
+  // Move away the return statement so insertAtTail() do not add after it.
+  CallExpr* ret = removeReturnStmt(_fn);
+
   // and then destroy each symbol at the end of its containing scope.
   insertAutoDestroy(&to_cons);
+
+  // Reinsert the return statement.
+  if (ret) _fn->body->insertAtTail(ret);
 }
 
 
