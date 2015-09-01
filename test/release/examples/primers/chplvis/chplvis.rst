@@ -1,5 +1,3 @@
-.. image:: chapel-a.png
-
 =======
 chplvis
 =======
