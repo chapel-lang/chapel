@@ -44,6 +44,11 @@
    In the future, we expect to add more language-level support for a
    "task-team" concept.  A task-team will more directly support collective
    operations such as barriers between the tasks within a team.
+
+   The current implementation is designed for correctness, but is not expected
+   to perform well at scale.  We expect performance at scale to improve as
+   this barrier implementation is optimized and as the task-team concept is
+   implemented and optimized.
 */
 module Barrier {
   /* The BarrierBaseType record provides an abstract base type for barriers
