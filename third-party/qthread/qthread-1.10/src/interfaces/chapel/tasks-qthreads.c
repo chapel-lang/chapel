@@ -21,7 +21,7 @@
 #include "chpl-comm.h"
 #include "chpl-locale-model.h"
 #include "chpl-tasks.h"
-#include "chpl-visual-debug.h"
+#include "chpl-tasks-callbacks-internal.h"
 #include "config.h"
 #include "error.h"
 #include "arg.h"
@@ -137,6 +137,12 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
     PRV_DATA_IMPL_VAL("<comm thread>", 0, chpl_nullTaskID, false,
                       c_sublocid_any_val, false),
     NULL, 0 };
+
+//
+// QTHREADS_SUPPORTS_REMOTE_CACHE is set in the Chapel Qthreads
+// Makefile, based on the Qthreads scheduler configuration.
+//
+int chpl_qthread_supports_remote_cache = QTHREADS_SUPPORTS_REMOTE_CACHE;
 
 //
 // structs chpl_task_prvDataImpl_t, chpl_qthread_wrapper_args_t and
@@ -618,117 +624,16 @@ void chpl_task_exit(void)
 #endif /* QTHREAD_MULTINODE */
 }
 
-//
-// Tasking callback support.
-//
-#define MAX_CBS_PER_EVENT 10
-
-static struct cb_info {
-    chpl_task_cb_fn_t fns[MAX_CBS_PER_EVENT];
-    chpl_task_cb_info_kind_t info_kinds[MAX_CBS_PER_EVENT];
-    int count;
-} cb_info[chpl_task_cb_num_event_kinds];
-
-int chpl_task_install_callback(chpl_task_cb_event_kind_t event_kind,
-                               chpl_task_cb_info_kind_t info_kind,
-                               chpl_task_cb_fn_t cb_fn) {
-    int i;
-
-    if (event_kind >= chpl_task_cb_num_event_kinds) {
-        errno = ERANGE;
-        return -1;
-    }
-
-    i = cb_info[event_kind].count;
-
-    if (i >= MAX_CBS_PER_EVENT) {
-        errno = ENOMEM;
-        return -1;
-    }
-
-    cb_info[event_kind].count++;
-    cb_info[event_kind].fns[i]= cb_fn;
-    cb_info[event_kind].info_kinds[i] = info_kind;
-
-    return 0;
-}
-
-int chpl_task_uninstall_callback(chpl_task_cb_event_kind_t event_kind,
-                                 chpl_task_cb_fn_t cb_fn) {
-    int i;
-    int found_i;
-
-    if (event_kind >= chpl_task_cb_num_event_kinds) {
-        errno = ERANGE;
-        return -1;
-    }
-
-    for (i = 0, found_i = -1; i < cb_info[event_kind].count; i++) {
-        if (cb_info[event_kind].fns[i] == cb_fn) {
-            found_i = i;
-            break;
-        }
-    }
-
-    if (found_i < 0) {
-        errno = ENOENT;
-        return -1;
-    }
-
-    for (i = found_i + 1; i < cb_info[event_kind].count; i++) {
-        cb_info[event_kind].fns[i - 1] =
-            cb_info[event_kind].fns[i];
-        cb_info[event_kind].info_kinds[i - 1] =
-            cb_info[event_kind].info_kinds[i];
-    }
-
-    cb_info[event_kind].count--;
-
-    return 0;
-}
-
-static inline void do_callbacks(chpl_task_cb_event_kind_t event_kind,
-                                chpl_task_prvDataImpl_t *chpl_data) {
-    struct cb_info *cbp;
-
-    assert(event_kind < chpl_task_cb_num_event_kinds);
-
-    cbp = &cb_info[event_kind];
-
-    if (cbp->count > 0) {
-        chpl_task_cb_info_t info;
-        int i;
-
-        info.nodeID = chpl_nodeID;
-        info.event_kind = event_kind;
-
+static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
+                                  chpl_task_prvDataImpl_t *chpl_data) {
+    if (chpl_task_have_callbacks(event_kind)) {
         if (chpl_data->id == chpl_nullTaskID)
             chpl_data->id = qthread_incr(&next_task_id, 1);
-
-        for (i = 0; i < cbp->count; i++) {
-            info.info_kind = cbp->info_kinds[i];
-
-            switch (cbp->info_kinds[i]) {
-            case chpl_task_cb_info_kind_full:
-                info.iu.full = (struct chpl_task_info_full)
-                               { .filename = chpl_data->task_filename,
-                                 .lineno = chpl_data->task_lineno,
-                                 .id = chpl_data->id,
-                                 .is_executeOn = chpl_data->is_executeOn
-                               };
-              break;
-
-            case chpl_task_cb_info_kind_id_only:
-                info.iu.id_only.id = chpl_data->id;
-                break;
-
-            default:
-                assert(false);
-                break;
-            }
-
-            (*cbp->fns[i])((const chpl_task_cb_info_t*) &info);
-        }
+        chpl_task_do_callbacks(event_kind,
+                               chpl_data->task_filename,
+                               chpl_data->task_lineno,
+                               chpl_data->id,
+                               chpl_data->is_executeOn);
     }
 }
 
@@ -745,11 +650,11 @@ static aligned_t chapel_wrapper(void *arg)
         chpl_taskRunningCntInc(0, NULL);
     }
 
-    do_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
+    wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
 
     (*(chpl_fn_p)(rarg->fn))(rarg->args);
 
-    do_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
+    wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
 
     if (rarg->countRunning) {
         chpl_taskRunningCntDec(0, NULL);
@@ -778,7 +683,7 @@ void chpl_task_callMain(void (*chpl_main)(void))
     assert(SPR_OK == rc);
 #endif /* QTHREAD_MULTINODE */
 
-    do_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
+    wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
 
     qthread_fork_syncvar(chapel_wrapper, &wrapper_args, &exit_ret);
     qthread_syncvar_readFF(NULL, &exit_ret);
@@ -824,10 +729,6 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
-    // Visual Debug
-    chpl_vdebug_log_task_queue(fid, arg, subloc, task_list, task_list_locale,
-                               is_begin_stmt, lineno, filename);
-
     if (serial_state) {
         // call the function directly.
         (chpl_ftable[fid])(arg);
@@ -837,7 +738,9 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
              PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, false,
                                subloc, serial_state) };
 
-        do_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
+        wrap_callbacks(chpl_task_cb_event_kind_create,
+                       &wrapper_args.chpl_data);
+
         if (subloc == c_sublocid_any) {
             qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
                                   sizeof(chpl_qthread_wrapper_args_t), NULL);
@@ -880,7 +783,7 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
-    do_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
+    wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
 
     if (subloc == c_sublocid_any) {
         qthread_fork_copyargs(chapel_wrapper, &wrapper_args,

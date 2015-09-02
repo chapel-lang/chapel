@@ -25,6 +25,10 @@
 #include "ViewField.h"
 #include "math.h"
 #include <FL/fl_draw.H>
+#include <sstream>
+
+#define SSTR( x ) dynamic_cast< std::ostringstream & >( \
+                    ( std::ostringstream() << std::dec << x ) ).str()
 
 // Local utility functions
 
@@ -102,11 +106,14 @@ void ViewField::allocArrays()
   //printf ("allocArrays\n");
   // Dealloc anything current
   if (theLocales != NULL) {
-    for (ix = 0; ix < getSize; ix++)
+    for (ix = 0; ix < getSize; ix++) {
       if (theLocales[ix].win != NULL) {
         delete theLocales[ix].win;
         //printf ("deleting win for %d\n", ix);
       }
+      if (theLocales[ix].ccwin != NULL) 
+        delete theLocales[ix].ccwin;
+    }
     delete [] theLocales;
   }
   if (comms != NULL) {
@@ -144,6 +151,7 @@ void ViewField::allocArrays()
 
   for (ix = 0; ix < numlocales; ix++) {
     theLocales[ix].win = NULL;
+    theLocales[ix].ccwin = NULL;
   }
 
   if (tags != NULL) {
@@ -179,6 +187,9 @@ void ViewField::selectData(int tagNum)
     if (theLocales[ix1].win != NULL) {
       theLocales[ix1].win->hide();
     }
+    if (theLocales[ix1].ccwin != NULL) {
+      theLocales[ix1].ccwin->hide();
+    }
     for (ix2 = 0; ix2 < numlocales; ix2++)  {
       if (comms[ix1][ix2].win != NULL) 
         comms[ix1][ix2].win->hide();
@@ -187,10 +198,11 @@ void ViewField::selectData(int tagNum)
 
   // Select data to use
   curTagData = VisData.getTagData(tagNum);
+  curTagNum = tagNum;
 
   // Set the max values in the info bar
   Info->setMaxes(curTagData->maxTasks, curTagData->maxComms, curTagData->maxSize,
-                 curTagData->maxCpu, curTagData->maxClock);
+                 curTagData->maxConc, curTagData->maxCpu, curTagData->maxClock);
 
  }
 
@@ -239,12 +251,12 @@ void ViewField::makeTagsMenu(void)
 
     long ix;
     for (ix = 0; ix < VisData.NumTags(); ix++) {
-      std::string tName = "Tags/tag " + std::to_string(ix) + " ("
+      std::string tName = "Tags/tag " + SSTR(ix) + " ("
                           + VisData.getTagName(ix) + ")";
-      // printf ("Tag[%d] is '%s'\n", ix, tags[ix].tagName);
       MainMenuBar->add(tName.c_str(), 0, selTag, (void *)&tags[ix], 0);
       tags[ix].tagNo = ix;
       tags[ix].tagName = strdup(tName.c_str());
+      // printf ("Tag[%ld] is '%s'\n", ix, tags[ix].tagName);
     }
     MainMenuBar->redraw();
   }
@@ -349,6 +361,8 @@ void ViewField::draw()
       break;
     case show_Clock:
       drawLocale(ix, heatColor(curTagData->locales[ix].clockTime, curTagData->maxClock));
+    case show_Concurrency:
+      drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
     }
   }
 
@@ -361,8 +375,8 @@ void ViewField::draw()
         com2iy = curTagData->comms[ix][iy].numComms;
         comMax = curTagData->maxComms;
       } else {
-        com2ix = curTagData->comms[ix][iy].commSize;
-        com2iy = curTagData->comms[iy][ix].commSize;
+        com2ix = curTagData->comms[iy][ix].commSize;
+        com2iy = curTagData->comms[ix][iy].commSize;
         comMax = curTagData->maxSize;
       }
       if (com2ix || com2iy) {
@@ -391,6 +405,9 @@ void ViewField::draw()
       break;
     case show_Clock:
       Info->showClock();
+      break;
+    case show_Concurrency:
+      Info->showConcurrency();
       break;
   }
     
@@ -477,16 +494,29 @@ int ViewField::handle(int event)
         localeInfo *loc = &theLocales[ix];
         if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
-          if (theLocales[ix].win == NULL) {
-            // Create the window
-            theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
+          if (infoTop == show_Concurrency) {
+            if (theLocales[ix].ccwin == NULL) {
+              // Create the window
+              theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
+            } else {
+              theLocales[ix].ccwin->updateData(ix, curTagNum);
+            }
+            if (theLocales[ix].ccwin->visible()) 
+              theLocales[ix].ccwin->hide();
+            else
+              theLocales[ix].ccwin->show();
           } else {
-            theLocales[ix].win->updateWin(&curTagData->locales[ix]);
+            if (theLocales[ix].win == NULL) {
+              // Create the window
+              theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
+            } else {
+              theLocales[ix].win->updateWin(&curTagData->locales[ix]);
+            }
+            if (theLocales[ix].win->visible()) 
+              theLocales[ix].win->hide();
+            else
+              theLocales[ix].win->show();
           }
-          if (theLocales[ix].win->visible()) 
-            theLocales[ix].win->hide();
-          else
-            theLocales[ix].win->show();
           return 1;
         }
       }

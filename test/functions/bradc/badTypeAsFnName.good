@@ -1,0 +1,1 @@
+badTypeAsFnName.chpl:3: error: unresolved call 'real(64)(complex(128))'

@@ -1,0 +1,2 @@
+genericRecordTypeMethod.chpl:5: In function 'firstElement':
+genericRecordTypeMethod.chpl:5: error: 'myTuple' undeclared (first use this function)

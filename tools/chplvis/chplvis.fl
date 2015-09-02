@@ -53,6 +53,9 @@ decl {\#include "LocaleWin.h"} {public global
 decl {\#include "CommWin.h"} {public local
 } 
 
+decl {\#include "ConcurrencyWin.h"} {public local
+} 
+
 decl {DataModel VisData;} {public local
 } 
 
@@ -64,8 +67,8 @@ Function {mainWinCallback(Fl_Widget *)} {return_type void
 Function {make_locale_window(int locnum, localeData *locInfo)} {open C
 } {
   Fl_Window {} {open
-    xywh {1037 56 180 120} type Double color 7 hide resizable
-    class LocaleWin size_range {180 120 0 0}
+    xywh {-1081 123 180 130} type Double color 7 resizable
+    class LocaleWin size_range {180 120 0 0} visible
   } {
     Fl_Box Locale_Title {
       label {Locale }
@@ -73,7 +76,7 @@ Function {make_locale_window(int locnum, localeData *locInfo)} {open C
     }
     Fl_Output cpuInfo {
       label { }
-      xywh {0 25 180 95} labeltype NO_LABEL resizable
+      private xywh {0 25 180 105} labeltype NO_LABEL resizable
       class Fl_Multiline_Output
     }
   }
@@ -84,8 +87,8 @@ w->updateWin(locInfo);} {}
 Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
 } {
   Fl_Window {} {open
-    xywh {1039 205 180 120} type Double color 7 hide resizable
-    class CommWin
+    xywh {-866 126 180 120} type Double color 7 resizable
+    class CommWin visible
   } {
     Fl_Box Comm_Title {
       label Comm
@@ -93,7 +96,7 @@ Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {op
     }
     Fl_Output commInfo {
       label { }
-      xywh {0 25 180 95} labeltype NO_LABEL resizable
+      private xywh {0 25 180 95} labeltype NO_LABEL resizable
       class Fl_Multiline_Output
     }
   }
@@ -101,11 +104,35 @@ Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {op
 w->updateWin(commdata);} {}
 } 
 
+Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
+} {
+  Fl_Window {} {open
+    xywh {-509 101 500 600} type Double color 7 resizable
+    class ConcurrencyWin visible
+  } {
+    Fl_Box title {
+      label Concurrency
+      private xywh {0 0 500 30}
+    }
+    Fl_Scroll ConcScroll {open
+      private xywh {0 30 500 570} box DOWN_BOX color 7 resizable
+    } {
+      Fl_Box scrollData {
+        private xywh {2 32 460 900} box FLAT_BOX color 7 resizable
+        class ConcurrencyData
+      }
+    }
+  }
+  code {w->setMembers(title, ConcScroll, scrollData);
+w->updateData(locNum, tagNum);
+return w;} {}
+} 
+
 Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1278 56 500 590} type Double color 7 hide resizable size_range {500 590 0 0}
+    xywh {-1082 304 500 590} type Double color 7 resizable size_range {500 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 500 20} color 55
@@ -130,7 +157,7 @@ if (selfile) {
    Info->setFileName(selfile);
    Info->clearTagName();
    MainWindow->redraw();
-}} selected
+}}
           xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
@@ -196,6 +223,12 @@ MainWindow->redraw();}
           xywh {0 0 31 20}
         }
         MenuItem {} {
+          label {Show Concurrency}
+          callback {DbgView->showConcurrency();
+MainWindow->redraw();}
+          xywh {0 0 31 20}
+        }
+        MenuItem {} {
           label {Show Communication Count}
           callback {DbgView->showComms();
 MainWindow->redraw();}
@@ -222,12 +255,10 @@ MainWindow->redraw();}
     if (!VisData.LoadData(argv[1])) {
        exit(1);
     }
-    if (DbgView) {
-      DbgView->setNumLocales(VisData.NumLocales());
-      DbgView->makeTagsMenu();
-      DbgView->selectData(DataModel::TagALL);
-      Info->setFileName(argv[1]);
-    }
+    DbgView->setNumLocales(VisData.NumLocales());
+    DbgView->makeTagsMenu();
+    DbgView->selectData(DataModel::TagALL);
+    Info->setFileName(argv[1]);
     argc--;
     argv++;
 } else {
@@ -240,5 +271,6 @@ MainWindow->redraw();}
       Info->setFileName(".Vdebug (default)");
    }
 }
-MainWindow->callback(mainWinCallback);} {}
+MainWindow->callback(mainWinCallback);} {selected
+  }
 } 
