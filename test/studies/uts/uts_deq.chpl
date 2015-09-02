@@ -41,16 +41,13 @@ config const chunkSize:     int = 10;
 config const threading_throttle = 1;
 
 // Global thread counter
-var thread_cnt: sync int = 0;
-var threads_spawned: int = 0; // "Locked" by thread_cnt
+var thread_cnt: atomic int;
+var threads_spawned: atomic int;
 
 // Global stats, updated by a thread when it exits
 // FIXME: These will become hotspots
-var global_count: sync int = 0;
-var global_maxDepth: sync int = 0;
-
-// Shared termination detection
-var terminated: single bool;
+var global_count: atomic int;
+var global_maxDepth: atomic int;
 
 
 /**** State of the load balancer ****/
@@ -68,7 +65,7 @@ class TreeNode {
   var nChildren: int = 0;
 
   // Generate this node's children
-  proc genChildren(inout q: DeQueue(TreeNode)): int {
+  proc genChildren(ref q: DeQueue(TreeNode)): int {
     select distrib {
       when NodeDistrib.Geometric do 
         nChildren = numGeoChildren(geoDist);
@@ -166,6 +163,14 @@ class TreeNode {
 }
 
 
+/* Compute atomically:  this = max(this, other) */
+proc atomic_int64.max(other: int) {
+  var curMax = this.read();
+  while curMax < other && !this.compareExchange(curMax, other) do
+    curMax = this.read();
+}
+
+
 /*
 ** Print out search parameters
 */
@@ -197,10 +202,10 @@ proc uts_showSearchParams() {
 }
 
 
-proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int {
+proc balance_load(ref state: LDBalanceState, ref q: DeQueue(TreeNode)): int {
   if (parallel) {
     // Trade some imbalance here for blocking overhead
-    if (q.size > 2*chunkSize && thread_cnt.readXX() < MAX_THREADS) {
+    if (q.size > 2*chunkSize && thread_cnt.read() < MAX_THREADS) {
       if debug then writeln(" ** dequeue ", q.id, " splitting off ", chunkSize, " nodes");
 
       // Attempt to reduce thread creation overhead
@@ -215,10 +220,9 @@ proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int 
       var work = q.split(chunkSize);
 
       // Spawn a new worker on this queue
-      var tmp = thread_cnt; // Lock the access to threads_spawned
-      threads_spawned += 1;
-      thread_cnt = tmp + 1;
-      begin with (ref work) create_tree(work);
+      threads_spawned.add(1);
+      thread_cnt.add(1);
+      begin with (in work) create_tree(work);
       return 1;
     }
   }
@@ -229,7 +233,7 @@ proc balance_load(inout state: LDBalanceState, inout q: DeQueue(TreeNode)): int 
 /*
 **  Parallel Tree Creation
 */
-proc create_tree(inout q: DeQueue(TreeNode)) {
+proc create_tree(ref q: DeQueue(TreeNode)) {
   var count, maxDepth: int;
   var ldbal_state = new LDBalanceState();
 
@@ -248,15 +252,11 @@ proc create_tree(inout q: DeQueue(TreeNode)) {
   }
 
   // Update search stats
-  global_count += count;
-  global_maxDepth = max(global_maxDepth.readFE(), maxDepth);
+  global_count.add(count);
+  global_maxDepth.max(maxDepth);
 
-  // Update thread counts and detect termination
-  var thread_cnt_l = thread_cnt;
-  thread_cnt_l -= 1;
-  if thread_cnt_l == 0 then
-    terminated = true;
-  thread_cnt = thread_cnt_l;
+  // Done. Update thread counts
+  thread_cnt.sub(1);
 } 
 
 
@@ -268,7 +268,7 @@ proc main() {
   // Create the root and push it into a queue
   root = new TreeNode(0);
   rng_init(root.hash[1], SEED:sha_int);
-  global_count += 1;
+  global_count.add(1);
   queue.pushTop(root);
 
   uts_showSearchParams();
@@ -276,17 +276,17 @@ proc main() {
   writeln("Performing ", if parallel then "parallel" else "serial", " tree search...");
 
   t_create.start();
-  thread_cnt.writeXF(1);
+  thread_cnt.write(1);
   create_tree(queue);
-  if parallel then while !terminated { } // Wait for termination
+  if parallel then thread_cnt.waitFor(0); // Wait for termination
   t_create.stop();
 
   writeln();
-  if !testMode then writeln("Threads spawned: ", threads_spawned);
-  writeln("Tree size = ", global_count.readFF(),
-            ", depth = ", global_maxDepth.readFF());
+  if !testMode then writeln("Threads spawned: ", threads_spawned.read());
+  writeln("Tree size = ", global_count.read(),
+            ", depth = ", global_maxDepth.read());
   if !testMode then writeln("Time: t_create= ", t_create.elapsed(),
-          " (", global_count.readXX()/t_create.elapsed(), " nodes/sec)");
+          " (", global_count.read()/t_create.elapsed(), " nodes/sec)");
 
 
 }
