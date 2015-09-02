@@ -24,7 +24,7 @@
 bool operator < (Event &lh, Event &rh)
 {
   if (lh.tsec() < rh.tsec()) return true;
-  if (lh.tusec() < rh.tsec()) return true;
+  if (lh.tsec() == rh.tsec() && lh.tusec() < rh.tusec()) return true;
   return false;
 }
 
