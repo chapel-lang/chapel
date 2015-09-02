@@ -43,19 +43,22 @@ module Barrier {
   /* The BarrierBaseType record provides an abstract base type for barriers
    */
   record BarrierBaseType {
-    /* Abstract `barrier` method */
+    pragma "no doc"
     proc barrier() {
       compilerError("barrier() not implemented");
     }
-    /* Abstract `notify` method */
+
+    pragma "no doc"
     proc notify() {
       compilerWarning("notify() not implemented");
     }
-    /* Abstract `wait` method */
+
+    pragma "no doc"
     proc wait() {
       compilerWarning("wait() not implemented");
     }
-    /* Abstract `try` method */
+
+    pragma "no doc"
     proc try(): int {
       compilerWarning("try() not implemented");
     }
