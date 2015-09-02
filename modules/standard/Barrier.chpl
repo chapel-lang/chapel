@@ -17,7 +17,28 @@
  * limitations under the License.
  */
 
-/* Support for task barriers. */
+/* Support for task barriers.
+
+   The Barrier records provided in this module can be used to prevent tasks
+   from proceeding until all other related tasks have also reached the
+   barrier.
+
+   In the following example, all of the tasks created by the coforall loop
+   will print their "entering the barrier" messages in an unspecified order,
+   then all of the tasks will print their "past the barrier" messages, also
+   in an unspecified order.  Because of the barrier, all of the
+   "entering the barrier" messages will be printed before any of the
+   "past the barrier" messages. ::
+
+     config const numTasks = here.maxTaskPar;
+     var b = new Barrier(numTasks);
+
+     coforall tid in 1..numTasks {
+       writeln("Task ", tid, " is entering the barrier");
+       b.barrier();
+       writeln("Task ", tid, " is past the barrier");
+     }
+*/
 module Barrier {
   /* The BarrierBaseType record provides an abstract base type for barriers
    */
