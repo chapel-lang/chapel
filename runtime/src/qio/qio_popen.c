@@ -36,81 +36,6 @@
 // current environment variables
 extern char** environ;
 
-#if 0
-struct subprocess {
-};
-
-// The "fd" for popen
-struct popen_file {
-  pid_t pid; // the child process ID
-  int fd; // the input or output pipe
-  char* command; // what to report in getpath
-};
-
-static inline
-struct popen_file* to_popen_file(void* ptr) {
-  return (struct popen_file*) ptr;
-}
-
-static
-qioerr popen_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_written_out, void* fs)
-{
-  return qio_int_to_err(
-      sys_writev(to_popen_file(fl)->fd, iov, iovcnt, num_written_out));
-}
-
-
-static
-qioerr popen_readv (void* fl, const struct iovec *iov, int iovcnt, ssize_t* num_read_out, void* fs)
-{
-  return qio_int_to_err(
-      sys_readv(to_popen_file(fl)->fd, iov, iovcnt, num_read_out));
-}
-
-
-
-static
-qioerr popen_close(void* fl, void* fs)
-{
-  qioerr err = 0;
-  struct popen_file* pfl = to_popen_file(fl);
-  pid_t pid = pfl->pid;
-  int status = 127;
-  pid_t got_pid = 0;
-
-  // Close the file descriptor.
-  sys_close(pfl->fd);
-  pfl->fd = -1;
-
-  STARTING_SLOW_SYSCALL;
-
-  // Wait for the process to exit.
-  if( pid != -1 ) {
-    do {
-      got_pid = waitpid( pid, &status, 0 );
-    } while( got_pid == -1 && errno == EINTR );
-
-    pfl->pid = -1;
-
-    if( got_pid == -1 ) {
-      err = qio_int_to_err(errno);
-    } else {
-      if( WIFEXITED( status ) ) status = WEXITSTATUS(status);
-      err = 0;
-    }
-  }
-
-  DONE_SLOW_SYSCALL;
-
-  qio_free(pfl->command);
-  qio_free(pfl);
-
-  // TODO *status_out = status;
-  return err; 
-}
-
-#endif
-
 /* Set up file actions for posix_spawn.
    *std__fd is FD_FORWARD, FD_CLOSE, FD_PIPE etc or a file descriptor #
    pipe[2] is the pipe created for FD_PIPE
@@ -207,38 +132,6 @@ qioerr qio_openproc(const char** argv,
   bool inited_actions = false;
   bool hasactions = false;
   const char* progname;
-
-  /*
-  char** use_argv;
-  char** use_envp;
-
-  // Copy argv and envp into NULL-terminated versions.
-  use_argv = qio_calloc(n_argv+1, sizeof(char*));
-
-  if( ! use_argv ) {
-    err = QIO_ENOMEM;
-    goto error;
-  }
-
-  for( i = 0; i < n_argv; i++ ) {
-    use_argv[i] = qio_strdup(argv[i]);
-  }
-  use_argv[n_argv] = NULL; // argv must be NULL-terminated.
-
-  if( n_envp == 0 ) use_envp = NULL;
-  else {
-    use_envp = qio_calloc(n_envp+1, sizeof(char*));
-
-    if( ! use_envp ) {
-      err = QIO_ENOMEM;
-      goto error;
-    }
-
-    for( i = 0; i < n_envp; i++ ) {
-      use_envp[i] = qio_strdup(envp[i]);
-    }
-    use_envp[n_argv] = NULL; // argv must be NULL-terminated.
-  } */
 
   progname = argv[0];
   if( executable && executable[0] ) progname = executable;
@@ -344,23 +237,6 @@ qioerr qio_openproc(const char** argv,
     goto error;
   }
 
-  /*
-  // Free the argument and environment copies.
-  if( use_argv ) {
-    for( i = 0; i < n_argv; i++ ) {
-      qio_free(use_argv[i]);
-    }
-    qio_free(use_argv);
-    use_argv = NULL;
-  }
-  if( use_envp ) {
-    for( i = 0; i < n_envp; i++ ) {
-      qio_free(use_envp[i]);
-    }
-    qio_free(use_envp);
-    use_envp = NULL;
-  }*/
-
   // destroy file actions, ignoring return code.
   posix_spawn_file_actions_destroy(&actions);
   inited_actions = false;
@@ -397,12 +273,6 @@ error:
   if( out_pipe[1] ) close(out_pipe[1]);
   if( err_pipe[0] ) close(err_pipe[0]);
   if( err_pipe[1] ) close(err_pipe[1]);
-
-  /*
-  if( pfl ) {
-    qio_free(pfl->command);
-    qio_free(pfl);
-  }*/
 
   return err;
 }
@@ -622,34 +492,3 @@ qioerr qio_proc_communicate(
   return err;
 }
 
-#if 0
-
-static
-qioerr popen_getpath(void* fl, const char** string_out, void* fs)  {
-
-  *string_out = qio_strdup(to_popen_file(fl)->command);
-  if( ! *string_out ) return QIO_ENOMEM;
-  return 0;
-}
-
-static
-qio_file_functions_t popen_function_struct = {
-  &popen_writev,
-  &popen_readv,
-  NULL, // No pwritev for popen, no seeking!
-  NULL, // No preadv for popen, no seeking!
-  &popen_close,
-  NULL, // &popen_open, TODO
-  NULL, // No seek
-  NULL, // No length
-  &popen_getpath,
-  NULL, // No fsync - no stable storage
-  NULL, // No getcwd
-  NULL, // No get_fs_type
-  NULL, // No file chunk size
-  NULL, // No locality information
-};
-
-const qio_file_functions_ptr_t popen_function_struct_ptr = &popen_function_struct;
-
-#endif
