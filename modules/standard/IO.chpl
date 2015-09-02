@@ -3386,7 +3386,9 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     return qio_channel_print_string(false, _channel_internal, x, x.length:ssize_t);
   } else if t == string {
     // handle string
-    const local_x = x.localize();
+    const local_x: string = if x.locale.id != chpl_nodeID
+        then x // assignment makes it local
+        else new string(x, owned=false);
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
   } else if isEnumType(t) {
     var s = x:string;
@@ -3537,7 +3539,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
   } else if t == c_string {
     return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length: ssize_t);
   } else if t == string {
-    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x.localize().c_str(), x.length: ssize_t);
+    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x.c_str(), x.length: ssize_t);
   } else if isEnumType(t) {
     var i:enum_mintype(t) = x:enum_mintype(t);
     // call the integer version
@@ -4648,7 +4650,7 @@ class ChannelReader : Reader {
 // TODO -- change to FileSystem.remove
 proc unlink(path:string, out error:syserr) {
   extern proc sys_unlink(path:c_string):err_t;
-  error = sys_unlink(path.localize().c_str());
+  error = sys_unlink(path.c_str());
 }
 
 // documented in the error= version
@@ -4876,7 +4878,7 @@ proc _toChar(x:?t) where t == string
 {
   var chr:int(32);
   var nbytes:c_int;
-  qio_decode_char_buf(chr, nbytes, x.localize().c_str(), x.length:ssize_t);
+  qio_decode_char_buf(chr, nbytes, x.c_str(), x.length:ssize_t);
   return (chr, true);
 }
 private inline
@@ -5510,7 +5512,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
                will halt with an error message.
  */
 proc channel.writef(fmt:string, args ...?k, out error:syserr):bool {
-  return this.writef(fmt.localize().c_str(), (...args), error);
+  return this.writef(fmt.c_str(), (...args), error);
 }
 
 // documented in string error= version
@@ -5672,7 +5674,7 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
 // documented in string error= version
 pragma "no doc"
 proc channel.writef(fmt:string, out error:syserr):bool {
-  return this.writef(fmt.localize().c_str(), error);
+  return this.writef(fmt.c_str(), error);
 }
 
 // documented in string error= version
@@ -5735,7 +5737,7 @@ proc channel.writef(fmt:c_string, out error:syserr):bool {
  */
 
 proc channel.readf(fmt:string, ref args ...?k, out error:syserr):bool {
-  return this.readf(fmt.localize().c_str(), (...args), error);
+  return this.readf(fmt.c_str(), (...args), error);
 }
 
 // documented in string error= version
@@ -5982,7 +5984,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
 // documented in string error= version
 pragma "no doc"
 proc channel.readf(fmt:string, out error:syserr):bool {
-  return this.readf(fmt.localize().c_str(), error);
+  return this.readf(fmt.c_str(), error);
 }
 
 // documented in string error= version
@@ -6037,7 +6039,7 @@ proc channel.readf(fmt:c_string, out error:syserr):bool {
 // documented in string error= version
 pragma "no doc"
 proc channel.writef(fmt: string, args ...?k) {
-  return this.writef(fmt.localize().c_str(), (...args));
+  return this.writef(fmt.c_str(), (...args));
 }
 
 // documented in string error= version
@@ -6055,7 +6057,7 @@ proc channel.writef(fmt:c_string, args ...?k) {
 // documented in string error= version
 pragma "no doc"
 proc channel.writef(fmt: string) {
-  return this.writef(fmt.localize().c_str());
+  return this.writef(fmt.c_str());
 }
 
 // documented in string error= version
@@ -6073,7 +6075,7 @@ proc channel.writef(fmt:c_string) {
 // documented in string error= version
 pragma "no doc"
 proc channel.readf(fmt:string, ref args ...?k) {
-  return this.readf(fmt.localize().c_str(), (...args));
+  return this.readf(fmt.c_str(), (...args));
 }
 
 // documented in string error= version
@@ -6092,7 +6094,7 @@ proc channel.readf(fmt:c_string, ref args ...?k) {
 // documented in string error= version
 pragma "no doc"
 proc channel.readf(fmt:string) {
-  return this.readf(fmt.localize().c_str());
+  return this.readf(fmt.c_str());
 }
 
 // documented in string error= version
@@ -6198,14 +6200,14 @@ proc format(fmt:string, args ...?k):string {
  */
 
 proc string.format(args ...?k, out error:syserr):string {
-  return _do_format(this.localize().c_str(), (...args), error);
+  return _do_format(this.c_str(), (...args), error);
 }
 
 // documented in the error= version
 pragma "no doc"
 proc string.format(args ...?k):string {
   var err:syserr = ENOERR;
-  var ret = _do_format(this.localize().c_str(), (...args), error=err);
+  var ret = _do_format(this.c_str(), (...args), error=err);
   if err then ioerror(err, "in string.format");
   return ret;
 }

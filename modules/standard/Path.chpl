@@ -49,7 +49,7 @@ proc realPath(out error: syserr, name: string): string {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string_copy): syserr;
 
   var res: c_string_copy;
-  error = chpl_fs_realpath(name.localize().c_str(), res);
+  error = chpl_fs_realpath(name.c_str(), res);
   var len = res.length;
   return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
 }

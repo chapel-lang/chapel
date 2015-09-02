@@ -57,7 +57,7 @@ proc quote_string(s:string, len:ssize_t) {
   // 34 is ASCII double quote
   var err: syserr = qio_quote_string(34:uint(8), 34:uint(8),
                                     QIO_STRING_FORMAT_CHPL,
-                                    s.localize().c_str(), len, ret, c_nil);
+                                    s.c_str(), len, ret, c_nil);
 
   // This doesn't handle the case where ret==NULL as did the previous
   // version in QIO, but I'm not sure how that was used.

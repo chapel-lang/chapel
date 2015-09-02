@@ -474,7 +474,7 @@ module GMP {
     }
     proc BigInt(str:string, base:int=0) {
       var e:c_int;
-      e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
+      e = mpz_init_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
       if e {
         mpz_clear(this.mpz);
         halt("Error initializing big integer: bad format");
@@ -483,7 +483,7 @@ module GMP {
     proc BigInt(str:string, base:int=0, out error:syserr) {
       var e:c_int;
       error = ENOERR;
-      e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
+      e = mpz_init_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
       if e {
         mpz_clear(this.mpz);
         error = EFORMAT;
@@ -560,7 +560,7 @@ module GMP {
     }
     proc set_str(str:string, base:int=0)
     {
-      on this do mpz_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
+      on this do mpz_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
     }
     proc swap(a:BigInt)
     {

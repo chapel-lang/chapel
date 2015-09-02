@@ -440,7 +440,11 @@ module ChapelIO {
   
   inline proc Reader.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
-    this.readWriteLiteral(lit.localize().c_str(), ignoreWhiteSpace);
+    /***
+    var iolit = new ioLiteral(lit.c_str(), ignoreWhiteSpace);
+    this.readwrite(iolit);
+    ***/
+    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
   }
   inline proc Reader.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
   {
@@ -449,7 +453,11 @@ module ChapelIO {
   }
   inline proc Writer.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
-    this.readWriteLiteral(lit.localize().c_str(), ignoreWhiteSpace);
+    /***
+    var iolit = new ioLiteral(lit.c_str(), ignoreWhiteSpace);
+    this.readwrite(iolit);
+    ***/
+    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
   }
   inline proc Writer.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
   {
@@ -472,7 +480,7 @@ module ChapelIO {
   }
   
   proc halt(s:string) {
-    halt(s.localize().c_str());
+    halt(s.c_str());
   }
 
   proc halt(s:c_string) {
@@ -486,7 +494,7 @@ module ChapelIO {
   }
   
   proc warning(s:string) {
-    warning(s.localize().c_str());
+    warning(s.c_str());
   }
 
   proc warning(s:c_string) {
