@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-#include <unordered_set>
+#include <set>
 #include <string>
 #include <assert.h>
 
 class StringCache {
 
  private:
-   std::unordered_set<std::string> storage;
+   std::set<std::string> storage;
 
  public:
    StringCache() {};
@@ -35,7 +35,7 @@ class StringCache {
 
    const char *getString(char *str) {
       std::string strstr (str);
-      std::unordered_set<std::string>::iterator got = storage.find (strstr);
+      std::set<std::string>::iterator got = storage.find (strstr);
       
       if (got == storage.end()) {
          (void) storage.insert(strstr);
