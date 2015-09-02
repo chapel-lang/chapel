@@ -414,7 +414,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   opts.nongreedy = nongreedy;
 
   var ret:regexp;
-  qio_regexp_create_compile(pattern.c_str(), pattern.length, opts, ret._regexp);
+  qio_regexp_create_compile(pattern.localize().c_str(), pattern.length, opts, ret._regexp);
   if ! qio_regexp_ok(ret._regexp) {
     var err_str = qio_regexp_error(ret._regexp);
     var err_msg = "Error " + err_str + " when compiling regexp '" + pattern + "'";
@@ -654,9 +654,9 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
       if t == stringPart {
-       got = qio_regexp_match(_regexp, text.from.c_str(), text.from.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+       got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       } else {
-       got = qio_regexp_match(_regexp, text.c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+       got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
@@ -686,9 +686,9 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
       if t == stringPart {
-       got = qio_regexp_match(_regexp, text.from.c_str(), text.from.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+       got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       } else {
-       got = qio_regexp_match(_regexp, text.c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+       got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
@@ -734,9 +734,9 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
       if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.c_str(), text.from.length, pos, endpos, QIO_REGEXP_ANCHOR_START, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos, endpos, QIO_REGEXP_ANCHOR_START, matches, nmatches);
       } else {
-        got = qio_regexp_match(_regexp, text.c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_START, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_START, matches, nmatches);
       }
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
@@ -766,9 +766,9 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
       if t == stringPart {
-       got = qio_regexp_match(_regexp, text.from.c_str(), text.from.length, pos, endpos, QIO_REGEXP_ANCHOR_START, matches, nmatches);
+       got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.length, pos, endpos, QIO_REGEXP_ANCHOR_START, matches, nmatches);
       } else {
-       got = qio_regexp_match(_regexp, text.c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_START, matches, nmatches);
+       got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_START, matches, nmatches);
       }
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset, matches[0].len);
@@ -816,7 +816,7 @@ record regexp {
       var got:bool;
       on this.home {
         // This doesn't have a case for stringPart.  Mistake?
-        got = qio_regexp_match(_regexp, text.c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.localize().c_str(), text.length, pos, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
 
       splits += 1;
@@ -886,7 +886,7 @@ record regexp {
       var got:bool;
       on this.home {
         // This doesn't have a case for stringPart.  Mistake?
-        got = qio_regexp_match(_regexp, text.c_str(), textLength, cur, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
+        got = qio_regexp_match(_regexp, text.localize().c_str(), textLength, cur, endpos, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       if !got then break;
       param nret = captures+1;
@@ -926,9 +926,9 @@ record regexp {
     var nreplaced:int; 
     var replaced_len:int(64); 
     if t == stringPart {
-      nreplaced = qio_regexp_replace(_regexp, repl.c_str(), repl.length, text.from.c_str(), text.from.length, pos, endpos, global, replaced, replaced_len);
+      nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.length, text.from.localize().c_str(), text.from.length, pos, endpos, global, replaced, replaced_len);
     } else {
-      nreplaced = qio_regexp_replace(_regexp, repl.c_str(), repl.length, text.c_str(), text.length, pos, endpos, global, replaced, replaced_len);
+      nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.length, text.localize().c_str(), text.length, pos, endpos, global, replaced, replaced_len);
     }
     const ret = replaced:string;
     return (ret, nreplaced);
