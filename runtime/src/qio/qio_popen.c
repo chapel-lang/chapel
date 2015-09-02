@@ -107,7 +107,8 @@ static qioerr setup_actions(
     -2 -> close the file descriptor
     -3 -> create a pipe and return the parent's end
     >0 -> use this file discriptor
-   When this function returns, any file descriptors with -1
+   When this function returns, any file descriptors with a negative
+   value indicating a pipe should be created (-3)
    will have their value replaced with the new pipe file descriptor.
 
    executable == NULL or "" -> search the path for argv[0]
