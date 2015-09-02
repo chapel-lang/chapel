@@ -83,21 +83,20 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_uint64_t(x:c_string) : uint(64);
 
-    const localX = x.localize();
     if isIntType(t) {
       select numBits(t) {
-        when 8  do return c_string_to_int8_t(localX.c_str());
-        when 16 do return c_string_to_int16_t(localX.c_str());
-        when 32 do return c_string_to_int32_t(localX.c_str());
-        when 64 do return c_string_to_int64_t(localX.c_str());
+        when 8  do return c_string_to_int8_t(x.c_str());
+        when 16 do return c_string_to_int16_t(x.c_str());
+        when 32 do return c_string_to_int32_t(x.c_str());
+        when 64 do return c_string_to_int64_t(x.c_str());
         otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
       }
     } else {
       select numBits(t) {
-        when 8  do return c_string_to_uint8_t(localX.c_str());
-        when 16 do return c_string_to_uint16_t(localX.c_str());
-        when 32 do return c_string_to_uint32_t(localX.c_str());
-        when 64 do return c_string_to_uint64_t(localX.c_str());
+        when 8  do return c_string_to_uint8_t(x.c_str());
+        when 16 do return c_string_to_uint16_t(x.c_str());
+        when 32 do return c_string_to_uint32_t(x.c_str());
+        when 64 do return c_string_to_uint64_t(x.c_str());
         otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
       }
     }
@@ -139,10 +138,9 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_real64(x: c_string) : real(64);
 
-    const localX = x.localize();
     select numBits(t) {
-      when 32 do return c_string_to_real32(localX.c_str());
-      when 64 do return c_string_to_real64(localX.c_str());
+      when 32 do return c_string_to_real32(x.c_str());
+      when 64 do return c_string_to_real64(x.c_str());
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
   }
@@ -153,10 +151,9 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_imag64(x: c_string) : imag(64);
 
-    const localX = x.localize();
     select numBits(t) {
-      when 32 do return c_string_to_imag32(localX.c_str());
-      when 64 do return c_string_to_imag64(localX.c_str());
+      when 32 do return c_string_to_imag32(x.c_str());
+      when 64 do return c_string_to_imag64(x.c_str());
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
   }
@@ -194,10 +191,9 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_complex128(x:c_string) : complex(128);
 
-    const localX = x.localize();
     select numBits(t) {
-      when 64 do return c_string_to_complex64(localX.c_str());
-      when 128 do return c_string_to_complex128(localX.c_str());
+      when 64 do return c_string_to_complex64(x.c_str());
+      when 128 do return c_string_to_complex128(x.c_str());
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
   }
@@ -216,5 +212,15 @@ module StringCasts {
     ret.write(x);
     return ret;
   }
+
+  //
+  // Badness
+  //
+  // TODO: I *really* dont like this
+  // Other casts to strings use the bufferType
+  //inline proc _cast(type t, x) where t == string && x.type != c_string && x.type != string {
+  //  compilerError("_cast ":c_string+typeToString(x.type)+"->c_string->string":c_string);
+  //}
+
 
 }
