@@ -1,3 +1,13 @@
-# only run on applicable XC machines
-CHPL_TARGET_PLATFORM != cray-xc
-CHPL_HOST_COMPILER != gnu
+#!/usr/bin/env python
+
+import os, os.path
+
+isXC = os.getenv('CHPL_TARGET_PLATFORM') == 'cray-xc'
+isGNU = 'gnu' in str(os.getenv('CHPL_TARGET_COMPILER'))
+isWB = not os.path.exists('/etc/opt/cray/release') or not os.path.exists('/etc/opt/cray/release/CLEinfo')
+isLLVM = '--llvm' in str(os.getenv('COMPOPTS'))
+
+if isXC and isGNU and not isWB and not isLLVM:
+  print(False) # Don't skip
+else:
+  print(True) # Do skip

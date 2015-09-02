@@ -10,7 +10,7 @@ echo epsilon=$epsilon
 #rm stencil9
 if -e stencil9 then
 else
-	chpl --fast stencil9.chpl -o stencil9
+  chpl --fast stencil9.chpl -o stencil9
 endif
 
 echo 'Block (B)'

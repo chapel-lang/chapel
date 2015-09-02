@@ -217,13 +217,8 @@ def test_directory(test, test_type):
                 skip_test = False
                 if os.path.isfile("SKIPIF"):
                     try:
-                        # if executable
-                        if os.access("./SKIPIF", os.X_OK):
-                            skip_test = subprocess.check_output(
-                                    ["./SKIPIF"]).strip()
-                        else: # if not, run a script to check SKIPIF condition
-                            skip_test = subprocess.check_output(
-                                    [test_env, "SKIPIF"]).strip()
+                        skip_test = subprocess.check_output(
+                                [test_env, "SKIPIF"]).strip()
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
                             logger.write("[Skipping directory based on SKIPIF "
@@ -240,13 +235,8 @@ def test_directory(test, test_type):
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
-                        # if executable
-                        if os.access(skip_file_name, os.X_OK):
-                            prune_if = subprocess.check_output(
-                                    [skip_file_name]).strip()
-                        else: # if not, run a script to check SKIPIF condition
-                            prune_if = subprocess.check_output(
-                                    [test_env, skip_file_name]).strip()
+                        prune_if = subprocess.check_output(
+                                [test_env, skip_file_name]).strip()
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
                             logger.write("[Skipping directory and children bas"
@@ -717,9 +707,12 @@ def set_up_general():
             .format(time.strftime("%y%m%d.%H%M%S")))
 
     # check to see if we are in subdir of CHPL_HOME
-    if args.chpl_home_warn and os.getcwd().find(home) < 0:
-        print ("[Warning: start_test not invoked from a subdirectory of "
-                "$CHPL_HOME]")
+    if args.chpl_home_warn:
+        norm_cwd  = os.path.normpath(os.path.realpath(os.getcwd()))
+        norm_home = os.path.normpath(os.path.realpath(home))
+        if norm_cwd.find(norm_home) < 0:
+            print ("[Warning: start_test not invoked from a subdirectory of "
+                    "$CHPL_HOME]")
 
     # log some messages
     logger.write('[starting directory: "{0}"]'.format(os.getcwd()))
@@ -843,8 +836,8 @@ def set_up_performance_testing_B():
         if "CHPL_TEST_COMP_PERF_DIR" in os.environ:
             comp_perf_dir = os.environ["CHPL_TEST_COMP_PERF_DIR"]
         else:
-            comp_perf_dir = os.path.join(home, ("test", "compperfdat", 
-                    "{0}".format(compperf_test_name)))
+            comp_perf_dir = os.path.join(home, "test", "compperfdat",
+                                         compperf_test_name)
             logger.write("[Warning: CHPL_COMP_TEST_PERF DIR must be set for "
                     "generating compiler performance graphs, using default {0}]"
                     .format(comp_perf_dir))
@@ -1243,7 +1236,8 @@ def parser_setup():
             "--compperformance-description", action="store", default="",
             dest="comp_performance_description")
     parser.add_argument("-numtrials", "--numtrials", "-num-trials",
-        "--num-trials", action="store", dest="num_trials", default="1",
+        "--num-trials", action="store", dest="num_trials",
+        default=os.getenv("CHPL_TEST_NUM_TRIALS", "1"),
         help="the number of times to run the performance tests")
     # graphing
     parser.add_argument("-gen-graphs", "--gen-graphs", "-generate-graphs",
@@ -1310,14 +1304,14 @@ def parser_setup():
 def preprocess_options():
     index = 0
     for arg in sys.argv:
-        if (arg == "-compopts" or arg == "--compopts" 
-                or arg == "-execopts" or arg == "--execopts"):
+        arg = arg.replace('\"', '').replace('\'', '')
+        if arg in ["-compopts", "--compopts", "-execopts", "--execopts"]:
             escape_next_argument(sys.argv, index)
         index += 1
 
 
 def escape_next_argument(args, index):
-    next = args[index + 1]
+    next = args[index + 1].strip()
     if next and next[0] == "-": # single argument, not escaped
         args[index + 1] = "'{0}'".format(next)
     print(args)

@@ -657,6 +657,14 @@ module ChapelArray {
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
   }  // record _distribution
   
+  inline proc ==(d1: _distribution(?), d2: _distribution(?)) {
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  inline proc !=(d1: _distribution(?), d2: _distribution(?)) {
+    return !d1._value.dsiEqualDMaps(d2._value);
+  }
+
   // The following method is called by the compiler to determine the default
   // value of a given type.
   /* Need new <alias>() for this to function
@@ -1467,25 +1475,49 @@ module ChapelArray {
       return _newArray(x);
     }
 
-    proc chpl_checkDomMatch(d: domain) {
+    proc chpl_checkDomMatch(formalDom: domain) {
       //
-      // Start by making sure the ranks match
+      // It's a compile-time error if the ranks don't match
       //
-      if (d.rank != this.domain.rank) then
-	compilerError("Rank mismatch passing array argument: expected " + d.rank + " but got " + 
+      if (formalDom.rank != this.domain.rank) then
+	compilerError("Rank mismatch passing array argument: expected " + formalDom.rank + " but got " + 
 		      this.domain.rank, errorDepth=2);
 
-      if (d.type != this.domain.type) then
-        compilerWarning("Domain type mismatch in passing array argument");
+      //
+      // If the formal domain specifies a domain map other than the
+      // default one, then we're putting a constraint on the domain
+      // map of the actual that's being passed in.  If it's the
+      // default, we take that as an indication that the routine is
+      // generic w.r.t. domain map for now (though we may wish to
+      // change this in the future when we have better syntax for
+      // indicating a generic domain map)..
+      //
+      if (formalDom.dist._value.type != DefaultDist) {
+        //
+        // First, at compile-time, check that the domain's types are
+        // the same:
+        //
+        if (formalDom.type != this.domain.type) then
+          compilerError("Domain type mismatch in passing array argument");
 
-      if (d != this.domain) then
+        //
+        // Then, at run-time, check that the domain map's values are
+        // the same.
+        //
+        if (formalDom.dist != this.domain.dist) then
+          halt("Domain map mismatch passing array argument:\n",
+               "  Formal domain map is: ", formalDom.dist, "\n",
+               "  Actual domain map is: ", this.domain.dist);
+      }
+
+      //
+      // If we pass those checks, verify at runtime that the index
+      // sets of the formal and actual match.
+      //
+      if (formalDom != this.domain) then
         halt("Domain mismatch passing array argument:\n",
-	     "  Formal domain is: ", d, "\n",
+	     "  Formal domain is: ", formalDom, "\n",
              "  Actual domain is: ", this.domain);
-      /*
-      writeln("Formal domain: ", d);
-      writeln("Actual domain: ", this.domain);
-      */
     }
   
     proc reindex(d: domain)

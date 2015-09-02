@@ -9,7 +9,6 @@ record myR {
   proc ~myR() { delete c; }
 }
 
-pragma "auto destroy fn"
 inline proc chpl__autoDestroy(x: myR) { }
 
 proc =(ref a: myR, b: myR) {

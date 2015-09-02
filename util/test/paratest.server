@@ -57,6 +57,11 @@ $junit_remove_prefix = "";
 $timeout = -1;
 if (exists $ENV{CHPL_PARATEST_TIMEOUT}) { $timeout = $ENV{CHPL_PARATEST_TIMEOUT}; } 
 
+# updated if -valgrind options are given
+$ENV{'CHPL_TEST_VGRND_COMP'} = "off";
+$ENV{'CHPL_TEST_VGRND_EXE'} = "off";
+
+
 $localhost = `uname -n`;
 ($localnode, $junk) = split (/\./, $localhost, 2);
 chomp $localnode;
@@ -433,13 +438,8 @@ sub find_subdirs {
         my $skipfilen = "$targetdir/$filen.skipif";
         if (-e "$skipfilen") {
             my $skip;
-            if (-x "$skipfilen") {
-                print "$skipfilen = " . `$skipfilen` if $debug;
-                $skip = `$skipfilen`;
-            } else {
-                print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
-                $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
-            }
+            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+            $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
             next if $skip > '0' or $skip =~ m/true/i;
         }
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
@@ -597,9 +597,13 @@ sub main {
                 exit (8);
             }
         } elsif (/^-valgrind/) {
-            $valgrind = 1;
             if (/^-valgrindexe/) {
                 $valgrind = 2;
+                $ENV{'CHPL_TEST_VGRND_EXE'} = "on";
+            } else {
+                $valgrind = 1;
+                $ENV{'CHPL_TEST_VGRND_COMP'} = "on";
+                $ENV{'CHPL_TEST_VGRND_EXE'} = "on";
             }
         } elsif (/^-show-all-errors/) {
             $show_all_errors = 1;
