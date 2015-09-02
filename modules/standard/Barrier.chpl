@@ -33,7 +33,7 @@
      config const numTasks = here.maxTaskPar;
      var b = new Barrier(numTasks);
 
-     coforall tid in 1..numTasks {
+     coforall tid in 1..numTasks with (ref b) {
        writeln("Task ", tid, " is entering the barrier");
        b.barrier();
        writeln("Task ", tid, " is past the barrier");
