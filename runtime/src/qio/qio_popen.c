@@ -455,19 +455,10 @@ qioerr qio_proc_communicate(
 
     if( rc == 0 ) break;
 
-    /* ... we don't actually care about which fds are ready,
-           we'll just try to work with all of them each time through the
-           loop.
-    if(do_input && (FD_ISSET(input_fd, &wfds) || FD_ISSET(input_fd, &efds)))
-    if(do_output &&(FD_ISSET(output_fd, &wfds) || FD_ISSET(output_fd, &efds)))
-    if( do_error &&(FD_ISSET(error_fd, &wfds) || FD_ISSET(error_fd, &efds)))
-    */
+    // we don't actually care about which fds are ready,
+    // we'll just try to work with all of them each time through the
+    // loop.
   }
-
-  // revert the output and error channels
-  if( output) qio_channel_revert_unlocked(output);
-  if( error ) qio_channel_revert_unlocked(error);
-
 
   // we could close the file descriptors at this point,
   // but we don't because we don't want to modify
@@ -475,13 +466,18 @@ qioerr qio_proc_communicate(
   // constant (and not protected by file's lock).
   // The pipes will be closed when the channels are destroyed.
 
-  // mark the output and error channels so that we
+  // We marked the output and error channels so that we
   // can just keep advancing to read while buffering
   // up all data. Before returning, we'll revert them
   // so that this buffered data can be read again and
   // update end_pos so that the channel knows not to
   // call read again. Then, we can close the file
   // descriptor.
+
+  // revert the output and error channels
+  if( output) qio_channel_revert_unlocked(output);
+  if( error ) qio_channel_revert_unlocked(error);
+
 
   if( threadsafe ) {
     // unlock all three channels.
