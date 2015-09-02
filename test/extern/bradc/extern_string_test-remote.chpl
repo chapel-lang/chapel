@@ -4,9 +4,9 @@ extern proc return_string_arg_test(ref str:c_string);
 writeln("returned string ",return_string_test()); stdout.flush();
 var s:string;
 on Locales(1) {
-  var tmp:c_string = s.localize().c_str();
-  return_string_arg_test(tmp);
-  s = tmp:string; // TODO -- this cast should not be necessary.
+  var temp_cs: c_string;
+  return_string_arg_test(temp_cs);
+  var temp_s:string = temp_cs;
+  s = temp_s;
 }
 writeln("returned string arg ",s);
-
