@@ -1,0 +1,6 @@
+-stestErrorCase=0
+-stestErrorCase=1 # formalActualArrayArgMatch-indexMismatch.good
+-stestErrorCase=2 # formalActualArrayArgMatch-domTypeMismatch.good
+-stestErrorCase=3 # formalActualArrayArgMatch-domTypeMismatch.good
+-stestErrorCase=4 # formalActualArrayArgMatch-domMapMismatch.good
+
