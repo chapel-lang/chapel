@@ -38,6 +38,12 @@
        b.barrier();
        writeln("Task ", tid, " is past the barrier");
      }
+
+   Future direction
+   ----------------
+   In the future, we expect to add more language-level support for a
+   "task-team" concept.  A task-team will more directly support collective
+   operations such as barriers between the tasks within a team.
 */
 module Barrier {
   /* The BarrierBaseType record provides an abstract base type for barriers
