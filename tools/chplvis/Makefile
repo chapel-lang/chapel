@@ -42,8 +42,9 @@ CXXFLAGS=  -Wall -I. -g
 	$$($(FLTK_CONFIG) --cxx) -c $$($(FLTK_CONFIG) --cxxflags) $(CXXFLAGS) $<
 
 
-SRCS= ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx  CommWin.cxx
-HFILES= ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h
+SRCS= ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx  CommWin.cxx \
+      ConcurrencyWin.cxx
+HFILES= ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -55,7 +56,6 @@ all: chplvis
 chplvis: $(GENSRCS) $(OFILES) 
 	$$($(FLTK_CONFIG) --cxx)  -o chplvis $(OFILES) \
 	        $$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
-
 
 chplvis.cxx chplvis.h: chplvis.fl
 	$(FLTK_FLUID) -c chplvis.fl
@@ -70,10 +70,11 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
-chplvis.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h
-ViewField.o: ViewField.h DataModel.h Event.h
+chplvis.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h
+ViewField.o: ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h
 DataModel.o: DataModel.h Event.h
-InfoBar.o: InfoBar.h ViewField.h
+InfoBar.o: InfoBar.h ViewField.h chplvis.h
 LocaleWin.o: LocaleWin.h
 CommWin.o: CommWin.h
+ConcurrencyWin.o: ConcurrencyWin.h DataModel.h chplvis.h
 Event.o: Event.h

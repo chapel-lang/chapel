@@ -27,12 +27,14 @@ case $testname in
      # or similar is sometimes reported in a failed run, sometimes not.
      # Ditto "FATAL ERROR: recursive failure in AMUDP_SPMDShutdown".
      #
-     egrep -i '^start...finish$|error|warning' $outputfile.orig \
-       | grep -v 'error: attempt to dereference nil' \
-       | grep -v 'FATAL ERROR:' \
+     egrep -ai '^start...finish$|error|warning' $outputfile.orig \
+       | grep -av 'error: attempt to dereference nil' \
+       | grep -av 'FATAL ERROR:' \
+       | grep -avi 'AMUDP.*error' \
        > $outputfile
 
      echo retained the original output in $outputfile.orig
+     doSort=false
      ;; #hplx
 esac
 

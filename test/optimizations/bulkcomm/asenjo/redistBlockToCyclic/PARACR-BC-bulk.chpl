@@ -13,9 +13,9 @@ proc BlockArr.copyBtoC(B)
   coforall loc in Locales do on loc
   {
     param stridelevels=1;
-    var dststrides:[1..#stridelevels] int(32); 
-    var srcstrides: [1..#stridelevels] int(32);
-    var count: [1..#(stridelevels+1)] int(32);
+    var dststrides:[1..#stridelevels] size_t;
+    var srcstrides: [1..#stridelevels] size_t;
+    var count: [1..#(stridelevels+1)] size_t;
     var lid=loc.id; 
 
     var numLocales: int(32)=dom.dist.targetLocDom.dim(1).length:int(32);
@@ -23,7 +23,7 @@ proc BlockArr.copyBtoC(B)
     var src = locArr[lid].myElems._value.theData;
 
     dststrides[1]=1;
-    srcstrides[1]=numLocales;
+    srcstrides[1]=numLocales.safeCast(size_t);
 
     var dststr=dststrides._value.theData;
     var srcstr=srcstrides._value.theData;
@@ -60,7 +60,7 @@ proc BlockArr.copyBtoC(B)
       //var destr = privB.locArr[dst].myElems._value.theData;
       var destr = B._value.locArr[dst].myElems._value.theData;
       count[1]=1;
-      count[2]=chunksize;
+      count[2]=chunksize.safeCast(size_t);
 
       __primitive("chpl_comm_put_strd",
 		  __primitive("array_get",destr,
@@ -83,9 +83,9 @@ proc  BlockArr.copyCtoB(B)
   coforall loc in Locales do on loc
   {
     param stridelevels=1;
-    var dststrides:[1..#stridelevels] int(32);
-    var srcstrides: [1..#stridelevels] int(32);
-    var count: [1..#(stridelevels+1)] int(32); 
+    var dststrides:[1..#stridelevels] size_t;
+    var srcstrides: [1..#stridelevels] size_t;
+    var count: [1..#(stridelevels+1)] size_t;
     var lid=loc.id;
     var numLocales: int=dom.dist.targetLocDom.dim(1).length;
     var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
@@ -118,10 +118,10 @@ proc  BlockArr.copyCtoB(B)
       else chunksize=num/numLocales+1;
 
       var destr = B._value.locArr[dst].myElems._value.theData;
-      dststrides[1]=numLocales:int(32);
+      dststrides[1]=numLocales:size_t;
       srcstrides[1]=1;
       count[1]=1;
-      count[2]=chunksize:int(32);
+      count[2]=chunksize:size_t;
 
       __primitive("chpl_comm_get_strd",
 		  __primitive("array_get",src,

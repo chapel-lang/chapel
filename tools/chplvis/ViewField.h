@@ -26,6 +26,7 @@
 #include <FL/Fl_Box.H>
 #include "LocaleWin.h"
 #include "CommWin.h"
+#include "ConcurrencyWin.h"
 
 #include <string>
 
@@ -34,30 +35,21 @@
 // Information stored for each locale
 
 struct localeInfo {
-  int numTasks;
-  double userCpu;
-  double sysCpu;
-  double Cpu;
-  double refUserCpu; 
-  double refSysCpu;
-  double clockTime;
-  double refTime;
-  // Locale Window information.
-  LocaleWin *win;
-  int x;  // Window location
+  // locale box location on view area
+  int x; 
   int y;
   int w;
   int h;
+  // Locale Window information.
+  LocaleWin *win;
+  // Concurrency Window information.
+  ConcurrencyWin *ccwin;
 };
 
 // Information stored for every comm direction
 // X -> Y and Y -> X for all X & Y.  (2d array)
 
-struct commInfo {
-  int numComms;
-  int numGets;
-  int numPuts;
-  long commSize;
+struct commInfo { // Remove this and just use CommWin*??? YYY
   CommWin *win;
 };
 
@@ -97,18 +89,15 @@ class ViewField : public Fl_Box {
     int tagMenu;
 
     // Keep track of what is being displayed
-    enum show_what {show_Tasks, show_CPU, show_Clock} infoTop;
-    int maxTasks;
-    double maxCpu;
-    double maxClock;
+    enum show_what {show_Tasks, show_CPU, show_Clock, show_Concurrency} infoTop;
 
+    DataModel::tagData *curTagData;
+    int curTagNum;
     bool showcomms;
-    int maxComms;
-    long maxDatasize; 
 
     // Methods
 
-    void allocArrays();
+    void allocArrays ();
 
   public:
 
@@ -118,16 +107,16 @@ class ViewField : public Fl_Box {
              const char *label = 0);
 
   //  Virtual methods to override
-  void draw(void);
-  int handle(int event);
+  void draw (void);
+  int handle (int event);
 
   // Processing routines
 
-  void processData(int tagNum);
+  void selectData (int tagNum);
 
-  void makeTagsMenu(void);
+  void makeTagsMenu (void);
 
-  void setNumLocales(int n)
+  void setNumLocales (int n)
     { 
       //printf("NumLocalse set to %d\n", n);
       numlocales = n;
@@ -136,26 +125,27 @@ class ViewField : public Fl_Box {
       allocArrays();
     }
 
-  int  getNumLocales(void) { return numlocales; }
+  int  getNumLocales (void) { return numlocales; }
 
   // Draw a "locale box, with ix as the label on it
-  void drawLocale(int ix, Fl_Color col);
+  void drawLocale (int ix, Fl_Color col);
 
   // Draw a comm line between loc1 and loc2, color changing in the middle
-  void drawCommLine(int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
+  void drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
 
   // What to show!
-  void showTasks(void) { infoTop = show_Tasks; }
-  void showCpu(void) { infoTop = show_CPU; }
-  void showClock(void) { infoTop = show_Clock; }
+  void showTasks (void) { infoTop = show_Tasks; }
+  void showCpu (void  ) { infoTop = show_CPU; }
+  void showClock (void) { infoTop = show_Clock; }
+  void showConcurrency (void) { infoTop = show_Concurrency; }
 
-  void showComms(void) { showcomms = true; }
-  void showDsize(void) { showcomms = false; }
+  void showComms (void) { showcomms = true; }
+  void showDsize (void) { showcomms = false; }
 
-  void showAllData(void) { printf ("showAllData called\n"); }
+  void showAllData (void) { printf ("showAllData called\n"); }
 
   // Window show/hide functions ...
-  void hideAllCommWindows(void)
+  void hideAllCommWindows (void)
     {
       int ix1, ix2;
       for (ix1 = 0; ix1 < numlocales; ix1++)
@@ -163,7 +153,8 @@ class ViewField : public Fl_Box {
           if (comms[ix1][ix2].win != NULL)
             comms[ix1][ix2].win->hide();
     }
-  void showAllCommWindows(void)
+
+  void showAllCommWindows (void)
     {
       int ix1, ix2;
       for (ix1 = 0; ix1 < numlocales; ix1++)
@@ -171,20 +162,27 @@ class ViewField : public Fl_Box {
           if (comms[ix1][ix2].win != NULL)
             comms[ix1][ix2].win->show();
     }
-  void hideAllLocaleWindows(void)
+
+  void hideAllLocaleWindows (void)
     {
       int ix;
-      for (ix = 0; ix < numlocales; ix++)
+      for (ix = 0; ix < numlocales; ix++) {
         if (theLocales[ix].win != NULL)
           theLocales[ix].win->hide();
+        if (theLocales[ix].ccwin != NULL)
+          theLocales[ix].ccwin->hide();
+      }
     }        
 
-  void showAllLocaleWindows(void)
+  void showAllLocaleWindows (void)
     {
       int ix;
-      for (ix = 0; ix < numlocales; ix++)
+      for (ix = 0; ix < numlocales; ix++) {
         if (theLocales[ix].win != NULL)
           theLocales[ix].win->show();
+        if (theLocales[ix].ccwin != NULL)
+          theLocales[ix].ccwin->show();
+      }
     }
 
 };

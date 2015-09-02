@@ -509,6 +509,7 @@ resolveAutoDestroy(Type* type) {
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
+  fn->addFlag(FLAG_AUTO_DESTROY_FN);
   resolveFns(fn);
   autoDestroyMap.put(type, fn);
   tmp->defPoint->remove();
@@ -5477,6 +5478,13 @@ preFold(Expr* expr) {
         result = new SymExpr(gFalse);
       call->replace(result);
 
+    } else if (call->isPrimitive(PRIM_IS_REF_ITER_TYPE)) {
+      if (isRefIterType(call->get(1)->typeInfo()))
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
+
     } else if (call->isPrimitive(PRIM_IS_SYNC_TYPE)) {
       Type* syncType = call->get(1)->typeInfo();
       if (syncType->symbol->hasFlag(FLAG_SYNC))
@@ -6144,23 +6152,6 @@ resolveExpr(Expr* expr) {
       issueCompilerError(call);
     }
 
-    // Resolve expressions of the form:  <type> ( args )
-    // These will be constructor calls (or type constructor calls) that slipped
-    // past normalization due to the use of typedefs.
-    if (SymExpr* se = toSymExpr(call->baseExpr)) {
-      if (TypeSymbol* ts = toTypeSymbol(se->var)) {
-        if (call->numActuals() == 0 ||
-            (call->numActuals() == 2 && isSymExpr(call->get(1)) &&
-             toSymExpr(call->get(1))->var == gMethodToken)) {
-          // This looks like a typedef, so ignore it.
-
-        } else {
-          // More needed here ... .
-          INT_FATAL(ts, "not yet implemented.");
-        }
-      }
-    }
-
     callStack.add(call);
 
     resolveCall(call);
@@ -6466,6 +6457,14 @@ static bool isStandaloneIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gStandaloneTag);
 }
 
+// helper to identify explicitly vectorized iterators
+static bool isVecIterator(FnSymbol* fn) {
+  if (fn->isIterator()) {
+    return fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS);
+  }
+  return false;
+}
+
 void
 resolveFns(FnSymbol* fn) {
   if (fn->isResolved())
@@ -6483,14 +6482,15 @@ resolveFns(FnSymbol* fn) {
     return;
 
   //
-  // Mark serial loops that yield inside of follower and standalone iterators
-  // as order independent. By using a forall loop, a user is asserting that
-  // their loop is order independent. Here we just mark the serial loops inside
-  // of the "follower" with this information. Note that only loops that yield
-  // are marked since other loops are not necessarily order independent. Only
-  // the inner most loop of a loop nest will be marked.
+  // Mark serial loops that yield inside of follower, standalone, and
+  // explicitly vectorized iterators as order independent. By using a forall
+  // loop or a loop over a vectorized iterator, a user is asserting that the
+  // loop can be executed in any iteration order. Here we just mark the
+  // iterator's yielding loops as order independent as they are ones that will
+  // actually execute the body of the loop that invoked the iterator. Note that
+  // for nested loops with a single yield, only the inner most loop is marked.
   //
-  if (isFollowerIterator(fn) || isStandaloneIterator(fn)) {
+  if (isFollowerIterator(fn) || isStandaloneIterator(fn) || isVecIterator(fn)) {
     std::vector<CallExpr*> callExprs;
     collectCallExprs(fn->body, callExprs);
 
@@ -6532,7 +6532,9 @@ resolveFns(FnSymbol* fn) {
     if (!ct)
       INT_FATAL(fn, "Constructor has no class type");
     setScalarPromotionType(ct);
-    fixTypeNames(ct);
+    if (!developer) {
+      fixTypeNames(ct);
+    }
   }
 
   resolveReturnType(fn);

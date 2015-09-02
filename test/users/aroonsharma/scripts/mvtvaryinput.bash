@@ -8,10 +8,10 @@ echo nl=$nl
 chpl --fast mvt.chpl -o mvt
 
 for n in {410..800..10}
-	do
-		echo "Cyclic (C) Dim=$n"
-		./mvt -nl $nl --dist=C --Dim=$n --messages --timeit
+  do
+    echo "Cyclic (C) Dim=$n"
+    ./mvt -nl $nl --dist=C --Dim=$n --messages --timeit
 
-		echo "Cyclic with modulo unrolling (CM) Dim=$n"
-		./mvt -nl $nl --dist=CM --Dim=$n --messages --timeit
-	done
+    echo "Cyclic with modulo unrolling (CM) Dim=$n"
+    ./mvt -nl $nl --dist=CM --Dim=$n --messages --timeit
+  done
