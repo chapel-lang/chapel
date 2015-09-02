@@ -127,10 +127,8 @@ module Barrier {
     }
 
     /* return `true` if `n` tasks have called :proc:`notify`
-
-       :rtype: bool
      */
-    inline proc try() {
+    inline proc try(): bool {
       return done.read();
     }
   }
@@ -188,10 +186,8 @@ module Barrier {
     }
 
     /* return `true` if `n` tasks have called :proc:`notify`
-
-       :rtype: bool
      */
-    inline proc try() {
+    inline proc try(): bool {
       return done.readXX();
     }
   }
