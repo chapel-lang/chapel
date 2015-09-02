@@ -1,6 +1,6 @@
-
+-------
 chplvis
-=======
+-------
 A task and communication debug tool for Chapel
 ----------------------------------------------
 
@@ -13,9 +13,8 @@ created that are used as input for *chplvis*.  This document
 will help you understand the *VisualDebug* module and the
 *chplvis* tool.
 
-=====
 Setup
-=====
+-----
 
 *chplvis* is built by giving the command **make chplvis**
 at the top level of the chapel tree.  This also builds
@@ -30,9 +29,8 @@ instead of the default, *qthreads*, for the tasking layer.   If you use
 *qthreads*, your task count may differ from the examples.
 
 
-==================
 Chapel Source Code
-==================
+------------------
 
 To use *chplvis*, the programmer adds code to their program.  In many
 cases, the programmer may want to investigate only part of the program.  This
@@ -44,7 +42,6 @@ of files, one per locale, are created in a directory with the *name* given
 in *startVdebug(name)*.
 </p>
 
----------
 Example 1
 ---------
 
@@ -63,7 +60,6 @@ Consider the chapel program: (prog1.chpl)
 
      stopVdebug();
 
-
 Compiling the program and running it with the options *-nl 6* will then
 produce a directory called *E1* containing 6 data files, one
 for each of the locales and named *E1-n* where *n* is
@@ -79,16 +75,19 @@ will be on the normal menu bar at the top of the screen and will
 not show in the main window.)
 
 
-================
 chplvis Elements
-================
+----------------
 
--  A *Locale* is represented by a box.  The initial display
-   draws the color of the locale to represent the number of tasks run
-   at that locale.   For example 1, we can see that locale 0 has the
-   most tasks and we expect that to be 13 since that is the maximum
-   number of tasks as shown by the color reference at the top of the
-   window.
+- The *information* box shows the file set opened, which tag (see
+  Example 2) is displayed, and provides a color bar to help visually
+  see what values are displayed for locales and communication.
+
+- A *Locale* is represented by a colored box in the main display.  The
+  initial display draws the color of the locale to represent the
+  number of tasks run at that locale.  For example 1, we can see that
+  locale 0 has the most tasks and we expect that to be 12 since that
+  is the maximum number of tasks as shown by the color reference in
+  the information box at the top of the window.
 
 - *Communication links* are shown by lines between two
   locale boxes.  The color of the line adjacent to a locale box 
@@ -110,15 +109,14 @@ chplvis Elements
   equal across all locales.  For the communication links, one can
   select number of communications or size of data sent.</li>
 
-===================
 Display Interaction
-===================
-
+-------------------
 
 Clicking on elements of the display will bring up more information.
-Clicking on a locale will open a window for that locale showing
+Clicking on a locale will open a new window for that locale showing
 information for that locale.  For example, in example 1, clicking on
-locale 0 will produce a window that looks like:
+locale 0 when the locale data is 'number of tasks', 'CPU time' or 'clock
+time' will produce a window that looks like:
 
 .. image:: E1-L0.png
 
@@ -127,8 +125,21 @@ time for the Visual Debug function calls.  *chplvis* removes
 from the task count the overhead tasks but it can not remove the
 CPU and clock time overhead.)
 
-Clicking on the red part of the line between locale 0 and locale 1
-will produce a window that looks like:
+When the locale data selected is 'concurrency', clicking on a locale
+will bring up a window that shows task on the locale.  This display
+shows the order the tasks are executed and the color of each task
+shows the clock time for that task.   For example, locale 0 for this
+example shows the window:
+
+.. image:: E1-L0-cw.png
+
+In this concurrency display, hovering the mouse over a task will
+bring up a "tooltip" that shows the clock time taken by that task,
+and if available, the source file name and line number of the code
+that started that task.
+
+In the main window, clicking on the red part of the line between
+locale 0 and locale 1 will produce a window that looks like:
 
 .. image:: E1-C1.0.png
 
@@ -144,11 +155,13 @@ out into three components:
     to put data from locale 1 onto locale 0.
 
   - *Forks:* This where *locale 1* starts a task running
-    on locale 0.  As part of the task start, a block of data is sent to locale 0
-    as an argument to the task.  This data is considered a communication call
-    by *chplvis*
+    on locale 0.  As part of the task start, a block of data is sent to
+    locale 0 as an argument to the task.  This data is considered a
+    communication call  by *chplvis*.
 
----------
+
+
+
 Example 2
 ---------
 
@@ -202,7 +215,6 @@ gives an example of using the *VisualDebug* functions
 
        writeln ("sum is " + i + ".");
     }
-
 
 
 Note that the *startVdebug("E2");* is placed after the declarations
@@ -279,9 +291,9 @@ tag.
 ..  Give examples of how to find problems. 
 
 
-==============
+
 Final Comments
-==============
+--------------
 
 The following items are not covered above:
 
