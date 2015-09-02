@@ -28,12 +28,22 @@
  *
  */
 
-//TODO: I dont think this module is overly useful anymore
 module BaseStringType {
+  // TODO: figure out why I cant move this defintion into `module String`
+  type bufferType = c_ptr(uint(8));
+}
+
+// Chapel Strings
+module String {
+  use BaseStringType;
   use CString;
   use SysCTypes;
+  use StringCasts;
 
-  type bufferType = c_ptr(uint(8));
+  //
+  // Externs and constants used to implement strings
+  //
+  // TODO: mark most of these as private or move elsewhere
 
   param chpl_string_min_alloc_size: int = 16;
   // Growth factor to use when extending the buffer for appends
@@ -48,30 +58,30 @@ module BaseStringType {
   // as well we will get a duplicate symbol error. I believe this is due to
   // module load ordering issues.
   // TODO: make a proc in ChapelLocale that returns this rather than using the extern
-  extern var chpl_nodeID: chpl_nodeID_t;
+  //extern var chpl_nodeID: chpl_nodeID_t;
 
   // TODO: hook into chpl_here_alloc and friends somehow
   // The runtime exits on errors for these, no need to check for nil on return
   pragma "insert line file info"
-  extern proc chpl_mem_alloc(size: size_t,
+  private extern proc chpl_mem_alloc(size: size_t,
                              description: chpl_mem_descInt_t): c_void_ptr;
 
   pragma "insert line file info"
-  extern proc chpl_mem_calloc(number: size_t, size: size_t,
+  private extern proc chpl_mem_calloc(number: size_t, size: size_t,
                               description: chpl_mem_descInt_t) : c_void_ptr;
 
   pragma "insert line file info"
-  extern proc chpl_mem_realloc(ptr: c_ptr, size: size_t,
+  private extern proc chpl_mem_realloc(ptr: c_ptr, size: size_t,
                                description: chpl_mem_descInt_t) : c_void_ptr;
 
   pragma "insert line file info"
-  extern proc chpl_mem_free(ptr: c_ptr): void;
+  private extern proc chpl_mem_free(ptr: c_ptr): void;
 
   // TODO: define my own mem descriptors?
-  extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
-  extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
+  private extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
+  private extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
 
-  inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
+  private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
                                    src_addr: bufferType, len: size_t) {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len);
   }
@@ -83,18 +93,15 @@ module BaseStringType {
       return dest;
   }
 
-  extern proc memmove(destination: c_ptr, const source: c_ptr, num: size_t);
-  extern proc memcpy(destination: c_ptr, const source: c_ptr, num: size_t);
-  extern proc memcmp(s1: c_ptr, s2: c_ptr, n: size_t) : c_int;
+  private extern proc memmove(destination: c_ptr, const source: c_ptr, num: size_t);
+  private extern proc memcpy(destination: c_ptr, const source: c_ptr, num: size_t);
+  private extern proc memcmp(s1: c_ptr, s2: c_ptr, n: size_t) : c_int;
 
   config param debugStrings = false;
-}
 
-// Chapel Strings
-module String {
-  use BaseStringType;
-  use StringCasts;
-
+  //
+  // String Implementaion
+  //
   // TODO: We should be able to remove "ignore noinit", but doing so causes
   // memory leaks in various places. Investigate why later and add noinit back
   // in when possible.
@@ -107,25 +114,28 @@ module String {
     var owned: bool = true;
 
     proc string(s: string, owned: bool = true) {
-      this.owned = owned;
       const sRemote = s.locale.id != chpl_nodeID;
-      if !owned && sRemote {
-        // TODO: Should I just ignore the supplied value of owned instead of
-        //       halting?
-        halt("Must take ownership of a copy of a remote string");
-      }
-      var localBuff: bufferType = nil;
       const sLen = s.len;
       // Dont need to do anything if s is an empty string
       if sLen != 0 {
-        localBuff = if sRemote
-          then copyRemoteBuffer(s.locale.id, s.buff, sLen)
-          else s.buff;
+        this.len = sLen;
+        if sRemote {
+          // ignore supplied valure of owned for remote strings
+          this.owned = true;
+          this.buff = copyRemoteBuffer(s.locale.id, s.buff, sLen);
+          this._size = sLen+1;
+        } else {
+          this.owned = owned;
+          if s.owned {
+            this.buff = chpl_mem_alloc(s._size.safeCast(size_t),
+                                       CHPL_RT_MD_STR_COPY_DATA): bufferType;
+            memcpy(this.buff, s.buff, s.len.safeCast(size_t));
+            this.buff[s.len] = 0;
+          } else {
+            this.buff = s.buff;
+          }
+        }
       }
-      // We only need to copy when the buffer is local
-      // TODO: reinitString does more checks then we actually need but is still
-      // correct. Is it worth just doing the proper copy here?
-      this.reinitString(localBuff, sLen, sLen+1, needToCopy=sRemote);
     }
 
     // This constructor can cause a leak if owned = false and needToCopy = true
@@ -300,14 +310,12 @@ module String {
       return ret;
     }
 
-    // Returns a string containing the character at the given index of
-    // the string, or an empty string if the index is out of bounds.
+    pragma "no doc"
     inline proc substring(i: int) {
       compilerError("substring removed: use string[index]");
     }
 
-    // Returns a string containing the string sliced by the given
-    // range, or an empty string if the range does not overlap.
+    pragma "no doc"
     inline proc substring(r: range) {
       compilerError("substring removed: use string[range]");
     }
@@ -317,6 +325,7 @@ module String {
     }
 
     //TODO: What is this for? nothing uses it...
+    pragma "no doc"
     proc writeThis(f: Writer) {
       compilerWarning("not implemented: writeThis");
     }
@@ -653,10 +662,9 @@ module String {
       on this {
         for i in 0..#this.len {
           const b = buff[i];
-          // TODO: (escaped chars seem to break ascii...)
           if !((b == ascii(' ')) ||
-               (b == 0x09) || // \t
-               (b >= 0x0A && b <= 0x0D)) { // \n \v \f \r
+               (b == ascii('\t')) ||
+               (b >= ascii('\n') && b <= ascii('\r'))) { // \n \v \f \r
             result = false;
             break;
           }
@@ -769,6 +777,7 @@ module String {
       for i in 0..#result.len {
         const b = result.buff[i];
         if _byte_isUpper(b) {
+          // We can just add or subtract 0x20 to change between upper and lower
           result.buff[i] = b + 0x20;
         }
       }
@@ -1228,19 +1237,19 @@ module String {
   //
   // Helper routines
   //
-  inline proc _byte_isUpper(b: uint(8)) : bool {
+  private inline proc _byte_isUpper(b: uint(8)) : bool {
     return b >= ascii('A') && b <= ascii('Z');
   }
 
-  inline proc _byte_isLower(b: uint(8)) : bool {
+  private inline proc _byte_isLower(b: uint(8)) : bool {
     return b >= ascii('a') && b <= ascii('z');
   }
 
-  inline proc _byte_isAlpha(b: uint(8)) : bool {
+  private inline proc _byte_isAlpha(b: uint(8)) : bool {
     return b >= ascii('A')  && b <= ascii('z');
   }
 
-  inline proc _byte_isDigit(b: uint(8)) : bool {
+  private inline proc _byte_isDigit(b: uint(8)) : bool {
     return b >= ascii('0')  && b <= ascii('9');
   }
 
@@ -1294,7 +1303,7 @@ module String {
   //
   // Developer Extras
   //
-
+  pragma "no doc"
   proc chpldev_refToString(ref arg) : string {
     // print out the address of class references as well
     proc chpldev_classToString(x: object) : string

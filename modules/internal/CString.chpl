@@ -149,7 +149,7 @@ module CString {
   }
 
   inline proc =(ref a: c_string, b: string) {
-    __primitive("=", a, b.c_str());
+    __primitive("=", a, b.localize().c_str());
   }
 
   // Create a fresh copy of the RHS string, first releasing the LHS.
