@@ -1,4 +1,4 @@
-use Subprocess;
+use Spawn;
 
 {
   var comp = spawn(["gcc", "print-args-env.c", "-o", "print-args-env"]);

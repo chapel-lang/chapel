@@ -1,4 +1,4 @@
-use Subprocess;
+use Spawn;
 
 {
   var comp = spawn(["gcc", "return-10.c", "-o", "return-10"]);

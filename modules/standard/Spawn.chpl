@@ -1,10 +1,4 @@
-module Subprocess {
-
-  // TODO: should this module be called Subprocess or Spawn?
-  // Should the main function be called
-  // spawn
-  // openproc
-  // popen
+module Spawn {
 
   private extern proc qio_openproc(argv:c_ptr(c_string_copy),
                                    env:c_ptr(c_string_copy),
@@ -20,6 +14,8 @@ module Subprocess {
   record subprocess {
     param kind:iokind;
     param locking:bool;
+
+    var home:locale;
 
     var pid:int(64);
     var inputfd:c_int;
@@ -74,7 +70,9 @@ module Subprocess {
      stdin stdout and stderr can be PIPE, existing file descriptor,
      existing file opject, or None. and stderr can be STDOUT which
      indicates stderr -> stdout.
-     What about a string for a file path?
+
+     What about a string for a file path? To support that, use
+     arguments like this: stdin:?t = FORWARD 
 
      * forward it -> posix_spawn_file_actions_adddup2
      * close it -> posix_spawn_file_actions_addclose
@@ -90,8 +88,10 @@ module Subprocess {
      a cwd argument like Python does, but it wouldn't be thread-safe
      without heroic effort on our part.  Boo.
    */
-  proc spawn(args:[] string, env:[] string=Subprocess.empty_env, executable="",
-             stdin = FORWARD, stdout = FORWARD, stderr = FORWARD,
+  /*
+     */
+  proc spawn(args:[] string, env:[] string=Spawn.empty_env, executable="",
+             stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
              param kind=iokind.dynamic, param locking=true)
   {
     var stdin_fd:c_int;
@@ -149,6 +149,7 @@ module Subprocess {
     c_free(use_env);
 
     var ret = new subprocess(kind=kind, locking=locking,
+                             home=here,
                              pid=pid,
                              inputfd=stdin_fd,
                              outputfd=stdout_fd,
@@ -220,47 +221,52 @@ module Subprocess {
     return ret;
   }
 
-  proc spawnshell(args:[] string, env:[] string,
-                  stdin, stdout, stderr,
+  proc spawnshell(command:string, env:[] string=Spawn.empty_env,
+                  stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
                   executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true)
   {
-    var argscopy = args;
-    if shellarg != "" then argscopy.push_front(shellarg);
-    argscopy.push_front(executable);
-    return openproc(argscopy, env, executable, kind=kind, locking=locking);
+    var args = [command];
+    if shellarg != "" then args.push_front(shellarg);
+    args.push_front(executable);
+    return spawn(args, env, executable, kind=kind, locking=locking);
   }
 
   proc subprocess.poll(out error:syserr) {
-    // check if child process has terminated.
-    var done:c_int = 0;
-    var exitcode:c_int = 0;
-    error = qio_waitpid(pid, 0, done, exitcode);
-    if done {
-      this.running = false;
-      this.exit_status = exitcode;
+    on home {
+      // check if child process has terminated.
+      var done:c_int = 0;
+      var exitcode:c_int = 0;
+      error = qio_waitpid(pid, 0, done, exitcode);
+      if done {
+        this.running = false;
+        this.exit_status = exitcode;
+      }
     }
   }
   proc subprocess.wait(out error:syserr) {
+
     error = this.spawn_error;
-
     if !running then return;
-    
-    // Close stdin.
-    if this.stdin_pipe {
-      // send data to stdin
-      if this.stdin_buffering then this.stdin._commit();
-      this.stdin.close(error=error);
-      this.stdin_file.close(error=error);
-    }
 
-    // check if child process has terminated.
-    var done:c_int = 0;
-    var exitcode:c_int = 0;
-    error = qio_waitpid(pid, 1, done, exitcode);
-    if done {
-      this.running = false;
-      this.exit_status = exitcode;
+    on home {
+      
+      // Close stdin.
+      if this.stdin_pipe {
+        // send data to stdin
+        if this.stdin_buffering then this.stdin._commit();
+        this.stdin.close(error=error);
+        this.stdin_file.close(error=error);
+      }
+
+      // check if child process has terminated.
+      var done:c_int = 0;
+      var exitcode:c_int = 0;
+      error = qio_waitpid(pid, 1, done, exitcode);
+      if done {
+        this.running = false;
+        this.exit_status = exitcode;
+      }
     }
   }
   proc subprocess.wait() {
@@ -276,18 +282,20 @@ module Subprocess {
   // into the stdout and stderr channel buffers.
   proc subprocess.communicate(out error:syserr) {
     
-    stdin._commit();
+    on home {
+      stdin._commit();
 
-    error = qio_proc_communicate(
-      locking, 
-      stdin._channel_internal,
-      stdout._channel_internal,
-      stderr._channel_internal);
-    /*
-      if stdin_pipe then stdin._channel_internal else QIO_CHANNEL_PTR_NULL,
-      if stdout_pipe then stdout._channel_internal else QIO_CHANNEL_PTR_NULL,
-      if stderr_pipe then stderr._channel_internal else
-      QIO_CHANNEL_PTR_NULL);*/
+      error = qio_proc_communicate(
+        locking, 
+        stdin._channel_internal,
+        stdout._channel_internal,
+        stderr._channel_internal);
+      /*
+        if stdin_pipe then stdin._channel_internal else QIO_CHANNEL_PTR_NULL,
+        if stdout_pipe then stdout._channel_internal else QIO_CHANNEL_PTR_NULL,
+        if stderr_pipe then stderr._channel_internal else
+        QIO_CHANNEL_PTR_NULL);*/
+    }
   }
   proc subprocess.communicate() {
     var err:syserr = ENOERR;

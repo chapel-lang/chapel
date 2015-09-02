@@ -36,6 +36,7 @@
 // current environment variables
 extern char** environ;
 
+#if 0
 struct subprocess {
 };
 
@@ -108,6 +109,7 @@ qioerr popen_close(void* fl, void* fs)
   return err; 
 }
 
+#endif
 
 /* Set up file actions for posix_spawn.
    *std__fd is FD_FORWARD, FD_CLOSE, FD_PIPE etc or a file descriptor #
@@ -174,7 +176,6 @@ static qioerr setup_actions(
   return 0;
 }
 
-
 /* Each of stdin/stdout/stderr take in a pointer to a file descriptor.
    *ptr should be:
     -1 -> use the existing stdin/stdout
@@ -198,7 +199,7 @@ qioerr qio_openproc(const char** argv,
   qioerr err;
   int rc;
   pid_t pid = 0;
-  struct popen_file* pfl = NULL;
+  //struct popen_file* pfl = NULL;
   int in_pipe[2];
   int out_pipe[2];
   int err_pipe[2];
@@ -397,10 +398,11 @@ error:
   if( err_pipe[0] ) close(err_pipe[0]);
   if( err_pipe[1] ) close(err_pipe[1]);
 
+  /*
   if( pfl ) {
     qio_free(pfl->command);
     qio_free(pfl);
-  }
+  }*/
 
   return err;
 }
@@ -620,6 +622,8 @@ qioerr qio_proc_communicate(
   return err;
 }
 
+#if 0
+
 static
 qioerr popen_getpath(void* fl, const char** string_out, void* fs)  {
 
@@ -648,3 +652,4 @@ qio_file_functions_t popen_function_struct = {
 
 const qio_file_functions_ptr_t popen_function_struct_ptr = &popen_function_struct;
 
+#endif

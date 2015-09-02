@@ -1,4 +1,4 @@
-use Subprocess;
+use Spawn;
 
 {
   var comp = spawn(["gcc", "mutate-args.c", "-o", "mutate-args"]);

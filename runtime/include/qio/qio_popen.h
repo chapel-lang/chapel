@@ -28,8 +28,6 @@
 extern "C" {
 #endif
 
-extern const qio_file_functions_ptr_t popen_function_struct_ptr;
-
 #define QIO_FD_FORWARD (-1)
 #define QIO_FD_CLOSE (-2)
 #define QIO_FD_PIPE (-3)

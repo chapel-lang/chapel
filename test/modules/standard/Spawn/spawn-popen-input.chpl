@@ -1,4 +1,4 @@
-use Subprocess;
+use Spawn;
 
 var sub = spawn(["cat"], stdin=PIPE);
 
