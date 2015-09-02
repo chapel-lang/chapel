@@ -102,11 +102,11 @@ chplvis Elements
   If communication is only one way, the communication color for
   *no communication* is gray.
 
-- The *Data menu* controls what data is used for display
-  colors.   This initial data is number of tasks for locales
-  and number of communications calls for the communication links.
-  For locales, one can select number of tasks, CPU time at the locale,
-  clock time or concurrrency at the locale.  Clock time is normally very close to
+- The *Data menu* controls what data is used for display colors.  This
+  initial data is number of tasks for locales and number of
+  communications calls for the communication links.  For locales, one
+  can select number of tasks, CPU time at the locale, clock time or
+  concurrrency at the locale.  Clock time is normally very close to
   equal across all locales.  For the communication links, one can
   select number of communications or size of data sent.</li>
 
