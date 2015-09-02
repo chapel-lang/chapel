@@ -312,11 +312,6 @@ module Spawn {
         stdin._channel_internal,
         stdout._channel_internal,
         stderr._channel_internal);
-      /*
-        if stdin_pipe then stdin._channel_internal else QIO_CHANNEL_PTR_NULL,
-        if stdout_pipe then stdout._channel_internal else QIO_CHANNEL_PTR_NULL,
-        if stderr_pipe then stderr._channel_internal else
-        QIO_CHANNEL_PTR_NULL);*/
     }
   }
   proc subprocess.communicate() {
@@ -327,6 +322,7 @@ module Spawn {
   }
 
 
+// Future work: support
 // send_signal
 // terminate
 // kill (send SIGKILL)
