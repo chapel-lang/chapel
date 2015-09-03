@@ -115,6 +115,8 @@ void ViewField::allocArrays()
       }
       if (theLocales[ix].ccwin != NULL) 
         delete theLocales[ix].ccwin;
+      if (theLocales[ix].b != NULL) 
+        delete theLocales[ix].b;
     }
     delete [] theLocales;
   }
@@ -271,7 +273,7 @@ void ViewField::setTooltip ( int ix, bool isInt, int ival, double fval)
     if (theLocales != NULL) {
       localeInfo *loc = &theLocales[ix];
 
-      // Draw a locale ...
+      // Sets up an invisible box under each locale that responds to tooltip requests!
       loc->x = cx + (int) rint(rx * sin (angle * ix - start));
       loc->y = cy - (int) rint(ry * cos (angle * ix - start));
       loc->w = 30;
