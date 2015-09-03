@@ -1464,8 +1464,7 @@ OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
   // Note that if all return statements (of a function marked "return value is
   // not owned") return unowned values, then we do not reach this code, because
   // the RVV will be unowned (so its corresponding to_cons bit will be false).
-  if (_fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED) &&
-      sym == _fn->getReturnSymbol())
+  if (_fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED) && sym == fnRetSym)
     return;
 
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
