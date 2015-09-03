@@ -663,11 +663,16 @@ static aligned_t chapel_wrapper(void *arg)
     return 0;
 }
 
+typedef struct {
+    chpl_fn_p fn;
+    void *arg;
+} comm_task_wrapper_info_t;
+
 static void *comm_task_wrapper(void *arg)
 {
-    chpl_qthread_wrapper_args_t *rarg = arg;
+    comm_task_wrapper_info_t *rarg = arg;
     chpl_moveToLastCPU();
-    (*(chpl_fn_p)(rarg->fn))(rarg->args);
+    (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     return 0;
 }
 
@@ -715,9 +720,18 @@ int chpl_task_createCommTask(chpl_fn_p fn,
                              void     *arg)
 {
 #ifndef QTHREAD_MULTINODE
-    chpl_qthread_wrapper_args_t wrapper_args = {fn, arg, false, {0}};
+    //
+    // The wrapper info must be static because it won't be referred to
+    // until the new pthread calls comm_task_wrapper().  And, it is
+    // safe for it to be static because we will be called at most once
+    // on each node.
+    //
+    static
+        comm_task_wrapper_info_t wrapper_info;
+    wrapper_info.fn = fn;
+    wrapper_info.arg = arg;
     return pthread_create(&chpl_qthread_comm_pthread,
-                          NULL, comm_task_wrapper, &wrapper_args);
+                          NULL, comm_task_wrapper, &wrapper_info);
 #else
     return 0;
 #endif
