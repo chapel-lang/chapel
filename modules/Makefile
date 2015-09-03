@@ -55,6 +55,7 @@ MODULES_TO_DOCUMENT = \
 	standard/AdvancedIters.chpl \
 	standard/Assert.chpl \
 	standard/AutoPtr.chpl \
+	standard/Barrier.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \

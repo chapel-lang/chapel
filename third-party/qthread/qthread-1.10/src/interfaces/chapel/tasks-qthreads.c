@@ -663,6 +663,14 @@ static aligned_t chapel_wrapper(void *arg)
     return 0;
 }
 
+static void *comm_task_wrapper(void *arg)
+{
+    chpl_qthread_wrapper_args_t *rarg = arg;
+    chpl_moveToLastCPU();
+    (*(chpl_fn_p)(rarg->fn))(rarg->args);
+    return 0;
+}
+
 // Start the main task.
 //
 // Warning: this method is not called within a Qthread task context. Do
@@ -707,8 +715,9 @@ int chpl_task_createCommTask(chpl_fn_p fn,
                              void     *arg)
 {
 #ifndef QTHREAD_MULTINODE
+    chpl_qthread_wrapper_args_t wrapper_args = {fn, arg, false, {0}};
     return pthread_create(&chpl_qthread_comm_pthread,
-                          NULL, (void *(*)(void *))fn, arg);
+                          NULL, comm_task_wrapper, &wrapper_args);
 #else
     return 0;
 #endif
