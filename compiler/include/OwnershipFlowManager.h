@@ -112,18 +112,21 @@ class OwnershipFlowManager
   // Properties
  private:
   FnSymbol* _fn; // Records the function being analyzed (un-owned).
+  Symbol*   fnRetSym;  // The return symbol of _fn.
+
   // The vector of basic blocks is a property of the function being analyzed.
   // It is copied here for convience.  This pointer must be whenever basic
   // block analysis is re-run.
   BasicBlockVector* basicBlocks; // Cached basic block vector (un-owned).
   size_t nbbs; // Cached basic block count.  Valid after BB analysis is run.
+
   // A vector of symbols of interest in this function.
   // The bits in each  BitVec in the flow sets correspond to symbols in this
   // vector.
   SymbolVector symbols;
   size_t nsyms; // Cached symbol count.  Valid after the symbols is populated.
-  SymbolIndexMap symbolIndex; // A map from a symbol to its index in the bit
-                              // vectors.
+  SymbolIndexMap symbolIndex; // A map from a symbol to its index in BitVecs.
+
   // The map contains one entry for each symbol.
   // Each entry is a list of symbols with which the given symbol is an alias.
   AliasVectorMap aliases;
@@ -587,7 +590,7 @@ OwnershipFlowManager::~OwnershipFlowManager()
 
 inline
 OwnershipFlowManager::OwnershipFlowManager(FnSymbol* fn)
-  : _fn(fn)
+  : _fn(fn), fnRetSym(fn->getReturnSymbol())
   , PROD(0), CONS(0), USE(0), USED_LATER(0), EXIT(0), IN(0), OUT(0)
 #if DEBUG_AMM
   , debug(0)
