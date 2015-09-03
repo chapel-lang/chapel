@@ -1,0 +1,6 @@
+Bug: Copy propagation can not follow references through record fields
+
+This test started to fail after 4160bf4 (Add peephole optimization to remove
+ref temps). The actual failure is due to copy propagation not being able to
+follow references through record fields. If this test is run with scalar
+replacement, it works correctly since the record fields will be extracted.
