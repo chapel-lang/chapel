@@ -5108,14 +5108,9 @@ preFold(Expr* expr) {
           if (!nowarn)
             USR_WARN(type->symbol, "type %s does not currently support noinit, using default initialization", type->symbol->name);
 
-          if( type->defaultValue ) {
-            result = new SymExpr(type->defaultValue);
-            call->replace(result);
-          } else {
-            result = new CallExpr(PRIM_INIT, call->get(1)->remove());
-            call->replace(result);
-            inits.add((CallExpr *)result);
-          }
+          result = new CallExpr(PRIM_INIT, call->get(1)->remove());
+          call->replace(result);
+          inits.add((CallExpr *)result);
         } else {
           result = call;
           inits.add(call);
