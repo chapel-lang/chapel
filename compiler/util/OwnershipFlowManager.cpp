@@ -1588,12 +1588,12 @@ OwnershipFlowManager::insertAutoDestroys()
 
 // start debugging support
 
-void OwnershipFlowManager::printInfo() {
+void OwnershipFlowManager::printInfo() const {
   printf("OwnershipFlowManager for fn %d %s\n", _fn->id, _fn->name);
   printf("  nbbs %ld  nsyms %ld\n", nbbs, nsyms);
 }
 
-void OwnershipFlowManager::printSymbols() {
+void OwnershipFlowManager::printSymbols() const {
   if (nsyms < 1) {
     printf("printSymbols(): no symbols\n");
     return;
@@ -1680,7 +1680,7 @@ void OwnershipFlowManager::printSymbolStats(Symbol* sym) {
 }
 
 void OwnershipFlowManager::printSymbolStats(size_t index) {
-  if (index < 0 || index >= nsyms) {
+  if (index >= nsyms) {
     printf("invalid index %ld\n", index);
     return;
   }
@@ -1690,7 +1690,7 @@ void OwnershipFlowManager::printSymbolStats(size_t index) {
 
 void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
   if (!sym) { printf("NULL symbol\n"); return; }
-  if (index<0 || index>=nsyms) { printf("invalid idx %ld\n", index); return; }
+  if (index >= nsyms) { printf("invalid idx %ld\n", index); return; }
   printf("\n" "#%-3ld %s[%d]\n", index, sym->name, sym->id);
 
   for (size_t i = 0; i < nbbs; i++) {

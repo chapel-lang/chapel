@@ -223,8 +223,8 @@ class OwnershipFlowManager
   void insertAutoDestroys();
   
   // Debug support.
-  void printInfo();
-  void printSymbols();
+  void printInfo() const;
+  void printSymbols() const;
   void printBasicBlocks();
   void printFlowSets();
   void printFlowSets(FlowSetFlags flags);
