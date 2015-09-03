@@ -303,13 +303,13 @@ proc Block.dsiAssign(other: this.type) {
 //
 proc Block.dsiEqualDMaps(that: Block(?)) {
   return (this.boundingBox == that.boundingBox &&
-          & reduce (this.targetLocales == that.targetLocales));
+          this.targetLocales.equals(that.targetLocales));
 }
 
 //
 // Block distributions are not equivalent to other domain maps.
 //
-proc Block.dsiEqualDMaps(that) {
+proc Block.dsiEqualDMaps(that) param {
   return false;
 }
 
