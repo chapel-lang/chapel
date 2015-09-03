@@ -665,7 +665,7 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
   
-  config param parallelInitElts=false;
+  config param parallelInitElts=true;
   proc init_elts(x, s, type t) {
     //
     // Q: why is the declaration of 'y' in the following loops?
@@ -679,35 +679,27 @@ module ChapelBase {
 
     //
     // Heuristically determine if we should do parallel initialization. The
-    // current heuristic really just checks that the array is of numeric types
-    // and is at least 2MB. This value was chosen experimentally. Any smaller
-    // than that and the cost of a forall (mostly the task creation) outweighs
-    // the benefit of using multiple tasks. This was tested on a dual core
-    // laptop, 8 core workstation, and 24 core XC40.
+    // current heuristic really just checks that we have a numeric array that's
+    // at least 2MB. This value was chosen experimentally: Any smaller and the
+    // cost of a forall (mostly the task creation) outweighs the benefit of
+    // using multiple tasks. This was tested on a 2 core laptop, 8 core
+    // workstation, and 24 core XC40.
     //
-    // Ideally we also want to do parallel init for POD types, however the
-    // isPODType is currently on string-as-rec only. The heuristic will
-    // probably have to be slightly updated for POD types since there will also
-    // be the construction cost from the creation of `y: t`
+    // Ideally we want to be able to do parallel initialization for all types,
+    // but we're currently blocked by an issue with arrays of arrays and thus
+    // arrays of aggregate types where at one field is an array. The issue is
+    // basically that an array's domain stores a linked list of all its arrays
+    // and removal becomes expensive when addition and removal occur in
+    // different orders. We don't currently have a good way to check if an
+    // aggregate type contains arrays, so we limit parallel init to numeric
+    // types.
     //
-    // We do not want to do parallel init for non-POD types for the time being.
-    // Well, really we don't want to do parallel init if `t` is an array or an
-    // aggregate type with at least one field that is an array. Domains keep
-    // track of what arrays belong to them, so that when a domain is updated,
-    // all of its arrays can be updated too. Currently the domain's arrays are
-    // stored in a linked list. When an array is destroyed, it goes to its
-    // domain and tells the domain to remove the array from the list of arrays.
-    // This involves searching through the list of arrays to find the one to
-    // remove. For an array of arrays, if the outer array is initialized
-    // serially, the order or initialization and destruction will be the same.
-    // This means that when initialized serially, no real searching through the
-    // linked list has to be done since the array to remove will be at the
-    // beginning of the linked list effectively resulting in O(1) time. When
-    // the order the arrays are added to the linked list is different than the
-    // order they are removed from you experience the true O(n) time of
-    // searching through a linked list to find the array to remove. To fix
-    // this, the domains list of arrays should really be stored as a BST, or
-    // associative array or something that has < log(n) removal time.
+    // Long term we probably want to store the domain's arrays as an
+    // associative domain or some data structure with < log(n) find/add/remove
+    // times. Currently we can't do that because the domain's arrays are part
+    // of the base domain, so we have a circular reference. As a stepping
+    // stone, we could do parallel init for plain old data (POD) types.
+    //
 
     if parallelInitElts && isNumericType(t) {
 

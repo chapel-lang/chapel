@@ -138,7 +138,8 @@ typedef qioerr (*qio_open_fptr)(void**,      // file information on return
                                 qio_hint_t,  // Hints for opening the file
                                 void*);      // plugin filesystem pointer
 
-typedef qioerr (*qio_close_fptr)(void*, void*); // file information, fs info
+typedef qioerr (*qio_close_fptr)(void*, // file information
+                                 void*); // fs info
 
 typedef qioerr (*qio_fsync_fptr)(void*, void*); // file information, fs info
 
@@ -536,7 +537,8 @@ qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_st
 
 qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
                         int flags, mode_t mode, qio_hint_t iohints, 
-                        const qio_style_t* style, void* fs_info,
+                        const qio_style_t* style,
+                        void* fs_info,
                         const qio_file_functions_t* s);
 
 qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, 
@@ -546,7 +548,8 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info,
 
 qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, 
                                const char* access, qio_hint_t iohints, 
-                               const qio_style_t* style, void* fs_info,
+                               const qio_style_t* style,
+                               void* fs_info,
                                const qio_file_functions_t* s);
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
