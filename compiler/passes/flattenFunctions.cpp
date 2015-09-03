@@ -219,10 +219,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               CallExpr* call = toCallExpr(se->parentExpr);
               INT_ASSERT(call);
               FnSymbol* fnc = call->isResolved();
-              if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_ASSIGN) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_GET_MEMBER)) ||
+              if ((call->isPrimitive(PRIM_GET_MEMBER)) ||
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
