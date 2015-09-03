@@ -4,7 +4,7 @@ chplvis
 A task and communication debug tool for Chapel
 ----------------------------------------------
 
-*chplvis* is a tool to help the Chapel programer visualize their
+*chplvis* is a tool to help the Chapel programmer visualize their
 Chapel program's tasks and communication between locales.  Using the
 standard module *VisualDebug*, the programmer controls what part
 of their program generates information for chplvis.  During the run of
@@ -105,7 +105,7 @@ chplvis Elements
   initial data is number of tasks for locales and number of
   communications calls for the communication links.  For locales, one
   can select number of tasks, CPU time at the locale, clock time or
-  concurrrency at the locale.  Clock time is normally very close to
+  concurrency at the locale.  Clock time is normally very close to
   equal across all locales.  For the communication links, one can
   select number of communications or size of data sent.</li>
 
