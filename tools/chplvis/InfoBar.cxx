@@ -36,7 +36,7 @@ static const int Y_OFF = 0;
 
 // XXX should new and delete here?
 void InfoBar::setFileName(const char *name) {
-    const char *sl;
+    char *sl;
     char *dash;
     int nameLen = strlen(name);
     char tmpNam[nameLen+1];
