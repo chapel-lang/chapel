@@ -31,6 +31,8 @@ size_t chpl_bytesAvailOnThisLocale(void);
 int chpl_getNumPhysicalCpus(chpl_bool accessible_only);
 int chpl_getNumLogicalCpus(chpl_bool accessible_only);
 
+void chpl_moveToLastCPU(void);
+
 //
 // returns the name of a locale via uname -n or the like
 //

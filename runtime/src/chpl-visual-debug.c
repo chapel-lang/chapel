@@ -22,6 +22,7 @@
 //
 
 #define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 
 #include "chpl-visual-debug.h"
 #include "chplrt.h"
