@@ -586,8 +586,6 @@ int DataModel::LoadData(const char * filename)
   }
 #endif 
 
-  printf ("String cache size is %lu.\n", strDB.size());
-
   return 1;
 }
 
