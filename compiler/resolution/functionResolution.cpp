@@ -750,6 +750,9 @@ protoIteratorClass(FnSymbol* fn) {
   // of the iterator record type.  Since we are only creating shell functions
   // here, we still need a way to obtain the original iterator function, so we
   // can fill in the bodies of the above 9 methods in the lowerIterators pass.
+
+  // This re-use of the default initializer for this purpose dates
+  //  back to antiquity in commit 0326c9ce465c4b83060939c60699d82b80fe2077
   ii->irecord->defaultInitializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
