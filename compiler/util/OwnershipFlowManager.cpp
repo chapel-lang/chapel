@@ -1586,6 +1586,129 @@ OwnershipFlowManager::insertAutoDestroys()
   if (ret) _fn->body->insertAtTail(ret);
 }
 
+// start debugging support
+
+void OwnershipFlowManager::printInfo() const {
+  printf("OwnershipFlowManager for fn %d %s\n", _fn->id, _fn->name);
+  printf("  nbbs %ld  nsyms %ld\n", nbbs, nsyms);
+}
+
+void OwnershipFlowManager::printSymbols() const {
+  if (nsyms < 1) {
+    printf("printSymbols(): no symbols\n");
+    return;
+  }
+  for (size_t j = 0; j < nsyms; j++) {
+    Symbol* sym = symbols[j];
+    printf("%-3ld %s[%d]\n", j, sym->name, sym->id);
+  }
+}
+
+void OwnershipFlowManager::printBasicBlocks()
+{
+  #if DEBUG_AMM
+  if (debug > 1)
+  {
+    printf("\n");
+    list_view(_fn);
+  }
+
+  if (debug > 0)
+  {
+    BasicBlock::printBasicBlocks(_fn);
+  }
+  #endif
+}
+
+void OwnershipFlowManager::printFlowSets() {
+  printInfo();
+  printSymbols();
+  printFlowSets(FlowSet_ALL);
+}
+
+void OwnershipFlowManager::printFlowSets(FlowSetFlags flags)
+{
+  #if DEBUG_AMM
+  if (debug > 0)
+  {
+    if (flags & FlowSet_PROD)
+    {
+      printf("PROD:\n"); 
+      BasicBlock::printBitVectorSets(PROD);
+    }
+    if (flags & FlowSet_CONS) 
+    {
+      printf("CONS:\n"); 
+      BasicBlock::printBitVectorSets(CONS);
+    }
+    if (flags & FlowSet_USE) 
+    {
+      printf("USE:\n"); 
+      BasicBlock::printBitVectorSets(USE);
+    }
+    if (flags & FlowSet_USED_LATER) 
+    {
+      printf("USED_LATER:\n"); 
+      BasicBlock::printBitVectorSets(USED_LATER);
+    }
+    if (flags & FlowSet_EXIT) 
+    {
+      printf("EXIT:\n"); 
+      BasicBlock::printBitVectorSets(EXIT);
+    }
+    if (flags & FlowSet_IN) 
+    {
+      printf("IN:\n"); 
+      BasicBlock::printBitVectorSets(IN);
+    }
+    if (flags & FlowSet_OUT) 
+    {
+      printf("OUT:\n"); 
+      BasicBlock::printBitVectorSets(OUT);
+    }
+  }
+  #endif
+}
+
+void OwnershipFlowManager::printSymbolStats(Symbol* sym) {
+  if (!sym) {
+    printf("<NULL>\n");
+    return;
+  }
+  size_t index = symbolIndex[sym];
+  printSymbolStats(sym, index);
+}
+
+void OwnershipFlowManager::printSymbolStats(size_t index) {
+  if (index >= nsyms) {
+    printf("invalid index %ld\n", index);
+    return;
+  }
+  Symbol* sym = symbols[index];
+  printSymbolStats(sym, index);
+}
+
+void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
+  if (!sym) { printf("NULL symbol\n"); return; }
+  if (index >= nsyms) { printf("invalid idx %ld\n", index); return; }
+  printf("\n" "#%-3ld %s[%d]\n", index, sym->name, sym->id);
+
+  for (size_t i = 0; i < nbbs; i++) {
+    printf("%4ld", i);
+    if (PROD[i]->test(index)) printf("  prod");
+    if (CONS[i]->test(index)) printf("  cons");
+    if (USE[i]->test(index))  printf("  use");
+    if (USED_LATER[i]->test(index)) printf("  usedL");
+    if (EXIT[i]->test(index)) printf("  exit");
+    if (IN[i]->test(index))   printf("  in");
+    if (OUT[i]->test(index))  printf("  out");
+    printf("\n");
+  }
+  printf("\n");
+}
+  
+// end debugging support
+
 
 // TODO: Remove the computation of the EXIT set.  It is no longer needed,
 // because the only information we need to determine whether to insert an

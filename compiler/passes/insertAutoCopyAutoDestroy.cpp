@@ -372,22 +372,22 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   OwnershipFlowManager ofm(fn);
 
   ofm.buildBasicBlocks();
-  ofm.debugPrintBasicBlocks();
+  ofm.printBasicBlocks();
   ofm.extractSymbols();
   ofm.populateAliases();
   ofm.createFlowSets();
   ofm.computeExits();
   ofm.computeTransitions();
-  ofm.debugPrintFlowSets(OwnershipFlowManager::FlowSet_ALL);
+  ofm.printFlowSets(OwnershipFlowManager::FlowSet_ALL);
 
   ofm.backwardFlowUse();
-  ofm.debugPrintFlowSets(OwnershipFlowManager::FlowSet_USE);
+  ofm.printFlowSets(OwnershipFlowManager::FlowSet_USE);
 
   ofm.forwardFlowOwnership();
 
-  ofm.debugPrintFlowSets((OwnershipFlowManager::FlowSetFlags)
-                         (OwnershipFlowManager::FlowSet_IN |
-                          OwnershipFlowManager::FlowSet_OUT));
+  ofm.printFlowSets((OwnershipFlowManager::FlowSetFlags)
+                    (OwnershipFlowManager::FlowSet_IN |
+                     OwnershipFlowManager::FlowSet_OUT));
 
   ofm.insertAutoCopies();
 
@@ -416,7 +416,7 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   // into a node is owned on all such paths.
   ofm.backwardFlowOwnership();
 
-  ofm.debugPrintFlowSets(FlowSet_IN | FlowSet_OUT);
+  ofm.printFlowSets(FlowSet_IN | FlowSet_OUT);
 #endif
 
   ofm.insertAutoDestroys();
