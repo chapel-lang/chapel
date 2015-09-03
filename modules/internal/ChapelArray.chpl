@@ -2259,6 +2259,12 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isComplexType(t) return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isTupleType(t) {
+    for param i in 1..x.size {
+      if !chpl__supportedDataTypeForBulkTransfer(x[i]) then return false;
+    }
+    return true;
+  }
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
   
