@@ -67,10 +67,9 @@ module elemental_cholesky_symmetric_index_ranges_alt {
   // the implementation of such local declarations.
   // =========================================================================
 
-  use CyclicDist;
+  use CyclicDist, Barrier;
 
-  use Barrier, 
-      elemental_schur_complement, 
+  use elemental_schur_complement, 
       local_reduced_matrix_cyclic_partition_alt,
       scalar_inner_product_cholesky,
       transposed_block_triangular_solve;
