@@ -1843,6 +1843,24 @@ module ChapelArray {
     }
   }  // record _array
 
+  //
+  // A helper function to check array equality (== on arrays promotes
+  // to an array of booleans)
+  //
+  proc _array.equals(that: _array) {
+    if this.rank != that.rank then
+      return false;
+    //    writeln("ranks match!");
+    for d in 1..this.rank do
+      if this.domain.dim(d).size != that.domain.dim(d).size then
+        return false;
+    //    writeln("sizes match");
+    //    writeln("this == that is: ", this == that);
+    return && reduce (this == that);
+  }
+  
+  
+
 
   //
   // isXxxType, isXxxValue
