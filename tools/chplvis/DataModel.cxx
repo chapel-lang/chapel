@@ -90,6 +90,7 @@ int DataModel::LoadData(const char * filename)
   // fflush(stdout);
 
   newList();
+  strDB.clear();
   curEvent = theEvents.begin();
   
   FILE *data = fopen(fullfilename, "r");
@@ -407,9 +408,18 @@ int DataModel::LoadData(const char * filename)
           // Find task in task map
           it = curTag->locales[curNodeId].tasks.find(etp->taskId());
           if (it != curTag->locales[curNodeId].tasks.end()) {
+            double taskTime;
             // Update the end record
-            (*it).second.endRec = etp;
-            (*it).second.endTagNo = cTagNo;
+            it->second.endRec = etp;
+            it->second.endTagNo = cTagNo;
+            // Set task times
+            taskTime = it->second.endRec->clock_time() - it->second.beginRec->clock_time();
+            //printf ("Task %d/%ld taskTime %lf\n", curNodeId, etp->taskId(), taskTime);
+            it->second.taskClock = taskTime;
+            if (curTag->locales[curNodeId].maxTaskClock < taskTime)
+              curTag->locales[curNodeId].maxTaskClock = taskTime;
+            if (tagList[0]->locales[curNodeId].maxTaskClock < taskTime)
+              tagList[0]->locales[curNodeId].maxTaskClock = taskTime;
             //printf ("End task %d, node %d\n", etp->taskId(), curNodeId);
           } else {
             bool validEnd = false;
@@ -417,8 +427,8 @@ int DataModel::LoadData(const char * filename)
             while (tryTagNo > DataModel::TagALL) {
               it = tagList[tryTagNo+2]->locales[curNodeId].tasks.find(etp->taskId());
               if (it != tagList[tryTagNo+2]->locales[curNodeId].tasks.end()) {
-                (*it).second.endRec = etp;
-                (*it).second.endTagNo = cTagNo;
+                it->second.endRec = etp;
+                it->second.endTagNo = cTagNo;
                 //printf ("Found end task %d in tag %d started in tag %s (%d), nid %d\n",
                 //        etp->taskId(), cTagNo, tagList[tryTagNo+2]->name.c_str(),
                 //        tryTagNo, curNodeId);
@@ -734,7 +744,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             (void)vdbTids.insert(taskid);
           } else {
             newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O',
-                                   nlineno, nfilename);
+                                   nlineno, strDB.getString(nfilename));
           }
 
         }
@@ -760,9 +770,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
                    line[0] == 'p' ? 0 :
                    line[3] == 'g' ? 1 : 0);
           if (isGet)
-            newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen, isGet);
+            newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen, isGet,
+                                   strDB.getString(nfilename));
           else
-            newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet);
+            newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet,
+                                   strDB.getString(nfilename));
         }
         break;
 
@@ -805,7 +817,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         } else {
           nextCh += nameOffset;
           newEvent = new E_tag(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, tagId, 
-                               &linedata[nextCh], vdbTid);
+                               strDB.getString(&linedata[nextCh]), vdbTid);
           if (tagId >= numTags)
             numTags = tagId+1;
           if (nid == 0) {

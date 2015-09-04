@@ -24,6 +24,7 @@
 #include <list>
 #include <vector>
 #include <map>
+#include "StringCache.h"
 
 // This class builds a list of events 
 //   Start, Stop, Pause, and Tag events are grouped together 
@@ -45,6 +46,7 @@ struct taskData {
   E_begin_task *beginRec;
   E_end_task *endRec;
   int endTagNo;
+  double taskClock;
 
   taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL), endTagNo(-2) {};
 };
@@ -58,6 +60,8 @@ struct localeData {
   double refSysCpu;
   double clockTime;
   double refTime;
+  double maxTaskClock;
+   //double minTaskClock;
   long    numTasks;
   long    runConc;
   long    maxConc;
@@ -65,7 +69,8 @@ struct localeData {
   std::map<long,taskData> tasks;
 
   localeData() : userCpu(0), sysCpu(0), Cpu(0), refUserCpu(0), refSysCpu(0),
-    clockTime(0), refTime(0), numTasks(0), runConc(0), maxConc(0) {};
+                 clockTime(0), refTime(0), maxTaskClock(0), // minTaskClock(1E10),
+                 numTasks(0), runConc(0), maxConc(0) {};
 };
 
 // Used to track communication,  each tag has a 2D array of commData, one for each direction
@@ -96,6 +101,8 @@ class DataModel {
   std::list < timelineEntry > *taskTimeline;
 
  private:
+
+  StringCache strDB;
 
   typedef std::list<Event*>::iterator evItr;
 
@@ -131,7 +138,7 @@ class DataModel {
     localeData *locales;
     commData **comms;
     
-    // Local Maxes
+    // Local Maxes and Minimums
     double maxCpu;
     double maxClock;
     long   maxTasks;
@@ -140,7 +147,7 @@ class DataModel {
     long   maxConc;
     
     tagData(long numLoc) : numLocales(numLoc), name(""),  maxCpu(0), maxClock(0),
-                          maxTasks(0), maxComms(0), maxSize(0), maxConc(0)  {
+                           maxTasks(0), maxComms(0), maxSize(0), maxConc(0) {
       locales = new localeData[numLocales];
       comms = new  commData * [numLocales];
       for (int i = 0; i < numLocales; i++ )

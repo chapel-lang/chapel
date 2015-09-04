@@ -89,10 +89,11 @@ class  E_task : public Event {
     long taskid;
     bool isOn;
     long lineNum;
-    char *srcFile;
+    const char *srcFile;
   
   public:
-    E_task (long esec, long eusec, int nid, long taskId, bool ison, long line, char *file)
+    E_task (long esec, long eusec, int nid, long taskId, bool ison, long line,
+            const char *file)
       : Event(esec,eusec, nid), taskid(taskId), isOn(ison), lineNum(line)
     {
       srcFile = strdup(file);
@@ -100,7 +101,7 @@ class  E_task : public Event {
 
     bool isLocal () { return !isOn; }
     long srcLine () { return lineNum; }
-    char *srcName () { return srcFile; }
+    const char *srcName () { return srcFile; }
     long taskId () { return taskid; }
     
 
@@ -119,11 +120,13 @@ class E_comm : public Event {
      int  dstid;
      int  elemsize, datalen;
      bool isget;
+     const char *srcFile;
 
    public:
      E_comm (long esec, long eusec, int esrcid, int edstid, int elSize,
-             int dLen, bool get) : Event(esec, eusec, esrcid), dstid(edstid),
-                                   elemsize(elSize), datalen(dLen), isget(get) {};
+             int dLen, bool get, const char *srcF) :
+          Event(esec, eusec, esrcid), dstid(edstid), elemsize(elSize),
+          datalen(dLen), isget(get), srcFile(srcF) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
@@ -131,6 +134,7 @@ class E_comm : public Event {
      int dataLen() { return datalen; }
      int totalLen() { return elemsize * datalen; }
      bool isGet() { return isget; }
+     const char *srcName () { return srcFile; }
 
      virtual int Ekind() {return Ev_comm;}
      virtual void print() { 
@@ -166,20 +170,20 @@ class E_tag : public Event {
 
    private:
      int tag_num;
-     std::string tag_name;
+     const char *tag_name;
      long u_sec, u_usec;    // getrusage times
      long s_sec, s_usec;
      int vdbTask;
 
    public:
      E_tag (long esec, long eusec, int nodeid, long u_sec, long u_usec, long s_sec, long s_usec,
-            long tagno, char *tag, int tid)
+            long tagno, const char *tag, int tid)
        : Event(esec, eusec, nodeid), tag_num(tagno), tag_name(tag), u_sec(u_sec),
          u_usec(u_usec), s_sec(s_sec), s_usec(s_usec), vdbTask(tid)
        { }
 
      int tagNo() { return tag_num; }
-     std::string tagName() { return tag_name; }
+     const char *tagName() { return tag_name; }
 
      double cpu_time()  { return u_sec+s_sec + ((double)u_usec+s_usec)/1000000; }
      double user_time() { return u_sec+(double)u_usec/1000000; }
@@ -189,7 +193,7 @@ class E_tag : public Event {
      virtual int Ekind() {return Ev_tag;}
      virtual void print() {
        printf ("Tag: node %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld tagNo %d, Tag='%s'\n",
-               nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tag_num, tag_name.c_str());
+               nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tag_num, tag_name);
      }
 
 };
