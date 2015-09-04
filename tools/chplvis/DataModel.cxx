@@ -54,7 +54,7 @@ int DataModel::LoadData(const char * filename)
 {
   const char *suffix;
   struct stat statbuf;
-  char fullfilename[MAXPATHLEN];  
+  char fullfilename[MAXPATHLEN];
 
   // Remove trailing / in name
   int fn_len = strlen(filename);
@@ -396,7 +396,7 @@ int DataModel::LoadData(const char * filename)
             //printf ("Begin task %d, node %d\n", btp->taskId(), curNodeId);
           } else {
             printf ("(Begin task) No such task %ld in tag %s nodeid %d.\n",
-                    btp->taskId(), curTag->name.c_str(), curNodeId);
+                    btp->taskId(), curTag->name, curNodeId);
           }
         }
         break;
@@ -501,8 +501,18 @@ int DataModel::LoadData(const char * filename)
       case Ev_tag:
         tp = (E_tag *)ev;
         if (curNodeId == 0) {
+          std::map<const char *, int>::iterator t_itr;
           cTagNo++;
           curTag = tagList[cTagNo+2];
+          // Check for duplicate tags, map the tag name
+          t_itr = name2tag.find(tp->tagName());
+          if (t_itr != name2tag.end()) {
+            // tag is duplicate
+            uniqueTags = false;
+          } else {
+            // new tag, set a new index for it
+            name2tag[tp->tagName()] = cTagNo;
+          }
         }
         assert(cTagNo == tp->tagNo());
         taskTimeline[curNodeId].push_back(timelineEntry(Tl_Tag,cTagNo));
@@ -562,6 +572,66 @@ int DataModel::LoadData(const char * filename)
 
     // Move to next event record
     itr++;
+  }
+
+  // If duplicate tags, build unique tag information
+  if (!uniqueTags) {
+    int nextUtag;
+    int tTag;
+
+    //printf ("uniq tag no: %lu\n", name2tag.size());
+
+    // Allocate tage data
+    utagList = new tagData *[name2tag.size()];
+    for (int ix = 0; ix < name2tag.size(); ix++)
+      utagList[ix] = new tagData(numLocales);
+
+    // All and Start use tagData ... see getUTagData
+    // Now, aggrigate all duplicate tags, tag order is as first seen in tagList
+    nextUtag = 0;   // Should be tag 2 in tagList
+    for (int ix = 2; ix < numTags+2; ix++) {
+      tTag = name2tag[tagList[ix]->name];
+      //printf ("ix->tTag: %d -> %d\n", ix, tTag);
+      if (tTag >= nextUtag) {
+        name2tag[tagList[ix]->name] = nextUtag;
+        tTag = nextUtag++;
+        utagList[tTag]->name = tagList[ix]->name;
+      }
+      // merge data from tagList[ix] int utagList[tTag]
+      for (int il = 0 ; il < numLocales; il ++ ) {
+        // Ignore "ref" and "run" fields
+        utagList[tTag]->locales[il].userCpu      += tagList[ix]->locales[il].userCpu;
+        utagList[tTag]->locales[il].sysCpu       += tagList[ix]->locales[il].sysCpu;
+        utagList[tTag]->locales[il].Cpu          += tagList[ix]->locales[il].Cpu;
+        utagList[tTag]->locales[il].clockTime    += tagList[ix]->locales[il].clockTime;
+        utagList[tTag]->locales[il].maxTaskClock += tagList[ix]->locales[il].maxTaskClock;
+        utagList[tTag]->locales[il].numTasks     += tagList[ix]->locales[il].numTasks;
+        if (utagList[tTag]->locales[il].maxConc  <  tagList[ix]->locales[il].maxConc)
+          utagList[tTag]->locales[il].maxConc = tagList[ix]->locales[il].maxConc;
+        // Update tag maxes
+        if (utagList[tTag]->locales[il].Cpu > utagList[tTag]->maxCpu)
+          utagList[tTag]->maxCpu = utagList[tTag]->locales[il].Cpu;
+        if (utagList[tTag]->locales[il].clockTime > utagList[tTag]->maxClock)
+          utagList[tTag]->maxClock = utagList[tTag]->locales[il].clockTime;
+        if (utagList[tTag]->locales[il].numTasks > utagList[tTag]->maxTasks)
+          utagList[tTag]->maxTasks = utagList[tTag]->locales[il].numTasks;
+        if (utagList[tTag]->locales[il].maxConc > utagList[tTag]->maxConc)
+          utagList[tTag]->maxConc = utagList[tTag]->locales[il].maxConc;
+        // Communication
+        for (int ic = 0; ic < numLocales; ic++ ) {
+          utagList[tTag]->comms[il][ic].numComms += tagList[ix]->comms[il][ic].numComms;
+          utagList[tTag]->comms[il][ic].numGets  += tagList[ix]->comms[il][ic].numGets;
+          utagList[tTag]->comms[il][ic].numPuts  += tagList[ix]->comms[il][ic].numPuts;
+          utagList[tTag]->comms[il][ic].numForks += tagList[ix]->comms[il][ic].numForks;
+          utagList[tTag]->comms[il][ic].commSize += tagList[ix]->comms[il][ic].commSize;
+          // Maxes
+          if (utagList[tTag]->comms[il][ic].numComms > utagList[tTag]->maxComms)
+            utagList[tTag]->maxComms = utagList[tTag]->comms[il][ic].numComms;
+          if (utagList[tTag]->comms[il][ic].commSize > utagList[tTag]->maxSize)
+            utagList[tTag]->maxSize = utagList[tTag]->comms[il][ic].commSize;
+        }
+      }
+    }
   }
 
 #if 0
