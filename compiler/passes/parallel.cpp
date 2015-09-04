@@ -546,7 +546,6 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   fcall->insertBefore( new DefExpr(bundle_buf));
   fcall->insertBefore(new CallExpr(PRIM_MOVE, bundle_buf, allocated_args));
 
-
   // serialize the fields into the allocated space.
   i = 1;
   for_actuals(arg, fcall) 
@@ -576,7 +575,6 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
                                      bundle_buf, serializedSize[i]));
     i++;
   }
-
 
   if (firstCall) {
     // Add autoDestroy calls
