@@ -1484,7 +1484,11 @@ module ChapelArray {
     // runtime checks (are the domains' index sets the same; are
     // the domain maps/distributions equivalent?)
     //
-    proc chpl_checkArrArgDoms(formalDom: domain) {
+    // The 'runtimeChecks' argument indicates whether or not runtime
+    // checks should be performed and is set based on the value of
+    // the --no-formal-domain-checks flag.
+    //
+    inline proc chpl_checkArrArgDoms(formalDom: domain, param runtimeChecks: bool) {
       //
       // It's a compile-time error if the ranks don't match
       //
@@ -1511,9 +1515,9 @@ module ChapelArray {
 
         //
         // Then, at run-time, check that the domain map's values are
-        // the same.
+        // the same (do this only if the runtime checks argument is true).
         //
-        if (formalDom.dist != this.domain.dist) then
+        if (runtimeChecks && formalDom.dist != this.domain.dist) then
           halt("Domain map mismatch passing array argument:\n",
                "  Formal domain map is: ", formalDom.dist, "\n",
                "  Actual domain map is: ", this.domain.dist);
@@ -1521,9 +1525,10 @@ module ChapelArray {
 
       //
       // If we pass those checks, verify at runtime that the index
-      // sets of the formal and actual match.
+      // sets of the formal and actual match (do this only if the
+      // runtime checks argument is true).
       //
-      if (formalDom != this.domain) then
+      if (runtimeChecks && formalDom != this.domain) then
         halt("Domain mismatch passing array argument:\n",
 	     "  Formal domain is: ", formalDom, "\n",
              "  Actual domain is: ", this.domain);

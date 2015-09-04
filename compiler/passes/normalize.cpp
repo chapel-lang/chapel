@@ -1329,7 +1329,8 @@ static void fixup_array_formals(FnSymbol* fn) {
           fn->insertAtHead(new CallExpr(new CallExpr(".", arg,
                                                      new_StringSymbol("chpl_checkArrArgDoms")
                                                      ),
-                                        call->get(1)->copy()));
+                                        call->get(1)->copy(), 
+                                        (fNoFormalDomainChecks ? gFalse : gTrue)));
         }
       }
     }
