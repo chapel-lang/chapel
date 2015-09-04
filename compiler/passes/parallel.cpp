@@ -326,15 +326,15 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
   // Put the bundle into a void* argument
   VarSymbol *allocated_args = newTemp(astr("_args_vfor", fn->name), dtCVoidPtr);
-  fcall->insertBefore(new DefExpr(allocated_arg));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, allocated_arg, tempc));
+  fcall->insertBefore(new DefExpr(allocated_args));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, allocated_args, tempc));
 
   // Put the size of the bundle into the next argument
   VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
                              dtInt[INT_SIZE_DEFAULT]);
   fcall->insertBefore(new DefExpr(tmpsz));
   fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz,
-                                   new CallExpr(PRIM_SIZEOF, ctype)));
+                                   new CallExpr(PRIM_SIZEOF, ctype->symbol)));
 
   // Find the _EndCount argument so we can pass that explicitly as the
   // first argument to a task launch function.
