@@ -659,9 +659,11 @@ can be omitted and/or the domain of the array can be queried or
 omitted.  In such cases, the argument is generic and is discussed
 in~\rsec{Formal_Arguments_of_Generic_Array_Types}.
 
-If a non-queried domain is specified in the array type of a formal
-argument, the domain must match the domain of the actual argument.
-This is verified at runtime.
+If a formal array argument specifies a domain as part of its type
+signature, the domain of the actual argument must represent the same
+index set.  If the formal array's domain was declared using an
+explicit domain map, the actual array's domain must use an equivalent
+domain map.
 
 
 \subsection{Array Promotion of Scalar Functions}
