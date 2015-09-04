@@ -100,17 +100,16 @@ proc luLikeMultiply(
 
 
 proc matrixMult_ijk(
-    const m : int,
-    const p : int,
-    const n : int,
-    const A : [1..m, 1..p] int,
-    const B : [1..p, 1..n] int,
-    C : [1..m, 1..n] int)
+    outerDim,
+    innerDim,
+    const A : [outerDim, innerDim] int,
+    const B : [innerDim, outerDim] int,
+    C : [outerDim, outerDim] int)
 {
-    for i in 1..m {
-        for j in 1..n {
+    for i in outerDim {
+        for j in outerDim {
             C[i,j] = 0;
-            for k in 1..p {
+            for k in innerDim {
                 C[i,j] += A[i,k] * B[k,j];
             }
         }
@@ -162,9 +161,8 @@ proc main() {
     }
 
     matrixMult_ijk(
-        n-blkSize,
-        blkSize,
-        n-blkSize,
+        1+blkSize..n,
+        1..1+blkSize-1,
         data(aRegion),
         data(bRegion),
         data(solRegion));
