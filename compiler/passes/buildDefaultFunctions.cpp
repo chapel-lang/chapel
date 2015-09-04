@@ -461,7 +461,7 @@ static void build_chpl_entry_points() {
   // support them).
   //
   if (fMinimalModules == false) {
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", gFalse)));
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
   }
 

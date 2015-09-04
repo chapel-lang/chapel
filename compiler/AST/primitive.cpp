@@ -282,7 +282,16 @@ returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
     forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-      if (!strcmp(ts->name, "_EndCount")) {
+      const char* net = "_EndCount_r";
+      const char* proc = "_EndCount_a";
+      const char* prefix = NULL;
+      if (!strcmp(CHPL_NETWORK_ATOMICS, "none")) {
+        prefix = proc;
+      } else {
+        prefix = net;
+      }
+      bool startsWith = strncmp(prefix, ts->cname, strlen(prefix)) == 0;
+      if (startsWith) {
         endCountType = ts->type;
         break;
       }

@@ -826,12 +826,13 @@ module ChapelBase {
   //
   
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
-  type taskCntType = if useAtomicTaskCnt then atomic int
-                                         else int;
+
   pragma "no default functions"
   class _EndCount {
-    var i: atomic int,
-        taskCnt: taskCntType,
+    type iType;
+    type taskType;
+    var i: iType,
+        taskCnt: taskType,
         taskList: _task_list = _defaultOf(_task_list);
   }
   
@@ -840,8 +841,14 @@ module ChapelBase {
   // locale as the sync/cofall/cobegin was initiated on and thus the
   // same locale on which the object is allocated.
   pragma "dont disable remote value forwarding"
-  inline proc _endCountAlloc() {
-    return new _EndCount();
+  inline proc _endCountAlloc(param forceLocalTypes : bool) {
+    type taskCntType = if !forceLocalTypes && useAtomicTaskCnt then atomic int
+                                           else int;
+    if forceLocalTypes {
+      return new _EndCount(chpl__processorAtomicType(int), taskCntType);
+    } else {
+      return new _EndCount(chpl__atomicType(int), taskCntType);
+    }
   }
   
   // This function is called once by the initiating task.  As above, no
@@ -857,7 +864,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "no remote memory fence"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
-    if useAtomicTaskCnt {
+    if isAtomicType(e.taskCnt.type) {
       e.i.add(1, memory_order_release);
       e.taskCnt.add(1, memory_order_release);
     } else {
@@ -899,7 +906,7 @@ module ChapelBase {
     e.i.waitFor(0, memory_order_acquire);
 
     if countRunningTasks {
-      const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
+      const taskDec = if isAtomicType(e.taskCnt.type) then e.taskCnt.read() else e.taskCnt;
       // taskDec-1 to adjust for the task that was waiting for others to finish
       here.runningTaskCntSub(taskDec-1);  // increment is in _upEndCount()
     } else {
