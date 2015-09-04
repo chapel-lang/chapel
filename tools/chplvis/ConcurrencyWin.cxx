@@ -22,6 +22,7 @@
 
 #include "ConcurrencyWin.h"
 #include "chplvis.h"
+#include "ViewField.h"   // for heatColor
 
 #include <FL/fl_draw.H>
 
@@ -36,8 +37,9 @@ void ConcurrencyWin::updateData (long loc, long tag)
   localeNum = loc;
   tagNum = tag;
   curTag = VisData.getTagData(tagNum);
-  snprintf(tmp, sizeof(tmp), "Concurrency for Locale %ld, tag %s, max %ld",
-           loc, curTag->name.c_str(), curTag->locales[loc].maxConc);
+  snprintf(tmp, sizeof(tmp), "Concurrency for Locale %ld, tag %s, max %ld, max Clock %f",
+           loc, curTag->name.c_str(), curTag->locales[loc].maxConc,
+           curTag->locales[loc].maxTaskClock);
   title->copy_label(tmp);
   dataBox->buildData();
   redraw();
@@ -266,9 +268,10 @@ void ConcurrencyData::buildData(void) {
           break;
         }
         curCol = 0;
+        tmpTagNo = tl_itr->second;
         while (greedy[curCol] != 0) curCol++;
         snprintf (tmp, sizeof(tmp), "TAG: %s", 
-                  VisData.getTagData(tl_itr->second)->name.c_str());
+                  VisData.getTagData(tmpTagNo)->name.c_str());
         b = new Fl_Box(FL_BORDER_BOX, 10+60*curCol, 40+25*curLine,
                                8+7*strlen(tmp), 20, NULL);
         b->copy_label(tmp);
@@ -287,12 +290,19 @@ void ConcurrencyData::buildData(void) {
         snprintf (tmp, sizeof(tmp), "%c %ld", 
                    theTask.taskRec->isLocal() ? 'L' : 'F', tl_itr->second);
         b->copy_label(tmp);
+        b->color(heatColor(theTask.taskClock,
+                           VisData.getTagData(parent->tagNum)->
+                           locales[parent->localeNum].maxTaskClock));
         add(b);
         if (theTask.taskRec->isLocal()) {
-          snprintf (tmp, sizeof(tmp), "%s:%ld", theTask.taskRec->srcName(),
+          snprintf (tmp, sizeof(tmp), "[%f] %s:%ld", 
+                    theTask.taskClock, theTask.taskRec->srcName(),
                     theTask.taskRec->srcLine());
-          b->copy_tooltip(tmp);
+        } else {
+          snprintf (tmp, sizeof(tmp), "[%f] <no file information>", 
+                    theTask.taskClock);
         }
+         b->copy_tooltip(tmp);
         curLine++;
         break;
 

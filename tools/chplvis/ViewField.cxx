@@ -70,6 +70,7 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   
 };
 
+#if 0
 ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *label)
   : Fl_Box (b, bx, by, bw, bh, 0)
 {
@@ -93,8 +94,9 @@ ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *
   */
   infoTop = show_Tasks;
   showcomms = true;
+  resizable(self);
 };
-
+#endif
 
 // Private methods 
 
@@ -113,6 +115,8 @@ void ViewField::allocArrays()
       }
       if (theLocales[ix].ccwin != NULL) 
         delete theLocales[ix].ccwin;
+      if (theLocales[ix].b != NULL) 
+        delete theLocales[ix].b;
     }
     delete [] theLocales;
   }
@@ -152,6 +156,7 @@ void ViewField::allocArrays()
   for (ix = 0; ix < numlocales; ix++) {
     theLocales[ix].win = NULL;
     theLocales[ix].ccwin = NULL;
+    theLocales[ix].b = NULL;
   }
 
   if (tags != NULL) {
@@ -262,6 +267,35 @@ void ViewField::makeTagsMenu(void)
   }
 }
 
+void ViewField::setTooltip ( int ix, bool isInt, int ival, double fval)
+{
+    char tmpchars[100];
+    if (theLocales != NULL) {
+      localeInfo *loc = &theLocales[ix];
+
+      // Sets up an invisible box under each locale that responds to tooltip requests!
+      loc->x = cx + (int) rint(rx * sin (angle * ix - start));
+      loc->y = cy - (int) rint(ry * cos (angle * ix - start));
+      loc->w = 30;
+      loc->h = 30;
+
+      // Invisible button for the tooltip!
+      if (loc->b == NULL) {
+        loc->b = new Fl_Box (FL_NO_BOX, loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h, NULL);
+        parent()->add(loc->b);
+        loc->b->show();
+      } else {
+        loc->b->position(loc->x-loc->w/2,loc->y-loc->h/2);
+        loc->b->size(loc->w,loc->h);
+      }
+      if (isInt)
+        snprintf (tmpchars, sizeof(tmpchars), "%d", ival);
+      else
+        snprintf (tmpchars, sizeof(tmpchars), "%lf", fval);
+      loc->b->copy_tooltip(tmpchars);
+    }
+}
+
 
 void ViewField::drawLocale ( int ix, Fl_Color col)
 {
@@ -269,14 +303,14 @@ void ViewField::drawLocale ( int ix, Fl_Color col)
     char ixchars[10];
     if (theLocales != NULL) {
       localeInfo *loc = &theLocales[ix];
-      
+
       // Draw a locale ...
       loc->x = cx + (int) rint(rx * sin (angle * ix - start));
       loc->y = cy - (int) rint(ry * cos (angle * ix - start));
       snprintf (ixchars, 10, "%d", ix);
       loc->w = 30;
       loc->h = 30;
-      
+
       fl_color(col);
       fl_rectf(loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h);
       fl_color(FL_BLACK);
@@ -340,6 +374,9 @@ void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
 
 void ViewField::draw()
 {
+  int ix;
+  int iy;
+
   //printf ("ViewField draw, numlocales is %d\n", numlocales);
   //printf ("draw: x,y = %d,%d, h,w = %d,%d\n", x(), y(), w(), h());
 
@@ -348,9 +385,24 @@ void ViewField::draw()
   rx = 0.85 * w() / 2;
   ry = 0.85 * h() / 2;
 
+  for (ix = 0; ix < numlocales; ix++) {
+    switch (infoTop) {
+    case show_Tasks:
+      setTooltip(ix, true, curTagData->locales[ix].numTasks, 0);
+      break;
+    case show_CPU:
+      setTooltip(ix, false, 0, curTagData->locales[ix].Cpu);
+      break;
+    case show_Clock:
+      setTooltip(ix, false, 0, curTagData->locales[ix].clockTime);
+      break;
+    case show_Concurrency:
+      setTooltip(ix, true, curTagData->locales[ix].maxConc, 0);
+    }
+  }
+
   Fl_Box::draw();
 
-  int ix;
   for (ix = 0; ix < numlocales; ix++) {
     switch (infoTop) {
     case show_Tasks:
@@ -361,12 +413,12 @@ void ViewField::draw()
       break;
     case show_Clock:
       drawLocale(ix, heatColor(curTagData->locales[ix].clockTime, curTagData->maxClock));
+      break;
     case show_Concurrency:
       drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
     }
   }
 
-  int iy;
   for (ix = 0; ix < numlocales-1; ix++) {
     for (iy = ix + 1; iy < numlocales; iy++) {
       int  com2ix, com2iy, comMax; 
@@ -391,6 +443,7 @@ void ViewField::draw()
       }
     }
   }
+
   // Set up the info widget correctly
   if (showcomms)
     Info->showComms();

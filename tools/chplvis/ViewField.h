@@ -44,6 +44,8 @@ struct localeInfo {
   LocaleWin *win;
   // Concurrency Window information.
   ConcurrencyWin *ccwin;
+  // Locale box ... for tool tips.
+  Fl_Box *b;
 };
 
 // Information stored for every comm direction
@@ -103,8 +105,8 @@ class ViewField : public Fl_Box {
 
   ViewField (int bx, int by, int bw, int bh, const char *label = 0);
 
-  ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh,
-             const char *label = 0);
+  //  ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh,
+  //             const char *label = 0);
 
   //  Virtual methods to override
   void draw (void);
@@ -126,6 +128,9 @@ class ViewField : public Fl_Box {
     }
 
   int  getNumLocales (void) { return numlocales; }
+
+  // Add an invisible under the locale
+  void setTooltip ( int ix, bool isInt, int ival, double fval);
 
   // Draw a "locale box, with ix as the label on it
   void drawLocale (int ix, Fl_Color col);

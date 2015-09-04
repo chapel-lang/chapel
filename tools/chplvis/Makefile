@@ -70,11 +70,11 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
-chplvis.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h
-ViewField.o: ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h
-DataModel.o: DataModel.h Event.h
+chplvis.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
+ViewField.o: ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
+DataModel.o: DataModel.h Event.h StringCache.h
 InfoBar.o: InfoBar.h ViewField.h chplvis.h
 LocaleWin.o: LocaleWin.h
 CommWin.o: CommWin.h
-ConcurrencyWin.o: ConcurrencyWin.h DataModel.h chplvis.h
+ConcurrencyWin.o: ConcurrencyWin.h DataModel.h chplvis.h StringCache.h
 Event.o: Event.h
