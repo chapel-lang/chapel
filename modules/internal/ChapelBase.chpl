@@ -1163,6 +1163,37 @@ module ChapelBase {
   proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
+ 
+  // + operators for c_void_ptr
+  // (used in autoSerialize functions)
+  inline proc +(a: c_void_ptr, b: integral) return __primitive("+", a, b);
+
+  pragma "compiler generated" 
+  proc chpl__autoSerializeSize(ref x):int {
+    // this might be wrong...
+    extern proc sizeof(type x): size_t;
+    return sizeof(x.type):int;
+  }
+ 
+ pragma "donor fn"
+ pragma "compiler generated" 
+ proc chpl__autoSerialize(ref x, dst:c_void_ptr) {
+    // this might be wrong...
+    extern proc sizeof(type x): size_t;
+    extern proc memcpy(dst: c_void_ptr, ref src, num: size_t);
+    pragma "no copy" var tmp = chpl__autoCopy(x);
+    memcpy(dst, tmp, sizeof(tmp.type));
+  }
+ 
+  pragma "compiler generated" 
+  proc chpl__autoDeserialize(ref x, src:c_void_ptr):int {
+    // this might be wrong...
+    extern proc sizeof(type x): size_t;
+    extern proc memcpy(ref dst, src: c_void_ptr, num: size_t);
+    var sz = sizeof(x.type);
+    memcpy(x, src, sz);
+    return sz:int;
+  }
   
   // Type functions for representing function types
   inline proc func() type { return __primitive("create fn type", void); }

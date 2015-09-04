@@ -28,7 +28,7 @@
 #include "stmt.h"
 #include "expr.h"
 
-#include "resolution.h" // for autoCopyMap and autoDestroyMap.
+#include "resolution.h" // for getAutoCopy etc
 #include "passes.h" // for insertReferenceTemps
 
 // TODO: This should be moved to symbol.cpp
@@ -956,7 +956,7 @@ static Expr* getLastStmtInBB(Expr* stmt)
 static void insertAutoDestroyAfterStmt(SymExpr* se)
 {
   Symbol* sym = se->var;
-  FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
+  FnSymbol* autoDestroy = toFnSymbol(getAutoDestroy(sym->type));
   if (isPOD(sym->type) || autoDestroy == NULL)
     // This type does not have a destructor, so we don't have to add an
     // autoDestroy call for it.
@@ -1182,7 +1182,7 @@ static void insertAutoCopy(SymExpr* se)
 {
   SET_LINENO(se);
   Symbol* sym = se->var;
-  FnSymbol* autoCopyFn = autoCopyMap.get(sym->type);
+  FnSymbol* autoCopyFn = getAutoCopy(sym->type);
 
   if (isPOD(sym->type) || autoCopyFn == NULL)
     return;
@@ -1468,7 +1468,7 @@ OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
       sym == _fn->getReturnSymbol())
     return;
 
-  FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
+  FnSymbol* autoDestroy = toFnSymbol(getAutoDestroy(sym->type));
   if (isPOD(sym->type) || autoDestroy == NULL)
     // This type does not have a destructor, so we don't have a add an
     // autoDestroy call for it.

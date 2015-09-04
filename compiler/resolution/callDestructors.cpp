@@ -240,7 +240,7 @@ static bool stmtDefinesAnAutoDestroyedVariable(Expr* stmt) {
         // There are variables that have been tagged with an AUTO_DESTROY
         // flag, presumably before the type was known, that should not in
         // fact be auto-destroyed.  Don't gum things up by collecting them.
-        if (autoDestroyMap.get(var->type) != 0) {
+        if (getAutoDestroy(var->type) != 0) {
           if (var->isType() == false) {
             retval = true;
           }
@@ -277,7 +277,7 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
     for_vector(GotoStmt, gotoStmt, gotoStmts) {
       if (gotoExitsBlock(gotoStmt, block)) {
         forv_Vec(VarSymbol, var, vars) {
-          if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+          if (FnSymbol* autoDestroyFn = getAutoDestroy(var->type)) {
             SET_LINENO(var);
             
             gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
@@ -385,7 +385,7 @@ static void updateBlockExit(Expr*            stmt,
                             BlockStmt*       block,
                             Vec<VarSymbol*>& vars) {
   forv_Vec(VarSymbol, var, vars) {
-    if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+    if (FnSymbol* autoDestroyFn = getAutoDestroy(var->type)) {
       SET_LINENO(var);
       stmt->insertAfter(new CallExpr(autoDestroyFn, var));
     }
@@ -692,13 +692,13 @@ fixupDestructors() {
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
               new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-            FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+            FnSymbol* autoDestroyFn = getAutoDestroy(field->type);
             if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY))
               fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
             else
               fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
           }
-        } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
+        } else if (FnSymbol* autoDestroyFn = getAutoDestroy(field->type)) {
           VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);
           fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           fn->insertBeforeReturnAfterLabel(
@@ -761,7 +761,7 @@ static void addAutoDestroyCallsForModule(ModuleSymbol* mod, FnSymbol* fn,
         if (var->hasFlag(FLAG_TYPE_VARIABLE))
           continue;
 
-        if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type))
+        if (FnSymbol* autoDestroy = getAutoDestroy(var->type))
         {
           // Skip destructors for class types (only nude RWT types at this point).
           if (AggregateType* at = toAggregateType(var->type))
@@ -900,7 +900,7 @@ static void insertYieldTemps()
       Symbol* tmp = newTemp("_yield_expr_tmp_", type);
       Expr* stmt = call->getStmtExpr();
       stmt->insertBefore(new DefExpr(tmp));
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(autoCopyMap.get(type), yieldExpr->remove())));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(getAutoCopy(type), yieldExpr->remove())));
       call->insertAtHead(new SymExpr(tmp)); // New first argument.
     }
   }

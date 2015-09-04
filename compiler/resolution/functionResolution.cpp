@@ -223,8 +223,17 @@ static std::map<FnSymbol*, FnSymbol*> functionCaptureMap; //loopup table/cache f
 static Map<FnSymbol*,const char*> innerCompilerWarningMap;
 static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 
-Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
-Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
+struct autoCopyFns {
+  FnSymbol* autoCopy; // chpl__autoCopy function
+  FnSymbol* autoDestroy; // chpl__autoDestroy function
+
+  // serialize/de-serialize to/from argument bundles 
+  FnSymbol* autoSerializeSize;
+  FnSymbol* autoSerialize;
+  FnSymbol* autoDeserialize;
+};
+
+Map<Type*,autoCopyFns*> autoFnsMap; // type -> autoCopy etc
 
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
@@ -239,8 +248,7 @@ static bool typeHasRefField(Type *type);
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
 static bool hasUserAssign(Type* type);
-static void resolveAutoCopy(Type* type);
-static void resolveAutoDestroy(Type* type);
+static void resolveAutoFns(Type* type);
 static void resolveOther();
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
@@ -457,7 +465,12 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
   BlockStmt* block = new BlockStmt();
   block->insertAtHead(call);
 
-  if (type->defaultInitializer) {
+  if (type->defaultInitializer /*&&
+      // workaround for infinite loop in iterator/initCopy
+      // The right way to handle this is probably to stop
+      // storing the iterator function in the iterator
+      // record type's defaultInitializer.
+      !type->symbol->hasEitherFlag(FLAG_ITERATOR_CLASS, FLAG_ITERATOR_RECORD) */){
     if (type->defaultInitializer->instantiationPoint)
       type->defaultInitializer->instantiationPoint->insertAtHead(block);
     else
@@ -530,41 +543,148 @@ hasUserAssign(Type* type) {
 
 
 static void
-resolveAutoCopy(Type* type) {
+resolveAutoFns(Type* type) {
+  struct autoCopyFns* fns;
+
+  fns = autoFnsMap.get(type);
+  //printf("get of %p gives %p\n", type, fns);
+  if (!fns ) {
+    fns = new autoCopyFns;
+    memset(fns, 0, sizeof(struct autoCopyFns));
+    autoFnsMap.put(type, fns);
+    //printf("put to %p value %p\n", type, fns);
+    //printf("Creating new autoFns : ");
+    //nprint_view(type);
+  }
+
   SET_LINENO(type->symbol);
-  Symbol* tmp = newTemp(type);
-  chpl_gen_main->insertAtHead(new DefExpr(tmp));
-  CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
-  FnSymbol* fn = resolveUninsertedCall(type, call);
-  resolveFns(fn);
-  autoCopyMap.put(type, fn);
-  tmp->defPoint->remove();
+
+  // resolve auto copy
+  if (!fns->autoCopy) {
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    if( fn ) fn->addFlag(FLAG_AUTO_COPY_FN);
+    resolveFns(fn);
+    fns->autoCopy = fn;
+    tmp->defPoint->remove();
+  }
+  // resolve auto destroy
+  if (!fns->autoDestroy) {
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    if( fn ) fn->addFlag(FLAG_AUTO_DESTROY_FN);
+    resolveFns(fn);
+    fns->autoDestroy = fn;
+    tmp->defPoint->remove();
+  }
+
+  // only resolve autoSerialize etc for records
+  if( !isRecord(type) ) return;
+  // only resolve autoSerialize etc for not references
+  if( isReferenceType(type) ) return;
+
+  //print_view(type);
+  //printf("resolving auto serialize size\n");
+
+  // resolve auto serialize size
+  if (!fns->autoSerializeSize) {
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__autoSerializeSize", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    if( fn ) fn->addFlag(FLAG_AUTO_SERIALIZE_SIZE);
+    resolveFns(fn);
+    // TODO - check int return type
+    fns->autoSerializeSize = fn;
+    tmp->defPoint->remove();
+  }
+  //printf("resolving auto serialize\n");
+  // resolve auto serialize
+  if (!fns->autoSerialize) {
+    Symbol* tmp = newTemp(type);
+    Symbol* tmp2 = newTemp(dtCVoidPtr);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    chpl_gen_main->insertAtHead(new DefExpr(tmp2));
+    CallExpr* call = new CallExpr("chpl__autoSerialize", tmp, tmp2);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    if( fn ) fn->addFlag(FLAG_AUTO_SERIALIZE);
+
+
+    //printf("auto serialize is this : \n");
+    //print_view(fn);
+
+    resolveFns(fn);
+    
+    //printf("auto serialize is this after resolve : \n");
+    //print_view(fn);
+
+
+    // TODO - check void return type
+    fns->autoSerialize = fn;
+    tmp->defPoint->remove();
+    tmp2->defPoint->remove();
+  }
+  //printf("resolving auto deserialize\n");
+  // resolve auto deserialize
+  if (!fns->autoDeserialize) {
+    Symbol* tmp = newTemp(type);
+    Symbol* tmp2 = newTemp(dtCVoidPtr);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    chpl_gen_main->insertAtHead(new DefExpr(tmp2));
+    CallExpr* call = new CallExpr("chpl__autoDeserialize", tmp, tmp2);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    if( fn ) fn->addFlag(FLAG_AUTO_DESERIALIZE);
+    resolveFns(fn);
+    // TODO - check int return type
+    fns->autoDeserialize = fn;
+    tmp->defPoint->remove();
+    tmp2->defPoint->remove();
+  }
+
+  //printf("done resolving auto fns for type : ");
+  //print_view(type);
 }
 
 
-static void
-resolveAutoDestroy(Type* type) {
-  SET_LINENO(type->symbol);
-  Symbol* tmp = newTemp(type);
-  chpl_gen_main->insertAtHead(new DefExpr(tmp));
-  CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
-  FnSymbol* fn = resolveUninsertedCall(type, call);
-  fn->addFlag(FLAG_AUTO_DESTROY_FN);
-  resolveFns(fn);
-  autoDestroyMap.put(type, fn);
-  tmp->defPoint->remove();
-}
 
+void getAutoFnKeys(Vec<Type*> & keys) {
+  autoFnsMap.get_keys(keys);
+}
 
 FnSymbol* getAutoCopy(Type *t) {
-  return autoCopyMap.get(t);
+  struct autoCopyFns* fns = autoFnsMap.get(t);
+  if (!fns) return NULL;
+  return fns->autoCopy;
 }
 
 
 FnSymbol* getAutoDestroy(Type* t) {
-  return autoDestroyMap.get(t);
+  struct autoCopyFns* fns = autoFnsMap.get(t);
+  if (!fns) return NULL;
+  return fns->autoDestroy;
 }
 
+FnSymbol* getAutoSerializeSize(Type* t) {
+  struct autoCopyFns* fns = autoFnsMap.get(t);
+  if (!fns) return NULL;
+  return fns->autoSerializeSize;
+}
+
+FnSymbol* getAutoSerialize(Type* t) {
+  struct autoCopyFns* fns = autoFnsMap.get(t);
+  if (!fns) return NULL;
+  return fns->autoSerialize;
+}
+
+FnSymbol* getAutoDeserialize(Type* t) {
+  struct autoCopyFns* fns = autoFnsMap.get(t);
+  if (!fns) return NULL;
+  return fns->autoDeserialize;
+}
 
 const char* toString(Type* type) {
   return type->getValType()->symbol->name;
@@ -800,6 +920,8 @@ protoIteratorClass(FnSymbol* fn) {
   // of the iterator record type.  Since we are only creating shell functions
   // here, we still need a way to obtain the original iterator function, so we
   // can fill in the bodies of the above 9 methods in the lowerIterators pass.
+  // This re-use of the default initializer for this purpose dates
+  //  back to antiquity in commit 0326c9ce465c4b83060939c60699d82b80fe2077
   ii->irecord->defaultInitializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
@@ -813,6 +935,12 @@ protoIteratorClass(FnSymbol* fn) {
   // This is a bit of a kludge.  The defaultInitializer field of the iterator
   // class type is reused to stash the getIterator function for later use.
   ii->iclass->defaultInitializer = ii->getIterator;
+  
+  
+  // Temporary. Resolve iterator autoFns now so that we can better
+  // see the infinite loop.
+  resolveAutoFns(ii->iclass);
+  resolveAutoFns(ii->irecord); // issue occurs here
 }
 
 static FnSymbol* protoGetIterator(IteratorInfo* ii, FnSymbol* fn)
@@ -3468,6 +3596,9 @@ void resolveNormalCall(CallExpr* call) {
     print_view(call);
     gdbShouldBreakHere();
   }
+  //printf("resolving : ");
+  //nprint_view(call);
+  //printf("\n");
 
   resolveDefaultGenericType(call);
 
@@ -3635,6 +3766,11 @@ void resolveNormalCall(CallExpr* call) {
   if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 1);
   }
+
+  //printf("done resolving : ");
+  //print_view(call);
+  //printf("\n");
+
 }
 
 
@@ -6704,6 +6840,8 @@ resolveFns(FnSymbol* fn) {
   }
 
   if (fn->isIterator() && !fn->iteratorInfo) {
+    //printf("About to call protoIteratorClass for fn %p iteratorInfo %p\n",
+    //        fn, fn->iteratorInfo);
     protoIteratorClass(fn);
   }
 
@@ -7426,8 +7564,10 @@ static void resolveAutoCopies() {
         isDomImplType(ts->type) || isArrayImplType(ts->type) ||
         isDistImplType(ts->type))
     {
-      resolveAutoCopy(ts->type);
-      resolveAutoDestroy(ts->type);
+      //printf("in resolveAutoCopies : ");
+      //print_view(ts);
+
+      resolveAutoFns(ts->type);
     }
 
     if (isRecord(ts->type) ) {
@@ -7473,13 +7613,18 @@ static bool propagateNotPOD(Type* t) {
   }
 
   // make sure we have resolve auto copy/auto destroy.
-  resolveAutoCopy(t);
-  resolveAutoDestroy(t);
+  //printf("in propagateNotPOD : ");
+  //print_view(t);
+
+  resolveAutoFns(t);
 
   // also check for a non-compiler generated
   // autocopy/autodestroy.
-  FnSymbol* autoCopyFn = autoCopyMap.get(t);
-  FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
+  FnSymbol* autoCopyFn = getAutoCopy(t);
+  FnSymbol* autoDestroyFn = getAutoDestroy(t);
+  FnSymbol* autoSerializeSize = getAutoSerializeSize(t);
+  FnSymbol* autoSerialize = getAutoSerialize(t);
+  FnSymbol* autoDeserialize = getAutoDeserialize(t);
   FnSymbol* destructor = t->destructor;
 
   // Ignore invisible (compiler-defined) functions.
@@ -7487,6 +7632,12 @@ static bool propagateNotPOD(Type* t) {
     autoCopyFn = NULL;
   if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
     autoDestroyFn = NULL;
+  if (autoSerializeSize && autoSerializeSize->hasFlag(FLAG_COMPILER_GENERATED))
+    autoSerializeSize = NULL;
+  if (autoSerialize && autoSerialize->hasFlag(FLAG_COMPILER_GENERATED))
+    autoSerialize = NULL;
+  if (autoDeserialize && autoDeserialize->hasFlag(FLAG_COMPILER_GENERATED))
+    autoDeserialize = NULL;
   if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED))
     destructor = NULL;
 
@@ -7495,6 +7646,7 @@ static bool propagateNotPOD(Type* t) {
   // if it has a user-specified destructor, it's not pod
   if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
       autoCopyFn || autoDestroyFn ||
+      autoSerializeSize || autoSerialize || autoDeserialize ||
       destructor )
     notPOD = true;
 
@@ -8301,8 +8453,9 @@ static void buildRuntimeTypeInitFns() {
         build_constructors(runtimeType);
         buildDefaultDestructor(runtimeType);
         buildRuntimeTypeInitCopyFn(runtimeType);
-        resolveAutoCopy(runtimeType);
-        resolveAutoDestroy(runtimeType);
+        //printf("in build runtype type init fns : ");
+        //print_view(runtimeType);
+        resolveAutoFns(runtimeType);
       }
     }
   }

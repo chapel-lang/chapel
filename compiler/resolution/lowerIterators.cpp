@@ -2243,7 +2243,7 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   for_fields(field, irt) {
     SET_LINENO(field);
 //    AggregateType* fat = toAggregateType(field->type);
-    FnSymbol* autoCopy = autoCopyMap.get(field->type);
+    FnSymbol* autoCopy = getAutoCopy(field->type);
     if (autoCopy &&
         // For now, apply the autocopy only to non-class types.'
         // See the note in reconstructIRAutoDestroy() below.
@@ -2275,7 +2275,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type->getValType());
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
+    if (FnSymbol* autoDestroy = getAutoDestroy(field->type)) {
 #if 0
       // For now, ignore class types.  At present, only nude domain and array
       // implementation types have autoCopy and autoDestroy functions defined

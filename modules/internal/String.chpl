@@ -860,6 +860,51 @@ module String {
     return ret;
   }
 
+  proc chpl__autoSerializeSize(ref x:string):int {
+    extern proc sizeof(type x): size_t;
+    return sizeof(int):int + x.length;
+  }
+
+  pragma "donor fn"
+  proc chpl__autoSerialize(ref x:string, dst:c_void_ptr) {
+    extern proc sizeof(type x): size_t;
+    extern proc memcpy(dst: c_void_ptr, src: bufferType, num: size_t);
+    extern proc memcpy(dst: c_void_ptr, ref src, num: size_t);
+    var size_int = sizeof(int);
+    var localx = x.localize();
+    var size_str:int = localx.length;
+    memcpy(dst, size_str, size_int);
+    memcpy(dst + size_int, localx.buff, size_str:size_t);
+  }
+
+  proc chpl__autoDeserialize(ref x:string, src:c_void_ptr):int {
+    extern proc sizeof(type x): size_t;
+    extern proc memcpy(ref dst, src: c_void_ptr, num: size_t);
+    var size_int = sizeof(int);
+    var len:int;
+
+    // Read the length
+    memcpy(len, src, size_int);
+
+    // Get the pointer to the buffer we need to copy
+    var buff = (src + size_int):bufferType;
+
+    // Manually set x so reinitString will work correctly.
+    // This function is passed a stack variable which is not
+    // yet initialized at all. We can't use = to set it
+    // to a default-initialized record since we overload =...
+    x.len = 0;
+    x._size = 0;
+    x.buff = nil;
+    x.owned = true;
+
+    // Set up the string with the buffer
+    x.reinitString(buff, len, len, true);
+
+    // Return the amount of data we consumed from src.
+    return sizeof(int):int + len;
+  }
+
   /*
    * NOTES: Just a word on memory allocation in the generated code.
    * Any function that returns a string copies the returned value
@@ -1274,6 +1319,11 @@ module String {
   inline proc _cast(type t, cs: c_string_copy) where t == bufferType {
     return __primitive("cast", t, cs);
   }
+
+  inline proc _cast(type t, cs: c_void_ptr) where t == bufferType {
+    return __primitive("cast", t, cs);
+  }
+
 
   // Cast from c_string to string
   proc _cast(type t, cs: c_string) where t == string {

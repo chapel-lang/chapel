@@ -26,8 +26,6 @@ class CallInfo;
 
 extern SymbolMap paramMap;
 extern Vec<CallExpr*> callStack;
-extern Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
-extern Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
 
@@ -69,9 +67,13 @@ void reorderActuals(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* inf
 void coerceActuals(FnSymbol* fn, CallInfo* info);
 FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
+void getAutoFnKeys(Vec<Type*> & keys);
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
-
+FnSymbol* getAutoSerializeSize(Type* t);
+FnSymbol* getAutoSerialize(Type* t);
+FnSymbol* getAutoDeserialize(Type* t);
+ 
 bool isPOD(Type* t);
 
 #endif
