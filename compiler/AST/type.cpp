@@ -1496,6 +1496,17 @@ void initPrimitiveTypes() {
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = NULL;
 
+  // Like c_string_copy but unowned.
+  // Could be == c_ptr(int(8)) e.g.
+  // used in serialize/deserialize interface for argument bundles.
+  dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr->symbol->addFlag(FLAG_IGNORE_NOINIT);
+  dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCVoidPtr->defaultValue = gOpaque;
+  CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
+  gCVoidPtr->cname = "NULL";
+  gCVoidPtr->addFlag(FLAG_EXTERN);
+
   dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
   dtFile = createPrimitiveType ("_file", "_cfile");
