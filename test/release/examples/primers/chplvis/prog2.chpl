@@ -1,6 +1,6 @@
 // Example 2 of use of VisualDebug module and chplvis tool.
-// Read the file chplvis.html with a browser to understand
-// this program.
+// Read the file doc/chplvis/chplvis.rst for full documentation
+// on chplvis.
 
 use BlockDist;
 use VisualDebug;
@@ -19,14 +19,19 @@ proc main() {
    startVdebug ("E2");
 
    // First computation step ... a simple forall
+   // Even though the data is distributed, the computation is
+   // on Locale 0.  chplvis shows no computation on locales
+   // other than 0.   Domain is not dmapped.
    forall i in Domain do data[i] += here.id + 1;
    
    // Write the result, we want to see the results of the above
-   // so we tag before we continue.
+   // so we tag before we continue.  Computation only on locale 0.
    tagVdebug("writeln 1");
    writeln("data= ", data);
 
    // Second computation step ... using the distributed domain
+   // in the forall and thus computation is distributed.  Again,
+   // chplvis shows computation on all locales.
    tagVdebug("step 2");
    forall i in mapDomain do data[i] += here.id+1;
 
@@ -34,7 +39,7 @@ proc main() {
    pauseVdebug();
    writeln("data2= ", data);
 
-   // Reduction step
+   // Reduction step, computation on all locales.
    tagVdebug("reduce");
    var i = + reduce data;
 
