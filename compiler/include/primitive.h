@@ -218,6 +218,8 @@ enum PrimitiveTag {
   PRIM_CAPTURE_FN,
   PRIM_CREATE_FN_TYPE,
 
+  PRIM_MEMCPY,                  // memcpy(dst, src, size)
+
   PRIM_STRING_COPY,
   PRIM_CAST_TO_VOID_STAR,       // Cast the object argument to void*.
 
