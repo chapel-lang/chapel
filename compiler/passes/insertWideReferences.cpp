@@ -681,7 +681,8 @@ static void addKnownWides() {
       // Get the arg bundle type for an on-stmt. Testing against a name like
       // "_class_localson_fn" is NOT enough, because sometimes the name is
       // a bit more complicated. Recursive iterators may introduce this.
-      AggregateType* ag = toAggregateType(fn->getFormal(2)->type);
+      ArgSymbol* bundle_class = toArgSymbol(toDefExpr(fn->formals.tail)->sym);
+      AggregateType* ag = toAggregateType(bundle_class->type);
 
       for_fields(fi, ag) {
         if (isRecord(fi->type)) {

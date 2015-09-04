@@ -1506,15 +1506,6 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
 }
 
 static
-GenRet codegenFieldPtr(GenRet base, Symbol* field) {
-  const char* cname = NULL;
-  const char* name = NULL;
-  cname = field->cname;
-  name = field->name;
-  return codegenFieldPtr(base, cname, name, field_normal);
-}
-
-static
 GenRet codegenFieldPtr(GenRet base, const char* field) {
   const char* cname = NULL;
   const char* name = NULL;
@@ -5522,38 +5513,19 @@ GenRet CallExpr::codegen() {
     genFnName = "chpl_taskListAddCoStmt";
   }
   if (gotBCbCf) {
-    // get(1) is a class containing bundled arguments
+    // get(1) is an end count symbol.
+    // get(2) is a buffer containing bundled arguments
+    // get(3) is the buffer's length (unused for task fns)
+    // get(4) is a dummy class type for the argument bundle
+
+    GenRet endCountPtr = codegenValue(get(1));
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
-    args[2] = codegenCastToVoidStar(codegenValue(get(1)));
+    args[2] = codegenCastToVoidStar(codegenValue(get(2)));
 
-    AggregateType *bundledArgsType = toAggregateType(toSymExpr(get(1))->typeInfo());
-    int endCountField = 0;
-    for (int i = 1; i <= bundledArgsType->fields.length; i++) {
-      if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                  "_ref(_EndCount)")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "__wide__ref__wide__EndCount")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "_EndCount")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "__wide__EndCount")) {
-        // Turns out there can be more than one such field. See e.g.
-        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
-        // INT_ASSERT(endCountField == 0);
-        endCountField = i;
-        // We have historically picked the first such field.
-        break;
-      }
-    }
-    // We need the endCountField.
-    INT_ASSERT(endCountField != 0);
+    Type *endCountType = endCountPtr.chplType;
 
-    GenRet endCountPtr =
-      codegenValue(
-          codegenFieldPtr(get(1), bundledArgsType->getField(endCountField)));
-    Type *endCountType = bundledArgsType->getField(endCountField)->typeInfo();
     // endCount is either an address or {locale, ptr} -- it is a class.
     GenRet endCountValue = codegenValue(endCountPtr);
     GenRet taskList;
@@ -5601,6 +5573,11 @@ GenRet CallExpr::codegen() {
     codegenCall(genFnName, args);
     return ret;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    // get(1) is the locale
+    // get(2) is a buffer containing bundled arguments
+    // get(3) is a the size of the buffer
+    // get(4) is a dummy class type for the argument bundle
+
     const char* fname = NULL;
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       fname = "chpl_executeOnNB";
@@ -5609,24 +5586,13 @@ GenRet CallExpr::codegen() {
     else
       fname = "chpl_executeOn";
 
-    TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
-    if (argType == NULL) {
-      INT_FATAL("could not get a type symbol");
-    }
-    
-    AggregateType* ct = toAggregateType(argType->typeInfo());
-    if (!ct) {
-      INT_FATAL("Expected a class type in %s argument", fname);
-    }
-    std::string ctype = ct->classStructName(true);
-
     GenRet locale_id = get(1);
 
     std::vector<GenRet> args(6);
     args[0] = codegenLocalAddrOf(locale_id);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_32);
     args[2] = get(2);
-    args[3] = codegenSizeof(ctype.c_str());
+    args[3] = get(3);
     args[4] = fn->linenum();
     args[5] = fn->fname();
 
