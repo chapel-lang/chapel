@@ -86,8 +86,7 @@ class ViewField : public Fl_Box {
     int getSize;            // size used for doing deallocate after changeing numlocales
     commInfo **comms;       // Also need to de/reallocate after changing numlocales
 
-    tagInfo *tags;    // Information for creating the tag menu
-    int tagsSize;
+    bool useUTags;
     int tagMenu;
 
     // Keep track of what is being displayed
@@ -105,14 +104,15 @@ class ViewField : public Fl_Box {
 
   ViewField (int bx, int by, int bw, int bh, const char *label = 0);
 
-  //  ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh,
-  //             const char *label = 0);
-
   //  Virtual methods to override
   void draw (void);
   int handle (int event);
 
   // Processing routines
+
+  bool usingUTags() { return useUTags; }
+
+  void toggleUTags() { useUTags = !useUTags; }
 
   void selectData (int tagNum);
 
