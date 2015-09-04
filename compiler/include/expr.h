@@ -336,6 +336,10 @@ const char* get_string(Expr* e); // fatal on failure
 CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md = NULL);
 void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                          Type* t, VarSymbol* md = NULL);
+void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
+                         Type* t, VarSymbol* md,
+                         Symbol *sizeTmp);
+
 CallExpr* callChplHereFree(BaseAST* p);
 
 // Walk the subtree of expressions rooted at "expr" in postorder, returning the

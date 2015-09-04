@@ -5903,14 +5903,9 @@ CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md) {
 //
 // This function should be used *after* resolution
 void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
-                         Type* t, VarSymbol* md) {
+                         Type* t, VarSymbol* md,
+                         Symbol *sizeTmp) {
   INT_ASSERT(resolved);
-  AggregateType* ct = toAggregateType(toTypeSymbol(t->symbol)->type);
-  Symbol* sizeTmp = newTemp("chpl_here_alloc_size", SIZE_TYPE);
-  CallExpr *sizeExpr = new CallExpr(PRIM_MOVE, sizeTmp,
-                                    new CallExpr(PRIM_SIZEOF,
-                                                 (ct != NULL) ?
-                                                 ct->symbol : t->symbol));
   VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(t->symbol->name);
   Symbol *allocTmp = newTemp("chpl_here_alloc_tmp", dtOpaque);
   CallExpr* allocExpr = new CallExpr(PRIM_MOVE, allocTmp,
@@ -5922,17 +5917,42 @@ void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
   if (insertAfter) {
     call->insertAfter(castExpr);
     call->insertAfter(allocExpr);
-    call->insertAfter(sizeExpr);
     call->insertAfter(new DefExpr(allocTmp));
-    call->insertAfter(new DefExpr(sizeTmp));
   } else {
-    call->insertBefore(new DefExpr(sizeTmp));
-    call->insertBefore(new DefExpr(allocTmp));
-    call->insertBefore(sizeExpr);
+    call->insertAfter(new DefExpr(allocTmp));
     call->insertBefore(allocExpr);
     call->insertBefore(castExpr);
   }
 }
+
+
+// This insert normalized call expressions for allocation of enough
+// space to hold a variable of the given type.
+//
+// This function should be used *after* resolution
+void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
+                         Type* t, VarSymbol* md) {
+  INT_ASSERT(resolved);
+  AggregateType* ct = toAggregateType(toTypeSymbol(t->symbol)->type);
+  Symbol* sizeTmp = newTemp("chpl_here_alloc_size", SIZE_TYPE);
+  CallExpr *sizeExpr = new CallExpr(PRIM_MOVE, sizeTmp,
+                                    new CallExpr(PRIM_SIZEOF,
+                                                 (ct != NULL) ?
+                                                 ct->symbol : t->symbol));
+
+  if (!insertAfter) {
+    call->insertBefore(new DefExpr(sizeTmp));
+    call->insertBefore(sizeExpr);
+  }
+
+  insertChplHereAlloc(call, insertAfter, sym, t, md, sizeTmp);
+
+  if (insertAfter) {
+    call->insertAfter(sizeExpr);
+    call->insertAfter(new DefExpr(sizeTmp));
+  }
+}
+
 
 
 // Similar to callChplHereAlloc(), above but this can be called any time
