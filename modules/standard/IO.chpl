@@ -1395,6 +1395,8 @@ pragma "no doc"
 extern const QIO_HINT_DIRECT:c_int;
 pragma "no doc"
 extern const QIO_HINT_NOREUSE:c_int;
+pragma "no doc"
+extern const QIO_HINT_OWNED:c_int;
 
 /*  IOHINT_NONE means normal operation, nothing special
     to hint. Expect to use NONE most of the time.
@@ -1577,6 +1579,7 @@ extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
 
 pragma "no doc"
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
+
 
 private extern proc qio_file_lock(f:qio_file_ptr_t):syserr;
 private extern proc qio_file_unlock(f:qio_file_ptr_t);

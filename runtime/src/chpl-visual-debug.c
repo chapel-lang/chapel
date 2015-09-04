@@ -22,6 +22,7 @@
 //
 
 #define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 
 #include "chpl-visual-debug.h"
 #include "chplrt.h"
@@ -316,9 +317,18 @@ void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
     struct timezone tz = {0,0};
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, &tz);
-    /// XXXX bug I can't fix!!!
+
+    // XXXX BUG IN CALLING CHAIN YEILDS SEGFAULT HERE
+    // This routine is called by chpl_comm_get in runtime/src/comm/gasnet/comm-gasnet.c
+    // passes a non-NULL invalid pointer for the c_string fn.  It causes the
+    // following chpl_dprintf call chain to segfault.
+    // Currently chplvis does not make use of this file name, but it should
+    // When this bug is fixed, chplvis should be upgraded to take notice of
+    // this file name.
+    //
     //printf ("log_get/%d, fn is 0x%lx\n",chpl_nodeID, (long) fn); fflush(stdout);
     //printf ("log_get/%d, fn length is %lu\n", chpl_nodeID, strlen(fn));
+
     chpl_dprintf (chpl_vdebug_fd,
              "get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d <unknown>\n",
              (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
