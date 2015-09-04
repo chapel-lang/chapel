@@ -52,6 +52,7 @@ static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
 static GenRet codegenCast(const char* typeName, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
+static GenRet codegenCastToCharStar(GenRet value);
 static GenRet createTempVar(Type* t);
 #define createTempRef(t) createTempVar(t)
 
@@ -1988,6 +1989,18 @@ GenRet codegenAdd(GenRet a, GenRet b)
   GenRet ret;
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
+  bool handle_void_star = false;
+
+  // allow primitive + to apply to void *
+  // which isn't allowed by all C compilers,
+  // so we cast to char* and back.
+  // This feature is used so the compiler can generate
+  // calls to autoSerialize, etc.
+  if( av.chplType == dtCVoidPtr ) {
+    handle_void_star = true;
+    av = codegenCastToCharStar(av);
+  }
+
   if( info->cfile ) ret.c = "(" + av.c + " + " + bv.c + ")";
   else {
 #ifdef HAVE_LLVM
@@ -2005,6 +2018,11 @@ GenRet codegenAdd(GenRet a, GenRet b)
     ret.isUnsigned = !values.isSigned;
 #endif
   }
+
+  if( handle_void_star ) {
+    ret = codegenCastToVoidStar(ret);
+  }
+
   return ret;
 }
 
@@ -3029,6 +3047,26 @@ GenRet codegenSizeof(Type* t)
   return codegenSizeof(t->symbol->cname);
 }
 
+static
+GenRet codegenSizeof(Symbol* var)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  ret.chplType = SIZE_TYPE;
+  if( info->cfile ) {
+    ret.c = "sizeof(";
+    ret.c += var->cname;
+    ret.c += ')';
+  } else {
+#ifdef HAVE_LLVM
+    GenRet arg = var;
+    ret.val = codegenSizeofLLVM(var->val->getType());
+#endif
+  }
+  return ret;
+}
+
+
 // dest dest must have isLVPtr set. This function implements
 // part of codegenAssign.
 static
@@ -3820,12 +3858,17 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
     aLocal = ap;
   }
 
-  if( info->cfile ) {
-    // generate the local C statement
-    std::string stmt = codegenValue(aLocal).c + op + bv.c + ";\n";
-    info->cStatements.push_back(stmt);
+  if( a.chplType != dtCVoidPtr ) {
+    if( info->cfile ) {
+      // generate the local C statement
+      std::string stmt = codegenValue(aLocal).c + op + bv.c + ";\n";
+      info->cStatements.push_back(stmt);
+    } else {
+      // LLVM version of a += b is just a = a + b.
+      codegenAssign(aLocal, codegenOp(codegenValue(ap), bv));
+    }
   } else {
-    // LLVM version of a += b is just a = a + b.
+    // Special case: handle casting to char* to get it right.
     codegenAssign(aLocal, codegenOp(codegenValue(ap), bv));
   }
 
@@ -5226,21 +5269,31 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_SIZEOF:
     {
-      Type* type = get(1)->typeInfo();
-      if (type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          type->symbol->hasFlag(FLAG_WIDE_REF))
-        // If wide, get the value type.
-        type = toAggregateType(type)->getField("addr", true)->typeInfo();
+      // get(1) is a SymExpr(TypeSymbol) or a SymExpr(VarSymbol/ArgSymbol)
+      // if it's a TypeSymbol, we'll use the size to allocate for
+      // a class.
+      // Otherwise, actually generate the size of the variable.
+      SymExpr* symExpr = toSymExpr(get(1));
+      Symbol* var = symExpr->var;
+      TypeSymbol* ts = toTypeSymbol(var);
 
-      GenRet size;
-      if (AggregateType* ct = toAggregateType(type)) {
-        // If Chapel class or record
-        size = codegenSizeof(ct->classStructName(true));
+      if (ts) {
+        Type* type = ts->type;
+        if (ts->hasFlag(FLAG_WIDE_CLASS) ||
+            ts->hasFlag(FLAG_WIDE_REF))
+          // If wide, get the value type.
+          type = toAggregateType(type)->getField("addr", true)->typeInfo();
+
+        if (AggregateType* ct = toAggregateType(type)) {
+          // If Chapel class or record
+          ret = codegenSizeof(ct->classStructName(true));
+        } else {
+          ret = codegenSizeof(type);
+        }
       } else {
-        size = codegenSizeof(type);
+        ret = codegenSizeof(var);
       }
 
-      ret = size;
       break;
     }
     case PRIM_CAST: 
@@ -5346,6 +5399,13 @@ GenRet CallExpr::codegen() {
         ret = codegenBasicPrimitiveExpr(this);
       break;
     }
+    case PRIM_MEMCPY:
+    {
+      // memcpy(dst, src, len)
+      codegenCall("memcpy", get(1), get(2), get(3));
+      break;
+    }
+
     case PRIM_CAST_TO_VOID_STAR:
     {
       Type* t = get(1)->typeInfo();
