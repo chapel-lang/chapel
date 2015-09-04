@@ -1,0 +1,4 @@
+  # formalDomainChecks.good
+--no-formal-domain-checks  # formalDomainChecks-off.good
+--no-checks                # formalDomainChecks-off.good
+--fast                     # formalDomainChecks-off.good
