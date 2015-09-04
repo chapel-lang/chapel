@@ -1493,8 +1493,8 @@ module ChapelArray {
       // It's a compile-time error if the ranks don't match
       //
       if (formalDom.rank != this.domain.rank) then
-	compilerError("Rank mismatch passing array argument: expected " + formalDom.rank + " but got " + 
-		      this.domain.rank, errorDepth=2);
+        compilerError("Rank mismatch passing array argument: expected " + 
+                      formalDom.rank + " but got " + this.domain.rank, errorDepth=2);
 
       //
       // If the formal domain specifies a domain map other than the
@@ -1530,7 +1530,7 @@ module ChapelArray {
       //
       if (runtimeChecks && formalDom != this.domain) then
         halt("Domain mismatch passing array argument:\n",
-	     "  Formal domain is: ", formalDom, "\n",
+             "  Formal domain is: ", formalDom, "\n",
              "  Actual domain is: ", this.domain);
     }
   
@@ -1538,7 +1538,8 @@ module ChapelArray {
       where isRectangularDom(this.domain) && isRectangularDom(d)
     {
       if rank != d.rank then
-	compilerError("rank mismatch: cannot reindex() from " + rank + " dimension(s) to " + d.rank);
+        compilerError("rank mismatch: cannot reindex() from " + rank + 
+                      " dimension(s) to " + d.rank);
   
       // Optimization: Just return an alias of this array when
       // reindexing to the same domain. We skip same-ness test
