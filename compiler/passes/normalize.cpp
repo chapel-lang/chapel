@@ -1325,9 +1325,9 @@ static void fixup_array_formals(FnSymbol* fn) {
           // The domain argument is supplied but NULL.
           INT_ASSERT(queryDomain == NULL);
           
-          // arg.assertDomainMatch(arg->typeExpr)
+          // actualArg.chpl_checkArrArgDoms(arg->typeExpr)
           fn->insertAtHead(new CallExpr(new CallExpr(".", arg,
-                                                     new_StringSymbol("chpl_checkDomMatch")
+                                                     new_StringSymbol("chpl_checkArrArgDoms")
                                                      ),
                                         call->get(1)->copy()));
         }

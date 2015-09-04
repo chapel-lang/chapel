@@ -1,2 +1,1 @@
-formalActualArrayArgMatch.chpl:19: In function 'bar':
-formalActualArrayArgMatch.chpl:19: error: Domain type mismatch in passing array argument
+formalActualArrayArgMatch.chpl:39: error: Domain type mismatch in passing array argument

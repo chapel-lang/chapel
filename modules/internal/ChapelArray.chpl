@@ -1475,7 +1475,16 @@ module ChapelArray {
       return _newArray(x);
     }
 
-    proc chpl_checkDomMatch(formalDom: domain) {
+    //
+    // This routine determines whether an actual array argument
+    // ('this')'s domain is appropriate for a formal array argument
+    // that specifies a domain ('formalDom').  It does this using a
+    // mix of static checks (do the ranks match, are the domain map
+    // types the same if the formal isn't the default dist?) and
+    // runtime checks (are the domains' index sets the same; are
+    // the domain maps/distributions equivalent?)
+    //
+    proc chpl_checkArrArgDoms(formalDom: domain) {
       //
       // It's a compile-time error if the ranks don't match
       //
@@ -1498,7 +1507,7 @@ module ChapelArray {
         // the same:
         //
         if (formalDom.type != this.domain.type) then
-          compilerError("Domain type mismatch in passing array argument");
+          compilerError("Domain type mismatch in passing array argument", errorDepth=2);
 
         //
         // Then, at run-time, check that the domain map's values are
