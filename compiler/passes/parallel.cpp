@@ -106,7 +106,7 @@ static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 static void insertEndCounts();
 static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions);
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn);
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* endCount);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
@@ -454,9 +454,63 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     i++;
   }
 
+
+
+  // Put the bundle into a void* argument
+  VarSymbol *allocated_args = newTemp(astr("_args_vfor", fn->name), dtCVoidPtr);
+  fcall->insertBefore(new DefExpr(allocated_arg));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, allocated_arg, tempc));
+
+  // Put the size of the bundle into the next argument
+  VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
+                             dtInt[INT_SIZE_DEFAULT]);
+  fcall->insertBefore(new DefExpr(tmpsz));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz,
+                                   new CallExpr(PRIM_SIZEOF, ctype)));
+
+  // Find the _EndCount argument so we can pass that explicitly as the
+  // first argument to a task launch function.
+  Symbol* endCount = NULL;
+  for_actuals(arg, fcall) {
+    bool strcmp_found = false;
+    bool type_found = false;
+
+    Type* baseType = arg->getValType();
+    if (baseType == dtEndCount) {
+      type_found = true;
+    }
+
+    // This strcmp code was moved from expr.cpp codegen,
+    // but there has got to be a better way to do this! 
+    if (!strcmp(arg->typeInfo()->symbol->name,
+                "_ref(_EndCount)")
+        || !strcmp(arg->typeInfo()->symbol->name,
+                   "__wide__ref__wide__EndCount")
+        || !strcmp(arg->typeInfo()->symbol->name,
+                   "_EndCount")
+        || !strcmp(arg->typeInfo()->symbol->name,
+                   "__wide__EndCount")) {
+      strcmp_found = true;
+    }
+
+    // If this assert never fires, we can remove the strcmp version.
+    INT_ASSERT(type_found == strcmp_found);
+
+    if( type_found || strcmp_found ) {
+      SymExpr* symexp = toSymExpr(arg);
+      endCount = symexp->var;
+
+      // Turns out there can be more than one such field. See e.g.
+      //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
+      // INT_ASSERT(endCountField == 0);
+      // We have historically picked the first such field.
+      break;
+    }
+  }
+
   // create wrapper-function that uses the class instance
   create_block_fn_wrapper(fn, fcall, baData);
-  call_block_fn_wrapper(fn, fcall, tempc, baData.wrap_fn);
+  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, endCount);
   baData.firstCall = false;
 }
 
@@ -496,16 +550,30 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     // into the wrapper here, and then later on remove it completely.
     // The on_fn does not need this extra argument, and can find out its locale
     // by reading the task-private "here" pointer.
-    DefExpr* localeArg = toDefExpr(fn->formals.get(1)->copy());
+    ArgSymbol *localeArg = fn->getFormal(1)->copy();
     // The above copy() used to be a remove(), based on the assumption that there was
     // exactly one wrapper for each on.  Now, the on_fn is outlined early and has
     // several callers, therefore severall wrapon_fns are generated.
     // So, we leave the extra locale arg in place here and remove it later 
     // (see the last if (fn->hasFlag(FLAG_ON)) clause in passArgsToNestedFns()).
+    localeArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(localeArg);
+  } else {
+    // create an EndCount argument.
+    ArgSymbol *endCountArg = new ArgSymbol( INTENT_IN, "dummy_endCount", 
+                                            dtEndCount );
+    endCountArg->addFlag(FLAG_NO_CODEGEN);
+    wrap_fn->insertFormalAtTail(endCountArg);
   }
 
-  ArgSymbol *wrap_c = new ArgSymbol( INTENT_CONST_REF, "c", ctype);
+  ArgSymbol *allocated_args = new ArgSymbol( INTENT_IN, "buf", dtCVoidPtr);
+  wrap_fn->insertFormalAtTail(allocated_args);
+  allocated_args->addFlag(FLAG_NO_CODEGEN);
+  ArgSymbol *allocated_sz = new ArgSymbol( INTENT_IN, "buf_size",  dtInt[INT_SIZE_DEFAULT]);
+  allocated_sz->addFlag(FLAG_NO_CODEGEN);
+  wrap_fn->insertFormalAtTail(allocated_sz);
+  ArgSymbol *wrap_c = new ArgSymbol( INTENT_IN, "dummy_c", ctype);
+  //wrap_c->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
@@ -553,16 +621,21 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   baData.wrap_fn = wrap_fn;
 }
 
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn)
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* endCount)
 {
   // The wrapper function is called with the bundled argument list.
   if (fn->hasFlag(FLAG_ON)) {
     // For an on block, the first argument is also passed directly
     // to the wrapper function.
     // The forking function uses this to fork a task on the target locale.
-    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
-  } else
-    fcall->insertBefore(new CallExpr(wrap_fn, tempc));
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), args_buf, args_buf_len, tempc));
+  } else {
+    // For non-on blocks, the end count is passed directly to the function
+    // (so that codegen can find it).
+    // We need the endCount.
+    INT_ASSERT(endCount);
+    fcall->insertBefore(new CallExpr(wrap_fn, new SymExpr(endCount), args_buf, args_buf_len, tempc));
+  }
 
   if (fn->hasFlag(FLAG_ON))
     fcall->insertAfter(callChplHereFree(tempc));
@@ -1354,7 +1427,8 @@ static void insertEndCounts()
       FnSymbol* pfn = call->getFunction();
       if (!endCountMap.get(pfn))
         insertEndCount(pfn, endCountType, queue, endCountMap);
-      call->insertAtTail(endCountMap.get(pfn));
+      Symbol* endCount = endCountMap.get(pfn);
+      call->insertAtTail(endCount);
     }
   }
 }

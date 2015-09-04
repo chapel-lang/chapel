@@ -255,6 +255,7 @@ TYPE_EXTERN AggregateType* dtDist;
 TYPE_EXTERN AggregateType* dtTuple;
 TYPE_EXTERN AggregateType* dtLocale;
 TYPE_EXTERN AggregateType* dtLocaleID;
+TYPE_EXTERN AggregateType* dtEndCount;
 TYPE_EXTERN AggregateType* dtMainArgument;
 
 TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
