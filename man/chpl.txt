@@ -195,6 +195,12 @@ OPTIONS
   --[no-]bounds-checks   Enable [disable] run-time bounds checking,
                     e.g. during slicing and array indexing.
 
+  --[no-]formal-domain-checks   Enable [disable] run-time checks to ensure
+                    that an actual array argument's domain matches its formal
+                    array argument's domain in terms of (a) describing the same
+                    index set and (b) having an equivalent domain map (if the formal
+                    domain explicitly specifies a domain map).
+
   --[no-]local-checks  Enable [disable] run-time checking of the locality of
                     references within local blocks.
 
