@@ -1,67 +1,92 @@
-/* This example demonstrates how one would use a LAPACK procedure in Chapel
- * using Chapel arrays.
- * The procedure used is the gesv procedure which solves A * X = B for X, 
- * given both A and B, where A is a square matrix.
- * 
- * Here, we create A and X, then compute B with a matrix multiplication, and
- * show that the result the gesv of the procedure give the correct output.
- */
+/*
+  Example usage of the LAPACK module in Chapel. This particular file
+  demonstrates how to use the gesv procedure with Chapel's arrays. The gesv
+  procedure solves A*X = B for X given both A and B, where A is a square matrix.
+ 
+  Here, we create A and X, then compute B with a matrix multiplication, and
+  show that the result of the gesv procedure is the same as our synthesized
+  X array (within a small margin of error for floating point).
+
+  To compile a program with LAPACK, you may need to add some additional flags
+  depending on how LAPACk was installed on your system:
+
+  chpl -I$PATH_TO_LAPACK_INCLUDE_DIR \
+       -L$PATH_TO_LAPACK_BINARIES \
+       -lgfortran
+
+  See the LAPACK module documentation for more information on compiling.
+*/
 
 use LAPACK;
+use Random;
 
-var N = 2;
-var K = 1;
+// The dimension for the square array A
+config const N = 2;
 
-// Create our 2-D arrays for out matrices 
-// Our synthesized matrix A
-var A : [1..N,1..N] real(64); 
-A[1,1..2] = [ 1, 2 ]; // first row of matrix
-A[2,1..2] = [ 3, 4 ]; // second row of matrix
+// The second dimension for the arrays X and B
+config const K = 1;
 
-// Our synthesized matrix X
-var X : [1..N,1..K] real(64);
-X[1,1] = 2;
-X[2,1] = 1;
+// Margin of error for success
+config const epsilon = 1e-13;
+
+config const seed = 41;
+
+var A : [1..N, 1..N] real;
+fillRandom(A, seed);
+
+var X : [1..N, 1..K] real;
+fillRandom(X, seed);
 
 // Our computed matrix B
-var B : [1..N,1..K] real(64);
+var B : [1..N, 1..K] real;
 
-// Matrix multiply Ax = B
-for i in A.domain.dim(1) do
-  for j in X.domain.dim(2) do
-    for k in A.domain.dim(1) do
+// Matrix multiply A*X, store result in B
+for i in 1..N do
+  for j in 1..K do
+    for k in 1..N do
       B[i,j] += A[i,k] * X[k, j];
+      
+writeln("Matrix A:\n", A, "\n");
+writeln("Matrix X:\n", X, "\n");
+writeln("Matrix B:\n", B, "\n");
 
+// Copy original arrays into temporary arrays.
 
-writeln( "A:\n", A, "\n\nX:\n", X, "\n\nB:\n", B , "\n==============");
+// Input and work array. Becomes garbage.
+var WorkA = A;
 
-// copy our results into temporary work/result arrays
-// since LAPACK walks over them and stores the result in them
-var work_A = A; // Input and work array. Becomes garbage. 
-var work_B = B; // Input and output. Becomes result of solution (X)
+// Input and output. Becomes result of solution (X)
+var WorkBX = B;
 
-var ipiv : [1..N] c_int; // Output array. Stores pivot indices
+// Output array. Stores pivot indices
+var ipiv : [1..N] c_int;
 
-// Call the gesv function 
-// Our matrices are in row_major order
-var info = gesv( lapack_memory_order.row_major, work_A, ipiv, work_B );
+//
+// Call the gesv function to solve for X. Note that Chapel arrays are row-major
+// order by default.
+//
+var info = gesv(lapack_memory_order.row_major, WorkA, ipiv, WorkBX);
 
-// LAPACK and LAPACK return error codes when they fail.
+// LAPACK returns an error code to indicate a failure.
 if info != 0 {
-  writeln( "There was an error!" );
+  writeln("There was an error!");
   if info < 0 {
-    writeln( "Argument ", -info, " was incorrect." );
+    writeln("Argument ", -info, " was incorrect.");
   } else {
-    writeln( "The matrix A is a sigular matrix. U", (info,info), " is zero" );
+    writeln("The matrix A is a singular matrix. U", (info,info), " is zero");
   }
 }
 
-writeln( "X:\n", work_B, "\n" ); 
-// We can see that work_B is the same as X
-// Unfortunately, there will be some small amount of error
-writeln( "X == result: ", && reduce (work_B == X), "\n");
+writeln("gesv result for X:\n", WorkBX, "\n");
 
-// We can approximate with a small epsilon (lets try 1e-15)
-var err = 1e-15; // one ten-quadrillionth
-var closeEnough = && reduce [ (b,x) in zip( work_B, X ) ] abs( b - x ) < err;
-writeln( "X == result ±", err, ": ", closeEnough);
+//
+// The arrays may not be identical due to floating point errors. Use a small
+// value as a margin of error to measure success.
+//
+const Diff = WorkBX - X;
+const closeEnough = && reduce [d in Diff] abs(d) < epsilon;
+
+if closeEnough then
+  writeln("SUCCESS");
+else
+  writeln("FAILURE");
