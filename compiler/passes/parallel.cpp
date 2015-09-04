@@ -35,6 +35,9 @@
 #include "symbol.h"
 #include "CForLoop.h"
 
+// temporary
+#include "view.h"
+
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
 //   insertWideReferences()
@@ -98,6 +101,8 @@ typedef struct {
   bool firstCall;
   AggregateType* ctype;
   FnSymbol*  wrap_fn;
+  // one value for each of the types in ctype
+  std::vector<int> useSerialize;
 } BundleArgsFnData;
 
 // bundleArgsFnDataInit: the initial value for BundleArgsFnData
@@ -287,7 +292,17 @@ taskMayOutliveTaskArg(Expr* arg, CallExpr* taskFnCall)
 //#
 //########################################################################
 
+static bool
+argumentNeedsAutoCopy(Expr* arg, CallExpr* taskFnCall)
+{
+  Type* t = arg->typeInfo();
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return taskMayOutliveTaskArg(arg, taskFnCall);
+  // POD types never need an auto copy.
+  return false;
+}
 
+#if 0
 /// Optionally autoCopies an argument being inserted into an argument bundle.
 ///
 /// This routine optionally inserts an autoCopy ahead of each invocation of a
@@ -331,6 +346,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
   if (taskMayOutliveTaskArg(arg, fcall))
   {
     Type* baseType = arg->getValType();
+// TODO -- should baseType == arg->typeInfo() ?
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
 
@@ -418,10 +434,29 @@ static Symbol* insertAutoCopyDestroyForTaskArg
   }
   return var;
 }
+#endif
 
 
+static void insertAutoDestroyBeforeDownEndCount(Expr* arg, CallExpr* fcall)
+{
+  Type* t = arg->typeInfo();
+  FnSymbol* autoDestroyFn = getAutoDestroy(t);
+
+  // TODO? handle reference types for wrapper records?
+
+  // Insert a call to the autoDestroy function ahead of the return (or
+  // _downEndCount() call, if present).
+  // (But only once per function for each affected argument.)
+  FnSymbol* fn = fcall->isResolved();
+  Symbol* formal = actual_to_formal(arg);
+  CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
+  fn->insertBeforeDownEndCount(autoDestroyCall);
+  insertReferenceTemps(autoDestroyCall);
+}
+   
 static void
 bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
+  int i;
   SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();
   FnSymbol* fn = fcall->isResolved();
@@ -431,43 +466,130 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     create_arg_bundle_class(fn, fcall, mod, baData);
   AggregateType* ctype = baData.ctype;
 
-  // create the class variable instance and allocate space for it
-  VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
+  // create the class variable instance. This will be used
+  // as a dummy variable. The actual arguments are in the c_void_ptr buffer.
+  VarSymbol *tempc = newTemp(astr("_dummy_arg_bundle", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  insertChplHereAlloc(fcall, false /*insertAfter*/, tempc,
-                      ctype, newMemDesc("bundled args"));
 
-  // set the references in the class instance
-  int i = 1;
+  // First, decide whether or not we're adding an autoCopy
+  // for each argument.
+  std::vector<VarSymbol*> serializedSize;
+  baData.useSerialize.push_back(0); // so we can count from 1
+  serializedSize.push_back(NULL); // so we can count from 1
+
+  i = 1;
+  for_actuals(arg, fcall) {
+    bool autoCopyIt = argumentNeedsAutoCopy(arg, fcall);
+    baData.useSerialize.push_back(autoCopyIt);
+
+    SymExpr* s = toSymExpr(arg);
+    Symbol* var = s->var;
+
+    Type* t = arg->typeInfo();
+    FnSymbol* autoSerializeSize = getAutoSerializeSize(t);
+
+    VarSymbol *tmpfieldsz = newTemp(astr("_field_size", fn->name, istr(i)),
+                                    dtInt[INT_SIZE_DEFAULT]);
+    fcall->insertBefore(new DefExpr(tmpfieldsz));
+
+    if (autoCopyIt) {
+      // Create a reference temp for arg and call
+      // size = autoSerializeSize(ref to var)
+      VarSymbol* ref = newTemp(astr("_ref_field_a", fn->name, istr(i)),
+                               getOrMakeRefTypeDuringCodegen(arg->typeInfo()));
+      ref->addFlag(FLAG_REF_TEMP);
+      fcall->insertBefore(new DefExpr(ref));
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, ref,
+                                       new CallExpr(PRIM_ADDR_OF, var)));
+
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpfieldsz,
+                                       new CallExpr(autoSerializeSize, ref)));
+    } else {
+      // size = sizeof(var)
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpfieldsz,
+                                       new CallExpr(PRIM_SIZEOF, var)));
+    }
+    serializedSize.push_back(tmpfieldsz);
+    i++;
+  }
+
+  // Then, compute size of the bundle and allocate that much space.
+  // size of bundle is be computed with autoSerializeSize.
+  VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
+                             dtInt[INT_SIZE_DEFAULT]);
+  fcall->insertBefore(new DefExpr(tmpsz));
+  // TODO -- could check that all fields are not needing auto copy,
+  // or that all fields are using default autoSerialize...
+  // That would bring those cases down in generated size again.
+
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz,
+                                   new_IntSymbol(0, INT_SIZE_DEFAULT)));
+  i = 1;
   for_actuals(arg, fcall) 
   {
-    // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
-    // calls.
-    Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, firstCall);
+    fcall->insertBefore(new CallExpr(PRIM_ADD_ASSIGN,
+                                     tmpsz, serializedSize[i]));
+    i++;
+  }
 
-    // Copy the argument into the corresponding slot in the argument bundle.
-    CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
-                                  tempc,
-                                  ctype->getField(i),
-                                  var);
-    fcall->insertBefore(setc);
+  // allocate space for the argument bundle
+  VarSymbol *allocated_args = newTemp(astr("_args_for", fn->name), dtCVoidPtr);
+  fcall->insertBefore( new DefExpr(allocated_args));
+  insertChplHereAlloc(fcall, false /*insertAfter*/, allocated_args,
+                      dtCVoidPtr, newMemDesc("bundled args"),
+                      tmpsz);
+
+  // Copy the allocated args pointer into bundle_buf
+  // since we will update the bundle_buf pointer as we write to the buffer.
+  // Then, we'll pass allocated_args to the task/on spawn function.
+  VarSymbol *bundle_buf = newTemp(astr("_args_buf_for", fn->name), dtCVoidPtr);
+  fcall->insertBefore( new DefExpr(bundle_buf));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, bundle_buf, allocated_args));
+
+
+  // serialize the fields into the allocated space.
+  i = 1;
+  for_actuals(arg, fcall) 
+  {
+    SymExpr* s = toSymExpr(arg);
+    Symbol* var = s->var;
+
+    Type* t = arg->typeInfo();
+    FnSymbol* autoSerialize = getAutoSerialize(t);
+
+    VarSymbol* ref = newTemp(astr("_ref_field_b", fn->name, istr(i)),
+                             getOrMakeRefTypeDuringCodegen(arg->typeInfo()));
+    ref->addFlag(FLAG_REF_TEMP);
+    fcall->insertBefore(new DefExpr(ref));
+    fcall->insertBefore(new CallExpr(PRIM_MOVE, ref,
+                                     new CallExpr(PRIM_ADDR_OF, var)));
+
+    if( baData.useSerialize[i] && autoSerialize ) {
+      // autoSerialize(arg, bundle_buf)
+      // bundle_buf += field_serialized_size
+      fcall->insertBefore(new CallExpr(autoSerialize, ref, bundle_buf));
+    } else {
+      // bit copy
+      fcall->insertBefore(new CallExpr(PRIM_MEMCPY, bundle_buf, ref, serializedSize[i]));
+    }
+    fcall->insertBefore(new CallExpr(PRIM_ADD_ASSIGN,
+                                     bundle_buf, serializedSize[i]));
     i++;
   }
 
 
-
-  // Put the bundle into a void* argument
-  VarSymbol *allocated_args = newTemp(astr("_args_vfor", fn->name), dtCVoidPtr);
-  fcall->insertBefore(new DefExpr(allocated_arg));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, allocated_arg, tempc));
-
-  // Put the size of the bundle into the next argument
-  VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
-                             dtInt[INT_SIZE_DEFAULT]);
-  fcall->insertBefore(new DefExpr(tmpsz));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz,
-                                   new CallExpr(PRIM_SIZEOF, ctype)));
-
+  if (firstCall) {
+    // Add autoDestroy calls
+    i = 1;
+    for_actuals(arg, fcall) 
+    {
+      if (baData.useSerialize[i]) {
+        insertAutoDestroyBeforeDownEndCount(arg, fcall);
+      }
+      i++;
+    }
+  }
+ 
   // Find the _EndCount argument so we can pass that explicitly as the
   // first argument to a task launch function.
   Symbol* endCount = NULL;
@@ -568,27 +690,66 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   ArgSymbol *allocated_args = new ArgSymbol( INTENT_IN, "buf", dtCVoidPtr);
   wrap_fn->insertFormalAtTail(allocated_args);
-  allocated_args->addFlag(FLAG_NO_CODEGEN);
   ArgSymbol *allocated_sz = new ArgSymbol( INTENT_IN, "buf_size",  dtInt[INT_SIZE_DEFAULT]);
   allocated_sz->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(allocated_sz);
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_IN, "dummy_c", ctype);
-  //wrap_c->addFlag(FLAG_NO_CODEGEN);
+  wrap_c->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(wrap_c);
+
+  VarSymbol *bundle_buf = newTemp(astr("args_buf"), dtCVoidPtr);
+  wrap_fn->insertAtTail( new DefExpr(bundle_buf));
+  wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, bundle_buf, allocated_args));
+
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
 
   // Create a call to the original function
-  CallExpr *call_orig = new CallExpr(fn);
+  CallExpr *call_orig_function = new CallExpr(fn);
   bool first = true;
+
+  int i = 1;
   for_fields(field, ctype)
   {
-    // insert args
+    Type* t = field->typeInfo();
+    VarSymbol *tmpfieldsz = newTemp(astr("_field_size", istr(i)),
+                                    dtInt[INT_SIZE_DEFAULT]);
+    wrap_fn->insertAtTail(new DefExpr(tmpfieldsz));
+
     VarSymbol* tmp = newTemp(field->name, field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
-    wrap_fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-        new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+
+    VarSymbol* ref = newTemp("_field_ref", getOrMakeRefTypeDuringCodegen(t));
+    ref->addFlag(FLAG_REF_TEMP);
+    wrap_fn->insertAtTail(new DefExpr(ref));
+    wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, ref,
+                                     new CallExpr(PRIM_ADDR_OF, tmp)));
+
+    FnSymbol* autoDeserialize = getAutoDeserialize(t);
+
+    if (baData.useSerialize[i]) {
+      // bytes_handled = autoDeserialize(tmp, bundle_buf)
+      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz,
+                                     new CallExpr(autoDeserialize, ref, bundle_buf)));
+    } else {
+      // bytes_handled = sizeof(type);
+      // memcpy(tmp, bundle_buf, bytes_handled)
+      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz,
+                                   new CallExpr(PRIM_SIZEOF,
+                                                tmp)));
+      wrap_fn->insertAtTail(new CallExpr(PRIM_MEMCPY, ref, bundle_buf, tmpfieldsz));
+    }
+
+    // add to bundle_buf the number of bytes handled
+    wrap_fn->insertAtTail(new CallExpr(PRIM_ADD_ASSIGN,
+                                         bundle_buf, tmpfieldsz));
+
+    // insert args
+    //VarSymbol* tmp = newTemp(field->name, field->type);
+    //wrap_fn->insertAtTail(new DefExpr(tmp));
+    //wrap_fn->insertAtTail(
+    //    new CallExpr(PRIM_MOVE, tmp,
+    //    new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
     // Special case: 
     // If this is an on block, remember the first field,
@@ -597,18 +758,19 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     if (first && fn->hasFlag(FLAG_ON))
       /* no-op */;
     else
-      call_orig->insertAtTail(tmp);
+      call_orig_function->insertAtTail(tmp);
 
     first = false;
+    i++;
   }
 
   wrap_fn->retType = dtVoid;
-  wrap_fn->insertAtTail(call_orig);     // add new call
+  wrap_fn->insertAtTail(call_orig_function);     // add new call
 
   if (fn->hasFlag(FLAG_ON))
     ; // the caller will free the actual
   else
-    wrap_fn->insertAtTail(callChplHereFree(wrap_c));
+    wrap_fn->insertAtTail(callChplHereFree(allocated_args));
 
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -1453,6 +1615,8 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
       bundleArgs(call, baData);
     }
 
+    // does this need to apply to other arguments as well?
+    /*
     if (fn->hasFlag(FLAG_ON))
     {
       // Now we can remove the dummy locale arg from the on_fn
@@ -1465,7 +1629,7 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
           sym->getStmtExpr()->remove();
       }
       localeArg->remove();
-    }
+    }*/
   }
 }
 

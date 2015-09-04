@@ -35,7 +35,7 @@
 // number and a filename.
 //
 
-static void moveLinenoInsideArgBundle();
+//static void moveLinenoInsideArgBundle();
 
 //
 // The queue keeps track of the functions to which line number and
@@ -259,9 +259,14 @@ void insertLineNumbers() {
     }
   }
 
-  moveLinenoInsideArgBundle();
+  // TODO HERE -- I've disabled this code because it works
+  // with the form of the wrapper code generated, which I've
+  // changed. I don't understand why this can't be handled
+  // earlier. At least, we could add placeholder expressions
+  // in parallel when we're creating the argument bundles.
+  //moveLinenoInsideArgBundle();
 }
-
+/*
 static void moveLinenoInsideArgBundle()
 {
   // pass line number and filename arguments to functions that are
@@ -320,4 +325,4 @@ static void moveLinenoInsideArgBundle()
       }
     }
   }
-}
+}*/
