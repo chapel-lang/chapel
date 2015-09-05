@@ -1863,14 +1863,26 @@ module ChapelArray {
   // to an array of booleans)
   //
   proc _array.equals(that: _array) {
+    //
+    // quick path for identical arrays
+    //
+    if this._value == that._value then
+      return true;
+    //
+    // quick path for rank mismatches
+    //
     if this.rank != that.rank then
       return false;
-    //    writeln("ranks match!");
+    //
+    // check that size/shape are the same to permit legal zippering
+    //
     for d in 1..this.rank do
       if this.domain.dim(d).size != that.domain.dim(d).size then
         return false;
-    //    writeln("sizes match");
-    //    writeln("this == that is: ", this == that);
+    //
+    // if all the above tests match, see if zippered equality is
+    // true everywhere
+    //
     return && reduce (this == that);
   }
   
