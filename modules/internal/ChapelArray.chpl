@@ -658,10 +658,14 @@ module ChapelArray {
   }  // record _distribution
   
   inline proc ==(d1: _distribution(?), d2: _distribution(?)) {
+    if (d1._value == d2._value) then
+      return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   inline proc !=(d1: _distribution(?), d2: _distribution(?)) {
+    if (d1._value == d2._value) then
+      return false;
     return !d1._value.dsiEqualDMaps(d2._value);
   }
 
