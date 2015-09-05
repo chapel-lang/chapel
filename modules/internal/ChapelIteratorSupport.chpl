@@ -364,20 +364,11 @@ module ChapelIteratorSupport {
     return follower;
   }
 
-  pragma "no implicit copy"
-  inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex) {
-    return _toFollower(iterator, leaderIndex);
-  }
-
-  inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
-    return _toFollower(ir, leaderIndex);
-  }
-
   inline proc _toFastFollower(x, leaderIndex) {
     if chpl__staticFastFollowCheck(x) then
-      return _toFastFollower(x.these(), leaderIndex, fast=true);
+      return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
     else
-      return _toFollower(x.these(), leaderIndex);
+      return _toFollower(_getIterator(x), leaderIndex);
   }
 
   inline proc _toFastFollowerZip(x, leaderIndex) {

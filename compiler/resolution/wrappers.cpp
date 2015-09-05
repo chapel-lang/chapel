@@ -780,6 +780,8 @@ buildPromotionWrapper(FnSymbol* fn,
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);
 
+
+    // Build up the leader iterator
     SymbolMap leaderMap;
     FnSymbol* lifn = wrapper->copy(&leaderMap);
     INT_ASSERT(! lifn->hasFlag(FLAG_RESOLVED));
@@ -812,6 +814,8 @@ buildPromotionWrapper(FnSymbol* fn,
     normalize(lifn);
     lifn->instantiationPoint = getVisibilityBlock(info->call);
 
+
+    // Build up the follower iterator
     SymbolMap followerMap;
     FnSymbol* fifn = wrapper->copy(&followerMap);
     INT_ASSERT(! fifn->hasFlag(FLAG_RESOLVED));
@@ -824,17 +828,21 @@ buildPromotionWrapper(FnSymbol* fn,
     fifn->insertFormalAtTail(fifnTag);
     ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
     fifn->insertFormalAtTail(fifnFollower);
+    ArgSymbol* fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, new SymExpr(gFalse));
+    fifn->insertFormalAtTail(fastFollower);
     fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
     VarSymbol* followerIterator = newTemp("p_followerIterator");
     followerIterator->addFlag(FLAG_EXPR_TEMP);
     fifn->insertAtTail(new DefExpr(followerIterator));
 
     if( !zippered ) {
-      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
+      fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
+                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollower", iterator->copy(&followerMap), fifnFollower)),
+                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower))));
     } else {
-      Expr* tMe = iterator->copy(&followerMap);
-      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new
-                  CallExpr("_toFollowerZip", tMe, fifnFollower)));
+      fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
+                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollowerZip", iterator->copy(&followerMap), fifnFollower)),
+                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", iterator->copy(&followerMap), fifnFollower))));
     }
 
     BlockStmt* followerBlock = new BlockStmt();
@@ -849,6 +857,9 @@ buildPromotionWrapper(FnSymbol* fn,
     fifn->addFlag(FLAG_GENERIC);
     fifn->instantiationPoint = getVisibilityBlock(info->call);
 
+
+    // Finish building the serial iterator. We stopped mid-way so the common
+    // code could be copied for the leader/follower
     BlockStmt* yieldBlock = new BlockStmt();
     yieldTmp = newTemp("p_yield");
     yieldTmp->addFlag(FLAG_EXPR_TEMP);
