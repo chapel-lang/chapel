@@ -58,6 +58,7 @@ Optimization Control Options:
 Run-time Semantic Check Options:
       --no-checks                     Disable all following run-time checks
       --[no-]bounds-checks            Enable [disable] bounds checking
+      --[no-]formal-domain-checks     Enable [disable] formal domain checking
       --[no-]local-checks             Enable [disable] local block checking
       --[no-]nil-checks               Enable [disable] nil checking
       --[no-]stack-checks             Enable [disable] stack overflow checking
