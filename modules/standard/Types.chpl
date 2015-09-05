@@ -130,6 +130,12 @@ The argument must be a type.
 pragma "no instantiation limit"
 proc isStringType(type t) param return t == string;
 
+pragma "no instantiation limit"
+pragma "no doc" // Not sure how we want to document isPOD* right now
+proc isPODType(type t) param {
+  return __primitive("is pod type", t);
+}
+
 // Returns the unsigned equivalent of the input type.
 pragma "no doc"
 proc chpl__unsignedType(type t) type 
@@ -214,6 +220,8 @@ pragma "no doc"
 proc isAtomicValue(e)    param  return isAtomicType(e.type);
 pragma "no doc"
 proc isRefIterValue(e)   param  return isRefIterType(e.type);
+pragma "no doc"
+proc isPODValue(e)       param  return isPODType(e.type);
 
 
 //
@@ -272,6 +280,8 @@ pragma "no doc"
 proc isAtomic(type t)    param  return isAtomicType(t);
 pragma "no doc"
 proc isRefIter(type t)   param  return isRefIterType(t);
+pragma "no doc"
+proc isPOD(type t)       param  return isPODType(t);
 
 // Set 2 - values.
 /*
@@ -326,6 +336,8 @@ a corresponding type or a value of such a type.
 */
 proc isRefIter(e)   param  return isRefIterValue(e);
 
+pragma "no doc" // Not sure how we want to document isPOD* right now
+proc isPOD(e)       param  return isPODValue(e);
 
 // for internal use until we have a better name
 pragma "no doc"
