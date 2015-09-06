@@ -952,12 +952,13 @@ static void setupRedRefs(FnSymbol* fn, bool nested,
     // Be cute - add new stuff past the defs of 'ret' and 'origRet'.
     fn->body->body.head->next->insertAfter(redRef1);
   }
-  // insert before _downEndCount
-  // by inserting before return then moving one up past _downEndCount
   fn->insertBeforeReturn(redRef2);
-  CallExpr* dc = toCallExpr(redRef2->prev);
-  INT_ASSERT(dc && dc->isNamed("_downEndCount"));
-  dc->insertBefore(redRef2->remove());
+  if (nested) {
+    // move redRef2 one up so it is just before _downEndCount()
+    CallExpr* dc = toCallExpr(redRef2->prev);
+    INT_ASSERT(dc && dc->isNamed("_downEndCount"));
+    dc->insertBefore(redRef2->remove());
+  }
 }
 
 static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
@@ -984,6 +985,17 @@ static const char* astrArg(int ix, const char* add1) {
 //
 // Propagate 'extraActuals' through the task constructs, implementing
 // task intents. See the header comment for extendLeader().
+//
+// * 'call' gets each of extraActuals[ix] added as an actual
+// * callee 'fn' gets a newly-created corresponding formal: extraFormals[ix]
+//
+// Within 'fn' :
+// * for each call to a task function: do the above recursively
+// * for each yield: convert to yielding (prev yield value, extraFormals[*])
+//
+// For a reduce-intent position -- when reduceArgs[ix]:
+// * extraFormals[ix] is a parentOp - passed to task functions, extra treatment
+// * shadowVars[ix] is created - passed to yields, extra treatment
 //
 static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
                                      int numExtraArgs, Symbol* extraActuals[],
@@ -1049,8 +1061,6 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
     }
   }
 
-  cleanupRedRefs(redRef1, redRef2);
-
   // Propagate recursively into task functions and yields.
   std::vector<CallExpr*> rCalls;
   collectMyCallExprs(fn, rCalls, fn);
@@ -1066,11 +1076,24 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       for (int ix = 0; ix < numExtraArgs; ix++) {
         bool isReduce = reduceArgs[ix];
         Symbol* svar = shadowVars[ix];
-        if (isReduce && !svar)
-          // Currently we do not create a shadow var for yields in this case.
-          USR_FATAL(rcall, "yields outside of task constructs in the leader or standalone iterator are not supported with reduce intents");
         Symbol* tFormal;
         if (isReduce) {
+          if (!svar) {
+            INT_ASSERT(!nested); // nested case is handled above
+            setupRedRefs(fn, nested, redRef1, redRef2);
+            // Todo: skip these additions if the current 'rcall' yield
+            // is going to be compiled away, e.g. if it is
+            // within a param conditional on a not-taken branch.
+            Symbol* parentOp = extraFormals[ix];
+            INT_ASSERT(isReduceOp(extraActuals[0]->type));
+            svar = new VarSymbol(astrArg(ix, "shadowVar"));
+            redRef1->insertBefore(new DefExpr(svar));
+            redRef1->insertBefore("'move'(%S, identity(%S,%S))", // init
+                                  svar, gMethodToken, parentOp);
+            redRef2->insertBefore("accumulate(%S,%S,%S)",
+                                  gMethodToken, parentOp, svar);
+            shadowVars[ix] = svar;
+          }
           // pass 'svar' by reference
           VarSymbol* sref = new VarSymbol(astrArg(ix, "svarRef"));
           rcall->insertBefore(new DefExpr(sref));
@@ -1093,14 +1116,34 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       // OTOH our normal call verification should suffice: it will fail
       // the first propagated call if a second call propagates to same tfn.
       INT_ASSERT(tfn->defPoint->parentSymbol == fn);
-      // Reduce intents do not make sense when a 'begin' outlives the iterator.
-      if (tfn->hasFlag(FLAG_BEGIN))
-        USR_FATAL_CONT(tfn, "reduce intents are not implemented with leader and standalone iterators that include 'begin' statement(s)");
-      // Propagate the extra args recursively into 'tfn'.
-      propagateExtraLeaderArgs(rcall, retSym, numExtraArgs,
-                               extraFormals, reduceArgs, true);
+
+      if (tfn->hasFlag(FLAG_BEGIN)) {
+        // (A) Reduce intents do not make sense when a 'begin' outlives
+        //     the iterator. There used to be a check for that here.
+        // (B) However, currently there can be no yields in a 'begin'
+        //     - see checkControlFlow().
+        //     Without a yield, the above is not a concern.
+        // (C) Generally, if a task function does not have a yield,
+        //     there is nothing to be done w.r.t. forall intents.
+        //     We could check the entire tfn for yields. Instead,
+        //     we just do a fast check for FLAG_BEGIN
+        //     as a conservative approximation.
+        //     We verify the absence of yields, however.
+        if (fVerify) {  // for assertions only
+          std::vector<CallExpr*> bCalls;
+          collectMyCallExprs(tfn, bCalls, tfn);
+          for_vector(CallExpr, bcall, bCalls)
+            INT_ASSERT(!bcall->isPrimitive(PRIM_YIELD));
+        }
+      } else {
+        // Propagate the extra args recursively into 'tfn'.
+        propagateExtraLeaderArgs(rcall, retSym, numExtraArgs,
+                                 extraFormals, reduceArgs, true);
+      }
     }
   }
+
+  cleanupRedRefs(redRef1, redRef2);
 }
 
 //
