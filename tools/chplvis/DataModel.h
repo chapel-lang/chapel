@@ -193,7 +193,7 @@ class DataModel {
       return tagList[0];
     if (tagno == TagStart)
       return tagList[1];
-    if (uniqueTags || tagno >= name2tag.size() || tagno < 0)
+    if (uniqueTags || tagno >= (int)name2tag.size() || tagno < 0)
       return NULL;
     return utagList[tagno];
   }
@@ -222,7 +222,7 @@ class DataModel {
     if (taskTimeline != NULL)
       delete [] taskTimeline;
     if (utagList != NULL) {
-      for (int ix = 0; ix < name2tag.size(); ix++)
+      for (unsigned int ix = 0; ix < name2tag.size(); ix++)
         delete utagList[ix];
       delete [] utagList;
     }
