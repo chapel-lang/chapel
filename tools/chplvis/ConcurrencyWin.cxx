@@ -38,7 +38,7 @@ void ConcurrencyWin::updateData (long loc, long tag)
   tagNum = tag;
   curTag = VisData.getTagData(tagNum);
   snprintf(tmp, sizeof(tmp), "Concurrency for Locale %ld, tag %s, max %ld, max Clock %f",
-           loc, curTag->name.c_str(), curTag->locales[loc].maxConc,
+           loc, curTag->name, curTag->locales[loc].maxConc,
            curTag->locales[loc].maxTaskClock);
   title->copy_label(tmp);
   dataBox->buildData();
@@ -271,7 +271,7 @@ void ConcurrencyData::buildData(void) {
         tmpTagNo = tl_itr->second;
         while (greedy[curCol] != 0) curCol++;
         snprintf (tmp, sizeof(tmp), "TAG: %s", 
-                  VisData.getTagData(tmpTagNo)->name.c_str());
+                  VisData.getTagData(tmpTagNo)->name);
         b = new Fl_Box(FL_BORDER_BOX, 10+60*curCol, 40+25*curLine,
                                8+7*strlen(tmp), 20, NULL);
         b->copy_label(tmp);
