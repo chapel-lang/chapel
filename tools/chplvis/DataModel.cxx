@@ -617,7 +617,7 @@ int DataModel::LoadData(const char * filename)
 
     // Allocate tage data
     utagList = new tagData *[name2tag.size()];
-    for (int ix = 0; ix < name2tag.size(); ix++)
+    for (unsigned int ix = 0; ix < name2tag.size(); ix++)
       utagList[ix] = new tagData(numLocales);
 
     // All and Start use tagData ... see getUTagData
