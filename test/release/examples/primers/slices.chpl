@@ -76,13 +76,13 @@ proc main() {
 
   A = 0; 
 
-  // Case 3:  An array alias without reindexing is used to point
-  // to each diagonal block.  This alias is then sent to initBlock2
-  // where the domain of the array argument is reindexed.
+  // Case 3: An array alias is used to point to each diagonal block
+  // and is reindexed to use 1-based indexing in order to meet the
+  // requirements of the initBlock2() routine.
   writeln("Initializing the diagonal blocks of A."); 
   writeln("Reindexing of array argument in init procedure definition. ");
   for subvec in blockIter(vec,blk) {
-    var Ablock => A[subvec,subvec];
+    var Ablock => A[subvec,subvec].reindex({1..blk, 1..blk});
     initBlock2(Ablock);
   }
 
@@ -107,10 +107,9 @@ proc initBlock(A) {
   }
 }
 
-// This procedure reindexes the domain of the array argument to
-// be of [1..blk,1..blk].  It expects arrays to be blk x blk.
-// The procedure  sets each element of A to be the value of its
-// row index.
+// This procedure requires the domain of the array argument to
+// be [1..blk,1..blk].  It sets each element of A to be the value of
+// its row index.
 proc initBlock2(A: [1..blk,1..blk]) {
   for (i,j) in A.domain {
     A(i,j) = i;

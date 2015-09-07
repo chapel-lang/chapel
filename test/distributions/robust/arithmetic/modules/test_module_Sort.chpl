@@ -51,7 +51,7 @@ proc foo(D: domain, A: [D], st: SortType) {
 const TD1D: domain(1) = Space1.translate(-o5);
 for param st in 0..5 /* this is annoying */ {
   rng.fillRandom(R1D);
-  foo(TD1D, R1D, st:SortType);
+  foo(TD1D, R1D.reindex(TD1D), st:SortType);
 }
 
 writeln("Sort rank changed array (2D->1D)");

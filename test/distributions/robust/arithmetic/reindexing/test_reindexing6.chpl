@@ -34,7 +34,7 @@ proc dit() {
                   MySpace4.dim(4).low-ReindexSpace4.dim(4).low);
   var A: [MyDom4D] int;
   for e in A do e = next();
-  writeln("reindex A: ", foo(ReindexDom4D, A, A, offset), " errors");
+  writeln("reindex A: ", foo(ReindexDom4D, A.reindex(ReindexDom4D), A, offset), " errors");
 }
 
 dit();

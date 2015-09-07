@@ -3,4 +3,4 @@ proc foo(A: [1..10] int) {
 }
 
 var A: [1..2, 1..5] int;
-foo(A);
+foo(A.reindex({1..10}));

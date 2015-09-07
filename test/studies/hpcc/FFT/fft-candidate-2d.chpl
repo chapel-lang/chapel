@@ -216,19 +216,23 @@ proc printResults(successful, execTime) {
 }
 
 
-proc butterfly(wk1, wk2, wk3, inout A:[1..radix]) {
-  var x0 = A(1) + A(2),
-      x1 = A(1) - A(2),
-      x2 = A(3) + A(4),
-      x3rot = (A(3) - A(4))*1.0i;
+proc butterfly(wk1, wk2, wk3, inout A:[?D]) {
+  const i1 = D.low,
+        i2 = i1 + D.stride,
+        i3 = i2 + D.stride,
+        i4 = i3 + D.stride;
+  var x0 = A(i1) + A(i2),
+      x1 = A(i1) - A(i2),
+      x2 = A(i3) + A(i4),
+      x3rot = (A(i3) - A(i4))*1.0i;
 
-  A(1) = x0 + x2;
+  A(i1) = x0 + x2;
   x0 -= x2;
-  A(3) = wk2 * x0;
+  A(i3) = wk2 * x0;
   x0 = x1 + x3rot;
-  A(2) = wk1 * x0;
+  A(i2) = wk1 * x0;
   x0 = x1 - x3rot;
-  A(4) = wk3 * x0;
+  A(i4) = wk3 * x0;
 }
 
 

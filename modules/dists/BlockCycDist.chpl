@@ -148,6 +148,26 @@ class BlockCyclic : BaseDist {
   proc dsiClone() {
     return new BlockCyclic(lowIdx, blocksize, targetLocales, tasksPerLocale);
   }
+
+  proc dsiEqualDMaps(that: BlockCyclic(?)) {
+    //
+    // TODO: In retrospect, I think that this equality check
+    // is too simple.  Since a distribution distributes the
+    // whole plane/space that its domains live in, the equality
+    // check should be that the two lowIdx's are equal modulo
+    // the number of locales in that dimension times the blocksize.
+    // I think this is more akin to what cyclic does.  So the
+    // current test is shallower, indicating whether they were
+    // paramterized the same, but not whether they distribute
+    // the same.
+    //
+    return (this.lowIdx == that.lowIdx &&
+            this.blocksize == that.blocksize &&
+            this.targetLocales.equals(that.targetLocales));
+  }
+
+  proc dsiEqualDMaps(that) param {
+  }
 }
 
 //

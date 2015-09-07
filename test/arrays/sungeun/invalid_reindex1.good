@@ -1,2 +1,1 @@
-invalid_reindex1.chpl:6: In function 'foo':
-invalid_reindex1.chpl:6: error: illegal implicit rank change
+invalid_reindex1.chpl:14: error: Rank mismatch passing array argument: expected 4 but got 3

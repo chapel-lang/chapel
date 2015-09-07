@@ -8,5 +8,5 @@ proc main {
   var A: [1..n] int = [i in 1..n] i;
 
   for i in 1..n-k+1 do
-    foo(A[i..i+k-1]);
+    foo(A[i..i+k-1].reindex({1..k}));
 }

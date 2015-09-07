@@ -297,6 +297,22 @@ proc Block.dsiAssign(other: this.type) {
                                     targetLocDomDims);
 }
 
+//
+// Block distributions are equivalent if they share the same bounding
+// box and target locale set.
+//
+proc Block.dsiEqualDMaps(that: Block(?)) {
+  return (this.boundingBox == that.boundingBox &&
+          this.targetLocales.equals(that.targetLocales));
+}
+
+//
+// Block distributions are not equivalent to other domain maps.
+//
+proc Block.dsiEqualDMaps(that) param {
+  return false;
+}
+
 proc Block.dsiClone() {
   return new Block(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,

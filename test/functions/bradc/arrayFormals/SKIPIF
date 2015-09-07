@@ -1,0 +1,7 @@
+# --fast sets --no-checks
+#
+# --fast sets --no-checks and some configurations for the tests in
+# this directory explicitly check that one of our runtime checks is
+# working correctly, so we'll skip the tests to be safe.
+
+COMPOPTS <= --fast

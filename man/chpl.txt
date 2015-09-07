@@ -185,15 +185,20 @@ OPTIONS
 
   Run-time Semantic Check Options
 
-  --no-checks       Turns off many run-time checks, equivalent to:
-                      --no-bounds-checks --no-nil-checks --no-local-checks
-                      --no-stack-checks.
-                    Currently, it is typically necessary to use this flag
-                    (or --fast) in order to have any hope of achieving
-                    performance competitive with hand-coded C or Fortran.
+  --no-checks       Turns off all of the run-time checks in this section
+                    of the man page. Currently, it is typically necessary
+                    to use this flag (or --fast, which implies --no-checks)
+                    to achieve performance competitive with hand-coded C
+                    or Fortran.
 
   --[no-]bounds-checks   Enable [disable] run-time bounds checking,
                     e.g. during slicing and array indexing.
+
+  --[no-]formal-domain-checks   Enable [disable] run-time checks to ensure
+                    that an actual array argument's domain matches its formal
+                    array argument's domain in terms of (a) describing the same
+                    index set and (b) having an equivalent domain map (if the formal
+                    domain explicitly specifies a domain map).
 
   --[no-]local-checks  Enable [disable] run-time checking of the locality of
                     references within local blocks.

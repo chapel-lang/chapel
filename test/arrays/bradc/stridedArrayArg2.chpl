@@ -1,4 +1,4 @@
-proc foo(X: [1..3] int) {
+proc foo(X: [?XD] int) {
   X *= -1;
 }
 

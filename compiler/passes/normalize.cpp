@@ -1324,20 +1324,13 @@ static void fixup_array_formals(FnSymbol* fn) {
         } else if (!noDomain) {
           // The domain argument is supplied but NULL.
           INT_ASSERT(queryDomain == NULL);
-
-          VarSymbol* tmp = newTemp("reindex");
-          tmp->addFlag(FLAG_EXPR_TEMP);
-          for_vector(SymExpr, se, symExprs) {
-            if (se->var == arg)
-              se->var = tmp;
-          }
-          // tmp <- arg.reindex(arg->typeExpr)
-          fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,
-                                        new CallExpr(
-                                          new CallExpr(".", arg,
-                                                       new_StringSymbol("reindex")),
-                                          call->get(1)->copy())));
-          fn->insertAtHead(new DefExpr(tmp));
+          
+          // actualArg.chpl_checkArrArgDoms(arg->typeExpr)
+          fn->insertAtHead(new CallExpr(new CallExpr(".", arg,
+                                                     new_StringSymbol("chpl_checkArrArgDoms")
+                                                     ),
+                                        call->get(1)->copy(), 
+                                        (fNoFormalDomainChecks ? gFalse : gTrue)));
         }
       }
     }

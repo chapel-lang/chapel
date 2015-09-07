@@ -13,6 +13,6 @@ var A: [1..10 by 2] int;
 for i in A.domain do
   A(i) = i;
 
-foo(A);
+foo(A.reindex({1..5}));
 
-bar(A);
+bar(A.reindex({1..20 by 4}));

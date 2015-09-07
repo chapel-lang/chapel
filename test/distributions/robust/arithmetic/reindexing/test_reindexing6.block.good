@@ -1,2 +1,2 @@
 reindex A: 0 errors
-test_reindexing6.chpl:11: error: halt reached - invalid reindex for Block: distribution bounding box (low) out of range in dimension 4
+test_reindexing6.chpl:37: error: halt reached - invalid reindex for Block: distribution bounding box (low) out of range in dimension 4
