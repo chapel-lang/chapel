@@ -493,9 +493,11 @@ int DataModel::LoadData(const char * filename)
     E_tag *tp;
     E_begin_task *btp;
     E_end_task *etp;
+    E_comm   *cp;
+    E_fork   *fp;
     
     switch (ev->Ekind()) {
-      default: // Do nothing for most of these
+      default: // Do nothing 
         break;
 
       case Ev_tag:
@@ -568,6 +570,38 @@ int DataModel::LoadData(const char * filename)
             printf ("Timeline: did not find task %ld, nid %d\n", etp->taskId(), curNodeId);
         }
         break;
+
+      case Ev_fork:
+        fp = (E_fork *)ev;
+        {
+          taskData *theTask = getTaskData(curNodeId, fp->inTask());
+          if (theTask != NULL) {
+            // Insert the event
+            theTask->commList.push_back(ev);
+            theTask->commSum.numForks++;
+            theTask->commSum.numComms++;
+          } else 
+            printf ("per task forks, no task %ld\n", (long)fp->inTask());
+        }
+        break;
+
+      case Ev_comm:
+        cp = (E_comm *)ev;
+        {
+          taskData *theTask = getTaskData(cp->isGet() ? cp->dstId() : cp->srcId(), cp->inTask());
+          if (theTask != NULL) {
+            // Insert the event
+            theTask->commList.push_back(ev);
+            theTask->commSum.numComms++;
+            if (cp->isGet())
+              theTask->commSum.numGets++;
+            else
+              theTask->commSum.numPuts++;
+            theTask->commSum.commSize += cp->dataLen();
+          } else 
+            printf ("per task comms, no task %ld\n", (long)cp->inTask());
+        }
+        break;
     }
 
     // Move to next event record
@@ -583,7 +617,7 @@ int DataModel::LoadData(const char * filename)
 
     // Allocate tage data
     utagList = new tagData *[name2tag.size()];
-    for (int ix = 0; ix < name2tag.size(); ix++)
+    for (unsigned int ix = 0; ix < name2tag.size(); ix++)
       utagList[ix] = new tagData(numLocales);
 
     // All and Start use tagData ... see getUTagData
@@ -840,10 +874,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
                    line[0] == 'p' ? 0 :
                    line[3] == 'g' ? 1 : 0);
           if (isGet)
-            newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen, isGet,
+            newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen, isGet, taskid, nlineno,
                                    strDB.getString(nfilename));
           else
-            newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet,
+            newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet, taskid, nlineno,
                                    strDB.getString(nfilename));
         }
         break;
@@ -859,7 +893,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             // printf ("fork vdbtid: %d/%d\n", nid, vdbTid);
             break;
           }
-          newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_');
+          newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_', vdbTid);
         }
         break;
 
@@ -1052,27 +1086,27 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
 // Get the task data by task Id and locale.
 
-taskData DataModel::getTaskData (long locale, long taskId, long tagNo)
+taskData * DataModel::getTaskData (long locale, long taskId, long tagNo)
 {
   std::map<long,taskData>::iterator tskItr;
-  taskData retVal;
   long curTag;
+
+  if (locale == 0 && taskId == 1)
+    return &mainTask;
 
   if (tagNo != TagALL) {
     tskItr = tagList[tagNo+2]->locales[locale].tasks.find(taskId);
     if (tskItr != tagList[tagNo+2]->locales[locale].tasks.end())
-      return (*tskItr).second;
+      return &(tskItr->second);
   }
 
   curTag = TagStart;
   while (curTag < numTags) {
     tskItr = tagList[curTag+2]->locales[locale].tasks.find(taskId);
     if (tskItr != tagList[curTag+2]->locales[locale].tasks.end())
-      return (*tskItr).second;
+      return &(tskItr->second);
     curTag++;
   }
   
-  retVal.taskRec = NULL;
-  retVal.endTagNo = -1;
-  return retVal;
+  return NULL;
 }
