@@ -850,6 +850,8 @@ module ChapelBase {
       return new _EndCount(chpl__atomicType(int), taskCntType);
     }
   }
+
+  type _remoteEndCountType = _endCountAlloc(false).type;
   
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
@@ -864,7 +866,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "no remote memory fence"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
-    if isAtomicType(e.taskCnt.type) {
+    if isAtomic(e.taskCnt) {
       e.i.add(1, memory_order_release);
       e.taskCnt.add(1, memory_order_release);
     } else {
@@ -906,7 +908,7 @@ module ChapelBase {
     e.i.waitFor(0, memory_order_acquire);
 
     if countRunningTasks {
-      const taskDec = if isAtomicType(e.taskCnt.type) then e.taskCnt.read() else e.taskCnt;
+      const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
       // taskDec-1 to adjust for the task that was waiting for others to finish
       here.runningTaskCntSub(taskDec-1);  // increment is in _upEndCount()
     } else {

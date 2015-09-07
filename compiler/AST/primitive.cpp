@@ -281,21 +281,11 @@ static Type*
 returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
-    // Ugly hack. Basically we want to use network atomics when possible
-    // for begins and sync stmts. A nicer way to do this would be to use
-    // the return-type of "_endCountAlloc(false)".
-    const char* net = "_EndCount_r";
-    const char* proc = "_EndCount_a";
-    const char* prefix = NULL;
-    if (!strcmp(CHPL_NETWORK_ATOMICS, "none")) {
-      prefix = proc;
-    } else {
-      prefix = net;
-    }
-    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-      bool startsWith = strncmp(prefix, ts->cname, strlen(prefix)) == 0;
-      if (startsWith) {
-        endCountType = ts->type;
+    // Look for the type var `_remoteEndCountType` in ChapelBase.
+    forv_Vec(VarSymbol, var, gVarSymbols) {
+      const char* searchStr = "_remoteEndCountType";
+      if (strcmp(var->cname, searchStr) == 0) {
+        endCountType = var->type;
         break;
       }
     }
