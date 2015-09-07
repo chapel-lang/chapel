@@ -25,6 +25,7 @@
 #include "ViewField.h"   // for heatColor
 
 #include <FL/fl_draw.H>
+#include <FL/Fl_Button.H>
 
 ConcurrencyWin::ConcurrencyWin (int x, int y, int W, int H, const char *l)
   :  Fl_Double_Window (W, H, l)
@@ -103,8 +104,16 @@ int ConcurrencyData::handle(int event) {
 }
 
 
+// Callback for tasks
+
+void taskCallback (Fl_Widget *w, void *p) {
+  printf ("taskCallback! \n");
+}
+
+
 void ConcurrencyData::buildData(void) {
   Fl_Box *b;
+  Fl_Button *btn;
   char tmp[2048];
   int width = w();
   int height = h();
@@ -121,7 +130,7 @@ void ConcurrencyData::buildData(void) {
   std::list <DataModel::timelineEntry>::iterator tl_itr;
   std::list <DataModel::timelineEntry>::iterator tagStart;
 
-  taskData theTask;
+  taskData *theTask;
   bool done;
 
   drawData lineDrawData;
@@ -175,7 +184,7 @@ void ConcurrencyData::buildData(void) {
         case DataModel::Tl_Begin:
           if (tmpTagNo < parent->tagNum) {
             theTask =  VisData.getTaskData(parent->localeNum, tl_itr->second, tmpTagNo);
-            if (theTask.taskRec != NULL && theTask.endTagNo != tmpTagNo) {
+            if (theTask && theTask->taskRec != NULL && theTask->endTagNo != tmpTagNo) {
               // printf ("should be greedy: tag %ld\n", tl_itr->second);
               for (int i = 0; i < progMaxConc; i++) {
                 if (greedy[i] == 0) {
@@ -187,7 +196,7 @@ void ConcurrencyData::buildData(void) {
                 assert (i+1 != progMaxConc);
               }
             } else {
-              if (theTask.taskRec == NULL) 
+              if (theTask && theTask->taskRec == NULL) 
                 printf ("Didn't find task %ld/%ld in tag %ld\n", parent->localeNum,
                         tl_itr->second, tmpTagNo);
             }
@@ -244,9 +253,9 @@ void ConcurrencyData::buildData(void) {
       b->copy_label(tmp);
       add(b);
       theTask = VisData.getTaskData(parent->localeNum, greedy[curCol]);
-      if (theTask.taskRec && theTask.taskRec->isLocal()) {
-        snprintf (tmp, sizeof(tmp), "%s:%ld", theTask.taskRec->srcName(),
-                  theTask.taskRec->srcLine());
+      if (theTask && theTask->taskRec && theTask->taskRec->isLocal()) {
+        snprintf (tmp, sizeof(tmp), "%s:%ld", theTask->taskRec->srcName(),
+                  theTask->taskRec->srcLine());
         b->copy_tooltip(tmp);
       }
       if (curCol != col)
@@ -285,24 +294,29 @@ void ConcurrencyData::buildData(void) {
         greedy[curCol] = tl_itr->second; // store the task id
         greedyStart[curCol] = curLine;
         theTask = VisData.getTaskData(parent->localeNum,tl_itr->second, tmpTagNo);
-        b = new Fl_Box(FL_ROUNDED_BOX, 10+60*curCol,
-                               40+25*curLine, 70, 20, NULL);
+        btn = new Fl_Button(10+60*curCol, 40+25*curLine, 70, 20, NULL);
+        btn->box(FL_ROUNDED_BOX);
+        btn->down_box(FL_ROUNDED_BOX);
         snprintf (tmp, sizeof(tmp), "%c %ld", 
-                   theTask.taskRec->isLocal() ? 'L' : 'F', tl_itr->second);
-        b->copy_label(tmp);
-        b->color(heatColor(theTask.taskClock,
-                           VisData.getTagData(parent->tagNum)->
-                           locales[parent->localeNum].maxTaskClock));
-        add(b);
-        if (theTask.taskRec->isLocal()) {
-          snprintf (tmp, sizeof(tmp), "[%f] %s:%ld", 
-                    theTask.taskClock, theTask.taskRec->srcName(),
-                    theTask.taskRec->srcLine());
-        } else {
-          snprintf (tmp, sizeof(tmp), "[%f] <no file information>", 
-                    theTask.taskClock);
+                   theTask->taskRec->isLocal() ? 'L' : 'F', tl_itr->second);
+        btn->copy_label(tmp);
+        btn->color(heatColor(theTask->taskClock,
+                             VisData.getTagData(parent->tagNum)->
+                             locales[parent->localeNum].maxTaskClock));
+        btn->down_color(btn->color());
+        // btn->callback(taskCallback, (void *)theTask);
+        add(btn);
+        if (theTask->taskRec->isLocal()) {
+          snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF\n%s:%ld",
+                    theTask->taskClock, theTask->commSum.numGets,
+                    theTask->commSum.numPuts, theTask->commSum.numForks,
+                    theTask->taskRec->srcName(), theTask->taskRec->srcLine());
+        } else {;
+          snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF",
+                    theTask->taskClock, theTask->commSum.numGets,
+                    theTask->commSum.numPuts, theTask->commSum.numForks);
         }
-         b->copy_tooltip(tmp);
+        btn->copy_tooltip(tmp);
         curLine++;
         break;
 

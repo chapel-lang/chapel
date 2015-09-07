@@ -40,6 +40,17 @@
 
 // Support Structs used by DataModel
 
+// Used to track communication,  each tag has a 2D array of commData, one for each direction
+struct commData {
+  long numComms;
+  long numGets;
+  long numPuts;
+  long numForks;
+  long commSize;
+  
+  commData() :  numComms(0), numGets(0), numPuts(0), numForks(0), commSize(0) {};
+};
+
 // Used to track tasks,  each tag/locale has a map of taskData
 struct taskData {
   E_task *taskRec;
@@ -47,6 +58,8 @@ struct taskData {
   E_end_task *endRec;
   int endTagNo;
   double taskClock;
+  std::list<Event *>commList;
+  commData commSum;
 
   taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL), endTagNo(-2) {};
 };
@@ -72,17 +85,6 @@ struct localeData {
                  numTasks(0), runConc(0), maxConc(0) {};
 };
 
-// Used to track communication,  each tag has a 2D array of commData, one for each direction
-struct commData {
-  long numComms;
-  long numGets;
-  long numPuts;
-  long numForks;
-  long commSize;
-  
-  commData() :  numComms(0), numGets(0), numPuts(0), numForks(0), commSize(0) {};
-};
-
 // Primary data structure built by reading the data files dumped by using VisualDebug.chpl
 
 class DataModel {
@@ -100,6 +102,8 @@ class DataModel {
   std::list < timelineEntry > *taskTimeline;
 
  private:
+
+  taskData mainTask;
 
   StringCache strDB;
 
@@ -198,7 +202,7 @@ class DataModel {
     return utagList[tagno];
   }
 
-  taskData getTaskData (long locale, long taskId, long tagNo = TagALL);
+  taskData * getTaskData (long locale, long taskId, long tagNo = TagALL);
   
   // Constructor for DataModel
   
