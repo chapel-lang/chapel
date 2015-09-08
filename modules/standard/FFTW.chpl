@@ -89,7 +89,7 @@
 module FFTW {
 
   use SysCTypes;
-  use "fftw3.h", "-lfftw3";
+  require "fftw3.h", "-lfftw3";
 
 
   /*
