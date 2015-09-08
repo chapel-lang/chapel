@@ -4,13 +4,13 @@ use CommDiagnostics;
 
 const numRemoteTasks = numLocales;
 
-proc remoteTestBasic(ref b, numRemoteTasks) {
+proc remoteTestBasic(b: Barrier, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
   var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
   var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
   resetCommDiagnostics();
   startCommDiagnostics();
-  coforall t in barSpace with (ref b) do on A.domain.dist.idxToLocale(t) {
+  coforall t in barSpace do on A.domain.dist.idxToLocale(t) {
     B[t] = A[t];
     b.barrier();
   }
@@ -18,14 +18,14 @@ proc remoteTestBasic(ref b, numRemoteTasks) {
   writeln(getCommDiagnostics());
 }
 
-proc remoteTestSplitPhase(ref b, numRemoteTasks) {
+proc remoteTestSplitPhase(b: Barrier, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
   const hi = barSpace.high;
   var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
   var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
   resetCommDiagnostics();
   startCommDiagnostics();
-  coforall t in barSpace with (ref b) do on A.domain.dist.idxToLocale(t) {
+  coforall t in barSpace do on A.domain.dist.idxToLocale(t) {
     B[t] = A[t];
     b.notify();
     if t!=hi {            // Use an 'on' to get same results for atomics
@@ -43,9 +43,12 @@ remoteTestBasic(b, numRemoteTasks);
 
 b.reset(numRemoteTasks);
 remoteTestSplitPhase(b, numRemoteTasks);
+delete b;
 
-var sb1 = new sBarrier(numRemoteTasks);
+var sb1 = new Barrier(numRemoteTasks, BarrierType.Sync);
 remoteTestBasic(sb1, numRemoteTasks);
+delete sb1;
 
-var sb2 = new sBarrier(numRemoteTasks);
+var sb2 = new Barrier(numRemoteTasks, BarrierType.Sync);
 remoteTestSplitPhase(sb2, numRemoteTasks);
+delete sb2;
