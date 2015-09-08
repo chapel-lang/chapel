@@ -840,6 +840,11 @@ module ChapelBase {
   // statement needed, because the task should be running on the same
   // locale as the sync/cofall/cobegin was initiated on and thus the
   // same locale on which the object is allocated.
+  //
+  // TODO: 'taskCnt' can sometimes be local even if 'i' has to be remote.
+  // It is currently believed that only a remote-begin will want a network
+  // atomic 'taskCnt'. There should be a separate argument to control the type
+  // of 'taskCnt'.
   pragma "dont disable remote value forwarding"
   inline proc _endCountAlloc(param forceLocalTypes : bool) {
     type taskCntType = if !forceLocalTypes && useAtomicTaskCnt then atomic int
@@ -851,6 +856,8 @@ module ChapelBase {
     }
   }
 
+  // Compiler looks for this variable to determine the return type of
+  // the "get end count" primitive.
   type _remoteEndCountType = _endCountAlloc(false).type;
   
   // This function is called once by the initiating task.  As above, no
