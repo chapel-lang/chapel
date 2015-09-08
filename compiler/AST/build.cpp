@@ -1364,7 +1364,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     //
     VarSymbol* coforallCount = newTemp("_coforallCount");
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, body, true, zippered);
-    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", gFalse)));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
     block->insertAtHead(new DefExpr(coforallCount));
     body->insertAtHead(new CallExpr("_upEndCount", coforallCount, gFalse));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, gFalse));
@@ -1386,7 +1386,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, beginBlk, true, zippered);
-    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", gTrue)));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
     block->insertAtHead(new DefExpr(coforallCount));
     block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, coforallCount));
     beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
@@ -2116,7 +2116,7 @@ buildSyncStmt(Expr* stmt) {
   VarSymbol* endCountSave = newTemp("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc", gFalse)));
+  block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
   block->insertAtTail(stmt);
   block->insertAtTail(new CallExpr("_waitEndCount"));
   block->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_END_COUNT)));
@@ -2158,7 +2158,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     block->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
   }
 
-  block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", gTrue)));
+  block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
   block->insertAtHead(new DefExpr(cobeginCount));
   block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, cobeginCount));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
