@@ -47,6 +47,12 @@
    "task-team" concept.  A task-team will more directly support collective
    operations such as barriers between the tasks within a team.
 
+   The Barrier type is currently implemented as a class, requiring it to be
+   explicitly deleted before it goes out of scope.  It is expected that this
+   type will be changed into a record allowing it to be automatically
+   reclaimed.  When this change happens, code that uses this Barrier will need
+   to have the explicit deletes removed, but should require no other changes.
+
    The current implementation is designed for correctness, but is not expected
    to perform well at scale.  We expect performance at scale to improve as
    this barrier implementation is optimized and as the task-team concept is
@@ -70,7 +76,7 @@ module Barrier {
 
        :arg numTasks: The number of tasks that will use this barrier
        :arg barrierType: The barrier implementation to use
-       :arg reusable: Encure some extra overhead to allow reuse of this barrier?
+       :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
     proc Barrier(numTasks: int,
