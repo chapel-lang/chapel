@@ -10,7 +10,7 @@
 $DESCRIPTION=CHPL
 
 # Putting reserved identifiers here from spec section 6.4.2 Keywords
-$KEYWORDS(kwa)=atomic begin break by class cobegin coforall config const continue proc iter delete dmapped do domain else enum false for forall if in index inout label lambda let local module new nil noinit on otherwise out param private public record reduce return scan select serial single sparse subdomain sync then true type union use var when where while with yield zip
+$KEYWORDS(kwa)=atomic begin break by class cobegin coforall config const continue proc iter delete dmapped do domain else enum false for forall if in index inout label lambda let local module new nil noinit on otherwise out param private public record reduce ref require return scan select serial single sparse subdomain sync then true type union use var when where while with yield zip
 
 # Putting built-in things that are not types things here
 $KEYWORDS(kwb)=bool complex int opaque range real string uint
