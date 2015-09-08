@@ -19,7 +19,7 @@
 
 /* Support for task barriers.
 
-   The Barrier record provided in this module can be used to prevent tasks
+   The Barrier type provided in this module can be used to prevent tasks
    from proceeding until all other related tasks have also reached the
    barrier.
 
