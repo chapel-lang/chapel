@@ -826,12 +826,13 @@ module ChapelBase {
   //
   
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
-  type taskCntType = if useAtomicTaskCnt then atomic int
-                                         else int;
+
   pragma "no default functions"
   class _EndCount {
-    var i: atomic int,
-        taskCnt: taskCntType,
+    type iType;
+    type taskType;
+    var i: iType,
+        taskCnt: taskType,
         taskList: _task_list = _defaultOf(_task_list);
   }
   
@@ -839,10 +840,25 @@ module ChapelBase {
   // statement needed, because the task should be running on the same
   // locale as the sync/cofall/cobegin was initiated on and thus the
   // same locale on which the object is allocated.
+  //
+  // TODO: 'taskCnt' can sometimes be local even if 'i' has to be remote.
+  // It is currently believed that only a remote-begin will want a network
+  // atomic 'taskCnt'. There should be a separate argument to control the type
+  // of 'taskCnt'.
   pragma "dont disable remote value forwarding"
-  inline proc _endCountAlloc() {
-    return new _EndCount();
+  inline proc _endCountAlloc(param forceLocalTypes : bool) {
+    type taskCntType = if !forceLocalTypes && useAtomicTaskCnt then atomic int
+                                           else int;
+    if forceLocalTypes {
+      return new _EndCount(chpl__processorAtomicType(int), taskCntType);
+    } else {
+      return new _EndCount(chpl__atomicType(int), taskCntType);
+    }
   }
+
+  // Compiler looks for this variable to determine the return type of
+  // the "get end count" primitive.
+  type _remoteEndCountType = _endCountAlloc(false).type;
   
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
@@ -857,7 +873,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "no remote memory fence"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
-    if useAtomicTaskCnt {
+    if isAtomic(e.taskCnt) {
       e.i.add(1, memory_order_release);
       e.taskCnt.add(1, memory_order_release);
     } else {
@@ -899,7 +915,7 @@ module ChapelBase {
     e.i.waitFor(0, memory_order_acquire);
 
     if countRunningTasks {
-      const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
+      const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
       // taskDec-1 to adjust for the task that was waiting for others to finish
       here.runningTaskCntSub(taskDec-1);  // increment is in _upEndCount()
     } else {

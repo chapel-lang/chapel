@@ -248,20 +248,24 @@ module Atomics {
     chpl_rmem_consist_fence(order);
   }
 
+  proc chpl__processorAtomicType(type base_type) type {
+    if base_type==bool then return atomicflag;
+    else if base_type==uint(8) then return atomic_uint8;
+    else if base_type==uint(16) then return atomic_uint16;
+    else if base_type==uint(32) then return atomic_uint32;
+    else if base_type==uint(64) then return atomic_uint64;
+    else if base_type==int(8) then return atomic_int8;
+    else if base_type==int(16) then return atomic_int16;
+    else if base_type==int(32) then return atomic_int32;
+    else if base_type==int(64) then return atomic_int64;
+    else if base_type==real(64) then return atomic_real64;
+    else if base_type==real(32) then return atomic_real32;
+    else compilerError("Unsupported atomic type");
+  }
+
   proc chpl__atomicType(type base_type) type {
     if CHPL_NETWORK_ATOMICS == "none" {
-      if base_type==bool then return atomicflag;
-      else if base_type==uint(8) then return atomic_uint8;
-      else if base_type==uint(16) then return atomic_uint16;
-      else if base_type==uint(32) then return atomic_uint32;
-      else if base_type==uint(64) then return atomic_uint64;
-      else if base_type==int(8) then return atomic_int8;
-      else if base_type==int(16) then return atomic_int16;
-      else if base_type==int(32) then return atomic_int32;
-      else if base_type==int(64) then return atomic_int64;
-      else if base_type==real(64) then return atomic_real64;
-      else if base_type==real(32) then return atomic_real32;
-      else compilerError("Unsupported atomic type");
+      return chpl__processorAtomicType(base_type);
     } else {
       return chpl__networkAtomicType(base_type);
     }
