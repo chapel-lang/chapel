@@ -274,7 +274,7 @@
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TON TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
-%token TRECORD TREDUCE TREF TRETURN
+%token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TWITH TYIELD TZIP
@@ -347,7 +347,7 @@
 %type <pblockstmt> block_stmt
 %type <pblockstmt> stmt_ls
 
-%type <pblockstmt> use_stmt
+%type <pblockstmt> use_stmt require_stmt
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -426,6 +426,7 @@ stmt:
   module_decl_stmt
 | block_stmt
 | use_stmt
+| require_stmt
 | class_level_stmt
 | assignment_stmt
 | extern_block_stmt
@@ -489,6 +490,10 @@ stmt_ls:
 
 use_stmt:
   TUSE expr_ls TSEMI                   { $$ = buildUseStmt($2); }
+;
+
+require_stmt:
+  TREQUIRE expr_ls TSEMI               { $$ = buildRequireStmt($2); }
 ;
 
 assignment_stmt:

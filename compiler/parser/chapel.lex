@@ -159,6 +159,7 @@ public           return processToken(yyscanner, TPUBLIC);
 record           return processToken(yyscanner, TRECORD);
 reduce           return processToken(yyscanner, TREDUCE);
 ref              return processToken(yyscanner, TREF);
+require          return processToken(yyscanner, TREQUIRE);
 return           return processToken(yyscanner, TRETURN);
 scan             return processToken(yyscanner, TSCAN);
 select           return processToken(yyscanner, TSELECT);

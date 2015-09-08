@@ -397,7 +397,7 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 }
 
 //
-// Given a string literal argument from a 'use' statement, process
+// Given a string literal argument from a 'require' statement, process
 // that argument.  We assume it's either a "-llib" flag,
 // or a source filename like "foo.h", "foo.c", "foo.o", etc.  
 //
@@ -407,7 +407,7 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 // - Otherwise, assume it's the latter and pass it to our source file
 //   handler (which itself handles cases it doesn't recognize).
 //
-static void processStringInUseStmt(const char* str) {
+static void processStringInRequireStmt(const char* str) {
   if (strncmp(str, "-l", 2) == 0) {
     addLibInfo(str);
   } else {
@@ -427,17 +427,54 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   //
   for_actuals(expr, args) {
     Expr* useArg = expr->remove();
-
     //
-    // if this is a string argument to 'use', process it
+    // 'use' statements no longer accept string literals, but let's
+    // let it slide for one release to ease transition to the
+    // 'require' statement.  Generate a warning and process it as
+    // though the user had typed 'require'.  This check can be removed
+    // after the 1.12 release.
     //
     if (const char* str = toImmediateString(useArg)) {
-      processStringInUseStmt(str);
+      USR_WARN(args, "'use' no longer accepts string literals == use 'require' instead");
+      processStringInRequireStmt(str);
     } else {
       //
       // Otherwise, handle it in the traditional way
       //
       list = buildUseList(useArg, list);
+    }
+  }
+
+  //
+  // If all of them are consumed, replace the use statement by a no-op
+  //
+  if (list == NULL) {
+    list = buildChapelStmt(new CallExpr(PRIM_NOOP));
+  }
+  
+  return list;
+}
+
+
+//
+// Build a 'require' statement
+//
+BlockStmt* buildRequireStmt(CallExpr* args) {
+  BlockStmt* list = NULL;
+
+  //
+  // Iterate over the expressions being 'require'd, processing them
+  //
+  for_actuals(expr, args) {
+    Expr* useArg = expr->remove();
+
+    //
+    // if this is a string argument to 'require', process it
+    //
+    if (const char* str = toImmediateString(useArg)) {
+      processStringInRequireStmt(str);
+    } else {
+      USR_FATAL("'require' currently only accepts string literal arguments");
     }
   }
 
