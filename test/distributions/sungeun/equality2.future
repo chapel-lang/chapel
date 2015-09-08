@@ -1,5 +1,0 @@
-unimplemented feature: Distribution inequality
-
-Currently this is implemented as a pointer comparison.  Once
-implemented, we should add tests to the distribution robustness suite.
-
