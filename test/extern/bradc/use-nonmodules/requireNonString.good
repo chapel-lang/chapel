@@ -1,1 +1,1 @@
-error: 'require' currently only accepts string literal arguments
+requireNonString.chpl:3: error: 'require' currently only accepts string literal arguments

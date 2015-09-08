@@ -435,7 +435,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
     // after the 1.12 release.
     //
     if (const char* str = toImmediateString(useArg)) {
-      USR_WARN(args, "'use' no longer accepts string literals == use 'require' instead");
+      USR_WARN(useArg, "'use' no longer accepts string literals == use 'require' instead");
       processStringInRequireStmt(str);
     } else {
       //
@@ -474,7 +474,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     if (const char* str = toImmediateString(useArg)) {
       processStringInRequireStmt(str);
     } else {
-      USR_FATAL("'require' currently only accepts string literal arguments");
+      USR_FATAL(useArg, "'require' currently only accepts string literal arguments");
     }
   }
 
