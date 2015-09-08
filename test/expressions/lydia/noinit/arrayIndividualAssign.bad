@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:1288: warning: type [domain(1,int(64),false)] int(64) does not currently support noinit, using default initialization
+arrayIndividualAssign.chpl:1: warning: type [domain(1,int(64),false)] int(64) does not currently support noinit, using default initialization
 1 2 3 4 5
