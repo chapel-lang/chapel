@@ -30,6 +30,8 @@
    "entering the barrier" messages will be printed before any of the
    "past the barrier" messages. ::
 
+     use Barrier;
+
      config const numTasks = here.maxTaskPar;
      var b = new Barrier(numTasks);
 
