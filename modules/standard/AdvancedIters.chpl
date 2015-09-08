@@ -50,21 +50,6 @@ config param debugAdvancedIters:bool=false;
 //************************* Dynamic iterator
 
 /*
-   The serial version of the dynamic iterator.
-
-   Equivalent to serial iteration over the range ``c``.
-*/
-iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
-
-  if debugAdvancedIters then 
-    writeln("Serial dynamic Iterator. Working with range ", c);
-  
-  for i in c do yield i;    
-}             
-
-// Parallel iterator
-
-/*
 
   :arg c: The range to iterate over. The length of the range must be greater
           than zero.
@@ -89,7 +74,19 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
   than ``chunkSize``). This continues until there are no remaining iterations
   in ``c``.
 
+  This iterator can be called in serial and zippered contexts.
+
 */
+iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
+
+  if debugAdvancedIters then 
+    writeln("Serial dynamic Iterator. Working with range ", c);
+  
+  for i in c do yield i;    
+}             
+
+// Parallel iterator
+pragma "no doc"
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int=0) 
 where tag == iterKind.leader
 {
@@ -161,19 +158,6 @@ where tag == iterKind.follower
 //************************* Guided iterator
 
 /*
-   The serial version of the guided iterator.
-
-   Equivalent to serial iteration over the range ``c``.
-*/
-iter guided(c:range(?), numTasks:int=0) {
-
-  if debugAdvancedIters then 
-    writeln("Serial guided Iterator. Working with range ", c);
-  
-  for i in c do yield i;                  
-}
-
-/*
 
   :arg c: The range to iterate over. Must have a length greater than zero.
   :type c: range(?)
@@ -192,7 +176,18 @@ iter guided(c:range(?), numTasks:int=0) {
   decreases approximately exponentially to 1. The splitting strategy is
   therefore adaptive.
 
+  This iterator can be called in serial and zippered contexts.
+
 */
+iter guided(c:range(?), numTasks:int=0) {
+
+  if debugAdvancedIters then 
+    writeln("Serial guided Iterator. Working with range ", c);
+  
+  for i in c do yield i;                  
+}
+
+pragma "no doc"
 iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader 
 {   
@@ -244,9 +239,30 @@ where tag == iterKind.follower
 
 //************************* Adaptive work-stealing iterator
 /*
-   The serial version of the adaptive iterator.
 
-   Equivalent to serial iteration over the range ``c``.
+  :arg c: The range to iterate over. Must have a length greater than zero.
+  :type c: range(?)
+
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
+  :type numTasks: int
+
+  :yields: Indices in the range ``c``.
+
+  This iterator implements a naive adaptive binary splitting work-stealing
+  strategy: Initially the leader iterator distributes the range to split, ``c``,
+  evenly among the ``numTasks`` tasks.
+
+  Then, each task performs adaptive splitting on its local sub-range's iterations.
+  When a task exhausts its local iterations, it steals and splits from the
+  range of another task (the victim). The splitting method on the local range
+  and on the victim range is binary: i.e. the size of each chunk is computed as
+  the number of unassigned iterations divided by 2. There are three stealing
+  strategies that can be selected at compile time using the config param
+  :param:`methodStealing`.
+
+  This iterator can be called in serial and zippered contexts.
 */
 iter adaptive(c:range(?), numTasks:int=0) {  
 
@@ -289,30 +305,7 @@ enum Method {
 */
 config param methodStealing = Method.Whole;
 
-/*
-
-  :arg c: The range to iterate over. Must have a length greater than zero.
-  :type c: range(?)
-
-  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
-                 has the value 0, it will use the value indicated by
-                 ``dataParTasksPerLocale``.
-  :type numTasks: int
-
-  :yields: Indices in the range ``c``.
-
-  This iterator implements a naive adaptive binary splitting work-stealing
-  strategy: Initially the leader iterator distributes the range to split, ``c``,
-  evenly among the ``numTasks`` tasks.
-
-  Then, each task performs adaptive splitting on its local sub-range's iterations.
-  When a task exhausts its local iterations, it steals and splits from the
-  range of another task (the victim). The splitting method on the local range
-  and on the victim range is binary: i.e. the size of each chunk is computed as
-  the number of unassigned iterations divided by 2. There are three stealing
-  strategies that can be selected at compile time using the config param
-  :param:`methodStealing`.
-*/
+pragma "no doc"
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
   
