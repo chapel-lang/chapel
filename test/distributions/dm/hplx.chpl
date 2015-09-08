@@ -46,5 +46,5 @@ proc main() {
 
 proc dgemm(/*A: [1..blk, 1..blk] real,
            B: [1..blk, 1..blk] real,
-           */C: [1..blk, 1..blk] real)
+           */C: [?D] real)
 { }
