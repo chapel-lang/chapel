@@ -21,11 +21,9 @@ proc main {
     domain12test(ri);
     domain21test(ri);
     domain22test(ri);
-/* coming up:
     array1test(ri);
     array21test(ri);
     array22test(ri);
-*/
     if f != 0 && ri % f == 0 then writeln(ri, " tests");
   }
   writeConfig("done");
