@@ -109,8 +109,8 @@ proc advance(dt) {
       const dpos = b1.pos - b2.pos,
             mag = dt / sqrt(sumOfSquares(dpos))**3;
         
-        b1.v -= dpos * b2.mass * mag;
-        b2.v += dpos * b1.mass * mag;
+      b1.v -= dpos * b2.mass * mag;
+      b2.v += dpos * b1.mass * mag;
     }
   }
   
