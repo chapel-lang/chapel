@@ -83,8 +83,7 @@ writeln("gesv result for X:\n", WorkBX, "\n");
 // The arrays may not be identical due to floating point errors. Use a small
 // value as a margin of error to measure success.
 //
-const Diff = WorkBX - X;
-const closeEnough = && reduce [d in Diff] abs(d) < epsilon;
+const closeEnough = && reduce [d in (WorkBX - X)] abs(d) < epsilon;
 
 if closeEnough then
   writeln("SUCCESS");
