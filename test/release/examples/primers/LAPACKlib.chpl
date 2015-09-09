@@ -8,7 +8,7 @@
   X array (within a small margin of error for floating point).
 
   To compile a program with LAPACK, you may need to add some additional flags
-  depending on how LAPACk was installed on your system:
+  depending on how LAPACK was installed on your system:
 
   chpl -I$PATH_TO_LAPACK_INCLUDE_DIR \
        -L$PATH_TO_LAPACK_BINARIES \
@@ -44,7 +44,7 @@ var B : [1..N, 1..K] real;
 for i in 1..N do
   for j in 1..K do
     for k in 1..N do
-      B[i,j] += A[i,k] * X[k, j];
+      B[i,j] += A[i,k] * X[k,j];
       
 writeln("Matrix A:\n", A, "\n");
 writeln("Matrix X:\n", X, "\n");
