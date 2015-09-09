@@ -273,10 +273,14 @@ chomp($num_procs);
 
 $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
 
-$host = hostname;
+$perfConfigName = $ENV{'CHPL_NIGHTLY_PERF_CONFIG_NAME'};
+if ($perfConfigName eq "") {
+  $perfConfigName = hostname;
+}
+
 if ($cronlogdir eq "") {
     if ($performance == 1) {
-        $cronlogdir = "/data/sea/chapel/NightlyPerformance/$host";
+        $cronlogdir = "/data/sea/chapel/NightlyPerformance/$perfConfigName";
     } else {
         $cronlogdir = "/data/sea/chapel/Nightly";
     }
@@ -729,7 +733,7 @@ if ($runtests == 0) {
 
     if ($performance == 1 or $compperformance == 1) {
         # sync the performance graphs over to sourceforge
-        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/html/ $host/$syncsuffix --logFile $logdir/syncToSourceForge.errors";
+        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/html/ $perfConfigName/$syncsuffix --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
    }
@@ -783,12 +787,12 @@ if ($runtests == 0) {
             $altTitle = "Chapel Release Over Release Performance Graphs";
             $startdate = "04/10/12"; # earliest date that we generate historical data for
             $genGraphs = "$utildir/test/genGraphs";
-            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $host  -g $chplhomedir/test/GRAPHFILES -s $startdate";
+            $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $perfConfigName  -g $chplhomedir/test/GRAPHFILES -s $startdate";
             $genGraphsMessage = "Generating release over release performance graphs";
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
 
             # sync the perf graphs over to sourceforge
-            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $host/releaseOverRelease/$syncsuffix --logFile $logdir/syncReleaseToSourceForge.errors";
+            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $perfConfigName/releaseOverRelease/$syncsuffix --logFile $logdir/syncReleaseToSourceForge.errors";
             $rsyncMessage = "syncing release performance graph to sourceforge -- log file at $logdir/syncReleaseToSourceForge.errors";
             mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
         }
