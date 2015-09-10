@@ -96,7 +96,7 @@ class  E_task : public Event {
             const char *file)
       : Event(esec,eusec, nid), taskid(taskId), isOn(ison), lineNum(line)
     {
-      srcFile = strdup(file);
+      srcFile = file;  // Not duplicating, just saving the pointer
     }
 
     bool isLocal () { return !isOn; }
