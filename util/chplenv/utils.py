@@ -34,6 +34,19 @@ def get_compiler_version(compiler):
     version_string = '0'
     if 'gnu' in compiler:
         version_string = run_command(['gcc', '-dumpversion'])
+    elif 'cray' in compiler:
+        match = None
+        # make sure that the cray compiler is available
+        cray_loaded = os.environ.get('PE_ENV').lower() == 'cray'
+        if cray_loaded:
+            # version info goes to stderr
+            version_output = run_command(['cc', '-V'], stderr=True)
+            version_line = version_output[0] + version_output[1]
+            match = re.search('.* Version (.*) .*', version_line)
+        if match:
+            version_string=match.group(1)
+        else:
+            raise ValueError("Could not detect cray compiler version number")
     return CompVersion(version_string)
 
 # Takes a version string of the form 'major', 'major.minor',
