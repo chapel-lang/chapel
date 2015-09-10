@@ -9,5 +9,5 @@ proc foo(A: [3..6 by 2] int) {
   writeln(A);
 }
 
-foo(A(1..8 by 6));
+foo(A(1..8 by 6).reindex({3..6 by 2}));
 

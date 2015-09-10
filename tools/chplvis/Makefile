@@ -71,7 +71,7 @@ install: chplvis
 
 # Dependencies
 chplvis.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
-ViewField.o: ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
+ViewField.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
 DataModel.o: DataModel.h Event.h StringCache.h
 InfoBar.o: InfoBar.h ViewField.h chplvis.h
 LocaleWin.o: LocaleWin.h

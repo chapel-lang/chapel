@@ -23,18 +23,15 @@ config const blksVert  : int = ceil(n:real/blkSize:real):int;
 
 // calculate C = C - A * B.
 proc dgemm(
-    p : int,    // number of rows in A
-    q : int,    // number of cols in A, number of rows in B
-    r : int,    // number of cols in B
-    A : [1..p, 1..q] ?t,
-    B : [1..q, 1..r] t,
-    C : [1..p, 1..r] t)
+    A : [?AD] ?t,
+    B : [?BD] t,
+    C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
-    for i in 1..p {
-        for j in 1..r {
-            for k in 1..q {
-                C[i,j] -= A[i, k] * B[k, j];
+    for (ai,ci) in zip(AD.dim(1),CD.dim(1)) {
+        for (bj,cj) in zip(BD.dim(2),CD.dim(2)) {
+            for (ak,bk) in zip(AD.dim(2),BD.dim(1)) {
+                C[ci,cj] -= A[ai, ak] * B[bk, bj];
             }
         }
     }
@@ -108,9 +105,6 @@ proc luLikeMultiply(
 
         local {
             dgemm(
-                aBlkD.dim(1).length,
-                aBlkD.dim(2).length,
-                bBlkD.dim(2).length,
                 ACopies(aBlkD),
                 BCopies(bBlkD),
                 A(cBlkD));

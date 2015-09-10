@@ -54,7 +54,7 @@ int DataModel::LoadData(const char * filename)
 {
   const char *suffix;
   struct stat statbuf;
-  char fullfilename[MAXPATHLEN];  
+  char fullfilename[MAXPATHLEN];
 
   // Remove trailing / in name
   int fn_len = strlen(filename);
@@ -396,7 +396,7 @@ int DataModel::LoadData(const char * filename)
             //printf ("Begin task %d, node %d\n", btp->taskId(), curNodeId);
           } else {
             printf ("(Begin task) No such task %ld in tag %s nodeid %d.\n",
-                    btp->taskId(), curTag->name.c_str(), curNodeId);
+                    btp->taskId(), curTag->name, curNodeId);
           }
         }
         break;
@@ -493,16 +493,28 @@ int DataModel::LoadData(const char * filename)
     E_tag *tp;
     E_begin_task *btp;
     E_end_task *etp;
+    E_comm   *cp;
+    E_fork   *fp;
     
     switch (ev->Ekind()) {
-      default: // Do nothing for most of these
+      default: // Do nothing 
         break;
 
       case Ev_tag:
         tp = (E_tag *)ev;
         if (curNodeId == 0) {
+          std::map<const char *, int>::iterator t_itr;
           cTagNo++;
           curTag = tagList[cTagNo+2];
+          // Check for duplicate tags, map the tag name
+          t_itr = name2tag.find(tp->tagName());
+          if (t_itr != name2tag.end()) {
+            // tag is duplicate
+            uniqueTags = false;
+          } else {
+            // new tag, set a new index for it
+            name2tag[tp->tagName()] = cTagNo;
+          }
         }
         assert(cTagNo == tp->tagNo());
         taskTimeline[curNodeId].push_back(timelineEntry(Tl_Tag,cTagNo));
@@ -558,10 +570,102 @@ int DataModel::LoadData(const char * filename)
             printf ("Timeline: did not find task %ld, nid %d\n", etp->taskId(), curNodeId);
         }
         break;
+
+      case Ev_fork:
+        fp = (E_fork *)ev;
+        {
+          taskData *theTask = getTaskData(curNodeId, fp->inTask());
+          if (theTask != NULL) {
+            // Insert the event
+            theTask->commList.push_back(ev);
+            theTask->commSum.numForks++;
+            theTask->commSum.numComms++;
+          } else 
+            printf ("per task forks, no task %ld\n", (long)fp->inTask());
+        }
+        break;
+
+      case Ev_comm:
+        cp = (E_comm *)ev;
+        {
+          taskData *theTask = getTaskData(cp->isGet() ? cp->dstId() : cp->srcId(), cp->inTask());
+          if (theTask != NULL) {
+            // Insert the event
+            theTask->commList.push_back(ev);
+            theTask->commSum.numComms++;
+            if (cp->isGet())
+              theTask->commSum.numGets++;
+            else
+              theTask->commSum.numPuts++;
+            theTask->commSum.commSize += cp->dataLen();
+          } else 
+            printf ("per task comms, no task %ld\n", (long)cp->inTask());
+        }
+        break;
     }
 
     // Move to next event record
     itr++;
+  }
+
+  // If duplicate tags, build unique tag information
+  if (!uniqueTags) {
+    int nextUtag;
+    int tTag;
+
+    //printf ("uniq tag no: %lu\n", name2tag.size());
+
+    // Allocate tage data
+    utagList = new tagData *[name2tag.size()];
+    for (unsigned int ix = 0; ix < name2tag.size(); ix++)
+      utagList[ix] = new tagData(numLocales);
+
+    // All and Start use tagData ... see getUTagData
+    // Now, aggrigate all duplicate tags, tag order is as first seen in tagList
+    nextUtag = 0;   // Should be tag 2 in tagList
+    for (int ix = 2; ix < numTags+2; ix++) {
+      tTag = name2tag[tagList[ix]->name];
+      //printf ("ix->tTag: %d -> %d\n", ix, tTag);
+      if (tTag >= nextUtag) {
+        name2tag[tagList[ix]->name] = nextUtag;
+        tTag = nextUtag++;
+        utagList[tTag]->name = tagList[ix]->name;
+      }
+      // merge data from tagList[ix] int utagList[tTag]
+      for (int il = 0 ; il < numLocales; il ++ ) {
+        // Ignore "ref" and "run" fields
+        utagList[tTag]->locales[il].userCpu      += tagList[ix]->locales[il].userCpu;
+        utagList[tTag]->locales[il].sysCpu       += tagList[ix]->locales[il].sysCpu;
+        utagList[tTag]->locales[il].Cpu          += tagList[ix]->locales[il].Cpu;
+        utagList[tTag]->locales[il].clockTime    += tagList[ix]->locales[il].clockTime;
+        utagList[tTag]->locales[il].maxTaskClock += tagList[ix]->locales[il].maxTaskClock;
+        utagList[tTag]->locales[il].numTasks     += tagList[ix]->locales[il].numTasks;
+        if (utagList[tTag]->locales[il].maxConc  <  tagList[ix]->locales[il].maxConc)
+          utagList[tTag]->locales[il].maxConc = tagList[ix]->locales[il].maxConc;
+        // Update tag maxes
+        if (utagList[tTag]->locales[il].Cpu > utagList[tTag]->maxCpu)
+          utagList[tTag]->maxCpu = utagList[tTag]->locales[il].Cpu;
+        if (utagList[tTag]->locales[il].clockTime > utagList[tTag]->maxClock)
+          utagList[tTag]->maxClock = utagList[tTag]->locales[il].clockTime;
+        if (utagList[tTag]->locales[il].numTasks > utagList[tTag]->maxTasks)
+          utagList[tTag]->maxTasks = utagList[tTag]->locales[il].numTasks;
+        if (utagList[tTag]->locales[il].maxConc > utagList[tTag]->maxConc)
+          utagList[tTag]->maxConc = utagList[tTag]->locales[il].maxConc;
+        // Communication
+        for (int ic = 0; ic < numLocales; ic++ ) {
+          utagList[tTag]->comms[il][ic].numComms += tagList[ix]->comms[il][ic].numComms;
+          utagList[tTag]->comms[il][ic].numGets  += tagList[ix]->comms[il][ic].numGets;
+          utagList[tTag]->comms[il][ic].numPuts  += tagList[ix]->comms[il][ic].numPuts;
+          utagList[tTag]->comms[il][ic].numForks += tagList[ix]->comms[il][ic].numForks;
+          utagList[tTag]->comms[il][ic].commSize += tagList[ix]->comms[il][ic].commSize;
+          // Maxes
+          if (utagList[tTag]->comms[il][ic].numComms > utagList[tTag]->maxComms)
+            utagList[tTag]->maxComms = utagList[tTag]->comms[il][ic].numComms;
+          if (utagList[tTag]->comms[il][ic].commSize > utagList[tTag]->maxSize)
+            utagList[tTag]->maxSize = utagList[tTag]->comms[il][ic].commSize;
+        }
+      }
+    }
   }
 
 #if 0
@@ -770,10 +874,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
                    line[0] == 'p' ? 0 :
                    line[3] == 'g' ? 1 : 0);
           if (isGet)
-            newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen, isGet,
+            newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen, isGet, taskid, nlineno,
                                    strDB.getString(nfilename));
           else
-            newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet,
+            newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet, taskid, nlineno,
                                    strDB.getString(nfilename));
         }
         break;
@@ -789,7 +893,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             // printf ("fork vdbtid: %d/%d\n", nid, vdbTid);
             break;
           }
-          newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_');
+          newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_', vdbTid);
         }
         break;
 
@@ -982,27 +1086,27 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
 // Get the task data by task Id and locale.
 
-taskData DataModel::getTaskData (long locale, long taskId, long tagNo)
+taskData * DataModel::getTaskData (long locale, long taskId, long tagNo)
 {
   std::map<long,taskData>::iterator tskItr;
-  taskData retVal;
   long curTag;
+
+  if (locale == 0 && taskId == 1)
+    return &mainTask;
 
   if (tagNo != TagALL) {
     tskItr = tagList[tagNo+2]->locales[locale].tasks.find(taskId);
     if (tskItr != tagList[tagNo+2]->locales[locale].tasks.end())
-      return (*tskItr).second;
+      return &(tskItr->second);
   }
 
   curTag = TagStart;
   while (curTag < numTags) {
     tskItr = tagList[curTag+2]->locales[locale].tasks.find(taskId);
     if (tskItr != tagList[curTag+2]->locales[locale].tasks.end())
-      return (*tskItr).second;
+      return &(tskItr->second);
     curTag++;
   }
   
-  retVal.taskRec = NULL;
-  retVal.endTagNo = -1;
-  return retVal;
+  return NULL;
 }

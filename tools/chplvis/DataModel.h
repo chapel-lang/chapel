@@ -40,6 +40,17 @@
 
 // Support Structs used by DataModel
 
+// Used to track communication,  each tag has a 2D array of commData, one for each direction
+struct commData {
+  long numComms;
+  long numGets;
+  long numPuts;
+  long numForks;
+  long commSize;
+  
+  commData() :  numComms(0), numGets(0), numPuts(0), numForks(0), commSize(0) {};
+};
+
 // Used to track tasks,  each tag/locale has a map of taskData
 struct taskData {
   E_task *taskRec;
@@ -47,6 +58,8 @@ struct taskData {
   E_end_task *endRec;
   int endTagNo;
   double taskClock;
+  std::list<Event *>commList;
+  commData commSum;
 
   taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL), endTagNo(-2) {};
 };
@@ -61,7 +74,6 @@ struct localeData {
   double clockTime;
   double refTime;
   double maxTaskClock;
-   //double minTaskClock;
   long    numTasks;
   long    runConc;
   long    maxConc;
@@ -71,17 +83,6 @@ struct localeData {
   localeData() : userCpu(0), sysCpu(0), Cpu(0), refUserCpu(0), refSysCpu(0),
                  clockTime(0), refTime(0), maxTaskClock(0), // minTaskClock(1E10),
                  numTasks(0), runConc(0), maxConc(0) {};
-};
-
-// Used to track communication,  each tag has a 2D array of commData, one for each direction
-struct commData {
-  long numComms;
-  long numGets;
-  long numPuts;
-  long numForks;
-  long commSize;
-  
-  commData() :  numComms(0), numGets(0), numPuts(0), numForks(0), commSize(0) {};
 };
 
 // Primary data structure built by reading the data files dumped by using VisualDebug.chpl
@@ -102,6 +103,8 @@ class DataModel {
 
  private:
 
+  taskData mainTask;
+
   StringCache strDB;
 
   typedef std::list<Event*>::iterator evItr;
@@ -111,6 +114,11 @@ class DataModel {
   
   // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
   tagData **tagList;    // 1D array of pointers to tagData
+
+  // Unique named tags ... if names repeat
+  bool uniqueTags;
+  std::map<const char *, int> name2tag;
+  tagData **utagList;
 
   std::list < Event* > theEvents;
   std::list < Event* >::iterator curEvent;
@@ -134,7 +142,7 @@ class DataModel {
   struct tagData { // a class with public elements the default
     friend class DataModel;
     const long numLocales;
-    std::string name;
+    const char *name;
     localeData *locales;
     commData **comms;
     
@@ -142,12 +150,12 @@ class DataModel {
     double maxCpu;
     double maxClock;
     long   maxTasks;
+    long   maxConc;
     long   maxComms;
     long   maxSize;
-    long   maxConc;
     
     tagData(long numLoc) : numLocales(numLoc), name(""),  maxCpu(0), maxClock(0),
-                           maxTasks(0), maxComms(0), maxSize(0), maxConc(0) {
+                           maxTasks(0),  maxConc(0), maxComms(0), maxSize(0) {
       locales = new localeData[numLocales];
       comms = new  commData * [numLocales];
       for (int i = 0; i < numLocales; i++ )
@@ -171,15 +179,12 @@ class DataModel {
   // End of struct tagData
 
   // DataModel methods
+
+  bool hasUniqueTags () { return uniqueTags; }
   
   int NumTags () { return numTags; }
-  
-  std::string getTagName (const int tagNo) {
-    if (tagNo < 0 || tagNo >= numTags) 
-      return "";
-    else
-      return tagList[tagNo-TagALL]->name;
-  }
+
+  int NumUTags () { return name2tag.size(); }
   
   tagData * getTagData(int tagno) {
     if (tagno < TagALL || tagno >= numTags) 
@@ -187,7 +192,17 @@ class DataModel {
     return tagList[tagno-TagALL];
   }
 
-  taskData getTaskData (long locale, long taskId, long tagNo = TagALL);
+  tagData * getUTagData(int tagno) {
+    if (tagno == TagALL)
+      return tagList[0];
+    if (tagno == TagStart)
+      return tagList[1];
+    if (uniqueTags || tagno >= (int)name2tag.size() || tagno < 0)
+      return NULL;
+    return utagList[tagno];
+  }
+
+  taskData * getTaskData (long locale, long taskId, long tagNo = TagALL);
   
   // Constructor for DataModel
   
@@ -197,14 +212,24 @@ class DataModel {
     tagList = NULL;
     taskTimeline = NULL;
     curEvent = theEvents.begin();
+    uniqueTags = true;
+    utagList = NULL;
   }
   
   // Destructor for DataModel
   ~DataModel() {
-    if (tagList != NULL)
+    if (tagList != NULL) {
+      for (int ix = 0; ix < numTags + 2; ix++)
+        delete tagList[ix];
       delete [] tagList;
+    }
     if (taskTimeline != NULL)
       delete [] taskTimeline;
+    if (utagList != NULL) {
+      for (unsigned int ix = 0; ix < name2tag.size(); ix++)
+        delete utagList[ix];
+      delete [] utagList;
+    }
   }
   
   //  LoadData loads data from a collection of files

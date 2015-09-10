@@ -25,6 +25,7 @@
 #include "ViewField.h"
 #include "math.h"
 #include <FL/fl_draw.H>
+#include <FL/fl_ask.H>
 #include <sstream>
 
 #define SSTR( x ) dynamic_cast< std::ostringstream & >( \
@@ -51,10 +52,9 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   numlocales = 0;
   theLocales = NULL;
   comms = NULL;
-  tags = NULL;
   curTagData = NULL;
-  tagsSize = 0;
   tagMenu = -1;
+  useUTags = false;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
@@ -69,34 +69,6 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   showcomms = true;
   
 };
-
-#if 0
-ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *label)
-  : Fl_Box (b, bx, by, bw, bh, 0)
-{
-  // printf ("ViewField init with boxtype. h=%d, w=%d\n",bh,bw);
-  numlocales = 0;
-  theLocales = NULL;
-  comms = NULL;
-  tags = NULL;
-  curTagData = NULL;
-  tagsSize = 0;
-  tagMenu = -1;
-  if (VisData.NumLocales() > 0) {
-    setNumLocales(VisData.NumLocales());
-  }
-  /*
-  maxTasks = 1;
-  maxComms = 1;
-  maxCpu = 0.000001;
-  maxClock = 0;
-  maxDatasize = 1;
-  */
-  infoTop = show_Tasks;
-  showcomms = true;
-  resizable(self);
-};
-#endif
 
 // Private methods 
 
@@ -129,12 +101,8 @@ void ViewField::allocArrays()
     }
     delete [] comms;
   }
-  if (tags != NULL) {
-    delete [] tags;
-    tags = NULL;
-  }
   
-  // Alloc new space ... except for tags, done in process data.
+  // Alloc new space
   theLocales = new localeInfo [numlocales];
   comms = new  struct commInfo* [numlocales];
   if (theLocales == NULL || comms == NULL) {
@@ -157,19 +125,6 @@ void ViewField::allocArrays()
     theLocales[ix].win = NULL;
     theLocales[ix].ccwin = NULL;
     theLocales[ix].b = NULL;
-  }
-
-  if (tags != NULL) {
-    for (ix = 0; ix < tagsSize; ix++)
-      if (tags[ix].tagName != NULL)
-        delete [] tags[ix].tagName;
-    delete [] tags;
-  }
-  tagsSize = VisData.NumTags();
-  tags = new tagInfo [tagsSize];
-  for (ix = 0; ix < VisData.NumTags(); ix++) {
-    tags[ix].tagNo = -1;
-    tags[ix].tagName = NULL;
   }
 }
 
@@ -202,7 +157,10 @@ void ViewField::selectData(int tagNum)
   }
 
   // Select data to use
-  curTagData = VisData.getTagData(tagNum);
+  if (useUTags)
+    curTagData = VisData.getUTagData(tagNum);
+  else
+    curTagData = VisData.getTagData(tagNum);
   curTagNum = tagNum;
 
   // Set the max values in the info bar
@@ -214,7 +172,6 @@ void ViewField::selectData(int tagNum)
 static void selTag(Fl_Widget *w, void *p)
 {
   long ix = (long) p;
-  struct tagInfo *ptr = (struct tagInfo *)p;
   
   if (ix == DataModel::TagALL) {
     // printf ("selTag called on All\n");
@@ -226,11 +183,20 @@ static void selTag(Fl_Widget *w, void *p)
     DbgView->selectData(ix);
   } else {
     // printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
-    Info->setTagName(ptr->tagName);
-    DbgView->selectData(ptr->tagNo);
+    if (DbgView->usingUTags())
+      Info->setTagName(VisData.getUTagData(ix)->name);
+    else
+      Info->setTagName(VisData.getTagData(ix)->name);
+    DbgView->selectData(ix);
   }
   DbgView->redraw();
   Info->redraw();
+}
+
+static void toggleUnique (Fl_Widget *w, void *p) {
+  DbgView->toggleUTags();
+  DbgView->makeTagsMenu();
+  selTag((Fl_Widget *)NULL, (void *)DataModel::TagALL);
 }
 
 void ViewField::makeTagsMenu(void)
@@ -251,17 +217,34 @@ void ViewField::makeTagsMenu(void)
       printf ("Menu problem!\n");
       return;
     }
+    if (!VisData.hasUniqueTags()) {
+      if (useUTags)
+        MainMenuBar->add("Tags/Show All Tags", 0, toggleUnique, (void *)0);
+      else
+        MainMenuBar->add("Tags/Merge Tags", 0, toggleUnique, (void *)0);
+    }
     MainMenuBar->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
     MainMenuBar->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
 
     long ix;
-    for (ix = 0; ix < VisData.NumTags(); ix++) {
-      std::string tName = "Tags/tag " + SSTR(ix) + " ("
-                          + VisData.getTagName(ix) + ")";
-      MainMenuBar->add(tName.c_str(), 0, selTag, (void *)&tags[ix], 0);
-      tags[ix].tagNo = ix;
-      tags[ix].tagName = strdup(tName.c_str());
-      // printf ("Tag[%ld] is '%s'\n", ix, tags[ix].tagName);
+    long numTags;
+    if (useUTags)
+      numTags = VisData.NumUTags();
+    else
+      numTags = VisData.NumTags();
+    // printf ("make menu: numTags = %ld\n", numTags);
+    for (ix = 0; ix < numTags; ix++) {
+      const char *tagName;
+      std::string menuName;
+      if (useUTags)
+        tagName = VisData.getUTagData(ix)->name;
+      else
+        tagName = VisData.getTagData(ix)->name;
+      if (VisData.hasUniqueTags() || useUTags)
+        menuName = "Tags/" + std::string(tagName);
+      else
+        menuName = "Tags/tag " + SSTR(ix) + " (" + tagName + ")";
+      MainMenuBar->add(menuName.c_str(), 0, selTag, (void *)ix, 0);
     }
     MainMenuBar->redraw();
   }
@@ -548,16 +531,20 @@ int ViewField::handle(int event)
         if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
           if (infoTop == show_Concurrency) {
-            if (theLocales[ix].ccwin == NULL) {
-              // Create the window
-              theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
+            if (useUTags && curTagNum != DataModel::TagALL) {
+              fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
             } else {
-              theLocales[ix].ccwin->updateData(ix, curTagNum);
+              if (theLocales[ix].ccwin == NULL) {
+                // Create the window
+                theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
+              } else {
+                theLocales[ix].ccwin->updateData(ix, curTagNum);
+              }
+              if (theLocales[ix].ccwin->visible())
+                theLocales[ix].ccwin->hide();
+              else
+                theLocales[ix].ccwin->show();
             }
-            if (theLocales[ix].ccwin->visible()) 
-              theLocales[ix].ccwin->hide();
-            else
-              theLocales[ix].ccwin->show();
           } else {
             if (theLocales[ix].win == NULL) {
               // Create the window

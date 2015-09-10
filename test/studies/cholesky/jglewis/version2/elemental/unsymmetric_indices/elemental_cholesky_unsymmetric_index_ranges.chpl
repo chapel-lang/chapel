@@ -101,7 +101,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
 
     const diag_offset = A.domain.low(1) - A.domain.low(2);
 
-    coforall processor in A_grid_domain with (ref bar) do {
+    coforall processor in A_grid_domain do {
 
       on A_locale_grid (processor) do {
 
@@ -259,6 +259,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
 	  }
       }
     }
+    delete bar;
 
     // return success 
 

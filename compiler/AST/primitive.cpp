@@ -281,9 +281,11 @@ static Type*
 returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
-    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-      if (!strcmp(ts->name, "_EndCount")) {
-        endCountType = ts->type;
+    // Look for the type var `_remoteEndCountType` in ChapelBase.
+    forv_Vec(VarSymbol, var, gVarSymbols) {
+      const char* searchStr = "_remoteEndCountType";
+      if (strcmp(var->cname, searchStr) == 0) {
+        endCountType = var->type;
         break;
       }
     }

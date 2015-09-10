@@ -120,13 +120,15 @@ class E_comm : public Event {
      int  dstid;
      int  elemsize, datalen;
      bool isget;
+     long byTask;
+     long lineNo;
      const char *srcFile;
 
    public:
      E_comm (long esec, long eusec, int esrcid, int edstid, int elSize,
-             int dLen, bool get, const char *srcF) :
+             int dLen, bool get, long origTask, long line, const char *srcF) :
           Event(esec, eusec, esrcid), dstid(edstid), elemsize(elSize),
-          datalen(dLen), isget(get), srcFile(srcF) {};
+            datalen(dLen), isget(get), byTask(origTask), lineNo(line), srcFile(srcF) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
@@ -134,7 +136,9 @@ class E_comm : public Event {
      int dataLen() { return datalen; }
      int totalLen() { return elemsize * datalen; }
      bool isGet() { return isget; }
+     long getLineNo() { return lineNo; }
      const char *srcName () { return srcFile; }
+     long inTask() { return byTask; }
 
      virtual int Ekind() {return Ev_comm;}
      virtual void print() { 
@@ -148,16 +152,18 @@ class E_fork : public Event {
      int  dstid;
      int  argsize;
      bool isFast;
+     long byTask;
 
    public:
        E_fork (long esec, long eusec, int esrcid, int edstid, int argsize,
-               bool fast) : Event(esec,eusec, esrcid), dstid(edstid),
-                            argsize(argsize), isFast(fast) {};
+               bool fast, long task) : Event(esec,eusec, esrcid), dstid(edstid),
+       argsize(argsize), isFast(fast), byTask(task) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
      bool fast() { return isFast; }
      int argSize() { return argsize; }
+     long inTask() { return byTask; }
 
      virtual int Ekind() {return Ev_fork;}
      virtual void print() {
