@@ -109,7 +109,7 @@ module elemental_cholesky_symmetric_strided {
     // SPMD -- launch a separate task on each processor
     // ------------------------------------------------
 
-    coforall processor in A_grid_domain with (ref bar) do {
+    coforall processor in A_grid_domain do {
 
       on A_locale_grid (processor) do {
 
@@ -274,6 +274,7 @@ module elemental_cholesky_symmetric_strided {
 	  }
       }
     }
+    delete bar;
 
     // return success 
 
