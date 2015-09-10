@@ -25,7 +25,7 @@
 #include "ViewField.h"   // for heatColor
 
 #include <FL/fl_draw.H>
-#include <FL/Fl_ask.h>
+#include <FL/fl_ask.H>
 
 // Callback for this window
 
