@@ -130,8 +130,30 @@ The argument must be a type.
 pragma "no instantiation limit"
 proc isStringType(type t) param return t == string;
 
+/*
+POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
+Old Data in C++.
+
+A record, tuple, or union type in Chapel is a POD type if:
+
+  * it does not set pragma "ignore noinit"
+  * it has only a compiler generated autoCopy
+  * it has only a compiler generated autoDestroy
+  * it has only a compiler generated default initialization/construction
+    routine
+  * it has only a compiler generated = routine (when the left hand side
+    and right hand side have the same type. Assignment overloads covering cases
+    where left hand side and right hand side are different types are allowed
+    for POD types)
+  * it contains only POD type fields
+
+Class types in Chapel are always considered POD types (because an instance of
+the class is actually a pointer to the class object, and this pointer is POD).
+
+Primitive numeric Chapel types are POD types as well.
+ */
 pragma "no instantiation limit"
-pragma "no doc" // Not sure how we want to document isPOD* right now
+pragma "no doc" // I don't think we want to make this public yet
 proc isPODType(type t) param {
   return __primitive("is pod type", t);
 }
