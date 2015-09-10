@@ -2,7 +2,7 @@
 import sys, os, optparse
 
 import chpl_platform, chpl_comm, chpl_compiler, utils
-from utils import memoize
+from utils import memoize, CompVersion
 
 @memoize
 def get(flag='target'):
@@ -27,13 +27,10 @@ def get(flag='target'):
             # with an older gcc, we fall back to locks
             if compiler_val == 'gnu' or compiler_val == 'cray-prgenv-gnu':
                 version = utils.get_compiler_version('gnu')
-                if version.major > 4:
+                if version >= CompVersion('4.8'):
                     atomics_val = 'intrinsics'
-                if version.major == 4:
-                    if version.minor >= 8:
-                        atomics_val = 'intrinsics'
-                    elif version.minor >= 1 and not platform_val.endswith('32'):
-                        atomics_val = 'intrinsics'
+                elif version >= CompVersion('4.1') and not platform_val.endswith('32'):
+                    atomics_val = 'intrinsics'
             elif compiler_val == 'intel' or compiler_val == 'cray-prgenv-intel':
                 atomics_val = 'intrinsics'
             elif compiler_val == 'cray-prgenv-cray':
