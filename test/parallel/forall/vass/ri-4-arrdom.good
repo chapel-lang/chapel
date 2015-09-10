@@ -1,8 +1,5 @@
-starting  30000 tests  250 size
+starting  15000 tests  100 size
 5000 tests
 10000 tests
 15000 tests
-20000 tests
-25000 tests
-30000 tests
-done  30000 tests  250 size   all good
+done  15000 tests  100 size   all good
