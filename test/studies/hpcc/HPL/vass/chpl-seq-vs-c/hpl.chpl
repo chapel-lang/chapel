@@ -22,7 +22,7 @@ use HPCCProblemSize;
 const numMatrices = 1;
 config type indexType = int;
 config type elemType  = real;
-config const realFmt = "###.######";
+config const realFmt = "%{###.######}";
 
 //
 // Configuration constants indicating the problem size (n) and the
@@ -399,7 +399,7 @@ proc show1e(Ab: [] elemType) {
 
 proc tost(arg: elemType): string {
   compilerAssert(elemType != int);
-  return " " + format(realFmt, arg);
+  return " " + realFmt.format(arg);
 }
 
 //

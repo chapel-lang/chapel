@@ -15,6 +15,6 @@ printf("%d\n", xyz);
   }
   
   pragma "build tuple"
-  inline proc _build_tuple_always(x ...?size)
+  inline proc _build_tuple(x...)
     return x;
   

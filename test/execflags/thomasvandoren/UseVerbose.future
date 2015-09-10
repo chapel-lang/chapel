@@ -1,0 +1,4 @@
+feature request: better support for configs that conflict with runtime flags
+
+The config and the runtime flag could coexist happily (assuming the types
+matched up), but probably more useful would be a compiler warning/error.

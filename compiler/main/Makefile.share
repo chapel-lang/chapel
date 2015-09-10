@@ -18,6 +18,7 @@
 MAIN_SRCS =                  \
             arg.cpp          \
             checks.cpp       \
+            commonFlags.cpp  \
             config.cpp       \
             docsDriver.cpp   \
             driver.cpp       \

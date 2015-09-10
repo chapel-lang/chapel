@@ -1,0 +1,14 @@
+     iDefault            =     0
+     iSetToZero          =     0
+     iSetToTen           =    10
+     iInferFromTwenty    =    20
+     
+     rDefault            =     0.00
+     rSetToZero          =     0.00
+     rSetToTenIsh        =    10.20
+     rInferFromTwentyIsh =    20.10
+     
+     bDefault            = false
+     bSetToFalse         = false
+     bSetToTrue          =  true
+     bInferFromTrue      =  true

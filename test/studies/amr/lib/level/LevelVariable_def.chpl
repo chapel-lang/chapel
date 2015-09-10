@@ -215,7 +215,7 @@ proc LevelVariable.clawOutput (
 {
 
   //==== Names of output files ====
-  var frame_string:      string = format("%04i", frame_number),
+  var frame_string:      string = "%04i".format(frame_number),
       time_filename:     string = "_output/fort.t" + frame_string,
       solution_filename: string = "_output/fort.q" + frame_string;
 

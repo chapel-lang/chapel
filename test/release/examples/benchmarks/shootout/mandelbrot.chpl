@@ -5,7 +5,6 @@
    modified by Lydia Duncan, Brad Chamberlain, and Ben Harshbarger
 */
 
-use UtilMath;                      // get the int ceil function, divceilpos()
 use AdvancedIters;
 
 config const n = 200,              // the problem size

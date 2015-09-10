@@ -1,1 +1,7 @@
-internal error: REMnnnn chpl Version 1.10.0.-999
+ Unfortunately the Chapel compiler has encountered
+ an internal error. Please file a bug report that
+ includes a program reproducing the problem as well
+ as this output. See http://chapel.cray.com/getinvolved.html for
+ further instructions on filing bug reports.
+
+internal error: REM0411 chpl Version 1.11.0.559e3c7

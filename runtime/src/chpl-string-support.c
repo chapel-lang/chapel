@@ -102,7 +102,7 @@ string_copy(c_string x, int32_t lineno, c_string filename)
   if (x == NULL)
     return NULL;
 
-  z = (char*)chpltypes_malloc(strlen(x)+1, CHPL_RT_MD_STRING_COPY_DATA,
+  z = (char*)chpltypes_malloc(strlen(x)+1, CHPL_RT_MD_STR_COPY_DATA,
                               lineno, filename);
   return strcpy(z, x);
 }
@@ -123,7 +123,7 @@ string_concat(c_string x, c_string y, int32_t lineno, c_string filename) {
   ylen = strlen(y);
 
   z = (char*)chpltypes_malloc(xlen + ylen + 1,
-                              CHPL_RT_MD_STRING_CONCAT_DATA,
+                              CHPL_RT_MD_STR_CONCAT_DATA,
                               lineno, filename);
 
   // memcpy can be more efficient than the str??? functions because it does not
@@ -159,7 +159,7 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, c_strin
   if (high < low) return NULL;
 
   size = high - low + 1;
-  result = chpltypes_malloc(size + 1, CHPL_RT_MD_STRING_SELECT_DATA,
+  result = chpltypes_malloc(size + 1, CHPL_RT_MD_STR_SELECT_DATA,
                             lineno, filename);
   src = stride > 0 ? x + low - 1 : x + high - 1;
   dst = result;
@@ -191,7 +191,7 @@ string_index(c_string x, int i, int32_t lineno, c_string filename) {
   {
     return NULL;
   }
-  buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
+  buffer = chpltypes_malloc(2, CHPL_RT_MD_STR_COPY_DATA,
                             lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
   return buffer;

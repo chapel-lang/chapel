@@ -6,16 +6,16 @@ var ch = ff.writer();
 
 ch.writeln("Part 1");
 
-ch.writef("HELOOLO \n##.###\n bla \n##\n", 1.1234, 5.1);
+ch.writef("HELOOLO \n%{##.###}\n bla \n%{##}\n", 1.1234, 5.1);
 ch.writef("HELLO");
 ch.writef("HELLO\n");
-ch.writef("#\n", 5);
+ch.writef("%{#}\n", 5);
 
 
 ch.writef("\n\n");
 
 ch.writef("%%\n");
-ch.writef("%#\n");
+ch.writef("#\n");
 
 ch.writeln("Part 2");
 ch.writef("%xi\n", 17);

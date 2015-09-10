@@ -30,7 +30,7 @@ module LocaleTree {
     var left, right: locale;
   }
 
-  pragma "private" var chpl_localeTree: chpl_localeTreeRecord;
+  pragma "locale private" var chpl_localeTree: chpl_localeTreeRecord;
 
   proc chpl_initLocaleTree() {
     for i in LocaleSpace {

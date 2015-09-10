@@ -17,11 +17,14 @@
  * limitations under the License.
  */
 
+#ifndef _docs_driver_H_
+#define _docs_driver_H_
+
 #include "arg.h"
 #include "misc.h"
 
 extern bool fDocs;
-extern bool fDocsPrintHelp;
+extern char fDocsAuthor[256];
 extern bool fDocsAlphabetize;
 extern char fDocsCommentLabel[256];
 extern char fDocsFolder[256];
@@ -38,3 +41,5 @@ void docsArgSetCommentLabel(const ArgumentState* arg_state, const char* label);
 
 
 extern ArgumentDescription docs_arg_desc[];
+
+#endif

@@ -164,6 +164,15 @@ else
   AC_SUBST(ac_cv_have_struct_mallinfo, 0)
 fi
 
+if test "$ac_cv_header_malloc_h" = yes; then
+  AC_SUBST(TC_MALLINFO_HEADER, "malloc.h")   # gperftools/tcmalloc.h needs this
+elif test "$ac_cv_header_sys_malloc_h" = yes; then
+  AC_SUBST(TC_MALLINFO_HEADER, "sys/malloc.h")   # gperftools/tcmalloc.h needs this
+elif test "$ac_cv_header_malloc_malloc_h" = yes; then
+  AC_SUBST(TC_MALLINFO_HEADER, "malloc/malloc.h")   # gperftools/tcmalloc.h needs this
+fi
+
+
 # We need to check for mmap.  cygwin supports mmap, but the autoconf
 # test doesn't work on cygwin:
 #    http://www.cygwin.com/ml/cygwin/2002-04/msg00412.html

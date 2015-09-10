@@ -22,14 +22,14 @@ proc allMemoryUsed(first=true) {
 
   if CHPL_COMM == "none" {
     if first && verboseMem then startVerboseMem();
-    if !first && verboseMemLeaks then printMemLeaksTable();
+    if !first && verboseMemLeaks then printMemAllocsByType();
     return memoryUsed();
   } else {
     var mu: [LocaleSpace] uint(64);
     for loc in Locales do on loc do mu[here.id] = memoryUsed();
     if first && verboseMem then startVerboseMem();
     if !first && verboseMemLeaks then
-      for loc in Locales do on loc do printMemLeaksTable();
+      for loc in Locales do on loc do printMemAllocsByType();
     if !first then mu[0] -= memTrackOverhead;
     return mu;
   }

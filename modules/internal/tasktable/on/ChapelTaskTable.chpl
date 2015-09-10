@@ -63,7 +63,7 @@ module ChapelTaskTable {
     var map : [dom] chpldev_Task;
   }
   
-  pragma "private"
+  pragma "locale private"
   var chpldev_taskTable : chpldev_taskTable_t;
   
   //----------------------------------------------------------------------{

@@ -1413,7 +1413,7 @@ var phase = 0;
 // to preserve coarse ordering ("phases") when sorting the output
 proc nextphase() {
   phase += 1;
-  pfx = format("####", phase) + "  ";
+  pfx = "%{####}".format(phase) + "  ";
   traceDimensionalDistPrefix = pfx;
 }
 

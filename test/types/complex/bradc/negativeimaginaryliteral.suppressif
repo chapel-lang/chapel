@@ -1,0 +1,3 @@
+# pgi compiler bug, see jira issue 48
+CHPL_TARGET_COMPILER==pgi
+CHPL_TARGET_COMPILER==cray-prgenv-pgi

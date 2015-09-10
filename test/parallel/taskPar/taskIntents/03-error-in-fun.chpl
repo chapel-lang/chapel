@@ -52,18 +52,16 @@ var m32: imag(32);
 var m64: imag(64);
 var z64: complex(64);
 var z128: complex(128);
-var str: string;
+/* no strings for now */
 var enm: EnumType;
-var rec1: RecordSmall;
-var rec2: RecordLarge;
+/* no records for now */
+/* no unions for now */
 var cls: ClassType;
-var unn: UnionType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-str = "."; // patch up
 // Create a function named FUNNAME with formals of INTENT
 // that assigns to each formal, then call it.
 // Requires #include "support-decls.cpp" and #include "var-decls.cpp"
@@ -89,12 +87,11 @@ proc funBlank(
  m64: imag(64),
  z64: complex(64),
  z128: complex(128),
- str: string,
+/* no strings for now */
  enm: EnumType,
- rec1: RecordSmall,
- rec2: RecordLarge,
+/* no records for now */
+/* no unions for now */
  cls: ClassType,
- unn: UnionType,
 /* no tuples for now */
  dom1: DomType1,
  dom2: DomType2,
@@ -126,12 +123,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -159,12 +155,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -192,12 +187,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -226,12 +220,11 @@ m32,
 m64,
 z64,
 z128,
-str,
+/* no strings for now */
 enm,
-rec1,
-rec2,
+/* no records for now */
+/* no unions for now */
 cls,
-unn,
 /* no tuples for now */
 dom1,
 dom2,
@@ -264,12 +257,11 @@ const m32: imag(32),
 const m64: imag(64),
 const z64: complex(64),
 const z128: complex(128),
-const str: string,
+/* no strings for now */
 const enm: EnumType,
-const rec1: RecordSmall,
-const rec2: RecordLarge,
+/* no records for now */
+/* no unions for now */
 const cls: ClassType,
-const unn: UnionType,
 /* no tuples for now */
 const dom1: DomType1,
 const dom2: DomType2,
@@ -301,12 +293,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -334,12 +325,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -367,12 +357,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -401,12 +390,11 @@ m32,
 m64,
 z64,
 z128,
-str,
+/* no strings for now */
 enm,
-rec1,
-rec2,
+/* no records for now */
+/* no unions for now */
 cls,
-unn,
 /* no tuples for now */
 dom1,
 dom2,
@@ -439,12 +427,11 @@ const in m32: imag(32),
 const in m64: imag(64),
 const in z64: complex(64),
 const in z128: complex(128),
-const in str: string,
+/* no strings for now */
 const in enm: EnumType,
-const in rec1: RecordSmall,
-const in rec2: RecordLarge,
+/* no records for now */
+/* no unions for now */
 const in cls: ClassType,
-const in unn: UnionType,
 /* no tuples for now */
 const in dom1: DomType1,
 const in dom2: DomType2,
@@ -476,12 +463,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -509,12 +495,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -542,12 +527,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -576,12 +560,11 @@ m32,
 m64,
 z64,
 z128,
-str,
+/* no strings for now */
 enm,
-rec1,
-rec2,
+/* no records for now */
+/* no unions for now */
 cls,
-unn,
 /* no tuples for now */
 dom1,
 dom2,
@@ -614,12 +597,11 @@ in m32: imag(32),
 in m64: imag(64),
 in z64: complex(64),
 in z128: complex(128),
-in str: string,
+/* no strings for now */
 in enm: EnumType,
-in rec1: RecordSmall,
-in rec2: RecordLarge,
+/* no records for now */
+/* no unions for now */
 in cls: ClassType,
-in unn: UnionType,
 /* no tuples for now */
 in dom1: DomType1,
 in dom2: DomType2,
@@ -651,12 +633,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -684,12 +665,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -717,12 +697,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -751,12 +730,11 @@ m32,
 m64,
 z64,
 z128,
-str,
+/* no strings for now */
 enm,
-rec1,
-rec2,
+/* no records for now */
+/* no unions for now */
 cls,
-unn,
 /* no tuples for now */
 dom1,
 dom2,
@@ -789,12 +767,11 @@ inout m32: imag(32),
 inout m64: imag(64),
 inout z64: complex(64),
 inout z128: complex(128),
-inout str: string,
+/* no strings for now */
 inout enm: EnumType,
-inout rec1: RecordSmall,
-inout rec2: RecordLarge,
+/* no records for now */
+/* no unions for now */
 inout cls: ClassType,
-inout unn: UnionType,
 /* no tuples for now */
 inout dom1: DomType1,
 inout dom2: DomType2,
@@ -826,12 +803,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -859,12 +835,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -892,12 +867,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -926,12 +900,11 @@ m32,
 m64,
 z64,
 z128,
-str,
+/* no strings for now */
 enm,
-rec1,
-rec2,
+/* no records for now */
+/* no unions for now */
 cls,
-unn,
 /* no tuples for now */
 dom1,
 dom2,
@@ -964,12 +937,11 @@ out m32: imag(32),
 out m64: imag(64),
 out z64: complex(64),
 out z128: complex(128),
-out str: string,
+/* no strings for now */
 out enm: EnumType,
-out rec1: RecordSmall,
-out rec2: RecordLarge,
+/* no records for now */
+/* no unions for now */
 out cls: ClassType,
-out unn: UnionType,
 /* no tuples for now */
 out dom1: DomType1,
 out dom2: DomType2,
@@ -1001,12 +973,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1034,12 +1005,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1067,12 +1037,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1101,12 +1070,11 @@ m32,
 m64,
 z64,
 z128,
-str,
+/* no strings for now */
 enm,
-rec1,
-rec2,
+/* no records for now */
+/* no unions for now */
 cls,
-unn,
 /* no tuples for now */
 dom1,
 dom2,
@@ -1139,12 +1107,11 @@ ref m32: imag(32),
 ref m64: imag(64),
 ref z64: complex(64),
 ref z128: complex(128),
-ref str: string,
+/* no strings for now */
 ref enm: EnumType,
-ref rec1: RecordSmall,
-ref rec2: RecordLarge,
+/* no records for now */
+/* no unions for now */
 ref cls: ClassType,
-ref unn: UnionType,
 /* no tuples for now */
 ref dom1: DomType1,
 ref dom2: DomType2,
@@ -1176,12 +1143,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1209,12 +1175,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1242,12 +1207,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1276,12 +1240,11 @@ m32,
 m64,
 z64,
 z128,
-str,
+/* no strings for now */
 enm,
-rec1,
-rec2,
+/* no records for now */
+/* no unions for now */
 cls,
-unn,
 /* no tuples for now */
 dom1,
 dom2,
@@ -1314,12 +1277,11 @@ const ref m32: imag(32),
 const ref m64: imag(64),
 const ref z64: complex(64),
 const ref z128: complex(128),
-const ref str: string,
+/* no strings for now */
 const ref enm: EnumType,
-const ref rec1: RecordSmall,
-const ref rec2: RecordLarge,
+/* no records for now */
+/* no unions for now */
 const ref cls: ClassType,
-const ref unn: UnionType,
 /* no tuples for now */
 const ref dom1: DomType1,
 const ref dom2: DomType2,
@@ -1351,12 +1313,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1384,12 +1345,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1417,12 +1377,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -1451,12 +1410,11 @@ m32,
 m64,
 z64,
 z128,
-str,
+/* no strings for now */
 enm,
-rec1,
-rec2,
+/* no records for now */
+/* no unions for now */
 cls,
-unn,
 /* no tuples for now */
 dom1,
 dom2,

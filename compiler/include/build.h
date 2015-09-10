@@ -60,7 +60,7 @@ BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, const char* docs);
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, bool priv, const char* docs);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
@@ -110,11 +110,13 @@ CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* docs);
 
 DefExpr*  buildClassDefExpr(const char* name,
+                            const char* cname,
                             Type*       type,
                             Expr*       inherit,
                             BlockStmt*  decls,
                             Flag        isExtern,
                             const char* docs);
+void setupTypeIntentArg(ArgSymbol* arg);
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
@@ -129,6 +131,7 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              Expr*       optWhere,
                              BlockStmt*  optFnBody,
                              const char* docs);
+void applyPrivateToBlock(BlockStmt* block);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);

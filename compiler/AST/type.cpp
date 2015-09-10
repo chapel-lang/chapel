@@ -21,9 +21,11 @@
 
 #include "type.h"
 
+#include "AstToText.h"
 #include "astutil.h"
 #include "build.h"
 #include "codegen.h"
+#include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
@@ -148,7 +150,7 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
   // Only print extern types.
-  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (this->symbol->noDocGen()) {
     return;
   }
 
@@ -500,15 +502,16 @@ void EnumType::accept(AstVisitor* visitor) {
 
 
 void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (this->symbol->noDocGen()) {
     return;
   }
 
   this->printTabs(file, tabs);
   *file << this->docsDirective();
   *file << "enum ";
-  *file << this->symbol->name;
-  *file << this->docsConstantList();
+  AstToText info;
+  info.appendEnumDecl(this);
+  *file << info.text();
   *file << std::endl;
 
   // In rst mode, ensure there is an empty line between the enum signature and
@@ -535,36 +538,6 @@ std::string EnumType::docsDirective() {
     return "";
   } else {
     return ".. enum:: ";
-  }
-}
-
-
-std::string EnumType::docsConstantList() {
-  if (this->constants.length == 0) {
-    return "";
-  } else {
-    std::vector<std::string> constNames;
-
-    for_alist(constant, this->constants) {
-      if (DefExpr* de = toDefExpr(constant)) {
-        constNames.push_back(de->sym->name);
-      } else {
-        INT_FATAL(constant, "Expected DefExpr for all members in constants alist.");
-      }
-    }
-
-    if (constNames.empty()) {
-      return "";
-    }
-
-    // If there are constants, join them in a single comma delimited string
-    // inside curly brackets.
-    std::string constList = " { " + constNames.front();
-    for (unsigned int i = 1; i < constNames.size(); i++) {
-      constList += ", " + constNames.at(i);
-    }
-    constList += " }";
-    return constList;
   }
 }
 
@@ -650,8 +623,12 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
          "Type binding clauses ('%s.' in this case) are not supported in "
          "declarations within a class, record or union", name);
     } else {
-      fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
-      fn->_this->addFlag(FLAG_ARG_THIS);
+      ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", ct);
+      fn->_this = arg;
+      if (fn->thisTag == INTENT_TYPE) {
+        setupTypeIntentArg(arg);
+      }
+      arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtHead(new DefExpr(fn->_this));
       fn->insertFormalAtHead(
           new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
@@ -1284,7 +1261,7 @@ Symbol* AggregateType::getField(int i) {
 
 void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
   // TODO: Include unions... (thomasvandoren, 2015-02-25)
-  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
+  if (this->symbol->noDocGen() || this->isUnion()) {
     return;
   }
 
@@ -1402,11 +1379,11 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 
 #define INIT_PRIM_REAL( name, width)                                            \
   dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width);    \
-  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", FLOAT_SIZE_ ## width)
 
 #define INIT_PRIM_IMAG( name, width)                                            \
   dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width);    \
-  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", FLOAT_SIZE_ ## width)
 
 #define INIT_PRIM_COMPLEX( name, width)                                                   \
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width);       \
@@ -1456,7 +1433,7 @@ void initPrimitiveTypes() {
 
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
-  dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", 0.0, FLOAT_SIZE_64);
+  dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
   dtStringC->defaultValue              = new_StringSymbol("");
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];
@@ -1647,6 +1624,7 @@ DefExpr* defineObjectClass() {
   dtObject = new AggregateType(AGGREGATE_CLASS);
 
   retval   = buildClassDefExpr("object",
+                               NULL,
                                dtObject,
                                NULL,
                                new BlockStmt(),
@@ -1871,6 +1849,19 @@ bool isSyncType(Type* t) {
 
 bool isAtomicType(Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
+}
+
+bool isRefIterType(Type* t) {
+  Symbol* iteratorRecord = NULL;
+
+  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+    iteratorRecord = t->defaultInitializer->getFormal(1)->type->symbol;
+  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    iteratorRecord = t->symbol;
+
+  if (iteratorRecord)
+    return iteratorRecord->hasFlag(FLAG_REF_ITERATOR_CLASS);
+  return false;
 }
 
 bool isSubClass(Type* type, Type* baseType)

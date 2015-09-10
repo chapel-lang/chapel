@@ -18,6 +18,9 @@
  */
 
 /* dlmalloc memory function implementation */
+#ifndef _chpl_mem_impl_H_
+#define _chpl_mem_impl_H_
+
 
 #include "dlmalloc.h"
 
@@ -31,6 +34,10 @@ static inline void* chpl_malloc(size_t size) {
   return mspace_malloc(chpl_dlmalloc_heap, size);
 }
 
+static inline void* chpl_memalign(size_t boundary, size_t size) {
+  return mspace_memalign(chpl_dlmalloc_heap, boundary, size);
+}
+
 static inline void* chpl_realloc(void* ptr, size_t size) {
   return mspace_realloc(chpl_dlmalloc_heap, ptr, size);
 }
@@ -39,3 +46,10 @@ static inline void chpl_free(void* ptr) {
   mspace_free(chpl_dlmalloc_heap, ptr);
 }
 
+// DLMalloc doesn't give us a function to figure this out before allocating, so
+// we just return minSize.
+static inline size_t chpl_goodAllocSize(size_t minSize) {
+  return minSize;
+}
+
+#endif

@@ -1,0 +1,1 @@
+bug: Per spec, exterior, interior, translate should take single int argument.

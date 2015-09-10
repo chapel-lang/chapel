@@ -77,22 +77,37 @@ case $COMP_TYPE in
         ;;
 esac
 
-# Load compiler module.
+# load compiler versions from $CHPL_INTERNAL_REPO/build/compiler_versions.bash
+# This should define load_target_compiler function and CHPL_GCC_TARGET_VERSION.
+# The module uses the gen compiler to build the compiler and runtime, and the
+# target version to test. For whitebox testing we use the target compiler for
+# everything because there's no easy way to split up what we build with vs test
+# with. We decided to always use the target compiler to get more exposure
+# building with newer compilers.
+source $CHPL_INTERNAL_REPO/build/compiler_versions.bash
+
+# Always load the right version of GCC since we use it sometimes
+# to e.g. build the Chapel compiler with COMP_TYPE=TARGET
+if [ "${COMPILER}" != "gnu" ] ; then
+    module load gcc/${CHPL_GCC_TARGET_VERSION}
+fi
+
+# quiet libu warning about cpuid detection failure until it's fixed in CCE 8.4
+if [ "${COMPILER}" == "cray" ] ; then
+  export RFE_811452_DISABLE=true
+fi
+
+# Then load the selected compiler
+load_target_compiler ${COMPILER}
+
+# Do minor fixups
 case $COMPILER in
     cray)
-        log_info "Loading module: ${module_name}"
-        module load ${module_name}
-
-        # Use cce version 8.3.0 for consistency.
-        module swap cce cce/8.3.0
-
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
         module swap craype-network-aries craype-target-local_host
         ;;
     intel|gnu|pgi)
-        log_info "Loading module: ${module_name}"
-        module load ${module_name}
         ;;
     *)
         log_error "Unknown COMPILER value: ${COMPILER}. Exiting."
@@ -100,11 +115,11 @@ case $COMPILER in
         ;;
 esac
 
-libsci_module=$(module list -t 2>&1 | grep libsci)
-if [ -n "${libsci_module}" ] ; then
-    log_info "Unloading cray-libsci module: ${libsci_module}"
-    module unload $libsci_module
-fi
+#libsci_module=$(module list -t 2>&1 | grep libsci)
+#if [ -n "${libsci_module}" ] ; then
+#    log_info "Unloading cray-libsci module: ${libsci_module}"
+#    module unload $libsci_module
+#fi
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 

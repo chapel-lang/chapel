@@ -19,6 +19,8 @@ QIO_SRCS = \
 	bulkget.c \
 	deque.c \
 	qbuffer.c \
+	qio_error.c \
+	qio_popen.c \
 	qio.c \
 	qio_formatted.c \
 	sys.c \

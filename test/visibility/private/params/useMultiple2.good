@@ -1,0 +1,3 @@
+useMultiple2.chpl:3: warning: A visible 'bar' is an inaccessible private symbol, defined at:
+ ./multipleDecl.chpl:1
+useMultiple2.chpl:3: error: 'bar' undeclared (first use this function)

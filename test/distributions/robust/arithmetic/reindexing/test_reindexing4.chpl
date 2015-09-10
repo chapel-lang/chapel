@@ -18,7 +18,7 @@ proc dit(TD: domain, A:[?D]) {
   var errs = 0;
   for iterNo in 1..iters {
     [i in D] A[i] -= iterNo;
-    var ei = foo(TD, A, A, iterNo);
+    var ei = foo(TD, A.reindex(TD), A, iterNo);
     if (ei != 0) {
       writeln("\tIteration ", iterNo, ": ", ei, " errors");
       errs += ei;

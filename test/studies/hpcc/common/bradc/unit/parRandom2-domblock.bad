@@ -1,0 +1,1 @@
+parRandom2-domblock.chpl:15: error: cannot iterate over values of type RandomStream(real(64),true)

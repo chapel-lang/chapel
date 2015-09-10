@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# cray compiler bug (should be fixed w/ 8.4), see JIRA issue 16
+
+if [ "$CHPL_TEST_PERF" = "on" ] && [ "$CHPL_TARGET_COMPILER" = "cray-prgenv-cray" ]
+then
+  echo "True"
+else
+  echo "False"
+fi

@@ -1,0 +1,3 @@
+useMultiple3.chpl:3: warning: A visible 'baz' is an inaccessible private symbol, defined at:
+ ./multipleDecl.chpl:2
+useMultiple3.chpl:3: error: 'baz' undeclared (first use this function)

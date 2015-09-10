@@ -176,6 +176,7 @@ class AbstractJob(object):
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
+    target_arch = chpl_arch.get('target')
     @property
     def knc(self):
         """Returns True when testing KNC (Xeon Phi).
@@ -183,7 +184,22 @@ class AbstractJob(object):
         :rtype: bool
         :returns: True when testing KNC
         """
-        return chpl_arch.get('target') == 'knc'
+        return self.target_arch == 'knc'
+
+    def work_around_knc_module_bug(self):
+        """Hack to unload the knc module before calling qsub in order to work
+        around a module bug. Note that this unloading of knc here is why the
+        above 'knc' method doesn't just return `chpl_arch.get('target') == knc`
+        but instead caches the value since unloading knc module means chpl_arch
+        will no longer return 'knc'
+        """
+        if self.knc:
+	    unload_knc_proc = subprocess.Popen(
+                ['modulecmd', 'python', 'unload', 'craype-intel-knc'],
+                stdout=subprocess.PIPE
+            )
+	    stdout, stderr = unload_knc_proc.communicate()
+	    exec stdout
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
@@ -423,6 +439,8 @@ class AbstractJob(object):
         """
         if self.submit_bin != 'qsub':
             raise RuntimeError('_launch_qsub called for non-pbs job type!')
+
+        self.work_around_knc_module_bug()
 
         logging.info(
             'Starting {0} job "{1}" on {2} nodes with walltime {3} '

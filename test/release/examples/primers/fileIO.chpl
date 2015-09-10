@@ -11,11 +11,12 @@
    Seventh example: binary I/O with bits at a time
 */
 
-config var n = 9,            // the problem size for example 1
+config var n = 9,                 // the problem size for example 1
            filename = "Arr.dat";  // the filename for writing/reading the array
 config const num = 128*1024;
 config const example = 0;
 config const testfile = "test.bin";
+config const epsilon = 10e-13;
 
 use IO;
 
@@ -42,9 +43,9 @@ if example == 0 || example == 1 {
   writeln("B is:\n", B);
   
   //
-  // verify that A and B contain the same values and print success or failure
+  // verify that the values in A and B are within tolerance
   //
-  const numErrors = + reduce [i in ADom] (A(i) != B(i));
+  const numErrors = + reduce [i in ADom] (abs(A(i) - B(i)) > epsilon);
 
   if (numErrors > 0) {
     writeln("FAILURE");

@@ -53,10 +53,9 @@ module elemental_cholesky_fully_blocked {
   // via its native task parallelism constructs.  The lack of a standard way
   // to replicate data and computation across tasks requires this emulation of
   // the SPMD style.  We expect that later versions will fit the native Chapel
-  // execution model more closely.  Barriers have not been implemented as
-  // separate constructs yet in Chapel beyond the specific functionality of
-  // coforall and sync statements.  The SPMD style requires more barriers than
-  // native to those constructs; this code rolls its own.
+  // execution model more closely.  Barriers are implemented in the Barrier
+  // standard module for synchronization beyond the specific functionality of
+  // coforall and sync statements.
   // =========================================================================
   // The input array should be a two-dimensional array, indexed by the
   // same set of indices for rows as for columns.
@@ -68,10 +67,9 @@ module elemental_cholesky_fully_blocked {
   // the implementation of such local declarations.
   // =========================================================================
 
-  use CyclicDist;
+  use CyclicDist, Barrier;
 
-  use barrier, 
-      blocked_elemental_schur_complement, 
+  use blocked_elemental_schur_complement, 
       locality_info, 
       local_reduced_matrix_cyclic_partition_fb,
       scalar_inner_product_cholesky,
@@ -101,15 +99,14 @@ module elemental_cholesky_fully_blocked {
 
     assert ( A (A.domain.low).locale.id == 0 );
 	     
-    // initialize data structure for hand-coded barriers
-    
-    var locks = new barrier_data ( n_processors );
-      
+    // initialize a tasking barrier
+    var bar = new Barrier(n_processors);
+
     // ------------------------------------------------
     // SPMD -- launch a separate task on each processor
     // ------------------------------------------------
 
-    coforall processor in A_grid_domain do {
+    coforall processor in A_grid_domain with (ref bar) do {
 
       on A_locale_grid (processor) do {
 
@@ -217,7 +214,7 @@ module elemental_cholesky_fully_blocked {
 		  I_compute_L21 [I_compute_L21_indices];
 	      }
 
-	      barrier (locks);
+	      bar.barrier();
 
 	      // Each processor acquire all entries in rows or columns of the
 	      // off-diagonal block for which it owns any entries.  Data is
@@ -229,7 +226,7 @@ module elemental_cholesky_fully_blocked {
 	      const L21_Idx              = {my_A2x_rows, A11_cols};
 	      const L21 : [L21_Idx] real = A [L21_Idx];
 
-	      barrier (locks);
+	      bar.barrier();
 
 	      // The assignment following should be an ALL-GATHER among 
 	      // processors in a single processor column, since those 
@@ -255,7 +252,7 @@ module elemental_cholesky_fully_blocked {
 		( A (my_A2x_rows, my_Ax2_cols), L12, L21 );
 	      // }
 	
-	      barrier (locks);
+	      bar.barrier();
 	    }
 	    // else
 

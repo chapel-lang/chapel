@@ -63,8 +63,10 @@ capabilities in the interest of a simple and clean build.
         rehash
 
 
-5) To ensure you have installed Chapel properly, you can optionally
-   run an automatic sanity check using a few example programs:
+5) To ensure you have installed Chapel properly, you can optionally run an
+   automatic sanity check using a few example programs. For this to work
+   correctly, you will need python, and python-devel packages installed on your
+   system. See doc/README.prereqs for more information.
 
         gmake check
 
@@ -123,7 +125,7 @@ For more detailed information about...      refer to...
   ...executing Chapel programs               ... doc/README.executing
   ...reporting bugs                          ... doc/README.bugs
 
-  ...Chapel modes for emacs and vim          ... etc/README
+  ...Chapel modes for emacs and vim          ... etc/README.md
 
   ...example Chapel programs                 ... examples/README
   ...a quick reference for Chapel syntax     ... doc/quickReference.pdf

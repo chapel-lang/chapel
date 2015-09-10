@@ -37,8 +37,7 @@ We note some of the most useful flags here:
 
      -O : turns on optimization of the generated C code
 
-     --fast : turns on --no-checks, -O, and relaxes IEEE floating
-              point strictness
+     --fast : turns on --no-checks, -O, and enables many other optimizations
 
      --savec <dir> : saves the generated C code in the specified
                      directory

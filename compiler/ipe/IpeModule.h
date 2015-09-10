@@ -20,30 +20,64 @@
 #ifndef _IPE_MODULE_H_
 #define _IPE_MODULE_H_
 
-class IpeVars;
+class IpeEnv;
+class IpeModuleRoot;
 class IpeScopeModule;
+class IpeSequence;
+
+class Expr;
+class DefExpr;
 class ModuleSymbol;
 
 class IpeModule
 {
 public:
-                           IpeModule(ModuleSymbol* sym);
-                          ~IpeModule();
+  virtual                 ~IpeModule();
 
-  const char*              name()                                     const;
+  const char*              name()                                             const;
+  IpeEnv*                  environment()                                      const;
+  IpeScopeModule*          scopeGet()                                         const;
 
-  IpeScopeModule*          scope()                                    const;
+  void                     moduleAdd(IpeModule* module);
+  IpeModule*               moduleByName(const char* name)                     const;
 
-  void                     ensureInitialized(IpeVars* vars);
+  void                     moduleEvaluate();
+  void                     moduleResolve();
+  void                     initialize();
 
-  void                     describe(int offset)                       const;
+  void                     describe(int offset)                               const;
+
+protected:
+  enum State
+  {
+    kLoaded,
+
+    kResolving,
+    kResolved,
+
+    kInitializing,
+    kInitialized
+  };
+
+                           IpeModule(IpeModule*    parent,
+                                     ModuleSymbol* modSym);
+
+  virtual const char*      moduleTypeAsString()                               const = 0;
+
+  const char*              stateAsString()                                    const;
+
+  void                     ensureInitialized();
+
+  State                    mState;
+
+  IpeEnv*                  mEnv;
+
+  ModuleSymbol*            mModSym;
+
+  IpeSequence*             mBodyResolved;
 
 private:
                            IpeModule();
-
-  ModuleSymbol*            mModuleDecl;
-  IpeScopeModule*          mScope;
-  bool                     mInitialized;
 };
 
 #endif

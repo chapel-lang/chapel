@@ -52,14 +52,14 @@ for dir in third_party_pkgs:
         f.close()
 
 printchplenv = chpl_home+'/util/printchplenv'
-chplenv=subprocess.Popen([printchplenv],
+chplenv=subprocess.Popen([printchplenv, '--simple'],
                          stdout=subprocess.PIPE).communicate()[0]
 
 pkgs=''
 for l in chplenv.split('\n'):
     # Consider only lines to that start with 'CHPL_'.
     if l.startswith('CHPL_'):
-        (var, val) = l.split(':', 1)
+        (var, val) = l.split('=', 1)
         var=var.strip()
         val=val.strip()
         # Ignore platform variables

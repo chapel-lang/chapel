@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "scopeResolve.h"
+#include "externCResolve.h"
 
 #include "astutil.h"
 #include "build.h"
@@ -102,7 +102,9 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
           fields->insertAtTail(buildVarDecls(stmt, flags, NULL));
         }
 
-        DefExpr* strct = buildClassDefExpr(tmp_name, new AggregateType(AGGREGATE_RECORD), NULL, fields, FLAG_EXTERN, NULL);
+        DefExpr* strct = buildClassDefExpr(tmp_name, NULL,
+                                           new AggregateType(AGGREGATE_RECORD),
+                                           NULL, fields, FLAG_EXTERN, NULL);
 
         //...and patch up the resulting struct so that its cname is
         //  correct and codegen can find it.       

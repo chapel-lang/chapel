@@ -44,6 +44,7 @@ public:
                                       VarSymbol*   low,
                                       VarSymbol*   high,
                                       VarSymbol*   stride,
+                                      LabelSymbol* continueLabel,
                                       LabelSymbol* breakLabel,
                                       BlockStmt*   initBody);
   virtual               ~ParamForLoop();

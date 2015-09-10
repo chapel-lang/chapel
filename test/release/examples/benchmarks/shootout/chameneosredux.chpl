@@ -74,6 +74,12 @@ proc simulate(numChameneos) {
   // print information about the population once we're done
   //
   printInfo(chameneos);
+
+  //
+  // Clean up after ourselves
+  //
+  destroyChameneos(chameneos);
+  delete meetingPlace;
 }
 
 
@@ -265,6 +271,12 @@ proc createChameneos(size): [1..size] Chameneos {
                                                          else ((i-1)%3):Color);
 }
 
+//
+// Destroy the array of chameneos
+//
+proc destroyChameneos(ca: [] Chameneos) {
+  for c in ca do delete c;
+}
 
 //
 // getNewColor() returns the complement of two colors; if the two colors

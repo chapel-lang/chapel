@@ -1,0 +1,3 @@
+bug: using domain extraction syntax inside a class causes compiler failure
+
+internal error: CAL0051 chpl Version 1.11.0

@@ -22,47 +22,37 @@
 
 #include <vector>
 
-class FnSymbol;
-class IpeVars;
-class IpeScope;
-class IpeScopeProcedure;
-class Type;
+class Expr;
+class IpeCallExpr;
+class IpeMethod;
+class SymExpr;
 
-// NOAKES 2015/02/24 Only handles module-level functions
 class IpeProcedure
 {
 public:
-                          IpeProcedure(FnSymbol* sym, IpeScope* scope);
-                         ~IpeProcedure();
+                            IpeProcedure(const char* identifierName);
+                           ~IpeProcedure();
 
-  const char*             name()                                     const;
+  const char*               name()                                                   const;
 
-  IpeScopeProcedure*      scope()                                    const;
+  bool                      isValid(int generationId)                                const;
 
-  FnSymbol*               fnSymbol()                                 const;
+  int                       methodCount()                                            const;
+  void                      methodAdd(IpeMethod* method);
+  IpeMethod*                methodGet(int index)                                     const;
 
-  bool                    exactMatch(std::vector<Type*>& actualTypes);
-  bool                    ensureBodyResolved();
+  IpeCallExpr*              resolve(SymExpr* procExpr, std::vector<Expr*>& actuals)  const;
 
-  void                    frameSizeSet(int size);
-  int                     frameSize()                                const;
-
-  void                    describe(int offset)                       const;
+  void                      describe(int offset)                                     const;
 
 private:
-  enum State
-  {
-    kUnresolved,
-    kFormalsResolved,
-    kResolved
-  };
-                          IpeProcedure();
+                            IpeProcedure();
 
-  FnSymbol*               mFnDecl;
-  IpeScopeProcedure*      mScope;
-  IpeVars*                mVars;
-  State                   mState;
-  int                     mFrameSize;
+  bool                      isActualRef(Expr* actual)                                const;
+
+  const char*               mIdentifierName;
+  int                       mVersion;
+  std::vector<IpeMethod*>   mMethods;
 };
 
 #endif

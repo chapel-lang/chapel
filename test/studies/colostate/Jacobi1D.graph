@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:, Time:, Time:, Time:, Time:, Time:
+files: Jacobi1D-Serial-C.dat, Jacobi1D-NaiveParallel-OMP_static.dat, Jacobi1D-NaiveParallel-Chapel_static.dat,Jacobi1D-DiamondByHand-OMP_static.dat,Jacobi1D-DiamondByHand-OMP_dyn.dat,Jacobi1D-DiamondByHand-Chapel_static.dat,Jacobi1D-DiamondByHand-Chapel_dyn.dat
+graphkeys: Baseline Serial C, Naive Parallel C/OpenMP, Naive Parallel Chapel, Diamond C/OpenMP (static), Diamond C/OpenMP (dynamic), Diamond Chapel (static), Diamond Chapel (dynamic)
+ylabel: Time (seconds)
+graphtitle: Performance of Various Jacobi1D Implementations

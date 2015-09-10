@@ -35,12 +35,14 @@ sync serial doSerial || (!doSerial && !parSafe) {
 
   writeln("Start removing..");
   var totalRemoved: sync int = 0;
-  begin with (ref D) while (totalRemoved.readXX() != numRemoves) {
-    forall i in 1..min(numAdds,numRemoves) with (ref D) {
-      if inserted[removeOrder[i]] == true {
-        D -= elems[removeOrder[i]];
-        inserted[removeOrder[i]] = false;
-        begin totalRemoved = totalRemoved + 1;
+  sync {
+    begin with (ref D) while (totalRemoved.readXX() != numRemoves) {
+      forall i in 1..min(numAdds,numRemoves) with (ref D) {
+        if inserted[removeOrder[i]] == true {
+          D -= elems[removeOrder[i]];
+          inserted[removeOrder[i]] = false;
+          begin totalRemoved = totalRemoved + 1;
+        }
       }
     }
   }

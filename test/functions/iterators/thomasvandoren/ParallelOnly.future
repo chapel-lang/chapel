@@ -1,0 +1,10 @@
+feature request: write standalone parallel iterator, without serial version
+
+If this is added to ParallelOnly.chpl, it works as expected:
+
+    iter myIter() {
+        yield "";
+    }
+
+There might be cases where only a standalone parallel iterator is needed, so it
+seems like a burden to also have to define a serial iterator.

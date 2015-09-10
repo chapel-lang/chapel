@@ -121,5 +121,6 @@ void chpl_thread_mutexInit(chpl_thread_mutex_p);
 chpl_thread_mutex_p chpl_thread_mutexNew(void);
 void chpl_thread_mutexLock(chpl_thread_mutex_p);
 void chpl_thread_mutexUnlock(chpl_thread_mutex_p);
+void chpl_thread_mutexDestroy(chpl_thread_mutex_p);
 
 #endif

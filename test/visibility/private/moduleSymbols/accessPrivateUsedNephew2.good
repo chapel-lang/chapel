@@ -1,0 +1,4 @@
+accessPrivateUsedNephew2.chpl:17: In function 'main':
+accessPrivateUsedNephew2.chpl:18: warning: A visible 'child' is an inaccessible private symbol, defined at:
+ accessPrivateUsedNephew2.chpl:4
+accessPrivateUsedNephew2.chpl:18: error: 'child' undeclared (first use this function)

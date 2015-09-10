@@ -10,7 +10,7 @@
 #     - example annotation 3
 #   mm/dd/yy:
 #     - text: example annotation 4
-#       host: [hostname1, hostname2]
+#       config: [config1, config2]
 #
 #
 # where 'group' is the base name of the .graph file that attached set
@@ -18,9 +18,10 @@
 # annotations are added to to every single graph.
 #
 # When the long form of an annotation is used (where 'text:' and
-# 'host:' are specified), the annotation is only added to the graphs
-# if the current hostname is in the host list.  Note that in this
-# form, the 'host:' line does not (cannot) have a leading '-' sign.
+# 'config:' are specified), the annotation is only added to the graphs
+# if the current configuration is in the configuration list. Note
+# that in this form, the 'config:' line does not (cannot) have a
+# leading '-' sign.
 #
 # Groups are listed in case insensitive alphabetical order
 #
@@ -59,7 +60,7 @@ all:
     - move chpl_getLocaleID into the modules
   02/12/15:
     - text: zombie process on chap04 was causing noise
-      host: chap04
+      config: chap04
 
 AllCompTime:
   11/09/14:
@@ -68,7 +69,7 @@ AllCompTime:
 arrayPerformance-1d:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
-      host: chap03
+      config: chap03
 
 arr-forall:
   03/24/15:
@@ -147,6 +148,8 @@ is:
     - added -E to tests which would benefit from it
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
+  05/21/15:
+    - set dataParTasksPerLocale to 2 to avoid occasional validation failure
 
 jacobi:
   03/07/14:
@@ -199,6 +202,12 @@ memleaks:
     - Enabled GMP in nightly testing, allowing pidigits to run in memory leaks
   07/09/14:
     - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
+  05/04/15:
+    - Changed tracking of internal memory descriptor types
+  05/20/15:
+    - Closed sync/single leaks
+  06/05/15:
+    - Nikhil's k-d tests added to repository
 
 memleaksfull:
   07/08/14:
@@ -237,6 +246,10 @@ parOpEquals:
 regexdna:
   10/07/14:
     - Add c_string_copy type
+
+revcomp:
+  05/11/15:
+    - various qio changes motivated by cygwin failures (#1943)
 
 spectralnorm:
   01/21/15:
@@ -279,7 +292,7 @@ testSerialReductions:
 thread-ring:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
-      host: chap03
+      config: chap03
 
 time_array_vs_ddata:
   05/31/14:

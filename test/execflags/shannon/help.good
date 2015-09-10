@@ -25,10 +25,11 @@ CONFIG VARS:
       dataParMinGranularity: int(64)
                    memTrack: bool
                    memStats: bool
+             memLeaksByType: bool
                    memLeaks: bool
-              memLeaksTable: bool
                      memMax: uint(64)
                memThreshold: uint(64)
                      memLog: c_string
                 memLeaksLog: c_string
+             memLeaksByDesc: c_string
                  numLocales: int(64)

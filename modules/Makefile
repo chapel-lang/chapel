@@ -54,6 +54,7 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MODULES_TO_DOCUMENT = \
 	standard/AdvancedIters.chpl \
 	standard/Assert.chpl \
+	standard/Barrier.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
@@ -67,6 +68,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Help.chpl \
 	standard/IO.chpl \
 	standard/List.chpl \
+	standard/LAPACK.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Norm.chpl \
@@ -77,7 +79,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Sort.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
-	standard/UtilMath.chpl \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 

@@ -35,8 +35,8 @@ param vPrintMem = false;
     const prevTime = vLapTime;
     vLapTime = currTime;
     return
-      (if vPrintStart then format("###.##", currTime - vStartTime) else "") +
-      (if vPrintCurr  then format("####.###", currTime - prevTime)  else "") +
+      (if vPrintStart then "%{###.##}".format(currTime - vStartTime) else "") +
+      (if vPrintCurr  then "%{####.###}".format(currTime - prevTime)  else "") +
       (if vPrintMem then "" else vUserSep);
   }
 
@@ -45,7 +45,7 @@ param vPrintMem = false;
     const currMem = getCurrentMem();
     const prevMem = vLapMem;
     vLapMem = currMem;
-    return format("####.###", currMem - prevMem) + vUserSep;
+    return "%{####.###}".format(currMem - prevMem) + vUserSep;
   }
 
   proc vmsg(args...) { if vDoPrint then writeln(vPrintHelp(), (...args));  }
@@ -206,7 +206,7 @@ record VTimerG {
   proc print(resetOnPrint = this.resetOnPrint, verbPrint = this.verbPrint) {
     if VTimerQuiet then return;
     const fmt = "%-" + VTimerWidth:string + "s";
-    const name = format(fmt, this.name);
+    const name = fmt.format(this.name);
     const style = new iostyle(realfmt = 1, precision = VTimerDigits);
     if verbPrint then
       writeln(name, " : cnt ", invCount,"  elapsed ", elapsed(),

@@ -69,16 +69,17 @@ To run Chapel on multiple locales, the following steps are required:
 
 5) Set up GASNet environment variables for execution:
 
-   (a) Set up variables telling GASNet how to spawn program instances.
-       Most of our experience to date has been with two options:
+   (a) If you are using GASNet's udp conduit, set up variables telling GASNet
+       how to spawn program instances.  Most of our experience to date has been
+       with two options:
 
        (i) To run on a network of workstations to which you have
            access via ssh, configure GASNet as follows:
 
              export GASNET_SPAWNFN=S
              export GASNET_SSH_SERVERS="host1 host2 host3 ..."
-             export SSH_CMD=ssh
-             export SSH_OPTIONS=-x
+             export GASNET_SSH_CMD=ssh
+             export GASNET_SSH_OPTIONS=-x
 
            where host1, host2, host3, ... are the names of the
            workstations that will serve as your Chapel locales.  In
@@ -88,9 +89,18 @@ To run Chapel on multiple locales, the following steps are required:
            to use normal ssh-agent/ssh-add capabilities to support
            password-less ssh-ing.
 
-           Note that it is possible to configure GASNet to launch jobs
-           with SLURM using the following command:
+           Also note that if you are using SSH to launch jobs, you might get a
+           login banner printed out along with your program's output. We have
+           found the following setting useful to disable such printing:
+
+             export GASNET_SSH_OPTIONS="-o LogLevel=Error"
+
+           It is also possible to configure GASNet/UDP to launch jobs with
+           SLURM using the following command:
+
+              export GASNET_SPAWNFN=C
               export GASNET_CSPAWN_CMD="srun -N%N %C"
+
 
        (ii) To simulate multiple Chapel locales with one workstation,
             you can request that GASNet spawn its child functions on
@@ -105,7 +115,42 @@ To run Chapel on multiple locales, the following steps are required:
                $CHPL_HOME/third-party/gasnet/GASNet-1.*.*/udp-conduit/README
 
 
-   (b) We've had best results with console I/O using:
+   (b) If you are using GASNet's ibv conduit, configure the environment to
+       launch program instances.  We have experience with these configurations:
+
+       (i) For clusters using SLURM, enable slurm-gasnetrun_ibv:
+
+             export CHPL_LAUNCHER=slurm-gasnetrun_ibv
+
+           See README.launcher for other options available, such
+           as setting the time limit or selecting the type of node.
+
+       (ii) To launch InfiniBand jobs with SSH, use the following
+
+             export CHPL_LAUNCHER=gasnetrun_ibv
+             export GASNET_SSH_SERVERS="host1 host2 host3 ..."
+             export GASNET_IBV_SPAWNER=ssh
+
+
+       (iii) We've observed job launch hangs in some systems with InfiniBand
+             that were resolved by limiting the memory available for
+             communication, for example with:
+
+               export GASNET_PHYSMEM_MAX=1G
+
+
+       (iv) For more information on these and other available GASNet options
+            other options, including configuring to launch through MPI,
+            please refer to:
+
+              $CHPL_HOME/third-party/gasnet/GASNet-1.*.*/ibv-conduit/README
+
+   (c) If you are trying to debug job launch, try adding -v to your
+       program's command line and set:
+
+         export GASNET_VERBOSEENV=1
+
+   (d) We've had best results with console I/O using:
 
          export GASNET_ROUTE_OUTPUT=0
 

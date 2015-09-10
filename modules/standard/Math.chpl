@@ -49,29 +49,19 @@ module Math {
   //////////////////////////////////////////////////////////////////////////
   // Helper constants and functions (not included in chpldocs).
   //
-  pragma "no doc"
-  extern proc chpl_macro_INFINITY():real(64);
-  pragma "no doc"
-  extern proc chpl_macro_NAN():real(64);
+  private extern proc chpl_macro_INFINITY():real(64);
+  private extern proc chpl_macro_NAN():real(64);
 
-  pragma "no doc"
-  extern proc chpl_macro_double_isinf(x: real(64)): c_int;
-  pragma "no doc"
-  extern proc chpl_macro_float_isinf(x: real(32)): c_int;
-  pragma "no doc"
-  extern proc chpl_macro_double_isfinite(x: real(64)): c_int;
-  pragma "no doc"
-  extern proc chpl_macro_float_isfinite(x: real(32)): c_int;
-  pragma "no doc"
-  extern proc chpl_macro_double_isnan(x: real(64)): c_int;
-  pragma "no doc"
-  extern proc chpl_macro_float_isnan(x: real(32)): c_int;
+  private extern proc chpl_macro_double_isinf(x: real(64)): c_int;
+  private extern proc chpl_macro_float_isinf(x: real(32)): c_int;
+  private extern proc chpl_macro_double_isfinite(x: real(64)): c_int;
+  private extern proc chpl_macro_float_isfinite(x: real(32)): c_int;
+  private extern proc chpl_macro_double_isnan(x: real(64)): c_int;
+  private extern proc chpl_macro_float_isnan(x: real(32)): c_int;
 
-  pragma "no doc"
-  extern proc fabs(x: real(64)): real(64);
+  private extern proc fabs(x: real(64)): real(64);
 
-  pragma "no doc"
-  proc _logBasePow2Help(in val, baseLog2) {
+  private proc _logBasePow2Help(in val, baseLog2) {
     var result = -1;
     while (val != 0) {
       val >>= baseLog2;
@@ -80,21 +70,6 @@ module Math {
     return result;
   }
 
-  pragma "no doc"
-  proc logBasePow2(in val: int(?w), baseLog2) {
-    if (val < 1) {
-      halt("Can't take the log() of a non-positive integer");
-    }
-    return _logBasePow2Help(val, baseLog2);
-  }
-
-  pragma "no doc"
-  proc logBasePow2(in val: uint(?w), baseLog2) {
-    if (val < 1) {
-      halt("Can't take the log() of a non-positive integer");
-    }
-    return _logBasePow2Help(val, baseLog2);
-  }
   // 
   //////////////////////////////////////////////////////////////////////////
 
@@ -323,6 +298,17 @@ module Math {
       if isNonnegative(n) then m / n
       else                     (m + n + 1) / n;
 
+  /*
+    A variant of :proc:`divceil` that performs no runtime checks.
+    The user must ensure that both arguments are strictly positive
+    (not 0) and are of a signed integer type (not `uint`).
+  */
+  proc divceilpos(m: integral, n: integral) {
+    if !isIntType(m.type) || !isIntType(n.type) then
+      compilerError("divceilpos() accepts only arguments of signed integer types");
+    return (m - 1) / n + 1;
+  }
+
 
   /* Returns :proc:`floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
@@ -351,6 +337,17 @@ module Math {
     else
       if isNonnegative(n) then (m - n + 1) / n
       else                     m / n;
+
+  /*
+    A variant of :proc:`divfloor` that performs no runtime checks.
+    The user must ensure that both arguments are strictly positive
+    (not 0) and are of a signed integer type (not `uint`).
+  */
+  proc divfloorpos(m: integral, n: integral) {
+    if !isIntType(m.type) || !isIntType(n.type) then
+      compilerError("divfloorpos() accepts only arguments of signed integer types");
+    return m / n;
+  }
 
 
   /* Returns the error function of the argument `x`. */
@@ -509,6 +506,32 @@ module Math {
   inline proc log1p(x : real(32)): real(32) {
     extern proc log1pf(x: real(32)): real(32);
     return log1pf(x);
+  }
+
+
+  /* Returns the log to the base `2**baseLog2` of the given `in` value.
+     If `baseLog2` is `1`, then returns the log to the base `2`;
+     if `baseLog2` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(in val: int(?w), baseLog2) {
+    if (val < 1) {
+      halt("Can't take the log() of a non-positive integer");
+    }
+    return _logBasePow2Help(val, baseLog2);
+  }
+
+  /* Returns the log to the base `2**baseLog2` of the given `in` value.
+     If `baseLog2` is `1`, then returns the log to the base `2`;
+     if `baseLog2` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(in val: uint(?w), baseLog2) {
+    return _logBasePow2Help(val, baseLog2);
   }
 
 
@@ -747,6 +770,32 @@ module Math {
   }
 
 
+  /* e - exp(1) or  the base of the natural logarithm */
+  param e = 2.7182818284590452354;
+  /* log2(e) */
+  param log2_e = 1.4426950408889634074;
+  /* log10(e) */
+  param log10_e = 0.43429448190325182765;
+  /* log(2) (natural logarithm) */
+  param ln_2 = 0.69314718055994530942;
+  /* log(10) (natural logarithm) */
+  param ln_10 = 2.30258509299404568402;
+  /* pi - the circumference/the diameter of a circle */
+  param pi = 3.14159265358979323846;
+  /* pi/2 */
+  param half_pi = 1.57079632679489661923;
+  /* pi/4 */
+  param quarter_pi = 0.78539816339744830962;
+  /* 1/pi */
+  param recipr_pi = 0.31830988618379067154;
+  /* 2/pi */
+  param twice_recipr_pi = 0.63661977236758134308;
+  /* 2/sqrt(pi) */
+  param twice_recipr_sqrt_pi = 1.12837916709551257390;
+  /* sqrt(2) */
+  param sqrt_2 = 1.41421356237309504880;
+  /* 1/sqrt(2) */
+  param recipr_sqrt_2 = 0.70710678118654752440;
 } // end of module Math
 
 // TODO: Consolidate overloaded signatures, to simplify the documentation.

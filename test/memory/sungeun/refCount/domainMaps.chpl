@@ -32,7 +32,7 @@ proc doit(param dmType: DMType) {
   }
   var m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Return domain map:");
   m1 = memoryUsed();
@@ -41,7 +41,7 @@ proc doit(param dmType: DMType) {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Create domain:");
   m1 = memoryUsed();
@@ -50,7 +50,7 @@ proc doit(param dmType: DMType) {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Create domain and array:");
   m1 = memoryUsed();
@@ -61,7 +61,7 @@ proc doit(param dmType: DMType) {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
 }
 
@@ -73,7 +73,7 @@ proc main() {
   var m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Block Dist");
   writeln("==========");
@@ -82,7 +82,7 @@ proc main() {
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Cyclic Dist");
   writeln("===========");
@@ -91,7 +91,7 @@ proc main() {
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Block-Cyclic Dist");
   writeln("=================");
@@ -100,7 +100,7 @@ proc main() {
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Replicated Dist");
   writeln("===============");
@@ -109,6 +109,6 @@ proc main() {
   m2 = memoryUsed();
   writeln("total:");
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
 }

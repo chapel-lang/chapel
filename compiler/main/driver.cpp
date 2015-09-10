@@ -26,6 +26,7 @@
 
 #include "arg.h"
 #include "chpl.h"
+#include "commonFlags.h"
 #include "config.h"
 #include "countTokens.h"
 #include "docsDriver.h"
@@ -87,12 +88,9 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
-static bool rungdb = false;
-static bool runlldb = false;
 bool fLibraryCompile = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
-bool developer = false;
 bool fVerify = false;
 bool ignore_errors = false;
 bool ignore_errors_for_pass = false;
@@ -116,6 +114,7 @@ bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
+bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
@@ -153,10 +152,12 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
 bool fIgnoreLocalClasses = false;
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
-bool fieeefloat = true;
+bool fieeefloat = false;
+int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
 char fExplainCall[256] = "";
 int explainCallID = -1;
+int breakOnResolveID = -1;
 char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
 bool fPrintCallStackOnError = false;
@@ -200,13 +201,6 @@ bool preserveInlinedLineNumbers = false;
 const char* compileCommand = NULL;
 char compileVersion[64];
 
-static bool printCopyright = false;
-static bool printHelp = false;
-static bool printEnvHelp = false;
-static bool printSettingsHelp = false;
-static bool printLicense = false;
-static bool printVersion = false;
-static bool printChplHome = false;
 
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
@@ -444,15 +438,26 @@ static void setChapelDebug(const ArgumentState* state, const char* arg_unused) {
   printCppLineno = true;
 }
 
-static void setDevelSettings(const ArgumentState* state, const char* arg_unused) {
-  // have to handle both cases since this will be called with --devel
-  // and --no-devel
-  if (developer) {
-    ccwarnings = true;
+
+// In order to handle accumulating ccflags arguments, the argument
+// processing calls this function. This function appends the flags
+// to the ccflags variable, so that multiple --ccflags arguments
+// all end up together in the ccflags variable (and will end up
+// being passed to the backend C compiler).
+static void setCCFlags(const ArgumentState* state, const char* arg) {
+  // Append arg to the end of ccflags.
+  int curlen = strlen(ccflags);
+  int space = sizeof(ccflags) - curlen - 1 - 1; // room for ' ' and \0
+  int arglen = strlen(arg);
+  if( arglen <= space ) {
+    // add a space if there are already arguments here
+    if( curlen != 0 ) ccflags[curlen++] = ' ';
+    memcpy(&ccflags[curlen], arg, arglen);
   } else {
-    ccwarnings = false;
+    USR_FATAL("ccflags argument too long");
   }
 }
+
 
 static void handleLibrary(const ArgumentState* state, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
@@ -533,6 +538,7 @@ static void verifySaveCDir(const ArgumentState* state, const char* unused) {
 static void turnOffChecks(const ArgumentState* state, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
+  fNoFormalDomainChecks = true;
   fNoLocalChecks  = true;
   fNoStackChecks  = true;
   fNoCastChecks = true;
@@ -555,7 +561,9 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   // Enable all compiler optimizations, disable all runtime checks
   //
   fBaseline = false;
-  fieeefloat = false;
+  // don't set fieeefloat since it can change program behavior.
+  // instead, we rely on the backend C compiler to choose
+  // an appropriate level of optimization.
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
   fNoFastFollowers = false;
@@ -571,15 +579,26 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoTupleCopyOpt = false;
   fNoPrivatization = false;
   fNoChecks = true;
-  fNoBoundsChecks = true;
-  fNoLocalChecks = true;
   fIgnoreLocalClasses = false;
-  fNoNilChecks = true;
-  fNoStackChecks = true;
-  fNoCastChecks = true;
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
+  turnOffChecks(state, unused);
+}
+
+static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
+  // It would be nicer if arg.cpp could handle
+  // 3-value variables like this (set to false, set to true, not set)
+  // But if this is the only such case, having a set function is an OK plan.
+
+  // ffloatOpt defaults to 0 -> backend default
+  if( fieeefloat ) {
+    // IEEE strict
+    ffloatOpt = -1;
+  } else {
+    // lax IEEE, optimize
+    ffloatOpt = 1;
+  }
 }
 
 static void setBaselineFlag(const ArgumentState* state, const char* unused) {
@@ -611,10 +630,6 @@ static void setCacheEnable(const ArgumentState* state, const char* unused) {
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
 
-
-static void setHelpTrue(const ArgumentState* state, const char* unused) {
-  printHelp = true;
-}
 
 static void setHtmlUser(const ArgumentState* state, const char* unused) {
   fdump_html = true;
@@ -689,7 +704,7 @@ static ArgumentDescription arg_desc[] = {
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
  {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
- {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
+ {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", setFloatOptFlag},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
  {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, NULL, NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
@@ -711,6 +726,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL}, 
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},
@@ -724,7 +740,7 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
- {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
+ {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
  {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
@@ -750,7 +766,7 @@ static ArgumentDescription arg_desc[] = {
 // Support for extern { c-code-here } blocks could be toggled with this
 // flag, but instead we just leave it on if the compiler can do it.
 // {"extern-c", ' ', NULL, "Enable [disable] extern C block support", "f", &externC, "CHPL_EXTERN_C", NULL},
- {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
+ DRIVER_ARG_DEVELOPER,
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
@@ -765,12 +781,12 @@ static ArgumentDescription arg_desc[] = {
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
- {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL, NULL},
- {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL, NULL},
- {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
- {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
- {"license", ' ', NULL, "Show license", "F", &printLicense, NULL, NULL},
- {"version", ' ', NULL, "Show version", "F", &printVersion, NULL, NULL},
+ DRIVER_ARG_COPYRIGHT,
+ DRIVER_ARG_HELP,
+ DRIVER_ARG_HELP_ENV,
+ DRIVER_ARG_HELP_SETTINGS,
+ DRIVER_ARG_LICENSE,
+ DRIVER_ARG_VERSION,
 
  {"", ' ', NULL, "Developer Flags -- Debug Output", NULL, NULL, NULL, NULL},
  {"cc-warnings", ' ', NULL, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
@@ -808,8 +824,8 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-codegen", ' ', NULL, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
- {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"lldb", ' ', NULL, "Run compiler in lldb", "F", &runlldb, NULL, NULL},
+ {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
+ DRIVER_ARG_DEBUGGERS,
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
@@ -824,8 +840,8 @@ static ArgumentDescription arg_desc[] = {
  {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
 
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
- {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome,   NULL,                   NULL},
- {0}
+ DRIVER_ARG_PRINT_CHPL_HOME,
+ DRIVER_ARG_LAST
 };
 
 
@@ -860,32 +876,32 @@ static void printStuff(const char* argv0) {
   bool shouldExit       = false;
   bool printedSomething = false;
 
-  if (printVersion) {
+  if (fPrintVersion) {
     fprintf(stdout, "%s Version %s\n", sArgState.program_name, compileVersion);
 
-    printCopyright   = true;
+    fPrintCopyright  = true;
     printedSomething = true;
     shouldExit       = true;
   }
 
-  if (printLicense) {
+  if (fPrintLicense) {
     fprintf(stdout,
 #include "LICENSE"
             );
 
-    printCopyright   = false;
+    fPrintCopyright  = false;
     shouldExit       = true;
     printedSomething = true;
   }
 
-  if (printCopyright) {
+  if (fPrintCopyright) {
     fprintf(stdout,
 #include "COPYRIGHT"
             );
 
     printedSomething = true;
   }
-  if( printChplHome ) {
+  if( fPrintChplHome ) {
     char* guess = findProgramPath(argv0);
 
     printf("%s\t%s\n", CHPL_HOME, guess);
@@ -895,17 +911,10 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printHelp || fDocsPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+  if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
 
-    int usageExitStatus;
-    if (fDocs) {
-      usageExitStatus = (!fDocsPrintHelp);
-    } else {
-      usageExitStatus = (!printHelp);
-    }
-
-    usage(&sArgState, usageExitStatus, printEnvHelp, printSettingsHelp);
+    usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
 
     shouldExit       = true;
     printedSomething = true;
@@ -968,10 +977,10 @@ int main(int argc, char* argv[]) {
   if (fUseIPE == false)
     printStuff(argv[0]);
 
-  if (rungdb)
+  if (fRungdb)
     runCompilerInGDB(argc, argv);
 
-  if (runlldb)
+  if (fRunlldb)
     runCompilerInLLDB(argc, argv);
 
   addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);

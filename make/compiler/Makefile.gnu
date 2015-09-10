@@ -43,7 +43,6 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
 
-
 #
 # Flags for compiler, runtime, and generated code
 #
@@ -66,6 +65,10 @@ ifneq ($(CHPL_MAKE_TARGET_ARCH), unknown)
 SPECIALIZE_CFLAGS = -march=$(CHPL_MAKE_TARGET_ARCH)
 endif
 endif
+
+# Set flag for lax or IEEE floating point
+FAST_FLOAT_GEN_CFLAGS = -ffast-math
+IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
@@ -90,11 +93,6 @@ COMP_GEN_LFLAGS += -maix64
 endif
 
 #
-# a hacky flag necessary currently due to our use of setenv in the runtime code
-#
-SUPPORT_SETENV_CFLAGS = -std=gnu89
-
-#
 # query gcc version
 #
 ifndef GNU_GPP_MAJOR_VERSION
@@ -117,6 +115,13 @@ WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasi
 # decl-after-stmt for non c99 compilers. See commit message 21665
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
+
+#
+# Don't warn for signed pointer issues (ex. c_ptr(c_char) )
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4; echo "$$?"),1)
+WARN_GEN_CFLAGS += -Wno-pointer-sign
+endif
 
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations

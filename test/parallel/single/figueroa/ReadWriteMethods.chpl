@@ -5,17 +5,18 @@ var done: sync bool = true;
 
 proc foo(type t, v: t, s) {
   var d: single t;
-
-  begin {
-    writeln("2: got ", d.readFF());
-    writeln("2: got ", d.readFF());
-    done = true;
+  sync {
+    begin {
+      writeln("2: got ", d.readFF());
+      writeln("2: got ", d.readFF());
+      done = true;
+    }
+    if done then // wait until all prior invocations have finished
+      writeln("1: going to sleep with ", v, " of type ", s);
+    sleep(1);
+    writeln("1: woke up. writing ", v);
+    d.writeEF(v);
   }
-  if done then // wait until all prior invocations have finished
-  writeln("1: going to sleep with ", v, " of type ", s);
-  sleep(1);
-  writeln("1: woke up. writing ", v);
-  d.writeEF(v);
 }
 
 foo(bool, true, "bool");

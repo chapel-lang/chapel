@@ -29,6 +29,26 @@ IpeValue::IpeValue(bool value)
   mValue.iValue       = (value == true) ? 1 : 0;
 }
 
+IpeValue::IpeValue(long value)
+{
+  mValue.iValue       = value;
+}
+
+IpeValue::IpeValue(double value)
+{
+  mValue.rValue       = value;
+}
+
+IpeValue::IpeValue(const char* value)
+{
+  mValue.sValue       = value;
+}
+
+IpeValue::IpeValue(Type* value)
+{
+  mValue.typePtr      = value;
+}
+
 IpeValue::IpeValue(IpeModule* value)
 {
   mValue.modulePtr    = value;
@@ -39,6 +59,10 @@ IpeValue::IpeValue(IpeProcedure* value)
   mValue.procedurePtr = value;
 }
 
+IpeValue::IpeValue(IpeValue* value)
+{
+  mValue.valuePtr = value;
+}
 
 bool IpeValue::boolGet() const
 {
@@ -80,6 +104,11 @@ void IpeValue::cstringSet(const char* value)
   mValue.sValue = value;
 }
 
+Type* IpeValue::typeGet() const
+{
+  return mValue.typePtr;
+}
+
 IpeModule* IpeValue::moduleGet() const
 {
   return mValue.modulePtr;
@@ -93,9 +122,4 @@ IpeProcedure* IpeValue::procedureGet() const
 IpeValue* IpeValue::refGet() const
 {
   return mValue.valuePtr;
-}
-
-void IpeValue::refSet(IpeValue* value)
-{
-  mValue.valuePtr = value;
 }

@@ -5,7 +5,6 @@ Initializing Modules:
      CString
     MemConsistency
     Atomics
-    NetworkAtomics
     AtomicsCommon
     NewString
      BaseStringType

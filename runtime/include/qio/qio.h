@@ -138,7 +138,8 @@ typedef qioerr (*qio_open_fptr)(void**,      // file information on return
                                 qio_hint_t,  // Hints for opening the file
                                 void*);      // plugin filesystem pointer
 
-typedef qioerr (*qio_close_fptr)(void*, void*); // file information, fs info
+typedef qioerr (*qio_close_fptr)(void*, // file information
+                                 void*); // fs info
 
 typedef qioerr (*qio_fsync_fptr)(void*, void*); // file information, fs info
 
@@ -536,7 +537,8 @@ qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_st
 
 qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
                         int flags, mode_t mode, qio_hint_t iohints, 
-                        const qio_style_t* style, void* fs_info,
+                        const qio_style_t* style,
+                        void* fs_info,
                         const qio_file_functions_t* s);
 
 qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, 
@@ -546,7 +548,8 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info,
 
 qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, 
                                const char* access, qio_hint_t iohints, 
-                               const qio_style_t* style, void* fs_info,
+                               const qio_style_t* style,
+                               void* fs_info,
                                const qio_file_functions_t* s);
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
@@ -913,9 +916,9 @@ qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* 
   }
 
   // Is there room in our fast path buffer?
-  if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+  if( qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur) ) {
     qio_memcpy( ptr, ch->cached_cur, len );
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, len);
     *amt_read = len;
     err = 0;
   } else {
@@ -949,9 +952,9 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
   }
 
   // Is there room in our fast path buffer?
-  if( ((intptr_t)1) <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+  if( qio_space_in_ptr_diff(1, ch->cached_end, ch->cached_cur) ) {
     ret = *(unsigned char*) ch->cached_cur;
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, 1);
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, 1);
   } else {
     ssize_t amt_read;
     qioerr err;
@@ -987,10 +990,12 @@ qioerr qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, 
     }
   }
 
+  //printf("IN WRITE BYTE %x %p %p %p\n", (int) byte, ch->cached_cur, ch->cached_end, ch->cached_end_bits);
+
   // Is there room in our fast path buffer?
-  if( ((intptr_t)1) <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+  if( qio_space_in_ptr_diff(1, ch->cached_end, ch->cached_cur) ) {
     *(unsigned char*) ch->cached_cur = byte;
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, 1);
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, 1);
     err = _qio_channel_post_cached_write(ch);
   } else {
     ssize_t amt_written = 0;
@@ -1067,9 +1072,9 @@ qioerr qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const
   }
 
   // Is there room in our fast path buffer?
-  if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+  if( qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur) ) {
     qio_memcpy( ch->cached_cur, ptr, len );
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, len);
     *amt_written = len;
     err = _qio_channel_post_cached_write(ch);
   } else {
@@ -1097,9 +1102,9 @@ qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, vo
   }
 
   // Is there room in our fast path buffer?
-  if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+  if( qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur) ) {
     qio_memcpy( ptr, ch->cached_cur, len );
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, len);
     err = 0;
   } else {
     ssize_t amt_read = 0;
@@ -1127,9 +1132,9 @@ qioerr qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, c
   }
 
   // Is there room in our fast path buffer?
-  if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+  if( qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur) ) {
     qio_memcpy( ch->cached_cur, ptr, len );
-    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
+    ch->cached_cur = qio_ptr_add(ch->cached_cur, len);
     err = _qio_channel_post_cached_write(ch);
   } else {
     ssize_t amt_written = 0;
@@ -1251,7 +1256,7 @@ qioerr qio_channel_offset(const int threadsafe, qio_channel_t* ch, int64_t* offs
 static inline
 int64_t qio_channel_offset_unlocked(qio_channel_t* ch)
 {
-  int64_t cached_amt = VOID_PTR_DIFF(ch->cached_cur, ch->cached_start);
+  int64_t cached_amt = qio_ptr_diff(ch->cached_cur, ch->cached_start);
   int writing = ch->flags & QIO_FDFLAG_WRITEABLE;
   int bytes_in_bits = 0;
 
@@ -1452,8 +1457,8 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
 
-  if( ((intptr_t) (sizeof(uint64_t)+2*sizeof(qio_bitbuffer_t))) <=
-            VOID_PTR_DIFF(ch->cached_end_bits, ch->cached_cur )) {
+  if( qio_space_in_ptr_diff(sizeof(uint64_t)+2*sizeof(qio_bitbuffer_t),
+                            ch->cached_end_bits, ch->cached_cur) ) {
     //printf("WRITE BITS CACHED WRITING %llx %i %llx %i\n", (long long int) tmp_bits, tmp_live, (long long int) v, nbits);
 
     // We have buffer for it...
@@ -1478,10 +1483,10 @@ qioerr qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, 
       //printf("WRITE BITS CACHED PARTONE %llx tmp %llx %i\n", (long long int) part_one_bits, (long long int) tmp_bits, tmp_live);
       // If we are 8-byte aligned, write part_one_bits and
       // carry on.
-      if( VOID_PTR_ALIGN(ch->cached_cur, sizeof(qio_bitbuffer_t)) == 0 ) {
+      if( qio_ptr_align(ch->cached_cur, sizeof(qio_bitbuffer_t)) == 0 ) {
         // We have 8-byte alignment
-        *(qio_bitbuffer_t*)ch->cached_cur = part_one_bits_be;
-        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, sizeof(qio_bitbuffer_t));
+        memcpy(ch->cached_cur, &part_one_bits_be, sizeof(qio_bitbuffer_t));
+        ch->cached_cur = qio_ptr_add(ch->cached_cur, sizeof(qio_bitbuffer_t));
         ch->bit_buffer = tmp_bits;
         ch->bit_buffer_bits = tmp_live;
         //printf("WRITE BITS ALIGNED WRITING %llx\n", (long long int) part_one_bits);
@@ -1540,8 +1545,8 @@ qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, u
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
 
-  if( ((intptr_t) (sizeof(uint64_t)+2*sizeof(qio_bitbuffer_t))) <=
-            VOID_PTR_DIFF(ch->cached_end_bits, ch->cached_cur )) {
+  if( qio_space_in_ptr_diff( sizeof(uint64_t)+2*sizeof(qio_bitbuffer_t),
+                             ch->cached_end_bits, ch->cached_cur )) {
     //printf("READ BITS CACHED %llx %i\n", (long long int) tmp_bits, (int) tmp_live);
 
     // We have buffer for it...
@@ -1560,10 +1565,10 @@ qioerr qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, u
       part_two = nbits - tmp_live;
 
       // Add some value to cached_cur
-      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, ch->bits_read_bytes);
+      ch->cached_cur = qio_ptr_add(ch->cached_cur, ch->bits_read_bytes);
 
       // If we are 8-byte aligned, read part_two_bits and carry on.
-      if( VOID_PTR_ALIGN(ch->cached_cur, sizeof(qio_bitbuffer_t)) == 0 ) {
+      if( qio_ptr_align(ch->cached_cur, sizeof(qio_bitbuffer_t)) == 0 ) {
         //printf("READ BITS CACHED ALIGNED\n");
         // We have 8-byte alignment
         // Read the next word.

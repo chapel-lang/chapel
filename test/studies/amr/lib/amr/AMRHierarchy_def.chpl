@@ -903,7 +903,7 @@ proc AMRHierarchy.clawOutput(frame_number: int)
 
   //---- Names of output files ----
   
-  var frame_string:       string = format("%04i", frame_number);
+  var frame_string:       string = "%04i".format(frame_number);
   var time_file_name:     string = "_output/fort.t" + frame_string;
   var solution_file_name: string = "_output/fort.q" + frame_string;
 

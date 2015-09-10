@@ -161,6 +161,7 @@ class SetChplEnvTests(unittest.TestCase):
             self.assertEqual('fifo', get_var('CHPL_TASKS'))
             self.assertEqual('none', get_var('CHPL_GMP'))
             self.assertEqual('none', get_var('CHPL_REGEXP'))
+            self.assertEqual('none', get_var('CHPL_LLVM'))
 
             # TODO: Re-add this check when/if tcmalloc becomes
             #       default. (thomasvandoren, 2015-01-13)

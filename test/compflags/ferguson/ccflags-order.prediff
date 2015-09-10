@@ -1,0 +1,24 @@
+#!/bin/bash
+
+TEST=$1
+LOG=$2
+# PREDIFF: Script to execute before diff'ing output (arguments: <test
+#    executable>, <log>, <compiler executable>)
+
+MYLOG=""
+
+LAST=""
+
+for word in `cat $LOG`
+  do
+    if [[ $word == -O* ]]
+      then
+        if [[ $word != $LAST ]]
+          then
+            MYLOG+=" $word"
+            LAST=$word
+          fi
+      fi
+done
+
+echo $MYLOG > $LOG

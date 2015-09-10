@@ -18,11 +18,13 @@ proc main() {
   var s2: real;
   var flag2: sync bool;
 
-  s2 = 1.0;
-  on Locales(1) do begin with (ref s2) {
-    const tmp = flag2;
-    printf("%s\n", ("s2 is: " + s2).c_str());
+  sync {
+    s2 = 1.0;
+    on Locales(1) do begin with (ref s2) {
+        const tmp = flag2;
+        printf("%s\n", ("s2 is: " + s2).c_str());
+      }
+    s2 = 2.0;
+    flag2 = true;
   }
-  s2 = 2.0;
-  flag2 = true;
 }

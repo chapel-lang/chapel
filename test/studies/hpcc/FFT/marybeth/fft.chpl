@@ -16,6 +16,7 @@ config const epsilon = 2.0 ** -51.0,
 
 // boolean configs
 config const printTiming = true;
+config const printError = true;
 
 proc main() {
   // compute problem size
@@ -162,8 +163,14 @@ proc verifyResults(z, Z, execTime, Twiddles) {
 
   maxerr = maxerr / logN / epsilon;
 
-  write(if (maxerr < threshold) then "SUCCESS" else "FAILURE");
-  writeln(", error = ", maxerr);
+  if maxerr < threshold {
+    write("SUCCESS");
+    if printError then writeln(", error = ", maxerr);
+    else writeln();
+  } else {
+    write("FAILURE");
+    writeln(", error = ", maxerr);
+  }
   writeln();
   writeln("N      = ", N);
   if (printTiming) {
@@ -174,17 +181,21 @@ proc verifyResults(z, Z, execTime, Twiddles) {
 }
 
 proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
-              inout A:[1..4] complex) {
-  var x0 = A[1] + A[2];
-  var x1 = A[1] - A[2];
-  var x2 = A[3] + A[4];
-  var x3 = A[3] - A[4];
+              inout A:[?D] complex) {
+  const i1 = D.low,
+        i2 = i1 + D.stride,
+        i3 = i2 + D.stride,
+        i4 = i3 + D.stride;
+  var x0 = A[i1] + A[i2];
+  var x1 = A[i1] - A[i2];
+  var x2 = A[i3] + A[i4];
+  var x3 = A[i3] - A[i4];
 
-  A[1] = x0 + x2;
+  A[i1] = x0 + x2;
   x0 -= x2;
-  A[3] = wk2 * x0;
+  A[i3] = wk2 * x0;
   x0 = (x1.re - x3.im, x1.im + x3.re):complex;
-  A[2] = wk1 * x0;
+  A[i2] = wk1 * x0;
   x0 = (x1.re + x3.im, x1.im - x3.re):complex;
-  A[4] = wk3 * x0;
+  A[i4] = wk3 * x0;
 }

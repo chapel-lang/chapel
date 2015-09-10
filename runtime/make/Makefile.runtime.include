@@ -72,6 +72,20 @@ RUNTIME_INCLS += \
         -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
+        -I$(CHPL_MAKE_HOME)/runtime/src/$(RUNTIME_OBJDIR) \
+
+RUNTIME_CYGWIN=0
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cygwin32)
+  RUNTIME_CYGWIN=1
+endif
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cygwin64)
+  RUNTIME_CYGWIN=1
+endif
+
+# w32api is provided by cygwin32-w32api-runtime
+ifeq ($(RUNTIME_CYGWIN),1)
+  RUNTIME_INCLS += -I/usr/include/w32api
+endif
 
 # Add any further includes (e.g. third party tcmalloc dir) for memory
 MEM_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_MEM)
@@ -96,4 +110,5 @@ endif
 
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 RUNTIME_CXXFLAGS += $(RUNTIME_DEFS)
+
 

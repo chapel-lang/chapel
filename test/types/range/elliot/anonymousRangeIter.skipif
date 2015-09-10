@@ -5,5 +5,8 @@ CHPL_COMM != none
 # inlining turned on so the output will be drastically different
 COMPOPTS <= --baseline
 
+# Ditto for no-inline
+COMPOPTS <= --no-inline
+
 # test greps generated c code, will fail for llvm
 COMPOPTS <= --llvm

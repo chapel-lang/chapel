@@ -6,6 +6,7 @@ This copy of GMP is being release with Chapel for convenience and uses
 a snapshot of GMP obtained from the GMP team at: http://gmplib.org
 
 For more information on the current support for GMP within Chapel,
-please refer to $CHPL_HOME/doc/technotes/README.gmp.  For more
-information about GMP itself, please refer to the website above or to
-the README in the gmp-*/ subdirectory of this directory.
+please refer to the GMP module documentation available at:
+ http://chapel.cray.com/docs/latest/modules/standard/GMP.html
+For more information about GMP itself, please refer to the website above
+or to the README in the gmp-*/ subdirectory of this directory.

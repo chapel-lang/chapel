@@ -32,12 +32,30 @@
 #include "chpl-tasks.h"
 #include "error.h"
 
+
+/* The names and arguments for these functions are part
+   of Chapel's user-facing interface because they are
+   documented in a README doc/release
+ */
+// start public interface
+static inline void* chpl_calloc(size_t n, size_t size);
+static inline void* chpl_malloc(size_t size);
+static inline void* chpl_memalign(size_t boundary, size_t size);
+static inline void* chpl_realloc(void* ptr, size_t size);
+static inline void chpl_free(void* ptr);
+int chpl_posix_memalign(void** ptr, size_t alignment, size_t size);
+void* chpl_valloc(size_t size);
+void* chpl_pvalloc(size_t size);
+// end public interface
+
+// returns 0 if valid, EINVAL otherwise
+int chpl_posix_memalign_check_valid(size_t alignment);
+
 // runtime/include/mem/*/chpl-mem-impl.h defines
 // chpl_calloc, chpl_malloc, chpl_realloc, chpl_free
 // with the same signatures as the standard functions
 // and no additional error checking.
 #include "chpl-mem-impl.h"
-
 
 void chpl_mem_init(void);
 void chpl_mem_exit(void);
@@ -112,6 +130,16 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src);
   return memcpy(dest, src, num);
+}
+
+// Query the allocator to ask for a good size to allocate that is at least
+// minSize. One example where this is useful is to grow a vector while
+// minimizing memory wasted by overallocation.
+//
+// If an allocator does not have the ability to get this information, minSize
+// will be returned.
+static inline size_t chpl_mem_goodAllocSize(size_t minSize) {
+  return chpl_goodAllocSize(minSize);
 }
 
 // free a c_string_copy, no error checking.

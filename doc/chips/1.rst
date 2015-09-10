@@ -1,0 +1,118 @@
+Chapel Improvement Proposals
+============================
+
+Status
+  Draft
+
+Author
+  Michael Ferguson
+
+
+In order to better keep track of proposed improvements for the Chapel, I've
+created a concept of Chapel Improvement Proposals or CHIPs. This idea mimics
+Python Enhancement Proposals (PEPs) or D Improvement Proposals (DIPs) if you
+are familiar with those.
+
+Abstract
+--------
+
+This document provides an overview of Chapel Improvement Proposals (CHIPs) and
+serves as a template for other CHIPs.
+
+Rationale
+---------
+
+It can be difficult to keep track of proposed improvements for the Chapel
+project - especially when the implementation is deferred for some reason. These
+design ideas as well as any decisions or consensus reached about the idea need
+to be recorded so that work will not have to start over when the proposal
+becomes higher priority.
+
+Description
+-----------
+
+Sometimes it is useful to use a documentation format to arrive at consensus on
+a language or library design issue. The CHIPs contained here are Chapel
+Improvement Proposals. (The idea here is similar to D Improvement Proposals or
+Python Enhancement Proposals). Here are the key features and benefits to
+using CHIPs:
+
+ * Each CHIP is stored in version control as part of the Chapel project,
+   and so the history of the CHIP will be automatically maintained.
+ * As a proposal is discussed, the CHIP will be updated to reflect
+   any decisions made on the matter.
+ * CHIPs can record design decisions that have been made. Otherwise, it is
+   hard to track all of the proposals and which ones are moving forward.
+
+Chapel Improvement Proposals should be used to document the planned design for
+new features and to track their implementation progress.  Not all new features
+need to go through this process. In particular, bug reports and feature
+requests should continue to be filed as .future files in Chapel's testing
+system. Likewise, not all discussion of a CHIP needs to be connected to the
+CHIP itself. The CHIP documents should record the results of discussions
+whenever high-level decisions about the design or implementation strategy have
+been made.
+
+When referring to a CHIP, you can use CHIP and the number (so this document is
+CHIP 1).
+
+The author or authors of a CHIP are expected to advocate for the idea and
+to update the CHIP the idea progresses.
+
+The key parts of a CHIP are:
+ * a title
+ * a status
+ * an abstract summarizing the proposal
+ * a rationale explaining what problem the proposal is solving
+ * any other sections needed to record the idea and the rational for any
+   decisions
+
+Each CHIP should be written in ReStructured Text. That way, they can be easily
+viewed in a text editor and also converted into other formats including html
+for web pages. Since ReStructured Text is the same format used for chpldoc
+documentation strings, Chapel contributors will need to work with fewer
+formats.
+
+A CHIP should be at least a few paragraphs to have enough information content
+to be reasonable for this format.
+
+Title
++++++
+
+Each CHIP should have a short title.
+
+Status
+++++++
+
+As a Chapel Improvement Proposal is discussed with the Chapel community, it
+should be updated to record the level of consensus with a Status marker.
+Status can be:
+
+ * Draft - CHIPs start here
+ * Active - No longer a draft. Informational.
+ * Accepted - The Chapel community likes the idea and work is planned on it
+ * Deferred - Progress is not being made on an issue
+ * Rejected - The proposal has been discussed and the Chapel project does
+   not plan to incorporate the proposal.
+ * Withdrawn - A champion can withdraw their proposal for any reason
+ * Final - Work on the feature has completed and it is in the repository
+ * Superseded - The proposal has been replaced by another proposal
+
+
+Abstract
+++++++++
+
+Each CHIP should have a short paragraph summarizing the proposal.
+
+Rationale
++++++++++
+
+Each CHIP should have a discussion of the problem it is attempting to solve.
+
+Details
++++++++
+
+Each CHIP ccan contain any other sections that are appropriate to record the
+proposal idea, design details, implementation details, and justification for
+decisions.
+

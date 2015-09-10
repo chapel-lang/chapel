@@ -17,7 +17,10 @@
 
 # put Cray PE cross-compilation gnu-specific settings here
 
-include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_TARGET_PLATFORM)
+CRAYPE_GEN_CFLAGS =
+CRAYPE_COMP_CFLAGS =
 
-RUNTIME_CFLAGS += -std=c99
-GEN_CFLAGS += -std=c99
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
+
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
+

@@ -1,5 +1,5 @@
-warning: type _singlevar(int(64)) does not currently support noinit, using default initialization
-warning: type _singlevar(bool) does not currently support noinit, using default initialization
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:187: warning: type _singlevar(int(64)) does not currently support noinit, using default initialization
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:187: warning: type _singlevar(bool) does not currently support noinit, using default initialization
 Task 1 finishing
 Task 2 done!
 4

@@ -1,5 +1,5 @@
-perfkeys: Total Time:, Total Time:, Total Time:, Total Time:
-graphkeys: sparse (local), sparse (no-local), dense (local), dense (no-local)
-files: lulesh.default.dat, lulesh.block.dat, lulesh.default-dense.dat, lulesh.block-dense.dat
+perfkeys: Total Time:, Total Time:
+graphkeys: sparse (local), dense (local)
+files: lulesh.default.dat, lulesh.default-dense.dat
 graphtitle: LULESH (release)
 ylabel: Time (seconds)

@@ -95,7 +95,6 @@ where tag == iterKind.leader
 {
   assert(chunkSize > 0); // caller's responsibility
 
-  use UtilMath;
   // # of tasks the range can fill. (fast) ceil so all work is represented
   const chunkTasks = divceilpos(c.length, chunkSize): int;
   
@@ -455,8 +454,7 @@ where tag == iterKind.follower
 }
 
 //************************* Helper functions
-pragma "no doc"
-proc defaultNumTasks(nTasks:int)
+private proc defaultNumTasks(nTasks:int)
 {
   var dnTasks=nTasks;
   if nTasks==0 then {
@@ -468,8 +466,7 @@ proc defaultNumTasks(nTasks:int)
   return dnTasks;
 }
 
-pragma "no doc"
-proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:bool, ref lock : vlock, splitTail:bool=false)
+private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:bool, ref lock : vlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
   type lenType=rangeToSplit.length.type;

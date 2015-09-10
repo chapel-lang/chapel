@@ -8,6 +8,7 @@ then
 else
     echo Unpacking RE2
     tar xzf re2-20140111.tgz
+    mv re2-cc56ba02d9d2bdafa614ad5ebf564dde287625bb re2
     echo Applying Patches
     cd re2
     patch -p1 < ../hg_diff_g.patch

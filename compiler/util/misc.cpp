@@ -35,6 +35,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+
+static const char* help_url = "http://chapel.cray.com/getinvolved.html";
+
 static void cleanup_for_exit(void) {
   deleteTmpDir();
   stopCatchingSignals();
@@ -196,9 +199,58 @@ printDevelErrorHeader(BaseAST* ast) {
     }
   }
 
+  bool have_ast_line = false;
+  const char* filename;
+  int linenum;
 
-  if (ast && ast->linenum())
-    fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
+  if ( ast && ast->linenum() ) {
+    have_ast_line = true;
+    filename = cleanFilename(ast);
+    linenum = ast->linenum();
+  } else {
+    have_ast_line = false;
+    if ( !err_print && currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
+      // Use our best guess for the line number for user errors,
+      // but don't do that for err_print (USR_PRINT) notes that don't
+      // come with line numbers.
+      filename = cleanFilename(currentAstLoc.filename);
+      linenum = currentAstLoc.lineno;
+    } else {
+      filename = NULL;
+      linenum = -1;
+    }
+  }
+
+  bool apologize = !err_user;
+  bool guess = filename && !have_ast_line;
+
+  if ( apologize ) {
+    fprintf(stderr, " Unfortunately the Chapel compiler has encountered\n"
+                    " an internal error. Please file a bug report that\n"
+                    " includes a program reproducing the problem as well\n"
+                    " as this output. See %s for\n"
+                    " further instructions on filing bug reports.\n"
+                    "\n", help_url);
+    if ( guess ) {
+      // Print out our best guess for the location of an error
+      // if we had no source location
+      fprintf(stderr, " The error may be related to this location:\n"
+                      " %s:%d\n",
+                      filename, linenum);
+    }
+  }
+
+
+  // TODO: indicate that the file/line is a guess if
+  //  (err_user && filename && guess && !developer)
+  // which will almost certainly change some .good files
+
+  if (filename) {
+    fprintf(stderr, "%s:%d: ", filename, linenum);
+    if( developer && guess ) {
+      fprintf(stderr, "[source location guessed] ");
+    }
+  }
 
   if (err_print) {
     fprintf(stderr, "note: ");

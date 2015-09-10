@@ -1,0 +1,3 @@
+# 04/30/15: The versions of nbody that use slicing take ~550 seconds
+# for --no-local performance testing and ~300 seconds for pgi.
+900

@@ -29,7 +29,9 @@
 #ifndef _CHPL_GEN_INTERFACE_H_
 #define _CHPL_GEN_INTERFACE_H_
 
+#include <stddef.h>
 #include <stdlib.h>
+
 #include "chpltypes.h"
 
 /* This header file is for routines that are in the generated code */

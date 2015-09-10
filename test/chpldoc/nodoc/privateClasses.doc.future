@@ -1,0 +1,5 @@
+feature request: private classes, and fields and methods
+
+When private classes are allowed, this test should prove that chpldoc
+ignores them, as it ignores other private symbols.  When private fields and
+methods are allowed, chpldoc should similarly ignore them.

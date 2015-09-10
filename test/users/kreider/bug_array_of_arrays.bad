@@ -1,0 +1,3 @@
+bug_array_of_arrays.chpl:22: In function 'pass_arrayofarrays':
+bug_array_of_arrays.chpl:22: error: unresolved call 'chpl__buildArrayRuntimeType(nil, type int(64))'
+$CHPL_HOME/modules/internal/ChapelArray.chpl:216: note: candidates are: chpl__buildArrayRuntimeType(dom: domain, type eltType)

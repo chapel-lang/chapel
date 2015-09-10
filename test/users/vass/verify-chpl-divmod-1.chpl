@@ -49,7 +49,7 @@ proc launch(type ta, type tb) {
     }
 
   if verbose then
-    writeln(format("####", vtestcount - tcv), " var tests ",
+    writeln("%{####}".format(vtestcount - tcv), " var tests ",
             typeToString(ta), ",", typeToString(tb), " -> ",
             typeToString((a2/b2).type), " ",
             typeToString((a2%b2).type));

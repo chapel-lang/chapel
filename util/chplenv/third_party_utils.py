@@ -33,6 +33,9 @@ def handle_la(la_path):
                     lib_name = line.split('\'')[1]
                     p = re.compile(r'^lib([^/]+)\.a$')
                     args.append(p.sub(r'-l\1', lib_name))
+                elif 'inherited_linker_flags=' in line:
+                    for tok in line.split('\'')[1].split():
+                        args.append(tok)
                 elif 'dependency_libs=' in line:
                     for tok in line.split('\'')[1].split():
                         # paths reflect built env; replace with $CHPL_HOME

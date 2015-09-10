@@ -1,0 +1,1 @@
+writeln(string(1));

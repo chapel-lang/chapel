@@ -42,6 +42,7 @@ extern bool fNoInlineIterators;
 extern bool fNoloopInvariantCodeMotion;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
+extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
@@ -105,6 +106,7 @@ extern bool widePointersStruct;
 
 extern char fExplainCall[256];
 extern int  explainCallID;
+extern int  breakOnResolveID;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
@@ -120,7 +122,7 @@ extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
 extern bool fHeterogeneous;
-extern bool fieeefloat;
+extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 
 extern bool llvmCodegen;
@@ -147,13 +149,6 @@ extern bool fVerify;
 extern int  num_constants_per_variable;
 extern bool printCppLineno;
 
-extern bool fDocs;
-extern bool fDocsAlphabetize;
-extern char fDocsCommentLabel[256];
-extern char fDocsFolder[256];
-extern bool fDocsTextOnly;
-extern char fDocsSphinxDir[256];
-extern bool fDocsIncludeExterns;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;

@@ -59,7 +59,7 @@ proc main() {
   }
   var m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_literal():");
   m1 = memoryUsed();
@@ -68,7 +68,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_literal() with assignment:");
   m1 = memoryUsed();
@@ -77,7 +77,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   const D = return_literal();
 
@@ -88,7 +88,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_by():");
   m1 = memoryUsed();
@@ -97,7 +97,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_by() with assignment:");
   m1 = memoryUsed();
@@ -106,7 +106,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling create_slice():");
   m1 = memoryUsed();
@@ -115,7 +115,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_slice():");
   m1 = memoryUsed();
@@ -124,7 +124,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_slice() with assignment:");
   m1 = memoryUsed();
@@ -133,7 +133,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling create_expand():");
   m1 = memoryUsed();
@@ -142,7 +142,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_expand():");
   m1 = memoryUsed();
@@ -151,7 +151,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_expand() with assignment:");
   m1 = memoryUsed();
@@ -160,7 +160,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling create_exterior():");
   m1 = memoryUsed();
@@ -169,7 +169,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_exterior():");
   m1 = memoryUsed();
@@ -178,7 +178,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_exterior() with assignment:");
   m1 = memoryUsed();
@@ -187,7 +187,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling create_interior():");
   m1 = memoryUsed();
@@ -196,7 +196,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_interior():");
   m1 = memoryUsed();
@@ -205,7 +205,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_interior() with assignment:");
   m1 = memoryUsed();
@@ -214,7 +214,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling create_translate():");
   m1 = memoryUsed();
@@ -223,7 +223,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_translate():");
   m1 = memoryUsed();
@@ -232,7 +232,7 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
   writeln("Calling return_translate() with assignment:");
   m1 = memoryUsed();
@@ -241,6 +241,6 @@ proc main() {
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
-  if printMemStats then printMemTable();
+  if printMemStats then printMemAllocs();
 
 }

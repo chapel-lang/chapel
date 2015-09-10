@@ -2,6 +2,7 @@
 a.out
 a.out_real
 *.bak
+*~
 output
 gen
 *.ntoks
@@ -18,7 +19,6 @@ tags
 /SVNLOG
 /.SVNLOG-revnum
 /bin
-/docs
 /lib
 /tar
 
@@ -38,6 +38,8 @@ tags
 # Doc ignores.
 /doc/**/*.aux
 /doc/**/*.log
+/doc/chips/html
+/doc/chips/tmp
 /doc/developer/compilerOverview/compiler.pdf
 /doc/developer/compilerOverview/compiler.dvi
 /doc/developer/compilerOverview/compiler.toc
@@ -105,6 +107,13 @@ tags
 /test/chpldoc/compflags/folder/my_docs
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
 
+/test/chplvis/TREEvis
+/test/chplvis/benchmarks-hpcc/FFTvis
+/test/chplvis/benchmarks-hpcc/HPLvis
+/test/chplvis/benchmarks-hpcc/RAvis
+/test/chplvis/overhead/OH
+/test/chplvis/overhead/OH2
+
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
 /test/compflags/bradc/gdbddash/.gdb_history
@@ -138,6 +147,9 @@ tags
 /test/compflags/sungeun/configs/type_variables/configTypeUserType.good
 /test/compflags/sungeun/configs/type_variables/configTypeFunNoType.good
 /test/compflags/sungeun/configs/type_variables/configTypeFun.good
+
+/test/compflags/thomasvandoren/chpldoc/*.doc.good
+/test/compflags/thomasvandoren/chpldoc/docs/
 
 /test/compflags/waynew/*.c
 /test/compflags/waynew/*.tmp_launcher
@@ -259,6 +271,8 @@ tags
 /test/modules/standard/FileSystem/lydia/exists/file
 /test/modules/standard/FileSystem/lydia/exists/file_link
 /test/modules/standard/FileSystem/lydia/exists/going_away
+/test/modules/standard/FileSystem/lydia/isLink/broken_dir_link
+/test/modules/standard/FileSystem/lydia/isLink/broken_file_link
 /test/modules/standard/FileSystem/lydia/isLink/my_dir
 /test/modules/standard/FileSystem/lydia/isLink/my_file
 /test/modules/standard/FileSystem/lydia/isLink/my_link_dir
@@ -320,6 +334,7 @@ tags
 
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
+/test/runtime/kbrady/goodAllocSize.good
 
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output
@@ -417,9 +432,22 @@ tags
 /third-party/gmp/gmp-6.0.0
 /third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
-/third-party/re2/re2
+/third-party/re2/re2/**/*.orig
+/third-party/re2/re2/core
+/third-party/re2/re2/obj
+/third-party/re2/re2/.git
+
 /third-party/qthread/qthread-1.10/autom4te.cache/
 /third-party/qthread/qthread-1.10/config.h.in
+
+/third-party/fltk/build.*
+/third-party/fltk/install.*
+
+# Tools ignores.
+
+/tools/chplvis/chplvis
+/tools/chplvis/chplvis.cxx
+/tools/chplvis/chplvis.h
 
 # Util ignores.
 /util/pastPerformance/ra.dat

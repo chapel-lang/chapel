@@ -72,7 +72,7 @@ const terms   = (d/DIGITS_PER_ITER): c_long,
 
 record fac_t {
   var num_facs: c_long;
-  var sdom: domain(1, idxType=c_long);
+  var sdom: domain(1);
   var fac, pow: [sdom] c_ulong;
 };
 
@@ -244,8 +244,10 @@ proc main() {
   if (printTimings) then
     writeln("total   time = ", end - start);
 
-  writeln("   P size=", psize, " digits (", format("%f", psize:real/d), ")\n",
-          "   Q size=", qsize, " digits (", format("%f", qsize:real/d), ")");
+  writef("   P size=%n digits (%dr)\n", psize, psize:real/d);
+  writef("   Q size=%n digits (%dr)\n", qsize, qsize:real/d);
+         
+
 
   /* output Pi and timing statistics */
   if (_out&1)  {

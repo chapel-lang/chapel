@@ -111,6 +111,15 @@ qioerr chpl_fs_exists(int* ret, const char* name) {
   return err;
 }
 
+qioerr chpl_fs_get_size(int64_t* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = buf.st_size;
+  return 0;
+}
+
 qioerr chpl_fs_get_uid(int* ret, const char* name) {
   struct stat buf;
   int exitStatus = stat(name, &buf);
@@ -152,8 +161,13 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
   // comparison is also not valid when an unlinked file is provided.
   struct stat buf;
   int exitStatus = lstat(name, &buf);
-  if (exitStatus)
+  if (exitStatus == -1 && errno == ENOENT) {
+    // The link examined does not exist, return false
+    *ret = 0;
+    return 0;
+  } else if (exitStatus) {
     return qio_mkerror_errno();
+  }
   *ret = S_ISLNK(buf.st_mode);
   return 0;
 }
@@ -186,11 +200,14 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
     // itself.
 
     char* curTok = strtok(safeNameCopy, "/");
-    // should never be null.  The only string which would return null is "/",
-    // but that directory is not a link, so won't be here in the first place.
     char* nextTok = strtok(NULL, "/");
     // We need the next token to determine if the path is longer than a single
     // link name.
+    assert(curTok != NULL);
+    // curTok should never be null.  The only string which would return null is
+    // "/", but that directory is not a link, so won't be here in the first
+    // place.
+
     if (nextTok != NULL) {
       // name includes a path longer than just the current symlink.
       // Thus, we should copy up to (but not including) the basename of the

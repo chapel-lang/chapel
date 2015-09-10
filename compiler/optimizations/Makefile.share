@@ -24,7 +24,6 @@ OPTIMIZATIONS_SRCS = \
 	liveVariableAnalysis.cpp \
 	localizeGlobals.cpp \
 	loopInvariantCodeMotion.cpp \
-	narrowWideReferences.cpp \
 	optimizeOnClauses.cpp \
 	reachingDefinitionsAnalysis.cpp \
 	remoteValueForwarding.cpp \

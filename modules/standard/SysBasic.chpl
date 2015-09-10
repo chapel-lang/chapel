@@ -82,7 +82,7 @@ extern proc chpl_cnullfile():_file;
      if !err then do writeln("err does not contain an error; err == ENOERR");
 
 
-   When a :type:`syserr` formal has blank intent, the actual is copied to the
+   When a :type:`syserr` formal has default intent, the actual is copied to the
    formal upon a function call and the formal cannot be assigned within the
    function.
 
@@ -170,7 +170,6 @@ inline proc _cast(type t, x) where t:c_void_ptr && x.type:c_ptr {
   return __primitive("cast", t, x);
 }
 
-/*
 // allow casts from c_ptr(c_char) to c_string
 pragma "no doc"
 inline proc _cast(type t, x) where t:c_string && x.type:c_ptr(c_char) {
@@ -182,7 +181,21 @@ pragma "no doc"
 inline proc _cast(type t, x) where t:c_ptr(c_char) && x.type:c_string {
   return __primitive("cast", t, x);
 }
-*/
+
+pragma "compiler generated"
+pragma "no doc"
+inline proc _defaultOf(type t) where t == c_void_ptr {
+    return __primitive("cast", t, nil);
+}
+
+pragma "compiler generated"
+pragma "no doc"
+inline proc _defaultOf(type t) where t:c_ptr {
+    return __primitive("cast", t, nil);
+}
+
+
+>>>>>>> upstream/master
 
 /* Allocate memory that is filled with zeros. This memory should eventually be
    freed with c_free.
@@ -291,14 +304,10 @@ inline proc c_ptrTo(ref x:?t):c_ptr(t) {
 
 // error numbers
 
-pragma "no doc"
-extern proc qio_err_eq(a:syserr, b:syserr):c_int;
-pragma "no doc"
-extern proc qio_err_to_int(a:syserr):int(32);
-pragma "no doc"
-extern proc qio_int_to_err(a:int(32)):syserr;
-pragma "no doc"
-extern proc qio_err_iserr(a:syserr):c_int;
+private extern proc qio_err_eq(a:syserr, b:syserr):c_int;
+private extern proc qio_err_to_int(a:syserr):int(32);
+private extern proc qio_int_to_err(a:int(32)):syserr;
+private extern proc qio_err_iserr(a:syserr):c_int;
 
 /* The error code indicating that no error occured (Chapel specific) */
 inline proc ENOERR return 0:err_t;
@@ -354,15 +363,13 @@ inline proc =(ref ret:err_t, x:syserr)
 { __primitive("=", ret, qio_err_to_int(x):err_t); }
 
 // end of file
-pragma "no doc"
-extern proc chpl_macro_int_EEOF():err_t;
+private extern proc chpl_macro_int_EEOF():err_t;
 
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
 inline proc EEOF return chpl_macro_int_EEOF():err_t;
 
-pragma "no doc"
-extern proc chpl_macro_int_ESHORT():err_t;
+private extern proc chpl_macro_int_ESHORT():err_t;
 
 /* An error code indicating that the end of file or the end of the
    input was reached before the requested amount of data could be read.
@@ -370,8 +377,7 @@ extern proc chpl_macro_int_ESHORT():err_t;
   */
 inline proc ESHORT return chpl_macro_int_ESHORT():err_t;
 
-pragma "no doc"
-extern proc chpl_macro_int_EFORMAT():err_t;
+private extern proc chpl_macro_int_EFORMAT():err_t;
 
 /* An error code indicating a format error; for example when reading a quoted
    string literal, this would be returned if we never encountered the

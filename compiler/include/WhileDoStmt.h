@@ -38,6 +38,7 @@ private:
   // Instance interface
   //
 public:
+                         WhileDoStmt(Expr*      cond, BlockStmt* body);
   virtual               ~WhileDoStmt();
 
   virtual WhileDoStmt*   copy(SymbolMap* map = NULL, bool internal = false);
@@ -53,7 +54,6 @@ public:
 private:
                          WhileDoStmt();
 
-                         WhileDoStmt(Expr*      cond, BlockStmt* body);
                          WhileDoStmt(VarSymbol* var,  BlockStmt* body);
 };
 

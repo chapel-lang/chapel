@@ -1,0 +1,646 @@
+<?xml version="1.0" ?>
+<pass-input>
+  <pass name="DumpCodePass">
+    <copyright>
+/*
+ * Copyright 2004-2015 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+    </copyright>
+    <main-module name="LAPACK" file-name="LAPACK.chpl" > 
+      <!--<use>ClassicLAPACK</use>-->
+      <use>"lapacke.h"</use>
+      <use>SysCTypes</use>
+      
+      <description>
+Chapel idiomatic wrappers for the LAPACK library.
+
+.. note::
+
+  Because of the volume of procedures provided, and because their behavior is virtually unchanged, in-depth documentation on each procedure's purpose and use is not given here.
+  
+  Consult the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ site, and the `Netlibs &lt;http://www.netlib.org/lapack/explore-html/globals_func.html&gt;`_ and `Intel &lt;https://software.intel.com/en-us/node/501008&gt;`_ LAPACK documents for that information.
+  
+  Additionally, only a small set of LAPACK procedures have been tested for correctness.
+
+Differences from LAPACK
+-----------------------
+
+The `XYYZZZ &lt;http://www.netlib.org/lapack/individualroutines.html&gt;`_ naming convention for procedures has been only slightly modified with the removal of the type identifier in the procedure name,
+creating a set of polymorphic procedures under the name YYZZZ.
+
+Procedure arguments have been simplified. 
+Using the original Fortran documentation, groupings of arguments pertaining to matrices and arrays were found, and encapsulated by Chapel arrays.
+
+For example, instead of 
+
+.. code-block:: chapel
+
+  LAPACKE_sgesv(matrix_order : lapack_memory_order, n : c_int, nrhs : c_int, a : [] c_float, lda : c_int, ipiv : [] c_int, b : [] c_float, ldb : c_int) : c_int;
+
+the arguments n, nrhs, lda, and ldb can be encapsulated by properties of Chapel arrays and their domains, giving the LAPACK procedure:
+
+.. code-block:: chapel
+
+  gesv(matrix_order : lapack_memory_order, a : [] real(32), ipiv : [] c_int, b : [] real(32) ): c_int;
+
+This requires that your matrices are stored in a two dimensional form.
+
+Type Adjustments
+----------------
+
+The LAPACKE types ``lapack_int``, ``lapack_float``, ``lapack_double``, ``lapack_complex_float``, ``lapack_complex_double``, and ``lapack_logical`` are not defined at all, but rather are replaced by the types :type:`c_int`, :type:`real(32)`, :type:`real(64)`, :type:`complex(64)`, :type:`complex(128)`, and :type:`c_int` respectively.
+
+
+
+The :enum:`lapack_memory_order` enumeration is a replacement for the :type:`c_int` constants :data:`LAPACK_ROW_MAJOR` and :data:`LAPACK_COL_MAJOR` defined by LAPACK and used by ``matrix_order`` which is an argument present in essentially all procedures.
+The value of each enumeration is equivalent (both in type and value) of the LAPACK constants.
+However the constants are also provided and can be used as well.
+
+The ``LAPACK_SELECT`` types are function pointer types, whose procedures need to be declared and implemented in C, then be declared as ``extern var`` on the Chapel side. 
+See the dgees test (``$CHPL_HOME/test/modules/standard/LAPACK/dgees.chpl``) for a concrete example.
+
+Compiling with LAPACK
+------------------------
+
+Using this module require that you have LAPACK (binaries and C interface) on your system, as it is not bundled with Chapel. 
+
+You can download and build the `Netlibs LAPACK &lt;http://www.netlib.org/lapack/&gt;`_ , if it is not already installed, and this section will assume usage of the Netlibs LAPACK.
+You must also have libgfortran installed on your system (typically installed along with gcc).
+
+To compile with LAPACK, Chapel needs to know:
+
+1. Where the LAPACKE header (lapacke.h) is.
+
+2. Where the libgfortran binary is (sometimes it is not to be found by ``ld``).
+
+3. Where the various LAPACK binaries (lapacke, lapack, and refblas) are.
+
+Once the details are worked out, compiling is quite simple and nearly identical to how one would compile a C program to work with LAPACK.
+
+.. code-block:: sh
+
+  chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
+       -L$PATH_TO_LIBGFORTRAN -lgfortran \
+       -L$PATH_TO_LAPACK_BINARIES -llapacke -lapack -lrefblas \
+       source.chpl
+
+As an example,
+
+.. code-block:: sh
+
+  chpl -I$HOME/LAPACK/lapacke/include \
+       -L/usr/lib/gcc/stuff -lgfortran \
+       -L$HOME/LAPACK -llapacke -lapack -lrefblas \
+       source.chpl
+
+would be the command to use if Netlibs LAPACK had been built in ``$HOME/LAPACK``, and the libgfortran binary found to be located in ``/usr/lib/gcc/stuff``
+
+You can refer to the COMPOPTS file of the LAPACK test suit (``$CHPL_HOME/test/modules/standard/LAPACK/``) for an example
+
+Future Work
+-----------
+
+We anticipate the following additions:
+
+1. Better documentation on each individual procedure, mostly derived from the original Fortran documentation.
+
+2. Larger test coverage of the provided procedures.
+
+3. Enumerated values for arguments of procedures that currently take strings to denote different options.
+
+</description>
+    </main-module>
+    <helper-module name="ClassicLAPACK" no-doc="all">  
+      <use>"lapacke.h"</use>
+      <use>SysCTypes</use>
+      <description> </description>
+    </helper-module>
+  </pass>
+  <pass name="TypeSubstitutionPass">
+    <substitution find="int" replace="c_int" />
+    <substitution find="double" replace="c_double" />
+    <substitution find="float" replace="c_float" />
+    <substitution find="char" replace="c_char" />
+    <substitution find="void" replace="c_void_ptr" />
+    <substitution find="lapack_int" replace="c_int" />
+    <substitution find="lapack_logical" replace="c_int" />
+    <substitution find="lapack_complex_double" replace="complex(128)" />
+    <substitution find="lapack_complex_float" replace="complex(64)" />
+  </pass>
+  <pass name="ImportTypeDefinesPass">
+	  <define external="yes" alias="LAPACK_C_SELECT1" >
+	  <description>External function pointer type LAPACK_C_SELECT1.</description> 
+</define>
+    <define external="yes" alias="LAPACK_Z_SELECT1" >
+    <description>External function pointer type LAPACK_Z_SELECT1.
+</description>
+ </define>
+    <define external="yes" alias="LAPACK_C_SELECT2" >
+    <description>External function pointer type LAPACK_C_SELECT2.</description>
+</define>
+    <define external="yes" alias="LAPACK_D_SELECT2" >
+    <description>External function pointer type LAPACK_D_SELECT2.</description> 
+ </define>
+	  <define external="yes" alias="LAPACK_S_SELECT2" >
+	  <description>External function pointer type LAPACK_S_SELECT2.</description> 
+</define>
+    <define external="yes" alias="LAPACK_Z_SELECT2" >
+    <description>External function pointer type LAPACK_Z_SELECT2.</description> 
+</define>
+    <define external="yes" alias="LAPACK_S_SELECT3" >
+    <description>External function pointer type LAPACK_S_SELECT3.</description> 
+</define>
+    <define external="yes" alias="LAPACK_D_SELECT3" >
+    <description>External function pointer type LAPACK_D_SELECT3.</description>  
+</define>
+  </pass>
+  <pass name="ImportEnumeratedTypeDefinesPass">
+    <enumeration name="lapack_memory_order">
+      <value name="row_major">101 : c_int</value>
+      <value name="column_major">102 : c_int</value>
+        <description>Mirrors the :data:`LAPACK_ROW_MAJOR` and :data:`LAPACK_COL_MAJOR` consts defined by LAPACK.
+
+The enum values values are the same as the const value such that ``lapack_memory_order.row_major == LAPACK_ROW_MAJOR`` and ``lapack_memory_order.column_major == LAPACK_COL_MAJOR``, allowing the enum to be used with pure LAPACK procedures.
+</description>
+    </enumeration>
+  </pass>
+  <pass name="ImportExternConstDefinesPass">
+	  <define external="yes" symbol="LAPACK_ROW_MAJOR" type="c_int" >
+	  <description>External const LAPACK_ROW_MAJOR.</description>
+    </define>
+	  <define external="yes" symbol="LAPACK_COL_MAJOR" type="c_int" >
+	    <description>External const LAPACK_COL_MAJOR.</description>
+    </define>
+	  <define external="yes" symbol="LAPACK_WORK_MEMORY_ERROR" type="c_int" >
+  	  <description>External const LAPACK_WORK_MEMORY_ERROR.</description>
+    </define>
+	  <define external="yes" symbol="LAPACK_TRANSPOSE_MEMORY_ERROR" type="c_int" >
+	    <description>External const LAPACK_TRANSPOSE_MEMORY_ERROR.</description>
+    </define>
+  </pass>
+  <pass name="ImportArgumentTypePass">
+    <argument name="matrix_order" type="lapack_memory_order" />
+  </pass>
+  <pass name="TranslateChapelKeywordsPass" >
+    <global prefix="chlapack_" />
+    <keyword symbol="align" />
+    <keyword symbol="atomic" />
+    <keyword symbol="begin" />
+    <keyword symbol="break" />
+    <keyword symbol="by" />
+    <keyword symbol="class" />
+    <keyword symbol="cobegin" />
+    <keyword symbol="coforall" />
+    <keyword symbol="config" />
+    <keyword symbol="const" />
+    <keyword symbol="continue" />
+    <keyword symbol="delete" />
+    <keyword symbol="dmapped" />
+    <keyword symbol="do" />
+    <keyword symbol="domain" />
+    <keyword symbol="else" />
+    <keyword symbol="enum" />
+    <keyword symbol="export" />
+    <keyword symbol="extern" />
+    <keyword symbol="for" />
+    <keyword symbol="forall" />
+    <keyword symbol="if" />
+    <keyword symbol="in" />
+    <keyword symbol="index" />
+    <keyword symbol="inline" />
+    <keyword symbol="inout" />
+    <keyword symbol="iter" />
+    <keyword symbol="label" />
+    <keyword symbol="let" />
+    <keyword symbol="local" />
+    <keyword symbol="module" />
+    <keyword symbol="new" />
+    <keyword symbol="nil" />
+    <keyword symbol="noinit" />
+    <keyword symbol="on" />
+    <keyword symbol="otherwise" />
+    <keyword symbol="out" />
+    <keyword symbol="param" />
+    <keyword symbol="proc" />
+    <keyword symbol="record" />
+    <keyword symbol="reduce" />
+    <keyword symbol="ref" />
+    <keyword symbol="return" />
+    <keyword symbol="scan" />
+    <keyword symbol="select" />
+    <keyword symbol="serial" />
+    <keyword symbol="single" />
+    <keyword symbol="sparse" />
+    <keyword symbol="subdomain" />
+    <keyword symbol="sync" />
+    <keyword symbol="then" />
+    <keyword symbol="type" />
+    <keyword symbol="union" />
+    <keyword symbol="use" />
+    <keyword symbol="var" />
+    <keyword symbol="when" />
+    <keyword symbol="where" />
+    <keyword symbol="while" />
+    <keyword symbol="yield" />
+    <keyword symbol="zip" />
+  </pass>
+  <pass name="ImportArgumentAnaloguesPass">
+    <procedure name="LAPACKE_sgbsvx" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgbsvx']">
+      <argument name="rpivot" substitution="WORK" substitution-path="./LAPACK/procedures/procedure/[@name='SGBSVX']/arguments-list/argument/[@name='WORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgbsvx']/arguments-list/argument/[@name='rpivot']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dgbsvx" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgbsvx']">
+      <argument name="rpivot" substitution="WORK" substitution-path="./LAPACK/procedures/procedure/[@name='DGBSVX']/arguments-list/argument/[@name='WORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgbsvx']/arguments-list/argument/[@name='rpivot']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_cgbsvx" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cgbsvx']">
+      <argument name="rpivot" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='CGBSVX']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cgbsvx']/arguments-list/argument/[@name='rpivot']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zgbsvx" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zgbsvx']">
+      <argument name="rpivot" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='ZGBSVX']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zgbsvx']/arguments-list/argument/[@name='rpivot']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_sgejsv" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgejsv']">
+      <argument name="istat" substitution="IWORK" path="./LAPACK/procedures/procedure/[@name='SGEJSV']/arguments-list/argument/[@name='IWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgejsv']/arguments-list/argument/[@name='istat']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dgejsv" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgejsv']">
+      <argument name="istat" substitution="IWORK" path="./LAPACK/procedures/procedure/[@name='DGEJSV']/arguments-list/argument/[@name='IWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgejsv']/arguments-list/argument/[@name='istat']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_sgesvj" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgesvj']">
+      <argument name="stat" substitution="WORK" substitution-path="./LAPACK/procedures/procedure/[@name='SGESVJ']/arguments-list/argument/[@name='WORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgesvj']/arguments-list/argument/[@name='stat']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dgesvj" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgesvj']">
+      <argument name="stat" substitution="WORK" substitution-path="./LAPACK/procedures/procedure/[@name='DGESVJ']/arguments-list/argument/[@name='WORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgesvj']/arguments-list/argument/[@name='stat']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_sgesvx" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgesvx']">
+      <argument name="rpivot" substitution="WORK" substitution-path="./LAPACK/procedures/procedure/[@name='SGESVX']/arguments-list/argument/[@name='WORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgesvx']/arguments-list/argument/[@name='rpivot']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dgesvx" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgesvx']">
+      <argument name="rpivot" substitution="WORK" substitution-path="./LAPACK/procedures/procedure/[@name='DGESVX']/arguments-list/argument/[@name='WORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgesvx']/arguments-list/argument/[@name='rpivot']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_cgesvx" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cgesvx']">
+      <argument name="rpivot" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='CGESVX']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cgesvx']/arguments-list/argument/[@name='rpivot']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zgesvx" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zgesvx']">
+      <argument name="rpivot" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='ZGESVX']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zgesvx']/arguments-list/argument/[@name='rpivot']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_shsein" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_shsein']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='SHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_shsein']/arguments-list/argument/[@name='job']" refdepth="0" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dhsein" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dhsein']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='DHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dhsein']/arguments-list/argument/[@name='job']" refdepth="0" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_chsein" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_chsein']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='CHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_chsein']/arguments-list/argument/[@name='job']" refdepth="0" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zhsein" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zhsein']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='ZHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zhsein']/arguments-list/argument/[@name='job']" refdepth="0" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_spbstf" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_spbstf']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_spbstf']/arguments-list/argument/[@name='kb']" refdepth="0" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_spbstf']/arguments-list/argument/[@name='bb']" refdepth="1" type="float"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_spbstf']/arguments-list/argument/[@name='ldbb']" refdepth="0" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dpbstf" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dpbstf']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dpbstf']/arguments-list/argument/[@name='kb']" refdepth="0" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dpbstf']/arguments-list/argument/[@name='bb']" refdepth="1" type="double"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dpbstf']/arguments-list/argument/[@name='ldbb']" refdepth="0" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_cpbstf" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cpbstf']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cpbstf']/arguments-list/argument/[@name='kb']" refdepth="0" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cpbstf']/arguments-list/argument/[@name='bb']" refdepth="1" type="lapack_complex_float"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cpbstf']/arguments-list/argument/[@name='ldbb']" refdepth="0" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zpbstf" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zpbstf']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zpbstf']/arguments-list/argument/[@name='kb']" refdepth="0" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zpbstf']/arguments-list/argument/[@name='bb']" refdepth="1" type="lapack_complex_double"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zpbstf']/arguments-list/argument/[@name='ldbb']" refdepth="0" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_sstein" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sstein']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='SSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sstein']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dstein" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dstein']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='DSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dstein']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_cstein" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cstein']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='CSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cstein']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zstein" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zstein']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='ZSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zstein']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_cbdsqr_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cbdsqr_work']">
+      <argument name="work" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='CBDSQR']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cbdsqr_work']/arguments-list/argument/[@name='work']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zbdsqr_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zbdsqr_work']">
+      <argument name="work" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='ZBDSQR']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zbdsqr_work']/arguments-list/argument/[@name='work']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_shsein_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_shsein_work']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='SHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_shsein_work']/arguments-list/argument/[@name='job']" refdepth="0" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dhsein_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dhsein_work']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='DHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dhsein_work']/arguments-list/argument/[@name='job']" refdepth="0" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_chsein_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_chsein_work']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='CHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_chsein_work']/arguments-list/argument/[@name='job']" refdepth="0" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zhsein_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zhsein_work']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='ZHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zhsein_work']/arguments-list/argument/[@name='job']" refdepth="0" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_spbstf_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_spbstf_work']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_spbstf_work']/arguments-list/argument/[@name='kb']" refdepth="0" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_spbstf_work']/arguments-list/argument/[@name='bb']" refdepth="1" type="float"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_spbstf_work']/arguments-list/argument/[@name='ldbb']" refdepth="0" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dpbstf_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dpbstf_work']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dpbstf_work']/arguments-list/argument/[@name='kb']" refdepth="0" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dpbstf_work']/arguments-list/argument/[@name='bb']" refdepth="1" type="double"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dpbstf_work']/arguments-list/argument/[@name='ldbb']" refdepth="0" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_cpbstf_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cpbstf_work']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cpbstf_work']/arguments-list/argument/[@name='kb']" refdepth="0" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cpbstf_work']/arguments-list/argument/[@name='bb']" refdepth="1" type="lapack_complex_float"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cpbstf_work']/arguments-list/argument/[@name='ldbb']" refdepth="0" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zpbstf_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zpbstf_work']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zpbstf_work']/arguments-list/argument/[@name='kb']" refdepth="0" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zpbstf_work']/arguments-list/argument/[@name='bb']" refdepth="1" type="lapack_complex_double"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zpbstf_work']/arguments-list/argument/[@name='ldbb']" refdepth="0" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_cptcon_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cptcon_work']">
+      <argument name="work" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='CPTCON']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cptcon_work']/arguments-list/argument/[@name='work']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zptcon_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zptcon_work']">
+      <argument name="work" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='ZPTCON']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zptcon_work']/arguments-list/argument/[@name='work']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_sstein_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sstein_work']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='SSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sstein_work']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_dstein_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dstein_work']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='DSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dstein_work']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_cstein_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cstein_work']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='CSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cstein_work']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACKE_zstein_work" path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zstein_work']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='ZSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zstein_work']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_cptcon" path="./LAPACKE/procedures/procedure/[@name='LAPACK_cptcon']">
+      <argument name="work" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='CPTCON']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_cptcon']/arguments-list/argument/[@name='work']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_zptcon" path="./LAPACKE/procedures/procedure/[@name='LAPACK_zptcon']">
+      <argument name="work" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='ZPTCON']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_zptcon']/arguments-list/argument/[@name='work']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_cbdsqr" path="./LAPACKE/procedures/procedure/[@name='LAPACK_cbdsqr']">
+      <argument name="work" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='CBDSQR']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_cbdsqr']/arguments-list/argument/[@name='work']" refdepth="1" type="float"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_zbdsqr" path="./LAPACKE/procedures/procedure/[@name='LAPACK_zbdsqr']">
+      <argument name="work" substitution="RWORK" substitution-path="./LAPACK/procedures/procedure/[@name='ZBDSQR']/arguments-list/argument/[@name='RWORK']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_zbdsqr']/arguments-list/argument/[@name='work']" refdepth="1" type="double"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_sstein" path="./LAPACKE/procedures/procedure/[@name='LAPACK_sstein']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='SSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_sstein']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_dstein" path="./LAPACKE/procedures/procedure/[@name='LAPACK_dstein']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='DSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_dstein']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_cstein" path="./LAPACKE/procedures/procedure/[@name='LAPACK_cstein']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='CSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_cstein']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_zstein" path="./LAPACKE/procedures/procedure/[@name='LAPACK_zstein']">
+      <argument name="ifailv" substitution="IFAIL" substitution-path="./LAPACK/procedures/procedure/[@name='ZSTEIN']/arguments-list/argument/[@name='IFAIL']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_zstein']/arguments-list/argument/[@name='ifailv']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_spbstf" path="./LAPACKE/procedures/procedure/[@name='LAPACK_spbstf']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_spbstf']/arguments-list/argument/[@name='kb']" refdepth="1" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_spbstf']/arguments-list/argument/[@name='bb']" refdepth="1" type="float"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='SPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_spbstf']/arguments-list/argument/[@name='ldbb']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_dpbstf" path="./LAPACKE/procedures/procedure/[@name='LAPACK_dpbstf']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_dpbstf']/arguments-list/argument/[@name='kb']" refdepth="1" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_dpbstf']/arguments-list/argument/[@name='bb']" refdepth="1" type="double"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='DPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_dpbstf']/arguments-list/argument/[@name='ldbb']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_cpbstf" path="./LAPACKE/procedures/procedure/[@name='LAPACK_cpbstf']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_cpbstf']/arguments-list/argument/[@name='kb']" refdepth="1" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_cpbstf']/arguments-list/argument/[@name='bb']" refdepth="1" type="lapack_complex_float"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='CPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_cpbstf']/arguments-list/argument/[@name='ldbb']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_zpbstf" path="./LAPACKE/procedures/procedure/[@name='LAPACK_zpbstf']">
+      <argument name="kb" substitution="KD" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='KD']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_zpbstf']/arguments-list/argument/[@name='kb']" refdepth="1" type="lapack_int"/>
+      </argument>
+      <argument name="bb" substitution="AB" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='AB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_zpbstf']/arguments-list/argument/[@name='bb']" refdepth="1" type="lapack_complex_double"/>
+      </argument>
+      <argument name="ldbb" substitution="LDAB" substitution-path="./LAPACK/procedures/procedure/[@name='ZPBSTF']/arguments-list/argument/[@name='LDAB']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_zpbstf']/arguments-list/argument/[@name='ldbb']" refdepth="1" type="lapack_int"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_shsein" path="./LAPACKE/procedures/procedure/[@name='LAPACK_shsein']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='SHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_shsein']/arguments-list/argument/[@name='job']" refdepth="1" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_dhsein" path="./LAPACKE/procedures/procedure/[@name='LAPACK_dhsein']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='DHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_dhsein']/arguments-list/argument/[@name='job']" refdepth="1" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_chsein" path="./LAPACKE/procedures/procedure/[@name='LAPACK_chsein']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='CHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_chsein']/arguments-list/argument/[@name='job']" refdepth="1" type="char"/>
+      </argument>
+    </procedure>
+    <procedure name="LAPACK_zhsein" path="./LAPACKE/procedures/procedure/[@name='LAPACK_zhsein']">
+      <argument name="job" substitution="SIDE" substitution-path="./LAPACK/procedures/procedure/[@name='ZHSEIN']/arguments-list/argument/[@name='SIDE']">
+        <argument-info path="./LAPACKE/procedures/procedure/[@name='LAPACK_zhsein']/arguments-list/argument/[@name='job']" refdepth="1" type="char"/>
+      </argument>
+    </procedure>
+  </pass>
+  <pass name="ImportLAPACKESemanticsIntentsPass">
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgesvd']/arguments-list/argument/[@name='superb']" semantic="array" intent="out" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgesvd']/arguments-list/argument/[@name='superb']" semantic="array" intent="out" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_cgesvd']/arguments-list/argument/[@name='superb']" semantic="array" intent="out" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_zgesvd']/arguments-list/argument/[@name='superb']" semantic="array" intent="out" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_sgejsv']/arguments-list/argument/[@name='stat']" semantic="array" intent="inout" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dgejsv']/arguments-list/argument/[@name='stat']" semantic="array" intent="inout" />
+    <assign path="./LAPACKE/procedures/procedure/arguments-list/argument/[@name='matrix_order']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_slamch']/arguments-list/argument/[@name='cmach']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dlamch']/arguments-list/argument/[@name='cmach']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_slamch_work']/arguments-list/argument/[@name='cmach']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACKE_dlamch_work']/arguments-list/argument/[@name='cmach']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_slamch']/arguments-list/argument/[@name='cmach']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_dlamch']/arguments-list/argument/[@name='cmach']" semantic="scalar" intent="in" />  
+    <assign path="./LAPACKE/procedures/procedure/[@name='lapack_make_complex_double']/arguments-list/argument/[@name='re']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='lapack_make_complex_double']/arguments-list/argument/[@name='im']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='lapack_make_complex_float']/arguments-list/argument/[@name='re']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='lapack_make_complex_float']/arguments-list/argument/[@name='im']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_lsame']/arguments-list/argument/[@name='ca']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_lsame']/arguments-list/argument/[@name='cb']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_lsame']/arguments-list/argument/[@name='lca']" semantic="scalar" intent="in" />
+    <assign path="./LAPACKE/procedures/procedure/[@name='LAPACK_lsame']/arguments-list/argument/[@name='lcb']" semantic="scalar" intent="in" />
+  </pass>
+  <pass name="ChapelModuleChapelerrificProcPass">
+    <use>ClassicLAPACK</use>
+    <cases>
+      <case name="gesv" />
+      <case name="posv" />
+    </cases>
+  </pass>
+</pass-input>

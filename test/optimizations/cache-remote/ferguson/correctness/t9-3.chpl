@@ -21,19 +21,19 @@ on Locales[1] {
   assert(phase == 0);
   phase += 1;
   assert(phase == 1);
-  var local_format = format("####", 1);
-  assert(local_format == format("####", 1));
+  var local_format = "%{####}".format(1);
+  assert(local_format == "%{####}".format(1));
   pfx = local_format;
   //chpl_cache_print();
   var local_pfx = pfx;
   assert(local_pfx == local_format);
   phase += 1;
-  pfx = format("####", phase);
-  assert(pfx == format("####", phase));
+  pfx = "%{####}".format(phase);
+  assert(pfx == "%{####}".format(phase));
   phase += 1;
-  pfx = format("####", phase);
-  assert(pfx == format("####", phase));
+  pfx = "%{####}".format(phase);
+  assert(pfx == "%{####}".format(phase));
   phase += 1;
-  pfx = format("####", phase);
-  assert(pfx == format("####", phase));
+  pfx = "%{####}".format(phase);
+  assert(pfx == "%{####}".format(phase));
 }

@@ -257,7 +257,7 @@ proc newDimensionalDist2D(
 ) {
   if targetLocales.rank != 1 then compilerError("newDimensionalDist2D() is provided only for 1D targetLocales arrays");
   const (nl1, nl2) = (di1.numLocales, di2.numLocales);
-  var reshapedLocales => reshape(targetLocales[0..#nl1*nl2],[0..#nl1,0..#nl2]);
+  var reshapedLocales => reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
 
   return new DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
    dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);

@@ -454,7 +454,7 @@ proc readLevel(file_name: string){
   var dim_in: int;
   input_file.readln(dim_in);
   assert(dim_in == dimension, 
-         "error: dimension of space.txt must equal " + format("%i",dimension));
+         "error: dimension of space.txt must equal " + "%i".format(dimension));
   input_file.readln(); // empty line
 
   var x_low, x_high:    dimension*real;

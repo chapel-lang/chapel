@@ -339,8 +339,9 @@ expression-list:
   expression , expression-list
 \end{syntax}
 The expression that follows the keyword \chpl{select}, the select
-expression, is compared with the list of expressions following the
-keyword \chpl{when}, the case expressions, using the equality
+expression, is evaluated once and its value is then compared
+with the list of case expressions following each
+\chpl{when} keyword. These values are compared using the equality
 operator \chpl{==}.  If the expressions cannot be compared with the
 equality operator, a compile-time error is generated.  The first case
 expression that contains an expression where that comparison
@@ -619,72 +620,9 @@ label outer for i in 1..n {
 \index{statements!use@\chpl{use}}
 \index{modules!using}
 
-The use statement makes the symbols defined by a module available
-within the scope containing the use statement without requiring them
-to be prefixed by the module's name.  The syntax of the use statement
-is given by:
-
-\begin{syntax}
-use-statement:
-  `use' module-name-list ;
-
-module-name-list:
-  module-name
-  module-name , module-name-list
-
-module-name:
-  identifier
-  module-name . module-name
-\end{syntax}
-The use statement makes symbols in each listed module's scope available
-from the scope where the use statement occurs.
-
-Symbols made available by a use statement are at an outer scope from those
-defined directly in the scope where the use statement occurs, but at a
-nearer scope than symbols defined in the scope containing the scope where
-the use statement occurs.
-
-If used modules themselves use other modules, symbols are scoped according
-the depth of use statements followed to find them. It is an error for two
-variables, types, or modules to be defined at the same depth.
-
-\begin{openissue}
-There is an expectation that this statement will be extended to allow
-the programmer to restrict which symbols are 'used' as well as to
-rename symbols that are 'used.'
-\end{openissue}
-
-\begin{chapelexample}{use.chpl}
-  The following example illustrates how the use statement makes
-  symbols declared in \chpl{M1}'s scope (like procedure
-  \chpl{foo()}) visible within the scope of \chpl{M2}'s \chpl{main}
-  function.  Without the \chpl{use} statement, the procedure call to
-  \chpl{foo} could not be resolved since \chpl{M2} would not have
-  access to symbols in \chpl{M1}.
-
-  When executed, the program
-\begin{chapel}
-module M1 {
-  proc foo() {
-    writeln("In M1's foo.");
-  }
-}
-
-module M2 {
-  proc main() {
-    use M1;
-
-    writeln("In M2's main.");
-    foo();
-  }
-}
-\end{chapel}
-prints out
-\begin{chapelprintoutput}{}
-In M2's main.
-In M1's foo.
-\end{chapelprintoutput}
-\end{chapelexample}
+The use statement makes symbols in each listed module's scope
+available from the scope where the use statement occurs.  For more
+information on use statements, see~\rsec{Using_Modules}.
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}

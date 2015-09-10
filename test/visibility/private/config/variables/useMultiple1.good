@@ -1,0 +1,3 @@
+useMultiple1.chpl:3: warning: A visible 'foo' is an inaccessible private symbol, defined at:
+ ./multipleDecl.chpl:1
+useMultiple1.chpl:3: error: 'foo' undeclared (first use this function)

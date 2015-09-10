@@ -1,0 +1,3 @@
+usesOther.chpl:3: warning: A visible 'foo' is an inaccessible private symbol, defined at:
+ ./definesPrivate.chpl:1
+usesOther.chpl:3: error: 'foo' undeclared (first use this function)

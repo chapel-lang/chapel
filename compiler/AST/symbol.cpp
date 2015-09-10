@@ -28,6 +28,7 @@
 #include "bb.h"
 #include "build.h"
 #include "codegen.h"
+#include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
@@ -43,6 +44,7 @@
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <inttypes.h>
 #include <iostream>
@@ -110,10 +112,15 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
   type(init_type),
   flags(),
-  name(astr(init_name)),
-  cname(name),
   defPoint(NULL)
-{}
+{
+  if (init_name) {
+    name = astr(init_name);
+  } else {
+    name = astr("");
+  }
+  cname = name;
+}
 
 
 Symbol::~Symbol() {
@@ -205,6 +212,12 @@ void Symbol::removeFlag(Flag flag) {
 
 bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
   return hasFlag(aflag) || hasFlag(bflag);
+}
+
+// Don't generate documentation for this symbol, either because it is private,
+// or because the symbol should not be documented independent of privacy
+bool Symbol::noDocGen() const {
+  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE);
 }
 
 
@@ -337,7 +350,7 @@ std::string VarSymbol::docsDirective() {
 
 
 void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_SUPER_CLASS)) {
+  if (this->noDocGen() || this->hasFlag(FLAG_SUPER_CLASS)) {
       return;
   }
 
@@ -354,17 +367,9 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << "var ";
   }
 
-  *file << this->name;
-
-  if (this->defPoint->exprType != NULL) {
-    *file << ": ";
-    this->defPoint->exprType->prettyPrint(file);
-  }
-
-  if (this->defPoint->init != NULL) {
-    *file << " = ";
-    this->defPoint->init->prettyPrint(file);
-  }
+  AstToText info;
+  info.appendVarDef(this);
+  *file << info.text();
 
   *file << std::endl;
 
@@ -1082,6 +1087,10 @@ bool ArgSymbol::isConstValWillNotChange() const {
 
 bool ArgSymbol::isParameter() const {
   return (intent == INTENT_PARAM);
+}
+
+bool ArgSymbol::isVisible(BaseAST* scope) const {
+  return true;
 }
 
 
@@ -2397,7 +2406,7 @@ std::string FnSymbol::docsDirective() {
 
 
 void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->noDocGen()) {
     return;
   }
 
@@ -2421,10 +2430,9 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   // Print name and arguments.
-  AstToText *info = new AstToText();
-  info->appendNameAndFormals(this);
-  *file << info->text();
-  delete info;
+  AstToText info;
+  info.appendNameAndFormals(this);
+  *file << info.text();
 
   // Print return intent, if one exists.
   switch (this->retTag) {
@@ -2557,18 +2565,11 @@ ModuleSymbol::copyInner(SymbolMap* map) {
 }
 
 
-static int compareLineno(const void* v1, const void* v2) {
-  FnSymbol* fn1 = *(FnSymbol* const *)v1;
-  FnSymbol* fn2 = *(FnSymbol* const *)v2;
+static int compareLineno(void* v1, void* v2) {
+  FnSymbol* fn1 = (FnSymbol*)v1;
+  FnSymbol* fn2 = (FnSymbol*)v2;
 
-  if (fn1->linenum() > fn2->linenum())
-    return 1;
-
-  else if (fn1->linenum() < fn2->linenum())
-    return -1;
-
-  else
-    return 0;
+  return fn1->linenum() < fn2->linenum();
 }
 
 
@@ -2581,7 +2582,7 @@ void ModuleSymbol::codegenDef() {
   info->cStatements.clear();
   info->cLocalDecls.clear();
 
-  Vec<FnSymbol*> fns;
+  std::vector<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
@@ -2591,13 +2592,13 @@ void ModuleSymbol::codegenDef() {
             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
 
-        fns.add(fn);
+        fns.push_back(fn);
       }
   }
 
-  qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
+  std::sort(fns.begin(), fns.end(), compareLineno);
 
-  forv_Vec(FnSymbol, fn, fns) {
+  for_vector(FnSymbol, fn, fns) {
     fn->codegenDef();
   }
 
@@ -2652,7 +2653,7 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 
 
 void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->noDocGen()) {
     return;
   }
 
@@ -3096,41 +3097,63 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   return s;
 }
 
-static VarSymbol* new_FloatSymbol(const char* n, long double b,
+static VarSymbol* new_FloatSymbol(const char* n,
                                   IF1_float_type size, IF1_num_kind kind,
                                   Type* type) {
   Immediate imm;
+  const char* normalized = NULL;
+
   switch (size) {
-  case FLOAT_SIZE_32  : imm.v_float32  = b; break;
-  case FLOAT_SIZE_64  : imm.v_float64  = b; break;
-  default:
-    INT_FATAL( "unknown FLOAT_SIZE");
+    case FLOAT_SIZE_32:
+      imm.v_float32  = strtof(n, NULL);
+      break;
+    case FLOAT_SIZE_64:
+      imm.v_float64  = strtod(n, NULL);
+      break;
+    default:
+      INT_FATAL( "unknown FLOAT_SIZE");
   }
   imm.const_kind = kind;
   imm.num_index = size;
+  
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   if (s) {
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), type);
   rootModule->block->insertAtTail(new DefExpr(s));
-  if (!strchr(n, '.') && !strchr(n, 'e') && !(strchr(n, 'E'))) {
-    s->cname = astr(n, ".0");
+  
+  // Normalize the number for C99
+  if (!strchr(n, '.') && !strchr(n, 'e') && !strchr(n, 'E') &&
+      !strchr(n, 'p') && !strchr(n, 'P') ) {
+    // Add .0 for floating point literals without a decimal point
+    // or exponent.
+    normalized = astr(n, ".0");
+  } else if( n[0] == '0' && (n[1] == 'x' || n[1] == 'X') &&
+             !strchr(n, 'p') && !strchr(n, 'P') ) {
+    // Add p0 for hex floating point literals without an exponent
+    // since C99 requires it (because f needs to be a suffix for
+    // floating point numbers)
+    normalized = astr(n, "p0");
   } else {
-    s->cname = astr(n);
+    normalized = astr(n);
   }
+
+  // Use the normalized number when code-genning the literal
+  s->cname = normalized;
+
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }
 
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
-  return new_FloatSymbol(n, b, size, NUM_KIND_REAL, dtReal[size]);
+VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
+  return new_FloatSymbol(n, size, NUM_KIND_REAL, dtReal[size]);
 }
 
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
-  return new_FloatSymbol(n, b, size, NUM_KIND_IMAG, dtImag[size]);
+VarSymbol *new_ImagSymbol(const char *n, IF1_float_type size) {
+  return new_FloatSymbol(n, size, NUM_KIND_IMAG, dtImag[size]);
 }
 
 VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,

@@ -140,7 +140,7 @@ module FFTW {
       var error = false;
 
       for i in 1..input.rank do
-        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft()");
+        error |= checkDimMismatch(Din, Dout, i, "plan_dft()");
 
       if error then
         halt("Incorrect array sizes in plan_dft()");
@@ -170,15 +170,10 @@ module FFTW {
 
   //
   // Though not strictly necessary, this helper routine is to avoid
-  // doing the size check for the in-place case.  This is the kind
-  // of thing we'd like to mark as "private" once we have that
-  // capability.  I could move it into a sub-module for the time
-  // being, but want to keep the diff with the previous version of
-  // the code minimal.  -BLC
-  // 
-  pragma "no doc"
-  proc plan_dft_help(input: [] complex(128), output: [] complex(128), 
-                 sign: c_int, flags: c_uint) : fftw_plan
+  // doing the size check for the in-place case.
+  //
+  private proc plan_dft_help(input: [] complex(128), output: [] complex(128),
+                             sign: c_int, flags: c_uint) : fftw_plan
   {
     param rank = input.rank;
 
@@ -218,9 +213,9 @@ module FFTW {
       var error = false;
 
       for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
+        error |= checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
 
-      error |= Private_FFTW.checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
+      error |= checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
 
       if (error) then
         halt("Incorrect array sizes in plan_dft_r2c()");
@@ -252,7 +247,7 @@ module FFTW {
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
-      if Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real) then
+      if checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real) then
         halt("Incorrect array sizes in plan_dft_r2c()");
         
     param rank = realDom.rank: c_int;
@@ -294,9 +289,9 @@ module FFTW {
       var error = false;
 
       for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
+        error |= checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
 
-      error |= Private_FFTW.checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
+      error |= checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
 
       if (error) then
         halt("Incorrect array sizes in plan_dft_c2r()");
@@ -327,7 +322,7 @@ module FFTW {
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
-      if Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real) then
+      if checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real) then
         halt("Incorrect array sizes in plan_dft_c2r()");
 
     param rank = realDom.rank: c_int;
@@ -454,96 +449,87 @@ module FFTW {
 
 
   //
-  // This is a helper module to give us a "private" notion.  Once we
-  // have a private keyword, these could be hoisted to module scope
-  // and labeled private.
+  // Check for a mismatch in size between two domain dimensions,
+  // print an error if they don't, and return whether or not a
+  // mismatch occurred.  Note that the 'inplace' argument is used to
+  // customize the error message for in-place and out-of-place
+  // cases.
   //
-  pragma "no doc"
-  module Private_FFTW {
-    //
-    // Check for a mismatch in size between two domain dimensions,
-    // print an error if they don't, and return whether or not a
-    // mismatch occurred.  Note that the 'inplace' argument is used to
-    // customize the error message for in-place and out-of-place
-    // cases.
-    //
-    proc checkDimMismatch(inDom, outDom, dim, fnname, inplace=false) {
-      const inputDim = inDom.dim(dim).size;
-      const outputDim = outDom.dim(dim).size;
-      if (inputDim == outputDim) then
-        return false;
+  private proc checkDimMismatch(inDom, outDom, dim, fnname, inplace=false) {
+    const inputDim = inDom.dim(dim).size;
+    const outputDim = outDom.dim(dim).size;
+    if (inputDim == outputDim) then
+      return false;
 
-      const first = if inplace then "domain" else "input";
-      const second = if inplace then "array" else "output";
+    const first = if inplace then "domain" else "input";
+    const second = if inplace then "array" else "output";
 
-      writeln("Error: In ", fnname, ", the ", first, " and ", second,
-              if !inplace then " arrays" else "",
-              " don't have same size in dimension ", dim, 
-              " (", first, " = ", inputDim, ", ", second, " = ", outputDim, 
-              ")");
-      return true;
-    }
-
-    //
-    // Check for mismatches in the dimensions for an in-place
-    // transform between the logical domain for a DFT and the
-    // physical domain over which the array is allocated.
-    //
-    proc checkInPlaceDimMismatch(logDom, physDom, fnname, realElems) {
-      var error = false;
-      
-      for i in 1..logDom.rank-1 do
-        error |= checkDimMismatch(logDom, physDom, i, fnname, inplace=true);
-
-      if realElems {
-        error |= checkRealInPlaceDimMismatch(logDom, physDom, fnname);
-      } else {
-        error |= checkRealCplxDimMismatch(logDom, physDom, fnname);
-      }
-      return error;
-    }
-
-    //
-    // Check for a mismatch in the proper size relationship between
-    // two domain dimensions where the first describes a real array
-    // and the second a complex array.  The 'cplxarrdesc' is used
-    // to customize the error message for the role of the complex
-    // domain.
-    //
-    proc checkRealCplxDimMismatch(realDom, complexDom, fnname, cplxarrdesc="") {
-      const dim = realDom.rank;
-      const realDim = realDom.dim(dim).size/2+1;
-      const complexDim = complexDom.dim(dim).size;
-
-      if (realDim == complexDim) then
-        return false;
-
-      writeln("Error: In ", fnname, ", the ", cplxarrdesc, 
-              "array's leading dimension is not the proper size (expected ", realDim, 
-              ", got ", complexDim, ")");
-      return true;
-    }
-
-    //
-    // Check for a mismatch in the proper size relationship between two
-    // domain dimensions for an in-place transform on reals, where the
-    // first describes the logical computation coordinates and the
-    // second describes the domain describing the padded array allocation.
-    //
-    proc checkRealInPlaceDimMismatch(logDom, physDom, fnname) {
-      const dim = logDom.rank;
-      const arrDim = physDom.dim(dim).size;
-      const domDim = 2*(logDom.dim(dim).size/2+1);
-      if (arrDim == domDim) then
-        return false;
-
-      writeln("Error: In ", fnname, 
-              ", the array's leading dimension is not the proper size (expected ", domDim, 
-              ", got ", arrDim, ")");
-      return true;
-    }
+    writeln("Error: In ", fnname, ", the ", first, " and ", second,
+            if !inplace then " arrays" else "",
+            " don't have same size in dimension ", dim,
+            " (", first, " = ", inputDim, ", ", second, " = ", outputDim,
+            ")");
+    return true;
   }
 
+  //
+  // Check for mismatches in the dimensions for an in-place
+  // transform between the logical domain for a DFT and the
+  // physical domain over which the array is allocated.
+  //
+  private proc checkInPlaceDimMismatch(logDom, physDom, fnname, realElems) {
+    var error = false;
+
+    for i in 1..logDom.rank-1 do
+      error |= checkDimMismatch(logDom, physDom, i, fnname, inplace=true);
+
+    if realElems {
+      error |= checkRealInPlaceDimMismatch(logDom, physDom, fnname);
+    } else {
+      error |= checkRealCplxDimMismatch(logDom, physDom, fnname);
+    }
+    return error;
+  }
+
+  //
+  // Check for a mismatch in the proper size relationship between
+  // two domain dimensions where the first describes a real array
+  // and the second a complex array.  The 'cplxarrdesc' is used
+  // to customize the error message for the role of the complex
+  // domain.
+  //
+  private proc checkRealCplxDimMismatch(realDom, complexDom, fnname, cplxarrdesc="") {
+    const dim = realDom.rank;
+    const realDim = realDom.dim(dim).size/2+1;
+    const complexDim = complexDom.dim(dim).size;
+
+    if (realDim == complexDim) then
+      return false;
+
+    writeln("Error: In ", fnname, ", the ", cplxarrdesc,
+            "array's leading dimension is not the proper size (expected ", realDim,
+            ", got ", complexDim, ")");
+    return true;
+  }
+
+  //
+  // Check for a mismatch in the proper size relationship between two
+  // domain dimensions for an in-place transform on reals, where the
+  // first describes the logical computation coordinates and the
+  // second describes the domain describing the padded array allocation.
+  //
+  private proc checkRealInPlaceDimMismatch(logDom, physDom, fnname) {
+    const dim = logDom.rank;
+    const arrDim = physDom.dim(dim).size;
+    const domDim = 2*(logDom.dim(dim).size/2+1);
+    if (arrDim == domDim) then
+      return false;
+
+    writeln("Error: In ", fnname,
+            ", the array's leading dimension is not the proper size (expected ", domDim,
+            ", got ", arrDim, ")");
+    return true;
+  }
 
   pragma "no doc"
   module C_FFTW {

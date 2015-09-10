@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+import os
+import shutil
+import subprocess
+import sys
+
+chpl_home = os.getenv('CHPL_HOME')
+
+# copy the current chplenv and stuff it into a c file that will fail if the
+# values for current chplenv aren't defined in the runtime
+printchplenv = os.path.join(chpl_home, 'util', 'printchplenv')
+printchplenv_cmd = [printchplenv, '--simple']
+
+p = subprocess.Popen(printchplenv_cmd, stdout=subprocess.PIPE).communicate()[0]
+chpl_env = dict(map(lambda l: l.split('='), p.splitlines()))
+
+testname = sys.argv[1]
+genfile = testname+'.test.gen.c'
+with open(genfile, 'w') as f:
+    for key,val in chpl_env.items():
+        key_val = key+'_'+val.replace('-', '_').upper()
+        f.write('#ifndef %s\n'%(key_val))
+        f.write('#error "%s undefined or does not match runtime definition"\n'%(val))
+        f.write('#endif\n')
+
+
+# copy chpl-env-gen.h to this directory, rather than just including it. On some
+# test systems the include path is too long for pgi
+runtime_path_cmd = [printchplenv, '--runtime']
+runtime_path = subprocess.Popen(runtime_path_cmd, stdout=subprocess.PIPE).communicate()[0]
+runtime_path = runtime_path.strip()
+gen_env_f = os.path.join(chpl_home, 'runtime', 'src', 'gen', runtime_path, 'chpl-env-gen.h')
+
+here_gen_env_f = os.path.join(os.path.dirname(__file__), 'chpl-env-gen.h')
+shutil.copyfile(gen_env_f, here_gen_env_f)

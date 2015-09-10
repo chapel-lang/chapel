@@ -43,6 +43,9 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
 
           echo "Setting CHPL_REGEXP to none"
           export CHPL_REGEXP=none
+
+          echo "Setting CHPL_LLVM to none"
+          export CHPL_LLVM=none
         fi
    else
       echo "Error: util/setchplenv must be sourced from within the chapel root directory"

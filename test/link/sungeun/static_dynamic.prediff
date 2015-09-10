@@ -14,7 +14,7 @@ compopts=sys.argv[4].split()
 chpl_home=os.getenv('CHPL_HOME', '.');
 printchplenv = chpl_home+'/util/printchplenv'
 try:
-    p = subprocess.Popen(printchplenv,
+    p = subprocess.Popen([printchplenv,'--simple'],
                          stdout=subprocess.PIPE);
 except:
     testFailed(logfilename, 'Prediff script: Error executing '+printchplenv);
@@ -23,18 +23,18 @@ chpl_env = p.communicate()[0]
 
 defaultLinkStyle = 'dynamically'
 for l in chpl_env.split('\n'):
-    env = l.split(':')
+    env = l.split('=')
     var = env[0].strip()
     if var != '':
         val = env[1].strip()
-    if var=='CHPL_TARGET_PLATFORM':
-        if val.find('cray-x')==0:
-            defaultLinkStyle='statically'
-            
-    if var=='CHPL_COMM':
+    if var == 'CHPL_TARGET_PLATFORM':
+        if val.find('cray-x') == 0:
+            defaultLinkStyle = 'statically'
+
+    if var == 'CHPL_COMM':
         chpl_comm=val
 
-if chpl_comm!='none':
+if chpl_comm != 'none':
     execname += '_real'
 
 

@@ -33,7 +33,7 @@ proc launch(type ta, type tb) {
     }
 
   if verbose then
-    writeln(format("####", vtestcount - tcv), " var tests ",
+    writeln("%{####}".format(vtestcount - tcv), " var tests ",
             typeToString(ta), ",", typeToString(tb), " -> ",
             typeToString(divceil(a2,b2).type), " ",
             typeToString(divfloor(a2,b2).type), " ",
@@ -56,7 +56,7 @@ proc launch(type ta, type tb) {
     }
 
   if verbose then
-    writeln(format("####", ptestcount - tcp), " par tests ",
+    writeln("%{####}".format(ptestcount - tcp), " par tests ",
             typeToString(ta), ",", typeToString(tb), " -> ",
             typeToString(divceil(e2,f2).type), " ",
             typeToString(divfloor(e2,f2).type), " ",

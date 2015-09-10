@@ -116,29 +116,31 @@ module Graph500_main
     var stats: [0..NSTAT-1] real;
 
     sz = (1:int(32) << scale) * edgefactor * 2 * DEFAULT_INT_SIZE;
-    write ("SCALE: ", scale, " \nnvtx: ", NV, " \nedgefactor: ", edgefactor, 
-           " \nterasize: ", format("%20.17e\n", sz/1.0e12));
-    writeln ("A: ", format("%20.17e", D));
-    writeln ("B: ", format("%20.17e", B));
-    writeln ("C: ", format("%20.17e", C));
-    writeln ("D: ", format("%20.17e", D));
-    writeln ("generation_time: ", format("%20.17e", generation_time));
-    writeln ("construction_time: ", format("%20.17e", construction_time));
+    writeln ("SCALE: ", scale, " ");
+    writeln ("nvtx: ", NV, " ");
+    writeln ("edgefactor: ", edgefactor, " ");
+    writef ("terasize: %20.17er\n", sz/1.0e12);
+    writef ("A: %20.17er\n", D);
+    writef ("B: %20.17er\n", B);
+    writef ("C: %20.17er\n", C);
+    writef ("D: %20.17er\n", D);
+    writef ("generation_time: %20.17er\n", generation_time);
+    writef ("construction_time: %20.17er\n", construction_time);
     writeln ("nbfs: ", nbfs);
 
     proc PRINT_STATS(lbl, israte) {
       do {
-        writeln ("min_", lbl, format(": %20.17e", stats[0]));
-        writeln ("firstquartile_", lbl, format(": %20.17e", stats[1]));
-        writeln ("median_", lbl, format(": %20.17e", stats[2]));
-        writeln ("thirdquartile_", lbl, format(": %20.17e", stats[3]));
-        writeln ("max_", lbl, format(": %20.17e", stats[4]));
+        writeln ("min_%s: %20.17e", lbl, stats[0]);
+        writeln ("firstquartile_%s: %20.17e", lbl, stats[1]);
+        writeln ("median_%s: %20.17e", lbl, stats[2]);
+        writeln ("thirdquartile_%s: %20.17e", lbl, stats[3]);
+        writeln ("max_%s: %20.17e", lbl, stats[4]);
         if (!israte) {
-          writeln ("mean_", lbl, format(": %20.17e", stats[5]));
-          writeln ("stddev_", lbl, format(": %20.17e", stats[6]));
+          writeln ("mean_%s: %20.17e", lbl, stats[5]);
+          writeln ("stddev_%s: %20.17e", lbl, stats[6]);
         } else {
-          writeln ("harmonic_mean_", lbl, format(": %20.17e", stats[7]));
-          writeln ("harmonic_stddev_", lbl, format(": %20.17e", stats[8]));
+          writeln ("harmonic_mean_%s: %20.17e", lbl, stats[7]);
+          writeln ("harmonic_stddev_%s: %20.17e", lbl, stats[8]);
         }
       } while (0);
     }

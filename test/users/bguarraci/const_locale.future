@@ -1,0 +1,5 @@
+bug: const value is located on Locale[0] making it impossible to use in a local block without copying the value first
+
+Although this may become less of an issue when the local block is no longer needed (via data locality),
+it seems like a constant value should be replicated across all locales so that there is no RPC occurring when accessing a value.
+

@@ -1,0 +1,5 @@
+feature request: Compiler warning/error if enum not covered by select.
+
+Compiler should warn if there's an enum value that is not checked by a 
+when/othewise clause.
+

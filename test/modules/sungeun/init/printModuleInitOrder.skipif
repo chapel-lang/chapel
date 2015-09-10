@@ -3,3 +3,4 @@
 # This skips baseline testing so that we only test the
 # initialization output when those modules are eliminated.
 COMPOPTS <= --baseline
+COMPOPTS <= --no-inline

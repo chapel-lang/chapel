@@ -1,0 +1,8 @@
+Writing formatted I/O sometimes drops in a null....
+
+bug.chpl produces test.dat which has a stray null in it.
+
+[npadmana@lovelace:null_in_formattedio] sed -n '/\x0/p' test.dat                             
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+0 0.000000e+00 0.000000e+00
+
+In the line above, the 5th number is missing a zero in the exponent.

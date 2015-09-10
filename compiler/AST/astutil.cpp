@@ -887,3 +887,38 @@ Symbol* getSvecSymbol(CallExpr* call) {
     return NULL;
   }
 }
+
+
+static void addToUsedFnSymbols(std::set<FnSymbol*>& fnSymbols, FnSymbol* newFn) {
+  if(fnSymbols.count(newFn) == 0) {
+    fnSymbols.insert(newFn);
+    AST_CHILDREN_CALL(newFn->body, collectUsedFnSymbols, fnSymbols);
+  }
+}
+
+/*
+* Collect all of the functions in the call graph at and below the function
+* call.
+*/
+void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
+  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
+  //if there is a function call, get the FnSymbol associated with it
+  //and look through that FnSymbol for other function calls. Do not
+  //look through an already visited FnSymbol, or you'll have an infinite
+  //loop in the case of recursion.
+  if (CallExpr* call = toCallExpr(ast)) {
+    if (FnSymbol* fn = call->isResolved()) {
+      addToUsedFnSymbols(fnSymbols, fn);
+    } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+      //
+      // TODO: We'd like a way to accurately find the set of functions that
+      // might be called from a PRIM_FTABLE_CALL. The complicated nature
+      // of recursive iterator lowering seems to be too big of an obstacle
+      // right now.
+      //
+      forv_Vec(FnSymbol, fn, ftableVec) {
+        addToUsedFnSymbols(fnSymbols, fn);
+      }
+    }
+  }
+}

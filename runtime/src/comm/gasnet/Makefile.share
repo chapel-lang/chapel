@@ -34,24 +34,12 @@ COMM_LAUNCHER_OBJS = \
 ifneq ($(MAKE_LAUNCHER), 1)
 ifneq ($(CHPL_MAKE_RULE),clean)
 ifneq ($(CHPL_MAKE_RULE),clobber)
--include $(GASNET_INC_MAKEFILE)
+# get CHPL_GASNET_CFLAGS
+-include $(GASNET_SETUP_MAKEFILE)
 endif
-endif
-
-# 
-# The following lines try to combine GASNet's favorite C compiler
-# flags with ours.  The CHPL_GASNET_MORE_CFLAGS macro is used in
-# case we need to dampen some of our own settings in order to
-# compile GASnet without warnings.
-
-GASNET_RUNTIME_CFLAGS_ALL = $(RUNTIME_CFLAGS) $(GASNET_CPPFLAGS) $(GASNET_CFLAGS) $(SUPPORT_SETENV_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
-# Remove -Winline from Gasnet's provided flags
-GASNET_RUNTIME_CFLAGS = $(GASNET_RUNTIME_CFLAGS_ALL:-Winline=)
-ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-xk cray-xc) )
-GASNET_RUNTIME_CFLAGS += -DGASNET_NEEDS_MAX_SEGSIZE
 endif
 endif
 
 $(RUNTIME_OBJ_DIR)/comm-gasnet.o: comm-gasnet.c $(RUNTIME_OBJ_DIR_STAMP)
-	$(ENSURE_GASNET_COMPATIBLE_COMPILER) $(CC) -c $(GASNET_RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	$(CC) -c $(RUNTIME_CFLAGS) $(CHPL_GASNET_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 

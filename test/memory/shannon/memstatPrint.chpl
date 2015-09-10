@@ -4,13 +4,13 @@ extern proc chpl_mem_allocMany(number, size, description, lineno=-1, filename:c_
 
 config var print: bool = false;
 
-printMemStat();
+printMemAllocStats();
 chpl_mem_allocMany(1, 64, 0);
-printMemStat();
+printMemAllocStats();
 chpl_mem_allocMany(1, 64, 0);
-printMemStat();
+printMemAllocStats();
 chpl_mem_allocMany(1, 64, 0);
-printMemStat();
+printMemAllocStats();
 chpl_mem_allocMany(1, 64, 0);
-printMemStat();
+printMemAllocStats();
 

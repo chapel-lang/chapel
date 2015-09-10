@@ -71,18 +71,6 @@ static void addModuleToDoneList(ModuleSymbol* module) {
   modDoneSet.set_add(uniqueName);
 }
 
-
-static const char* filenameToModulename(const char* filename) {
-  const char* moduleName = astr(filename);
-  const char* firstSlash = strrchr(moduleName, '/');
-
-  if (firstSlash) {
-    moduleName = firstSlash + 1;
-  }
-
-  return asubstr(moduleName, strrchr(moduleName, '.'));
-}
-
 static bool
 containsOnlyModules(BlockStmt* block, const char* filename) {
   int           moduleDefs     =     0;
@@ -209,7 +197,10 @@ ModuleSymbol* parseFile(const char* filename,
     } else if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
       const char* modulename = filenameToModulename(filename);
 
-      retval = buildModule(modulename, yyblock, yyfilename, NULL);
+      retval = buildModule(modulename, yyblock, yyfilename, false, NULL);
+      // surrounding module is public by default - if the module designer
+      // wanted it private, they would have declared it so.
+
 
       theProgram->block->insertAtTail(new DefExpr(retval));
 

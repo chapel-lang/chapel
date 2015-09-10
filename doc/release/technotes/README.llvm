@@ -44,6 +44,9 @@ Note:
   and some features (such as building a library instead of an executable)
   are not yet supported.
 
+* You can set the environment variable CHPL_LLVM_DEVELOPER
+  to request a debug build of LLVM.
+
 ---------------------------
 Activating the LLVM support
 ---------------------------
