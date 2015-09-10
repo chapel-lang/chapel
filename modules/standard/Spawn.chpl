@@ -22,8 +22,8 @@
  */
 module Spawn {
 
-  private extern proc qio_openproc(argv:c_ptr(c_string_copy),
-                                   env:c_ptr(c_string_copy),
+  private extern proc qio_openproc(argv:c_ptr(c_string),
+                                   env:c_ptr(c_string),
                                    executable:c_string,
                                    ref stdin_fd:c_int,
                                    ref stdout_fd:c_int,
@@ -31,6 +31,19 @@ module Spawn {
                                    ref pid:int(64)):syserr;
   private extern proc qio_waitpid(pid:int(64),
     blocking:c_int, ref done:c_int, ref exitcode:c_int):syserr;
+
+  // When spawning, we need to allocate the command line
+  // and environment to spawn with the C allocator (instead
+  // of the Chapel one) because the Chapel heap might not
+  // be accessible to a forked process.
+  // So, we have here some functions that work with
+  // the C allocator instead of the Chapel one.
+
+  private extern proc qio_spawn_strdup(str: c_string): c_string;
+  private extern proc qio_spawn_allocate_args(count: size_t): c_ptr(c_string);
+  private extern proc qio_spawn_free_args(args: c_ptr(c_string));
+  private extern proc qio_spawn_free_str(str: c_string);
+
 
   /* A subprocess */
   record subprocess {
@@ -125,8 +138,6 @@ module Spawn {
     var pid:int;
     var err:syserr;
 
-    extern proc qio_strdup(s:c_string):c_string_copy;
-
     if isIntegralType(stdin.type) then stdin_fd = stdin;
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported"); 
     if isIntegralType(stdout.type) then stdout_fd = stdout;
@@ -141,15 +152,17 @@ module Spawn {
     // Create the C pointer structures appropriate for spawn/exec
     // that are NULL terminated and consist of C strings.
 
-    var use_args = c_calloc(c_string_copy, args.size + 1);
+    var nargs = args.size + 1;
+    var use_args = qio_spawn_allocate_args( nargs.safeCast(size_t) );
     for (a,i) in zip(args, 0..) {
-      use_args[i] = qio_strdup(a.c_str());
+      use_args[i] = qio_spawn_strdup(a.c_str());
     }
-    var use_env:c_ptr(c_string_copy) = nil;
+    var use_env:c_ptr(c_string) = nil;
     if env.size != 0 {
-      use_env = c_calloc(c_string_copy, env.size + 1);
+      var nenv = env.size + 1;
+      use_env = qio_spawn_allocate_args( nenv.safeCast(size_t) );
       for (a,i) in zip(env, 0..) {
-        use_env[i] = qio_strdup(a.c_str());
+        use_env[i] = qio_spawn_strdup(a.c_str());
       }
     }
 
@@ -160,15 +173,13 @@ module Spawn {
 
     // free the c structures we created.
     for i in 0..#args.size {
-      chpl_free_c_string_copy(use_args[i]);
-      use_args[i] = _nullString;
+      qio_spawn_free_str(use_args[i]);
     }
     for i in 0..#env.size {
-      chpl_free_c_string_copy(use_env[i]);
-      use_env[i] = _nullString;
+      qio_spawn_free_str(use_env[i]);
     }
-    c_free(use_args);
-    c_free(use_env);
+    qio_spawn_free_args(use_args);
+    qio_spawn_free_args(use_env);
 
     var ret = new subprocess(kind=kind, locking=locking,
                              home=here,

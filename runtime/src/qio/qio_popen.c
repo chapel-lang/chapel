@@ -33,8 +33,45 @@
 #include <unistd.h>
 #include <spawn.h>
 
+// We need to be able to call malloc, free, etc.
+#include "chpl-mem-no-warning-macros.h"
+
 // current environment variables
 extern char** environ;
+
+/* Helper routines for allocating out of the C
+   heap instead of the Chapel one. That is necessary
+   since the Chapel heap might not be available to
+   a forked process, and we need args for exec
+   (command, arguments, environment) to be available
+   after a fork.
+ */
+
+const char* qio_spawn_strdup(const char* str)
+{
+  size_t len = strlen(str);
+  char* ret = malloc(len + 1);
+  // note: also copies '\0' at end of string.
+  memcpy(ret, str, len + 1);
+  return ret;
+}
+
+const char** qio_spawn_allocate_args(size_t count)
+{
+  char** ret = calloc(count, sizeof(char*));
+  return (const char**) ret;
+}
+
+void qio_spawn_free_args(const char** args)
+{
+  free((void*) args);
+}
+
+void qio_spawn_free_str(const char* str)
+{
+  free((void*) str);
+}
+
 
 /* Set up file actions for posix_spawn.
    *std__fd is FD_FORWARD, FD_CLOSE, FD_PIPE etc or a file descriptor #
