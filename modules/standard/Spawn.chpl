@@ -40,8 +40,8 @@ module Spawn {
   // the C allocator instead of the Chapel one.
 
   private extern proc qio_spawn_strdup(str: c_string): c_string;
-  private extern proc qio_spawn_allocate_args(count: size_t): c_ptr(c_string);
-  private extern proc qio_spawn_free_args(args: c_ptr(c_string));
+  private extern proc qio_spawn_allocate_ptrvec(count: size_t): c_ptr(c_string);
+  private extern proc qio_spawn_free_ptrvec(args: c_ptr(c_string));
   private extern proc qio_spawn_free_str(str: c_string);
 
 
@@ -153,14 +153,14 @@ module Spawn {
     // that are NULL terminated and consist of C strings.
 
     var nargs = args.size + 1;
-    var use_args = qio_spawn_allocate_args( nargs.safeCast(size_t) );
+    var use_args = qio_spawn_allocate_ptrvec( nargs.safeCast(size_t) );
     for (a,i) in zip(args, 0..) {
       use_args[i] = qio_spawn_strdup(a.c_str());
     }
     var use_env:c_ptr(c_string) = nil;
     if env.size != 0 {
       var nenv = env.size + 1;
-      use_env = qio_spawn_allocate_args( nenv.safeCast(size_t) );
+      use_env = qio_spawn_allocate_ptrvec( nenv.safeCast(size_t) );
       for (a,i) in zip(env, 0..) {
         use_env[i] = qio_spawn_strdup(a.c_str());
       }
@@ -178,8 +178,8 @@ module Spawn {
     for i in 0..#env.size {
       qio_spawn_free_str(use_env[i]);
     }
-    qio_spawn_free_args(use_args);
-    qio_spawn_free_args(use_env);
+    qio_spawn_free_ptrvec(use_args);
+    qio_spawn_free_ptrvec(use_env);
 
     var ret = new subprocess(kind=kind, locking=locking,
                              home=here,

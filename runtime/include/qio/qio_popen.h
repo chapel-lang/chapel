@@ -36,8 +36,8 @@ extern "C" {
 // Helper functions to allocate/free memory available
 // to a forked child process
 const char* qio_spawn_strdup(const char* str);
-const char** qio_spawn_allocate_args(size_t count);
-void qio_spawn_free_args(const char** args);
+const char** qio_spawn_allocate_ptrvec(size_t count);
+void qio_spawn_free_ptrvec(const char** args);
 void qio_spawn_free_str(const char* str);
 
 

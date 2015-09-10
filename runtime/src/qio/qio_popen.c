@@ -45,6 +45,10 @@ extern char** environ;
    a forked process, and we need args for exec
    (command, arguments, environment) to be available
    after a fork.
+
+   Using these routines resolves problems with
+    * Gasnet/aries with segment=fast
+    * Gasnet/udp with segment=fast
  */
 
 const char* qio_spawn_strdup(const char* str)
@@ -56,13 +60,13 @@ const char* qio_spawn_strdup(const char* str)
   return ret;
 }
 
-const char** qio_spawn_allocate_args(size_t count)
+const char** qio_spawn_allocate_ptrvec(size_t count)
 {
   char** ret = calloc(count, sizeof(char*));
   return (const char**) ret;
 }
 
-void qio_spawn_free_args(const char** args)
+void qio_spawn_free_ptrvec(const char** args)
 {
   free((void*) args);
 }
