@@ -145,6 +145,8 @@ class ReplicatedDist : BaseDist {
 proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
                  purposeMessage: string = "used to create a ReplicatedDist")
 {
+  if targetLocales.rank != 1 then
+    compilerError("ReplicatedDist only accepts a 1D targetLocales array");
   if traceReplicatedDist then
     writeln("ReplicatedDist constructor over ", targetLocales);
   _localesCheckHelper(purposeMessage);
@@ -161,6 +163,13 @@ proc ReplicatedDist._localesCheckHelper(purposeMessage: string): void {
     }
 }
 
+proc ReplicatedDist.dsiEqualDMaps(that: ReplicatedDist(?)) {
+  return this.targetLocales.equals(that.targetLocales);
+}
+
+proc ReplicatedDist.dsiEqualDMaps(that) param {
+  return false;
+}
 
 // privatization
 

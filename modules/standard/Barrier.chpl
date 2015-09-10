@@ -19,7 +19,7 @@
 
 /* Support for task barriers.
 
-   The Barrier records provided in this module can be used to prevent tasks
+   The Barrier type provided in this module can be used to prevent tasks
    from proceeding until all other related tasks have also reached the
    barrier.
 
@@ -30,14 +30,18 @@
    "entering the barrier" messages will be printed before any of the
    "past the barrier" messages. ::
 
+     use Barrier;
+
      config const numTasks = here.maxTaskPar;
      var b = new Barrier(numTasks);
 
-     coforall tid in 1..numTasks with (ref b) {
+     coforall tid in 1..numTasks {
        writeln("Task ", tid, " is entering the barrier");
        b.barrier();
        writeln("Task ", tid, " is past the barrier");
      }
+
+     delete b;
 
    Future direction
    ----------------
@@ -45,33 +49,128 @@
    "task-team" concept.  A task-team will more directly support collective
    operations such as barriers between the tasks within a team.
 
+   The Barrier type is currently implemented as a class, requiring it to be
+   explicitly deleted before it goes out of scope.  It is expected that this
+   type will be changed into a record allowing it to be automatically
+   reclaimed.  When this change happens, code that uses this Barrier will need
+   to have the explicit deletes removed, but should require no other changes.
+
    The current implementation is designed for correctness, but is not expected
    to perform well at scale.  We expect performance at scale to improve as
    this barrier implementation is optimized and as the task-team concept is
    implemented and optimized.
 */
 module Barrier {
-  /* The BarrierBaseType record provides an abstract base type for barriers
+  /* An enumeration of the different barrier implementations.  Used to choose
+     the implementation to use when constructing a new barrier object.
+
+     * `BarrierType.Atomic` uses Chapel atomic variables to control the barrier.
+     * `BarrierType.Sync` uses Chapel sync variables to control the barrier.
+  */
+  enum BarrierType {Atomic, Sync}
+
+  /* A barrier that will cause `numTasks` to wait before proceeding. */
+  class Barrier {
+    pragma "no doc"
+    var bar: BarrierBaseType;
+
+    /* Construct a new barrier object.
+
+       :arg numTasks: The number of tasks that will use this barrier
+       :arg barrierType: The barrier implementation to use
+       :arg reusable: Incur some extra overhead to allow reuse of this barrier?
+
+    */
+    proc Barrier(numTasks: int,
+                 barrierType: BarrierType = BarrierType.Atomic,
+                 reusable: bool = (barrierType == BarrierType.Atomic)) {
+      select barrierType {
+        when BarrierType.Atomic {
+          if reusable {
+            bar = new aBarrier(numTasks, reusable=true);
+          } else {
+            bar = new aBarrier(numTasks, reusable=false);
+          }
+        }
+        when BarrierType.Sync {
+          if reusable {
+            halt("reusable barriers not implemented for ", barrierType);
+          } else {
+            bar = new sBarrier(numTasks);
+          }
+        }
+        otherwise {
+          halt("unknown barrier type");
+        }
+      }
+    }
+
+    pragma "no doc"
+    proc ~Barrier() {
+      if bar != nil {
+        delete bar;
+      }
+    }
+
+    /* Block until all related tasks have called this method.  If `reusable`
+       is true, reset the barrier to be used again.
+     */
+    inline proc barrier() {
+      bar.barrier();
+    }
+
+    /* Notify the barrier that this task has reached this point. */
+    inline proc notify() {
+      bar.notify();
+    }
+
+    /* Wait until `n` tasks have called :proc:`notify`.  If `reusable` is true,
+       reset the barrier to be used again.  Note: if `reusable` is true
+       :proc:`wait` will block until `n` tasks have called it after calling
+       :proc:`notify`.
+     */
+    inline proc wait() {
+      bar.wait();
+    }
+
+    /* return `true` if `n` tasks have called :proc:`notify`
+     */
+    inline proc try(): bool {
+      return bar.try();
+    }
+
+    pragma "no doc"
+    inline proc reset(_n: int) {
+      bar.reset(_n);
+    }
+  }
+
+  /* The BarrierBaseType class provides an abstract base type for barriers
    */
-  record BarrierBaseType {
+  pragma "no doc" class BarrierBaseType {
     pragma "no doc"
     proc barrier() {
-      compilerError("barrier() not implemented");
+      halt("barrier() not implemented");
     }
 
     pragma "no doc"
     proc notify() {
-      compilerWarning("notify() not implemented");
+      halt("notify() not implemented");
     }
 
     pragma "no doc"
     proc wait() {
-      compilerWarning("wait() not implemented");
+      halt("wait() not implemented");
     }
 
     pragma "no doc"
-    proc try(): int {
-      compilerWarning("try() not implemented");
+    proc try(): bool {
+      halt("try() not implemented");
+    }
+
+    pragma "no doc"
+    proc reset(_n: int) {
+      halt("reset() not implemented");
     }
   }
 
@@ -79,7 +178,7 @@ module Barrier {
 /* A task barrier implemented using atomics. Can be used as a simple barrier
    or as a split-phase barrier.
  */
-  record Barrier: BarrierBaseType {
+  pragma "no doc" class aBarrier: BarrierBaseType {
     /* If true the barrier can be used multiple times.  When using this as a
        split-phase barrier this causes :proc:`wait` to block until all tasks
        have reached the wait */
@@ -96,7 +195,7 @@ module Barrier {
 
        :arg n: The number of tasks involved in this barrier
      */
-    proc Barrier(n: int) {
+    proc aBarrier(n: int, param reusable: bool) {
       reset(n);
     }
 
@@ -171,7 +270,7 @@ module Barrier {
   /* A task barrier implemented using sync and single variables. Can be used
      as a simple barrier or as a split-phase barrier.
    */
-  record sBarrier: BarrierBaseType {
+  pragma "no doc" class sBarrier: BarrierBaseType {
     pragma "no doc"
     var count: sync int;
     pragma "no doc"
@@ -183,6 +282,9 @@ module Barrier {
      */
     proc sBarrier(n: int) {
       count = n;
+    }
+    proc reset(_n: int) {
+      halt("cannot reset sync based barrier");
     }
 
     /* Block until `n` tasks have called this method.

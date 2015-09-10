@@ -142,6 +142,15 @@ class Cyclic: BaseDist {
         locDist(locid) = new LocCyclic(rank, idxType, locid, this);
   }
 
+  proc dsiEqualDMaps(that: Cyclic(?)) {
+    return (this.startIdx == that.startIdx &&
+            this.targetLocs.equals(that.targetLocs));
+  }
+
+  proc dsiEqualDMaps(that) param {
+    return false;
+  }
+
   proc dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
 }
 

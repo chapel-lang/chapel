@@ -21,6 +21,7 @@
 #define _RESOLUTION_H_
 
 #include "baseAST.h"
+#include <map>
 
 class CallInfo;
 
@@ -30,10 +31,13 @@ extern Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 extern Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
+extern std::map<CallExpr*,CallExpr*> eflopiMap;
 
 #ifndef HILDE_MM
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
 #endif
+bool isLeaderIterator(FnSymbol* fn);
+bool isStandaloneIterator(FnSymbol* fn);
 
 bool isDispatchParent(Type* t, Type* pt);
 
@@ -53,6 +57,7 @@ FnSymbol* getTheIteratorFn(Type* icType);
 // forall intents
 void implementForallIntents1(DefExpr* defChplIter);
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
+void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
 void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignore_isResolved);
 
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call);

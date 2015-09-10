@@ -6,7 +6,7 @@ use Spawn;
   assert(comp.exit_status == 0);
 }
 
-var sub = spawn(["./stdout-stderr"], stdin=PIPE, stdout=PIPE, stderr=PIPE);
+var sub = spawn(["./stdout-stderr", "-nl", "1"], stdin=PIPE, stdout=PIPE, stderr=PIPE);
 
 config const n = 10000;
 for i in 1..n {
