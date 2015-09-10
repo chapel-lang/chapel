@@ -3,7 +3,7 @@
 // of its symbols.  If this feature sticks around, we've talked
 // about switching to the keyword 'require' to avoid this confusion.
 //
-use "Foo.chpl";
+require "Foo.chpl";
 
 proc foo() {
   writeln("In useModAsString.chpl's foo");

@@ -103,15 +103,14 @@ proc initSun() {
 proc advance(dt) {
   for i in 1..numbodies {
     for j in i+1..numbodies {
-      updateVelocities(bodies[i], bodies[j]);
-      
-      inline proc updateVelocities(ref b1, ref b2) {
-        const dpos = b1.pos - b2.pos,
-               mag = dt / sqrt(sumOfSquares(dpos))**3;
+      ref b1 = bodies[i],
+          b2 = bodies[j];
+
+      const dpos = b1.pos - b2.pos,
+            mag = dt / sqrt(sumOfSquares(dpos))**3;
         
-        b1.v -= dpos * b2.mass * mag;
-        b2.v += dpos * b1.mass * mag;
-      }
+      b1.v -= dpos * b2.mass * mag;
+      b2.v += dpos * b1.mass * mag;
     }
   }
   

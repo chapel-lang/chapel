@@ -4245,7 +4245,7 @@ GenRet CallExpr::codegen() {
             if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               // The source is a wide string.
               codegenCall("c_string_from_wide_string",
-                          dst, src, call->get(2), call->get(3));
+                          dst, src, info->lineno, info->filename);
             } else {
               codegenCall("c_string_from_string",
                           dst, src, call->get(2), call->get(3));
@@ -5531,14 +5531,7 @@ GenRet CallExpr::codegen() {
     AggregateType *bundledArgsType = toAggregateType(toSymExpr(get(1))->typeInfo());
     int endCountField = 0;
     for (int i = 1; i <= bundledArgsType->fields.length; i++) {
-      if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                  "_ref(_EndCount)")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "__wide__ref__wide__EndCount")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "_EndCount")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "__wide__EndCount")) {
+      if (strstr(bundledArgsType->getField(i)->typeInfo()->symbol->name, "_EndCount") != NULL) {
         // Turns out there can be more than one such field. See e.g.
         //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
         // INT_ASSERT(endCountField == 0);

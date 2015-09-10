@@ -19,17 +19,14 @@ var timer = new Timer();
 
 // calculate C = C - A * B.
 proc dgemm(
-    p : int,    // number of rows in A
-    q : int,    // number of cols in A, number of rows in B
-    r : int,    // number of cols in B
-    A : [1..p, 1..q] ?t,
-    B : [1..q, 1..r] t,
-    C : [1..p, 1..r] t)
+    A : [?AD] ?t,
+    B : [?BD] t,
+    C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
-    for i in 1..p {
-        for j in 1..r {
-            for k in 1..q {
+    for i in AD.dim(1) {
+        for j in CD.dim(2) {
+            for k in AD.dim(2) {
                 C[i,j] -= A[i, k] * B[k, j];
             }
         }
@@ -91,9 +88,6 @@ proc schurComplement(
 
         local {
             dgemm(
-                aBlkD.dim(1).length,
-                aBlkD.dim(2).length,
-                bBlkD.dim(2).length,
                 replA(aBlkD),
                 replB(bBlkD),
                 A(cBlkD));

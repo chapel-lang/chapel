@@ -72,7 +72,10 @@ module ChapelLocale {
     // now, we make the assumption that all requests for the number of
     // running tasks want the count from the locale the calling task is
     // running on, so the minimum possible value must be 1.
-    var runningTaskCounter : atomic int;
+    //
+    // This field should only be accessed locally, so we will have better
+    // performance if we always use a processor atomic.
+    var runningTaskCounter : chpl__processorAtomicType(int);
 
     inline proc runningTaskCntSet(val : int) {
       runningTaskCounter.write(val, memory_order_relaxed);
