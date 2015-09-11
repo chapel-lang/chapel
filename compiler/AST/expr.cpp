@@ -5560,18 +5560,18 @@ GenRet CallExpr::codegen() {
       // make it into a local pointer to a class.
       endCountValue = codegenRaddr(endCountValue);
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList")); 
-      taskList = codegenTernary(
-                       codegenNotEquals(node, codegenGetNodeID()),
-                       codegenNullPointer(),
-                       taskList);
+      //taskList = codegenTernary(
+      //                 codegenNotEquals(node, codegenGetNodeID()),
+      //                 codegenNullPointer(),
+      //                taskList);
     } else if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       GenRet node = codegenRnode(endCountValue);
       endCountValue = codegenRaddr(endCountValue);
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-      taskList = codegenTernary(
-                     codegenNotEquals(node, codegenGetNodeID()),
-                     codegenNullPointer(),
-                     taskList);
+      //taskList = codegenTernary(
+      //               codegenNotEquals(node, codegenGetNodeID()),
+      //               codegenNullPointer(),
+      //               taskList);
     } else if (endCountType->symbol->hasFlag(FLAG_REF)) {
       endCountValue = codegenDeref(endCountValue);
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
