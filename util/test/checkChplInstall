@@ -127,9 +127,9 @@ fi
 if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "none" ]; then
     echo "Launcher, \$CHPL_LAUNCHER = ${chpl_launcher}, is compatible with test script"
 else
-    echo "This script is not compatible with the \$CHPL_LAUNCHER value of ${CHPL_LAUNCHER}"
+    echo "This script is not compatible with the \$CHPL_LAUNCHER value of ${chpl_launcher}"
     echo "This does not necessarily indicate that your Chapel installation is incorrect"
-    echo "See ${CHPL_HOME}/doc/README.launcher for more information on how to manually run a Chapel program"
+    echo "See \$CHPL_HOME/doc/README.launcher for more information on how to manually run a Chapel program"
     exit 10
 fi
 
