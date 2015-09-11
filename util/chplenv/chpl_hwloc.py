@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os
 
-import chpl_tasks, chpl_arch
+import chpl_tasks, chpl_arch, chpl_compiler
 from utils import memoize
 
 @memoize
@@ -10,7 +10,10 @@ def get():
     if not hwloc_val:
         tasks_val = chpl_tasks.get()
         arch_val = chpl_arch.get('target', get_lcd=True)
-        if tasks_val == 'qthreads' and arch_val != 'knc':
+        compiler_val = chpl_compiler.get('target')
+
+        if (tasks_val == 'qthreads' and arch_val != 'knc' and
+                compiler_val != 'cray-prgenv-cray'):
             hwloc_val = 'hwloc'
         else:
             hwloc_val = 'none'
