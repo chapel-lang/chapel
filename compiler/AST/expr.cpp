@@ -4041,7 +4041,17 @@ GenRet CallExpr::codegen() {
             codegenAssign(get(1),call->get(1));
           } else {
             // set get(1) = *(call->get(1));
-            codegenAssign(get(1),codegenDeref(call->get(1)));
+            // but use memcpy if call->get(1) has FLAG_UNALIGNED_REF
+            SymExpr* se = toSymExpr(call->get(1));
+            if (se && se->var->hasFlag(FLAG_UNALIGNED_REF)) {
+              // unaligned reference case - use memcpy
+              Type* t = get(1)->typeInfo();
+              GenRet size = codegenSizeof(t);
+              codegenCallMemcpy(codegenAddrOf(get(1)), codegenValue(se), size, t);
+            } else {
+              // normal case
+              codegenAssign(get(1),codegenDeref(call->get(1)));
+            }
           }
           break;
          }
@@ -4352,9 +4362,18 @@ GenRet CallExpr::codegen() {
         break;
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
-          !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
-        codegenAssign(codegenDeref(get(1)), get(2));
-      else
+          !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        // use memcpy if get(1) has FLAG_UNALIGNED_REF
+        SymExpr* se = toSymExpr(get(1));
+        if (se && se->var->hasFlag(FLAG_UNALIGNED_REF)) {
+          // unaligned reference case - use memcpy
+          Type* t = get(2)->typeInfo();
+          GenRet size = codegenSizeof(t);
+          codegenCallMemcpy(codegenValue(se), codegenAddrOf(codegenValuePtr(get(2))), size, t);
+        } else {
+          codegenAssign(codegenDeref(get(1)), get(2));
+        }
+      } else
         codegenAssign(get(1), get(2));
       break;
     } // End of PRIM_MOVE
