@@ -1,13 +1,18 @@
 var ops:[1..0] (int,object,int, int, int);
+var opsLock$: sync bool = true;
 
 var counter: atomic int;
 
 proc trackAllocation(c: object, id:int, x:int) {
+  opsLock$.readFE();
   ops.push_back( (1, c, id, x, 1+counter.fetchAdd(1)) );
+  opsLock$.writeEF(true);
 }
 
 proc trackFree(c: object, id:int, x:int) {
+  opsLock$.readFE();
   ops.push_back( (-1, c, id, x, 1+counter.fetchAdd(1)) );
+  opsLock$.writeEF(true);
 }
 
 proc checkAllocations() {
