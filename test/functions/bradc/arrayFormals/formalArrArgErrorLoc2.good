@@ -1,0 +1,17 @@
+formalArrArgErrorLoc2.chpl:9: error: halt reached - Domain map mismatch passing array argument:
+  Formal domain map is: Block
+-------
+distributes: {1..3}
+across locales: LOCALE0
+indexed via: {0..0}
+resulting in: 
+  [0] locale 0 owns chunk: {-9223372036854775808..9223372036854775807}
+
+  Actual domain map is: Block
+-------
+distributes: {1..10}
+across locales: LOCALE0
+indexed via: {0..0}
+resulting in: 
+  [0] locale 0 owns chunk: {-9223372036854775808..9223372036854775807}
+

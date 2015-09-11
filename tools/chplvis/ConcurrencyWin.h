@@ -23,8 +23,9 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Group.H>
-#include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Scroll.H>
+#include <FL/Fl_Text_Display.H>
+#include <FL/Fl_Button.H>
 
 #include "DataModel.h"
 
@@ -67,6 +68,8 @@ class ConcurrencyWin : public Fl_Double_Window {
     Fl_Box *title;
     Fl_Scroll *scroll;
     ConcurrencyData *dataBox;
+    Fl_Text_Display *commBox;
+    Fl_Button *backBtn;
 
     long localeNum;
     long tagNum;
@@ -84,9 +87,14 @@ class ConcurrencyWin : public Fl_Double_Window {
       tagNum = -3;
       localeNum = 0;
       dataBox->setParent(this);
+      commBox = NULL;
     }
 
     void updateData (long loc, long tag);
+
+    void showCommBoxFor(taskData *task);
+
+    void showTaskBox();
 
 };
 

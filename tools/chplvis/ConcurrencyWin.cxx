@@ -22,8 +22,22 @@
 
 #include "ConcurrencyWin.h"
 #include "chplvis.h"
+#include "ViewField.h"   // for heatColor
 
 #include <FL/fl_draw.H>
+#include <FL/fl_ask.H>
+
+// Callback for this window
+
+void backCallback (Fl_Widget *w, void *p) {
+  ConcurrencyWin *win = (ConcurrencyWin *)w->window();
+  win->showTaskBox();
+}
+
+void taskCallback (Fl_Widget *w, void *p) {
+  ConcurrencyWin *win = (ConcurrencyWin *)w->window();
+  win->showCommBoxFor((taskData *)p);
+}
 
 ConcurrencyWin::ConcurrencyWin (int x, int y, int W, int H, const char *l)
   :  Fl_Double_Window (W, H, l)
@@ -36,12 +50,96 @@ void ConcurrencyWin::updateData (long loc, long tag)
   localeNum = loc;
   tagNum = tag;
   curTag = VisData.getTagData(tagNum);
-  snprintf(tmp, sizeof(tmp), "Concurrency for Locale %ld, tag %s, max %ld",
-           loc, curTag->name.c_str(), curTag->locales[loc].maxConc);
+  snprintf(tmp, sizeof(tmp), "Concurrency for Locale %ld, tag %s, max %ld, max Clock %f",
+           loc, curTag->name, curTag->locales[loc].maxConc,
+           curTag->locales[loc].maxTaskClock);
   title->copy_label(tmp);
   dataBox->buildData();
   redraw();
 }
+
+void ConcurrencyWin::showCommBoxFor(taskData *task)
+{
+  if (task->commSum.numComms == 0) {
+    fl_alert("Task has no communicastions to show.");
+  } else {
+    scroll->hide();
+
+    backBtn = new Fl_Button (10,35,50,25,"back");
+    backBtn->color(FL_GREEN);
+    backBtn->callback(backCallback, (void *)0);
+    add(backBtn);
+    backBtn->show();
+
+    Fl_Text_Buffer *buff = new Fl_Text_Buffer();
+    commBox = new Fl_Text_Display (0,65,w(),h()-65);
+    commBox->buffer(buff);
+    commBox->hide_cursor();
+    commBox->show();
+    resizable(commBox);
+
+    // Add the data to the text display:
+    // Title
+    char tmpText[2048];
+    snprintf (tmpText, sizeof(tmpText), "Communications for task %ld on locale %d:\n\n",
+              task->taskRec->taskId(), task->taskRec->nodeId());
+    commBox->insert(tmpText);
+
+    // Time reference
+    double startTime = task->beginRec->clock_time();
+
+    // Data lines
+    std::list<Event *>::iterator itr;
+    itr = task->commList.begin();
+    while (itr != task->commList.end()) {
+      E_fork *fp;
+      E_comm *cp;
+      switch ((*itr)->Ekind()) {
+        case Ev_fork:
+          fp = (E_fork *) *itr;
+          snprintf (tmpText, sizeof(tmpText), "[%f] %s to %d, argument size %d.\n",
+                    fp->clock_time() - startTime,
+                    (fp->fast() ? "Fast fork" : "Fork"),
+                     fp->dstId(), fp->argSize());
+          commBox->insert(tmpText);
+          break;
+        case Ev_comm:
+          cp = (E_comm *) *itr;
+          if (cp->isGet()) 
+            snprintf (tmpText, sizeof(tmpText), "[%f] Get from %d, total size %d, file %s:%ld\n",
+                      cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), cp->srcName(),
+                      cp->getLineNo());
+          else
+            snprintf (tmpText, sizeof(tmpText), "[%f] Put to %d, total size %d, file %s:%ld\n",
+                      cp->clock_time() - startTime, cp->dstId(), cp->totalLen(), cp->srcName(),
+                      cp->getLineNo());
+          commBox->insert(tmpText);
+          break;
+        default: // Do nothing
+          break;
+      }
+      itr++;
+    }
+
+    add(commBox);
+    redraw();
+  }
+}
+
+void ConcurrencyWin::showTaskBox() {
+  if (commBox != NULL) {
+    remove(commBox);
+    delete commBox;
+    commBox = NULL;
+    remove(backBtn);
+    delete(backBtn);
+    backBtn = NULL;
+    scroll->show();
+    resizable(scroll);
+    redraw();
+  }
+}
+
 
 // Concurrency Data 
 void ConcurrencyData::draw (void) {
@@ -103,6 +201,7 @@ int ConcurrencyData::handle(int event) {
 
 void ConcurrencyData::buildData(void) {
   Fl_Box *b;
+  Fl_Button *btn;
   char tmp[2048];
   int width = w();
   int height = h();
@@ -119,7 +218,7 @@ void ConcurrencyData::buildData(void) {
   std::list <DataModel::timelineEntry>::iterator tl_itr;
   std::list <DataModel::timelineEntry>::iterator tagStart;
 
-  taskData theTask;
+  taskData *theTask;
   bool done;
 
   drawData lineDrawData;
@@ -173,7 +272,7 @@ void ConcurrencyData::buildData(void) {
         case DataModel::Tl_Begin:
           if (tmpTagNo < parent->tagNum) {
             theTask =  VisData.getTaskData(parent->localeNum, tl_itr->second, tmpTagNo);
-            if (theTask.taskRec != NULL && theTask.endTagNo != tmpTagNo) {
+            if (theTask && theTask->taskRec != NULL && theTask->endTagNo != tmpTagNo) {
               // printf ("should be greedy: tag %ld\n", tl_itr->second);
               for (int i = 0; i < progMaxConc; i++) {
                 if (greedy[i] == 0) {
@@ -185,7 +284,7 @@ void ConcurrencyData::buildData(void) {
                 assert (i+1 != progMaxConc);
               }
             } else {
-              if (theTask.taskRec == NULL) 
+              if (theTask && theTask->taskRec == NULL) 
                 printf ("Didn't find task %ld/%ld in tag %ld\n", parent->localeNum,
                         tl_itr->second, tmpTagNo);
             }
@@ -242,9 +341,9 @@ void ConcurrencyData::buildData(void) {
       b->copy_label(tmp);
       add(b);
       theTask = VisData.getTaskData(parent->localeNum, greedy[curCol]);
-      if (theTask.taskRec && theTask.taskRec->isLocal()) {
-        snprintf (tmp, sizeof(tmp), "%s:%ld", theTask.taskRec->srcName(),
-                  theTask.taskRec->srcLine());
+      if (theTask && theTask->taskRec && theTask->taskRec->isLocal()) {
+        snprintf (tmp, sizeof(tmp), "%s:%ld", theTask->taskRec->srcName(),
+                  theTask->taskRec->srcLine());
         b->copy_tooltip(tmp);
       }
       if (curCol != col)
@@ -266,9 +365,10 @@ void ConcurrencyData::buildData(void) {
           break;
         }
         curCol = 0;
+        tmpTagNo = tl_itr->second;
         while (greedy[curCol] != 0) curCol++;
         snprintf (tmp, sizeof(tmp), "TAG: %s", 
-                  VisData.getTagData(tl_itr->second)->name.c_str());
+                  VisData.getTagData(tmpTagNo)->name);
         b = new Fl_Box(FL_BORDER_BOX, 10+60*curCol, 40+25*curLine,
                                8+7*strlen(tmp), 20, NULL);
         b->copy_label(tmp);
@@ -282,17 +382,29 @@ void ConcurrencyData::buildData(void) {
         greedy[curCol] = tl_itr->second; // store the task id
         greedyStart[curCol] = curLine;
         theTask = VisData.getTaskData(parent->localeNum,tl_itr->second, tmpTagNo);
-        b = new Fl_Box(FL_ROUNDED_BOX, 10+60*curCol,
-                               40+25*curLine, 70, 20, NULL);
+        btn = new Fl_Button(10+60*curCol, 40+25*curLine, 70, 20, NULL);
+        btn->box(FL_ROUNDED_BOX);
+        btn->down_box(FL_ROUNDED_BOX);
         snprintf (tmp, sizeof(tmp), "%c %ld", 
-                   theTask.taskRec->isLocal() ? 'L' : 'F', tl_itr->second);
-        b->copy_label(tmp);
-        add(b);
-        if (theTask.taskRec->isLocal()) {
-          snprintf (tmp, sizeof(tmp), "%s:%ld", theTask.taskRec->srcName(),
-                    theTask.taskRec->srcLine());
-          b->copy_tooltip(tmp);
+                   theTask->taskRec->isLocal() ? 'L' : 'F', tl_itr->second);
+        btn->copy_label(tmp);
+        btn->color(heatColor(theTask->taskClock,
+                             VisData.getTagData(parent->tagNum)->
+                             locales[parent->localeNum].maxTaskClock));
+        btn->down_color(btn->color());
+        btn->callback(taskCallback, (void *)theTask);
+        add(btn);
+        if (theTask->taskRec->isLocal()) {
+          snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF\n%s:%ld",
+                    theTask->taskClock, theTask->commSum.numGets,
+                    theTask->commSum.numPuts, theTask->commSum.numForks,
+                    theTask->taskRec->srcName(), theTask->taskRec->srcLine());
+        } else {;
+          snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF",
+                    theTask->taskClock, theTask->commSum.numGets,
+                    theTask->commSum.numPuts, theTask->commSum.numForks);
         }
+        btn->copy_tooltip(tmp);
         curLine++;
         break;
 

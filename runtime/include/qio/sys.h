@@ -32,7 +32,9 @@ extern "C" {
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#ifndef __CYGWIN__
 #include <netinet/tcp.h>
+#endif
 #include <netdb.h>
 #include <unistd.h>
 #include <stdio.h>

@@ -659,48 +659,11 @@ can be omitted and/or the domain of the array can be queried or
 omitted.  In such cases, the argument is generic and is discussed
 in~\rsec{Formal_Arguments_of_Generic_Array_Types}.
 
-If a non-queried domain is specified in the array type of a formal
-argument, the domain must match the domain of the actual argument.
-This is verified at runtime.  There is an exception if the domain is
-a rectangular domain, described
-in~\rsec{Formal_Arguments_of_Rectangular_Array_Type}.
-
-
-\subsection{Formal Arguments of Rectangular Array Type}
-\label{Formal_Arguments_of_Rectangular_Array_Type}
-\index{arguments!formal!rectangular arrays}
-\index{arrays!arguments!formal}
-\index{arrays!formal arguments}
-
-Formal arguments of rectangular array type allow a rectangular domain
-to be specified that does not match the rectangular domain of the
-actual rectangular array that is passed to the formal argument.  In
-this case, the shape (size in each dimension and rank) of the domain
-of the actual array must match the shape of the domain of the formal
-array.  The indices are translated in the formal array, which is a
-reference to the actual array.
-
-\begin{chapelexample}{actual-domain-strided.chpl}
-In the code
-\begin{chapelpre}
-config const c = 55;
-\end{chapelpre}
-\begin{chapel}
-proc foo(X: [1..5] int) { X = c; }
-var A: [1..10 by 2] int;
-foo(A);
-\end{chapel}
-\begin{chapelpost}
-writeln(A);
-\end{chapelpost}
-\begin{chapeloutput}
-55 55 55 55 55
-\end{chapeloutput}
-the array \chpl{A} is strided and its elements can be indexed by the
-odd integers between one and nine.  In the function \chpl{foo}, the
-array \chpl{X} references array \chpl{A} and the same elements can be
-indexed by the integers between one and five.
-\end{chapelexample}
+If a formal array argument specifies a domain as part of its type
+signature, the domain of the actual argument must represent the same
+index set.  If the formal array's domain was declared using an
+explicit domain map, the actual array's domain must use an equivalent
+domain map.
 
 
 \subsection{Array Promotion of Scalar Functions}
