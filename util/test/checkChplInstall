@@ -94,7 +94,7 @@ chpl_launcher="$($CHPL_HOME/util/chplenv/chpl_launcher.py)"
 TEST_COMP_OUT=${TEST_JOB}.comp.out
 
 # Compile test job into temporary directory
-chpl ${TEST_DIR}/${TEST_JOB}.chpl -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
+${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
 
 # Check that compile was successful
 COMPILE_STATUS=$?

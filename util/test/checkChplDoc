@@ -51,34 +51,8 @@ function log_error()
     echo "[ERROR] ${msg}" 1>&2
 }
 
-bin_name=chpl
-
-for opt in ${*:1} ; do
-case $opt in
-    --debug)
-        debug_chpl_test=true
-        ;;
-    --chpldoc)
-        bin_name=chpldoc
-        ;;
-    --help|-h|*)
-        cat<<EOF
-usage: $0
-
-  Runs hello world example programs to verify chpl installation is working
-  correctly. Exits with zero status code when successful. Expects chpl to be on
-  the PATH and CHPL_HOME to be set correctly.
-
-  By default, programs are compiled and run from \$HOME/.chpl/. Set
-  CHPL_CHECK_INSTALL_DIR environment variable to use an alternate location.
-
-  --chpldoc  Test chpldoc with the chpldoc primer, instead of the chpl.
-
-EOF
-        exit 0
-        ;;
-esac
-done
+# Test chpldoc with the chpldoc primer, instead of the chpl.
+bin_name=chpldoc
 
 CHPL_BIN=$(which ${bin_name} 2> /dev/null)
 

@@ -168,7 +168,7 @@ check: all
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 check-chpldoc: chpldoc
-	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall --chpldoc
+	@bash $(CHPL_MAKE_HOME)/util/test/checkChplDoc
 
 -include Makefile.devel
 
