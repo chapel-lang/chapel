@@ -5589,59 +5589,22 @@ GenRet CallExpr::codegen() {
     genFnName = "chpl_taskListAddCoStmt";
   }
   if (gotBCbCf) {
-    // get(1) is an end count symbol.
-    // get(2) is a buffer containing bundled arguments
-    // get(3) is the buffer's length (unused for task fns)
-    // get(4) is a dummy class type for the argument bundle
+    // get(1) is an task list value
+    // get(2) is the node ID owning the task list
+    // get(3) is a buffer containing bundled arguments
+    // get(4) is the buffer's length (unused for task fns)
+    // get(5) is a dummy class type for the argument bundle
 
-    GenRet endCountPtr = codegenValue(get(1));
+    GenRet taskList = codegenValue(get(1));
+    GenRet taskListNode = codegenValue(get(2));
+    GenRet taskBundle = codegenValue(get(3));
+
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
-    args[2] = codegenCastToVoidStar(codegenValue(get(2)));
-
-    Type *endCountType = endCountPtr.chplType;
-
-    // endCount is either an address or {locale, ptr} -- it is a class.
-    GenRet endCountValue = codegenValue(endCountPtr);
-    GenRet taskList;
-
-    if (endCountType->symbol->hasFlag(FLAG_WIDE_REF)) {
-      GenRet node = codegenRnode(endCountValue);
-      while(endCountValue.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF)){
-        endCountValue = codegenLocalDeref(endCountValue);
-      }
-      // Now, we should have a wide pointer to a class
-      // make it into a local pointer to a class.
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList")); 
-      taskList = codegenTernary(
-                       codegenNotEquals(node, codegenGetNodeID()),
-                       codegenNullPointer(),
-                       taskList);
-    } else if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      GenRet node = codegenRnode(endCountValue);
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-      taskList = codegenTernary(
-                     codegenNotEquals(node, codegenGetNodeID()),
-                     codegenNullPointer(),
-                     taskList);
-    } else if (endCountType->symbol->hasFlag(FLAG_REF)) {
-      endCountValue = codegenDeref(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    } else {
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    }
-
+    args[2] = codegenCastToVoidStar(taskBundle);
     args[3] = taskList;
-
-    if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      args[4] = codegenRnode(endCountPtr);
-    } else {
-      args[4] = codegenGetNodeID();
-    }
-
+    args[4] = codegenValue(taskListNode);
     args[5] = fn->linenum();
     args[6] = fn->fname();
 
