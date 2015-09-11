@@ -4,19 +4,6 @@
    is available in doc/technotes/README.extern.
  */
 
-// allow casts from c_ptr(c_char) to c_string
-pragma "no doc"
-inline proc _cast(type t, x) where t:c_string && x.type:c_ptr(c_char) {
-    return __primitive("cast", t, x);
-}
-
-// allow casts from c_string to c_ptr(c_char)
-pragma "no doc"
-inline proc _cast(type t, x) where t:c_ptr(c_char) && x.type:c_string {
-    return __primitive("cast", t, x);
-}
-
-
 
 // Use the Time module to time some C vs Chapel tests
 use Time;
@@ -99,4 +86,24 @@ if !quiet {
 
 // Demonstrate c_calloc and c_free
 c_free(hostname_ptr);
+
+
+
+
+// The following two routines are currently required in this module
+// but should be in the standard modules.
+
+// allow casts from c_ptr(c_char) to c_string
+pragma "no doc"
+inline proc _cast(type t, x) where t:c_string && x.type:c_ptr(c_char) {
+    return __primitive("cast", t, x);
+}
+
+// allow casts from c_string to c_ptr(c_char)
+pragma "no doc"
+inline proc _cast(type t, x) where t:c_ptr(c_char) && x.type:c_string {
+    return __primitive("cast", t, x);
+}
+
+
 
