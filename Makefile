@@ -164,7 +164,7 @@ clobber: FORCE
 depend:
 	@echo "make depend has been deprecated for the time being"
 
-check: all third-party-test-venv
+check: all
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 check-chpldoc: chpldoc
