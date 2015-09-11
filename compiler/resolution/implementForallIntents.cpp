@@ -1418,12 +1418,13 @@ void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall) {
 }
 
 // Heuristically find the wrapped call.
+// Keep in sync with unresolveWrapper() below.
 static CallExpr* findWrappedCall(FnSymbol* wrapper) {
   CallExpr* ret = toCallExpr(wrapper->body->body.tail);
   INT_ASSERT(ret->isPrimitive(PRIM_RETURN));
   // We want the third-last statement.
   CallExpr* move = toCallExpr(ret->prev->prev);
-  INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+  INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
   INT_ASSERT(!strcmp(toSymExpr(move->get(1))->var->name, "wrap_call_tmp"));
   CallExpr* wCall = toCallExpr(move->get(2));
   INT_ASSERT(wCall);
@@ -1435,6 +1436,25 @@ static CallExpr* findWrappedCall(FnSymbol* wrapper) {
 static void ifi2checkAssumptions(FnSymbol* dest) {
   INT_ASSERT(dest->hasFlag(FLAG_ITERATOR_FN));
   INT_ASSERT(isLeaderIterator(dest) || isStandaloneIterator(dest));
+}
+
+// Cause 'wrapper' to be resolved anew.
+static void unresolveWrapper(FnSymbol* wrapper) {
+  wrapper->removeFlag(FLAG_RESOLVED);
+
+  // like findWrappedCall() above
+  CallExpr* retCall = toCallExpr(wrapper->body->body.tail);
+  INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
+  SymExpr* retSE = toSymExpr(retCall->get(1));
+  INT_ASSERT(retSE && !strcmp(retSE->var->name, "ret"));
+  CallExpr* move = toCallExpr(retCall->prev);
+  INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+  INT_ASSERT(toSymExpr(move->get(1))->var == retSE->var);
+  SymExpr* wrapSE = toSymExpr(move->get(2));
+  INT_ASSERT(wrapSE && !strcmp(wrapSE->var->name, "wrap_call_tmp"));
+
+  // the type of these needs to be resolved anew
+  retSE->var->type = wrapSE->var->type = dtUnknown;
 }
 
 // Handle the wrapper if applicable.
@@ -1493,5 +1513,17 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
 
     INT_ASSERT(call->numActuals()  == savedNumArgsC + numExtraArgs);
     INT_ASSERT(wCall->numActuals() == savedNumArgsW + numExtraArgs);
+
+    // We cloned the wrapper 'dest' into 'wDest'.  wDest's call 'wCall'
+    // now invokes a clone of the iterator that 'dest' was invoking.
+    // The above code modifies both 'wCall' and the iterator that it invokes.
+    // Alas, 'wCall' inherits FLAG_RESOLVED and its return type from 'dest'
+    // and these are no longer appropriate due to these modifications.
+    //
+    // So 'wDest' needs to be resolved again. To make that happen,
+    // we un-resolve its relevant pieces.
+    //
+    if (wDest->isResolved())
+      unresolveWrapper(wDest);
   }
 }
