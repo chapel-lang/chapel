@@ -2359,14 +2359,19 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isComplexType(t) return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isTupleType(t) {
-    for param i in 1..x.size {
-      if !chpl__supportedDataTypeForBulkTransfer(x[i]) then return false;
-    }
-    return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) || isTupleType(t) {
+    // TODO: The current implementations of isPODType and
+    //       supportedDataTypeForBulkTransfer do not completely align. I'm
+    //       leaving it as future work to enable bulk transfer for other types
+    //       that are POD. In the long run it seems like we should be able to
+    //       have only one method for supportedDataType that just calls
+    //       isPODType.
+
+    // We can bulk transfer any record or tuple that is 'Plain Old Data' ie. a
+    // bag of bits
+    return isPODType(t);
   }
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
   
