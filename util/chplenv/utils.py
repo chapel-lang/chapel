@@ -35,18 +35,7 @@ def get_compiler_version(compiler):
     if 'gnu' in compiler:
         version_string = run_command(['gcc', '-dumpversion'])
     elif 'cray' in compiler:
-        match = None
-        # make sure that the cray compiler is available
-        cray_loaded = os.environ.get('PE_ENV').lower() == 'cray'
-        if cray_loaded:
-            # version info goes to stderr
-            version_output = run_command(['cc', '-V'], stderr=True)
-            version_line = version_output[0] + version_output[1]
-            match = re.search('.* Version (.*) .*', version_line)
-        if match:
-            version_string=match.group(1)
-        else:
-            raise ValueError("Could not detect cray compiler version number")
+        version_string = os.environ.get('CRAY_CC_VERSION', '0')
     return CompVersion(version_string)
 
 # Takes a version string of the form 'major', 'major.minor',
@@ -64,7 +53,8 @@ def CompVersion(version_string):
         build    = int(match.group(7) or 0)
         return CompVersionT(major=major, minor=minor, revision=revision, build=build)
     else:
-        raise ValueError("Could not convert version to tuple")
+        raise ValueError("Could not convert version '{0}' to "
+                         "a tuple".format(version_string))
 
 class CommandError(Exception):
     pass
