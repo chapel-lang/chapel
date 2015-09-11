@@ -606,59 +606,64 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
       i++;
     }
   }
- 
+
   // Find the _EndCount argument so we can pass that explicitly as the
   // first argument to a task launch function.
   Symbol* endCount = NULL;
-  for_actuals(arg, fcall) {
-    bool strcmp_found = false;
-    bool type_found = false;
+  VarSymbol *taskList = NULL;
+  VarSymbol *taskListNode = NULL;
 
-    Type* baseType = arg->getValType();
-    if (baseType->symbol->hasFlag(FLAG_END_COUNT)) {
-      type_found = true;
+  if (!fn->hasFlag(FLAG_ON)) {
+    for_actuals(arg, fcall) {
+      bool strcmp_found = false;
+      bool type_found = false;
+
+      Type* baseType = arg->getValType();
+      if (baseType->symbol->hasFlag(FLAG_END_COUNT)) {
+        type_found = true;
+      }
+
+      // This strcmp code was moved from expr.cpp codegen,
+      // but there has got to be a better way to do this! 
+      if (strstr(baseType->symbol->name, "_EndCount") != NULL) {
+        strcmp_found = true;
+      }
+
+      // If this assert never fires, we can remove the strcmp version.
+      INT_ASSERT(type_found == strcmp_found);
+
+      if( type_found || strcmp_found ) {
+        SymExpr* symexp = toSymExpr(arg);
+        endCount = symexp->var;
+
+        // Turns out there can be more than one such field. See e.g.
+        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
+        // INT_ASSERT(endCountField == 0);
+        // We have historically picked the first such field.
+        break;
+      }
     }
 
-    // This strcmp code was moved from expr.cpp codegen,
-    // but there has got to be a better way to do this! 
-    if (strstr(baseType->symbol->name, "_EndCount") != NULL) {
-      strcmp_found = true;
-    }
+    INT_ASSERT(endCount);
 
-    // If this assert never fires, we can remove the strcmp version.
-    INT_ASSERT(type_found == strcmp_found);
+    // Now get the taskList field out of the end count.
 
-    if( type_found || strcmp_found ) {
-      SymExpr* symexp = toSymExpr(arg);
-      endCount = symexp->var;
+    taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+    fcall->insertBefore(new DefExpr(taskList));
+    fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
+                                     new CallExpr(PRIM_GET_MEMBER,
+                                                  endCount,
+                                                  endCount->typeInfo()->getField("taskList"))));
 
-      // Turns out there can be more than one such field. See e.g.
-      //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
-      // INT_ASSERT(endCountField == 0);
-      // We have historically picked the first such field.
-      break;
-    }
+
+    // Now get the node ID field for the end count,
+    // which is where the task list is stored.
+    taskListNode = newTemp(astr("_taskListNode", fn->name), dtInt[INT_SIZE_DEFAULT]);
+    fcall->insertBefore(new DefExpr(taskListNode));
+    fcall->insertBefore(new CallExpr(PRIM_MOVE, taskListNode,
+                                     new CallExpr(PRIM_WIDE_GET_NODE,
+                                                  endCount)));
   }
-
-  INT_ASSERT(endCount);
-
-  // Now get the taskList field out of the end count.
-
-  taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
-  fcall->insertBefore(new DefExpr(taskList));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
-                                   new CallExpr(PRIM_GET_MEMBER,
-                                                endCount,
-                                                endCount->typeInfo()->getField("taskList"))));
-
-
-  // Now get the node ID field for the end count,
-  // which is where the task list is stored.
-  taskListNode = newTemp(astr("_taskListNode", fn->name), dtInt[INT_SIZE_DEFAULT]);
-  fcall->insertBefore(new DefExpr(taskListNode));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, taskListNode,
-                                   new CallExpr(PRIM_WIDE_GET_NODE,
-                                                endCount)));
 
   // create wrapper-function that uses the class instance
   create_block_fn_wrapper(fn, fcall, baData);
