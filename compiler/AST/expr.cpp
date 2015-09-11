@@ -5418,13 +5418,6 @@ GenRet CallExpr::codegen() {
         ret = codegenBasicPrimitiveExpr(this);
       break;
     }
-    case PRIM_MEMCPY:
-    {
-      // memcpy(dst, src, len)
-      codegenCall("memcpy", get(1), get(2), get(3));
-      break;
-    }
-
     case PRIM_CAST_TO_VOID_STAR:
     {
       Type* t = get(1)->typeInfo();
