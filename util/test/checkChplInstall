@@ -93,8 +93,11 @@ chpl_launcher="$($CHPL_HOME/util/chplenv/chpl_launcher.py)"
 # Log file for compile output
 TEST_COMP_OUT=${TEST_JOB}.comp.out
 
+# Necessary to suppress warnings when WARNINGS=1 (e.g. nightly build settings)
+COMP_FLAGS="--cc-warnings"
+
 # Compile test job into temporary directory
-${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
+${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
 
 # Check that compile was successful
 COMPILE_STATUS=$?
