@@ -1,8 +1,8 @@
 // Stress test for parallel correctness.
 
 config var
-  r = 30000,  // how many times to repeat
-  d = 250,    // each dimension of the domain and array
+  r = 15000,  // how many times to repeat
+  d = 100,    // each dimension of the domain and array
   f = 5000;   // frequency of reports, 0 if none
 
 var nErr = 0;

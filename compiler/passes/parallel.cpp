@@ -111,7 +111,7 @@ static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 static void insertEndCounts();
 static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions);
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* endCount);
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
@@ -615,20 +615,13 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     bool type_found = false;
 
     Type* baseType = arg->getValType();
-    if (baseType == dtEndCount) {
+    if (baseType->symbol->hasFlag(FLAG_END_COUNT)) {
       type_found = true;
     }
 
     // This strcmp code was moved from expr.cpp codegen,
     // but there has got to be a better way to do this! 
-    if (!strcmp(arg->typeInfo()->symbol->name,
-                "_ref(_EndCount)")
-        || !strcmp(arg->typeInfo()->symbol->name,
-                   "__wide__ref__wide__EndCount")
-        || !strcmp(arg->typeInfo()->symbol->name,
-                   "_EndCount")
-        || !strcmp(arg->typeInfo()->symbol->name,
-                   "__wide__EndCount")) {
+    if (strstr(baseType->symbol->name, "_EndCount") != NULL) {
       strcmp_found = true;
     }
 
@@ -647,9 +640,29 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     }
   }
 
+  INT_ASSERT(endCount);
+
+  // Now get the taskList field out of the end count.
+
+  taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+  fcall->insertBefore(new DefExpr(taskList));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
+                                   new CallExpr(PRIM_GET_MEMBER,
+                                                endCount,
+                                                endCount->typeInfo()->getField("taskList"))));
+
+
+  // Now get the node ID field for the end count,
+  // which is where the task list is stored.
+  taskListNode = newTemp(astr("_taskListNode", fn->name), dtInt[INT_SIZE_DEFAULT]);
+  fcall->insertBefore(new DefExpr(taskListNode));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, taskListNode,
+                                   new CallExpr(PRIM_WIDE_GET_NODE,
+                                                endCount)));
+
   // create wrapper-function that uses the class instance
   create_block_fn_wrapper(fn, fcall, baData);
-  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, endCount);
+  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, taskList, taskListNode);
   baData.firstCall = false;
 }
 
@@ -698,15 +711,20 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     localeArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(localeArg);
   } else {
-    // create an EndCount argument.
-    ArgSymbol *endCountArg = new ArgSymbol( INTENT_IN, "dummy_endCount", 
-                                            dtEndCount );
-    endCountArg->addFlag(FLAG_NO_CODEGEN);
-    wrap_fn->insertFormalAtTail(endCountArg);
+    // create a task list argument.
+    ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
+                                            dtTaskList->refType );
+    taskListArg->addFlag(FLAG_NO_CODEGEN);
+    wrap_fn->insertFormalAtTail(taskListArg);
+    ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 
+                                             dtInt[INT_SIZE_DEFAULT]);
+    taskListNode->addFlag(FLAG_NO_CODEGEN);
+    wrap_fn->insertFormalAtTail(taskListNode);
   }
 
   ArgSymbol *allocated_args = new ArgSymbol( INTENT_IN, "buf", dtCVoidPtr);
   wrap_fn->insertFormalAtTail(allocated_args);
+  //allocated_args->addFlag(FLAG_NO_CODEGEN);
   ArgSymbol *allocated_sz = new ArgSymbol( INTENT_IN, "buf_size",  dtInt[INT_SIZE_DEFAULT]);
   allocated_sz->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(allocated_sz);
@@ -818,7 +836,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   baData.wrap_fn = wrap_fn;
 }
 
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* endCount)
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode)
 {
   // The wrapper function is called with the bundled argument list.
   if (fn->hasFlag(FLAG_ON)) {
@@ -827,11 +845,11 @@ static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args
     // The forking function uses this to fork a task on the target locale.
     fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), args_buf, args_buf_len, tempc));
   } else {
-    // For non-on blocks, the end count is passed directly to the function
+    // For non-on blocks, the task list is passed directly to the function
     // (so that codegen can find it).
-    // We need the endCount.
-    INT_ASSERT(endCount);
-    fcall->insertBefore(new CallExpr(wrap_fn, new SymExpr(endCount), args_buf, args_buf_len, tempc));
+    // We need the taskList.
+    INT_ASSERT(taskList);
+    fcall->insertBefore(new CallExpr(wrap_fn, new SymExpr(taskList), new SymExpr(taskListNode), args_buf, args_buf_len, tempc));
   }
 
   if (fn->hasFlag(FLAG_ON))

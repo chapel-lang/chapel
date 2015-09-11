@@ -278,7 +278,7 @@ static void moveLinenoInsideArgBundle()
     //  argument bundle, and the on-block expects an additional argument
     //  that is the locale on which it should be executed.
     if ((fn->numFormals() > 4 && fn->hasFlag(FLAG_ON_BLOCK)) ||
-        (fn->numFormals() > 4 && !fn->hasFlag(FLAG_ON_BLOCK) &&
+        (fn->numFormals() > 5 && !fn->hasFlag(FLAG_ON_BLOCK) &&
          (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
           fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)))) {
 

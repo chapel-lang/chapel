@@ -25,7 +25,19 @@
 #include "ViewField.h"   // for heatColor
 
 #include <FL/fl_draw.H>
-#include <FL/Fl_Button.H>
+#include <FL/fl_ask.H>
+
+// Callback for this window
+
+void backCallback (Fl_Widget *w, void *p) {
+  ConcurrencyWin *win = (ConcurrencyWin *)w->window();
+  win->showTaskBox();
+}
+
+void taskCallback (Fl_Widget *w, void *p) {
+  ConcurrencyWin *win = (ConcurrencyWin *)w->window();
+  win->showCommBoxFor((taskData *)p);
+}
 
 ConcurrencyWin::ConcurrencyWin (int x, int y, int W, int H, const char *l)
   :  Fl_Double_Window (W, H, l)
@@ -45,6 +57,89 @@ void ConcurrencyWin::updateData (long loc, long tag)
   dataBox->buildData();
   redraw();
 }
+
+void ConcurrencyWin::showCommBoxFor(taskData *task)
+{
+  if (task->commSum.numComms == 0) {
+    fl_alert("Task has no communicastions to show.");
+  } else {
+    scroll->hide();
+
+    backBtn = new Fl_Button (10,35,50,25,"back");
+    backBtn->color(FL_GREEN);
+    backBtn->callback(backCallback, (void *)0);
+    add(backBtn);
+    backBtn->show();
+
+    Fl_Text_Buffer *buff = new Fl_Text_Buffer();
+    commBox = new Fl_Text_Display (0,65,w(),h()-65);
+    commBox->buffer(buff);
+    commBox->hide_cursor();
+    commBox->show();
+    resizable(commBox);
+
+    // Add the data to the text display:
+    // Title
+    char tmpText[2048];
+    snprintf (tmpText, sizeof(tmpText), "Communications for task %ld on locale %d:\n\n",
+              task->taskRec->taskId(), task->taskRec->nodeId());
+    commBox->insert(tmpText);
+
+    // Time reference
+    double startTime = task->beginRec->clock_time();
+
+    // Data lines
+    std::list<Event *>::iterator itr;
+    itr = task->commList.begin();
+    while (itr != task->commList.end()) {
+      E_fork *fp;
+      E_comm *cp;
+      switch ((*itr)->Ekind()) {
+        case Ev_fork:
+          fp = (E_fork *) *itr;
+          snprintf (tmpText, sizeof(tmpText), "[%f] %s to %d, argument size %d.\n",
+                    fp->clock_time() - startTime,
+                    (fp->fast() ? "Fast fork" : "Fork"),
+                     fp->dstId(), fp->argSize());
+          commBox->insert(tmpText);
+          break;
+        case Ev_comm:
+          cp = (E_comm *) *itr;
+          if (cp->isGet()) 
+            snprintf (tmpText, sizeof(tmpText), "[%f] Get from %d, total size %d, file %s:%ld\n",
+                      cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), cp->srcName(),
+                      cp->getLineNo());
+          else
+            snprintf (tmpText, sizeof(tmpText), "[%f] Put to %d, total size %d, file %s:%ld\n",
+                      cp->clock_time() - startTime, cp->dstId(), cp->totalLen(), cp->srcName(),
+                      cp->getLineNo());
+          commBox->insert(tmpText);
+          break;
+        default: // Do nothing
+          break;
+      }
+      itr++;
+    }
+
+    add(commBox);
+    redraw();
+  }
+}
+
+void ConcurrencyWin::showTaskBox() {
+  if (commBox != NULL) {
+    remove(commBox);
+    delete commBox;
+    commBox = NULL;
+    remove(backBtn);
+    delete(backBtn);
+    backBtn = NULL;
+    scroll->show();
+    resizable(scroll);
+    redraw();
+  }
+}
+
 
 // Concurrency Data 
 void ConcurrencyData::draw (void) {
@@ -101,13 +196,6 @@ void ConcurrencyData::draw (void) {
 
 int ConcurrencyData::handle(int event) {
   return Fl_Group::handle(event);
-}
-
-
-// Callback for tasks
-
-void taskCallback (Fl_Widget *w, void *p) {
-  printf ("taskCallback! \n");
 }
 
 
@@ -304,7 +392,7 @@ void ConcurrencyData::buildData(void) {
                              VisData.getTagData(parent->tagNum)->
                              locales[parent->localeNum].maxTaskClock));
         btn->down_color(btn->color());
-        // btn->callback(taskCallback, (void *)theTask);
+        btn->callback(taskCallback, (void *)theTask);
         add(btn);
         if (theTask->taskRec->isLocal()) {
           snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF\n%s:%ld",

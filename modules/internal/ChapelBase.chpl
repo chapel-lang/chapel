@@ -827,6 +827,7 @@ module ChapelBase {
   
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
 
+  pragma "end count"
   pragma "no default functions"
   class _EndCount {
     type iType;
