@@ -106,7 +106,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
 
   case PRIM_STRING_COPY:
   case PRIM_C_STRING_FROM_STRING:
-  case PRIM_MEMCPY:
   case PRIM_CAST_TO_VOID_STAR:
   case PRIM_SIZEOF:
 
