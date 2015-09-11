@@ -475,15 +475,15 @@ qioerr qio_proc_communicate(
     FD_ZERO(&wfds);
     FD_ZERO(&efds);
 
-    if( do_input ) {
+    if( do_input && input_fd != -1 ) {
       FD_SET(input_fd, &wfds);
       FD_SET(input_fd, &efds);
     }
-    if( do_output ) {
+    if( do_output && output_fd != -1 ) {
       FD_SET(output_fd, &rfds);
       FD_SET(output_fd, &efds);
     }
-    if( do_error ) {
+    if( do_error && error_fd != -1 ) {
       FD_SET(error_fd, &rfds);
       FD_SET(error_fd, &efds);
     }
