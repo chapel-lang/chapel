@@ -556,20 +556,39 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     Type* t = arg->typeInfo();
     FnSymbol* autoSerialize = getAutoSerialize(t);
 
-    VarSymbol* ref = newTemp(astr("_ref_field_b", fn->name, istr(i)),
+    /*VarSymbol* ref = newTemp(astr("_ref_field_b", fn->name, istr(i)),
                              getOrMakeRefTypeDuringCodegen(arg->typeInfo()));
     ref->addFlag(FLAG_REF_TEMP);
     fcall->insertBefore(new DefExpr(ref));
     fcall->insertBefore(new CallExpr(PRIM_MOVE, ref,
                                      new CallExpr(PRIM_ADDR_OF, var)));
+    */
+
+    Type* refType = getOrMakeRefTypeDuringCodegen(t);
 
     if( baData.useSerialize[i] && autoSerialize ) {
       // autoSerialize(arg, bundle_buf)
       // bundle_buf += field_serialized_size
-      fcall->insertBefore(new CallExpr(autoSerialize, ref, bundle_buf));
+      CallExpr* serializeCall = new CallExpr(autoSerialize, var, bundle_buf);
+      fcall->insertBefore(serializeCall);
+      insertReferenceTemps(serializeCall);
     } else {
-      // bit copy
-      fcall->insertBefore(new CallExpr(PRIM_MEMCPY, bundle_buf, ref, serializedSize[i]));
+      // PRIM_MOVE is bit-copy, so:
+      // PRIM_MOVE (*vartype) bundle_buf var
+      // or 
+      // PRIM_MOVE (PRIM_DEREF (*vartype) bundle_buf) var
+      // This needs to translate in the C code to
+      // memcpy(bundle_buf, &var, sizeof(var))
+      // because the bundle_buf is not properly aligned.
+
+      VarSymbol* cast_buf = newTemp(astr("_ref_buf", fn->name, istr(i)),
+                                    refType);
+      cast_buf->addFlag(FLAG_UNALIGNED_REF);
+      fcall->insertBefore(new DefExpr(cast_buf));
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, cast_buf,
+                                       new CallExpr(PRIM_CAST, refType->symbol, bundle_buf)));
+
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, cast_buf, var));
     }
     fcall->insertBefore(new CallExpr(PRIM_ADD_ASSIGN,
                                      bundle_buf, serializedSize[i]));
@@ -717,25 +736,43 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     VarSymbol* tmp = newTemp(field->name, field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
 
+    Type* refType = getOrMakeRefTypeDuringCodegen(t);
+
+    /*
     VarSymbol* ref = newTemp("_field_ref", getOrMakeRefTypeDuringCodegen(t));
     ref->addFlag(FLAG_REF_TEMP);
     wrap_fn->insertAtTail(new DefExpr(ref));
     wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, ref,
                                      new CallExpr(PRIM_ADDR_OF, tmp)));
+                                     */
 
     FnSymbol* autoDeserialize = getAutoDeserialize(t);
 
     if (baData.useSerialize[i]) {
       // bytes_handled = autoDeserialize(tmp, bundle_buf)
-      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz,
-                                     new CallExpr(autoDeserialize, ref, bundle_buf)));
+      CallExpr* deserCall = new CallExpr(autoDeserialize, tmp, bundle_buf);
+      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz, deserCall));
+      insertReferenceTemps(deserCall);
     } else {
+      // PRIM_MOVE is a bit-copy, so:
+      // PRIM_MOVE var (PRIM_DEREF (vartype*) bundle_buf)
       // bytes_handled = sizeof(type);
-      // memcpy(tmp, bundle_buf, bytes_handled)
+      // This needs to translate in the C code to
+      // memcpy(&var, bundle_buf, sizeof(var))
+      // because the bundle_buf is not properly aligned.
+      
+      VarSymbol* cast_buf = newTemp(astr("_ref_buf", fn->name, istr(i)),
+                                    refType);
+      cast_buf->addFlag(FLAG_UNALIGNED_REF);
+      wrap_fn->insertAtTail(new DefExpr(cast_buf));
+      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, cast_buf,
+                                       new CallExpr(PRIM_CAST, refType->symbol, bundle_buf)));
+
+      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                  new CallExpr(PRIM_DEREF, cast_buf)));
+
       wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz,
-                                   new CallExpr(PRIM_SIZEOF,
-                                                tmp)));
-      wrap_fn->insertAtTail(new CallExpr(PRIM_MEMCPY, ref, bundle_buf, tmpfieldsz));
+                                         new CallExpr(PRIM_SIZEOF, tmp)));
     }
 
     // add to bundle_buf the number of bytes handled
