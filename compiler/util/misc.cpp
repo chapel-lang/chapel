@@ -251,7 +251,6 @@ printErrorHeader(BaseAST* ast) {
 
 
 static void printErrorFooter(bool guess) {
-  fprintf(stderr, "I'm in!");
   if (developer)
     fprintf(stderr, " [%s:%d]", err_filename, err_lineno);
 
@@ -259,7 +258,8 @@ static void printErrorFooter(bool guess) {
     fprintf(stderr, "\n(this source location is a guess)");
   }
   if (!developer) {
-    fprintf(stderr, "\nThis is the new apology message which references %s\n", 
+    fprintf(stderr, "\n\n"
+            "This is the new apology message which references %s\n", 
             help_url);
   }
   if (!err_user && !developer && err_fatal)
