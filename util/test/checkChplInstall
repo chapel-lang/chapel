@@ -26,29 +26,15 @@
 # environment variable.
 
 
-
-# TODO:
-#   4.5 Stage, commit, push to dev branch
-#
-#   5. Test on machines:
-#       * tiger (module swap PrgEnv-{cray,gnu})
-#       * kay-esl (module swap PrgEnv-{cray,gnu})
-#       * OS X (this guy)
-#       * sealcs01 (linux)
-#       * mork (pbs-system) -> should fail
-#       * stpwchap (Cygwin - ask someone how to do this)
-
-
 # Base name for test job in $CHPL_HOME/test/release/examples
 TEST_JOB_BASENAME=hello6-taskpar-dist
 
 err() {
-    #echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] error: $@" >&2
     echo "error: $@" >&2
 }
 
 # Notify user we are running this script
-echo "Running minimal test script, checkChplInstall"
+echo "Running minimal test script: checkChplInstall"
 
 BIN_NAME=chpl
 
@@ -95,24 +81,27 @@ else
     exit 1
 fi
 
-# Create temporary directory with randomly generated name, for test job
 TMP_TEST_DIR="$(mktemp -d ${CHPL_DIR}/chapel-test-XXXXX)"
 echo "Temporary test job directory: ${TMP_TEST_DIR}"
 
-# Single test job (subject to change in future)
 TEST_JOB=${TEST_JOB_BASENAME}
 
 # Collect comm protocol environment variables (lowercase to avoid conflicts)
 chpl_comm="$($CHPL_HOME/util/chplenv/chpl_comm.py)"
 chpl_launcher="$($CHPL_HOME/util/chplenv/chpl_launcher.py)"
 
+# Log file for compile output
+TEST_COMP_OUT=${TEST_JOB}.comp.out
+
 # Compile test job into temporary directory
-chpl ${TEST_DIR}/${TEST_JOB}.chpl -o ${TMP_TEST_DIR}/${TEST_JOB}
+chpl ${TEST_DIR}/${TEST_JOB}.chpl -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
 
 # Check that compile was successful
 COMPILE_STATUS=$?
 if [ ${COMPILE_STATUS} -ne 0 ]; then
     err "Test job failed to compile, Chapel is not installed correctly"
+    echo "Compilation output:"
+    cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
     exit 1
 else
     echo "Test job compiled into ${TMP_TEST_DIR}/${TEST_JOB}"
@@ -144,6 +133,8 @@ else
     exit 10
 fi
 
+TEST_EXEC_OUT=${TEST_JOB}.exec.out
+
 # Run compiled binary with parsed execution options
 (
     cd ${TMP_TEST_DIR}
@@ -151,25 +142,25 @@ fi
     EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
     echo "Running test job"
-    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} > ${TEST_JOB}.exec.out 2>&1
+    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} > ${TEST_EXEC_OUT} 2>&1
     echo "Test job complete"
 
     # Quick test to verify fail case
-    #echo "this should break the test" >> ${TEST_JOB}.out
+    #echo "this should break the test" >> ${TEST_EXEC_OUT}
 
 )
 
-
-# Call diff on the output with .good file
-DIFF_OUTPUT="$(diff -q ${TMP_TEST_DIR}/${TEST_JOB}.exec.out ${GOOD})"
+# Check result
+DIFF_OUTPUT=$(diff -q ${TMP_TEST_DIR}/${TEST_EXEC_OUT} ${GOOD})
 
 # Return 0 if diff is good
 if [ -z "${DIFF_OUTPUT}" ]; then
     echo "Installation works as expected!"
     exit 0
 else
-    echo "There was an issue with the installation"
-    echo "diff log:"
-    echo "$(diff ${TMP_TEST_DIR}/${TEST_JOB}.out ${TEST_DIR}/${TEST_JOB}.comm-none.good)"
+    echo "There was an issue with the installation, test job output incorrect"
+    echo "== Log =="
+    echo "diff ${TMP_TEST_DIR}/${TEST_EXEC_OUT} ${GOOD}"
+    echo "$(diff ${TMP_TEST_DIR}/${TEST_EXEC_OUT} ${GOOD})"
     exit 10
 fi
