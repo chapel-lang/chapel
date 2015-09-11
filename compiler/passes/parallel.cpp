@@ -1673,8 +1673,6 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
       bundleArgs(call, baData);
     }
 
-    // does this need to apply to other arguments as well?
-    /*
     if (fn->hasFlag(FLAG_ON))
     {
       // Now we can remove the dummy locale arg from the on_fn
@@ -1687,7 +1685,7 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
           sym->getStmtExpr()->remove();
       }
       localeArg->remove();
-    }*/
+    }
   }
 }
 
