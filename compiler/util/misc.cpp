@@ -36,7 +36,7 @@
 #include <sys/stat.h>
 
 
-static const char* help_url = "http://chapel.cray.com/getinvolved.html";
+static const char* help_url = "http://chapel.cray.com/bugs.html";
 
 static void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -252,14 +252,17 @@ printErrorHeader(BaseAST* ast) {
 
 static void printErrorFooter(bool guess) {
   if (developer)
-    fprintf(stderr, " [%s:%d]", err_filename, err_lineno);
+    fprintf(stderr, " [%s:%d]\n", err_filename, err_lineno);
 
   if (guess) {
-    fprintf(stderr, "\n(this source location is a guess)");
+    fprintf(stderr, "Note: This source location is a guess.\n");
   }
   if (!developer) {
-    fprintf(stderr, "\n\n"
-            "This is the new apology message which references %s\n", 
+    fprintf(stderr, "\n"
+            "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
+            "and we're sorry for the hassle.  We would appreciate your reporting this bug -- \n"
+            "please see %s for instructions.  In the meantime,\n"
+            "the filename + line number above may be useful in working around the issue.\n\n", 
             help_url);
   }
   if (!err_user && !developer && err_fatal)
@@ -340,8 +343,6 @@ void handleError(const char *fmt, ...) {
 
   printErrorFooter(guess);
 
-  fprintf(stderr, "\n");
-
   printCallStackOnError();
 
   if (!err_user && !developer)
@@ -390,8 +391,6 @@ static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args
 
   if (file == stderr)
     printErrorFooter(guess);
-
-  fprintf(file, "\n");
 
   if (file == stderr)
     printCallStackOnError();
