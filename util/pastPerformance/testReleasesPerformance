@@ -87,6 +87,8 @@ export CHPL_TEST_PERF_DATE="03/25/15"
 export CHPL_HOME=$chpl_release_home/chapel-1.11.0
 testReleasePerformance
 
+export -n CHPL_TEST_PERF_DATE
+export CHPL_HOME=$CHPL_HOME_ORIG
 start_test --gen-graphs
 
 #
