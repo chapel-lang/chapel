@@ -33,8 +33,49 @@
 #include <unistd.h>
 #include <spawn.h>
 
+// We need to be able to call malloc, free, etc.
+#include "chpl-mem-no-warning-macros.h"
+
 // current environment variables
 extern char** environ;
+
+/* Helper routines for allocating out of the C
+   heap instead of the Chapel one. That is necessary
+   since the Chapel heap might not be available to
+   a forked process, and we need args for exec
+   (command, arguments, environment) to be available
+   after a fork.
+
+   Using these routines resolves problems with
+    * Gasnet/aries with segment=fast
+    * Gasnet/udp with segment=fast
+ */
+
+const char* qio_spawn_strdup(const char* str)
+{
+  size_t len = strlen(str);
+  char* ret = malloc(len + 1);
+  // note: also copies '\0' at end of string.
+  memcpy(ret, str, len + 1);
+  return ret;
+}
+
+const char** qio_spawn_allocate_ptrvec(size_t count)
+{
+  char** ret = calloc(count, sizeof(char*));
+  return (const char**) ret;
+}
+
+void qio_spawn_free_ptrvec(const char** args)
+{
+  free((void*) args);
+}
+
+void qio_spawn_free_str(const char* str)
+{
+  free((void*) str);
+}
+
 
 /* Set up file actions for posix_spawn.
    *std__fd is FD_FORWARD, FD_CLOSE, FD_PIPE etc or a file descriptor #
@@ -434,15 +475,15 @@ qioerr qio_proc_communicate(
     FD_ZERO(&wfds);
     FD_ZERO(&efds);
 
-    if( do_input ) {
+    if( do_input && input_fd != -1 ) {
       FD_SET(input_fd, &wfds);
       FD_SET(input_fd, &efds);
     }
-    if( do_output ) {
+    if( do_output && output_fd != -1 ) {
       FD_SET(output_fd, &rfds);
       FD_SET(output_fd, &efds);
     }
-    if( do_error ) {
+    if( do_error && error_fd != -1 ) {
       FD_SET(error_fd, &rfds);
       FD_SET(error_fd, &efds);
     }

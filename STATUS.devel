@@ -139,6 +139,9 @@ Types, Params, Variables, and Consts
   symbol error is issued.
   # functions/kbrady/proc_scoping.future
   # modules/bradc/useFileSystemShadowsPath.future
+- Type aliases and enum declarations cannot be declared private/public.
+  # visibility/private/typeAlias.future
+  # visibility/private/privateEnum.future
 
 Conversions
 -----------

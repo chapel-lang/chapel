@@ -76,6 +76,7 @@ not the type face."
          "inline" "iter"
          "module"
          "param" "private" "proc" "public"
+         "require"
          "type"
          "use"
          "var"))

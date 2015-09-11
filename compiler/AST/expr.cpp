@@ -4245,7 +4245,7 @@ GenRet CallExpr::codegen() {
             if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               // The source is a wide string.
               codegenCall("c_string_from_wide_string",
-                          dst, src, call->get(2), call->get(3));
+                          dst, src, info->lineno, info->filename);
             } else {
               codegenCall("c_string_from_string",
                           dst, src, call->get(2), call->get(3));
