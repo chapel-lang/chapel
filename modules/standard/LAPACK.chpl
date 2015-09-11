@@ -118,7 +118,7 @@ We anticipate the following additions:
 
 */
 module LAPACK {
-use "lapacke.h";
+require "lapacke.h";
 use SysCTypes;
 
 /*External function pointer type LAPACK_C_SELECT1.*/
@@ -162,7 +162,7 @@ pragma "no doc"
  
 */
 module ClassicLAPACK {
-use "lapacke.h";
+require "lapacke.h";
 use SysCTypes;
 
 pragma "no doc"

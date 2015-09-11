@@ -5556,9 +5556,22 @@ GenRet CallExpr::codegen() {
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
-    args[2] = codegenCastToVoidStar(codegenValue(get(2)));
+    args[2] = codegenCastToVoidStar(codegenValue(get(1)));
 
-    Type *endCountType = endCountPtr.chplType;
+    AggregateType *bundledArgsType = toAggregateType(toSymExpr(get(1))->typeInfo());
+    int endCountField = 0;
+    for (int i = 1; i <= bundledArgsType->fields.length; i++) {
+      if (strstr(bundledArgsType->getField(i)->typeInfo()->symbol->name, "_EndCount") != NULL) {
+        // Turns out there can be more than one such field. See e.g.
+        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
+        // INT_ASSERT(endCountField == 0);
+        endCountField = i;
+        // We have historically picked the first such field.
+        break;
+      }
+    }
+    // We need the endCountField.
+    INT_ASSERT(endCountField != 0);
 
     // endCount is either an address or {locale, ptr} -- it is a class.
     GenRet endCountValue = codegenValue(endCountPtr);

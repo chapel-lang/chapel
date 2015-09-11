@@ -1024,7 +1024,11 @@ static void build_constructor(AggregateType* ct) {
         CallExpr* init = new CallExpr("initialize", gMethodToken, fn->_this);
         fn->insertAtTail(init);
         // If a type has an initialize method, it's not Plain Old Data.
-        ct->symbol->addFlag(FLAG_NOT_POD);
+        // The only time classes aren't Plain Old Data is when they have the
+        // pragma "no object" associated with them.
+        if (!isClass(ct) || ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+          ct->symbol->addFlag(FLAG_NOT_POD);
+        }
         break;
       }
     }

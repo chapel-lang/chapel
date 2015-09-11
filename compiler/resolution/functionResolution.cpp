@@ -237,6 +237,7 @@ Map<Type*,autoCopyFns*> autoFnsMap; // type -> autoCopy etc
 
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
+std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
 //#
 //# Static Function Declarations
@@ -5242,16 +5243,10 @@ preFold(Expr* expr) {
             }
           }
           if (!nowarn)
-            USR_WARN(type->symbol, "type %s does not currently support noinit, using default initialization", type->symbol->name);
-
-          if( type->defaultValue ) {
-            result = new SymExpr(type->defaultValue);
-            call->replace(result);
-          } else {
-            result = new CallExpr(PRIM_INIT, call->get(1)->remove());
-            call->replace(result);
-            inits.add((CallExpr *)result);
-          }
+            USR_WARN(call, "type %s does not currently support noinit, using default initialization", type->symbol->name);
+          result = new CallExpr(PRIM_INIT, call->get(1)->remove());
+          call->replace(result);
+          inits.add((CallExpr *)result);
         } else {
           result = call;
           inits.add(call);
@@ -6200,7 +6195,8 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol((int)str[0], INT_SIZE_DEFAULT));
+        const std::string unescaped = unescapeString(str);
+        result = new SymExpr(new_IntSymbol((int)unescaped[0], INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_contains")) {
@@ -6441,6 +6437,10 @@ resolveExpr(Expr* expr) {
       if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
         // ForallLeaderArgs: process the leader that 'call' invokes.
         implementForallIntents2(call, origToLeaderCall);
+
+      else if (CallExpr* eflopiHelper = eflopiMap[call]) {
+        implementForallIntents2wrapper(call, eflopiHelper);
+      }
 
       resolveFns(call->isResolved());
     }
@@ -6733,13 +6733,13 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   }
   return false;
 }
-static bool isLeaderIterator(FnSymbol* fn) {
+bool isLeaderIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gLeaderTag);
 }
 static bool isFollowerIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gFollowerTag);
 }
-static bool isStandaloneIterator(FnSymbol* fn) {
+bool isStandaloneIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gStandaloneTag);
 }
 

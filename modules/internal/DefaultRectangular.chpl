@@ -63,6 +63,9 @@ module DefaultRectangular {
   
     proc dsiCreateReindexDist(newSpace, oldSpace) return this;
     proc dsiCreateRankChangeDist(param newRank, args) return this;
+
+    proc dsiEqualDMaps(d:DefaultDist) param return true;
+    proc dsiEqualDMaps(d) param return false;
   }
   
   //

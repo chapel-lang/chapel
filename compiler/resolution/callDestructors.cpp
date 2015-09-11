@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,7 +67,7 @@ static void cullAutoDestroyFlags()
       // of that value is shared between the formal_tmp and the record field.
       // If the autodestroy flag is left on that formal temp, then it will be
       // destroyed which -- for ref-counted types -- can result in a dangling
-      // reference.  So here, we look for that case and remove it.  
+      // reference.  So here, we look for that case and remove it.
       if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       {
         Map<Symbol*,Vec<SymExpr*>*> defMap;
@@ -861,6 +861,12 @@ static void insertAutoCopyTemps()
 }
 #endif
 
+#ifndef HILDE_MM
+//
+// NOAKES 2015/09/04: AMM should be handling these autoCopies now
+//
+
+
 // This routine inserts autoCopy calls ahead of yield statements as necessary,
 // so the calling routine "owns" the returned value.
 // The copy is necessary for yielded values of record type returned by value.
@@ -885,6 +891,7 @@ static void insertYieldTemps()
     // The transformation is applied only if is has a normal record type
     // (passed by value).
     Type* type = yieldExpr->var->type;
+
     if (isRecord(type) &&
         !type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
@@ -905,6 +912,7 @@ static void insertYieldTemps()
     }
   }
 }
+#endif
 
 
 //
@@ -1106,18 +1114,20 @@ void insertDerefTemps() {
 }
 
 
-void
-callDestructors() {
+void callDestructors() {
   fixupDestructors();
   insertDestructorCalls();
+
 #ifndef HILDE_MM
   insertAutoCopyTemps();
   cullAutoDestroyFlags();
   cullExplicitAutoDestroyFlags();
   insertAutoDestroyCalls();
   returnRecordsByReferenceArguments();
-#endif
+
   insertYieldTemps();
+#endif
+
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();
 }

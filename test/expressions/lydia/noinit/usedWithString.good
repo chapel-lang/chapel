@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/internal/String.chpl:: warning: type string does not currently support noinit, using default initialization
+usedWithString.chpl:: warning: type string does not currently support noinit, using default initialization
 Hello, world

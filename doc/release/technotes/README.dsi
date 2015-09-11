@@ -100,6 +100,11 @@ proc GlobalDistribution.dsiDisplayRepresentation(): void
   A debugging method. It implements displayRepresentation()
   on the dmap wrapper.
 
+proc GlobalDistribution.dsiEqualDMaps(that: [some other GlobalDistribution]): bool
+  Return whether or not the two domain maps are "equal" (specify the
+  same distribution).  This is invoked when '==' is appled to two
+  domain maps.
+
 ------------------
 class GlobalDomain
 ------------------

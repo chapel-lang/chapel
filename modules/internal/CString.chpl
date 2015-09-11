@@ -148,6 +148,8 @@ module CString {
     __primitive("=", a, b);
   }
 
+  // for a to be a valid c_string after this function it must be on the same
+  // locale as b
   inline proc =(ref a: c_string, b: string) {
     __primitive("=", a, b.c_str());
   }
