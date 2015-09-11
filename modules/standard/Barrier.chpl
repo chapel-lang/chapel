@@ -116,12 +116,16 @@ module Barrier {
        is true, reset the barrier to be used again.
      */
     inline proc barrier() {
-      bar.barrier();
+      on this {
+        bar.barrier();
+      }
     }
 
     /* Notify the barrier that this task has reached this point. */
     inline proc notify() {
-      bar.notify();
+      on this {
+        bar.notify();
+      }
     }
 
     /* Wait until `n` tasks have called :proc:`notify`.  If `reusable` is true,
@@ -130,7 +134,9 @@ module Barrier {
        :proc:`notify`.
      */
     inline proc wait() {
-      bar.wait();
+      on this {
+        bar.wait();
+      }
     }
 
     /* return `true` if `n` tasks have called :proc:`notify`
@@ -141,7 +147,9 @@ module Barrier {
 
     pragma "no doc"
     inline proc reset(_n: int) {
-      bar.reset(_n);
+      on this {
+        bar.reset(_n);
+      }
     }
   }
 
