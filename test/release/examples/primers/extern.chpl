@@ -69,9 +69,6 @@ var result:c_int;
 
 hostname_ptr = c_calloc(c_char, hostname_len);
 
-
-// TODO Getting a mutable copy of a C string?
-
 result = gethostname(hostname_ptr:c_ptr(c_char), hostname_len:size_t);
 if !quiet {
   if result == 0 {
