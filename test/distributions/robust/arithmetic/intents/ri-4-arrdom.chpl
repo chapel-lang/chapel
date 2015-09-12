@@ -1,17 +1,21 @@
 // Stress test for parallel correctness.
 
+use driver;
+
 config var
   r = 15000,  // how many times to repeat
-  d = 100,    // each dimension of the domain and array
+  d = n2,     // each dimension of the domain and array
   f = 5000;   // frequency of reports, 0 if none
 
 var nErr = 0;
 
 var
-  D1 = {1..d, 1..d},
-  D2 = {0..d-1, 0..d-1},
+  D1 = {1..d, 1..d} dmapped Dist2D,
+  D2 = {0..d-1, 0..d-1} dmapped Dist2D,
   A1: [D1] int,
   A2: [D2] real;
+
+const mult = if distType == DistType.replicated then numLocales else 1;
 
 proc main {
   writeConfig("starting"); writeln();
@@ -119,7 +123,7 @@ proc sum0(l) return l * (l-1) / 2;  // sum(0..l-1)
 proc sum1(l) return l * (l+1) / 2;  // sum(1..l)
 
 proc check(actual, expected, ri, name) {
-  if actual == expected then return; // OK!
+  if actual == expected * mult then return; // OK!
   nErr += 1;
   writeln("ERROR: onetest(", ri, ", ", name, ")  expected ", expected,
           "  actual ", actual);
