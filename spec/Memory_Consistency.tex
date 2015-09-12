@@ -8,6 +8,14 @@
   with, the broader community.
 \end{openissue}
 
+TODO -- reduce the number of hits to C++
+TODO 30.6 put open issues first
+TODO 30.3.1 --forall "The following text that refers to foralls also
+covers promotion", also separate tasks "for purposes of MCM" - whether
+separate in actuality depends ot the implementation of the parallel
+iterator (see parallel iterators chapter).
+TODO -- on mentioned too many times
+
 In this section, we describe Chapel's memory consistency model. This memory
 consistency model is in the spirit of Sequential Consistency (SC) for
 data-race-free programs adopted by C11, C++11, Java, UPC, and Fortran 2008. In
@@ -126,7 +134,9 @@ We will use the following notation:
   (see sections \ref{relating_to_C_MCM} and \ref{relaxed_atomics}). All
   atomic operations must be completed in a single step (i.e. atomically)
   and so it is not possible to observe an intermediate state from an
-  atomic operation under any circumstances.
+  atomic operation under any circumstances. TODO -- change notation to
+  A-r(a,o) for these relaxed operations and call A-sc, and don't let A-r
+  be sequentially consistent.
 
   \item $A(a)$ indicates an \textit{atomic operation} on a variable at
   address $a$ with sequential consistency ordering constraint. $a$ could
@@ -144,6 +154,7 @@ We will use the following notation:
   \item \chpl{wait($t_1$..$t_n$)} wait for tasks $t_1..t_n$ to complete
 
   \item \chpl{on(L)} run the remainder of this task on locale $L$
+   TODO: on has no impact on the program order, don't mention it again.
 
 \end{itemize}
 
@@ -187,13 +198,15 @@ operations} and we have $x_i <_p y_j$.
 Likewise, for the purposes of this memory model, Chapel's parallelism keywords
 are viewed as a sequence of operations including the primitives of starting a
 task (\chpl{begin}) and waiting for some number of tasks
-(\chpl{wait($t_1$..$t_n$)}). In particular:
+(\chpl{wait($t_1$..$t_n$)}). In particular: TODO promotion
 
 \begin{itemize}
 
   \item \chpl{forall} creates some implementation-dependent number of tasks $n$
 with \chpl{$t_i$ = begin\{some-loop-bodies\}} to execute some number of loop
 iterations and waits for them to complete with \chpl{wait($t_1$..$t_n$)}.
+TODO all iterations independent. Uses n tasks. (may not correspond to
+runtime task).
 
   \item \chpl{coforall} creates one task per loop iteration (\chpl{$t_i$ =
 begin\{loop-body\}} for all loop iterations $i=1..n$) and then waits for them
@@ -205,9 +218,12 @@ waits for them all to complete (with \chpl{wait($t_1$..$t_n$)}).
 
   \item \chpl{begin} creates a task to execute the contained statement and adds
 it to a list of tasks executing in dynamic scope (\chpl{t = begin\{X\}}).
+TODO -- include formal name for the task of lists.
 
   \item \chpl{sync} statement waits for all of the $n$ tasks $t_i$ created in
 the dynamic scope of the sync statement with \chpl{wait($t_1$..$t_n$)}.
+
+TODO -- promote sync/single bullet here and describe in terms of A.
 
 \end{itemize}
 
