@@ -119,7 +119,7 @@ print_user_internal_error() {
   fprintf(stderr, "%s ", error);
   char version[128];
   get_version(version);
-  fprintf(stderr, "chpl Version %s\n", version);
+  fprintf(stderr, "chpl Version %s", version);
 }
 
 
@@ -221,10 +221,6 @@ printErrorHeader(BaseAST* ast) {
 
   bool guess = filename && !have_ast_line;
 
-  // TODO: indicate that the file/line is a guess if
-  //  (err_user && filename && guess && !developer)
-  // which will almost certainly change some .good files
-
   if (filename) {
     fprintf(stderr, "%s:%d: ", filename, linenum);
   }
@@ -251,22 +247,40 @@ printErrorHeader(BaseAST* ast) {
 
 
 static void printErrorFooter(bool guess) {
-  if (developer)
-    fprintf(stderr, " [%s:%d]\n", err_filename, err_lineno);
+  //
+  // For developers, indicate the compiler source location where an
+  // internal error was generated.
+  //
+  if (developer && !err_user)
+    fprintf(stderr, " [%s:%d]", err_filename, err_lineno);
 
+  //
+  // For users and developers, if the source line was a guess (i.e., an
+  // AST was not passed to the INT_FATAL() macro and we relied on the
+  // global SET_LINENO() information instead), indicate that.
+  //
   if (guess) {
-    fprintf(stderr, "Note: This source location is a guess.\n");
+    fprintf(stderr, "\nNote: This source location is a guess.");
   }
-  if (!developer) {
-    fprintf(stderr, "\n"
+
+  //
+  // Apologize for our internal errors to the end-user
+  //
+  if (!developer && !err_user) {
+    fprintf(stderr, "\n\n"
             "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
             "and we're sorry for the hassle.  We would appreciate your reporting this bug -- \n"
             "please see %s for instructions.  In the meantime,\n"
             "the filename + line number above may be useful in working around the issue.\n\n", 
             help_url);
+
+    //
+    // and exit if it's fatal (isn't it always?)
+    //
+    if (err_fatal) {
+      clean_exit(1);
+    }
   }
-  if (!err_user && !developer && err_fatal)
-    clean_exit(1);
 }
 
 
@@ -342,6 +356,7 @@ void handleError(const char *fmt, ...) {
   }
 
   printErrorFooter(guess);
+  fprintf(stderr, "\n");
 
   printCallStackOnError();
 
@@ -391,6 +406,7 @@ static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args
 
   if (file == stderr)
     printErrorFooter(guess);
+  fprintf(file, "\n");
 
   if (file == stderr)
     printCallStackOnError();
