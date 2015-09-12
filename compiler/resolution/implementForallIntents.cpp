@@ -1126,8 +1126,8 @@ static void propagateThroughYield(CallExpr* rcall,
     Symbol* svar = shadowVars[ix];
     Symbol* tupleComponent;
     if (isReduce) {
-      // Todo: handle eflopi case when: (a) nested or (b) !isReduce.
-      if (!nested && !eflopiChecked) {
+      // Todo: handle eflopi case when !isReduce.
+      if (!eflopiChecked) {
         eflopiChecked = true;
         eflopiFind(rcall,
                    // sets these if appropriate:
@@ -1137,16 +1137,14 @@ static void propagateThroughYield(CallExpr* rcall,
       // not resolved yet: INT_ASSERT(isReduceOp(extraActuals[ix]->type));
 
       if (eflopiCall) {
-        INT_ASSERT(!nested); // the nested case is not handled for now
-
         //
         // Convert the eflopiLoop loop similarly to how a forall is handled:
         //
-        // * pass parentOp to its eflopi's iterator
+        // * pass parentOp/currOp to its eflopi's iterator
         //    --> done earlier in propagateExtraLeaderArgs()
         //        the same way as for non-eflopi reduce-intent args
         //
-        // * propagate parentOp within eflopi's iterator
+        // * propagate that parentOp/currOp within eflopi's iterator
         //   and have it yield a tuple containing
         //   the corresponding shadow var by reference
         //    --> this is done by calling implementForallIntents2()
