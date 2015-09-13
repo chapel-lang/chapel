@@ -335,6 +335,7 @@ tags
 /test/release/examples/primers/chplvis/E1
 /test/release/examples/primers/chplvis/E2
 /test/release/examples/primers/chplvis/E3
+/test/release/examples/primers/chplvis/E4
 
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
