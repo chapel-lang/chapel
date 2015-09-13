@@ -3,9 +3,9 @@
 use driver;
 
 config var
-  r = 15000,  // how many times to repeat
+  r = 5000,   // how many times to repeat
   d = n2,     // each dimension of the domain and array
-  f = 5000;   // frequency of reports, 0 if none
+  f = 1000;   // frequency of reports, 0 if none
 
 var nErr = 0;
 
