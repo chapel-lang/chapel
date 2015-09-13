@@ -551,10 +551,9 @@ static void
 freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   Vec<FnSymbol*> fnsContainingTaskll;
 
-  // start with the functions created from begin, cobegin, and coforall statements
+  // start with functions created by begin statements
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
-        fn->hasFlag(FLAG_NON_BLOCKING))
+    if (fn->hasFlag(FLAG_BEGIN))
       fnsContainingTaskll.add(fn);
   }
   // add any functions that call the functions added so far
@@ -589,8 +588,8 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 
   forv_Vec(Symbol, var, heapAllocatedVars) {
     // find out if a variable that was put on the heap could be passed in as an
-    // argument to a function created from a begin, cobegin, or coforall statement;
-    // if not, free the heap memory just allocated at the end of the block
+    // argument to a function created by a begin statement; if not, free the
+    // heap memory just allocated at the end of the block
     Vec<SymExpr*>* defs = defMap.get(var);
     if (defs == NULL) {
       INT_FATAL(var, "Symbol is never defined.");
