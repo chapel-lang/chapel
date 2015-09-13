@@ -130,7 +130,7 @@ from the task count the overhead tasks but it can not remove the
 CPU and clock time overhead.)
 
 When the locale data selected is 'concurrency', clicking on a locale
-will bring up a window that shows a task timeline for the locale.
+will bring up a window that shows a task time line for the locale.
 This display shows the order the tasks are executed and the color of
 each task shows the clock time for that task.  *Note:* The task order
 may change from run to run.  The following shows one possible execution
@@ -148,7 +148,7 @@ similar to the following:
 
 .. image:: E1-L0-tc.png
 
-In the main window, clicking on a communicaton line will create a
+In the main window, clicking on a communication line will create a
 window with communication information for that link.  Clicking red
 part of the line between locale 0 and locale 1 will produce a window
 that looks like:
@@ -298,7 +298,7 @@ tag.
 Example 3
 ---------
 
-The program djacobi.chpl is similar to the program
+The program prog3.chpl is similar to the program
 examples/programs/jacobi.chpl.  This version uses dmapped domains
 and VisualDebug.  Only parts of the code are shown to illustrate
 other *chplvis* features.  First, config variables are handy here so one
@@ -360,11 +360,11 @@ The following shows the default *tags* menu for this run:
 .. image:: E3-1.png
 
 Notice that the tags are now numbered and the tags menu extends past
-the end of the window. (This screeshot does not show the entire tags
+the end of the window. (This screenshot does not show the entire tags
 menu that was displayed on the screen.)  *All* and *Start* remain the
 same, but since two or more tags have the same name, *chplvis* shows a
 unique tag for each *tagVdebug()* call.  Notice the new menu item
-above *All* which is highlited in this example.  *Merge Tags* allows
+above *All* which is highlighted in this example.  *Merge Tags* allows
 you to see data for tags with the same name to be merged together.
 For this example, with merged tags, the tags menu now looks like:
 
@@ -398,6 +398,91 @@ results by running *chplvis* multiple times.  By a good choice of
 the *compLoop* variable, one can dramatically reduce the CPU time for
 computing the *max* while not increasing the *computation* time by much.
 
+Example 4
+_________
+
+To help show another feature of the "Concurrency View", prog4.chpl was
+written to create a *begin* task on all locales and have those tasks
+live across calls to the *VisualDebug* module.  The code is:
+
+::
+
+   // Example 4, begin tasks as shown in chplvis
+   // This is a contrived example to have tasks live
+   // across a tagVdebug() call.
+
+   use VisualDebug;
+   use BlockDist;
+
+   const space =  { 0 .. #numLocales };
+   const Dspace = space dmapped Block (boundingBox=space);
+
+   startVdebug("E4");
+
+   var go$: [Dspace] single bool;
+   var done$: [Dspace] single bool;
+
+   // Start a begin task on all locales.  The task will start and then block.
+   coforall loc in Locales do
+     on loc do begin { // start a async task
+
+              go$[here.id]; // Block until ready!
+              writeln ("Finishing running the 'begin' statement on locale "
+                        + here.id + ".");
+              done$[here.id] = true;
+           }
+
+   tagVdebug("loc");
+
+   coforall loc in Locales do
+       on loc do writeln("Hello from " + here.id);
+
+   tagVdebug("finish");
+
+   // Let all tasks go
+   go$ = true;
+
+   // Wait until all tasks are finished
+   done$;
+
+   stopVdebug();
+
+First we will look at the results of running this code on a single
+locale.  Even though there is no communication, *chplvis* can help
+you see how tasks are run, especially how much concurrency you have.
+
+.. image:: E4-1.png
+
+This view shows the tasks for locale 0, the only locale in this run.
+Things to notice from this view are
+
+  - Main represents the main program.  It is shown as a gray rectangular
+    box to show that it was running at the time of *startVdebug()* was
+    called.
+
+  - In the *tag ALL* view, tags are shown in the sequence of tasks.
+
+  - Task *F 28* is started before the *loc* tag, but it finishes
+    in the *finish* tag.
+
+.. image:: E4-2.png
+
+This view shows the tasks for locale 1 on a 3 locale run for the tag
+*loc*.  In this view, the task started before the *loc* tag appears
+as a gray rectangular box at the top of the view.  This indicates
+that is was running at the start of the tag.  The lack of a task
+termination horizontal line on the task line indicates that the task
+continued running past the end of the tag.  Tasks that are running
+at the beginning of a tag and terminate during a tag can be seen
+by the horizontal termination line, such as for task *C50*, a
+*continued* task for locale 0 on the same 3 locale run as seen next.
+
+.. image:: E4-3.png
+
+*Main* will always show as a continued task with no termination.
+*Main* is shown only for locale 0.  *Main* is included in the
+calculation of concurrency as seen above.
+           
 ..  Find more examples to show off more of chplvis 
 
 ..  Give examples of how to find problems. 
@@ -429,15 +514,16 @@ The following items are not covered above:
 
   - In all the examples given, all calls to *xVdebug()* routines were
     essentially in the *main* program.   While this will not be the case
-    in all programs, a couple of thinges should be noted.
+    in all programs, a couple of things should be noted.
 
     - All calls run code on all locales.
 
-    - Calls should not be made in *on* statements.  While that program
+    - Calls should not be made in *on* statements.  While such programs
       should run, the *chplvis* data will mostly likely not make much
       sense.
 
     - Calls should not be made in *begin* statements for similar reasons.
 
+    - Calls should not be made in forall or coforall statements.
 
 :Author: Philip A. Nelson

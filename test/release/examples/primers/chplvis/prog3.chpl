@@ -1,5 +1,5 @@
-// A more complex chplvis example
-// A modified version of Jacobi to run on multiple locales
+// prog3.chpl -- A more complex chplvis example
+// A version of Jacobi Iterations written to run on multiple locales
 
 use VisualDebug;
 use BlockDist;
@@ -63,7 +63,6 @@ if (verbose) {
 
 var iteration : int = 0;
 var delta : real = 1;
-
 
 // Main computation loop -- we want to see the two parts of this
 // loop, the computation and the reduction part.
