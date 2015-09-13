@@ -74,10 +74,10 @@ while (delta > epsilon) {
   tagVdebug("computation");
 
   for t in 1 .. compLoop do {
-    forall (i,j) in R {
+    forall (i,j) in R do
       A(i,j) = Temp(i,j);
+    forall (i,j) in R do
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
-    }
   }
   
   // tag the reduction part of this loop.
