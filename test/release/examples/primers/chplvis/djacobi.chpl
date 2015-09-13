@@ -5,7 +5,7 @@ use VisualDebug;
 use BlockDist;
 
 // Typical config variables
-config var n : int = 30;
+config var n : int = 10;
 config var epsilon : real = 0.0001;
 config var verbose : bool = false;
 
