@@ -23,7 +23,8 @@ run *chplvis*.  (Note: Some versions of Linux may require the
 standard package *libx11-dev* to be installed before *FLTK* will
 compile properly.)  To get the most out of this primer, you should
 compile and run the example programs and examine
-the *VisualDebug* results with *chplvis*.  The graphics
+the *VisualDebug* results with *chplvis*.  The example programs
+are found on the path examples/primers/chplvis.  The graphics
 in this primer were produced on a system using the *fifo* threads
 instead of the default, *qthreads*, for the tasking layer.   If you use
 *qthreads*, your task count may differ from the examples.
@@ -40,15 +41,15 @@ of their program.  Compilation and execution of these programs remain the
 same.  When the *startVdebug(name)* is executed, a collection
 of files, one per locale, are created in a directory with the *name* given
 in *startVdebug(name)*.
-</p>
 
 Example 1
 ---------
 
-Consider the chapel program: (prog1.chpl)
+Consider the chapel program prog1.chpl: (The example programs in this
+primer are found in the directory examples/primers/chplvis in your
+distribution tree.  The files have more comments than are shown here.)
 
 ::
-
      //  Example 1 using visual debug
 
      use VisualDebug;
@@ -87,7 +88,9 @@ chplvis Elements
   number of tasks run at that locale.  For example 1, we can see that
   locale 0 has the most tasks and we expect that to be 12 since that
   is the maximum number of tasks as shown by the color reference in
-  the information box at the top of the window.
+  the information box at the top of the window.  Hover your mouse over
+  a locale and it will display a "tooltip" that is the value for
+  that locale.
 
 - *Communication links* are shown by lines between two
   locale boxes.  The color of the line adjacent to a locale box 
@@ -101,13 +104,14 @@ chplvis Elements
   If communication is only one way, the communication color for
   *no communication* is gray.
 
-- The *Data menu* controls what data is used for display colors.  This
-  initial data is number of tasks for locales and number of
-  communications calls for the communication links.  For locales, one
-  can select number of tasks, CPU time at the locale, clock time or
-  concurrency at the locale.  Clock time is normally very close to
-  equal across all locales.  For the communication links, one can
-  select number of communications or size of data sent.</li>
+- The *Data menu* controls what data is used for the display colors
+  and available tooltip values.  This initial data is number of tasks
+  for locales and number of communications calls for the communication
+  links.  For locales, one can select number of tasks, CPU time at the
+  locale, clock time or concurrency at the locale.  Clock time is
+  normally very close to equal across all locales.  For the
+  communication links, one can select number of communications or size
+  of data sent.
 
 Display Interaction
 -------------------
@@ -126,20 +130,28 @@ from the task count the overhead tasks but it can not remove the
 CPU and clock time overhead.)
 
 When the locale data selected is 'concurrency', clicking on a locale
-will bring up a window that shows task on the locale.  This display
-shows the order the tasks are executed and the color of each task
-shows the clock time for that task.   For example, locale 0 for this
-example shows the window:
+will bring up a window that shows a task timeline for the locale.
+This display shows the order the tasks are executed and the color of
+each task shows the clock time for that task.  *Note:* The task order
+may change from run to run.  The following shows one possible execution
+order of the tasks:
 
 .. image:: E1-L0-cw.png
 
-In this concurrency display, hovering the mouse over a task will
-bring up a "tooltip" that shows the clock time taken by that task,
-and if available, the source file name and line number of the code
-that started that task.
+In this concurrency display, hovering the mouse over a task will bring
+up a "tooltip" that shows the clock time taken by that task, the
+number of *gets*, *puts* and *forks* performed by that task and if
+available, the source file name and line number of the code that
+started that task.  If the task has communication, clicking on the
+task will cause the task's communications to be listed in the window
+similar to the following:
 
-In the main window, clicking on the red part of the line between
-locale 0 and locale 1 will produce a window that looks like:
+.. image:: E1-L0-tc.png
+
+In the main window, clicking on a communicaton line will create a
+window with communication information for that link.  Clicking red
+part of the line between locale 0 and locale 1 will produce a window
+that looks like:
 
 .. image:: E1-C1.0.png
 
@@ -158,8 +170,6 @@ out into three components:
     on locale 0.  As part of the task start, a block of data is sent to
     locale 0 as an argument to the task.  This data is considered a
     communication call  by *chplvis*.
-
-
 
 
 Example 2
@@ -219,7 +229,8 @@ gives an example of using the *VisualDebug* functions
 
 Note that the *startVdebug("E2");* is placed after the declarations
 so that tasks and communication for the declarations are not included.
-The initial display of *chplvis* shows data for the entire run.
+The initial display of *chplvis* shows data for the entire run. (This
+program was run on five locales.)
 
 .. image:: E2-1.png
 
@@ -229,14 +240,11 @@ gives the following display:
 
 .. image:: E2-2.png
 
-Notice that the tag names are in parentheses.  If a *tagVdebug()*
-call is executed more than once, each execution will end up with a
-different tag number.  It is possible that this menu could be very long and
-require scrolling to see all menu options.  There are two special
-tags in this menu, *All* and *Start*.   *All* shows the
-initial display for the entire run and *Start* shows the tasks and
-communication only between the *startVdebug("E2");* call and the
-first call to *tagVdebug()*, in this case, *tagVdebug("writeln 1")*.
+There are two special tags in this menu, *All* and *Start*.  *All*
+shows the initial display for the entire run and *Start* shows the
+tasks and communication only between the *startVdebug("E2");* call and
+the first call to *tagVdebug()*, in this case, *tagVdebug("writeln
+1")*.
 
 Selecting the tag menu option *Start* displays data for all
 code between *startVdebug("E2")* and *tagVdebug("writeln 1")*.
@@ -277,7 +285,7 @@ Now, consider the *writeln 1* tag display.
 .. image:: E2-4.png
 
 Notice the gray communication links.  This means there was no data
-flow from locale 0 to the other locales.   The gray links was provided
+flow from locale 0 to the other locales.   The gray links are provided
 to make it easy to visually see the corresponding locale.
 
 Finally, for completeness, look at the display for the last tag
@@ -286,14 +294,120 @@ tag.
 
 .. image:: E2-6.png
 
+
+Example 3
+---------
+
+The program djacobi.chpl is similar to the program
+examples/programs/jacobi.chpl.  This version uses dmapped domains
+and VisualDebug.  Only parts of the code are shown to illustrate
+other *chplvis* features.  First, config variables are handy here so one
+can create different directories of chplvis data on different runs.
+Although not shown here, config params are useful to allow your
+program to use VisualDebug and generate data only if you need it.
+
+::
+   
+    // Allow different runs to create different data directories so it is
+    // easier to compare runs with chplvis.
+    config var dirname = "E3";
+
+    // Start VisualDebug here to see that distributed domain and variable
+    // declarations generate tasks and communication.
+    startVdebug(dirname);
+
+Next, if *tagVdebug()* calls are made inside a loop, it produces a unique tag for each call. 
+
+::
+   
+   // Main computation loop -- we want to see the two parts of this
+   // loop, the computation and the reduction part.
+
+   while (delta > epsilon) {
+
+     // Tag the computation part of this loop 
+     tagVdebug("computation");
+
+     for t in 1 .. compLoop do {
+       forall (i,j) in R {
+         A(i,j) = Temp(i,j);
+         Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+       }
+     }
+  
+     // tag the reduction part of this loop.
+     tagVdebug("max");
+     forall (i,j) in R {
+       Diff(i,j) = abs(Temp(i,j)-A(i,j));
+     }
+     delta = max reduce Diff;
+
+     pauseVdebug();
+     iteration += compLoop;
+     if (verbose) {
+       writeln("iteration: ", iteration);
+       writeln("delta:     ", delta);
+       writeln(A);
+     }
+   }
+
+We use *pauseVdebug()* here to make sure chplvis data is generated for
+the parts of the loop of interest.
+
+This example was run with the command line arguments *--n=16 -nl 8".
+The following shows the default *tags* menu for this run:
+
+.. image:: E3-1.png
+
+Notice that the tags are now numbered and the tags menu extends past
+the end of the window. (This screeshot does not show the entire tags
+menu that was displayed on the screen.)  *All* and *Start* remain the
+same, but since two or more tags have the same name, *chplvis* shows a
+unique tag for each *tagVdebug()* call.  Notice the new menu item
+above *All* which is highlited in this example.  *Merge Tags* allows
+you to see data for tags with the same name to be merged together.
+For this example, with merged tags, the tags menu now looks like:
+
+.. image:: E3-2.png
+
+Now, selecting the tag *computation* will show the accumulated tasks and
+communication for the entire *while* loop for just the computation
+part of the loop.  This is all code between the *tagVdebug("computation")*
+call and the *tagVdebug("max")* call.   Selecting the tag *max* will
+then show accumulated tasks and communication for the code between
+the *tagVdebug("max")* call and the *pauseVdebug()* call.  The following
+shows the display for the *computation* tags and displaying *CPU* data.
+
+.. image:: E3-3.png
+
+The concurrency display is not available for tags in the "merge tag mode"
+except the *All* tag, which is the same for both tags mode.
+
+This example has some extra config variables that can be used to help
+understand the usefulness of *chplvis*.  For example, one can compare
+the CPU time used between the *computation* and *max* phases of this
+Jacobi computation.  The config variable *compLoop* allows one to run
+the computation loop more than once before than checking for convergence
+in the *max* tagged code.  It is know that the Jacobi code will not
+diverge and thus extra computation steps will not produce a "wrong"
+answer.  By doing extra computation, the result will be a bit more
+accurate.  The reader should use the *compLoop* and the *dirname*
+config variables to run several versions of this program yeilding
+a *chplvis* directory for each run.  Then one can compare the different
+results by running *chplvis* multiple times.  By a good choice of
+the *compLoop* variable, one can dramatically reduce the CPU time for
+computing the *max* while not increasing the *computation* time by much.
+
 ..  Find more examples to show off more of chplvis 
 
 ..  Give examples of how to find problems. 
 
-
-
 Final Comments
 --------------
+
+*chplvis* was created in 2015 and first released with Chapel-1.12.0.
+The Chapel team hopes this tool will be of use to Chapel programmers
+and would like feedback on this tool.
 
 The following items are not covered above:
 
@@ -313,3 +427,17 @@ The following items are not covered above:
     **.Vdebug** which is generated if the *startVdebug()*
     function is given a string of zero length.  ("")
 
+  - In all the examples given, all calls to *xVdebug()* routines were
+    essentially in the *main* program.   While this will not be the case
+    in all programs, a couple of thinges should be noted.
+
+    - All calls run code on all locales.
+
+    - Calls should not be made in *on* statements.  While that program
+      should run, the *chplvis* data will mostly likely not make much
+      sense.
+
+    - Calls should not be made in *begin* statements for similar reasons.
+
+
+:Author: Philip A. Nelson

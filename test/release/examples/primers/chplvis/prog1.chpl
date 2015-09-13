@@ -1,7 +1,7 @@
 
 //  Example 1 using visual debug
 //  Full primer is found in doc/chplvis/chplvis.rst.
-//  Please read that documentation for better understand chplvis.
+//  Please read that documentation for a better understanding of chplvis.
 
 //  The standard module "VisualDebug" is needed to generate data
 //  during the program's run for chplvis.
@@ -14,7 +14,6 @@ use VisualDebug;
 
 startVdebug("E1");
 
-
 //  This is a simple loop that runs tasks on all locales
 
 coforall loc in Locales do
@@ -23,7 +22,6 @@ coforall loc in Locales do
 //  This stops the VisualDebug system and close the data files.
 
 stopVdebug();
-
 
 //  Now that the program has completed and generated data files,
 //  run "chplvis E1" to look at the results.
