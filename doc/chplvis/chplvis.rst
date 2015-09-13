@@ -329,10 +329,10 @@ Next, if *tagVdebug()* calls are made inside a loop, it produces a unique tag fo
      tagVdebug("computation");
 
      for t in 1 .. compLoop do {
-       forall (i,j) in R {
+       forall (i,j) in R do
          A(i,j) = Temp(i,j);
+       forall (i,j) in R do
          Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
-       }
      }
   
      // tag the reduction part of this loop.
@@ -354,7 +354,7 @@ Next, if *tagVdebug()* calls are made inside a loop, it produces a unique tag fo
 We use *pauseVdebug()* here to make sure chplvis data is generated for
 the parts of the loop of interest.
 
-This example was run with the command line arguments *--n=16 -nl 8".
+This example was run with the command line arguments *--n=8 -nl 8".
 The following shows the default *tags* menu for this run:
 
 .. image:: E3-1.png
