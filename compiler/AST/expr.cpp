@@ -5292,7 +5292,8 @@ GenRet CallExpr::codegen() {
         // cast like this: (type) (intptr_t) v
         ret = codegenCast(typeInfo(), codegenCast("intptr_t", v));
       } else {
-        if (isRecord(typeInfo()) || isUnion(typeInfo())) {
+        if (!isReferenceType(typeInfo()) &&
+            (isRecord(typeInfo()) || isUnion(typeInfo()))) {
           INT_FATAL("TODO - don't like type-punning record/union");
           /*fprintf(outfile, "(*((");
           typeInfo()->codegen(outfile);
