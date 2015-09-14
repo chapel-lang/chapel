@@ -26,6 +26,14 @@ class CSR: BaseDist {
   }
 
   proc dsiClone() return new CSR();
+
+  proc dsiEqualDMaps(that: CSR) param {
+    return true;
+  }
+
+  proc dsiEqualDMaps(that) param {
+    return false;
+  }
 }
 
 pragma "auto copy fn"

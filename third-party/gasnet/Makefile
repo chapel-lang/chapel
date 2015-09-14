@@ -14,7 +14,14 @@ CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-a
 # disable it in all others.
 SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
 ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large))
+
+# Enable pshm but not on Mac OS X because it doesn't build there
+ifeq ($(CHPL_MAKE_PLATFORM), darwin)
+CHPL_GASNET_CFG_OPTIONS += --disable-pshm
+else
 CHPL_GASNET_CFG_OPTIONS += --enable-pshm
+endif
+
 else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
 endif

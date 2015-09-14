@@ -33,6 +33,13 @@ extern "C" {
 #define QIO_FD_PIPE (-3)
 #define QIO_FD_TO_STDOUT (-4)
 
+// Helper functions to allocate/free memory available
+// to a forked child process
+const char* qio_spawn_strdup(const char* str);
+const char** qio_spawn_allocate_ptrvec(size_t count);
+void qio_spawn_free_ptrvec(const char** args);
+void qio_spawn_free_str(const char* str);
+
 
 qioerr qio_openproc(const char** argv,
                     const char** envp,
