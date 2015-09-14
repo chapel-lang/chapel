@@ -396,8 +396,8 @@ This example has some extra config variables that can be used to help
 understand the usefulness of *chplvis*.  For example, one can compare
 the CPU time used between the *computation* and *max* phases of this
 Jacobi computation.  The config variable *compLoop* allows one to run
-the computation loop more than once before than checking for convergence
-in the *max* tagged code.  It is know that the Jacobi code will not
+the computation loop more than once before then checking for convergence
+in the *max* tagged code.  It is known that the Jacobi code will not
 diverge and thus extra computation steps will not produce a "wrong"
 answer.  By doing extra computation, the result will be a bit more
 accurate.  The reader should use the *compLoop* and the *dirname*

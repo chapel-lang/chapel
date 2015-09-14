@@ -48,7 +48,7 @@ forall (i,j) in R {
   Temp(i,j) = 0.0;
 }
 
-tagVdebug("boundry");
+tagVdebug("boundary");
 
 forall (i,j) in South {
   A(i,j) = 1.0;
