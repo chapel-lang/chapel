@@ -5,5 +5,6 @@ globberator-zip.chpl
 globberator.chpl
 testboth.chpl
 testemptyglob.chpl
+testziptoobig.chpl
 walk-par.chpl
 walk.chpl

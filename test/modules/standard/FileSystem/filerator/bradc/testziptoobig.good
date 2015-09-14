@@ -1,0 +1,1 @@
+testziptoobig.chpl:3: error: halt reached - glob() is being zipped with something too big; it only has 10 matches
