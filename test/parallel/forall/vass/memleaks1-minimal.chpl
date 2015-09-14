@@ -28,7 +28,7 @@ iter MYITER(param tag, followThis) where tag == iterKind.follower {
 
 iter OTHER_ITER(param tag) where tag == iterKind.leader {
   cobegin {
-    on RELOC do     // on_fn() with FLAG_NON_BLOCKING
+    on RELOC do
       yield 77777;
     var jjjjj: int;
   }
