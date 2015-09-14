@@ -35,7 +35,7 @@ proc main() {
    tagVdebug("step 2");
    forall i in mapDomain do data[i] += here.id+1;
 
-   // Don't capture for the writeln
+   // Don't capture the writeln
    pauseVdebug();
    writeln("data2= ", data);
 

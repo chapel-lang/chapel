@@ -91,7 +91,7 @@ while (delta > epsilon) {
   if (verbose) {
     writeln("iteration: ", iteration);
     writeln("delta:     ", delta);
-    writeln(A);
+    writeln(Temp);
   }
 }
 

@@ -50,6 +50,7 @@ primer are found in the directory examples/primers/chplvis in your
 distribution tree.  The files have more comments than are shown here.)
 
 ::
+
      //  Example 1 using visual debug
 
      use VisualDebug;
@@ -107,38 +108,43 @@ chplvis Elements
 - The *Data menu* controls what data is used for the display colors
   and available tooltip values.  This initial data is number of tasks
   for locales and number of communications calls for the communication
-  links.  For locales, one can select number of tasks, CPU time at the
-  locale, clock time or concurrency at the locale.  Clock time is
-  normally very close to equal across all locales.  For the
-  communication links, one can select number of communications or size
-  of data sent.
+  links.  For locales, one can select number of tasks, CPU time, clock
+  time or concurrency.  Clock time is normally very close to equal
+  across all locales.  For the communication links, one can select
+  number of communications or size of data sent.
 
 Display Interaction
 -------------------
 
 Clicking on elements of the display will bring up more information.
 Clicking on a locale will open a new window for that locale showing
-information for that locale.  For example, in example 1, clicking on
-locale 0 when the locale data is 'number of tasks', 'CPU time' or 'clock
-time' will produce a window that looks like:
+information for that locale.  In example 1, clicking on locale 0 when
+the locale data is 'number of tasks', 'CPU time' or 'clock time' will
+produce a window that looks like:
 
 .. image:: E1-L0.png
 
-(Note: There is overhead generated in tasks, CPU time and clock
-time for the Visual Debug function calls.  *chplvis* removes
-from the task count the overhead tasks but it can not remove the
-CPU and clock time overhead.)
+(Note: There is overhead generated in tasks, CPU time, clock time and
+communication for the Visual Debug function calls.  *chplvis* removes
+the overhead tasks and communication from displayed values, but it can
+not remove the CPU and clock time overhead.)
 
 .. _`Concurrency View`:
 
 When the locale data selected is 'concurrency', clicking on a locale
 will bring up a window that shows a task time line for the locale.
 This display shows the order the tasks are executed and the color of
-each task shows the clock time for that task.  *Note:* The task order
+each task shows the clock time for that task.  The black vertical vertical
+lines show the life time of the task.  There are two kinds of tasks
+shown, taskes forked to this locale indicated by an *F* and tasks 
+started locally indicated by an *L*.  *Note:* The task order
 may change from run to run.  The following shows one possible execution
 order of the tasks:
 
 .. image:: E1-L0-cw.png
+
+Note the special *Main* task.  It is shown as a square gray box because
+it was already running at the start of the displayed data.
 
 In this concurrency display, hovering the mouse over a task will bring
 up a "tooltip" that shows the clock time taken by that task, the
@@ -149,6 +155,10 @@ task will cause the task's communications to be listed in the window
 similar to the following:
 
 .. image:: E1-L0-tc.png
+
+The number in brackets is the clock time since the task started
+execution.   This list gives details about the *gets*, *puts* and
+*forks* initiated by this task.
 
 In the main window, clicking on a communication line will create a
 window with communication information for that link.  Clicking red
@@ -209,13 +219,13 @@ gives an example of using the *VisualDebug* functions
        // Write the result, we want to see the results of the above
        // so we tag before we continue.
        tagVdebug("writeln 1");
-       writeln(*data= *, data);
+       writeln("data= ", data);
     
        // Second computation step ... using the distributed domain
        tagVdebug("step 2");
        forall i in mapDomain do data[i] += here.id+1;
 
-       // Don't capture for the writeln
+       // Don't capture the writeln
        pauseVdebug();
        writeln("data2= ", data);
 
@@ -230,7 +240,7 @@ gives an example of using the *VisualDebug* functions
     }
 
 
-Note that the *startVdebug("E2");* is placed after the declarations
+Note that the *startVdebug("E2")* is placed after the declarations
 so that tasks and communication for the declarations are not included.
 The initial display of *chplvis* shows data for the entire run. (This
 program was run on five locales.)
@@ -247,11 +257,7 @@ There are two special tags in this menu, *All* and *Start*.  *All*
 shows the initial display for the entire run and *Start* shows the
 tasks and communication only between the *startVdebug("E2");* call and
 the first call to *tagVdebug()*, in this case, *tagVdebug("writeln
-1")*.
-
-Selecting the tag menu option *Start* displays data for all
-code between *startVdebug("E2")* and *tagVdebug("writeln 1")*.
-The display for the *Start* tag looks like:
+1")*.  The display for the *Start* tag looks like:
 
 .. image:: E2-3.png
 
@@ -350,14 +356,14 @@ Next, if *tagVdebug()* calls are made inside a loop, it produces a unique tag fo
      if (verbose) {
        writeln("iteration: ", iteration);
        writeln("delta:     ", delta);
-       writeln(A);
+       writeln(Temp);
      }
    }
 
 We use *pauseVdebug()* here to make sure chplvis data is generated for
 the parts of the loop of interest.
 
-This example was run with the command line arguments *--n=8 -nl 8".
+This example was run with the command line arguments *--n=8 -nl 8*.
 The following shows the default *tags* menu for this run:
 
 .. image:: E3-1.png
