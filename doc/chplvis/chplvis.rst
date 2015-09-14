@@ -80,7 +80,7 @@ chplvis Elements
 ----------------
 
 - The *information* box shows the file set opened, which tag (see
-  Example 2) is displayed, and provides a color bar to help visually
+  `Example 2`_ ) is displayed, and provides a color bar to help visually
   see what values are displayed for locales and communication.
 
 - A *Locale* is represented by a colored box in the main display.  The
@@ -129,6 +129,8 @@ time for the Visual Debug function calls.  *chplvis* removes
 from the task count the overhead tasks but it can not remove the
 CPU and clock time overhead.)
 
+.. _`Concurrency View`:
+
 When the locale data selected is 'concurrency', clicking on a locale
 will bring up a window that shows a task time line for the locale.
 This display shows the order the tasks are executed and the color of
@@ -171,7 +173,8 @@ out into three components:
     locale 0 as an argument to the task.  This data is considered a
     communication call  by *chplvis*.
 
-
+.. _`Example 2`: 
+    
 Example 2
 ---------
 
@@ -401,7 +404,7 @@ computing the *max* while not increasing the *computation* time by much.
 Example 4
 _________
 
-To help show another feature of the "Concurrency View", prog4.chpl was
+To help show another feature of the "`Concurrency View`_", prog4.chpl was
 written to create a *begin* task on all locales and have those tasks
 live across calls to the *VisualDebug* module.  The code is:
 
@@ -490,10 +493,6 @@ calculation of concurrency as seen above.
 Final Comments
 --------------
 
-*chplvis* was created in 2015 and first released with Chapel-1.12.0.
-The Chapel team hopes this tool will be of use to Chapel programmers
-and would like feedback on this tool.
-
 The following items are not covered above:
 
   - By clicking on the locale box or a communication link, a window
@@ -518,6 +517,8 @@ The following items are not covered above:
 
     - All calls run code on all locales.
 
+    - All calls should be made from locale 0.
+
     - Calls should not be made in *on* statements.  While such programs
       should run, the *chplvis* data will mostly likely not make much
       sense.
@@ -525,5 +526,9 @@ The following items are not covered above:
     - Calls should not be made in *begin* statements for similar reasons.
 
     - Calls should not be made in forall or coforall statements.
+
+*chplvis* was created in 2015 and first released with Chapel-1.12.0.
+The Chapel team hopes this tool will be of use to Chapel programmers
+and would like feedback on this tool.
 
 :Author: Philip A. Nelson
