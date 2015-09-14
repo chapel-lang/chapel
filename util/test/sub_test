@@ -1234,14 +1234,22 @@ for testname in testsrc:
         if globalPrecomp:
             sys.stdout.write('[Executing ./PRECOMP]\n')
             sys.stdout.flush()
-            subprocess.Popen(['./PRECOMP',
-                             execname,complog,compiler]).wait()
+            p = subprocess.Popen(['./PRECOMP',
+                                  execname,complog,compiler],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+            sys.stdout.write(p.communicate()[0])
+            sys.stdout.flush()
 
         if precomp:
             sys.stdout.write('[Executing precomp %s.precomp]\n'%(test_filename))
             sys.stdout.flush()
-            subprocess.Popen(['./'+test_filename+'.precomp',
-                             execname,complog,compiler]).wait()
+            p = subprocess.Popen(['./'+test_filename+'.precomp',
+                                  execname,complog,compiler],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+            sys.stdout.write(p.communicate()[0])
+            sys.stdout.flush()
 
 
         #
