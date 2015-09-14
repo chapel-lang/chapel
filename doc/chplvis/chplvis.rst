@@ -395,7 +395,7 @@ in the *max* tagged code.  It is know that the Jacobi code will not
 diverge and thus extra computation steps will not produce a "wrong"
 answer.  By doing extra computation, the result will be a bit more
 accurate.  The reader should use the *compLoop* and the *dirname*
-config variables to run several versions of this program yeilding
+config variables to run several versions of this program yielding
 a *chplvis* directory for each run.  Then one can compare the different
 results by running *chplvis* multiple times.  By a good choice of
 the *compLoop* variable, one can dramatically reduce the CPU time for
