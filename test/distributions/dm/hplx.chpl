@@ -38,7 +38,7 @@ proc main() {
 
       dgemm(/*replA(aBlkD),
             replB(bBlkD),
-            */Ab(cBlkD));
+            */Ab(cBlkD).reindex({1..blk, 1..blk}));
   }
 
   writeln("finish");
@@ -46,5 +46,5 @@ proc main() {
 
 proc dgemm(/*A: [1..blk, 1..blk] real,
            B: [1..blk, 1..blk] real,
-           */C: [?D] real)
+           */C: [1..blk, 1..blk] real)
 { }
