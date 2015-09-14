@@ -61,6 +61,28 @@ all:
   02/12/15:
     - text: zombie process on chap04 was causing noise
       config: chap04
+  07/19/15:
+    - new 1-pass implementation of widening
+  08/13/15:
+    - text: remove restriction of soft-threads to 16 only
+      config: 16 node XC
+  08/18/15:
+    - fix task counting for coforall+on
+  08/26/15:
+    - text: re-enable optimization of op= in local blocks
+      config: 16 node XC
+  09/01/15:
+    - parallel array initialization
+  09/02/15:
+    - malloc vs. calloc
+  09/07/15:
+    - domains of formal array args no longer mean reindex
+  09/08/15:
+    - text: localization optimization for endcounts
+      config: 16 node XC
+  09/09/15:
+    - text: ubuntu update to 15.04 (gcc upgraded to 4.9.2)
+      config: shootout
 
 AllCompTime:
   11/09/14:

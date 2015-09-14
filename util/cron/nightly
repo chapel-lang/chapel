@@ -273,7 +273,7 @@ chomp($num_procs);
 
 $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
 
-$perfConfigName = $ENV{'CHPL_NIGHTLY_PERF_CONFIG_NAME'};
+$perfConfigName = $ENV{'CHPL_TEST_PERF_CONFIG_NAME'};
 if ($perfConfigName eq "") {
   $perfConfigName = hostname;
 }

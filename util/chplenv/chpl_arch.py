@@ -5,7 +5,7 @@ from sys import stdout, stderr
 from string import punctuation
 
 import utils, chpl_platform, chpl_comm, chpl_compiler
-from utils import memoize
+from utils import memoize, CompVersion
 
 class argument_map(object):
     # intel does not support amd archs... it may be worth testing setting the
@@ -109,15 +109,12 @@ class argument_map(object):
             return arch
 
         if compiler == 'gnu':
-            if version.major > 4:
+            if version >= CompVersion('4.9'):
                 return cls.gcc49.get(arch, '')
-            elif version.major == 4:
-                if version.minor >= 9:
-                    return cls.gcc49.get(arch, '')
-                elif version.minor >= 7:
-                    return cls.gcc47.get(arch, '')
-                elif version.minor >= 3:
-                    return cls.gcc43.get(arch, '')
+            elif version >= CompVersion('4.7'):
+                return cls.gcc47.get(arch, '')
+            elif version >= CompVersion('4.3'):
+                return cls.gcc43.get(arch, '')
             return 'none'
         elif compiler == 'intel':
             return cls.intel.get(arch, '')

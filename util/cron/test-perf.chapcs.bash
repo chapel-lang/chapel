@@ -4,7 +4,7 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 
-export CHPL_NIGHTLY_PERF_CONFIG_NAME='chapcs'
+export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
 
