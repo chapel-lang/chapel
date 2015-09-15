@@ -1091,6 +1091,7 @@ taskData * DataModel::getTaskData (long locale, long taskId, long tagNo)
   std::map<long,taskData>::iterator tskItr;
   long curTag;
 
+  // may not be taskId 1 ... has been so far.
   if (locale == 0 && taskId == 1)
     return &mainTask;
 
