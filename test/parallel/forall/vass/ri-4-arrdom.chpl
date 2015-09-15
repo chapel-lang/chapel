@@ -1,13 +1,40 @@
 // Stress test for parallel correctness.
 
-use driver;
+use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
 
 config var
-  r = 5000,   // how many times to repeat
+  n2 = 100,   // for compatibility with distributions/robust/arithmetic suite
+  r = 3000,   // how many times to repeat
   d = n2,     // each dimension of the domain and array
-  f = 1000;   // frequency of reports, 0 if none
+  f = 500;    // frequency of reports, 0 if none
 
 var nErr = 0;
+
+enum DistType { default, block, cyclic, blockcyclic, replicated };
+
+config param distType: DistType = if CHPL_COMM=="none" then DistType.default
+                                                       else DistType.block;
+
+proc setupDistributions() {
+  if distType == DistType.default then
+    return new DefaultDist();
+
+  else if distType == DistType.block then
+    return new Block(rank=2, boundingBox={1..d, 1..d});
+
+  else if distType == DistType.cyclic then
+    return new Cyclic(startIdx=(0,0));
+
+  else if distType == DistType.blockcyclic then
+    return new BlockCyclic(startIdx=(0,0), blocksize=(3,3));
+
+  else if distType == DistType.replicated then
+    return new ReplicatedDist();
+
+  else compilerError("unexpected 'distType': ", distType:c_string);
+}
+
+const Dist2D = new dmap(setupDistributions());
 
 var
   D1 = {1..d, 1..d} dmapped Dist2D,
