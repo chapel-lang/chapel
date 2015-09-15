@@ -34,8 +34,8 @@
 bool fWarnOwnership = false;
 
 static void createFlowSet(std::vector<BitVec*>& set,
-              size_t                nbbs,
-              size_t                nsyms)
+                          size_t                nbbs,
+                          size_t                nsyms)
 {
   // Create a BitVec of length size for each block.
   for (size_t i = 0; i < nbbs; ++i)
@@ -418,7 +418,8 @@ void OwnershipFlowManager::createFlowSets()
 //######################### Alias list utilities #########################
 
 static void
-setAliasList(BitVec* bits, SymbolVector& aliasList,
+setAliasList(BitVec* bits,
+             SymbolVector& aliasList,
              OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
   for_vector(Symbol, alias, aliasList)
@@ -430,7 +431,8 @@ setAliasList(BitVec* bits, SymbolVector& aliasList,
 
 
 static void
-resetAliasList(BitVec* bits, SymbolVector& aliasList,
+resetAliasList(BitVec* bits,
+               SymbolVector& aliasList,
                OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
   for_vector(Symbol, alias, aliasList)
@@ -581,8 +583,7 @@ static void createAlias(SymExpr* se, AliasVectorMap& aliases)
 }
 
 
-void
-OwnershipFlowManager::populateStmtAliases(OwnershipFlowManager::SymExprVector& symExprs)
+void OwnershipFlowManager::populateStmtAliases(SymExprVector& symExprs)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -633,7 +634,8 @@ OwnershipFlowManager::populateAliases()
 
 // Track when a local symbol gains ownership of an object.
 static void processCreator(SymExpr* se,
-                           BitVec* prod, BitVec* live,
+                           BitVec* prod,
+                           BitVec* live,
                            const AliasVectorMap& aliases,
                            OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
@@ -685,7 +687,9 @@ static void processCreator(SymExpr* se,
 
 
 static void processBitwiseCopy(SymExpr* se,
-                               BitVec* prod, BitVec* live, BitVec* cons,
+                               BitVec* prod,
+                               BitVec* live,
+                               BitVec* cons,
                                const AliasVectorMap& aliases,
                                OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
@@ -752,7 +756,8 @@ static void processBitwiseCopy(SymExpr* se,
 
 // If this call uses the given symbol, then add that symbol
 // and all of its aliases to the use set.
-static void processUser(SymExpr* se, BitVec* use,
+static void processUser(SymExpr* se,
+                        BitVec* use,
                         const AliasVectorMap& aliases,
                         OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
@@ -767,7 +772,8 @@ static void processUser(SymExpr* se, BitVec* use,
 // If this call acts like a destructor, then add the symbols it
 // affects to the cons set and remove them from the prod set.
 static void processConsumer(SymExpr* se,
-                            BitVec* live, BitVec* cons,
+                            BitVec*  live,
+                            BitVec*  cons,
                             const AliasVectorMap& aliases,
                             OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
@@ -782,8 +788,10 @@ static void processConsumer(SymExpr* se,
 
 void
 OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
-                                         BitVec* prod, BitVec* live,
-                                         BitVec* use, BitVec* cons)
+                                         BitVec* prod,
+                                         BitVec* live,
+                                         BitVec* use,
+                                         BitVec* cons)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -833,8 +841,10 @@ OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
 // the first (receiver) argument.
 void
 OwnershipFlowManager::computeTransitions(BasicBlock& bb,
-                                         BitVec* prod, BitVec* live,
-                                         BitVec* use, BitVec* cons)
+                                         BitVec* prod,
+                                         BitVec* live,
+                                         BitVec* use,
+                                         BitVec* cons)
 {
   for_vector(Expr, expr, bb.exprs)
   {
@@ -1355,7 +1365,8 @@ static void insertAutoDestroyAfterStmt(SymExpr* se)
 
 
 void
-OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons,
+OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons,
+                                                 BitVec* cons,
                                                  SymExprVector& symExprs)
 {
   // Run the symexprs in reverse order
@@ -1382,7 +1393,9 @@ OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons,
 }
 
 void
-OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons, BasicBlock* bb)
+OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons,
+                                                 BitVec* cons,
+                                                 BasicBlock* bb)
 {
   // Run the expressions backwards
   size_t i = bb->exprs.size();
@@ -1610,14 +1623,16 @@ static void insertAutoCopy(SymExpr* se)
 
 
 static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
-                           BitVec* prod, BitVec* live, BitVec* cons,
+                           BitVec* prod,
+                           BitVec* live,
+                           BitVec* cons,
                            const AliasVectorMap& aliases,
                            OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
   for_vector(SymExpr, se, symExprs)
   {
-    // We are only interested in local symbols, so if this one does not appear
-    // in our map, move on.
+    // We are only interested in local symbols, so if this one does
+    // not appear in our map, move on.
     Symbol* sym = se->var;
     if (symbolIndex.find(sym) == symbolIndex.end())
       continue;
@@ -1661,8 +1676,8 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
 
     // I apologize for this slightly special case.
     // The main AMM routine deals with the ownership of symbols, so the code
-    // appearing above in the bitwiseCopyArg(se) == 1 clause only triggers when
-    // the RHS is a symbol.
+    // appearing above in the bitwiseCopyArg(se) == 1 clause only triggers
+    // when the RHS is a symbol.
     // If the RHS is a call to a function, no autocopy is needed because calls
     // are uniformly treated as returning an owned value.  If the thing being
     // copied into the RVV is owned, we don't need to insert an autoCopy.
