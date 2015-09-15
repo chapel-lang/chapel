@@ -168,7 +168,7 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
   
   // Write the DIB header BITMAPINFOHEADER
   outfile.writef("%<4u %<4i %<4i %<2u %<2u %<4u %<4u %<4u %<4u %<4u %<4u",
-                 dib_header_size, cols, rows /*neg for swap*/,
+                 dib_header_size, cols, -rows /*neg for swap*/,
                  1 /* 1 color plane */, bits_per_pixel,
                  0 /* no compression */,
                  pixels_size,
