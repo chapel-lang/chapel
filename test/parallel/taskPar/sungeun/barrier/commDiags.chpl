@@ -45,16 +45,20 @@ proc remoteTestSplitPhase(b: Barrier, numRemoteTasks) {
 }
 
 var b = new Barrier(numRemoteTasks);
+writeln("atomic remote test basic");
 remoteTestBasic(b, numRemoteTasks);
 
 b.reset(numRemoteTasks);
+writeln("atomic remote test split phase");
 remoteTestSplitPhase(b, numRemoteTasks);
 delete b;
 
 var sb1 = new Barrier(numRemoteTasks, BarrierType.Sync);
+writeln("sync remote test basic");
 remoteTestBasic(sb1, numRemoteTasks);
 delete sb1;
 
 var sb2 = new Barrier(numRemoteTasks, BarrierType.Sync);
+writeln("sync remote test split phase");
 remoteTestSplitPhase(sb2, numRemoteTasks);
 delete sb2;
