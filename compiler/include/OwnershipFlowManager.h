@@ -33,26 +33,17 @@
 //#
 //########################################################################
 
-#ifdef _CHPL_OWNERSHIPFLOWMANAGER_H_
-#error Multiple inclusion
-#else
-#define _CHPL_OWNERSHIPFLOWMANAGER_H_
+#ifndef _CHPL_OWNERSHIP_FLOW_MANAGER_H_
+#define _CHPL_OWNERSHIP_FLOW_MANAGER_H_
 
-#ifndef ALIASVECTORMAP_H
 #include "AliasVectorMap.h"
-#endif
-
-
-#include "view.h" // For list_view (debugging).
-
-#include "bb.h"
-#include "stmt.h"
-#include "expr.h"
-#include "symbol.h"
 #include "CForLoop.h"
-
+#include "bb.h"
 #include "bitVec.h"
-
+#include "expr.h"
+#include "stmt.h"
+#include "symbol.h"
+#include "view.h"
 
 #define DEBUG_AMM 1
 
