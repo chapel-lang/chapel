@@ -3770,7 +3770,7 @@ pragma "no doc"
 proc channel.read(ref args ...?k,
                   style:iostyle):bool {
   var e:syserr = ENOERR;
-  this.read((...args), style=iostyle, error=e);
+  this.read((...args), style=style, error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {
