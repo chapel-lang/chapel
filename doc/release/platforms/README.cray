@@ -625,19 +625,22 @@ layer:
 
     With muxed tasking, the compiler --stack-checks setting specifies
     the default setting for execution-time stack overflow checking.  If
-    this is set and the program heap is not on hugepages (meaning for
-    now that CHPL_COMM!=ugni) then each stack gets an inaccessible guard
-    page added at the end toward which stack growth occurs.  Then if the
+    this is set and the program heap, from which stacks are allocated,
+    is not on hugepages then each stack gets an inaccessible guard page
+    added at the end toward which stack growth occurs.  Then if the
     stack overflows, the resulting SIGSEGV is diagnostic.  While this
     signal-based solution is a bit crude, it is also fairly trustworthy
     and hard to fool.
 
-    If guard pages cannot be used then muxed tasking does synchronous
-    stack overflow detection instead.  Explicit checks against the
-    task's stack limit are done on entry to selected functions in the
-    muxed tasking layer.  If overflow is seen, the runtime prints an
-    error message and halts the program.  The level of overflow checking
-    may be controlled using the CHPL_RT_STACK_CHECK_LEVEL environment
+    Guard pages cannot be used when the heap is on hugepages, because
+    the system call that makes memory pages inaccessible cannot be
+    applied to hugepages.  Currently the heap is on hugepages when
+    CHPL_COMM=ugni.  In this case muxed tasking does synchronous stack
+    overflow detection instead.  Explicit checks against the task's
+    stack limit are done on entry to selected functions in the muxed
+    tasking layer.  If overflow is seen, the runtime prints an error
+    message and halts the program.  The level of overflow checking may
+    be controlled using the CHPL_RT_STACK_CHECK_LEVEL environment
     variable, which can take the following values:
 
       0: no stack overflow checking
