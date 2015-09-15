@@ -30,7 +30,6 @@ typedef std::vector<BitVec*> FlowSet;
 
 class OwnershipFlowManager
 {
-  // Typedefs
 public:
   typedef BasicBlock::BasicBlockVector    BasicBlockVector;
   typedef std::map<Symbol*, size_t>       SymbolIndexMap;
@@ -50,10 +49,72 @@ public:
     FlowSet_ALL        = 0xff
   };
 
+       OwnershipFlowManager(FnSymbol* fn);
+      ~OwnershipFlowManager();
 
+  void buildBasicBlocks();
+  void extractSymbols();
+  void populateAliases();
+  void createFlowSets();
+  void computeTransitions();
+  void computeExits();
+  void backwardFlowUse();
+  void forwardFlowOwnership();
+  void insertAutoCopies();
+  void iteratorInsertAutoDestroys();
+  void checkForwardOwnership();
+  void backwardFlowOwnership();
+  void insertAutoDestroys();
 
-  // Properties
+  // Debug support.
+  void printInfo()                                                       const;
+  void printSymbols()                                                    const;
+  void printBasicBlocks();
+  void printFlowSets();
+  void printFlowSets(FlowSetFlags flags);
+  void printSymbolStats(Symbol* sym);
+  void printSymbolStats(size_t index);
+  void printSymbolStats(Symbol* sym, size_t index);
+
+protected:
+  void populateStmtAliases(SymExprVector& symExprs);
+
+  void computeTransitions(BasicBlock&    bb,
+                          BitVec*        prod,
+                          BitVec*        live,
+                          BitVec*        use,
+                          BitVec*        cons);
+
+  void computeTransitions(SymExprVector& symExprs,
+                          BitVec*        prod,
+                          BitVec*        live,
+                          BitVec*        use,
+                          BitVec*        cons);
+
+  void computeScopeMap();
+  void addInternalDefs();
+  void computeExitBlocks();
+
+  void iteratorInsertAutoDestroys(BitVec*        toCons,
+                                  BitVec*        cons,
+                                  BasicBlock*    bb);
+
+  void iteratorInsertAutoDestroys(BitVec*        toCons,
+                                  BitVec*        cons,
+                                  SymExprVector& symExprs);
+
+  void insertAutoDestroy(BitVec* to_cons);
+  void insertAutoDestroyAtScopeExit(Symbol* sym);
+
+  void insertAtOtherExitPoints(Symbol*   sym,
+                               CallExpr* autoDestroyCall);
+
 private:
+       OwnershipFlowManager();
+       OwnershipFlowManager(const OwnershipFlowManager&);
+
+  void operator=(const OwnershipFlowManager&);
+
   FnSymbol*         _fn;         // Records the function being analyzed
   Symbol*           fnRetSym;    // The return symbol of _fn.
 
@@ -143,75 +204,6 @@ private:
   // Debug level: 0 - off; 1 - verbose; 2 - very verbose.
   unsigned debug;
 #endif
-
-
-private:
-       OwnershipFlowManager();
-       OwnershipFlowManager(const OwnershipFlowManager&);
-
-  void operator=(const OwnershipFlowManager&);
-
-public:
-       OwnershipFlowManager(FnSymbol* fn);
-      ~OwnershipFlowManager();
-
-  void buildBasicBlocks();
-  void extractSymbols();
-  void populateAliases();
-  void createFlowSets();
-  void computeTransitions();
-  void computeExits();
-  void backwardFlowUse();
-  void forwardFlowOwnership();
-  void insertAutoCopies();
-  void iteratorInsertAutoDestroys();
-  void checkForwardOwnership();
-  void backwardFlowOwnership();
-  void insertAutoDestroys();
-
-  // Debug support.
-  void printInfo()                                                       const;
-  void printSymbols()                                                    const;
-  void printBasicBlocks();
-  void printFlowSets();
-  void printFlowSets(FlowSetFlags flags);
-  void printSymbolStats(Symbol* sym);
-  void printSymbolStats(size_t index);
-  void printSymbolStats(Symbol* sym, size_t index);
-
-  // Support routines
-protected:
-  void populateStmtAliases(SymExprVector& symExprs);
-
-  void computeTransitions(BasicBlock&    bb,
-                          BitVec*        prod,
-                          BitVec*        live,
-                          BitVec*        use,
-                          BitVec*        cons);
-
-  void computeTransitions(SymExprVector& symExprs,
-                          BitVec*        prod,
-                          BitVec*        live,
-                          BitVec*        use,
-                          BitVec*        cons);
-
-  void computeScopeMap();
-  void addInternalDefs();
-  void computeExitBlocks();
-
-  void iteratorInsertAutoDestroys(BitVec*        toCons,
-                                  BitVec*        cons,
-                                  BasicBlock*    bb);
-
-  void iteratorInsertAutoDestroys(BitVec*        toCons,
-                                  BitVec*        cons,
-                                  SymExprVector& symExprs);
-
-  void insertAutoDestroy(BitVec* to_cons);
-  void insertAutoDestroyAtScopeExit(Symbol* sym);
-
-  void insertAtOtherExitPoints(Symbol*   sym,
-                               CallExpr* autoDestroyCall);
 };
 
 #endif
