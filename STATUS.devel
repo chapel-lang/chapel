@@ -40,9 +40,6 @@ run into.
 # OMITTED: users/csep524/userDefReduceSlim.future
 #  b/c mutiple errors in the user code and hard to quantify what is wrong
 #
-# OMITTED: users/ferguson/override_overload.future
-#  b/c I really don't know how to describe it.
-#
 # OMITTED: users/npadmana/fftw/testFFTWsegfault.future
 # b/c not investigated or diagnosed
 
@@ -61,7 +58,6 @@ General (see also portability section at the bottom of this file)
   # parsing/vass/newline-in-string-compiletime-1.future
 - Names in a Chapel program can collide with names used internally.
   # modules/hilde/Writer.future
-  # modules/diten/module_use_hides_size_var.future
   # types/records/sungeun/chapelTypes/record_array.future
   # extern/vass/c_sublocid_any.inner-extern.future
 - There are several internal memory leaks
@@ -97,8 +93,6 @@ Types, Params, Variables, and Consts
   # functions/bradc/resolution/badEnumDispatch.future
 - Cannot define a method on sized types.
   # users/ferguson/int32method.future
-- Invoking a method directly on an enum constant results in a compiler error
-  # types/enum/vass/enum-receiver-1.future
 - Declaring enum types in a function body can cause compile time errors
   # types/enum/diten/enumDeclInFn.future
   # types/enum/diten/unusedEnumDeclInFn.future
@@ -135,10 +129,6 @@ Types, Params, Variables, and Consts
 - Attempting to instantiate a generic class in a type alias context results
   in an unresolved call error.
   # functions/vass/param-formal-in-ctor.future
-- Some symbols are incorrectly masked by other statements and an undeclared
-  symbol error is issued.
-  # functions/kbrady/proc_scoping.future
-  # modules/bradc/useFileSystemShadowsPath.future
 - Type aliases and enum declarations cannot be declared private/public.
   # visibility/private/typeAlias.future
   # visibility/private/privateEnum.future
@@ -170,9 +160,6 @@ Statements and Expressions
   # statements/diten/continueInForall.future
   # statements/sungeun/continue_coforall_label.future
   # statements/sungeun/continue_forall_label.future
-- Unlabeled break and continue statements fail to compile in param for
-  loops.
-  # statements/sungeun/continue_nolabel_param.future
 - On statement variable declarations are not yet supported.
   E.g., on Locales(1) var x: real;
   # multilocale/sungeun/on_statement_var_decl.future
@@ -216,8 +203,6 @@ Modules
 
 Functions and Iterators
 -----------------------
-# OMITTED: classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators.future
-#  b/c can't really describe this in a way that would be useful
 - Invalid where clauses may result in an internal compiler error.
   # functions/bradc/resolution/uintParamInWhere.future
 - Querying the type of a function is not supported and currently
@@ -316,7 +301,6 @@ Functions and Iterators
   or errors.
   # functions/bradc/paramThis/funParamThis2.future
   # functions/bradc/paramThis/funParamThis3.future
-  # functions/bradc/paramThis/funParamThis4.future
 
 
 Strings
@@ -716,9 +700,6 @@ Standard Modules, Standard Distributions, and Standard Layouts
 - Array assignment fails for Block distributions with bounding boxes
   that do not overlap with the bounds of the domain.
   # arrays/sungeun/multilocale/weird_bbox_block.future
-- Distribution equality is not implemented properly.
-  # distributions/sungeun/equality1.future
-  # distributions/sungeun/equality2.future
 - Records with domain map fields do not work.
   # types/records/sungeun/distInRecord.future
   # types/records/sungeun/distInRecordInClass.future
@@ -761,7 +742,7 @@ Optimizations
 
 Miscellaneous
 -------------
-# OMITTED: chpldoc/compflags/alphabetical/classFields.future
+# OMITTED: chpldoc/compflags/alphabetical/classFields.doc.future
 #  b/c the future is terse, and I have no idea what is wrong
 # OMITTED: memory/shannon/memstatEquals.future
 #  b/c it's pretty benign and probably will not cause a problem
@@ -779,9 +760,6 @@ Miscellaneous
 - An exported function that returns a record results in two versions
   in the generated code.
   # functions/gbt/retRecordMultiDef.future
-- An array variable and function that share the same name at the same
-  scope result in one of the two being arbitrarily chosen.
-  # functions/bradc/resolution/arrayVsFn.future
 - Leaving off () when calling exit results in an internal compiler
   error.
   # exits/sungeun/exitWithNoParensNoArgs.future
@@ -832,15 +810,12 @@ chpldoc
 -------
 - chpldoc comments that are not closed with using the specified
   comment style are not detected.
-  # chpldoc/compflags/comment/badClose.future
+  # chpldoc/compflags/comment/badClose.doc.future
 - chpldoc generates documentation for some symbols that should not be
   documented
-  # chpldoc/basics/main.future
+  # chpldoc/basics/main.doc.future
 - chpldoc is incorrect or incomplete for some types
-  # chpldoc/enum/docConstants.future
-  # chpldoc/types/fields/complexes.future
-  # chpldoc/types/fields/imags.future
-  # chpldoc/types/fields/reals.future
+  # chpldoc/enum/docConstants.doc.future
 
 
 Developer
