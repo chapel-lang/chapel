@@ -58,8 +58,8 @@ static void destroyFlowSet(std::vector<BitVec*> set)
 //############################## Predicates ##############################
 //#
 
-// Returns true if the given SymExpr is contructed by the expression in which it
-// appears; false otherwise.
+// Returns true if the given SymExpr is contructed by the expression in
+// which it appears; false otherwise.
 static bool isCreated(SymExpr* se)
 {
   if (CallExpr* call = toCallExpr(se->parentExpr))
@@ -100,23 +100,26 @@ static bool isCreated(SymExpr* se)
 
           switch (rhsCall->primitive->tag)
           {
-           default:
+          default:
             break; // Fall through and return true.
-           case PRIM_DEREF:
-            // Because the operand is a reference, its contents are "unowned" by the
-            // result.  An autoCopy needs to be inserted where an owned copy is required.
+          case PRIM_DEREF:
+            // Because the operand is a reference, its contents are
+            // "unowned" by the result.  An autoCopy needs to be inserted
+            // where an owned copy is required.
             return false;
-           case PRIM_GET_MEMBER_VALUE:
-           case PRIM_GET_SVEC_MEMBER_VALUE:
+
+          case PRIM_GET_MEMBER_VALUE:
+          case PRIM_GET_SVEC_MEMBER_VALUE:
             // Returns a bitwise copy of the referenced field which is, as a
             // consequence, unowned.
             return false;
-           case PRIM_ARRAY_GET_VALUE:
-            // Returns a bitwise copy of the selected array element which is, as a
-            // consequence, unowned.
+          case PRIM_ARRAY_GET_VALUE:
+            // Returns a bitwise copy of the selected array element which is,
+            // as a consequence, unowned.
             return false;
           }
         }
+
         return true;
       }
     }
@@ -128,8 +131,9 @@ static bool isCreated(SymExpr* se)
 
 
 // Returns true if the given SymExpr is being accessed.
-// Writes as well as reads return true, so the "last use" of a variable will be
-// its definition if it is never read.
+// Writes as well as reads return true, so the "last use" of a variable will
+// be its definition if it is never read.
+//
 // We use a simple form here that ignores references.
 // If it turns out that we need reference tracking, we should use the version
 // from copyPropagation.cpp.
@@ -153,8 +157,8 @@ static bool isUsed(SymExpr* se)
 }
 
 
-// Returns nonzero if the expression in which the given SymExpr appears makes it a
-// bitwise copy of some other symbol or vice versa; zero otherwise.
+// Returns nonzero if the expression in which the given SymExpr appears makes
+// it a bitwise copy of some other symbol or vice versa; zero otherwise.
 // If the parent expression of the given se is a bitwise copy, the return value
 // is the index of the given se in the argument list of the move (1 or 2).
 static int bitwiseCopyArg(SymExpr* se)
@@ -172,8 +176,8 @@ static int bitwiseCopyArg(SymExpr* se)
       // We just expect the lhs to be a SymExpr.
       INT_ASSERT(lhse);
 
-      // To be a bitwise copy, the RHS expression must be a SymExpr (but other
-      // ASTs are valid).
+      // To be a bitwise copy, the RHS expression must be a SymExpr
+      // (but other ASTs are valid).
       if (! rhse)
         return 0;
 
@@ -198,8 +202,8 @@ static bool isConsumed(SymExpr* se)
     {
       // This is a function call.
 
-      // The only ones we're interested in right now are destructor calls and
-      // autodestroy calls.
+      // The only ones we're interested in right now are destructor calls
+      // and autodestroy calls.
       if (fn->hasFlag(FLAG_DESTRUCTOR) ||
           fn->hasFlag(FLAG_AUTO_DESTROY_FN))
       {
@@ -215,7 +219,7 @@ static bool isConsumed(SymExpr* se)
       switch(call->primitive->tag)
       {
        default:
-        // Assume that, generally speaking, a primitive does not consume its argument.
+        // Assume that a primitive does not consume its argument.
         return false;
 
        case PRIM_RETURN:
@@ -229,8 +233,8 @@ static bool isConsumed(SymExpr* se)
        case PRIM_MOVE:
        case PRIM_ASSIGN:
         {
-          // If the left side of a move is a global, it assumes ownership from the
-          // RHS.  We can assume that the RHS is local.
+          // If the left side of a move is a global, it assumes ownership
+          // from the RHS.  We can assume that the RHS is local.
           SymExpr* lhse = toSymExpr(call->get(1));
           INT_ASSERT(lhse);
           if (SymExpr* rhse = toSymExpr(call->get(2)))
@@ -241,8 +245,8 @@ static bool isConsumed(SymExpr* se)
                 return true;
 
               // Assignment to the return-value variable is treated as a
-              // consumption, unless the function doest no return an owned value.
-              // (see Note #2).
+              // consumption, unless the function does not return an owned
+              // value. (see Note #2).
               if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
                 if (lhse->var == fn->getReturnSymbol())
                 {
@@ -392,7 +396,8 @@ void OwnershipFlowManager::buildBasicBlocks()
 
   // This is a workaround for the presence of non-empty blocks with no
   // predecessors in the interior of the flow graph.  When dead block removal
-  // works completely and runs before this pass, then this workaround may be removed.
+  // works completely and runs before this pass, then this workaround may be
+  // removed.
   BasicBlock::ignoreUnreachableBlocks(_fn);
 
   basicBlocks = _fn->basicBlocks;
@@ -490,8 +495,8 @@ static bool isParentExpr(Expr* expr, Expr* other)
 
 
 // Scans the body of the given function and inserts all of the variable and
-// argument symbols defined in it into the vector of symbols.  Bits in the flow
-// analysis bit-vectors correspond to the entries in this vector.
+// argument symbols defined in it into the vector of symbols.  Bits in the
+// flow analysis bit-vectors correspond to the entries in this vector.
 // Also constructs an index map, to make it easier to find the index of a
 // symbol in the vector.  (Otherwise, a linear search is required.)
 // The alias map can also be populated at the same time.
@@ -525,8 +530,8 @@ OwnershipFlowManager::extractSymbols()
     // type must be constructed by having their values piped through a copy
     // constructor.  Currently, that is not the case.
 
-    // We are interested only in records passed by value.  Records passed by
-    // ref appear be a class in the current AST because _ref(T) is a class type.
+    // Only interested in records passed by value.  Records passed by ref
+    // appear to be a class in the current AST because _ref(T) is a class type.
     AggregateType* at = toAggregateType(type);
     if (at == NULL)
       // Not an aggregate type, so not a record.
@@ -711,8 +716,8 @@ static void processBitwiseCopy(SymExpr* se,
   // same alias clique.  In that case, ownership is shared.
   if (laliasList == raliasList)
   {
-    // We set and reset the live bits for the members of an alias set in concert,
-    // so all we do here is assert that that has been done correctly.
+    // Live bits for the members of an alias set are updated in concert;
+    // assert that that has been done correctly.
     INT_ASSERT(live->get(lindex) == live->get(rindex));
   }
   else
@@ -724,15 +729,16 @@ static void processBitwiseCopy(SymExpr* se,
     {
       bool owned = live->get(rindex);
 
-      // lsym is defined in an outer scope, so we can transfer ownership from
-      // rsym's clique to lsym's clique.
+      // lsym is defined in an outer scope, so we can transfer ownership
+      // from rsym's clique to lsym's clique.
       // When that happens, we clear the live bit and set
       // the cons bit for each member of the RHS clique,
       // and then set the live and prod bits for each member of the LHS clique.
       resetAliasList(live, *raliasList, symbolIndex);
       setAliasList(cons, *raliasList, symbolIndex);
 
-      // Now set the produce bit for each member of the lhs clique, but only if the RHS
+      // If the RHS is owned, set the produce bit for each member of the lhs
+      // clique
       // was owned.
       if (owned)
       {
@@ -744,8 +750,8 @@ static void processBitwiseCopy(SymExpr* se,
 }
 
 
-// If this call uses the given symbol, then add that symbol and all its aliases
-// to the use set.
+// If this call uses the given symbol, then add that symbol
+// and all of its aliases to the use set.
 static void processUser(SymExpr* se, BitVec* use,
                         const AliasVectorMap& aliases,
                         OwnershipFlowManager::SymbolIndexMap& symbolIndex)
@@ -758,8 +764,8 @@ static void processUser(SymExpr* se, BitVec* use,
 }
 
 
-// If this call acts like a destructor, then add the symbols it affects to the
-// cons set and remove them from the prod set.
+// If this call acts like a destructor, then add the symbols it
+// affects to the cons set and remove them from the prod set.
 static void processConsumer(SymExpr* se,
                             BitVec* live, BitVec* cons,
                             const AliasVectorMap& aliases,
@@ -884,14 +890,15 @@ computeScopeToLastBBIDMap(FnSymbol* fn,
     std::vector<Expr*>& exprs = bbs[i]->exprs;
     for_vector(Expr, expr, exprs)
     {
-      // Now, for each scope up the chain, mark that this basic block (i) is the
-      // last one in it.  In loops, the last block belonging to the outer scope
-      // cannot be one that is executed repeatedly.  Otherwise, variables
-      // belonging to an outer scope will be freed repeatedly, which is not what
-      // we want.
-      // If blocks were properly nested, we would not have to do this, but since
-      // the end of several blocks may lie between two adjacent statements, we
-      // have to go up the chain and mark them all.
+      // Now, for each scope up the chain, mark that this basic block (i) is
+      // the last one in it.  In loops, the last block belonging to the outer
+      // scope cannot be one that is executed repeatedly.  Otherwise, variables
+      // belonging to an outer scope will be freed repeatedly, which is not
+      // what we want.
+      //
+      // If blocks were properly nested, we would not have to do this, but
+      // since the end of several blocks may lie between two adjacent
+      // statements, we have to go up the chain and mark them all.
       while ((expr = expr->parentExpr))
       {
         if (BlockStmt* block = toBlockStmt(expr))
@@ -1156,8 +1163,8 @@ OwnershipFlowManager::backwardFlowUse()
     for (size_t i = nbbs; i--; )
     {
       // Compute the OUT set for block i.
-      // A true bit means that the symbol is used on all paths out of that block.
-      // OUT is the union of the IN sets in all successor blocks.
+      // A true bit means that the symbol is used on all paths out of that
+      // block. OUT is the union of the IN sets in all successor blocks.
       // (If the last use of a symbol is in one or more successor branches,
       // it must flow through this block.)
       BitVec& out = *OUT[i];
@@ -1436,8 +1443,8 @@ OwnershipFlowManager::checkForwardOwnership()
 //
 // In backward flow, we adjust the out set so it is the intersection of the IN
 // sets of its successors.  If the block is a terminal block (a block with no
-// successors), however, we set its OUT to all zeroes.  This forces ownership to
-// be driven to zero before the function is exited.
+// successors), however, we set its OUT to all zeroes.  This forces ownership
+// to be driven to zero before the function is exited.
 // This analysis will work correctly even if the function has multiple exits.
 //
 // Backward flow through the blocks allows the destruction of temporaries to
@@ -1559,8 +1566,8 @@ static void insertAutoCopy(SymExpr* se)
     return;
 
   // Prevent autoCopy functions from calling themselves recursively.
-  // TODO: Remove this clause after the autoCopy function becomes a copy constructor
-  // method.
+  // TODO: Remove this clause after the autoCopy function becomes a
+  // copy constructor method.
   if (isRetVarInReturn(se))
     return;
 
@@ -1625,8 +1632,8 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
 
     if (bitwiseCopyArg(se) == 1)
     {
-      // If the live bit is set for the RHS symbol, we can leave it as a move and
-      // transfer ownership.  Otherwise, we need to insert an autoCopy.
+      // If the live bit is set for the RHS symbol, we can leave it as a move
+      // and transfer ownership.  Otherwise, we need to insert an autoCopy.
       if (seIsRVV && rvvIsOwned)
       {
         CallExpr* call = toCallExpr(se->parentExpr);
@@ -1715,8 +1722,8 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
       {
         insertAutoCopy(se);
         // We can set the bit in the PROD set to show that ownership is
-        // produced, but since it is consumed immediately, the state of OUT and
-        // the rest of the forward-flowed bitsets is unchanged.
+        // produced, but since it is consumed immediately, the state of
+        // OUT and the rest of the forward-flowed bitsets is unchanged.
         prod->set(index);
       }
       processConsumer(se, live, cons, aliases, symbolIndex);
@@ -1752,8 +1759,8 @@ OwnershipFlowManager::insertAutoCopies()
     // For this block traversal, we initialize live = IN[i].
     BitVec* live = new BitVec(*IN[i]);
     // We use temporaries for the prod and cons sets.  The results of
-    // global flow analysis should yield the same values, and this allows us to
-    // test that assertion.
+    // global flow analysis should yield the same values, and this allows
+    // us to test that assertion.
     BitVec* prod = new BitVec(PROD[i]->size());
     BitVec* cons = new BitVec(CONS[i]->size());
     insertAutoCopy(bb, prod, live, cons, symbols, symbolIndex, aliases);
@@ -1762,7 +1769,6 @@ OwnershipFlowManager::insertAutoCopies()
     delete prod; prod = 0;
   }
 }
-
 
 // Visit each goto in the scope containing the given symbol, and insert the
 // given autoDestroy call if the symbol is live at that point in the flow.
@@ -1795,8 +1801,8 @@ OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
     if (GotoStmt* gotoStmt = toGotoStmt(lastStmt))
     {
       // The scope must contain the goto statement.
-      // The negative case occurs when the scope block ends in the middle of a
-      // basic block.
+      // The negative case occurs when the scope block
+      // ends in the middle of a basic block.
       if (! scope->contains(gotoStmt))
         continue;
 
@@ -1806,8 +1812,8 @@ OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
       INT_ASSERT(target);
       if (! scope->contains(target))
       {
-        // This BlockStmt does not contain the DefExpr definition the target of
-        // the goto.  So we treat this as an exit point.
+        // This BlockStmt does not contain the DefExpr definition the
+        // target of the goto.  So we treat this as an exit point.
         gotoStmt->insertBefore(autoDestroyCall->copy());
       }
     }
@@ -1864,7 +1870,8 @@ OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
 }
 
 
-// Heuristic for determining which alias to use when autodestroying an alias clique.
+// Heuristic for determining which alias to use when autodestroying an
+// alias clique.
 static Symbol*
 getBestAlias(const SymbolVector& aliasList)
 {
@@ -1930,8 +1937,8 @@ OwnershipFlowManager::insertAutoDestroys()
 {
   // We need to re-run BB analysis, so that inserted autoCopy() calls are added
   // to their respective basic blocks.
-// This is probably not needed anymore.
-//  buildBasicBlocks();
+  // This is probably not needed anymore.
+  //  buildBasicBlocks();
 
   // We must insert an autoDestroy for each symbol that is live on exit from
   // its declaration scope.
@@ -2112,19 +2119,19 @@ void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
 //# memory.  However, if one of these is modified, then they are no longer
 //# equivalent.  They should be the same object, but one of them is obsolete.
 //# Which one?
-//#  In this implementation, temporaries are initialized only once, and typically
-//# used only once as well.  Named variables are also initialized only once, but
-//# may be used in multiple places -- including as lvalues.
-//#  Currently, we use a heuristic to determine the "current" alias -- we simply
-//# use the last one in the alias chain.  This is likely to be the named
-//# variable into which the call temps are finally assigned.
+//#  In this implementation, temporaries are initialized only once, and
+//# typically used only once as well.  Named variables are also initialized
+//# only once, but may be used in multiple places -- including as lvalues.
+//#  Currently, we use a heuristic to determine the "current" alias --
+//# we simply use the last one in the alias chain.  This is likely to be the
+//# named variable into which the call temps are finally assigned.
 //#  The heuristic can be made more robust in two ways:
 //#  1. In alias sets that contain a named variable, ensure that this named
 //# variable is unique (i.e. that the remaining aliases are unnamed
 //# temporaries).  Then, actually use that named variable.
 //#  2. Ensure that temporaries cannot be updated.  That is, that they are in
-//# fact assigned only one, and that only constant references (i.e. specifically
-//# not modifiable references) to them are created.
+//# fact assigned only one, and that only constant references (i.e.
+//# specifically not modifiable references) to them are created.
 //#
 //# Note #2: The return-value variable is special
 //#  To avoid ambiguity in the ownership state of a variable on entry to a join
