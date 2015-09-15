@@ -319,24 +319,6 @@ static bool resultIsOwned(CallExpr* call)
 }
 
 
-#if 0
-static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
-{
-  Expr*& first = bb->exprs.front();
-  Expr*& last = bb->exprs.back();
-  if (Expr* parent = getCommonParentExpr(first, last))
-  {
-    if (CForLoop* cfl = dynamic_cast<CForLoop*>(parent->parentExpr))
-    {
-      if (cfl->incrBlockGet() == parent)
-        return true;
-    }
-  }
-  return false;
-}
-#endif
-
-
 // Returns true if this block one which is executed repeatedly within a loop;
 // false otherwise.
 // Only C-style for loops have init clauses that are essentially in the
@@ -448,37 +430,6 @@ resetAliasList(BitVec* bits,
 //#
 //# TODO: See if these are defined elsewhere.
 //#
-
-#if 0
-static BlockStmt* getScopeBlock(Expr* expr)
-{
-  // If this is a DefExpr and the symbol is a formal, then we use the body of
-  // the function as the scope block.
-  if (DefExpr* def = toDefExpr(expr))
-  {
-    if (isArgSymbol(def->sym))
-      return toFnSymbol(def->parentSymbol)->body;
-
-    // Fall through.
-    // That is, we treat DefExprs containing VarSymbols like any other
-    // expression and search for scopes using the loop below.
-  }
-
-  // Traverse all scopes containing this expression, up to the root.
-  while (expr)
-  {
-    BlockStmt* block = toBlockStmt(expr);
-    if (block && ! (block->blockTag & BLOCK_SCOPELESS))
-      // This is a scoped block containing the Expr, so this is what we want.
-      return block;
-
-    expr = expr->parentExpr;
-  }
-
-  INT_FATAL(expr, "Expression is not associated with any scope.");
-  return NULL;
-}
-#endif
 
 // Returns true if expr is a parent expr of other; false otherwise.
 // The comparison is not strict (an Expr be its own parent);
@@ -872,7 +823,6 @@ OwnershipFlowManager::computeTransitions()
 }
 
 
-#if 0
 //////////////////////////////////////////////////////////////////////////
 // computeExits
 //
@@ -888,100 +838,6 @@ OwnershipFlowManager::computeTransitions()
 //   Find the block (scope) in which it is declared.
 //   Look up the bbID for the final bb in that scope.
 //   Set the corresponding bit: EXIT[bbID]->set(symbolID)
-static void
-computeScopeToLastBBIDMap(FnSymbol* fn,
-                          std::map<BlockStmt*, size_t>&scopeToLastBBIDMap)
-{
-  size_t nbbs = fn->basicBlocks->size();
-  BasicBlock::BasicBlockVector& bbs = *fn->basicBlocks;
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    // Walk the expressions in this block.
-    std::vector<Expr*>& exprs = bbs[i]->exprs;
-    for_vector(Expr, expr, exprs)
-    {
-      // Now, for each scope up the chain, mark that this basic block (i) is
-      // the last one in it.  In loops, the last block belonging to the outer
-      // scope cannot be one that is executed repeatedly.  Otherwise, variables
-      // belonging to an outer scope will be freed repeatedly, which is not
-      // what we want.
-      //
-      // If blocks were properly nested, we would not have to do this, but
-      // since the end of several blocks may lie between two adjacent
-      // statements, we have to go up the chain and mark them all.
-      while ((expr = expr->parentExpr))
-      {
-        if (BlockStmt* block = toBlockStmt(expr))
-        {
-          if (! (block->blockTag & BLOCK_SCOPELESS))
-            scopeToLastBBIDMap[block] = i;
-          if (isRepeatedInLoop(block))
-            break;
-        }
-      }
-    }
-  }
-}
-
-
-// We need to find the DefExprs corresponding to each symbol on our list, so
-// just traverse all DefExprs in the function and then look up the ones we're
-// interested in.
-void
-OwnershipFlowManager::computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap)
-{
-  std::vector<DefExpr*> defExprs;
-  collectDefExprs(_fn, defExprs);
-  for_vector(DefExpr, def, defExprs)
-  {
-    if (! def->parentSymbol)
-      continue;
-
-    Symbol* sym = def->sym;
-    OwnershipFlowManager::SymbolIndexMap::iterator simelt = symbolIndex.find(sym);
-
-    // We only care about symbols in our selected set.
-    if (simelt == symbolIndex.end())
-      continue;
-
-    // Get the symbol index out of the symbolIndexMap element.
-    size_t symID = simelt->second;
-
-    // Look for the closest scope block enclosing the DefExpr.
-    // Is there a utility for this?
-    BlockStmt* block = getScopeBlock(def);
-
-    // Workaround: Some passes leave shrapnel in the tree, including DefExprs
-    // for symbols that are never accessed.  We would normally expect to find a
-    // last basic block for every DefExpr, but if the DefExpr appears in a
-    // block that contains no executable statements, then because basic block
-    // analysis harvests only statements (not DefExprs), that block never has a
-    // last BBID established for it.
-    // The workaround can be removed if we make sure that DefExprs for symbols
-    // that are never actually accessed are removed from the treee before we
-    // reach this point in the translation.
-    std::map<BlockStmt*, size_t>::iterator item = scopeToLastBBIDMap.find(block);
-    if (item != scopeToLastBBIDMap.end())
-    {
-      size_t bbID = item->second;
-      EXIT[bbID]->set(symID);
-    }
-  }
-}
-
-
-void
-OwnershipFlowManager::computeExits()
-{
-  std::map<BlockStmt*, size_t> scopeToLastBBIDMap;
-
-  computeScopeToLastBBIDMap(_fn, scopeToLastBBIDMap);
-
-  computeExits(scopeToLastBBIDMap);
-}
-#else
-
-
 // Get the first statement in the given basic block.
 static Expr*
 getFirstStatement(BasicBlock* bb)
@@ -1128,7 +984,7 @@ OwnershipFlowManager::computeExits()
   addInternalDefs();
   computeExitBlocks();
 }
-#endif
+
 
 
 // Compute a set that tells if a symbol j is used later in the flow.  In any
@@ -1559,10 +1415,12 @@ static bool isDestructorArg(SymExpr* se)
     if (parent->hasFlag(FLAG_DESTRUCTOR) ||
         parent->hasFlag(FLAG_AUTO_DESTROY_FN))
 #endif
-      if (CallExpr* call = toCallExpr(se->parentExpr))
-        if (FnSymbol* fn = call->isResolved())
-          if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
-            return true;
+
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+    if (FnSymbol* fn = call->isResolved())
+      if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+        return true;
+
   return false;
 }
 
@@ -1998,7 +1856,7 @@ void OwnershipFlowManager::printSymbols() const {
 
 void OwnershipFlowManager::printBasicBlocks()
 {
-  #if DEBUG_AMM
+#if DEBUG_AMM
   if (debug > 1)
   {
     printf("\n");
@@ -2009,7 +1867,7 @@ void OwnershipFlowManager::printBasicBlocks()
   {
     BasicBlock::printBasicBlocks(_fn);
   }
-  #endif
+#endif
 }
 
 void OwnershipFlowManager::printFlowSets() {
@@ -2020,7 +1878,7 @@ void OwnershipFlowManager::printFlowSets() {
 
 void OwnershipFlowManager::printFlowSets(FlowSetFlags flags)
 {
-  #if DEBUG_AMM
+#if DEBUG_AMM
   if (debug > 0)
   {
     if (flags & FlowSet_PROD)
@@ -2059,7 +1917,7 @@ void OwnershipFlowManager::printFlowSets(FlowSetFlags flags)
       BasicBlock::printBitVectorSets(OUT);
     }
   }
-  #endif
+#endif
 }
 
 void OwnershipFlowManager::printSymbolStats(Symbol* sym) {
@@ -2100,6 +1958,150 @@ void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
 }
 
 // end debugging support
+
+
+#if 0
+static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
+{
+  Expr*& first = bb->exprs.front();
+  Expr*& last = bb->exprs.back();
+  if (Expr* parent = getCommonParentExpr(first, last))
+  {
+    if (CForLoop* cfl = dynamic_cast<CForLoop*>(parent->parentExpr))
+    {
+      if (cfl->incrBlockGet() == parent)
+        return true;
+    }
+  }
+  return false;
+}
+#endif
+
+
+#if 0
+static BlockStmt* getScopeBlock(Expr* expr)
+{
+  // If this is a DefExpr and the symbol is a formal, then we use the body of
+  // the function as the scope block.
+  if (DefExpr* def = toDefExpr(expr))
+  {
+    if (isArgSymbol(def->sym))
+      return toFnSymbol(def->parentSymbol)->body;
+
+    // Fall through.
+    // That is, we treat DefExprs containing VarSymbols like any other
+    // expression and search for scopes using the loop below.
+  }
+
+  // Traverse all scopes containing this expression, up to the root.
+  while (expr)
+  {
+    BlockStmt* block = toBlockStmt(expr);
+    if (block && ! (block->blockTag & BLOCK_SCOPELESS))
+      // This is a scoped block containing the Expr, so this is what we want.
+      return block;
+
+    expr = expr->parentExpr;
+  }
+
+  INT_FATAL(expr, "Expression is not associated with any scope.");
+  return NULL;
+}
+#endif
+
+#if 0
+static void
+computeScopeToLastBBIDMap(FnSymbol* fn,
+                          std::map<BlockStmt*, size_t>&scopeToLastBBIDMap)
+{
+  size_t nbbs = fn->basicBlocks->size();
+  BasicBlock::BasicBlockVector& bbs = *fn->basicBlocks;
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // Walk the expressions in this block.
+    std::vector<Expr*>& exprs = bbs[i]->exprs;
+    for_vector(Expr, expr, exprs)
+    {
+      // Now, for each scope up the chain, mark that this basic block (i) is
+      // the last one in it.  In loops, the last block belonging to the outer
+      // scope cannot be one that is executed repeatedly.  Otherwise, variables
+      // belonging to an outer scope will be freed repeatedly, which is not
+      // what we want.
+      //
+      // If blocks were properly nested, we would not have to do this, but
+      // since the end of several blocks may lie between two adjacent
+      // statements, we have to go up the chain and mark them all.
+      while ((expr = expr->parentExpr))
+      {
+        if (BlockStmt* block = toBlockStmt(expr))
+        {
+          if (! (block->blockTag & BLOCK_SCOPELESS))
+            scopeToLastBBIDMap[block] = i;
+          if (isRepeatedInLoop(block))
+            break;
+        }
+      }
+    }
+  }
+}
+
+
+// We need to find the DefExprs corresponding to each symbol on our list, so
+// just traverse all DefExprs in the function and then look up the ones we're
+// interested in.
+void
+OwnershipFlowManager::computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap)
+{
+  std::vector<DefExpr*> defExprs;
+  collectDefExprs(_fn, defExprs);
+  for_vector(DefExpr, def, defExprs)
+  {
+    if (! def->parentSymbol)
+      continue;
+
+    Symbol* sym = def->sym;
+    OwnershipFlowManager::SymbolIndexMap::iterator simelt = symbolIndex.find(sym);
+
+    // We only care about symbols in our selected set.
+    if (simelt == symbolIndex.end())
+      continue;
+
+    // Get the symbol index out of the symbolIndexMap element.
+    size_t symID = simelt->second;
+
+    // Look for the closest scope block enclosing the DefExpr.
+    // Is there a utility for this?
+    BlockStmt* block = getScopeBlock(def);
+
+    // Workaround: Some passes leave shrapnel in the tree, including DefExprs
+    // for symbols that are never accessed.  We would normally expect to find a
+    // last basic block for every DefExpr, but if the DefExpr appears in a
+    // block that contains no executable statements, then because basic block
+    // analysis harvests only statements (not DefExprs), that block never has a
+    // last BBID established for it.
+    // The workaround can be removed if we make sure that DefExprs for symbols
+    // that are never actually accessed are removed from the treee before we
+    // reach this point in the translation.
+    std::map<BlockStmt*, size_t>::iterator item = scopeToLastBBIDMap.find(block);
+    if (item != scopeToLastBBIDMap.end())
+    {
+      size_t bbID = item->second;
+      EXIT[bbID]->set(symID);
+    }
+  }
+}
+
+
+void
+OwnershipFlowManager::computeExits()
+{
+  std::map<BlockStmt*, size_t> scopeToLastBBIDMap;
+
+  computeScopeToLastBBIDMap(_fn, scopeToLastBBIDMap);
+
+  computeExits(scopeToLastBBIDMap);
+}
+#endif
 
 
 // TODO: Remove the computation of the EXIT set.  It is no longer needed,
