@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -123,7 +123,7 @@ static bool isParentExpr(Expr* expr, Expr* other)
 // analysis bit-vectors correspond to the entries in this vector.
 // Also constructs an index map, to make it easier to find the index of a
 // symbol in the vector.  (Otherwise, a linear search is required.)
-// The alias map can also be populated at the same time.  
+// The alias map can also be populated at the same time.
 void
 OwnershipFlowManager::extractSymbols()
 {
@@ -205,7 +205,7 @@ static void createAlias(SymExpr* se, AliasVectorMap& aliases)
 }
 
 
-void 
+void
 OwnershipFlowManager::populateStmtAliases(OwnershipFlowManager::SymExprVector& symExprs)
 {
   for_vector(SymExpr, se, symExprs)
@@ -235,7 +235,7 @@ OwnershipFlowManager::populateStmtAliases(OwnershipFlowManager::SymExprVector& s
 }
 
 
-void 
+void
 OwnershipFlowManager::populateAliases()
 {
   for_vector(BasicBlock, bb, *basicBlocks)
@@ -256,7 +256,7 @@ OwnershipFlowManager::populateAliases()
 
 
 // Track when a local symbol gains ownership of an object.
-static void processCreator(SymExpr* se, 
+static void processCreator(SymExpr* se,
                            BitVec* prod, BitVec* live,
                            const AliasVectorMap& aliases,
                            OwnershipFlowManager::SymbolIndexMap& symbolIndex)
@@ -283,16 +283,16 @@ static void processCreator(SymExpr* se,
   // When one member of an alias set is defined, we treat them all as being
   // defined.
   // Otherwise, backward flow will lead to premature deletion:
-  //  1:  0  >  5 
-  // move( call_tmp call( fn newAlias arg this ) ) 
-  // move( ret call_tmp ) 
-  // goto 806806   _end_reindex 
-  //  4:  2 3  >  5 
-  // move( call_tmp call( fn _newArray x ) ) 
-  // move( ret call_tmp ) 
-  //  5:  4 1  >  
-  // def _end_reindex 
-  // return( ret ) 
+  //  1:  0  >  5
+  // move( call_tmp call( fn newAlias arg this ) )
+  // move( ret call_tmp )
+  // goto 806806   _end_reindex
+  //  4:  2 3  >  5
+  // move( call_tmp call( fn _newArray x ) )
+  // move( ret call_tmp )
+  //  5:  4 1  >
+  // def _end_reindex
+  // return( ret )
   // In blocks 1 and 4, the respective call_tmp becomes live and is aliased
   // with ret.  But only the first call_tmp is live at the end of block 1 and
   // only the second call_tmp is live at the end of block 4: they will not flow
@@ -356,7 +356,7 @@ static void processBitwiseCopy(SymExpr* se,
       // lsym is defined in an outer scope, so we can transfer ownership from
       // rsym's clique to lsym's clique.
       // When that happens, we clear the live bit and set
-      // the cons bit for each member of the RHS clique, 
+      // the cons bit for each member of the RHS clique,
       // and then set the live and prod bits for each member of the LHS clique.
       resetAliasList(live, *raliasList, symbolIndex);
       setAliasList(cons, *raliasList, symbolIndex);
@@ -389,7 +389,7 @@ static void processUser(SymExpr* se, BitVec* use,
 
 // If this call acts like a destructor, then add the symbols it affects to the
 // cons set and remove them from the prod set.
-static void processConsumer(SymExpr* se, 
+static void processConsumer(SymExpr* se,
                             BitVec* live, BitVec* cons,
                             const AliasVectorMap& aliases,
                             OwnershipFlowManager::SymbolIndexMap& symbolIndex)
@@ -752,7 +752,7 @@ OwnershipFlowManager::computeExits()
 // Input: USE(i,j) is true iff symbol j is read at least once in block i.
 //
 // Output: USED_LATER(i,j) is true iff USE(k,j) is true for some k such that k
-// follows i in the global flow.  
+// follows i in the global flow.
 //
 // In general USED_LATER(i,j) is not true if the
 // last use of j lies in block i.  However, if USE(i,j) is true for a block i
@@ -770,7 +770,7 @@ OwnershipFlowManager::computeExits()
 // Then, we set USED_LATER <- OUT;
 //
 // Back edges are ignored.
-void 
+void
 OwnershipFlowManager::backwardFlowUse()
 {
   // Clear IN sets.
@@ -853,7 +853,7 @@ OwnershipFlowManager::forwardFlowOwnership()
   } while (changed);
 
   // We set the OUT set of any terminal block to all zeroes, to force cleanup
-  // of any variables that are unused at that point. 
+  // of any variables that are unused at that point.
   // TODO: Try disabling this and see if it is needed after reworking the USE
   // computation.
 #if 0
@@ -939,7 +939,7 @@ static Expr* getLastStmtInBB(Expr* stmt)
 // We can apply similar reasoning to conclude that a local in a loop body
 // whose value is established before the yield must be used before the
 // yield, and likewise one established after the yield must be used after
-// the yield and before the end of the loop.  
+// the yield and before the end of the loop.
 // No temporary can be established after the yield and remain valid after
 // returning to the top of the loop.  If this were true, then on the first
 // iteration, its value would have to magically jump into existence before
@@ -1011,7 +1011,7 @@ OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons, 
   while (i--)
   {
     Expr* stmt = bb->exprs[i];
-    
+
     SymExprVector symExprs;
     collectSymExprs(stmt, symExprs);
 
@@ -1070,7 +1070,7 @@ OwnershipFlowManager::checkForwardOwnership()
 // This analysis will work correctly even if the function has multiple exits.
 //
 // Backward flow through the blocks allows the destruction of temporaries to
-// flow backward to the end of the block in which they are last used.  
+// flow backward to the end of the block in which they are last used.
 void
 OwnershipFlowManager::backwardFlowOwnership()
 {
@@ -1132,7 +1132,7 @@ static bool isRetVarCopyInConstructor(SymExpr* se)
       if (se == call->get(2)) // whose RHS is the given SymExpr
         if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) // and the
           if (fn->hasFlag(FLAG_CONSTRUCTOR) ||             // containing
-              fn->hasFlag(FLAG_AUTO_COPY_FN) ||            // function 
+              fn->hasFlag(FLAG_AUTO_COPY_FN) ||            // function
               fn->hasFlag(FLAG_INIT_COPY_FN)) // is a constructor.
             // TODO: Can the above be generalized to all functions?
             if (SymExpr* lhse = toSymExpr(call->get(1))) // whose LHS
@@ -1367,7 +1367,7 @@ static void insertAutoCopy(BasicBlock& bb,
 
     insertAutoCopy(symExprs, prod, live, cons, aliases, symbolIndex);
   }
-}                          
+}
 
 
 void
@@ -1457,7 +1457,7 @@ OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
   //    returns an owned value.
   // Autocopies will be inserted to make the ownership state of the return
   // value variable consistent, but then the RVV will be owned while the
-  // function signature says that the returned value is not.  
+  // function signature says that the returned value is not.
   // Without this clause, an autoDestroy call will be inserted after the return
   // statement.  The C compiler may complain about this being unreachable code,
   // and we don't want it anyway, so we just don't insert it.
@@ -1524,7 +1524,7 @@ static CallExpr* removeReturnStmt(FnSymbol* fn) {
 
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
-void 
+void
 OwnershipFlowManager::insertAutoDestroy(BitVec* to_cons)
 {
   // For each true bit in the bit vector, add an autodestroy call.
@@ -1632,37 +1632,37 @@ void OwnershipFlowManager::printFlowSets(FlowSetFlags flags)
   {
     if (flags & FlowSet_PROD)
     {
-      printf("PROD:\n"); 
+      printf("PROD:\n");
       BasicBlock::printBitVectorSets(PROD);
     }
-    if (flags & FlowSet_CONS) 
+    if (flags & FlowSet_CONS)
     {
-      printf("CONS:\n"); 
+      printf("CONS:\n");
       BasicBlock::printBitVectorSets(CONS);
     }
-    if (flags & FlowSet_USE) 
+    if (flags & FlowSet_USE)
     {
-      printf("USE:\n"); 
+      printf("USE:\n");
       BasicBlock::printBitVectorSets(USE);
     }
-    if (flags & FlowSet_USED_LATER) 
+    if (flags & FlowSet_USED_LATER)
     {
-      printf("USED_LATER:\n"); 
+      printf("USED_LATER:\n");
       BasicBlock::printBitVectorSets(USED_LATER);
     }
-    if (flags & FlowSet_EXIT) 
+    if (flags & FlowSet_EXIT)
     {
-      printf("EXIT:\n"); 
+      printf("EXIT:\n");
       BasicBlock::printBitVectorSets(EXIT);
     }
-    if (flags & FlowSet_IN) 
+    if (flags & FlowSet_IN)
     {
-      printf("IN:\n"); 
+      printf("IN:\n");
       BasicBlock::printBitVectorSets(IN);
     }
-    if (flags & FlowSet_OUT) 
+    if (flags & FlowSet_OUT)
     {
-      printf("OUT:\n"); 
+      printf("OUT:\n");
       BasicBlock::printBitVectorSets(OUT);
     }
   }
@@ -1705,7 +1705,7 @@ void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
   }
   printf("\n");
 }
-  
+
 // end debugging support
 
 
@@ -1722,7 +1722,7 @@ void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
 // just inserts a new element if none is present.  However, at() is only
 // available in the C++11 version of the STL and PGI does not support that
 // version (as of this writing).  Using find() and then [] is a bit wordy, so
-// we just use [] with fingers crossed for now.  
+// we just use [] with fingers crossed for now.
 
 // TODO: In several places, we would like to pass SymbolIndex& with a const
 // qualifier, but since operator[] in the C++98 STL is not a const member
@@ -1747,7 +1747,7 @@ void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
 //#  Currently, we use a heuristic to determine the "current" alias -- we simply
 //# use the last one in the alias chain.  This is likely to be the named
 //# variable into which the call temps are finally assigned.
-//#  The heuristic can be made more robust in two ways: 
+//#  The heuristic can be made more robust in two ways:
 //#  1. In alias sets that contain a named variable, ensure that this named
 //# variable is unique (i.e. that the remaining aliases are unnamed
 //# temporaries).  Then, actually use that named variable.

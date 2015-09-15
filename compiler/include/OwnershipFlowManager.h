@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,15 +19,15 @@
 
 //# OwnershipFlowManager.h -*- C++ -*-
 //########################################################################
-//# Ownership flow manager 
+//# Ownership flow manager
 //#
 //# Passing around the various pieces of state associated with ownership flow
 //# analysis was getting cumbersome, so these have been consolidated in the
-//# OwnershipFlowManager class.  
+//# OwnershipFlowManager class.
 //# It is basically just a container that cleans up the contained objects when
 //# it is destroyed.  For now, the main structure of the algorithm is left
 //# external to the class, though certainly these parts can be pulled in
-//# later.  
+//# later.
 //# At that time, the test for whether a routine belongs here is whether it is
 //# specific to ownership flow analysis.
 //#
@@ -224,7 +224,7 @@ class OwnershipFlowManager
   void checkForwardOwnership();
   void backwardFlowOwnership();
   void insertAutoDestroys();
-  
+
   // Debug support.
   void printInfo() const;
   void printSymbols() const;
@@ -380,7 +380,7 @@ bitwiseCopyArg(SymExpr* se)
 
       // We just expect the lhs to be a SymExpr.
       INT_ASSERT(lhse);
-      
+
       // To be a bitwise copy, the RHS expression must be a SymExpr (but other
       // ASTs are valid).
       if (! rhse)
@@ -540,7 +540,7 @@ inline static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
   return false;
 }
 #endif
-  
+
 
 // Returns true if this block one which is executed repeatedly within a loop;
 // false otherwise.
@@ -576,7 +576,7 @@ inline static bool isRepeatedInLoop(BlockStmt* block)
 
 // We have to explicitly destroy the flow sets.
 // The remaining properties are either owned elsewhere or "automatic".
-inline 
+inline
 OwnershipFlowManager::~OwnershipFlowManager()
 {
   destroyFlowSet(PROD);
