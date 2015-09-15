@@ -399,27 +399,25 @@ void OwnershipFlowManager::createFlowSets()
 
 //######################### Alias list utilities #########################
 
-static void
-setAliasList(BitVec* bits,
-             SymbolVector& aliasList,
-             OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+void OwnershipFlowManager::setAliasList(BitVec*        bits,
+                                        SymbolVector& aliasList)
 {
   for_vector(Symbol, alias, aliasList)
   {
     size_t index = symbolIndex[alias];
+
     bits->set(index);
   }
 }
 
 
-static void
-resetAliasList(BitVec* bits,
-               SymbolVector& aliasList,
-               OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+void OwnershipFlowManager::resetAliasList(BitVec*        bits,
+                                          SymbolVector& aliasList)
 {
   for_vector(Symbol, alias, aliasList)
   {
     size_t index = symbolIndex[alias];
+
     bits->reset(index);
   }
 }
@@ -509,7 +507,7 @@ OwnershipFlowManager::extractSymbols()
 }
 
 
-static void createAlias(SymExpr* se, AliasVectorMap& aliases)
+void OwnershipFlowManager::createAlias(SymExpr* se)
 {
   CallExpr* call = toCallExpr(se->parentExpr);
 
@@ -558,7 +556,7 @@ void OwnershipFlowManager::populateStmtAliases(SymExprVector& symExprs)
     if (bitwiseCopyArg(se) == 1)
       // It suffices to create the alias when the se is the left operand (1),
       // though it probably does no harm to do this symmetrically.
-      createAlias(se, aliases);
+      createAlias(se);
   }
 }
 
@@ -584,11 +582,9 @@ OwnershipFlowManager::populateAliases()
 
 
 // Track when a local symbol gains ownership of an object.
-static void processCreator(SymExpr* se,
-                           BitVec* prod,
-                           BitVec* live,
-                           const AliasVectorMap& aliases,
-                           OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+void OwnershipFlowManager::processCreator(SymExpr* se,
+                                          BitVec*  prod,
+                                          BitVec*  live)
 {
   // Any function returning a value is considered to be a constructor.
 
@@ -632,17 +628,16 @@ static void processCreator(SymExpr* se,
   // the flow sets -- either all are owned or none are.  This will save time
   // and space.
   SymbolVector* aliasList = aliases.at(sym);
-  setAliasList(prod, *aliasList, symbolIndex);
-  setAliasList(live, *aliasList, symbolIndex);
+
+  setAliasList(prod, *aliasList);
+  setAliasList(live, *aliasList);
 }
 
 
-static void processBitwiseCopy(SymExpr* se,
-                               BitVec* prod,
-                               BitVec* live,
-                               BitVec* cons,
-                               const AliasVectorMap& aliases,
-                               OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+void OwnershipFlowManager::processBitwiseCopy(SymExpr* se,
+                                              BitVec*  prod,
+                                              BitVec*  live,
+                                              BitVec*  cons)
 {
   CallExpr* call = toCallExpr(se->parentExpr);
 
@@ -689,16 +684,16 @@ static void processBitwiseCopy(SymExpr* se,
       // When that happens, we clear the live bit and set
       // the cons bit for each member of the RHS clique,
       // and then set the live and prod bits for each member of the LHS clique.
-      resetAliasList(live, *raliasList, symbolIndex);
-      setAliasList(cons, *raliasList, symbolIndex);
+      resetAliasList(live, *raliasList);
+      setAliasList  (cons, *raliasList);
 
       // If the RHS is owned, set the produce bit for each member of the lhs
       // clique
       // was owned.
       if (owned)
       {
-        setAliasList(prod, *laliasList, symbolIndex);
-        setAliasList(live, *laliasList, symbolIndex);
+        setAliasList(prod, *laliasList);
+        setAliasList(live, *laliasList);
       }
     }
   }
@@ -707,33 +702,30 @@ static void processBitwiseCopy(SymExpr* se,
 
 // If this call uses the given symbol, then add that symbol
 // and all of its aliases to the use set.
-static void processUser(SymExpr* se,
-                        BitVec* use,
-                        const AliasVectorMap& aliases,
-                        OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+void OwnershipFlowManager::processUser(SymExpr* se, BitVec* use)
 {
   // All members of an alias clique point to the same SymbolVector, so we only
   // need to look up one arbitrarily and then run the list.
   Symbol* sym = se->var;
   SymbolVector* aliasList = aliases.at(sym);
-  setAliasList(use, *aliasList, symbolIndex);
+
+  setAliasList(use, *aliasList);
 }
 
 
 // If this call acts like a destructor, then add the symbols it
 // affects to the cons set and remove them from the prod set.
-static void processConsumer(SymExpr* se,
-                            BitVec*  live,
-                            BitVec*  cons,
-                            const AliasVectorMap& aliases,
-                            OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+void OwnershipFlowManager::processConsumer(SymExpr* se,
+                                           BitVec*  live,
+                                           BitVec*  cons)
 {
   // All members of an alias clique point to the same SymbolVector, so we only
   // need to look up one arbitrarily and then run the list.
   Symbol* sym = se->var;
   SymbolVector* aliasList = aliases.at(sym);
-  resetAliasList(live, *aliasList, symbolIndex);
-  setAliasList(cons, *aliasList, symbolIndex);
+
+  resetAliasList(live, *aliasList);
+  setAliasList  (cons, *aliasList);
 }
 
 
@@ -757,29 +749,31 @@ OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
       continue;
 
     if (isCreated(se))
-      processCreator(se, prod, live, aliases, symbolIndex);
+      processCreator(se, prod, live);
 
     if (bitwiseCopyArg(se) == 1)
     {
-      processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
+      processBitwiseCopy(se, prod, live, cons);
 
       // When the RVV is on the LHS of an assignment, it is considered
       // to be owned unless the function says no.
       FnSymbol* fn = toFnSymbol(se->parentSymbol);
+
       if (sym == fn->getReturnSymbol())
         if (! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
         {
           SymbolVector* laliasList = aliases.at(sym);
-          setAliasList(prod, *laliasList, symbolIndex);
-          setAliasList(live, *laliasList, symbolIndex);
+
+          setAliasList(prod, *laliasList);
+          setAliasList(live, *laliasList);
         }
     }
 
     if (isUsed(se))
-      processUser(se, use, aliases, symbolIndex);
+      processUser(se, use);
 
     if (isConsumed(se))
-      processConsumer(se, live, cons, aliases, symbolIndex);
+      processConsumer(se, live, cons);
   }
 }
 
@@ -1241,8 +1235,10 @@ OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons,
     {
       // Remove this symbol and all its aliases from the cons set.
       SymbolVector* aliasList = aliases.at(sym);
-      resetAliasList(to_cons, *aliasList, symbolIndex);
-      setAliasList(cons, *aliasList, symbolIndex);
+
+      resetAliasList(to_cons, *aliasList);
+      setAliasList  (cons,    *aliasList);
+
       insertAutoDestroyAfterStmt(se);
     }
   }
@@ -1427,7 +1423,7 @@ static bool isDestructorArg(SymExpr* se)
 
 // Insert an autoCopy because this symbol is unowned and
 // a receptor formal expects its operand to be owned.
-static void insertAutoCopy(SymExpr* se)
+void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
 {
   SET_LINENO(se);
   Symbol* sym = se->var;
@@ -1480,12 +1476,10 @@ static void insertAutoCopy(SymExpr* se)
 }
 
 
-static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
-                           BitVec* prod,
-                           BitVec* live,
-                           BitVec* cons,
-                           const AliasVectorMap& aliases,
-                           OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
+                                          BitVec*        prod,
+                                          BitVec*        live,
+                                          BitVec*        cons)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -1528,7 +1522,8 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
           }
         }
       }
-      processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
+
+      processBitwiseCopy(se, prod, live, cons);
       continue;
     }
 
@@ -1573,7 +1568,7 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
 
     // Set a bit in the live set if this is a constructor.
     if (isCreated(se))
-      processCreator(se, prod, live, aliases, symbolIndex);
+      processCreator(se, prod, live);
 
     if (isConsumed(se))
     {
@@ -1599,24 +1594,24 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
         // OUT and the rest of the forward-flowed bitsets is unchanged.
         prod->set(index);
       }
-      processConsumer(se, live, cons, aliases, symbolIndex);
+      processConsumer(se, live, cons);
     }
   }
 }
 
 
-static void insertAutoCopy(BasicBlock& bb,
-                           BitVec* prod, BitVec* live, BitVec* cons,
-                           const SymbolVector& symbols,
-                           OwnershipFlowManager::SymbolIndexMap& symbolIndex,
-                           const AliasVectorMap& aliases)
+void OwnershipFlowManager::insertAutoCopy(BasicBlock& bb,
+                                          BitVec* prod,
+                                          BitVec* live,
+                                          BitVec* cons)
 {
   for_vector(Expr, expr, bb.exprs)
   {
     OwnershipFlowManager::SymExprVector symExprs;
+
     collectSymExprs(expr, symExprs);
 
-    insertAutoCopy(symExprs, prod, live, cons, aliases, symbolIndex);
+    insertAutoCopy(symExprs, prod, live, cons);
   }
 }
 
@@ -1636,7 +1631,9 @@ OwnershipFlowManager::insertAutoCopies()
     // us to test that assertion.
     BitVec* prod = new BitVec(PROD[i]->size());
     BitVec* cons = new BitVec(CONS[i]->size());
-    insertAutoCopy(bb, prod, live, cons, symbols, symbolIndex, aliases);
+
+    insertAutoCopy(bb, prod, live, cons);
+
     delete cons; cons = 0;
     delete live; live = 0;
     delete prod; prod = 0;
@@ -1789,7 +1786,8 @@ OwnershipFlowManager::insertAutoDestroy(BitVec* to_cons)
       // Remove this symbol and all its aliases from the cons set.
       SymbolVector* aliasList = aliases.at(sym);
       Symbol* best = getBestAlias(*aliasList);
-      resetAliasList(to_cons, *aliasList, symbolIndex);
+
+      resetAliasList(to_cons, *aliasList);
 
       // Use the last named symbol in the alias list (or just the last one if
       // they are all unnamed).

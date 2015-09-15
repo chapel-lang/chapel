@@ -115,6 +115,41 @@ private:
 
   void operator=(const OwnershipFlowManager&);
 
+  void insertAutoCopy(BasicBlock& bb,
+                      BitVec* prod,
+                      BitVec* live,
+                      BitVec* cons);
+
+  void insertAutoCopy(SymExprVector& symExprs,
+                      BitVec*        prod,
+                      BitVec*        live,
+                      BitVec*        cons);
+
+  void insertAutoCopy(SymExpr* se);
+
+  void setAliasList(BitVec*       bits,
+                    SymbolVector& aliasList);
+
+  void resetAliasList(BitVec*       bits,
+                      SymbolVector& aliasList);
+
+  void createAlias(SymExpr* se);
+
+  void processCreator(SymExpr* se,
+                      BitVec*  prod,
+                      BitVec*  live);
+
+  void processBitwiseCopy(SymExpr* se,
+                          BitVec*  prod,
+                          BitVec*  live,
+                          BitVec*  cons);
+
+  void processUser(SymExpr* se, BitVec* use);
+
+  void processConsumer(SymExpr* se,
+                       BitVec*  live,
+                       BitVec*  cons);
+
   FnSymbol*         _fn;         // Records the function being analyzed
   Symbol*           fnRetSym;    // The return symbol of _fn.
 
