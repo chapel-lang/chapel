@@ -1,1 +1,1 @@
-testemptyglob.chpl:18: error: halt reached - glob() is being zipped with something too big; it only has 0 matches
+testemptyglob.chpl:15: error: halt reached - glob() is being zipped with something too big; it only has 0 matches
