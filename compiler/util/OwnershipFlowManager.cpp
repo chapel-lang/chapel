@@ -33,8 +33,7 @@
 
 bool fWarnOwnership = false;
 
-inline static void
-createFlowSet(std::vector<BitVec*>& set,
+static void createFlowSet(std::vector<BitVec*>& set,
               size_t                nbbs,
               size_t                nsyms)
 {
@@ -44,8 +43,7 @@ createFlowSet(std::vector<BitVec*>& set,
 }
 
 
-inline static void
-destroyFlowSet(std::vector<BitVec*> set)
+static void destroyFlowSet(std::vector<BitVec*> set)
 {
   for_vector(BitVec, vec, set)
     delete vec; vec = 0;
@@ -57,16 +55,12 @@ destroyFlowSet(std::vector<BitVec*> set)
 
 
 
-//########################################################################
-//# inline implementations
-//########################################################################
-
 //############################## Predicates ##############################
 //#
 
 // Returns true if the given SymExpr is contructed by the expression in which it
 // appears; false otherwise.
-inline static bool isCreated(SymExpr* se)
+static bool isCreated(SymExpr* se)
 {
   if (CallExpr* call = toCallExpr(se->parentExpr))
   {
@@ -139,7 +133,7 @@ inline static bool isCreated(SymExpr* se)
 // We use a simple form here that ignores references.
 // If it turns out that we need reference tracking, we should use the version
 // from copyPropagation.cpp.
-inline static bool isUsed(SymExpr* se)
+static bool isUsed(SymExpr* se)
 {
   // We are only interested in CallExprs here (not DefExprs, e.g.)
   if (isCallExpr(se->parentExpr))
@@ -163,8 +157,7 @@ inline static bool isUsed(SymExpr* se)
 // bitwise copy of some other symbol or vice versa; zero otherwise.
 // If the parent expression of the given se is a bitwise copy, the return value
 // is the index of the given se in the argument list of the move (1 or 2).
-inline static int
-bitwiseCopyArg(SymExpr* se)
+static int bitwiseCopyArg(SymExpr* se)
 {
   // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
   if (CallExpr* call = toCallExpr(se->parentExpr))
@@ -197,7 +190,7 @@ bitwiseCopyArg(SymExpr* se)
 
 // Returns true if the expression in which the given SymExpr appears causes
 // its ownership to be consumed; false otherwise.
-inline static bool isConsumed(SymExpr* se)
+static bool isConsumed(SymExpr* se)
 {
   if (CallExpr* call = toCallExpr(se->parentExpr))
   {
@@ -309,7 +302,7 @@ inline static bool isConsumed(SymExpr* se)
 }
 
 
-inline static bool resultIsOwned(CallExpr* call)
+static bool resultIsOwned(CallExpr* call)
 {
   if (call->isResolved())
     return true;
@@ -323,7 +316,7 @@ inline static bool resultIsOwned(CallExpr* call)
 
 
 #if 0
-inline static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
+static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
 {
   Expr*& first = bb->exprs.front();
   Expr*& last = bb->exprs.back();
@@ -344,7 +337,7 @@ inline static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
 // false otherwise.
 // Only C-style for loops have init clauses that are essentially in the
 // preceding scope.  All other loops contain only repeated clauses.
-inline static bool isRepeatedInLoop(BlockStmt* block)
+static bool isRepeatedInLoop(BlockStmt* block)
 {
   BlockStmt* parent = toBlockStmt(block->parentExpr);
   if (parent == NULL)
@@ -418,12 +411,8 @@ void OwnershipFlowManager::createFlowSets()
 }
 
 //######################### Alias list utilities #########################
-// Optimization note: When optimization is turned on, GCC is probably smart
-// enough to inline and coalesce adjacent loops (see e.g. the adjacent calls to
-// resetAliasList and setAliasList at the end of processConsumer), even without
-// the "inline" hint.  If so, inlining these by hand would be a waste of time.
 
-static inline void
+static void
 setAliasList(BitVec* bits, SymbolVector& aliasList,
              OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
@@ -435,7 +424,7 @@ setAliasList(BitVec* bits, SymbolVector& aliasList,
 }
 
 
-static inline void
+static void
 resetAliasList(BitVec* bits, SymbolVector& aliasList,
                OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
