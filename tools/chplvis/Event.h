@@ -167,8 +167,9 @@ class E_fork : public Event {
 
      virtual int Ekind() {return Ev_fork;}
      virtual void print() {
-       printf ("Fork%s: node %d time %ld.%06ld to %d datasize %d\n",
-               (isFast ? "(fast)" : ""), nodeid, sec, usec, dstid, argsize);
+       printf ("Fork%s: node %d time %ld.%06ld to %d datasize %d by task %ld\n",
+               (isFast ? "(fast)" : ""), nodeid, sec, usec, dstid,
+               argsize, byTask);
      }
 };
 
