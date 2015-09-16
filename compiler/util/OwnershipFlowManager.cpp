@@ -1576,21 +1576,7 @@ void OwnershipFlowManager::resetAliasList(BitVec*        bits,
 //# TODO: See if these are defined elsewhere.
 //#
 
-// Returns true if expr is a parent expr of other; false otherwise.
-// The comparison is not strict (an Expr be its own parent);
-// use equality to disambiguate.
-static bool isParentExpr(Expr* expr, Expr* other)
-{
-  while (other)
-  {
-    if (other == expr)
-      return true;
-
-    other = other->parentExpr;
-  }
-  return false;
-}
-
+static bool isParentExpr(Expr* expr, Expr* other);
 
 // Track when a local symbol gains ownership of an object.
 void OwnershipFlowManager::processCreator(SymExpr* se,
@@ -1644,7 +1630,6 @@ void OwnershipFlowManager::processCreator(SymExpr* se,
   setAliasList(live, *aliasList);
 }
 
-
 void OwnershipFlowManager::processBitwiseCopy(SymExpr* se,
                                               BitVec*  prod,
                                               BitVec*  live,
@@ -1686,6 +1671,7 @@ void OwnershipFlowManager::processBitwiseCopy(SymExpr* se,
     // Otherwise, the symbols are in different cliques.
     BlockStmt* lscope = lsym->getDeclarationScope();
     BlockStmt* rscope = rsym->getDeclarationScope();
+
     if (isParentExpr(lscope, rscope))
     {
       bool owned = live->get(rindex);
@@ -1710,6 +1696,20 @@ void OwnershipFlowManager::processBitwiseCopy(SymExpr* se,
   }
 }
 
+// Returns true if expr is a parent expr of other; false otherwise.
+// The comparison is not strict (an Expr be its own parent);
+// use equality to disambiguate.
+static bool isParentExpr(Expr* expr, Expr* other)
+{
+  while (other)
+  {
+    if (other == expr)
+      return true;
+
+    other = other->parentExpr;
+  }
+  return false;
+}
 
 // If this call uses the given symbol, then add that symbol
 // and all of its aliases to the use set.
