@@ -145,6 +145,18 @@ module Spawn {
     if isIntegralType(stderr.type) then stderr_fd = stderr;
     else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported"); 
 
+    // When memory is registered with the NIC under ugni, a fork will currently
+    // segfault. Here we halt before such a call is made to provide an
+    // informative error message instead of a segfault. Note that we don't
+    // register with the NIC for numLocales == 1, and vfork is used instead of
+    // fork when stdin, stdout, stderr=FORWARD so we won't run into this issue
+    // under those circumstances. See JIRA issue 113 for more details.
+    if CHPL_COMM == "ugni" then
+      if stdin != FORWARD || stdout != FORWARD || stderr != FORWARD then
+        if numLocales > 1 then
+          halt("spawn with more than 1 locale for CHPL_COMM=ugni currently ",
+               "requires stdin, stdout, stderr=FORWARD");
+
     if stdin == QIO_FD_PIPE then stdin_pipe = true;
     if stdout == QIO_FD_PIPE then stdout_pipe = true;
     if stderr == QIO_FD_PIPE then stderr_pipe = true;
