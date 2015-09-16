@@ -24,6 +24,9 @@
 #include "bb.h"
 #include "bitVec.h"
 
+#include <map>
+#include <vector>
+
 #define DEBUG_AMM 1
 
 typedef std::vector<BitVec*> FlowSet;
@@ -31,6 +34,13 @@ typedef std::vector<BitVec*> FlowSet;
 class OwnershipFlowManager
 {
 public:
+       OwnershipFlowManager(FnSymbol* fn);
+      ~OwnershipFlowManager();
+
+  void updateFunction();
+
+
+private:
   typedef BasicBlock::BasicBlockVector    BasicBlockVector;
   typedef std::map<Symbol*, size_t>       SymbolIndexMap;
   typedef SymbolIndexMap::value_type      SymbolIndexElement;
@@ -49,10 +59,10 @@ public:
     FlowSet_ALL        = 0xff
   };
 
-       OwnershipFlowManager(FnSymbol* fn);
-      ~OwnershipFlowManager();
+       OwnershipFlowManager();
+       OwnershipFlowManager(const OwnershipFlowManager&);
 
-  void updateFunction();
+  void operator=(const OwnershipFlowManager&);
 
   void buildBasicBlocks();
   void extractSymbols();
@@ -78,7 +88,6 @@ public:
   void printSymbolStats(size_t index);
   void printSymbolStats(Symbol* sym, size_t index);
 
-protected:
   void populateStmtAliases(SymExprVector& symExprs);
 
   void computeTransitions(BasicBlock&    bb,
@@ -110,12 +119,6 @@ protected:
 
   void insertAtOtherExitPoints(Symbol*   sym,
                                CallExpr* autoDestroyCall);
-
-private:
-       OwnershipFlowManager();
-       OwnershipFlowManager(const OwnershipFlowManager&);
-
-  void operator=(const OwnershipFlowManager&);
 
   void insertAutoCopy(BasicBlock& bb,
                       BitVec* prod,
