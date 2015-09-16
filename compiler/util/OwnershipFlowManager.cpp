@@ -1527,23 +1527,6 @@ static int bitwiseCopyArg(SymExpr* se)
 //# End of predicates
 //########################################################################
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //######################### Alias list utilities #########################
 
 void OwnershipFlowManager::setAliasList(BitVec*        bits,
@@ -1556,7 +1539,6 @@ void OwnershipFlowManager::setAliasList(BitVec*        bits,
     bits->set(index);
   }
 }
-
 
 void OwnershipFlowManager::resetAliasList(BitVec*        bits,
                                           SymbolVector& aliasList)
@@ -1737,76 +1719,6 @@ void OwnershipFlowManager::processConsumer(SymExpr* se,
 
   resetAliasList(live, *aliasList);
   setAliasList  (cons, *aliasList);
-}
-
-
-// After forward flow analysis and after autoCopies have been inserted, it
-// should be the case that every consumer has a producer associated with it on
-// all possible paths reaching the consumer node.
-void
-OwnershipFlowManager::checkForwardOwnership()
-{
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    // We expect the out sets of all predecessor to match the computed in set.
-    // This means that ownership is unambiguous on entry to a join node.
-    BitVec* in = IN[i];
-    for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
-    {
-      if (*OUT[pred->id] - *EXIT[pred->id] != *in)
-      {
-        fprintf(stderr, "OwnershipFlowManager::checkForwardOwnership -- Ownership mismatch");
-        fprintf(stderr, " at edge from block %d to block %ld in %s\n", pred->id, i, _fn->name);
-        INT_FATAL("Check failed.");
-      }
-    }
-  }
-}
-
-
-// Backward flow is no longer needed.  The computation of the last-use takes
-// care of determining the point at which autoDestroy calls need to be
-// inserted.  Those calls are consumers, so ownership of a given symbol does
-// not propagate out of a block that contains a corresponding USE bit.
-// Owned symbols are eagerly destroyed in a block where their USE bit is true.
-//
-// In backward flow, we adjust the out set so it is the intersection of the IN
-// sets of its successors.  If the block is a terminal block (a block with no
-// successors), however, we set its OUT to all zeroes.  This forces ownership
-// to be driven to zero before the function is exited.
-// This analysis will work correctly even if the function has multiple exits.
-//
-// Backward flow through the blocks allows the destruction of temporaries to
-// flow backward to the end of the block in which they are last used.
-void
-OwnershipFlowManager::backwardFlowOwnership()
-{
-  bool changed;
-  do {
-    changed = false;
-
-    for (size_t i = nbbs; i-- > 0; )
-    {
-      if ((*basicBlocks)[i]->outs.size() == 0)
-      {
-        // This is a terminal block because it has no successors.
-        // Its OUT set must be empty.
-        OUT[i]->clear();
-      }
-      else
-      {
-        BitVec* out = OUT[i];
-        for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
-          *out &= *IN[succ->id];
-      }
-      BitVec new_in = *OUT[i] + *CONS[i] - *PROD[i];
-      if (new_in != *IN[i])
-      {
-        *IN[i] = new_in;
-        changed = true;
-      }
-    }
-  } while (changed);
 }
 
 
@@ -2126,6 +2038,78 @@ void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
 }
 
 // end debugging support
+
+
+#if 0
+// After forward flow analysis and after autoCopies have been inserted, it
+// should be the case that every consumer has a producer associated with it on
+// all possible paths reaching the consumer node.
+void OwnershipFlowManager::checkForwardOwnership()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // We expect the out sets of all predecessor to match the computed in set.
+    // This means that ownership is unambiguous on entry to a join node.
+    BitVec* in = IN[i];
+    for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
+    {
+      if (*OUT[pred->id] - *EXIT[pred->id] != *in)
+      {
+        fprintf(stderr, "OwnershipFlowManager::checkForwardOwnership -- Ownership mismatch");
+        fprintf(stderr, " at edge from block %d to block %ld in %s\n", pred->id, i, _fn->name);
+        INT_FATAL("Check failed.");
+      }
+    }
+  }
+}
+#endif
+
+
+#if 0
+// Backward flow is no longer needed.  The computation of the last-use takes
+// care of determining the point at which autoDestroy calls need to be
+// inserted.  Those calls are consumers, so ownership of a given symbol does
+// not propagate out of a block that contains a corresponding USE bit.
+// Owned symbols are eagerly destroyed in a block where their USE bit is true.
+//
+// In backward flow, we adjust the out set so it is the intersection of the IN
+// sets of its successors.  If the block is a terminal block (a block with no
+// successors), however, we set its OUT to all zeroes.  This forces ownership
+// to be driven to zero before the function is exited.
+// This analysis will work correctly even if the function has multiple exits.
+//
+// Backward flow through the blocks allows the destruction of temporaries to
+// flow backward to the end of the block in which they are last used.
+void OwnershipFlowManager::backwardFlowOwnership()
+{
+  bool changed;
+  do {
+    changed = false;
+
+    for (size_t i = nbbs; i-- > 0; )
+    {
+      if ((*basicBlocks)[i]->outs.size() == 0)
+      {
+        // This is a terminal block because it has no successors.
+        // Its OUT set must be empty.
+        OUT[i]->clear();
+      }
+      else
+      {
+        BitVec* out = OUT[i];
+        for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
+          *out &= *IN[succ->id];
+      }
+      BitVec new_in = *OUT[i] + *CONS[i] - *PROD[i];
+      if (new_in != *IN[i])
+      {
+        *IN[i] = new_in;
+        changed = true;
+      }
+    }
+  } while (changed);
+}
+#endif
 
 
 #if 0

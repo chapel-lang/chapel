@@ -74,8 +74,6 @@ private:
   void forwardFlowOwnership();
   void insertAutoCopies();
   void iteratorInsertAutoDestroys();
-  void checkForwardOwnership();
-  void backwardFlowOwnership();
   void insertAutoDestroys();
 
   // Debug support.
