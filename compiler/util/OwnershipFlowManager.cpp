@@ -1457,269 +1457,6 @@ void OwnershipFlowManager::insertAtOtherExitPoints(Symbol*   sym,
   }
 }
 
-//############################## Predicates ##############################
-//#
-
-// Returns true if the given SymExpr is contructed by the expression in
-// which it appears; false otherwise.
-static bool isCreated(SymExpr* se)
-{
-  if (CallExpr* call = toCallExpr(se->parentExpr))
-  {
-    // In the current incarnation, we expect construction to look like:
-    //  ('move' lhs (construct <args>))
-    // When constructors turn into methods, this will look a bit different.
-    if (call->isPrimitive(PRIM_MOVE) ||
-        call->isPrimitive(PRIM_ASSIGN))
-    {
-      // We expect the target symbol to appear as the first operand.
-      if (call->get(1) != se)
-        return false;
-
-      if (CallExpr* rhsCall = toCallExpr(call->get(2)))
-      {
-        if (FnSymbol* fn = rhsCall->isResolved())
-        {
-          // A "normal" function.
-
-          // Return values of class type are ruled out.
-          Type* retType = fn->retType;
-
-          if (AggregateType* at = toAggregateType(retType))
-            if (at->isClass())
-              return false;
-
-          if (fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
-            return false;
-        }
-        else
-        {
-          // A primitive.
-
-          // We are only interested in record types, so if the RHS is not of
-          // aggregate type, we can skip it.
-          if (AggregateType* at = toAggregateType(rhsCall->typeInfo()))
-            if (at->isClass())
-              return false;
-
-          switch (rhsCall->primitive->tag)
-          {
-          default:
-            break; // Fall through and return true.
-
-          case PRIM_DEREF:
-            // Because the operand is a reference, its contents are
-            // "unowned" by the result.  An autoCopy needs to be inserted
-            // where an owned copy is required.
-            return false;
-
-          case PRIM_GET_MEMBER_VALUE:
-          case PRIM_GET_SVEC_MEMBER_VALUE:
-            // Returns a bitwise copy of the referenced field which is, as a
-            // consequence, unowned.
-            return false;
-
-          case PRIM_ARRAY_GET_VALUE:
-            // Returns a bitwise copy of the selected array element which is,
-            // as a consequence, unowned.
-            return false;
-          }
-        }
-
-        return true;
-      }
-    }
-  }
-
-  // Return false by default.
-  return false;
-}
-
-
-// Returns true if the given SymExpr is being accessed.
-// Writes as well as reads return true, so the "last use" of a variable will
-// be its definition if it is never read.
-//
-// We use a simple form here that ignores references.
-// If it turns out that we need reference tracking, we should use the version
-// from copyPropagation.cpp.
-static bool isUsed(SymExpr* se)
-{
-  // We are only interested in CallExprs here (not DefExprs, e.g.)
-  if (isCallExpr(se->parentExpr))
-  {
-    return true;
-  }
-
-  else if (isDefExpr(se->parentExpr))
-  {
-    return false;
-  }
-
-  else
-  {
-    INT_FATAL(se, "A SymExpr appears in an unexpected context.");
-  }
-
-  return false;
-}
-
-
-// Returns true if the expression in which the given SymExpr appears causes
-// its ownership to be consumed; false otherwise.
-static bool isConsumed(SymExpr* se)
-{
-  if (CallExpr* call = toCallExpr(se->parentExpr))
-  {
-    if (FnSymbol* fn = call->isResolved())
-    {
-      // This is a function call.
-
-      // The only ones we're interested in right now are destructor calls
-      // and autodestroy calls.
-      if (fn->hasFlag(FLAG_DESTRUCTOR) ||
-          fn->hasFlag(FLAG_AUTO_DESTROY_FN))
-      {
-        // We only care about calls where the se is the first operand.
-        // (The function being called is also a SymExpr.)
-        if (call->get(1) == se)
-          return true;
-      }
-    }
-    else
-    {
-      // This is a primitive.
-      switch(call->primitive->tag)
-      {
-       default:
-        // Assume that a primitive does not consume its argument.
-        return false;
-
-       case PRIM_RETURN:
-        // Returns act like destructors.
-        // Unless the enclosing function is marked to the contrary.
-        if (se->parentSymbol->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
-          return false;
-        else
-          return true;
-
-       case PRIM_MOVE:
-       case PRIM_ASSIGN:
-        {
-          // If the left side of a move is a global, it assumes ownership
-          // from the RHS.  We can assume that the RHS is local.
-          SymExpr* lhse = toSymExpr(call->get(1));
-
-          INT_ASSERT(lhse);
-
-          if (SymExpr* rhse = toSymExpr(call->get(2)))
-            if (se == rhse)
-            {
-              if (//lhse->var->type->symbol->hasFlag(FLAG_REF) ||
-                isModuleSymbol(lhse->var->defPoint->parentSymbol))
-                return true;
-
-              // Assignment to the return-value variable is treated as a
-              // consumption, unless the function does not return an owned
-              // value. (see Note #2).
-              if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
-                if (lhse->var == fn->getReturnSymbol())
-                {
-                  if (fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
-                    return false;
-                  else
-                    return true;
-                }
-            }
-        }
-        break;
-
-       case PRIM_SET_MEMBER:
-        if (call->get(3) == se)
-        {
-          // Very special code to handle the case of field assignment within a
-          // default constructor wrapper.  In this context, the field
-          // assignment is necessary, so that fields initialized earlier in the
-          // constructor can be used to provide default initializers for later
-          // fields.  (We are talking about field-initializers: those are
-          // initializer expressions that appear in field declarations in a
-          // record or class declaration.)  However, if the initializer
-          // expression is an owned value, it looks as though ownership is
-          // transferred to the field in the constructor wrapper.  In the
-          // constructor proper, however, the argument used to initialize that
-          // field is considered unowned.  Ownership is not transferred through
-          // the constructor argument.
-          // What happens is that ownership of the initializer expression is
-          // effectively lost.  That results in a memory leak.
-          // To prevent that, only in the context of a default constructor
-          // wrapper, we treat field initialization as if it does *not* consume
-          // its argument.  As a result, an autoDestroy call will be inserted
-          // if necessary in the default constructor wrapper.  If the field is
-          // a reference-counted type, for example, calling the default
-          // constructor wrapper (and letting it run to completion) should only
-          // increment the reference count by 1 as a net amount.
-          if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
-            if (parent->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
-                parent->hasFlag(FLAG_WRAPPER))
-              // This is the very special case.
-              return false;
-
-          // This is the normal case.
-          return true;
-        }
-        break;
-
-       case PRIM_ARRAY_SET_FIRST:
-        if (call->get(3) == se)
-          return true;
-        break;
-      }
-    }
-  }
-
-  return false;
-}
-
-
-// Returns nonzero if the expression in which the given SymExpr appears makes
-// it a bitwise copy of some other symbol or vice versa; zero otherwise.
-// If the parent expression of the given se is a bitwise copy, the return value
-// is the index of the given se in the argument list of the move (1 or 2).
-static int bitwiseCopyArg(SymExpr* se)
-{
-  // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
-  if (CallExpr* call = toCallExpr(se->parentExpr))
-  {
-    // Call must be a move or assignment
-    if (call->isPrimitive(PRIM_MOVE) ||
-        call->isPrimitive(PRIM_ASSIGN))
-    {
-      SymExpr* lhse = toSymExpr(call->get(1));
-      SymExpr* rhse = toSymExpr(call->get(2));
-
-      // We just expect the lhs to be a SymExpr.
-      INT_ASSERT(lhse);
-
-      // To be a bitwise copy, the RHS expression must be a SymExpr
-      // (but other ASTs are valid).
-      if (! rhse)
-        return 0;
-
-      if (se == lhse)
-        return 1;
-      if (se == rhse)
-        return 2;
-      INT_FATAL(se, "SymExpr does not appear in its parent move expression");
-    }
-  }
-  return 0;
-}
-
-
-//#
-//# End of predicates
-//########################################################################
-
 //######################### Alias list utilities #########################
 
 void OwnershipFlowManager::setAliasList(BitVec*        bits,
@@ -2040,6 +1777,269 @@ void OwnershipFlowManager::printSymbolStats(Symbol* sym, size_t index) {
 
 // end debugging support
 
+
+//############################## Predicates ##############################
+//#
+
+// Returns true if the given SymExpr is contructed by the expression in
+// which it appears; false otherwise.
+static bool isCreated(SymExpr* se)
+{
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+  {
+    // In the current incarnation, we expect construction to look like:
+    //  ('move' lhs (construct <args>))
+    // When constructors turn into methods, this will look a bit different.
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN))
+    {
+      // We expect the target symbol to appear as the first operand.
+      if (call->get(1) != se)
+        return false;
+
+      if (CallExpr* rhsCall = toCallExpr(call->get(2)))
+      {
+        if (FnSymbol* fn = rhsCall->isResolved())
+        {
+          // A "normal" function.
+
+          // Return values of class type are ruled out.
+          Type* retType = fn->retType;
+
+          if (AggregateType* at = toAggregateType(retType))
+            if (at->isClass())
+              return false;
+
+          if (fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+            return false;
+        }
+        else
+        {
+          // A primitive.
+
+          // We are only interested in record types, so if the RHS is not of
+          // aggregate type, we can skip it.
+          if (AggregateType* at = toAggregateType(rhsCall->typeInfo()))
+            if (at->isClass())
+              return false;
+
+          switch (rhsCall->primitive->tag)
+          {
+          default:
+            break; // Fall through and return true.
+
+          case PRIM_DEREF:
+            // Because the operand is a reference, its contents are
+            // "unowned" by the result.  An autoCopy needs to be inserted
+            // where an owned copy is required.
+            return false;
+
+          case PRIM_GET_MEMBER_VALUE:
+          case PRIM_GET_SVEC_MEMBER_VALUE:
+            // Returns a bitwise copy of the referenced field which is, as a
+            // consequence, unowned.
+            return false;
+
+          case PRIM_ARRAY_GET_VALUE:
+            // Returns a bitwise copy of the selected array element which is,
+            // as a consequence, unowned.
+            return false;
+          }
+        }
+
+        return true;
+      }
+    }
+  }
+
+  // Return false by default.
+  return false;
+}
+
+
+// Returns true if the given SymExpr is being accessed.
+// Writes as well as reads return true, so the "last use" of a variable will
+// be its definition if it is never read.
+//
+// We use a simple form here that ignores references.
+// If it turns out that we need reference tracking, we should use the version
+// from copyPropagation.cpp.
+static bool isUsed(SymExpr* se)
+{
+  // We are only interested in CallExprs here (not DefExprs, e.g.)
+  if (isCallExpr(se->parentExpr))
+  {
+    return true;
+  }
+
+  else if (isDefExpr(se->parentExpr))
+  {
+    return false;
+  }
+
+  else
+  {
+    INT_FATAL(se, "A SymExpr appears in an unexpected context.");
+  }
+
+  return false;
+}
+
+
+// Returns true if the expression in which the given SymExpr appears causes
+// its ownership to be consumed; false otherwise.
+static bool isConsumed(SymExpr* se)
+{
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+  {
+    if (FnSymbol* fn = call->isResolved())
+    {
+      // This is a function call.
+
+      // The only ones we're interested in right now are destructor calls
+      // and autodestroy calls.
+      if (fn->hasFlag(FLAG_DESTRUCTOR) ||
+          fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+      {
+        // We only care about calls where the se is the first operand.
+        // (The function being called is also a SymExpr.)
+        if (call->get(1) == se)
+          return true;
+      }
+    }
+    else
+    {
+      // This is a primitive.
+      switch(call->primitive->tag)
+      {
+       default:
+        // Assume that a primitive does not consume its argument.
+        return false;
+
+       case PRIM_RETURN:
+        // Returns act like destructors.
+        // Unless the enclosing function is marked to the contrary.
+        if (se->parentSymbol->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+          return false;
+        else
+          return true;
+
+       case PRIM_MOVE:
+       case PRIM_ASSIGN:
+        {
+          // If the left side of a move is a global, it assumes ownership
+          // from the RHS.  We can assume that the RHS is local.
+          SymExpr* lhse = toSymExpr(call->get(1));
+
+          INT_ASSERT(lhse);
+
+          if (SymExpr* rhse = toSymExpr(call->get(2)))
+            if (se == rhse)
+            {
+              if (//lhse->var->type->symbol->hasFlag(FLAG_REF) ||
+                isModuleSymbol(lhse->var->defPoint->parentSymbol))
+                return true;
+
+              // Assignment to the return-value variable is treated as a
+              // consumption, unless the function does not return an owned
+              // value. (see Note #2).
+              if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
+                if (lhse->var == fn->getReturnSymbol())
+                {
+                  if (fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+                    return false;
+                  else
+                    return true;
+                }
+            }
+        }
+        break;
+
+       case PRIM_SET_MEMBER:
+        if (call->get(3) == se)
+        {
+          // Very special code to handle the case of field assignment within a
+          // default constructor wrapper.  In this context, the field
+          // assignment is necessary, so that fields initialized earlier in the
+          // constructor can be used to provide default initializers for later
+          // fields.  (We are talking about field-initializers: those are
+          // initializer expressions that appear in field declarations in a
+          // record or class declaration.)  However, if the initializer
+          // expression is an owned value, it looks as though ownership is
+          // transferred to the field in the constructor wrapper.  In the
+          // constructor proper, however, the argument used to initialize that
+          // field is considered unowned.  Ownership is not transferred through
+          // the constructor argument.
+          // What happens is that ownership of the initializer expression is
+          // effectively lost.  That results in a memory leak.
+          // To prevent that, only in the context of a default constructor
+          // wrapper, we treat field initialization as if it does *not* consume
+          // its argument.  As a result, an autoDestroy call will be inserted
+          // if necessary in the default constructor wrapper.  If the field is
+          // a reference-counted type, for example, calling the default
+          // constructor wrapper (and letting it run to completion) should only
+          // increment the reference count by 1 as a net amount.
+          if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
+            if (parent->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
+                parent->hasFlag(FLAG_WRAPPER))
+              // This is the very special case.
+              return false;
+
+          // This is the normal case.
+          return true;
+        }
+        break;
+
+       case PRIM_ARRAY_SET_FIRST:
+        if (call->get(3) == se)
+          return true;
+        break;
+      }
+    }
+  }
+
+  return false;
+}
+
+
+// Returns nonzero if the expression in which the given SymExpr appears makes
+// it a bitwise copy of some other symbol or vice versa; zero otherwise.
+// If the parent expression of the given se is a bitwise copy, the return value
+// is the index of the given se in the argument list of the move (1 or 2).
+static int bitwiseCopyArg(SymExpr* se)
+{
+  // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+  {
+    // Call must be a move or assignment
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN))
+    {
+      SymExpr* lhse = toSymExpr(call->get(1));
+      SymExpr* rhse = toSymExpr(call->get(2));
+
+      // We just expect the lhs to be a SymExpr.
+      INT_ASSERT(lhse);
+
+      // To be a bitwise copy, the RHS expression must be a SymExpr
+      // (but other ASTs are valid).
+      if (! rhse)
+        return 0;
+
+      if (se == lhse)
+        return 1;
+      if (se == rhse)
+        return 2;
+      INT_FATAL(se, "SymExpr does not appear in its parent move expression");
+    }
+  }
+  return 0;
+}
+
+
+//#
+//# End of predicates
+//########################################################################
 
 #if 0
 // After forward flow analysis and after autoCopies have been inserted, it
