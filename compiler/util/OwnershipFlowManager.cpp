@@ -330,6 +330,175 @@ static void destroyFlowSet(std::vector<BitVec*> set)
 //#
 
 
+static Expr* getFirstStatement(BasicBlock* bb);
+
+//////////////////////////////////////////////////////////////////////////
+// computeExits
+//
+// For each symbol in our symbol set, find the basic block whose end coincides
+// with the end-of-scope for that symbol.
+// We do this by creating a map from blocks to basic block IDs: scope -> bbID.
+// We traverse the statements in each basic block and for each block
+// expression containing that statement, the corresponding index is updated to
+// the index of the current basic block.  When this pass is complete, each
+// element of the map will contain the ID of the final BB the lies entirely
+// within the scope it defines.
+// Then, for each symbol in our symbol set,
+//   Find the block (scope) in which it is declared.
+//   Look up the bbID for the final bb in that scope.
+//   Set the corresponding bit: EXIT[bbID]->set(symbolID)
+// Get the first statement in the given basic block.
+//
+// A statement can have multiple exits, by jumping to a label that is outside
+// the block.  The above algorithm assumes that there is only one exit block
+// per construct, but there are counterexamples such as tryGetPath().
+
+// Basic block analysis has already computed the successor blocks of each BB.
+// To find out whether a given scope is being exited, we can compute the scope
+// membership of the first statement in all of its successor blocks.  These
+// should all agree as to whether a given scope is being exited.  However, an
+// exception I can imagine is a do-while loop -- in which the branch
+// transfers control back to the top of the loop while sequential execution
+// falls through to the statment following the do-while construct.  In that
+// case, an inserted autodestroy should follow the end of the statement.  We
+// may need to add another slot to the do-while construct, so we have a place
+// to put autodestroys that belong there.
+
+// To compute EXIT(i,j), in each basic block we extract the first statement in
+// the block.  For each symbol in our list, we test if that statement lies
+// within its declaration scope.  If so, we set the corresponding bit in IN to
+// true.  (We use IN as a temporary set for this calculation.)
+// When that is done, we have a map showing basic blocks where each symbol is
+// in scope.
+// We then compute the difference, so EXIT records transitions from
+// in-scope to not-in-scope.
+
+void OwnershipFlowManager::computeExits()
+{
+  computeScopeMap();
+
+  addInternalDefs();
+
+  computeExitBlocks();
+}
+
+// Use the IN set to compute whether the first statement in each block i lies
+// within the scope in which symbol j is declared.  The corresponding bit
+// IN(i,j) is set to true if so, false otherwise.
+void OwnershipFlowManager::computeScopeMap()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    BitVec* in = IN[i];
+
+    Expr* first = getFirstStatement((*basicBlocks)[i]);
+
+    for (size_t j = 0; j < nsyms; ++j)
+    {
+      Symbol*    sym   = symbols[j];
+      BlockStmt* scope = sym->getDeclarationScope();
+
+      if (first && scope->contains(first))
+        in->set(j);
+      else
+        in->reset(j);
+    }
+  }
+}
+
+static Expr* getFirstStatement(BasicBlock* bb)
+{
+  std::vector<Expr*>& exprs = bb->exprs;
+
+  // If this block is empty, look in its successor.
+  // In this case, we assume that its successor block is unique.
+  if (exprs.size() > 0)
+  {
+    return exprs[0];
+  }
+  else
+  {
+    std::vector<BasicBlock*>& successors = bb->outs;
+
+    if (successors.size() > 0)
+    {
+      // Two or more successors.  Assume that all successors lie in the same
+      // scope and just take the first.
+      return getFirstStatement(successors[0]);
+    }
+    else
+    {
+      // No successors.  We must be at the end of the function
+      return NULL;
+    }
+  }
+}
+
+// We also have to handle the case where a symbol is declared and goes out of
+// scope in the same basic block.  In this case, the variable will not be in
+// scope at the top of the block, and it will not be in scope at the top of the
+// next block.  We get arond this by adding it to the IN set as if it was in
+// scope for the entire block.
+void OwnershipFlowManager::addInternalDefs()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    BitVec* in = IN[i];
+
+    for_vector(Expr, expr, (*basicBlocks)[i]->exprs)
+    {
+      if (DefExpr* def = toDefExpr(expr))
+      {
+        Symbol* sym = def->sym;
+
+        if (symbolIndex.find(sym) != symbolIndex.end())
+        {
+          size_t j = symbolIndex[sym];
+
+          in->set(j);
+        }
+      }
+    }
+  }
+}
+
+
+// Compute the EXIT set.
+//
+// A bit in the EXIT set is true if the corresponding symbol is
+// it scope in block i but not in scope in all successors of i.
+// If successors differ, then that case may have to be handled specially.
+//
+// Failing to set a bit in EXIT due to ambiguity will result in memory
+// leakage, but still allow the program to compile.  We can add debug
+// code here, to help track down leaks later.
+void OwnershipFlowManager::computeExitBlocks()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // A bit in EXIT[i] is set if the corresponding symbol is IN scope,
+    *EXIT[i] = *IN[i];
+
+    // and then reset if it is still in scope in all successor blocks.
+    BitVec                   still_alive = *EXIT[i];
+    std::vector<BasicBlock*> successors  = (*basicBlocks)[i]->outs;
+
+    if (successors.size() == 0)
+    {
+      // No successors means this is a terminal block.
+      // In that case, no symbols are still alive at the end of this block.
+      still_alive.clear();
+    }
+    else
+    {
+      for_vector(BasicBlock, succ, successors)
+        still_alive &= *IN[succ->id];
+    }
+
+    *EXIT[i] -= still_alive;
+  }
+}
+
 
 
 
@@ -950,170 +1119,6 @@ OwnershipFlowManager::computeTransitions()
     delete live;
   }
 }
-
-
-//////////////////////////////////////////////////////////////////////////
-// computeExits
-//
-// For each symbol in our symbol set, find the basic block whose end coincides
-// with the end-of-scope for that symbol.
-// We do this by creating a map from blocks to basic block IDs: scope -> bbID.
-// We traverse the statements in each basic block and for each block
-// expression containing that statement, the corresponding index is updated to
-// the index of the current basic block.  When this pass is complete, each
-// element of the map will contain the ID of the final BB the lies entirely
-// within the scope it defines.
-// Then, for each symbol in our symbol set,
-//   Find the block (scope) in which it is declared.
-//   Look up the bbID for the final bb in that scope.
-//   Set the corresponding bit: EXIT[bbID]->set(symbolID)
-// Get the first statement in the given basic block.
-static Expr*
-getFirstStatement(BasicBlock* bb)
-{
-  std::vector<Expr*>& exprs = bb->exprs;
-
-  // If this block is empty, look in its successor.
-  // In this case, we assume that its successor block is unique.
-  if (exprs.size() > 0)
-  {
-    return exprs[0];
-  }
-  else
-  {
-    std::vector<BasicBlock*>& successors = bb->outs;
-    if (successors.size() > 0)
-    {
-      // Two or more successors.  Assume that all successors lie in the same
-      // scope and just take the first.
-      return getFirstStatement(successors[0]);
-    }
-    // No successors.  We must be at the end of the function
-    return NULL;
-  }
-}
-
-
-// Use the IN set to compute whether the first statement in each block i lies
-// within the scope in which symbol j is declared.  The corresponding bit
-// IN(i,j) is set to true if so, false otherwise.
-void
-OwnershipFlowManager::computeScopeMap()
-{
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    BitVec* in = IN[i];
-
-    Expr* first = getFirstStatement((*basicBlocks)[i]);
-
-    for (size_t j = 0; j < nsyms; ++j)
-    {
-      Symbol* sym = symbols[j];
-      BlockStmt* scope = sym->getDeclarationScope();
-      if (first && scope->contains(first))
-        in->set(j);
-      else
-        in->reset(j);
-    }
-  }
-}
-
-
-// We also have to handle the case where a symbol is declared and goes out of
-// scope in the same basic block.  In this case, the variable will not be in
-// scope at the top of the block, and it will not be in scope at the top of the
-// next block.  We get arond this by adding it to the IN set as if it was in
-// scope for the entire block.
-void
-OwnershipFlowManager::addInternalDefs()
-{
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    BitVec* in = IN[i];
-
-    for_vector(Expr, expr, (*basicBlocks)[i]->exprs)
-    {
-      if (DefExpr* def = toDefExpr(expr))
-      {
-        Symbol* sym = def->sym;
-        if (symbolIndex.find(sym) != symbolIndex.end())
-        {
-          size_t j = symbolIndex[sym];
-          in->set(j);
-        }
-      }
-    }
-  }
-}
-
-
-// Compute the EXIT set.
-// A bit in the EXIT set is true if the corresponding symbol is in scope in
-// block i but not in scope in all successors of i.  If successors
-// differ, then that case may have to be handled specially.
-// Failing to set a bit in EXIT due to ambiguity will result in memory leakage,
-// but still allow the program to compile.  We can add debug code here, to help
-// track down leaks later.
-void
-OwnershipFlowManager::computeExitBlocks()
-{
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    // A bit in EXIT[i] is set if the corresponding symbol is IN scope,
-    *EXIT[i] = *IN[i];
-
-    // and then reset if it is still in scope in all successor blocks.
-    BitVec still_alive = *EXIT[i];
-    std::vector<BasicBlock*> successors = (*basicBlocks)[i]->outs;
-    if (successors.size() == 0)
-    {
-      // No successors means this is a terminal block.
-      // In that case, no symbols are still alive at the end of this block.
-      still_alive.clear();
-    }
-    else
-    {
-      for_vector(BasicBlock, succ, successors)
-        still_alive &= *IN[succ->id];
-    }
-
-    *EXIT[i] -= still_alive;
-  }
-}
-
-
-// Another implementation.
-// A statement can have multiple exits, by jumping to a label that is outside
-// the block.  The above algorithm assumes that there is only one exit block
-// per construct, but there are counterexamples such as tryGetPath().
-
-// Basic block analysis has already computed the successor blocks of each BB.
-// To find out whether a given scope is being exited, we can compute the scope
-// membership of the first statement in all of its successor blocks.  These
-// should all agree as to whether a given scope is being exited.  However, an
-// exception I can imagine is a do-while loop -- in which the branch
-// transfers control back to the top of the loop while sequential execution
-// falls through to the statment following the do-while construct.  In that
-// case, an inserted autodestroy should follow the end of the statement.  We
-// may need to add another slot to the do-while construct, so we have a place
-// to put autodestroys that belong there.
-
-// To compute EXIT(i,j), in each basic block we extract the first statement in
-// the block.  For each symbol in our list, we test if that statement lies
-// within its declaration scope.  If so, we set the corresponding bit in IN to
-// true.  (We use IN as a temporary set for this calculation.)
-// When that is done, we have a map showing basic blocks where each symbol is
-// in scope.
-// We then compute the difference, so EXIT records transitions from
-// in-scope to not-in-scope.
-void
-OwnershipFlowManager::computeExits()
-{
-  computeScopeMap();
-  addInternalDefs();
-  computeExitBlocks();
-}
-
 
 
 // Compute a set that tells if a symbol j is used later in the flow.  In any
