@@ -600,6 +600,79 @@ void OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
 //#
 
 
+// Compute a set that tells if a symbol j is used later in the flow.  In any
+// given block, if a symbol is consumed and it is not used or consumed later in
+// the same block and USED_LATER in that block is false for that symbol, then
+// ownership may be transferred to that consumer.  Otherwise, an autoCopy must
+// be inserted.
+//
+// Input: USE(i,j) is true iff symbol j is read at least once in block i.
+//
+// Output: USED_LATER(i,j) is true iff USE(k,j) is true for some k such that k
+// follows i in the global flow.
+//
+// In general USED_LATER(i,j) is not true if the
+// last use of j lies in block i.  However, if USE(i,j) is true for a block i
+// that lies within a loop, then USE(i,j) and USED_LATER(i,j) may be true
+// simultaneously.  In that case, there is no clear last use of symbol j; it
+// must be reclaimed at the end of its scope.
+//
+// First, we use IN and OUT as temporary sets to flow future use backwards.  If
+// a use in one block sets the corresponding OUT bit in a preceding block, that
+// means the preceding block is not the last use.  All OUT sets are initially
+// empty.  Then we compute:
+//  IN[i] = OUT[i] + USE[i]
+//  OUT[i] += IN[j], for every j a successor of block i.
+//  and iterate.
+// Then, we set USED_LATER <- OUT;
+//
+// Back edges are ignored.
+void OwnershipFlowManager::backwardFlowUse()
+{
+  // Clear IN sets.
+  // Assume that all OUT sets are empty.
+  for (size_t i = 0; i < nbbs; ++i)
+    IN[i]->clear();
+
+  bool changed;
+
+  do
+  {
+    changed = false;
+
+    for (size_t i = nbbs; i--; )
+    {
+      // Compute the OUT set for block i.
+      // A true bit means that the symbol is used on all paths out of that
+      // block. OUT is the union of the IN sets in all successor blocks.
+      // (If the last use of a symbol is in one or more successor branches,
+      // it must flow through this block.)
+      BitVec& out = *OUT[i];
+
+      out.clear();
+
+      for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
+        if ((size_t) succ->id > i)
+          out |= *IN[succ->id];
+
+      // Within a block, a bit in IN transitions to true if the symbol is used
+      // within that block.
+      BitVec new_in = *OUT[i] + *USE[i];
+
+      if (new_in != *IN[i])
+      {
+        *IN[i] = new_in;
+        changed = true;
+      }
+    }
+  } while (changed);
+
+  // Now just copy the OUT sets into USED_LATER.
+  for (size_t i = 0; i < nbbs; ++i)
+    *USED_LATER[i] = *OUT[i];
+}
+
+
 
 
 
@@ -1123,75 +1196,6 @@ void OwnershipFlowManager::processConsumer(SymExpr* se,
 
   resetAliasList(live, *aliasList);
   setAliasList  (cons, *aliasList);
-}
-
-
-// Compute a set that tells if a symbol j is used later in the flow.  In any
-// given block, if a symbol is consumed and it is not used or consumed later in
-// the same block and USED_LATER in that block is false for that symbol, then
-// ownership may be transferred to that consumer.  Otherwise, an autoCopy must
-// be inserted.
-//
-// Input: USE(i,j) is true iff symbol j is read at least once in block i.
-//
-// Output: USED_LATER(i,j) is true iff USE(k,j) is true for some k such that k
-// follows i in the global flow.
-//
-// In general USED_LATER(i,j) is not true if the
-// last use of j lies in block i.  However, if USE(i,j) is true for a block i
-// that lies within a loop, then USE(i,j) and USED_LATER(i,j) may be true
-// simultaneously.  In that case, there is no clear last use of symbol j; it
-// must be reclaimed at the end of its scope.
-//
-// First, we use IN and OUT as temporary sets to flow future use backwards.  If
-// a use in one block sets the corresponding OUT bit in a preceding block, that
-// means the preceding block is not the last use.  All OUT sets are initially
-// empty.  Then we compute:
-//  IN[i] = OUT[i] + USE[i]
-//  OUT[i] += IN[j], for every j a successor of block i.
-//  and iterate.
-// Then, we set USED_LATER <- OUT;
-//
-// Back edges are ignored.
-void
-OwnershipFlowManager::backwardFlowUse()
-{
-  // Clear IN sets.
-  // Assume that all OUT sets are empty.
-  for (size_t i = 0; i < nbbs; ++i)
-    IN[i]->clear();
-
-  bool changed;
-  do {
-    changed = false;
-
-    for (size_t i = nbbs; i--; )
-    {
-      // Compute the OUT set for block i.
-      // A true bit means that the symbol is used on all paths out of that
-      // block. OUT is the union of the IN sets in all successor blocks.
-      // (If the last use of a symbol is in one or more successor branches,
-      // it must flow through this block.)
-      BitVec& out = *OUT[i];
-      out.clear();
-      for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
-        if ((size_t) succ->id > i)
-          out |= *IN[succ->id];
-
-      // Within a block, a bit in IN transitions to true if the symbol is used
-      // within that block.
-      BitVec new_in = *OUT[i] + *USE[i];
-      if (new_in != *IN[i])
-      {
-        *IN[i] = new_in;
-        changed = true;
-      }
-    }
-  } while (changed);
-
-  // Now just copy the OUT sets into USED_LATER.
-  for (size_t i = 0; i < nbbs; ++i)
-    *USED_LATER[i] = *OUT[i];
 }
 
 
