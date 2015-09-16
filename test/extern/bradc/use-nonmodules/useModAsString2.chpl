@@ -3,7 +3,7 @@
 // of its symbols.  If this feature sticks around, we've talked
 // about switching to the keyword 'require' to avoid this confusion.
 //
-use "Foo.chpl";
+require "Foo.chpl";
 //
 // This tells it to make Foo's symbols available in this scope
 //

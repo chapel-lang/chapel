@@ -1,4 +1,4 @@
-use "void_extern_proc_array.h";
+require "void_extern_proc_array.h";
 
 extern proc voidArrayFunction(array: [] c_int, elems : c_int): void;
 

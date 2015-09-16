@@ -14,9 +14,11 @@ import chpl_make
 
 # Activate a virtualenv that has testing infrastructure requirements installed
 #
-# By default, we will try to use $CHPL_HOME/third-party/chpl-venv as our
-# virtualenv. We then check for a sentinel file that test-venv creates when
-# it's been successfully installed and finally activate the virtualenv.
+# By default, we will try to use 
+#   $CHPL_HOME/third-party/chpl-venv/install/$CHPL_TARGET_PLATFORM/chpl-virtualenv 
+# as our virtualenv. We then check for a sentinel file that test-venv
+# creates when it's been successfully installed and finally activate
+# the virtualenv.
 #
 # A user can also set CHPL_TEST_VENV_DIR to specify the path to a custom
 # virtualenv that will be activated. "none" is a special value that means skip

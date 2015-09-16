@@ -31,16 +31,30 @@ def using_chapel_module():
 
 @memoize
 def get_compiler_version(compiler):
-    CompVersion = namedtuple('CompVersion', ['major', 'minor'])
+    version_string = '0'
     if 'gnu' in compiler:
-        output = run_command(['gcc', '-dumpversion'])
-        match = re.search(r'(\d+)\.(\d+)', output)
-        if match:
-            return CompVersion(major=int(match.group(1)), minor=int(match.group(2)))
-        else:
-            raise ValueError("Could not find the GCC version")
+        version_string = run_command(['gcc', '-dumpversion'])
+    elif 'cray' in compiler:
+        version_string = os.environ.get('CRAY_CC_VERSION', '0')
+    return CompVersion(version_string)
+
+# Takes a version string of the form 'major', 'major.minor',
+# 'major.minor.revision', or 'major.minor,revision.build' and returns the named
+# tuple (major, minor, revision, build). If minor, revision, or build are not
+# specified, 0 will be used for their value(s)
+@memoize
+def CompVersion(version_string):
+    CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
+    match = re.search(r'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
+    if match:
+        major    = int(match.group(1))
+        minor    = int(match.group(3) or 0)
+        revision = int(match.group(5) or 0)
+        build    = int(match.group(7) or 0)
+        return CompVersionT(major=major, minor=minor, revision=revision, build=build)
     else:
-        return CompVersion(major=0, minor=0)
+        raise ValueError("Could not convert version '{0}' to "
+                         "a tuple".format(version_string))
 
 class CommandError(Exception):
     pass
