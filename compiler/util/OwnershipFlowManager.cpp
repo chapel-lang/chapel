@@ -1517,6 +1517,33 @@ void OwnershipFlowManager::processCreator(SymExpr* se,
   setAliasList(live, *aliasList);
 }
 
+// If this call uses the given symbol, then add that symbol
+// and all of its aliases to the use set.
+void OwnershipFlowManager::processUser(SymExpr* se, BitVec* use)
+{
+  // All members of an alias clique point to the same SymbolVector, so we only
+  // need to look up one arbitrarily and then run the list.
+  Symbol* sym = se->var;
+  SymbolVector* aliasList = aliases.at(sym);
+
+  setAliasList(use, *aliasList);
+}
+
+// If this call acts like a destructor, then add the symbols it
+// affects to the cons set and remove them from the prod set.
+void OwnershipFlowManager::processConsumer(SymExpr* se,
+                                           BitVec*  live,
+                                           BitVec*  cons)
+{
+  // All members of an alias clique point to the same SymbolVector, so we only
+  // need to look up one arbitrarily and then run the list.
+  Symbol* sym = se->var;
+  SymbolVector* aliasList = aliases.at(sym);
+
+  resetAliasList(live, *aliasList);
+  setAliasList  (cons, *aliasList);
+}
+
 void OwnershipFlowManager::processBitwiseCopy(SymExpr* se,
                                               BitVec*  prod,
                                               BitVec*  live,
@@ -1596,34 +1623,6 @@ static bool isParentExpr(Expr* expr, Expr* other)
     other = other->parentExpr;
   }
   return false;
-}
-
-// If this call uses the given symbol, then add that symbol
-// and all of its aliases to the use set.
-void OwnershipFlowManager::processUser(SymExpr* se, BitVec* use)
-{
-  // All members of an alias clique point to the same SymbolVector, so we only
-  // need to look up one arbitrarily and then run the list.
-  Symbol* sym = se->var;
-  SymbolVector* aliasList = aliases.at(sym);
-
-  setAliasList(use, *aliasList);
-}
-
-
-// If this call acts like a destructor, then add the symbols it
-// affects to the cons set and remove them from the prod set.
-void OwnershipFlowManager::processConsumer(SymExpr* se,
-                                           BitVec*  live,
-                                           BitVec*  cons)
-{
-  // All members of an alias clique point to the same SymbolVector, so we only
-  // need to look up one arbitrarily and then run the list.
-  Symbol* sym = se->var;
-  SymbolVector* aliasList = aliases.at(sym);
-
-  resetAliasList(live, *aliasList);
-  setAliasList  (cons, *aliasList);
 }
 
 //######################### Alias list utilities #########################
