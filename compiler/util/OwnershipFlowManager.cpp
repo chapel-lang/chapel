@@ -36,6 +36,10 @@ bool fWarnOwnership = false;
 static void destroyFlowSet(std::vector<BitVec*> set);
 static int  bitwiseCopyArg(SymExpr* se);
 
+static bool isCreated(SymExpr* se);
+static bool isUsed(SymExpr* se);
+static bool isConsumed(SymExpr* se);
+
 
 //#########################################################################
 //#
@@ -500,6 +504,100 @@ void OwnershipFlowManager::computeExitBlocks()
 }
 
 
+//#########################################################################
+//#
+
+void OwnershipFlowManager::computeTransitions()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // On the first pass, we compute live and then throw it away.
+    BitVec* live = new BitVec(PROD[i]->size());
+
+    computeTransitions(*(*basicBlocks)[i], PROD[i], live, USE[i], CONS[i]);
+
+    delete live;
+  }
+}
+
+// Look for expressions that create, destroy or transfer ownership of a record
+// object.
+// Right now, we can get away with just looking for MOVE or ASSIGN primitives
+// to determine where ownership is created or transferred.  When constructors
+// become methods, we'll key off the CONSTRUCTOR flag and modify the state of
+// the first (receiver) argument.
+void OwnershipFlowManager::computeTransitions(BasicBlock& bb,
+                                              BitVec*     prod,
+                                              BitVec*     live,
+                                              BitVec*     use,
+                                              BitVec*     cons)
+{
+  for_vector(Expr, expr, bb.exprs)
+  {
+    // Are all expressions in this list mutually exclusive?
+    // Can we speed things up by processing only statement expressions?
+
+    OwnershipFlowManager::SymExprVector symExprs;
+
+    collectSymExprs(expr, symExprs);
+
+    computeTransitions(symExprs, prod, live, use, cons);
+  }
+}
+
+void OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
+                                              BitVec*        prod,
+                                              BitVec*        live,
+                                              BitVec*        use,
+                                              BitVec*        cons)
+{
+  for_vector(SymExpr, se, symExprs)
+  {
+    // Ignore SymExprs that are not in the tree.
+    if (se->parentSymbol == NULL)
+      continue;
+
+    // We are only interested in local symbols, so if this one does not appear
+    // in our map, move on.
+    Symbol* sym = se->var;
+
+    if (symbolIndex.find(sym) == symbolIndex.end())
+      continue;
+
+    if (isCreated(se))
+      processCreator(se, prod, live);
+
+    if (bitwiseCopyArg(se) == 1)
+    {
+      processBitwiseCopy(se, prod, live, cons);
+
+      // When the RVV is on the LHS of an assignment, it is considered
+      // to be owned unless the function says no.
+      FnSymbol* fn = toFnSymbol(se->parentSymbol);
+
+      if (sym == fn->getReturnSymbol())
+      {
+        if (! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+        {
+          SymbolVector* laliasList = aliases.at(sym);
+
+          setAliasList(prod, *laliasList);
+          setAliasList(live, *laliasList);
+        }
+      }
+    }
+
+    if (isUsed(se))
+      processUser(se, use);
+
+    if (isConsumed(se))
+      processConsumer(se, live, cons);
+  }
+}
+
+
+//#########################################################################
+//#
 
 
 
@@ -880,11 +978,6 @@ static bool isParentExpr(Expr* expr, Expr* other)
 }
 
 
-//
-// computeTransitions
-//
-
-
 // Track when a local symbol gains ownership of an object.
 void OwnershipFlowManager::processCreator(SymExpr* se,
                                           BitVec*  prod,
@@ -1030,94 +1123,6 @@ void OwnershipFlowManager::processConsumer(SymExpr* se,
 
   resetAliasList(live, *aliasList);
   setAliasList  (cons, *aliasList);
-}
-
-
-void
-OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
-                                         BitVec* prod,
-                                         BitVec* live,
-                                         BitVec* use,
-                                         BitVec* cons)
-{
-  for_vector(SymExpr, se, symExprs)
-  {
-    // Ignore SymExprs that are not in the tree.
-    if (se->parentSymbol == NULL)
-      continue;
-
-    // We are only interested in local symbols, so if this one does not appear
-    // in our map, move on.
-    Symbol* sym = se->var;
-    if (symbolIndex.find(sym) == symbolIndex.end())
-      continue;
-
-    if (isCreated(se))
-      processCreator(se, prod, live);
-
-    if (bitwiseCopyArg(se) == 1)
-    {
-      processBitwiseCopy(se, prod, live, cons);
-
-      // When the RVV is on the LHS of an assignment, it is considered
-      // to be owned unless the function says no.
-      FnSymbol* fn = toFnSymbol(se->parentSymbol);
-
-      if (sym == fn->getReturnSymbol())
-        if (! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
-        {
-          SymbolVector* laliasList = aliases.at(sym);
-
-          setAliasList(prod, *laliasList);
-          setAliasList(live, *laliasList);
-        }
-    }
-
-    if (isUsed(se))
-      processUser(se, use);
-
-    if (isConsumed(se))
-      processConsumer(se, live, cons);
-  }
-}
-
-
-// Look for expressions that create, destroy or transfer ownership of a record
-// object.
-// Right now, we can get away with just looking for MOVE or ASSIGN primitives
-// to determine where ownership is created or transferred.  When constructors
-// become methods, we'll key off the CONSTRUCTOR flag and modify the state of
-// the first (receiver) argument.
-void
-OwnershipFlowManager::computeTransitions(BasicBlock& bb,
-                                         BitVec* prod,
-                                         BitVec* live,
-                                         BitVec* use,
-                                         BitVec* cons)
-{
-  for_vector(Expr, expr, bb.exprs)
-  {
-    // Are all expressions in this list mutually exclusive?
-    // Can we speed things up by processing only statement expressions?
-
-    OwnershipFlowManager::SymExprVector symExprs;
-    collectSymExprs(expr, symExprs);
-
-    computeTransitions(symExprs, prod, live, use, cons);
-  }
-}
-
-
-void
-OwnershipFlowManager::computeTransitions()
-{
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    // On the first pass, we compute live and then throw it away.
-    BitVec* live = new BitVec(PROD[i]->size());
-    computeTransitions(*(*basicBlocks)[i], PROD[i], live, USE[i], CONS[i]);
-    delete live;
-  }
 }
 
 
