@@ -1457,31 +1457,6 @@ void OwnershipFlowManager::insertAtOtherExitPoints(Symbol*   sym,
   }
 }
 
-//######################### Alias list utilities #########################
-
-void OwnershipFlowManager::setAliasList(BitVec*        bits,
-                                        SymbolVector& aliasList)
-{
-  for_vector(Symbol, alias, aliasList)
-  {
-    size_t index = symbolIndex[alias];
-
-    bits->set(index);
-  }
-}
-
-void OwnershipFlowManager::resetAliasList(BitVec*        bits,
-                                          SymbolVector& aliasList)
-{
-  for_vector(Symbol, alias, aliasList)
-  {
-    size_t index = symbolIndex[alias];
-
-    bits->reset(index);
-  }
-}
-
-
 //########################################################################
 //# Scope utilities
 //#
@@ -1649,6 +1624,30 @@ void OwnershipFlowManager::processConsumer(SymExpr* se,
 
   resetAliasList(live, *aliasList);
   setAliasList  (cons, *aliasList);
+}
+
+//######################### Alias list utilities #########################
+
+void OwnershipFlowManager::setAliasList(BitVec*        bits,
+                                        SymbolVector& aliasList)
+{
+  for_vector(Symbol, alias, aliasList)
+  {
+    size_t index = symbolIndex[alias];
+
+    bits->set(index);
+  }
+}
+
+void OwnershipFlowManager::resetAliasList(BitVec*        bits,
+                                          SymbolVector& aliasList)
+{
+  for_vector(Symbol, alias, aliasList)
+  {
+    size_t index = symbolIndex[alias];
+
+    bits->reset(index);
+  }
 }
 
 //#########################################################################
