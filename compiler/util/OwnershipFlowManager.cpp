@@ -1191,6 +1191,68 @@ static Expr* getLastStmtInBB(Expr* stmt)
 }
 
 
+//#########################################################################
+//#
+
+void OwnershipFlowManager::forwardFlowOwnership()
+{
+  // Start with all out sets empty.
+  // TODO: Change backwardFlowUse() so it does not use the IN and OUT sets.
+  // Then this initialization block can be removed.
+  for (size_t i = 0; i < nbbs; ++i)
+    OUT[i]->clear();
+
+  bool changed;
+
+  do {
+    changed = false;
+
+    for (size_t i = 0; i < nbbs; ++i)
+    {
+      // The in set is the intersection of the OUTs of its predecessors, but a
+      // symbol does not actually escape its declaration scope, so we subtract
+      // off the respective EXITs first.
+      BitVec* in = IN[i];
+
+      in->clear();
+
+      for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
+        *in |= *OUT[pred->id] - *EXIT[pred->id];
+
+      // This means: ownership reaches the end of a block if it enters or is
+      // produced in the block and it is not consumed within the block.  Also,
+      // if this is the last block in which the variable of interest is in
+      // scope, an autoDestroy will be inserted, so in that case ownership does
+      // not survive to the end of the block.
+      // There is an implicit assumption here that if a producer and consumer
+      // of the same variable appear within the same block, then the producer
+      // precedes the consumer.  But then, the other ordering makes no sense.
+      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i];
+
+      if (new_out != *OUT[i])
+      {
+        *OUT[i] = new_out;
+        changed = true;
+      }
+    }
+  } while (changed);
+
+  // We set the OUT set of any terminal block to all zeroes, to force cleanup
+  // of any variables that are unused at that point.
+  // TODO: Try disabling this and see if it is needed after reworking the USE
+  // computation.
+#if 0
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    if ((*basicBlocks)[i]->outs.size() == 0)
+    {
+      OUT[i]->clear();
+    }
+  }
+#endif
+}
+
+
 
 
 
@@ -1696,62 +1758,6 @@ void OwnershipFlowManager::processConsumer(SymExpr* se,
 
   resetAliasList(live, *aliasList);
   setAliasList  (cons, *aliasList);
-}
-
-
-void
-OwnershipFlowManager::forwardFlowOwnership()
-{
-  // Start with all out sets empty.
-  // TODO: Change backwardFlowUse() so it does not use the IN and OUT sets.
-  // Then this initialization block can be removed.
-  for (size_t i = 0; i < nbbs; ++i)
-    OUT[i]->clear();
-
-  bool changed;
-  do {
-    changed = false;
-
-    for (size_t i = 0; i < nbbs; ++i)
-    {
-      // The in set is the intersection of the OUTs of its predecessors, but a
-      // symbol does not actually escape its declaration scope, so we subtract
-      // off the respective EXITs first.
-      BitVec* in = IN[i];
-      in->clear();
-      for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
-        *in |= *OUT[pred->id] - *EXIT[pred->id];
-
-      // This means: ownership reaches the end of a block if it enters or is
-      // produced in the block and it is not consumed within the block.  Also,
-      // if this is the last block in which the variable of interest is in
-      // scope, an autoDestroy will be inserted, so in that case ownership does
-      // not survive to the end of the block.
-      // There is an implicit assumption here that if a producer and consumer
-      // of the same variable appear within the same block, then the producer
-      // precedes the consumer.  But then, the other ordering makes no sense.
-      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i];
-      if (new_out != *OUT[i])
-      {
-        *OUT[i] = new_out;
-        changed = true;
-      }
-    }
-  } while (changed);
-
-  // We set the OUT set of any terminal block to all zeroes, to force cleanup
-  // of any variables that are unused at that point.
-  // TODO: Try disabling this and see if it is needed after reworking the USE
-  // computation.
-#if 0
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    if ((*basicBlocks)[i]->outs.size() == 0)
-    {
-      OUT[i]->clear();
-    }
-  }
-#endif
 }
 
 
