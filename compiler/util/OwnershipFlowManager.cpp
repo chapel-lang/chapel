@@ -288,25 +288,24 @@ void OwnershipFlowManager::createAlias(SymExpr* se)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //#########################################################################
 //#
 //#
+
+static void createFlowSet(std::vector<BitVec*>& set,
+                          size_t                nbbs,
+                          size_t                nsyms);
+
+void OwnershipFlowManager::createFlowSets()
+{
+  createFlowSet(PROD,       nbbs, nsyms);
+  createFlowSet(CONS,       nbbs, nsyms);
+  createFlowSet(USE,        nbbs, nsyms);
+  createFlowSet(USED_LATER, nbbs, nsyms);
+  createFlowSet(EXIT,       nbbs, nsyms);
+  createFlowSet(IN,         nbbs, nsyms);
+  createFlowSet(OUT,        nbbs, nsyms);
+}
 
 static void createFlowSet(std::vector<BitVec*>& set,
                           size_t                nbbs,
@@ -324,6 +323,28 @@ static void destroyFlowSet(std::vector<BitVec*> set)
     delete vec; vec = 0;
 }
 
+
+
+//#########################################################################
+//#
+//#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//#########################################################################
+//#
+//#
 
 //########################################################################
 
@@ -641,17 +662,6 @@ static bool isRepeatedInLoop(BlockStmt* block)
 
 
 
-
-void OwnershipFlowManager::createFlowSets()
-{
-  createFlowSet(PROD, nbbs, nsyms);
-  createFlowSet(CONS, nbbs, nsyms);
-  createFlowSet(USE, nbbs, nsyms);
-  createFlowSet(USED_LATER, nbbs, nsyms);
-  createFlowSet(EXIT, nbbs, nsyms);
-  createFlowSet(IN, nbbs, nsyms);
-  createFlowSet(OUT, nbbs, nsyms);
-}
 
 //######################### Alias list utilities #########################
 
