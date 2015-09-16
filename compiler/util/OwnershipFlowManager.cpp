@@ -33,6 +33,106 @@
 
 bool fWarnOwnership = false;
 
+static void destroyFlowSet(std::vector<BitVec*> set);
+
+
+
+//#########################################################################
+//#
+//#
+
+OwnershipFlowManager::OwnershipFlowManager(FnSymbol* fn)
+  : _fn(fn),
+    fnRetSym(fn->getReturnSymbol()),
+    PROD(0),
+    CONS(0),
+    USE(0),
+    USED_LATER(0),
+    EXIT(0),
+    IN(0),
+    OUT(0)
+#if DEBUG_AMM
+  , debug(0)
+#endif
+{}
+
+
+// We have to explicitly destroy the flow sets.
+// The remaining properties are either owned elsewhere or "automatic".
+OwnershipFlowManager::~OwnershipFlowManager()
+{
+  destroyFlowSet(PROD);
+  destroyFlowSet(CONS);
+  destroyFlowSet(USE);
+  destroyFlowSet(USED_LATER);
+  destroyFlowSet(EXIT);
+  destroyFlowSet(IN);
+  destroyFlowSet(OUT);
+}
+
+//#########################################################################
+//#
+//# This is the only public method on this class i.e. this is the driver
+//#
+
+void OwnershipFlowManager::updateFunction()
+{
+  buildBasicBlocks();
+  printBasicBlocks();
+  extractSymbols();
+  populateAliases();
+  createFlowSets();
+  computeExits();
+  computeTransitions();
+
+  printFlowSets(FlowSet_ALL);
+
+  backwardFlowUse();
+
+  printFlowSets(FlowSet_USE);
+
+  forwardFlowOwnership();
+
+  printFlowSets((FlowSetFlags) (FlowSet_IN | FlowSet_OUT));
+
+  insertAutoCopies();
+
+  // Only do this for the "advance" iterator function.
+  if (_fn->hasFlag(FLAG_AUTO_II) && strcmp(_fn->name, "advance") == 0)
+  {
+    // In iterators, insert autodestroys after last use.
+    iteratorInsertAutoDestroys();
+
+    // Recompute forward flow, to take into account new
+    // consumers added.
+    forwardFlowOwnership();
+  }
+
+  //if (fVerify)
+  //  checkForwardOwnership();
+
+#if 0
+  // We need our own equation for backward flow.
+  // Backward flow determines where ownership must be given up through a
+  // delete, by making the OUT set the AND of all its successor INs and the IN
+  // be no greater than OUT | CONS (that is, every symbol owned at the
+  // beginning of the block (IN) must either appear in OUT or be consed in the
+  // block.
+  // Also, consumptions are propagated backward, so that a variable owned
+  // on one path into a node is owned on all such paths.
+  backwardFlowOwnership();
+
+  printFlowSets(FlowSet_IN | FlowSet_OUT);
+#endif
+
+  insertAutoDestroys();
+}
+
+
+//#########################################################################
+//#
+//#
+
 static void createFlowSet(std::vector<BitVec*>& set,
                           size_t                nbbs,
                           size_t                nsyms)
@@ -350,81 +450,6 @@ static bool isRepeatedInLoop(BlockStmt* block)
 //# End of predicates
 //########################################################################
 
-
-// We have to explicitly destroy the flow sets.
-// The remaining properties are either owned elsewhere or "automatic".
-OwnershipFlowManager::~OwnershipFlowManager()
-{
-  destroyFlowSet(PROD);
-  destroyFlowSet(CONS);
-  destroyFlowSet(USE);
-  destroyFlowSet(USED_LATER);
-  destroyFlowSet(EXIT);
-  destroyFlowSet(IN);
-  destroyFlowSet(OUT);
-}
-
-OwnershipFlowManager::OwnershipFlowManager(FnSymbol* fn)
-  : _fn(fn), fnRetSym(fn->getReturnSymbol())
-  , PROD(0), CONS(0), USE(0), USED_LATER(0), EXIT(0), IN(0), OUT(0)
-#if DEBUG_AMM
-  , debug(0)
-#endif
-{}
-
-
-void OwnershipFlowManager::updateFunction()
-{
-  buildBasicBlocks();
-  printBasicBlocks();
-  extractSymbols();
-  populateAliases();
-  createFlowSets();
-  computeExits();
-  computeTransitions();
-
-  printFlowSets(FlowSet_ALL);
-
-  backwardFlowUse();
-
-  printFlowSets(FlowSet_USE);
-
-  forwardFlowOwnership();
-
-  printFlowSets((FlowSetFlags) (FlowSet_IN | FlowSet_OUT));
-
-  insertAutoCopies();
-
-  // Only do this for the "advance" iterator function.
-  if (_fn->hasFlag(FLAG_AUTO_II) &&  strcmp(_fn->name, "advance") == 0)
-  {
-    // In iterators, insert autodestroys after last use.
-    iteratorInsertAutoDestroys();
-
-    // Recompute forward flow, to take into account new
-    // consumers added.
-    forwardFlowOwnership();
-  }
-
-  //if (fVerify)
-  //  checkForwardOwnership();
-
-#if 0
-  // We need our own equation for backward flow.
-  // Backward flow determines where ownership must be given up through a
-  // delete, by making the OUT set the AND of all its successor INs and the IN
-  // be no greater than OUT | CONS (that is, every symbol owned at the
-  // beginning of the block (IN) must either appear in OUT or be consed in the
-  // block.
-  // Also, consumptions are propagated backward, so that a variable owned on one path
-  // into a node is owned on all such paths.
-  backwardFlowOwnership();
-
-  printFlowSets(FlowSet_IN | FlowSet_OUT);
-#endif
-
-  insertAutoDestroys();
-}
 
 
 
