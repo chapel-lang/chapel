@@ -147,6 +147,96 @@ void OwnershipFlowManager::buildBasicBlocks()
   nbbs        = basicBlocks->size();
 }
 
+
+//#########################################################################
+//#
+//#
+
+// Scans the body of the given function and inserts all of the variable and
+// argument symbols defined in it into the vector of symbols.  Bits in the
+// flow analysis bit-vectors correspond to the entries in this vector.
+// Also constructs an index map, to make it easier to find the index of a
+// symbol in the vector.  (Otherwise, a linear search is required.)
+// The alias map can also be populated at the same time.
+void OwnershipFlowManager::extractSymbols()
+{
+  DefExprVector defExprs;
+
+  collectDefExprs(_fn, defExprs);
+
+  for_vector(DefExpr, def, defExprs)
+  {
+    Symbol* sym = def->sym;
+
+    // We are interested only in arguments and variables.
+    if (! (toArgSymbol(sym) || toVarSymbol(sym)))
+      continue;
+
+    Type* type = sym->type;
+
+    // TODO: Extern record types also do not have constructors and
+    // destructors.  To treat them uniformly, we would have to enforce that
+    // extern types supply constructors and destructors and/or supply them
+    // internally.
+    TypeSymbol* ts = type->symbol;
+
+    if (ts->hasFlag(FLAG_EXTERN))
+      continue;
+
+    // We are concerned only with record types.
+    // TODO: This is too bad, because it would be nice to be able to treat all
+    // value types uniformly.  But for that to work, arguments of fundamental
+    // type must be constructed by having their values piped through a copy
+    // constructor.  Currently, that is not the case.
+
+    // Only interested in records passed by value.  Records passed by ref
+    // appear to be a class in the current AST because _ref(T) is a class type.
+    AggregateType* at = toAggregateType(type);
+
+    if (at == NULL)
+      // Not an aggregate type, so not a record.
+      continue;
+
+    if (!at->isRecord())
+      // Not a record.
+      continue;
+
+    symbolIndex.insert(SymbolIndexElement(sym, symbols.size()));
+    symbols.push_back(sym);
+
+    // We expect the symbolIndex to return the index of that symbol in the
+    // symbols vector.
+    INT_ASSERT(symbols[symbolIndex[sym]] == sym);
+
+    // Initialize each entry in the alias map with a list of symbols
+    // containing just the symbol itself.
+    aliases.insert(sym);
+  }
+
+  nsyms = symbols.size();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //#########################################################################
 //#
 //#
@@ -541,68 +631,6 @@ static bool isParentExpr(Expr* expr, Expr* other)
     other = other->parentExpr;
   }
   return false;
-}
-
-
-// Scans the body of the given function and inserts all of the variable and
-// argument symbols defined in it into the vector of symbols.  Bits in the
-// flow analysis bit-vectors correspond to the entries in this vector.
-// Also constructs an index map, to make it easier to find the index of a
-// symbol in the vector.  (Otherwise, a linear search is required.)
-// The alias map can also be populated at the same time.
-void
-OwnershipFlowManager::extractSymbols()
-{
-  DefExprVector defExprs;
-  collectDefExprs(_fn, defExprs);
-
-  for_vector(DefExpr, def, defExprs)
-  {
-    Symbol* sym = def->sym;
-
-    // We are interested only in arguments and variables.
-    if (! (toArgSymbol(sym) || toVarSymbol(sym)))
-      continue;
-
-    Type* type = sym->type;
-
-    // TODO: Extern record types also do not have constructors and
-    // destructors.  To treat them uniformly, we would have to enforce that
-    // extern types supply constructors and destructors and/or supply them
-    // internally.
-    TypeSymbol* ts = type->symbol;
-    if (ts->hasFlag(FLAG_EXTERN))
-      continue;
-
-    // We are concerned only with record types.
-    // TODO: This is too bad, because it would be nice to be able to treat all
-    // value types uniformly.  But for that to work, arguments of fundamental
-    // type must be constructed by having their values piped through a copy
-    // constructor.  Currently, that is not the case.
-
-    // Only interested in records passed by value.  Records passed by ref
-    // appear to be a class in the current AST because _ref(T) is a class type.
-    AggregateType* at = toAggregateType(type);
-    if (at == NULL)
-      // Not an aggregate type, so not a record.
-      continue;
-    if (!at->isRecord())
-      // Not a record.
-      continue;
-
-    symbolIndex.insert(SymbolIndexElement(sym, symbols.size()));
-    symbols.push_back(sym);
-
-    // We expect the symbolIndex to return the index of that symbol in the
-    // symbols vector.
-    INT_ASSERT(symbols[symbolIndex[sym]] == sym);
-
-    // Initialize each entry in the alias map with a list of symbols
-    // containing just the symbol itself.
-    aliases.insert(sym);
-  }
-
-  nsyms = symbols.size();
 }
 
 
