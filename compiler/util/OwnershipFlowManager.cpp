@@ -133,6 +133,24 @@ void OwnershipFlowManager::updateFunction()
 //#
 //#
 
+void OwnershipFlowManager::buildBasicBlocks()
+{
+  BasicBlock::buildBasicBlocks(_fn);
+
+  // This is a workaround for the presence of non-empty blocks with no
+  // predecessors in the interior of the flow graph.  When dead block removal
+  // works completely and runs before this pass, then this workaround may be
+  // removed.
+  BasicBlock::ignoreUnreachableBlocks(_fn);
+
+  basicBlocks = _fn->basicBlocks;
+  nbbs        = basicBlocks->size();
+}
+
+//#########################################################################
+//#
+//#
+
 static void createFlowSet(std::vector<BitVec*>& set,
                           size_t                nbbs,
                           size_t                nsyms)
@@ -466,20 +484,6 @@ static bool isRepeatedInLoop(BlockStmt* block)
 
 
 
-
-void OwnershipFlowManager::buildBasicBlocks()
-{
-  BasicBlock::buildBasicBlocks(_fn);
-
-  // This is a workaround for the presence of non-empty blocks with no
-  // predecessors in the interior of the flow graph.  When dead block removal
-  // works completely and runs before this pass, then this workaround may be
-  // removed.
-  BasicBlock::ignoreUnreachableBlocks(_fn);
-
-  basicBlocks = _fn->basicBlocks;
-  nbbs = basicBlocks->size();
-}
 
 void OwnershipFlowManager::createFlowSets()
 {
