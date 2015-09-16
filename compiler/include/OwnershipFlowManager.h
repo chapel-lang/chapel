@@ -65,93 +65,110 @@ private:
   void operator=(const OwnershipFlowManager&);
 
   void buildBasicBlocks();
+
+
   void extractSymbols();
+
+
   void populateAliases();
-  void createFlowSets();
-  void computeTransitions();
-  void computeExits();
-  void backwardFlowUse();
-  void forwardFlowOwnership();
-  void insertAutoCopies();
-  void iteratorInsertAutoDestroys();
-  void insertAutoDestroys();
-
-  // Debug support.
-  void printInfo()                                                       const;
-  void printSymbols()                                                    const;
-  void printBasicBlocks();
-  void printFlowSets();
-  void printFlowSets(FlowSetFlags flags);
-  void printSymbolStats(Symbol* sym);
-  void printSymbolStats(size_t index);
-  void printSymbolStats(Symbol* sym, size_t index);
-
   void populateStmtAliases(SymExprVector& symExprs);
+  void createAlias(SymExpr* se);
 
+
+  void createFlowSets();
+
+
+  void computeExits();
+  void computeScopeMap();
+  void addInternalDefs();
+  void computeExitBlocks();
+
+
+  void computeTransitions();
   void computeTransitions(BasicBlock&    bb,
                           BitVec*        prod,
                           BitVec*        live,
                           BitVec*        use,
                           BitVec*        cons);
-
   void computeTransitions(SymExprVector& symExprs,
                           BitVec*        prod,
                           BitVec*        live,
                           BitVec*        use,
                           BitVec*        cons);
 
-  void computeScopeMap();
-  void addInternalDefs();
-  void computeExitBlocks();
 
-  void iteratorInsertAutoDestroys(BitVec*        toCons,
-                                  BitVec*        cons,
-                                  BasicBlock*    bb);
+  void backwardFlowUse();
 
-  void iteratorInsertAutoDestroys(BitVec*        toCons,
-                                  BitVec*        cons,
-                                  SymExprVector& symExprs);
 
-  void insertAutoDestroy(BitVec* to_cons);
-  void insertAutoDestroyAtScopeExit(Symbol* sym);
-
-  void insertAtOtherExitPoints(Symbol*   sym,
-                               CallExpr* autoDestroyCall);
-
+  void insertAutoCopies();
   void insertAutoCopy(BasicBlock& bb,
                       BitVec* prod,
                       BitVec* live,
                       BitVec* cons);
-
   void insertAutoCopy(SymExprVector& symExprs,
                       BitVec*        prod,
                       BitVec*        live,
                       BitVec*        cons);
-
   void insertAutoCopy(SymExpr* se);
 
-  void setAliasList(BitVec*       bits,
-                    SymbolVector& aliasList);
 
-  void resetAliasList(BitVec*       bits,
-                      SymbolVector& aliasList);
+  void iteratorInsertAutoDestroys();
+  void iteratorInsertAutoDestroys(BitVec*        toCons,
+                                  BitVec*        cons,
+                                  BasicBlock*    bb);
+  void iteratorInsertAutoDestroys(BitVec*        toCons,
+                                  BitVec*        cons,
+                                  SymExprVector& symExprs);
 
-  void createAlias(SymExpr* se);
+
+  void forwardFlowOwnership();
+
+
+  void insertAutoDestroys();
+  void insertAutoDestroy(BitVec* toCons);
+  void insertAutoDestroyAtScopeExit(Symbol* sym);
+  void insertAtOtherExitPoints(Symbol*   sym,
+                               CallExpr* autoDestroyCall);
+
 
   void processCreator(SymExpr* se,
                       BitVec*  prod,
                       BitVec*  live);
+
+  void processUser(SymExpr* se,
+                   BitVec*  use);
+
+  void processConsumer(SymExpr* se,
+                       BitVec*  live,
+                       BitVec*  cons);
 
   void processBitwiseCopy(SymExpr* se,
                           BitVec*  prod,
                           BitVec*  live,
                           BitVec*  cons);
 
-  void processUser(SymExpr* se, BitVec* use);
 
-  void processConsumer(SymExpr* se,
-                       BitVec*  live,
-                       BitVec*  cons);
+  void setAliasList  (BitVec*       bits,
+                      SymbolVector& aliasList);
+
+  void resetAliasList(BitVec*       bits,
+                      SymbolVector& aliasList);
+
+
+  // Debug support.
+  void printInfo()                                                       const;
+
+  void printSymbols()                                                    const;
+
+  void printBasicBlocks();
+
+  void printFlowSets();
+
+  void printFlowSets(FlowSetFlags flags);
+
+  void printSymbolStats(Symbol* sym);
+  void printSymbolStats(size_t index);
+  void printSymbolStats(Symbol* sym, size_t index);
 
   FnSymbol*         _fn;         // Records the function being analyzed
   Symbol*           fnRetSym;    // The return symbol of _fn.
