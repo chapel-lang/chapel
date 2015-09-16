@@ -1293,9 +1293,11 @@ static bool isCreated(SymExpr* se)
 
           // Return values of class type are ruled out.
           Type* retType = fn->retType;
+
           if (AggregateType* at = toAggregateType(retType))
             if (at->isClass())
               return false;
+
           if (fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
             return false;
         }
@@ -1355,51 +1357,18 @@ static bool isUsed(SymExpr* se)
   {
     return true;
   }
+
   else if (isDefExpr(se->parentExpr))
   {
     return false;
   }
+
   else
   {
     INT_FATAL(se, "A SymExpr appears in an unexpected context.");
   }
 
   return false;
-}
-
-
-// Returns nonzero if the expression in which the given SymExpr appears makes
-// it a bitwise copy of some other symbol or vice versa; zero otherwise.
-// If the parent expression of the given se is a bitwise copy, the return value
-// is the index of the given se in the argument list of the move (1 or 2).
-static int bitwiseCopyArg(SymExpr* se)
-{
-  // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
-  if (CallExpr* call = toCallExpr(se->parentExpr))
-  {
-    // Call must be a move or assignment
-    if (call->isPrimitive(PRIM_MOVE) ||
-        call->isPrimitive(PRIM_ASSIGN))
-    {
-      SymExpr* lhse = toSymExpr(call->get(1));
-      SymExpr* rhse = toSymExpr(call->get(2));
-
-      // We just expect the lhs to be a SymExpr.
-      INT_ASSERT(lhse);
-
-      // To be a bitwise copy, the RHS expression must be a SymExpr
-      // (but other ASTs are valid).
-      if (! rhse)
-        return 0;
-
-      if (se == lhse)
-        return 1;
-      if (se == rhse)
-        return 2;
-      INT_FATAL(se, "SymExpr does not appear in its parent move expression");
-    }
-  }
-  return 0;
 }
 
 
@@ -1447,7 +1416,9 @@ static bool isConsumed(SymExpr* se)
           // If the left side of a move is a global, it assumes ownership
           // from the RHS.  We can assume that the RHS is local.
           SymExpr* lhse = toSymExpr(call->get(1));
+
           INT_ASSERT(lhse);
+
           if (SymExpr* rhse = toSymExpr(call->get(2)))
             if (se == rhse)
             {
@@ -1514,6 +1485,41 @@ static bool isConsumed(SymExpr* se)
   }
 
   return false;
+}
+
+
+// Returns nonzero if the expression in which the given SymExpr appears makes
+// it a bitwise copy of some other symbol or vice versa; zero otherwise.
+// If the parent expression of the given se is a bitwise copy, the return value
+// is the index of the given se in the argument list of the move (1 or 2).
+static int bitwiseCopyArg(SymExpr* se)
+{
+  // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+  {
+    // Call must be a move or assignment
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN))
+    {
+      SymExpr* lhse = toSymExpr(call->get(1));
+      SymExpr* rhse = toSymExpr(call->get(2));
+
+      // We just expect the lhs to be a SymExpr.
+      INT_ASSERT(lhse);
+
+      // To be a bitwise copy, the RHS expression must be a SymExpr
+      // (but other ASTs are valid).
+      if (! rhse)
+        return 0;
+
+      if (se == lhse)
+        return 1;
+      if (se == rhse)
+        return 2;
+      INT_FATAL(se, "SymExpr does not appear in its parent move expression");
+    }
+  }
+  return 0;
 }
 
 
