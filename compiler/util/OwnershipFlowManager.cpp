@@ -1001,6 +1001,195 @@ static bool isDestructorArg(SymExpr* se)
   return false;
 }
 
+//#########################################################################
+//#
+//#
+
+static void  insertAutoDestroyAfterStmt(SymExpr* se);
+static Expr* getLastStmtInBB(Expr* stmt);
+
+// Conversion of an iterator into an "advance" function does unnatural
+// things to scopes.  If a yield appears within a loop, on the first
+// execution the advance function passes through all initializations up to
+// that yield.  On the second and subsequent calls (until the loop exits),
+// that initialization is bypassed, and we only execute one iteration of
+// the body of the loop (from wherever the yield is and back to it).
+// 1. Should a temporary variable go out of scope in the body of the loop,
+//    it will be deleted once per iteration without ever being initialized.
+// 2. Should a temporary variable go out of scope in a scope that contains the
+//    loop (possibly just the loop itself), then the first incarnation of the
+//    temporary will be leaked, and upon loop exit we will free an incarnation
+//    of the temp that has never been initialized.
+// We can argue that 1. can never happen because part of the conversion of
+// the iterator function into "advance" involves scraping the function for
+// all locals that can cross a yield, and placing these into the iterator
+// state class (IC).  By the time we see the "advance" function, there are
+// no locals that could survive past a yield.
+// We can apply similar reasoning to conclude that a local in a loop body
+// whose value is established before the yield must be used before the
+// yield, and likewise one established after the yield must be used after
+// the yield and before the end of the loop.
+// No temporary can be established after the yield and remain valid after
+// returning to the top of the loop.  If this were true, then on the first
+// iteration, its value would have to magically jump into existence before
+// the body of the loop is first entered.
+// Finally, any temporary whose value is established before entry to the loop
+// portion of the construct must also be used before that entry.  Otherwise, we
+// have the preceding problem in reverse: the variable must jump into existence
+// after we resume from a yield in the loop body.
+//
+// What this means is that temporaries that have not been captured in the
+// IC are "very local".  For a first cut, I think we can insert an autoDestroy
+// just after the last use of a given symbol (as opposed to waiting for it to
+// go out of scope.
+
+void OwnershipFlowManager::iteratorInsertAutoDestroys()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // Find symbols that are owned and last used in this block.
+    BitVec  to_cons = *OUT[i] & (*USE[i] - *USED_LATER[i]);
+    BitVec* cons    = CONS[i];
+
+    iteratorInsertAutoDestroys(&to_cons, cons, (*basicBlocks)[i]);
+  }
+}
+
+void OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec*     toCons,
+                                                      BitVec*     cons,
+                                                      BasicBlock* bb)
+{
+  // Run the expressions backwards
+  size_t i = bb->exprs.size();
+
+  while (i--)
+  {
+    Expr*         stmt = bb->exprs[i];
+    SymExprVector symExprs;
+
+    collectSymExprs(stmt, symExprs);
+
+    iteratorInsertAutoDestroys(toCons, cons, symExprs);
+  }
+}
+
+void OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec*        toCons,
+                                                      BitVec*        cons,
+                                                      SymExprVector& symExprs)
+{
+  // Run the symexprs in reverse order
+  size_t s = symExprs.size();
+
+  while (s--)
+  {
+    SymExpr* se  = symExprs[s];
+    Symbol*  sym = se->var;
+
+    // Skip symbols we don't care about
+    if (symbolIndex.find(sym) == symbolIndex.end())
+      continue;
+
+    size_t sindex = symbolIndex[sym];
+
+    if (toCons->get(sindex))
+    {
+      // Remove this symbol and all its aliases from the cons set.
+      SymbolVector* aliasList = aliases.at(sym);
+
+      resetAliasList(toCons, *aliasList);
+      setAliasList  (cons,   *aliasList);
+
+      insertAutoDestroyAfterStmt(se);
+    }
+  }
+}
+
+static void insertAutoDestroyAfterStmt(SymExpr* se)
+{
+  Symbol*   sym             = se->var;
+  FnSymbol* autoDestroy     = toFnSymbol(autoDestroyMap.get(sym->type));
+
+  if (isPOD(sym->type) || autoDestroy == NULL)
+    // This type does not have a destructor, so we don't have to add an
+    // autoDestroy call for it.
+    return;
+
+  Expr*     stmt            = se->getStmtExpr();
+
+  // Actually, at least code involving runtime types creates references to
+  // members of temporary variables, so we are not able to see the last use
+  // (since we do not track references).  As a workaround, we march forward to
+  // the end of the current basic block and use that as the insertion point.
+  Expr*     lastStmtInBB    = getLastStmtInBB(stmt);
+
+  SET_LINENO(sym->defPoint);
+
+  CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
+
+  lastStmtInBB->insertAfter(autoDestroyCall);
+
+  insertReferenceTemps(autoDestroyCall);
+}
+
+// Move forward through expressions following the given stmt, until we
+// encounter one that would cause a new basic block to be spawned.
+// TODO: This is selfish code.  It ought to be a service provided by the
+// BasicBlock module, but is currently not.  Any significant change to
+// BasicBlock::buildBasicBlocks should be reflected here.
+static Expr* getLastStmtInBB(Expr* stmt)
+{
+  Expr* curr = stmt;
+  Expr* last = stmt;
+
+  while (curr)
+  {
+    Expr* next = curr->getFirstChild();
+
+    if (! next)
+      next = curr->next;
+
+    while (! next)
+    {
+      // Because we are enumerating nodes in preorder, we already enumerated
+      // the parent, so we skip right to its first child.
+      curr = curr->parentExpr;
+
+      if (curr == stmt->parentExpr)
+      {
+        // We ran out of candidates without finding a valid successor, so just
+        // return the last statment visited.
+        return last->getStmtExpr();
+      }
+
+      next = curr->next;
+    }
+
+    // Break on any statement that alters flow in any way.
+    if (isLoopStmt(next))
+      break;
+
+    if (isCondStmt(next))
+      break;
+
+    if (isGotoStmt(next))
+      break;
+
+    if (DefExpr* def = toDefExpr(next))
+      if (isLabelSymbol(def->sym))
+        break;
+
+    last = curr;
+    curr = next;
+  }
+
+  // We always expect a valid expression to be returned.
+  // This is also an assert that the caller did not pass in stmt == NULL.
+  INT_ASSERT(curr);
+  INT_ASSERT(curr == curr->getStmtExpr());
+
+  return curr;
+}
+
 
 
 
@@ -1563,176 +1752,6 @@ OwnershipFlowManager::forwardFlowOwnership()
     }
   }
 #endif
-}
-
-
-// Move forward through expressions following the given stmt, until we
-// encounter one that would cause a new basic block to be spawned.
-// TODO: This is selfish code.  It ought to be a service provided by the
-// BasicBlock module, but is currently not.  Any significant change to
-// BasicBlock::buildBasicBlocks should be reflected here.
-static Expr* getLastStmtInBB(Expr* stmt)
-{
-  Expr* curr = stmt;
-  Expr* last = stmt;
-  while (curr)
-  {
-    Expr* next = curr->getFirstChild();
-    if (! next)
-      next = curr->next;
-    while (! next)
-    {
-      // Because we are enumerating nodes in preorder, we already enumerated
-      // the parent, so we skip right to its first child.
-      curr = curr->parentExpr;
-      if (curr == stmt->parentExpr)
-      {
-        // We ran out of candidates without finding a valid successor, so just
-        // return the last statment visited.
-        return last->getStmtExpr();
-      }
-      next = curr->next;
-    }
-
-    // Break on any statement that alters flow in any way.
-    if (isLoopStmt(next))
-      break;
-    if (isCondStmt(next))
-      break;
-    if (isGotoStmt(next))
-      break;
-    if (DefExpr* def = toDefExpr(next))
-      if (isLabelSymbol(def->sym))
-        break;
-
-    last = curr;
-    curr = next;
-  }
-
-  // We always expect a valid expression to be returned.
-  // This is also an assert that the caller did not pass in stmt == NULL.
-  INT_ASSERT(curr);
-  INT_ASSERT(curr == curr->getStmtExpr());
-  return curr;
-}
-
-
-// Conversion of an iterator into an "advance" function does unnatural
-// things to scopes.  If a yield appears within a loop, on the first
-// execution the advance function passes through all initializations up to
-// that yield.  On the second and subsequent calls (until the loop exits),
-// that initialization is bypassed, and we only execute one iteration of
-// the body of the loop (from wherever the yield is and back to it).
-// 1. Should a temporary variable go out of scope in the body of the loop,
-//    it will be deleted once per iteration without ever being initialized.
-// 2. Should a temporary variable go out of scope in a scope that contains the
-//    loop (possibly just the loop itself), then the first incarnation of the
-//    temporary will be leaked, and upon loop exit we will free an incarnation
-//    of the temp that has never been initialized.
-// We can argue that 1. can never happen because part of the conversion of
-// the iterator function into "advance" involves scraping the function for
-// all locals that can cross a yield, and placing these into the iterator
-// state class (IC).  By the time we see the "advance" function, there are
-// no locals that could survive past a yield.
-// We can apply similar reasoning to conclude that a local in a loop body
-// whose value is established before the yield must be used before the
-// yield, and likewise one established after the yield must be used after
-// the yield and before the end of the loop.
-// No temporary can be established after the yield and remain valid after
-// returning to the top of the loop.  If this were true, then on the first
-// iteration, its value would have to magically jump into existence before
-// the body of the loop is first entered.
-// Finally, any temporary whose value is established before entry to the loop
-// portion of the construct must also be used before that entry.  Otherwise, we
-// have the preceding problem in reverse: the variable must jump into existence
-// after we resume from a yield in the loop body.
-//
-// What this means is that temporaries that have not been captured in the
-// IC are "very local".  For a first cut, I think we can insert an autoDestroy
-// just after the last use of a given symbol (as opposed to waiting for it to
-// go out of scope.
-static void insertAutoDestroyAfterStmt(SymExpr* se)
-{
-  Symbol* sym = se->var;
-  FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
-  if (isPOD(sym->type) || autoDestroy == NULL)
-    // This type does not have a destructor, so we don't have to add an
-    // autoDestroy call for it.
-    return;
-
-  Expr* stmt = se->getStmtExpr();
-  // Actually, at least code involving runtime types creates references to
-  // members of temporary variables, so we are not able to see the last use
-  // (since we do not track references).  As a workaround, we march forward to
-  // the end of the current basic block and use that as the insertion point.
-  Expr* lastStmtInBB = getLastStmtInBB(stmt);
-
-  SET_LINENO(sym->defPoint);
-  CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
-  lastStmtInBB->insertAfter(autoDestroyCall);
-  insertReferenceTemps(autoDestroyCall);
-}
-
-
-void
-OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons,
-                                                 BitVec* cons,
-                                                 SymExprVector& symExprs)
-{
-  // Run the symexprs in reverse order
-  size_t s = symExprs.size();
-  while (s--)
-  {
-    SymExpr* se = symExprs[s];
-    Symbol* sym = se->var;
-
-    // Skip symbols we don't care about
-    if (symbolIndex.find(sym) == symbolIndex.end())
-      continue;
-
-    size_t sindex = symbolIndex[sym];
-    if (to_cons->get(sindex))
-    {
-      // Remove this symbol and all its aliases from the cons set.
-      SymbolVector* aliasList = aliases.at(sym);
-
-      resetAliasList(to_cons, *aliasList);
-      setAliasList  (cons,    *aliasList);
-
-      insertAutoDestroyAfterStmt(se);
-    }
-  }
-}
-
-void
-OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons,
-                                                 BitVec* cons,
-                                                 BasicBlock* bb)
-{
-  // Run the expressions backwards
-  size_t i = bb->exprs.size();
-  while (i--)
-  {
-    Expr* stmt = bb->exprs[i];
-
-    SymExprVector symExprs;
-    collectSymExprs(stmt, symExprs);
-
-    iteratorInsertAutoDestroys(to_cons, cons, symExprs);
-  }
-}
-
-
-void
-OwnershipFlowManager::iteratorInsertAutoDestroys()
-{
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    // Find symbols that are owned and last used in this block.
-    BitVec to_cons = *OUT[i] & (*USE[i] - *USED_LATER[i]);
-    BitVec* cons = CONS[i];
-    iteratorInsertAutoDestroys(&to_cons, cons, (*basicBlocks)[i]);
-  }
 }
 
 
