@@ -351,9 +351,11 @@ Optional Settings
 
 *  Optionally, the CHPL_HWLOC environment variable can select between
    no hwloc support or using the hwloc package distributed with Chapel
-   in third-party.  Note that hwloc is only used by the qthreads
-   tasking layer, and does not need to be built for other tasking
-   layers.  Current options are:
+   in third-party (see www.open-mpi.org/projects/hwloc/ for more information 
+   on the hwloc software package).
+   Note that hwloc is only used by the qthreads tasking layer, and 
+   does not need to be built for other tasking layers.  
+   Current options are:
 
        none   : do not build hwloc support into the Chapel runtime
        hwloc  : use the hwloc distribution bundled with Chapel in
@@ -361,12 +363,12 @@ Optional Settings
 
    If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is "qthreads",
    unless the target platform is knc.  In all other cases it defaults to
-   "none".  In the unlikely event the bundled hwloc distribution does
+   "none". In the unlikely event the bundled hwloc distribution does
    not build successfully, it should still be possible to use qthreads.
    Manually set CHPL_HWLOC to "none" and rebuild in this case (and
    please file a bug with the Chapel team.)  Building without hwloc
    should not have a large performance impact when CHPL_LOCALE_MODEL
-   is "flat" but will drastically hurt performance for "numa".
+   is "flat", but will drastically hurt performance for "numa".
 
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
