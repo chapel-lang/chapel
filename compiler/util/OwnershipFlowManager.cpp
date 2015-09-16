@@ -372,6 +372,76 @@ OwnershipFlowManager::OwnershipFlowManager(FnSymbol* fn)
 #endif
 {}
 
+
+void OwnershipFlowManager::updateFunction()
+{
+  buildBasicBlocks();
+  printBasicBlocks();
+  extractSymbols();
+  populateAliases();
+  createFlowSets();
+  computeExits();
+  computeTransitions();
+
+  printFlowSets(FlowSet_ALL);
+
+  backwardFlowUse();
+
+  printFlowSets(FlowSet_USE);
+
+  forwardFlowOwnership();
+
+  printFlowSets((FlowSetFlags) (FlowSet_IN | FlowSet_OUT));
+
+  insertAutoCopies();
+
+  // Only do this for the "advance" iterator function.
+  if (_fn->hasFlag(FLAG_AUTO_II) &&  strcmp(_fn->name, "advance") == 0)
+  {
+    // In iterators, insert autodestroys after last use.
+    iteratorInsertAutoDestroys();
+
+    // Recompute forward flow, to take into account new
+    // consumers added.
+    forwardFlowOwnership();
+  }
+
+  //if (fVerify)
+  //  checkForwardOwnership();
+
+#if 0
+  // We need our own equation for backward flow.
+  // Backward flow determines where ownership must be given up through a
+  // delete, by making the OUT set the AND of all its successor INs and the IN
+  // be no greater than OUT | CONS (that is, every symbol owned at the
+  // beginning of the block (IN) must either appear in OUT or be consed in the
+  // block.
+  // Also, consumptions are propagated backward, so that a variable owned on one path
+  // into a node is owned on all such paths.
+  backwardFlowOwnership();
+
+  printFlowSets(FlowSet_IN | FlowSet_OUT);
+#endif
+
+  insertAutoDestroys();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void OwnershipFlowManager::buildBasicBlocks()
 {
   BasicBlock::buildBasicBlocks(_fn);

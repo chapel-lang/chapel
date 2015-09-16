@@ -52,6 +52,8 @@ public:
        OwnershipFlowManager(FnSymbol* fn);
       ~OwnershipFlowManager();
 
+  void updateFunction();
+
   void buildBasicBlocks();
   void extractSymbols();
   void populateAliases();
