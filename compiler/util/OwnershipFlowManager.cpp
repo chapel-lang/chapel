@@ -1523,33 +1523,6 @@ static int bitwiseCopyArg(SymExpr* se)
 }
 
 
-// Returns true if this block one which is executed repeatedly within a loop;
-// false otherwise.
-// Only C-style for loops have init clauses that are essentially in the
-// preceding scope.  All other loops contain only repeated clauses.
-static bool isRepeatedInLoop(BlockStmt* block)
-{
-  BlockStmt* parent = toBlockStmt(block->parentExpr);
-  if (parent == NULL)
-    // Not block statement, so can't be a loop
-    return false;
-
-  if (parent->isLoopStmt())
-  {
-    // This is the case we're looking for -- the init clause in a CForLoop.
-    if (CForLoop* cfl = toCForLoop(parent))
-      if (block == cfl->initBlockGet())
-        return false;
-
-    // All other clauses in all other loop types are repeated.
-    return true;
-  }
-
-  // But clauses in non-loop statements are not repeated (at this level).
-  return false;
-}
-
-
 //#
 //# End of predicates
 //########################################################################
@@ -2238,6 +2211,32 @@ computeScopeToLastBBIDMap(FnSymbol* fn,
       }
     }
   }
+}
+
+// Returns true if this block one which is executed repeatedly within a loop;
+// false otherwise.
+// Only C-style for loops have init clauses that are essentially in the
+// preceding scope.  All other loops contain only repeated clauses.
+static bool isRepeatedInLoop(BlockStmt* block)
+{
+  BlockStmt* parent = toBlockStmt(block->parentExpr);
+  if (parent == NULL)
+    // Not block statement, so can't be a loop
+    return false;
+
+  if (parent->isLoopStmt())
+  {
+    // This is the case we're looking for -- the init clause in a CForLoop.
+    if (CForLoop* cfl = toCForLoop(parent))
+      if (block == cfl->initBlockGet())
+        return false;
+
+    // All other clauses in all other loop types are repeated.
+    return true;
+  }
+
+  // But clauses in non-loop statements are not repeated (at this level).
+  return false;
 }
 
 
