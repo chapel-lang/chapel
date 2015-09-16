@@ -34,7 +34,7 @@
 bool fWarnOwnership = false;
 
 static void destroyFlowSet(std::vector<BitVec*> set);
-
+static int  bitwiseCopyArg(SymExpr* se);
 
 
 //#########################################################################
@@ -217,7 +217,74 @@ void OwnershipFlowManager::extractSymbols()
 }
 
 
+//#########################################################################
+//#
+//#
 
+void OwnershipFlowManager::populateAliases()
+{
+  for_vector(BasicBlock, bb, *basicBlocks)
+  {
+    for_vector(Expr, expr, bb->exprs)
+    {
+      SymExprVector symExprs;
+
+      collectSymExprs(expr, symExprs);
+
+      populateStmtAliases(symExprs);
+    }
+  }
+}
+
+void OwnershipFlowManager::populateStmtAliases(SymExprVector& symExprs)
+{
+  for_vector(SymExpr, se, symExprs)
+  {
+    // Ignore SymExprs that are not in the tree.
+    if (se->parentSymbol == NULL)
+      continue;
+
+    // We are only interested in local symbols, so if this one does not appear
+    // in our map, move on.
+    Symbol* sym = se->var;
+
+    if (symbolIndex.find(sym) == symbolIndex.end())
+      continue;
+
+    // We treat the return value variable specially.  It cannot participate in
+    // alias cliques because it can be assigned more than once and that causes
+    // two unrelated cliques to be joined.
+    if (sym == toFnSymbol(se->parentSymbol)->getReturnSymbol())
+      continue;
+
+    // Pass ownership to this symbol if it is the result of a bitwise copy.
+    if (bitwiseCopyArg(se) == 1)
+      // It suffices to create the alias when the se is the left operand (1),
+      // though it probably does no harm to do this symmetrically.
+      createAlias(se);
+  }
+}
+
+void OwnershipFlowManager::createAlias(SymExpr* se)
+{
+  CallExpr*  call   = toCallExpr(se->parentExpr);
+
+  SymExpr*   lhs    = toSymExpr(call->get(1));
+  SymExpr*   rhs    = toSymExpr(call->get(2));
+
+  // Workaround (See Note #2).
+  Symbol*    lsym   = lhs->var;
+  Symbol*    rsym   = rhs->var;
+
+  // All members of an alias clique must belong to the same scope.  Otherwise,
+  // the destruction of one in an inner scope may cause the the one still
+  // accessible in an outer scope to become corrupted (read-after-free).
+  BlockStmt* lscope = lsym->getDeclarationScope();
+  BlockStmt* rscope = rsym->getDeclarationScope();
+
+  if (lscope == rscope)
+    aliases.merge(rsym, lsym);
+}
 
 
 
@@ -631,75 +698,6 @@ static bool isParentExpr(Expr* expr, Expr* other)
     other = other->parentExpr;
   }
   return false;
-}
-
-
-void OwnershipFlowManager::createAlias(SymExpr* se)
-{
-  CallExpr* call = toCallExpr(se->parentExpr);
-
-  SymExpr* lhs = toSymExpr(call->get(1));
-  SymExpr* rhs = toSymExpr(call->get(2));
-
-  // Workaround (See Note #2).
-
-  Symbol* lsym = lhs->var;
-  Symbol* rsym = rhs->var;
-
-  // All members of an alias clique must belong to the same scope.  Otherwise,
-  // the destruction of one in an inner scope may cause the the one still
-  // accessible in an outer scope to become corrupted (read-after-free).
-  BlockStmt* lscope = lsym->getDeclarationScope();
-  BlockStmt* rscope = rsym->getDeclarationScope();
-  if (lscope != rscope)
-    return;
-
-  // Merge aliases whether or not they are live.
-  aliases.merge(rsym, lsym);
-}
-
-
-void OwnershipFlowManager::populateStmtAliases(SymExprVector& symExprs)
-{
-  for_vector(SymExpr, se, symExprs)
-  {
-    // Ignore SymExprs that are not in the tree.
-    if (se->parentSymbol == NULL)
-      continue;
-
-    // We are only interested in local symbols, so if this one does not appear
-    // in our map, move on.
-    Symbol* sym = se->var;
-    if (symbolIndex.find(sym) == symbolIndex.end())
-      continue;
-
-    // We treat the return value variable specially.  It cannot participate in
-    // alias cliques because it can be assigned more than once and that causes
-    // two unrelated cliques to be joined.
-    if (sym == toFnSymbol(se->parentSymbol)->getReturnSymbol())
-      continue;
-
-    // Pass ownership to this symbol if it is the result of a bitwise copy.
-    if (bitwiseCopyArg(se) == 1)
-      // It suffices to create the alias when the se is the left operand (1),
-      // though it probably does no harm to do this symmetrically.
-      createAlias(se);
-  }
-}
-
-
-void
-OwnershipFlowManager::populateAliases()
-{
-  for_vector(BasicBlock, bb, *basicBlocks)
-  {
-    for_vector(Expr, expr, bb->exprs)
-    {
-      SymExprVector symExprs;
-      collectSymExprs(expr, symExprs);
-      populateStmtAliases(symExprs);
-    }
-  }
 }
 
 
