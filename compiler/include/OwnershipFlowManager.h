@@ -111,8 +111,7 @@ private:
                       BitVec*  prod,
                       BitVec*  live,
                       BitVec*  cons,
-                      Symbol*  rvv,
-                      bool     rvvIsOwned);
+                      Symbol*  rvv);
   bool isSimpleAssignment(Expr* expr)                                    const;
   void autoCopyForSimpleAssignment(CallExpr* call,
                                    BitVec*   prod,

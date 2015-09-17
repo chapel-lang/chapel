@@ -728,7 +728,7 @@ void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
     {
       // Is this symbol local?
       if (symbolIndex.find(se->var) != symbolIndex.end())
-        insertAutoCopy(se, prod, live, cons, rvv, rvvIsOwned);
+        insertAutoCopy(se, prod, live, cons, rvv);
     }
   }
 }
@@ -799,8 +799,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
                                           BitVec*  prod,
                                           BitVec*  live,
                                           BitVec*  cons,
-                                          Symbol*  rvv,
-                                          bool     rvvIsOwned)
+                                          Symbol*  rvv)
 {
   Symbol* sym = se->var;
 
@@ -839,7 +838,6 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
 
       processConsumer(se, live, cons);
     }
-
   }
 }
 
