@@ -683,6 +683,7 @@ static bool isDestructorArg(SymExpr* se);
 
 void OwnershipFlowManager::insertAutoCopies()
 {
+  // RVV is "Return Value Variable"
   Symbol* rvv        = _fn->getReturnSymbol();
   bool    rvvIsOwned = ! _fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
 
@@ -693,6 +694,8 @@ void OwnershipFlowManager::insertAutoCopies()
     BitVec*     prod = new BitVec(PROD[i]->size());
     BitVec*     cons = new BitVec(CONS[i]->size());
 
+    // We need to insert an autodestroy call for each symbol that is owned
+    // (live) at the end of the block but is unowned (dead) in the OUT set.
     for_vector(Expr, expr, bb.exprs)
       insertAutoCopy(expr, prod, live, cons, rvv, rvvIsOwned);
 
@@ -762,13 +765,11 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 
   if (symbolIndex.find(lhse->var) != symbolIndex.end())
   {
-    // If the live bit is set for the RHS symbol, we can leave it as a move
-    // and transfer ownership.  Otherwise, we need to insert an autoCopy.
     if (lhse->var == rvv && rvvIsOwned == true)
     {
       Symbol* rsym = rhse->var;
 
-      INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
+      INT_ASSERT(call->isPrimitive(PRIM_MOVE));
 
       if (symbolIndex.find(rsym) == symbolIndex.end())
       {
@@ -841,10 +842,6 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
   }
 }
 
-// The main AMM routine deals with the ownership of symbols, so the code
-// appearing above in the bitwiseCopyArg(se) == 1 clause only triggers
-// when the RHS is a symbol.
-//
 // If the RHS is a call to a function, no autocopy is needed because calls
 // are uniformly treated as returning an owned value.  If the thing being
 // copied into the RVV is owned, we don't need to insert an autoCopy.
@@ -867,10 +864,10 @@ void OwnershipFlowManager::insertAutoCopyForRVV(SymExpr* se)
         SET_LINENO(stmt);
 
         VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
+        SymExpr*   rhse    = new SymExpr(callTmp);
 
         stmt->insertBefore(new DefExpr(callTmp));
         stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
-        SymExpr* rhse = new SymExpr(callTmp);
 
         call->insertAtTail(rhse);
 
@@ -882,14 +879,7 @@ void OwnershipFlowManager::insertAutoCopyForRVV(SymExpr* se)
 
 static bool resultIsOwned(CallExpr* call)
 {
-  if (call->isResolved())
-    return true;
-  else
-  {
-    // This call must be a primitive.
-    // Guilty until proven innocent.
-    return false;
-  }
+  return call->isResolved() ? true : false;
 }
 
 // Insert an autoCopy because this symbol is unowned and
