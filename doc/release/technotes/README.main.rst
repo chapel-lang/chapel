@@ -46,6 +46,8 @@ Usage
 -----
 To use this feature, declare main as follows:
 
+.. code-block:: chapel
+
   proc main(args: [] string) {
     // ...body...
   }
@@ -54,28 +56,30 @@ When main is so declared, Chapel's default command line argument
 processing changes. Rather than generate an error message when an
 unknown argument is encountered, that argument will instead be passed
 on to this main(args) function. Arguments corresponding to config
-variables or Chapel's predefined flags (like -nl, -b, etc) will still
+variables or Chapel's predefined flags (like ``-nl``, ``-b``, etc) will still
 be processed and will not be passed on to the main(args) function.
 
 To be clear, the arguments that would be handled without using this
 feature will continue to behave as usual. The difference is that other
 arguments will be passed to main(args) rather than generating an error
-message. The only exception to this, is --help and -h.
+message. The only exception to this, is ``--help`` and ``-h``.
 
 Prior to this feature, a Chapel program would always exit immediately
 after printing the help message. A programmer might want to print
 other information explaining what non-config-var command line
 arguments are available and what they might do. For this reason, when
-a Chapel program includes a main declared to take arguments, --help
-and -h will be passed on to the main(args) function.  The function
+a Chapel program includes a main declared to take arguments, ``--help``
+and ``-h`` will be passed on to the main(args) function.  The function
 Help.printUsage() will print out the familiar config var table.
 
 To gain access to this new function requires a module:
 
-use Help;
+``use Help;``
 
 From that module, the function printDefaultUsage() is available. For
 example, consider the following program:
+
+.. code-block:: chapel
 
   use Help;
 
@@ -91,26 +95,26 @@ example, consider the following program:
     }
   }
 
-This program scans its argument list for "--help", and if found, it
+This program scans its argument list for ``--help``, and if found, it
 prints the standard usage message as well as some additional text
 explaining the purpose of the extra arguments. Note that this could be
 used by a program which simply wants to add explanatory text to the
---help output without actually handling any additional arguments.
+``--help`` output without actually handling any additional arguments.
 
 Finally, as is common in GNU programs, there is a way to suspend
 argument processing when main is declared to take arguments. Suppose
-you are writing "rm" in Chapel and need to delete a file named
-"--memTrack=true". Your program will consume this flag during startup,
+you are writing ``rm`` in Chapel and need to delete a file named
+``--memTrack=true``. Your program will consume this flag during startup,
 rather than passing it on to the declared main function. However,
-placing the argument "--" in the argument list will cause all
+placing the argument ``--`` in the argument list will cause all
 following arguments to be passed to the declared main function and
 will suspend handling of any builtin command line
 arguments. Specifically, if a.out is a Chapel program which has
 declared main to take arguments:
 
-  ./a.out -- --memTrack=true
+``./a.out -- --memTrack=true``
 
-will result in the program receiving "--memTrack=true" as the first
+will result in the program receiving ``--memTrack=true`` as the first
 argument after the executable name.
 
 

@@ -11,6 +11,8 @@ gen
 *.tmp
 TAGS
 tags
+*.DS_Store
+
 
 # Top level ignores.
 /BUILD_VERSION
@@ -64,6 +66,7 @@ tags
 /modules/docs
 /modules/internal/tasks/muxed
 /modules/internal/threads/soft-threads
+/modules/webdocs
 
 # Runtime ignores.
 /runtime/etc/Makefile.comm-ugni
