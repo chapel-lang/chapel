@@ -804,43 +804,9 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
 {
   Symbol* sym = se->var;
 
-  if (bitwiseCopyArg(se) == 1)
+  if (sym == rvv)
   {
-    // If the live bit is set for the RHS symbol, we can leave it as a move
-    // and transfer ownership.  Otherwise, we need to insert an autoCopy.
-    if (sym == rvv && rvvIsOwned == true)
-    {
-      CallExpr* call = toCallExpr(se->parentExpr);
-
-      INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
-
-      if (SymExpr* rhse = toSymExpr(call->get(2)))
-      {
-        Symbol* rsym = rhse->var;
-
-        if (symbolIndex.find(rsym) == symbolIndex.end())
-        {
-          // The RHS is not local, so we need an autocopy.
-          insertAutoCopy(rhse);
-        }
-        else
-        {
-          // The RHS is local.  We need an autocopy only if it is unowned.
-          size_t rindex = symbolIndex[rsym];
-
-          if (!live->get(rindex))
-            insertAutoCopy(rhse);
-        }
-      }
-    }
-
-    processBitwiseCopy(se, prod, live, cons);
-  }
-
-  else if (bitwiseCopyArg(se) == 2 || sym == rvv)
-  {
-    if (sym == rvv)
-      insertAutoCopyForRVV(se);
+    insertAutoCopyForRVV(se);
   }
 
   else
