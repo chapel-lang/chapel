@@ -107,12 +107,12 @@ private:
                       BitVec*  cons,
                       Symbol*  rvv,
                       bool     rvvIsOwned);
-  void insertAutoCopy(SymExprVector& symExprs,
-                      BitVec*        prod,
-                      BitVec*        live,
-                      BitVec*        cons,
-                      Symbol*        rvv,
-                      bool           rvvIsOwned);
+  void insertAutoCopy(SymExpr* se,
+                      BitVec*  prod,
+                      BitVec*  live,
+                      BitVec*  cons,
+                      Symbol*  rvv,
+                      bool     rvvIsOwned);
   void insertAutoCopy(SymExpr* se);
 
 

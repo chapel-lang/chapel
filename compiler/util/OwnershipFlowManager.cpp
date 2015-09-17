@@ -713,24 +713,22 @@ void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
 
   collectSymExprs(expr, symExprs);
 
-  insertAutoCopy(symExprs, prod, live, cons, rvv, rvvIsOwned);
-}
-
-void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
-                                          BitVec*        prod,
-                                          BitVec*        live,
-                                          BitVec*        cons,
-                                          Symbol*        rvv,
-                                          bool           rvvIsOwned)
-{
   for_vector(SymExpr, se, symExprs)
   {
-    // We are only interested in local symbols, so if this one does
-    // not appear in our map, move on.
-    Symbol* sym = se->var;
+    // Is this symbol local?
+    if (symbolIndex.find(se->var) != symbolIndex.end())
+      insertAutoCopy(se, prod, live, cons, rvv, rvvIsOwned);
+  }
+}
 
-    if (symbolIndex.find(sym) == symbolIndex.end())
-      continue;
+void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
+                                          BitVec*  prod,
+                                          BitVec*  live,
+                                          BitVec*  cons,
+                                          Symbol*  rvv,
+                                          bool     rvvIsOwned)
+{
+    Symbol* sym = se->var;
 
     if (bitwiseCopyArg(se) == 1)
     {
@@ -764,7 +762,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
 
       processBitwiseCopy(se, prod, live, cons);
 
-      continue;
+      return;
     }
 
     // I apologize for this slightly special case.
@@ -804,12 +802,12 @@ void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
           }
         }
       }
-      continue;
+      return;
     }
 
     // We assume that this case is handled by the above.
     if (bitwiseCopyArg(se) == 2)
-      continue;
+      return;
 
     // Set a bit in the live set if this is a constructor.
     if (isCreated(se))
@@ -826,7 +824,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
       if (sym == rvv)
         if (CallExpr* call = toCallExpr(se->parentExpr))
           if (call->isPrimitive(PRIM_RETURN))
-            continue;
+            return;
 
       // If the live bit is set for this symbol, we can leave it as a move and
       // transfer ownership.  Otherwise, we need to insert an autoCopy.
@@ -844,7 +842,6 @@ void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
 
       processConsumer(se, live, cons);
     }
-  }
 }
 
 static bool resultIsOwned(CallExpr* call)
