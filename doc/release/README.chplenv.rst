@@ -49,21 +49,22 @@ Recommended Settings
         ============= =====================================
         Value         Description
         ============= =====================================
-        cygwin32     : x86 Cygwin (Windows) platforms
-        cygwin64     : x86_64 Cygwin (Windows) platforms
-        darwin       : Macintosh OS X platforms
-        linux32      : 32-bit Linux platforms
-        linux64      : 64-bit Linux platforms
-        marenostrum  : BSC's MareNostrum platform
-        netbsd32     : 32-bit NetBSD platforms
-        netbsd64     : 64-bit NetBSD platforms
-        pwr5         : IBM Power5 SMP cluster
-        pwr6         : IBM Power6 SMP cluster
-        sunos        : SunOS platforms
-        cray-cs      : Cray CS (TM)
-        cray-xc      : Cray XC (TM)
-        cray-xe      : Cray XE (TM)
-        cray-xk      : Cray XK (TM)
+        cygwin32      x86 Cygwin (Windows) platforms
+        cygwin64      x86_64 Cygwin (Windows) platforms
+        darwin        Macintosh OS X platforms
+        linux32       32-bit Linux platforms
+        linux64       64-bit Linux platforms
+        marenostrum   BSC's MareNostrum platform
+        netbsd32      32-bit NetBSD platforms
+        netbsd64      64-bit NetBSD platforms
+        pwr5          IBM Power5 SMP cluster
+        pwr6          IBM Power6 SMP cluster
+        sunos         SunOS platforms
+        cray-cs       Cray CS (TM)
+        cray-xc       Cray XC (TM)
+        cray-xe       Cray XE (TM)
+        cray-xk       Cray XK (TM)
+        ===================================================
 
    Platform-specific READMEs are available for most of these platforms
    in `$CHPL_HOME/doc/platforms`_.  See `$CHPL_HOME/doc/README`_ for a
@@ -78,8 +79,8 @@ Recommended Settings
    to the README.building file and/or contact us at:
    chapel_info@cray.com
 
-.. _$CHPL_HOME/doc/platforms: https://github.com/chapel-lang/chapel/blob/master/doc/platforms
-.. _$CHPL_HOME/doc/README: https://github.com/chapel-lang/chapel/blob/master/doc/README
+.. _$CHPL_HOME/doc/platforms: https://github.com/chapel-lang/chapel/blob/master/doc/release/platforms
+.. _$CHPL_HOME/doc/README: https://github.com/chapel-lang/chapel/blob/master/doc/release/README
 
 #. Set your PATH to include the directory $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
    which is created when you build the compiler.  For example::
@@ -113,30 +114,36 @@ Optional Settings
    build the runtime libraries and generated code for
    CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
 
-        clang             : the Clang compiler suite -- clang and clang++
-        clang-included    : the Clang compiler in third-party/llvm
-        cray-prgenv-cray  : the Cray PrgEnv compiler using the Cray CCE backend
-        cray-prgenv-gnu   : the Cray PrgEnv compiler using the GNU backend
-        cray-prgenv-intel : the Cray PrgEnv compiler using the Intel backend
-        cray-prgenv-pgi   : the Cray PrgEnv compiler using the PGI backend
-        gnu               : the GNU compiler suite -- gcc and g++
-        ibm               : the IBM compiler suite -- xlc and xlC
-        intel             : the Intel compiler suite -- icc and icpc
-        pgi               : the PGI compiler suite -- pgcc and pgCC
+        =================  ==================================
+        Value              Description
+        =================  ==================================
+        clang              the Clang compiler suite -- clang and clang++
+        clang-included     the Clang compiler in third-party/llvm
+        cray-prgenv-cray   the Cray PrgEnv compiler using the Cray CCE backend
+        cray-prgenv-gnu    the Cray PrgEnv compiler using the GNU backend
+        cray-prgenv-intel  the Cray PrgEnv compiler using the Intel backend
+        cray-prgenv-pgi    the Cray PrgEnv compiler using the PGI backend
+        gnu                the GNU compiler suite -- gcc and g++
+        ibm                the IBM compiler suite -- xlc and xlC
+        intel              the Intel compiler suite -- icc and icpc
+        pgi                the PGI compiler suite -- pgcc and pgCC
+        =====================================================
 
    The default for CHPL_*_COMPILER depends on the value of the
    corresponding CHPL_*_PLATFORM environment variable:
 
-        platform        compiler
-        --------        --------
-        cray-x*     ->  gnu (for CHPL_HOST_COMPILER)
-                        cray-prgenv-$PE_ENV (for CHPL_TARGET_COMPILER, where
-                                             PE_ENV is set by PrgEnv-* modules)
-        darwin      ->  clang if available, otherwise gnu
-        marenostrum ->  ibm
-        pwr5, pwr6  ->  ibm
-        x1, x2      ->  cray-vec
-        other       ->  gnu
+        ============  ==================================================
+        Platform      Compiler
+        ============  ==================================================
+        cray-x*       - gnu (for CHPL_HOST_COMPILER)
+                      - cray-prgenv-$PE_ENV (for CHPL_TARGET_COMPILER,
+                        where PE_ENV is set by PrgEnv-* modules)
+        darwin        clang if available, otherwise gnu
+        marenostrum   ibm
+        pwr5, pwr6    ibm
+        x1, x2        cray-vec
+        other         gnu
+        ================================================================
 
    If CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM and is not cray-x*,
    CHPL_TARGET_COMPILER will default to the same value as CHPL_HOST_COMPILER.
@@ -150,17 +157,21 @@ Optional Settings
    the target executable should be specialized to the given architecture when
    using --specialize (and --fast). Valid options are:
 
-        all
-        ---
-        native  : The C compiler will attempt to detect the architecture on the
-                  machine that is compiling the target executable. This is a
-                  good choice if you will be running on the same machine that
-                  you are compiling on. If you are not, see the options below.
-        unknown : No specialization will be performed
-        none    : No specialization will be performed (will not warn)
+        native
+            The C compiler will attempt to detect the architecture on the
+            machine that is compiling the target executable. This is a
+            good choice if you will be running on the same machine that
+            you are compiling on. If you are not, see the options below.
+        unknown
+            No specialization will be performed
+        none
+            No specialization will be performed (will not warn)
 
-        intel           amd
-        -----           ---
+        =========== ===============
+        Architecture-specific
+        ---------------------------
+        intel       amd
+        =========== ===============
         core2           k8
         nehalem         k8sse3
         westmere        barcelona
@@ -168,6 +179,7 @@ Optional Settings
         ivybridge       bdver2
         haswell         bdver3
         broadwell       bdver4
+        ===========================
 
    These values are defined to be the same as in GCC 4.9:
 
@@ -207,11 +219,13 @@ Optional Settings
    invoke when compiling the generated C code.  If not set, this will
    default to a value based on $CHPL_HOST_PLATFORM:
 
+        ==================    ============
         platform              make utility
-        --------              ------------
-        cygwin*, darwin   ->  make
-        linux32, linux64  ->  gmake if available, otherwise make
-        other             ->  gmake
+        ==================    ============
+        cygwin*, darwin       make
+        linux32, linux64      gmake if available, otherwise make
+        other                 gmake
+        ==================================
 
 
 *  Optionally, set the CHPL_MODULE_PATH environment variable to provide a list
@@ -228,9 +242,11 @@ Optional Settings
 *  Optionally, set the CHPL_LOCALE_MODEL environment variable to
    indicate the locale model you want to use.  Current options are:
 
-        flat : top-level locales are not further subdivided
-        numa : top-level locales are further subdivided into sublocales,
-               each one a NUMA domain
+        flat
+          top-level locales are not further subdivided
+        numa
+          top-level locales are further subdivided into sublocales, each one a
+          NUMA domain
 
    If unset, CHPL_LOCALE_MODEL defaults to "flat".
 
@@ -243,12 +259,15 @@ Optional Settings
    (see README.tasks for more information on this option).  Current
    options are:
 
-   CHPL_TASKS:
-        qthreads       : use Sandia's Qthreads package
-        fifo           : use POSIX threads
-        massivethreads : use U Tokyo's MassiveThreads package
-        muxed          : use Cray-specific lightweight threading (with
-                         Cray pre-built module only)
+        ==============  ===============================================
+        CHPL_TASKS      Description
+        ==============  ===============================================
+        qthreads        use Sandia's Qthreads package
+        fifo            use POSIX threads
+        massivethreads  use U Tokyo's MassiveThreads package
+        muxed           use Cray-specific lightweight threading (with
+                        Cray pre-built module only)
+        ===============================================================
 
    If CHPL_TASKS is not set it defaults to "qthreads" unless the
    target platform is either "cygwin*" or "netbsd*", the target
@@ -271,10 +290,12 @@ Optional Settings
    communication layer you want to use to implement inter-locale
    communication.  Current options are:
 
-        none   : only supports single-locale execution
-        gasnet : use the GASNet-based communication layer
-        ugni   : Cray-specific native communications (with Cray
-                 pre-built module only)
+        none
+          only supports single-locale execution
+        gasnet
+          use the GASNet-based communication layer
+        ugni
+          Cray-specific native communications (with Cray pre-built module only)
 
    If unset, CHPL_COMM defaults to "none" in most cases.  On a Cray
    system it defaults to "gasnet" except when using a pre-built module
@@ -287,9 +308,12 @@ Optional Settings
 *  Optionally, the CHPL_MEM environment variable can be used to select
    a memory management layer.  Current options are:
 
-        cstdlib  : use the standard C malloc/free commands
-        dlmalloc : use Doug Lea's memory allocation package
-        tcmalloc : use the tcmalloc package from Google Performance Tools
+        cstdlib
+          use the standard C malloc/free commands
+        dlmalloc
+          use Doug Lea's memory allocation package
+        tcmalloc
+          use the tcmalloc package from Google Performance Tools
 
    If unset, CHPL_MEM defaults to "cstdlib" in most cases.  If comm is
    "gasnet" and you are using the fast or large segments it defaults to
@@ -307,10 +331,12 @@ Optional Settings
    select an implementation for atomic operations in the runtime.
    Current options are:
 
-        intrinsics : implement atomics using target compiler intrinsics
-                     (which typically map down to hardware capabilities)
-        locks      : implement atomics by using Chapel sync variables to
-                     protect normal operations
+        intrinsics
+          implement atomics using target compiler intrinsics (which typically
+          map down to hardware capabilities)
+        locks
+          implement atomics by using Chapel sync variables to protect normal
+          operations
 
    If unset, CHPL_ATOMICS defaults to "intrinsics" for most
    configurations.  On some 32 bit platforms, or if the target compiler
@@ -329,7 +355,8 @@ Optional Settings
 *  Optionally, the CHPL_TIMERS environment variable can be used to
    select an implementation for Chapel's timers.  Current options are:
 
-       generic : use a gettimeofday()-based implementation
+       generic
+        use a gettimeofday()-based implementation
 
    If unset, CHPL_TIMERS defaults to "generic"
 
@@ -338,17 +365,23 @@ Optional Settings
    no GMP support, using the GMP distributed with Chapel in third-party,
    or using a system GMP. Current options are:
 
-       system : assume GMP is already installed (#include gmp.h, -lgmp)
-       none   : do not build GMP support into the Chapel runtime
-       gmp    : use the GMP distribution bundled with Chapel in third-party
+       system
+        assume GMP is already installed (#include gmp.h, -lgmp)
+       none
+        do not build GMP support into the Chapel runtime
+       gmp
+        use the GMP distribution bundled with Chapel in third-party
 
    If unset, Chapel will attempt to build GMP using CHPL_TARGET_COMPILER
    (noting that the bundled version may not be supported by all compilers).
    Based on the outcome, Chapel will default to:
 
-       gmp    : if the build was successful
-       system : if unsuccessful and CHPL_TARGET_PLATFORM is cray-x*
-       none   : otherwise
+       gmp
+        if the build was successful
+       system
+        if unsuccessful and CHPL_TARGET_PLATFORM is cray-x*
+       none
+        otherwise
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_GMP to 'none' while the util/setchplenv.* versions leave
@@ -361,9 +394,10 @@ Optional Settings
    tasking layer, and does not need to be built for other tasking
    layers.  Current options are:
 
-       none   : do not build hwloc support into the Chapel runtime
-       hwloc  : use the hwloc distribution bundled with Chapel in
-                third-party
+       none
+        do not build hwloc support into the Chapel runtime
+       hwloc
+        use the hwloc distribution bundled with Chapel in third-party
 
    If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is "qthreads",
    unless the target platform is knc.  In all other cases it defaults to
@@ -380,15 +414,19 @@ Optional Settings
    doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.
    Current options are:
 
-       re2  : use the re2 distribution in third-party
-       none : do not support regular expression operations
+       re2
+        use the re2 distribution in third-party
+       none
+        do not support regular expression operations
 
    If unset, Chapel will attempt to build RE2 using CHPL_TARGET_COMPILER
    (noting that the bundled version may not be supported by all compilers).
    Based on the outcome, Chapel will default to:
 
-       re2  : if the build was successful
-       none : otherwise
+       re2
+        if the build was successful
+       none
+        otherwise
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_REGEXP to 'none' while the util/setchplenv.* versions
@@ -399,9 +437,12 @@ Optional Settings
    request that runtime support for filesystems beyond the usual Linux
    one be present.  Current options are:
 
-       none : only support traditional Linux filesystems
-       hdfs : also support HDFS filesystems
-       curl : also support CURL as a filesystem interface
+       none
+        only support traditional Linux filesystems
+       hdfs
+        also support HDFS filesystems
+       curl
+        also support CURL as a filesystem interface
 
    If unset, CHPL_AUX_FILESYS defaults to "none".
 
@@ -417,8 +458,10 @@ Optional Settings
    Chapel code via the Clang compiler (see doc/technotes/README.extern).
    Current options are:
 
-       llvm : use the llvm/clang distribution in third-party
-       none : do not support llvm-/clang-related features
+       llvm
+        use the llvm/clang distribution in third-party
+       none
+        do not support llvm-/clang-related features
 
    If unset, CHPL_LLVM defaults to "llvm" if you've already installed
    llvm in third-party and "none" otherwise.
@@ -428,12 +471,13 @@ Optional Settings
    specify the wide pointer format for multilocale programs.  Current
    options are:
 
-       struct : store wide pointers in structures which may span more
+       struct
+        store wide pointers in structures which may span more
                 than one word
-       nodeN :  ("N" a number, 2 <= N <= 60) store wide pointers in
-                single words, with N bits used to store the node (top
-                level locale) number and the rest containing the address
-                on that node
+       nodeN
+        ("N" a number, 2 <= N <= 60) store wide pointers in single words, with
+        N bits used to store the node (top level locale) number and the rest
+        containing the address on that node
 
    CHPL_WIDE_POINTERS is used to select between two modes of operation.
    One is universally applicable; the other has restricted applicability
