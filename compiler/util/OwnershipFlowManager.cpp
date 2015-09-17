@@ -763,46 +763,10 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
     processBitwiseCopy(se, prod, live, cons);
   }
 
-  // I apologize for this slightly special case.
-  // The main AMM routine deals with the ownership of symbols, so the code
-  // appearing above in the bitwiseCopyArg(se) == 1 clause only triggers
-  // when the RHS is a symbol.
-  // If the RHS is a call to a function, no autocopy is needed because calls
-  // are uniformly treated as returning an owned value.  If the thing being
-  // copied into the RVV is owned, we don't need to insert an autoCopy.
-  // But that still leaves the case where a CallExpr on the RHS returns
-  // something that is unowned.  That special case is handle here.
   else if (bitwiseCopyArg(se) == 2 || sym == rvv)
   {
     if (sym == rvv)
-    {
-    CallExpr* call = toCallExpr(se->parentExpr);
-
-    INT_ASSERT(call);
-
-    if (call->isPrimitive(PRIM_MOVE))
-    {
-      if (CallExpr* rhs = toCallExpr(call->get(2)))
-      {
-        if (! resultIsOwned(rhs))
-        {
-          Expr* stmt = rhs->getStmtExpr();
-
-          SET_LINENO(stmt);
-
-          VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
-
-          stmt->insertBefore(new DefExpr(callTmp));
-          stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
-          SymExpr* rhse = new SymExpr(callTmp);
-
-          call->insertAtTail(rhse);
-
-          insertAutoCopy(rhse);
-        }
-      }
-    }
-    }
+      insertAutoCopyForRVV(se);
   }
 
   else
@@ -841,6 +805,45 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
         }
 
         processConsumer(se, live, cons);
+      }
+    }
+  }
+}
+
+// The main AMM routine deals with the ownership of symbols, so the code
+// appearing above in the bitwiseCopyArg(se) == 1 clause only triggers
+// when the RHS is a symbol.
+//
+// If the RHS is a call to a function, no autocopy is needed because calls
+// are uniformly treated as returning an owned value.  If the thing being
+// copied into the RVV is owned, we don't need to insert an autoCopy.
+// But that still leaves the case where a CallExpr on the RHS returns
+// something that is unowned.  That special case is handle here.
+void OwnershipFlowManager::insertAutoCopyForRVV(SymExpr* se)
+{
+  CallExpr* call = toCallExpr(se->parentExpr);
+
+  INT_ASSERT(call);
+
+  if (call->isPrimitive(PRIM_MOVE))
+  {
+    if (CallExpr* rhs = toCallExpr(call->get(2)))
+    {
+      if (! resultIsOwned(rhs))
+      {
+        Expr* stmt = rhs->getStmtExpr();
+
+        SET_LINENO(stmt);
+
+        VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
+
+        stmt->insertBefore(new DefExpr(callTmp));
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
+        SymExpr* rhse = new SymExpr(callTmp);
+
+        call->insertAtTail(rhse);
+
+        insertAutoCopy(rhse);
       }
     }
   }
