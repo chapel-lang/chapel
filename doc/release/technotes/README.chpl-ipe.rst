@@ -29,7 +29,7 @@ to track our progress on Github.
 #. `No Additional Installation`_
 #. Overview_
 #. `The IPE subset of Chapel`_
-#. `Future directions`_
+#. `chpl-ipe Future directions`_
 
 
 .. _No Additional Installation:
@@ -131,7 +131,7 @@ Arithmetic operators
 ~~~~~~~~~~~~~~~~~~~~
 
 The IPE implements the unary +, - operators on int and real and the
-binary operators +, -, *, / on int and real.  Once again the IPE
+binary operators +, -, \*, / on int and real.  Once again the IPE
 does not currently implement implicit coercion from int to real.
 
 
@@ -269,10 +269,10 @@ prints the c_string followed by a representation of the second argument e.g.::
 
 
 
-.. _Future directions:
+.. _chpl-ipe Future directions:
 
-Future directions
------------------
+chpl-ipe Future directions
+--------------------------
 
 We expect the IPE to mature rapidly during the development for release 1.12.  In the
 immediate term we plan to
