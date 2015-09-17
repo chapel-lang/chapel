@@ -74,7 +74,7 @@ locking and unlocking of sync vars.
 We expect to begin using the specified memory order with a C11
 implementation of the atomics.
 
-------------------------------
+-------------------------------
 Variances from the C11 standard
 -------------------------------
 
