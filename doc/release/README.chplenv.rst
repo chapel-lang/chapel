@@ -9,15 +9,12 @@ or can be inferred, run the script::
 
   $CHPL_HOME/util/printchplenv
 
-The setchplenv.* source scripts in the `$CHPL_HOME/util/quickstart/`_ and
-`$CHPL_HOME/util/`_ directories contain commands that set the following
-variables for various shells and host platforms when they are sourced from the
-$CHPL_HOME directory.  Frequent Chapel users may want to add such settings to
-their shell's dotfile(s); but for getting started the setchplenv.* scripts can
-be convenient.
-
-.. _$CHPL_HOME/util/quickstart/: https://github.com/chapel-lang/chapel/blob/master/util/quickstart/
-.. _$CHPL_HOME/util/: https://github.com/chapel-lang/chapel/blob/master/util
+The setchplenv.* source scripts in the $CHPL_HOME/util/quickstart/ and
+$CHPL_HOME/util/ directories contain commands that set the following variables
+for various shells and host platforms when they are sourced from the $CHPL_HOME
+directory.  Frequent Chapel users may want to add such settings to their
+shell's dotfile(s); but for getting started the setchplenv.* scripts can be
+convenient.
 
 Recommended Settings
 --------------------
@@ -102,8 +99,9 @@ Optional Settings
    for legal values (though whether or not a given setting will
    support cross-compilation depends on your specific environment).
 
-   If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
-   the same value as $CHPL_HOST_PLATFORM.
+   .. note::
+     If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
+     the same value as $CHPL_HOST_PLATFORM.
 
 
 *  Optionally, you can set CHPL_HOST_COMPILER and/or
@@ -117,16 +115,16 @@ Optional Settings
         =================  ==================================
         CHPL_*_COMPILER              Description
         =================  ==================================
-        clang              the Clang compiler suite -- clang and clang++
-        clang-included     the Clang compiler in third-party/llvm
-        cray-prgenv-cray   the Cray PrgEnv compiler using the Cray CCE backend
-        cray-prgenv-gnu    the Cray PrgEnv compiler using the GNU backend
-        cray-prgenv-intel  the Cray PrgEnv compiler using the Intel backend
-        cray-prgenv-pgi    the Cray PrgEnv compiler using the PGI backend
-        gnu                the GNU compiler suite -- gcc and g++
-        ibm                the IBM compiler suite -- xlc and xlC
-        intel              the Intel compiler suite -- icc and icpc
-        pgi                the PGI compiler suite -- pgcc and pgCC
+        clang              The Clang compiler suite -- clang and clang++
+        clang-included     The Clang compiler in third-party/llvm
+        cray-prgenv-cray   The Cray PrgEnv compiler using the Cray CCE backend
+        cray-prgenv-gnu    The Cray PrgEnv compiler using the GNU backend
+        cray-prgenv-intel  The Cray PrgEnv compiler using the Intel backend
+        cray-prgenv-pgi    The Cray PrgEnv compiler using the PGI backend
+        gnu                The GNU compiler suite -- gcc and g++
+        ibm                The IBM compiler suite -- xlc and xlC
+        intel              The Intel compiler suite -- icc and icpc
+        pgi                The PGI compiler suite -- pgcc and pgCC
         =================  ==================================
 
    The default for CHPL_*_COMPILER depends on the value of the
@@ -148,10 +146,11 @@ Optional Settings
    If CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM and is not cray-x*,
    CHPL_TARGET_COMPILER will default to the same value as CHPL_HOST_COMPILER.
 
-   Note that builds with LLVM support (ie when CHPL_LLVM=llvm) will build
-   the runtime twice: once with the compiler as described above and once
-   with clang-included. We do this in order to avoid issues in linking
-   objects built by different compilers.
+   .. note::
+     Note that builds with LLVM support (ie when CHPL_LLVM=llvm) will build
+     the runtime twice: once with the compiler as described above and once
+     with clang-included. We do this in order to avoid issues in linking
+     objects built by different compilers.
 
 *  Optionally, set the CHPL_TARGET_ARCH environment variable to indicate that
    the target executable should be specialized to the given architecture when
@@ -276,10 +275,11 @@ Optional Settings
    Cray XC and XE (TM) systems when using the pre-built module,
    it defaults to "muxed".
 
-   Note that the Chapel util/quickstart/setchplenv.* source scripts
-   set CHPL_TASKS to 'fifo' to reduce build-time and third-party
-   dependences, while the util/setchplenv.* versions leave it unset,
-   resulting in the behavior described just above.
+   .. note::
+     Note that the Chapel util/quickstart/setchplenv.* source scripts set
+     CHPL_TASKS to 'fifo' to reduce build-time and third-party dependences,
+     while the util/setchplenv.* versions leave it unset, resulting in the
+     behavior described just above.
 
    See README.tasks for more information about executing using the
    various CHPL_TASKS options.  See also platforms/README.cray for more
@@ -383,9 +383,10 @@ Optional Settings
        none
         otherwise
 
-   Note that the Chapel util/quickstart/setchplenv.* source scripts
-   set CHPL_GMP to 'none' while the util/setchplenv.* versions leave
-   it unset, resulting in the behavior described just above.
+   .. note::
+     Note that the Chapel util/quickstart/setchplenv.* source scripts set
+     CHPL_GMP to 'none' while the util/setchplenv.* versions leave it unset,
+     resulting in the behavior described just above.
 
 
 *  Optionally, the CHPL_HWLOC environment variable can select between
@@ -428,9 +429,10 @@ Optional Settings
        none
         otherwise
 
-   Note that the Chapel util/quickstart/setchplenv.* source scripts
-   set CHPL_REGEXP to 'none' while the util/setchplenv.* versions
-   leave it unset, resulting in the behavior described just above.
+   .. note::
+     Note that the Chapel util/quickstart/setchplenv.* source scripts set
+     CHPL_REGEXP to 'none' while the util/setchplenv.* versions leave it unset,
+     resulting in the behavior described just above.
 
 
 *  Optionally, the CHPL_AUX_FILESYS environment variable can be used to
@@ -472,8 +474,7 @@ Optional Settings
    options are:
 
        struct
-        store wide pointers in structures which may span more
-                than one word
+        store wide pointers in structures which may span more than one word
        nodeN
         ("N" a number, 2 <= N <= 60) store wide pointers in single words, with
         N bits used to store the node (top level locale) number and the rest
