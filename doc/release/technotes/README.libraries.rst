@@ -30,6 +30,7 @@ call ``chpl__init_Random`` at some point before the Random interface is first
 used.
 
 .. code-block:: C
+
     // C code using the Chapel Random module.
     int main()
     {
