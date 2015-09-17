@@ -772,8 +772,10 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
   // copied into the RVV is owned, we don't need to insert an autoCopy.
   // But that still leaves the case where a CallExpr on the RHS returns
   // something that is unowned.  That special case is handle here.
-  else if (sym == rvv)
+  else if (bitwiseCopyArg(se) == 2 || sym == rvv)
   {
+    if (sym == rvv)
+    {
     CallExpr* call = toCallExpr(se->parentExpr);
 
     INT_ASSERT(call);
@@ -800,54 +802,47 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
         }
       }
     }
+    }
   }
-
-  // We assume that this case is handled by the above.
-  else if (bitwiseCopyArg(se) == 2)
-    ;
 
   else
   {
+    // Set a bit in the live set if this is a constructor.
+    if (isCreated(se))
+      processCreator(se, prod, live);
 
-  // Set a bit in the live set if this is a constructor.
-  if (isCreated(se))
-    processCreator(se, prod, live);
-
-  if (isConsumed(se))
-  {
-    bool returnsRVV = false;
-
-    // When there is a return-value variable, it is assumed to be assigned
-    // elsewhere and owned (see the clause for seIsRVV && rvvIsOwned under
-    // (bitwiseCopyAr(se) == 1) above).  Therefore, it is not necessary to
-    // add an autocopy here.
-    // TODO: Ultimately, there will be no RVV, so this special case can be
-    // removed.
-    if (sym == rvv)
-      if (CallExpr* call = toCallExpr(se->parentExpr))
-        if (call->isPrimitive(PRIM_RETURN))
-          returnsRVV = true;
-
-    if (returnsRVV == false)
+    if (isConsumed(se))
     {
-    // If the live bit is set for this symbol, we can leave it as a move and
-    // transfer ownership.  Otherwise, we need to insert an autoCopy.
-    size_t index = symbolIndex[sym];
+      bool returnsRVV = false;
 
-    if (!live->get(index))
-    {
-      insertAutoCopy(se);
+      // When there is a return-value variable, it is assumed to be assigned
+      // elsewhere and owned (see the clause for seIsRVV && rvvIsOwned under
+      // (bitwiseCopyAr(se) == 1) above).  Therefore, it is not necessary to
+      // add an autocopy here.
+      if (sym == rvv)
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (call->isPrimitive(PRIM_RETURN))
+            returnsRVV = true;
 
-      // We can set the bit in the PROD set to show that ownership is
-      // produced, but since it is consumed immediately, the state of
-      // OUT and the rest of the forward-flowed bitsets is unchanged.
-      prod->set(index);
+      if (returnsRVV == false)
+      {
+        // If the live bit is set for this symbol, we can leave it as a move
+        // and transfer ownership.  Otherwise, we need to insert an autoCopy.
+        size_t index = symbolIndex[sym];
+
+        if (!live->get(index))
+        {
+          insertAutoCopy(se);
+
+          // We can set the bit in the PROD set to show that ownership is
+          // produced, but since it is consumed immediately, the state of
+          // OUT and the rest of the forward-flowed bitsets is unchanged.
+          prod->set(index);
+        }
+
+        processConsumer(se, live, cons);
+      }
     }
-
-    processConsumer(se, live, cons);
-    }
-  }
-
   }
 }
 
