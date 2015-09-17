@@ -683,6 +683,9 @@ static bool isDestructorArg(SymExpr* se);
 
 void OwnershipFlowManager::insertAutoCopies()
 {
+  Symbol* rvv        = _fn->getReturnSymbol();
+  bool    rvvIsOwned = ! _fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
+
   for (size_t i = 0; i < nbbs; i++)
   {
     BasicBlock& bb   = *(*basicBlocks)[i];
@@ -691,7 +694,7 @@ void OwnershipFlowManager::insertAutoCopies()
     BitVec*     cons = new BitVec(CONS[i]->size());
 
     for_vector(Expr, expr, bb.exprs)
-      insertAutoCopy(expr, prod, live, cons);
+      insertAutoCopy(expr, prod, live, cons, rvv, rvvIsOwned);
 
     delete cons;
     delete live;
@@ -702,19 +705,23 @@ void OwnershipFlowManager::insertAutoCopies()
 void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
                                           BitVec* prod,
                                           BitVec* live,
-                                          BitVec* cons)
+                                          BitVec* cons,
+                                          Symbol* rvv,
+                                          bool    rvvIsOwned)
 {
   OwnershipFlowManager::SymExprVector symExprs;
 
   collectSymExprs(expr, symExprs);
 
-  insertAutoCopy(symExprs, prod, live, cons);
+  insertAutoCopy(symExprs, prod, live, cons, rvv, rvvIsOwned);
 }
 
 void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
                                           BitVec*        prod,
                                           BitVec*        live,
-                                          BitVec*        cons)
+                                          BitVec*        cons,
+                                          Symbol*        rvv,
+                                          bool           rvvIsOwned)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -725,20 +732,11 @@ void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
     if (symbolIndex.find(sym) == symbolIndex.end())
       continue;
 
-    bool seIsRVV    = false;
-    bool rvvIsOwned = true;
-
-    if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
-    {
-      seIsRVV    = sym == fn->getReturnSymbol();
-      rvvIsOwned = ! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
-    }
-
     if (bitwiseCopyArg(se) == 1)
     {
       // If the live bit is set for the RHS symbol, we can leave it as a move
       // and transfer ownership.  Otherwise, we need to insert an autoCopy.
-      if (seIsRVV && rvvIsOwned)
+      if (sym == rvv && rvvIsOwned == true)
       {
         CallExpr* call = toCallExpr(se->parentExpr);
 
@@ -778,7 +776,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
     // copied into the RVV is owned, we don't need to insert an autoCopy.
     // But that still leaves the case where a CallExpr on the RHS returns
     // something that is unowned.  That special case is handle here.
-    if (seIsRVV)
+    if (sym == rvv)
     {
       CallExpr* call = toCallExpr(se->parentExpr);
 
@@ -825,7 +823,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
       // add an autocopy here.
       // TODO: Ultimately, there will be no RVV, so this special case can be
       // removed.
-      if (seIsRVV)
+      if (sym == rvv)
         if (CallExpr* call = toCallExpr(se->parentExpr))
           if (call->isPrimitive(PRIM_RETURN))
             continue;
