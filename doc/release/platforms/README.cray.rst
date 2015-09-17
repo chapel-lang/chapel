@@ -96,7 +96,7 @@ Building Chapel for a Cray System from Source
    it is in your path; ``none`` otherwise.
 
    For more information on Chapel's launcher capabilities and options,
-   refer to :doc:`../launcher`.
+   refer to $CHPL_HOME/doc/README.launcher.
 
 
 3) Select the target compiler that Chapel should use when compiling
@@ -136,7 +136,7 @@ Building Chapel for a Cray System from Source
 
 5) Optionally, set one or more of the following environment variables to
    configure the Chapel build.  These are described in greater detail in
-   :doc:`../chplenv`.
+   README.chplenv.
 
      :``CHPL_TASKS``: tasking implementation, default ``fifo`` when using
                       target compiler ``cray``, otherwise ``qthreads``
@@ -193,7 +193,7 @@ Using Chapel on a Cray System
 
 2) Optionally, set one or more of the following environment variables to
    select a Chapel configuration.  These are described in greater detail
-   in :doc:`../chplenv`.
+   in README.chplenv.
 
      :``CHPL_TASKS``: tasking implementation, default ``fifo`` with target
                       compiler ``cray``, ``muxed`` on Cray XC/XE with pre-built
@@ -221,7 +221,7 @@ Using Chapel on a Cray System
 
       chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
-   See :doc:`../compiling` or ``man chpl`` for further details.
+   See README.compiling or  ``man chpl`` for further details.
 
 
 4) If ``CHPL_LAUNCHER`` is set to anything other than ``none``, when you
@@ -269,7 +269,7 @@ Using Chapel on a Cray System
         export CHPL_LAUNCHER_WALLTIME=00:15:00
 
    For further information about launchers, please refer to
-   :doc:`../launcher`.
+   $CHPL_HOME/doc/README.launcher.
 
 
 5) Execute your Chapel program.  Multi-locale executions require the
@@ -328,11 +328,11 @@ Using Chapel on a Cray System
 ========================================  =============================
 For more information on...                see...
 ========================================  =============================
-...CHPL_* environment settings            :doc:`../chplenv`
-...Compiling Chapel programs              :doc:`../compiling`
-...Launcher options                       :doc:`../launcher`
-...Executing Chapel programs              :doc:`../executing`
-...Running multi-locale Chapel programs   :doc:`../multilocale`
+...CHPL_* environment settings            README.chplenv
+...Compiling Chapel programs              README.compiling
+...Launcher options                       README.launcher
+...Executing Chapel programs              README.executing
+...Running multi-locale Chapel programs   README.multilocale
 ========================================  =============================
 
 
@@ -412,18 +412,17 @@ Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
 Native Runtime Layers
 ---------------------
 
-The :doc:`multilocale <../multilocale>` and :doc:`tasking
-<../tasks>` pages describe a variety of communication and tasking
-layers that can be used by Chapel programs.  In addition to the standard
-runtime layers available in any Chapel release, the pre-built Chapel module for
-Cray XC and XE series systems supports Cray-specific communication and tasking
-layers.  These make use of the Cray systems' hardware and/or software to
-produce enhanced performance for Chapel programs.  When using the pre-built
-module on Cray XC or XE systems the allowed combinations are ugni
-communications with muxed tasking (the default), and ugni communications with
-qthreads tasking.  On other kinds of Cray systems or when not using the
-pre-built module, the default is to use gasnet communications and qthreads
-tasking.
+The README.multilocale and README.tasking pages describe a variety of
+communication and tasking layers that can be used by Chapel programs.  In
+addition to the standard runtime layers available in any Chapel release, the
+pre-built Chapel module for Cray XC and XE series systems supports
+Cray-specific communication and tasking layers.  These make use of the Cray
+systems' hardware and/or software to produce enhanced performance for Chapel
+programs.  When using the pre-built module on Cray XC or XE systems the allowed
+combinations are ugni communications with muxed tasking (the default), and ugni
+communications with qthreads tasking.  On other kinds of Cray systems or when
+not using the pre-built module, the default is to use gasnet communications and
+qthreads tasking.
 
 Note that neither the ugni communication layer nor the muxed tasking
 layer can be built from sources, as they are not distributed in source
@@ -638,7 +637,7 @@ SSCA#2), it can be useful to make the stack size smaller than its
 default of 8 MiB.
 
 You can set the task stack size using ``CHPL_RT_CALL_STACK_SIZE``, as described
-in :doc:`../executing`.  The following would make the task stack
+in  README.executing.  The following would make the task stack
 size 128 KiB, for example:
 
   .. code-block:: sh
