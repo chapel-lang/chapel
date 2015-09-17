@@ -46,25 +46,25 @@ Recommended Settings
    be set explicitly.  The strings for our currently-supported host
    platforms are as follows:
    
-        ============= =====================================
-        Value         Description
-        ============= =====================================
-        cygwin32      x86 Cygwin (Windows) platforms
-        cygwin64      x86_64 Cygwin (Windows) platforms
-        darwin        Macintosh OS X platforms
-        linux32       32-bit Linux platforms
-        linux64       64-bit Linux platforms
-        marenostrum   BSC's MareNostrum platform
-        netbsd32      32-bit NetBSD platforms
-        netbsd64      64-bit NetBSD platforms
-        pwr5          IBM Power5 SMP cluster
-        pwr6          IBM Power6 SMP cluster
-        sunos         SunOS platforms
-        cray-cs       Cray CS (TM)
-        cray-xc       Cray XC (TM)
-        cray-xe       Cray XE (TM)
-        cray-xk       Cray XK (TM)
-        ===================================================
+        ================== =====================================
+        CHPL_HOST_PLATFORM Description
+        ================== =====================================
+        cygwin32           x86 Cygwin (Windows) platforms
+        cygwin64           x86_64 Cygwin (Windows) platforms
+        darwin             Macintosh OS X platforms
+        linux32            32-bit Linux platforms
+        linux64            64-bit Linux platforms
+        marenostrum        BSC's MareNostrum platform
+        netbsd32           32-bit NetBSD platforms
+        netbsd64           64-bit NetBSD platforms
+        pwr5               IBM Power5 SMP cluster
+        pwr6               IBM Power6 SMP cluster
+        sunos              SunOS platforms
+        cray-cs            Cray CS (TM)
+        cray-xc            Cray XC (TM)
+        cray-xe            Cray XE (TM)
+        cray-xk            Cray XK (TM)
+        ================== =====================================
 
    Platform-specific READMEs are available for most of these platforms
    in `$CHPL_HOME/doc/platforms`_.  See `$CHPL_HOME/doc/README`_ for a
@@ -115,7 +115,7 @@ Optional Settings
    CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
 
         =================  ==================================
-        Value              Description
+        CHPL_*_COMPILER              Description
         =================  ==================================
         clang              the Clang compiler suite -- clang and clang++
         clang-included     the Clang compiler in third-party/llvm
@@ -127,7 +127,7 @@ Optional Settings
         ibm                the IBM compiler suite -- xlc and xlC
         intel              the Intel compiler suite -- icc and icpc
         pgi                the PGI compiler suite -- pgcc and pgCC
-        =====================================================
+        =================  ==================================
 
    The default for CHPL_*_COMPILER depends on the value of the
    corresponding CHPL_*_PLATFORM environment variable:
@@ -143,7 +143,7 @@ Optional Settings
         pwr5, pwr6    ibm
         x1, x2        cray-vec
         other         gnu
-        ================================================================
+        ============  ==================================================
 
    If CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM and is not cray-x*,
    CHPL_TARGET_COMPILER will default to the same value as CHPL_HOST_COMPILER.
@@ -179,7 +179,7 @@ Optional Settings
         ivybridge       bdver2
         haswell         bdver3
         broadwell       bdver4
-        ===========================
+        =========== ===============
 
    These values are defined to be the same as in GCC 4.9:
 
@@ -225,7 +225,7 @@ Optional Settings
         cygwin*, darwin       make
         linux32, linux64      gmake if available, otherwise make
         other                 gmake
-        ==================================
+        ==================    ============
 
 
 *  Optionally, set the CHPL_MODULE_PATH environment variable to provide a list
@@ -267,7 +267,7 @@ Optional Settings
         massivethreads  use U Tokyo's MassiveThreads package
         muxed           use Cray-specific lightweight threading (with
                         Cray pre-built module only)
-        ===============================================================
+        ==============  ===============================================
 
    If CHPL_TASKS is not set it defaults to "qthreads" unless the
    target platform is either "cygwin*" or "netbsd*", the target
