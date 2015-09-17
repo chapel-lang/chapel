@@ -2,7 +2,7 @@
 The 'local' statement
 =====================
 
-This README describes the 'local' statement in the Chapel language.
+This README describes the ``local`` statement in the Chapel language.
 Its definition and implementation is an area of ongoing work and it
 should be used with caution.
 
@@ -10,7 +10,7 @@ should be used with caution.
 Overview
 --------
 
-The 'local' construct in Chapel performs runtime checks for any
+The ``local`` construct in Chapel performs runtime checks for any
 communication within the construct. If communication occurs, an error
 is reported. The checks are performed in the code within the lexical
 scope of the construct, as well as in all function calls performed by
@@ -30,12 +30,12 @@ communication free. This may be desired, for example, when tuning
 the performance of a program, as communication usually slows down
 execution.
 
-The 'local' construct does not necessarily indicate the cause of
-communication when present. See `a link`_.
+The ``local`` construct does not necessarily indicate the cause of
+communication when present. See the `Module\: CommDiagnostics`_ for ways to
+diagnose communication.
 
-.. _a link:    http://chapel.cray.com/docs/latest/modules/standard/CommDiagnostics.html
+.. _Module\: CommDiagnostics:    http://chapel.cray.com/docs/latest/modules/standard/CommDiagnostics.html
 
-for ways to diagnose communication.
 
 
 Syntax
@@ -44,7 +44,7 @@ Syntax
 The ``local`` construct is a statement. It consists of the ``local`` keyword
 followed by a statement:
 
-.. code-block:: chapel
+.. code-block::
 
     local-statement:
         "local" statement
