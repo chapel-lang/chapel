@@ -685,39 +685,23 @@ void OwnershipFlowManager::insertAutoCopies()
 {
   for (size_t i = 0; i < nbbs; i++)
   {
-    // We need to insert an autodestroy call for each symbol that is owned
-    // (live) at the end of the block but is unowned (dead) in the OUT set.
-    BasicBlock& bb  = *(*basicBlocks)[i];
-
-    // For this block traversal, we initialize live = IN[i].
+    BasicBlock& bb   = *(*basicBlocks)[i];
     BitVec*     live = new BitVec(*IN[i]);
-
-    // We use temporaries for the prod and cons sets.  The results of
-    // global flow analysis should yield the same values, and this allows
-    // us to test that assertion.
     BitVec*     prod = new BitVec(PROD[i]->size());
     BitVec*     cons = new BitVec(CONS[i]->size());
 
-    insertAutoCopy(bb, prod, live, cons);
+    for_vector(Expr, expr, bb.exprs)
+    {
+      OwnershipFlowManager::SymExprVector symExprs;
 
-    delete cons; cons = 0;
-    delete live; live = 0;
-    delete prod; prod = 0;
-  }
-}
+      collectSymExprs(expr, symExprs);
 
-void OwnershipFlowManager::insertAutoCopy(BasicBlock& bb,
-                                          BitVec*     prod,
-                                          BitVec*     live,
-                                          BitVec*     cons)
-{
-  for_vector(Expr, expr, bb.exprs)
-  {
-    OwnershipFlowManager::SymExprVector symExprs;
+      insertAutoCopy(symExprs, prod, live, cons);
+    }
 
-    collectSymExprs(expr, symExprs);
-
-    insertAutoCopy(symExprs, prod, live, cons);
+    delete cons;
+    delete live;
+    delete prod;
   }
 }
 
