@@ -1,4 +1,4 @@
-feature request: allow private enum declarations
+unimplemented feature: allow private enum declarations
 
 Right now, public and private can't be applied to enum declarations.  We would
 like to be able to do that, and catch any outside use of publicly visible
