@@ -761,8 +761,6 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
     }
 
     processBitwiseCopy(se, prod, live, cons);
-
-    return;
   }
 
   // I apologize for this slightly special case.
@@ -774,7 +772,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
   // copied into the RVV is owned, we don't need to insert an autoCopy.
   // But that still leaves the case where a CallExpr on the RHS returns
   // something that is unowned.  That special case is handle here.
-  if (sym == rvv)
+  else if (sym == rvv)
   {
     CallExpr* call = toCallExpr(se->parentExpr);
 
@@ -802,12 +800,14 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
         }
       }
     }
-    return;
   }
 
   // We assume that this case is handled by the above.
-  if (bitwiseCopyArg(se) == 2)
-    return;
+  else if (bitwiseCopyArg(se) == 2)
+    ;
+
+  else
+  {
 
   // Set a bit in the live set if this is a constructor.
   if (isCreated(se))
@@ -815,6 +815,8 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
 
   if (isConsumed(se))
   {
+    bool returnsRVV = false;
+
     // When there is a return-value variable, it is assumed to be assigned
     // elsewhere and owned (see the clause for seIsRVV && rvvIsOwned under
     // (bitwiseCopyAr(se) == 1) above).  Therefore, it is not necessary to
@@ -824,8 +826,10 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
     if (sym == rvv)
       if (CallExpr* call = toCallExpr(se->parentExpr))
         if (call->isPrimitive(PRIM_RETURN))
-          return;
+          returnsRVV = true;
 
+    if (returnsRVV == false)
+    {
     // If the live bit is set for this symbol, we can leave it as a move and
     // transfer ownership.  Otherwise, we need to insert an autoCopy.
     size_t index = symbolIndex[sym];
@@ -841,6 +845,9 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
     }
 
     processConsumer(se, live, cons);
+    }
+  }
+
   }
 }
 
