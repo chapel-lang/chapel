@@ -709,15 +709,27 @@ void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
                                           Symbol* rvv,
                                           bool    rvvIsOwned)
 {
-  OwnershipFlowManager::SymExprVector symExprs;
-
-  collectSymExprs(expr, symExprs);
-
-  for_vector(SymExpr, se, symExprs)
+  if (isSimpleAssignment(expr) == true)
   {
-    // Is this symbol local?
-    if (symbolIndex.find(se->var) != symbolIndex.end())
-      insertAutoCopy(se, prod, live, cons, rvv, rvvIsOwned);
+    autoCopyForSimpleAssignment(toCallExpr(expr),
+                                prod,
+                                live,
+                                cons,
+                                rvv,
+                                rvvIsOwned);
+  }
+  else
+  {
+    OwnershipFlowManager::SymExprVector symExprs;
+
+    collectSymExprs(expr, symExprs);
+
+    for_vector(SymExpr, se, symExprs)
+    {
+      // Is this symbol local?
+      if (symbolIndex.find(se->var) != symbolIndex.end())
+        insertAutoCopy(se, prod, live, cons, rvv, rvvIsOwned);
+    }
   }
 }
 
