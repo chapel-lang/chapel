@@ -811,41 +811,34 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
 
   else
   {
-    // Set a bit in the live set if this is a constructor.
     if (isCreated(se))
+    {
+      // This must be true right?
+      // It seems true but hard to tell from implementation
+      // Verify with a paratest
+      INT_ASSERT(isConsumed(se) == false);
+
       processCreator(se, prod, live);
+    }
 
     if (isConsumed(se))
     {
+      size_t index = symbolIndex[sym];
 
+      // If the live bit is set for this symbol, leave it as a move
+      // and transfer ownership.  Otherwise, insert an autoCopy.
+      if (!live->get(index))
+      {
+        insertAutoCopy(se);
 
-
-
-
-
-
-
-
-
-
-
-
-        // If the live bit is set for this symbol, we can leave it as a move
-        // and transfer ownership.  Otherwise, we need to insert an autoCopy.
-        size_t index = symbolIndex[sym];
-
-        if (!live->get(index))
-        {
-          insertAutoCopy(se);
-
-          // We can set the bit in the PROD set to show that ownership is
-          // produced, but since it is consumed immediately, the state of
-          // OUT and the rest of the forward-flowed bitsets is unchanged.
-          prod->set(index);
-        }
-
-        processConsumer(se, live, cons);
+        // Set the bit in the PROD set to show that ownership is
+        // produced, but since it is consumed immediately, the state of
+        // OUT and the rest of the forward-flowed bitsets are unchanged.
+        prod->set(index);
       }
+
+      processConsumer(se, live, cons);
+    }
 
   }
 }
