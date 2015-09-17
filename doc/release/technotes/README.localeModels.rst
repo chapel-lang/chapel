@@ -38,7 +38,7 @@ hierarchical locale support was added, these calls were all satisfied
 directly by the runtime.  With hierarchical locales, now they are
 satisfied by the Chapel module code that defines the architecture of a
 locale.  The required interface for this is defined by ChapelLocale and
-implemented by LocaleModel.chpl.  The required interface is still a work
+implemented by ``LocaleModel.chpl``.  The required interface is still a work
 in progress and will continue to evolve.
 
 
@@ -68,16 +68,22 @@ locale, please see $CHPL_HOME/doc/README.tasks.
 
 To use the NUMA locale model:
 
-1) Set the CHPL_LOCALE_MODEL environment variable to "numa".
+1) Set the ``CHPL_LOCALE_MODEL`` environment variable to "numa".
+
+.. code-block:: sh
 
     export CHPL_LOCALE_MODEL=numa
 
-2) Re-make the compiler and runtime from CHPL_HOME
+2) Re-make the compiler and runtime from ``CHPL_HOME``
+
+.. code-block:: sh
 
     cd $CHPL_HOME
     make
 
 3) Compile your Chapel program as usual.
+
+.. code-block:: sh
 
     chpl -o jacobi $CHPL_HOME/examples/programs/jacobi.chpl
 
@@ -85,7 +91,7 @@ To use the NUMA locale model:
 * Qthreads thread scheduling
 
 When qthreads tasking is used, different Qthreads thread schedulers are
-selected depending upon the CHPL_LOCALE_MODEL setting.  For the flat
+selected depending upon the ``CHPL_LOCALE_MODEL`` setting.  For the flat
 locale model the "nemesis" thread scheduler is used, and for the NUMA
 locale model the "sherwood" thread scheduler is used.  This selection is
 done at the time the Qthreads third-party package is built, and cannot
@@ -97,6 +103,9 @@ Caveats for using the NUMA locale model
 ---------------------------------------
 
 * Explicit memory allocation for NUMA domains is not yet implemented.
+
 * Distributed arrays other than Block do not yet map iterations to NUMA
   domains.
+
 * Performance for NUMA has not been optimized.
+

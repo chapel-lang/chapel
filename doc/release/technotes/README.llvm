@@ -9,7 +9,7 @@ block support uses the clang parser, and so it is necessary to build a Chapel
 compiler with LLVM support in order to use that feature. See README.extern
 for more information on extern blocks, and the discussion below in this
 file for more information about the LLVM communication optimizations.
- 
+
 -------------------------
 Building the LLVM support
 -------------------------
@@ -108,6 +108,7 @@ from it - for example when constructing a global pointer from a node number and
 a local address, or extracting the node number or the address - the LLVM code
 generated with --llvm-wide-opt includes calls to nonexistent functions to mark
 these operations:
+
 * .gf.addr extracts an address from a global pointer
 * .gf.loc extracts a locale from a global pointer
 * .gf.node extracts a node number from a global pointer
