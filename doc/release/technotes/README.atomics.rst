@@ -44,18 +44,18 @@ which the atomic variable was allocated and performing the atomic
 operations locally.
 
 If supported, the network atomics implementation can be selected via
-the environment variable CHPL_NETWORK_ATOMICS. If set, all variables
+the environment variable ``CHPL_NETWORK_ATOMICS``. If set, all variables
 declared to be atomic will use the specified network's atomic
 operations. It is possible to override this default by using the
 explicit type name for the processor-based atomics (available in the
-type function chpl__atomicType() defined in the file
-$CHPL_HOME/modules/internal/Atomics.chpl).
+type function ``chpl__atomicType()`` defined in the file
+``$CHPL_HOME/modules/internal/Atomics.chpl``).
 
 For more information about the runtime implementation see
-$CHPL_HOME/runtime/include/atomics/README.
+``$CHPL_HOME/runtime/include/atomics/README``.
 
 To see a full list of available functions, see
-$CHPL_HOME/modules/internal/Atomics.chpl.
+``$CHPL_HOME/modules/internal/Atomics.chpl``.
 
 
 ------------------
@@ -91,7 +91,7 @@ reads and writes with more relaxed memory constraints. Currently they
 are implemented as reads and writes with memory_order_relaxed but since
 our implementations ignore memory_order, they are semantically the same
 as read and write. waitFor is method that waits until an atomic value
-has a specific value.  It can yield to other tasks while waiting. 
+has a specific value.  It can yield to other tasks while waiting.
 
 Chapel currently does not support the memory fences and isLockFree
 methods from the C11 spec. They are defined in the runtime but not in
@@ -113,9 +113,9 @@ Open issues
 Below are a few of the known open issues with Chapel atomics.
 
 - Atomic bools are only supported for the default size and not
-  implemented for all sizes of bools. 
+  implemented for all sizes of bools.
 
-- The memory_order is currently ignored by all implementations. 
+- The memory_order is currently ignored by all implementations.
 
 - Chapel's memory consistency model is still a work-in-progress.
 
@@ -126,4 +126,3 @@ Feedback
 
 If you have any questions regarding atomics in Chapel, please send
 mail to chapel_info@cray.com.
-
