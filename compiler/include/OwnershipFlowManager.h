@@ -101,6 +101,10 @@ private:
 
 
   void insertAutoCopies();
+  void insertAutoCopy(Expr*   expr,
+                      BitVec* prod,
+                      BitVec* live,
+                      BitVec* cons);
   void insertAutoCopy(SymExprVector& symExprs,
                       BitVec*        prod,
                       BitVec*        live,

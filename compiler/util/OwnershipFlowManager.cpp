@@ -691,18 +691,24 @@ void OwnershipFlowManager::insertAutoCopies()
     BitVec*     cons = new BitVec(CONS[i]->size());
 
     for_vector(Expr, expr, bb.exprs)
-    {
-      OwnershipFlowManager::SymExprVector symExprs;
-
-      collectSymExprs(expr, symExprs);
-
-      insertAutoCopy(symExprs, prod, live, cons);
-    }
+      insertAutoCopy(expr, prod, live, cons);
 
     delete cons;
     delete live;
     delete prod;
   }
+}
+
+void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
+                                          BitVec* prod,
+                                          BitVec* live,
+                                          BitVec* cons)
+{
+  OwnershipFlowManager::SymExprVector symExprs;
+
+  collectSymExprs(expr, symExprs);
+
+  insertAutoCopy(symExprs, prod, live, cons);
 }
 
 void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
