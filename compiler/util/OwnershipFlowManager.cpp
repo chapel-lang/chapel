@@ -721,6 +721,85 @@ void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
   }
 }
 
+bool OwnershipFlowManager::isSimpleAssignment(Expr* expr) const
+{
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(expr))
+  {
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+    {
+      INT_ASSERT(isSymExpr(call->get(1)));
+
+      retval = isSymExpr(call->get(2));
+    }
+  }
+
+  return retval;
+}
+
+void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
+                                                       BitVec*   prod,
+                                                       BitVec*   live,
+                                                       BitVec*   cons,
+                                                       Symbol*   rvv,
+                                                       bool      rvvIsOwned)
+{
+  SymExpr* lhse = toSymExpr(call->get(1));
+  SymExpr* rhse = toSymExpr(call->get(2));
+
+  if (symbolIndex.find(lhse->var) != symbolIndex.end())
+  {
+  SymExpr* se   = lhse;
+  Symbol*  sym  = se->var;
+
+  if (bitwiseCopyArg(se) == 1)
+  {
+    // If the live bit is set for the RHS symbol, we can leave it as a move
+    // and transfer ownership.  Otherwise, we need to insert an autoCopy.
+    if (sym == rvv && rvvIsOwned == true)
+    {
+      CallExpr* call = toCallExpr(se->parentExpr);
+
+      INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
+
+      if (SymExpr* rhse = toSymExpr(call->get(2)))
+      {
+        Symbol* rsym = rhse->var;
+
+        if (symbolIndex.find(rsym) == symbolIndex.end())
+        {
+          // The RHS is not local, so we need an autocopy.
+          insertAutoCopy(rhse);
+        }
+        else
+        {
+          // The RHS is local.  We need an autocopy only if it is unowned.
+          size_t rindex = symbolIndex[rsym];
+
+          if (!live->get(rindex))
+            insertAutoCopy(rhse);
+        }
+      }
+    }
+
+    processBitwiseCopy(se, prod, live, cons);
+  }
+  }
+
+  if (symbolIndex.find(rhse->var) != symbolIndex.end())
+  {
+  SymExpr* se   = rhse;
+  Symbol*  sym  = se->var;
+
+  if (bitwiseCopyArg(se) == 2 || sym == rvv)
+  {
+    if (sym == rvv)
+      insertAutoCopyForRVV(se);
+  }
+  }
+}
+
 void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
                                           BitVec*  prod,
                                           BitVec*  live,
