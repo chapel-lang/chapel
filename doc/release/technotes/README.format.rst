@@ -21,12 +21,14 @@ numeric value to a string.
 
 The prototype for the format function is as follows:
 
+.. code-block:: chapel
+
    proc format(fmt: string, val): string;
 
 where "fmt" is a format string and "val" is a scalar value.  This
 function can currently be used in one of two forms:
 
-1) format(<C format string>, val)
+1) ``format(<C format string>, val)``
 
    In this form, the first argument is expected to be a string that
    can serve as a C sprintf()-style format string for the second
@@ -37,11 +39,14 @@ function can currently be used in one of two forms:
 
    As an example:
 
-     var onethird = 1.0/3.0;
-     var numItems = 32;
+    .. code-block:: chapel
 
-     writeln("onethird is: ", format("%13.8f", onethird));
-     var myString: string = format("%12d", numItems);
+            var onethird = 1.0/3.0;
+            var numItems = 32;
+
+            writeln("onethird is: ", format("%13.8f", onethird));
+            var myString: string = format("%12d", numItems);
+
 
    The current implementation of format does not provide good support
    for complex numbers, requiring the user to treat the real and
@@ -50,16 +55,18 @@ function can currently be used in one of two forms:
    format string.
 
 
-2) format(<pattern string>, val)
+2) ``format(<pattern string>, val)``
 
-   In this form, the first argument is a string composed of "#" and
-   "." characters that indicates the pattern that should be used to
-   print the value.  In this pattern, a "#" character indicates a
-   digit or a blank while "." indicates where the decimal place should
+   In this form, the first argument is a string composed of ``#`` and
+   ``.`` characters that indicates the pattern that should be used to
+   print the value.  In this pattern, a ``#`` character indicates a
+   digit or a blank while ``.`` indicates where the decimal place should
    fall.  The second argument must be a numeric type -- integral,
    real, imaginary, or complex.
 
    As an example:
+
+.. code-block:: chapel
 
      var pi = 3.14159265;
      var numItems = 32;

@@ -96,6 +96,10 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	rm -rf ./docs/ && cp -r ${TEMP_DOC_DIR}/build/html docs/
 	rm -rf ${TEMP_DOC_DIR}
 
+webdocs: $(SYS_CTYPES_MODULE_DOC)
+	export CHPLDOC_AUTHOR='Cray Inc' && \
+	$(CHPLDOC) --save-sphinx webdocs $(MODULES_TO_DOCUMENT)
+
 clean-documentation:
 	rm -rf ./docs
 	rm -rf $(TEMP_DOC_DIR)
