@@ -750,53 +750,36 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 
   if (symbolIndex.find(lhse->var) != symbolIndex.end())
   {
-
-
-
-
-
     // If the live bit is set for the RHS symbol, we can leave it as a move
     // and transfer ownership.  Otherwise, we need to insert an autoCopy.
     if (lhse->var == rvv && rvvIsOwned == true)
     {
-
+      Symbol* rsym = rhse->var;
 
       INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
 
+      if (symbolIndex.find(rsym) == symbolIndex.end())
+      {
+        // The RHS is not local, so we need an autocopy.
+        insertAutoCopy(rhse);
+      }
+      else
+      {
+        // The RHS is local.  We need an autocopy only if it is unowned.
+        size_t rindex = symbolIndex[rsym];
 
-
-        Symbol* rsym = rhse->var;
-
-        if (symbolIndex.find(rsym) == symbolIndex.end())
-        {
-          // The RHS is not local, so we need an autocopy.
+        if (!live->get(rindex))
           insertAutoCopy(rhse);
-        }
-        else
-        {
-          // The RHS is local.  We need an autocopy only if it is unowned.
-          size_t rindex = symbolIndex[rsym];
-
-          if (!live->get(rindex))
-            insertAutoCopy(rhse);
-        }
-
+      }
     }
 
     processBitwiseCopy(lhse, prod, live, cons);
-
   }
 
   if (symbolIndex.find(rhse->var) != symbolIndex.end())
   {
-
-
-
-
-
     if (rhse->var == rvv)
       insertAutoCopyForRVV(rhse);
-
   }
 }
 
