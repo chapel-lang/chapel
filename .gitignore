@@ -344,6 +344,13 @@ tags
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
 /test/runtime/kbrady/goodAllocSize.good
 
+test/separate_compilation/jturner/libclassextern2.so.a
+test/separate_compilation/jturner/libfcfunc.so.a
+test/separate_compilation/jturner/libiterator.so.a
+test/separate_compilation/jturner/libmethodextern2.so.a
+test/separate_compilation/jturner/libsimplefloat.so.a
+test/separate_compilation/jturner/libsubclass.so.a
+
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output
 /test/studies/amr/**/*.tmp.save
