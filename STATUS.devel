@@ -578,9 +578,6 @@ Domain Maps, Domains and Arrays
 - Bounds checks on index types is not implemented.
 - Concurrent slicing of privatized Replicated arrays dereferences nil
   # distributions/dm/hplx.future
-- Overloading operations such as multiplication for domain literals not
-  supported.
-  # domains/claridge/multiplicationSyntaxCheck.future
 - Query expressions on domains and subdomains not supported.
   # domains/vass/domain-arg-query-expr.future
   # functions/vass/arg-is-queried-domain.future
