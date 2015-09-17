@@ -1,41 +1,43 @@
-======================================
 Setting up your environment for Chapel
 ======================================
 
-To get started with Chapel, there are four environment settings that
-are strongly recommended for effective use of the release, and a few
-other optional settings that are useful for cross-compiling or
-overriding the default settings.  To check the values of the Chapel
-environment variables that are set or can be inferred, run the script:
-$CHPL_HOME/util/printchplenv
+To get started with Chapel, there are four environment settings that are
+strongly recommended for effective use of the release, and a few other optional
+settings that are useful for cross-compiling or overriding the default
+settings.  To check the values of the Chapel environment variables that are set
+or can be inferred, run the script::
 
-The setchplenv.* source scripts in the $CHPL_HOME/util/quickstart/ and
-$CHPL_HOME/util/ directories contain commands that set the following
-variables for various shells and host platforms when they are sourced
-from the $CHPL_HOME directory.  Frequent Chapel users may want to add
-such settings to their shell's dotfile(s); but for getting started the
-setchplenv.* scripts can be convenient.
+  $CHPL_HOME/util/printchplenv
 
---------------------
+The setchplenv.* source scripts in the `$CHPL_HOME/util/quickstart/`_ and
+`$CHPL_HOME/util/`_ directories contain commands that set the following
+variables for various shells and host platforms when they are sourced from the
+$CHPL_HOME directory.  Frequent Chapel users may want to add such settings to
+their shell's dotfile(s); but for getting started the setchplenv.* scripts can
+be convenient.
+
+.. _$CHPL_HOME/util/quickstart/: https://github.com/chapel-lang/chapel/blob/master/util/quickstart/
+.. _$CHPL_HOME/util/: https://github.com/chapel-lang/chapel/blob/master/util
+
 Recommended Settings
 --------------------
 
-1) Set the CHPL_HOME environment variable to point to the location of
-   the chapel/ directory that was created when you unpacked the
-   release.  This is the parent of the directory containing this file.
-   For example:
+#. Set the CHPL_HOME environment variable to point to the location of the
+   chapel/ directory that was created when you unpacked the release.  This is
+   the parent of the directory containing this file.  For example::
 
         export CHPL_HOME=~/chapel-1.12.0
 
-   [This, and all other examples in Chapel READMEs, assumes you're
-    using the 'bash' shell.  If using 'csh' or 'tcsh', mentally change
-    'export FOO=BAR' to 'setenv FOO BAR'.  If using some other shell,
-    make the appropriate adjustment.]
+   .. note::
+     This, and all other examples in Chapel READMEs, assumes you're using the
+     'bash' shell.  If using 'csh' or 'tcsh', mentally change 'export FOO=BAR'
+     to 'setenv FOO BAR'.  If using some other shell, make the appropriate
+     adjustment.
 
 
-2) Set the CHPL_HOST_PLATFORM environment variable to represent the platform on
+#. Set the CHPL_HOST_PLATFORM environment variable to represent the platform on
    which you're working.  For standard UNIX workstations, this can be done by
-   running the $CHPL_HOME/util/chplenv/chpl_platform.py script.  For example:
+   running the $CHPL_HOME/util/chplenv/chpl_platform.py script.  For example::
 
         export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
 
@@ -43,7 +45,10 @@ Recommended Settings
    from the shell prompt (e.g., a Cray XK (TM)), the value may need to
    be set explicitly.  The strings for our currently-supported host
    platforms are as follows:
-
+   
+        ============= =====================================
+        Value         Description
+        ============= =====================================
         cygwin32     : x86 Cygwin (Windows) platforms
         cygwin64     : x86_64 Cygwin (Windows) platforms
         darwin       : Macintosh OS X platforms
@@ -61,7 +66,7 @@ Recommended Settings
         cray-xk      : Cray XK (TM)
 
    Platform-specific READMEs are available for most of these platforms
-   in $CHPL_HOME/doc/platforms.  See $CHPL_HOME/doc/README for a
+   in `$CHPL_HOME/doc/platforms`_.  See `$CHPL_HOME/doc/README`_ for a
    directory of these files.
 
    The Chapel Makefiles and sources are designed to work for any
@@ -73,19 +78,20 @@ Recommended Settings
    to the README.building file and/or contact us at:
    chapel_info@cray.com
 
+.. _$CHPL_HOME/doc/platforms: https://github.com/chapel-lang/chapel/blob/master/doc/platforms
+.. _$CHPL_HOME/doc/README: https://github.com/chapel-lang/chapel/blob/master/doc/README
 
-3) Set your PATH to include the directory $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
-   which is created when you build the compiler.  For example:
+#. Set your PATH to include the directory $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
+   which is created when you build the compiler.  For example::
 
         export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 
 
-4) Set your man path to include the directory $CHPL_HOME/man.
-   For example:
+#. Set your man path to include the directory $CHPL_HOME/man.
+   For example::
 
         export MANPATH="$MANPATH":"$CHPL_HOME"/man
 
------------------
 Optional Settings
 -----------------
 
@@ -443,7 +449,6 @@ Optional Settings
    See doc/technotes/README.llvm for more information about
    CHPL_WIDE_POINTERS=nodeN.
 
--------------------------------------
 Compiler Command Line Option Defaults
 -------------------------------------
 
