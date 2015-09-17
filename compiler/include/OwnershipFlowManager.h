@@ -101,14 +101,25 @@ private:
 
 
   void insertAutoCopies();
-  void insertAutoCopy(BasicBlock& bb,
-                      BitVec* prod,
-                      BitVec* live,
-                      BitVec* cons);
-  void insertAutoCopy(SymExprVector& symExprs,
-                      BitVec*        prod,
-                      BitVec*        live,
-                      BitVec*        cons);
+  void insertAutoCopy(Expr*    expr,
+                      BitVec*  prod,
+                      BitVec*  live,
+                      BitVec*  cons,
+                      Symbol*  rvv,
+                      bool     rvvIsOwned);
+  void insertAutoCopy(SymExpr* se,
+                      BitVec*  prod,
+                      BitVec*  live,
+                      BitVec*  cons,
+                      Symbol*  rvv);
+  bool isSimpleAssignment(Expr* expr)                                    const;
+  void autoCopyForSimpleAssignment(CallExpr* call,
+                                   BitVec*   prod,
+                                   BitVec*   live,
+                                   BitVec*   cons,
+                                   Symbol*   rvv,
+                                   bool      rvvIsOwned);
+  void insertAutoCopyForRVV(SymExpr* se);
   void insertAutoCopy(SymExpr* se);
 
 

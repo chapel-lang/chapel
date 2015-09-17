@@ -683,192 +683,195 @@ static bool isDestructorArg(SymExpr* se);
 
 void OwnershipFlowManager::insertAutoCopies()
 {
+  // RVV is "Return Value Variable"
+  Symbol* rvv        = _fn->getReturnSymbol();
+  bool    rvvIsOwned = ! _fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
+
   for (size_t i = 0; i < nbbs; i++)
   {
-    // We need to insert an autodestroy call for each symbol that is owned
-    // (live) at the end of the block but is unowned (dead) in the OUT set.
-    BasicBlock& bb  = *(*basicBlocks)[i];
-
-    // For this block traversal, we initialize live = IN[i].
+    BasicBlock& bb   = *(*basicBlocks)[i];
     BitVec*     live = new BitVec(*IN[i]);
-
-    // We use temporaries for the prod and cons sets.  The results of
-    // global flow analysis should yield the same values, and this allows
-    // us to test that assertion.
     BitVec*     prod = new BitVec(PROD[i]->size());
     BitVec*     cons = new BitVec(CONS[i]->size());
 
-    insertAutoCopy(bb, prod, live, cons);
+    // We need to insert an autodestroy call for each symbol that is owned
+    // (live) at the end of the block but is unowned (dead) in the OUT set.
+    for_vector(Expr, expr, bb.exprs)
+      insertAutoCopy(expr, prod, live, cons, rvv, rvvIsOwned);
 
-    delete cons; cons = 0;
-    delete live; live = 0;
-    delete prod; prod = 0;
+    delete cons;
+    delete live;
+    delete prod;
   }
 }
 
-void OwnershipFlowManager::insertAutoCopy(BasicBlock& bb,
-                                          BitVec*     prod,
-                                          BitVec*     live,
-                                          BitVec*     cons)
+void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
+                                          BitVec* prod,
+                                          BitVec* live,
+                                          BitVec* cons,
+                                          Symbol* rvv,
+                                          bool    rvvIsOwned)
 {
-  for_vector(Expr, expr, bb.exprs)
+  if (isSimpleAssignment(expr) == true)
+  {
+    autoCopyForSimpleAssignment(toCallExpr(expr),
+                                prod,
+                                live,
+                                cons,
+                                rvv,
+                                rvvIsOwned);
+  }
+  else
   {
     OwnershipFlowManager::SymExprVector symExprs;
 
     collectSymExprs(expr, symExprs);
 
-    insertAutoCopy(symExprs, prod, live, cons);
+    for_vector(SymExpr, se, symExprs)
+    {
+      // Is this symbol local?
+      if (symbolIndex.find(se->var) != symbolIndex.end())
+        insertAutoCopy(se, prod, live, cons, rvv);
+    }
   }
 }
 
-void OwnershipFlowManager::insertAutoCopy(SymExprVector& symExprs,
-                                          BitVec*        prod,
-                                          BitVec*        live,
-                                          BitVec*        cons)
+bool OwnershipFlowManager::isSimpleAssignment(Expr* expr) const
 {
-  for_vector(SymExpr, se, symExprs)
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(expr))
   {
-    // We are only interested in local symbols, so if this one does
-    // not appear in our map, move on.
-    Symbol* sym = se->var;
-
-    if (symbolIndex.find(sym) == symbolIndex.end())
-      continue;
-
-    bool seIsRVV    = false;
-    bool rvvIsOwned = true;
-
-    if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
     {
-      seIsRVV    = sym == fn->getReturnSymbol();
-      rvvIsOwned = ! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
+      INT_ASSERT(isSymExpr(call->get(1)));
+
+      retval = isSymExpr(call->get(2));
+    }
+  }
+
+  return retval;
+}
+
+void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
+                                                       BitVec*   prod,
+                                                       BitVec*   live,
+                                                       BitVec*   cons,
+                                                       Symbol*   rvv,
+                                                       bool      rvvIsOwned)
+{
+  SymExpr* lhse = toSymExpr(call->get(1));
+  SymExpr* rhse = toSymExpr(call->get(2));
+
+  if (symbolIndex.find(lhse->var) != symbolIndex.end())
+  {
+    if (lhse->var == rvv && rvvIsOwned == true)
+    {
+      Symbol* rsym = rhse->var;
+
+      INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+      if (symbolIndex.find(rsym) == symbolIndex.end())
+      {
+        // The RHS is not local, so we need an autocopy.
+        insertAutoCopy(rhse);
+      }
+      else
+      {
+        // The RHS is local.  We need an autocopy only if it is unowned.
+        size_t rindex = symbolIndex[rsym];
+
+        if (!live->get(rindex))
+          insertAutoCopy(rhse);
+      }
     }
 
-    if (bitwiseCopyArg(se) == 1)
+    processBitwiseCopy(lhse, prod, live, cons);
+  }
+
+  if (symbolIndex.find(rhse->var) != symbolIndex.end())
+  {
+    if (rhse->var == rvv)
+      insertAutoCopyForRVV(rhse);
+  }
+}
+
+void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
+                                          BitVec*  prod,
+                                          BitVec*  live,
+                                          BitVec*  cons,
+                                          Symbol*  rvv)
+{
+  Symbol* sym = se->var;
+
+  if (sym == rvv)
+  {
+    insertAutoCopyForRVV(se);
+  }
+
+  else if (isCreated(se))
+  {
+    processCreator(se, prod, live);
+  }
+
+  else if (isConsumed(se))
+  {
+    size_t index = symbolIndex[sym];
+
+    // If the live bit is set for this symbol, leave it as a move
+    // and transfer ownership.  Otherwise, insert an autoCopy.
+    if (!live->get(index))
     {
-      // If the live bit is set for the RHS symbol, we can leave it as a move
-      // and transfer ownership.  Otherwise, we need to insert an autoCopy.
-      if (seIsRVV && rvvIsOwned)
-      {
-        CallExpr* call = toCallExpr(se->parentExpr);
+      insertAutoCopy(se);
 
-        INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
-
-        if (SymExpr* rhse = toSymExpr(call->get(2)))
-        {
-          Symbol* rsym = rhse->var;
-
-          if (symbolIndex.find(rsym) == symbolIndex.end())
-          {
-            // The RHS is not local, so we need an autocopy.
-            insertAutoCopy(rhse);
-          }
-          else
-          {
-            // The RHS is local.  We need an autocopy only if it is unowned.
-            size_t rindex = symbolIndex[rsym];
-
-            if (!live->get(rindex))
-              insertAutoCopy(rhse);
-          }
-        }
-      }
-
-      processBitwiseCopy(se, prod, live, cons);
-
-      continue;
+      // Set the bit in the PROD set to show that ownership is
+      // produced, but since it is consumed immediately, the state of
+      // OUT and the rest of the forward-flowed bitsets are unchanged.
+      prod->set(index);
     }
 
-    // I apologize for this slightly special case.
-    // The main AMM routine deals with the ownership of symbols, so the code
-    // appearing above in the bitwiseCopyArg(se) == 1 clause only triggers
-    // when the RHS is a symbol.
-    // If the RHS is a call to a function, no autocopy is needed because calls
-    // are uniformly treated as returning an owned value.  If the thing being
-    // copied into the RVV is owned, we don't need to insert an autoCopy.
-    // But that still leaves the case where a CallExpr on the RHS returns
-    // something that is unowned.  That special case is handle here.
-    if (seIsRVV)
+    processConsumer(se, live, cons);
+  }
+}
+
+// If the RHS is a call to a function, no autocopy is needed because calls
+// are uniformly treated as returning an owned value.  If the thing being
+// copied into the RVV is owned, we don't need to insert an autoCopy.
+// But that still leaves the case where a CallExpr on the RHS returns
+// something that is unowned.  That special case is handle here.
+void OwnershipFlowManager::insertAutoCopyForRVV(SymExpr* se)
+{
+  CallExpr* call = toCallExpr(se->parentExpr);
+
+  INT_ASSERT(call);
+
+  if (call->isPrimitive(PRIM_MOVE))
+  {
+    if (CallExpr* rhs = toCallExpr(call->get(2)))
     {
-      CallExpr* call = toCallExpr(se->parentExpr);
-
-      INT_ASSERT(call);
-
-      if (call->isPrimitive(PRIM_MOVE))
+      if (! resultIsOwned(rhs))
       {
-        if (CallExpr* rhs = toCallExpr(call->get(2)))
-        {
-          if (! resultIsOwned(rhs))
-          {
-            Expr* stmt = rhs->getStmtExpr();
+        Expr* stmt = rhs->getStmtExpr();
 
-            SET_LINENO(stmt);
+        SET_LINENO(stmt);
 
-            VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
+        VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
+        SymExpr*   rhse    = new SymExpr(callTmp);
 
-            stmt->insertBefore(new DefExpr(callTmp));
-            stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
-            SymExpr* rhse = new SymExpr(callTmp);
+        stmt->insertBefore(new DefExpr(callTmp));
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
 
-            call->insertAtTail(rhse);
+        call->insertAtTail(rhse);
 
-            insertAutoCopy(rhse);
-          }
-        }
+        insertAutoCopy(rhse);
       }
-      continue;
-    }
-
-    // We assume that this case is handled by the above.
-    if (bitwiseCopyArg(se) == 2)
-      continue;
-
-    // Set a bit in the live set if this is a constructor.
-    if (isCreated(se))
-      processCreator(se, prod, live);
-
-    if (isConsumed(se))
-    {
-      // When there is a return-value variable, it is assumed to be assigned
-      // elsewhere and owned (see the clause for seIsRVV && rvvIsOwned under
-      // (bitwiseCopyAr(se) == 1) above).  Therefore, it is not necessary to
-      // add an autocopy here.
-      // TODO: Ultimately, there will be no RVV, so this special case can be
-      // removed.
-      if (seIsRVV)
-        if (CallExpr* call = toCallExpr(se->parentExpr))
-          if (call->isPrimitive(PRIM_RETURN))
-            continue;
-
-      // If the live bit is set for this symbol, we can leave it as a move and
-      // transfer ownership.  Otherwise, we need to insert an autoCopy.
-      size_t index = symbolIndex[sym];
-
-      if (!live->get(index))
-      {
-        insertAutoCopy(se);
-
-        // We can set the bit in the PROD set to show that ownership is
-        // produced, but since it is consumed immediately, the state of
-        // OUT and the rest of the forward-flowed bitsets is unchanged.
-        prod->set(index);
-      }
-
-      processConsumer(se, live, cons);
     }
   }
 }
 
 static bool resultIsOwned(CallExpr* call)
 {
-  if (call->isResolved())
-    return true;
-  else
-  {
-    // This call must be a primitive.
-    // Guilty until proven innocent.
-    return false;
-  }
+  return call->isResolved() ? true : false;
 }
 
 // Insert an autoCopy because this symbol is unowned and
