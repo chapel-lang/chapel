@@ -437,15 +437,21 @@ To use ugni communications:
    layer.
 
 
-3) Set your CHPL_TASKS environment variable to "muxed" or "qthreads".
+3) Set your CHPL_TASKS environment variable to "qthreads" (the default),
+   "muxed" or "fifo".
+
+     export CHPL_TASKS=qthreads
+
+     -- or --
 
      export CHPL_TASKS=muxed
 
      -- or --
 
-     export CHPL_TASKS=qthreads
+     export CHPL_TASKS=fifo
 
-   Only these two tasking layers work with ugni communications.  Other
+
+   All of these tasking layers work with ugni communications.  Other
    Chapel environment variables having to do with runtime layers should
    be left unset.  Setting CHPL_COMM and CHPL_TASKS like this will cause
    the correct combination of other runtime layers that work with those
@@ -491,11 +497,11 @@ To use ugni communications:
 
 Due to the use of hugepages in the ugni comm layer, tasking layers
 cannot use guard pages for stack overflow detection.  Qthreads tasking
-uses guard pages for stack overflow detection, so if ugni communications
-and qthreads tasking are combined, stack overflow detection in qthreads
-is automatically turned off.  (Muxed tasking uses a different technique
-to detect stack overflow, as described below, so it is not affected by
-this limitation.)
+can only use guard pages for stack overflow detection, so if ugni
+communications is combined with qthreads tasking, overflow detection is
+automatically turned off.  Muxed tasking can use guard pages for stack
+overflow detection, but it can also drop back to synchronous overflow
+detection, as described below, with CHPL_COMM=ugni and hugepages.)
 
 There are a few special parameters recognized by the ugni communication
 layer:
@@ -561,15 +567,25 @@ To use muxed tasking:
    layer.
 
 
-3) Set your CHPL_COMM environment variable to "ugni".
+3) Set your CHPL_COMM environment variable to "ugni" (the usual
+   default), "gasnet" (an alternative default)"none", or
+   .
+
+     export CHPL_COMM=none
+
+     -- or --
 
      export CHPL_COMM=ugni
 
-   Muxed tasking is only available combined with ugni communications.
-   Other Chapel environment variables having to do with runtime layers
-   should be left unset.  Setting CHPL_TASKS and CHPL_COMM like this
-   will cause the correct combination of other runtime layers that work
-   with those to be selected automatically.
+     -- or --
+
+     export CHPL_COMM=gasnet
+
+   These three communication layers are known to work with muxed
+   tasking.  Other Chapel environment variables having to do with
+   runtime layers should be left unset.  Setting CHPL_TASKS and
+   CHPL_COMM like this will cause the correct combination of other
+   runtime layers that work with those to be selected automatically.
 
 
 There are a few special parameters recognized by the muxed tasking
@@ -608,22 +624,32 @@ layer:
     -----------------------
 
     With muxed tasking, the compiler --stack-checks setting specifies
-    the default setting for execution-time stack overflow checking.
-    Final control over stack overflow checks is provided by the
-    CHPL_RT_STACK_CHECK_LEVEL environment variable, which can take the
-    following values:
-      0:  no stack overflow checking
-      1:  limited stack overflow checking (default)
-      2:  more stack overflow checking
+    the default setting for execution-time stack overflow checking.  If
+    this is set and the program heap, from which stacks are allocated,
+    is not on hugepages then each stack gets an inaccessible guard page
+    added at the end toward which stack growth occurs.  Then if the
+    stack overflows, the resulting SIGSEGV is diagnostic.  While this
+    signal-based solution is a bit crude, it is also fairly trustworthy
+    and hard to fool.
 
-    Due to the use of hugepages in the ugni comm layer, muxed tasking
-    cannot use guard pages for stack overflow detection as fifo and
-    qthreads tasking do.  So, overflow is detected by means of explicit
-    checks against the task's stack limit, on entry to certain selected
-    functions in the muxed tasking layer.  If overflow is seen, the
-    runtime prints an error message and halts the program.  Successively
-    higher levels (0, 1, 2) of overflow checking cause more overhead and
-    correspondingly have more impact on performance.
+    Guard pages cannot be used when the heap is on hugepages, because
+    the system call that makes memory pages inaccessible cannot be
+    applied to hugepages.  Currently the heap is on hugepages when
+    CHPL_COMM=ugni.  In this case muxed tasking does synchronous stack
+    overflow detection instead.  Explicit checks against the task's
+    stack limit are done on entry to selected functions in the muxed
+    tasking layer.  If overflow is seen, the runtime prints an error
+    message and halts the program.  The level of overflow checking may
+    be controlled using the CHPL_RT_STACK_CHECK_LEVEL environment
+    variable, which can take the following values:
+
+      0: no stack overflow checking
+      1: limited stack overflow checking (default)
+      2: more stack overflow checking
+
+    Successively higher levels of overflow checking are more likely to
+    catch overflow, and catch it earlier, but they also cause more
+    overhead and thus have a greater impact on performance.
 
 
     Number of Threads per Locale
