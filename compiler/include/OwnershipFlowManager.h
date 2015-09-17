@@ -185,13 +185,14 @@ private:
   // vector.
   SymbolVector      symbols;
   size_t            nsyms;       // Cached symbol count.
-                                 // Valid after the symbols is populated.
+                                 // Valid after <symbols> is populated.
   SymbolIndexMap    symbolIndex; // Map from a symbol to its index in BitVecs.
 
   // The map contains one entry for each symbol.
   // Each entry is a list of symbols with which the given symbol is an alias.
   AliasVectorMap    aliases;
 
+  // These fields are described in detail immediately below
   FlowSet           PROD;
   FlowSet           CONS;
   FlowSet           USE;
@@ -209,8 +210,8 @@ private:
   //  any conditional node; therefore this invariant is obeyed trivially.
   //  Internally, however, at present we break this rule for the return value
   //  variable.  It is declared at the beginning of the function but is
-  //  initialized (in routines that do not declare an explicit return type) at
-  //  each yield or return statement.
+  //  initialized (in routines that do not declare an explicit return type)
+  //  at each yield or return statement.
   //  If the invariant is violated, it is an internal error, since the user
   //  cannot write code that will cause a variable to be initialized later in
   //  the flow.  This analysis treats "noinit" initialization as
@@ -224,8 +225,8 @@ private:
   //  There can be multiple consumers on a given flow path.  A given insn can
   //  consume multple symbols, or even the same symbol multiple times.
   //  A given symbol need not be owned on entry to a given consumer insn.  If
-  //  the "owned" bit for that symbol is false, then an autocopy is inserted so
-  //  the ownership requirement of the consumer is satisfied.  Multiple
+  //  the "owned" bit for that symbol is false, then an autocopy is inserted
+  //  so the ownership requirement of the consumer is satisfied.  Multiple
   //  autocopies may be inserted if multiple symbols are consumed or if one
   //  symbol is consumed multiply.
   //  If the "owned" bit for that symbol is true, then the symbol can be
@@ -246,8 +247,8 @@ private:
   // is true for *any* of its successors.
 
   // EXIT(i,j) is true iff block i is associated with the end-of-scope of
-  // symbol j.  For this to be useful, we may need to insert empty join blocks
-  // at the end of scopes containing "interesting" flows.
+  // symbol j.  For this to be useful, we may need to insert empty join
+  // blocks at the end of scopes containing "interesting" flows.
 
   // IN(i,j) is true iff symbol j is already owned on entry to block i.
   //  Valid after forward and backward flows have converged.

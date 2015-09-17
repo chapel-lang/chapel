@@ -1598,9 +1598,8 @@ void OwnershipFlowManager::processBitwiseCopy(SymExpr* se,
       resetAliasList(live, *raliasList);
       setAliasList  (cons, *raliasList);
 
-      // If the RHS is owned, set the produce bit for each member of the lhs
-      // clique
-      // was owned.
+      // If the RHS is owned, set the produce bit for
+      // each member of the lhs clique.
       if (owned)
       {
         setAliasList(prod, *laliasList);
