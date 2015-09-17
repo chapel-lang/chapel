@@ -26,6 +26,8 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
 SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
+TEMP_DOC_DIR=$(shell pwd)/temp-docs
+
 default: all
 
 all: $(SYS_CTYPES_MODULE)
@@ -82,12 +84,21 @@ MODULES_TO_DOCUMENT = \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
+INTERNAL_MODULES_TO_DOCUMENT = \
+	internal/ChapelSyncvar.chpl \
+	internal/Atomics.chpl
+
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
+	$(CHPLDOC) --save-sphinx ${TEMP_DOC_DIR} $(MODULES_TO_DOCUMENT) \
+	$(INTERNAL_MODULES_TO_DOCUMENT)
+	./fixInternalDocs ${TEMP_DOC_DIR}
+	rm -rf ./docs/ && cp -r ${TEMP_DOC_DIR}/build/html docs/
+	rm -rf ${TEMP_DOC_DIR}
 
 clean-documentation:
 	rm -rf ./docs
+	rm -rf $(TEMP_DOC_DIR)
 
 FORCE:
 

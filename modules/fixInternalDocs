@@ -1,0 +1,61 @@
+#!/bin/bash
+
+
+# NOTE:
+# This script _should_ eventually go away entirely as chpldoc improves.
+# For now, we'll use common unix utilities to achieve a cleaner result.
+
+if [ $# -ne 1 ]; then
+  echo "Error: This script takes one argument, the path of the intermediate sphinx project"
+  exit 1
+fi
+
+if [ ! -d "$1" ]; then
+  echo "Error: Unable to find directory $1."
+  exit 2
+fi
+
+TEMPDIR="$1"
+
+cd "${TEMPDIR}/source/modules/internal/"
+
+function removePattern() {
+  sed -i '' "/$1/ { N; d; }" $FILE
+}
+
+function replace() {
+  sed -i '' "s/$1/$2/g" $FILE
+}
+
+function fixTitle() {
+  sed -i '' "s/module:: $1/module:: $2/g" $FILE
+  # Need to keep the new text short to match length of section marker
+  replace "Module: $1" "$2"
+}
+
+## ChapelSyncvar ##
+
+FILE="./ChapelSyncvar.rst"
+replace "_syncvar" "sync"
+replace "_singlevar" "single"
+removePattern "proc [^a-zA-Z]"
+removePattern "proc chpl__"
+fixTitle "ChapelSyncvar" "Synchronization Vars"
+
+
+## Atomics ##
+FILE="./Atomics.rst"
+
+removePattern "type atomic_"
+removePattern "proc atomic_"
+removePattern "proc create_"
+removePattern "proc [^a-zA-Z]"
+
+replace "atomic_int64" "atomic\(T\)"
+replace "int(64)" "T"
+fixTitle "Atomics" "Atomics"
+
+cd ${TEMPDIR}
+source $CHPL_MAKE_HOME/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/chpl-virtualenv/bin/activate
+make clean
+make html
