@@ -750,21 +750,21 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 
   if (symbolIndex.find(lhse->var) != symbolIndex.end())
   {
-  SymExpr* se   = lhse;
-  Symbol*  sym  = se->var;
 
-  if (bitwiseCopyArg(se) == 1)
-  {
+
+
+
+
     // If the live bit is set for the RHS symbol, we can leave it as a move
     // and transfer ownership.  Otherwise, we need to insert an autoCopy.
-    if (sym == rvv && rvvIsOwned == true)
+    if (lhse->var == rvv && rvvIsOwned == true)
     {
-      CallExpr* call = toCallExpr(se->parentExpr);
+
 
       INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
 
-      if (SymExpr* rhse = toSymExpr(call->get(2)))
-      {
+
+
         Symbol* rsym = rhse->var;
 
         if (symbolIndex.find(rsym) == symbolIndex.end())
@@ -780,23 +780,23 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
           if (!live->get(rindex))
             insertAutoCopy(rhse);
         }
-      }
+
     }
 
-    processBitwiseCopy(se, prod, live, cons);
-  }
+    processBitwiseCopy(lhse, prod, live, cons);
+
   }
 
   if (symbolIndex.find(rhse->var) != symbolIndex.end())
   {
-  SymExpr* se   = rhse;
-  Symbol*  sym  = se->var;
 
-  if (bitwiseCopyArg(se) == 2 || sym == rvv)
-  {
-    if (sym == rvv)
-      insertAutoCopyForRVV(se);
-  }
+
+
+
+
+    if (rhse->var == rvv)
+      insertAutoCopyForRVV(rhse);
+
   }
 }
 
