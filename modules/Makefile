@@ -92,9 +92,7 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) --save-sphinx ${TEMP_DOC_DIR} $(MODULES_TO_DOCUMENT) \
 	$(INTERNAL_MODULES_TO_DOCUMENT)
-	./fixInternalDocs ${TEMP_DOC_DIR}
-	rm -rf ./docs/ && cp -r ${TEMP_DOC_DIR}/build/html docs/
-	rm -rf ${TEMP_DOC_DIR}
+	$(CHPL_MAKE_HOME)/util/misc/fixInternalDocs ${TEMP_DOC_DIR}
 
 webdocs: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \

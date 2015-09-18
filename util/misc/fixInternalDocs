@@ -42,6 +42,8 @@ removePattern "proc [^a-zA-Z]"
 removePattern "proc chpl__"
 fixTitle "ChapelSyncvar" "Synchronization Vars"
 
+## End ChapelSyncvar ##
+
 
 ## Atomics ##
 FILE="./Atomics.rst"
@@ -55,7 +57,4 @@ replace "atomic_int64" "atomic\(T\)"
 replace "int(64)" "T"
 fixTitle "Atomics" "Atomics"
 
-cd ${TEMPDIR}
-source $CHPL_MAKE_HOME/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/chpl-virtualenv/bin/activate
-make clean
-make html
+## End Atomics ##
