@@ -767,18 +767,18 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 
       INT_ASSERT(call->isPrimitive(PRIM_MOVE));
 
-      if (isLocal(rsym) == false)
-      {
-        // The RHS is not local, so we need an autocopy.
-        insertAutoCopy(rhse);
-      }
-      else
+      if (isLocal(rsym) == true)
       {
         // The RHS is local.  We need an autocopy only if it is unowned.
         size_t rindex = symbolIndex[rsym];
 
         if (!live->get(rindex))
           insertAutoCopy(rhse);
+      }
+      else
+      {
+        // The RHS is not local, so we need an autocopy.
+        insertAutoCopy(rhse);
       }
     }
 
