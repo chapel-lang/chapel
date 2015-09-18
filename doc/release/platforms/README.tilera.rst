@@ -13,9 +13,11 @@ Self-Hosted (Native) Platforms
 ------------------------------
 
 The native Tilera development environment is a standard Linux/GNU environment.
-The native Tilera development tools must be installed and added to PATH.  For
+The native Tilera development tools must be installed and added to ``PATH``.  For
 compiling the Chapel compiler and runtime, the default environment settings
 should work:
+
+.. code-block:: sh
 
     export CHPL_HOME=<my-chapel-root>
     cd $CHPL_HOME
@@ -35,42 +37,46 @@ processor mounted on a TileEncore(TM) PCI development board.
 
 The Tilera development environment is based on the GCC compiler and binary
 utilities.  The cross-compiler and utilities are built with the executable
-prefix set to "tile-".  Hence the C compiler is "tile-cc", etc.
+prefix set to ``tile-``.  Hence the C compiler is ``tile-cc``, etc.
 
 The basic Chapel environment settings for cross-compiling to the Tilera are:
+
+.. code-block:: sh
 
     export CHPL_TARGET_COMPILER=tile-cc
     export CHPL_COMM=gasnet
 
 It is necessary to rebuild the runtime after choosing these settings, to produce
-GASNet and runtime support that can run on the Tilera target.  With the target
-compiler set to "tile-cc", "make runtime" should automatically select the
+GASNet and runtime support that can run on the Tilera target.  With the above
+settings, ``make runtime`` should automatically select the
 correct build parameters for a cross-compiled version of GASNet.
 
 With these settings, compilation of a Chapel program produces a launcher and an
-executable file.  The launcher invokes the tile-monitor utility to download and
-run the executable on the target hardware.  The launcher passes the "--resume"
+executable file.  The launcher invokes the ``tile-monitor`` utility to download and
+run the executable on the target hardware.  The launcher passes the ``--resume``
 flag, which assumes that the Tilera chip has already been booted with the
 desired boot parameters.  Consult the Tilera documentation for tile-monitor and
 "Programming the TileGX Processor, UG505" for more information.
 
 With a single target, use of the gasnet communication layer is optional:
 
+.. code-block:: sh
+
     export CHPL_COMM=none
 
-Since no launcher is produced when CHPL_COMM == none, it is necessary to
-manually download and launch the executable.  The tile-monitor utility makes
-this easy.  Most commonly, the command
+Since no launcher is produced with this setting, it is necessary to
+manually download and launch the executable.  The ``tile-monitor`` utility makes
+this easy.  Most commonly, the following command will work:
+
+.. code-block:: sh
 
     tile-monitor --resume --root --here -- ./a.out [program-args]
 
-will work.
-
-The default execution environment is a multicore Linux variant.  The --root flag
-in the tile-monitor command mounts the root file system from the development
-environment as a virtual file system on the target.  The --here flag mounts the
+The default execution environment is a multicore Linux variant.  The ``--root`` flag
+in the ``tile-monitor`` command mounts the root file system from the development
+environment as a virtual file system on the target.  The ``--here`` flag mounts the
 current directory (on the host) at the same path on the target and makes that
-the current working directory.  Once this is done, one can use the tile-console
+the current working directory.  Once this is done, one can use the ``tile-console``
 utility in a different command window to run commands on the target.
 
 
@@ -79,32 +85,36 @@ Simulating Self-Hosted Platforms in Hosted Systems
 
 To make a hosted system behave like a native system, it is necessary to boot the
 target and mount the required file systems.  Then, one can log in to the target
-via ssh or a tty port.
+via ``ssh`` or a tty port.
 
 To set up the target, the command
+
+.. code-block:: sh
 
     tile-monitor --root --here
 
 will boot the target, install the necessary root file systems, then cross-mount the
 current working directory from the host onto the target.  Next, it prints a
 command prompt and waits for further commands.   Most additional commands to
-tile-monitor must be prefixed by the 'run' command, which is a bit annoying; it
+tile-monitor must be prefixed by the ``run`` command. Instead, it
 is more convenient to use another shell for interaction with the target.  To exit
-from the tile-monitor command prompt, type 'quit'.
+from the ``tile-monitor`` command prompt, type ``quit``.
 
 Since booting takes a long time, you can avoid this step after the target chip
-is booted.  Use the --resume flag with tile-monitor to start a new session
+is booted.  Use the ``--resume`` flag with ``tile-monitor`` to start a new session
 without rebooting the target:
+
+.. code-block:: sh
 
     tile-monitor --resume --root --here
 
 
 To log in to the Tilera target from another terminal window, type
 
+.. code-block:: sh
+
     tile-console
 
-.  This opens a Kermit session connected to the target system.  As long as the
-tile-monitor program remains active, the root and user file systems will remain
-mounted.  Use C^\ to escape back to Kermit and 'quit' to exit.
-
-
+This opens a Kermit session connected to the target system.  As long as the
+``tile-monitor`` program remains active, the root and user file systems will remain
+mounted.  Use Ctrl-\\ to escape back to Kermit and ``quit`` to exit.
