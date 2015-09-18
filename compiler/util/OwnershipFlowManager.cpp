@@ -785,12 +785,6 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 
     processBitwiseCopy(lhse, prod, live, cons);
   }
-
-  if (symbolIndex.find(rhse->var) != symbolIndex.end())
-  {
-    if (rhse->var == rvv)
-      insertAutoCopyForRVV(rhse);
-  }
 }
 
 void OwnershipFlowManager::autoCopyWalkSymExprs(Expr*   expr,
@@ -821,7 +815,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
 
   if (sym == rvv)
   {
-    insertAutoCopyForRVV(se);
+
   }
 
   else if (isCreated(se))
