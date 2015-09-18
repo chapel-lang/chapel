@@ -18,6 +18,40 @@
  */
 
 /*
+   See runtime/include/atomics/README for more information about atomics.
+
+   Note that when compiling with --cache-remote, the compiler
+   will add fences to methods in atomic types with order arguments e.g.::
+
+     proc sub (... order:memory_order = memory_order_seq_cst):void {
+       on this do atomic_fetch_sub_explicit_...(_v, value, order);
+     }
+
+   becomes::
+
+     proc sub (... order:memory_order = memory_order_seq_cst):void {
+       chpl_rmem_consist_maybe_release(order);
+       on this do atomic_fetch_sub_explicit_...(_v, value, order);
+       chpl_rmem_consist_maybe_acquire(order);
+     }
+
+   In addition, when --cache-remote is activated, the normally required
+   memory fence for an 'on' statement is omitted for these functions
+   (since the maybe_release/maybe_acquire fence takes care of it).
+
+   These methods are detected based on the type of the order argument,
+   but to avoid errors, the compiler will give an error if the
+   order argument is not explicitly specified (because the relevant
+   pass runs before function resolution).
+
+   waitFor methods also do not need the fences written here -
+   because they will be added if the cache is enabled - but they
+   do need a thread fence after the loop of memory_order_relaxed
+   transactions in order to correctly run in a comm=none compilation
+   where the 'on' statement is omitted.
+*/
+
+/*
    Atomic variables are variables that support atomic operations. Chapel
    currently supports atomic operations for bools, all supported sizes of
    signed and unsigned integers, as well as all supported sizes of reals.
@@ -27,45 +61,10 @@
    constraints of atomic operations. The supported values are:
 
      * memory_order_relaxed
-     * memory_order_consume
      * memory_order_acquire
      * memory_order_release
      * memory_order_acq_rel
      * memory_order_seq_cst
-
-   See runtime/include/atomics/README for more information about atomics.
-
-   .. note::
-     Note that when compiling with --cache-remote, the compiler
-     will add fences to methods in atomic types with order arguments e.g.::
-
-       proc sub (... order:memory_order = memory_order_seq_cst):void {
-         on this do atomic_fetch_sub_explicit_...(_v, value, order);
-       }
-
-     becomes::
-
-       proc sub (... order:memory_order = memory_order_seq_cst):void {
-         chpl_rmem_consist_maybe_release(order);
-         on this do atomic_fetch_sub_explicit_...(_v, value, order);
-         chpl_rmem_consist_maybe_acquire(order);
-       }
-
-     In addition, when --cache-remote is activated, the normally required
-     memory fence for an 'on' statement is omitted for these functions
-     (since the maybe_release/maybe_acquire fence takes care of it).
-
-     These methods are detected based on the type of the order argument,
-     but to avoid errors, the compiler will give an error if the
-     order argument is not explicitly specified (because the relevant
-     pass runs before function resolution).
-
-     waitFor methods also do not need the fences written here -
-     because they will be added if the cache is enabled - but they
-     do need a thread fence after the loop of memory_order_relaxed
-     transactions in order to correctly run in a comm=none compilation
-     where the 'on' statement is omitted.
-
 */
 pragma "atomic module"
 module Atomics {
