@@ -127,8 +127,11 @@ module-docs: chpldoc
 # dependency so parallel make executions correctly build chpldoc first.
 	$(MAKE) module-docs-only
 
-docs: module-docs
+symlink-docs:
+# Set up symlinks betweenn doc/release and doc/sphinx/source
 	cd doc/sphinx && ./symlinks.py
+
+docs: module-docs symlink-docs
 	cd doc/sphinx && ${MAKE} html
 
 chplvis: compiler third-party-fltk FORCE 
