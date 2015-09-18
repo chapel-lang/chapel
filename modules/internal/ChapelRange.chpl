@@ -18,14 +18,14 @@
  */
 /*
   The ChapelRange module provides the implementation for the built in range
-  type.  A `range` is a first-class, constant-space representation of a
+  type.  A ``range`` is a first-class, constant-space representation of a
   regular sequence of integer indices. Ranges support iteration over the
   sequences they represent as well as operations such as slicing, shifting,
   comparisons, striding, counting and aligning.
 
   Range Construction Operations:
   New ranges can be constructed using the striding, counting, and alignment
-  operators, `by`, `#` and `align`
+  operators, ``by``, ``#`` and ``align``
 
   .. code-block:: chapel
 
@@ -44,7 +44,7 @@
     (1..10)(..5) // 1..5
 
   Range Shifting:
-  A range can be shifted by an integer using the `+` and `-` operators.
+  A range can be shifted by an integer using the ``+`` and ``-`` operators.
 
   .. code-block:: chapel
 
@@ -54,7 +54,7 @@
     (..10) + 1 // ..11
 
   Range Comparisons:
-  Ranges can be compared for equality using the `==` and `!=` operators
+  Ranges can be compared for equality using the ``==`` and ``!=`` operators
 
   .. code-block:: chapel
 
@@ -238,7 +238,7 @@ module ChapelRange {
   //################################################################################
   //# Predicates
   //#
-  /* Return true if argument `t` is a range type, false otherwise */
+  /* Return true if argument ``t`` is a range type, false otherwise */
   proc isRangeType(type t) param {
     proc isRangeHelp(type t: range(?)) param  return true;
     proc isRangeHelp(type t)           param  return false;
@@ -246,14 +246,14 @@ module ChapelRange {
   }
   pragma "no doc"
   proc isRangeValue(r: range(?)) param  return true;
-  /* Return true if argument `r` is a range, false otherwise */
+  /* Return true if argument ``r`` is a range, false otherwise */
   proc isRangeValue(r)           param  return false;
   
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
   pragma "no doc"
   proc isBoundedRange(r)           param
     return false;
-  /* Return true if argument `r` is a fully bounded range, false otherwise */
+  /* Return true if argument ``r`` is a fully bounded range, false otherwise */
   proc isBoundedRange(r: range(?)) param
     return isBoundedRange(r.boundedType);
 
@@ -400,7 +400,7 @@ module ChapelRange {
   proc range.isAmbiguous()       where stridable
     return !aligned && (stride > 1 || stride < -1);
   
-  /* Returns true if `i` is in this range, false otherwise */
+  /* Returns true if ``i`` is in this range, false otherwise */
   inline proc range.member(i: idxType) 
   {
     if this.isAmbiguous() then return false;
@@ -422,7 +422,7 @@ module ChapelRange {
     return true;
   }
   
-  /* Returns true if the range `other` is contained within this one,
+  /* Returns true if the range ``other`` is contained within this one,
      false otherwise
    */
   inline proc range.member(other: range(?)) 
@@ -522,7 +522,7 @@ module ChapelRange {
   //////////////////////////////////////////////////////////////////////////////////
   // Bounds checking
   //
-  /* Returns true if `other` lies entirely within this range and false
+  /* Returns true if ``other`` lies entirely within this range and false
      otherwise.  Returns false if either range is ambiguously aligned.
    */
   inline proc range.boundsCheck(other: range(?e,?b,?s))
@@ -551,7 +551,7 @@ module ChapelRange {
   
     return (boundedOther.length == 0) || member(boundedOther);
   }
-  /* Return true if `other` is a member of this range and false otherwise */
+  /* Return true if ``other`` is a member of this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
     return member(other);
   
@@ -583,10 +583,10 @@ module ChapelRange {
   }
   
   /*
-     If `i` is a member of the range\’s represented sequence, returns an
+     If ``i`` is a member of the range's represented sequence, returns an
      integer giving the ordinal index of i within the sequence using
-     zero-based indexing. Otherwise, returns (-1):idxType. It is an error
-     to invoke indexOrder if the represented sequence is not defined or
+     zero-based indexing. Otherwise, returns ``(-1):idxType``. It is an error
+     to invoke ``indexOrder`` if the represented sequence is not defined or
      the range does not have a first index.
 
      The following calls show the order of index 4 in each of the given ranges:
@@ -609,10 +609,10 @@ module ChapelRange {
     else return ((i:strType - this.first:strType) / _stride):idxType;
   }
   
-  /* Returns the zero-based `ord`-th element of this range's represented
-     sequence. It is an error to invoke `orderToIndex` if the range is not
-     defined, or if `ord` is negative or greater than the range's length.
-     OrderToIndex is the reverse of the indexOrder.
+  /* Returns the zero-based ``ord``-th element of this range's represented
+     sequence. It is an error to invoke ``orderToIndex`` if the range is not
+     defined, or if ``ord`` is negative or greater than the range's length.
+     The ``orderToIndex`` procedure is the reverse of ``indexOrder``.
 
      Example:
 
@@ -652,7 +652,7 @@ module ChapelRange {
   // we need to handle more generally in the future, so for
   // consistency, we are not handling it here at all :-P
   //
-  /* Return a range with elements shifted from this range by `i`.
+  /* Return a range with elements shifted from this range by ``i``.
 
      Example:
 
@@ -689,9 +689,9 @@ module ChapelRange {
   
   // TODO: hilde
   // Set _aligned to true only if stridable.
-  /* Return a range with `i` elements from the interior portion of this
-     range. If `i` is positive, take elements from the high end, and if
-     `i` is negative, take elements from the low end.
+  /* Return a range with ``i`` elements from the interior portion of this
+     range. If ``i`` is positive, take elements from the high end, and if
+     ``i`` is negative, take elements from the low end.
 
      Example:
 
@@ -722,9 +722,9 @@ module ChapelRange {
     compilerError("exterior is not supported on unbounded ranges");
   }
 
-  /* Return a range with `i` elements from the exterior portion of this
-     range. If `i` is positive, take elements from the high end, and if
-     `i` is negative, take elements from the low end.
+  /* Return a range with ``i`` elements from the exterior portion of this
+     range. If ``i`` is positive, take elements from the high end, and if
+     ``i`` is negative, take elements from the low end.
 
      Example:
 
@@ -756,7 +756,7 @@ module ChapelRange {
   {
     compilerError("expand() is not supported on unbounded ranges");
   }
-  /* Return a range expanded by `i` elements from each end.  If `i` is
+  /* Return a range expanded by ``i`` elements from each end.  If ``i`` is
      negative, the range will be contracted.
 
      Example:
@@ -964,7 +964,7 @@ module ChapelRange {
     return r;
   }
   
-  /* Returns a range whose alignment is this range's first index plus `n`.
+  /* Returns a range whose alignment is this range's first index plus ``n``.
      If the range has no first index, a runtime error is generated.
    */
   proc range.offset(offs : idxType)
