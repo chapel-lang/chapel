@@ -30,14 +30,14 @@ function replace() {
 }
 
 function fixTitle() {
-  sed "s/module:: $1/module:: $2/g" $3 > $3.tmp
-  mv $3.tmp $3
+  local base="$(basename $2 .rst)"
+  replace "modules:: $base" "modules:: $1" $2
 
   # Replace the section header so the internal modules don't show up like this:
   # Module: ChapelFoo
-  local titleLen=${#2}
+  local titleLen=${#1}
   local header="$(printf '=%.0s' $(seq 1 $titleLen))"
-  perl -0777 -i -pe "s/Module: $1\n=+\n/$2\n$header\n/g" $3
+  perl -0777 -i -pe "s/Module: $base\n=+\n/$1\n$header\n/g" $2
 }
 
 function removePrefixFunctions() {
@@ -51,7 +51,7 @@ file="./ChapelSyncvar.rst"
 replace "_syncvar" "sync" $file
 replace "_singlevar" "single" $file
 removePrefixFunctions $file
-fixTitle "ChapelSyncvar" "Synchronization Variables" $file
+fixTitle "Synchronization Variables" $file
 
 ## End ChapelSyncvar ##
 
@@ -67,6 +67,6 @@ removePrefixFunctions $file
 
 replace "atomic_int64" "atomic\(T\)" $file
 replace "int(64)" "T" $file
-fixTitle "Atomics" "Atomics" $file
+fixTitle "Atomics" $file
 
 ## End Atomics ##
