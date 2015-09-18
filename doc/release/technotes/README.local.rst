@@ -44,7 +44,7 @@ Syntax
 The ``local`` construct is a statement. It consists of the ``local`` keyword
 followed by a statement:
 
-.. code-block::
+.. code-block:: none
 
     local-statement:
         "local" statement
