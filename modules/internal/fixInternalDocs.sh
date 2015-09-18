@@ -20,22 +20,29 @@ TEMPDIR="$1"
 cd "${TEMPDIR}/source/modules/internal/"
 
 function removePattern() {
-  sed -i '' "/$1/ { N; d; }" $2
+  sed "/$1/ { N; d; }" $2 > $2.tmp
+  mv $2.tmp $2
 }
 
 function replace() {
-  sed -i '' "s/$1/$2/g" $3
+  sed "s/$1/$2/g" $3 > $3.tmp
+  mv $3.tmp $3
 }
 
 function fixTitle() {
-  sed -i '' "s/module:: $1/module:: $2/g" $3
-  # Need to keep the new text short to match length of section marker
-  replace "Module: $1" "$2" $3
+  sed "s/module:: $1/module:: $2/g" $3 > $3.tmp
+  mv $3.tmp $3
+
+  # Replace the section header so the internal modules don't show up like this:
+  # Module: ChapelFoo
+  local titleLen=${#2}
+  local header="$(printf '=%.0s' $(seq 1 $titleLen))"
+  perl -0777 -i -pe "s/Module: $1\n=+\n/$2\n$header\n/g" $3
 }
 
 function removePrefixFunctions() {
   removePattern "proc [^a-zA-Z]" $1
-  removePattern "proc chpl__" $1
+  removePattern "proc chpl_" $1
 }
 
 ## ChapelSyncvar ##
@@ -44,12 +51,13 @@ file="./ChapelSyncvar.rst"
 replace "_syncvar" "sync" $file
 replace "_singlevar" "single" $file
 removePrefixFunctions $file
-fixTitle "ChapelSyncvar" "Synchronization Vars" $file
+fixTitle "ChapelSyncvar" "Synchronization Variables" $file
 
 ## End ChapelSyncvar ##
 
 
 ## Atomics ##
+
 file="./Atomics.rst"
 
 removePattern "type atomic_" $file
