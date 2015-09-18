@@ -20,41 +20,45 @@ TEMPDIR="$1"
 cd "${TEMPDIR}/source/modules/internal/"
 
 function removePattern() {
-  sed -i '' "/$1/ { N; d; }" $FILE
+  sed -i '' "/$1/ { N; d; }" $2
 }
 
 function replace() {
-  sed -i '' "s/$1/$2/g" $FILE
+  sed -i '' "s/$1/$2/g" $3
 }
 
 function fixTitle() {
-  sed -i '' "s/module:: $1/module:: $2/g" $FILE
+  sed -i '' "s/module:: $1/module:: $2/g" $3
   # Need to keep the new text short to match length of section marker
-  replace "Module: $1" "$2"
+  replace "Module: $1" "$2" $3
+}
+
+function removePrefixFunctions() {
+  removePattern "proc [^a-zA-Z]" $1
+  removePattern "proc chpl__" $1
 }
 
 ## ChapelSyncvar ##
 
-FILE="./ChapelSyncvar.rst"
-replace "_syncvar" "sync"
-replace "_singlevar" "single"
-removePattern "proc [^a-zA-Z]"
-removePattern "proc chpl__"
-fixTitle "ChapelSyncvar" "Synchronization Vars"
+file="./ChapelSyncvar.rst"
+replace "_syncvar" "sync" $file
+replace "_singlevar" "single" $file
+removePrefixFunctions $file
+fixTitle "ChapelSyncvar" "Synchronization Vars" $file
 
 ## End ChapelSyncvar ##
 
 
 ## Atomics ##
-FILE="./Atomics.rst"
+file="./Atomics.rst"
 
-removePattern "type atomic_"
-removePattern "proc atomic_"
-removePattern "proc create_"
-removePattern "proc [^a-zA-Z]"
+removePattern "type atomic_" $file
+removePattern "proc atomic_" $file
+removePattern "proc create_" $file
+removePrefixFunctions $file
 
-replace "atomic_int64" "atomic\(T\)"
-replace "int(64)" "T"
-fixTitle "Atomics" "Atomics"
+replace "atomic_int64" "atomic\(T\)" $file
+replace "int(64)" "T" $file
+fixTitle "Atomics" "Atomics" $file
 
 ## End Atomics ##
