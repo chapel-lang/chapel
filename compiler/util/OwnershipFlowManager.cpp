@@ -880,37 +880,34 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   Symbol*   sym        = se->var;
   FnSymbol* autoCopyFn = autoCopyMap.get(sym->type);
 
-  if (isPOD(sym->type) || autoCopyFn == NULL)
-    return;
+  // 1) There must be an auto copy function
+  // 2) Do not insert an auto copy for POD types
+  // 3) Do not copy the meme argument in a constructor.
+  // 4) Argument to a destructor function is known to be live
+  // 5) Do not insert auto-copy for an argument to a destructor
 
-  // We don't want to copy the meme argument in a constructor.
-  // TODO: When constructors are methods, there will be no meme argument, so
-  // this will be dead code.
-  if (se->var->hasFlag(FLAG_IS_MEME))
-    return;
+  if (autoCopyFn                     != NULL  &&
+      isPOD(sym->type)               == false &&
+      se->var->hasFlag(FLAG_IS_MEME) == false &&
+      isDestructorFormal(se)         == false &&
+      isDestructorArg(se)            == false)
+  {
+    Expr*      stmt         = se->getStmtExpr();
+    VarSymbol* tmp          = newTemp("auto_copy_tmp", sym->type);
+    CallExpr*  autoCopyCall = new CallExpr(autoCopyFn, se->copy());
 
-  // Argument to a destructor function is known to be live
-  if (isDestructorFormal(se))
-    return;
+    stmt->insertBefore(new DefExpr(tmp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
 
-  // Do not insert auto-copy immediately before calling a destructor
-  if (isDestructorArg(se))
-    return;
+    se->replace(new SymExpr(tmp));
 
-  Expr*      stmt         = se->getStmtExpr();
-  VarSymbol* tmp          = newTemp("auto_copy_tmp", sym->type);
-  CallExpr*  autoCopyCall = new CallExpr(autoCopyFn, se->copy());
-
-  stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
-
-  se->replace(new SymExpr(tmp));
-
-  insertReferenceTemps(autoCopyCall);
+    insertReferenceTemps(autoCopyCall);
+  }
 }
 
 // The argument to a destructor function is known to be live, so we do not
 // need to insert an autoCopy even if one is called for.
+//
 // (Alternatively, we could pre-initialize the IN[0] set so the bit
 // corresponding to the argument is true, but heading off the insertion of a
 // called-for autoCopy seems simpler.)
@@ -929,6 +926,7 @@ bool OwnershipFlowManager::isDestructorFormal(SymExpr* se) const
 // each field in turn (in reverse order).  We don't want to call autoCopy on
 // these arguments, because that just undoes the effect of the field-wise
 // destructor call.
+//
 // TODO: This problem only occurs for sync and referencecounted types.  If we
 // can remove the useRefType predicate on line 687 of callDestructors.cpp and
 // always use ref types (PRIM_GET_MEMBER), then this test can be removed.
