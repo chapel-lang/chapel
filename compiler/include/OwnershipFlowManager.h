@@ -127,6 +127,8 @@ private:
 
   void insertAutoCopy(SymExpr* se);
 
+  bool isDestructorFormal(SymExpr* se)                                   const;
+  bool isDestructorArg(SymExpr* se)                                      const;
 
   void iteratorInsertAutoDestroys();
   void iteratorInsertAutoDestroys(BitVec*        toCons,

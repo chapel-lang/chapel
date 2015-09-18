@@ -675,9 +675,6 @@ void OwnershipFlowManager::backwardFlowUse()
 //#########################################################################
 //#
 
-static bool isDestructorFormal(SymExpr* se);
-static bool isDestructorArg(SymExpr* se);
-
 void OwnershipFlowManager::insertAutoCopies()
 {
   // RVV is "Return Value Variable"
@@ -922,7 +919,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   insertReferenceTemps(autoCopyCall);
 }
 
-static bool isDestructorFormal(SymExpr* se)
+bool OwnershipFlowManager::isDestructorFormal(SymExpr* se) const
 {
   if (ArgSymbol* arg = toArgSymbol(se->var))
     if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
@@ -937,7 +934,7 @@ static bool isDestructorFormal(SymExpr* se)
   return false;
 }
 
-static bool isDestructorArg(SymExpr* se)
+bool OwnershipFlowManager::isDestructorArg(SymExpr* se) const
 {
 #if 0
   // Cautiously disable the portion of this predicate that makes sure this
