@@ -729,16 +729,7 @@ void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
 
   else
   {
-    OwnershipFlowManager::SymExprVector symExprs;
-
-    collectSymExprs(expr, symExprs);
-
-    for_vector(SymExpr, se, symExprs)
-    {
-      // Is this symbol local?
-      if (symbolIndex.find(se->var) != symbolIndex.end())
-        insertAutoCopy(se, prod, live, cons, rvv);
-    }
+    autoCopyWalkSymExprs(expr, prod, live, cons, rvv);
   }
 }
 
@@ -799,6 +790,24 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
   {
     if (rhse->var == rvv)
       insertAutoCopyForRVV(rhse);
+  }
+}
+
+void OwnershipFlowManager::autoCopyWalkSymExprs(Expr*   expr,
+                                                BitVec* prod,
+                                                BitVec* live,
+                                                BitVec* cons,
+                                                Symbol* rvv)
+{
+  SymExprVector symExprs;
+
+  collectSymExprs(expr, symExprs);
+
+  for_vector(SymExpr, se, symExprs)
+  {
+    // Is this symbol local?
+    if (symbolIndex.find(se->var) != symbolIndex.end())
+      insertAutoCopy(se, prod, live, cons, rvv);
   }
 }
 
