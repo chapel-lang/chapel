@@ -128,7 +128,7 @@ module-docs: chpldoc
 	$(MAKE) module-docs-only
 
 symlink-docs:
-# Set up symlinks betweenn doc/release and doc/sphinx/source
+# Set up symlinks between `/doc/release` and `/doc/sphinx/source`
 	cd doc/sphinx && ./symlinks.py
 
 docs: module-docs symlink-docs
