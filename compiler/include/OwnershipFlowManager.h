@@ -130,7 +130,6 @@ private:
                             BitVec* cons,
                             Symbol* rvv);
 
-  void insertAutoCopyForRVV(SymExpr* se);
   void insertAutoCopy(SymExpr* se);
 
 

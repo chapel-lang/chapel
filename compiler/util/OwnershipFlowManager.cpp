@@ -675,7 +675,6 @@ void OwnershipFlowManager::backwardFlowUse()
 //#########################################################################
 //#
 
-static bool resultIsOwned(CallExpr* call);
 static bool isRetVarInReturn(SymExpr* se);
 static bool isRetVarCopyInConstructor(SymExpr* se);
 static bool isDestructorFormal(SymExpr* se);
@@ -891,57 +890,6 @@ void OwnershipFlowManager::autoCopyForMoveToRvvFromPrimop(CallExpr* call)
 
     insertAutoCopy(rhse);
   }
-}
-
-//
-// NOAKES: The logic to insert this autoCopy is being relocated to
-// the main loop.  Verify that this path never triggers as a step
-// to deprecating this version of that logic
-//
-
-
-// If the RHS is a call to a function, no autocopy is needed because calls
-// are uniformly treated as returning an owned value.  If the thing being
-// copied into the RVV is owned, we don't need to insert an autoCopy.
-// But that still leaves the case where a CallExpr on the RHS returns
-// something that is unowned.  That special case is handle here.
-void OwnershipFlowManager::insertAutoCopyForRVV(SymExpr* se)
-{
-  CallExpr* call = toCallExpr(se->parentExpr);
-
-  INT_ASSERT(call);
-
-  if (call->isPrimitive(PRIM_MOVE))
-  {
-    if (CallExpr* rhs = toCallExpr(call->get(2)))
-    {
-      if (! resultIsOwned(rhs))
-      {
-#if 0
-        Expr* stmt = rhs->getStmtExpr();
-
-        SET_LINENO(stmt);
-
-        VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
-        SymExpr*   rhse    = new SymExpr(callTmp);
-
-        stmt->insertBefore(new DefExpr(callTmp));
-        stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
-
-        call->insertAtTail(rhse);
-
-        insertAutoCopy(rhse);
-#else
-        INT_ASSERT(false);
-#endif
-      }
-    }
-  }
-}
-
-static bool resultIsOwned(CallExpr* call)
-{
-  return call->isResolved() ? true : false;
 }
 
 // Insert an autoCopy because this symbol is unowned and
