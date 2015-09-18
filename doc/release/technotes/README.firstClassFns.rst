@@ -18,17 +18,25 @@ values may be passed around as other value types.
 
 For example:
 
+.. code-block:: chapel
+
   proc myfunc(x:int) { return x + 1; }
   var f = myfunc;
   writeln(f(3));  // outputs: 4
 
 To be captured, a function must not be any of the following:
+
 - A generic function (all captured functions must be fully-qualified
   with no generic arguments)
+
 - A function with special return types (type, param)
+
 - An iterator
+
 - The method of an object
+
 - An operator
+
 - An overloaded function
 
 Rationale. Generic functions would require manipulating generic,
@@ -51,13 +59,17 @@ Lambda functions are anonymous first-class function objects. In other
 words, they are expressions rather than formally-defined named
 functions. They are available with the following syntax:
 
+.. code-block:: none
+
   lambda-declaration-expression:
     lambda argument-list return-type_opt function-body
 
-where 'lambda' is a Chapel keyword and return-type_opt is an optional
+where ``lambda`` is a Chapel keyword and ``return-type_opt`` is an optional
 return-type.
 
 For example:
+
+.. code-block:: chapel
 
   var f = lambda(x:int, y:int) { return x + y; };
   writeln(f(1,2));  // outputs: 3
@@ -74,6 +86,8 @@ on the stack, i.e. while these functions are still executing.
 
 Example. For example the following is acceptable:
 
+.. code-block:: chapel
+
   proc myfunc() {
     var x = 3;
     var f = lambda() { x = 4; };
@@ -83,7 +97,7 @@ Example. For example the following is acceptable:
 
   writeln(myfunc());  // outputs: 4
 
-whereas having myfunc() return its 'f' variable is not supported.
+whereas having ``myfunc()`` return its ``f`` variable is not supported.
 
 
 Function type signatures
@@ -91,6 +105,8 @@ Function type signatures
 
 The types of first-class functions can be obtained by using
 the 'func' type functions that are provided as follows:
+
+.. code-block:: chapel
 
   // no arguments, void return type (returns no value)
   proc func() type
@@ -102,6 +118,8 @@ the 'func' type functions that are provided as follows:
   proc func(type argtypes...?n, type rettype) type
 
 For example:
+
+.. code-block:: chapel
 
   var f : func(void);  // A function with no arguments, no return value
   var f1: func();      // A shortcut for the above
