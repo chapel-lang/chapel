@@ -132,7 +132,7 @@ symlink-docs:
 	cd doc/sphinx && ./symlinks.py
 
 docs: module-docs symlink-docs
-	cd doc/sphinx && ${MAKE} html
+	cd doc/sphinx && ./run-in-venv.bash ${MAKE} html
 
 chplvis: compiler third-party-fltk FORCE 
 	cd tools/chplvis && $(MAKE)
