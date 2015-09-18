@@ -921,35 +921,24 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
 
 bool OwnershipFlowManager::isDestructorFormal(SymExpr* se) const
 {
-  if (ArgSymbol* arg = toArgSymbol(se->var))
-    if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
-      if (fn->hasFlag(FLAG_DESTRUCTOR) ||
-          fn->hasFlag(FLAG_AUTO_DESTROY_FN))
-      {
-        // We presume this is the first (and only) argument.
-        INT_ASSERT(fn->getFormal(1) == arg);
-        return true;
-      }
+  bool retval = false;
 
-  return false;
+  if (ArgSymbol* arg = toArgSymbol(se->var))
+    if (_fn->hasFlag(FLAG_DESTRUCTOR) || _fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+      retval = true;
+
+  return retval;
 }
 
 bool OwnershipFlowManager::isDestructorArg(SymExpr* se) const
 {
-#if 0
-  // Cautiously disable the portion of this predicate that makes sure this
-  // it returns true only within a destructor or autodestroy function.
-  if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
-    if (parent->hasFlag(FLAG_DESTRUCTOR) ||
-        parent->hasFlag(FLAG_AUTO_DESTROY_FN))
-#endif
+  bool retval = false;
 
   if (CallExpr* call = toCallExpr(se->parentExpr))
-    if (FnSymbol* fn = call->isResolved())
-      if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
-        return true;
+    if (FnSymbol* target = call->isResolved())
+      retval = target->hasFlag(FLAG_AUTO_DESTROY_FN);
 
-  return false;
+  return retval;
 }
 
 //#########################################################################
