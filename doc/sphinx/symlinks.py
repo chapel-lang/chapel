@@ -4,12 +4,6 @@
 from __future__ import print_function
 
 import os
-import sys
-import shlex
-import shutil
-
-from subprocess32 import Popen, PIPE
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 
 def extfilter(directory, extension='.rst'):
@@ -18,10 +12,7 @@ def extfilter(directory, extension='.rst'):
 
 
 def main():
-    """TODO: Docstring for main.
-    :returns: TODO
-
-    """
+    """symlinks doc/release/* to doc/sphinx/source/ for *rst files"""
 
     # Check that $CHPL_HOME is defined, and set the path to a variable
     chpl_home = os.getenv('CHPL_HOME')
@@ -35,13 +26,13 @@ def main():
 
     # Create list of READMEs converted to rst
     docs = {}
-    docs['.'] = extfilter(os.path.join(chpl_home, 'doc/release'))
-    docs['platforms'] = extfilter(os.path.join(chpl_home, 'doc/release/platforms'))
-    docs['technotes'] = extfilter(os.path.join(chpl_home, 'doc/release/technotes'))
+    docs['source'] = extfilter(os.path.join(chpl_home, 'doc/release'))
+    docs['source/platforms'] = extfilter(os.path.join(chpl_home, 'doc/release/platforms'))
+    docs['source/technotes'] = extfilter(os.path.join(chpl_home, 'doc/release/technotes'))
 
-    # Copy READMEs into webdocs/source/{directory} with new names
+    # symlink READMEs into doc/sphinx
     for directory, rstfiles in docs.items():
-        newdir = os.path.join(sourcedir, directory)
+        newdir = os.path.join(filedir, directory)
         for rstfile in rstfiles:
             # strip off README. prefix
             newrstfilename = os.path.split(rstfile)[1].replace('README.', '')
