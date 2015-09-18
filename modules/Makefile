@@ -26,6 +26,9 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
 SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
+MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
+DOC_SPHINX=${CHPL_MAKE_HOME}/doc/sphinx
+
 default: all
 
 all: $(SYS_CTYPES_MODULE)
@@ -84,11 +87,9 @@ MODULES_TO_DOCUMENT = \
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
-
-webdocs: $(SYS_CTYPES_MODULE_DOC)
-	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) --save-sphinx webdocs $(MODULES_TO_DOCUMENT)
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT)
+	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	rm -rf ${MODULE_SPHINX}
 
 clean-documentation:
 	rm -rf ./docs
