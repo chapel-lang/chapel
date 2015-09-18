@@ -158,11 +158,15 @@ private:
                        BitVec*  live,
                        BitVec*  cons);
 
-  void processBitwiseCopy(SymExpr* se,
-                          BitVec*  prod,
-                          BitVec*  live,
-                          BitVec*  cons);
+  void processBitwiseCopy(SymExpr*  se,
+                          BitVec*   prod,
+                          BitVec*   live,
+                          BitVec*   cons);
 
+  void processBitwiseCopy(CallExpr* call,
+                          BitVec*   prod,
+                          BitVec*   live,
+                          BitVec*   cons);
 
   void setAliasList  (BitVec*       bits,
                       SymbolVector& aliasList);

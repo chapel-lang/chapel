@@ -785,7 +785,7 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
       }
     }
 
-    processBitwiseCopy(lhse, prod, live, cons);
+    processBitwiseCopy(call, prod, live, cons);
   }
 }
 
@@ -1535,6 +1535,16 @@ void OwnershipFlowManager::processBitwiseCopy(SymExpr* se,
 {
   CallExpr* call = toCallExpr(se->parentExpr);
 
+  INT_ASSERT(call);
+
+  processBitwiseCopy(call, prod, live, cons);
+}
+
+void OwnershipFlowManager::processBitwiseCopy(CallExpr* call,
+                                              BitVec*   prod,
+                                              BitVec*   live,
+                                              BitVec*   cons)
+{
   SymExpr* lhs = toSymExpr(call->get(1));
   SymExpr* rhs = toSymExpr(call->get(2));
 
