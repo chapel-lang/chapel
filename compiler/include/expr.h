@@ -203,8 +203,9 @@ class CallExpr : public Expr {
   Expr*           get(int index);
   FnSymbol*       findFnSymbol();
 
-  bool            isPrimitive(PrimitiveTag primitiveTag);
-  bool            isPrimitive(const char*  primitiveName);
+  bool            isPrimitive()                                          const;
+  bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
+  bool            isPrimitive(const char*  primitiveName)                const;
 };
 
 class NamedExpr : public Expr {
