@@ -801,10 +801,8 @@ bool OwnershipFlowManager::isMoveToRvvFromPrimop(Expr* expr, Symbol* rvv) const
       SymExpr*  lhse = toSymExpr(call->get(1));
       CallExpr* rhs  = toCallExpr(call->get(2));
 
-      if (lhse               != NULL &&
-          lhse->var          == rvv  &&
-          rhs->isPrimitive() == true)
-        retval = true;
+      if (lhse != NULL && rhs != NULL)
+        retval = (lhse->var == rvv && rhs->isPrimitive() == true);
     }
   }
 
