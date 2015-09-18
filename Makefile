@@ -129,7 +129,7 @@ module-docs: chpldoc
 
 doc-sphinx: module-docs
 	cd doc/sphinx && ${MAKE} symlink-docs
-	cd doc/sphinx && ${MAKE} html
+	cd doc/sphinx && ./run-in-venv.bash ${MAKE} html
 
 clean-sphinx:
 	cd doc/shpinx && ${MAKE} cleanall
