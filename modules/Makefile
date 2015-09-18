@@ -88,7 +88,7 @@ MODULES_TO_DOCUMENT = \
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT)
-	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/standard
 	rm -rf ${MODULE_SPHINX}
 
 clean-documentation:
