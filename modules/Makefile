@@ -26,7 +26,8 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
 SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
-TEMP_DOC_DIR=$(shell pwd)/temp-docs
+MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
+DOC_SPHINX=${CHPL_MAKE_HOME}/doc/sphinx
 
 default: all
 
@@ -90,17 +91,16 @@ INTERNAL_MODULES_TO_DOCUMENT = \
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) --save-sphinx ${TEMP_DOC_DIR} $(MODULES_TO_DOCUMENT) \
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT) \
 	$(INTERNAL_MODULES_TO_DOCUMENT)
-	./internal/fixInternalDocs.sh ${TEMP_DOC_DIR}
-
-webdocs: $(SYS_CTYPES_MODULE_DOC)
-	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) --save-sphinx webdocs $(MODULES_TO_DOCUMENT)
+	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
+	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
+	rm -rf ${MODULE_SPHINX}
 
 clean-documentation:
 	rm -rf ./docs
-	rm -rf $(TEMP_DOC_DIR)
+	rm -rf $(MODULE_SPHINX)
 
 FORCE:
 
