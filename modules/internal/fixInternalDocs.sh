@@ -20,16 +20,28 @@ TEMPDIR="$1"
 cd "${TEMPDIR}/source/modules/internal/"
 
 function removePattern() {
+  if [ $# -ne 2 ] || [ ! -f $2 ]; then
+    echo "Bad call to removePattern."
+    exit 1
+  fi
   sed "/$1/ { N; d; }" $2 > $2.tmp
   mv $2.tmp $2
 }
 
 function replace() {
+  if [ $# -ne 3 ] || [ ! -f $3 ]; then
+    echo "Bad call to removePattern."
+    exit 1
+  fi
   sed "s/$1/$2/g" $3 > $3.tmp
   mv $3.tmp $3
 }
 
 function fixTitle() {
+  if [ $# -ne 2 ] || [ ! -f $2 ]; then
+    echo "Bad call to removePattern."
+    exit 1
+  fi
   local base="$(basename $2 .rst)"
   replace "modules:: $base" "modules:: $1" $2
 
@@ -41,6 +53,10 @@ function fixTitle() {
 }
 
 function removePrefixFunctions() {
+  if [ $# -ne 1 ] || [ ! -f $1 ]; then
+    echo "Bad call to removePattern."
+    exit 1
+  fi
   removePattern "proc [^a-zA-Z]" $1
   removePattern "proc chpl_" $1
 }
