@@ -30,8 +30,8 @@ organized as multi-partition machines, you will need to treat it as a
 multi-locale machine if you want to span multiple partitions.
 
 For the single-locale version, you should be able to build Chapel in
-the standard way as described in $CHPL_HOME/README, making sure that
-CHPL_COMM is unset or set to 'none'.
+the standard way as described in ``$CHPL_HOME/README``, making sure that
+the ``CHPL_COMM`` environment variable is unset or set to ``none``.
 
 For multi-locale executions, Chapel uses GASNet as our means of
 specifying inter-locale communication.  Left to its own devices,
@@ -45,6 +45,8 @@ conduit needs to be used for GASNet executions.
 
 This can be done using the following settings:
 
+.. code-block:: sh
+
         go to chapel source directory
 
         export CHPL_HOME=$(pwd)
@@ -54,9 +56,11 @@ This can be done using the following settings:
         CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 
 In our experience, different Altix installations support MPI in
-different ways.  If your Altix machine supports MPI via an mpicc
-compiler command and launches using an mpiexec command, then make the
+different ways.  If your Altix machine supports MPI via an ``mpicc``
+compiler command and launches using an ``mpiexec`` command, then make the
 following settings:
+
+.. code-block:: sh
 
         export MPI_CC=mpicc
         export MPI_LDFLAGS=-mt
@@ -67,13 +71,15 @@ If on the other hand, your Altix machine supports MPI via a normal
 compiler invocation and by linking in the mpi libraries, make the
 following settings:
 
-        export MPI_CC=cc        (or whatever compiler you wish to use)
+.. code-block:: sh
+
+        export MPI_CC=cc   # or whatever compiler you wish to use
         export MPI_LIBS=-lmpi
 
-Then build the Chapel compiler/runtime again using 'make'/'gmake'
+Then build the Chapel compiler/runtime again using ``make`` or ``gmake``.
 
 Over time, we would like to minimize the number of settings that a
-user has to manually make by introducing the concept of an 'altix'
+user has to make manually. We would like to introduce an ``altix``
 platform for Chapel that implies the above settings in our scripts and
 Makefiles.  If you would like to help with this effort or can provide
 us with an account so that we can develop it (or Makefile patches that

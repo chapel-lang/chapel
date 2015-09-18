@@ -88,7 +88,9 @@ To use the NUMA locale model:
     chpl -o jacobi $CHPL_HOME/examples/programs/jacobi.chpl
 
 
-* Qthreads thread scheduling
+--------------------------
+Qthreads thread scheduling
+--------------------------
 
 When qthreads tasking is used, different Qthreads thread schedulers are
 selected depending upon the ``CHPL_LOCALE_MODEL`` setting.  For the flat

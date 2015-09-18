@@ -18,15 +18,16 @@ in confidence by the Chapel team, please mail it to:
 Please include as much information as possible in your email.  For
 example:
 
+  * the Chapel program that caused the problem (if possible and applicable)
   * the behavior you are seeing
-  * the output of the $CHPL_HOME/util/printchplenv script
-  * the version number of your Chapel compiler (chpl --version)
+  * the output of the ``$CHPL_HOME/util/printchplenv`` script
+  * the output of ``module list`` (when applicable)
+  * the version number of your Chapel compiler (``chpl --version``)
   * the platform(s) you are running on and their OS versions
   * the C/C++ compiler(s) you are using and their versions
-  * the Chapel program that caused the problem (if possible)
 
 A list of unimplemented features and known bugs can be found in
-$CHPL_HOME/STATUS.  Feel free to check any unexpected behavior against
+``$CHPL_HOME/STATUS``.  Feel free to check any unexpected behavior against
 this file.  Even if you run into a known issue, we encourage you to
 email us a bug report to make us aware that it's a problem for your
 code.  We are more than happy to suggest workarounds and/or to
