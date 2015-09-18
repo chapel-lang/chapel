@@ -676,7 +676,6 @@ void OwnershipFlowManager::backwardFlowUse()
 //#
 
 static bool isRetVarInReturn(SymExpr* se);
-static bool isRetVarCopyInConstructor(SymExpr* se);
 static bool isDestructorFormal(SymExpr* se);
 static bool isDestructorArg(SymExpr* se);
 
@@ -905,10 +904,6 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   if (se->var->hasFlag(FLAG_IS_MEME))
     return;
 
-  // We also don't want an autocopy when we assign to the RVV in a constructor.
-  if (isRetVarCopyInConstructor(se))
-    return;
-
   // The argument to a destructor function is known to be live, so we do not
   // need to insert an autoCopy even if one is called for.
   // (Alternatively, we could pre-initialize the IN[0] set so the bit
@@ -953,31 +948,6 @@ static bool isRetVarInReturn(SymExpr* se)
             fn->hasFlag(FLAG_AUTO_COPY_FN) ||
             fn->hasFlag(FLAG_INIT_COPY_FN))
         return true;
-
-  return false;
-}
-
-// Returns true if the given SymExpr is the RHS of a bitwise copy and the LHS
-// is a reference to the return value variable and the containing function is a
-// constructor (a.k.a. initCopy and autoCopy).
-static bool isRetVarCopyInConstructor(SymExpr* se)
-{
-  if (CallExpr* call = toCallExpr(se->parentExpr)) // This call
-    if (call->isPrimitive(PRIM_MOVE) ||
-        call->isPrimitive(PRIM_ASSIGN)) // is a bitwise copy
-      if (se == call->get(2)) // whose RHS is the given SymExpr
-        if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) // and the
-          if (fn->hasFlag(FLAG_CONSTRUCTOR) ||             // containing
-              fn->hasFlag(FLAG_AUTO_COPY_FN) ||            // function
-              fn->hasFlag(FLAG_INIT_COPY_FN)) // is a constructor.
-            // TODO: Can the above be generalized to all functions?
-            if (SymExpr* lhse = toSymExpr(call->get(1))) // whose LHS
-              if (lhse->var == fn->getReturnSymbol()) // is the RVV.
-              {
-                INT_ASSERT(false);
-
-                return true;
-              }
 
   return false;
 }
