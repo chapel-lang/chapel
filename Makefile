@@ -127,12 +127,17 @@ module-docs: chpldoc
 # dependency so parallel make executions correctly build chpldoc first.
 	$(MAKE) module-docs-only
 
-symlink-docs:
-# Set up symlinks between `/doc/release` and `/doc/sphinx/source`
-	cd doc/sphinx && ./symlinks.py
-
-docs: module-docs symlink-docs
+doc-sphinx: module-docs
+	cd doc/sphinx && ${MAKE} symlink-docs
 	cd doc/sphinx && ${MAKE} html
+
+clean-sphinx:
+	cd doc/shpinx && ${MAKE} cleanall
+
+docs: doc-sphinx
+
+clean-docs: FORCE
+	cd doc/sphinx && $(MAKE) clean
 
 chplvis: compiler third-party-fltk FORCE 
 	cd tools/chplvis && $(MAKE)
@@ -152,6 +157,7 @@ cleanall: FORCE
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
+	cd doc/sphinx && $(MAKE) clean
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -163,6 +169,7 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
+	cd doc/sphinx && $(MAKE) clean
 	rm -rf bin
 	rm -rf lib
 
