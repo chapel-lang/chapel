@@ -23,15 +23,10 @@ def get_arguments(args=None):
     return opts
 
 
-
-
 def extfilter(directory, extension='.rst'):
     """Filter out files without extension '.rst'"""
     return [os.path.join(directory, f) for f in os.listdir(directory) if os.path.splitext(f)[1] == extension]
 
-def cleansymlinks():
-
-    return
 
 def main(clean=False):
     """symlinks doc/release/* to doc/sphinx/source/ for *rst files"""
