@@ -3,11 +3,23 @@ Executing Chapel Programs
 =========================
 
 Once you have compiled a Chapel program using the chpl compiler, you
-can execute it from the command-line like any other program.  Using
-the -h or --help flags will print out help for the executable.  For
-example:
+can execute it from the command-line like any other program.  This
+document discusses command line options, environment variables, and
+other topics having to do with running programs written in Chapel.
 
-     ./a.out --help
+.. contents::
+
+
+------------
+Getting Help
+------------
+
+Using the -h or --help flags will print out help for the executable.
+For example:
+
+  .. code-block:: sh
+
+    ./a.out --help
 
 This flag lists all of the standard flags that can be used with a
 Chapel program, as well as a list of the configuration variables
@@ -20,47 +32,66 @@ Setting Configuration Variables
 -------------------------------
 
 Configuration constants and variables defined in a Chapel program can
-have their default values overridden on the command line using the -s
-or -- flags.  Either flag takes the name of the configuration variable
-followed by an equals character '=' and the value to assign to it.
+have their default values overridden on the command line using the ``-s``
+or ``--`` flags.  Either flag takes the name of the configuration variable
+followed by an equals character (``=``)' and the value to assign to it.
 This value must be a legal Chapel literal for the type of the variable.
 (Exception: for a string literal, the surrounding quotes are implicit.)
 In our current implementation, no extra spaces may appear between
 these elements.  Thus, the general form is:
 
-    ./a.out --<cfgVar>=<val>
-or:
-    ./a.out -s<cfgVar>=<val>
+  .. code-block:: sh
 
+    ./a.out --<cfgVar>=<val>
+
+or:
+
+  .. code-block:: sh
+
+    ./a.out -s<cfgVar>=<val>
 
 As an example, compile the hello2-module.chpl example which prints a
 user-definable message:
 
-     chpl -o hello2-module $CHPL_HOME/examples/hello2-module.chpl
+  .. code-block:: sh
 
-This program defines a configuration constant -- message -- indicating
-the string to print to the console, set to "Hello, world!" by default.
-To override the default, you can use:
+    chpl -o hello2-module $CHPL_HOME/examples/hello2-module.chpl
 
-     ./hello2-module --message='Hello, Chapel users!'
+This program defines a configuration constant, ``message``, indicating
+the string to print to the console, set to ``"Hello, world!"`` by
+default.  To override the default, you can use:
+
+  .. code-block:: sh
+
+    ./hello2-module --message='Hello, Chapel users!'
+
 or:
-     ./hello2-module -smessage='Hello, Chapel users!'
+
+  .. code-block:: sh
+
+    ./hello2-module -smessage='Hello, Chapel users!'
 
 The default value of a configuration constant or variable can also be
-overridden at compilation time with a -s option. (The surrounding
+overridden at compilation time with a ``-s`` option. (The surrounding
 quotes must be provided for a string literal.) For example:
 
-     cd $CHPL_HOME/examples
-     chpl -smessage='"Hello from the Chapel compiler"' hello2-module.chpl
-or
-     chpl -s message="'Hello from the Chapel compiler'" hello2-module.chpl
+  .. code-block:: sh
+
+    cd $CHPL_HOME/examples
+    chpl -smessage='"Hello from the Chapel compiler"' hello2-module.chpl
+
+or:
+
+  .. code-block:: sh
+
+    chpl -s message="'Hello from the Chapel compiler'" hello2-module.chpl
 
 The compiler-established default can still be overridden when
 executing the program, as shown above.
 
 Chapel programs can also accept C-like command line arguments to their
-main() procedure in addition to the aforementioned configuration
-variables. See $CHPL_HOME/doc/technotes/README.main for more information.
+``main()`` procedure in addition to the aforementioned configuration
+variables. See :doc:`technotes/main` for more information.
 
 
 -----------------------------
@@ -73,18 +104,30 @@ can be set either using the -nl flag, or by assigning to the built-in
 numLocales configuration constant using the normal mechanisms.  So, to
 execute on four locales, one could use:
 
-    ./a.out -nl 4
-or: ./a.out --numLocales=4
-or: ./a.out -snumLocales=4
+  .. code-block:: sh
 
-For users running with $CHPL_COMM == none (the default), only one
-locale can be used.  See $CHPL_HOME/doc/README.multilocale for more
+    ./a.out -nl 4
+
+or:
+
+  .. code-block:: sh
+
+    ./a.out --numLocales=4
+
+or:
+
+  .. code-block:: sh
+
+    ./a.out -snumLocales=4
+
+For users running with ``$CHPL_COMM=none`` (the default), only one
+locale can be used.  See :doc:`multilocale` for more
 information about executing on multiple locales.
 
-Multi-locale programs often use a launcher executable to do some
-initial command-line checking before spawning the real program, stored
-in a second binary named <original_binary_name>_real.  See
-README.launcher for more information about the launcher executable.
+Multi-locale programs often use a launcher executable to do some initial
+command-line checking before spawning the real program, which is then
+stored in a second binary named *original_binary_name*\ ``_real``.  See
+:doc:`launcher` for more information about the launcher executable.
 
 
 --------------------------------------
@@ -96,24 +139,22 @@ arrays permit the number of tasks used to implement the data
 parallelism to be specified using the following built-in configuration
 constants:
 
-  dataParTasksPerLocale       : Number of Chapel tasks to use to execute
-                                forall loops (default: number of physical
-                                CPUs on the node, which may be reduced by
-                                CHPL_RT_NUM_THREADS_PER_LOCALE; in qthreads
-                                tasking CHPL_RT_NUM_THREADS_PER_LOCALE can
-                                also increase this, up to the number of
-                                logical CPUs).
+  ``dataParTasksPerLocale``
+    Number of Chapel tasks to use to execute forall loops (default:
+    number of physical CPUs on the node, which may be reduced by
+    ``CHPL_RT_NUM_THREADS_PER_LOCALE``.  When ``CHPL_TASKS=qthreads``,
+    ``CHPL_RT_NUM_THREADS_PER_LOCALE`` can also increase this, up to the
+    number of logical CPUs).
 
-  dataParIgnoreRunningTasks   : If true, always use dataParTasksPerLocale
-                                tasks to execute forall loops.  If false,
-                                reduce the number of tasks used by the
-                                number of tasks already running
-                                (default: false).
+  ``dataParIgnoreRunningTasks``
+    If ``true``, always use ``dataParTasksPerLocale`` tasks to execute
+    forall loops.  If ``false``, reduce the number of tasks used by the
+    number of tasks already running (default: ``false``).
 
-  dataParMinGranularity       : The number of tasks used to execute forall
-                                loops should be reduced such that the number
-                                of iterations per task is never less than
-                                the specified value (default: 1).
+  ``dataParMinGranularity``
+    The number of tasks used to execute forall loops should be reduced
+    such that the number of iterations per task is never less than the
+    specified value (default: ``1``).
 
 Most Chapel standard distributions also use identically named
 constructor arguments to control the degree of data parallelism within
@@ -134,35 +175,26 @@ Chapel environment variables always take precedence over third-party
 ones when both control the same thing.  However, a third-party setting
 will still override a Chapel default, if those differ.
 
-As an example, the Chapel CHPL_RT_CALL_STACK_SIZE environment variable
-will override the Qthreads QT_STACK_SIZE environment variable if both
-are set.  However, if only QT_STACK_SIZE is set it will override the
+As an example, the Chapel ``CHPL_RT_CALL_STACK_SIZE`` environment variable
+will override the Qthreads ``QT_STACK_SIZE`` environment variable if both
+are set.  However, if only ``QT_STACK_SIZE`` is set it will override the
 Chapel default call stack size of 8 MiB if it differs from that.
 
 The Chapel environment variables that control execution time behavior
 are as follows:
 
-  CHPL_RT_CALL_STACK_SIZE           size of the call stack for a task
-                                    (documented below)
-  CHPL_RT_MAX_HEAP_SIZE             size of the heap used for dynamic
-                                    allocation in multilocale programs
-                                    on Cray systems (see README.cray)
-  CHPL_RT_NUM_THREADS_PER_LOCALE    number of threads used to execute
-                                    tasks (see README.tasks)
+  ``CHPL_RT_CALL_STACK_SIZE``
+    size of the call stack for a task
 
+  ``CHPL_RT_MAX_HEAP_SIZE``
+    size of the heap used for dynamic allocation in multilocale programs
 
----------------------------------
-Controlling the Number of Threads
----------------------------------
+  ``CHPL_RT_NUM_THREADS_PER_LOCALE``
+    number of threads used to execute tasks
 
-The following environment variable can be used to change the number of
-system threads used by a program.
-
-  CHPL_RT_NUM_THREADS_PER_LOCALE  : Controls the number of threads used
-                                    on each locale when running the program.
-
-See README.tasks for more information on the role of this variable in
-creating threads and executing tasks for the various tasking layers.
+There is a bit more information on ``CHPL_RT_CALL_STACK_SIZE`` and
+``CHPL_RT_NUM_THREADS_PER_LOCALE`` below, and more detailed discussion
+of all of these in :doc:`tasks` and :doc:`platforms/cray`.
 
 
 -------------------------------
@@ -185,66 +217,82 @@ that are unnecessarily large are typically only a problem for programs
 in which many tasks (thus their stacks) exist at once, when using a comm
 layer that has to pre-register memory.  For the particular case of using
 the native runtime communication and tasking layers on Cray X* systems,
-further discussion about this can be found in platforms/README.cray.
+further discussion about this can be found in :doc:`platforms/cray`.
 
 The following environment variable can be used to change the task call
 stack size.
 
-  CHPL_RT_CALL_STACK_SIZE : Size of the call stack for a task.  A plain
-                            numeric value indicates bytes.  A suffix can
-                            be appended to indicate larger units:
-                             'k' or 'K' meaning KiB (2**10 bytes),
-                             'm' or 'M' meaning MiB (2**20 bytes), or
-                             'g' or 'G' meaning GiB (2**30 bytes).
+  ``CHPL_RT_CALL_STACK_SIZE``
+    Size of the call stack for a task.  A plain numeric value indicates
+    bytes.  A suffix can be appended to indicate larger units:
+
+     | ``k``, ``K``: KiB (2**10 bytes)
+     | ``m``, ``M``: MiB (2**20 bytes)
+     | ``g``, ``G``: GiB (2**30 bytes)
+
+
+---------------------------------
+Controlling the Number of Threads
+---------------------------------
+
+The following environment variable can be used to change the number of
+system threads used by a program.
+
+  ``CHPL_RT_NUM_THREADS_PER_LOCALE``
+    Controls the number of threads used on each locale when running the
+    program.
+
+See :doc:`platforms/tasks` for more information on the role of this
+variable in creating threads and executing tasks for the various tasking
+layers.
 
 
 -----------------------------------------
 Controlling the Amount of Non-User Output
 -----------------------------------------
 
-The compiler-generated executable supports "verbose" and "quiet" modes
+The compiler-generated executable supports *verbose* and *quiet* modes
 that control the amount of Chapel-generated information printed by the
 executable.
 
-Using the --verbose flag (-v for short) will print out extra
-information.  For example, it prints out the launcher commands used to
-start the program (if any) and causes each locale to print out a
-message when it starts executing.
-
-Using the --quiet flag (-q for short) causes run-time warnings that
-are printed by default to be suppressed.
+    -v, --verbose  Print more information. For example, print the
+                   launcher commands used to start the program (if any)
+                   and print a message from each locale when the program
+                   starts executing there.
+    -q, --quiet    Print less information. For example, suppress run-time
+                   warnings that are printed by default.
 
 
 --------------
 Running in gdb
 --------------
 
-The compiler-generated executable has a --gdb flag that can be used to
-launch the program within a gdb session.  For best results, make sure
-that your program has been compiled using the chpl compiler's -g flag.
-For GASNet, launching gdb is supported via the environment variable
-CHPL_COMM_USE_GDB.  This will open up a separate xterm running gdb for
-each locale.  Note that we only know this to work for the amudprun
-launcher.
+The compiler-generated executable has a ``--gdb`` flag that can be used
+to launch the program within a ``gdb`` session.  For best results, make
+sure that your program has been compiled using the chpl compiler's
+``-g`` flag.  With ``CHPL_COMM=gasnet``, launching ``gdb`` is supported
+via the environment variable ``CHPL_COMM_USE_GDB``.  This will open up a
+separate xterm running ``gdb`` for each locale.  Note that we only know
+this to work for the ``amudprun`` launcher.
 
 The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or
 running into a runtime error, you can often determine where that is
-taking place by looking at a stack trace within gdb.  
+taking place by looking at a stack trace within ``gdb``.
 
-When debugging Chapel, it is useful to know that in generating its
-code, the Chapel compiler renames user identifiers.  By default, the
-Chapel compiler munges all user identifiers, such that a variable
-named 'x' would be code generated as 'x_chpl'.  This munging can be
-controlled using the --[no-]munge-user-idents flag (see the 'chpl' man
-page for more information).  In some cases, additional munging may be
-required or applied that cannot be turned off.  
+When debugging Chapel, it is useful to know that in generating its code,
+the Chapel compiler renames user identifiers.  By default, the Chapel
+compiler munges all user identifiers, such that a variable named ``x``
+would be code generated as ``x_chpl``.  This munging can be controlled
+using the ``--[no-]munge-user-idents`` flag (see the ``chpl`` man page
+for more information).  In some cases, additional munging may be
+required or applied that cannot be turned off.
 
 The net effect of this is that Chapel variables can often be inspected
-using "p <name>_chpl" (or "p <name>_chpl<TAB>" in cases where the
-compiler has further renamed the variable).  If the
---no-munge-user-idents flag is used, "p <name>" or "p <name><TAB>"
-should work in most cases.
+using ``p`` *name*\ ``_chpl`` (or ``p`` *name*\ ``_chpl<TAB>`` in cases
+where the compiler has further renamed the variable).  If the
+``--no-munge-user-idents`` flag is used, ``p`` *name* or
+``p`` *name*\ ``<TAB>`` should work in most cases.
 
 Over time, we plan to improve our ability to debug the generated C
 code for a Chapel program.  If you find yourself debugging the
@@ -259,24 +307,25 @@ Flags for Tracking Tasks
 For certain tasking layers, Chapel supports a few experimental
 capabilities for tracking the status of tasks, primarily designed for
 use in a single-locale execution.  To enable this capability, your
-program must be compiled with the --task-tracking flag.  These flags
+program must be compiled with the ``--task-tracking`` flag.  These flags
 add a fair amount of runtime overhead to task-parallel programs. The
 flags are as follows:
 
-  -b, --blockreport : when Ctrl-C is entered during a program
-                      executing under this flag, it will display a
-                      list of where tasks are blocked on a
-                      synchronization variable.  Running with this
-                      flag will also cause the executable to attempt
-                      to automatically detect deadlock for
-                      single-locale executions.  Both 'qthreads' and
-                      'fifo' tasking support this.
+  -b, --blockreport  When ``<CTRL-C>`` is entered during a program
+                     executing under this flag, it will display a list
+                     of where tasks are blocked on a synchronization
+                     variable.  Running with this flag will also cause
+                     the executable to attempt to automatically detect
+                     deadlock for single-locale executions.  This is
+                     only supported with ``CHPL_TASKS=qthreads`` or
+                     ``CHPL_TASKS=fifo``.
 
-  -t, --taskreport : When Ctrl-C is entered during a program executing
-                     under this flag, a list of pending and executing
-                     tasks will be printed to the console, giving an
-                     indication of which tasks are at which source
-                     locations.  Only 'fifo' tasking supports this.
+  -t, --taskreport   When ``<CTRL-C>`` is entered during a program
+                     executing under this flag, a list of pending and
+                     executing tasks will be printed to the console,
+                     giving an indication of which tasks are at which
+                     source locations.  This is only supported with
+                     ``CHPL_TASKS=fifo``.
 
 
 -------------------------------------------
@@ -295,27 +344,26 @@ For full information on these configuration constants consult
 
 A brief synopsis of these configuration constants is as follows:
 
-  --memTrack           : turn on memory tracking and enable reporting
-  --memStats           : call printMemAllocStats() on normal termination
-  --memLeaksByType     : call printMemAllocsByType() on normal termination
-  --memLeaks           : call printMemAllocs() on normal termination
-  --memMax=int         : set maximum level of allocatable memory
-  --memThreshold=int   : set minimum threshold for memory tracking
-  --memLog=string      : file to contain all memory reporting
-  --memLeaksLog=string : if set, append final stats and leaks-by-type here
+  --memTrack            turn on memory tracking and enable reporting
+  --memStats            call ``printMemAllocStats()`` on normal termination
+  --memLeaksByType      call ``printMemAllocsByType()`` on normal termination
+  --memLeaks            call ``printMemAllocs()`` on normal termination
+  --memMax=int          set maximum level of allocatable memory
+  --memThreshold=int    set minimum threshold for memory tracking
+  --memLog=string       file to contain all memory reporting
+  --memLeaksLog=string  if set, append final stats and leaks-by-type here
 
 
 ----------------
 Launcher Support
 ----------------
 
-For multilocale execution (see README.multilocale), Chapel programs are
+For multilocale execution (see :doc:`multilocale`), Chapel programs are
 executed indirectly by a launcher.  This section covers command line
 options that assist launchers in doing their job.  These options are not
 supported for general use.  We document them here so that their presence
-in, say, the verbose output produced by "-v" can be understood.
+in, say, the verbose output produced by ``-v`` can be understood.
 
 At present there is only one launcher support option:
 
-  -E<envVar>=<val> : set the given environment variable "envVar" to
-                     "val".
+  -E <envVar=val>  set the given environment variable *envVar* to *val*.
