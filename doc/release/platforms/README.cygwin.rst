@@ -7,8 +7,8 @@ Chapel can be sensitive to directories with spaces, but otherwise it
 will work on Cygwin just like any other platform.
 
 
-Unpacking Chapel:
------------------
+Unpacking Chapel
+----------------
 
 For best results, avoid using WinZip to unpack the release, or make
 sure that it is running in a mode that will not convert textfiles to
@@ -29,8 +29,8 @@ Cygwin experts have tips on addressing this issue in a portable way,
 please let us know at chapel_info@cray.com.
 
 
-Required Packages:
-------------------
+Required Packages
+-----------------
 
 In order to get the required tools listed in README.prereqs, Cygwin
 users will need to ensure that the following packages are installed in
@@ -48,8 +48,8 @@ addition to the standard set of Cygwin packages:
       + diffutils
 
 
-Additional Information:
------------------------
+Additional Information
+----------------------
 
 For more information on Cygwin, please refer to:
 
