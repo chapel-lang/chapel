@@ -121,7 +121,7 @@ or:
 
     ./a.out -snumLocales=4
 
-For users running with ``$CHPL_COMM=none`` (the default), only one
+For users running with ``CHPL_COMM=none`` (the default), only one
 locale can be used.  See ``$CHPL_HOME/doc/README.multilocale`` for more
 information about executing on multiple locales.
 
@@ -177,10 +177,12 @@ case, the Chapel environment variable has precedence over the
 third-party package environment variable, which in turn has precedence
 over the Chapel default.
 
-As an example, the Chapel ``CHPL_RT_CALL_STACK_SIZE`` environment variable
-will override the Qthreads ``QT_STACK_SIZE`` environment variable if both
-are set.  However, if only ``QT_STACK_SIZE`` is set it will override the
-Chapel default call stack size.
+As an example, with ``CHPL_TASKS=qthreads``, Chapel and Qthreads both
+have environment variables that can be used to set the task stack size.
+In this case the Chapel ``CHPL_RT_CALL_STACK_SIZE`` environment variable
+will override the Qthreads ``QT_STACK_SIZE`` environment variable if
+both are set.  However, if only ``QT_STACK_SIZE`` is set it will
+override the Chapel default call stack size.
 
 The Chapel environment variables that control execution time behavior
 are as follows:
