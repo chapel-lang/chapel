@@ -761,7 +761,11 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 
   if (isLocal(lhse) == true)
   {
-    if (lhse->var == rvv && rvvIsOwned == true)
+    if (lhse->var                       == rvv   &&
+        rvvIsOwned                      == true  &&
+        _fn->hasFlag(FLAG_CONSTRUCTOR)  == false &&
+        _fn->hasFlag(FLAG_AUTO_COPY_FN) == false &&
+        _fn->hasFlag(FLAG_INIT_COPY_FN) == false)
     {
       Symbol* rsym = rhse->var;
 
@@ -772,7 +776,7 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
         // The RHS is local.  We need an autocopy only if it is unowned.
         size_t rindex = symbolIndex[rsym];
 
-        if (!live->get(rindex))
+        if (live->get(rindex) == false)
           insertAutoCopy(rhse);
       }
       else
@@ -969,7 +973,11 @@ static bool isRetVarCopyInConstructor(SymExpr* se)
             // TODO: Can the above be generalized to all functions?
             if (SymExpr* lhse = toSymExpr(call->get(1))) // whose LHS
               if (lhse->var == fn->getReturnSymbol()) // is the RVV.
+              {
+                INT_ASSERT(false);
+
                 return true;
+              }
 
   return false;
 }
