@@ -112,6 +112,7 @@ private:
                       BitVec*  live,
                       BitVec*  cons,
                       Symbol*  rvv);
+
   bool isSimpleAssignment(Expr* expr)                                    const;
   void autoCopyForSimpleAssignment(CallExpr* call,
                                    BitVec*   prod,
@@ -119,6 +120,11 @@ private:
                                    BitVec*   cons,
                                    Symbol*   rvv,
                                    bool      rvvIsOwned);
+
+  bool isMoveToRvvFromPrimop(Expr* expr, Symbol* rvv)                    const;
+  void autoCopyForMoveToRvvFromPrimop(CallExpr* call);
+
+
   void insertAutoCopyForRVV(SymExpr* se);
   void insertAutoCopy(SymExpr* se);
 
