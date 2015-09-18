@@ -128,6 +128,8 @@ module-docs: chpldoc
 	$(MAKE) module-docs-only
 
 docs: module-docs
+	cd doc/sphinx && ./symlinks.py
+	cd doc/sphinx && ${MAKE} html
 
 chplvis: compiler third-party-fltk FORCE 
 	cd tools/chplvis && $(MAKE)
