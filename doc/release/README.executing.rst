@@ -14,8 +14,8 @@ other topics having to do with running programs written in Chapel.
 Getting Help
 ------------
 
-Using the -h or --help flags will print out help for the executable.
-For example:
+Using the ``-h`` or ``--help`` flags will print out help for the
+executable.  For example:
 
   .. code-block:: sh
 
@@ -34,7 +34,7 @@ Setting Configuration Variables
 Configuration constants and variables defined in a Chapel program can
 have their default values overridden on the command line using the ``-s``
 or ``--`` flags.  Either flag takes the name of the configuration variable
-followed by an equals character (``=``)' and the value to assign to it.
+followed by an equals character (``=``) and the value to assign to it.
 This value must be a legal Chapel literal for the type of the variable.
 (Exception: for a string literal, the surrounding quotes are implicit.)
 In our current implementation, no extra spaces may appear between
@@ -91,7 +91,8 @@ executing the program, as shown above.
 
 Chapel programs can also accept C-like command line arguments to their
 ``main()`` procedure in addition to the aforementioned configuration
-variables. See :doc:`technotes/main` for more information.
+variables. See ``$CHPL_HOME/doc/technotes/README.main`` for more
+information.
 
 
 -----------------------------
@@ -121,13 +122,14 @@ or:
     ./a.out -snumLocales=4
 
 For users running with ``$CHPL_COMM=none`` (the default), only one
-locale can be used.  See :doc:`multilocale` for more
+locale can be used.  See ``$CHPL_HOME/doc/README.multilocale`` for more
 information about executing on multiple locales.
 
 Multi-locale programs often use a launcher executable to do some initial
 command-line checking before spawning the real program, which is then
 stored in a second binary named *original_binary_name*\ ``_real``.  See
-:doc:`launcher` for more information about the launcher executable.
+``$CHPL_HOME/doc/README.launcher`` for more information about the
+launcher executable.
 
 
 --------------------------------------
@@ -170,15 +172,15 @@ Environment Variable Control over Chapel Behavior
 Chapel uses environment variables to control the number of threads used
 at execution time and the call stack size, among other things.  In many
 cases third-party packages used by Chapel define their own environment
-variables to provide the same or similar control.  For Chapel programs,
-Chapel environment variables always take precedence over third-party
-ones when both control the same thing.  However, a third-party setting
-will still override a Chapel default, if those differ.
+variables to provide the same or similar control.  When this is the
+case, the Chapel environment variable has precedence over the
+third-party package environment variable, which in turn has precedence
+over the Chapel default.
 
 As an example, the Chapel ``CHPL_RT_CALL_STACK_SIZE`` environment variable
 will override the Qthreads ``QT_STACK_SIZE`` environment variable if both
 are set.  However, if only ``QT_STACK_SIZE`` is set it will override the
-Chapel default call stack size of 8 MiB if it differs from that.
+Chapel default call stack size.
 
 The Chapel environment variables that control execution time behavior
 are as follows:
@@ -187,14 +189,16 @@ are as follows:
     size of the call stack for a task
 
   ``CHPL_RT_MAX_HEAP_SIZE``
-    size of the heap used for dynamic allocation in multilocale programs
+    per-locale size of the heap used for dynamic allocation in
+    multilocale programs
 
   ``CHPL_RT_NUM_THREADS_PER_LOCALE``
     number of threads used to execute tasks
 
 There is a bit more information on ``CHPL_RT_CALL_STACK_SIZE`` and
 ``CHPL_RT_NUM_THREADS_PER_LOCALE`` below, and more detailed discussion
-of all of these in :doc:`tasks` and :doc:`platforms/cray`.
+of all of these in ``$CHPL_HOME/doc/README.tasks`` and
+``$CHPL_HOME/doc/platforms/README.cray``.
 
 
 -------------------------------
@@ -217,7 +221,8 @@ that are unnecessarily large are typically only a problem for programs
 in which many tasks (thus their stacks) exist at once, when using a comm
 layer that has to pre-register memory.  For the particular case of using
 the native runtime communication and tasking layers on Cray X* systems,
-further discussion about this can be found in :doc:`platforms/cray`.
+further discussion about this can be found in
+``$CHPL_HOME/doc/platforms/README.cray``.
 
 The following environment variable can be used to change the task call
 stack size.
@@ -242,9 +247,9 @@ system threads used by a program.
     Controls the number of threads used on each locale when running the
     program.
 
-See :doc:`platforms/tasks` for more information on the role of this
-variable in creating threads and executing tasks for the various tasking
-layers.
+See ``$CHPL_HOME/doc/README.tasks`` for more information on the role of
+this variable in creating threads and executing tasks for the various
+tasking layers.
 
 
 -----------------------------------------
@@ -358,11 +363,12 @@ A brief synopsis of these configuration constants is as follows:
 Launcher Support
 ----------------
 
-For multilocale execution (see :doc:`multilocale`), Chapel programs are
-executed indirectly by a launcher.  This section covers command line
-options that assist launchers in doing their job.  These options are not
-supported for general use.  We document them here so that their presence
-in, say, the verbose output produced by ``-v`` can be understood.
+For multilocale execution (see ``$CHPL_HOME/doc/README.multilocale``),
+Chapel programs are executed indirectly by a launcher.  This section
+covers command line options that assist launchers in doing their job.
+These options are not supported for general use.  We document them here
+so that their presence in, say, the verbose output produced by ``-v``
+can be understood.
 
 At present there is only one launcher support option:
 
