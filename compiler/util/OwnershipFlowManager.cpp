@@ -759,7 +759,7 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
   SymExpr* lhse = toSymExpr(call->get(1));
   SymExpr* rhse = toSymExpr(call->get(2));
 
-  if (symbolIndex.find(lhse->var) != symbolIndex.end())
+  if (isLocal(lhse) == true)
   {
     if (lhse->var == rvv && rvvIsOwned == true)
     {
@@ -767,7 +767,7 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 
       INT_ASSERT(call->isPrimitive(PRIM_MOVE));
 
-      if (symbolIndex.find(rsym) == symbolIndex.end())
+      if (isLocal(rsym) == false)
       {
         // The RHS is not local, so we need an autocopy.
         insertAutoCopy(rhse);
@@ -848,8 +848,7 @@ void OwnershipFlowManager::autoCopyWalkSymExprs(Expr*   expr,
 
   for_vector(SymExpr, se, symExprs)
   {
-    // Is this symbol local?
-    if (symbolIndex.find(se->var) != symbolIndex.end())
+    if (isLocal(se) == true)
       insertAutoCopy(se, prod, live, cons, rvv);
   }
 }
@@ -1667,6 +1666,16 @@ void OwnershipFlowManager::resetAliasList(BitVec*        bits,
 
     bits->reset(index);
   }
+}
+
+bool OwnershipFlowManager::isLocal(SymExpr* expr) const
+{
+  return isLocal(expr->var);
+}
+
+bool OwnershipFlowManager::isLocal(Symbol* sym) const
+{
+  return symbolIndex.find(sym) != symbolIndex.end();
 }
 
 //#########################################################################

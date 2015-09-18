@@ -175,6 +175,8 @@ private:
   void resetAliasList(BitVec*       bits,
                       SymbolVector& aliasList);
 
+  bool isLocal(SymExpr* expr)                                            const;
+  bool isLocal(Symbol*  sym)                                             const;
 
   // Debug support.
   void printInfo()                                                       const;
