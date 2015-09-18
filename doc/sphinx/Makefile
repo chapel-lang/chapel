@@ -15,11 +15,13 @@ symlink-docs:
 
 clean: clean-build clean-source
 
-clean-symlink-docs:
+clean-symlink-docs: FORCE
 # Remove symlinks between `/doc/release` and `/doc/sphinx/source`
 	./symlinks.py --clean
 
-clean-module-docs:
+clean-module-docs: FORCE
 	rm -rf source/modules/standard
 
 clean-source: clean-symlink-docs
+
+FORCE:
