@@ -59,7 +59,7 @@ Lambda functions are anonymous first-class function objects. In other
 words, they are expressions rather than formally-defined named
 functions. They are available with the following syntax:
 
-.. code-block::
+.. code-block:: none
 
   lambda-declaration-expression:
     lambda argument-list return-type_opt function-body
