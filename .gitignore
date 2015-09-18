@@ -58,7 +58,7 @@ tags
 /doc/sphinx/source/*.rst
 /doc/sphinx/source/platforms/*.rst
 /doc/sphinx/source/technotes/*.rst
-/doc/sphinx/source/modules
+/doc/sphinx/source/modules/standard
 !/doc/sphinx/source/index.rst
 !/doc/sphinx/source/technotes/index.rst
 !/doc/sphinx/source/platforms/index.rst
