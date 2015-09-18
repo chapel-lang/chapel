@@ -675,7 +675,6 @@ void OwnershipFlowManager::backwardFlowUse()
 //#########################################################################
 //#
 
-static bool isRetVarInReturn(SymExpr* se);
 static bool isDestructorFormal(SymExpr* se);
 static bool isDestructorArg(SymExpr* se);
 
@@ -892,12 +891,6 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   if (isPOD(sym->type) || autoCopyFn == NULL)
     return;
 
-  // Prevent autoCopy functions from calling themselves recursively.
-  // TODO: Remove this clause after the autoCopy function becomes a
-  // copy constructor method.
-  if (isRetVarInReturn(se))
-    return;
-
   // We don't want to copy the meme argument in a constructor.
   // TODO: When constructors are methods, there will be no meme argument, so
   // this will be dead code.
@@ -932,35 +925,6 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   se->replace(new SymExpr(tmp));
 
   insertReferenceTemps(autoCopyCall);
-}
-
-
-static bool isRetVarInReturn(SymExpr* se)
-{
-  if (CallExpr* call = toCallExpr(se->parentExpr))
-  {
-    if (call->isPrimitive(PRIM_RETURN))
-    {
-      // It does not seem to be possible to get here
-      INT_ASSERT(false);
-
-      // We just assume that that call->get(1) == se.
-      // What else could it be?
-      if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
-      {
-        if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
-            // Treat RTT init fns like constructors:
-            fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
-            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-            fn->hasFlag(FLAG_INIT_COPY_FN))
-        {
-          return true;
-        }
-      }
-    }
-  }
-
-  return false;
 }
 
 static bool isDestructorFormal(SymExpr* se)
