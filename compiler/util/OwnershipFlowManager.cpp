@@ -709,14 +709,11 @@ void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
                                           Symbol* rvv,
                                           bool    rvvIsOwned)
 {
-  if      (isSimpleAssignment(expr) == true)
+  if (isSimpleAssignment(expr) == true)
   {
-    autoCopyForSimpleAssignment(toCallExpr(expr),
-                                prod,
-                                live,
-                                cons,
-                                rvv,
-                                rvvIsOwned);
+    CallExpr* call = toCallExpr(expr);
+
+    autoCopyForSimpleAssignment(call, prod, live, cons, rvv, rvvIsOwned);
   }
 
   else if (isMoveToRvvFromPrimop(expr, rvv)  == true)
