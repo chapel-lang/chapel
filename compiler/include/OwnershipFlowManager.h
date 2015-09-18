@@ -107,11 +107,6 @@ private:
                       BitVec*  cons,
                       Symbol*  rvv,
                       bool     rvvIsOwned);
-  void insertAutoCopy(SymExpr* se,
-                      BitVec*  prod,
-                      BitVec*  live,
-                      BitVec*  cons,
-                      Symbol*  rvv);
 
   bool isSimpleAssignment(Expr* expr)                                    const;
   void autoCopyForSimpleAssignment(CallExpr* call,

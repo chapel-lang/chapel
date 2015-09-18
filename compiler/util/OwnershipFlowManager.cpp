@@ -848,46 +848,32 @@ void OwnershipFlowManager::autoCopyWalkSymExprs(Expr*   expr,
 
   for_vector(SymExpr, se, symExprs)
   {
-    if (isLocal(se) == true)
-      insertAutoCopy(se, prod, live, cons, rvv);
-  }
-}
-
-void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
-                                          BitVec*  prod,
-                                          BitVec*  live,
-                                          BitVec*  cons,
-                                          Symbol*  rvv)
-{
-  Symbol* sym = se->var;
-
-  if (sym == rvv)
-  {
-
-  }
-
-  else if (isCreated(se))
-  {
-    processCreator(se, prod, live);
-  }
-
-  else if (isConsumed(se))
-  {
-    size_t index = symbolIndex[sym];
-
-    // If the live bit is set for this symbol, leave it as a move
-    // and transfer ownership.  Otherwise, insert an autoCopy.
-    if (!live->get(index))
+    if (se->var != rvv && isLocal(se) == true)
     {
-      insertAutoCopy(se);
+      if (isCreated(se))
+      {
+        processCreator(se, prod, live);
+      }
 
-      // Set the bit in the PROD set to show that ownership is
-      // produced, but since it is consumed immediately, the state of
-      // OUT and the rest of the forward-flowed bitsets are unchanged.
-      prod->set(index);
+      else if (isConsumed(se))
+      {
+        size_t index = symbolIndex[se->var];
+
+        // If the live bit is set for this symbol, leave it as a move
+        // and transfer ownership.  Otherwise, insert an autoCopy.
+        if (live->get(index) == false)
+        {
+          insertAutoCopy(se);
+
+          // Set the bit in the PROD set to show that ownership is
+          // produced, but since it is consumed immediately, the state of
+          // OUT and the rest of the forward-flowed bitsets are unchanged.
+          prod->set(index);
+        }
+
+        processConsumer(se, live, cons);
+      }
     }
-
-    processConsumer(se, live, cons);
   }
 }
 
