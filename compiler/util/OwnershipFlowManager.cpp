@@ -889,21 +889,11 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   if (se->var->hasFlag(FLAG_IS_MEME))
     return;
 
-  // The argument to a destructor function is known to be live, so we do not
-  // need to insert an autoCopy even if one is called for.
-  // (Alternatively, we could pre-initialize the IN[0] set so the bit
-  // corresponding to the argument is true, but heading off the insertion of a
-  // called-for autoCopy seems simpler.)
+  // Argument to a destructor function is known to be live
   if (isDestructorFormal(se))
     return;
 
-  // Record destructors call the autoDestroy function recursively, loading up
-  // each field in turn (in reverse order).  We don't want to call autoCopy on
-  // these arguments, because that just undoes the effect of the field-wise
-  // destructor call.
-  // TODO: This problem only occurs for sync and referencecounted types.  If we
-  // can remove the useRefType predicate on line 687 of callDestructors.cpp and
-  // always use ref types (PRIM_GET_MEMBER), then this test can be removed.
+  // Do not insert auto-copy immediately before calling a destructor
   if (isDestructorArg(se))
     return;
 
@@ -919,6 +909,11 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   insertReferenceTemps(autoCopyCall);
 }
 
+// The argument to a destructor function is known to be live, so we do not
+// need to insert an autoCopy even if one is called for.
+// (Alternatively, we could pre-initialize the IN[0] set so the bit
+// corresponding to the argument is true, but heading off the insertion of a
+// called-for autoCopy seems simpler.)
 bool OwnershipFlowManager::isDestructorFormal(SymExpr* se) const
 {
   bool retval = false;
@@ -930,6 +925,13 @@ bool OwnershipFlowManager::isDestructorFormal(SymExpr* se) const
   return retval;
 }
 
+// Record destructors call the autoDestroy function recursively, loading up
+// each field in turn (in reverse order).  We don't want to call autoCopy on
+// these arguments, because that just undoes the effect of the field-wise
+// destructor call.
+// TODO: This problem only occurs for sync and referencecounted types.  If we
+// can remove the useRefType predicate on line 687 of callDestructors.cpp and
+// always use ref types (PRIM_GET_MEMBER), then this test can be removed.
 bool OwnershipFlowManager::isDestructorArg(SymExpr* se) const
 {
   bool retval = false;
