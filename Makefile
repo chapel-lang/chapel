@@ -1,14 +1,14 @@
 # Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@
 #
 # This is the one Makefile that does not/should not include
 # $CHPL_HOME/make/Makefile.base.  The reasons are:
-# 
+#
 # (1) it does not need to include that file because it does not rely
 # on any of its settings; it only is responsible for cd-ing into
 # subdirectories and having them make things (where they should
@@ -127,14 +127,13 @@ module-docs: chpldoc
 # dependency so parallel make executions correctly build chpldoc first.
 	$(MAKE) module-docs-only
 
-symlink-docs:
-# Set up symlinks between `/doc/release` and `/doc/sphinx/source`
-	cd doc/sphinx && ./symlinks.py
-
-docs: module-docs symlink-docs
+doc-sphinx: module-docs
+	cd doc/sphinx && ${MAKE} symlink-docs
 	cd doc/sphinx && ./run-in-venv.bash ${MAKE} html
 
-chplvis: compiler third-party-fltk FORCE 
+docs: doc-sphinx
+
+chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
@@ -152,6 +151,7 @@ cleanall: FORCE
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
+	cd doc/sphinx && $(MAKE) clean
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -163,6 +163,7 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
+	cd doc/sphinx && $(MAKE) clean
 	rm -rf bin
 	rm -rf lib
 
