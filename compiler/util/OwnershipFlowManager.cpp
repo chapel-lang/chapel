@@ -720,7 +720,8 @@ void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
 
   else
   {
-    autoCopyWalkSymExprs(expr, prod, live, cons, rvv);
+    if (CallExpr* call = toCallExpr(expr))
+      autoCopyWalkSymExprs(call, prod, live, cons, rvv);
   }
 }
 
@@ -830,15 +831,15 @@ void OwnershipFlowManager::autoCopyForMoveToRvvFromPrimop(CallExpr* call)
   }
 }
 
-void OwnershipFlowManager::autoCopyWalkSymExprs(Expr*   expr,
-                                                BitVec* prod,
-                                                BitVec* live,
-                                                BitVec* cons,
-                                                Symbol* rvv)
+void OwnershipFlowManager::autoCopyWalkSymExprs(CallExpr* call,
+                                                BitVec*   prod,
+                                                BitVec*   live,
+                                                BitVec*   cons,
+                                                Symbol*   rvv)
 {
   SymExprVector symExprs;
 
-  collectSymExprs(expr, symExprs);
+  collectSymExprs(call, symExprs);
 
   for_vector(SymExpr, se, symExprs)
   {

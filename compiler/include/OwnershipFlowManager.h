@@ -119,11 +119,11 @@ private:
   bool isMoveToRvvFromPrimop(Expr* expr, Symbol* rvv)                    const;
   void autoCopyForMoveToRvvFromPrimop(CallExpr* call);
 
-  void autoCopyWalkSymExprs(Expr*   expr,
-                            BitVec* prod,
-                            BitVec* live,
-                            BitVec* cons,
-                            Symbol* rvv);
+  void autoCopyWalkSymExprs(CallExpr* call,
+                            BitVec*   prod,
+                            BitVec*   live,
+                            BitVec*   cons,
+                            Symbol*   rvv);
 
   void insertAutoCopy(SymExpr* se);
 
