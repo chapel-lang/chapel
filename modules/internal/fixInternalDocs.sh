@@ -107,8 +107,12 @@ removePattern "proc atomic_" $file
 removePattern "proc create_" $file
 removePrefixFunctions $file
 
-replace "atomic_int64" "atomic\(T\)" $file
+replace "record" "type" $file
+
+replace "atomicflag" "atomic \(bool\)" $file
+replace "atomic_int64" "atomic \(T\)" $file
 replace "int(64)" "T" $file
+
 fixTitle "Atomics" $file
 
 ## End Atomics ##
