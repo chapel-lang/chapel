@@ -66,13 +66,13 @@ module ChapelSyncvar {
       }
     }
 
-  /* :returns: true if the passed type `t` is a sync type. */
+  pragma "no doc"
   proc isSyncType(type t) param
     return __primitive("is sync type", t);
 
   pragma "no doc"
   proc isSyncValue(x: sync) param  return true;
-  /* :returns: true if the type of `x` is a sync type. */
+  pragma "no doc"
   proc isSyncValue(x)       param  return false;
 
   // The operations are:
@@ -265,13 +265,13 @@ module ChapelSyncvar {
       }
     }
 
-  /* :returns: true if the passed type `t` is a single type. */
+  pragma "no doc"
   proc isSingleType(type t) param
     return __primitive("is single type", t);
 
   pragma "no doc"
   proc isSingleValue(x: single) param  return true;
-  /* :returns: true if the type of `x` is a sync type. */
+  pragma "no doc"
   proc isSingleValue(x)         param  return false;
 
   /*
