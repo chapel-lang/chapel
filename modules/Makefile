@@ -85,16 +85,24 @@ MODULES_TO_DOCUMENT = \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
+DISTS_TO_DOCUMENT = \
+	layouts/LayoutCSR.chpl \
+	dists/BlockDist.chpl \
+
 INTERNAL_MODULES_TO_DOCUMENT = \
+	internal/ChapelTuple.chpl \
 	internal/ChapelSyncvar.chpl \
 	internal/Atomics.chpl
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT) \
-	$(INTERNAL_MODULES_TO_DOCUMENT)
+	$(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
+	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
 	rm -rf ${MODULE_SPHINX}
 
