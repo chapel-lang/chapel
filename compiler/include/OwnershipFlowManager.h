@@ -101,14 +101,14 @@ private:
 
 
   void insertAutoCopies();
-  void insertAutoCopy(Expr*    expr,
-                      BitVec*  prod,
-                      BitVec*  live,
-                      BitVec*  cons,
-                      Symbol*  rvv,
-                      bool     rvvIsOwned);
+  void insertAutoCopy(CallExpr* call,
+                      BitVec*   prod,
+                      BitVec*   live,
+                      BitVec*   cons,
+                      Symbol*   rvv,
+                      bool      rvvIsOwned);
 
-  bool isSimpleAssignment(Expr* expr)                                    const;
+  bool isSimpleAssignment(CallExpr* call)                                const;
   void autoCopyForSimpleAssignment(CallExpr* call,
                                    BitVec*   prod,
                                    BitVec*   live,
@@ -116,7 +116,7 @@ private:
                                    Symbol*   rvv,
                                    bool      rvvIsOwned);
 
-  bool isMoveToRvvFromPrimop(Expr* expr, Symbol* rvv)                    const;
+  bool isMoveToRvvFromPrimop(CallExpr* call, Symbol* rvv)                const;
   void autoCopyForMoveToRvvFromPrimop(CallExpr* call);
 
   void autoCopyWalkSymExprs(CallExpr* call,

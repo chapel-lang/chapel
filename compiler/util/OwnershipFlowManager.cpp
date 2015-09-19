@@ -691,7 +691,10 @@ void OwnershipFlowManager::insertAutoCopies()
     // We need to insert an autodestroy call for each symbol that is owned
     // (live) at the end of the block but is unowned (dead) in the OUT set.
     for_vector(Expr, expr, bb.exprs)
-      insertAutoCopy(expr, prod, live, cons, rvv, rvvIsOwned);
+    {
+      if (CallExpr* call = toCallExpr(expr))
+        insertAutoCopy(call, prod, live, cons, rvv, rvvIsOwned);
+    }
 
     delete cons;
     delete live;
@@ -699,44 +702,32 @@ void OwnershipFlowManager::insertAutoCopies()
   }
 }
 
-void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
-                                          BitVec* prod,
-                                          BitVec* live,
-                                          BitVec* cons,
-                                          Symbol* rvv,
-                                          bool    rvvIsOwned)
+void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
+                                          BitVec*   prod,
+                                          BitVec*   live,
+                                          BitVec*   cons,
+                                          Symbol*   rvv,
+                                          bool      rvvIsOwned)
 {
-  if (isSimpleAssignment(expr) == true)
-  {
-    CallExpr* call = toCallExpr(expr);
-
+  if (isSimpleAssignment(call) == true)
     autoCopyForSimpleAssignment(call, prod, live, cons, rvv, rvvIsOwned);
-  }
 
-  else if (isMoveToRvvFromPrimop(expr, rvv)  == true)
-  {
-    autoCopyForMoveToRvvFromPrimop(toCallExpr(expr));
-  }
+  else if (isMoveToRvvFromPrimop(call, rvv)  == true)
+    autoCopyForMoveToRvvFromPrimop(call);
 
   else
-  {
-    if (CallExpr* call = toCallExpr(expr))
-      autoCopyWalkSymExprs(call, prod, live, cons, rvv);
-  }
+    autoCopyWalkSymExprs(call, prod, live, cons, rvv);
 }
 
-bool OwnershipFlowManager::isSimpleAssignment(Expr* expr) const
+bool OwnershipFlowManager::isSimpleAssignment(CallExpr* call) const
 {
   bool retval = false;
 
-  if (CallExpr* call = toCallExpr(expr))
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
   {
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-    {
-      INT_ASSERT(isSymExpr(call->get(1)));
+    INT_ASSERT(isSymExpr(call->get(1)));
 
-      retval = isSymExpr(call->get(2));
-    }
+    retval = isSymExpr(call->get(2));
   }
 
   return retval;
@@ -788,20 +779,18 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 // copied into the RVV is owned, we don't need to insert an autoCopy.
 // But that still leaves the case where a CallExpr on the RHS returns
 // something that is unowned.
-bool OwnershipFlowManager::isMoveToRvvFromPrimop(Expr* expr, Symbol* rvv) const
+bool OwnershipFlowManager::isMoveToRvvFromPrimop(CallExpr* call,
+                                                 Symbol*   rvv) const
 {
   bool retval = false;
 
-  if (CallExpr* call = toCallExpr(expr))
+  if (call->isPrimitive(PRIM_MOVE) == true)
   {
-    if (call->isPrimitive(PRIM_MOVE) == true)
-    {
-      SymExpr*  lhse = toSymExpr(call->get(1));
-      CallExpr* rhs  = toCallExpr(call->get(2));
+    SymExpr*  lhse = toSymExpr(call->get(1));
+    CallExpr* rhs  = toCallExpr(call->get(2));
 
-      if (lhse != NULL && rhs != NULL)
-        retval = (lhse->var == rvv && rhs->isPrimitive() == true);
-    }
+    if (lhse != NULL && rhs != NULL)
+      retval = (lhse->var == rvv && rhs->isPrimitive() == true);
   }
 
   return retval;
