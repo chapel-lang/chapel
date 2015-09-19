@@ -733,6 +733,28 @@ bool OwnershipFlowManager::isSimpleAssignment(CallExpr* call) const
   return retval;
 }
 
+// If the RHS is a call to a function, no autocopy is needed because calls
+// are uniformly treated as returning an owned value.  If the thing being
+// copied into the RVV is owned, we don't need to insert an autoCopy.
+// But that still leaves the case where a CallExpr on the RHS returns
+// something that is unowned.
+bool OwnershipFlowManager::isMoveToRvvFromPrimop(CallExpr* call,
+                                                 Symbol*   rvv) const
+{
+  bool retval = false;
+
+  if (call->isPrimitive(PRIM_MOVE) == true)
+  {
+    SymExpr*  lhse = toSymExpr(call->get(1));
+    CallExpr* rhs  = toCallExpr(call->get(2));
+
+    if (lhse != NULL && rhs != NULL)
+      retval = (lhse->var == rvv && rhs->isPrimitive() == true);
+  }
+
+  return retval;
+}
+
 void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
                                                        BitVec*   prod,
                                                        BitVec*   live,
@@ -772,28 +794,6 @@ void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
 
     processBitwiseCopy(call, prod, live, cons);
   }
-}
-
-// If the RHS is a call to a function, no autocopy is needed because calls
-// are uniformly treated as returning an owned value.  If the thing being
-// copied into the RVV is owned, we don't need to insert an autoCopy.
-// But that still leaves the case where a CallExpr on the RHS returns
-// something that is unowned.
-bool OwnershipFlowManager::isMoveToRvvFromPrimop(CallExpr* call,
-                                                 Symbol*   rvv) const
-{
-  bool retval = false;
-
-  if (call->isPrimitive(PRIM_MOVE) == true)
-  {
-    SymExpr*  lhse = toSymExpr(call->get(1));
-    CallExpr* rhs  = toCallExpr(call->get(2));
-
-    if (lhse != NULL && rhs != NULL)
-      retval = (lhse->var == rvv && rhs->isPrimitive() == true);
-  }
-
-  return retval;
 }
 
 void OwnershipFlowManager::autoCopyForMoveToRvvFromPrimop(CallExpr* call)
