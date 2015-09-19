@@ -27,12 +27,12 @@ The CSR layout provides a Compressed Sparse Row implementation
 for Chapel's sparse domains and arrays.
 
 To declare a CSR domain, invoke the ``CSR`` constructor without arguments
-in a `dmap` clause. For example:
+in a `dmapped` clause. For example:
 
   .. code-block:: chapel
 
     use LayoutCSR;
-    var D = {1..n, 1..m};  // default layout
+    var D = {1..n, 1..m};  // a default-distributed domain
     var CSR_Domain: sparse subdomain(D) dmapped CSR();
 
 To declare a CSR array, use a CSR domain, for example:
