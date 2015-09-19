@@ -905,7 +905,7 @@ bool OwnershipFlowManager::isDestructorFormal(SymExpr* se) const
 {
   bool retval = false;
 
-  if (ArgSymbol* arg = toArgSymbol(se->var))
+  if (isArgSymbol(se->var) == true)
     if (_fn->hasFlag(FLAG_DESTRUCTOR) || _fn->hasFlag(FLAG_AUTO_DESTROY_FN))
       retval = true;
 
