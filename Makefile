@@ -128,7 +128,7 @@ module-docs: chpldoc
 	$(MAKE) module-docs-only
 
 doc-sphinx: module-docs
-	cd doc/sphinx && ${MAKE} symlink-docs
+	cd doc/sphinx && ./run-in-venv.bash ${MAKE} symlink-docs
 	cd doc/sphinx && ./run-in-venv.bash ${MAKE} html
 
 docs: doc-sphinx
