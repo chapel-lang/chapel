@@ -9,6 +9,8 @@ help-source:
 	@echo "Source Help:"
 	@echo "  symlinks-docs to symlink doc/release contents to source"
 
+docs: html
+
 symlink-docs:
 # Set up symlinks between `/doc/release` and `/doc/sphinx/source`
 	./symlinks.py
