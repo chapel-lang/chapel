@@ -19,7 +19,29 @@
 
 config param debugCSR = false;
 
-// Compressed Sparse Row
+// In the following, I insist on SUBdomains because
+// I have not seen us test a non-"sub" CSR domain
+// and I do not want untested code in the docs.  -Vass 9'2015
+/*
+The CSR layout provides a Compressed Sparse Row implementation
+for Chapel's sparse domains and arrays.
+
+To declare a CSR domain, invoke the ``CSR`` constructor without arguments
+in a `dmap` clause. For example:
+
+  .. code-block:: chapel
+
+    use LayoutCSR;
+    var D = {1..n, 1..m};  // default layout
+    var CSR_Domain: sparse subdomain(D) dmapped CSR();
+
+To declare a CSR array, use a CSR domain, for example:
+
+  .. code-block:: chapel
+
+    // assume the above declarations
+    var CSR_Array: [CSR_Domain] real;
+*/
 class CSR: BaseDist {
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
     return new CSRDom(rank=rank, idxType=idxType, dist=this, parentDom=dom);
