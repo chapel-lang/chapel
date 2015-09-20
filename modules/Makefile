@@ -91,6 +91,7 @@ DISTS_TO_DOCUMENT = \
 	dists/CyclicDist.chpl \
 	dists/BlockCycDist.chpl \
 	dists/ReplicatedDist.chpl \
+	dists/PrivateDist.chpl \
 
 INTERNAL_MODULES_TO_DOCUMENT = \
 	internal/ChapelTuple.chpl \

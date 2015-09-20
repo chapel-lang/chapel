@@ -88,7 +88,7 @@ The following code declares a domain ``D`` distributed over
 a Block-Cyclic distribution with a start index of ``(1,1)``
 and a block size of ``(2,3)``,
 and declares an array ``A`` over that domain.
-The ``forall`` loop sets each array element
+The `forall` loop sets each array element
 to the ID of the locale to which it is mapped.
 
   .. code-block:: chapel
@@ -164,7 +164,8 @@ They must match the rank and index type of the domains
 
 A `forall` loop over a Cyclic-distributed domain or array
 executes each iteration on the locale where that iteration's index
-is mapped to.
+is mapped to. Currently all iterations on a given locale
+execute within a single task.
 
 
 **Limitations**

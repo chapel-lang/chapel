@@ -76,7 +76,7 @@ we have:
 The following code declares a domain ``D`` distributed
 using a Cyclic distribution with a start index of ``(1,1)``,
 and declares an array ``A`` over that domain.
-The ``forall`` loop sets each array element
+The `forall` loop sets each array element
 to the ID of the locale to which it is mapped.
 
   .. code-block:: chapel

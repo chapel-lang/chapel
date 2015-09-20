@@ -169,7 +169,7 @@ the above computation is applied in each dimension.
 The following code declares a domain ``D`` distributed over
 a Block distribution with a bounding box equal to the domain ``Space``,
 and declares an array ``A`` over that domain.
-The ``forall`` loop sets each array element
+The `forall` loop sets each array element
 to the ID of the locale to which it is mapped.
 
   .. code-block:: chapel

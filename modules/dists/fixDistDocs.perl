@@ -21,6 +21,7 @@ process("BlockDist.rst");
 process("CyclicDist.rst");
 process("BlockCycDist.rst");
 process("ReplicatedDist.rst");
+process("PrivateDist.rst");
 
 #or: for my $rst (@ARGV) { process($rst); }
 
