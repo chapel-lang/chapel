@@ -88,6 +88,8 @@ MODULES_TO_DOCUMENT = \
 DISTS_TO_DOCUMENT = \
 	layouts/LayoutCSR.chpl \
 	dists/BlockDist.chpl \
+	dists/CyclicDist.chpl \
+	dists/ReplicatedDist.chpl \
 
 INTERNAL_MODULES_TO_DOCUMENT = \
 	internal/ChapelTuple.chpl \

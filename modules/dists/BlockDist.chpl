@@ -121,15 +121,19 @@ config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 //
 
 // chpldoc TODO:
+//   a good reference to
+//     dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity
+//   remove the above comments to avoid duplication/maintenance?
 //   talk about RAD - here or in DefaultRectangular?
+//   supports RAD opt, Bulk Transfer optimization, localSubdomain
 //   disableBlockLazyRAD
 //   disableAliasedBulkTransfer
-//   remove the above comments to avoid duplication/maintenance?
 //
 /*
-The Block distribution partitions indices into blocks
+This Block distribution partitions indices into blocks
 according to a ``boundingBox`` domain
 and maps each entire block onto a locale from a ``targetLocales`` array.
+
 
 **Mapping of Indices to Locales**
 
@@ -161,6 +165,7 @@ we have:
 In the multidimensional case, ``idx`` and ``locIdx`` are tuples
 of indices; ``boundingBox`` and ``targetLocales`` are multi-dimensional;
 the above computation is applied in each dimension.
+
 
 **Example**
 
@@ -199,6 +204,7 @@ When run on 6 locales, the output is:
     4 4 4 4 5 5 5 5
     4 4 4 4 5 5 5 5
 
+
 **Constructor Arguments**
 
 The ``Block`` class constructor is defined as follows:
@@ -207,9 +213,9 @@ The ``Block`` class constructor is defined as follows:
 
     proc Block(boundingBox: domain,
                 targetLocales: [] locale  = Locales, 
-                dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const
-                dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const
-                dataParMinGranularity     = // value of  dataParMinGranularity      config const
+                dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
+                dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
+                dataParMinGranularity     = // value of  dataParMinGranularity      config const,
                 param rank                = boundingBox.rank,
                 type  idxType             = boundingBox.idxType)
 
@@ -235,6 +241,7 @@ The ``rank`` and ``idxType`` arguments are inferred from the
 ``boundingBox`` argument unless explicitly set.
 They must match the rank and index type of the domains
 "dmapped" using that Block instance.
+
 
 **Data-Parallel Iteration**
 

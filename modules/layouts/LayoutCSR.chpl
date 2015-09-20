@@ -24,7 +24,7 @@ config param debugCSR = false;
 // and I do not want untested code in the docs.
 // TODO: change to 'sparse domain' and add that code to the test suite.
 /*
-The CSR layout provides a Compressed Sparse Row implementation
+This CSR layout provides a Compressed Sparse Row implementation
 for Chapel's sparse domains and arrays.
 
 To declare a CSR domain, invoke the ``CSR`` constructor without arguments
@@ -42,6 +42,10 @@ To declare a CSR array, use a CSR domain, for example:
 
     // assume the above declarations
     var CSR_Array: [CSR_Domain] real;
+
+This domain map is a layout, i.e. it maps all indices to the current locale.
+All elements of a CSR-distributed array are stored
+on the locale where the array variable is declared.
 */
 class CSR: BaseDist {
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {

@@ -18,6 +18,7 @@ my $errors = 0;
 
 process("../layouts/LayoutCSR.rst");
 process("BlockDist.rst");
+process("CyclicDist.rst");
 process("ReplicatedDist.rst");
 
 #or: for my $rst (@ARGV) { process($rst); }
