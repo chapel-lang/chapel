@@ -134,9 +134,6 @@ This Block distribution partitions indices into blocks
 according to a ``boundingBox`` domain
 and maps each entire block onto a locale from a ``targetLocales`` array.
 
-
-**Mapping of Indices to Locales**
-
 The indices inside the bounding box are partitioned "evenly" across
 the target locales. An index outside the bounding box is mapped to the
 same locale as the nearest index inside the bounding box.
@@ -169,8 +166,11 @@ the above computation is applied in each dimension.
 
 **Example**
 
-To create a Block-distributed domain, invoke the ``Block`` constructor
-in a `dmapped` clause. For example:
+The following code declares a domain ``D`` distributed over
+a Block distribution with a bounding box equal to the domain ``Space``,
+and declares an array ``A`` over that domain.
+The ``forall`` loop sets each array element
+to the ID of the locale to which it is mapped.
 
   .. code-block:: chapel
 
@@ -178,12 +178,6 @@ in a `dmapped` clause. For example:
 
     const Space = {1..8, 1..8};
     const D: domain(2) dmapped Block(boundingBox=Space) = Space;
-
-The following code declares a Block-distributed array:
-
-  .. code-block:: chapel
-
-    // assume the above declarations
     var A: [D] int;
 
     forall a in A do

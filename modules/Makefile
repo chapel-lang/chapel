@@ -89,6 +89,7 @@ DISTS_TO_DOCUMENT = \
 	layouts/LayoutCSR.chpl \
 	dists/BlockDist.chpl \
 	dists/CyclicDist.chpl \
+	dists/BlockCycDist.chpl \
 	dists/ReplicatedDist.chpl \
 
 INTERNAL_MODULES_TO_DOCUMENT = \
