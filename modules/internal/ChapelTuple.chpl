@@ -309,7 +309,7 @@ module ChapelTuple {
   }
   
   /*
-    Returns a tuple of type t with each component set to `max`
+    Returns a tuple of type t with each component set to ``max``
     of the type in the corresponding component of the argument.
   */
   proc max(type t): t where isTupleType(t) {
@@ -321,7 +321,7 @@ module ChapelTuple {
   }
   
   /*
-  Returns a tuple of type t with each component set to `min`
+  Returns a tuple of type t with each component set to ``min``
   of the type in the corresponding component of the argument.
   */
   proc min(type t): t where isTupleType(t) {

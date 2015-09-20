@@ -21,7 +21,8 @@ config param debugCSR = false;
 
 // In the following, I insist on SUBdomains because
 // I have not seen us test a non-"sub" CSR domain
-// and I do not want untested code in the docs.  -Vass 9'2015
+// and I do not want untested code in the docs.
+// TODO: change to 'sparse domain' and add that code to the test suite.
 /*
 The CSR layout provides a Compressed Sparse Row implementation
 for Chapel's sparse domains and arrays.

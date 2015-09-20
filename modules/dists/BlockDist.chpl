@@ -119,6 +119,13 @@ config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 // dataParMinGranularity: the minimum required number of elements per
 //                        task created
 //
+
+// chpldoc TODO:
+//   talk about RAD - here or in DefaultRectangular?
+//   disableBlockLazyRAD
+//   disableAliasedBulkTransfer
+//   remove the above comments to avoid duplication/maintenance?
+//
 /*
 The Block distribution partitions indices into blocks
 according to a ``boundingBox`` domain
@@ -135,25 +142,25 @@ where ``locIdx`` is computed as follows.
 
 In the 1-dimensional case, for a Block distribution with:
 
-  +-------------------+---------------------+
-  | ``boundingBox``   | ``{low..high}``     |
-  +-------------------+---------------------+
-  | ``targetLocales`` | ``[0..N-1] locale`` |
-  +-------------------+---------------------+
 
-``locIdx`` is:
+  =================   ====================
+  ``boundingBox``     ``{low..high}``
+  ``targetLocales``   ``[0..N-1] locale``
+  =================   ====================
 
-  +-----------------------+-------------------------------------------+
-  | if ``low<=idx<=high`` | ``floor(  (idx-low)*N / (high-low+1)  )`` |
-  +-----------------------+-------------------------------------------+
-  | if ``idx < low``      | ``0``                                     |
-  +-----------------------+-------------------------------------------+
-  | if ``idx > high``     | ``N-1``                                   |
-  +-----------------------+-------------------------------------------+
+we have:
+
+  ===================    ==========================================
+  if ``idx`` is ...      ``locIdx`` is ...
+  ===================    ==========================================
+  ``low<=idx<=high``     ``floor(  (idx-low)*N / (high-low+1)  )``
+  ``idx < low``          ``0``
+  ``idx > high``         ``N-1``
+  ===================    ==========================================
 
 In the multidimensional case, ``idx`` and ``locIdx`` are tuples
-of indices; ``boundingBox`` and ``targetLocales`` are multi-dimensional.
-The above computation is applied in each dimension.
+of indices; ``boundingBox`` and ``targetLocales`` are multi-dimensional;
+the above computation is applied in each dimension.
 
 **Example**
 
