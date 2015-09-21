@@ -1,6 +1,6 @@
-==========================================================
-Building the Chapel Compiler and Runtime Support Libraries
-==========================================================
+===============
+Building Chapel
+===============
 
 To build the Chapel compiler, set up your environment as described in
 the top-level README file (or README.chplenv), cd to $CHPL_HOME, and
@@ -20,12 +20,12 @@ If everything works as intended, you ought to see:
 
 #. the compiler binary getting linked and stored as:
 
-     $CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl
+     ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl``
 
 #. the runtime support libraries being compiled, archived, and stored
    in a configuration-specific subdirectory under:
 
-     $CHPL_HOME/lib/$CHPL_TARGET_PLATFORM/$CHPL_TARGET_COMPILER/...
+     ``$CHPL_HOME/lib/$CHPL_TARGET_PLATFORM/$CHPL_TARGET_COMPILER/...``
 
 If you get an error or failure during the make process, please let us
 know about it at: chapel-bugs@lists.sourceforge.net (as well as
@@ -122,24 +122,24 @@ Platform-specific Settings
 
 The structure of Chapel's Makefiles is designed to factor any
 compiler-specific settings in
-$CHPL_HOME/make/compiler/Makefile.<compiler> where <compiler> refers
-to $CHPL_HOST_COMPILER for the compiler sources and
-$CHPL_TARGET_COMPILER for the runtime sources and generated code.
+``$CHPL_HOME/make/compiler/Makefile.<compiler>`` where ``<compiler>`` refers
+to ``$CHPL_HOST_COMPILER`` for the compiler sources and
+``$CHPL_TARGET_COMPILER`` for the runtime sources and generated code.
 Refer to README.chplenv for more information about these variables and
 their default settings.
 
 In addition, any architecture-specific settings are defined in
-$CHPL_HOME/make/platform/Makefile.<platform>, where <platform> refers
-to $CHPL_HOST_PLATFORM for the compiler sources and
-$CHPL_TARGET_PLATFORM for the runtime sources and generated code.
+``$CHPL_HOME/make/platform/Makefile.<platform>``, where ``<platform>`` refers
+to ``$CHPL_HOST_PLATFORM`` for the compiler sources and
+``$CHPL_TARGET_PLATFORM`` for the runtime sources and generated code.
 Again, README.chplenv details these variables and their default
 settings.
 
 If you try making the compiler and runtime for an unknown platform, it
 will assume that you want to use gcc/g++ to compile the code and that
 you require no platform-specific settings.  You can add support for a
-new build environment by creating Makefile.<compiler> and/or
-Makefile.<platform> files and setting your environment variables to
+new build environment by creating ``Makefile.<compiler>`` and/or
+``Makefile.<platform>`` files and setting your environment variables to
 refer to those files.  If you do develop new build environment support
 that you would like to contribute back to the community, we encourage
 you to send your changes back to us at: chapel_info@cray.com
