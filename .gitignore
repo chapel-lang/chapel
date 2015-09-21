@@ -54,6 +54,16 @@ tags
 /doc/tutorial/workbooks/*.dvi
 /doc/tutorial/workbooks/*.bbl
 /doc/tutorial/workbooks/*.blg
+/doc/sphinx/build
+/doc/sphinx/source/*.rst
+/doc/sphinx/source/platforms/*.rst
+/doc/sphinx/source/technotes/*.rst
+/doc/sphinx/source/modules/standard
+/doc/sphinx/source/modules/internal
+!/doc/sphinx/source/index.rst
+!/doc/sphinx/source/technotes/index.rst
+!/doc/sphinx/source/platforms/index.rst
+
 
 # Make ignores.
 /make/Chapel.xcodeproj/*.pbxuser
