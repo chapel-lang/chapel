@@ -284,9 +284,9 @@ module Spawn {
                 :attr:`subprocess.kind` in the resulting subprocess.
                 Defaults to :enum:`IO.iokind.dynamic`.
                  
-     :arg kind: Should channels created use locking?
-                This argument is used to set :attr:`subprocess.locking`
-                in the resulting subprocess. Defaults to `true`.
+     :arg locking: Should channels created use locking?
+                   This argument is used to set :attr:`subprocess.locking`
+                   in the resulting subprocess. Defaults to `true`.
 
      :returns: a :record:`subprocess` with kind and locking set according
                to the arguments.
@@ -481,9 +481,9 @@ module Spawn {
                 :attr:`subprocess.kind` in the resulting subprocess.
                 Defaults to :enum:`IO.iokind.dynamic`.
                  
-     :arg kind: Should channels created use locking?
-                This argument is used to set :attr:`subprocess.locking`
-                in the resulting subprocess. Defaults to `true`.
+     :arg locking: Should channels created use locking?
+                   This argument is used to set :attr:`subprocess.locking`
+                   in the resulting subprocess. Defaults to `true`.
 
      :returns: a :record:`subprocess` with kind and locking set according
                to the arguments.
