@@ -2,13 +2,20 @@
 LLVM support
 ============
 
-The Chapel compiler includes a code generator for LLVM and also two LLVM
-optimizations. These features are experimental. However, some benchmark
-programs run faster with LLVM communication optimizations.  In addition, extern
-block support uses the clang parser, and so it is necessary to build a Chapel
-compiler with LLVM support in order to use that feature. See README.extern
-for more information on extern blocks, and the discussion below in this
-file for more information about the LLVM communication optimizations.
+The Chapel compiler can be built with LLVM support in able to enable
+the following features:
+
+ 1) extern block support (see README.extern). This feature uses the clang
+    parser. Note that it is *not* necessary to use the LLVM code generator in
+    order to use extern block support.
+
+ 2) Experimental LLVM code generator. The ``--llvm`` flag activates the LLVM
+    code generator. Note that by default, a Chapel compiler built with LLVM
+    support still uses the C backend.
+
+ 3) Experimental LLVM communication optimizations. You can activate these
+    communication optimizations with ``--llvm --llvm-wide-opt``. Some
+    benchmark programs run faster with these LLVM communication optimizations.
 
 -------------------------
 Building the LLVM support
