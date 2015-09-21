@@ -129,16 +129,19 @@ module Spawn {
        is the file descriptor for the write end of a pipe
        connected to the child's standard input.
      */
+    pragma "no doc"
     var inputfd:c_int;
     /* If the subprocess is configured to use pipes, outputfd
        is the file descriptor for the read end of a pipe
        connected to the child's standard output.
      */
+    pragma "no doc"
     var outputfd:c_int;
     /* If the subprocess is configured to use pipes, errorfd
        is the file descriptor for the read end of a pipe
        connected to the child's standard error.
      */
+    pragma "no doc"
     var errorfd:c_int;
 
    
@@ -503,7 +506,7 @@ module Spawn {
   /*
      Check to see if a child process has terminated.
      If the child process has terminated, after this
-     call, :attr:`subprocess.running` will be `false`.
+     call, :attr:`~subprocess.running` will be `false`.
    */
   proc subprocess.poll(out error:syserr) {
     on home {
@@ -520,20 +523,20 @@ module Spawn {
   
   /*
     Wait for a child process to complete. After this function
-    returns, :attr:`subprocess.running` is `false` and
-    :attr:`subprocess.exit_status` stores the exit code returned
+    returns, :attr:`~subprocess.running` is `false` and
+    :attr:`~subprocess.exit_status` stores the exit code returned
     by the subprocess.
      
     .. note::
      
         Use :proc:`subprocess.communicate` instead of this function when using
-        PIPE for stdin, stdout, or stderr.  This function does not try to send
-        any buffered input to the child process and so could result in a hang
-        if the child process is waiting for input to finish. Similarly,
-        this function does not consume the output from the child process
-        and so the child process could hang while waiting to write data
-        to its output while the parent process is waiting for it to
-        complete (and not consuming its output).
+        :const:`PIPE` for stdin, stdout, or stderr.  This function does not try
+        to send any buffered input to the child process and so could result in
+        a hang if the child process is waiting for input to finish. Similarly,
+        this function does not consume the output from the child process and so
+        the child process could hang while waiting to write data to its output
+        while the parent process is waiting for it to complete (and not
+        consuming its output).
 
     :arg error: optional argument to capture any error encountered
                 when waiting for the child process.
@@ -576,8 +579,8 @@ module Spawn {
   /*
      
     Wait for a child process to complete. After this function
-    returns, :attr:`subprocess.running` is `false` and
-    :attr:`subprocess.exit_status` stores the exit code returned
+    returns, :attr:`~subprocess.running` is `false` and
+    :attr:`~subprocess.exit_status` stores the exit code returned
     by the subprocess.
  
     This function handles cases in which stdin, stdout, or stderr
