@@ -19,6 +19,69 @@
 
 
 /*
+
+Support launching and interacting with other programs.
+
+Using functions in this module, one can create a subprocess
+possibly and capture its output. It is also possible to provide
+input to a subprocess.
+
+To start a subprocess, use :proc:`spawn` or :proc:`spawnshell`.  To wait for
+the subprocess process to finish, use the :proc:`subprocess.wait` or
+:proc:`subprocess.communicate` functions.
+
+This example program produces a listing of files in the current directory with
+names that begin with ``test.`` by using the ``ls`` command. The
+output will be mixed in with the Chapel program's output.
+
+.. code-block:: chapel
+
+  use Spawn;
+
+  var sub = spawn(["ls", "test.*"]);
+  sub.wait();
+
+This version also runs the ``ls`` command but uses a pipe
+to read the output from the ``ls`` command.
+
+.. code-block:: chapel
+
+  use Spawn;
+
+  var sub = spawn(["ls", "test.*"], stdout=PIPE);
+
+  var line:string;
+  while sub.stdout.readline(line) {
+    write("ls returned: ", line);
+  }
+
+  sub.wait();
+
+Finally, this version uses pipes to provide input to
+a subprocess in addition to capturing its output. This
+version uses the ``cat`` command, which just prints
+back its input.
+
+.. code-block:: chapel
+
+  use Spawn;
+
+  var sub = spawn(["cat"], stdin=PIPE, stdout=PIPE);
+
+  sub.stdin.writeln("Hello");
+  sub.stdin.writeln("World");
+
+  sub.communicate();
+
+  var line:string;
+  while sub.stdout.readline(line) {
+    write("Got line: ", line);
+  }
+  // prints out:
+  // Got line: Hello
+  // Got line: World
+
+
  */
 module Spawn {
 
@@ -45,41 +108,74 @@ module Spawn {
   private extern proc qio_spawn_free_str(str: c_string);
 
 
-  /* A subprocess */
+  /* 
+     This record represents a subprocess.
+   */
   record subprocess {
+    /* The kind of a subprocess is used to create the types
+       for any channels that are necessary. */
     param kind:iokind;
+    /* As with kind, this value is used to create the types
+       for any channels that are necessary. */
     param locking:bool;
 
+    pragma "no doc"
     var home:locale;
 
+    /* The Process ID number of the spawned process */
     var pid:int(64);
+
+    /* If the subprocess is configured to use pipes, inputfd
+       is the file descriptor for the write end of a pipe
+       connected to the child's standard input.
+     */
     var inputfd:c_int;
+    /* If the subprocess is configured to use pipes, outputfd
+       is the file descriptor for the read end of a pipe
+       connected to the child's standard output.
+     */
     var outputfd:c_int;
+    /* If the subprocess is configured to use pipes, errorfd
+       is the file descriptor for the read end of a pipe
+       connected to the child's standard error.
+     */
     var errorfd:c_int;
 
    
-    /* is the subprocess still running? */
+    /* `false` if this library knows that the subprocess is not running */
     var running:bool;
-    /* what is its exit status? */
+    /* The exit status from the subprocess, or possibly a value >= 256
+       if there was en error when creating the subprocess */
     var exit_status:int;
 
     // the channels
+    // TODO -- these could be private to this module
+    pragma "no doc"
     var stdin_pipe:bool;
+    pragma "no doc"
     var stdin_buffering:bool;
+    pragma "no doc"
     var stdin_file:file;
+    pragma "no doc"
     var stdin:channel(writing=true, kind=kind, locking=locking);
+    pragma "no doc"
     var stdout_pipe:bool;
+    pragma "no doc"
     var stdout_file:file;
+    pragma "no doc"
     var stdout:channel(writing=false, kind=kind, locking=locking);
+    pragma "no doc"
     var stderr_pipe:bool;
+    pragma "no doc"
     var stderr_file:file;
+    pragma "no doc"
     var stderr:channel(writing=false, kind=kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
     // for the file are updated.
 
-    // an error
+    pragma "no doc" 
     var spawn_error:syserr;
   }
 
@@ -88,11 +184,28 @@ module Spawn {
   private extern const QIO_FD_PIPE:c_int;
   private extern const QIO_FD_TO_STDOUT:c_int;
 
+  /*
+     FORWARD indicates that the child process should inherit
+     the stdin/stdout/stderr of this process.
+   */
   const FORWARD = QIO_FD_FORWARD;
+  /*
+     CLOSE indicates that the child process should close
+     its stdin/stdout/stderr.
+   */
   const CLOSE = QIO_FD_CLOSE;
+  /*
+     PIPE indicates that the spawn operation should set up
+     a pipe between the parent process and the child process
+     so that the parent process can provide input to the
+     child process or capture its output.
+   */
   const PIPE = QIO_FD_PIPE;
+  /*
+     STDOUT indicates that the stderr stream of the child process
+     should be forwarded to its stdout stream.
+   */
   const STDOUT = QIO_FD_TO_STDOUT;
-
 
   private const empty_env:[1..0] string;
 
@@ -123,7 +236,61 @@ module Spawn {
      a cwd argument like Python does, but it wouldn't be thread-safe
      without heroic effort on our part.  Boo.
    */
+
   /*
+     Create a subprocess.
+     
+     :arg args: An array of strings storing the command to run and
+                its arguments. The command to run is always the first argument.
+                The command could be found in the current PATH or
+                it could be a full path to a file to execute. If the
+                executable argument is set, the first argument will
+                be the name of the spawned program provided to that
+                program and typically shown in process listings.
+
+     :arg env: An array of strings storing the environment to use when
+               spawning the child process instead of forwarding the
+               current environment. By default, this argument
+               is an empty array. In that case, 
+               the current environment will be forwarded to the child
+               process.
+
+     :arg executable: By default, the executable argument is "". In that
+                      case, the program to launch is the first element
+                      of the args array. If the executable
+                      argument is provided, it will be used instead of
+                      the first element of the args array as the program
+                      to launch. In either case, the program could be
+                      found by searching the PATH.
+
+     :arg stdin: indicates how the standard input of the child process
+                 should be handled. It could be :const:`FORWARD`,
+                 :const:`CLOSE`, :const:`PIPE`, or a file
+                 descriptor number to use. Defaults to :const:`FORWARD`.
+
+     :arg stdout: indicates how the standard output of the child process
+                  should be handled. It could be :const:`FORWARD`,
+                  :const:`CLOSE`, :const:`PIPE`, or a file
+                  descriptor number to use. Defaults to :const:`FORWARD`.
+
+     :arg stderr: indicates how the standard error of the child process
+                  should be handled. It could be :const:`FORWARD`,
+                  :const:`CLOSE`, :const:`PIPE`, :const:`STDOUT`, or
+                  a file descriptor number to use. Defaults to
+                  :const:`FORWARD`.
+
+     :arg kind: What kind of channels should be created when
+                :const:`PIPE` is used. This argument is used to set
+                :attr:`subprocess.kind` in the resulting subprocess.
+                Defaults to :enum:`IO.iokind.dynamic`.
+                 
+     :arg kind: Should channels created use locking?
+                This argument is used to set :attr:`subprocess.locking`
+                in the resulting subprocess. Defaults to `true`.
+
+     :returns: a :record:`subprocess` with kind and locking set according
+               to the arguments.
+
      */
   proc spawn(args:[] string, env:[] string=Spawn.empty_env, executable="",
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
@@ -266,6 +433,62 @@ module Spawn {
     return ret;
   }
 
+  /*
+     Create a subprocess by invoking a shell.
+
+     .. note::
+
+       Since the command string is passed to a shell, it is
+       very unsecure to pass user input to this command
+       without proper quoting.
+    
+
+     :arg command: A string representing the command to run.
+                   This string will be interpreted by the shell.
+    
+     :arg env: An array of strings storing the environment to use when
+               spawning the child process instead of forwarding the
+               current environment. By default, this argument
+               is an empty array. In that case, 
+               the current environment will be forwarded to the child
+               process.
+
+     :arg stdin: indicates how the standard input of the child process
+                 should be handled. It could be :const:`FORWARD`,
+                 :const:`CLOSE`, :const:`PIPE`, or a file
+                 descriptor number to use. Defaults to :const:`FORWARD`.
+
+     :arg stdout: indicates how the standard output of the child process
+                  should be handled. It could be :const:`FORWARD`,
+                  :const:`CLOSE`, :const:`PIPE`, or a file
+                  descriptor number to use. Defaults to :const:`FORWARD`.
+
+     :arg stderr: indicates how the standard error of the child process
+                  should be handled. It could be :const:`FORWARD`,
+                  :const:`CLOSE`, :const:`PIPE`, :const:`STDOUT`, or
+                  a file descriptor number to use. Defaults to
+                  :const:`FORWARD`.
+
+     :arg executable: By default, the executable argument is "/bin/sh".
+                      That directs the subprocess to run the /bin/sh shell
+                      in order to interpret the command string.
+                     
+     :arg shellarg: An argument to pass to the shell before
+                    the command string. By default this is "-c".
+
+     :arg kind: What kind of channels should be created when
+                :const:`PIPE` is used. This argument is used to set
+                :attr:`subprocess.kind` in the resulting subprocess.
+                Defaults to :enum:`IO.iokind.dynamic`.
+                 
+     :arg kind: Should channels created use locking?
+                This argument is used to set :attr:`subprocess.locking`
+                in the resulting subprocess. Defaults to `true`.
+
+     :returns: a :record:`subprocess` with kind and locking set according
+               to the arguments.
+
+  */
   proc spawnshell(command:string, env:[] string=Spawn.empty_env,
                   stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
                   executable="/bin/sh", shellarg="-c",
@@ -277,6 +500,11 @@ module Spawn {
     return spawn(args, env, executable, kind=kind, locking=locking);
   }
 
+  /*
+     Check to see if a child process has terminated.
+     If the child process has terminated, after this
+     call, :attr:`subprocess.running` will be `false`.
+   */
   proc subprocess.poll(out error:syserr) {
     on home {
       // check if child process has terminated.
@@ -289,6 +517,27 @@ module Spawn {
       }
     }
   }
+  
+  /*
+    Wait for a child process to complete. After this function
+    returns, :attr:`subprocess.running` is `false` and
+    :attr:`subprocess.exit_status` stores the exit code returned
+    by the subprocess.
+     
+    .. note::
+     
+        Use :proc:`subprocess.communicate` instead of this function when using
+        PIPE for stdin, stdout, or stderr.  This function does not try to send
+        any buffered input to the child process and so could result in a hang
+        if the child process is waiting for input to finish. Similarly,
+        this function does not consume the output from the child process
+        and so the child process could hang while waiting to write data
+        to its output while the parent process is waiting for it to
+        complete (and not consuming its output).
+
+    :arg error: optional argument to capture any error encountered
+                when waiting for the child process.
+   */
   proc subprocess.wait(out error:syserr) {
 
     error = this.spawn_error;
@@ -314,6 +563,9 @@ module Spawn {
       }
     }
   }
+
+  // documented in the out error version
+  pragma "no doc"
   proc subprocess.wait() {
     var err:syserr = ENOERR;
 
@@ -321,10 +573,22 @@ module Spawn {
     if err then halt("Error in subprocess.wait: " + errorToString(err));
   }
 
-  // wait for process to terminate...
-  // commit stdin, sending any data to the process,
-  // while also reading any output from the process
-  // into the stdout and stderr channel buffers.
+  /*
+     
+    Wait for a child process to complete. After this function
+    returns, :attr:`subprocess.running` is `false` and
+    :attr:`subprocess.exit_status` stores the exit code returned
+    by the subprocess.
+ 
+    This function handles cases in which stdin, stdout, or stderr
+    for the child process is :const:`PIPE` by writing any
+    input to the child process and buffering up the output
+    of the child process as necessary while waiting for
+    it to terminate.
+
+    :arg error: optional argument to capture any error encountered
+                when waiting for the child process.
+   */
   proc subprocess.communicate(out error:syserr) {
     
     on home {
@@ -337,6 +601,9 @@ module Spawn {
         stderr._channel_internal);
     }
   }
+
+  // documented in the out error version
+  pragma "no doc"
   proc subprocess.communicate() {
     var err:syserr = ENOERR;
 
