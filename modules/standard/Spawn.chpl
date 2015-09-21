@@ -20,6 +20,9 @@
 
 /*
 
+.. versionadded:: 1.12
+  Spawn module added.
+
 Support launching and interacting with other programs.
 
 Using functions in this module, one can create a subprocess
@@ -81,6 +84,14 @@ back its input.
   // Got line: Hello
   // Got line: World
 
+
+.. note::
+
+  As of Chapel v1.12, creating a subprocess that uses :const:`PIPE` to provide
+  input or capture output does not work when using the ugni communications
+  layer and when using more than one locale. In this circumstance, the program
+  will halt with an error message. These scenarios do work when using GASNet
+  instead of the ugni layer.
 
  */
 module Spawn {
