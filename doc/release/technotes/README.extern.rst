@@ -1,6 +1,6 @@
-======================================================
-Support for Chapel <-> C Interoperability via 'extern'
-======================================================
+==================
+C Interoperability
+==================
 
 This README describes initial support in our Chapel compiler for
 referring to C code within Chapel using a keyword named 'extern'.
@@ -15,7 +15,6 @@ section entitled "Support for Extern Blocks" towards the end of the
 file.
 
 
-===============================
 Support for Extern Declarations
 ===============================
 
@@ -37,26 +36,28 @@ All of the following sections rely on the same general approach:
    For example, if an external function foo() was defined in foo.h and
    foo.c, it could be added to the compilation using either:
 
+   ::
+
        chpl foo.h foo.c myProgram.chpl
-or:    chpl foo.h foo.o myProgram.chpl (if foo.c had already been compiled)
-or:    chpl foo.h -lfoo myProgram.chpl (if foo.c had been archived in libfoo.a)
+       chpl foo.h foo.o myProgram.chpl #if foo.c had already been compiled)
+       chpl foo.h -lfoo myProgram.chpl #if foo.c had been archived in libfoo.a)
 
    The effect of naming such files on the command line is as follows:
 
-   * During Chapel's C code generation stage, any header files listed
-     on the compiler's command line will be #include'd by the
-     generated code in order to ensure that the appropriate prototypes
-     are found before making any references to the external symbols.
+     * During Chapel's C code generation stage, any header files listed
+       on the compiler's command line will be #include'd by the
+       generated code in order to ensure that the appropriate prototypes
+       are found before making any references to the external symbols.
 
-   * During Chapel's C compilation stage, any C files on the command
-     line will be compiled using the same flags as the
-     Chapel-generated C files (use --print-commands to see these
-     compile commands).
+     * During Chapel's C compilation stage, any C files on the command
+       line will be compiled using the same flags as the
+       Chapel-generated C files (use --print-commands to see these
+       compile commands).
 
-   * During Chapel's link step, any .o files created by this C compile
-     step will be linked to the .o and .a files listed on the
-     compiler's command-line along with the compiler-generated code
-     and runtime libraries.
+     * During Chapel's link step, any .o files created by this C compile
+       step will be linked to the .o and .a files listed on the
+       compiler's command-line along with the compiler-generated code
+       and runtime libraries.
 
 
 Parallel Safety
@@ -85,10 +86,12 @@ To help with mapping types between C and Chapel, Chapel installations
 contain a standard module named 'SysCTypes' (located under
 $CHPL_HOME/modules/standard/gen/...).  This module defines a number of
 type aliases that accurately describe C types using their Chapel
-equivalents.  Most of these are prefixed by "c_" to distinguish them
+equivalents.  Most of these are prefixed by ``c_`` to distinguish them
 from Chapel type names that may have different meanings.
 
 The Chapel names for C types are:
+
+.. code-block:: chapel
 
   c_int
   c_uint
@@ -111,8 +114,10 @@ For consistency, the following type aliases are also provided even
 though their sizes can't vary in C (thereby permitting the equivalent
 Chapel types to always be usable):
 
-  c_float  (a real(32) in Chapel)
-  c_double (a real(64) in Chapel)
+.. code-block:: chapel
+
+  c_float  // (a real(32) in Chapel)
+  c_double // (a real(64) in Chapel)
 
 c_void_ptr, c_string, and c_ptr(T) are described in the next section.
 
@@ -122,6 +127,8 @@ Referring to Pointer and String Types
 
 Chapel supports 3 C pointer types: c_void_ptr, c_string, and c_ptr(T).
 These types are the same as C types:
+
+.. code-block:: chapel
 
   c_void_ptr is void*
   c_ptr(T) is T*
@@ -140,14 +147,16 @@ longer valid, or to memory that has been freed. The Chapel language makes no
 effort to extend a variable's lifetime if it is converted in some manner to a C
 pointer.
 
-c_void_ptr:
+c_void_ptr
+~~~~~~~~~~
 
 The c_void_ptr type is provided as an opaque C pointer. Since the type is
 unknown, there is no way to dereference this pointer. In addition, it is not
 possible to construct a c_void_ptr directly in Chapel. Normally, a C function
 will return the void pointer, which will be passed to other C functions.
 
-c_ptr(T):
+c_ptr(T)
+~~~~~~~~
 
 The c_ptr(T) type is a generic type representing a C pointer to an arbitrary
 type T. This pointer should normally only point to local memory - since no
@@ -155,6 +164,8 @@ communication will be generated when it is dereferenced.  Of course, the
 pointed-to type T should be one that is supported in C interoperability if the
 c_ptr(T) is used for C interoperability. A c_ptr type can be constructed from a
 Chapel variable using the c_ptrTo() function; for example:
+
+.. code-block:: chapel
 
  var i:c_int;
  var i_ptr = c_ptrTo(i); // now i_ptr has type c_ptr(c_int) == int* in C
@@ -164,20 +175,23 @@ supports 0-based array indexing and dereferencing. In addition, it is possible
 to allocate and free space for one or more elements and return the result as a
 c_ptr. See the following example:
 
- var cArray = c_calloc(c_int, 10);
- for i in 0..#10 {
+.. code-block:: chapel
+
+  var cArray = c_calloc(c_int, 10);
+  for i in 0..#10 {
    cArray[i] = i:c_int;
- }
- // c_ptr.deref() always refers to the first element.
- cArray.deref() = 17;
- for i in 0..#10 {
+  }
+  // c_ptr.deref() always refers to the first element.
+  cArray.deref() = 17;
+  for i in 0..#10 {
    writeln(cArray[i]);
- }
- c_free(cArray);
+  }
+  c_free(cArray);
 
 Variables of type c_ptr can be compared against or set to nil.
 
-ref intents:
+ref intents
+~~~~~~~~~~~
 
 Note that for function arguments that are passed by pointer in C, it is
 recommended to use the ref argument intent instead of c_ptr(T). Using the ref
@@ -186,16 +200,19 @@ needing to be converted to a C pointer first. For example, both the functions
 byRef and byPtr below have the same C prototype, but they must be used
 differently in Chapel:
 
- // both of these correspond to void fn(int* x)
- extern proc byRef(ref x:c_int);
- extern proc byPtr(x:c_ptr(c_int));
+.. code-block:: chapel
 
- var x:c_int = 7;
- byRef(x); // ref argument intent allows the variable to be passed directly
- byPtr(c_ptrTo(x)); // c_ptr argument must be constructed explicitly
+  // both of these correspond to void fn(int* x)
+  extern proc byRef(ref x:c_int);
+  extern proc byPtr(x:c_ptr(c_int));
+
+  var x:c_int = 7;
+  byRef(x); // ref argument intent allows the variable to be passed directly
+  byPtr(c_ptrTo(x)); // c_ptr argument must be constructed explicitly
 
 
-c_string:
+c_string
+~~~~~~~~
 
 The c_string type maps to a constant C string (that is, const char*)
 that is intended for use locally. A c_string can be obtained from a
@@ -220,6 +237,8 @@ Effectively, such a declaration defines a new primitive type in
 Chapel.  For example, the following declaration says that there is an
 external type named 'foo':
 
+.. code-block:: chapel
+
     extern type foo;
 
 This permits you to declare variables of type 'foo' and to declare
@@ -235,14 +254,20 @@ directly, as it would any other Chapel type alias.  For example, if
 the external type 'foo' was a 64-bit integer, you could describe it in
 Chapel using:
 
+.. code-block:: chapel
+
     extern type foo = int(64);
 
 Static, fixed-size C array types can be described within Chapel using
 its homogeneous tuple type.  For example, the following C typedef:
 
+.. code-block:: chapel
+
     typedef double vec[3];
 
 could be described in Chapel using:
+
+.. code-block:: chapel
 
     extern type vec = 3*real(64);
 
@@ -256,10 +281,14 @@ Referring to External C Variables and Constants
 A C variable or constant can be referred to within Chapel by prefixing
 its declaration with the extern keyword.  For example:
 
+.. code-block:: chapel
+
     extern var bar: foo;
 
 would tell the Chapel compiler about an external C variable named
 'bar' of type 'foo'.  Similarly:
+
+.. code-block:: chapel
 
    extern const baz: int(32);
 
@@ -284,6 +313,8 @@ the routine in your Chapel code using the 'extern' keyword.  For
 example, for a C function foo() that takes no arguments and returns
 nothing, the prototype would appear as follows:
 
+.. code-block:: chapel
+
        extern proc foo();
 
 C functions that return values which you wish to refer to within your
@@ -291,6 +322,8 @@ Chapel program must have those return types declared (the Chapel
 compiler cannot infer the return type as it does for Chapel functions
 since it does not analyze the C source code).  To make the function
 above return a C "double", it would be declared:
+
+.. code-block:: chapel
 
        extern proc foo(): real;
 
@@ -300,6 +333,8 @@ arguments in Chapel.
 Types of function arguments may be omitted, in which case the types
 will be inferred based on the Chapel callsite.  For example, the
 following Chapel code:
+
+.. code-block:: chapel
 
        extern proc foo(x: int, y): real;
 
@@ -317,6 +352,8 @@ Default arguments can be declared for external function arguments, in
 which case the Chapel compiler will supply the default argument value
 if it is omitted at the callsite.  For example:
 
+.. code-block:: chapel
+
        extern proc foo(x: int, y = 1.2): real;
 
        foo(0);
@@ -328,10 +365,14 @@ C varargs functions can be declared using Chapel's varargs ("...")
 syntax.  For example, the following declaration prototypes C's printf
 function:
 
+.. code-block:: chapel
+
        extern proc printf(fmt: c_string, vals...?numvals): int;
 
 Note that it can also be prototyped more trivially/less accurately
 as follows:
+
+.. code-block:: chapel
 
        extern proc printf(args...): int;
 
@@ -341,6 +382,8 @@ which relies on the callsite to pass in reasonable arguments
 External C functions or macros that accept type arguments can also be
 prototyped in Chapel by declaring the argument as a type.  For
 example:
+
+.. code-block:: chapel
 
        extern foo(type t);
 
@@ -352,13 +395,19 @@ or built-in (like sizeof()) that can handle type identifiers.
 Extern functions with array arguments are handled as a special case within the
 compiler. As an example:
 
+.. code-block:: chapel
+
        extern proc foo(x: [] int, n: int);
 
 This procedure definition will match up to a C function with the prototype of
 
+.. code-block:: chapel
+
        void foo(int64_t* x, int64_t n);
 
 The Chapel compiler will then rewrite any calls to `foo` like this:
+
+.. code-block:: chapel
 
       foo(x, 10); -> foo(c_ptrTo(x), 10);
 
@@ -371,22 +420,26 @@ array.
 Frequently Asked Questions About External Routines
 --------------------------------------------------
 
-Q: How do I pass a Chapel variable to an external routine that expects
-   a pointer?
+How do I pass a Chapel variable to an external routine that expects
+a pointer?
 
-A: Today, the preferred way to do this is to declare the argument as
-   having 'ref' intent.  This should cause the Chapel compiler to pass
-   a pointer to the argument.  For example, given a C function:
+Today, the preferred way to do this is to declare the argument as
+having 'ref' intent.  This should cause the Chapel compiler to pass
+a pointer to the argument.  For example, given a C function:
 
-     void foo(double* x);
+.. code-block:: chapel
 
-   This could be called in Chapel using:
+  void foo(double* x);
 
-     extern proc foo(ref x: real);
+This could be called in Chapel using:
 
-     var myVal: real = 1.2;
+.. code-block:: chapel
 
-     foo(myVal);
+  extern proc foo(ref x: real);
+
+  var myVal: real = 1.2;
+
+  foo(myVal);
 
 
 Referring to External C Structs
@@ -396,12 +449,16 @@ External C struct types can be referred to within Chapel by prefixing
 a Chapel record definition with the extern keyword.  For example,
 given an external C structure defined in foo.h called fltdbl:
 
+.. code-block:: chapel
+
     typedef struct _fltdbl {
       float x;
       double y;
     } fltdbl;
 
 This type could be referred to within a Chapel program using:
+
+.. code-block:: chapel
 
    extern record fltdbl {
    }
@@ -414,12 +471,16 @@ fields need not match the order they were specified within the C code.
 As an example, the following declaration would permit access to both
 fields x and y within variables of type fltdbl:
 
+.. code-block:: chapel
+
    extern record fltdbl {
      var x: real(32);
      var y: real(64);
    }
 
 as would the following declaration:
+
+.. code-block:: chapel
 
    extern record fltdbl {
      var y: real(64);
@@ -431,6 +492,8 @@ fields.  For example, the following declaration would permit field y
 to be accessed by a Chapel program, but not field x (though both would
 still be stored in any variable of type 'fltdbl').
 
+.. code-block:: chapel
+
    extern record fltdbl {
      var y: real(64);
    }
@@ -439,6 +502,8 @@ Alternatively, the external declaration can avoid mentioning any
 fields, which would permit a variable of that struct type to be passed
 between Chapel and C routines, but without permitting its fields to be
 accessed within the Chapel program:
+
+.. code-block:: chapel
 
    extern record fltdbl {
    }
@@ -466,6 +531,8 @@ implications on the underlying C types.
 
 As an example, given the declaration:
 
+.. code-block:: chapel
+
   extern class D {
     var x: real;
   }
@@ -482,6 +549,8 @@ The requirements on the corresponding C code are:
 
 Thus, the following C typedef would fulfill the external Chapel class
 declaration shown above:
+
+.. code-block:: chapel
 
    typedef struct __D {
      double x;
@@ -508,6 +577,8 @@ For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that we can't or won't describe as
 an external class using the previous mechanism) as follows:
 
+.. code-block:: chapel
+
     extern proc returnStructPtr(): opaque;
 
     var structPtr: opaque = returnStructPtr();
@@ -517,6 +588,8 @@ much apart from assigning it to other opaque variables of matching
 underlying type, or passing it back to an external C routine that
 expects a pointer-to-struct of that type:
 
+.. code-block:: chapel
+
     extern proc operateOnStructPtr(ptr: opaque);
 
     var copyOfStructPtr = structPtr;
@@ -525,7 +598,6 @@ expects a pointer-to-struct of that type:
 
 
 
-=========================
 Support for Extern Blocks
 =========================
 
@@ -535,6 +607,8 @@ llvm/clang enabled.  To do so, set environment variable CHPL_LLVM to
 
 C code and header files can be included directly within Chapel source
 code using an "extern block" as follows:
+
+.. code-block:: chapel
 
   extern {
     #include "my_C_API.h"
@@ -551,6 +625,8 @@ without having to create distinct C files.
 
 If you don't want to have a lot of C symbols cluttering up a module's
 namespace, it's easy to put the C code into its own Chapel module:
+
+.. code-block:: chapel
 
   module C {
     extern {
@@ -574,6 +650,8 @@ The extern block functionality allows simple #defines to be used from Chapel
 code. Simple defines take no arguments and define an integer value or use
 another #define. For example:
 
+.. code-block:: chapel
+
   extern {
    #define NEG_ONE (-1)
    #define MY_NUMBER (NEG_ONE)
@@ -586,6 +664,8 @@ any #define taking arguments is not currently supported. For example, the
 ADD definition below has a resulting expression type that cannot be determined
 by the Chapel compiler:
 
+.. code-block:: chapel
+
  extern {
    #define ADD(x,y) ((x)+(y)) // NOT SUPPORTED
  }
@@ -594,6 +674,9 @@ by the Chapel compiler:
 If the library you are using depends on these types, the current solution
 is to create inline functions to call the define with the appropriate argument
 types; for example:
+
+.. code-block:: chapel
+
  extern {
    #define ADD(x,y) ((x)+(y))
    static inline int ADD_int_int(int x, int y) { return ADD(x,y); }
@@ -611,6 +694,9 @@ an extern block will be made visible to the Chapel program as c_ptr(T) or
 c_string (for char* types).
 
 For example:
+
+.. code-block:: chapel
+
  extern {
    static void setItToOne(int* x) { *x = 1; }
    // will translate automatically into
@@ -646,6 +732,8 @@ Example
 
 Here's a more complete example:
 
+.. code-block:: chapel
+
   module MyCModule {
     extern {
       static int foo(int b) { return b + 1; }
@@ -656,6 +744,8 @@ Here's a more complete example:
   writeln(MyCModule.foo(7));
 
 This prints out
+
+::
 
   Hello
   8

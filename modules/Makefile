@@ -80,12 +80,14 @@ MODULES_TO_DOCUMENT = \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
+	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 INTERNAL_MODULES_TO_DOCUMENT = \
+	internal/ChapelIO.chpl \
 	internal/ChapelSyncvar.chpl \
 	internal/Atomics.chpl
 
