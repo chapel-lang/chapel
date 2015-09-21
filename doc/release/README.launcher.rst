@@ -61,28 +61,28 @@ follows:
 
 * if ``CHPL_PLATFORM`` is cray-xc, cray-xe, cray-xk, or cray-xt:
 
-  ==================================  ===================
-  If                                  Then CHPL_LAUNCHER=
-  ==================================  ===================
+  ==================================  ===================================
+  If                                  CHPL_LAUNCHER
+  ==================================  ===================================
   both aprun and srun in user's path  none
   aprun in user's path                aprun
   srun in user's path                 slurm-srun
   otherwise                           none
-  ==================================  ===================
+  ==================================  ===================================
 
 * otherwise, if ``CHPL_COMM`` is gasnet:
 
-  =======================  ===================
-  If                       Then CHPL_LAUNCHER=
-  =======================  ===================
+  =======================  ==============================================
+  If                       CHPL_LAUNCHER
+  =======================  ==============================================
   CHPL_COMM_SUBSTRATE=ibv  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=mpi  gasnetrun_mpi
   CHPL_COMM_SUBSTRATE=mxm  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=udp  amudprun
   otherwise                none
-  =======================  ===================
+  =======================  ==============================================
 
-* otherwise ``CHPL_LAUNCHER`` = none
+* otherwise ``CHPL_LAUNCHER`` is set to none
 
 If the launcher binary does not work for your system (due to an
 installation-specific configuration, e.g.), you can often use the ``-v``
@@ -208,21 +208,21 @@ Additional launchers
 In addition to the launchers listed above there are several others that
 are not actively maintained but may still work.
 
-=============  ===================================================
+=============  ==========================================================
 Launcher Name  Description
-=============  ===================================================
+=============  ==========================================================
 loadleveler    launch using IBM loadleveler (still needs refining)
 marenostrum    launch using MareNostrum's mnsubmit script
 mpirun         launch using mpirun (no mpi comm currently) 
 tile-monitor   launch using Tilera's tile monitor
-=============  ===================================================
+=============  ==========================================================
 
 These launchers are the default for the following configurations: 
 
-============================  ===================
-If                            Then CHPL_LAUNCHER=
-============================  ===================
+============================  ===========================================
+If                            CHPL_LAUNCHER
+============================  ===========================================
 CHPL_PLATFORM=marenostrum     marenostrum
 CHPL_TARGET_COMPILER=tile-cc  tile-monitor
-============================  ===================
+============================  ===========================================
 
