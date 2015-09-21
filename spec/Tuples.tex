@@ -742,3 +742,63 @@ writeln(x);
 true
 \end{chapeloutput}
 \end{chapelexample}
+
+\section{Predefined Functions and Methods on Tuples}
+\label{Predefined_Functions_and_Methods_on_Tuples}
+\index{tuples!predefined functions}
+\index{predefined functions!tuples}
+\index{functions!tuples!predefined}
+
+\begin{protohead}
+proc isHomogeneousTuple(t: $Tuple$) param
+\end{protohead}
+\begin{protobody}
+Returns true if \chpl{t} is a homogeneous tuple; otherwise false.
+\end{protobody}
+
+\index{tuples!isTuple@\chpl{isTuple}}
+\index{predefined functions!isTuple@\chpl{isTuple}}
+\begin{protohead}
+proc isTuple(t: $Tuple$) param
+\end{protohead}
+\begin{protobody}
+Returns true if \chpl{t} is a tuple; otherwise false.
+\end{protobody}
+
+\index{tuples!isTupleType@\chpl{isTupleType}}
+\index{predefined functions!isTupleType@\chpl{isTupleType}}
+\begin{protohead}
+proc isTupleType(type t) param
+\end{protohead}
+\begin{protobody}
+Returns true if \chpl{t} is a tuple of types; otherwise false.
+\end{protobody}
+
+\index{tuples!max@\chpl{max}}
+\index{predefined functions!max@\chpl{max}}
+\begin{protohead}
+proc max(type t) where isTupleType(t)
+\end{protohead}
+\begin{protobody}
+Returns a tuple of type \chpl{t} with each component set to the maximum
+value that can be stored in its position.
+\end{protobody}
+
+\index{tuples!min@\chpl{min}}
+\index{predefined functions!min@\chpl{min}}
+\begin{protohead}
+proc min(type t) where isTupleType(t)
+\end{protohead}
+\begin{protobody}
+Returns a tuple of type \chpl{t} with each component set to the minimum
+value that can be stored in its position.
+\end{protobody}
+
+\index{tuples!size@\chpl{size}}
+\index{predefined functions!size@\chpl{size}}
+\begin{protohead}
+proc $Tuple$.size param
+\end{protohead}
+\begin{protobody}
+Returns the size of the tuple.
+\end{protobody}
