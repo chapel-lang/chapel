@@ -22,20 +22,20 @@ To run Chapel on multiple locales, the following steps are required:
    and active message layer being developed by Lawrence Berkeley
    National Lab and UC Berkeley.  For details, refer to:
 
-   * $CHPL_HOME/third-party/gasnet/README and
-   * $CHPL_HOME/third-party/README
+   * ``$CHPL_HOME/third-party/gasnet/README`` and
+   * ``$CHPL_HOME/third-party/README``
 
 
-#. 
+#.
    .. _set-comm-conduit:
 
    Advanced users can set ``CHPL_COMM_SUBSTRATE`` to indicate the GASNet
    conduit that they wish to use.  Novice users can leave this unset
    and Chapel will make a choice for them.  Current defaults are:
 
-     =====================  =====================
-     When compiling for...  Chapel will choose...
-     =====================  =====================
+     ====================  ===================
+     CHPL_TARGET_PLATFORM  CHPL_COMM_SUBSTRATE
+     ====================  ===================
      cray-cs                ibv
      cray-xc                aries
      cray-xe                gemini
@@ -44,7 +44,7 @@ To run Chapel on multiple locales, the following steps are required:
      pwr5                   lapi
      pwr6                   ibv
      other                  udp
-     =====================  =====================
+     =====================  ==================
 
 
 #.
@@ -53,15 +53,15 @@ To run Chapel on multiple locales, the following steps are required:
    Advanced GASNet users can set ``CHPL_GASNET_SEGMENT`` to choose a
    memory segment to use with GASNet.  Current defaults are:
 
-     ==============================  =====================
-     When CHPL_COMM_SUBSTRATE is...  Chapel will choose...
-     ==============================  =====================
-     aries                           fast
-     gemini                          fast
-     ibv                             large
-     portals                         fast
-     other                           everything
-     ==============================  =====================
+     ===================  ====================
+     CHPL_COMM_SUBSTRATE  CHPL_GASNET_SEGMENT
+     ===================  ====================
+     aries                fast
+     gemini               fast
+     ibv                  large
+     portals              fast
+     other                everything
+     ===================  ====================
 
 
 #.
@@ -144,7 +144,7 @@ To run Chapel on multiple locales, the following steps are required:
 
       #. For other options, please refer to:
 
-         $CHPL_HOME/third-party/gasnet/GASNet-1.*.*/udp-conduit/README
+         ``$CHPL_HOME/third-party/gasnet/GASNet-1.*.*/udp-conduit/README``
 
    #. If you are using GASNet's ibv conduit, configure the environment to
       launch program instances.  We have experience with these configurations:
@@ -181,7 +181,7 @@ To run Chapel on multiple locales, the following steps are required:
          other options, including configuring to launch through MPI,
          please refer to:
 
-         $CHPL_HOME/third-party/gasnet/GASNet-1.*.*/ibv-conduit/README
+         ``$CHPL_HOME/third-party/gasnet/GASNet-1.*.*/ibv-conduit/README``
 
    #. If you are trying to debug job launch, try adding ``-v`` to your
       program's command line and set:
