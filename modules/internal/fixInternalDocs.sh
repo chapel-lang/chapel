@@ -87,6 +87,14 @@ function removePrefixFunctions() {
 ## Modules to fixup listed in the same order as INTERNAL_MODULES_TO_DOCUMENT ##
 ###############################################################################
 
+## ChapelIO ##
+
+file="./ChapelIO.rst"
+fixTitle "IO Support" $file
+
+## End ChapelIO ##
+
+
 ## ChapelSyncvar ##
 
 file="./ChapelSyncvar.rst"
