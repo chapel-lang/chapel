@@ -92,6 +92,7 @@ DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
 	dists/ReplicatedDist.chpl \
 	dists/PrivateDist.chpl \
+	dists/DimensionalDist2D.chpl \
 
 INTERNAL_MODULES_TO_DOCUMENT = \
 	internal/ChapelTuple.chpl \
@@ -108,6 +109,7 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
+	rm ${DOC_SPHINX}/source/modules/dists/DSIUtil.rst
 	rm -rf ${MODULE_SPHINX}
 
 clean-documentation:

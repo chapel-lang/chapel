@@ -22,6 +22,7 @@ process("CyclicDist.rst");
 process("BlockCycDist.rst");
 process("ReplicatedDist.rst");
 process("PrivateDist.rst");
+process("DimensionalDist2D.rst");
 
 #or: for my $rst (@ARGV) { process($rst); }
 
