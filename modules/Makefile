@@ -86,6 +86,7 @@ MODULES_TO_DOCUMENT = \
 	$(SYS_CTYPES_MODULE_DOC)
 
 INTERNAL_MODULES_TO_DOCUMENT = \
+	internal/ChapelIO.chpl \
 	internal/ChapelSyncvar.chpl \
 	internal/Atomics.chpl
 
