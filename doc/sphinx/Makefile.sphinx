@@ -5,7 +5,7 @@ SPHINXOPTS    = -W
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
-BUILDPATH     = \$$CHPL_HOME/doc/sphinx/$$BUILDDIR
+BUILDPATH     = \$$CHPL_HOME/doc/sphinx/$(BUILDDIR)
 
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
