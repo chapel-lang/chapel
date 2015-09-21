@@ -38,9 +38,9 @@ generation, and also support ``--llvm-wide-opt``:
 
 Note:
 
-* If you have a built llvm in third-party/llvm/install, even if you
-  forget to export CHPL_LLVM=llvm, the default will be to use the built llvm.
-  You can override this default by setting CHPL_LLVM=none.
+* If you have a built llvm in ``third-party/llvm/install``, even if you forget
+  to ``export CHPL_LLVM=llvm``, the default will be to use the built llvm.  You
+  can override this default by setting ``CHPL_LLVM=none``.
 
 * the Makefile in third-party/llvm will unpack LLVM and Clang source releases
   and build them
@@ -49,7 +49,7 @@ Note:
   and some features (such as building a library instead of an executable)
   are not yet supported.
 
-* You can set the environment variable CHPL_LLVM_DEVELOPER
+* You can set the environment variable ``CHPL_LLVM_DEVELOPER``
   to request a debug build of LLVM.
 
 ---------------------------
@@ -62,15 +62,15 @@ line.
 If you pass a ``--savec`` directory, the LLVM backend will emit two .bc files
 in that directory:
 
-* chpl__module.bc is the version that will be linked
-* chpl__module-nopt.bc is the generated code without optimizations applied.
+* ``chpl__module.bc`` is the version that will be linked
+* ``chpl__module-nopt.bc`` is the generated code without optimizations applied.
 
 Passing ``--fast`` will cause LLVM optimizations to run.
 
 The ``--ccflags`` option can control which LLVM optimizations are run, using the
 same syntax as flags to clang.
 
-Additionally, if you build your compiler with CHPL_WIDE_POINTERS=node16 and
+Additionally, if you build your compiler with ``CHPL_WIDE_POINTERS=node16`` and
 then compile a program with ``--llvm --llvm-wide-opt --fast``, you will allow
 LLVM optimizations to work with global memory. For example, the Loop Invariant
 Code Motion (LICM) optimization might be able to hoist an access of a remote
@@ -79,22 +79,23 @@ performance with some benchmarks.
 
 CHPL_WIDE_POINTERS=node16 is necessary to use ``--llvm-wide-opt`` because of
 historical limitations in LLVM support for pointers in different address spaces
-having different sizes.  The default CHPL_WIDE_POINTERS=struct uses a 128-bit
-wide pointer, but CHPL_WIDE_POINTERS=node16 packs wide pointers into a
-pointer-sized value (normally 64 bits) which includes 16 bits of node number in
-order to avoid these problems.  We plan to remove this requirement in the
-future to enable ``--llvm-wide-opt`` to work with CHPL_WIDE_POINTERS=struct.
+having different sizes.  The default ``CHPL_WIDE_POINTERS=struct`` uses a
+128-bit wide pointer, but ``CHPL_WIDE_POINTERS=node16`` packs wide pointers
+into a pointer-sized value (normally 64 bits) which includes 16 bits of node
+number in order to avoid these problems.  We plan to remove this requirement in
+the future to enable ``--llvm-wide-opt`` to work with
+``CHPL_WIDE_POINTERS=struct``.
 
 Caveats:
 
-* ``--llvm-wide-opt`` currently requires CHPL_WIDE_POINTERS=node16, which means
-  that it will not work with the numa locale model since packed pointers will
-  not have a sublocale.
+* ``--llvm-wide-opt`` currently requires ``CHPL_WIDE_POINTERS=node16``, which
+  means that it will not work with the numa locale model since packed pointers
+  will not have a sublocale.
 * ``--llvm-wide-opt`` may add communication to or from a task's stack, so it
   may not function correctly for combinations of tasking and communication
   layers in which some task has a stack outside of an acceptable region for
   communication (e.g. operations on the initial 'main' thread may fail with
-  CHPL_COMM=gasnet, CHPL_GASNET_SEGMENT=fast).
+  ``CHPL_COMM=gasnet``, ``CHPL_GASNET_SEGMENT=fast``).
 
 -----------------------------
 How ``--llvm-wide-opt works``
