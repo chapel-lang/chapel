@@ -127,11 +127,8 @@ module-docs: chpldoc
 # dependency so parallel make executions correctly build chpldoc first.
 	$(MAKE) module-docs-only
 
-doc-sphinx: module-docs
-	cd doc/sphinx && ${MAKE} symlink-docs
-	cd doc/sphinx && ./run-in-venv.bash ${MAKE} html
-
-docs: doc-sphinx
+docs: module-docs
+	cd doc/sphinx && ./run-in-venv.bash ${MAKE} docs
 
 chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)

@@ -19,6 +19,13 @@ TEMPDIR="$1"
 
 cd "${TEMPDIR}/source/modules/internal/"
 
+
+
+############################
+## Common Helper Routines ##
+############################
+
+# Remove an entire line that contains a given pattern
 function removePattern() {
   if [ $# -ne 2 ] || [ ! -f $2 ]; then
     echo "Bad call to removePattern."
@@ -28,6 +35,7 @@ function removePattern() {
   mv $2.tmp $2
 }
 
+# Replace a given pattern with another
 function replace() {
   if [ $# -ne 3 ] || [ ! -f $3 ]; then
     echo "Bad call to removePattern."
@@ -37,6 +45,11 @@ function replace() {
   mv $3.tmp $3
 }
 
+# Replaces the module title with a given string. For example:
+#   `fixTitle 'Synchronization Variables' ChapelSyncvar.rst`
+# will replace "module::ChapelSyncvar" with just "Synchronization Variables".
+#
+# Note: It does not rename the .html file, it will still be ChapelSyncvar.html`
 function fixTitle() {
   if [ $# -ne 2 ] || [ ! -f $2 ]; then
     echo "Bad call to removePattern."
@@ -52,14 +65,27 @@ function fixTitle() {
   perl -0777 -i -pe "s/Module: $base\n=+\n/$1\n$header\n/g" $2
 }
 
+# Remove unwanted functions:
+#  - remove all procs/iters that start with chpl_ (they're internal)
+#  - remove all procs/iters that don't start with letters (to remove operator
+#    overloads, and functions starting with a underscores
 function removePrefixFunctions() {
   if [ $# -ne 1 ] || [ ! -f $1 ]; then
     echo "Bad call to removePattern."
     exit 1
   fi
   removePattern "proc [^a-zA-Z]" $1
+  removePattern "iter [^a-zA-Z]" $1
+
   removePattern "proc chpl_" $1
+  removePattern "iter chpl_" $1
 }
+
+
+
+###############################################################################
+## Modules to fixup listed in the same order as INTERNAL_MODULES_TO_DOCUMENT ##
+###############################################################################
 
 ## ChapelSyncvar ##
 
@@ -81,8 +107,12 @@ removePattern "proc atomic_" $file
 removePattern "proc create_" $file
 removePrefixFunctions $file
 
-replace "atomic_int64" "atomic\(T\)" $file
+replace "record" "type" $file
+
+replace "atomicflag" "atomic \(bool\)" $file
+replace "atomic_int64" "atomic \(T\)" $file
 replace "int(64)" "T" $file
+
 fixTitle "Atomics" $file
 
 ## End Atomics ##
