@@ -95,6 +95,15 @@ removePattern "param size" $file
 removePattern "record:: _tuple" $file
 fixTitle "Tuples" $file
 
+
+## ChapelIO ##
+
+file="./ChapelIO.rst"
+fixTitle "IO Support" $file
+
+## End ChapelIO ##
+
+
 ## ChapelSyncvar ##
 
 file="./ChapelSyncvar.rst"
