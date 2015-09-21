@@ -28,7 +28,7 @@ types and routines that support the :mod:`IO` module.
 Writing and Reading
 ~~~~~~~~~~~~~~~~~~~
 
-The :proc:`IO.writeln` function allows for a simple implementation
+The :proc:`~IO.writeln` function allows for a simple implementation
 of a Hello World program:
 
 .. code-block:: chapel
@@ -37,7 +37,7 @@ of a Hello World program:
  // outputs
  // Hello, World!
 
-The :proc:`IO.read` functions allow one to read values into variables as
+The :proc:`~IO.read` functions allow one to read values into variables as
 the following example demonstrates. It shows three ways to read values into
 a pair of variables ``x`` and ``y``.
 
@@ -60,7 +60,7 @@ a pair of variables ``x`` and ``y``.
 The write method on strings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :proc:`write` method can also be called on strings to write the output to a
+The ``write`` method can also be called on strings to write the output to a
 string instead of a channel. The string will be appended to.
 
 The readThis(), writeThis(), and readWriteThis() Methods
