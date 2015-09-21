@@ -127,11 +127,6 @@ module-docs: chpldoc
 # dependency so parallel make executions correctly build chpldoc first.
 	$(MAKE) module-docs-only
 
-docs: module-docs
-	-@if [ -d "doc/sphinx" ]; then \
-	cd doc/sphinx && ./run-in-venv.bash ${MAKE} docs; \
-	fi
-
 chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
@@ -144,13 +139,14 @@ clean: FORCE
 	cd modules && $(MAKE) clean
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
+	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clean
 
 cleanall: FORCE
 	cd compiler && $(MAKE) cleanall
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
-	-@if [ -d "doc/sphinx" ]; then cd doc/sphinx && $(MAKE) clean; fi
+	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) cleanall
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -162,7 +158,7 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
-	-@if [ -d "doc/sphinx" ]; then cd doc/sphinx && $(MAKE) clean; fi
+	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
 
