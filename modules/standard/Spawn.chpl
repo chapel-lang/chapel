@@ -23,7 +23,7 @@
 Support launching and interacting with other programs.
 
 Using functions in this module, one can create a subprocess
-possibly and capture its output. It is also possible to provide
+and possibly capture its output. It is also possible to provide
 input to a subprocess.
 
 To start a subprocess, use :proc:`spawn` or :proc:`spawnshell`.  To wait for
