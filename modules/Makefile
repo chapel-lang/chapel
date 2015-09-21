@@ -80,6 +80,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
+	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
