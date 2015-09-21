@@ -44,7 +44,7 @@ To run Chapel on multiple locales, the following steps are required:
      pwr5                   lapi
      pwr6                   ibv
      other                  udp
-     =====================  ==================
+     ====================  ===================
 
 
 #.
