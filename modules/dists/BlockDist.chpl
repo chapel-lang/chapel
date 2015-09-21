@@ -205,14 +205,14 @@ The ``Block`` class constructor is defined as follows:
 
   .. code-block:: chapel
 
-    proc Block(boundingBox: domain,
-                targetLocales: [] locale  = Locales, 
-                dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
-                dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
-                dataParMinGranularity     = // value of  dataParMinGranularity      config const,
-                param rank                = boundingBox.rank,
-                type  idxType             = boundingBox.idxType)
-
+    proc Block(
+      boundingBox: domain,
+      targetLocales: [] locale  = Locales, 
+      dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
+      dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
+      dataParMinGranularity     = // value of  dataParMinGranularity      config const,
+      param rank                = boundingBox.rank,
+      type  idxType             = boundingBox.idxType)
 
 The arguments ``boundingBox`` (a domain) and ``targetLocales`` (an array)
 define the mapping of any index of ``idxType`` type to a locale

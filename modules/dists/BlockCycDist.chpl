@@ -96,9 +96,9 @@ to the ID of the locale to which it is mapped.
     use BlockCycDist;
 
     const Space = {1..8, 1..8};
-    const D: domain(2) dmapped BlockCyclic(startIdx=Space.low, 
-                                              blocksize=(2,3)) 
-           = Space;
+    const D: domain(2)
+      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3)) 
+      = Space;
     var A: [D] int;
 
     forall a in A do
@@ -126,12 +126,13 @@ The ``BlockCyclic`` class constructor is defined as follows:
 
   .. code-block:: chapel
 
-    proc BlockCyclic(startIdx,
-                       blocksize,
-                       targetLocales: [] locale = Locales, 
-                       tasksPerLocale = 0,
-                       param rank: int  = // inferred from startIdx argument,
-                       type idxType     = // inferred from startIdx argument )
+    proc BlockCyclic(
+      startIdx,
+      blocksize,
+      targetLocales: [] locale = Locales, 
+      tasksPerLocale = 0,
+      param rank: int  = // inferred from startIdx argument,
+      type idxType     = // inferred from startIdx argument )
 
 The argument ``startIdx`` is a tuple of integers defining an index
 that will be distributed to the first locale in ``targetLocales``.

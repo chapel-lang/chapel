@@ -51,7 +51,6 @@ config param disableCyclicLazyRAD = defaultDisableLazyRADOpt;
 //   disableCyclicLazyRAD
 //   
 /*
-
 This Cyclic distribution maps indices to locales in a round-robin pattern
 starting at a given index.
 
@@ -112,13 +111,14 @@ The ``Cyclic`` class constructor is defined as follows:
 
   .. code-block:: chapel
 
-    proc Cyclic(startIdx,
-                 targetLocales: [] locale = Locales,
-                 dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
-                 dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
-                 dataParMinGranularity     = // value of  dataParMinGranularity      config const,
-                 param rank: int  = // inferred from startIdx argument,
-                 type idxType     = // inferred from startIdx argument )
+    proc Cyclic(
+      startIdx,
+      targetLocales: [] locale = Locales,
+      dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
+      dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
+      dataParMinGranularity     = // value of  dataParMinGranularity      config const,
+      param rank: int  = // inferred from startIdx argument,
+      type idxType     = // inferred from startIdx argument )
 
 The argument ``startIdx`` is a tuple of integers defining an index that
 will be distributed to the first locale in ``targetLocales``.

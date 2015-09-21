@@ -44,6 +44,8 @@ config param traceReplicatedDist = false;
 //
 // (global) distribution class
 //
+// chpldoc TODO
+//   nicer example - pull from primers/distributions.chpl
 
 /*
 This Replicated distribution causes a domain and its arrays
@@ -51,7 +53,7 @@ to be replicated across the desired locales (all the locales by default).
 An array receives a distinct set of elements - a "replicand" -
 allocated on each locale.
 
-In other words, mapping a domain with ReplicatedDist gives it
+In other words, a ReplicatedDist-distributed domain has
 an implicit additional dimension - over the locales,
 making it behave as if there is one copy of its indices per locale.
 
@@ -141,8 +143,9 @@ The ``ReplicatedDist`` class constructor is defined as follows:
 
   .. code-block:: chapel
 
-    proc ReplicatedDist(targetLocales: [] locale = Locales,
-                           purposeMessage: string = "used to create a ReplicatedDist")
+    proc ReplicatedDist(
+      targetLocales: [] locale = Locales,
+      purposeMessage: string = "used to create a ReplicatedDist")
 
 The array ``targetLocales`` must be "consistent", as defined below.
 
