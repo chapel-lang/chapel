@@ -1,6 +1,9 @@
-===================================
-Chapel programs, tasks, and threads
-===================================
+============
+Chapel Tasks
+============
+
+[NOAKES and RONAWHO: Some minor subjective concerns about putting table of
+contents here.  Helpful or distracting?].
 
 .. contents::
 
@@ -12,10 +15,12 @@ Chapel programs create new tasks via the begin, cobegin, and coforall
 statements.  Tasks are computations that can conceptually execute
 concurrently, though they may or may not do so in practice.  Tasks are
 executed using threads, which are the tasking layer's mechanism for
-executing work in parallel.  The implementation of tasks and threads
-depends on the target platform ($CHPL_TARGET_PLATFORM) and tasking
-package ($CHPL_TASKS) selected by the user.  For an introduction to
-these variables, refer to README.chplenv.
+executing work in parallel.
+
+[NOAKES and RONAWHO: This section takes some care to define
+"task" but leaves "thread" and "tasking layer" more or less undefined.
+Possibly a smal introduction to these terms?]
+
 
 All tasking layers support configuration constants to control system
 resources such as the number of threads used to execute tasks and the
@@ -109,7 +114,7 @@ create more or shorter-lived tasks than on programs which create fewer
 or longer-lived ones.
 
 As described in `Task Call Stacks`_, the execution-time default for
-stack overflow checking can be set by using the "--[no-]stack-checks"
+stack overflow checking can be set by using the ``--[no-]stack-checks``
 compiler option.  But whatever the default is, at execution time stack
 overflow detection can be turned off by setting the environment variable
 ``QT_GUARD_PAGES`` to any of the values "0", "no", or "false", or on by
@@ -339,7 +344,7 @@ CHPL_TASKS == fifo
   with an assumption that some minimum number of tasks are executing
   concurrently, setting ``CHPL_RT_NUM_THREADS_PER_LOCALE`` lower than this
   can result in deadlock if there are not enough threads to implement
-  all of the required tasks.  The -b/--blockreport flag can help debug
+  all of the required tasks.  The ``-b/--blockreport`` flag can help debug
   programs like this that appear to be deadlocked.
 
 CHPL_TASKS == qthreads
@@ -370,10 +375,10 @@ environment variable and the values it can take.
 When a task's call chain becomes so deep that it needs more space than
 the size of its call stack, stack overflow occurs.  Whether or not a
 program checks for stack overflow checking at execution time can be
-specified when it is compiled, via the --[no-]stack-checks compilation
-option.  The compile-time default is --stack-checks; --no-stack-checks
-can be given directly, and is also implied by --no-checks, which in turn
-is implied by --fast.  By default stack overflow checks are enabled.
+specified when it is compiled, via the ``--[no-]stack-checks`` compilation
+option.  The compile-time default is ``--stack-checks``; ``--no-stack-checks``
+can be given directly, and is also implied by ``--no-checks``, which in turn
+is implied by ``--fast``.  By default stack overflow checks are enabled.
 
 Chapel does not yet have a consistent, implementation-independent way to
 deal with call stack overflow.  Each tasking layer implementation
@@ -401,7 +406,7 @@ CHPL_TASKS == qthreads
   Like fifo tasks (see above), qthreads tasking can place guard pages
   beyond the ends of task stacks.  Stack overflow then results in the
   system's usual response to referencing memory that cannot be reached.
-  With qthreads tasking, the compiler --stack-checks setting specifies
+  With qthreads tasking, the compiler ``--stack-checks`` setting specifies
   the default setting for execution-time stack overflow checking.  Final
   control over stack overflow checks is provided by the ``QT_GUARD_PAGE``
   environment variable.  See the qthreads subsection of `Task
@@ -409,7 +414,7 @@ CHPL_TASKS == qthreads
 
 CHPL_TASKS == massivethreads
 ----------------------------
-  No stack overflow detection is available.  If the --stack-checks
+  No stack overflow detection is available.  If the ``--stack-checks``
   option is given to the compiler and ``CHPL_TASKS==massivethreads``,
   the compiler emits a warning that stack checks cannot be done.
 
@@ -447,7 +452,7 @@ the program with respect to its tasks.
     they are waiting on a sync or single variable.  In order to avoid
     unnecessary overheads, in the implementations this method will not
     generate meaningful information unless the program was run with the
-    -b/--blockreport flag.
+    ``-b/--blockreport`` flag.
 
   totalThreads()
     returns the number of threads that have been created
