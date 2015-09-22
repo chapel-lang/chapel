@@ -4,10 +4,17 @@
 Using Chapel on IBM Machines
 ============================
 
-[Note, if you are using Chapel on IBM's MareNostrum, you should refer
-to README.marenostrum in this directory]
+.. warning::
+    Chapel has not been recently tested on IBM systems.  The information
+    presented here may be stale or inaccurate.  If using Chapel on IBM
+    systems is important to you, please let us know at
+    chapel_info@cray.com.
 
-We only have limited experience using Chapel on IBM platforms to date.
+.. note::
+    If you are using Chapel on IBM's MareNostrum, you should refer to
+    :ref:`readme-marenostrum`.]
+
+We only have limited experience using Chapel on IBM systems.
 This file contains notes that reflect our current experience, focusing
 first on PowerPC-based systems and then BG systems.  If you are not
 familiar with Chapel, it is recommended that you first try the
@@ -20,10 +27,10 @@ PowerPC SMP clusters
 We have run Chapel on clusters of Power5 and Power6 SMP nodes using
 the following settings:
 
-1) Set ``CHPL_HOME`` and ``MANPATH`` as indicated in README.chplenv.
+#. Set ``CHPL_HOME`` and ``MANPATH`` as indicated in :ref:`readme-chplenv`.
 
 
-2) Set ``CHPL_HOST_PLATFORM`` to ``pwr5`` for a Power5 cluster or ``pwr6`` for a
+#. Set ``CHPL_HOST_PLATFORM`` to ``pwr5`` for a Power5 cluster or ``pwr6`` for a
    Power6 cluster.  For example:
 
    .. code-block:: sh
@@ -34,13 +41,13 @@ the following settings:
    default.
 
 
-3) Set CHPL_COMM to gasnet.  For example:
+#. Set ``CHPL_COMM`` to gasnet.  For example:
 
    .. code-block:: sh
 
      export CHPL_COMM=gasnet
 
-   See README.multilocale for further information about running using
+   See :ref:`readme-multilocale` for further information about running using
    multiple locales and GASNet.
 
    Note: if you are using an installation in which your xlc/xlC
@@ -53,7 +60,7 @@ the following settings:
      export OBJECT_MODE=64
 
 
-4) Make sure you're in the top-level chapel/ directory:
+#. Make sure you're in the top-level chapel/ directory:
 
    .. code-block:: sh
 
@@ -66,7 +73,7 @@ the following settings:
      gmake
 
 
-5) Set your ``PATH`` to include the directory ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM``
+#. Set your ``PATH`` to include the directory ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM``
    which is created when you build the compiler.  For example:
 
    .. code-block:: sh
@@ -74,7 +81,7 @@ the following settings:
      export PATH="$PATH:$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 
 
-6) Compile your Chapel program as usual.  See README.compiling for
+#. Compile your Chapel program as usual.  See :ref:`readme-compiling` for
    details.  For example:
 
    .. code-block:: sh
@@ -82,7 +89,7 @@ the following settings:
      chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
-7) When you compile a multi-locale program for pwr5 or pwr6, you will
+#. When you compile a multi-locale program for pwr5 or pwr6, you will
    get a single binary by default (e.g., ``hello6-taskpar-dist``).  In
    order to run this program properly, you will typically need to
    write a loadleveler script that requests a number of compute nodes
@@ -96,9 +103,9 @@ the following settings:
    site to another so check with your site's documentation for
    details.
 
-   We started work on a loadleveler launcher (see README.launcher for
+   We started work on a loadleveler launcher (see :ref:`readme-launcher` for
    a general description of the role of launchers in Chapel) which can
-   be utilized by setting the ``CHPL_LAUNCH`` environment variable to
+   be utilized by setting the ``CHPL_LAUNCHER`` environment variable to
    ``loadleveler``.  At the time of the release, this launcher was not
    sufficiently portable, robust, configurable, or interactive to
    warrant being made the default for Power5 or Power6 machines.  If
@@ -136,5 +143,5 @@ Blue Gene/P
 We have done some initial experimentation with the GASNet team to try
 and run Chapel on BG/P with some limited success, however more effort
 is required to make this a stable and supported platform.  If running
-Chapel on BG/P would be of interest to you, please contact us and let
-us know.
+Chapel on BG/P would be of interest to you, please let us know at
+chapel_info@cray.com.
