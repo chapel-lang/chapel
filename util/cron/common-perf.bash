@@ -8,5 +8,16 @@ source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common-fast.bash
 
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
-export CHPL_NIGHTLY_LOGDIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
-export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
+
+if [ -z "${CHPL_TEST_PERF_CONFIG_NAME}" ] ; then
+  export CHPL_TEST_PERF_CONFIG_NAME="$(hostname -s)"
+fi
+export CHPL_NIGHTLY_LOGDIR="$logdir_prefix/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME"
+export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
+
+export CHPL_TEST_PERF_DIR="$CHPL_NIGHTLY_LOGDIR"
+export CHPL_TEST_COMP_PERF_DIR="$CHPL_NIGHTLY_LOGDIR"
+
+# Our perf jobs require PyYAML for generating annotations but we don't have
+# approval to include it in the regular test-venv requirements globally
+echo "PyYAML==3.11" >> "$CHPL_HOME/third-party/chpl-venv/test-requirements.txt"

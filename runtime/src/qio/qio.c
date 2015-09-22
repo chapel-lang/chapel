@@ -57,6 +57,28 @@
 
 #include <assert.h>
 
+// Default to using close-on-exec for systems that support it.
+#ifdef O_CLOEXEC
+#define QIO_OCLOEXEC O_CLOEXEC
+#else
+#define QIO_OCLOEXEC 0
+#endif
+
+
+// Figure out if we have GLIBC 2.7 or greater
+// (to enable 'e' added to fopen mode strings to
+// enable close-on-exec).
+#define QIO_FOPEN_CLOEXEC
+
+#ifdef __GLIBC__
+#ifdef __GLIBC_MINOR__
+#if __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 7
+#undef QIO_FOPEN_CLOEXEC
+#define QIO_FOPEN_CLOEXEC "e"
+#endif
+#endif
+#endif
+
 ssize_t qio_too_small_for_default_mmap = 16*1024;
 ssize_t qio_too_large_for_default_mmap = 64*1024*((size_t)1024*1024);
 ssize_t qio_mmap_chunk_iobufs = 128; // mmap 128 iobufs at a time (8M)
@@ -1017,6 +1039,7 @@ qioerr qio_file_close(qio_file_t* f)
   return _qio_file_do_close(f);
 }
 
+
 qioerr qio_file_sync(qio_file_t* f)
 {
   qioerr err = 0;
@@ -1085,15 +1108,23 @@ qioerr open_flags_for_string(const char* s, int *flags_out)
 static
 const char* string_for_open_flags(int flags)
 {
-  if( flags == O_RDONLY ) return "r";
-  else if( flags == O_RDWR ) return "r+";
-  else if( flags == (O_WRONLY | O_CREAT | O_TRUNC) ) return "w";
-  else if( flags == (O_RDWR | O_CREAT | O_TRUNC) ) return "w+";
-  else if( flags == (O_WRONLY | O_CREAT | O_APPEND) ) return "a";
-  else if( flags == (O_RDWR | O_CREAT | O_APPEND) ) return "a+";
+  // Also add 'e' at the end to indicate to glibc that the
+  // file should be opened with close-on-exec enabled.
+  if( flags == O_RDONLY )
+    return "r" QIO_FOPEN_CLOEXEC;
+  else if( flags == O_RDWR )
+    return "r+" QIO_FOPEN_CLOEXEC;
+  else if( flags == (O_WRONLY | O_CREAT | O_TRUNC) )
+    return "w" QIO_FOPEN_CLOEXEC;
+  else if( flags == (O_RDWR | O_CREAT | O_TRUNC) )
+    return "w+" QIO_FOPEN_CLOEXEC;
+  else if( flags == (O_WRONLY | O_CREAT | O_APPEND) )
+    return "a" QIO_FOPEN_CLOEXEC;
+  else if( flags == (O_RDWR | O_CREAT | O_APPEND) )
+    return "a+" QIO_FOPEN_CLOEXEC;
   else {
     assert(0);
-    return "r";
+    return "r" QIO_FOPEN_CLOEXEC;
   }
 }
 // always enable reading (possibly in addition to writing).
@@ -1129,6 +1160,7 @@ qioerr qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mod
     if( method == QIO_METHOD_MMAP ) {
       flags = flags_for_mmap_open(flags);
     }
+    flags |= QIO_OCLOEXEC;
     err = qio_int_to_err(sys_open(pathname, flags, mode, &fd));
   }
 
@@ -1142,7 +1174,11 @@ qioerr qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mod
   return qio_file_init(file_out, fp, fd, iohints | QIO_HINT_OWNED, style, fp != NULL);
 }
 
-qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style, void* fs_info, const qio_file_functions_t* s)
+qioerr qio_file_open_usr(
+    qio_file_t** file_out, const char* pathname,
+    int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style,
+    void* fs_info,
+    const qio_file_functions_t* s)
 {
   qioerr err = 0;
   void* file_info;
@@ -1244,7 +1280,10 @@ qioerr qio_file_open_access(qio_file_t** file_out, const char* pathname, const c
   return qio_file_open(file_out, pathname, flags, mode, iohints, style);
 }
 
-qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, const qio_style_t* style, void* fs_info, const qio_file_functions_t* s)
+qioerr qio_file_open_access_usr(
+    qio_file_t** file_out, const char* pathname, const char* access,
+    qio_hint_t iohints, const qio_style_t* style,
+    void* fs_info, const qio_file_functions_t* s)
 {
   qioerr err = 0;
   int flags = 0;
@@ -1253,7 +1292,8 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, con
   err = open_flags_for_string(access, &flags);
   if( err ) return err;
 
-  return qio_file_open_usr(file_out, pathname, flags, mode, iohints, style, fs_info, s);
+  return qio_file_open_usr(file_out, pathname, flags, mode, iohints,
+      style, fs_info, s);
 }
 
 qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style)

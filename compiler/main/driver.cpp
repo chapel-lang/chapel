@@ -114,6 +114,7 @@ bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
+bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
@@ -537,6 +538,7 @@ static void verifySaveCDir(const ArgumentState* state, const char* unused) {
 static void turnOffChecks(const ArgumentState* state, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
+  fNoFormalDomainChecks = true;
   fNoLocalChecks  = true;
   fNoStackChecks  = true;
   fNoCastChecks = true;
@@ -577,15 +579,11 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoTupleCopyOpt = false;
   fNoPrivatization = false;
   fNoChecks = true;
-  fNoBoundsChecks = true;
-  fNoLocalChecks = true;
   fIgnoreLocalClasses = false;
-  fNoNilChecks = true;
-  fNoStackChecks = true;
-  fNoCastChecks = true;
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
+  turnOffChecks(state, unused);
 }
 
 static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
@@ -728,6 +726,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL}, 
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},

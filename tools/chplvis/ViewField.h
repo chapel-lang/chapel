@@ -26,6 +26,7 @@
 #include <FL/Fl_Box.H>
 #include "LocaleWin.h"
 #include "CommWin.h"
+#include "ConcurrencyWin.h"
 
 #include <string>
 
@@ -34,12 +35,17 @@
 // Information stored for each locale
 
 struct localeInfo {
-  // Locale Window information.
-  LocaleWin *win;
-  int x;  // Window location
+  // locale box location on view area
+  int x; 
   int y;
   int w;
   int h;
+  // Locale Window information.
+  LocaleWin *win;
+  // Concurrency Window information.
+  ConcurrencyWin *ccwin;
+  // Locale box ... for tool tips.
+  Fl_Box *b;
 };
 
 // Information stored for every comm direction
@@ -80,26 +86,15 @@ class ViewField : public Fl_Box {
     int getSize;            // size used for doing deallocate after changeing numlocales
     commInfo **comms;       // Also need to de/reallocate after changing numlocales
 
-    tagInfo *tags;    // Information for creating the tag menu
-    int tagsSize;
+    bool useUTags;
     int tagMenu;
 
     // Keep track of what is being displayed
-    enum show_what {show_Tasks, show_CPU, show_Clock} infoTop;
+    enum show_what {show_Tasks, show_CPU, show_Clock, show_Concurrency} infoTop;
 
     DataModel::tagData *curTagData;
-/*
-    int maxTasks;
-    double maxCpu;
-    double maxClock;
-*/
-
+    int curTagNum;
     bool showcomms;
-
-/*
-    int maxComms;
-    long maxDatasize; 
-*/
 
     // Methods
 
@@ -109,14 +104,15 @@ class ViewField : public Fl_Box {
 
   ViewField (int bx, int by, int bw, int bh, const char *label = 0);
 
-  ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh,
-             const char *label = 0);
-
   //  Virtual methods to override
   void draw (void);
   int handle (int event);
 
   // Processing routines
+
+  bool usingUTags() { return useUTags; }
+
+  void toggleUTags() { useUTags = !useUTags; }
 
   void selectData (int tagNum);
 
@@ -133,6 +129,9 @@ class ViewField : public Fl_Box {
 
   int  getNumLocales (void) { return numlocales; }
 
+  // Add an invisible under the locale
+  void setTooltip ( int ix, bool isInt, int ival, double fval);
+
   // Draw a "locale box, with ix as the label on it
   void drawLocale (int ix, Fl_Color col);
 
@@ -143,6 +142,7 @@ class ViewField : public Fl_Box {
   void showTasks (void) { infoTop = show_Tasks; }
   void showCpu (void  ) { infoTop = show_CPU; }
   void showClock (void) { infoTop = show_Clock; }
+  void showConcurrency (void) { infoTop = show_Concurrency; }
 
   void showComms (void) { showcomms = true; }
   void showDsize (void) { showcomms = false; }
@@ -171,17 +171,23 @@ class ViewField : public Fl_Box {
   void hideAllLocaleWindows (void)
     {
       int ix;
-      for (ix = 0; ix < numlocales; ix++)
+      for (ix = 0; ix < numlocales; ix++) {
         if (theLocales[ix].win != NULL)
           theLocales[ix].win->hide();
+        if (theLocales[ix].ccwin != NULL)
+          theLocales[ix].ccwin->hide();
+      }
     }        
 
   void showAllLocaleWindows (void)
     {
       int ix;
-      for (ix = 0; ix < numlocales; ix++)
+      for (ix = 0; ix < numlocales; ix++) {
         if (theLocales[ix].win != NULL)
           theLocales[ix].win->show();
+        if (theLocales[ix].ccwin != NULL)
+          theLocales[ix].ccwin->show();
+      }
     }
 
 };

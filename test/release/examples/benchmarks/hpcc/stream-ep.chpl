@@ -88,44 +88,27 @@ proc main() {
   //
   coforall loc in Locales do on loc {
 
-    //
-    // *** We declare these variables outside of the local block since
-    // *** we'll need to access them when we write back to the global
-    // *** aggregates declared above.
-    //
-    var validAnswer: bool;
     var execTime: [1..numTrials] real;
 
     //
-    // *** Indicates that all of the code in this block is local to
-    // *** this locale.  There is no communication.  A violation will
-    // *** result in an error, though error checking is disabled with
-    // *** --fast or --no-checks.
+    // *** A, B, and C are the three local vectors
     //
-    local {
+    var A, B, C: [1..m] elemType;
+
+    initVectors(B, C);    // Initialize the input vectors, B and C
+
+    for trial in 1..numTrials {                        // loop over the trials
+      const startTime = getCurrentTime();              // capture the start time
 
       //
-      // *** A, B, and C are the three local vectors
+      // *** The main loop looks identical to stream.chpl.  However,
+      // *** in this version we are iterating over arrays that are
+      // *** not distributed.
       //
-      var A, B, C: [1..m] elemType;
+      forall (a, b, c) in zip(A, B, C) do
+        a = b + alpha * c;
 
-      initVectors(B, C);    // Initialize the input vectors, B and C
-
-      for trial in 1..numTrials {                        // loop over the trials
-        const startTime = getCurrentTime();              // capture the start time
-
-        //
-        // *** The main loop looks identical to stream.chpl.  However,
-        // *** in this version we are iterating over arrays that are
-        // *** not distributed.
-        //
-        forall (a, b, c) in zip(A, B, C) do
-          a = b + alpha * c;
-
-        execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
-      }
-
-      validAnswer = verifyResults(A, B, C);              // verify...
+      execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
     }
 
     //
@@ -134,7 +117,7 @@ proc main() {
     // *** can write to them in parallel.
     //
     minTimes[here.id] = min reduce execTime;
-    validAnswers[here.id] = validAnswer;
+    validAnswers[here.id] = verifyResults(A, B, C);
   }
 
   //
@@ -165,9 +148,7 @@ proc printConfiguration() {
 // *** stream of random numbers is used across all of the locales.
 // ***
 // *** In this version, we've omitted a way to print the arrays.  This
-// *** ensures determinism of output.  Printing the arrays also
-// *** violates the locality constraint imposed by the local block
-// *** from which these functions are called.
+// *** ensures determinism of output.
 //
 // Initialize vectors B and C using a random stream of values
 //

@@ -26,6 +26,9 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
 SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
+MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
+DOC_SPHINX=${CHPL_MAKE_HOME}/doc/sphinx
+
 default: all
 
 all: $(SYS_CTYPES_MODULE)
@@ -54,6 +57,7 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MODULES_TO_DOCUMENT = \
 	standard/AdvancedIters.chpl \
 	standard/Assert.chpl \
+	standard/Barrier.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
@@ -76,17 +80,29 @@ MODULES_TO_DOCUMENT = \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
+	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
+INTERNAL_MODULES_TO_DOCUMENT = \
+	internal/ChapelIO.chpl \
+	internal/ChapelSyncvar.chpl \
+	internal/Atomics.chpl
+
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT) \
+	$(INTERNAL_MODULES_TO_DOCUMENT)
+	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
+	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
+	rm -rf ${MODULE_SPHINX}
 
 clean-documentation:
 	rm -rf ./docs
+	rm -rf $(MODULE_SPHINX)
 
 FORCE:
 

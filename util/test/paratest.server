@@ -57,6 +57,11 @@ $junit_remove_prefix = "";
 $timeout = -1;
 if (exists $ENV{CHPL_PARATEST_TIMEOUT}) { $timeout = $ENV{CHPL_PARATEST_TIMEOUT}; } 
 
+# updated if -valgrind options are given
+$ENV{'CHPL_TEST_VGRND_COMP'} = "off";
+$ENV{'CHPL_TEST_VGRND_EXE'} = "off";
+
+
 $localhost = `uname -n`;
 ($localnode, $junk) = split (/\./, $localhost, 2);
 chomp $localnode;
@@ -592,9 +597,13 @@ sub main {
                 exit (8);
             }
         } elsif (/^-valgrind/) {
-            $valgrind = 1;
             if (/^-valgrindexe/) {
                 $valgrind = 2;
+                $ENV{'CHPL_TEST_VGRND_EXE'} = "on";
+            } else {
+                $valgrind = 1;
+                $ENV{'CHPL_TEST_VGRND_COMP'} = "on";
+                $ENV{'CHPL_TEST_VGRND_EXE'} = "on";
             }
         } elsif (/^-show-all-errors/) {
             $show_all_errors = 1;

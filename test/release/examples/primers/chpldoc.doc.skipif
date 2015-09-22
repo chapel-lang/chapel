@@ -1,2 +1,0 @@
-# cygwin32 nightly test system cannot install chpldoc
-CHPL_TARGET_PLATFORM == cygwin32

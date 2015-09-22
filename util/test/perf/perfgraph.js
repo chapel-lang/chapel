@@ -119,8 +119,8 @@ if (!multiConfs) { configurations = ['']; }
 var defaultConfiguration = configurations[0];
 
 // Experimental: used to toggle how stroke pattern and line colors are used for
-// multi-configs
-var diffColorForEachConfig = false;
+// multi-configs. Default to using it for 16 node xc in a hacky way
+var diffColorForEachConfig = pageTitle.indexOf("16 node XC") >= 0;
 
 // This is used to get the next div for the graph and legend. This is important
 // for graph expansion because we need to be able to add the expanded graphs

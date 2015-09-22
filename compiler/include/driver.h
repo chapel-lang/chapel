@@ -42,6 +42,7 @@ extern bool fNoInlineIterators;
 extern bool fNoloopInvariantCodeMotion;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
+extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;

@@ -38,7 +38,7 @@ proc main() {
 
       dgemm(/*replA(aBlkD),
             replB(bBlkD),
-            */Ab(cBlkD));
+            */Ab(cBlkD).reindex({1..blk, 1..blk}));
   }
 
   writeln("finish");

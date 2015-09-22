@@ -665,7 +665,7 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
   
-  config param parallelInitElts=false;
+  config param parallelInitElts=true;
   proc init_elts(x, s, type t) {
     //
     // Q: why is the declaration of 'y' in the following loops?
@@ -678,35 +678,37 @@ module ChapelBase {
     //
 
     //
-    // Heuristically determine if we should do parallel initialization. We want
-    // each task to "own" at least a page in order to get good first-touch
-    // behavior and to avoid false-sharing. We naively assume the parallel
-    // range iterator will create maxTaskPar tasks so we want the array to be
-    // at least (maxTaskPar * pagesizes) big. For non-numeric element types we
-    // guess that each element is at least 8 bytes with the assumption that
-    // most record/classes/arrays will be at least 8 bytes.
+    // Heuristically determine if we should do parallel initialization. The
+    // current heuristic really just checks that we have a numeric array that's
+    // at least 2MB. This value was chosen experimentally: Any smaller and the
+    // cost of a forall (mostly the task creation) outweighs the benefit of
+    // using multiple tasks. This was tested on a 2 core laptop, 8 core
+    // workstation, and 24 core XC40.
     //
-    // TODO: improve the heuristic for non-numeric types
+    // Ideally we want to be able to do parallel initialization for all types,
+    // but we're currently blocked by an issue with arrays of arrays and thus
+    // arrays of aggregate types where at one field is an array. The issue is
+    // basically that an array's domain stores a linked list of all its arrays
+    // and removal becomes expensive when addition and removal occur in
+    // different orders. We don't currently have a good way to check if an
+    // aggregate type contains arrays, so we limit parallel init to numeric
+    // types.
     //
-    // TODO: Note that we could do even better if the range had an iterator
-    // that supported local overrides of dataParTasksPerLocale or
-    // MinGranularity. The current heuristic will always try to use
-    // dataParTasksPerLocale even if, say, arrsize is pagesize+1, where we'd
-    // really only want to use 2 tasks there or set minGranularity to pagesize.
-    // But at the very least, the current approach differentiates between
-    // larger and smaller arrays.
+    // Long term we probably want to store the domain's arrays as an
+    // associative domain or some data structure with < log(n) find/add/remove
+    // times. Currently we can't do that because the domain's arrays are part
+    // of the base domain, so we have a circular reference. As a stepping
+    // stone, we could do parallel init for plain old data (POD) types.
     //
 
-    if parallelInitElts {
-      extern proc chpl_getSysPageSize():size_t;
-      const pagesizeInBytes = chpl_getSysPageSize().safeCast(int);
+    if parallelInitElts && isNumericType(t) {
 
-      const elemsizeInBytes = if (isNumericType(t)) then numBytes(t) else 8;
+      param elemsizeInBytes = numBytes(t);
       const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
-      const heuristicThresh = pagesizeInBytes * here.maxTaskPar;
+      param heuristicThresh = 2 * 1024 * 1024;
       const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
 
-      if heuristicWantsPar {
+      if heuristicWantsPar && here != dummyLocale {
         forall i in 1..s {
           pragma "no auto destroy" var y: t;
           __primitive("array_set_first", x, i-1, y);
@@ -824,12 +826,13 @@ module ChapelBase {
   //
   
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
-  type taskCntType = if useAtomicTaskCnt then atomic int
-                                         else int;
+
   pragma "no default functions"
   class _EndCount {
-    var i: atomic int,
-        taskCnt: taskCntType,
+    type iType;
+    type taskType;
+    var i: iType,
+        taskCnt: taskType,
         taskList: _task_list = _defaultOf(_task_list);
   }
   
@@ -837,10 +840,25 @@ module ChapelBase {
   // statement needed, because the task should be running on the same
   // locale as the sync/cofall/cobegin was initiated on and thus the
   // same locale on which the object is allocated.
+  //
+  // TODO: 'taskCnt' can sometimes be local even if 'i' has to be remote.
+  // It is currently believed that only a remote-begin will want a network
+  // atomic 'taskCnt'. There should be a separate argument to control the type
+  // of 'taskCnt'.
   pragma "dont disable remote value forwarding"
-  inline proc _endCountAlloc() {
-    return new _EndCount();
+  inline proc _endCountAlloc(param forceLocalTypes : bool) {
+    type taskCntType = if !forceLocalTypes && useAtomicTaskCnt then atomic int
+                                           else int;
+    if forceLocalTypes {
+      return new _EndCount(chpl__processorAtomicType(int), taskCntType);
+    } else {
+      return new _EndCount(chpl__atomicType(int), taskCntType);
+    }
   }
+
+  // Compiler looks for this variable to determine the return type of
+  // the "get end count" primitive.
+  type _remoteEndCountType = _endCountAlloc(false).type;
   
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
@@ -855,7 +873,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   pragma "no remote memory fence"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
-    if useAtomicTaskCnt {
+    if isAtomic(e.taskCnt) {
       e.i.add(1, memory_order_release);
       e.taskCnt.add(1, memory_order_release);
     } else {
@@ -897,7 +915,7 @@ module ChapelBase {
     e.i.waitFor(0, memory_order_acquire);
 
     if countRunningTasks {
-      const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
+      const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
       // taskDec-1 to adjust for the task that was waiting for others to finish
       here.runningTaskCntSub(taskDec-1);  // increment is in _upEndCount()
     } else {
@@ -1122,29 +1140,27 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
-  pragma "auto destroy fn" inline proc chpl__autoDestroy(x: object) { }
-  pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
-  pragma "auto destroy fn"
+  inline proc chpl__autoDestroy(x: object) { }
+  inline proc chpl__autoDestroy(type t)  { }
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
-  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: _distribution) {
+  proc chpl__autoDestroy(x: _distribution) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: domain) {
+  proc chpl__autoDestroy(x: domain) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: []) {
+  proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
   
