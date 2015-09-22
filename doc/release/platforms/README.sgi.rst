@@ -1,8 +1,14 @@
 .. _readme-sgi:
 
-============================
-Using Chapel on an SGI Altix
-============================
+=========================
+Using Chapel on SGI Altix
+=========================
+
+.. warning::
+    Chapel has not been recently tested on SGI Altix.  The information
+    presented here may be stale or inaccurate.  If using Chapel on SGI
+    Altix  is important to you, please let us know at
+    chapel_info@cray.com.
 
 The Chapel team does not have access to an SGI Altix for the purposes
 of testing, so this file describes the experiences that other users
@@ -49,8 +55,7 @@ This can be done using the following settings:
 
 .. code-block:: sh
 
-        go to chapel source directory
-
+        # cd to chapel source directory
         export CHPL_HOME=$(pwd)
         export CHPL_COMM=gasnet
         export CHPL_COMM_SUBSTRATE=mpi
@@ -79,10 +84,3 @@ following settings:
         export MPI_LIBS=-lmpi
 
 Then build the Chapel compiler/runtime again using ``make`` or ``gmake``.
-
-Over time, we would like to minimize the number of settings that a
-user has to make manually. We would like to introduce an ``altix``
-platform for Chapel that implies the above settings in our scripts and
-Makefiles.  If you would like to help with this effort or can provide
-us with an account so that we can develop it (or Makefile patches that
-we could commit back to our source tree), please let us know.

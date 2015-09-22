@@ -1,8 +1,8 @@
 .. _readme-cygwin:
 
-========================
-Using Chapel with Cygwin
-========================
+======================
+Using Chapel on Cygwin
+======================
 
 Chapel can be used on both 32-bit and 64-bit installations of Cygwin.
 Chapel can be sensitive to directories with spaces, but otherwise it
@@ -34,14 +34,13 @@ please let us know at chapel_info@cray.com.
 Required Packages
 -----------------
 
-In order to get the required tools listed in README.prereqs, Cygwin
-users will need to ensure that the following packages are installed in
-addition to the standard set of Cygwin packages:
+In order to get the required tools listed in :ref:`readme-prereqs`,
+Cygwin users will need to ensure that the following packages are
+installed in addition to the standard set of Cygwin packages:
 
     Devel
       + gcc and gcc-g++
       + make
-      + patch
     Perl
       + perl
     Python
