@@ -86,7 +86,20 @@ MODULES_TO_DOCUMENT = \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
+DISTS_TO_DOCUMENT = \
+	layouts/LayoutCSR.chpl \
+	dists/BlockDist.chpl \
+	dists/CyclicDist.chpl \
+	dists/BlockCycDist.chpl \
+	dists/ReplicatedDist.chpl \
+	dists/PrivateDist.chpl \
+	dists/DimensionalDist2D.chpl \
+	dists/dims/ReplicatedDim.chpl \
+	dists/dims/BlockDim.chpl \
+	dists/dims/BlockCycDim.chpl \
+
 INTERNAL_MODULES_TO_DOCUMENT = \
+	internal/ChapelTuple.chpl \
 	internal/ChapelIO.chpl \
 	internal/ChapelSyncvar.chpl \
 	internal/Atomics.chpl
@@ -94,10 +107,14 @@ INTERNAL_MODULES_TO_DOCUMENT = \
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT) \
-	$(INTERNAL_MODULES_TO_DOCUMENT)
+	$(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
+	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
+	rm -f  ${DOC_SPHINX}/source/modules/dists/DSIUtil.rst
 	rm -rf ${MODULE_SPHINX}
 
 clean-documentation:
