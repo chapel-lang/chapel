@@ -2,23 +2,6 @@
 \label{Memory_Consistency_Model}
 \index{memory consistency model}
 
-%% Michael's notes
-%% - TODO -- reduce the number of hits to C++
-%%   sungeun: done
-%%   
-%% - TODO 30.6 put open issues first
-%%   sungeun: done, but don't know if I like it
-%%   
-%% - TODO 30.3.1 --forall "The following text that refers to foralls also
-%% covers promotion", also separate tasks "for purposes of MCM" - whether
-%% separate in actuality depends ot the implementation of the parallel
-%% iterator (see parallel iterators chapter).
-%%   sungeun: see below
-%%
-%% - TODO -- on mentioned too many times
-%%   sungeun: done
-%%   
-
 In this section, we describe Chapel's memory consistency model. The
 model is based on \emph{sequential consistency for data-race-free}
 programs as adopted by C11, C++11, Java, UPC, and Fortran 2008.
@@ -187,6 +170,8 @@ Section~\ref{Iterators} for details on iterators).
 %%
 %% Brad suggested dropping forall all together.  What do you think?
 %%
+%% michael: I think it's worth describing for the clarity, even
+%% if it's not strictly necessary.
 
   \item \chpl{coforall} creates one task per loop iteration
 (\chpl{$t_i$ = begin\{loop-body\}} for all loop iterations $i=1..n$)
@@ -201,8 +186,6 @@ waits for them all to complete (\chpl{waitFor($t_1$..$t_n$)}).
 tasks $t_i$ created by a \chpl{begin} statement in the dynamic scope of the
 \chpl{sync} statement that are not within other, nested \chpl{sync}
 statements (\chpl{waitFor($t_1$..$t_n$)} for all $n$ such tasks).
-%% sungeun: This used to say that tasks were added to a list, but
-%% that's an implementation detail.
 
 \end{itemize}
 
@@ -315,6 +298,10 @@ preserve sequential program behavior:
 % \end{center}
 
 
+
+
+% The following is commented out because it doesn't quite fit here.
+
 % I don't think this belongs in the MCM section. I think it's valuable, but
 % inappropriate for it to be here in it's current form. I'm guessing this is
 % meant to lead into some of the discussions we had around optimizing data
@@ -367,6 +354,16 @@ preserve sequential program behavior:
 %(e.g. with a 'flush' call).
 %
 %\end{itemize}
+
+
+
+
+
+
+% The following is commented out because it's long and probably not
+% worthwhile in the grand scheme of things. As it is now, programs using
+% acquire/release are relying on implementation details.
+% We could bring it back in the future if necessary.
 
 %% \section{Relationship to the C11 and C++11 memory models}
 %% \label{relating_to_C_MCM}
@@ -585,6 +582,8 @@ unordered operations to complete?
 %% (It would appear so from the current
 %% description and the C++11 semantics where thread creation and joining
 %% create a \textit{synchronizes with} relationship).
+%% (but the current version does not explicitly depend on the C++11
+%% semantics, so this is not an issue)
 \end{openissue}
 
 Rather than issuing normal loads and stores to read or write local or
@@ -672,13 +671,11 @@ for i in 1..n {
 
 
 %%
-%% sungeun: Commnented out for now.
-%%
+%% sungeun: Commented out for now.
+%% michael: the reasoning here is worth understanding and recording somewhere.
+%%          comments are fine..
 %% \section{Discussion}
 
-%% \todo{We may or may not want to include this discussion section in the
-%% spec. Michael thinks that the reasoning here is worth understanding and
-%% recording somewhere.}
 %% Chapel's memory model does not include the \textit{write atomicity} or
 %% \textit{store atomicity} property for general variable writes for two reasons.
 %% First, an RDMA message could be partway through copying some data when another
