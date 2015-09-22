@@ -81,6 +81,20 @@ function removePrefixFunctions() {
   removePattern "iter chpl_" $1
 }
 
+# Remove unwanted variables:
+#  - remove variables that start with chpl_
+#  - remove variables that start with underscores
+function removePrefixVariables() {
+  if [ $# -ne 1 ] || [ ! -f $1 ]; then
+    echo "Bad call to removePrefixVariables."
+    exit 1;
+  fi
+
+  removePattern "var _" $1
+
+  removePattern "var chpl_" $1
+}
+
 
 
 ###############################################################################
@@ -104,6 +118,20 @@ removePrefixFunctions $file
 fixTitle "Synchronization Variables" $file
 
 ## End ChapelSyncvar ##
+
+
+## ChapelArray ##
+file="./ChapelArray.rst"
+replace "_domain" "domain" $file
+replace "_array" "array" $file
+replace "record" "type" $file
+
+removePrefixFunctions $file
+removePrefixVariables $file
+
+fixTitle "Array Operations" $file
+
+## End ChapelArray ##
 
 
 ## Atomics ##
