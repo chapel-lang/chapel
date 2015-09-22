@@ -1,3 +1,6 @@
+![Chapel Logo](/util/images/chapelcray.png)
+Format: ![Cray Chapel](http://chapel.cray.com)
+
 ===============================
 Chapel Compiler Release: README
 ===============================
