@@ -356,7 +356,7 @@ Special Notes for Cray XC, XE, and XK Series Systems
 ----------------------------------------------------
 
 Controlling the Heap Size
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When running on Cray XC/XE/XK systems using either of the following
 configurations, the comm layer needs to know the maximum size the
@@ -410,19 +410,19 @@ Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
 
 
 Native Runtime Layers
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 The README.multilocale and README.tasking pages describe a variety of
-communication and tasking layers that can be used by Chapel programs.  In
-addition to the standard runtime layers available in any Chapel release, the
-pre-built Chapel module for Cray XC and XE series systems supports
-Cray-specific communication and tasking layers.  These make use of the Cray
-systems' hardware and/or software to produce enhanced performance for Chapel
-programs.  When using the pre-built module on Cray XC or XE systems the allowed
-combinations are ugni communications with muxed tasking (the default), and ugni
-communications with qthreads tasking.  On other kinds of Cray systems or when
-not using the pre-built module, the default is to use gasnet communications and
-qthreads tasking.
+communication and tasking layers that can be used by Chapel programs.
+In addition to the standard runtime layers available in any Chapel
+release, the pre-built Chapel module for Cray XC and XE series systems
+supports Cray-specific communication and tasking layers.  These make use
+of the Cray systems' hardware and/or software to produce enhanced
+performance for Chapel programs.  When using the pre-built module on
+Cray XC or XE systems the allowed combinations are ugni communications
+with either qthreads (the default) or muxed tasking.  On other kinds of
+Cray systems or when not using the pre-built module, the default is to
+use gasnet communications and qthreads tasking.
 
 Note that neither the ugni communication layer nor the muxed tasking
 layer can be built from sources, as they are not distributed in source
@@ -440,7 +440,7 @@ graph analytic applications.
 
 
 Using the ugni Communications Layer
----------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To use ugni communications:
 
@@ -457,7 +457,7 @@ To use ugni communications:
    unload it first, or do a swap instead of a load.)
 
 
-2) Set your CHPL_COMM environment variable to "ugni":
+2) Set your CHPL_COMM environment variable to ``ugni``:
 
    .. code-block:: sh
 
@@ -467,7 +467,14 @@ To use ugni communications:
    layer.
 
 
-3) Set your CHPL_TASKS environment variable to "muxed" or "qthreads":
+3) Set your CHPL_TASKS environment variable to ``qthreads`` (the
+   default), ``muxed``, or ``fifo``:
+
+   .. code-block:: sh
+
+     export CHPL_TASKS=qthreads
+
+   or:
 
    .. code-block:: sh
 
@@ -477,13 +484,13 @@ To use ugni communications:
 
    .. code-block:: sh
 
-     export CHPL_TASKS=qthreads
+     export CHPL_TASKS=fifo
 
-   Only these two tasking layers work with ugni communications.  Other
-   Chapel environment variables having to do with runtime layers should
-   be left unset.  Setting ``CHPL_COMM`` and ``CHPL_TASKS`` like this will cause
-   the correct combination of other runtime layers that work with those
-   to be selected automatically.
+   All of these tasking layers work with ugni communications.  Other
+   Chapel environment variables having to do with runtime layers can
+   be left unset.  Setting ``CHPL_COMM`` and ``CHPL_TASKS`` like this
+   will cause the correct combination of other runtime layers that work
+   with those to be selected automatically.
 
 
 4) Load an appropriate craype-hugepages module.  For example::
@@ -491,7 +498,7 @@ To use ugni communications:
      module load craype-hugepages16M
 
    Use of the ugni communication layer requires that the program's data
-   reside on so-called "hugepages".  To arrange for this, you must have
+   reside on so-called *hugepages*.  To arrange for this, you must have
    a ``craype-hugepages`` module loaded both when building your program and
    when running it.
 
@@ -522,21 +529,20 @@ To use ugni communications:
    fairly large 16 MiB hugepages will typically only result in around 1%
    of the total locale memory being wasted.
 
-
 Due to the use of hugepages in the ugni comm layer, tasking layers
 cannot use guard pages for stack overflow detection.  Qthreads tasking
-uses guard pages for stack overflow detection, so if ugni communications
-and qthreads tasking are combined, stack overflow detection in qthreads
-is automatically turned off.  (Muxed tasking uses a different technique
-to detect stack overflow, as described below, so it is not affected by
-this limitation.)
+can only use guard pages for stack overflow detection, so if ugni
+communications is combined with qthreads tasking, overflow detection is
+turned off completely.  Muxed tasking can use guard pages for stack
+overflow detection, but it can also drop back to synchronous overflow
+detection, as described below, with ``CHPL_COMM=ugni`` and hugepages.
 
-There are a few special parameters recognized by the ugni communication
+There is one special parameter recognized by the ugni communication
 layer:
 
 
 Communication Layer Concurrency
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_______________________________
 
 The ``CHPL_RT_COMM_CONCURRENCY`` environment variable tells the ugni
 communication layer how much program concurrency it should try to
@@ -552,7 +558,7 @@ silently increased or reduced so as to fall within it.
 
 
 Communication Layer Concurrency and Slurm
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_________________________________________
 
 When slurm is used for job placement on Cray systems, it limits the
 total NIC memory registration in order to allow for job sharing on
@@ -571,7 +577,7 @@ for job placement.
 
 
 Using the muxed Tasking Layer
----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To use muxed tasking:
 
@@ -597,25 +603,38 @@ To use muxed tasking:
    This specifies that you wish to use the Cray-specific tasking
    layer.
 
-
-3) Set your ``CHPL_COMM`` environment variable to ``ugni``:
+3) Set your CHPL_COMM environment variable to ``ugni`` (the usual
+   default), ``gasnet`` (an alternative default), or ``none``:
 
    .. code-block:: sh
 
      export CHPL_COMM=ugni
 
-   Muxed tasking is only available combined with ugni communications.
-   Other Chapel environment variables having to do with runtime layers
-   should be left unset.  Setting ``CHPL_TASKS`` and ``CHPL_COMM`` like this
-   will cause the correct combination of other runtime layers that work
-   with those to be selected automatically.
+or:
+
+   .. code-block:: sh
+
+     export CHPL_COMM=gasnet
+
+or:
+
+   .. code-block:: sh
+
+     export CHPL_COMM=none
+
+   All three Chapel communication layers are known to work with muxed
+   tasking.  Other Chapel environment variables having to do with
+   runtime layers can be left unset.  Setting ``CHPL_TASKS`` and
+   ``CHPL_COMM`` like this will cause the correct combination of other
+   runtime layers that work with those to be selected automatically.
 
 
 There are a few special parameters recognized by the muxed tasking
 layer:
 
+
 Controlling the Call Stack Size
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_______________________________
 
 For muxed tasking, more so than for other tasking implementations,
 it may be important to reduce the task call stack size from its
@@ -646,30 +665,46 @@ size 128 KiB, for example:
 
 
 Stack Overflow Checking
-~~~~~~~~~~~~~~~~~~~~~~~
+_______________________
 
-With muxed tasking, the compiler ``--stack-checks`` setting specifies:
-the default setting for execution-time stack overflow checking.
-Final control over stack overflow checks is provided by the
-``CHPL_RT_STACK_CHECK_LEVEL`` environment variable, which can take the
-following values:
+With muxed tasking, the compiler ``--stack-checks`` setting
+specifies the default setting for execution-time stack overflow
+checking.  If this is set and the program heap (from which stacks
+are allocated) is not on hugepages then each stack gets an
+inaccessible guard page added at the end toward which stack growth
+occurs.  If the stack overflows into this guard page, the resulting
+SIGSEGV is diagnostic.  This signal-based solution is crude, but
+also trustworthy because it relies on OS services.
+
+Guard pages cannot be used when the heap is on hugepages, because
+the system call that makes memory pages inaccessible cannot be
+applied to hugepages.  Currently the heap is on hugepages when
+``CHPL_COMM=ugni``.  In this case muxed tasking does synchronous
+stack overflow detection instead.  Explicit checks against the
+task's stack limit are done on entry to selected functions in the
+muxed tasking layer.  If overflow is seen, the runtime prints an
+error message and halts the program.  The level of overflow checking
+may be controlled using the ``CHPL_RT_STACK_CHECK_LEVEL``
+environment variable, which can take the following values:
 
   :0: no stack overflow checking
   :1: limited stack overflow checking (default)
   :2: more stack overflow checking
 
-Due to the use of hugepages in the ugni comm layer, muxed tasking
-cannot use guard pages for stack overflow detection as fifo and
-qthreads tasking do.  So, overflow is detected by means of explicit
-checks against the task's stack limit, on entry to certain selected
-functions in the muxed tasking layer.  If overflow is seen, the
-runtime prints an error message and halts the program.  Successively
-higher levels (0, 1, 2) of overflow checking cause more overhead and
-correspondingly have more impact on performance.
+Successively higher levels of overflow checking are more likely both to
+catch overflow and to catch it earlier, but they also have more overhead
+and thus a greater impact on performance.
+ 
+Note: in some situations the check as to whether or not the task
+stacks are in hugepage memory gets the wrong answer, leading to
+internal errors when the tasking layer tries to use guard pages and
+cannot do so.  This issue and its workarounds are tracked here:
+
+  https://chapel.atlassian.net/browse/CHAPEL-117
 
 
 Number of Threads per Locale
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+____________________________
 
 The muxed tasking layer gets the threads it uses as task execution
 vehicles from the soft-threads threading layer.  The soft-threads
@@ -704,6 +739,7 @@ soft-threads threading layer will silently limit it to >= 1 and <=
 32*the number of hardware threads.
 
 
+---------------
 Network Atomics
 ---------------
 
@@ -728,9 +764,9 @@ remote atomics are done using the network::
 
 Note that on XE and XK systems, which have Gemini networks, out of the
 above list only the 64-bit integer operations are done natively by the
-network hardware.  32-bit integer and all floating point operations
-are done with remote forks inside the ugni communication layer,
-accelerated by Gemini hardware capabilities.
+network hardware.  32-bit integer and all floating point operations are
+done using implicit ``on`` statements inside the ugni communication
+layer, accelerated by Gemini hardware capabilities.
 
 On XC systems, which have Aries networks, all of the operations shown
 above are done natively by the network hardware.
@@ -755,7 +791,7 @@ Known Constraints and Bugs
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.
 
-* GASNet targets multiple network "conduits" as the underlying
+* GASNet targets multiple network *conduits* as the underlying
   communication mechanism.  On certain platforms, the Chapel build
   will use the ``mpi`` conduit as the default.  As a result of using the
   mpi conduit, you may see a GASNet warning message at program start
