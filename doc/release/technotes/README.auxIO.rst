@@ -1,3 +1,5 @@
+.. _readme-auxIO:
+
 ================================
 Support for Auxiliary IO Systems
 ================================

@@ -1,3 +1,5 @@
+.. _readme-tasks:
+
 ============
 Chapel Tasks
 ============

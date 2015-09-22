@@ -1,3 +1,5 @@
+.. _readme-cygwin:
+
 ========================
 Using Chapel with Cygwin
 ========================
