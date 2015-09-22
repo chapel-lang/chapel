@@ -1,8 +1,8 @@
 .. _readme-knc:
 
-==================================
-Initial support for Intel Xeon Phi
-==================================
+==============================
+Using Chapel on Intel Xeon Phi
+==============================
 
 The following information is assembled to help Chapel users get up and
 running on Intel Xeon Phi, Knights Corner (KNC).

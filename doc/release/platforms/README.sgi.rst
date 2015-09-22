@@ -1,8 +1,9 @@
 .. _readme-sgi:
 
-============================
-Using Chapel on an SGI Altix
-============================
+=========================
+Using Chapel on SGI Altix
+=========================
+
 .. warning::
     Chapel has not been recently tested on SGI Altix.  The information
     presented here may be stale or inaccurate.  If using Chapel on SGI
