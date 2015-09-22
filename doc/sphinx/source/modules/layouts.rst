@@ -1,2 +1,4 @@
+.. _layouts:
+
 Layouts
 -------

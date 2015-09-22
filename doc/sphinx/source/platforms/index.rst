@@ -1,3 +1,5 @@
+.. _platforms-index:
+
 Platform-Specific Notes
 =======================
 
