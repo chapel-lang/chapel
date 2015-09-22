@@ -1,6 +1,5 @@
-Technical Notes
-===============
-
+Built-in Types
+==============
 Contents:
 
 .. toctree::
@@ -10,4 +9,4 @@ Contents:
    :maxdepth: 1
    :glob:
 
-   **
+   internal/**
