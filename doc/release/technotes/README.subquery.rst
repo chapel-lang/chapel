@@ -71,7 +71,7 @@ This iterator yields the subdomain(s) that represent the index set owned by the
 current locale.
 
 If the locale's index set can be represented by a single domain, then the
-result of 'localSubdomain' is yielded.
+result of ``localSubdomain`` is yielded.
 
 Currently, this is a serial iterator.
  
