@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 /*
-  The ChapelRange module provides the implementation for the built in range
-  type.  A ``range`` is a first-class, constant-space representation of a
+  A ``range`` is a first-class, constant-space representation of a
   regular sequence of integer indices. Ranges support iteration over the
   sequences they represent as well as operations such as slicing, shifting,
   comparisons, striding, counting and aligning.
