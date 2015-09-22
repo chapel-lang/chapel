@@ -1,3 +1,5 @@
+.. _readme-localeModels:
+
 =============
 Locale Models
 =============

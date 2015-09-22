@@ -1,3 +1,5 @@
+.. _readme-prereqs:
+
 ====================
 Chapel Prerequisites
 ====================

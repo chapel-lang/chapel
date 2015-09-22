@@ -1,3 +1,5 @@
+.. _readme-ibm:
+
 ============================
 Using Chapel on IBM Machines
 ============================

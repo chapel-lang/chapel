@@ -1,3 +1,5 @@
+.. _readme-firstClassFns:
+
 ===================================================
 Initial support for first-class functions in Chapel
 ===================================================

@@ -11,7 +11,7 @@ help-source:
 
 docs: html
 
-symlink-docs:
+symlink-docs: clean-symlink-docs
 	@echo "Setting up symlinks from /doc/release to /doc/sphinx/source"
 	./symlinks.py
 

@@ -1,3 +1,5 @@
+.. _readme-chplenv:
+
 Setting up your environment for Chapel
 ======================================
 

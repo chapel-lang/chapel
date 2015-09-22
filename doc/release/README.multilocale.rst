@@ -1,3 +1,5 @@
+.. _readme-multilocale:
+
 ============================
 Multilocale Chapel Execution
 ============================
