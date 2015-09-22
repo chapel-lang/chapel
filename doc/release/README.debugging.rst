@@ -3,6 +3,8 @@
 Debugging Chapel Programs
 =========================
 
+This document discusses support for debugging your Chapel program and a set of experimental flags and configuration constants to enable task monitoring and memory tracking.
+
 .. contents::
 
 --------------
