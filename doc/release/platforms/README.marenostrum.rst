@@ -4,6 +4,12 @@
 Using Chapel on MareNostrum
 ===========================
 
+.. warning::
+    Chapel has not been recently tested on MareNostrum.  The information
+    presented here may be stale or inaccurate.  If using Chapel on
+    MareNostrum systems is important to you, please let us know at
+    chapel_info@cray.com.
+
 The following information describes how to build and use Chapel on
 Barcelona Supercomputing Center's MareNostrum machine for users who
 have an account there.  If you are not familiar with Chapel, it is
@@ -11,14 +17,14 @@ recommended that you first try the instructions in the top-level
 README on a traditional workstation in order to get started with the
 language.
 
-1) Set ``CHPL_HOME`` to point to the directory of your installation as
+#. Set ``CHPL_HOME`` to point to the directory of your installation as
    usual.  For example:
 
    .. code-block:: sh
 
      export CHPL_HOME=~/chapel-x.y.z/chapel
 
-2) Set ``CHPL_HOST_PLATFORM`` to marenostrum and ``CHPL_COMM`` to ``gasnet``.
+#. Set ``CHPL_HOST_PLATFORM`` to ``marenostrum`` and ``CHPL_COMM`` to ``gasnet``.
    For example:
 
    .. code-block:: sh
@@ -27,9 +33,9 @@ language.
      export CHPL_COMM=gasnet
 
    Additional information about running using multiple locales and
-   GASNet can be found in ``$CHPL_HOME/doc/README.multilocale``
+   GASNet can be found in :ref:`readme-multilocale`
 
-3) Make sure you're in the top-level chapel/ directory:
+#. Make sure you're in the top-level chapel/ directory:
 
    .. code-block:: sh
 
@@ -41,7 +47,7 @@ language.
 
      gmake
 
-4) Set your ``PATH`` to include the directory ``$CHPL_HOME/bin/marenostrum``
+#. Set your ``PATH`` to include the directory ``$CHPL_HOME/bin/marenostrum``
    which is created when you build the compiler.  For example:
 
    .. code-block:: sh
@@ -49,21 +55,21 @@ language.
      export PATH="$PATH:$CHPL_HOME/bin/marenostrum" 
 
 
-5) Compile your Chapel program as usual.  See
-   ``$CHPL_HOME/doc/README.compiling`` for details.  For example:
+#. Compile your Chapel program as usual.  See
+   :ref:`readme-compiling` for details.  For example:
 
    .. code-block:: sh
 
      chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
-6) The above settings will result in a multi-locale compilation.  When
+#. The above settings will result in a multi-locale compilation.  When
    you compile a Chapel program, you should see two binaries (e.g.,
    ``hello6-taskpar-dist`` and ``hello6-taskpar-dist_real``).  The first
    binary contains code to launch the Chapel program onto the compute
    nodes using ``mnsubmit``.  The second contains the program code itself;
    it is not intended to be executed directly from the shell prompt.
 
-7) On MareNostrum, a marenostrum-specific launcher is used by default
+#. On MareNostrum, a marenostrum-specific launcher is used by default
    to wrap the ``mnsubmit`` and ``slurm`` scripts required to launch a job on the
    compute nodes.  This launcher accepts the following flags:
 
@@ -75,7 +81,7 @@ language.
    These options can also be set using the ``CHPL_LAUNCHER_WALLTIME`` and
    ``CHPL_LAUNCHER_QUEUE`` environment variables, respectively.
 
-8) Multi-locale binaries require the number of locales to be specified
+#. Multi-locale binaries require the number of locales to be specified
    on the command line.  Other than this, execute your Chapel program
    as usual.  For example:
 
@@ -88,7 +94,7 @@ language.
    variable, the script used with the ``mnsubmit`` command will be
    preserved after your program executes.
 
-9) On MareNostrum, jobs cannot be run in an interactive mode, so all
+#. On MareNostrum, jobs cannot be run in an interactive mode, so all
    program will end up in a ``.out`` file whose name matches the
    executable.  For example, the program above would leave its output
    in ``hello6-taskpar-dist.out``
