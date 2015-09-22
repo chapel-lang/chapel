@@ -1,3 +1,5 @@
+.. _readme-sets:
+
 =================================================
 Set Operations for Associative Domains and Arrays
 =================================================
