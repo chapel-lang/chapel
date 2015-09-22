@@ -240,6 +240,7 @@ module ChapelRange {
   pragma "no doc"
   proc isRangeValue(r: range(?)) param  return true;
   /* Return true if argument ``r`` is a range, false otherwise */
+  pragma "no doc"
   proc isRangeValue(r)           param  return false;
   
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
