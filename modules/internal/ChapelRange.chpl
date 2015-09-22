@@ -171,6 +171,7 @@ module ChapelRange {
   // If it is not a constructor, then the user can still create a maximal range
   // (for example) without being warned.
   //
+  pragma "no doc"
   proc range.range(type idxType = int,
                    param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                    param stridable : bool = false,
@@ -206,31 +207,24 @@ module ChapelRange {
   //
 
   // Range builders for fully bounded ranges
-  pragma "no doc"
   proc chpl_build_bounded_range(low: int(?w), high: int(w))
     return new range(idxType = int(w), _low = low, _high = high);
-  pragma "no doc"
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
     return new range(uint(w), _low = low, _high = high);
-  pragma "no doc"
   proc chpl_build_bounded_range(low, high) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
   }
 
   // Range builders for partially bounded ranges
-  pragma "no doc"
   proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: int(?w))
     return new range(int(w), bt, false, bound, bound);
-  pragma "no doc"
   proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: uint(?w))
     return new range(uint(w), bt, false, bound, bound);
-  pragma "no doc"
   proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
   }
 
   // Range builder for unbounded ranges
-  pragma "no doc"
   proc chpl_build_unbounded_range(param bt: BoundedRangeType)
     return new range(int, bt);
   
@@ -443,19 +437,16 @@ module ChapelRange {
 
   // This helper takes one arg by 'in', i.e. explicitly creating a copy,
   // so it can be modified.
-  pragma "no doc"
   /* private */ inline proc _memberHelp(arg1: range(?), in arg2: range(?)) {
     compilerAssert(arg2.stridable);
     arg2._stride = -arg2._stride;
     return arg2 == arg1(arg2);
   }
   
-  pragma "no doc"
   proc ==(r1: range(?), r2: range(?)) param
     where r1.boundedType != r2.boundedType
   return false;
 
-  pragma "no doc"
   proc ==(r1: range(?), r2: range(?)): bool
     where r1.boundedType == r2.boundedType
   {
@@ -493,7 +484,6 @@ module ChapelRange {
     }
   }
 
-  pragma "no doc"
   proc !=(r1: range(?), r2: range(?))  return !(r1 == r2);
   
   /* Returns true if the two ranges are the same in every respect: i.e. the
@@ -675,9 +665,10 @@ module ChapelRange {
   // Compute the alignment of the range returned by this.interior()
   // and this.exterior(). Keep it private.
   pragma "no doc"
-  /* private */ inline proc range._effAlmt()       where stridable return _alignment;
+  inline proc range._effAlmt()       where stridable return _alignment;
+
   pragma "no doc"
-  /* private */ proc range._effAlmt() param where !stridable return 0;
+  proc range._effAlmt() param where !stridable return 0;
   
   // Return an interior portion of this range.
   pragma "no doc"
@@ -781,7 +772,6 @@ module ChapelRange {
   //#
   
   // Assignment
-  pragma "no doc"
   pragma "compiler generated"
     // The "compiler generated" flag is added so this explicit definition
     // of assignment does not disable the POD optimization.
@@ -831,7 +821,6 @@ module ChapelRange {
   // Absolute alignment is not preserved
   // (That is, the alignment shifts along with the range.)
   //
-  pragma "no doc"
   inline proc +(r: range(?e, ?b, ?s), i: integral)
   {
     type resultType = (r._low+i).type;
@@ -842,11 +831,9 @@ module ChapelRange {
            r.stride : strType, r._alignment + i : resultType, r._aligned);
   }
 
-  pragma "no doc"
   inline proc +(i:integral, r: range(?e,?b,?s))
     return r + i;
  
-  pragma "no doc"
   inline proc -(r: range(?e,?b,?s), i: integral)
   {
     type resultType = (r._low+i).type;
@@ -857,14 +844,12 @@ module ChapelRange {
            r._stride : strType, r._alignment - i : resultType, r._aligned);
   }
   
-  pragma "no doc"
   inline proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then
       compilerError("can't apply 'by' using step of a non-integral type ",
                     typeToString(step.type));
   }
 
-  pragma "no doc"
   proc chpl_need_to_check_step(step, type strType) param {
     compilerAssert(isInt(strType)); // we assume strType is signed
     // 'step' is either same-sized unsigned, or any larger size
@@ -874,7 +859,6 @@ module ChapelRange {
   // Helpers to check if the stride of a range is invalid. Error (either at
   // runtime or compile time) if it's invalid.
 
-  pragma "no doc"  
   inline proc chpl_range_check_stride(step, type idxType) {
     chpl_check_step_integral(step);
     type strType = indexToStrideType(idxType);
@@ -896,7 +880,6 @@ module ChapelRange {
     }
   }
 
-  pragma "no doc"
   inline proc chpl_range_check_stride(param step, type idxType)  {
     chpl_check_step_integral(step);
     type strType = indexToStrideType(idxType);
@@ -911,7 +894,6 @@ module ChapelRange {
       compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
   }
   
-  pragma "no doc"
   proc chpl_by_help(r: range(?i,?b,?s), step) {
     const lw: i = r.low,
           hh: i = r.high,
@@ -928,7 +910,6 @@ module ChapelRange {
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
 
-  pragma "no doc"
   inline proc by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
@@ -938,7 +919,6 @@ module ChapelRange {
   
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
-  pragma "no doc"
   inline proc by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);
@@ -1100,14 +1080,12 @@ module ChapelRange {
   // If the argument n is negative, the new range contains
   // the last abs(n) elements in the existing range.
 
-  pragma "no doc"
   proc chpl_count_help(r:range(?), i)
     where r.boundedType == BoundedRangeType.boundedNone
   {
     compilerError("count operator is not defined for unbounded ranges");
   }
 
-  pragma "no doc"
   proc chpl_count_help(r, count: integral) {
     if r.isAmbiguous() then
       __primitive("chpl_error", "count -- Cannot count off elements from a range which is ambiguously aligned.");
@@ -1180,17 +1158,14 @@ module ChapelRange {
                      _aligned = r._aligned);
   }
 
-  pragma "no doc"
   proc #(r:range(?i), count:chpl__signedType(i)) {
     return chpl_count_help(r, count);
   }
 
-  pragma "no doc"
   proc #(r:range(?i), count:chpl__unsignedType(i)) {
     return chpl_count_help(r, count);
   }
 
-  pragma "no doc"
   proc #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ", 
                   typeToString(i), " using a count of type ", 
@@ -1202,7 +1177,6 @@ module ChapelRange {
   // signed/unsigned overflow checking for the last index + stride. Either
   // returns whether overflow will occur or not, or halts with an error
   // message.
-  pragma "no doc"
   proc chpl_checkIfRangeIterWillOverflow(type idxType, low, high, stride, first=low,
       last=high, shouldHalt=true) {
     // iterator won't execute at all so it can't overflow
@@ -1272,13 +1246,11 @@ module ChapelRange {
   // cases for when stride is a non-param int (don't want to deal with finding
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
   // over.)
-  pragma "no doc"
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  pragma "no doc"
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
@@ -1287,30 +1259,25 @@ module ChapelRange {
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
-  pragma "no doc"
   iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  pragma "no doc"
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
 
   // cases for when stride is a uint (we know the stride is must be positive)
-  pragma "no doc"
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
     for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
   }
-  pragma "no doc"
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
     for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
   }
 
 
   // cases for when stride isn't valid
-  pragma "no doc"
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(int(w)), " using a step of type ",
@@ -1318,7 +1285,6 @@ module ChapelRange {
     yield nil; // iters needs a yield in them
   }
 
-  pragma "no doc"
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(uint(w)), " using a step of type ",
@@ -1328,7 +1294,6 @@ module ChapelRange {
 
 
   // case for when low and high aren't compatible types and can't be coerced
-  pragma "no doc"
   iter chpl_direct_range_iter(low, high, stride) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
     yield nil; // iters needs a yield in them
@@ -1339,7 +1304,6 @@ module ChapelRange {
   // any checks on the arguments, and rely on the above functions to
   // check/coerce types (assumes args are of legal types, low/high are the same
   // same type, and stride is valid.)
-  pragma "no doc"
   iter chpl_direct_uint_stride_range_iter(low: ?t, high, stride) {
     if (useOptimizedRangeIterators) {
       chpl_range_check_stride(stride, t);
@@ -1359,7 +1323,6 @@ module ChapelRange {
     }
   }
 
-  pragma "no doc"
   iter chpl_direct_param_stride_range_iter(low: ?t, high, param stride) {
     if (useOptimizedRangeIterators) {
       chpl_range_check_stride(stride, t);
@@ -1846,7 +1809,6 @@ module ChapelRange {
   }
   
   // Determine if a strided range has a definite alignment.
-  pragma "no doc"
   proc chpl__hasAlignment(r : range(?))
   {
     if r.hasLowBound() && r.stride >= 2 then return true;
@@ -1861,7 +1823,6 @@ module ChapelRange {
   // 
   // Return the number in the range 0 <= result < b that is congruent to a (mod b)
   //
-  pragma "no doc"
   proc chpl__mod(dividend:integral, in modulus:integral)
   {
     type dType = dividend.type;
@@ -1889,7 +1850,6 @@ module ChapelRange {
   // We currently assume that the built-in modulo operator always returns an
   // integer in the range [0, mod-1].
   // 
-  pragma "no doc"
   proc chpl__diffMod(minuend : integral,
                      subtrahend : integral,
                      in modulus : integral) : minuend.type
@@ -1912,7 +1872,6 @@ module ChapelRange {
       else minMod - subMod;
   }
 
-  pragma "no doc"
   proc chpl__diffMod(minuend : integral,
                      subtrahend : integral,
                      in modulus : integral)
@@ -1923,7 +1882,6 @@ module ChapelRange {
   // Add two numbers together, and peg them to the min or max representable value
   // if there is overflow.
   // We might wish to add dialable run-time warning messages.
-  pragma "no doc"
   proc chpl__add(a: ?t, b: t, type resultType)
   {
     if !isIntegralType(t) then
@@ -1946,7 +1904,6 @@ module ChapelRange {
   // Get the simple expression 'start + stride*count' to typecheck.
   // Use example: low + i:idxType * stride.
   // Use explicit conversions, no other additional runtime work.
-  pragma "no doc"
   proc chpl__addRangeStrides(start, stride, count): start.type {
     proc convert(a,b) param
       return ( a.type == int(64) && b.type == uint(64) ) ||
@@ -1963,7 +1920,6 @@ module ChapelRange {
   //
   // source: Knuth Volume 2 --- Section 4.5.2
   //
-  pragma "no doc"
   proc chpl__extendedEuclidHelper(u, v)
   {
     var zero: u.type = 0;
@@ -1978,11 +1934,9 @@ module ChapelRange {
     return (U(3), U(1));
   }
 
-  pragma "no doc"
   inline proc chpl__extendedEuclid(u:int(32), v:int(32))
   { return chpl__extendedEuclidHelper(u,v); }
 
-  pragma "no doc"
   inline proc chpl__extendedEuclid(u:int(64), v:int(64))
   { return chpl__extendedEuclidHelper(u,v); }
   

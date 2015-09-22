@@ -124,3 +124,13 @@ replace "int(64)" "T" $file
 fixTitle "Atomics" $file
 
 ## End Atomics ##
+
+## ChapelRange ##
+
+file="./ChapelRange.rst"
+
+removePrefixFunctions $file
+fixTitle "Ranges" $file
+
+# End ChapelRange ##
+
