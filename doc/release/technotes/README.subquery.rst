@@ -1,3 +1,5 @@
+.. _readme-subquery:
+
 =============================
 Querying a Locale's Subdomain
 =============================
