@@ -4,7 +4,9 @@
 Debugging Chapel Programs
 =========================
 
-This document discusses support for debugging your Chapel program and a set of experimental flags and configuration constants to enable task monitoring and memory tracking.
+This document discusses support for debugging your Chapel program and a set of
+experimental flags and configuration constants to enable task monitoring and
+memory tracking.
 
 .. contents::
 
@@ -85,7 +87,7 @@ contains memory leaks, so you should not be surprised if your program
 requires more memory than it seems it should.
 
 For full information on these configuration constants consult
-  http://chapel.cray.com/docs/latest/modules/standard/Memory.html
+:chpl:mod:`Memory`.
 
 A brief synopsis of these configuration constants is as follows:
 

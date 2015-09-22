@@ -93,7 +93,7 @@ executing the program, as shown above.
 
 Chapel programs can also accept C-like command line arguments to their
 ``main()`` procedure in addition to the aforementioned configuration
-variables. See ``$CHPL_HOME/doc/technotes/README.main`` for more
+variables. See :ref:`readme-main` for more
 information.
 
 
@@ -124,14 +124,13 @@ or:
     ./a.out -snumLocales=4
 
 For users running with ``CHPL_COMM=none`` (the default), only one
-locale can be used.  See ``$CHPL_HOME/doc/README.multilocale`` for more
+locale can be used.  See :ref:`readme-multilocale` for more
 information about executing on multiple locales.
 
 Multi-locale programs often use a launcher executable to do some initial
 command-line checking before spawning the real program, which is then
 stored in a second binary named *original_binary_name*\ ``_real``.  See
-``$CHPL_HOME/doc/README.launcher`` for more information about the
-launcher executable.
+:ref:`readme-launcher` for more information about the launcher executable.
 
 
 --------------------------------------
@@ -201,8 +200,7 @@ are as follows:
 
 There is a bit more information on ``CHPL_RT_CALL_STACK_SIZE`` and
 ``CHPL_RT_NUM_THREADS_PER_LOCALE`` below, and more detailed discussion
-of all of these in ``$CHPL_HOME/doc/README.tasks`` and
-``$CHPL_HOME/doc/platforms/README.cray``.
+of all of these in :ref:`readme-tasks` and :ref:`readme-cray`.
 
 
 -------------------------------
@@ -225,8 +223,7 @@ that are unnecessarily large are typically only a problem for programs
 in which many tasks (thus their stacks) exist at once, when using a comm
 layer that has to pre-register memory.  For the particular case of using
 the native runtime communication and tasking layers on Cray X* systems,
-further discussion about this can be found in
-``$CHPL_HOME/doc/platforms/README.cray``.
+further discussion about this can be found in :ref:`readme-cray`.
 
 The following environment variable can be used to change the task call
 stack size.
@@ -251,7 +248,7 @@ system threads used by a program.
     Controls the number of threads used on each locale when running the
     program.
 
-See ``$CHPL_HOME/doc/README.tasks`` for more information on the role of
+See :ref:`readme-tasks` for more information on the role of
 this variable in creating threads and executing tasks for the various
 tasking layers.
 
@@ -276,7 +273,7 @@ executable.
 Launcher Support
 ----------------
 
-For multilocale execution (see ``$CHPL_HOME/doc/README.multilocale``),
+For multilocale execution (see :ref:`readme-multilocale`),
 Chapel programs are executed indirectly by a launcher.  This section
 covers command line options that assist launchers in doing their job.
 These options are not supported for general use.  We document them here
