@@ -896,19 +896,19 @@ two mechanisms.
     Note that you can use -I and -L arguments for the Chapel compiler
     to specify include or library paths as with a C compiler.
 
-  2) Alternatively, the required C resources can be listed within the
-     Chapel file using the `require` statement. For example:
+ 2) Alternatively, the required C resources can be listed within the
+    Chapel file using the `require` statement. For example:
 
-     .. code-block:: chapel
+    .. code-block:: chapel
 
        require "foo.h"
        require "foo.c"
 
 
-     This has an effect similar to adding foo.h and foo.c to the
-     command line. You might need to specify -I and -L arguments
-     to indicate to the directories storing any headers or library
-     files.
+    This has an effect similar to adding foo.h and foo.c to the
+    command line. You might need to specify -I and -L arguments
+    to indicate to the directories storing any headers or library
+    files.
 
 Either approach has the following results:
 
