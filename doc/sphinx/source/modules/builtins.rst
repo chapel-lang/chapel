@@ -1,5 +1,5 @@
-Built-ins
-=========
+Built-in Types
+==============
 Contents:
 
 .. toctree::
