@@ -1,12 +1,10 @@
-Platforms
-=========
+Platform-Specific Build
+=======================
 
 Contents:
 
 .. toctree::
    :hidden:
-
-   self
 
 .. toctree::
    :maxdepth: 1
