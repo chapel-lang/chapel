@@ -98,7 +98,7 @@ Building Chapel for a Cray System from Source
    it is in your path; ``none`` otherwise.
 
    For more information on Chapel's launcher capabilities and options,
-   refer to $CHPL_HOME/doc/README.launcher.
+   refer to :ref:`readme-launcher`.
 
 
 3) Select the target compiler that Chapel should use when compiling
@@ -271,7 +271,7 @@ Using Chapel on a Cray System
         export CHPL_LAUNCHER_WALLTIME=00:15:00
 
    For further information about launchers, please refer to
-   $CHPL_HOME/doc/README.launcher.
+   :ref:`readme-launcher`.
 
 
 5) Execute your Chapel program.  Multi-locale executions require the
