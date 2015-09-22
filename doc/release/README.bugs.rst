@@ -1,3 +1,5 @@
+.. _readme-bugs:
+
 =========================
 Reporting Bugs for Chapel
 =========================

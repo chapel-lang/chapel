@@ -1,3 +1,5 @@
+.. _readme-marenostrum:
+
 ===========================
 Using Chapel on MareNostrum
 ===========================
