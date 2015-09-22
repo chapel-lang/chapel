@@ -231,9 +231,9 @@ and arrays.
 Presently, the following dimension specifiers are available
 (shown here with their constructor arguments):
 
-* ``ReplicatedDim(numLocales)``
-* ``BlockDim(numLocales, boundingBox, idxType=boundingBox.idxType)``
-* ``BlockCyclicDim(numLocales, lowIdx, blockSize)``
+* :class:`ReplicatedDim(numLocales) <ReplicatedDim>`
+* :class:`BlockDim(numLocales, boundingBox, idxType=boundingBox.idxType) <BlockDim>`
+* :class:`BlockCyclicDim(numLocales, lowIdx, blockSize) <BlockCycDim>`
 
 
 **Limitations**
