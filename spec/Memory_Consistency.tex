@@ -547,9 +547,9 @@ ordinary loads or stores with two exceptions:
 \begin{itemize}
 
 \item Atomic operations (including relaxed atomic operations) cannot
-create a data races.
+create data races.
 
-\item All atomic operations (including relaxed atomic operations) should
+\item All atomic operations (including relaxed atomic operations) will
 eventually be visible to all other threads. This property is not true for
 normal loads and stores.
 %% sungeun: for our own reference
@@ -567,7 +567,7 @@ Syntax for \textit{unordered} operations has not yet been finalized.
 \end{openissue}
 
 \begin{openissue}
-Should Chapel provide a memory fence that only complete unordered
+Should Chapel provide a memory fence that only completes unordered
 operations started by the current task?
 \end{openissue}
 \begin{openissue}
@@ -605,7 +605,7 @@ will be used in this section:
 
 The \textit{unordered} loads and stores $UL(a)$ and $US(a)$ respect
 fences but not program order. As in Section~\ref{memory_order},
-Unordered loads and stores are ordered with SC atomics.  That is,
+unordered loads and stores are ordered with SC atomics.  That is,
 unordered loads and stores for a given task are in total order $<_m$
 respecting the following rules which preserve the order of unordered
 loads and stores relative to SC atomic operations:
@@ -623,11 +623,11 @@ Unordered loads and stores do not preserve sequential program behavior.
 
 Unordered operations should be thought of as happening in a way that
 overlaps with the program task. Unordered operations started in
-different program statements can happen at the same time unless an SC
+different program statements can happen in any order unless an SC
 atomic operation orders them.
 
-Since unordered operations started by a single task can happen at the
-same time, totally sequential programs can have a data race when using
+Since unordered operations started by a single task can happen in any
+order, totally sequential programs can have a data race when using
 unordered operations. This follows from our original definition of
 data race.
 
