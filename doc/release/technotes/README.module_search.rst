@@ -13,7 +13,7 @@ be overridden.
 
 The compiler uses three module search paths: one for internal modules, one for
 standard modules and one for user modules.  The user path first includes all the
-paths used to specify module files directly on the "chpl" command line and
+paths used to specify module files directly on the ``chpl`` command line and
 then includes the paths specified via ``-M`` commands or through
 the ``CHPL_MODULE_PATH`` environment variable.
 
