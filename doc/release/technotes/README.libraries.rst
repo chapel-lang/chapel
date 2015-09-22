@@ -1,3 +1,5 @@
+.. _readme-libraries:
+
 Chapel Libraries
 ================
 

@@ -1,3 +1,5 @@
+.. _readme-launcher:
+
 ================
 Chapel launchers
 ================

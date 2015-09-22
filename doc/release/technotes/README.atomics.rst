@@ -1,3 +1,5 @@
+.. _readme-atomics:
+
 ===========================================
 Current implementation for atomic variables
 ===========================================

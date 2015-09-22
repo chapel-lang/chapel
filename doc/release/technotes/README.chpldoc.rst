@@ -1,3 +1,5 @@
+.. _readme-chpldoc:
+
 Documenting Chapel
 ==================
 

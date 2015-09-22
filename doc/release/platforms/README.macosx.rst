@@ -1,3 +1,5 @@
+.. _readme-macosx:
+
 ==================================
 Using Chapel on a Mac running OS X
 ==================================

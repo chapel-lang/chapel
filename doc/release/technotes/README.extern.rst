@@ -1,3 +1,5 @@
+.. _readme-extern:
+
 ==================
 C Interoperability
 ==================
