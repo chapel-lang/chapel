@@ -1,6 +1,1 @@
-# This machine is a really slow vm, and this test takes a really long time on
-# it. We don't want to lower the problem size or number of tasks because it's a
-# stress test meant to ensure no race conditions. This isn't a very elegant
-# solution, but if we stop using this machine, this skipif can be removed.
-HOSTNAME==cflbs32
 CHPL_ATOMICS!=intrinsics

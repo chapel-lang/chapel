@@ -53,7 +53,7 @@ var d: [Bspace] int;
 
 tagVdebug ("simple forall");
 
-forall i in space do b[i] = here.id;
+forall i in Bspace do b[i] = here.id;
 
 tagVdebug ("writeln 0");
 

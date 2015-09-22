@@ -23,7 +23,7 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Multiline_Output.H>
-struct localeInfo;
+struct localeData;
 
 // Window for showing Locale information.
 
@@ -32,20 +32,20 @@ class LocaleWin : public Fl_Double_Window {
  private:
   Fl_Box *title;
   Fl_Multiline_Output *info;
-  localeInfo *loc;
+  localeData *loc;
   int locnum;
 
  public:
   LocaleWin (int x, int y, int W, int H, const char *l=0);
 
-  void setMembers (Fl_Box *t, Fl_Multiline_Output *i, localeInfo *l, int ln) {
+  void setMembers (Fl_Box *t, Fl_Multiline_Output *i, localeData *l, int ln) {
     title = t;
     info = i;
     loc = l;
     locnum = ln;
   }
 
-  void updateWin ();
+  void updateWin (localeData *l);
     
 };
 

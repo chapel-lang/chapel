@@ -28,7 +28,10 @@
 // Order important!  DataModel.cxx processes all events
 //   all event types before and including Ev_end are grouped together
 //   all event types after and including Ev_taks are inserted by time
-enum Event_kind {Ev_start, Ev_tag, Ev_pause, Ev_end, Ev_task, Ev_comm, Ev_fork};
+
+// Order important, all before Ev_end are grouped together, after, inserted by time
+enum Event_kind {Ev_start, Ev_tag, Ev_pause, Ev_end, Ev_task, Ev_comm, Ev_fork,
+		 Ev_begin_task, Ev_end_task};
 
 class Event {  // Base class for events 
 
@@ -73,7 +76,7 @@ class  E_start : public Event {
     virtual int Ekind() {return Ev_start;}
 
     virtual void print() {
-      printf ("Start: id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld\n",
+      printf ("Start: node %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld\n",
               nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec);
     }
 };
@@ -82,14 +85,27 @@ class  E_start : public Event {
 class  E_task : public Event {
 
   private:
-    int nodeid;
+    long taskid;
+    bool isOn;
+    long lineNum;
+    char *srcFile;
   
   public:
-    E_task (long esec, long eusec, int nid) : Event(esec,eusec, nid) {};
+    E_task (long esec, long eusec, int nid, int taskId, bool ison, long line, char *file)
+      : Event(esec,eusec, nid), taskid(taskId), isOn(ison), lineNum(line), srcFile(file) {};
+
+    bool isLocal () { return !isOn; }
+    long srcLine () { return lineNum; }
+    char *srcName () { return srcFile; }
+    long taskId () { return taskid; }
+    
 
     virtual int Ekind() {return Ev_task;}
-    virtual void print() { printf ("Task: id %d time %ld.%06ld\n",
-                                   nodeid, sec, usec); }
+    virtual void print() {
+      printf ("Task: node %d time %ld.%06ld taskId %ld %s line %ld file %s\n",
+              nodeid, sec, usec, taskid, isOn ? "OnExe" : "local", lineNum,
+              (srcFile != NULL ? srcFile : "<none>"));
+    }
 
 };
 
@@ -114,7 +130,7 @@ class E_comm : public Event {
 
      virtual int Ekind() {return Ev_comm;}
      virtual void print() { 
-       printf ("Comm: id %d time %ld.%06ld to %d size %d\n",
+       printf ("Comm: node %d time %ld.%06ld to %d size %d\n",
                nodeid, sec, usec, dstid, elemsize * datalen); }
 };
 
@@ -137,7 +153,7 @@ class E_fork : public Event {
 
      virtual int Ekind() {return Ev_fork;}
      virtual void print() {
-       printf ("Fork%s: id %d time %ld.%06ld to %d datasize %d\n",
+       printf ("Fork%s: node %d time %ld.%06ld to %d datasize %d\n",
                (isFast ? "(fast)" : ""), nodeid, sec, usec, dstid, argsize);
      }
 };
@@ -166,7 +182,7 @@ class E_tag : public Event {
 
      virtual int Ekind() {return Ev_tag;}
      virtual void print() {
-       printf ("Tag: id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld tagNo %d, Tag='%s'\n",
+       printf ("Tag: node %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld tagNo %d, Tag='%s'\n",
                nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec, tag_num, tag_name.c_str());
      }
 
@@ -213,9 +229,43 @@ class E_end : public Event {
     double sys_time() { return s_sec+(double)s_usec/1000000; }
     virtual int Ekind() { return Ev_end; }
     virtual void print() {
-      printf ("End: id %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld\n",
+      printf ("End: node %d time %ld.%06ld user %ld.%06ld sys %ld.%06ld\n",
               nodeid, sec, usec, u_sec, u_usec, s_sec, s_usec);
     }
+};
+
+class E_begin_task : public Event {
+
+  private:
+    int taskId;
+
+  public:
+    E_begin_task (long esec, long eusec, int nodeid, int taskid)
+      : Event(esec, eusec, nodeid), taskId(taskid) {};
+
+    int getTaskId() { return taskId; }
+    virtual int Ekind() { return Ev_begin_task; }
+    virtual void print() {
+      printf ("Btask: node %d time %ld.%06ld taskId %d\n",
+              nodeid, sec, usec, taskId);
+    }
+};
+
+class E_end_task : public Event {
+
+   private:
+     int taskId;
+
+   public:
+     E_end_task (long esec, long eusec, int nodeid, int taskid)
+       : Event(esec, eusec, nodeid), taskId(taskid) {};
+
+     int getTaskId() { return taskId; }
+     virtual int Ekind() { return Ev_end_task; }
+     virtual void print() {
+       printf ("Etask: node %d time %ld.%06ld taskId %d\n",
+               nodeid, sec, usec, taskId);
+     }
 };
 
 #endif

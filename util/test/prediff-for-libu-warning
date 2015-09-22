@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+#
+# Filter out warnings about libu not detecting which processor we're on with
+# CCE 8.4 on our whitebox machines.
+#
+
+import sys
+
+logfile = sys.argv[2]
+
+data = ''
+with open(logfile, 'r') as f:
+    data = f.read()
+    data = data.replace('WARNING: libu: memcpy AMD cpuid detection failed\n\0', '')
+
+with open(logfile, 'w') as f:
+    f.write(data)

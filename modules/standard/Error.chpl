@@ -40,7 +40,6 @@ module Error {
 use SysBasic;
 
 // here's what we need from Sys
-pragma "no doc"
 private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:err_t):c_string;
 
 /* This function takes in a string and returns it in double-quotes,

@@ -33,7 +33,13 @@
 #include "symbol.h"
 
 
-// getTheIteratorFn(): get the corresponding original iterator's FnSymbol.
+//
+// getTheIteratorFn(): get the original (user-written) iterator function
+// that corresponds to an _iteratorClass type or symbol
+// or a CallExpr therewith. Its uses were simply:
+//
+//   ... ->defaultInitializer->getFormal(1)->type->defaultInitializer
+//
 
 // 'ic' must be an instance of _iteratorClass
 FnSymbol* getTheIteratorFn(Symbol* ic) {
@@ -44,22 +50,25 @@ FnSymbol* getTheIteratorFn(CallExpr* call) {
   return getTheIteratorFn(call->get(1)->typeInfo());
 }
 
-// getTheIteratorFn() - was:
-//   ...->defaultInitializer->getFormal(1)->type->defaultInitializer
-//
-// * _iteratorClass's defaultInitializer's first arg type is _iteratorRecord
-// * _iteratorRecord type's defaultInitializer gives us the iterator
-//
-FnSymbol* getTheIteratorFn(Type* icType) {
-  // either an IC or a tuple thereof
+// either an _iteratorClass type or a tuple thereof
+FnSymbol* getTheIteratorFn(Type* icType)
+{
   // the asserts document the current state
   bool gotTuple = icType->symbol->hasFlag(FLAG_TUPLE);
   INT_ASSERT(gotTuple || icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-  Type* irType = icType->defaultInitializer->getFormal(1)->type;
+
+  // The _getIterator function is in _iteratorClass's defaultInitializer.
+  FnSymbol* getIterFn = icType->defaultInitializer;
+
+  // The type of _getIterator's first formal arg is _iteratorRecord.
+  Type* irType = getIterFn->getFormal(1)->type;
   INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
              (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
+
+  // The original iterator function is in _iteratorRecord's defaultInitializer.
   FnSymbol* result = irType->defaultInitializer;
   INT_ASSERT(gotTuple || result->hasFlag(FLAG_ITERATOR_FN));
+
   return result;
 }
 
@@ -1922,15 +1931,7 @@ inlineIterators() {
 
     if (ForLoop* forLoop = toForLoop(block)) {
       Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
-      // The _getIterator function is stashed in the defaultInitializer field
-      // of the iterator class.
-      FnSymbol* getIterFn = iterator->type->defaultInitializer;
-      // The operand of the getIterator function is an iterator record.
-      Type* irecord = getIterFn->getFormal(1)->type;
-      // The original iterator function is stored in the defaultInitializer
-      // field of an iterator record.
-      FnSymbol* ifn      = irecord->defaultInitializer;
-
+      FnSymbol* ifn = getTheIteratorFn(iterator);
       if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
         // The Boolean return value from expandIteratorInline() is being
         // ignored here, which means that forLoop might not have been replaced.

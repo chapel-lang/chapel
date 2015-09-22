@@ -27,7 +27,9 @@ The Chapel implementation is composed of two categories of code:
      vim              vim-based syntax coloring                    VIM
 
    third-party/
-     chpldoc-venv    python packages supporting chpldoc
+     chpl-venv        python packages supporting chpldoc & tests
+       subprocess32   Back port of python3 subprocess to python2   Python
+       argparse       Back port of argparse to < python2.7         Python
        Sphinx         Python documentation generator               BSD
        sphinxcontrib-chapeldomain
                       The Chapel language domain for Sphinx        Apache v2.0
@@ -83,7 +85,7 @@ The Chapel implementation is composed of two categories of code:
      vim              only used if a user modifies their vim environment
 
    third-party/
-     chpldoc-venv     only used when running 'chpldoc'
+     chpl-venv        only used when running 'chpldoc' or 'start_test'
      dlmalloc         only used when CHPL_MEM is 'dlmalloc'
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              where possible, used by default or when CHPL_GMP is 'gmp'

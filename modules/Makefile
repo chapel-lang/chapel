@@ -67,6 +67,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Help.chpl \
 	standard/IO.chpl \
 	standard/List.chpl \
+	standard/LAPACK.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Norm.chpl \

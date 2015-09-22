@@ -24,15 +24,18 @@ about your environment for using Chapel:
   using a range of compilers on a nightly basis; these include relatively
   recent versions of gcc/g++, clang, and compilers from Cray, Intel, and PGI.
 
+* If you wish to use Chapel's test system, python-devel or an equivalent package for
+  your platform is required for our test runner.
+
 We have used the following commands to set up newly installed system images.
 Note that our test system works much better with tcsh installed.
 
 CentOS 6.5, 6.6, 7.0:
-sudo yum install gcc gcc-c++ perl python tcsh bash make gawk
+sudo yum install gcc gcc-c++ perl python python-devel tcsh bash make gawk
 
 SLES 11 SP3:
-sudo zypper install gcc gcc-c++ perl python tcsh bash make gawk
+sudo zypper install gcc gcc-c++ perl python python-devel tcsh bash make gawk
 
 Debian 7.8, Ubuntu 12.04, 14.04, 14.10:
-sudo apt-get install gcc g++ perl python tcsh bash make mawk
+sudo apt-get install gcc g++ perl python python-dev tcsh bash make mawk
 

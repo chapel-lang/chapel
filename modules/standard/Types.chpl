@@ -212,6 +212,8 @@ proc isUnionValue(e)     param  return isUnionType(e.type);
 // isSingleValue
 pragma "no doc"
 proc isAtomicValue(e)    param  return isAtomicType(e.type);
+pragma "no doc"
+proc isRefIterValue(e)   param  return isRefIterType(e.type);
 
 
 //
@@ -268,6 +270,8 @@ pragma "no doc"
 proc isSingle(type t)    param  return isSingleType(t);
 pragma "no doc"
 proc isAtomic(type t)    param  return isAtomicType(t);
+pragma "no doc"
+proc isRefIter(type t)   param  return isRefIterType(t);
 
 // Set 2 - values.
 /*
@@ -314,12 +318,13 @@ proc isSync(e)           param  return false;
 pragma "no doc"
 proc isSingle(e: single) param  return true; // workaround: not isSingleValue
 proc isSingle(e)         param  return false;
+proc isAtomic(e)    param  return isAtomicValue(e);
 // Here is a single doc comment for the above.
 /*
 Each of the above functions returns `true` if its argument is
 a corresponding type or a value of such a type.
 */
-proc isAtomic(e)    param  return isAtomicValue(e);
+proc isRefIter(e)   param  return isRefIterValue(e);
 
 
 // for internal use until we have a better name

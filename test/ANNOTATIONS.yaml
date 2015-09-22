@@ -247,6 +247,10 @@ regexdna:
   10/07/14:
     - Add c_string_copy type
 
+revcomp:
+  05/11/15:
+    - various qio changes motivated by cygwin failures (#1943)
+
 spectralnorm:
   01/21/15:
     - qthreads updated to yield every ~100 uncontested sync var locks

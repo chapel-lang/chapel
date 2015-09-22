@@ -38,6 +38,7 @@ $synchdir = "$logdir/.synch";          # where to store temporary metadata
 $rem_exe = "ssh -x";                   # disable X
 $pwd = `pwd`; chomp $pwd;
 $client_script = "$pwd/../util/test/paratest.client";
+$venv_check = "$pwd/../util/test/activate_chpl_test_venv.py";
 $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
 $futures_mode = 0;
@@ -200,144 +201,150 @@ sub feed_nodes {
     $| = 1;    # autoflush stdout
 
     print "about to start distributing work\n" if $debug;
+   
+    $activate_venv_output = `$venv_check`;
+    if ($? != 0) {
+      print $activate_venv_output;
+      systemd ("echo '$activate_venv_output' >> $fin_logfile");
+    } else {
+      @testdir_list = sort @testdir_list;
+      print $nodeCount; print " worker(s) (@node_list)\n";
+      print "timeout = $timeout\n" if $debug > 0;
+      my $startCount = $#testdir_list + 1;
+      print $startCount; print " test(s) (@testdir_list)\n";
 
-    @testdir_list = sort @testdir_list;
-    print $nodeCount; print " worker(s) (@node_list)\n";
-    print "timeout = $timeout\n" if $debug > 0;
-    my $startCount = $#testdir_list + 1;
-    print $startCount; print " test(s) (@testdir_list)\n";
+      my $startSecs = time();
+      while (($#testdir_list >= 0) &&       # while still have work to do
+             ($nodeCount > 0)      &&       # not all nodes have failed
+             !(-e "PARAHALT")) {
+          @readyidv = free_workers ();      # get IDs of nodes that are ready
 
-    my $startSecs = time();
-    while (($#testdir_list >= 0) &&       # while still have work to do
-           ($nodeCount > 0)      &&       # not all nodes have failed
-           !(-e "PARAHALT")) {
-        @readyidv = free_workers ();      # get IDs of nodes that are ready
+          print @readyidv if $debug;
+          print "\n" if ($#readyidv >= 0);
+          foreach $readyid (@readyidv) {    # for ready nodes
+              next if ($#testdir_list < 0);
 
-        print @readyidv if $debug;
-        print "\n" if ($#readyidv >= 0);
-        foreach $readyid (@readyidv) {    # for ready nodes
-            next if ($#testdir_list < 0);
+              $testdir = $testdir_list[0];
+              $node = $node_list[$readyid]; # machine name to rem exec to
+              $synchfile = "$synchdir/$node.$readyid";
+              $callboard[$readyid] = time();
 
-            $testdir = $testdir_list[0];
-            $node = $node_list[$readyid]; # machine name to rem exec to
-            $synchfile = "$synchdir/$node.$readyid";
-            $callboard[$readyid] = time();
+              # remove synch file before forking work to worker
+              unless (-e $synchfile) {
+                  printf ("Error: synch file '$synchfile' missing\n");
+                  exit (7);
+              }
+              unlink $synchfile;
 
-            # remove synch file before forking work to worker
-            unless (-e $synchfile) {
-                printf ("Error: synch file '$synchfile' missing\n");
-                exit (7);
-            }
-            unlink $synchfile;
+              my $elapsedSecs = time() - $startSecs;
+              my $testsLeft = $#testdir_list + $nodeCount;
+              my $testsDone = $startCount - $testsLeft;
+              my $estSecsLeft = 1;
+              if ($testsDone > 0) {
+                  $estSecsLeft = int($testsLeft * $elapsedSecs / $testsDone);
+              }
+              my ($endSec, $endMin, $endHour) = localtime(time() + $estSecsLeft);
 
-            my $elapsedSecs = time() - $startSecs;
-            my $testsLeft = $#testdir_list + $nodeCount;
-            my $testsDone = $startCount - $testsLeft;
-            my $estSecsLeft = 1;
-            if ($testsDone > 0) {
-                $estSecsLeft = int($testsLeft * $elapsedSecs / $testsDone);
-            }
-            my ($endSec, $endMin, $endHour) = localtime(time() + $estSecsLeft);
+              print "$node <- $testdir ($#testdir_list left, ";
+              printf ("end ~%02d:%02d:%02d)\n", $endHour, $endMin, $endSec);
+              $testdirname = $testdir;
+              $testdirname =~ s/\//-/g;
+              $logfile = "$logdir/$testdirname.$node.log";
+              # fork work
+              unless ($pid = fork) {        # child
+                  if ($node eq $localnode) {
+                      $rem_exec_cmd = "";
+                      $chplenv = "\"$chplenv\"";
+                      $compopts = "\"$compopts\"";
+                      $execopts = "\"$execopts\"";
+                  } else {
+                      $rem_exec_cmd = "$rem_exe $node";
+                      $chplenv = "\\\"$chplenv\\\"";
+                      $compopts = "\\\"$compopts\\\"";
+                      $execopts = "\\\"$execopts\\\"";
+                  }
+                  # If the command line gets too long, consider using xargs
+                  $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $compopts $execopts";
+                  if ($verbose) {
+                      systemd ($rem_cmd);
+                  } else {
+                      systemd ("$rem_cmd 2>&1 | grep -i 'Error in paratest.client:'");
+                  }
+                  $pe_command = $show_all_errors
+                    # print Error lines; terminate when we reach Test Summary
+                    ? '/^\\[Error/p; /^\\[Test Summary/q'
+                    # once an Error line is seen, print it and terminate
+                    : '/^\\[Error/{p;q}';
+                  $partial_errors = `sed -n '$pe_command' $logfile`;
+                  if ($partial_errors) {
+                      print "\n:( $partial_errors";
+                  } else {
+                      print ":)";
+                  }
+                  exit (0);
+              }
 
-            print "$node <- $testdir ($#testdir_list left, ";
-            printf ("end ~%02d:%02d:%02d)\n", $endHour, $endMin, $endSec);
-            $testdirname = $testdir;
-            $testdirname =~ s/\//-/g;
-            $logfile = "$logdir/$testdirname.$node.log";
-            # fork work
-            unless ($pid = fork) {        # child
-                if ($node eq $localnode) {
-                    $rem_exec_cmd = "";
-                    $chplenv = "\"$chplenv\"";
-                    $compopts = "\"$compopts\"";
-                    $execopts = "\"$execopts\"";
-                } else {
-                    $rem_exec_cmd = "$rem_exe $node";
-                    $chplenv = "\\\"$chplenv\\\"";
-                    $compopts = "\\\"$compopts\\\"";
-                    $execopts = "\\\"$execopts\\\"";
-                }
-                # If the command line gets too long, consider using xargs
-                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $compopts $execopts";
-                if ($verbose) {
-                    systemd ($rem_cmd);
-                } else {
-                    systemd ("$rem_cmd 2>&1 | grep -i 'Error in paratest.client:'");
-                }
-                $pe_command = $show_all_errors
-                  # print Error lines; terminate when we reach Test Summary
-                  ? '/^\\[Error/p; /^\\[Test Summary/q'
-                  # once an Error line is seen, print it and terminate
-                  : '/^\\[Error/{p;q}';
-                $partial_errors = `sed -n '$pe_command' $logfile`;
-                if ($partial_errors) {
-                    print "\n:( $partial_errors";
-                } else {
-                    print ":)";
-                }
-                exit (0);
-            }
+              push @logs, $logfile;
+              shift @testdir_list;
+          }
 
-            push @logs, $logfile;
-            shift @testdir_list;
-        }
+          # wait before checking for free workers
+          sleep $sleep_time;                          
+      }
 
-        # wait before checking for free workers
-        sleep $sleep_time;                          
-    }
+      # wait for everyone to finish;
+      my ($done, $dead) = (0, 0);
+      while (! (-e "PARAHALT")) {
+          # For workers that are ready, set their last-fed time to zero.
+          @readyidv = free_workers ();
+          foreach $readyid (@readyidv) {
+              $callboard[$readyid] = 0;
 
-    # wait for everyone to finish;
-    my ($done, $dead) = (0, 0);
-    while (! (-e "PARAHALT")) {
-        # For workers that are ready, set their last-fed time to zero.
-        @readyidv = free_workers ();
-        foreach $readyid (@readyidv) {
-            $callboard[$readyid] = 0;
+              # This worker's termination has been noted.
+              $node = $node_list[$readyid]; # machine name to rem exec to
+              $synchfile = "$synchdir/$node.$readyid";
+              unless (-e $synchfile) {
+                  printf ("Error: synch file '$synchfile' missing\n");
+                  exit (7);
+              }
+              unlink $synchfile;
+          }
 
-            # This worker's termination has been noted.
-            $node = $node_list[$readyid]; # machine name to rem exec to
-            $synchfile = "$synchdir/$node.$readyid";
-            unless (-e $synchfile) {
-                printf ("Error: synch file '$synchfile' missing\n");
-                exit (7);
-            }
-            unlink $synchfile;
-        }
+          # Now check that all nodes have timed out.
+          ($done, $dead) = (0, 0);
+          for ($id = 0; $id < $nodeCount; $id++) {
+              if ($callboard[$id] == 0) { $done++; next; }
+              $dead++ if ($timeout > 0) && ((time() - $callboard[$id]) > $timeout);
+          }
+          last if ($done + $dead) >= $nodeCount;
 
-        # Now check that all nodes have timed out.
-        ($done, $dead) = (0, 0);
-        for ($id = 0; $id < $nodeCount; $id++) {
-            if ($callboard[$id] == 0) { $done++; next; }
-            $dead++ if ($timeout > 0) && ((time() - $callboard[$id]) > $timeout);
-        }
-        last if ($done + $dead) >= $nodeCount;
+          sleep $sleep_time;
+      }
 
-        sleep $sleep_time;
-    }
+      # Note that hung processes on remote nodes must be killed manually
+      # if we exit this loop due to one or more workers being declared dead.
+      if ($dead > 0) {
+          print "\n[Error: paratest failed to exit cleanly]\n";
+          for ($id = 0; $id < $nodeCount; $id++) {
+              print "[Error: Worker $id on node $node_list[$id] timed out.]\n"
+                  if $callboard[$id] > 0;
+          }
+      }
 
-    # Note that hung processes on remote nodes must be killed manually
-    # if we exit this loop due to one or more workers being declared dead.
-    if ($dead > 0) {
-        print "\n[Error: paratest failed to exit cleanly]\n";
-        for ($id = 0; $id < $nodeCount; $id++) {
-            print "[Error: Worker $id on node $node_list[$id] timed out.]\n"
-                if $callboard[$id] > 0;
-        }
-    }
+      if (-e "PARAHALT" && ($#testdir_list > 0)) {
+          print "\nExiting early due to PARAHALT file\n";
+      }
 
-    if (-e "PARAHALT" && ($#testdir_list > 0)) {
-        print "\nExiting early due to PARAHALT file\n";
-    }
+      if ($#testdir_list >= 0) {
+         print $#testdir_list+1; 
+         print " directory(s) left untested: @testdir_list\n";
+      }
 
-    if ($#testdir_list >= 0) {
-       print $#testdir_list+1; 
-       print " directory(s) left untested: @testdir_list\n";
-    }
-
-    $endtime = `date`; chomp $endtime;
-    if ($memleaksflag) {
-        systemd("cat $logdir/tmp.*.memleaks > $memleaks");
-        systemd("rm -f $logdir/tmp.*.memleaks");
+      $endtime = `date`; chomp $endtime;
+      if ($memleaksflag) {
+          systemd("cat $logdir/tmp.*.memleaks > $memleaks");
+          systemd("rm -f $logdir/tmp.*.memleaks");
+      }
     }
     collect_logs ($fin_logfile, @logs, $dead);
 }
@@ -426,13 +433,8 @@ sub find_subdirs {
         my $skipfilen = "$targetdir/$filen.skipif";
         if (-e "$skipfilen") {
             my $skip;
-            if (-x "$skipfilen") {
-                print "$skipfilen = " . `$skipfilen` if $debug;
-                $skip = `$skipfilen`;
-            } else {
-                print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
-                $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
-            }
+            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+            $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
             next if $skip > '0' or $skip =~ m/true/i;
         }
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
@@ -506,7 +508,7 @@ sub main {
     $fin_logfile = "$logdir/$user.$platform.log";      # final log file name
     # $fin_logfile = "$logdir/$user.$platform.log";
     unlink $fin_logfile if (-e $fin_logfile);          # remove final log file
-  
+
     $starttime = `date`; chomp $starttime;
 
     while ($#ARGV >= 0) {

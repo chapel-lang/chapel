@@ -15,10 +15,10 @@ endif
 
 default: all
 
-all: chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
+all: test-venv chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
 
 clean: FORCE
-	cd chpldoc-venv && $(MAKE) clean
+	cd chpl-venv && $(MAKE) clean
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
@@ -31,7 +31,7 @@ clean: FORCE
 	cd fltk && $(MAKE) clean
 
 cleanall: FORCE
-	cd chpldoc-venv && $(MAKE) cleanall
+	cd chpl-venv && $(MAKE) cleanall
 	cd dlmalloc && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
@@ -44,7 +44,7 @@ cleanall: FORCE
 	cd fltk && $(MAKE) cleanall
 
 clobber: FORCE
-	cd chpldoc-venv && $(MAKE) clobber
+	cd chpl-venv && $(MAKE) clobber
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
@@ -58,9 +58,13 @@ clobber: FORCE
 
 depend:
 
-chpldoc-venv: $(CHPLDOC_VENV_SPHINX_BUILD)
-$(CHPLDOC_VENV_SPHINX_BUILD):
-	cd chpldoc-venv && $(MAKE)
+test-venv: $(CHPL_VENV_TEST_REQS)
+$(CHPL_VENV_TEST_REQS):
+	cd chpl-venv && $(MAKE) test-venv
+
+chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
+$(CHPL_VENV_SPHINX_BUILD):
+	cd chpl-venv && $(MAKE) chpldoc-venv
 
 dlmalloc: $(DLMALLOC_INSTALL_DIR)
 $(DLMALLOC_INSTALL_DIR):

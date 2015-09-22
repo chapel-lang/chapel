@@ -1,0 +1,39 @@
+Whats Being Tested?
+===================
+
+The Fortran test framework is massive, and would be nearly impossible 
+to replicate here.
+
+We test to make sure that things of all types can make from the Chapel side to
+the C side to the Fortran side and back, without becoming corrupted.
+
+Each test file tests:
+ 1. the Fortran LAPACK call 
+ 2. the C LAPACKE call...
+  * in row major order
+  * in column major order
+ 3. the Chapel LAPACK call...
+  * in row major order
+  * in column major order
+  
+Additionally, dgees tests using a select function and on both sort ("S") and
+no sort ("N") options
+
+The types tested are:
+real(32) ( c_float )
+real(64) ( c_double )
+complex(64) ( complex_float )
+complex(128) ( complex_double )
+LAPACK_D_SELECT2_LESS_THAN ( function pointer f( c_double, c_double )  )
+
+LAPACK_Matrix
+=============
+
+LAPACK_Matrix is a container that was used to make the process of testing each 
+LAPACK function much easier by encapsulating and providing explicit hooks
+for fields that were required by LAPACK.
+
+It is not meant to be used outside of the test framework.
+
+See LAPACK_example.chpl for a 'real world' example of how to use LAPACK
+  

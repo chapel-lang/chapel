@@ -444,11 +444,11 @@ assignment
   destination to a temporary, bit copies the source into the destination,
   calls postblit on the destination, and then calls the destructor on 
   the temporary. Users can overload the assigment operator
-  to do something else that might be more efficient.
-  TODO: Tom wrote "Will not be invoked by the compiler after conversion to
-  the new AMM model is complete". Assignment is still called for something
-  like myRecordOne = myRecordTwo, right?
-
+  to do something else that might be more efficient. The assignment
+  operator is only called for uses the `=` operator; in other words,
+  if the compiler needs to create a copy it will do so using copy
+  initialization.
+ 
 TODO: Original Outline Material
 ===============================
 

@@ -119,6 +119,11 @@ WARN_CFLAGS = $(WARN_CXXFLAGS)
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
 
 #
+# Don't warn for signed pointer issues (ex. c_ptr(c_char) )
+#
+WARN_GEN_CFLAGS += -Wno-pointer-sign
+
+#
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
