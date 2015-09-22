@@ -1,3 +1,5 @@
+.. _readme-llvm:
+
 ============
 LLVM support
 ============
