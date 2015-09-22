@@ -1,3 +1,5 @@
+.. _readme-executing:
+
 =========================
 Executing Chapel Programs
 =========================

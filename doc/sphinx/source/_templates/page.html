@@ -1,4 +1,6 @@
 {% extends "!page.html" %}
+{% set css_files = css_files + ["_static/style.css"] %}
+
 {% block footer %}
 {{ super() }}
 {% if theme_analytics_id %}

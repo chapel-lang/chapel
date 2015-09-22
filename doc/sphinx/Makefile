@@ -12,18 +12,22 @@ help-source:
 docs: html
 
 symlink-docs:
-# Set up symlinks between `/doc/release` and `/doc/sphinx/source`
+	@echo "Setting up symlinks from /doc/release to /doc/sphinx/source"
 	./symlinks.py
 
-clean: clean-build clean-source
+clean: clean-source
+
+cleanall: clean-source
+
+clobber: clean-source clean-build
+
+clean-source: clean-symlink-docs clean-module-docs
 
 clean-symlink-docs: FORCE
-# Remove symlinks between `/doc/release` and `/doc/sphinx/source`
-	./symlinks.py --clean
+	@echo "Removing all symbolic links contained in source/"
+	find source -type l -delete
 
 clean-module-docs: FORCE
 	rm -rf source/modules/standard
-
-clean-source: clean-symlink-docs
 
 FORCE:
