@@ -4,8 +4,8 @@
 Initial support for Intel Xeon Phi
 ==================================
 
-This README describes how to build Chapel for Intel Xeon Phi, Knights
-Corner (KNC).
+The following information is assembled to help Chapel users get up and
+running on Intel Xeon Phi, Knights Corner (KNC).
 
 The initial implementation runs in self-hosted mode only.  That is,
 the entire Chapel program runs on the KNC co-processor.  For
@@ -16,19 +16,27 @@ all communication must bounce through the host processor.
 Current Limitations
 -------------------
 
-Currently, only the Intel compiler supports compilation for KNC
-(``CHPL_TARGET_COMPILER=intel`` or ``cray-prgenv-intel``).
+There are currently a number of limitations for KNC builds:
 
-There are a number of Chapel configurations that are not supported for
-KNC builds:
+- Only the Intel compiler supports compilation for KNC:
 
-- ``CHPL_MEM=tcmalloc`` (lfence not supported)
-- ``CHPL_REGEXP=re2`` (sfence not supported)
-- ``CHPL_HWLOC=hwloc`` (build issues)
-- ``CHPL_GMP=system`` (not supported)
-- GASNet builds can only use non-native substrates such as ``mpi`` or ``udp``.
+  ``CHPL_TARGET_COMPILER=intel`` or ``CHPL_TARGET_COMPILER=cray-prgenv-intel``
 
-Most of these setting are set as the default for KNC builds.
+- Only non-native comm substrates can be used with KNC:
+
+  ``CHPL_COMM_SUBSTRATE=mpi`` or ``CHPL_COMM_SUBSTRATE=udp``
+
+- Additionally the following configurations are not supported:
+
+  =================  ================================
+  Configuration      Reason
+  =================  ================================
+  CHPL_MEM=tcmalloc  lfence not supported
+  CHPL_REGEXP=re2    sfence not supported
+  CHPL_HWLOC=hwloc   undiagnosed build issues
+  CHPL_GMP=system    system version not built for KNC
+  =================  ================================
+
 
 ---------------
 Getting started
@@ -72,8 +80,6 @@ For Cray XC:
 For Cray machines, only the ``aprun`` launcher is supported.  In addition,
 ``CHPL_TASKS=muxed`` and ``CHPL_COMM=ugni`` are not supported.
 
-- Log into a Cray XC with KNC nodes.  Set ``CHPL_HOST_PLATFORM=cray-xc``.
-
 - Load the proper modules. The order in which you do these module
   commands matters.
 
@@ -82,9 +88,9 @@ For Cray machines, only the ``aprun`` launcher is supported.  In addition,
 
       module swap PrgEnv-cray PrgEnv-intel
 
-  - Unload ``libsci`` (unsupported) and any ``craype`` processor type modules::
+  - Unload ``libsci``, ``atp`` (unsupported) and any ``craype`` processor type modules::
 
-      module unload cray-libsci atp craype-sandybridge craype-ivybridge
+      module unload cray-libsci atp craype-ivybridge
 
   - Load the KNC ``craype`` module::
 
