@@ -1,3 +1,5 @@
+.. _readme-chpl-ipe:
+
 The Interactive Programming Environment
 ========================================
 

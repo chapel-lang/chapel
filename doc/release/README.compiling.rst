@@ -1,3 +1,5 @@
+.. _readme-compiling:
+
 =========================
 Compiling Chapel Programs
 =========================

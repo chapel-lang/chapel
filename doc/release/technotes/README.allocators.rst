@@ -1,3 +1,5 @@
+.. _readme-allocators:
+
 ==========================
 Chapel's use of Allocators
 ==========================

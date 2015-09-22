@@ -1,3 +1,5 @@
+.. _readme-local:
+
 =====================
 The 'local' statement
 =====================

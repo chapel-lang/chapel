@@ -1,3 +1,5 @@
+.. _readme-knc:
+
 ==================================
 Initial support for Intel Xeon Phi
 ==================================

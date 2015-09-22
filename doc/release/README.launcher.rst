@@ -1,3 +1,5 @@
+.. _readme-launcher:
+
 ================
 Chapel launchers
 ================
@@ -214,7 +216,6 @@ Launcher Name  Description
 loadleveler    launch using IBM loadleveler (still needs refining)
 marenostrum    launch using MareNostrum's mnsubmit script
 mpirun         launch using mpirun (no mpi comm currently) 
-tile-monitor   launch using Tilera's tile monitor
 =============  ==========================================================
 
 These launchers are the default for the following configurations: 
@@ -223,6 +224,5 @@ These launchers are the default for the following configurations:
 If                            CHPL_LAUNCHER
 ============================  ===========================================
 CHPL_PLATFORM=marenostrum     marenostrum
-CHPL_TARGET_COMPILER=tile-cc  tile-monitor
 ============================  ===========================================
 
