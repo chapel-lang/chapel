@@ -66,7 +66,7 @@ module ChapelSyncvar {
       }
     }
 
-  pragma "no doc"
+  /* Returns true if `t` is a sync type, false otherwise. */
   proc isSyncType(type t) param
     return __primitive("is sync type", t);
 
@@ -265,7 +265,7 @@ module ChapelSyncvar {
       }
     }
 
-  pragma "no doc"
+  /* Returns true if `t` is a single type, false otherwise. */
   proc isSingleType(type t) param
     return __primitive("is single type", t);
 
