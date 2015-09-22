@@ -261,7 +261,7 @@ io-expression:
   io-expression io-operator expression
 
 io-operator:
-  <~>
+  `<(*$\sim$*)>'
 \end{syntax}
 
 See the module documentation on I/O for details on how to use the
@@ -274,7 +274,7 @@ var w: Writer;
 var a: real;
 var b: int;
 
-w <~> a <~> b;
+w <(*$\sim$*)> a <(*$\sim$*)> b;
 \end{chapel}
 the I/O operator is left-associative and indicates writing \chpl{a}
 and then \chpl{b} to \chpl{w} in this case.
