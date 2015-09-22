@@ -137,7 +137,6 @@ We will use the following notation:
   operations must be completed as a single operation.
 
   \item $L(a)$, $S(a)$, $A_{sc}(a)$, and $A_r(a,o)$ are also called
-
   \textit{memory operations}
 
   \item $X <_p Y$ indicates that $X$ precedes $Y$ in program order
@@ -163,7 +162,7 @@ preserve sequential program semantics. That is, if we have a snippet
 of a Chapel program without task operations, such as \chpl{X; Y;}, the
 statements $X$ and $Y$ will be converted into a sequence
 of \textit{load}, \textit{store}, and \textit{atomic operations} in a
-manner that preserves the behavior of a serial portion of the
+manner that preserves the behavior of a this serial portion of the
 program. That is, $X=x_1,x_2,...$ and $Y=y_1,y_2,...$ where $x_i$ and
 $y_j$ are each a sequence of \textit{load}, \textit{store},
 or \textit{atomic operations} and we have $x_i <_p y_j$.
@@ -176,7 +175,9 @@ number of tasks (\chpl{waitFor($t_1$..$t_n$)}). In particular:
 \begin{itemize}
 
   \item \chpl{forall} (including promotion) creates some number of
-tasks $m$ to execute the $n$ iterations of the loop (\chpl{$t_i$ =
+tasks $m$ to execute the $n$ iterations of the loop
+
+(\chpl{$t_i$ =
 begin\{some-loop-bodies\}} for each task $i=1$..$m$) and waits for
 them to complete (\chpl{waitFor($t_1$..$t_m$)}).  The number of tasks $m$
 is defined by the implementation of the parallel iterator (See
@@ -197,8 +198,8 @@ waits for them all to complete (\chpl{waitFor($t_1$..$t_n$)}).
 
   \item \chpl{begin} creates a task to execute the enclosed statement
 (\chpl{t = begin\{X\}}).  The \chpl{sync} statement waits for all
-tasks $t_i$ created by a begin statement in the dynamic scope of the
-sync statement that are not within other, nested \chpl{sync}
+tasks $t_i$ created by a \chpl{begin} statement in the dynamic scope of the
+\chpl{sync} statement that are not within other, nested \chpl{sync}
 statements (\chpl{waitFor($t_1$..$t_n$)} for all $n$ such tasks).
 %% sungeun: This used to say that tasks were added to a list, but
 %% that's an implementation detail.
@@ -564,12 +565,9 @@ normal loads and stores.
 \label{unordered_operations}
 \index{memory consistency model!unordered memory operations}
 
-%% sungeun: Addressing Brad's comment, this isn't a syntax section, so
-%% no need to put it here.  Maybe?
-%%
-%% \begin{openissue}
-%% Syntax for \textit{unordered} operations has not yet been finalized.
-%% \end{openissue}
+\begin{openissue}
+Syntax for \textit{unordered} operations has not yet been finalized.
+\end{openissue}
 
 \begin{openissue}
 Should Chapel provide a memory fence that only complete unordered
@@ -635,13 +633,13 @@ unordered operations. This follows from our original definition of
 data race.
 
 \begin{chapel}
-var x: int;
+var x: int = 0;
 unordered_store(x, 10);
 unordered_store(x, 20);
 writeln(x);
 \end{chapel}
 
-The value of \textit{x} at the end of this program could be 10 or 20. As a
+The value of \textit{x} at the end of this program could be 0, 10, or 20. As a
 result, programs using unordered loads and stores are not sequentially
 consistent unless the program can guarantee that unordered operations
 can never operate on the same memory at the same time when one of them is a
@@ -651,7 +649,7 @@ store. In particular, the following are safe:
   \item Unordered stores to disjoint regions of memory.
   \item Unordered loads from potentially overlapping regions of memory when no store could overlap with the loads.
   \item Unordered loads and stores to the same memory location
-  when these are always separated by an atomic operation.
+  when these are always separated by an SC atomic operation.
 \end{itemize}
 
 Unordered loads and stores are available as a performance
@@ -787,7 +785,7 @@ cobegin {
       writeln("A[", i, "] = ", A[i]);
   }
   {  // Writer task
-    const numToWrite = 23;     // an arbitrary number
+    const numToWrite = 14;     // an arbitrary number
     for i in 1..numToWrite do
       A[i] = i/10.0;
     done(*\texttt{\$}*) = numToWrite;        // fence writes to A and signal done
@@ -810,15 +808,6 @@ A[11] = 1.1
 A[12] = 1.2
 A[13] = 1.3
 A[14] = 1.4
-A[15] = 1.5
-A[16] = 1.6
-A[17] = 1.7
-A[18] = 1.8
-A[19] = 1.9
-A[20] = 2.0
-A[21] = 2.1
-A[22] = 2.2
-A[23] = 2.3
 \end{chapelprintoutput}
 %\end{chapelexample}
 \end{example}
