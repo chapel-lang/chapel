@@ -119,7 +119,7 @@ inclusion in the next release.
 
 
 9) If you plan to do performance studies of Chapel programs, be sure
-   to (a) use the full-featured version and (b) read the PERFORMANCE
+   to (a) use the full-featured version and (b) read the ``PERFORMANCE``
    file in this directory to avoid common pitfalls.
 
 What's next?
