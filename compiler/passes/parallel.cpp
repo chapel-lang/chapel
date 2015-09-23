@@ -1139,13 +1139,19 @@ makeHeapAllocations() {
     for_defs(def, defMap, var) {
       if (CallExpr* call = toCallExpr(def->parentExpr)) {
         SET_LINENO(call);
-        // Do we need a case for PRIM_ASSIGN?
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
           Expr* value = call->get(2)->remove();
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, value));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
+        } else if (call->isPrimitive(PRIM_ASSIGN)) {
+          // ensure what we assign into is what we expect
+          INT_ASSERT(toSymExpr(call->get(1))->var == var);
+          VarSymbol* tmp = newTemp(var->type->refType);
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
+          def->replace(new SymExpr(tmp));
         } else if (call->isResolved() &&
                    call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
           call->remove();

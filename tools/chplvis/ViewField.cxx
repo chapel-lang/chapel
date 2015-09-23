@@ -186,7 +186,13 @@ static void selTag(Fl_Widget *w, void *p)
     if (DbgView->usingUTags())
       Info->setTagName(VisData.getUTagData(ix)->name);
     else
-      Info->setTagName(VisData.getTagData(ix)->name);
+      if (VisData.hasUniqueTags())
+        Info->setTagName(VisData.getTagData(ix)->name);
+      else {
+        char tmp[2048];
+        snprintf (tmp, sizeof(tmp), "%ld (%s)", ix, VisData.getTagData(ix)->name);
+        Info->setTagName(tmp);
+      }
     DbgView->selectData(ix);
   }
   DbgView->redraw();
