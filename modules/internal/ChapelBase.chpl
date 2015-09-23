@@ -889,6 +889,8 @@ module ChapelBase {
 //  inline proc bool.cast(type tl) where chpl_typeSupportsPrimitiveCast(t)
 //    return __primitive("cast", t, this);
   
+  // TODO -- spell these out so that implicit coercions work
+  // correctly.
   inline proc boolean.cast(type t) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, this);
   
@@ -944,8 +946,8 @@ module ChapelBase {
     return if this then 1i:t else 0i:t;
 
   // TODO - MPF says this should not return 0...
-  inline proc enumerated.cast(type t) where isImagType(t)
-    return 0i:t;
+  //inline proc enumerated.cast(type t) where isImagType(t)
+  //  return 0i:t;
   
   // TODO - MPF says this should not return 0...
   inline proc integral.cast(type t) where isImagType(t)
