@@ -1,4 +1,5 @@
-.. image:: ./util/images/craychapel.png
+.. image:: http://chapel.cray.com/images/cray-chapel-logo-200.png
+   :target: http://chapel.cray.com
 
 
 .. _chapelhome-readme:
@@ -164,9 +165,7 @@ What's next?
     example Chapel programs                     ``examples/README``
     a quick reference for Chapel syntax         ``doc/quickReference.pdf``
     the Chapel language specification           ``doc/chapelLanguageSpec.pdf``
-    how Chapel tasks are mapped to threads      ``doc/tasks.rst``
-    calling C code from Chapel                  ``doc/technotes/extern.rst``
-    other user and technical notes              ``doc/README``
+    other Chapel Documentation                  ``doc/README``
     third-party software that we use            ``third-party/README``
 =============================================== =====================================
 
@@ -176,8 +175,4 @@ What's next?
 ----------------------------------------------- -------------------------------------
        a Cray system                            ``doc/platforms/cray.rst``
        Cygwin over Windows                      ``doc/platforms/cygwin.rst``
-       an IBM system                            ``doc/platforms/ibm.rst``
-       an SGI Altix system                      ``doc/platforms/sgi.rst``
 =============================================== =====================================
-
-
