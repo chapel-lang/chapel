@@ -82,6 +82,18 @@ we have:
   ``j_k = (  (i_k - s_k) / b_k  ) (mod N_k)``
 
 
+**Limitations**
+
+This distribution is work in progress and so has significant limitations.
+
+It has not been tuned for performance.
+
+The only ``idxType`` currently supported is `int` or `int(64)`.
+
+A `forall` loop over a Cyclic-distributed domain or array
+currently executes at most a single task on each locale.
+
+
 **Example**
 
 The following code declares a domain ``D`` distributed over
@@ -167,16 +179,6 @@ A `forall` loop over a Cyclic-distributed domain or array
 executes each iteration on the locale where that iteration's index
 is mapped to. Currently all iterations on a given locale
 execute within a single task.
-
-
-**Limitations**
-
-This distribution has not been tuned for performance.
-
-A `forall` loop over a Cyclic-distributed domain or array
-currently executes at most a single task on each locale.
-
-The only ``idxType`` currently supported is `int` or `int(64)`.
 */
 class BlockCyclic : BaseDist {
   param rank: int;

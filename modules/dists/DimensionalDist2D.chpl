@@ -239,6 +239,8 @@ Presently, the following dimension specifiers are available
 **Limitations**
 
 Only 2D domains and arrays are supported.
+
+There may be performance issues when scaling to a large number of locales.
 */
 class DimensionalDist2D : BaseDist {
   // the desired locales to distribute things over;

@@ -27,6 +27,10 @@ process("dims/ReplicatedDim.rst");
 process("dims/BlockDim.rst");
 process("dims/BlockCycDim.rst");
 
+# There is nothing user-facing there.
+# chpldoc creates this .rst because DSIUtil is imported from the above modules.
+unlink "DSIUtil.rst" or warn "Could you remove DSIUtil.rst: $!";
+
 #or: for my $rst (@ARGV) { process($rst); }
 
 print "done\n";

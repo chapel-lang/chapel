@@ -142,14 +142,17 @@ module ChapelTuple {
     return __primitive("get svec member", this, i);
   }
 
-  /*
-    When this param is set to the string "true",
-    the compiler will issue a warning when iterating over components
-    of a homogeneous tuple, e.g. ``for i in (A,B,C)``.
-
-    This is useful to expose code where zippered iteration,
-    e.g. ``for abc in zip(A,B,C)``, may have been intended.
-  */
+  // This is controlled with --[no-]warn-tuple-iteration
+  // so we are not chpldoc-ing it.
+  //
+  // When this param is set to the string "true",
+  // the compiler will issue a warning when iterating over components
+  // of a homogeneous tuple, e.g. ``for i in (A,B,C)``.
+  //
+  // This is useful to expose code where zippered iteration,
+  // e.g. ``for abc in zip(A,B,C)``, may have been intended.
+  //
+  pragma "no doc"
   config param CHPL_WARN_TUPLE_ITERATION = "unset";
   
   //
