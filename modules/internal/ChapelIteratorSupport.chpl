@@ -396,17 +396,17 @@ module ChapelIteratorSupport {
      creation for loops with small trip counts or where task creation isn't
      desirable.
 
-     Data parallel operations in Chapel such as forall loops are order
-     independent. However, a forall is implemented in terms of either
+     Data parallel operations in Chapel such as forall loops are
+     order-independent. However, a forall is implemented in terms of either
      leader/follower or standalone iterators which typically create tasks.
-     This iterator exists to allow vectorization of order independent loops
+     This iterator exists to allow vectorization of order-independent loops
      without requiring task creation. By using this wrapper iterator you are
-     asserting that the loop is order independent (and thus a candidate for
+     asserting that the loop is order-independent (and thus a candidate for
      vectorization) just as you are when using a forall loop.
 
      When invoked from a serial for loop, this iterator will simply mark your
-     iterator(s) as order independent. When invoked from a parallel forall loop
-     this iterator will implicitly be order independent because of the
+     iterator(s) as order-independent. When invoked from a parallel forall loop
+     this iterator will implicitly be order-independent because of the
      semantics of a forall, and additionally it will invoke the serial
      iterator instead of the parallel iterators. For instance:
 
