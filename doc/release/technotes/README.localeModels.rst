@@ -70,7 +70,7 @@ locale, please see :ref:`readme-tasks`.
 
 To use the NUMA locale model:
 
-1) Set the ``CHPL_LOCALE_MODEL`` environment variable to "numa".
+1) Set the ``CHPL_LOCALE_MODEL`` environment variable to ``numa``.
 
 .. code-block:: sh
 
