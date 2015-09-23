@@ -118,6 +118,9 @@ are described below. Set the value to 1 to enable the feature.
   WARNINGS  Promote backend C compiler warnings to errors.
   ========  =======================================================
 
+
+.. _platform-specific-settings:
+
 --------------------------
 Platform-specific Settings
 --------------------------

@@ -80,13 +80,13 @@ CHPL_HOST_PLATFORM
    Platform-specific documentation is available for most of these platforms in
    :ref:`platforms-index`.
 
-   The Chapel Makefiles and sources are designed to work for any
-   UNIX-compatible environment that supports a GNU-compatible make utility.
-   The list above represents the set of platforms that we have access to and
-   can test easily.  We are interested in making our code framework portable to
-   other platforms -- if you are using Chapel on a platform other than the ones
-   listed above, please refer to the :ref:`readme-building` file and/or contact
-   us at: chapel_info@cray.com
+   The Chapel Makefiles and sources are designed to work for any UNIX-compatible
+   environment that supports a GNU-compatible make utility.  The list above
+   represents the set of platforms that we have access to and can test easily.
+   We are interested in making our code framework portable to other platforms --
+   if you are using Chapel on a platform other than the ones listed above,
+   please refer to :ref:`platform-specific-settings` for ways to set up a
+   Makefile for this platform and/or contact us at: chapel_info@cray.com
 
 PATH
 ~~~~
@@ -111,6 +111,8 @@ MANPATH
 Optional Settings
 -----------------
 
+.. _chpl_target_platform:
+
 CHPL_TARGET_PLATFORM
 ~~~~~~~~~~~~~~~~~~~~
    If you are cross-compiling for a platform other than your
@@ -122,6 +124,8 @@ CHPL_TARGET_PLATFORM
    .. note::
      If ``CHPL_TARGET_PLATFORM`` is not set, the target platform defaults to the
      same value as ``$CHPL_HOST_PLATFORM``.
+
+.. _chpl_compiler:
 
 CHPL_*_COMPILER
 ~~~~~~~~~~~~~~~
@@ -168,10 +172,10 @@ CHPL_*_COMPILER
    ``CHPL_TARGET_COMPILER`` will default to the same value as ``CHPL_HOST_COMPILER``.
 
    .. note::
-     Note that builds with LLVM support (ie when ``CHPL_LLVM=llvm``) will build
-     the runtime twice: once with the compiler as described above and once with
-     clang-included. We do this in order to avoid issues in linking objects
-     built by different compilers.
+     Note that builds with :ref:`readme-llvm` (i.e. when ``CHPL_LLVM=llvm``)
+     will build the runtime twice: once with the compiler as described above and
+     once with clang-included. We do this in order to avoid issues in linking
+     objects built by different compilers.
 
 CHPL_TARGET_ARCH
 ~~~~~~~~~~~~~~~~
@@ -220,7 +224,7 @@ CHPL_TARGET_ARCH
    The default value for this setting will vary based on settings in your
    environment, in order of application these rules are:
 
-        * If ``CHPL_TARGET_COMPILER`` is ``cray-prgenv-*`` you do not need to
+        * If :ref:`CHPL_TARGET_COMPILER <chpl_compiler>` is ``cray-prgenv-*`` you do not need to
           set anything in ``CHPL_TARGET_ARCH``. One of the ``craype-*`` modules
           (e.g.  ``craype-sandybridge``) should be loaded to provide equivalent
           functionality. Once the proper module is loaded, ``CRAY_CPU_TARGET``
@@ -230,13 +234,13 @@ CHPL_TARGET_ARCH
           ``CHPL_TARGET_ARCH`` will be set to ``none`` and no specialization
           will occur.
 
-        * If ``CHPL_COMM`` is set, no attempt to set a useful value will be made,
-          ``CHPL_TARGET_ARCH`` will be ``unknown``.
+        * If :ref:`CHPL_COMM` is set, no attempt to set a useful value will be
+          made, ``CHPL_TARGET_ARCH`` will be ``unknown``.
 
-        * If ``CHPL_TARGET_PLATFORM`` is ``darwin``, ``linux*``, or ``cygwin*``
-          ``CHPL_TARGET_ARCH`` will be ``native``, passing the responsibility
-          off to the backend C compiler to detect the specifics of the
-          hardware.
+        * If :ref:`CHPL_TARGET_PLATFORM` is ``darwin``, ``linux*``, or
+          ``cygwin*`` ``CHPL_TARGET_ARCH`` will be ``native``, passing the
+          responsibility off to the backend C compiler to detect the specifics
+          of the hardware.
 
 
 CHPL_MAKE
@@ -258,9 +262,9 @@ CHPL_MAKE
 CHPL_MODULE_PATH
 ~~~~~~~~~~~~~~~~
    Optionally, set the ``CHPL_MODULE_PATH`` environment variable to provide a
-   list of directories to be added to the module search path.  The value of
-   this environment variable should be a colon-separated list of directory
-   paths.
+   list of directories to be added to the :ref:`readme-module_search`.  The
+   value of this environment variable should be a colon-separated list of
+   directory paths.
 
    The module search path is used to satisfy 'use' statements in the Chapel
    program.  The complete search path can be displayed using the compiler option
@@ -268,6 +272,8 @@ CHPL_MODULE_PATH
    search paths, those introduced by the ``-M`` flag on the command line and
    directories containing the .chpl files named explicitly on the compiler
    command line.
+
+.. _chpl_locale_model:
 
 CHPL_LOCALE_MODEL
 ~~~~~~~~~~~~~~~~~
@@ -287,6 +293,7 @@ CHPL_LOCALE_MODEL
    See :ref:`readme-localeModels` for more information about
    locale models.
 
+.. _chpl_tasks:
 
 CHPL_TASKS
 ~~~~~~~~~~
@@ -321,6 +328,7 @@ CHPL_TASKS
    various ``CHPL_TASKS`` options.  See also :ref:`readme-cray` for more
    information about Cray-specific runtime layers.
 
+.. _chpl_comm:
 
 CHPL_COMM
 ~~~~~~~~~
@@ -426,15 +434,16 @@ CHPL_GMP
        gmp      use the GMP distribution bundled with Chapel in third-party
        =======  ============================================================
 
-   If unset, Chapel will attempt to build GMP using ``CHPL_TARGET_COMPILER``
-   (noting that the bundled version may not be supported by all compilers).
-   Based on the outcome, Chapel will default to:
+   If unset, Chapel will attempt to build GMP using
+   :ref:`CHPL_TARGET_COMPILER<chpl_compiler>` (noting that the bundled version
+   may not be supported by all compilers).  Based on the outcome, Chapel will
+   default to:
 
        ======= ====================================================
        Value   Description
        ======= ====================================================
        gmp     if the build was successful
-       system  if unsuccessful and CHPL_TARGET_PLATFORM is cray-x*
+       system  if unsuccessful and :ref:`CHPL_TARGET_PLATFORM` is cray-x*
        none    otherwise
        ======= ====================================================
 
@@ -459,20 +468,20 @@ CHPL_HWLOC
        hwloc   use the hwloc distribution bundled with Chapel in third-party
        ======= ==============================================================
 
-   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if ``CHPL_TASKS`` is
+   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if :ref:`CHPL_TASKS` is
    ``qthreads``, unless the target platform is knc.  In all other cases it
    defaults to ``none``.  In the unlikely event the bundled hwloc distribution
    does not build successfully, it should still be possible to use qthreads.
    Manually set ``CHPL_HWLOC`` to ``none`` and rebuild in this case (and please
    file a bug with the Chapel team.)  Building without hwloc should not have a
-   large performance impact when ``CHPL_LOCALE_MODEL`` is ``flat`` but will
+   large performance impact when :ref:`CHPL_LOCALE_MODEL` is ``flat`` but will
    drastically hurt performance for ``numa``.
 
 
 CHPL_REGEXP
 ~~~~~~~~~~~
    Optionally, the ``CHPL_REGEXP`` environment variable can be used to enable
-   regular expression operations as defined in :chpl:mod:RegExp:.  Current
+   regular expression operations as defined in :chpl:mod:`Regexp`.  Current
    options are:
 
        ======= ==============================================
@@ -482,7 +491,7 @@ CHPL_REGEXP
        none    do not support regular expression operations
        ======= ==============================================
 
-   If unset, Chapel will attempt to build RE2 using ``CHPL_TARGET_COMPILER``
+   If unset, Chapel will attempt to build RE2 using :ref:`CHPL_TARGET_COMPILER<CHPL_COMPILER>`
    (noting that the bundled version may not be supported by all compilers).
    Based on the outcome, Chapel will default to:
 
