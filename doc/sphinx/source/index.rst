@@ -1,3 +1,5 @@
+.. _chapel-documentation:
+
 Chapel Documentation
 ====================
 

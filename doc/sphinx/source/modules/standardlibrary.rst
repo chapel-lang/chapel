@@ -1,3 +1,5 @@
+.. _standard-library:
+
 Standard Library
 ================
 Contents:
