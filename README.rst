@@ -29,7 +29,7 @@ capabilities in the interest of a simple and clean build.
 0) See ``doc/prereqs.rst`` for more information about packages you
    might need to have installed for Chapel to work.
 
-#) Make sure that your shell is in the directory containing this
+1) Make sure that your shell is in the directory containing this
    ``README.rst`` file.  For example:
 
     .. code-block:: sh
@@ -37,7 +37,7 @@ capabilities in the interest of a simple and clean build.
         cd ~/chapel-1.12.0
 
 
-#) Set up your environment to use Chapel in "Quick Start" mode.
+2) Set up your environment to use Chapel in "Quick Start" mode.
 
 
 ======================================== ========================================
@@ -50,16 +50,16 @@ If you use...                            then type...
 ======================================== ========================================
 
 
-   You must be in the top-level Chapel directory for these command
-   scripts to work properly.  Note that there is no requirement to use
-   these scripts long-term, they are merely designed to get new users
-   up and running quickly.  See ``doc/chplenv.rst`` for a complete
-   description of Chapel's environment variables and their options.
+You must be in the top-level Chapel directory for these command
+scripts to work properly.  Note that there is no requirement to use
+these scripts long-term, they are merely designed to get new users
+up and running quickly.  See ``doc/chplenv.rst`` for a complete
+description of Chapel's environment variables and their options.
 
-   If you use a shell other than the ones listed above and are able to
-   create an equivalent ``util/quickstart/setchplenv.*`` script for it,
-   please consider contributing a copy of it back to the project for
-   inclusion in the next release.
+If you use a shell other than the ones listed above and are able to
+create an equivalent ``util/quickstart/setchplenv.*`` script for it,
+please consider contributing a copy of it back to the project for
+inclusion in the next release.
 
 
 3) Build the compiler and runtime libraries using:
