@@ -504,7 +504,7 @@ module ChapelLocale {
 
     .. code-block:: chapel
 
-      coforall loc in Locales do { on loc do { ... } }
+      coforall loc in Locales { on loc { ... } }
   */
   const Locales: [LocaleSpace] locale;
 
