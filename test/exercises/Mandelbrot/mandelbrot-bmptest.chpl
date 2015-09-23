@@ -34,24 +34,6 @@ proc main() {
   //
   forall (i,j) in ImgSpace do
     Image[i,j] = i+j;
-  //
-  // This could have equivalently been written:
-  //
-  // forall ij in ImgSpace do      // ij is a 2-tuple reprsenting an index from ImgSpace
-  //   Image[ij] = ij(1) + ij(2);  // arrays support tuple indices; tuples support detupling
-
-  //
-  // Here are some more things that may be helpful:
-  //
-  // var r = 1.2;            // this is a real floating point variable
-  // var i = 3.4i;           // this is an imag[inary] floating point variable
-  // var c = 1.2 + 3.4i;     // this is a complex variable
-  // var rt = (1.2, 3.4);    // this is a 2-tuple of real values
-  // var it = (5.6i, 7.8i);  // this is a 2-tuple of imaginary values
-  // var rit = (1.2, 7.8i);  // this is a 2-tuple of (real, imag) type
-  // var (r2,i2) = rit;      // tuples may also be de-tupled this way
-  //
-  // writeln("c is: ", c);   // most anything can be written out using write[ln]()
 
   //
   // Plot the image
@@ -60,14 +42,3 @@ proc main() {
 }
 
 
-//
-// Map an image coordinate to a point in the complex plane.
-// Image coordinates are (row, col), with row 0 at the top.
-//
-proc mapImg2CPlane(row, col) {
-  const (rmin, rmax) = (-1.5, .5);
-  const (imin, imax) = (-1i, 1i);
-
-  return ((rmax - rmin) * col / cols + rmin) +
-         ((imin - imax) * row / rows + imax);
-}
