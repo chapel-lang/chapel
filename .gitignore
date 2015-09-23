@@ -243,6 +243,7 @@ tags
 /test/execflags/shannon/configs/help/*.good
 /test/execflags/sungeun/about.good
 
+/test/exercises/Mandelbrot/mandelbrot.bmp
 /test/exercises/Mandelbrot/mandelbrot.ppm
 /test/exercises/Mandelbrot/solutions/mandelbrot.ppm
 
