@@ -99,11 +99,11 @@ DISTS_TO_DOCUMENT = \
 	layouts/LayoutCSR.chpl \
 
 INTERNAL_MODULES_TO_DOCUMENT =                \
-	internal/ChapelTuple.chpl             \
-	internal/ChapelIO.chpl                \
-	internal/ChapelRange.chpl             \
-	internal/ChapelSyncvar.chpl           \
-	internal/Atomics.chpl                 \
+        internal/ChapelTuple.chpl             \
+        internal/ChapelIO.chpl                \
+        internal/ChapelRange.chpl             \
+        internal/ChapelSyncvar.chpl           \
+        internal/Atomics.chpl                 \
         internal/ChapelComplex_forDocs.chpl   \
         internal/UtilMisc_forDocs.chpl
 
