@@ -103,6 +103,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelArray.chpl             \
         internal/ChapelTuple.chpl             \
         internal/ChapelIO.chpl                \
+        internal/ChapelIteratorSupport.chpl   \
         internal/ChapelRange.chpl             \
         internal/ChapelSyncvar.chpl           \
         internal/Atomics.chpl                 \

@@ -118,6 +118,16 @@ fixTitle "IO Support" $file
 ## End ChapelIO ##
 
 
+## ChapelIteratorSupport ##
+
+file="./ChapelIteratorSupport.rst"
+removePrefixFunctions $file
+fixTitle "Vectorizing Iterator" $file
+
+
+## End ChapelIteratorSupport ##
+
+
 ## ChapelSyncvar ##
 
 file="./ChapelSyncvar.rst"
