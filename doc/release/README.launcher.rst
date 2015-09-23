@@ -1,7 +1,7 @@
 .. _readme-launcher:
 
 ================
-Chapel launchers
+Chapel Launchers
 ================
 
 When compiling Chapel programs for multiple locales, a launcher binary
@@ -143,7 +143,7 @@ Prerequisites:
  
   To use native SLURM, set:
 
-  .. code-block:: bash
+  .. code-block:: sh
 
     export CHPL_LAUNCHER=slurm-srun
 
@@ -152,7 +152,7 @@ Prerequisites:
 
   To use SLURM using GASNet over Infiniband, set:
 
-  .. code-block:: bash
+  .. code-block:: sh
 
     export CHPL_LAUNCHER=slurm-gasnetrun_ibv
     export CHPL_COMM=gasnet
@@ -160,7 +160,7 @@ Prerequisites:
 
   To have GASNet use mpirun to launch your program, set:
 
-  .. code-block:: bash
+  .. code-block:: sh
 
     export GASNET_IBV_SPAWNER=mpi
 
@@ -172,7 +172,7 @@ Settings:
   Before running, you will need to set the amount of time to request
   from SLURM. For example, the following requests 15 minutes:
 
-  .. code-block:: bash
+  .. code-block:: sh
 
     export CHPL_LAUNCHER_WALLTIME=00:15:00
 
@@ -181,7 +181,7 @@ Settings:
   to use nodes with the 'cal' feature (as defined in the slurm.conf
   file), set:
 
-  .. code-block:: bash
+  .. code-block:: sh
 
     export CHPL_LAUNCHER_CONSTRAINT=cal
 
@@ -199,7 +199,7 @@ Settings:
   Other SLURM variables will have an impact; for example, the SLURM
   partition can be set to 'debug' with the command:
 
-  .. code-block:: bash
+  .. code-block:: sh
 
     export SLURM_PARTITION=debug
 
