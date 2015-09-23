@@ -125,7 +125,7 @@ inclusion in the next release.
 What's next?
 ------------
 =============================================== =====================================
-For more detailed information about:            refer to:
+**For more detailed information about:**        **refer to:**
 ----------------------------------------------- -------------------------------------
     changes since the last release              ``CHANGES``
     implementation status                       ``STATUS``
@@ -151,7 +151,7 @@ For more detailed information about:            refer to:
 
 
 =============================================== =====================================
-To use Chapel on a specific platform:           refer to:
+**To use Chapel on a specific platform:**       **refer to:**
 ----------------------------------------------- -------------------------------------
        a Cray system                            ``doc/platforms/cray.rst``
        Cygwin over Windows                      ``doc/platforms/cygwin.rst``
