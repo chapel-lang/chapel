@@ -36,11 +36,11 @@ The module search paths are initialized as follows:
         * ``$CHPL_MODULE_PATH``
         * ``(User paths)``
 
-When the root internal module "ChapelStandard" and its dependencies are
+When the root internal module *ChapelStandard* and its dependencies are
 loaded, the internal module path is searched first.  If a module is found there,
 it is marked as internal.  Otherwise, it is skipped.
 
-The users modules are parsed next.  If a module named in use statement is not
+The user's modules are parsed next.  If a module named in a use statement is not
 found, the standard version is loaded instead if it exists.  Otherwise, a
 file-not-found error will be issued.  If both user and standard versions of a
 module exist, the user is warned that the standard version is being overridden.
