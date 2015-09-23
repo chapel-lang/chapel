@@ -17,22 +17,41 @@
  * limitations under the License.
  */
 
-// ChapelSyncvar.chpl
-//
-// Sync and single variables.
-//
+/*
+Synchronization variables have a logical state associated with the value. The
+state of the variable is either full or empty. Normal reads of a
+synchronization variable cannot proceed until the variable's state is full.
+Normal writes of a synchronization variable cannot proceed until the variable's
+state is empty.
 
+Chapel supports two types of synchronization variables: sync and single. Both
+types behave similarly, except that a single variable may only be written once.
+Consequently, when a sync variable is read, its state transitions to empty,
+whereas when a single variable is read, its state does not change. When either
+type of synchronization variable is written, its state transitions to full.
+
+If a task attempts to read or write a synchronization variable that is not in
+the correct state, the task is suspended. When the variable transitions to the
+correct state, the task is resumed. If there are multiple tasks blocked waiting
+for the state transition, one is non-deterministically selected to proceed and
+the others continue to wait if it is a sync variable; all tasks are selected to
+proceed if it is a single variable.
+*/
 module ChapelSyncvar {
   use MemConsistency;
 
+  pragma "no doc"
   inline proc chpl__readXX(x: sync) return x.readXX();
+  pragma "no doc"
   inline proc chpl__readXX(x: single) return x.readXX();
+  pragma "no doc"
   inline proc chpl__readXX(x) return x;
 
   pragma "sync"
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
     pragma "ignore noinit"
+    pragma "no doc"
     class _syncvar {
       type base_type;
       var  value: base_type;       // actual data - may need to be declared specially on some targets!
@@ -47,10 +66,13 @@ module ChapelSyncvar {
       }
     }
 
+  /* Returns true if `t` is a sync type, false otherwise. */
   proc isSyncType(type t) param
     return __primitive("is sync type", t);
 
+  pragma "no doc"
   proc isSyncValue(x: sync) param  return true;
+  pragma "no doc"
   proc isSyncValue(x)       param  return false;
 
   // The operations are:
@@ -64,7 +86,13 @@ module ChapelSyncvar {
   //  reset - ignore F/E, write zero, leave empty
   //  isFull - query whether it is full
 
-  // This is the default read on sync vars. Wait for full, set and signal empty.
+  /*
+     This method blocks until the sync variable is full. The state of the sync
+     variable is set to empty when this method completes. This method
+     implements the default read of a sync variable.
+
+     :returns: The value of the sync variable.
+  */
   proc _syncvar.readFE(): base_type {
     var ret: base_type;
     on this {
@@ -79,7 +107,12 @@ module ChapelSyncvar {
     return ret;
   }
 
-  // Wait for full, set and signal full.
+  /*
+     This method blocks until the sync variable is full. The state of the sync
+     variable remains full when this method completes.
+
+     :returns: The value of the sync variable.
+  */
   proc _syncvar.readFF() {
     var ret: base_type;
     on this {
@@ -94,7 +127,12 @@ module ChapelSyncvar {
     return ret;
   }
 
-  // Ignore F/E.  Read value.  No state change or signals.
+  /*
+     This method is non-blocking and the state of the sync variable is
+     unchanged when this method completes.
+
+     :returns: The value of the sync variable.
+  */
   proc _syncvar.readXX() {
     var ret: base_type;
     on this {
@@ -109,7 +147,13 @@ module ChapelSyncvar {
     return ret;
   }
 
-  // This is the default write on sync vars. Wait for empty, set and signal full.
+  /*
+     :arg val: New value of the sync variable.
+
+     This method blocks until the sync variable is empty. The state of the sync
+     variable is set to full when this method completes. This method implements
+     the default write of a sync variable.
+  */
   proc _syncvar.writeEF(val:base_type) {
     on this {
       chpl_rmem_consist_release();
@@ -124,7 +168,12 @@ module ChapelSyncvar {
     sv.writeEF(val);
   }
 
-  // Wait for full, set and signal full.
+  /*
+     :arg val: New value of the sync variable.
+
+     This method blocks until the sync variable is full. The state
+     of the sync variable remains full when this method completes.
+  */
   proc _syncvar.writeFF(val:base_type) {
     on this {
       chpl_rmem_consist_release();
@@ -135,7 +184,12 @@ module ChapelSyncvar {
     }
   }
 
-  // Ignore F/E, set and signal full.
+  /*
+     :arg val: New value of the sync variable.
+
+     This method is non-blocking and the state of the sync
+     variable is set to full when this method completes.
+  */
   proc _syncvar.writeXF(val:base_type) {
     on this {
       chpl_rmem_consist_release();
@@ -146,7 +200,11 @@ module ChapelSyncvar {
     }
   }
 
-  // Ignore F/E, set to zero or default value and signal empty.
+  /*
+     Resets the value of this sync variable to the default value of
+     its type. This method is non-blocking and the state of the sync
+     variable is set to empty when this method completes.
+  */
   proc _syncvar.reset() {
     on this {
       const default_value: base_type;
@@ -158,6 +216,12 @@ module ChapelSyncvar {
     }
   }
 
+  /*
+     :returns: true if the state of the sync variable is full.
+
+     This method is non-blocking and the state of the sync variable is
+     unchanged when this method completes.
+  */
   proc _syncvar.isFull {
     var b: bool;
     on this {
@@ -169,11 +233,13 @@ module ChapelSyncvar {
   }
 
   // Do not allow implicit reads of sync/single vars.
+  pragma "no doc"
   proc _syncvar.readThis(x: Reader) {
     compilerError("sync/single variables cannot currently be read - use writeEF/writeFF instead");
   }
 
   // Do not allow implicit writes of sync/single vars.
+  pragma "no doc"
   proc _syncvar.writeThis(x: Writer) {
     compilerError("sync/single variables cannot currently be written - apply readFE/readFF() to those variables first");
   }
@@ -184,6 +250,7 @@ module ChapelSyncvar {
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
     pragma "ignore noinit"
+    pragma "no doc"
     class _singlevar {
       type base_type;
       var  value: base_type;     // actual data - may need to be declared specially on some targets!
@@ -198,13 +265,22 @@ module ChapelSyncvar {
       }
     }
 
+  /* Returns true if `t` is a single type, false otherwise. */
   proc isSingleType(type t) param
     return __primitive("is single type", t);
 
+  pragma "no doc"
   proc isSingleValue(x: single) param  return true;
+  pragma "no doc"
   proc isSingleValue(x)         param  return false;
 
-  // Wait for full. Set and signal full.
+  /*
+     This method blocks until the single variable is full. The state of the single
+     variable remains full when this method completes. This method implements
+     the default read of a single variable.
+
+     :returns: The value of the single variable.
+  */
   proc _singlevar.readFF() {
     var ret: base_type;
     on this {
@@ -224,7 +300,12 @@ module ChapelSyncvar {
   }
 
 
-  // Ignore F/E.  Read value.  No state change or signals.
+  /*
+     This method is non-blocking and the state of the single variable is
+     unchanged when this method completes.
+
+     :returns: The value of the single variable.
+  */
   proc _singlevar.readXX() {
     var ret: base_type;
     on this {
@@ -244,7 +325,13 @@ module ChapelSyncvar {
   }
 
 
-  // Can only write once.  Otherwise, it is an error.
+  /*
+     :arg val: New value of the single variable.
+
+     This method blocks until the single variable is empty. The state of the single
+     variable is set to full when this method completes. This method implements
+     the default write of a single variable.
+  */
   proc _singlevar.writeEF(val:base_type) {
     on this {
       chpl_rmem_consist_release();
@@ -261,6 +348,12 @@ module ChapelSyncvar {
     sv.writeEF(value);
   }
 
+  /*
+     :returns: true if the state of the single variable is full.
+
+     This method is non-blocking and the state of the single variable is
+     unchanged when this method completes.
+  */
   proc _singlevar.isFull {
     var b: bool;
     on this {
@@ -273,11 +366,13 @@ module ChapelSyncvar {
 
 
   // Do not allow implicit reads of sync/single vars.
+  pragma "no doc"
   proc _singlevar.readThis(x: Reader) {
     compilerError("single/sync variables cannot currently be read - use writeEF/writeFF instead");
   }
 
   // Do not allow implicit writes of sync/single vars.
+  pragma "no doc"
   proc _singlevar.writeThis(x: Writer) {
     compilerError("single/sync variables cannot currently be written - apply readFF/readFE() to those variables first");
   }
@@ -330,7 +425,7 @@ module ChapelSyncvar {
     return x.type;
   }
 
-  /* op= for sync variables */
+  // op= for sync variables
   inline proc  +=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  + rhs; }
   inline proc  -=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  - rhs; }
   inline proc  *=(ref lhs:sync, rhs:chpl__syncBaseType(lhs)) { lhs = lhs  * rhs; }

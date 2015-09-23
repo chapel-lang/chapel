@@ -367,62 +367,6 @@ static void hoistReturnIntoItsOwnScope()
 //
 
 // Insert autoDestroy calls in a function as needed.                                  
-static void insertAutoCopyAutoDestroy(FnSymbol* fn)
-{
-  OwnershipFlowManager ofm(fn);
-
-  ofm.buildBasicBlocks();
-  ofm.printBasicBlocks();
-  ofm.extractSymbols();
-  ofm.populateAliases();
-  ofm.createFlowSets();
-  ofm.computeExits();
-  ofm.computeTransitions();
-  ofm.printFlowSets(OwnershipFlowManager::FlowSet_ALL);
-
-  ofm.backwardFlowUse();
-  ofm.printFlowSets(OwnershipFlowManager::FlowSet_USE);
-
-  ofm.forwardFlowOwnership();
-
-  ofm.printFlowSets((OwnershipFlowManager::FlowSetFlags)
-                    (OwnershipFlowManager::FlowSet_IN |
-                     OwnershipFlowManager::FlowSet_OUT));
-
-  ofm.insertAutoCopies();
-
-  // Only do this for the "advance" iterator function.
-  if (fn->hasFlag(FLAG_AUTO_II) &&
-      ! strcmp(fn->name, "advance"))
-  {
-    // In iterators, insert autodestroys after last use.
-    ofm.iteratorInsertAutoDestroys();
-    // Recompute forward flow, to take into account new
-    // consumers added.
-    ofm.forwardFlowOwnership();
-  }
-
-  //if (fVerify)
-  //  ofm.checkForwardOwnership();
-
-#if 0
-  // We need our own equation for backward flow.
-  // Backward flow determines where ownership must be given up through a
-  // delete, by making the OUT set the AND of all its successor INs and the IN
-  // be no greater than OUT | CONS (that is, every symbol owned at the
-  // beginning of the block (IN) must either appear in OUT or be consed in the
-  // block.
-  // Also, consumptions are propagated backward, so that a variable owned on one path
-  // into a node is owned on all such paths.
-  ofm.backwardFlowOwnership();
-
-  ofm.printFlowSets(FlowSet_IN | FlowSet_OUT);
-#endif
-
-  ofm.insertAutoDestroys();
-}
-
-
 void insertAutoCopyAutoDestroy()
 {
   addFlagReturnValueNotOwned();
@@ -432,10 +376,12 @@ void insertAutoCopyAutoDestroy()
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
     // Function prototypes have no body, so we skip them.
-    if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
-      continue;
+    if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE) == false)
+    {
+      OwnershipFlowManager ofm(fn);
 
-    insertAutoCopyAutoDestroy(fn);
+      ofm.updateFunction();
+    }
   }
 
   // Re-run insertReferenceTemps, to cover autoDestroy calls that may have been

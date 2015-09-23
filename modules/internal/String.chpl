@@ -120,7 +120,7 @@ module String {
       // Dont need to do anything if s is an empty string
       if sLen != 0 {
         this.len = sLen;
-        if sRemote {
+        if !_local && sRemote {
           // ignore supplied valure of owned for remote strings so we dont leak
           this.owned = true;
           this.buff = copyRemoteBuffer(s.locale.id, s.buff, sLen);
@@ -215,11 +215,15 @@ module String {
     // Localize gets a version of this that is on the currently executing
     // locale. If this is already on the current locale we return a shallow
     // copy, otherwise a remote copy is performed.
-    inline proc localize() : string {
-        const ret: string = if this.locale.id != chpl_nodeID
-          then this // assignment makes it local
-          else new string(this, owned=false);
-        return ret;
+    //TODO: specifying return types still doesn't work quite right and in this
+    //      case, will cause us to return an owned copy even when this is local
+    inline proc localize() /*: string*/ {
+        if _local || this.locale.id == chpl_nodeID {
+          return new string(this, owned=false);
+        } else {
+          const x:string = this; // assignment makes it local
+          return x;
+        }
     }
 
     // TODO: cant explicitly state return type right now due to a bug in the

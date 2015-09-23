@@ -1,17 +1,48 @@
 // Stress test for parallel correctness.
 
+use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
+
 config var
-  r = 15000,  // how many times to repeat
-  d = 100,    // each dimension of the domain and array
-  f = 5000;   // frequency of reports, 0 if none
+  n2 = 100,   // for compatibility with distributions/robust/arithmetic suite
+  r = 3000,   // how many times to repeat
+  d = n2,     // each dimension of the domain and array
+  f = 500;    // frequency of reports, 0 if none
 
 var nErr = 0;
 
+enum DistType { default, block, cyclic, blockcyclic, replicated };
+
+config param distType: DistType = if CHPL_COMM=="none" then DistType.default
+                                                       else DistType.block;
+
+proc setupDistributions() {
+  if distType == DistType.default then
+    return new DefaultDist();
+
+  else if distType == DistType.block then
+    return new Block(rank=2, boundingBox={1..d, 1..d});
+
+  else if distType == DistType.cyclic then
+    return new Cyclic(startIdx=(0,0));
+
+  else if distType == DistType.blockcyclic then
+    return new BlockCyclic(startIdx=(0,0), blocksize=(3,3));
+
+  else if distType == DistType.replicated then
+    return new ReplicatedDist();
+
+  else compilerError("unexpected 'distType': ", distType:c_string);
+}
+
+const Dist2D = new dmap(setupDistributions());
+
 var
-  D1 = {1..d, 1..d},
-  D2 = {0..d-1, 0..d-1},
+  D1 = {1..d, 1..d} dmapped Dist2D,
+  D2 = {0..d-1, 0..d-1} dmapped Dist2D,
   A1: [D1] int,
   A2: [D2] real;
+
+const mult = if distType == DistType.replicated then numLocales else 1;
 
 proc main {
   writeConfig("starting"); writeln();
@@ -119,7 +150,7 @@ proc sum0(l) return l * (l-1) / 2;  // sum(0..l-1)
 proc sum1(l) return l * (l+1) / 2;  // sum(1..l)
 
 proc check(actual, expected, ri, name) {
-  if actual == expected then return; // OK!
+  if actual == expected * mult then return; // OK!
   nErr += 1;
   writeln("ERROR: onetest(", ri, ", ", name, ")  expected ", expected,
           "  actual ", actual);

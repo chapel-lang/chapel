@@ -18,6 +18,9 @@
 
 develall: man STATUS
 
+docs: module-docs
+	-cd doc/sphinx && ./run-in-venv.bash ${MAKE} docs
+
 man: FORCE
 	cd man && $(MAKE)
 
