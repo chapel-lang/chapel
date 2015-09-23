@@ -822,8 +822,8 @@ iter glob(const in pattern: string = "*", followThis, param tag: iterKind) : str
   if (err != 0 && err != GLOB_NOMATCH) then
     __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb);
-  if (r.high > num.safeCast(int)) then
-    halt("glob() iterator zipped with something too big");
+  if (r.high >= num.safeCast(int)) then
+    halt("glob() is being zipped with something too big; it only has ", num, " matches");
   for i in r do
     //
     // safe cast is used here to turn an int into a size_t

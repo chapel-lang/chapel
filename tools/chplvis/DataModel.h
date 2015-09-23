@@ -203,6 +203,10 @@ class DataModel {
   }
 
   taskData * getTaskData (long locale, long taskId, long tagNo = TagALL);
+
+  double start_clock() {
+    return (*theEvents.begin())->clock_time();
+  }
   
   // Constructor for DataModel
   
