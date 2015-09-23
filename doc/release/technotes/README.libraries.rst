@@ -7,10 +7,10 @@ Chapel Libraries
 
    This page discusses the implementation of libraries, which are still
    under development.  The idea is to allow components to be developed in
-   Chapel and linked with other programs and languages.  It is very fragile
-   and very difficult to work with, so user beware.
+   Chapel and linked with other programs and languages.  It is currently fragile
+   and difficult to work with.
 
-Normally, Chapel assumes that you are building a main program, and produces a
+Normally, Chapel assumes that you are building a main program and produces a
 main routine whether one is explicitly coded or not.  When the ``--library``
 flag is provided on the command line, it tells the Chapel compiler to produce a
 library instead.  The user can further specify (through the ``--static``
@@ -77,58 +77,36 @@ from which one would create a ``.h`` file:
    int64_t bar(void);
    void baz(int64_t x);
 
+It may be necessary to ``#include`` some Chapel headers, such as
+``chpl-string.h``, depending on the types used in your Chapel library.
 
-Next, update the ``$LD_LIBRARY_PATH`` environment variable to include the
-directory where the new library file lives and the directory where the Chapel
-build lives.  The latter can be found by looking at the output of a
-``$CHPL_HOME/util/printchplenv`` call and finding the appropriate directory
-under ``$CHPL_HOME/lib``; the directory name is of the form
-``$CHPL_HOST_PLATFORM.$CHPL_HOST_COMPILER.(<env variable suffix>-<corresponding environment variable.)+``.
-For instance, if the output of a printchplenv call was::
-
-   CHPL_HOST_PLATFORM: linux64
-   CHPL_HOST_COMPILER: gnu
-   CHPL_TARGET_PLATFORM: linux64
-   CHPL_TARGET_COMPILER: gnu
-   CHPL_TARGET_ARCH: native
-   CHPL_LOCALE_MODEL: flat
-   CHPL_COMM: none
-   CHPL_TASKS: fifo
-   CHPL_LAUNCHER: none
-   CHPL_TIMERS: generic
-   CHPL_MEM: cstdlib
-   CHPL_MAKE: gmake
-   CHPL_ATOMICS: intrinsics
-   CHPL_GMP: gmp
-   CHPL_HWLOC: none
-   CHPL_REGEXP: re2
-   CHPL_WIDE_POINTERS: struct
-   CHPL_LLVM: none
-   CHPL_AUX_FILESYS: none
-
-then the ``$CHPL_HOME/lib/`` subdirectory is::
-
-     linux64.gnu.arch-native.loc-flat.comm-none.tasks-fifo.tmr-generic.mem-cstdlib.atomics-intrinsics.gmp.hwloc-none.re2.wide-struct.fs-none/
+Next, if compiling dynamically, update the ``$LD_LIBRARY_PATH`` environment
+variable to include the directory where the new library file lives and the
+directory where the Chapel build lives.  The latter can be found by looking at
+the output of a ``$CHPL_HOME/util/printchplenv`` call and finding the
+appropriate directory under ``$CHPL_HOME/lib``; the directory name can be found
+by running ``$CHPL_HOME/util/printchplenv --runtime``.
 
 .. code-block:: sh
 
    # Replace $PWD with the appropriate path to your library file if it isn't
    # in the current directory
-   # Replace libDir with the directory we found from the previous step.
+   # Replace libDir with the directory we just found.
    export LD_LIBRARY_PATH=$PWD:<libDir>:$LD_LIBRARY_PATH
 
 
 When using a Chapel library from C, one must first initialize the Chapel runtime
-and standard modules.  This is done by the addition of a couple of includes and
-by calling the function ``chpl_library_init()`` before the Chapel library
-function calls and by calling ``chpl_library_finalize()`` after all the Chapel
-library function calls are finished.  For example:
+and standard modules.  This is done by the addition of a couple of extern
+declarations, calling the function ``chpl_library_init()`` before the Chapel
+library function calls and by calling ``chpl_library_finalize()`` after all the
+Chapel library function calls are finished.  For example:
 
 .. code-block:: C
 
-   #include "chpl-string.h"
-   #include "chpl-init.h"
-   #include "testing.h"
+   #include "foo.h"
+
+   extern void chpl_library_init(int argc, char* argv[]);
+   extern void chpl_library_finalize(void);
 
    int main(int argc, char* argv[]) {
        chpl_library_init(argc, argv);
@@ -141,21 +119,13 @@ library function calls are finished.  For example:
    }
 
 Finally, compilation of the C program involves some additional command line
-includes and links.  The easiest way to get the right combination is from
-the compilation output of another Chapel program.  If one compiles with
-``--print-commands`` and uses all the ``-I`` output and ``-std=c99`` during
-compilation of the C program, one would be most of the way towards a successful
-compile.  All that is missing is the addition of
-``$CHPL_HOME/runtime/src/chpl-init.c`` before the C program file, and
-``-L<libDir> -l<nameOfLib> -L<Chapel Lib location from LD step> -lchpl -lpthread`` in the linking stage.
+includes and links.  The easiest way to get the right combination is by using
+the ``compileline --compile`` and ``compileline --libraries`` tools we provide.
+The compilation command would then look like this:
 
-.. note::
+.. code-block:: sh
 
-   When compiling with ``CHPL_TASKS=qthreads``, ``CHPL_GMP=gmp``,
-   ``CHPL_HWLOC=hwloc``, ``CHPL_COMM=gasnet``, or ``CHPL_REGEXP=re2``,
-   the appropriate third-party ``install/<CHPL_SETTING>/lib`` folder will
-   need to be added to ``$LD_LIBRARY_PATH`` and the ``-L`` step here, as well
-   as a ``-l`` for the library name.  ``CHPL_TASKS=fifo`` does require this.
+   `$CHPL_HOME/util/config/compileline --compile` myprog.c -L. -lfoo `$CHPL_HOME/util/config/compileline --libraries`
 
 Chapel library files cannot be used from Chapel code.  The library files must
 include the chapel runtime and standard modules for use in a non-Chapel program
