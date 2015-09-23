@@ -1,7 +1,7 @@
 .. _readme-main:
 
 ============================
-Support for main() functions
+Support for main() Functions
 ============================
 
 After running module initialization code (top-level statements in
