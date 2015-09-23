@@ -5,10 +5,10 @@ Using Chapel on SGI Altix
 =========================
 
 .. warning::
-    Chapel has not been recently tested on SGI Altix.  The information
-    presented here may be stale or inaccurate.  If using Chapel on SGI
-    Altix  is important to you, please let us know at
-    chapel_info@cray.com.
+    Chapel has not been used on SGI Altix in several years.  It is
+    likely the information presented here is stale or outdated.  If
+    you are interested in using Chapel on SGI Altix, please let us
+    know.
 
 The Chapel team does not have access to an SGI Altix for the purposes
 of testing, so this file describes the experiences that other users
@@ -29,6 +29,16 @@ possible area of future work would be to look into how our runtime
 might be modified to do this binding and/or to utilize a user-level
 tasking library that multiplexes logical tasks onto a fixed set of
 pthreads equal to (and bound to) the number of cores.
+
+    .. note::
+        This performance characterization was written when ``fifo``
+        was the default tasking layer. It is likely that ``qthreads``
+        performs substantially better on Altix as it provides all of
+        the desired runtime capabilities listed above.  Additionally,
+        previous studies performanced by the qthreads team have shown
+        strong performance on Altix. See :ref:`readme-tasks` for more
+        information on Chapel's tasking layers.
+
 
 Due to its support for shared memory, an Altix machine can either be
 viewed as a large single locale, or as a multi-locale machine.  Our
