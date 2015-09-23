@@ -1,8 +1,8 @@
 .. _readme-sets:
 
-=================================================
-Set Operations for Associative Domains and Arrays
-=================================================
+==========================
+Associative Set Operations
+==========================
 
 This README describes some initial support for set operations on associative
 arrays and domains. It is expected that the features described here will be
