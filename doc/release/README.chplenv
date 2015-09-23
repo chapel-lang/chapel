@@ -351,7 +351,7 @@ Optional Settings
 
 *  Optionally, the CHPL_HWLOC environment variable can select between
    no hwloc support or using the hwloc package distributed with Chapel
-   in third-party (see www.open-mpi.org/projects/hwloc/ for more information 
+   in third-party (see $CHPL_HOME/third-party/hwloc/README for more information 
    on the hwloc software package).
    Note that hwloc is only used by the qthreads tasking layer, and 
    does not need to be built for other tasking layers.  
@@ -368,7 +368,7 @@ Optional Settings
    Manually set CHPL_HWLOC to "none" and rebuild in this case (and
    please file a bug with the Chapel team.)  Building without hwloc
    should not have a large performance impact when CHPL_LOCALE_MODEL
-   is "flat", but will drastically hurt performance for "numa".
+   is "flat" but will drastically hurt performance for "numa".
 
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
