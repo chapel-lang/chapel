@@ -1,7 +1,7 @@
 .. _readme-allocators:
 
 ==========================
-Chapel's use of Allocators
+Chapel's Use of Allocators
 ==========================
 
 The Chapel runtime will select an allocator according to the ``CHPL_MEM``

@@ -1,6 +1,6 @@
 .. _readme-chplenv:
 
-Setting up your environment for Chapel
+Setting up Your Environment for Chapel
 ======================================
 
 To get started with Chapel, there are four environment settings that are
