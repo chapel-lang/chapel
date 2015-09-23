@@ -35,8 +35,8 @@ pthreads equal to (and bound to) the number of cores.
         was the default tasking layer. It is likely that ``qthreads``
         performs substantially better on Altix as it provides all of
         the desired runtime capabilities listed above.  Additionally,
-        previous studies performanced by the qthreads team have shown
-        strong performance on Altix. See :ref:`readme-tasks` for more
+        previous studies done by the qthreads team have shown strong
+        performance on Altix. See :ref:`readme-tasks` for more
         information on Chapel's tasking layers.
 
 
