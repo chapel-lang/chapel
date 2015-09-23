@@ -12,13 +12,15 @@ Using Chapel on IBM Systems
 
 .. note::
     If you are using Chapel on IBM's MareNostrum, you should refer to
-    :ref:`readme-marenostrum`.]
+    :ref:`readme-marenostrum`.
 
 We only have limited experience using Chapel on IBM systems.
 This file contains notes that reflect our current experience, focusing
 first on PowerPC-based systems and then BG systems.  If you are not
 familiar with Chapel, it is recommended that you first try the
-instructions in the top-level README to get started with the language.
+instructions in `$CHPL_HOME/README.md`_ to get started with the language.
+
+.. _$CHPL_HOME/README.md: https://github.com/chapel-lang/chapel/blob/master/README.md
 
 
 PowerPC SMP clusters
