@@ -37,8 +37,10 @@ proc main() {
   //
   // This could have equivalently been written:
   //
-  // forall ij in ImgSpace do      // ij is a 2-tuple reprsenting an index from ImgSpace
-  //   Image[ij] = ij(1) + ij(2);  // arrays support tuple indices; tuples support detupling
+  // forall ij in ImgSpace do
+  //   // ij is a 2-tuple reprsenting an index from ImgSpace
+  //   Image[ij] = ij(1) + ij(2);
+  //   // arrays support tuple indices; tuples support element access
 
   //
   // Here are some more things that may be helpful:
@@ -51,10 +53,32 @@ proc main() {
   // var rit = (1.2, 7.8i);  // this is a 2-tuple of (real, imag) type
   // var (r2,i2) = rit;      // tuples may also be de-tupled this way
   //
-  // writeln("c is: ", c);   // most anything can be written out using write[ln]()
+  // var repart = c.re;      // access the real part of a complex
+  // var impart = c.im;      // access the imaginary part of a complex
+  //
+  // here is an example that creates a complex number from two
+  // parts (which are both stored as real numbers):
+  // var realpart = 1.1;
+  // var complexpart = 2.2;
+  // var c = realpart + complexpart * 1.0i;
+  //
+  // writeln("c is: ", c);   // most anything can be output using write[ln]()
 
   //
   // Plot the image
   //
   plot(Image);
+}
+
+
+//
+// Map an image coordinate to a point in the complex plane.
+// Image coordinates are (row, col), with row 0 at the top.
+//
+proc mapImg2CPlane(row, col) {
+  const (rmin, rmax) = (-1.5, .5);
+  const (imin, imax) = (-1i, 1i);
+
+  return ((rmax - rmin) * col / cols + rmin) +
+         ((imin - imax) * row / rows + imax);
 }

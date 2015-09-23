@@ -15,10 +15,9 @@ running the Chapel compiler.
 Getting Help
 ------------
 
-If you have set up your environment as described in
-``$CHPL_HOME/doc/README`` and built the compiler as described in
-``$CHPL_HOME/doc/README.building``, you can see the Chapel compiler's
-help message using:
+If you have set up your environment as described in :ref:`readme-chplenv` and
+built the compiler as described in :ref:`readme-building`, you can see the
+Chapel compiler's help message using:
 
   .. code-block:: sh
 

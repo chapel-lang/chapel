@@ -1,8 +1,10 @@
 .. _readme-auxIO:
 
-================================
-Support for Auxiliary IO Systems
-================================
+.. default-domain:: chpl
+
+=====================
+Auxiliary I/O Systems
+=====================
 
 This README describes Chapel support for Auxiliary I/O(AIO) systems. It also
 provides instructions on how to set Chapel up to support multiple Auxiliary I/O
@@ -12,8 +14,13 @@ systems simultaneously.
 Dependencies
 ------------
 
-For each AIO system described here, there is a corresponding README.<system> in
-this directory detailing how to install and use them.
+Each AIO system is typically described in the support module for it.
+See:
+
+ * :mod:`HDFS`
+ * :mod:`Curl`
+   
+for specific instructions on how to install and use those features.
 
 The AIO system depends upon three environment variables:
 
@@ -46,10 +53,12 @@ file would be:
 
 where <any libraries> might be ``-lcurl``, ``-lhdfs``, ``-ljvm`` etc.
 
-Note: It is not necessary to pass these library flags, or library/include paths
-      to the Chapel compiler invocations (chpl) as the values in ``CHPL_AUXIO_LIBS``
-      and ``CHPL_AUXIO_INCLUDE`` will be used there as well as in building the
-      Chapel runtime
+.. note::
+
+  It is not necessary to pass these library flags, or library/include paths
+  to the Chapel compiler invocations (chpl) as the values in ``CHPL_AUXIO_LIBS``
+  and ``CHPL_AUXIO_INCLUDE`` will be used there as well as in building the
+  Chapel runtime
 
 CHPL_AUX_FILESYS
 ----------------
@@ -74,9 +83,10 @@ I/O Systems Supported
 ---------------------
 
 Currently, the I/O systems supported are:
+
  - Lustre
- - HDFS   (see http://chapel.cray.com/docs/latest/modules/standard/HDFS.html)
- - Curl   (see http://chapel.cray.com/docs/latest/modules/standard/Curl.html)
+ - :mod:`HDFS`
+ - :mod:`Curl`
 
 
 Parallel and Distributed I/O Features
@@ -87,8 +97,8 @@ work on "standard" file systems as well).
 
 ``file.getchunk(start:int(64), end:int(64)):(int(64), int(64))``
 
- - This returns the first logical "chunk" of the file that is inside this
-   section. If no "chunk" can be found inside this region, (0,0) is returned. If
+ - This returns the first logical *chunk* of the file that is inside this
+   section. If no *chunk* can be found inside this region, (0,0) is returned. If
    no arguments are provided, we return the start and end of the first logical
    chunk for this file.
 
@@ -97,18 +107,18 @@ work on "standard" file systems as well).
      - On HDFS, this returns the first block for the file that is inside this
        region.
 
-     - On "local" file systems, it returns the first "optimal transfer block"
+     - On local file systems, it returns the first *optimal transfer block*
        (from fstatfs) inside this section of the file.
 
 ``file.localesForRegion(start:int(64), end:int(64)):domain(locale)``
 
- - This returns the "best locales" for a given chunk of the file. If no
-   individual or set of locales are "best" (i.e., there is some sort of data
+ - This returns the *best locales* for a given chunk of the file. If no
+   individual or set of locales are *best* (i.e., there is some sort of data
    affinity that we can exploit), we return all locales.
 
-     - On Lustre, no locale are "best", so we return all locales
+     - On Lustre, no locale are *best*, so we return all locales
 
      - On HDFS, we return the block owners for that specific block
 
-     - On "local" file systems, we return all locales, since no individual
+     - On local file systems, we return all locales, since no individual
        locale is best.

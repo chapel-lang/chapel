@@ -26,7 +26,7 @@ def main():
 
     # Create list of READMEs converted to rst
     docs = {}
-    docs['source'] = extfilter(os.path.join(chpl_home, 'doc/release'))
+    docs['source/usingchapel'] = extfilter(os.path.join(chpl_home, 'doc/release'))
     docs['source/platforms'] = extfilter(os.path.join(chpl_home, 'doc/release/platforms'))
     docs['source/technotes'] = extfilter(os.path.join(chpl_home, 'doc/release/technotes'))
 

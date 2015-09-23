@@ -1,8 +1,8 @@
 .. _readme-macosx:
 
-==================================
-Using Chapel on a Mac running OS X
-==================================
+========================
+Using Chapel on Mac OS X
+========================
 
 By and large, Chapel can be used on a Macintosh running OS X just like
 any other platform -- refer to the top-level README file for general

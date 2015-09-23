@@ -10,7 +10,8 @@ To run Chapel on multiple locales, the following steps are required:
 0. The following information describes a fairly generic use of
    multi-locale Chapel, suitable for networked workstations and
    generic parallel platforms.  For other platforms, refer to the
-   platform-specific READMEs for additional tips.
+   :ref:`platform-specific <platforms-index>` documentation for
+   additional tips.
 
 
 #. Set your ``CHPL_COMM`` environment variable to "gasnet".  For example:

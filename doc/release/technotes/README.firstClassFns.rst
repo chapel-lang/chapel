@@ -1,8 +1,8 @@
 .. _readme-firstClassFns:
 
-===================================================
-Initial support for first-class functions in Chapel
-===================================================
+===============================
+First-class Functions in Chapel
+===============================
 
 This README describes some initial support that we have added to the
 compiler for first-class functions in Chapel.  This mechanism should
@@ -48,7 +48,7 @@ require the ability to have param classes, to fit with the current
 implementation. Param classes are not currently part of Chapel.
 Iterators would require a new type of capture, one that works
 similarly to the current implementation but respects the yielding that
-occurs inside an interator. Method capture requires the currying of
+occurs inside an iterator. Method capture requires the currying of
 the object as the first argument to the first-class function.
 Operators and overloaded functions require a type-based multiple
 dispatch mechanism.

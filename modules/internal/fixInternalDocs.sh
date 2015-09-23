@@ -38,7 +38,7 @@ function removePattern() {
 # Replace a given pattern with another
 function replace() {
   if [ $# -ne 3 ] || [ ! -f $3 ]; then
-    echo "Bad call to removePattern."
+    echo "Bad call to replace."
     exit 1
   fi
   sed "s/$1/$2/g" $3 > $3.tmp
@@ -52,7 +52,7 @@ function replace() {
 # Note: It does not rename the .html file, it will still be ChapelSyncvar.html`
 function fixTitle() {
   if [ $# -ne 2 ] || [ ! -f $2 ]; then
-    echo "Bad call to removePattern."
+    echo "Bad call to fixTitle."
     exit 1
   fi
   local base="$(basename $2 .rst)"
@@ -71,7 +71,7 @@ function fixTitle() {
 #    overloads, and functions starting with a underscores
 function removePrefixFunctions() {
   if [ $# -ne 1 ] || [ ! -f $1 ]; then
-    echo "Bad call to removePattern."
+    echo "Bad call to removePrefixFunctions."
     exit 1
   fi
   removePattern "proc [^a-zA-Z]" $1
@@ -100,6 +100,15 @@ function removePrefixVariables() {
 ###############################################################################
 ## Modules to fixup listed in the same order as INTERNAL_MODULES_TO_DOCUMENT ##
 ###############################################################################
+
+## ChapelTuple ##
+
+file=ChapelTuple.rst
+removePrefixFunctions $file
+removePattern "param size" $file
+removePattern "record:: _tuple" $file
+fixTitle "Tuples" $file
+
 
 ## ChapelIO ##
 
@@ -152,3 +161,34 @@ replace "int(64)" "T" $file
 fixTitle "Atomics" $file
 
 ## End Atomics ##
+
+## ChapelRange ##
+
+file="./ChapelRange.rst"
+
+removePrefixFunctions $file
+fixTitle "Ranges" $file
+
+# End ChapelRange ##
+
+## ChapelComplex_forDocs ##
+
+file="./ChapelComplex_forDocs.rst"
+
+removePrefixFunctions $file
+fixTitle "Complex" $file
+
+# End ChapelComplex_forDocs ##
+
+
+
+
+
+## UtilMisc_forDocs ##
+
+file="./UtilMisc_forDocs.rst"
+
+removePrefixFunctions $file
+fixTitle "Misc Functions" $file
+
+# End UtilMisc_forDocs ##

@@ -11,7 +11,7 @@ help-source:
 
 docs: html
 
-symlink-docs:
+symlink-docs: clean-symlink-docs
 	@echo "Setting up symlinks from /doc/release to /doc/sphinx/source"
 	./symlinks.py
 
@@ -29,5 +29,6 @@ clean-symlink-docs: FORCE
 
 clean-module-docs: FORCE
 	rm -rf source/modules/standard
+	rm -rf source/modules/internal
 
 FORCE:

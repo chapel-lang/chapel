@@ -58,11 +58,15 @@ tags
 /doc/sphinx/source/*.rst
 /doc/sphinx/source/platforms/*.rst
 /doc/sphinx/source/technotes/*.rst
+/doc/sphinx/source/usingchapel/*.rst
 /doc/sphinx/source/modules/standard
+/doc/sphinx/source/modules/dists
+/doc/sphinx/source/modules/layouts
 /doc/sphinx/source/modules/internal
 !/doc/sphinx/source/index.rst
 !/doc/sphinx/source/technotes/index.rst
 !/doc/sphinx/source/platforms/index.rst
+!/doc/sphinx/source/usingchapel/index.rst
 
 
 # Make ignores.
@@ -239,6 +243,7 @@ tags
 /test/execflags/shannon/configs/help/*.good
 /test/execflags/sungeun/about.good
 
+/test/exercises/Mandelbrot/mandelbrot.bmp
 /test/exercises/Mandelbrot/mandelbrot.ppm
 /test/exercises/Mandelbrot/solutions/mandelbrot.ppm
 
