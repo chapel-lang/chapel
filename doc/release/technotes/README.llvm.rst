@@ -1,7 +1,7 @@
 .. _readme-llvm:
 
 ============
-LLVM support
+LLVM Support
 ============
 
 The Chapel compiler can be built with LLVM support in able to enable
