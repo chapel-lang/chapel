@@ -1,23 +1,20 @@
+.. _modules:
+
 Modules
 =======
-
 Contents:
 
 .. toctree::
    :hidden:
 
-   self
-
 .. toctree::
    :maxdepth: 1
    :glob:
 
-   **
+   standard/**
 
-
-Indices and tables
-==================
+Module Indices and tables
+-------------------------
 
 * :ref:`genindex`
 * :chpl:chplref:`chplmodindex`
-* :ref:`search`

@@ -23,7 +23,7 @@ config const filename = "mandelbrot";
 //
 // Format for the output file
 //
-config var format = "default";
+config var format = "bmp";
 
 //
 // Maximum color depth for image file
@@ -43,7 +43,7 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   const extensionSpace: domain(imageType);
   const extensions: [extensionSpace] string = ("pbm", "pgm", "ppm");
 
-  if format == "default" {
+  if format == "pbm" || format == "pgm" || format == "ppm" {
     format = extensions(imgType);
   }
 
@@ -200,7 +200,7 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
         // write the padding.
         // The padding is only rounding up to 4 bytes so
         // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits).safeCast(int(8)));
+        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
 
@@ -218,7 +218,7 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
         // write the padding.
         // The padding is only rounding up to 4 bytes so
         // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits).safeCast(int(8)));
+        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
 
@@ -238,7 +238,7 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
         // write the padding.
         // The padding is only rounding up to 4 bytes so
         // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits).safeCast(int(8)));
+        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
   }

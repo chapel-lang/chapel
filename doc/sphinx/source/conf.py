@@ -50,7 +50,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'Chapel Documentation'
 
-author_text = os.environ.get('CHPLDOC_AUTHOR', 'Cray, Inc')
+author_text = os.environ.get('CHPLDOC_AUTHOR', '')
 
 copyright = u'2015, {0}'.format(author_text)
 
