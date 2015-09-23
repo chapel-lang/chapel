@@ -1,29 +1,37 @@
-![Chapel Logo](/util/images/chapelcray.png)
-Format: ![Cray Chapel](http://chapel.cray.com)
+![Chapel Chapel](./util/images/craychapel.png)
 
-===============================
-Chapel Compiler Release: README
-===============================
+# The Chapel Language
+
+Chapel is an emerging programming language designed for productive parallel computing at scale. Chapel's design and implementation have been undertaken with portability in mind, permitting Chapel to run on multicore desktops and laptops, commodity clusters, and the cloud, in addition to the high-end supercomputers for which it was designed. Chapel's design and development are being led by [Cray Inc.](http://www.cray.com/) in collaboration with academia, computing centers, and industry. See [http://chapel.cray.com/](chapel.cray.com) for more information.
 
 This is the 1.12.0 release of the Chapel compiler, intended to give
 potential users a look at what we're doing and the opportunity to
 provide us with feedback.  See the LICENSE file for the release's
-licensing terms.
+licensing terms. 
 
 
------------
-Quick Start
------------
+
+## Quick Start
+
+### Building Chapel
+* [](#build-with-homebrew) 
+* 
+* [From Source](#building-from-source)
+
+
 
 The following instructions are designed to get you up and running with
 Chapel with a minimum of fuss.  Note that building and using Chapel in
 this mode disables enhanced runtime options and optional language
 capabilities in the interest of a simple and clean build.
 
-0) See doc/README.prereqs for more information about packages you
+### Building from Source
+
+
+0. See doc/README.prereqs for more information about packages you
    might need to have installed for Chapel to work.
 
-1) Make sure that your shell is in the directory containing this
+* Make sure that your shell is in the directory containing this
    README file.  For example:
 
         cd ~/chapel-1.12.0
@@ -110,11 +118,11 @@ capabilities in the interest of a simple and clean build.
    to (a) use the full-featured version and (b) read the PERFORMANCE
    file in this directory to avoid common pitfalls.
 
+## 
 
-------------
-What's next?
-------------
+## What's next?
 
+```
 For more detailed information about...      refer to...
 
   ...changes since the last release          ... CHANGES
@@ -147,3 +155,4 @@ For more detailed information about...      refer to...
   ...other user and technical notes          ... doc/README
 
   ...third-party software that we use        ... third-party/README
+  ```
