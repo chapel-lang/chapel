@@ -28,18 +28,24 @@ specified takes precedence.
 
 When creating a library file from Chapel code, only those symbols with
 ``export`` attached to them will be available from outside the library.  For
-example:
+example, if one defines a Chapel file ``foo.chpl`` like this:
 
 .. code-block:: Chapel
 
    // This function will be available to the library user
-   export proc foo() {
+   export proc bar(): int {
      // Does something
      ...
    }
 
+   // As will this one
+   export proc baz(int x) {
+     // Does something different
+     ...
+   }
+
    // but this function will not be
-   proc bar() {
+   proc gloop() {
      // Does something else
      ...
    }
@@ -51,7 +57,7 @@ during compilation of the library the ``--savec <dir>`` flag is also used, the C
 definitions for the exported functions should be visible in a C file under
 *dir* of the same name as the library Chapel file.  A declaration version of
 these definitions should go into a ``.h`` file.  For instance, if one compiled
-a Chapel file ``foo.chpl`` like this:
+``foo.chpl`` like this:
 
 .. code-block:: sh
 
@@ -92,7 +98,7 @@ by running ``$CHPL_HOME/util/printchplenv --runtime``.
    # Replace $PWD with the appropriate path to your library file if it isn't
    # in the current directory
    # Replace libDir with the directory we just found.
-   export LD_LIBRARY_PATH=$PWD:<libDir>:$LD_LIBRARY_PATH
+   export LD_LIBRARY_PATH=$PWD:$CHPL_HOME/lib/`$CHPL_HOME/util/printchplenv --runtime`:$LD_LIBRARY_PATH
 
 
 When using a Chapel library from C, one must first initialize the Chapel runtime
@@ -121,7 +127,8 @@ Chapel library function calls are finished.  For example:
 Finally, compilation of the C program involves some additional command line
 includes and links.  The easiest way to get the right combination is by using
 the ``compileline --compile`` and ``compileline --libraries`` tools we provide.
-The compilation command would then look like this:
+The compilation command would then look like this (replacing myprog.c with the
+name of your C program):
 
 .. code-block:: sh
 
