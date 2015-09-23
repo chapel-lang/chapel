@@ -127,30 +127,36 @@ What's next?
 =============================================== =====================================
 For more detailed information about:            refer to:
 ----------------------------------------------- -------------------------------------
-    changes since the last release             ``CHANGES``
-    implementation status                      ``STATUS``
-    performance status                         ``PERFORMANCE``
-    Chapel's file and directory structure      ``README.files``
-    prerequisites for using this release       ``doc/prereqs.rst``
-    setting Chapel environment variables       ``doc/chplenv.rst``
-    building the compiler                      ``doc/building.rst``
-    using the compiler                         ``doc/compiling.rst``
-    executing Chapel programs                  ``doc/executing.rst``
-    reporting bugs                             ``doc/bugs.rst``
-    Chapel modes for emacs and vim             ``etc/README.md``
+    changes since the last release              ``CHANGES``
+    implementation status                       ``STATUS``
+    performance status                          ``PERFORMANCE``
+    Chapel's file and directory structure       ``README.files``
+    prerequisites for using this release        ``doc/prereqs.rst``
+    setting Chapel environment variables        ``doc/chplenv.rst``
+    building the compiler                       ``doc/building.rst``
+    using the compiler                          ``doc/compiling.rst``
+    executing Chapel programs                   ``doc/executing.rst``
+    debugging Chapel programs                   ``doc/debugging.rst``                  
+    reporting bugs                              ``doc/bugs.rst``
+    Chapel modes for emacs and vim              ``etc/README.md``
     example Chapel programs                     ``examples/README``
-    a quick reference for Chapel syntax        ``doc/quickReference.pdf``
-    the Chapel language specification          ``doc/chapelLanguageSpec.pdf``
-    executing programs on multiple locales     ``doc/multilocale.rst``
-    how Chapel tasks are mapped to threads     ``doc/tasks.rst``
-    using Chapel on a specific platform..      ``.``
-       a Cray system                           ``doc/platforms/cray.rst``
-       Cygwin over Windows                     ``doc/platforms/cygwin.rst``
-       an IBM system                           ``doc/platforms/ibm.rst``
-       an SGI Altix system                     ``doc/platforms/sgi.rst``
-    calling C code from Chapel                 ``doc/technotes/extern.rst``
-    other user and technical notes             ``doc/README``
-    third-party software that we use           ``third-party/README``
+    a quick reference for Chapel syntax         ``doc/quickReference.pdf``
+    the Chapel language specification           ``doc/chapelLanguageSpec.pdf``
+    executing programs on multiple locales      ``doc/multilocale.rst``
+    how Chapel tasks are mapped to threads      ``doc/tasks.rst``
+    calling C code from Chapel                  ``doc/technotes/extern.rst``
+    other user and technical notes              ``doc/README``
+    third-party software that we use            ``third-party/README``
+=============================================== =====================================
+
+
+=============================================== =====================================
+To use Chapel on a specific platform:           refer to:
+----------------------------------------------- -------------------------------------
+       a Cray system                            ``doc/platforms/cray.rst``
+       Cygwin over Windows                      ``doc/platforms/cygwin.rst``
+       an IBM system                            ``doc/platforms/ibm.rst``
+       an SGI Altix system                      ``doc/platforms/sgi.rst``
 =============================================== =====================================
 
 
