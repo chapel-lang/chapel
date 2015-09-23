@@ -7,7 +7,13 @@
 The Chapel Language
 ===================
 
-Chapel is an emerging programming language designed for productive parallel computing at scale. Chapel's design and implementation have been undertaken with portability in mind, permitting Chapel to run on multicore desktops and laptops, commodity clusters, and the cloud, in addition to the high-end supercomputers for which it was designed. Chapel's design and development are being led by `Cray Inc.`_ in collaboration with academia, computing centers, and industry. See `chapel.cray.com`_ for more information.
+Chapel is an emerging programming language designed for productive parallel
+computing at scale. Chapel's design and implementation have been undertaken
+with portability in mind, permitting Chapel to run on multicore desktops and
+laptops, commodity clusters, and the cloud, in addition to the high-end
+supercomputers for which it was designed. Chapel's design and development are
+being led by `Cray Inc.`_ in collaboration with academia, computing centers,
+and industry. See `chapel.cray.com`_ for more information.
 
 .. _Cray Inc.: http://www.cray.com/
 .. _chapel.cray.com: http://chapel.cray.com/
@@ -29,8 +35,10 @@ capabilities in the interest of a simple and clean build.
 
 
 
-0) See ``doc/prereqs.rst`` for more information about packages you
+0) See `prereqs.rst`_ for more information about packages you
    might need to have installed for Chapel to work.
+
+.. _prereqs.rst: http://chapel.cray.com/docs/master/usingchapel/prereqs.html
 
 
 
@@ -48,14 +56,16 @@ capabilities in the interest of a simple and clean build.
    You must be in the top-level Chapel directory for the command
    scripts below to work properly.  Note that there is no requirement to use
    these scripts long-term, they are merely designed to get new users
-   up and running quickly.  See ``doc/chplenv.rst`` for a complete
+   up and running quickly.  See `chplenv.rst`_ for a complete
    description of Chapel's environment variables and their options.
 
    If you use a shell other than the ones listed below and are able to
    create an equivalent ``util/quickstart/setchplenv.*`` script for it,
    please consider contributing a copy of it back to the project for
    inclusion in the next release.
- 
+
+.. _chplenv.rst: http://chapel.cray.com/docs/master/usingchapel/chplenv.html
+
 ======================================== ==========================================
 **If you use:**                           **then type:**
 ---------------------------------------- ------------------------------------------
@@ -64,8 +74,6 @@ a csh-compatible shell (csh/tcsh)        ``source util/quickstart/setchplenv.csh
 the fish shell (fish)                    ``. util/quickstart/setchplenv.fish``
 the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 ======================================== ==========================================
-
-
 
 
 
@@ -91,7 +99,7 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 5) To ensure you have installed Chapel properly, you can optionally run an
    automatic sanity check using a few example programs. For this to work
    correctly, you will need python, and ``python-devel`` packages installed on your
-   system. See ``doc/prereqs.rst`` for more information.
+   system. See `prereqs.rst`_ for more information.
 
         ``gmake check``
 
@@ -135,16 +143,18 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 9) If you plan to do performance studies of Chapel programs, be sure
    to (a) use the full-featured version and (b) read the ``PERFORMANCE``
    file in this directory to avoid common pitfalls.
-   
-   
-   
-10) All of the instructions above describe how to run Chapel programs 
-    in a single-locale / shared-memory mode. To run on multiple compute 
-    nodes, please refer to ``doc/multilocale.rst``.
-    
-   
-   
-    
+
+
+
+10) All of the instructions above describe how to run Chapel programs
+    in a single-locale / shared-memory mode. To run on multiple compute
+    nodes, please refer to `multilocale.rst`_.
+
+.. _multilocale.rst: http://chapel.cray.com/docs/master/usingchapel/multilocale.html
+
+
+
+
 What's next?
 ------------
 =============================================== =====================================
@@ -154,25 +164,37 @@ What's next?
     implementation status                       ``STATUS``
     performance status                          ``PERFORMANCE``
     Chapel's file and directory structure       ``README.files``
-    prerequisites for using this release        ``doc/prereqs.rst``
-    setting Chapel environment variables        ``doc/chplenv.rst``
-    building the compiler                       ``doc/building.rst``
-    using the compiler                          ``doc/compiling.rst``
-    executing Chapel programs                   ``doc/executing.rst``
-    debugging Chapel programs                   ``doc/debugging.rst``                  
-    reporting bugs                              ``doc/bugs.rst``
+    prerequisites for using this release        `prereqs.rst`_
+    setting Chapel environment variables        `chplenv.rst`_
+    building the compiler                       `building.rst`_
+    using the compiler                          `compiling.rst`_
+    executing Chapel programs                   `executing.rst`_
+    debugging Chapel programs                   `debugging.rst`_
+    reporting bugs                              `bugs.rst`_
     Chapel modes for emacs and vim              ``etc/README.md``
     example Chapel programs                     ``examples/README``
     a quick reference for Chapel syntax         ``doc/quickReference.pdf``
     the Chapel language specification           ``doc/chapelLanguageSpec.pdf``
-    other Chapel Documentation                  ``doc/README``
+    other Chapel Documentation                  `chapel.cray.com/docs`_
     third-party software that we use            ``third-party/README``
 =============================================== =====================================
+
+
+.. _chapel.cray.com/docs: http://chapel.cray.com/docs/master/
+.. _building.rst: http://chapel.cray.com/docs/master/usingchapel/building.html
+.. _compiling.rst: http://chapel.cray.com/docs/master/usingchapel/compiling.html
+.. _executing.rst: http://chapel.cray.com/docs/master/usingchapel/executing.html
+.. _debugging.rst: http://chapel.cray.com/docs/master/usingchapel/debugging.html
+.. _bugs.rst: http://chapel.cray.com/docs/master/usingchapel/bugs.html
 
 
 =============================================== =====================================
 **To use Chapel on a specific platform:**       **refer to:**
 ----------------------------------------------- -------------------------------------
-       a Cray system                            ``doc/platforms/cray.rst``
-       Cygwin over Windows                      ``doc/platforms/cygwin.rst``
+       a Cray system                            `cray.rst`_
+       Cygwin over Windows                      `cygwin.rst`_
 =============================================== =====================================
+
+
+.. _cray.rst: http://chapel.cray.com/docs/master/platforms/cray.html
+.. _cygwin.rst: http://chapel.cray.com/docs/master/platforms/cygwin.html
