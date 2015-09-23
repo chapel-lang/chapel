@@ -29,5 +29,6 @@ clean-symlink-docs: FORCE
 
 clean-module-docs: FORCE
 	rm -rf source/modules/standard
+	rm -rf source/modules/internal
 
 FORCE:
