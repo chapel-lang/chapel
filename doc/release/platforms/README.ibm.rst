@@ -5,17 +5,17 @@ Using Chapel on IBM Systems
 ===========================
 
 .. warning::
-    Chapel has not been recently tested on IBM systems.  The information
-    presented here may be stale or inaccurate.  If using Chapel on IBM
-    systems is important to you, please let us know at
-    chapel_info@cray.com.
+    Chapel has not been used on IBM Systems in several years.  It is
+    likely the information presented here is stale or outdated.  If
+    you are interested in using Chapel on IBM Systems, please let us
+    know.
 
 .. note::
     If you are using Chapel on IBM's MareNostrum, you should refer to
     :ref:`readme-marenostrum`.
 
 We only have limited experience using Chapel on IBM systems.
-This file contains notes that reflect our current experience, focusing
+This file contains notes that reflect our experience, focusing
 first on PowerPC-based systems and then BG systems.  If you are not
 familiar with Chapel, it is recommended that you first try the
 instructions in `$CHPL_HOME/README.md`_ to get started with the language.
@@ -105,14 +105,14 @@ the following settings:
    site to another so check with your site's documentation for
    details.
 
-   We started work on a loadleveler launcher (see :ref:`readme-launcher` for
-   a general description of the role of launchers in Chapel) which can
-   be utilized by setting the ``CHPL_LAUNCHER`` environment variable to
-   ``loadleveler``.  At the time of the release, this launcher was not
-   sufficiently portable, robust, configurable, or interactive to
-   warrant being made the default for Power5 or Power6 machines.  If
-   you are an IBM enthusiast who would like to work with us to improve
-   the utility of this launcher, we would greatly appreciate the help.
+   There is a prototype loadleveler launcher (see :ref:`readme-launcher`
+   for a general description of the role of launchers in Chapel) which
+   can be utilized by setting the ``CHPL_LAUNCHER`` environment variable
+   to ``loadleveler``.  This launcher is not sufficiently portable,
+   robust, configurable, or interactive to warrant being made the
+   default for Power5 or Power6 machines.  If you are an IBM enthusiast
+   who would like to work with us to improve the utility of this
+   launcher we would greatly appreciate the help.
 
 
 Additional Notes for Power5 Clusters
@@ -126,7 +126,7 @@ indicating that we can't take the `log()` of a non-positive integer.
 Set the problem size explicitly using the ``--m`` or ``--n`` flags.  If anyone
 has a chance to debug this problem or suggest a better way to query
 the amount of memory before we come up with a solution, please let us
-know at chapel_info@cray.com.
+know.
 
 
 Blue Gene/L
@@ -145,5 +145,5 @@ Blue Gene/P
 We have done some initial experimentation with the GASNet team to try
 and run Chapel on BG/P with some limited success, however more effort
 is required to make this a stable and supported platform.  If running
-Chapel on BG/P would be of interest to you, please let us know at
-chapel_info@cray.com.
+Chapel on BG/P would be of interest to you, please contact us and let
+us know.
