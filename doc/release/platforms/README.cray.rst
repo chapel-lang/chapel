@@ -138,7 +138,7 @@ Building Chapel for a Cray System from Source
 
 5) Optionally, set one or more of the following environment variables to
    configure the Chapel build.  These are described in greater detail in
-   README.chplenv.
+   :ref:`readme-chplenv`.
 
      :``CHPL_TASKS``: tasking implementation, default ``fifo`` when using
                       target compiler ``cray``, otherwise ``qthreads``
@@ -195,7 +195,7 @@ Using Chapel on a Cray System
 
 2) Optionally, set one or more of the following environment variables to
    select a Chapel configuration.  These are described in greater detail
-   in README.chplenv.
+   in :ref:`readme-chplenv`.
 
      :``CHPL_TASKS``: tasking implementation, default ``fifo`` with target
                       compiler ``cray``, ``muxed`` on Cray XC/XE with pre-built
@@ -223,7 +223,7 @@ Using Chapel on a Cray System
 
       chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
-   See README.compiling or  ``man chpl`` for further details.
+   See :ref:`readme-compiling` or  ``man chpl`` for further details.
 
 
 4) If ``CHPL_LAUNCHER`` is set to anything other than ``none``, when you
@@ -330,11 +330,11 @@ Using Chapel on a Cray System
 ========================================  =============================
 For more information on...                see...
 ========================================  =============================
-...CHPL_* environment settings            README.chplenv
-...Compiling Chapel programs              README.compiling
-...Launcher options                       README.launcher
-...Executing Chapel programs              README.executing
-...Running multi-locale Chapel programs   README.multilocale
+...CHPL_* environment settings            :ref:`readme-chplenv`
+...Compiling Chapel programs              :ref:`readme-compiling`
+...Launcher options                       :ref:`readme-launcher`
+...Executing Chapel programs              :ref:`readme-executing`
+...Running multi-locale Chapel programs   :ref:`readme-multilocale`
 ========================================  =============================
 
 
@@ -414,7 +414,8 @@ Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
 Native Runtime Layers
 ~~~~~~~~~~~~~~~~~~~~~
 
-The README.multilocale and README.tasking pages describe a variety of
+The :ref:`readme-multilocale` and :ref:`readme-tasks` pages
+describe a variety of
 communication and tasking layers that can be used by Chapel programs.
 In addition to the standard runtime layers available in any Chapel
 release, the pre-built Chapel module for Cray XC and XE series systems
@@ -658,7 +659,7 @@ SSCA#2), it can be useful to make the stack size smaller than its
 default of 8 MiB.
 
 You can set the task stack size using ``CHPL_RT_CALL_STACK_SIZE``, as described
-in  README.executing.  The following would make the task stack
+in :ref:`readme-executing`.  The following would make the task stack
 size 128 KiB, for example:
 
   .. code-block:: sh

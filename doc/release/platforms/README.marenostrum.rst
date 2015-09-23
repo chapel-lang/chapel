@@ -13,9 +13,10 @@ Using Chapel on MareNostrum
 The following information describes how to build and use Chapel on
 Barcelona Supercomputing Center's MareNostrum machine for users who
 have an account there.  If you are not familiar with Chapel, it is
-recommended that you first try the instructions in the top-level
-README on a traditional workstation in order to get started with the
-language.
+recommended that you first try the instructions in `$CHPL_HOME/README.md`_
+on a traditional workstation to get started with the language.
+
+.. _$CHPL_HOME/README.md: https://github.com/chapel-lang/chapel/blob/master/README.md
 
 #. Set ``CHPL_HOME`` to point to the directory of your installation as
    usual.  For example:
