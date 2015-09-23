@@ -24,8 +24,8 @@ Recommended Settings
 --------------------
 
 #. Set the ``CHPL_HOME`` environment variable to point to the location of the
-   chapel/ directory that was created when you unpacked the release.  This is
-   the parent of the directory containing this file.  For example:
+   chapel/ directory that was created when you unpacked the release.
+   For example:
 
     .. code-block:: sh
 
@@ -38,7 +38,11 @@ Recommended Settings
      the appropriate adjustment.
 
 
-#. Set the ``CHPL_HOST_PLATFORM`` environment variable to represent the platform on
+
+#. 
+   .. _chpl-host-platform:
+
+   Set the ``CHPL_HOST_PLATFORM`` environment variable to represent the platform on
    which you're working.  For standard UNIX workstations, this can be done by
    running the ``$CHPL_HOME/util/chplenv/chpl_platform.py`` script.  For
    example:
@@ -102,11 +106,11 @@ Recommended Settings
 Optional Settings
 -----------------
 
-CHPL_HOST_PLATFORM
-~~~~~~~~~~~~~~~~~~
+CHPL_TARGET_PLATFORM
+~~~~~~~~~~~~~~~~~~~~
    If you are cross-compiling for a platform other than your
    ``$CHPL_HOST_PLATFORM``, set the ``CHPL_TARGET_PLATFORM`` environment
-   variable to describe that platform.  See ``CHPL_HOST_PLATFORM`` above for
+   variable to describe that platform.  See :ref:`CHPL_HOST_PLATFORM <chpl-host-platform>` above for
    legal values (though whether or not a given setting will support
    cross-compilation depends on your specific environment).
 
