@@ -23,7 +23,9 @@ can be convenient.
 Recommended Settings
 --------------------
 
-#. Set the ``CHPL_HOME`` environment variable to point to the location of the
+CHPL_HOME
+~~~~~~~~~
+   Set the ``CHPL_HOME`` environment variable to point to the location of the
    chapel/ directory that was created when you unpacked the release.
    For example:
 
@@ -39,9 +41,8 @@ Recommended Settings
 
 
 
-#. 
-   .. _chpl-host-platform:
-
+CHPL_HOST_PLATFORM
+~~~~~~~~~~~~~~~~~~
    Set the ``CHPL_HOST_PLATFORM`` environment variable to represent the platform on
    which you're working.  For standard UNIX workstations, this can be done by
    running the ``$CHPL_HOME/util/chplenv/chpl_platform.py`` script.  For
@@ -87,7 +88,9 @@ Recommended Settings
    listed above, please refer to the :ref:`readme-building` file and/or contact
    us at: chapel_info@cray.com
 
-#. Set your ``PATH`` to include the directory
+PATH
+~~~~
+   Set your ``PATH`` to include the directory
    ``$CHPL_HOME/bin/$CHPL_HOST_PLATFORM`` which is created when you build the
    compiler.  For example:
 
@@ -96,7 +99,9 @@ Recommended Settings
         export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 
 
-#. Set your man path to include the directory ``$CHPL_HOME/man``.
+MANPATH
+~~~~~~~
+   Set your man path to include the directory ``$CHPL_HOME/man``.
    For example:
 
     .. code-block:: sh
@@ -110,7 +115,7 @@ CHPL_TARGET_PLATFORM
 ~~~~~~~~~~~~~~~~~~~~
    If you are cross-compiling for a platform other than your
    ``$CHPL_HOST_PLATFORM``, set the ``CHPL_TARGET_PLATFORM`` environment
-   variable to describe that platform.  See :ref:`CHPL_HOST_PLATFORM <chpl-host-platform>` above for
+   variable to describe that platform.  See `CHPL_HOST_PLATFORM`_ above for
    legal values (though whether or not a given setting will support
    cross-compilation depends on your specific environment).
 
