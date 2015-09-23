@@ -149,5 +149,13 @@ compile.  All that is missing is the addition of
 ``$CHPL_HOME/runtime/src/chpl-init.c`` before the C program file, and
 ``-L<libDir> -l<nameOfLib> -L<Chapel Lib location from LD step> -lchpl -lpthread`` in the linking stage.
 
+.. note::
+
+   When compiling with ``CHPL_TASKS=qthreads``, ``CHPL_GMP=gmp``,
+   ``CHPL_HWLOC=hwloc``, ``CHPL_COMM=gasnet``, or ``CHPL_REGEXP=re2``,
+   the appropriate third-party ``install/<CHPL_SETTING>/lib`` folder will
+   need to be added to ``$LD_LIBRARY_PATH`` and the ``-L`` step here, as well
+   as a ``-l`` for the library name.  ``CHPL_TASKS=fifo`` does require this.
+
 As mentioned above, this feature is not very sturdy.  Please refer to
 :ref:`readme-bugs` if any problems are encountered.
