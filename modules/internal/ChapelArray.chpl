@@ -19,7 +19,117 @@
 
 // ChapelArray.chpl
 //
-/* Array operations.
+/* Operations on Domains and Arrays.
+
+   =================================================
+   Distribution, Domain and Array Equality operators
+   =================================================
+
+   Equality operators are defined to test if two distributions
+   are equivalent or not:
+
+   .. code-block:: chapel
+
+     dist1 == dist2
+     dist1 != dist2
+
+   Or to test if two domains are equivalent or not:
+
+   .. code-block:: chapel
+
+     dom1 == dom2
+     dom1 != dom2
+
+   Arrays are promoted, so the result of the equality operators is
+   an array of booleans.  To get a single result use the ``equals``
+   method instead.
+
+   .. code-block:: chapel
+
+     arr1 == arr2 // compare each element resulting in an array of booleans
+     arr1 != arr2 // compare each element resulting in an array of booleans
+     arr1.equals(arr2) // compare entire arrays resulting in a single boolean
+
+   ========================================
+   Miscellaneous Domain and Array Operators
+   ========================================
+
+   The domain count operator ``#``
+   -------------------------------
+
+   The ``#`` operator can be applied to dense rectangular domains
+   with a tuple argument whose size matches the rank of the domain
+   (or optionally an integer in the case of a 1D domain). The operator
+   is equivalent to applying the ``#`` operator to the component
+   ranges of the domain and then using them to slice the domain.
+
+   The array count operator ``#``
+   ------------------------------
+   The ``#`` operator can be applied to dense rectangular arrays
+   with a tuple argument whose size matches the rank of the array
+   (or optionally an integer in the case of a 1D array). The operator
+   is equivalent to applying the ``#`` operator to the array's domain
+   and using the result to slice the array.
+
+   The array swap operator ``<=>``
+   -------------------------------
+   The ``<=>`` operator can be used to swap the contents of two arrays
+   with the same shape.
+
+   The array alias operator ``=>``
+   -------------------------------
+
+   The ``=>`` operator can be used in a variable declaration to create
+   a new alias of an array. The new variable will refer to the same
+   array elements as the aliased array.  In the following example,
+   the variable ``Inner`` refers to the inner 9 elements of ``A``.
+
+   .. code-block:: chapel
+
+     var A: [0..10] int;
+     var Inner => A[1..9];
+
+   ================================================
+   Set Operations on Associative Domains and Arrays
+   ================================================
+
+   Associative domains and arrays support a number of operators for
+   set manipulations.  The supported set operators are:
+
+     =====  ====================
+     \+ \|    Union
+     &      Intersection
+     \-      Difference
+     ^      Symmetric Difference
+     =====  ====================
+
+   Consider the following code where ``A`` and ``B`` are associative arrays:
+
+   .. code-block:: chapel
+
+     var C = A op B;
+
+   The result ``C`` is a new associative array backed by a new associative
+   domain. The domains of ``A`` and ``B`` are not modified by ``op``.
+
+   There are also op= variants that store the result into the first operand.
+   
+   Consider the following code where ``A`` and ``B`` are associative arrays:
+
+   .. code-block:: chapel
+
+     A op= B;
+
+   ``A`` must not share its domain with another array, otherwise the program
+   will halt with an error message.
+
+   For the ``+=`` and ``|=`` operators, the value from ``B`` will overwrite
+   the existing value in ``A`` when indices overlap.
+
+   ===========================================
+   Functions and Methods on Arrays and Domains
+   ===========================================
+
  */
 module ChapelArray {
 
@@ -499,7 +609,7 @@ module ChapelArray {
     return _OpaqueIndex;
 
   /* Return true if the argument ``d`` is a rectangular domain.
-     Otherwise return false  */ 
+     Otherwise return false.  */ 
   proc isRectangularDom(d: domain) param {
     proc isRectangularDomClass(dc: BaseRectangularDom) param return true;
     proc isRectangularDomClass(dc) param return false;
@@ -507,7 +617,7 @@ module ChapelArray {
   }
 
   /* Return true if the argument ``a`` is an array with a rectangular
-     domain.  Otherwise return false */
+     domain.  Otherwise return false. */
   proc isRectangularArr(a: []) param return isRectangularDom(a.domain);
 
   /* Return true if ``d`` is an irregular domain; e.g. is not rectangular.
@@ -517,10 +627,10 @@ module ChapelArray {
   }
 
   /* Return true if ``a`` is an array with an irregular domain; e.g. not
-     rectangular. Otherwise return false; */
+     rectangular. Otherwise return false. */
   proc isIrregularArr(a: []) param return isIrregularDom(a.domain);
 
-  /* Return true if ``d`` is an associative domain. Otherwise return false */
+  /* Return true if ``d`` is an associative domain. Otherwise return false. */
   proc isAssociativeDom(d: domain) param {
     proc isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
     proc isAssociativeDomClass(dc) param return false;
@@ -541,14 +651,14 @@ module ChapelArray {
      return false. */
   proc isEnumArr(a: []) param return isEnumDom(a.domain);
  
-  /* Return true if ``d`` is an opaque domain. Otherwise return false */
+  /* Return true if ``d`` is an opaque domain. Otherwise return false. */
   proc isOpaqueDom(d: domain) param {
     proc isOpaqueDomClass(dc: BaseOpaqueDom) param return true;
     proc isOpaqueDomClass(dc) param return false;
     return isOpaqueDomClass(d._value);
   }
 
-  /* Return true if ``d`` is a sparse domain. Otherwise return false */
+  /* Return true if ``d`` is a sparse domain. Otherwise return false. */
   proc isSparseDom(d: domain) param {
     proc isSparseDomClass(dc: BaseSparseDom) param return true;
     proc isSparseDomClass(dc) param return false;
@@ -1004,8 +1114,8 @@ module ChapelArray {
         pos(d) = _value.dsiDim(d).indexOrder(ind(d));
       return pos;
     }
-    /*
-     */
+
+    pragma "no doc"
     proc expand(off: rank*_value.idxType) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("expand not supported on associative domains");
@@ -1016,7 +1126,14 @@ module ChapelArray {
       else
         compilerError("expand not supported on this domain type");
     }
+
+    pragma "no doc"
     proc expand(off: _value.idxType ...rank) return expand(off);
+
+    /* Returns a new domain that is the current domain expanded by
+       ``off(d)`` in dimension ``d`` if ``off(d)`` is positive or
+       contracted by ``off(d)`` in dimension ``d`` if ``off(d)``
+       is negative. */
     proc expand(off: rank*_value.idxType) {
       var ranges = dims();
       for i in 1..rank do {
@@ -1033,6 +1150,10 @@ module ChapelArray {
           d.dist.incRefCount();
       return _newDomain(d);
     }
+
+    /* Returns a new domain that is the current domain expanded by
+       ``off`` in all dimensions if ``off`` is positive or contracted
+       by ``off`` in all dimensions if ``off`` is negative. */
     proc expand(off: _value.idxType) where rank > 1 {
       var ranges = dims();
       for i in 1..rank do
@@ -1044,7 +1165,8 @@ module ChapelArray {
           d.dist.incRefCount();
       return _newDomain(d);
     }
-  
+
+    pragma "no doc"
     proc exterior(off: rank*_value.idxType) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("exterior not supported on associative domains");
@@ -1055,7 +1177,19 @@ module ChapelArray {
       else
         compilerError("exterior not supported on this domain type");
     }
+
+    /* Returns a new domain that is the exterior portion of the
+       current domain with ``off(d)`` indices for each dimension
+       ``d``. If ``off(d)`` is negative, compute the exterior from
+       the low bound of the dimension; if positive, compute the
+       exterior from the high bound. */
     proc exterior(off: _value.idxType ...rank) return exterior(off);
+
+    /* Returns a new domain that is the exterior portion of the
+       current domain with ``off`` indices for each dimension.
+       If ``off`` is negative, compute the exterior from the low
+       bound of the dimension; if positive, compute the exterior
+       from the high bound. */
     proc exterior(off: rank*_value.idxType) {
       var ranges = dims();
       for i in 1..rank do
@@ -1067,7 +1201,8 @@ module ChapelArray {
           d.dist.incRefCount();
       return _newDomain(d);
      }
-                    
+
+    pragma "no doc"
     proc interior(off: rank*_value.idxType) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("interior not supported on associative domains");
@@ -1078,7 +1213,19 @@ module ChapelArray {
       else
         compilerError("interior not supported on this domain type");
     }
+
+    /* Returns a new domain that is the interior portion of the
+       current domain with ``off`` indices for each dimension.
+       If ``off`` is negative, compute the interior from the low
+       bound of the dimension; if positive, compute the interior
+       from the high bound. */
     proc interior(off: _value.idxType ...rank) return interior(off);
+
+    /* Returns a new domain that is the interior portion of the
+       current domain with ``off(d)`` indices for each dimension
+       ``d``. If ``off(d)`` is negative, compute the interior from
+       the low bound of the dimension; if positive, compute the
+       interior from the high bound. */
     proc interior(off: rank*_value.idxType) {
       var ranges = dims();
       for i in 1..rank do {
@@ -1099,6 +1246,7 @@ module ChapelArray {
     //
     // NOTE: We eventually want to support translate on other domain types
     //
+    pragma "no doc"
     proc translate(off) where !isRectangularDom(this) {
       if isAssociativeDom(this) then
         compilerError("translate not supported on associative domains");
@@ -1109,11 +1257,17 @@ module ChapelArray {
       else
         compilerError("translate not supported on this domain type");
     }
+
     //
     // Notice that the type of the offset does not have to match the
     // index type.  This is handled in the range.translate().
     //
+    /* Returns a new domain that is the current domain translated by
+       ``off(d)`` in each dimension ``d``. */
     proc translate(off: ?t ...rank) return translate(off);
+
+    /* Returns a new domain that is the current domain translated by
+       ``off`` in each dimension. */
     proc translate(off) where isTuple(off) {
       if off.size != rank then
         compilerError("the domain and offset arguments of translate() must be of the same rank");
@@ -1143,47 +1297,56 @@ module ChapelArray {
           d.dist.incRefCount();
       return _newDomain(d);
     }
-  
+
+    pragma "no doc" 
     proc setIndices(x) {
       _value.dsiSetIndices(x);
       if _isPrivatized(_valueType) {
         _reprivatize(_value);
       }
     }
-  
+
+    pragma "no doc"  
     proc getIndices()
       return _value.dsiGetIndices();
-  
+
+    pragma "no doc"
     proc writeThis(f: Writer) {
       _value.dsiSerialWrite(f);
     }
+
+    pragma "no doc"
     proc readThis(f: Reader) {
       _value.dsiSerialRead(f);
     }
-  
+
+    pragma "no doc"
     proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularDom {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of a domain on locale ",
              _value.locale.id, " from locale ", here.id);
       return this((...r));
     }
-  
+
+    pragma "no doc"  
     proc localSlice(r: range(?)... rank) {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
     }
-  
+
+    pragma "no doc"
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
   
     // associative array interface
-  
+    /* Yield the domain indices in sorted order */
     iter sorted() {
       for i in _value.dsiSorted() {
         yield i;
       }
     }
-  
+
+    pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
   }  // record _domain
   
@@ -1356,10 +1519,7 @@ module ChapelArray {
   }
   
   
-  /* Array wrapper record
-     Want this type to be no doc, but want some of the methods to be documented
-     TODO:
-  */
+  // Array wrapper record
   pragma "array"
   pragma "has runtime type"
   pragma "ignore noinit"
@@ -1405,7 +1565,7 @@ module ChapelArray {
 
     /* The type of elements contained in the array */ 
     proc eltType type return _value.eltType;
-    /* The type of indicies used in the array's domain */
+    /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
@@ -1624,6 +1784,7 @@ module ChapelArray {
              "  Actual domain is: ", this.domain);
     }
 
+    pragma "no doc"
     proc reindex(d: domain)
       where isRectangularDom(this.domain) && isRectangularDom(d)
     {
@@ -1661,6 +1822,7 @@ module ChapelArray {
   
     // reindex for all non-rectangular domain types.
     // See above for the rectangular version.
+    pragma "no doc"
     proc reindex(d:domain) {
       if this.domain != d then
         halt("Reindexing of non-rectangular arrays is undefined.");
@@ -1752,18 +1914,23 @@ module ChapelArray {
     }
 
     /* Return the first value in the array */
+    // The return type used here is currently not pretty in the generated
+    // documentation. Don't document it for now.
+    pragma "no doc"
     proc head(): this._value.eltType {
       return this[this.domain.low];
     }
 
     /* Return the last value in the array */
+    // The return type used here is currently not pretty in the generated
+    // documentation. Don't document it for now.
+    pragma "no doc"
     proc tail(): this._value.eltType {
       return this[this.domain.high];
     }
 
-    /* Add element 'val' to the back of the array, extending the array's
-       domain by one. If the domain was {1..5} it will become {1..6}.
-       val: the value to add to the back of the array
+    /* Add element ``val`` to the back of the array, extending the array's
+       domain by one. If the domain was ``{1..5}`` it will become ``{1..6}``.
      */
     proc push_back(val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_back");
@@ -1779,7 +1946,7 @@ module ChapelArray {
     }
 
     /* Remove the last element from the array, reducing the size of the
-       domain by one. If the domain was {1..5} it will become {1..4}
+       domain by one. If the domain was ``{1..5}`` it will become ``{1..4}``
      */
     proc pop_back() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_back");
@@ -1793,9 +1960,8 @@ module ChapelArray {
       }
     }
 
-    /* Add element 'val' to the front of the array, extending the array's
-       domain by one. If the domain was {1..5} it will become {0..5}.
-       val: the value to add to the front of the array
+    /* Add element ``val`` to the front of the array, extending the array's
+       domain by one. If the domain was ``{1..5}`` it will become ``{0..5}``.
      */
     proc push_front(val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_front");
@@ -1811,7 +1977,7 @@ module ChapelArray {
     }
 
     /* Remove the first element of the array reducing the size of the
-       domain by one.  If the domain was {1..5} it will become {2..5}.
+       domain by one.  If the domain was ``{1..5}`` it will become ``{2..5}``.
      */
     proc pop_front() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_front");
@@ -1825,11 +1991,9 @@ module ChapelArray {
       }
     }
 
-    /* Insert element 'val' into the array at index 'pos'. Shift the array
-       elements above 'pos' up one index. If the domain was {1..5} it will
-       become {1..6}.
-       val: the value to add to the array
-       pos: the index at which the value should be added
+    /* Insert element ``val`` into the array at index ``pos``. Shift the array
+       elements above ``pos`` up one index. If the domain was ``{1..5}`` it will
+       become ``{1..6}``.
      */
     proc insert(pos: this.idxType, val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("insert");
@@ -1845,10 +2009,9 @@ module ChapelArray {
       this[pos] = val;
     }
 
-    /* Remove the element at index 'pos' from the array and shift the array
-       elements above 'pos' down one index. If the domain was {1..5} it will
-       become {1..4}.
-       pos: the index at which the value should be removed
+    /* Remove the element at index ``pos`` from the array and shift the array
+       elements above ``pos`` down one index. If the domain was ``{1..5}``
+       it will become ``{1..4}``.
      */
     proc remove(pos: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove");
@@ -1865,10 +2028,8 @@ module ChapelArray {
       }
     }
 
-    /* Remove 'count' elements from the array starting at index 'pos' and
-       shift elements above 'pos+count' down by 'count' indices.
-       pos: The index to start removing from
-       count: The number of array elements to remove
+    /* Remove ``count`` elements from the array starting at index ``pos`` and
+       shift elements above ``pos+count`` down by ``count`` indices.
      */
     proc remove(pos: this.idxType, count: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove count");
@@ -1887,12 +2048,11 @@ module ChapelArray {
       }
     }
 
-    /* Remove the elements at the indices in the 'pos' range and shift the
-       array elements down by 'pos.size' elements. If the domain was {1..5}
-       and this is called with 2..3 as an argument, the new domain would be
-       {1..3} and the array would contain the elements formerly at positions
-       1, 4, 5.
-       pos: a dense range of indices to remove
+    /* Remove the elements at the indices in the ``pos`` range and shift the
+       array elements down by ``pos.size`` elements. If the domain was
+       ``{1..5}`` and this is called with ``2..3`` as an argument, the new
+       domain would be ``{1..3}`` and the array would contain the elements
+       formerly at positions 1, 4, and 5.
      */
     proc remove(pos: range(this.idxType, stridable=false)) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove range");
@@ -1910,13 +2070,13 @@ module ChapelArray {
     }
 
     /* Remove all elements from the array leaving the domain empty. If the
-       domain was {5..10} it will become {5..4}.
+       domain was ``{5..10}`` it will become ``{5..4}``.
      */
     proc clear() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("clear");
       const lo = this.domain.low,
             hi = this.domain.low-1;
-      assert(hi < lo, "overflow occured subtracting 1 from low bound in clear");
+      assert(hi < lo, "overflow occurred subtracting 1 from low bound in clear");
       const newDom = {lo..hi};
       on this._value {
         this._value.dsiReallocate(newDom);
@@ -1925,10 +2085,9 @@ module ChapelArray {
       }
     }
 
-    /* Return a tuple containing true and the index of the first instance of
-       'val' in the array, or if 'val' is not found, a tuple containing false
-       and an unspecified value is returned.
-       val: the value to locate
+    /* Return a tuple containing ``true`` and the index of the first
+       instance of ``val`` in the array, or if ``val`` is not found, a
+       tuple containing ``false`` and an unspecified value is returned.
      */
     proc find(val: this.eltType): (bool, this.idxType) {
       for i in this.domain {
@@ -1937,9 +2096,7 @@ module ChapelArray {
       return (false, 0);
     }
 
-    /* Return the number of times 'val' occurs in the array.
-       val: the value to count
-     */
+    /* Return the number of times ``val`` occurs in the array. */
     proc count(val: this.eltType): int {
       var total: int = 0;
       for i in this do if i == val then total += 1;
@@ -1951,6 +2108,10 @@ module ChapelArray {
   // A helper function to check array equality (== on arrays promotes
   // to an array of booleans)
   //
+  /* Return true if all this array is the same size and shape
+     as argument ``that`` and all elements of this array are
+     equal to the corresponding element in ``that``. Otherwise
+     return false. */
   proc _array.equals(that: _array) {
     //
     // quick path for identical arrays
@@ -2018,39 +2179,11 @@ module ChapelArray {
   /* Return true if ``e`` is an array. Otherwise return false. */
   proc isArrayValue(e)     param  return false;
 
+//
 //     The following functions define set operations on associative arrays.
 //
-//     The supported functions (and their op= variations) are:
 
-//     =====  ====================
-//     + |   Union
-//     &     Intersection
-//     -     Difference
-//     ^     Symmetric Difference
-//     =====  ====================
-//
-//     Consider the following code where 'a' and 'b' are associative arrays:
-//
-//     .. code-block:: chapel
-//
-//       var c = a op b;
-//
-//     The result 'c' is a new associative array backed by a new associative
-//    domain. The domains of 'a' and 'b' are not modified by 'op'.
-//
-//     Consider the following code where 'a' and 'b' are associative arrays:
-//
-//     .. code-block:: chapel
-//
-//       a op= b;
-//
-//     ``a`` must not share its domain with another array, otherwise the program
-//     will halt with an error message.
-//     
-//     For the ``+=`` and ``|=`` operators, the value from ``b`` will overwrite
-//     the existing value when indices overlap.
-
-  // promototion for associative array addition doesn't really make sense. instead,
+  // promotion for associative array addition doesn't really make sense. instead,
   // we really just want a union
   proc +(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
     return a | b;
@@ -2133,19 +2266,6 @@ module ChapelArray {
         if a.domain.member(k) then a.domain.remove(k);
         else a[k] = b[k];
   }
-
-//     The following functions define set operations on associative domains.
-//
-//     The supported functions are:
-//
-//       ========  ====================
-//        + |      Union
-//        &        Intersection
-//        -        Difference
-//        ^        Symmetric Difference
-//       ========  ====================
-//
-//     For each operator, a new domain is returned.
 
   proc -(a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
     var newDom : a.type;
@@ -2525,7 +2645,7 @@ module ChapelArray {
     
     if b._value == nil then
       // This happens e.g. for 'new' on a record with an array field whose
-      // default initalizer is a forall expr. E.g. arrayInClassRecord.chpl.
+      // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
       return;
 
     if a._value == b._value {
@@ -2682,9 +2802,11 @@ module ChapelArray {
       a <=> b;
   }
   
-  //
-  // reshape function
-  //
+  /* Returns a copy of the array containing the same values but
+     in the shape of the new domain. The number of indices in the
+     domain must equal the number of elements in the array. The
+     elements of the array are copied into the new array using the
+     default iteration orders over both arrays.  */
   proc reshape(A: [], D: domain) {
     if !isRectangularDom(D) then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", typeToString(D.type));
@@ -2696,7 +2818,8 @@ module ChapelArray {
       B(i) = a;
     return B;
   }
-  
+
+  pragma "no doc"
   iter linearize(Xs) {
     for x in Xs do yield x;
   }
@@ -2774,4 +2897,12 @@ module ChapelArray {
     return A;
   }
 
+  /* ================================================
+     Set Operations on Associative Domains and Arrays
+     ================================================
+
+     Associative domains and arrays support a number of operators for
+     set manipulations.
+
+   */
 }

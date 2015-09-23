@@ -129,7 +129,7 @@ replace "record" "type" $file
 removePrefixFunctions $file
 removePrefixVariables $file
 
-fixTitle "Array Operations" $file
+fixTitle "Domain and Array Operations" $file
 
 ## End ChapelArray ##
 
