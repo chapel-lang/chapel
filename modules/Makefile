@@ -84,6 +84,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
+	standard/VisualDebug.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 DISTS_TO_DOCUMENT = \
@@ -99,6 +100,7 @@ DISTS_TO_DOCUMENT = \
 	layouts/LayoutCSR.chpl \
 
 INTERNAL_MODULES_TO_DOCUMENT =                \
+	internal/ChapelArray.chpl             \
         internal/ChapelTuple.chpl             \
         internal/ChapelIO.chpl                \
         internal/ChapelRange.chpl             \

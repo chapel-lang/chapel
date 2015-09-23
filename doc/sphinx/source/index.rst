@@ -14,3 +14,4 @@ Contents:
    modules/builtins
    modules/standardlibrary
    technotes/index
+   tools/index

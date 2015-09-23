@@ -1,7 +1,7 @@
 .. _readme-libraries:
 
-Chapel Libraries
-================
+Exporting Chapel as a Library
+=============================
 
 .. note::
 
