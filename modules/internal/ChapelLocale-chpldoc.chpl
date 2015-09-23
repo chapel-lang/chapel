@@ -17,6 +17,20 @@
  * limitations under the License.
  */
 
+//
+// gbt 2015/09/23
+//
+// This is a dummy chapel that is used to anchor some internal definitions
+// during the last day before Doc Freeze for 1.12.  This file is processed
+// for docs in modules/Makefile but is not part of the Chapel Module code
+// base.
+//
+// If we try to chpldoc ChapelLocale.chpl directly we get errors about
+// multiple definitions for some symbols, presumably because the compiler
+// already brings in ChapelLocale.chpl itself, automatically.  We expect
+// to fix this problem after the release.
+//
+
 /*
   A *locale* is a Chapel abstraction for a piece of a target
   architecture that has processing and storage capabilities.
@@ -86,11 +100,13 @@ module ChapelLocale {
 
     /*
       This is the maximum task concurrency that one can expect to
-      achieve on this locale.  This is often equal to `numCores`.
-      Creating more tasks than this will probably increase walltime
-      rather than decrease it.
+      achieve on this locale.  The value comes from an estimate by the
+      runtime tasking layer.  Typically it is the number of physical
+      processor cores available to the program.  Creating more tasks
+      than this will probably increase walltime rather than decrease
+      it.
      */
-    var maxTaskPar: int; // max parallelism tasking layer expects to deliver
+    var maxTaskPar: int;
 
     /*
       ``callStackSize`` holds the size of a task stack on a given
@@ -494,7 +510,7 @@ module ChapelLocale {
     This is the domain over which the global ``Locales`` array is
     defined.
   */  
-  const LocaleSpace: domain(1) = [0..numLocales-1];
+  const LocaleSpace = {0..numLocales-1};
 
   /*
     The global ``Locales`` array contains an entry for each
