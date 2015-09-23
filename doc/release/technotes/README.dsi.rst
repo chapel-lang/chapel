@@ -1,8 +1,14 @@
 .. _readme-dsi:
 
-======================================
-DSI: the Domain map Standard Interface
-======================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Domain Map Standard Interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. contents::
+
+============
+Introduction
+============
 
 This document defines **DSI** -- the Domain map Standard Interface.
 It is the interface that a domain map must implement.
@@ -84,7 +90,7 @@ multiple locales) will typically define "local descriptor" classes as well.
 
 
 ======================================
-PHASE 1: the essentials
+Phase 1: The Essentials
 ======================================
 
 
@@ -291,12 +297,12 @@ class ``GlobalDomain``
   DSI requires interoperability between domain maps only
   for *rectangular* domains, by prescribing:
 
-   (a) how the leader builds the description of a subdomain, and
+   A. how the leader builds the description of a subdomain, and
 
-   (b) in what order the follower yields the indices of that subdomain.
+   B. in what order the follower yields the indices of that subdomain.
 
-(a) - subdomain description
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A. Subdomain Description
+^^^^^^^^^^^^^^^^^^^^^^^^
 
   Let ``Dwhole`` be the Chapel domain corresponding to this ``GlobalDomain``.
 
@@ -343,8 +349,8 @@ class ``GlobalDomain``
   de-densification, but ensure it is used in zippering only
   with domains/arrays of the same domain map.
 
-(b) - follower yield order
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+B. Follower Yield Order
+^^^^^^^^^^^^^^^^^^^^^^^
 
   The follower iterator must traverse the subdomain for which the above
   description is created in the order given by the default domain map.
@@ -387,7 +393,7 @@ class ``GlobalDomain``
   on the corresponding Chapel domain value.
 
 
-``class GlobalArray``
+class ``GlobalArray``
 ---------------------
 
   An instance of this class is created whenever a Chapel array is created
@@ -556,7 +562,7 @@ name for their ``GlobalDistribution`` classes, e.g. Block and Cyclic.
 
 
 =================================
-PHASE 2: additional operations
+Phase 2: Additional Operations
 =================================
 
 The operations in this phase are required by DSI.
@@ -681,7 +687,7 @@ as an indication of what procedure(s) need to be defined.
 
 
 =================================
-PHASE 3: privatization
+Phase 3: Privatization
 =================================
 
 
