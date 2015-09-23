@@ -1,36 +1,34 @@
 .. _readme-bugs:
 
-=========================
-Reporting Bugs for Chapel
-=========================
+=============================
+Reporting Bugs against Chapel
+=============================
 
-If you encounter a bug or problem using the Chapel compiler, please do
-not hesitate to contact the Chapel development team at the following
-address:
+If you encounter a bug, internal error, or unclear error message when
+using the Chapel compiler, please do not hesitate to send a bug report
+to the Chapel team.  Do so by sending a mail to one of the following
+mailing lists:
 
-  chapel-bugs@lists.sourceforge.net
+  * chapel-bugs@lists.sourceforge.net : for bugs that are suitable for `public archive <https://sourceforge.net/p/chapel/mailman/chapel-bugs/>`_
+  * chapel_bugs@cray.com              : for bugs that the Chapel team at Cray Inc. should keep private
 
-Note that mail sent to the above address will be publicly readable and
-that submitted test cases may be folded into our testing system unless
-you explicitly forbid it.  If you would prefer for your bug to be held
-in confidence by the Chapel team, please mail it to:
+Please include the following information in your email:
 
-  chapel_bugs@cray.com
+  1. the version number of your Chapel compiler (``chpl --version``)
+  2. the output of the ``$CHPL_HOME/util/printchplenv`` script
+  3. the back-end C compiler you are using and its version (e.g., ``gcc --version``)
+  4. the output of ``module list`` (when applicable)
+  5. one of the following:
 
-Please include as much information as possible in your email.  For
-example:
+     a) preferably, a reduced program demonstrating the issue
+     b) alternatively, the original program demonstrating the issue
+     c) as a last resort, a description of how to recreate the issue
+  6. any helper modules or input files required to reproduce the issue
+  7. a description of the behavior you are seeing
 
-  * the Chapel program that caused the problem (if possible and applicable)
-  * the behavior you are seeing
-  * the output of the ``$CHPL_HOME/util/printchplenv`` script
-  * the output of ``module list`` (when applicable)
-  * the version number of your Chapel compiler (``chpl --version``)
-  * the platform(s) you are running on and their OS versions
-  * the C/C++ compiler(s) you are using and their versions
+A list of known bugs and unimplemented features can be found in
+``$CHPL_HOME/STATUS``.  Even if you run into a known issue, we
+encourage you to email us a bug report, particularly if it is impeding
+your progress.  Depending on the issue, we may be able to suggest a
+workaround or prioritize addressing the bug.
 
-A list of unimplemented features and known bugs can be found in
-``$CHPL_HOME/STATUS``.  Feel free to check any unexpected behavior against
-this file.  Even if you run into a known issue, we encourage you to
-email us a bug report to make us aware that it's a problem for your
-code.  We are more than happy to suggest workarounds and/or to
-prioritize working on an issue that is impeding your progress.
