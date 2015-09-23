@@ -146,7 +146,7 @@ if ($no_clone == 0) {
     "util/config",
     "util/quickstart",
     "util/test",
-    "tools/chplvis"
+    "tools"
 );
 
 
