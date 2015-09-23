@@ -84,6 +84,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
+	standard/VisualDebug.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 DISTS_TO_DOCUMENT = \
