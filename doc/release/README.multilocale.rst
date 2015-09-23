@@ -158,7 +158,7 @@ To run Chapel on multiple locales, the following steps are required:
 
            export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 
-         See README.launcher for other options available, such
+         See :ref:`readme-launcher` for other options available, such
          as setting the time limit or selecting the type of node.
 
 
@@ -215,7 +215,7 @@ To run Chapel on multiple locales, the following steps are required:
    launch the Chapel program onto the compute nodes using a GASNet run
    command.  The second contains the program code itself.  You can use
    the ``-v`` flag to see the commands used to launch your program.  See
-   README.launcher for further details.
+   :ref:`readme-launcher` for further details.
 
 
 #. Multi-locale executions require the number of locales to be
