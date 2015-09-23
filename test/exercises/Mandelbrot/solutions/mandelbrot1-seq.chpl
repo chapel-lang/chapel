@@ -30,8 +30,8 @@ proc main() {
   //
   // Compute the image, serially
   //
-  for ij in ImgSpace do
-    Image[ij] = compute(ij);
+  for (i,j) in ImgSpace do
+    Image[i,j] = compute(i,j);
 
   //
   // Plot the image
@@ -42,8 +42,8 @@ proc main() {
 //
 // Compute the pixel value as described in the handout
 //
-proc compute((x, y)) {
-  const c = mapImg2CPlane((x, y));  // convert the pixel coordinates to a complex value
+proc compute(x, y) {
+  const c = mapImg2CPlane(x, y);  // convert the pixel coordinates to a complex value
 
   var z: complex;
   for i in 1..maxSteps {
@@ -59,7 +59,7 @@ proc compute((x, y)) {
 // Map an image coordinate to a point in the complex plane.
 // Image coordinates are (row, col), with row 0 at the top.
 //
-proc mapImg2CPlane((row, col)) {
+proc mapImg2CPlane(row, col) {
   const (rmin, rmax) = (-1.5, .5);
   const (imin, imax) = (-1i, 1i);
 
