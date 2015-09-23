@@ -143,3 +143,24 @@ fixTitle "Ranges" $file
 
 # End ChapelRange ##
 
+## ChapelComplex_forDocs ##
+
+file="./ChapelComplex_forDocs.rst"
+
+removePrefixFunctions $file
+fixTitle "Complex" $file
+
+# End ChapelComplex_forDocs ##
+
+
+
+
+
+## UtilMisc_forDocs ##
+
+file="./UtilMisc_forDocs.rst"
+
+removePrefixFunctions $file
+fixTitle "Misc Functions" $file
+
+# End UtilMisc_forDocs ##
