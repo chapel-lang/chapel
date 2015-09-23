@@ -7,7 +7,7 @@ LLVM support
 The Chapel compiler can be built with LLVM support in able to enable
 the following features:
 
- 1) extern block support (see README.extern). This feature uses the clang
+ 1) extern block support (see :ref:`readme-extern`). This feature uses the clang
     parser. Note that it is *not* necessary to use the LLVM code generator in
     order to use extern block support.
 
