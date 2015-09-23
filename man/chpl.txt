@@ -383,7 +383,7 @@ OPTIONS
 
   --[no-]warn-const-loops  Enable [disable] warnings for 'while' loops
                      whose condition is a 'const' variable, because such
-                     a loop condition is likely unintended.  'While' loops
+                     a loop condition is likely unintended. 'While' loops
                      with 'param' conditions do not trigger this warning.
 
   --[no-]warn-special  Enable [disable] all special compiler warnings
