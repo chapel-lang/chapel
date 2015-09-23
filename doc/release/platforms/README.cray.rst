@@ -1,12 +1,12 @@
 .. _readme-cray:
 
-===================================
-Using Chapel on Cray\ |reg| Systems
-===================================
+============================
+Using Chapel on Cray Systems
+============================
 
 The following information is assembled to help Chapel users get up and running
-on Cray systems including the Cray XC\ |trade|, XE\ |trade|, XK\ |trade|, and
-CS\ |trade| series systems.
+on Cray\ |reg| systems including the Cray XC\ |trade|, XE\ |trade|, XK\
+|trade|, and CS\ |trade| series systems.
 
 .. contents::
 
