@@ -40,14 +40,14 @@ capabilities in the interest of a simple and clean build.
 2) Set up your environment to use Chapel in "Quick Start" mode.
 
 
-======================================== ========================================
-If you use...                            then type...
----------------------------------------- ----------------------------------------
-...a bash-compatible shell (bash/zsh)    source util/quickstart/setchplenv.bash
-...a csh-compatible shell (csh/tcsh)     source util/quickstart/setchplenv.csh
-...the fish shell (fish)                 . util/quickstart/setchplenv.fish
-...the Bourne shell (sh)                 . util/quickstart/setchplenv.sh
-======================================== ========================================
+======================================== ==========================================
+If you use:                              then type:
+---------------------------------------- ------------------------------------------
+a bash-compatible shell (bash/zsh)       ``source util/quickstart/setchplenv.bash``
+a csh-compatible shell (csh/tcsh)        ``source util/quickstart/setchplenv.csh``
+the fish shell (fish)                    ``. util/quickstart/setchplenv.fish``
+the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
+======================================== ==========================================
 
 
 You must be in the top-level Chapel directory for these command
@@ -125,32 +125,32 @@ inclusion in the next release.
 What's next?
 ------------
 =============================================== =====================================
-For more detailed information about...          refer to...
+For more detailed information about:            refer to:
 ----------------------------------------------- -------------------------------------
-    ...changes since the last release             ``... CHANGES``
-    ...implementation status                      ``... STATUS``
-    ...performance status                         ``... PERFORMANCE``
-    ...Chapel's file and directory structure      ``... README.files``
-    ...prerequisites for using this release       ``... doc/prereqs.rst``
-    ...setting Chapel environment variables       ``... doc/chplenv.rst``
-    ...building the compiler                      ``... doc/building.rst``
-    ...using the compiler                         ``... doc/compiling.rst``
-    ...executing Chapel programs                  ``... doc/executing.rst``
-    ...reporting bugs                             ``... doc/bugs.rst``
-    ...Chapel modes for emacs and vim             ``... etc/README.md``
-    ..example Chapel programs                     ``... examples/README``
-    ...a quick reference for Chapel syntax        ``... doc/quickReference.pdf``
-    ...the Chapel language specification          ``... doc/chapelLanguageSpec.pdf``
-    ...executing programs on multiple locales     ``... doc/multilocale.rst``
-    ...how Chapel tasks are mapped to threads     ``... doc/tasks.rst``
-    ...using Chapel on a specific platform..      ``...``
-       ...a Cray system                           ``... doc/platforms/cray.rst``
-       ...Cygwin over Windows                     ``... doc/platforms/cygwin.rst``
-       ...an IBM system                           ``... doc/platforms/ibm.rst``
-       ...an SGI Altix system                     ``... doc/platforms/sgi.rst``
-    ...calling C code from Chapel                 ``... doc/technotes/extern.rst``
-    ...other user and technical notes             ``... doc/README``
-    ...third-party software that we use           ``... third-party/README``
+    changes since the last release             ``CHANGES``
+    implementation status                      ``STATUS``
+    performance status                         ``PERFORMANCE``
+    Chapel's file and directory structure      ``README.files``
+    prerequisites for using this release       ``doc/prereqs.rst``
+    setting Chapel environment variables       ``doc/chplenv.rst``
+    building the compiler                      ``doc/building.rst``
+    using the compiler                         ``doc/compiling.rst``
+    executing Chapel programs                  ``doc/executing.rst``
+    reporting bugs                             ``doc/bugs.rst``
+    Chapel modes for emacs and vim             ``etc/README.md``
+    example Chapel programs                     ``examples/README``
+    a quick reference for Chapel syntax        ``doc/quickReference.pdf``
+    the Chapel language specification          ``doc/chapelLanguageSpec.pdf``
+    executing programs on multiple locales     ``doc/multilocale.rst``
+    how Chapel tasks are mapped to threads     ``doc/tasks.rst``
+    using Chapel on a specific platform..      ``.``
+       a Cray system                           ``doc/platforms/cray.rst``
+       Cygwin over Windows                     ``doc/platforms/cygwin.rst``
+       an IBM system                           ``doc/platforms/ibm.rst``
+       an SGI Altix system                     ``doc/platforms/sgi.rst``
+    calling C code from Chapel                 ``doc/technotes/extern.rst``
+    other user and technical notes             ``doc/README``
+    third-party software that we use           ``third-party/README``
 =============================================== =====================================
 
 
