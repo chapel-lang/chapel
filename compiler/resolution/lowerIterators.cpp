@@ -33,6 +33,46 @@
 #include "symbol.h"
 
 
+//
+// getTheIteratorFn(): get the original (user-written) iterator function
+// that corresponds to an _iteratorClass type or symbol
+// or a CallExpr therewith. Its uses were simply:
+//
+//   ... ->defaultInitializer->getFormal(1)->type->defaultInitializer
+//
+
+// 'ic' must be an instance of _iteratorClass
+FnSymbol* getTheIteratorFn(Symbol* ic) {
+  return getTheIteratorFn(ic->type);
+}
+
+FnSymbol* getTheIteratorFn(CallExpr* call) {
+  return getTheIteratorFn(call->get(1)->typeInfo());
+}
+
+// either an _iteratorClass type or a tuple thereof
+FnSymbol* getTheIteratorFn(Type* icType)
+{
+  // the asserts document the current state
+  bool gotTuple = icType->symbol->hasFlag(FLAG_TUPLE);
+  INT_ASSERT(gotTuple || icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
+
+  // The _getIterator function is in _iteratorClass's defaultInitializer.
+  FnSymbol* getIterFn = icType->defaultInitializer;
+
+  // The type of _getIterator's first formal arg is _iteratorRecord.
+  Type* irType = getIterFn->getFormal(1)->type;
+  INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+             (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
+
+  // The original iterator function is in _iteratorRecord's defaultInitializer.
+  FnSymbol* result = irType->defaultInitializer;
+  INT_ASSERT(gotTuple || result->hasFlag(FLAG_ITERATOR_FN));
+
+  return result;
+}
+
+
 // This consistency check should probably be moved earlier in the compilation.
 // It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
 // Does it need to be recursive? (Currently, it is not.)
@@ -803,61 +843,9 @@ static void localizeIteratorReturnSymbols() {
   }
 }
 
-
-//
-// Convert:
-// (248842 CallExpr move
-//   (248843 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//   (248839 CallExpr
-//     (838015 SymExpr 'fn =[835984]:[domain(...)] int(64)[803094]')
-//     (248841 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//     (193499 SymExpr 'p[113796]:[domain(...)] int(64)[803094]'))
-// to:
-// (248842 CallExpr move
-//   (248843 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//   (193499 SymExpr 'p[113796]:[domain(...)] int(64)[803094]'))
-//
-static void
-yieldArraysByRef() {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    // The ifs are ordered with simpler checks first.
-    // Watch out for *initializations* of 'ret' - they look similar.
-    if (call->isPrimitive(PRIM_MOVE)) {
-      if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
-        if (fn->isIterator() &&
-            fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
-        {
-          Symbol* ret = fn->getReturnSymbol();
-          INT_ASSERT(ret);
-          if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-            if (SymExpr* dest = toSymExpr(call->get(1))) {
-              if (dest->var == ret) {
-                CallExpr* source = toCallExpr(call->get(2));
-                INT_ASSERT(source);
-                FnSymbol* sourceFun = source->isResolved();
-                INT_ASSERT(sourceFun);
-                INT_ASSERT(!strcmp(sourceFun->name, "="));
-                SymExpr* sourceArg1 = toSymExpr(source->get(1));
-                INT_ASSERT(sourceArg1);
-                INT_ASSERT(sourceArg1->var == ret);
-                Expr* sourceArg2 = source->get(2);
-                INT_ASSERT(sourceArg2);
-                // OK, got it. Do the replacement.
-                source->replace(sourceArg2->remove());
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
 // processIteratorYields is a separate pass, called before flattenFunctions.
 // TODO: Move this and supporting functions into their own source file.
 void processIteratorYields() {
-  yieldArraysByRef();
   localizeIteratorReturnSymbols();
 }
 
@@ -1072,7 +1060,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   // passed to it when this function is flattened)
   //
   Symbol*    ic             = forLoop->iteratorGet()->var;
-  FnSymbol*  iterator       = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+  FnSymbol*  iterator       = getTheIteratorFn(ic);
   CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
 
   // replace function in iteratorFnCall with iterator function once that is created
@@ -1157,7 +1145,7 @@ static bool
 // the tree); false otherwise.
 expandIteratorInline(ForLoop* forLoop) {
   Symbol*   ic       = forLoop->iteratorGet()->var;
-  FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+  FnSymbol* iterator = getTheIteratorFn(ic);
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
@@ -1171,14 +1159,11 @@ expandIteratorInline(ForLoop* forLoop) {
     // to be handled in the recursive iterator function
     //
     if (forLoop->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
-//      printf("ForLoop %d parent %d has FLAG_RECURSIVE_ITERATOR\n", forLoop->id, forLoop->parentSymbol->id);
       return false;
     // vass: ditto for task functions called from recursive iterators
     } else if (taskFunInRecursiveIteratorSet.set_in(forLoop->parentSymbol)) {
-//      printf("ForLoop %d parent %d is in taskFunInRecursiveIteratorSet\n", forLoop->id, forLoop->parentSymbol->id);
       return false;
     } else {
-//      printf("ForLoop %d calling %d expanded inline\n", forLoop->id, iterator->id);
       expandRecursiveIteratorInline(forLoop);
       INT_ASSERT(!forLoop->inTree());
       return true;
@@ -1420,7 +1405,7 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
   getRecursiveIterators(iterators, gIterator);
 
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol*      iterator = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+    FnSymbol*      iterator = getTheIteratorFn(iterators.v[i]);
     BlockStmt*     block    = iterator->body;
     Vec<CallExpr*> calls;
     int            numYields = 0;
@@ -1531,7 +1516,7 @@ getIteratorChildren(Vec<Type*>& children, Type* type) {
 
 static void
 buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator) {
-  IteratorInfo* ii = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer->iteratorInfo;
+  IteratorInfo* ii = getTheIteratorFn(iterator)->iteratorInfo;
   FnSymbol* fn = NULL;
   switch (fnid) {
   case ZIP1: fn = ii->zip1; break;
@@ -1603,7 +1588,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
   forLoop->insertAtHead(noop);
 
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol*     iterator   = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+    FnSymbol*     iterator   = getTheIteratorFn(iterators.v[i]);
     BlockStmt*    ibody      = iterator->body->copy();
     bool          afterYield = false;
     int           count      = 1;
@@ -1677,8 +1662,8 @@ expandForLoop(ForLoop* forLoop) {
 
   if (!fNoInlineIterators)
   {
-    if (iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer->iteratorInfo &&
-        canInlineIterator(iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer) &&
+    FnSymbol* iterFn = getTheIteratorFn(iterator->type);
+    if (iterFn->iteratorInfo && canInlineIterator(iterFn) &&
         (iterator->type->dispatchChildren.n == 0 ||
          (iterator->type->dispatchChildren.n == 1 &&
           iterator->type->dispatchChildren.v[0] == dtObject))) {
@@ -1774,7 +1759,7 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAtTail(buildIteratorCall(NULL, ZIP3, iterators.v[i], children));
       forLoop->insertAfter (buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
 
-      FnSymbol* iterFn = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterFn = getTheIteratorFn(iterators.v[i]);
       if (isBoundedIterator(iterFn)) {
         if (testBlock == NULL) {
           if (isNotDynIter) {
@@ -1894,15 +1879,7 @@ inlineIterators() {
 
     if (ForLoop* forLoop = toForLoop(block)) {
       Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
-      // The _getIterator function is stashed in the defaultInitializer field
-      // of the iterator class.
-      FnSymbol* getIterFn = iterator->type->defaultInitializer;
-      // The operand of the getIterator function is an iterator record.
-      Type* irecord = getIterFn->getFormal(1)->type;
-      // The original iterator function is stored in the defaultInitializer
-      // field of an iterator record.
-      FnSymbol* ifn      = irecord->defaultInitializer;
-
+      FnSymbol* ifn = getTheIteratorFn(iterator);
       if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
         // The Boolean return value from expandIteratorInline() is being
         // ignored here, which means that forLoop might not have been replaced.
@@ -1913,6 +1890,40 @@ inlineIterators() {
       }
     }
   }
+}
+
+
+static bool iteratorDefPrecedesGoto(CallExpr* freeIterCall,
+                                    GotoStmt* stmt,
+                                    BlockStmt* block)
+{
+  // The iterator being freed is the argument of the _freeIterator call.
+  SymExpr* iterator = toSymExpr(freeIterCall->get(1));
+
+  std::vector<Expr*> exprs;
+  collectExprs(block, exprs);
+  for_vector(Expr, expr, exprs)
+  {
+    if (expr == stmt)
+      // We found the goto first.
+      // The iterator is not live, so there is no need to delete it.
+      return false;
+
+    if (CallExpr* call = toCallExpr(expr))
+    {
+      if (call->isPrimitive(PRIM_MOVE))
+      {
+        SymExpr* lhs = toSymExpr(call->get(1));
+        if (lhs->var == iterator->var)
+          // This is a def of the iterator symbol, so it is initialized before
+          // the goto statement.
+          return true;
+      }
+    }
+  }
+  // We never saw a definition for the iterator, so the safe thing to do is to
+  // not delete it.
+  return false;
 }
 
 
@@ -1948,10 +1959,14 @@ static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
           // Naturally, a flag is preferred.
           if (fn && !strcmp(fn->name, "_freeIterator"))
           {
-            // OK, we found a _freeIterator call that will be crossed,
-            // so duplicate it just before the break or return.
-            SET_LINENO(call);
-            stmt->insertBefore(call->copy());
+            // Don't bother with iterators that haven't been initialized yet.
+            if (iteratorDefPrecedesGoto(call, stmt, block))
+            {
+              // OK, we found a _freeIterator call that will be crossed,
+              // so duplicate it just before the break or return.
+              SET_LINENO(call);
+              stmt->insertBefore(call->copy());
+            }
           }
         }
       }

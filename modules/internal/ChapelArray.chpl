@@ -657,6 +657,18 @@ module ChapelArray {
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
   }  // record _distribution
   
+  inline proc ==(d1: _distribution(?), d2: _distribution(?)) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  inline proc !=(d1: _distribution(?), d2: _distribution(?)) {
+    if (d1._value == d2._value) then
+      return false;
+    return !d1._value.dsiEqualDMaps(d2._value);
+  }
+
   // The following method is called by the compiler to determine the default
   // value of a given type.
   /* Need new <alias>() for this to function
@@ -1466,12 +1478,72 @@ module ChapelArray {
       var x = _value;
       return _newArray(x);
     }
+
+    //
+    // This routine determines whether an actual array argument
+    // ('this')'s domain is appropriate for a formal array argument
+    // that specifies a domain ('formalDom').  It does this using a
+    // mix of static checks (do the ranks match, are the domain map
+    // types the same if the formal isn't the default dist?) and
+    // runtime checks (are the domains' index sets the same; are
+    // the domain maps/distributions equivalent?)
+    //
+    // The 'runtimeChecks' argument indicates whether or not runtime
+    // checks should be performed and is set based on the value of
+    // the --no-formal-domain-checks flag.
+    //
+    inline proc chpl_checkArrArgDoms(formalDom: domain, param runtimeChecks: bool) {
+      //
+      // It's a compile-time error if the ranks don't match
+      //
+      if (formalDom.rank != this.domain.rank) then
+        compilerError("Rank mismatch passing array argument: expected " + 
+                      formalDom.rank + " but got " + this.domain.rank, errorDepth=2);
+
+      //
+      // If the formal domain specifies a domain map other than the
+      // default one, then we're putting a constraint on the domain
+      // map of the actual that's being passed in.  If it's the
+      // default, we take that as an indication that the routine is
+      // generic w.r.t. domain map for now (though we may wish to
+      // change this in the future when we have better syntax for
+      // indicating a generic domain map)..
+      //
+      if (formalDom.dist._value.type != DefaultDist) {
+        //
+        // First, at compile-time, check that the domain's types are
+        // the same:
+        //
+        if (formalDom.type != this.domain.type) then
+          compilerError("Domain type mismatch in passing array argument", errorDepth=2);
+
+        //
+        // Then, at run-time, check that the domain map's values are
+        // the same (do this only if the runtime checks argument is true).
+        //
+        if (runtimeChecks && formalDom.dist != this.domain.dist) then
+          halt("Domain map mismatch passing array argument:\n",
+               "  Formal domain map is: ", formalDom.dist, "\n",
+               "  Actual domain map is: ", this.domain.dist);
+      }
+
+      //
+      // If we pass those checks, verify at runtime that the index
+      // sets of the formal and actual match (do this only if the
+      // runtime checks argument is true).
+      //
+      if (runtimeChecks && formalDom != this.domain) then
+        halt("Domain mismatch passing array argument:\n",
+             "  Formal domain is: ", formalDom, "\n",
+             "  Actual domain is: ", this.domain);
+    }
   
     proc reindex(d: domain)
       where isRectangularDom(this.domain) && isRectangularDom(d)
     {
       if rank != d.rank then
-        compilerError("illegal implicit rank change");
+        compilerError("rank mismatch: cannot reindex() from " + rank + 
+                      " dimension(s) to " + d.rank);
   
       // Optimization: Just return an alias of this array when
       // reindexing to the same domain. We skip same-ness test
@@ -1789,6 +1861,36 @@ module ChapelArray {
       return total;
     }
   }  // record _array
+
+  //
+  // A helper function to check array equality (== on arrays promotes
+  // to an array of booleans)
+  //
+  proc _array.equals(that: _array) {
+    //
+    // quick path for identical arrays
+    //
+    if this._value == that._value then
+      return true;
+    //
+    // quick path for rank mismatches
+    //
+    if this.rank != that.rank then
+      return false;
+    //
+    // check that size/shape are the same to permit legal zippering
+    //
+    for d in 1..this.rank do
+      if this.domain.dim(d).size != that.domain.dim(d).size then
+        return false;
+    //
+    // if all the above tests match, see if zippered equality is
+    // true everywhere
+    //
+    return && reduce (this == that);
+  }
+  
+  
 
 
   //

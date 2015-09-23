@@ -42,6 +42,7 @@ extern bool fNoInlineIterators;
 extern bool fNoloopInvariantCodeMotion;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
+extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
@@ -105,6 +106,7 @@ extern bool widePointersStruct;
 
 extern char fExplainCall[256];
 extern int  explainCallID;
+extern int  breakOnResolveID;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.

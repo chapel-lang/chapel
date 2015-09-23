@@ -29,6 +29,7 @@
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
+#include "chpl-tasks-callbacks-internal.h"
 #include "chplsys.h"
 #include "error.h"
 #include <stdio.h>
@@ -54,6 +55,7 @@ typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
   void*            arg;          // argument to the function
+  chpl_bool        is_executeOn; // is this the body of an executeOn?
   chpl_bool        begun;        // whether execution of this task has begun
   chpl_task_list_p ltask;        // points to the task list entry, if there is one
   c_string         filename;
@@ -144,6 +146,9 @@ static c_string idleTaskName = "|idle|";
 
 static chpl_fn_p comm_task_fn;
 
+//
+// Internal functions.
+//
 static void                    comm_task_wrapper(void*);
 static void                    movedTaskWrapper(void* a);
 static chpl_taskID_t           get_next_task_id(void);
@@ -166,6 +171,7 @@ static void                    launch_next_task_in_new_thread(void);
 static void                    schedule_next_task(int);
 static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 void*,
+                                                chpl_bool,
                                                 chpl_task_prvDataImpl_t,
                                                 chpl_task_list_p);
 
@@ -314,17 +320,18 @@ void chpl_sync_initAux(chpl_sync_aux_t *s) {
 }
 
 static void chpl_thread_condvar_destroy(chpl_thread_condvar_t* cv) {
-  if(pthread_cond_broadcast((pthread_cond_t*) cv))
-    chpl_internal_error("pthread_cond_broadcast() failed, cv was uninitialized");
+// Leak condvars on cygwin. Some bug results from condvars still being used at
+// this point on cygwin. For now, just leak them to avoid errors as a result of
+// the undefined behavior of trying to destroy an in-use condvar.
+#ifndef __CYGWIN__
   if (pthread_cond_destroy((pthread_cond_t*) cv))
     chpl_internal_error("pthread_cond_destroy() failed");
+#endif
 }
 
 void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
-  chpl_thread_mutexLock(&s->lock);
   chpl_thread_condvar_destroy(&s->signal_full);
   chpl_thread_condvar_destroy(&s->signal_empty);
-  chpl_thread_mutexUnlock(&s->lock);
   chpl_thread_mutexDestroy(&s->lock);
 }
 
@@ -368,6 +375,7 @@ void chpl_task_init(void) {
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
     tp->ptask->arg          = NULL;
+    tp->ptask->is_executeOn = false;
     tp->ptask->ltask        = NULL;
     tp->ptask->begun        = true;
     tp->ptask->filename     = "main program";
@@ -465,6 +473,7 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = comm_task_fn;
   tp->ptask->arg          = arg;
+  tp->ptask->is_executeOn = false;
   tp->ptask->ltask        = NULL;
   tp->ptask->begun        = true;
   tp->ptask->filename     = "communication task";
@@ -574,7 +583,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
 
       do {
         ltask = next_task;
-        ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg,
+        ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg, false,
                                         ltask->chpl_data, ltask);
         assert(ltask->ptask == NULL
                || ltask->ptask->ltask == ltask);
@@ -593,11 +602,18 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     nested_task.id           = get_next_task_id();
     nested_task.fun          = first_task->fun;
     nested_task.arg          = first_task->arg;
+    nested_task.is_executeOn = false;
     nested_task.ltask        = first_task;
     nested_task.begun        = true;
     nested_task.filename     = first_task->filename;
     nested_task.lineno       = first_task->lineno;
     nested_task.chpl_data    = curr_ptask->chpl_data;
+
+    chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
+                           nested_task.filename,
+                           nested_task.lineno,
+                           nested_task.id,
+                           nested_task.is_executeOn);
 
     set_current_ptask(&nested_task);
 
@@ -622,7 +638,19 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     if (blockreport)
       initializeLockReportForThread();
 
+    chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
+                           nested_task.filename,
+                           nested_task.lineno,
+                           nested_task.id,
+                           nested_task.is_executeOn);
+
     (*first_task->fun)(first_task->arg);
+
+    chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
+                           nested_task.filename,
+                           nested_task.lineno,
+                           nested_task.id,
+                           nested_task.is_executeOn);
 
     // begin critical section
     chpl_thread_mutexLock(&extra_task_lock);
@@ -728,7 +756,19 @@ void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
         if (blockreport)
           initializeLockReportForThread();
 
+        chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
+                               nested_ptask->filename,
+                               nested_ptask->lineno,
+                               nested_ptask->id,
+                               nested_ptask->is_executeOn);
+
         (*task_to_run_fun)(task_to_run_arg);
+
+        chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
+                               nested_ptask->filename,
+                               nested_ptask->lineno,
+                               nested_ptask->id,
+                               nested_ptask->is_executeOn);
 
         if (do_taskReport) {
           chpl_thread_mutexLock(&taskTable_lock);
@@ -797,7 +837,8 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(movedTaskWrapper, pmtwd, pmtwd->chpl_data, NULL);
+  (void) add_to_task_pool(movedTaskWrapper, pmtwd, true,
+                          pmtwd->chpl_data, NULL);
   schedule_next_task(1);
 
   // end critical section
@@ -1176,7 +1217,19 @@ thread_begin(void* ptask_void) {
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
+    chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
+                           ptask->filename,
+                           ptask->lineno,
+                           ptask->id,
+                           ptask->is_executeOn);
+
     (*ptask->fun)(ptask->arg);
+
+    chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
+                           ptask->filename,
+                           ptask->lineno,
+                           ptask->id,
+                           ptask->is_executeOn);
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
@@ -1313,8 +1366,6 @@ static void thread_end(void)
 }
 
 
-
-
 //
 // interface function with begin-statement
 //
@@ -1329,7 +1380,7 @@ void begin_task(chpl_fn_p fp, void* a, chpl_task_prvDataImpl_t chpl_data,
     // begin critical section
     chpl_thread_mutexLock(&threading_lock);
 
-    ptask = add_to_task_pool(fp, a, chpl_data, ltask);
+    ptask = add_to_task_pool(fp, a, false, chpl_data, ltask);
 
     //
     // This task may begin executing before returning from this function,
@@ -1433,6 +1484,7 @@ static void schedule_next_task(int howMany) {
 // assumes threading_lock has already been acquired!
 static task_pool_p add_to_task_pool(chpl_fn_p fp,
                                     void* a,
+                                    chpl_bool is_executeOn,
                                     chpl_task_prvDataImpl_t chpl_data,
                                     chpl_task_list_p ltask) {
   task_pool_p ptask =
@@ -1442,6 +1494,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->id           = get_next_task_id();
   ptask->fun          = fp;
   ptask->arg          = a;
+  ptask->is_executeOn = is_executeOn;
   ptask->ltask        = ltask;
   ptask->begun        = false;
   ptask->chpl_data    = chpl_data;
@@ -1464,6 +1517,12 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   task_pool_tail = ptask;
 
   queued_task_cnt++;
+
+  chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
+                         ptask->filename,
+                         ptask->lineno,
+                         ptask->id,
+                         ptask->is_executeOn);
 
   if (do_taskReport) {
     chpl_thread_mutexLock(&taskTable_lock);

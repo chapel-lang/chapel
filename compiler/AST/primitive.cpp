@@ -281,9 +281,11 @@ static Type*
 returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
-    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-      if (!strcmp(ts->name, "_EndCount")) {
-        endCountType = ts->type;
+    // Look for the type var `_remoteEndCountType` in ChapelBase.
+    forv_Vec(VarSymbol, var, gVarSymbols) {
+      const char* searchStr = "_remoteEndCountType";
+      if (strcmp(var->cname, searchStr) == 0) {
+        endCountType = var->type;
         break;
       }
     }
@@ -616,6 +618,7 @@ initPrimitive() {
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
+  prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
 
   prim_def(PRIM_CALL_RESOLVES, "call resolves", returnInfoBool);
   prim_def(PRIM_METHOD_CALL_RESOLVES, "method call resolves", returnInfoBool);

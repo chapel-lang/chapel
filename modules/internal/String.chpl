@@ -437,6 +437,12 @@ module CString {
     __primitive("=", a, b);
   }
 
+  // Yes this is invoked sometimes. In the long run, however,
+  // we'd like the compiler to eliminate casts to the same type instead.
+  inline proc c_string.cast(type t) where t == c_string {
+    return x;
+  }
+
   inline proc c_string.cast(type t) where t == string {
     return toString(this);
   }
@@ -473,7 +479,7 @@ module CString {
   }
 
   inline proc integral.cast(type t) where t == c_string_copy {
-    extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy ;
+    extern proc integral_to_c_string_copy(x:int(64), size:size_t, isSigned: bool) : c_string_copy ;
     return integral_to_c_string_copy(this:int(64), numBytes(this.type),
         isIntType(this.type));
   }

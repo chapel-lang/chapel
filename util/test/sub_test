@@ -460,22 +460,10 @@ def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
     else:
         return '{0}.{1}-{2}{3}'.format(execname, comp_opts_count, exec_opts_count, suffix)
 
-# If the first line of the skipif file contains '/usr/bin/env', then just execute it.
-# (Don't forget to add execute permission to a script skipif file.)
-# Otherwise, use testEnv to process it the old way.
+# Use testEnv to process skipif files, it works for executable and
+# non-executable versions
 def runSkipIf(skipifName):
-    name = './' + skipifName
-    # Already a file because os.R_OK is true?
-    if os.access(name, os.X_OK):
-        env_cmd = [os.path.join(utildir, 'printchplenv'), '--simple']
-        chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
-        chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
-
-        skipif_env = os.environ.copy()
-        skipif_env.update(chpl_env)
-        skiptest = subprocess.Popen([name], stdout=subprocess.PIPE, env=skipif_env).communicate()[0]
-    else:
-        skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
+    skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
     return skiptest
 
 # Start of sub_test proper
@@ -1391,6 +1379,14 @@ for testname in testsrc:
             complogfile=file(complog, 'w')
             complogfile.write('%s'%(output))
             complogfile.close()
+
+            if systemPrediff:
+                sys.stdout.write('[Executing system-wide prediff]\n')
+                sys.stdout.flush()
+                subprocess.Popen([systemPrediff,
+                                  execname,complog,compiler,
+                                  ' '.join(envCompopts)+' '+compopts,
+                                  ' '.join(args)]).wait()
 
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')

@@ -7,17 +7,16 @@ the Chapel team and which are released under distinct licenses from
 Chapel itself.  Current subdirectories include:
 
 
-chpldoc-venv/
+chpl-venv/
 
-  Summary: Directory where several python packages are downloaded and installed
-           when running 'make chpldoc-venv' in the third-party directory, or
-           when running 'make chpldoc' in $CHPL_HOME. See requirements.txt and
+  Summary: Directory where several python packages are downloaded and installed.
+           Used for chpldoc and the testing system. See requirements.txt and
            virtualenv.txt files for a complete list of packages that are
            installed.
 
-  License: Varies, see chpldoc-venv/README.md
+  License: Varies, see chpl-venv/README.md
 
-  Website: Varies, see chpldoc-venv/README.md
+  Website: Varies, see chpl-venv/README.md
 
 
 dlmalloc/

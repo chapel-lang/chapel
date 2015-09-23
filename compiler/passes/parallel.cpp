@@ -551,10 +551,9 @@ static void
 freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   Vec<FnSymbol*> fnsContainingTaskll;
 
-  // start with the functions created from begin, cobegin, and coforall statements
+  // start with functions created by begin statements
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
-        fn->hasFlag(FLAG_NON_BLOCKING))
+    if (fn->hasFlag(FLAG_BEGIN))
       fnsContainingTaskll.add(fn);
   }
   // add any functions that call the functions added so far
@@ -589,8 +588,8 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 
   forv_Vec(Symbol, var, heapAllocatedVars) {
     // find out if a variable that was put on the heap could be passed in as an
-    // argument to a function created from a begin, cobegin, or coforall statement;
-    // if not, free the heap memory just allocated at the end of the block
+    // argument to a function created by a begin statement; if not, free the
+    // heap memory just allocated at the end of the block
     Vec<SymExpr*>* defs = defMap.get(var);
     if (defs == NULL) {
       INT_FATAL(var, "Symbol is never defined.");
@@ -964,12 +963,18 @@ makeHeapAllocations() {
     for_defs(def, defMap, var) {
       if (CallExpr* call = toCallExpr(def->parentExpr)) {
         SET_LINENO(call);
-        // Do we need a case for PRIM_ASSIGN?
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
+        } else if (call->isPrimitive(PRIM_ASSIGN)) {
+          // ensure what we assign into is what we expect
+          INT_ASSERT(toSymExpr(call->get(1))->var == var);
+          VarSymbol* tmp = newTemp(var->type->refType);
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
+          def->replace(new SymExpr(tmp));
         } else if (call->isResolved() &&
                    call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
           call->remove();

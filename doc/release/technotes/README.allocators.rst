@@ -1,14 +1,17 @@
+.. _readme-allocators:
+
 ==========================
 Chapel's use of Allocators
 ==========================
 
-The Chapel runtime will select an allocator according to the CHPL_MEM
-environment variable. See README.chplenv for details on how that works.  The
-default is usually the system allocator (ie malloc/free as supported by the C
-compiler and runtime) but some configurations use a different allocator in
-order to get all of memory allocated by Chapel on to a network registered heap.
-Using the registered heap can improve communication performance, but having two
-allocators can create interoperability challenges:
+The Chapel runtime will select an allocator according to the ``CHPL_MEM``
+environment variable. See :ref:`readme-chplenv` for details on how that
+works.  The default is usually the system allocator (ie malloc/free as
+supported by the C compiler and runtime) but some configurations use a
+different allocator in order to get all of memory allocated by Chapel on
+to a network registered heap.  Using the registered heap can improve
+communication performance, but having two allocators can create
+interoperability challenges:
 
  * memory allocated by one allocator cannot be freed by another
  * the Chapel heap might pre-allocate a significant amount of memory. In this
@@ -37,9 +40,10 @@ The command:
 
   $CHPL_HOME/util/config/compileline --includes-and-defines
 
-should produce the necessary -I and -D options so that you can compile a .c
-file to a .o file for linking with the Chapel runtime. Note that these include
-paths are already handled for extern blocks.
+should produce the necessary ``-I`` and ``-D`` options so that you can
+compile a ``.c`` file to a ``.o`` file for linking with the Chapel
+runtime. Note that these include paths are already handled for extern
+blocks.
 
 For example, here is a Chapel program that uses the Chapel allocator from C:
 
@@ -64,9 +68,10 @@ For example, here is a Chapel program that uses the Chapel allocator from C:
 
   myfree(x);
 
-The Chapel runtime includes chpl_calloc, chpl_malloc, chpl_memalign,
-chpl_realloc, chpl_free, chpl_posix_memalign, chpl_valloc, and chpl_pvalloc.
-These routines take in exactly the same arguments as the C library versions.
+The Chapel runtime includes ``chpl_calloc``, ``chpl_malloc``,
+``chpl_memalign``, ``chpl_realloc``, ``chpl_free``,
+``chpl_posix_memalign``, ``chpl_valloc``, and ``chpl_pvalloc``.  These
+routines take in exactly the same arguments as the C library versions.
 
 ------------------------------
 Replacing the System Allocator

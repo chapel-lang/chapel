@@ -103,25 +103,20 @@ module UtilReplicatedVar {
 
 use ReplicatedDist;
 
-pragma "no doc"
-const rcDomainIx   = 1; // todo convert to param
+private const rcDomainIx   = 1; // todo convert to param
 /* Use this domain when replicating over a subset of locales,
    as shown :ref:`above <subset-of-locales>`. */
 const rcDomainBase = {rcDomainIx..rcDomainIx};
-pragma "no doc"
-const rcLocales    = Locales;
-pragma "no doc"
-const rcDomainMap  = new ReplicatedDist(rcLocales);
+private const rcLocales    = Locales;
+private const rcDomainMap  = new ReplicatedDist(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
    as shown :ref:`above <basic-usage>` . */
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
-pragma "no doc" // todo - remove this?  our examples use LocaleSpace instead
-const rcCollectDomaim = rcLocales.domain;
-pragma "no doc"
-param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped ReplicatedDist(an array of locales)'";
+// todo - remove private from rcCollectDomaim?  our examples use LocaleSpace instead
+private const rcCollectDomaim = rcLocales.domain;
+private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped ReplicatedDist(an array of locales)'";
 
-pragma "no doc"
-proc _rcTargetLocalesHelper(replicatedVar: [?D])
+private proc _rcTargetLocalesHelper(replicatedVar: [?D])
   where replicatedVar._value.type: ReplicatedArr
 {
   return replicatedVar._value.dom.dist.targetLocales;

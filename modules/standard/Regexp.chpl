@@ -355,30 +355,23 @@ extern record qio_regexp_options_t {
 
 pragma "no doc"
 extern proc qio_regexp_null():qio_regexp_t;
-pragma "no doc"
-extern proc qio_regexp_init_default_options(ref options:qio_regexp_options_t);
-pragma "no doc"
-extern proc qio_regexp_create_compile(str:c_string, strlen:int(64), ref options:qio_regexp_options_t, ref compiled:qio_regexp_t);
-pragma "no doc"
-extern proc qio_regexp_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
+private extern proc qio_regexp_init_default_options(ref options:qio_regexp_options_t);
+private extern proc qio_regexp_create_compile(str:c_string, strlen:int(64), ref options:qio_regexp_options_t, ref compiled:qio_regexp_t);
+private extern proc qio_regexp_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
 pragma "no doc"
 extern proc qio_regexp_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
-pragma "no doc"
-extern proc qio_regexp_retain(const ref compiled:qio_regexp_t);
+private extern proc qio_regexp_retain(const ref compiled:qio_regexp_t);
 pragma "no doc"
 extern proc qio_regexp_release(ref compiled:qio_regexp_t);
 pragma "no doc"
 
-pragma "no doc"
-extern proc qio_regexp_get_options(const ref regexp:qio_regexp_t, ref options: qio_regexp_options_t);
-pragma "no doc"
-extern proc qio_regexp_get_pattern(const ref regexp:qio_regexp_t, ref pattern: c_string);
+private extern proc qio_regexp_get_options(const ref regexp:qio_regexp_t, ref options: qio_regexp_options_t);
+private extern proc qio_regexp_get_pattern(const ref regexp:qio_regexp_t, ref pattern: c_string);
 pragma "no doc"
 extern proc qio_regexp_get_ncaptures(const ref regexp:qio_regexp_t):int(64);
 pragma "no doc"
 extern proc qio_regexp_ok(const ref regexp:qio_regexp_t):bool;
-pragma "no doc"
-extern proc qio_regexp_error(const ref regexp:qio_regexp_t):c_string;
+private extern proc qio_regexp_error(const ref regexp:qio_regexp_t):c_string;
 
 pragma "no doc"
 extern const QIO_REGEXP_ANCHOR_UNANCHORED:c_int;
@@ -393,13 +386,10 @@ extern record qio_regexp_string_piece_t {
   var len:int(64);
 }
 
-pragma "no doc"
-extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
+private extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
 
-pragma "no doc"
-extern proc qio_regexp_match(ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
-pragma "no doc"
-extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
+private extern proc qio_regexp_match(ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
+private extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied

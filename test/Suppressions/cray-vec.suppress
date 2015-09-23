@@ -1,2 +1,0 @@
-# Because pthreads aren't implemented in the simulator
-release/examples/programs/prodCons

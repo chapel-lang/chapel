@@ -114,6 +114,7 @@ bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
+bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
@@ -156,6 +157,7 @@ int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
 char fExplainCall[256] = "";
 int explainCallID = -1;
+int breakOnResolveID = -1;
 char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
 bool fPrintCallStackOnError = false;
@@ -536,6 +538,7 @@ static void verifySaveCDir(const ArgumentState* state, const char* unused) {
 static void turnOffChecks(const ArgumentState* state, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
+  fNoFormalDomainChecks = true;
   fNoLocalChecks  = true;
   fNoStackChecks  = true;
   fNoCastChecks = true;
@@ -576,15 +579,11 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoTupleCopyOpt = false;
   fNoPrivatization = false;
   fNoChecks = true;
-  fNoBoundsChecks = true;
-  fNoLocalChecks = true;
   fIgnoreLocalClasses = false;
-  fNoNilChecks = true;
-  fNoStackChecks = true;
-  fNoCastChecks = true;
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
+  turnOffChecks(state, unused);
 }
 
 static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
@@ -727,6 +726,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
+ {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL}, 
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},
@@ -824,6 +824,7 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-codegen", ' ', NULL, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
+ {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  DRIVER_ARG_DEBUGGERS,
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},

@@ -72,6 +72,7 @@ RUNTIME_INCLS += \
         -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
+        -I$(CHPL_MAKE_HOME)/runtime/src/$(RUNTIME_OBJDIR) \
 
 RUNTIME_CYGWIN=0
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cygwin32)

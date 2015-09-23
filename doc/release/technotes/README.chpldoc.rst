@@ -1,7 +1,9 @@
+.. _readme-chpldoc:
+
 Documenting Chapel
 ==================
 
-The Chapel standard libraries are documenting using ``chpldoc``, which
+The Chapel standard libraries are documented using ``chpldoc``, which
 generates HTML-based documentation for Chapel code from comments embedded
 within the code.
 
@@ -44,10 +46,10 @@ Prerequisites
 -------------
 
 ``chpldoc`` depends on several Python packages. The full list is available in
-`$CHPL_HOME/third-party/chpldoc-venv/README.md`_ including details on each
+`$CHPL_HOME/third-party/chpl-venv/README.md`_ including details on each
 package.
 
-.. _$CHPL_HOME/third-party/chpldoc-venv/README.md: https://github.com/chapel-lang/chapel/blob/master/third-party/chpldoc-venv/README.md
+.. _$CHPL_HOME/third-party/chpl-venv/README.md: https://github.com/chapel-lang/chapel/blob/master/third-party/chpl-venv/README.md
 
 
 .. _Generating documentation:
@@ -187,6 +189,18 @@ preface the symbol with the pragma "no doc". For example:
 
    pragma "no doc"
    proc foo() { ... }
+
+Private symbols are not documented by default.
+
+.. code-block:: chapel
+
+   private proc foo() { ... }
+
+.. note::
+
+   Private cannot be applied to all symbols at this time.  It is currently
+   limited to functions, iterators, globals, and modules.  Not supported are
+   type aliases, enum declarations, classes/records/unions, methods, and fields.
 
 
 Creating links to other symbols
@@ -370,7 +384,7 @@ determined from the succession of headings.
 Comments
 ~~~~~~~~
 
-Every explicit markup block, which is not a valid markup construct is regarded
+Every explicit markup block which is not a valid markup construct is regarded
 as a comment. For example::
 
    This is a normal paragraph.
@@ -631,9 +645,8 @@ Future directions
 If there are other features you would like, please let us know. These are
 currently on our backlog:
 
-* Add visibility control (public/private) to Chapel and have chapeldoc only
-  represent public elements by default (with options for including private
-  elements).
+* Expand visibility control (public/private) to remaining Chapel symbols
+  (with options for including private elements in output if desired).
 
 * Ability to include doctests, which would be code snippets in documentation
   that can be tested. This is similar to Python's doctest feature.

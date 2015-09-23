@@ -24,6 +24,7 @@
 #include "alist.h"
 
 #include <vector>
+#include <set>
 
 class Type;
 class FnSymbol;
@@ -179,6 +180,7 @@ Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 bool isTypeExpr(Expr* expr);
 
 Symbol* getSvecSymbol(CallExpr* call);
+void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
 
 // move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);

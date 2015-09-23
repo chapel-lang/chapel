@@ -25,7 +25,6 @@
 #endif
 
 #include "resolution.h"
-
 #include "astutil.h"
 #include "stlUtil.h"
 #include "build.h"
@@ -43,12 +42,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "WhileStmt.h"
-
 #include "../ifa/prim_data.h"
-
-
 #include "view.h"
-
 
 #include <inttypes.h>
 #include <map>
@@ -235,6 +230,7 @@ Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
+std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
 static int maxUserCoercions = 1;
 static int nUserCoercions = 0;
@@ -309,7 +305,8 @@ static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited);
+                    Vec<BlockStmt*>& visited,
+                    CallExpr* callOrigin);
 static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static void resolveDefaultGenericType(CallExpr* call);
@@ -518,6 +515,7 @@ resolveAutoDestroy(Type* type) {
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
+  fn->addFlag(FLAG_AUTO_DESTROY_FN);
   resolveFns(fn);
   autoDestroyMap.put(type, fn);
   tmp->defPoint->remove();
@@ -2516,13 +2514,22 @@ printResolutionErrorUnresolved(
   if( ! info ) INT_FATAL("CallInfo is NULL");
   if( ! info->call ) INT_FATAL("call is NULL");
   CallExpr* call = userCall(info->call);
+
+  if( developer ) {
+    // Should this be controled another way?
+    USR_FATAL_CONT(call, "failed to resolve call with id %i", call->id);
+  }
+
   if (call->isCast() ) {
     // args are: dtMethodToken, this (from), to
     // but actuals is 0-based, so ...
     int from = 1;
     int to = 2;
+
     if (!info->actuals.v[to]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL(call, "illegal cast to non-type");
+      USR_FATAL(call, "illegal cast to non-type",
+                toString(info->actuals.v[from]->type),
+                toString(info->actuals.v[to]->type));
     } else {
       USR_FATAL(call, "illegal cast from %s to %s",
                 toString(info->actuals.v[from]->type),
@@ -2798,7 +2805,8 @@ static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
                     Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited) {
+                    Vec<BlockStmt*>& visited,
+                    CallExpr* callOrigin) {
   //
   // all functions in standard modules are stored in a single block
   //
@@ -2821,7 +2829,15 @@ getVisibleFunctions(BlockStmt* block,
     canSkipThisBlock = false; // cannot skip if this block defines functions
     Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
     if (fns) {
-      visibleFns.append(*fns);
+      forv_Vec(FnSymbol, fn, *fns) {
+        if (fn->isVisible(callOrigin)) {
+          // isVisible checks if the function is private to its defining
+          // module (and in that case, if we are under its defining module)
+          // This ensures that private functions will not be used outside
+          // of their proper scope.
+          visibleFns.add(fn);
+        }
+      }
     }
   }
 
@@ -2832,7 +2848,9 @@ getVisibleFunctions(BlockStmt* block,
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
       canSkipThisBlock = false; // cannot skip if this block uses modules
-      getVisibleFunctions(mod->block, name, visibleFns, visited);
+      if (mod->isVisible(callOrigin)) {
+        getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+      }
     }
   }
 
@@ -2840,13 +2858,13 @@ getVisibleFunctions(BlockStmt* block,
   // visibilityBlockCache contains blocks that can be skipped
   //
   if (BlockStmt* next = visibilityBlockCache.get(block)) {
-    getVisibleFunctions(next, name, visibleFns, visited);
+    getVisibleFunctions(next, name, visibleFns, visited, callOrigin);
     return (canSkipThisBlock) ? next : block;
   }
 
   if (block != rootModule->block) {
     BlockStmt* next = getVisibilityBlock(block);
-    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited);
+    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited, callOrigin);
     if (cache)
       visibilityBlockCache.put(block, cache);
     return (canSkipThisBlock) ? cache : block;
@@ -3379,6 +3397,9 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
          info.call->id == explainCallID))
     {
       USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+      if( info.call->id == breakOnResolveID ) {
+        gdbShouldBreakHere();
+      }
     }
 
     filterCandidate(candidates, visibleFn, info);
@@ -3406,6 +3427,9 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
          info.call->id == explainCallID))
     {
       USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+      if( info.call->id == breakOnResolveID ) {
+        gdbShouldBreakHere();
+      }
     }
 
     filterCandidate(candidates, visibleFn, info);
@@ -3449,6 +3473,12 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 // be a fatal error.
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
+  if( call->id == breakOnResolveID ) {
+    printf("breaking on call:\n");
+    print_view(call);
+    gdbShouldBreakHere();
+  }
+
   resolveDefaultGenericType(call);
 
   CallInfo info(call, checkonly);
@@ -3468,7 +3498,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (!call->isResolved()) {
     if (!info.scope) {
       Vec<BlockStmt*> visited;
-      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited);
+      getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited, call);
     } else {
       if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope)) {
         if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
@@ -4521,7 +4551,7 @@ createFunctionAsValue(CallExpr *call) {
 
   Vec<FnSymbol*> visibleFns;
   Vec<BlockStmt*> visited;
-  getVisibleFunctions(getVisibilityBlock(call), flname, visibleFns, visited);
+  getVisibleFunctions(getVisibilityBlock(call), flname, visibleFns, visited, call);
 
   if (visibleFns.n > 1) {
     USR_FATAL(call, "%s: can not capture overloaded functions as values",
@@ -4677,7 +4707,7 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
       Vec<FnSymbol*> visibleFns;
       Vec<BlockStmt*> visited;
 
-      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited);
+      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited, call);
 
       forv_Vec(FnSymbol, called_fn, visibleFns) {
         bool seen_this_fn = false;
@@ -5100,7 +5130,7 @@ preFold(Expr* expr) {
             }
           }
           if (!nowarn)
-            USR_WARN("type %s does not currently support noinit, using default initialization", type->symbol->name);
+            USR_WARN(call, "type %s does not currently support noinit, using default initialization", type->symbol->name);
           result = new CallExpr(PRIM_INIT, call->get(1)->remove());
           call->replace(result);
           inits.add((CallExpr *)result);
@@ -5387,8 +5417,8 @@ preFold(Expr* expr) {
         call->insertAtTail(tmp);
       }
     } else if (call->isPrimitive(PRIM_TO_STANDALONE)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
-     CallExpr* standaloneCall = new CallExpr(iterator->name);
+      FnSymbol* iterator = getTheIteratorFn(call);
+      CallExpr* standaloneCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
         standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
@@ -5398,7 +5428,7 @@ preFold(Expr* expr) {
       call->replace(standaloneCall);
       result = standaloneCall;
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* leaderCall;
       if (FnSymbol* leader = iteratorLeaderMap.get(iterator))
         leaderCall = new CallExpr(leader);
@@ -5413,7 +5443,7 @@ preFold(Expr* expr) {
       call->replace(leaderCall);
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* followerCall;
       if (FnSymbol* follower = iteratorFollowerMap.get(iterator))
         followerCall = new CallExpr(follower);
@@ -5640,6 +5670,13 @@ preFold(Expr* expr) {
 
     } else if (call->isPrimitive(PRIM_IS_ATOMIC_TYPE)) {
       if (isAtomicType(call->get(1)->typeInfo()))
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
+
+    } else if (call->isPrimitive(PRIM_IS_REF_ITER_TYPE)) {
+      if (isRefIterType(call->get(1)->typeInfo()))
         result = new SymExpr(gTrue);
       else
         result = new SymExpr(gFalse);
@@ -6312,23 +6349,6 @@ resolveExpr(Expr* expr) {
       issueCompilerError(call);
     }
 
-    // Resolve expressions of the form:  <type> ( args )
-    // These will be constructor calls (or type constructor calls) that slipped
-    // past normalization due to the use of typedefs.
-    if (SymExpr* se = toSymExpr(call->baseExpr)) {
-      if (TypeSymbol* ts = toTypeSymbol(se->var)) {
-        if (call->numActuals() == 0 ||
-            (call->numActuals() == 2 && isSymExpr(call->get(1)) &&
-             toSymExpr(call->get(1))->var == gMethodToken)) {
-          // This looks like a typedef, so ignore it.
-
-        } else {
-          // More needed here ... .
-          INT_FATAL(ts, "not yet implemented.");
-        }
-      }
-    }
-
     callStack.add(call);
 
     resolveCall(call);
@@ -6337,6 +6357,10 @@ resolveExpr(Expr* expr) {
       if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
         // ForallLeaderArgs: process the leader that 'call' invokes.
         implementForallIntents2(call, origToLeaderCall);
+
+      else if (CallExpr* eflopiHelper = eflopiMap[call]) {
+        implementForallIntents2wrapper(call, eflopiHelper);
+      }
 
       resolveFns(call->isResolved());
     }
@@ -6625,14 +6649,22 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   }
   return false;
 }
-static bool isLeaderIterator(FnSymbol* fn) {
+bool isLeaderIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gLeaderTag);
 }
 static bool isFollowerIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gFollowerTag);
 }
-static bool isStandaloneIterator(FnSymbol* fn) {
+bool isStandaloneIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gStandaloneTag);
+}
+
+// helper to identify explicitly vectorized iterators
+static bool isVecIterator(FnSymbol* fn) {
+  if (fn->isIterator()) {
+    return fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS);
+  }
+  return false;
 }
 
 void
@@ -6652,14 +6684,15 @@ resolveFns(FnSymbol* fn) {
     return;
 
   //
-  // Mark serial loops that yield inside of follower and standalone iterators
-  // as order independent. By using a forall loop, a user is asserting that
-  // their loop is order independent. Here we just mark the serial loops inside
-  // of the "follower" with this information. Note that only loops that yield
-  // are marked since other loops are not necessarily order independent. Only
-  // the inner most loop of a loop nest will be marked.
+  // Mark serial loops that yield inside of follower, standalone, and
+  // explicitly vectorized iterators as order independent. By using a forall
+  // loop or a loop over a vectorized iterator, a user is asserting that the
+  // loop can be executed in any iteration order. Here we just mark the
+  // iterator's yielding loops as order independent as they are ones that will
+  // actually execute the body of the loop that invoked the iterator. Note that
+  // for nested loops with a single yield, only the inner most loop is marked.
   //
-  if (isFollowerIterator(fn) || isStandaloneIterator(fn)) {
+  if (isFollowerIterator(fn) || isStandaloneIterator(fn) || isVecIterator(fn)) {
     std::vector<CallExpr*> callExprs;
     collectCallExprs(fn->body, callExprs);
 
@@ -6701,7 +6734,9 @@ resolveFns(FnSymbol* fn) {
     if (!ct)
       INT_FATAL(fn, "Constructor has no class type");
     setScalarPromotionType(ct);
-    fixTypeNames(ct);
+    if (!developer) {
+      fixTypeNames(ct);
+    }
   }
 
   resolveReturnType(fn);
@@ -8311,6 +8346,14 @@ static void replaceTypeArgsWithFormalTypeTemps()
         }
       }
       formal->defPoint->remove();
+      //
+      // If we're removing the formal representing 'this' (if it's a
+      // type, say), we need to nullify the 'this' pointer in the
+      // function as well to avoid assumptions that it's legal later.
+      //
+      if (formal == fn->_this) {
+        fn->_this = NULL;
+      }
     }
   }
 }

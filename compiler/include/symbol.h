@@ -122,6 +122,9 @@ public:
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
+  virtual bool       isVisible(BaseAST* scope)                 const;
+  bool               noDocGen()                                const;
+
   Type*              type;
   FlagSet            flags;
 
@@ -249,6 +252,8 @@ public:
   virtual bool    isConstValWillNotChange()                 const;
   virtual bool    isParameter()                             const;
 
+  virtual bool    isVisible(BaseAST* scope)                 const;
+
   bool            requiresCPtr();
   const char*     intentDescrString();
 
@@ -321,7 +326,8 @@ class FnSymbol : public Symbol {
   BlockStmt* body;
   IntentTag thisTag;
   RetTag retTag;
-  IteratorInfo* iteratorInfo;
+  IteratorInfo* iteratorInfo; // Attached only to iterators, specifically to
+                              // original (user) iterators before lowering.
   Symbol* _this;
   Symbol* _outer;
   FnSymbol *instantiatedFrom;

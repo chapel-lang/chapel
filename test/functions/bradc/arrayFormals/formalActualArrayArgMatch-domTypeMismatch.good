@@ -1,0 +1,1 @@
+formalActualArrayArgMatch.chpl:39: error: Domain type mismatch in passing array argument

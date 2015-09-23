@@ -13,9 +13,9 @@ proc BlockArr.copyBtoC(B)
   coforall loc in Locales do on loc
   {
     param stridelevels=1;
-    var dststrides:[1..#stridelevels] int(32); 
-    var srcstrides: [1..#stridelevels] int(32);
-    var count: [1..#(stridelevels+1)] int(32);
+    var dststrides:[1..#stridelevels] size_t; 
+    var srcstrides: [1..#stridelevels] size_t;
+    var count: [1..#(stridelevels+1)] size_t;
     var lid=loc.id; 
 
     var numLocales: int(32)=dom.dist.targetLocDom.dim(1).length:int(32);
@@ -23,7 +23,7 @@ proc BlockArr.copyBtoC(B)
     var src = locArr[lid].myElems._value.theData;
 
     dststrides[1]=1;
-    srcstrides[1]=numLocales;
+    srcstrides[1]=numLocales.safeCast(size_t);
 
     var dststr=dststrides._value.theData;
     var srcstr=srcstrides._value.theData;
@@ -60,7 +60,7 @@ proc BlockArr.copyBtoC(B)
       //var destr = privB.locArr[dst].myElems._value.theData;
       var destr = B._value.locArr[dst].myElems._value.theData;
       count[1]=1;
-      count[2]=chunksize;
+      count[2]=chunksize.safeCast(size_t);
 
       __primitive("chpl_comm_put_strd",
 		  __primitive("array_get",destr,
@@ -83,9 +83,9 @@ proc  BlockArr.copyCtoB(B)
   coforall loc in Locales do on loc
   {
     param stridelevels=1;
-    var dststrides:[1..#stridelevels] int(32);
-    var srcstrides: [1..#stridelevels] int(32);
-    var count: [1..#(stridelevels+1)] int(32); 
+    var dststrides:[1..#stridelevels] size_t;
+    var srcstrides: [1..#stridelevels] size_t;
+    var count: [1..#(stridelevels+1)] size_t; 
     var lid=loc.id;
     var numLocales: int=dom.dist.targetLocDom.dim(1).length;
     var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
@@ -118,10 +118,10 @@ proc  BlockArr.copyCtoB(B)
       else chunksize=num/numLocales+1;
 
       var destr = B._value.locArr[dst].myElems._value.theData;
-      dststrides[1]=numLocales:int(32);
+      dststrides[1]=numLocales:size_t;
       srcstrides[1]=1;
       count[1]=1;
-      count[2]=chunksize:int(32);
+      count[2]=chunksize:size_t;
 
       __primitive("chpl_comm_get_strd",
 		  __primitive("array_get",src,
@@ -376,19 +376,23 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
 // this is the radix-4 butterfly routine that takes multipliers wk1,
 // wk2, and wk3 and a 4-element array (slice) A.
 //
-proc butterfly(wk1, wk2, wk3, X:[0..3]) {
-  var x0 = X(0) + X(1),
-    x1 = X(0) - X(1),
-    x2 = X(2) + X(3),
-    x3rot = (X(2) - X(3))*1.0i;
+proc butterfly(wk1, wk2, wk3, X:[?D]) {
+  const i0 = D.low,
+        i1 = i0 + D.stride,
+        i2 = i1 + D.stride,
+        i3 = i2 + D.stride;
+  var x0 = X(i0) + X(i1),
+      x1 = X(i0) - X(i1),
+      x2 = X(i2) + X(i3),
+      x3rot = (X(i2) - X(i3))*1.0i;
 
-  X(0) = x0 + x2;                   // compute the butterfly in-place on X
+  X(i0) = x0 + x2;                   // compute the butterfly in-place on X
   x0 -= x2;
-  X(2) = wk2 * x0;
+  X(i2) = wk2 * x0;
   x0 = x1 + x3rot;
-  X(1) = wk1 * x0;
+  X(i1) = wk1 * x0;
   x0 = x1 - x3rot;
-  X(3) = wk3 * x0;
+  X(i3) = wk3 * x0;
 }
 
 //

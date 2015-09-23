@@ -1,7 +1,0 @@
-# AMM-related bug; should be fixed when string-as-rec is merged
-# -------------------------------------------------------------
-# With --baseline, we free the domain(string) in the parallel glob
-# iterator too aggressively; the AMM work on the string-as-rec branch
-# seems to correct this, so let's suppress this case until that fix
-# can be integrated.
-COMPOPTS <= --baseline
