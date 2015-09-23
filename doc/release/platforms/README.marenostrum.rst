@@ -5,10 +5,10 @@ Using Chapel on MareNostrum
 ===========================
 
 .. warning::
-    Chapel has not been recently tested on MareNostrum.  The information
-    presented here may be stale or inaccurate.  If using Chapel on
-    MareNostrum systems is important to you, please let us know at
-    chapel_info@cray.com.
+    Chapel has not been used on MareNostrum in several years.  It is
+    likely the information presented here is stale or outdated.  If
+    you are interested in using Chapel on MareNostrum, please let us
+    know.
 
 The following information describes how to build and use Chapel on
 Barcelona Supercomputing Center's MareNostrum machine for users who
