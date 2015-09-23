@@ -12,7 +12,6 @@ For code examples using these features, see the 'distributions.chpl' primer.
 
 .. contents::
 
-======================================
 Functions Supported on All Array Types
 ======================================
 
@@ -78,7 +77,6 @@ Currently, this is a serial iterator.
 To support this iterator on a custom distributed array type, write an iterator
 named 'dsiLocalSubdomains'.
 
-=========================================
 Functions Supported by Distributed Arrays
 =========================================
 
@@ -95,7 +93,6 @@ targetLocales
 This function returns an array of locales that the distribution uses as the
 locale grid.
 
-===========
 Future Work
 ===========
 
