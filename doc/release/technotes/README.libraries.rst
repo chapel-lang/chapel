@@ -157,5 +157,10 @@ compile.  All that is missing is the addition of
    need to be added to ``$LD_LIBRARY_PATH`` and the ``-L`` step here, as well
    as a ``-l`` for the library name.  ``CHPL_TASKS=fifo`` does require this.
 
+Chapel library files cannot be used from Chapel code.  The library files must
+include the chapel runtime and standard modules for use in a non-Chapel program
+and when the library is linked to a Chapel program this leads to multiple
+definitions of these functions.
+
 As mentioned above, this feature is not very sturdy.  Please refer to
 :ref:`readme-bugs` if any problems are encountered.
