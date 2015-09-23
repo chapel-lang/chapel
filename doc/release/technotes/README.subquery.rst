@@ -1,14 +1,15 @@
 .. _readme-subquery:
 
-=============================
-Querying a Locale's Subdomain
-=============================
+==========================
+Querying a Local Subdomain
+==========================
 
 While writing a distributed program, one might need to know the index set that
 a certain locale owns in a given distributed array. This README describes the
 initial support for this functionality.
 
-For code examples using these features, see the 'distributions.chpl' primer.
+For code examples using these features, see the
+``$CHPL_HOME/examples/primers/distributions.chpl`` primer.
 
 .. contents::
 
