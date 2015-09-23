@@ -26,6 +26,9 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
 SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
+MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
+DOC_SPHINX=${CHPL_MAKE_HOME}/doc/sphinx
+
 default: all
 
 all: $(SYS_CTYPES_MODULE)
@@ -77,17 +80,46 @@ MODULES_TO_DOCUMENT = \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
+	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
+DISTS_TO_DOCUMENT = \
+	dists/BlockCycDist.chpl \
+	dists/BlockDist.chpl \
+	dists/CyclicDist.chpl \
+	dists/DimensionalDist2D.chpl \
+	dists/PrivateDist.chpl \
+	dists/ReplicatedDist.chpl \
+	dists/dims/BlockCycDim.chpl \
+	dists/dims/BlockDim.chpl \
+	dists/dims/ReplicatedDim.chpl \
+	layouts/LayoutCSR.chpl \
+
+INTERNAL_MODULES_TO_DOCUMENT = \
+	internal/ChapelTuple.chpl \
+	internal/ChapelIO.chpl \
+	internal/ChapelRange.chpl \
+	internal/ChapelSyncvar.chpl \
+	internal/Atomics.chpl
+
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT) \
+	$(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
+	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
+	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
+	rm -rf ${MODULE_SPHINX}
 
 clean-documentation:
 	rm -rf ./docs
+	rm -rf $(MODULE_SPHINX)
 
 FORCE:
 

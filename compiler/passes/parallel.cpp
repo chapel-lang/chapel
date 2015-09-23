@@ -973,8 +973,7 @@ makeHeapAllocations() {
           INT_ASSERT(toSymExpr(call->get(1))->var == var);
           VarSymbol* tmp = newTemp(var->type->refType);
           call->insertBefore(new DefExpr(tmp));
-          call->insertBefore("'move'(%S,'.'(%S,%S))",
-                             tmp, var, heapType->getField(1));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
         } else if (call->isResolved() &&
                    call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
