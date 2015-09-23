@@ -88,6 +88,7 @@ MODULES_TO_DOCUMENT = \
 
 INTERNAL_MODULES_TO_DOCUMENT = \
 	internal/ChapelIO.chpl \
+	internal/ChapelLocale-chpldoc.chpl \
 	internal/ChapelRange.chpl \
 	internal/ChapelSyncvar.chpl \
 	internal/Atomics.chpl
