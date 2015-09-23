@@ -1,14 +1,14 @@
 # Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -86,19 +86,37 @@ MODULES_TO_DOCUMENT = \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
-INTERNAL_MODULES_TO_DOCUMENT = \
-	internal/ChapelIO.chpl \
+DISTS_TO_DOCUMENT = \
+	dists/BlockCycDist.chpl \
+	dists/BlockDist.chpl \
+	dists/CyclicDist.chpl \
+	dists/DimensionalDist2D.chpl \
+	dists/PrivateDist.chpl \
+	dists/ReplicatedDist.chpl \
+	dists/dims/BlockCycDim.chpl \
+	dists/dims/BlockDim.chpl \
+	dists/dims/ReplicatedDim.chpl \
+	layouts/LayoutCSR.chpl \
+
+INTERNAL_MODULES_TO_DOCUMENT =                \
+        internal/ChapelTuple.chpl             \
+        internal/ChapelIO.chpl                \
 	internal/ChapelLocale-chpldoc.chpl \
-	internal/ChapelRange.chpl \
-	internal/ChapelSyncvar.chpl \
-	internal/Atomics.chpl
+        internal/ChapelRange.chpl             \
+        internal/ChapelSyncvar.chpl           \
+        internal/Atomics.chpl                 \
+        internal/ChapelComplex_forDocs.chpl   \
+        internal/UtilMisc_forDocs.chpl
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT) \
-	$(INTERNAL_MODULES_TO_DOCUMENT)
+	$(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
+	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
 	rm -rf ${MODULE_SPHINX}
 

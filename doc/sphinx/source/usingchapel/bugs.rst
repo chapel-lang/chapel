@@ -1,1 +1,0 @@
-/Users/balbrecht/opt/dev/chapel/chapel/doc/release/README.bugs.rst

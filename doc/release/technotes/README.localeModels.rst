@@ -66,11 +66,11 @@ the NUMA locale model, they are not NUMA aware.  In addition, the
 Portable Hardware Locality library (hwloc) is used with qthreads to map
 sublocales to NUMA domains. For more information about qthreads and
 about tuning parameters such as the number of qthread shepherds per
-locale, please see $CHPL_HOME/doc/README.tasks.
+locale, please see :ref:`readme-tasks`.
 
 To use the NUMA locale model:
 
-1) Set the ``CHPL_LOCALE_MODEL`` environment variable to "numa".
+1) Set the ``CHPL_LOCALE_MODEL`` environment variable to ``numa``.
 
 .. code-block:: sh
 

@@ -1,3 +1,5 @@
+.. _technical_notes:
+
 Technical Notes
 ===============
 
