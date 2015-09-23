@@ -5,7 +5,7 @@ Using Chapel on SGI Altix
 =========================
 
 .. warning::
-    Chapel has not been used on SGI Altix in several years.  It is
+    We have not used Chapel on SGI Altix in several years.  It is
     likely the information presented here is stale or outdated.  If
     you are interested in using Chapel on SGI Altix, please let us
     know.

@@ -5,7 +5,7 @@ Using Chapel on MareNostrum
 ===========================
 
 .. warning::
-    Chapel has not been used on MareNostrum in several years.  It is
+    We have not used Chapel on MareNostrum in several years.  It is
     likely the information presented here is stale or outdated.  If
     you are interested in using Chapel on MareNostrum, please let us
     know.

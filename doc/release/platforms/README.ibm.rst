@@ -5,7 +5,7 @@ Using Chapel on IBM Systems
 ===========================
 
 .. warning::
-    Chapel has not been used on IBM Systems in several years.  It is
+    We have not used Chapel on IBM Systems in several years.  It is
     likely the information presented here is stale or outdated.  If
     you are interested in using Chapel on IBM Systems, please let us
     know.
