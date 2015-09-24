@@ -129,7 +129,7 @@ information about executing on multiple locales.
 
 Multi-locale programs often use a launcher executable to do some initial
 command-line checking before spawning the real program, which is then
-stored in a second binary named *original_binary_name*\ ``_real``.  See
+stored in a second binary named ``<original_binary_name>_real``.  See
 :ref:`readme-launcher` for more information about the launcher executable.
 
 
