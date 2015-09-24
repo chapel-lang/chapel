@@ -202,3 +202,12 @@ removePrefixFunctions $file
 fixTitle "Misc Functions" $file
 
 # End UtilMisc_forDocs ##
+
+# Remove "Module: " prefix #
+
+cd "${TEMPDIR}/source/modules/"
+
+for file in `find . -iname "*.rst"`; do
+  base="$(basename $file .rst)"
+  fixTitle $base $file
+done
