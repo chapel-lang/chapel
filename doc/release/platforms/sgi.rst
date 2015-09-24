@@ -48,7 +48,7 @@ organized as multi-partition machines, you will need to treat it as a
 multi-locale machine if you want to span multiple partitions.
 
 For the single-locale version, you should be able to build Chapel in
-the standard way as described in :ref:`chapelhome-quickstart`,
+the standard way as described in the :ref:`chapelhome-quickstart`,
 making sure that the ``CHPL_COMM`` environment variable is unset or set to
 ``none``.
 
