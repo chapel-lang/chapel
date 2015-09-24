@@ -19,9 +19,10 @@ potential users a look at what we're doing and the opportunity to
 provide us with feedback.  See the LICENSE file for the release's
 licensing terms.
 
+.. _chapelhome-quickstart:
 
-Quick Start
------------
+Quick Start Instructions
+------------------------
 
 The following instructions are designed to get you up and running with
 Chapel with a minimum of fuss.  Note that building and using Chapel in
