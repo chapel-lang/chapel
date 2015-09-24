@@ -130,7 +130,6 @@ Building Chapel for a Cray System from Source
    override this default by setting ``CHPL_HOST_COMPILER`` to one of the
    following values:
 
-     :``cray``: the Cray compiler suite -- ``cc`` and ``CC``
      :``gnu``: the GNU compiler suite -- ``gcc`` and ``g++``
      :``intel``: the Intel compiler suite -- ``icc`` and ``icpc``
      :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgCC``
