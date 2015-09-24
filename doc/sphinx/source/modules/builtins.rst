@@ -1,7 +1,7 @@
 .. _built-in-types:
 
-Built-in Types
-==============
+Built-in Types and Functions
+============================
 Contents:
 
 .. toctree::
