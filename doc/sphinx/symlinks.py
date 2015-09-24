@@ -43,7 +43,7 @@ def main():
 
     # CHPL_HOME README
     chplhomereadme = os.path.join(chpl_home, 'README.rst')
-    os.symlink(os.path.join(chpl_home, 'README.rst'), 'source/usingchapel/README.rst')
+    os.symlink(chplhomereadme, 'source/usingchapel/README.rst')
 
 
 if __name__ == '__main__':
