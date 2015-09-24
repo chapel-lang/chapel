@@ -901,14 +901,21 @@ two mechanisms.
 
     .. code-block:: chapel
 
-       require "foo.h"
-       require "foo.c"
-
+       require "foo.h", "foo.c";
 
     This has an effect similar to adding foo.h and foo.c to the
     command line. You might need to specify -I and -L arguments
     to indicate to the directories storing any headers or library
     files.
+
+    Similarly, the version below uses the require statement to indicate
+    that this module depends on libfoo.a (and has a similar effect as if
+    ``-lfoo`` were added to the command line).
+
+    .. code-block:: chapel
+
+       require "foo.h", "-lfoo";
+
 
 Either approach has the following results:
 
