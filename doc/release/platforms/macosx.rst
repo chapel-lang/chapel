@@ -5,8 +5,8 @@ Using Chapel on Mac OS X
 ========================
 
 By and large, Chapel can be used on a Macintosh running OS X just like
-any other platform -- refer to the top-level README file for general
-instructions on building and using Chapel.
+any other platform -- refer to the :ref:`chapelhome-quickstart` on building
+and using Chapel.
 
 For Macintosh developers, there is an Xcode project file located in
 

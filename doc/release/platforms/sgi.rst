@@ -48,10 +48,9 @@ organized as multi-partition machines, you will need to treat it as a
 multi-locale machine if you want to span multiple partitions.
 
 For the single-locale version, you should be able to build Chapel in
-the standard way as described in `$CHPL_HOME/README.md`_, making sure that
-the ``CHPL_COMM`` environment variable is unset or set to ``none``.
-
-.. _$CHPL_HOME/README.md: https://github.com/chapel-lang/chapel/blob/master/README.md
+the standard way as described in :ref:`chapelhome-quickstart`,
+making sure that the ``CHPL_COMM`` environment variable is unset or set to
+``none``.
 
 For multi-locale executions, Chapel uses GASNet as our means of
 specifying inter-locale communication.  Left to its own devices,

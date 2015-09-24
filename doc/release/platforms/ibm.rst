@@ -17,10 +17,8 @@ Using Chapel on IBM Systems
 We only have limited experience using Chapel on IBM systems.  This
 file contains notes that reflect our experience, focusing first on
 PowerPC-based systems and then BG systems.  If you are not familiar
-with Chapel, it is recommended that you first try the instructions
-in `$CHPL_HOME/README.md`_ to get started with the language.
-
-.. _$CHPL_HOME/README.md: https://github.com/chapel-lang/chapel/blob/master/README.md
+with Chapel, it is recommended that you first try the
+:ref:`chapelhome-quickstart` to get started with the language.
 
 
 PowerPC SMP clusters
