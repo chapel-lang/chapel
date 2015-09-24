@@ -93,10 +93,7 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 
 
 
-5) To ensure you have installed Chapel properly, you can optionally run an
-   automatic sanity check using a few example programs. For this to work
-   correctly, you will need python, and ``python-devel`` packages installed on your
-   system. See `prereqs.rst`_ for more information.
+5) Optionally, check that your Chapel installation is working correctly:
 
         ``gmake check``
 
