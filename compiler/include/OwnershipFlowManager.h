@@ -109,7 +109,7 @@ private:
                       bool      rvvIsOwned);
 
   bool isSimpleAssignment(CallExpr* call)                                const;
-  bool isMoveToRvvFromPrimop(CallExpr* call, Symbol* rvv)                const;
+  bool isPrimopToRvv(CallExpr* call, Symbol* rvv)                        const;
 
   void autoCopyForSimpleAssignment(CallExpr* call,
                                    BitVec*   prod,

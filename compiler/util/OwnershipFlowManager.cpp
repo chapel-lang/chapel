@@ -709,28 +709,40 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
                                           Symbol*   rvv,
                                           bool      rvvIsOwned)
 {
-  if (isSimpleAssignment(call) == true)
-    autoCopyForSimpleAssignment(call, prod, live, cons, rvv, rvvIsOwned);
+  bool isMove   = call->isPrimitive(PRIM_MOVE);
+  bool isAssign = call->isPrimitive(PRIM_ASSIGN);
 
-  else if (isMoveToRvvFromPrimop(call, rvv)  == true)
-    autoCopyForMoveToRvvFromPrimop(call);
+  if (isMove == true || isAssign == true)
+  {
+    if (isSimpleAssignment(call) == true)
+    {
+      autoCopyForSimpleAssignment(call, prod, live, cons, rvv, rvvIsOwned);
+    }
+
+    else if (isMove == true && isPrimopToRvv(call, rvv)  == true)
+    {
+      autoCopyForMoveToRvvFromPrimop(call);
+    }
+
+    else
+    {
+      autoCopyWalkSymExprs(call, prod, live, cons, rvv);
+    }
+  }
 
   else
+  {
     autoCopyWalkSymExprs(call, prod, live, cons, rvv);
+  }
 }
 
 bool OwnershipFlowManager::isSimpleAssignment(CallExpr* call) const
 {
   bool retval = false;
 
-  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-  {
-    INT_ASSERT(isSymExpr(call->get(1)));
+  INT_ASSERT(isSymExpr(call->get(1)));
 
-    retval = isSymExpr(call->get(2));
-  }
-
-  return retval;
+  return isSymExpr(call->get(2));
 }
 
 // If the RHS is a call to a function, no autocopy is needed because calls
@@ -738,19 +750,15 @@ bool OwnershipFlowManager::isSimpleAssignment(CallExpr* call) const
 // copied into the RVV is owned, we don't need to insert an autoCopy.
 // But that still leaves the case where a CallExpr on the RHS returns
 // something that is unowned.
-bool OwnershipFlowManager::isMoveToRvvFromPrimop(CallExpr* call,
-                                                 Symbol*   rvv) const
+bool OwnershipFlowManager::isPrimopToRvv(CallExpr* call,
+                                         Symbol*   rvv) const
 {
-  bool retval = false;
+  SymExpr*  lhse   = toSymExpr(call->get(1));
+  CallExpr* rhs    = toCallExpr(call->get(2));
+  bool      retval = false;
 
-  if (call->isPrimitive(PRIM_MOVE) == true)
-  {
-    SymExpr*  lhse = toSymExpr(call->get(1));
-    CallExpr* rhs  = toCallExpr(call->get(2));
-
-    if (lhse != NULL && rhs != NULL)
-      retval = (lhse->var == rvv && rhs->isPrimitive() == true);
-  }
+  if (lhse != NULL && rhs != NULL)
+    retval = (lhse->var == rvv && rhs->isPrimitive() == true);
 
   return retval;
 }
