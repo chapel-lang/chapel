@@ -130,7 +130,6 @@ Building Chapel for a Cray System from Source
    override this default by setting ``CHPL_HOST_COMPILER`` to one of the
    following values:
 
-     :``cray``: the Cray compiler suite -- ``cc`` and ``CC``
      :``gnu``: the GNU compiler suite -- ``gcc`` and ``g++``
      :``intel``: the Intel compiler suite -- ``icc`` and ``icpc``
      :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgCC``
@@ -141,7 +140,8 @@ Building Chapel for a Cray System from Source
    :ref:`readme-chplenv`.
 
      :``CHPL_TASKS``: tasking implementation, default ``fifo`` when using
-                      target compiler ``cray``, otherwise ``qthreads``
+                      target compiler ``cray-prgenv-cray``, otherwise
+                      ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``gasnet``
 
    Other configuration environment variables such as ``CHPL_MEM`` can also
@@ -198,8 +198,8 @@ Using Chapel on a Cray System
    in :ref:`readme-chplenv`.
 
      :``CHPL_TASKS``: tasking implementation, default ``fifo`` with target
-                      compiler ``cray``, ``muxed`` on Cray XC/XE with pre-built
-                      module, otherwise ``qthreads``
+                      compiler ``cray-prgenv-cray``, ``muxed`` on Cray
+                      XC/XE with pre-built module, otherwise ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``ugni`` on Cray
                      XC/XE with pre-built module, else ``gasnet``
 
