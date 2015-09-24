@@ -106,7 +106,7 @@ if ($no_clone == 0) {
        "LICENSE.chapel",
        "Makefile",
        "PERFORMANCE",
-       "README",
+       "README.rst",
        "README.files",
        "STATUS",
        "compiler/passes/reservedSymbolNames",
@@ -145,7 +145,8 @@ if ($no_clone == 0) {
     "util/chplenv",
     "util/config",
     "util/quickstart",
-    "util/test"
+    "util/test",
+    "tools"
 );
 
 
@@ -162,6 +163,10 @@ system("make man-chpldoc");
 
 print "Building the STATUS file...\n";
 system("make STATUS");
+
+print "Building the docs...\n";
+system("make docs");
+system("mv doc/sphinx/build/html doc/release");
 
 print "Creating the docs directory...\n";
 system("mv doc doctmp");
