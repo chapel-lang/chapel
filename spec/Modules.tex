@@ -211,13 +211,15 @@ of~\rsec{Visibility_Of_Symbols}. There, the nested module is
 considered a "symbol defined at the top level scope" of its outer
 module.
 
-\subsection{Visibility Of Module's Symbols}
+\subsection{Visibility Of A Module's Symbols}
 \label{Visibility_Of_Symbols}
 \index{modules!access}
 
 A symbol defined at the top level scope of a module is \emph{visible}
 from outside the module when the \sntx{privacy-specifier} of its
-definition is \chpl{public} or is omitted (i.e. by default).  A
+definition is \chpl{public} or is omitted (i.e. by default). When a
+symbol defined at the top level scope of a module is declared
+\chpl{private}, it is not visible outside of that module. A
 symbol's visibility inside its module is controlled by normal lexical
 scoping and is not affected by its \sntx{privacy-specifier}.  A
 module's visible symbols are accessible via explicit
