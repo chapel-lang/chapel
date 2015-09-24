@@ -18,7 +18,7 @@ Highlights
   (see http://chapel.cray.com/docs/1.12/tools/chplvis/index.html)
 * added a new chapter describing Chapel's memory consistency model in detail
   (see http://chapel.cray.com/spec/spec-0.98.pdf)
-* added a 'vectorizeOnly()' iterator that vectorizes without using multitasking
+* added a 'vectorizeOnly()' iterator that vectorizes without task creation
   (http://chapel.cray.com/docs/1.12/modules/internal/ChapelIteratorSupport.html)
 * new performance optimizations, particularly intra- and inter-node locality
   (see "Performance Improvements" section below)
@@ -31,7 +31,7 @@ Highlights
   (see 'Modules:Access of Module Contents::Visibility of Module's Symbols')
 * domains in formal array arguments are now interpreted as a constraint
   (see 'Arrays::Array Arguments to Functions' in the language spec)
-* significantly revamped and improved the testing and graphing systems
+* significantly revamped and improved correctness and performance testing system
 * improved how internal error messages are displayed to users
 * added Chapel Improvement Proposals (CHIPs) framework for proposing changes
   (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/1.rst)
@@ -60,7 +60,8 @@ Tool Changes
   - automatically skip documentation of 'private' symbols
   - squashed generation of 'inline' in output
   - added support for --print-commands with chpldoc
-* added a quit() primitive to chpl-ipe for clean exits from the environment
+* chpl-ipe:
+  - added a quit() primitive for clean exits from the environment
 
 Syntactic/Naming Changes
 ------------------------
@@ -133,19 +134,19 @@ Standard Library/Modules
 
 Performance Improvements
 ------------------------
-* parallelized large numeric array initializations for better first-touch
+* parallelized large numeric array initialization for better first-touch
 * improved analysis and optimization of variables that are provably local
 * fixed a bug in which non-blocking 'on's were counted as local running tasks
 * improved task counting when one task is waiting for others to complete
-* optimized task counts to make use of processor atomics when definitely safe
-* changed default tasking layer on 'cray-x*' from 'muxed' to 'qthreads'
+* optimized task counts to use processor atomics when profitable
+* made 'cray-x*' systems default to 'qthreads' over 'muxed'
 * moved polling threads to the last available CPU to avoid contention
-* fixed a performance issue in tcmalloc due to calling calloc(), not malloc()
+* made array allocation use calloc(), not malloc() for better first-touch
 * enabled more optimizations and streamlined code when using the LLVM back-end
 
 Memory Improvements
 -------------------
-* stopped leaking sync and single variables
+* stopped leaking sync and single variables on all platforms except Cygwin
 * eliminated leaks for heap allocated variables used in cobegin/coforall
 
 Documentation
@@ -280,7 +281,6 @@ Portability Improvements
 Third-Party Software Changes
 ----------------------------
 * added 'fltk' to the third-party directory for use by 'chplvis'
-* removed our snapshot of 'dygraphs' in favor of using content delivery network
 * enabled the use of GMP with the LLVM back-end
 * made LLVM build in non-debug mode and without asserts by default
 * improved cross-compilation of third-party packages for 'cray-x*' platforms
@@ -300,8 +300,7 @@ Runtime Library Changes
 Testing System
 --------------
 * rewrote 'start_test' and 'computePerfStats' in python
-  (see $CHPL_HOME/util/start_test)
-* replaced --suppress feature with .suppressif/SUPPRESSIF files
+* replaced --suppress feature with .suppressif files
 * added ability to write chpldoc tests using the .doc.chpl extension
 * updated testing system to support testing of 'chpl-ipe'
 * made the parallel testing system print an estimated end time
@@ -312,7 +311,7 @@ Testing System
 * made C testing system more accepting of C compilers that print filenames
 * specialized testing system to recognize some common launcher errors
 * improved ability to use chpl_launchcmd.py from NFS-mounted Lustre filesystems
-* made implementation timeouts in Cygwin robust
+* extended timeout mechanism to work under Cygwin
 
 Makefile Changes
 ----------------
@@ -368,7 +367,7 @@ Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added support for task callbacks in the runtime
 * eliminated reliance on __always_inline
-* added chpl_mem_goodAllocSize to runtime to support minimizing wasted memory
+* added chpl_mem_goodAllocSize() to runtime to support minimizing wasted memory
 * added the ability to flag certain memory types to avoid tracking them
 * added a capability to generate a header file #defining CHPL_* variables
 * turned off remote caching for tasking layers where migration can occur
