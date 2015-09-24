@@ -67,6 +67,10 @@ var branchInfo = [
                     "releaseDate": "2015-04-02",
                     "branchDate" : "2015-03-25",
                     "revision" : -1}
+                  { "release" : "1.12",
+                    "releaseDate": "2015-10-01",
+                    "branchDate" : "2015-09-24",
+                    "revision" : -1}
                   ];
 
 var rebootDates = [
