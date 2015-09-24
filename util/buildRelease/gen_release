@@ -106,7 +106,7 @@ if ($no_clone == 0) {
        "LICENSE.chapel",
        "Makefile",
        "PERFORMANCE",
-       "README",
+       "README.rst",
        "README.files",
        "STATUS",
        "compiler/passes/reservedSymbolNames",
