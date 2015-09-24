@@ -131,7 +131,7 @@ fixTitle "Vectorizing Iterator" $file
 ## ChapelLocale ##
 
 file="./ChapelLocale.rst"
-fixTitle "Locale" $file
+fixTitle "Locales" $file
 replace "LocaleSpace = chpl__buildDomainExpr(0..numLocales-1)" \
         "LocaleSpace = {0..numLocales-1}" $file
 
