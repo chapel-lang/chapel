@@ -141,7 +141,8 @@ Building Chapel for a Cray System from Source
    :ref:`readme-chplenv`.
 
      :``CHPL_TASKS``: tasking implementation, default ``fifo`` when using
-                      target compiler ``cray``, otherwise ``qthreads``
+                      target compiler ``cray-prgenv-cray``, otherwise
+                      ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``gasnet``
 
    Other configuration environment variables such as ``CHPL_MEM`` can also
@@ -198,8 +199,8 @@ Using Chapel on a Cray System
    in :ref:`readme-chplenv`.
 
      :``CHPL_TASKS``: tasking implementation, default ``fifo`` with target
-                      compiler ``cray``, ``muxed`` on Cray XC/XE with pre-built
-                      module, otherwise ``qthreads``
+                      compiler ``cray-prgenv-cray``, ``muxed`` on Cray
+                      XC/XE with pre-built module, otherwise ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``ugni`` on Cray
                      XC/XE with pre-built module, else ``gasnet``
 
