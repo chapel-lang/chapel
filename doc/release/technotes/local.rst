@@ -1,7 +1,7 @@
 .. _readme-local:
 
 =====================
-The 'local' statement
+The 'local' Statement
 =====================
 
 This README describes the ``local`` statement in the Chapel language.

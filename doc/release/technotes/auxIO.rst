@@ -2,9 +2,9 @@
 
 .. default-domain:: chpl
 
-================================
-Support for Auxiliary IO Systems
-================================
+=====================
+Auxiliary I/O Systems
+=====================
 
 This README describes Chapel support for Auxiliary I/O(AIO) systems. It also
 provides instructions on how to set Chapel up to support multiple Auxiliary I/O

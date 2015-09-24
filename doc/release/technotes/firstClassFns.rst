@@ -1,8 +1,8 @@
 .. _readme-firstClassFns:
 
-===================================================
-Initial support for first-class functions in Chapel
-===================================================
+===============================
+First-class Functions in Chapel
+===============================
 
 This README describes some initial support that we have added to the
 compiler for first-class functions in Chapel.  This mechanism should

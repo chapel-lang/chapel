@@ -1,7 +1,7 @@
 .. _readme-chpl-ipe:
 
-The Interactive Programming Environment
-========================================
+Interactive Chapel
+==================
 
 The Chapel team has initiated an effort to develop an Interactive
 Programming Environment (IPE) for Chapel.  This system will allow
