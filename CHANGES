@@ -17,7 +17,7 @@ Highlights
 * added chplvis: a new tool for visualizing Chapel communication and concurrency
   (see http://chapel.cray.com/docs/1.12/tools/chplvis/index.html)
 * added a new chapter describing Chapel's memory consistency model in detail
-  (see http://chapel.cray.com/spec/spec-0.98.pdf)
+  (see 'Memory Consistency Model' in the language spec)
 * added a 'vectorizeOnly()' iterator that vectorizes without task creation
   (http://chapel.cray.com/docs/1.12/modules/internal/ChapelIteratorSupport.html)
 * new performance optimizations, particularly intra- and inter-node locality
@@ -37,7 +37,7 @@ Highlights
   (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/1.rst)
 * made more bug fixes than any release since version 1.1
   (see "Bug Fixes" section below)
-* addressed portability issues for a number of platform and compiler versions
+* addressed portability issues for a number of platforms and compilers
 
 Process Improvements
 --------------------
@@ -48,7 +48,7 @@ Environment/Configuration Changes
 ---------------------------------
 * 'printchplenv' now indicates which settings come from environment variables
 * made the quickstart scripts turn CHPL_LLVM off by default
-* removed need for 'bc' and 'patch' when building Chapel
+* removed dependencies on 'bc' and 'patch'
 
 Tool Changes
 ------------
