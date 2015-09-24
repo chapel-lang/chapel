@@ -128,6 +128,17 @@ fixTitle "Vectorizing Iterator" $file
 ## End ChapelIteratorSupport ##
 
 
+## ChapelLocale ##
+
+file="./ChapelLocale.rst"
+fixTitle "Locale" $file
+replace "LocaleSpace = chpl__buildDomainExpr(0..numLocales-1)" \
+        "LocaleSpace = {0..numLocales-1}" $file
+
+
+## End ChapelLocale ##
+
+
 ## ChapelSyncvar ##
 
 file="./ChapelSyncvar.rst"
