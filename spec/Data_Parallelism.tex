@@ -558,6 +558,9 @@ in Chapter~\ref{User_Defined_Reductions_and_Scans}.
 \label{data_parallel_knobs}
 \index{data parallelism!knobs for default data parallelism}
 \index{data parallelism!configuration constants}
+\index{dataParTasksPerLocale@\chpl{dataParTasksPerLocale}}
+\index{dataParIgnoreRunningTasks@\chpl{dataParIgnoreRunningTasks}}
+\index{dataParMinGranularity@\chpl{dataParMinGranularity}}
 
 The following configuration constants are provided to control the
 degree of data parallelism over ranges, default domains, and default
@@ -596,5 +599,4 @@ the specified value.
 For distributed domains and arrays that have these same configuration
 constants (\eg, Block and Cyclic distributions), these same
 module level configuration constants are used to specify their
-default behavior within each locale
-(see \rsec{Block_Dist} and \rsec{Cyclic_Dist}).
+default behavior within each locale.
