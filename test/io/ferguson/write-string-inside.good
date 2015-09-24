@@ -1,0 +1,5 @@
+(str = "string in record")
+"string in array" "other string in array"
+("string in tuple", "other string in tuple")
+string on its own
+this is a test.
