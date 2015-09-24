@@ -1,7 +1,3 @@
-.. image:: http://chapel.cray.com/images/cray-chapel-logo-200.png
-   :target: http://chapel.cray.com
-
-
 .. _chapelhome-readme:
 
 The Chapel Language
