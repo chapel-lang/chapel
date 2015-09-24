@@ -1391,26 +1391,38 @@ for testname in testsrc:
             if systemPrediff:
                 sys.stdout.write('[Executing system-wide prediff]\n')
                 sys.stdout.flush()
-                subprocess.Popen([systemPrediff,
-                                  execname,complog,compiler,
-                                  ' '.join(envCompopts)+' '+compopts,
-                                  ' '.join(args)]).wait()
+                p = subprocess.Popen([systemPrediff,
+                                      execname,complog,compiler,
+                                      ' '.join(envCompopts)+' '+compopts,
+                                      ' '.join(args)],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')
                 sys.stdout.flush()
-                subprocess.Popen(['./PREDIFF',
-                                  execname,complog,compiler,
-                                  ' '.join(envCompopts)+' '+compopts,
-                                  ' '.join(args)]).wait()
+                p = subprocess.Popen(['./PREDIFF',
+                                      execname,complog,compiler,
+                                      ' '.join(envCompopts)+' '+compopts,
+                                      ' '.join(args)],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             if prediff:
                 sys.stdout.write('[Executing prediff %s.prediff]\n'%(test_filename))
                 sys.stdout.flush()
-                subprocess.Popen(['./'+test_filename+'.prediff',
-                                  execname,complog,compiler,
-                                  ' '.join(envCompopts)+' '+compopts,
-                                  ' '.join(args)]).wait()
+                p = subprocess.Popen(['./'+test_filename+'.prediff',
+                                      execname,complog,compiler,
+                                      ' '.join(envCompopts)+' '+compopts,
+                                      ' '.join(args)],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             
             # find the compiler .good file to compare against. The compiler
@@ -1851,7 +1863,8 @@ for testname in testsrc:
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
-                                                          stdout=subprocess.PIPE).
+                                                          stdout=subprocess.PIPE,
+                                                          stderr=subprocess.STDOUT).
                                         communicate()[0])
 
                     if globalPrediff:
@@ -1862,7 +1875,8 @@ for testname in testsrc:
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
-                                                          stdout=subprocess.PIPE).
+                                                          stdout=subprocess.PIPE,
+                                                          stderr=subprocess.STDOUT).
                                         communicate()[0])
 
                     if prediff:
@@ -1873,7 +1887,8 @@ for testname in testsrc:
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
-                                                          stdout=subprocess.PIPE).
+                                                          stdout=subprocess.PIPE,
+                                                          stderr=subprocess.STDOUT).
                                         communicate()[0])
 
                     if not perftest:
