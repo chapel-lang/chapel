@@ -10,25 +10,34 @@ Fifteenth public release of Chapel, October 1, 2015
 
 Highlights
 ----------
+* significantly expanded the coverage of our online documentation
+  (see http://chapel.cray.com/docs/1.12/ and "Documentation" below)
+* added new 'Barrier', 'Spawn', and 'LAPACK' modules to the standard set
+  (see "Standard Library/Modules" section below)
 * added chplvis: a new tool for visualizing Chapel communication and concurrency
   (see http://chapel.cray.com/docs/1.12/tools/chplvis/index.html)
-* changed the default tasking layer on 'cray-x*' to 'qthreads' for performance
-* improved 'chpldoc' in several ways
-  (see 'chpldoc' entry in 'Tool Changes' below for details)
-* added Chapel Improvement Proposals (CHIPs) framework for proposed changes
+* added a new chapter describing Chapel's memory consistency model in detail
+  (see http://chapel.cray.com/spec/spec-0.98.pdf)
 * added a 'vectorizeOnly()' iterator that vectorizes without using multitasking
   (http://chapel.cray.com/docs/1.12/modules/internal/ChapelIteratorSupport.html)
+* new performance optimizations, particularly intra- and inter-node locality
+  (see "Performance Improvements" section below)
+* removed the 'local' block from stream-ep based on the above optimizations
+  (see examples/benchmarks/hpcc/stream-ep.chpl)
+* changed the default tasking layer on 'cray-x*' to 'qthreads' for performance
 * added support for type methods and iterators
   (see 'Classes::Class Method Calls::The Method Receiver and the this Argument')
+* added support for public/private module-level variables, functions, modules)
+  (see 'Modules:Access of Module Contents::Visibility of Module's Symbols')
 * domains in formal array arguments are now interpreted as a constraint
   (see 'Arrays::Array Arguments to Functions' in the language spec)
-* Chapel no longer keeps referenced variables alive past their lexical scope
-* added a new 'Barrier' module defining a simple collective barrier capability
-  (see http://chapel.cray.com/docs/1.12/modules/standard/Barrier.html)
-* added a new 'Spawn' module for creating new subprocesses
-  (see http://chapel.cray.com/docs/1.12/modules/standard/Spawn.html)
-* added a new 'LAPACK' module that provides an interface to LAPACK
-  (see http://chapel.cray.com/docs/1.12/modules/standard/LAPACK.html)
+* significantly revamped and improved the testing and graphing systems
+* improved how internal error messages are displayed to users
+* added Chapel Improvement Proposals (CHIPs) framework for proposing changes
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/chips/1.rst)
+* made more bug fixes than any release since version 1.1
+  (see "Bug Fixes" section below)
+* addressed portability issues for a number of platform and compiler versions
 
 Process Improvements
 --------------------
@@ -39,7 +48,7 @@ Environment/Configuration Changes
 ---------------------------------
 * 'printchplenv' now indicates which settings come from environment variables
 * made the quickstart scripts turn CHPL_LLVM off by default
-* removed need for 'bc' when building Chapel
+* removed need for 'bc' and 'patch' when building Chapel
 
 Tool Changes
 ------------
@@ -51,8 +60,7 @@ Tool Changes
   - automatically skip documentation of 'private' symbols
   - squashed generation of 'inline' in output
   - added support for --print-commands with chpldoc
-* chpl-ipe improvements:
-  - added a quit() primitive for cleanly exiting the interpreted environment
+* added a quit() primitive to chpl-ipe for clean exits from the environment
 
 Syntactic/Naming Changes
 ------------------------
@@ -64,7 +72,7 @@ Syntactic/Naming Changes
   (see http://chapel.cray.com/docs/1.12/modules/standard/Memory.html)
 * changed the '##.##' writef() pattern so that it requires '%{...}' around it
   (see http://chapel.cray.com/docs/1.12/modules/standard/IO.html#specifiers)
-* added support for form feed characters ('\f') as whitespace
+* added support for form-feed characters ('\f') as whitespace
   (see 'Lexical Structure::White Space' in the language specification)
 * changed the term 'blank intent' to 'default intent'
   (see 'Functions::Argument Intents::Abstract Intents::The Default Intent')
@@ -76,8 +84,6 @@ Semantic Changes / Changes to Chapel Language
 * Chapel no longer keeps referenced variables alive past their lexical scope
 * c_strings are no longer made into strings when passed to generic extern args
 * 'select' statements now only evaluate their argument expression once
-* by default, strings in records/arrays/etc. are written out with quotes
-  (TODO: Really?)
 
 New Features
 ------------
@@ -154,24 +160,22 @@ Documentation
   (see $CHPL_HOME/doc/html)
 * converted most READMEs to ReStructured Text (.rst) or markdown (.md)
   (for example, see $CHPL_HOME/doc/* and $CHPL_HOME/doc/technotes/*)
-* refreshed the contents of most READMEs for this release
+* refreshed the contents of most former READMEs as part of this effort
 * language specification updates:
   - added a new chapter on Chapel's memory consistency model
   - added documentation of the I/O operator, <~>
   - improved the specification's page numbering and format
   - retired standard library chapters from the spec now that they're online
-  (see $CHPL_HOME/doc/chapelLanguageSpec.pdf)
+  (see http://chapel.cray.com/spec/spec-0.98.pdf)
 * standard module documentation improvements
   - added a "Formatted I/O for C Programmers" table to the IO module
     (see http://chapel.cray.com/docs/1.12/modules/standard/IO.html#formatted-i-o)
   - refreshed the documentation of other standard modules
 * refreshed the contents of the C interoperability technical note
   (see http://chapel.cray.com/docs/1.12/technotes/extern.html)
-* minor wording improvements to the 'chpl' man page
-* made minor improvements to etc/ READMEs
-* removed Tilera-specific documentation due to lack of use and testing
 * retired README.format due to its documentation as part of a standard module
   (http://chapel.cray.com/docs/1.12/modules/standard/IO.html#IO.string.format)
+* removed Tilera-specific documentation due to lack of use and testing
 
 Example Codes
 -------------
