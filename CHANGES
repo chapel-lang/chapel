@@ -138,7 +138,7 @@ Performance Improvements
 * fixed a bug in which non-blocking 'on's were counted as local running tasks
 * improved task counting when one task is waiting for others to complete
 * optimized task counts to make use of processor atomics when definitely safe
-* changed default tasking layer on 'cray-x*' from 'ugni' to 'qthreads'
+* changed default tasking layer on 'cray-x*' from 'muxed' to 'qthreads'
 * moved polling threads to the last available CPU to avoid contention
 * fixed a performance issue in tcmalloc due to calling calloc(), not malloc()
 * enabled more optimizations and streamlined code when using the LLVM back-end
