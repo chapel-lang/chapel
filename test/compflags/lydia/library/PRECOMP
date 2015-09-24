@@ -1,5 +1,4 @@
 #!/bin/bash
 export dep=`echo $1 | sed -e 's/use_//' | sed -e 's/.test//'`
-rm lib$dep.a 2>&1 > /dev/null
 echo Compiling $dep.chpl
 $3 --library --static $dep.chpl -o lib$dep
