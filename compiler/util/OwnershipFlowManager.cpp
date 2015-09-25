@@ -709,94 +709,85 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
                                           Symbol*   rvv,
                                           bool      rvvIsOwned)
 {
-  if (isSimpleAssignment(call) == true)
-    autoCopyForSimpleAssignment(call, prod, live, cons, rvv, rvvIsOwned);
+  bool isMove   = call->isPrimitive(PRIM_MOVE);
+  bool isAssign = call->isPrimitive(PRIM_ASSIGN);
 
-  else if (isMoveToRvvFromPrimop(call, rvv)  == true)
-    autoCopyForMoveToRvvFromPrimop(call);
-
-  else
-    autoCopyWalkSymExprs(call, prod, live, cons, rvv);
-}
-
-bool OwnershipFlowManager::isSimpleAssignment(CallExpr* call) const
-{
-  bool retval = false;
-
-  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+  if (isMove == true || isAssign == true)
   {
-    INT_ASSERT(isSymExpr(call->get(1)));
+    SymExpr* lhse = toSymExpr(call->get(1));
 
-    retval = isSymExpr(call->get(2));
-  }
+    INT_ASSERT(lhse);
 
-  return retval;
-}
-
-// If the RHS is a call to a function, no autocopy is needed because calls
-// are uniformly treated as returning an owned value.  If the thing being
-// copied into the RVV is owned, we don't need to insert an autoCopy.
-// But that still leaves the case where a CallExpr on the RHS returns
-// something that is unowned.
-bool OwnershipFlowManager::isMoveToRvvFromPrimop(CallExpr* call,
-                                                 Symbol*   rvv) const
-{
-  bool retval = false;
-
-  if (call->isPrimitive(PRIM_MOVE) == true)
-  {
-    SymExpr*  lhse = toSymExpr(call->get(1));
-    CallExpr* rhs  = toCallExpr(call->get(2));
-
-    if (lhse != NULL && rhs != NULL)
-      retval = (lhse->var == rvv && rhs->isPrimitive() == true);
-  }
-
-  return retval;
-}
-
-void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
-                                                       BitVec*   prod,
-                                                       BitVec*   live,
-                                                       BitVec*   cons,
-                                                       Symbol*   rvv,
-                                                       bool      rvvIsOwned)
-{
-  SymExpr* lhse = toSymExpr(call->get(1));
-  SymExpr* rhse = toSymExpr(call->get(2));
-
-  if (isLocal(lhse) == true)
-  {
-    if (lhse->var                       == rvv   &&
-        rvvIsOwned                      == true  &&
-        _fn->hasFlag(FLAG_CONSTRUCTOR)  == false &&
-        _fn->hasFlag(FLAG_AUTO_COPY_FN) == false &&
-        _fn->hasFlag(FLAG_INIT_COPY_FN) == false)
+    if (isSymExpr(call->get(2)) == true)
     {
-      Symbol* rsym = rhse->var;
-
-      INT_ASSERT(call->isPrimitive(PRIM_MOVE));
-
-      if (isLocal(rsym) == true)
+      if (isLocal(lhse) == true)
       {
-        // The RHS is local.  We need an autocopy only if it is unowned.
-        size_t rindex = symbolIndex[rsym];
+        if (lhse->var == rvv && rvvIsOwned == true)
+          autoCopyToRvvFromSymExpr(call, prod, live, cons);
 
-        if (live->get(rindex) == false)
-          insertAutoCopy(rhse);
-      }
-      else
-      {
-        // The RHS is not local, so we need an autocopy.
-        insertAutoCopy(rhse);
+        processBitwiseCopy(call, prod, live, cons);
       }
     }
 
-    processBitwiseCopy(call, prod, live, cons);
+    else if (CallExpr* rhce = toCallExpr(call->get(2)))
+    {
+      if (lhse->var == rvv && isMove == true && rhce->isPrimitive() == true)
+      {
+        autoCopyToRvvFromPrimop(call);
+      }
+
+      else
+      {
+        if (lhse->var != rvv && isLocal(lhse) && isCreated(lhse))
+          processCreator(lhse, prod, live);
+
+        autoCopyForCallExpr(rhce, prod, live, cons, rvv);
+      }
+    }
+
+    else
+    {
+      INT_ASSERT(false);
+    }
+  }
+
+  else
+  {
+    autoCopyForCallExpr(call, prod, live, cons, rvv);
   }
 }
 
-void OwnershipFlowManager::autoCopyForMoveToRvvFromPrimop(CallExpr* call)
+void OwnershipFlowManager::autoCopyToRvvFromSymExpr(CallExpr* call,
+                                                    BitVec*   prod,
+                                                    BitVec*   live,
+                                                    BitVec*   cons)
+{
+  if (_fn->hasFlag(FLAG_CONSTRUCTOR)  == false &&
+      _fn->hasFlag(FLAG_AUTO_COPY_FN) == false &&
+      _fn->hasFlag(FLAG_INIT_COPY_FN) == false)
+  {
+    SymExpr* rhse = toSymExpr(call->get(2));
+    Symbol*  rsym = rhse->var;
+
+    INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+    if (isLocal(rsym) == true)
+    {
+      // The RHS is local.  We need an autocopy only if it is unowned.
+      size_t rindex = symbolIndex[rsym];
+
+      if (live->get(rindex) == false)
+        insertAutoCopy(rhse);
+    }
+    else
+    {
+      // The RHS is not local, so we need an autocopy.
+      insertAutoCopy(rhse);
+    }
+  }
+}
+
+void OwnershipFlowManager::autoCopyToRvvFromPrimop(CallExpr* call)
 {
   INT_ASSERT(call != NULL && call->isPrimitive(PRIM_MOVE));
 
@@ -820,11 +811,11 @@ void OwnershipFlowManager::autoCopyForMoveToRvvFromPrimop(CallExpr* call)
   }
 }
 
-void OwnershipFlowManager::autoCopyWalkSymExprs(CallExpr* call,
-                                                BitVec*   prod,
-                                                BitVec*   live,
-                                                BitVec*   cons,
-                                                Symbol*   rvv)
+void OwnershipFlowManager::autoCopyForCallExpr(CallExpr* call,
+                                               BitVec*   prod,
+                                               BitVec*   live,
+                                               BitVec*   cons,
+                                               Symbol*   rvv)
 {
   SymExprVector symExprs;
 
@@ -836,6 +827,7 @@ void OwnershipFlowManager::autoCopyWalkSymExprs(CallExpr* call,
     {
       if (isCreated(se))
       {
+        INT_ASSERT(false);
         processCreator(se, prod, live);
       }
 

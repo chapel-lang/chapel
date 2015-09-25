@@ -108,23 +108,18 @@ private:
                       Symbol*   rvv,
                       bool      rvvIsOwned);
 
-  bool isSimpleAssignment(CallExpr* call)                                const;
-  bool isMoveToRvvFromPrimop(CallExpr* call, Symbol* rvv)                const;
+  void autoCopyToRvvFromSymExpr(CallExpr* call,
+                                BitVec*   prod,
+                                BitVec*   live,
+                                BitVec*   cons);
 
-  void autoCopyForSimpleAssignment(CallExpr* call,
-                                   BitVec*   prod,
-                                   BitVec*   live,
-                                   BitVec*   cons,
-                                   Symbol*   rvv,
-                                   bool      rvvIsOwned);
+  void autoCopyToRvvFromPrimop(CallExpr* call);
 
-  void autoCopyForMoveToRvvFromPrimop(CallExpr* call);
-
-  void autoCopyWalkSymExprs(CallExpr* call,
-                            BitVec*   prod,
-                            BitVec*   live,
-                            BitVec*   cons,
-                            Symbol*   rvv);
+  void autoCopyForCallExpr(CallExpr* call,
+                           BitVec*   prod,
+                           BitVec*   live,
+                           BitVec*   cons,
+                           Symbol*   rvv);
 
   void insertAutoCopy(SymExpr* se);
 
