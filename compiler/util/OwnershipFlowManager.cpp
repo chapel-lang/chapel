@@ -823,32 +823,23 @@ void OwnershipFlowManager::autoCopyForCallExpr(CallExpr* call,
 
   for_vector(SymExpr, se, symExprs)
   {
-    if (se->var != rvv && isLocal(se) == true)
+    if (se->var != rvv && isLocal(se) == true && isConsumed(se) == true)
     {
-      if (isCreated(se))
+      size_t index = symbolIndex[se->var];
+
+      // If the live bit is set for this symbol, leave it as a move
+      // and transfer ownership.  Otherwise, insert an autoCopy.
+      if (live->get(index) == false)
       {
-        INT_ASSERT(false);
-        processCreator(se, prod, live);
+        insertAutoCopy(se);
+
+        // Set the bit in the PROD set to show that ownership is
+        // produced, but since it is consumed immediately, the state of
+        // OUT and the rest of the forward-flowed bitsets are unchanged.
+        prod->set(index);
       }
 
-      else if (isConsumed(se))
-      {
-        size_t index = symbolIndex[se->var];
-
-        // If the live bit is set for this symbol, leave it as a move
-        // and transfer ownership.  Otherwise, insert an autoCopy.
-        if (live->get(index) == false)
-        {
-          insertAutoCopy(se);
-
-          // Set the bit in the PROD set to show that ownership is
-          // produced, but since it is consumed immediately, the state of
-          // OUT and the rest of the forward-flowed bitsets are unchanged.
-          prod->set(index);
-        }
-
-        processConsumer(se, live, cons);
-      }
+      processConsumer(se, live, cons);
     }
   }
 }
