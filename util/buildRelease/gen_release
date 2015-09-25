@@ -39,7 +39,7 @@ if (exists($ENV{"CHPL_HOME"})) {
     $ENV{"CHPL_HOME"}=$chplhome;
 }
 
-print "CHPL_HOME is set to: $ENV{"CHPL_HOME"}\n";
+print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo and
 # just use $CHPL_HOME as the work space.
