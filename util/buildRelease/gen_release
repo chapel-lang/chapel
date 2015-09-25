@@ -34,6 +34,9 @@ if (exists($ENV{"CHPL_HOME"})) {
 } else {
     $script_dir = dirname($0);
     $chplhome = abs_path("$script_dir/../..");
+
+    # We set $CHPL_HOME because `make docs` depends on it
+    $ENV{"CHPL_HOME"}=$chplhome;
 }
 
 # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo and
