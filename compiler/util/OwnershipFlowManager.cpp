@@ -729,11 +729,11 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
       }
     }
 
-    else if (isCallExpr(call->get(2)) == true)
+    else if (CallExpr* rhce = toCallExpr(call->get(2)))
     {
-      if (isMove == true && isPrimopToRvv(call, rvv)  == true)
+      if (lhse->var == rvv && isMove == true && rhce->isPrimitive() == true)
       {
-        autoCopyForMoveToRvvFromPrimop(call);
+        autoCopyToRvvFromPrimop(call);
       }
 
       else
@@ -752,24 +752,6 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
   {
     autoCopyWalkSymExprs(call, prod, live, cons, rvv);
   }
-}
-
-// If the RHS is a call to a function, no autocopy is needed because calls
-// are uniformly treated as returning an owned value.  If the thing being
-// copied into the RVV is owned, we don't need to insert an autoCopy.
-// But that still leaves the case where a CallExpr on the RHS returns
-// something that is unowned.
-bool OwnershipFlowManager::isPrimopToRvv(CallExpr* call,
-                                         Symbol*   rvv) const
-{
-  SymExpr*  lhse   = toSymExpr(call->get(1));
-  CallExpr* rhs    = toCallExpr(call->get(2));
-  bool      retval = false;
-
-  if (lhse != NULL && rhs != NULL)
-    retval = (lhse->var == rvv && rhs->isPrimitive() == true);
-
-  return retval;
 }
 
 void OwnershipFlowManager::autoCopyToRvvFromSymExpr(CallExpr* call,
@@ -802,7 +784,7 @@ void OwnershipFlowManager::autoCopyToRvvFromSymExpr(CallExpr* call,
   }
 }
 
-void OwnershipFlowManager::autoCopyForMoveToRvvFromPrimop(CallExpr* call)
+void OwnershipFlowManager::autoCopyToRvvFromPrimop(CallExpr* call)
 {
   INT_ASSERT(call != NULL && call->isPrimitive(PRIM_MOVE));
 
