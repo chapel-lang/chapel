@@ -115,11 +115,11 @@ private:
 
   void autoCopyToRvvFromPrimop(CallExpr* call);
 
-  void autoCopyWalkSymExprs(CallExpr* call,
-                            BitVec*   prod,
-                            BitVec*   live,
-                            BitVec*   cons,
-                            Symbol*   rvv);
+  void autoCopyForCallExpr(CallExpr* call,
+                           BitVec*   prod,
+                           BitVec*   live,
+                           BitVec*   cons,
+                           Symbol*   rvv);
 
   void insertAutoCopy(SymExpr* se);
 

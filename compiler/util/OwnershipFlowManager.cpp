@@ -738,7 +738,10 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
 
       else
       {
-        autoCopyWalkSymExprs(call, prod, live, cons, rvv);
+        if (lhse->var != rvv && isLocal(lhse) && isCreated(lhse))
+          processCreator(lhse, prod, live);
+
+        autoCopyForCallExpr(rhce, prod, live, cons, rvv);
       }
     }
 
@@ -750,7 +753,7 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
 
   else
   {
-    autoCopyWalkSymExprs(call, prod, live, cons, rvv);
+    autoCopyForCallExpr(call, prod, live, cons, rvv);
   }
 }
 
@@ -808,11 +811,11 @@ void OwnershipFlowManager::autoCopyToRvvFromPrimop(CallExpr* call)
   }
 }
 
-void OwnershipFlowManager::autoCopyWalkSymExprs(CallExpr* call,
-                                                BitVec*   prod,
-                                                BitVec*   live,
-                                                BitVec*   cons,
-                                                Symbol*   rvv)
+void OwnershipFlowManager::autoCopyForCallExpr(CallExpr* call,
+                                               BitVec*   prod,
+                                               BitVec*   live,
+                                               BitVec*   cons,
+                                               Symbol*   rvv)
 {
   SymExprVector symExprs;
 
@@ -824,6 +827,7 @@ void OwnershipFlowManager::autoCopyWalkSymExprs(CallExpr* call,
     {
       if (isCreated(se))
       {
+        INT_ASSERT(false);
         processCreator(se, prod, live);
       }
 
