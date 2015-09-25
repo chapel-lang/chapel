@@ -35,11 +35,8 @@ if (exists($ENV{"CHPL_HOME"})) {
     $script_dir = dirname($0);
     $chplhome = abs_path("$script_dir/../..");
 
-    # We set $CHPL_HOME because `make docs` depends on it
-    $ENV{"CHPL_HOME"}=$chplhome;
 }
 
-print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo and
 # just use $CHPL_HOME as the work space.
@@ -162,14 +159,16 @@ if ($no_clone == 0) {
 
 
 chdir "$archive_dir";
+`source util/quickstart/setchplenv.sh`;
+print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
+exit 1;
 
 # Docs must be built first so we can get rid of any extra files (chpldoc) with
 # a clobber
 print "Building the docs...\n";
 # Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
 # existing because we haven't built the third-party libs
-$ENV{CHPL_COMM} = "none";
-SystemOrDie("make docs");
+SystemOrDie("make -j docs");
 SystemOrDie("mv doc/sphinx/build/html doc/release");
 SystemOrDie("make clobber");
 
