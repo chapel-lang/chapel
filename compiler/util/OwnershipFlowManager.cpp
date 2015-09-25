@@ -789,26 +789,20 @@ void OwnershipFlowManager::autoCopyToRvvFromSymExpr(CallExpr* call,
 
 void OwnershipFlowManager::autoCopyToRvvFromPrimop(CallExpr* call)
 {
-  INT_ASSERT(call != NULL && call->isPrimitive(PRIM_MOVE));
+  CallExpr*  rhs     = toCallExpr(call->get(2));
+  Expr*      stmt    = rhs->getStmtExpr();
 
-  if (CallExpr* rhs = toCallExpr(call->get(2)))
-  {
-    INT_ASSERT(rhs->isPrimitive());
+  SET_LINENO(stmt);
 
-    Expr* stmt = rhs->getStmtExpr();
+  VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
+  SymExpr*   rhse    = new SymExpr(callTmp);
 
-    SET_LINENO(stmt);
+  stmt->insertBefore(new DefExpr(callTmp));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
 
-    VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
-    SymExpr*   rhse    = new SymExpr(callTmp);
+  call->insertAtTail(rhse);
 
-    stmt->insertBefore(new DefExpr(callTmp));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
-
-    call->insertAtTail(rhse);
-
-    insertAutoCopy(rhse);
-  }
+  insertAutoCopy(rhse);
 }
 
 void OwnershipFlowManager::autoCopyForCallExpr(CallExpr* call,
