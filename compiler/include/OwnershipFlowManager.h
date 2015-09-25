@@ -110,12 +110,10 @@ private:
 
   bool isPrimopToRvv(CallExpr* call, Symbol* rvv)                        const;
 
-  void autoCopyForSimpleAssignment(CallExpr* call,
-                                   BitVec*   prod,
-                                   BitVec*   live,
-                                   BitVec*   cons,
-                                   Symbol*   rvv,
-                                   bool      rvvIsOwned);
+  void autoCopyToRvvFromSymExpr(CallExpr* call,
+                                BitVec*   prod,
+                                BitVec*   live,
+                                BitVec*   cons);
 
   void autoCopyForMoveToRvvFromPrimop(CallExpr* call);
 

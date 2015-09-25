@@ -720,7 +720,13 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
 
     if (isSymExpr(call->get(2)) == true)
     {
-      autoCopyForSimpleAssignment(call, prod, live, cons, rvv, rvvIsOwned);
+      if (isLocal(lhse) == true)
+      {
+        if (lhse->var == rvv && rvvIsOwned == true)
+          autoCopyToRvvFromSymExpr(call, prod, live, cons);
+
+        processBitwiseCopy(call, prod, live, cons);
+      }
     }
 
     else if (isCallExpr(call->get(2)) == true)
@@ -766,44 +772,33 @@ bool OwnershipFlowManager::isPrimopToRvv(CallExpr* call,
   return retval;
 }
 
-void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
-                                                       BitVec*   prod,
-                                                       BitVec*   live,
-                                                       BitVec*   cons,
-                                                       Symbol*   rvv,
-                                                       bool      rvvIsOwned)
+void OwnershipFlowManager::autoCopyToRvvFromSymExpr(CallExpr* call,
+                                                    BitVec*   prod,
+                                                    BitVec*   live,
+                                                    BitVec*   cons)
 {
-  SymExpr* lhse = toSymExpr(call->get(1));
-  SymExpr* rhse = toSymExpr(call->get(2));
-
-  if (isLocal(lhse) == true)
+  if (_fn->hasFlag(FLAG_CONSTRUCTOR)  == false &&
+      _fn->hasFlag(FLAG_AUTO_COPY_FN) == false &&
+      _fn->hasFlag(FLAG_INIT_COPY_FN) == false)
   {
-    if (lhse->var                       == rvv   &&
-        rvvIsOwned                      == true  &&
-        _fn->hasFlag(FLAG_CONSTRUCTOR)  == false &&
-        _fn->hasFlag(FLAG_AUTO_COPY_FN) == false &&
-        _fn->hasFlag(FLAG_INIT_COPY_FN) == false)
+    SymExpr* rhse = toSymExpr(call->get(2));
+    Symbol*  rsym = rhse->var;
+
+    INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+    if (isLocal(rsym) == true)
     {
-      Symbol* rsym = rhse->var;
+      // The RHS is local.  We need an autocopy only if it is unowned.
+      size_t rindex = symbolIndex[rsym];
 
-      INT_ASSERT(call->isPrimitive(PRIM_MOVE));
-
-      if (isLocal(rsym) == true)
-      {
-        // The RHS is local.  We need an autocopy only if it is unowned.
-        size_t rindex = symbolIndex[rsym];
-
-        if (live->get(rindex) == false)
-          insertAutoCopy(rhse);
-      }
-      else
-      {
-        // The RHS is not local, so we need an autocopy.
+      if (live->get(rindex) == false)
         insertAutoCopy(rhse);
-      }
     }
-
-    processBitwiseCopy(call, prod, live, cons);
+    else
+    {
+      // The RHS is not local, so we need an autocopy.
+      insertAutoCopy(rhse);
+    }
   }
 }
 
