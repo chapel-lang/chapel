@@ -714,19 +714,31 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
 
   if (isMove == true || isAssign == true)
   {
-    if (isSimpleAssignment(call) == true)
+    SymExpr* lhse = toSymExpr(call->get(1));
+
+    INT_ASSERT(lhse);
+
+    if (isSymExpr(call->get(2)) == true)
     {
       autoCopyForSimpleAssignment(call, prod, live, cons, rvv, rvvIsOwned);
     }
 
-    else if (isMove == true && isPrimopToRvv(call, rvv)  == true)
+    else if (isCallExpr(call->get(2)) == true)
     {
-      autoCopyForMoveToRvvFromPrimop(call);
+      if (isMove == true && isPrimopToRvv(call, rvv)  == true)
+      {
+        autoCopyForMoveToRvvFromPrimop(call);
+      }
+
+      else
+      {
+        autoCopyWalkSymExprs(call, prod, live, cons, rvv);
+      }
     }
 
     else
     {
-      autoCopyWalkSymExprs(call, prod, live, cons, rvv);
+      INT_ASSERT(false);
     }
   }
 
@@ -734,15 +746,6 @@ void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
   {
     autoCopyWalkSymExprs(call, prod, live, cons, rvv);
   }
-}
-
-bool OwnershipFlowManager::isSimpleAssignment(CallExpr* call) const
-{
-  bool retval = false;
-
-  INT_ASSERT(isSymExpr(call->get(1)));
-
-  return isSymExpr(call->get(2));
 }
 
 // If the RHS is a call to a function, no autocopy is needed because calls

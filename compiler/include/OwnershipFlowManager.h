@@ -108,7 +108,6 @@ private:
                       Symbol*   rvv,
                       bool      rvvIsOwned);
 
-  bool isSimpleAssignment(CallExpr* call)                                const;
   bool isPrimopToRvv(CallExpr* call, Symbol* rvv)                        const;
 
   void autoCopyForSimpleAssignment(CallExpr* call,
