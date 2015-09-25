@@ -165,8 +165,8 @@ chdir "$archive_dir";
 print "Building the docs...\n";
 # Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
 # existing because we haven't built the third-party libs
-$ENV{CHPL_HOME} = "$archive_dir";
-$ENV{CHPL_COMM} = "none";
+$ENV{'CHPL_HOME'} = "$archive_dir";
+$ENV{'CHPL_COMM'} = "none";
 print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 SystemOrDie("make -j docs");
