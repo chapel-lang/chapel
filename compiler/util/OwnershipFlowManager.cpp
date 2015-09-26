@@ -789,26 +789,20 @@ void OwnershipFlowManager::autoCopyToRvvFromSymExpr(CallExpr* call,
 
 void OwnershipFlowManager::autoCopyToRvvFromPrimop(CallExpr* call)
 {
-  INT_ASSERT(call != NULL && call->isPrimitive(PRIM_MOVE));
+  CallExpr*  rhs     = toCallExpr(call->get(2));
+  Expr*      stmt    = rhs->getStmtExpr();
 
-  if (CallExpr* rhs = toCallExpr(call->get(2)))
-  {
-    INT_ASSERT(rhs->isPrimitive());
+  SET_LINENO(stmt);
 
-    Expr* stmt = rhs->getStmtExpr();
+  VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
+  SymExpr*   rhse    = new SymExpr(callTmp);
 
-    SET_LINENO(stmt);
+  stmt->insertBefore(new DefExpr(callTmp));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
 
-    VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
-    SymExpr*   rhse    = new SymExpr(callTmp);
+  call->insertAtTail(rhse);
 
-    stmt->insertBefore(new DefExpr(callTmp));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
-
-    call->insertAtTail(rhse);
-
-    insertAutoCopy(rhse);
-  }
+  insertAutoCopy(rhse);
 }
 
 void OwnershipFlowManager::autoCopyForCallExpr(CallExpr* call,
@@ -823,32 +817,23 @@ void OwnershipFlowManager::autoCopyForCallExpr(CallExpr* call,
 
   for_vector(SymExpr, se, symExprs)
   {
-    if (se->var != rvv && isLocal(se) == true)
+    if (se->var != rvv && isLocal(se) == true && isConsumed(se) == true)
     {
-      if (isCreated(se))
+      size_t index = symbolIndex[se->var];
+
+      // If the live bit is set for this symbol, leave it as a move
+      // and transfer ownership.  Otherwise, insert an autoCopy.
+      if (live->get(index) == false)
       {
-        INT_ASSERT(false);
-        processCreator(se, prod, live);
+        insertAutoCopy(se);
+
+        // Set the bit in the PROD set to show that ownership is
+        // produced, but since it is consumed immediately, the state of
+        // OUT and the rest of the forward-flowed bitsets are unchanged.
+        prod->set(index);
       }
 
-      else if (isConsumed(se))
-      {
-        size_t index = symbolIndex[se->var];
-
-        // If the live bit is set for this symbol, leave it as a move
-        // and transfer ownership.  Otherwise, insert an autoCopy.
-        if (live->get(index) == false)
-        {
-          insertAutoCopy(se);
-
-          // Set the bit in the PROD set to show that ownership is
-          // produced, but since it is consumed immediately, the state of
-          // OUT and the rest of the forward-flowed bitsets are unchanged.
-          prod->set(index);
-        }
-
-        processConsumer(se, live, cons);
-      }
+      processConsumer(se, live, cons);
     }
   }
 }
