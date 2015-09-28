@@ -268,7 +268,6 @@ TYPE_EXTERN Type* dtObject;
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
-TYPE_EXTERN std::map<Type*, Type*> wideToNarrowRefMap; // reference of wide class to reference of narrow class
 
 void     initRootModule();
 void     initPrimitiveTypes();
@@ -298,6 +297,7 @@ bool isRefCountedType(Type* t);
 bool isRecordWrappedType(Type* t);
 bool isSyncType(Type* t);
 bool isAtomicType(Type* t);
+bool isRefIterType(Type* t);
 
 bool isSubClass(Type* type, Type* baseType);
 bool isDistClass(Type* type);

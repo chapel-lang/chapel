@@ -9,7 +9,7 @@ iter myiter() {
 
 iter myiter(param tag) where tag == iterKind.standalone && allowStandalone {
   writeln("Standalone");
-//not implemented:  yield 100;
+  yield 100;
   cobegin {
     {
       yield 222;

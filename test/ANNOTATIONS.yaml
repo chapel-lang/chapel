@@ -61,6 +61,28 @@ all:
   02/12/15:
     - text: zombie process on chap04 was causing noise
       config: chap04
+  07/19/15:
+    - new 1-pass implementation of widening
+  08/13/15:
+    - text: remove restriction of soft-threads to 16 only
+      config: 16 node XC
+  08/18/15:
+    - fix task counting for coforall+on
+  08/26/15:
+    - text: re-enable optimization of op= in local blocks
+      config: 16 node XC
+  09/01/15:
+    - parallel array initialization
+  09/02/15:
+    - malloc vs. calloc
+  09/07/15:
+    - domains of formal array args no longer mean reindex
+  09/08/15:
+    - text: localization optimization for endcounts
+      config: 16 node XC
+  09/09/15:
+    - text: ubuntu update to 15.04 (gcc upgraded to 4.9.2)
+      config: shootout
 
 AllCompTime:
   11/09/14:
@@ -148,6 +170,8 @@ is:
     - added -E to tests which would benefit from it
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
+  05/21/15:
+    - set dataParTasksPerLocale to 2 to avoid occasional validation failure
 
 jacobi:
   03/07/14:
@@ -200,6 +224,12 @@ memleaks:
     - Enabled GMP in nightly testing, allowing pidigits to run in memory leaks
   07/09/14:
     - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
+  05/04/15:
+    - Changed tracking of internal memory descriptor types
+  05/20/15:
+    - Closed sync/single leaks
+  06/05/15:
+    - Nikhil's k-d tests added to repository
 
 memleaksfull:
   07/08/14:
@@ -238,6 +268,10 @@ parOpEquals:
 regexdna:
   10/07/14:
     - Add c_string_copy type
+
+revcomp:
+  05/11/15:
+    - various qio changes motivated by cygwin failures (#1943)
 
 spectralnorm:
   01/21/15:

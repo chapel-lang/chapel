@@ -7,6 +7,12 @@ use File::Path qw(mkpath);
 use File::Spec;
 use File::Temp qw/ tempdir /;
 
+sub SystemOrDie{
+  if (system(shift) != 0) {
+    die "Command failed with error code: $?";
+  }
+}
+
 $version = "";
 
 while (@ARGV) {
@@ -28,7 +34,9 @@ if (exists($ENV{"CHPL_HOME"})) {
 } else {
     $script_dir = dirname($0);
     $chplhome = abs_path("$script_dir/../..");
+
 }
+
 
 # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo and
 # just use $CHPL_HOME as the work space.
@@ -106,7 +114,7 @@ if ($no_clone == 0) {
        "LICENSE.chapel",
        "Makefile",
        "PERFORMANCE",
-       "README",
+       "README.rst",
        "README.files",
        "STATUS",
        "compiler/passes/reservedSymbolNames",
@@ -145,49 +153,63 @@ if ($no_clone == 0) {
     "util/chplenv",
     "util/config",
     "util/quickstart",
-    "util/test"
+    "util/test",
+    "tools"
 );
 
 
 chdir "$archive_dir";
 
+# Docs must be built first so we can get rid of any extra files (chpldoc) with
+# a clobber
+print "Building the docs...\n";
+# Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
+# existing because we haven't built the third-party libs
+$ENV{'CHPL_HOME'} = "$archive_dir";
+$ENV{'CHPL_COMM'} = "none";
+print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
+
+SystemOrDie("make -j docs");
+SystemOrDie("mv doc/sphinx/build/html doc/release");
+SystemOrDie("make clobber");
+
 print "Creating the examples directory...\n";
-system("cp -r test/release/examples .");
-system("cd util && cp start_test ../examples/");
-system("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
+SystemOrDie("cp -r test/release/examples .");
+SystemOrDie("cd util && cp start_test ../examples/");
+SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
 
 print "Building the man pages...\n";
-system("make man");
-system("make man-chpldoc");
+SystemOrDie("make man");
+SystemOrDie("make man-chpldoc");
 
 print "Building the STATUS file...\n";
-system("make STATUS");
+SystemOrDie("make STATUS");
 
 print "Creating the docs directory...\n";
-system("mv doc doctmp");
-system("mv doctmp/release doc");
-system("rm -r doctmp");
+SystemOrDie("mv doc doctmp");
+SystemOrDie("mv doctmp/release doc");
+SystemOrDie("rm -r doctmp");
 
 print "Removing Makefiles that are not intended for release...\n";
-system("cd make/platform && rm Makefile.sunos_old");
+SystemOrDie("cd make/platform && rm Makefile.sunos_old");
 
 print "Removing compiler directories that are not intended for release...\n";
-system("cd compiler/include && rm -r sunos_old");
+SystemOrDie("cd compiler/include && rm -r sunos_old");
 
 print "Removing runtime directories that are not ready for release...\n";
-system("cd runtime/src/launch && rm -r dummy");
-system("cd runtime/src/launch && rm -r mpirun");
-system("cd runtime/include && rm -r sunos_old");
-system("cd third-party && rm -rf txt2man");
+SystemOrDie("cd runtime/src/launch && rm -r dummy");
+SystemOrDie("cd runtime/src/launch && rm -r mpirun");
+SystemOrDie("cd runtime/include && rm -r sunos_old");
+SystemOrDie("cd third-party && rm -rf txt2man");
 
 print "Removing third-party directories that are not intended for release...\n";
-system("cd third-party && rm *.devel*");
+SystemOrDie("cd third-party && rm *.devel*");
 
 chdir "$rootdir";
 
 print "Chmodding the hierarchy\n";
-system("chmod -R ugo+rX $reldir");
-system("chmod -R go-w $reldir");
+SystemOrDie("chmod -R ugo+rX $reldir");
+SystemOrDie("chmod -R go-w $reldir");
 
 foreach $file (@files) {
     $dfile = "$reldir/$file";

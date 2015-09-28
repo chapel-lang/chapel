@@ -151,13 +151,15 @@ on               return processToken(yyscanner, TON);
 otherwise        return processToken(yyscanner, TOTHERWISE);
 out              return processToken(yyscanner, TOUT);
 param            return processToken(yyscanner, TPARAM);
-zip              return processToken(yyscanner, TZIP);
 pragma           return processToken(yyscanner, TPRAGMA);
 __primitive      return processToken(yyscanner, TPRIMITIVE);
+private          return processToken(yyscanner, TPRIVATE);
 proc             return processToken(yyscanner, TPROC);
+public           return processToken(yyscanner, TPUBLIC);
 record           return processToken(yyscanner, TRECORD);
 reduce           return processToken(yyscanner, TREDUCE);
 ref              return processToken(yyscanner, TREF);
+require          return processToken(yyscanner, TREQUIRE);
 return           return processToken(yyscanner, TRETURN);
 scan             return processToken(yyscanner, TSCAN);
 select           return processToken(yyscanner, TSELECT);
@@ -176,6 +178,7 @@ where            return processToken(yyscanner, TWHERE);
 while            return processToken(yyscanner, TWHILE);
 with             return processToken(yyscanner, TWITH);
 yield            return processToken(yyscanner, TYIELD);
+zip              return processToken(yyscanner, TZIP);
 
 "_"              return processToken(yyscanner, TUNDERSCORE);
 

@@ -1,0 +1,2 @@
+passSubClassByRef.chpl:6: error: unresolved call 'foo(C)'
+passSubClassByRef.chpl:3: note: candidates are: foo(ref obj: object)

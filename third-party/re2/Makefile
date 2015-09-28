@@ -21,8 +21,6 @@ CHPL_RE2_CXXFLAGS=-mmic
 endif
 endif
 
-RE2_UNPACKED_DIR = $(RE2_SUBDIR)
-
 default: all
 
 all: re2
@@ -34,15 +32,12 @@ cleanall: FORCE
 	rm -rf build
 
 clobber: FORCE
-	rm -rf build install re2
+	rm -rf build install
 
 $(RE2_BUILD_SUBDIR):
 	mkdir -p $@
 
-$(RE2_UNPACKED_DIR):
-	if [ ! -d re2 ]; then ./unpack-re2.sh; fi
-
-$(RE2_H_FILE): $(RE2_BUILD_SUBDIR) $(RE2_UNPACKED_DIR)
+$(RE2_H_FILE): $(RE2_BUILD_SUBDIR)
 	cd re2 && \
 	$(MAKE) clean && \
 	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' obj/libre2.a && \

@@ -4054,6 +4054,11 @@ GenRet CallExpr::codegen() {
             codegenAssign(
                 get(1), codegenAddrOf(codegenFieldPtr(call->get(1), se))); 
           }
+          else if (get(1)->getValType() != call->get(2)->typeInfo()) {
+            // get a narrow reference to the actual 'addr' field of the wide pointer
+            GenRet getField = codegenFieldPtr(call->get(1), se);
+            codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR)));
+          }
           else
             handled = false;
           break;
@@ -4067,6 +4072,10 @@ GenRet CallExpr::codegen() {
             INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
             elemPtr = codegenAddrOf(elemPtr);
             codegenAssign(get(1), elemPtr);
+          }
+          else if (get(1)->getValType() != call->getValType()) {
+            GenRet getElem = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+            codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getElem, WIDE_GEP_ADDR)));
           }
           else
             handled = false;
@@ -4236,7 +4245,7 @@ GenRet CallExpr::codegen() {
             if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               // The source is a wide string.
               codegenCall("c_string_from_wide_string",
-                          dst, src, call->get(2), call->get(3));
+                          dst, src, info->lineno, info->filename);
             } else {
               codegenCall("c_string_from_string",
                           dst, src, call->get(2), call->get(3));
@@ -4280,8 +4289,16 @@ GenRet CallExpr::codegen() {
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        // get(1) = Raddr(get(2));
-        codegenAssign(get(1), codegenRaddr(get(2))); 
+        if (get(1)->getValType() != get(2)->getValType()) {
+          // ref_T = wide_ref_wide_T
+          GenRet narrowRef = codegenRaddr(get(2));
+          GenRet wideThing = codegenDeref(narrowRef);
+          GenRet narrowThing = codegenWideThingField(wideThing, WIDE_GEP_ADDR);
+          codegenAssign(get(1), codegenAddrOf(narrowThing));
+        } else {
+          // get(1) = Raddr(get(2));
+          codegenAssign(get(1), codegenRaddr(get(2)));
+        }
         break;
       }
       if (!get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
@@ -5540,14 +5557,7 @@ GenRet CallExpr::codegen() {
     AggregateType *bundledArgsType = toAggregateType(toSymExpr(get(1))->typeInfo());
     int endCountField = 0;
     for (int i = 1; i <= bundledArgsType->fields.length; i++) {
-      if (!strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                  "_ref(_EndCount)")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "__wide__ref__EndCount")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "_EndCount")
-          || !strcmp(bundledArgsType->getField(i)->typeInfo()->symbol->name,
-                     "__wide__EndCount")) {
+      if (strstr(bundledArgsType->getField(i)->typeInfo()->symbol->name, "_EndCount") != NULL) {
         // Turns out there can be more than one such field. See e.g.
         //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
         // INT_ASSERT(endCountField == 0);

@@ -321,17 +321,12 @@ module Curl {
 pragma "no doc"
 extern type chpl_slist;
 
-pragma "no doc"
-extern proc chpl_curl_set_opt(fl:qio_file_ptr_t, opt:c_int, arg...):syserr;
-pragma "no doc"
-extern proc chpl_curl_perform(fl:qio_file_ptr_t):syserr;
-pragma "no doc"
-extern proc chpl_curl_slist_append(ref list:chpl_slist, str:c_string):syserr;
-pragma "no doc"
-extern proc chpl_curl_slist_free(list:chpl_slist);
+private extern proc chpl_curl_set_opt(fl:qio_file_ptr_t, opt:c_int, arg...):syserr;
+private extern proc chpl_curl_perform(fl:qio_file_ptr_t):syserr;
+private extern proc chpl_curl_slist_append(ref list:chpl_slist, str:c_string):syserr;
+private extern proc chpl_curl_slist_free(list:chpl_slist);
 
-pragma "no doc"
-extern const CHPL_CURL_SLIST_NULL:chpl_slist;
+private extern const CHPL_CURL_SLIST_NULL:chpl_slist;
 
 /* This function is the equivalent to the 
    `curl_easy_setopt <http://curl.haxx.se/libcurl/c/curl_easy_setopt.html>`_

@@ -52,18 +52,16 @@ var m32: imag(32);
 var m64: imag(64);
 var z64: complex(64);
 var z128: complex(128);
-var str: string;
+/* no strings for now */
 var enm: EnumType;
-var rec1: RecordSmall;
-var rec2: RecordLarge;
+/* no records for now */
+/* no unions for now */
 var cls: ClassType;
-var unn: UnionType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-str = "."; // patch up
 // Verify that an error is reported when assigning to a would-be global.
 // This needs #include "support-decls.cpp" and #include "var-decls.cpp".
 // Can be placed in any scope.
@@ -88,12 +86,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -121,12 +118,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -154,12 +150,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;

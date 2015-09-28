@@ -1,9 +1,0 @@
-bug: compiler segfault override/overload
-
-Non-deterministic compiler seg faults when compiling this program.
-
-9/11/14 (sungeun): This doesn't seg fault all the time.  The seg fault
-is in add_internal() of the Vec class called from
-compute_call_sites(), but I've seen it happen during inlineFunctions
-as well as removeUnnecessaryAutoCopyCalls.
-

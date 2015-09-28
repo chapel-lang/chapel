@@ -21,6 +21,7 @@
 //
 
 module ChapelBase {
+  // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
 
@@ -738,20 +739,68 @@ module ChapelBase {
     __primitive("chpl_exit_any", status);
   }
   
+  config param parallelInitElts=true;
   proc init_elts(x, s, type t) {
-    for i in 1..s {
-      //
-      // Q: why is the following declaration of 'y' in the loop?
-      //
-      // A: so that if the element type is something like an array,
-      // the element can 'steal' the array rather than copying it.
-      // One effect of having it in the loop is that the reference
-      // count for an array element's domain gets bumped once per
-      // element.  Is this good, bad, necessary?  Unclear.
-      //
-      pragma "no auto destroy" var y: t;  
-      __primitive("array_set_first", x, i-1, y);
+    //
+    // Q: why is the declaration of 'y' in the following loops?
+    //
+    // A: so that if the element type is something like an array,
+    // the element can 'steal' the array rather than copying it.
+    // One effect of having it in the loop is that the reference
+    // count for an array element's domain gets bumped once per
+    // element.  Is this good, bad, necessary?  Unclear.
+    //
+
+    //
+    // Heuristically determine if we should do parallel initialization. The
+    // current heuristic really just checks that we have a numeric array that's
+    // at least 2MB. This value was chosen experimentally: Any smaller and the
+    // cost of a forall (mostly the task creation) outweighs the benefit of
+    // using multiple tasks. This was tested on a 2 core laptop, 8 core
+    // workstation, and 24 core XC40.
+    //
+    // Ideally we want to be able to do parallel initialization for all types,
+    // but we're currently blocked by an issue with arrays of arrays and thus
+    // arrays of aggregate types where at one field is an array. The issue is
+    // basically that an array's domain stores a linked list of all its arrays
+    // and removal becomes expensive when addition and removal occur in
+    // different orders. We don't currently have a good way to check if an
+    // aggregate type contains arrays, so we limit parallel init to numeric
+    // types.
+    //
+    // Long term we probably want to store the domain's arrays as an
+    // associative domain or some data structure with < log(n) find/add/remove
+    // times. Currently we can't do that because the domain's arrays are part
+    // of the base domain, so we have a circular reference. As a stepping
+    // stone, we could do parallel init for plain old data (POD) types.
+    //
+
+    if parallelInitElts && isNumericType(t) {
+
+      param elemsizeInBytes = numBytes(t);
+      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+      param heuristicThresh = 2 * 1024 * 1024;
+      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+
+      if heuristicWantsPar && here != dummyLocale {
+        forall i in 1..s {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i-1, y);
+        }
+
+      } else {
+        for i in 1..s {
+          pragma "no auto destroy" var y: t;
+          __primitive("array_set_first", x, i-1, y);
+        }
+      }
+    } else {
+      for i in 1..s {
+        pragma "no auto destroy" var y: t;
+        __primitive("array_set_first", x, i-1, y);
+      }
     }
+
   }
   
   // dynamic data block class
@@ -851,12 +900,13 @@ module ChapelBase {
   //
   
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
-  type taskCntType = if useAtomicTaskCnt then atomic int
-                                         else int;
+
   pragma "no default functions"
   class _EndCount {
-    var i: atomic int,
-        taskCnt: taskCntType,
+    type iType;
+    type taskType;
+    var i: iType,
+        taskCnt: taskType,
         taskList: _task_list = _defaultOf(_task_list);
   }
   
@@ -864,10 +914,25 @@ module ChapelBase {
   // statement needed, because the task should be running on the same
   // locale as the sync/cofall/cobegin was initiated on and thus the
   // same locale on which the object is allocated.
+  //
+  // TODO: 'taskCnt' can sometimes be local even if 'i' has to be remote.
+  // It is currently believed that only a remote-begin will want a network
+  // atomic 'taskCnt'. There should be a separate argument to control the type
+  // of 'taskCnt'.
   pragma "dont disable remote value forwarding"
-  inline proc _endCountAlloc() {
-    return new _EndCount();
+  inline proc _endCountAlloc(param forceLocalTypes : bool) {
+    type taskCntType = if !forceLocalTypes && useAtomicTaskCnt then atomic int
+                                           else int;
+    if forceLocalTypes {
+      return new _EndCount(chpl__processorAtomicType(int), taskCntType);
+    } else {
+      return new _EndCount(chpl__atomicType(int), taskCntType);
+    }
   }
+
+  // Compiler looks for this variable to determine the return type of
+  // the "get end count" primitive.
+  type _remoteEndCountType = _endCountAlloc(false).type;
   
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
@@ -881,8 +946,8 @@ module ChapelBase {
   // statement needed.
   pragma "dont disable remote value forwarding"
   pragma "no remote memory fence"
-  proc _upEndCount(e: _EndCount) {
-    if useAtomicTaskCnt {
+  proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
+    if isAtomic(e.taskCnt) {
       e.i.add(1, memory_order_release);
       e.taskCnt.add(1, memory_order_release);
     } else {
@@ -895,7 +960,9 @@ module ChapelBase {
         e.taskCnt += 1;
       }
     }
-    here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
+    if countRunningTasks {
+      here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
+    }
   }
   
   // This function is called once by each newly initiated task.  No on
@@ -909,15 +976,26 @@ module ChapelBase {
   // This function is called once by the initiating task.  As above, no
   // on statement needed.
   pragma "dont disable remote value forwarding"
-  proc _waitEndCount(e: _EndCount) {
+  proc _waitEndCount(e: _EndCount, param countRunningTasks=true) {
     // See if we can help with any of the started tasks
     __primitive("execute tasks in list", e.taskList);
-  
+
+    // Remove the task that will just be waiting/yielding in the following
+    // waitFor() from the running task count to let others do real work. It is
+    // re-added after the waitFor().
+    here.runningTaskCntSub(1);
+
     // Wait for all tasks to finish
     e.i.waitFor(0, memory_order_acquire);
 
-    const taskDec = if useAtomicTaskCnt then e.taskCnt.read() else e.taskCnt;
-    here.runningTaskCntSub(taskDec);  // increment is in _upEndCount()
+    if countRunningTasks {
+      const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
+      // taskDec-1 to adjust for the task that was waiting for others to finish
+      here.runningTaskCntSub(taskDec-1);  // increment is in _upEndCount()
+    } else {
+      // re-add the task that was waiting for others to finish
+      here.runningTaskCntAdd(1);
+    }
   
     // It is now safe to free the task list, because we know that all the
     // tasks have been completed.  We could free this list when all the
@@ -930,9 +1008,9 @@ module ChapelBase {
     __primitive("free task list", e.taskList);
   }
   
-  proc _upEndCount() {
+  proc _upEndCount(param countRunningTasks=true) {
     var e = __primitive("get end count");
-    _upEndCount(e);
+    _upEndCount(e, countRunningTasks);
   }
   
   proc _downEndCount() {
@@ -940,9 +1018,9 @@ module ChapelBase {
     _downEndCount(e);
   }
   
-  proc _waitEndCount() {
+  proc _waitEndCount(param countRunningTasks=true) {
     var e = __primitive("get end count");
-    _waitEndCount(e);
+    _waitEndCount(e, countRunningTasks);
   }
   
   pragma "command line setting"
@@ -1079,10 +1157,6 @@ module ChapelBase {
     compilerError("illegal assignment of type to value");
   }
   
-  pragma "ref"
-  pragma "init copy fn"
-  inline proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("deref", r));
-  
   pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
@@ -1135,39 +1209,32 @@ module ChapelBase {
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
   
-  pragma "ref" 
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(r: _ref) ref return r;
-  
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
-  pragma "auto destroy fn" inline proc chpl__autoDestroy(x: object) { }
-  pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
-  pragma "auto destroy fn"
+  inline proc chpl__autoDestroy(x: object) { }
+  inline proc chpl__autoDestroy(type t)  { }
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
-  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: _distribution) {
+  proc chpl__autoDestroy(x: _distribution) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: domain) {
+  proc chpl__autoDestroy(x: domain) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
-  pragma "auto destroy fn" proc chpl__autoDestroy(x: []) {
+  proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
   
@@ -1553,6 +1620,8 @@ module ChapelBase {
   proc isUnionType(type t) param return __primitive("is union type", t);
 
   proc isAtomicType(type t) param return __primitive("is atomic type", t);
+
+  proc isRefIterType(type t) param return __primitive("is ref iter type", t);
   
   // These style element #s are used in the default Writer and Reader.
   // and in e.g. implementations of those in Tuple.
@@ -1575,5 +1644,64 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_CHPL:int;
   extern const QIO_TUPLE_FORMAT_SPACE:int;
   extern const QIO_TUPLE_FORMAT_JSON:int;
+
+  // What follows are the type _defaultOf methods, used to initialize types
+  // Booleans
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where (isBoolType(t)) return false:t;
+
+  // ints, reals, imags, complexes
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where (isIntegralType(t)) return 0:t;
+  // TODO: In order to make _defaultOf param for reals and imags we had to split
+  // the cases into their default size and a non-param case.  It is hoped that
+  // in the future, floating point numbers may be castable whilst param.  In that
+  // world, we can again shrink these calls into the size-ignorant case.
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where t == real return 0.0;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where (isRealType(t) && t != real) return 0.0:t;
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where t == imag return 0.0i;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where (isImagType(t) && t != imag) return 0.0i:t;
+  // Also, complexes cannot yet be parametized
+  pragma "no doc"
+  inline proc _defaultOf(type t): t where (isComplexType(t)) {
+    var ret:t = noinit;
+    param floatwidth = numBits(t)/2;
+    ret.re = 0.0:real(floatwidth);
+    ret.im = 0.0:real(floatwidth);
+    return ret;
+  }
+
+  // Enums
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where (isEnumType(t)) {
+    return chpl_enum_first(t);
+  }
+
+  // Classes
+  pragma "no doc"
+  inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
+
+  // Various types whose default value is known
+  pragma "no doc"
+  inline proc _defaultOf(type t) param where t: void return _void;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t == _task_list return _nullTaskList;
+
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t: _ddata
+    return __primitive("cast", t, nil);
+
+  // There used to be a catch-all _defaultOf that return nil:t, but that
+  // was the nexus of several tricky resolution bugs.
 
 }

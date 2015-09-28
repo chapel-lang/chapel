@@ -242,7 +242,7 @@ endif
 
 " Chapel extentions
 syn keyword chplStatement	goto break return continue compilerWarning delete noinit
-syn keyword chplStatement	new delete this these use module yield compilerError zip
+syn keyword chplStatement	new delete this these use require module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
 syn keyword chplStorageClass    const config export extern var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool
@@ -251,7 +251,7 @@ syn keyword chplType            locale sync atomic single dmapped
 syn keyword chplOperator	on reduce scan by
 syn keyword chplStructure	class record union enum
 syn keyword chplStructure	proc iter cobegin begin local sync let select where
-syn keyword chplStructure	pragma inline with
+syn keyword chplStructure	pragma inline with private public
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil

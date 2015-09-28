@@ -1,0 +1,3 @@
+innerBlockBad.chpl:3: warning: Private declarations within nested blocks are meaningless
+12
+13

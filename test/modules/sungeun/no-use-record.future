@@ -1,2 +1,13 @@
 bug: Cannot use a record type from another module without using the module.
 
+(2015-06-19)
+At this point in time, the _defaultOf() called on a type is a function.  This
+means that it is not visible when just accessing the record through a module
+accessor instead of a module use, so trying to initialize the record type fails
+to find it.
+
+There are several potential strategies to fix this, as suggested by Brad: one
+could move such _defaultOf() functions to some parent scope; one could have the
+_defaultOf() function for a module-qualified record name also be
+module-qualified; or one could make _defaultOf() functions into static methods
+on types.

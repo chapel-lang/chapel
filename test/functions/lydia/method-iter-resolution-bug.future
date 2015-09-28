@@ -1,0 +1,8 @@
+bug: resolution fails to find iterator from inside method of same name
+
+This seems to work just fine for functions and iterators, even if the function
+is in a nested block statement.  However, inside a method, function resolution
+gets confused and fails to match against anything: it knows the method is
+incorrect because it has the wrong number of arguments, but the external
+function doesn't have a method token and for some reason it expects it to do
+so.  I think this is a pre-existing bug.

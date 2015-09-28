@@ -2,6 +2,7 @@
 a.out
 a.out_real
 *.bak
+*~
 output
 gen
 *.ntoks
@@ -10,6 +11,8 @@ gen
 *.tmp
 TAGS
 tags
+*.DS_Store
+
 
 # Top level ignores.
 /BUILD_VERSION
@@ -18,7 +21,6 @@ tags
 /SVNLOG
 /.SVNLOG-revnum
 /bin
-/docs
 /lib
 /tar
 
@@ -38,6 +40,8 @@ tags
 # Doc ignores.
 /doc/**/*.aux
 /doc/**/*.log
+/doc/chips/html
+/doc/chips/tmp
 /doc/developer/compilerOverview/compiler.pdf
 /doc/developer/compilerOverview/compiler.dvi
 /doc/developer/compilerOverview/compiler.toc
@@ -50,6 +54,20 @@ tags
 /doc/tutorial/workbooks/*.dvi
 /doc/tutorial/workbooks/*.bbl
 /doc/tutorial/workbooks/*.blg
+/doc/sphinx/build
+/doc/sphinx/source/*.rst
+/doc/sphinx/source/platforms/*.rst
+/doc/sphinx/source/technotes/*.rst
+/doc/sphinx/source/usingchapel/*.rst
+/doc/sphinx/source/modules/standard
+/doc/sphinx/source/modules/dists
+/doc/sphinx/source/modules/layouts
+/doc/sphinx/source/modules/internal
+!/doc/sphinx/source/index.rst
+!/doc/sphinx/source/technotes/index.rst
+!/doc/sphinx/source/platforms/index.rst
+!/doc/sphinx/source/usingchapel/index.rst
+
 
 # Make ignores.
 /make/Chapel.xcodeproj/*.pbxuser
@@ -62,6 +80,7 @@ tags
 /modules/docs
 /modules/internal/tasks/muxed
 /modules/internal/threads/soft-threads
+/modules/webdocs
 
 # Runtime ignores.
 /runtime/etc/Makefile.comm-ugni
@@ -104,6 +123,13 @@ tags
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
+
+/test/chplvis/TREEvis
+/test/chplvis/benchmarks-hpcc/FFTvis
+/test/chplvis/benchmarks-hpcc/HPLvis
+/test/chplvis/benchmarks-hpcc/RAvis
+/test/chplvis/overhead/OH
+/test/chplvis/overhead/OH2
 
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
@@ -217,6 +243,7 @@ tags
 /test/execflags/shannon/configs/help/*.good
 /test/execflags/sungeun/about.good
 
+/test/exercises/Mandelbrot/mandelbrot.bmp
 /test/exercises/Mandelbrot/mandelbrot.ppm
 /test/exercises/Mandelbrot/solutions/mandelbrot.ppm
 
@@ -262,6 +289,8 @@ tags
 /test/modules/standard/FileSystem/lydia/exists/file
 /test/modules/standard/FileSystem/lydia/exists/file_link
 /test/modules/standard/FileSystem/lydia/exists/going_away
+/test/modules/standard/FileSystem/lydia/isLink/broken_dir_link
+/test/modules/standard/FileSystem/lydia/isLink/broken_file_link
 /test/modules/standard/FileSystem/lydia/isLink/my_dir
 /test/modules/standard/FileSystem/lydia/isLink/my_file
 /test/modules/standard/FileSystem/lydia/isLink/my_link_dir
@@ -321,8 +350,21 @@ tags
 /test/release/examples/primers/varargs
 /test/release/examples/primers/test.bin
 
+/test/release/examples/primers/chplvis/E1
+/test/release/examples/primers/chplvis/E2
+/test/release/examples/primers/chplvis/E3
+/test/release/examples/primers/chplvis/E4
+
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
+/test/runtime/kbrady/goodAllocSize.good
+
+test/separate_compilation/jturner/libclassextern2.so.a
+test/separate_compilation/jturner/libfcfunc.so.a
+test/separate_compilation/jturner/libiterator.so.a
+test/separate_compilation/jturner/libmethodextern2.so.a
+test/separate_compilation/jturner/libsimplefloat.so.a
+test/separate_compilation/jturner/libsubclass.so.a
 
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output
@@ -420,9 +462,22 @@ tags
 /third-party/gmp/gmp-6.0.0
 /third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
-/third-party/re2/re2
+/third-party/re2/re2/**/*.orig
+/third-party/re2/re2/core
+/third-party/re2/re2/obj
+/third-party/re2/re2/.git
+
 /third-party/qthread/qthread-1.10/autom4te.cache/
 /third-party/qthread/qthread-1.10/config.h.in
+
+/third-party/fltk/build.*
+/third-party/fltk/install.*
+
+# Tools ignores.
+
+/tools/chplvis/chplvis
+/tools/chplvis/chplvis.cxx
+/tools/chplvis/chplvis.h
 
 # Util ignores.
 /util/pastPerformance/ra.dat

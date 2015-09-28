@@ -129,7 +129,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   VarSymbol*   iterator      = newTemp("_iterator");
   CallExpr*    iterInit      = 0;
   CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(index, iterator, body);
+  ForLoop*     loop          = new ForLoop(index, iterator, body, zippered);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
@@ -190,14 +190,17 @@ ForLoop::ForLoop() : LoopStmt(0)
 {
   mIndex    = 0;
   mIterator = 0;
+  mZippered = false;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
-                 BlockStmt* initBody) : LoopStmt(initBody)
+                 BlockStmt* initBody,
+                 bool       zippered) : LoopStmt(initBody)
 {
   mIndex    = new SymExpr(index);
   mIterator = new SymExpr(iterator);
+  mZippered = zippered;
 }
 
 ForLoop::~ForLoop()
@@ -220,6 +223,7 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 
   retval->mIndex            = mIndex->copy(map, true),
   retval->mIterator         = mIterator->copy(map, true);
+  retval->mZippered         = mZippered;
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -275,6 +279,11 @@ SymExpr* ForLoop::indexGet() const
 SymExpr* ForLoop::iteratorGet() const
 {
   return mIterator;
+}
+
+bool ForLoop::zipperedGet() const
+{
+  return mZippered;
 }
 
 CallExpr* ForLoop::blockInfoGet() const

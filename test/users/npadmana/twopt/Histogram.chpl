@@ -1,5 +1,9 @@
 module Histogram {
 
+  // This allows us to turn off the atomic histogram add
+  // to test the overhead we're getting from it.
+  config param doHist = true;
+
   class UniformBins {
     param dim : int;
     var nbins : dim*int;
@@ -37,7 +41,11 @@ module Histogram {
 
       var pos : dim*int;
       for param ii in 1..dim do pos(ii) = ((x(ii)-lo(ii))*invdx[ii]) : int;
-      arr[pos].add(w);
+      if doHist then arr[pos].add(w);
+    }
+
+    proc set(ndx : dim*int, val : real) {
+      arr[ndx].write(val);
     }
 
     proc this(ndx) : real {
@@ -46,8 +54,7 @@ module Histogram {
 
   } // UniformBins
 
-  proc writeHist(fn : string, hh : UniformBins) {
-    var ff = openwriter(fn);
+  proc writeHist(ff : channel, hh : UniformBins, fmt : string = "%20.14er ") {
     // Dump out values
     for xx in hh.bins(1) do ff.writef("%12.4dr",xx); 
     ff.writeln();
@@ -55,11 +62,10 @@ module Histogram {
     ff.writeln("\n##");
     for ii in hh.Dhist.dim(1) {
       for jj in hh.Dhist.dim(2) {
-        ff.writef("%20.14er ",hh[(ii,jj)]);
+        ff.writef(fmt, hh[(ii,jj)]);
       }
       ff.writeln();
     }
-    ff.close();
   }
 
 

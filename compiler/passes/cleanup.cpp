@@ -157,8 +157,16 @@ static void flatten_primary_methods(FnSymbol* fn) {
     DefExpr* def = fn->defPoint;
     def->remove();
     insertPoint->insertBefore(def);
-    if (fn->userString && fn->name != ts->name)
-      fn->userString = astr(ts->name, ".", fn->userString);
+    if (fn->userString && fn->name != ts->name) {
+      if (strncmp(fn->userString, "ref ", 4) == 0) {
+        // fn->userString of "ref foo()"
+        // Move "ref " before the type name so we end up with "ref Type.foo()"
+        // instead of "Type.ref foo()"
+        fn->userString = astr("ref ", ts->name, ".", fn->userString+4);
+      } else {
+        fn->userString = astr(ts->name, ".", fn->userString);
+      }
+    }
     if (ts->hasFlag(FLAG_SYNC))
       fn->addFlag(FLAG_SYNC);
     if (ts->hasFlag(FLAG_SINGLE))

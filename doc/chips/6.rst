@@ -1,0 +1,201 @@
+Tuple Semantics
+===============
+
+Status
+  Draft
+
+Author
+  Vassily Litvinov, Chapel Team
+
+
+Abstract
+--------
+
+Tuples behave as records, with some fields being automatically 'ref' fields.
+The ref and const attributes of a field are consistent with return intents.
+
+
+Motivation
+----------
+
+Chapel makes use of tuples as a convenience for bundling several items
+together. This is done when passing them into and out of functions,
+variable-length argument lists, yielding from iterators, storing in
+variables and data structures.
+
+This CHIP defines the semantics of what tuples are.
+It is intended to add precision to certain parts
+of the spec and to settle some open questions.
+
+
+Rationale
+---------
+
+We had been considering two major options:
+
+* a tuple is a shorthand for writing down individual variables
+* a tuple is a shorthand for creating a record
+
+The key appeal of the "individual variables" option is
+the preservation of argument and return intents.
+E.g if A is an array, ``f((1,A));`` and ``return (1,A);``
+pass/return 1 by value and A by reference.
+
+The appeal of the "record" option is:
+
+* tuples are record-like in Rust, Swift, Fortress
+* (and also in Python, Ruby, Julia, although that's less interesting)
+* a few team members already had the mental model of tuples as records
+* grouping a few things together sounds like creating a record
+* the implementation had already treated tuples as records
+
+We decided to determine ref-ness of a tuple component
+based on the return intent for that component's type
+(see below),
+so that ``return (1,A);`` returns `A` by reference.
+The consequence of this is that ``var t = (1,A);``
+stores `A` by reference, which was preferred by
+a few team members.
+(`A` above is an array.)
+
+
+Tuples Behave As Records
+------------------------
+
+A tuple is implicitly a record.
+A tuple component is implicitly a field of that record.
+All definitions applicable to records apply to tuples as well,
+except as specified in this CHIP.
+
+Notation:
+
+* "tuple record" is such a record implicitly created for a tuple
+* "user record" is a user-defined (non-tuple) record
+* "record" refers to either a tuple record or a user record
+
+
+Determining Whether A Field Is Ref
+----------------------------------
+
+Given the type of a tuple component,
+the corresponding field of the tuple record is a `var` field
+when the default return intent for that type is "by value."
+Otherwise the default return intent is `ref` and
+the tuple record's field is a `ref` field.
+
+The default return intent is clarified in the following section.
+
+
+Default Return Intent
+---------------------
+
+This section clarifies the "Return Intents" section of the
+"Procedures" chapter of the spec.
+
+When a function's return intent is not specified explicitly,
+the function is said to have the "default" return intent.
+It is an abstract return intent. Depending on the return type,
+the corresonding concrete intent is either by value or `ref`.
+
+When the concrete intent is by value, the function returns
+an r-value. When the concrete intent is `ref`, it is equivalent
+to the explicit `ref` return intent and the subsection
+"The Ref Return Intent" applies.
+
+The following tables defines the concrete intent
+for the default return intent and a given return type.
+
+=======    ========
+type       intent
+=======    ========
+bool       by value
+int        by value
+uint       by value
+real       by value
+imag       by value
+complex    by value
+string     by value
+tuple      by value
+record     by value
+class      by value
+union      by value
+sync       `ref`
+single     `ref`
+atomic     `ref`
+dmap       `ref`
+domain     `ref`
+array      `ref`
+=======    ========
+
+This CHIP also re-opens this question.
+What is the concrete intent when the return intent is `const` and
+the return type is a domain, array, sync/single, atomic?
+E.g. by value, by const ref, ...?
+
+
+Argument Intents For Tuples
+---------------------------
+
+Argument intents for tuples are the same as for records.
+In particular, the default intent for tuples is `const`;
+Cray Chapel's `const` intent for tuples is `const ref`.
+
+This CHIP also clarifies the default behavior of
+constructing a copy of a record with a `ref` field.
+Namely, the corresponding field of the copy
+references the same variable as that field of the source.
+The contents of the referenced variable is not copied.
+
+Such a copy is constructed in the following cases,
+unless optimized away by the compiler:
+
+* declaring a variable or a field or (in the future) array element whose initialization expression is the source record
+
+* passing the source record into a function via an `in` or `const in` or `inout` argument
+
+* returning the source record from a function by value via a `return` or `yield` statement
+
+* returning the source record from a function via an `out` or `inout` argument
+
+
+Corner Cases and Open Issues
+----------------------------
+
+Records are stored in tuples by value. Modification
+of a tuple component does not affect the original record.
+For example:
+
+.. code-block:: chapel
+
+  var rec: MyRecord;
+  var tup = (rec,1);
+  tup(1) = ...;      // does not affect 'rec'
+
+By contrast, arrays are stored in tuples by reference.
+This is a change from the previously-implemented semantics.
+For example:
+
+.. code-block:: chapel
+
+  var Arr: [1..10] real;
+  var tup = (Arr,1);
+  tup(1) = tup(2);   // updates 'Arr'
+
+Consider a tuple type `T` for which the corresponding record type has
+`ref` field(s). The default value for such type `T` is *not* provided.
+An attempt to declare a variable `tup` of such a type
+without an initialization expression is a compile-time error.
+Our implementation will not implicitly provide another variable
+for this field of `tup` to reference.
+If this presents a significant user issue, we will look for solutions.
+
+Currently there is no way to create a tuple whose components:
+
+* reference variables of "by value" types like integers, or
+* are variables, not references to other variables", of "reference" types like arrays.
+
+Passing a tuple literal to a function by `ref` intent is an error.
+
+Assigning to a tuple with an array component results in copying
+into that component's array, not into re-aliasing that component
+to point to the RHS array.

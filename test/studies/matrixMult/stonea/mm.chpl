@@ -16,15 +16,15 @@
 
 use Random;
 
-proc dotProd(n : int, A : [1..n] int, B : [1..n] int) : int {
+proc dotProd(n : int, A : [] int, B : [] int) : int {
     return + reduce(A * B);
 }
 
 proc saxpy(
     n : int,
     alpha : int,
-    x : [1..n] int,
-    y : [1..n] int)
+    x : [] int,
+    y : [] int)
     :
     [1..n] int
 {
@@ -35,15 +35,15 @@ proc matrixMult_ijk(
     const m : int,
     const p : int,
     const n : int,
-    const A : [1..m, 1..p] int,
-    const B : [1..p, 1..n] int,
-    C : [1..m, 1..n] int)
+    const A : [?AD] int,
+    const B : [?BD] int,
+    C : [?CD] int)
 {
-    for i in 1..m {
-        for j in 1..n {
-            C[i,j] = 0;
-            for k in 1..p {
-                C[i,j] += A[i,k] * B[k,j];
+    for (ai,ci) in zip(AD.dim(1), CD.dim(1)) {
+        for (bj,cj) in zip(BD.dim(2), CD.dim(2)) {
+            C[ci,cj] = 0;
+            for (ak,bk) in zip(AD.dim(2),BD.dim(1)) {
+                C[ci,cj] += A[ai,ak] * B[bk,bj];
             }
         }
     }
@@ -53,13 +53,13 @@ proc matrixMult_ijk_clever(
     const m : int,
     const p : int,
     const n : int,
-    const A : [1..m, 1..p] int,
-    const B : [1..p, 1..n] int,
-    C : [1..m, 1..n] int)
+    const A : [?AD] int,
+    const B : [?BD] int,
+    C : [?CD] int)
 {
-    for i in 1..m {
-        for j in 1..n {
-            C[i,j] = dotProd(p, A[i,..], B[..,j]);
+    for (ai,ci) in zip(AD.dim(1), CD.dim(1)) {
+        for (bj,cj) in zip(BD.dim(2), CD.dim(2)) {
+            C[ci,cj] = dotProd(p, A[ai,..], B[..,bj]);
         }
     }
 }
@@ -68,15 +68,15 @@ proc matrixMult_kij_clever(
     const m : int,
     const p : int,
     const n : int,
-    const A : [1..m, 1..p] int,
-    const B : [1..p, 1..n] int,
-    C : [1..m, 1..n] int)
+    const A : [?AD] int,
+    const B : [?BD] int,
+    C : [?CD] int)
 {
     C = 0;
 
-    for k in 1..p {
-        for i in 1..m {
-            C[i,..] = saxpy(n, A[i,k], B[k,..], C[i,..]);
+    for (ak,bk) in zip(AD.dim(2), BD.dim(1)) {
+        for (ai,ci) in zip(AD.dim(1), CD.dim(1)) {
+            C[ci,..] = saxpy(n, A[ai,ak], B[bk,..], C[ci,..]);
         }
     }
 }
@@ -198,7 +198,7 @@ proc main() {
     checkMult("mult kij (with saxpy): ", C, D);
     C = 2;
 
-    matrixMult_tensored(m, p, n, A, B, C);
+    matrixMult_tensored(m, p, n, A.reindex({1..m, 1..p}), B.reindex({1..p, 1..n}), C.reindex({1..m, 1..n}));
     checkMult("mult tensored: ", C, D);
     C = 2;
 

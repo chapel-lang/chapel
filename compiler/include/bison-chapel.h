@@ -32,14 +32,14 @@
 
 /* "%code requires" blocks.  */
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 33 "chapel.ypp"
 
   extern int  captureTokens;
   extern char captureString[1024];
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 44 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
@@ -56,7 +56,7 @@
   #endif
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 63 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
@@ -110,7 +110,7 @@
   #endif
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 119 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
@@ -130,7 +130,7 @@
   #endif
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 141 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
@@ -161,7 +161,7 @@
 
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 166 "../include/bison-chapel.h"
 
 /* Tokens.  */
@@ -219,85 +219,88 @@
      TPLUSPLUS = 304,
      TPRAGMA = 305,
      TPRIMITIVE = 306,
-     TPROC = 307,
-     TRECORD = 308,
-     TREDUCE = 309,
-     TREF = 310,
-     TRETURN = 311,
-     TSCAN = 312,
-     TSELECT = 313,
-     TSERIAL = 314,
-     TSINGLE = 315,
-     TSPARSE = 316,
-     TSUBDOMAIN = 317,
-     TSYNC = 318,
-     TTHEN = 319,
-     TTYPE = 320,
-     TUNDERSCORE = 321,
-     TUNION = 322,
-     TUSE = 323,
-     TVAR = 324,
-     TWHEN = 325,
-     TWHERE = 326,
-     TWHILE = 327,
-     TWITH = 328,
-     TYIELD = 329,
-     TZIP = 330,
-     TALIAS = 331,
-     TAND = 332,
-     TASSIGN = 333,
-     TASSIGNBAND = 334,
-     TASSIGNBOR = 335,
-     TASSIGNBXOR = 336,
-     TASSIGNDIVIDE = 337,
-     TASSIGNEXP = 338,
-     TASSIGNLAND = 339,
-     TASSIGNLOR = 340,
-     TASSIGNMINUS = 341,
-     TASSIGNMOD = 342,
-     TASSIGNMULTIPLY = 343,
-     TASSIGNPLUS = 344,
-     TASSIGNSL = 345,
-     TASSIGNSR = 346,
-     TBAND = 347,
-     TBNOT = 348,
-     TBOR = 349,
-     TBXOR = 350,
-     TCOLON = 351,
-     TCOMMA = 352,
-     TDIVIDE = 353,
-     TDOT = 354,
-     TDOTDOT = 355,
-     TDOTDOTDOT = 356,
-     TEQUAL = 357,
-     TEXP = 358,
-     TGREATER = 359,
-     TGREATEREQUAL = 360,
-     THASH = 361,
-     TLESS = 362,
-     TLESSEQUAL = 363,
-     TMINUS = 364,
-     TMOD = 365,
-     TNOT = 366,
-     TNOTEQUAL = 367,
-     TOR = 368,
-     TPLUS = 369,
-     TQUESTION = 370,
-     TSEMI = 371,
-     TSHIFTLEFT = 372,
-     TSHIFTRIGHT = 373,
-     TSTAR = 374,
-     TSWAP = 375,
-     TIO = 376,
-     TLCBR = 377,
-     TRCBR = 378,
-     TLP = 379,
-     TRP = 380,
-     TLSBR = 381,
-     TRSBR = 382,
-     TNOELSE = 383,
-     TUMINUS = 384,
-     TUPLUS = 385
+     TPRIVATE = 307,
+     TPROC = 308,
+     TPUBLIC = 309,
+     TRECORD = 310,
+     TREDUCE = 311,
+     TREF = 312,
+     TREQUIRE = 313,
+     TRETURN = 314,
+     TSCAN = 315,
+     TSELECT = 316,
+     TSERIAL = 317,
+     TSINGLE = 318,
+     TSPARSE = 319,
+     TSUBDOMAIN = 320,
+     TSYNC = 321,
+     TTHEN = 322,
+     TTYPE = 323,
+     TUNDERSCORE = 324,
+     TUNION = 325,
+     TUSE = 326,
+     TVAR = 327,
+     TWHEN = 328,
+     TWHERE = 329,
+     TWHILE = 330,
+     TWITH = 331,
+     TYIELD = 332,
+     TZIP = 333,
+     TALIAS = 334,
+     TAND = 335,
+     TASSIGN = 336,
+     TASSIGNBAND = 337,
+     TASSIGNBOR = 338,
+     TASSIGNBXOR = 339,
+     TASSIGNDIVIDE = 340,
+     TASSIGNEXP = 341,
+     TASSIGNLAND = 342,
+     TASSIGNLOR = 343,
+     TASSIGNMINUS = 344,
+     TASSIGNMOD = 345,
+     TASSIGNMULTIPLY = 346,
+     TASSIGNPLUS = 347,
+     TASSIGNSL = 348,
+     TASSIGNSR = 349,
+     TBAND = 350,
+     TBNOT = 351,
+     TBOR = 352,
+     TBXOR = 353,
+     TCOLON = 354,
+     TCOMMA = 355,
+     TDIVIDE = 356,
+     TDOT = 357,
+     TDOTDOT = 358,
+     TDOTDOTDOT = 359,
+     TEQUAL = 360,
+     TEXP = 361,
+     TGREATER = 362,
+     TGREATEREQUAL = 363,
+     THASH = 364,
+     TLESS = 365,
+     TLESSEQUAL = 366,
+     TMINUS = 367,
+     TMOD = 368,
+     TNOT = 369,
+     TNOTEQUAL = 370,
+     TOR = 371,
+     TPLUS = 372,
+     TQUESTION = 373,
+     TSEMI = 374,
+     TSHIFTLEFT = 375,
+     TSHIFTRIGHT = 376,
+     TSTAR = 377,
+     TSWAP = 378,
+     TIO = 379,
+     TLCBR = 380,
+     TRCBR = 381,
+     TLP = 382,
+     TRP = 383,
+     TLSBR = 384,
+     TRSBR = 385,
+     TNOELSE = 386,
+     TUMINUS = 387,
+     TUPLUS = 388
    };
 #endif
 
@@ -351,7 +354,7 @@ void yypstate_delete ();
 
 /* "%code provides" blocks.  */
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 172 "chapel.ypp"
 
   extern int yydebug;
@@ -362,5 +365,5 @@ void yypstate_delete ();
 
 
 
-/* Line 2132 of yacc.c  */
-#line 367 "../include/bison-chapel.h"
+/* Line 2068 of yacc.c  */
+#line 370 "../include/bison-chapel.h"

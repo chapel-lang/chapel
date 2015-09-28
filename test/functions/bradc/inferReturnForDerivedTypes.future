@@ -1,0 +1,7 @@
+feature request: infer function return type for derived types
+
+It seems to me that we should do a better job of inferring
+return types for functions with multiple return paths that
+return derived types without having to explicitly name the
+return type.  This relates in part to inferArrayOfDerivedType.chpl.
+

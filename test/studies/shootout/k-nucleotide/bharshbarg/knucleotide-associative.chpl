@@ -1,5 +1,4 @@
 use IO;
-use AdvancedIters;
 
 extern proc memcpy(x : [], b:c_string , len:int);
 
@@ -41,14 +40,13 @@ proc calculate(data : [] uint(8), size : int) {
   var freqDom : domain(uint);
   var freqs : [freqDom] int;
 
-  const ntasks = defaultNumTasks(0);
   var lock : sync bool;
   lock = true;
   const sizeRange = 0..size-1;
-  coforall tid in 1..ntasks {
+  coforall tid in 1..here.maxTaskPar {
     var curDom : domain(uint);
     var curArr : [curDom] int;
-    for i in tid .. data.size-size by ntasks {
+    for i in tid .. data.size-size by here.maxTaskPar {
       curArr[hash(data, i, sizeRange)] += 1;
     }
     lock; // acquire lock

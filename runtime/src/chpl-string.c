@@ -52,7 +52,7 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
 // to receive the bytes copied from the remote node.  This buffer will be leaked,
 // since no corresponding free is added to the generated code.
 void chpl_gen_comm_wide_string_get(void* addr,
-  c_nodeid_t node, void* raddr, int32_t elemSize, int32_t typeIndex, int32_t len,
+  c_nodeid_t node, void* raddr, size_t elemSize, int32_t typeIndex, size_t len,
   int ln, chpl_string fn)
 {
   // This part just copies the descriptor.
