@@ -30,6 +30,7 @@ case $testname in
      egrep -ai '^start...finish$|error|warning' $outputfile.orig \
        | grep -av 'error: attempt to dereference nil' \
        | grep -av 'FATAL ERROR:' \
+       | grep -avi 'AMUDP.*error' \
        > $outputfile
 
      echo retained the original output in $outputfile.orig

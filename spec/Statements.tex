@@ -12,6 +12,7 @@ statement:
   expression-statement
   assignment-statement
   swap-statement
+  io-statement
   conditional-statement
   select-statement
   while-do-statement
@@ -237,6 +238,49 @@ b = a;
 a = t;
 \end{chapel}
 \end{example}
+
+\section{The I/O Statement}
+\label{The_IO_Statement}
+\index{IO!statement}
+\index{statements!IO}
+\index{IO!operator}
+\index{operators!IO}
+
+The I/O operator indicates writing to the left-hand-side the value in the
+right-hand-side; or reading from the left-hand-side and storing the result
+in the variable on the right-hand-side. This operator can be chained with
+other I/O operator calls.
+
+The I/O operator can be overloaded for different types using operator
+overloading~(\rsec{Function_Overloading}).
+\begin{syntax}
+io-statement:
+  io-expression io-operator expression
+
+io-expression:
+  expression
+  io-expression io-operator expression
+
+io-operator:
+  <`(*$\sim$*)'>
+\end{syntax}
+
+See the module documentation on I/O for details on how to use the
+I/O statement.
+
+\begin{example}
+In the example below,
+\begin{chapel}
+var w: Writer;
+var a: real;
+var b: int;
+
+w <(*$\sim$*)> a <(*$\sim$*)> b;
+\end{chapel}
+the I/O operator is left-associative and indicates writing \chpl{a}
+and then \chpl{b} to \chpl{w} in this case.
+\end{example}
+
 
 \section{The Conditional Statement}
 \label{The_Conditional_Statement}

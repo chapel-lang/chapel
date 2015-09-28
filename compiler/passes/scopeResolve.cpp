@@ -1902,7 +1902,6 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
         // symbols
         if (!sym->isVisible(callingContext)) {
           rejectedPrivateIds.insert(sym->id);
-          USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, sym->stringLoc());
         } else {
           symbols.push_back(sym);
         }
@@ -1962,7 +1961,6 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
                   // private symbols
                   if (!sym->isVisible(callingContext)) {
                     rejectedPrivateIds.insert(sym->id);
-                    USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, sym->stringLoc());
                   } else {
                     if (!isRepeat(symbols, sym)) {
                       symbols.push_back(sym);

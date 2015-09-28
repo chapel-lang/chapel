@@ -1,0 +1,8 @@
+test_formal_assoc_arg.chpl:1: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+test_formal_assoc_arg.chpl:2: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+test_formal_assoc_arg.chpl:3: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+In foo!
+In foo!
+test_formal_assoc_arg.chpl:13: error: halt reached - Domain mismatch passing array argument:
+  Formal domain is: {1.2, 3.4, 5.6}
+  Actual domain is: {1.4, 9.8, 7.3}

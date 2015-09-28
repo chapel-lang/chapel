@@ -63,6 +63,12 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(SCHEDULER)
 
+ifeq (nemesis,$(SCHEDULER))
+CFLAGS += -DQTHREADS_SUPPORTS_REMOTE_CACHE=1
+else
+CFLAGS += -DQTHREADS_SUPPORTS_REMOTE_CACHE=0
+endif
+
 # spawn-caching has a semantic mismatch with chapel (and leads to deadlock with
 # some applications.) Qthreads team tends to build with spawn cache off too
 CHPL_QTHREAD_CFG_OPTIONS += --disable-spawn-cache

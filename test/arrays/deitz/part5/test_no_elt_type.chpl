@@ -17,7 +17,7 @@ var B: [1..3] int = (1, 2, 3);
 
 foo(A);
 foo(B);
-bar2(A);
-bar(A);
-bar(B);
+bar2(A.reindex({2..4}));
+bar(A.reindex({2..4}));
+bar(B.reindex({2..4}));
 

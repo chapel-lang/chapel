@@ -5,29 +5,33 @@ Chapel Primers
 These primers are small Chapel program with narrative comments that
 demonstrate Chapel feature areas in detail.
 
-     arrays.chpl            : Rectangular arrays/domains
-     arrayVectorOps.chpl    : Vector-like operations on 1D arrays
-     associative.chpl       : Associative arrays/domains and set operations
-     atomics.chpl           : Atomic variables
-     chpldoc.doc.chpl       : The chpldoc feature
-     classes.chpl           : Defining and using classes
-     distributions.chpl     : Chapel standard distributions
-     domains.chpl           : Domains and methods on domains
-     FFTWlib.chpl           : the FFTW standard library
-     fileIO.chpl            : File I/O example using arrays
-     genericClasses.chpl    : Defining and using generic classes
-     iterators.chpl         : Iterator examples
-     locales.chpl           : Chapel Locale types
-     opaque.chpl            : Opaque arrays
-     parIters.chpl          : Introduction to parallel iterators
-     procedures.chpl        : Procedure examples
-     randomNumbers.chpl     : Usage of the standard module Random
-     ranges.chpl            : Range types and operations on ranges
-     reductions.chpl        : Reduction examples
-     slices.chpl            : Array slicing and reindexing examples
-     sparse.chpl            : Sparse domains and arrays
-     syncsingle.chpl        : Sync and single variables
-     taskParallel.chpl      : Task parallel language concepts
-     timers.chpl            : Time standard module
-     varargs.chpl           : Variable argument procedures
-     variables.chpl         : Variables, constants, and parameters
+     arrays.chpl                 : Rectangular arrays/domains
+     arrayVectorOps.chpl         : Vector-like operations on 1D arrays
+     associative.chpl            : Associative arrays/domains and set operations
+     atomics.chpl                : Atomic variables
+     chpldoc.doc.chpl            : The chpldoc feature
+     classes.chpl                : Defining and using classes
+     distributions.chpl          : Chapel standard distributions
+     domains.chpl                : Domains and methods on domains
+     FFTWlib.chpl                : the FFTW standard library
+     fileIO.chpl                 : File I/O example using arrays
+     genericClasses.chpl         : Defining and using generic classes
+     iterators.chpl              : Iterator examples
+     LAPACKlib.chpl              : the LAPACK standard library
+     learnChapelInYMinutes.chpl  : Chapel's entry for learnxinyminutes.com
+     locales.chpl                : Chapel Locale types
+     opaque.chpl                 : Opaque arrays
+     parIters.chpl               : Introduction to parallel iterators
+     procedures.chpl             : Procedure examples
+     randomNumbers.chpl          : Usage of the standard module Random
+     ranges.chpl                 : Range types and operations on ranges
+     reductions.chpl             : Reduction examples
+     slices.chpl                 : Array slicing and reindexing examples
+     sparse.chpl                 : Sparse domains and arrays
+     syncsingle.chpl             : Sync and single variables
+     taskParallel.chpl           : Task parallel language concepts
+     timers.chpl                 : Time standard module
+     varargs.chpl                : Variable argument procedures
+     variables.chpl              : Variables, constants, and parameters
+
+     chplvis                     : A directory contaning a primer on the chplvis tool
