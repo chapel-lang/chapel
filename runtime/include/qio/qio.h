@@ -1050,11 +1050,21 @@ uint8_t qio_channel_byteorder(qio_channel_t* ch)
 {
   return ch->style.byteorder;
 }
+
+/* Returns a channel's current style for *binary* string I/O */
 static inline
 int64_t qio_channel_str_style(qio_channel_t* ch)
 {
   return ch->style.str_style;
 }
+
+/* Returns a channel's current style for *text* string I/O */
+static inline
+uint8_t qio_channel_string_format(qio_channel_t* ch)
+{
+  return ch->style.string_format;
+}
+
 
 int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element);
  

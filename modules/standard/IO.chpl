@@ -1609,6 +1609,7 @@ private extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:
 private extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_str_style(ch:qio_channel_ptr_t):int(64);
+private extern proc qio_channel_string_format(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_style_element(ch:qio_channel_ptr_t, element:int(64)):int(64);
 
 private extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
@@ -3617,7 +3618,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, para
   // Adjust the style to use Chapel strings in quotes
   // unless the string style was already overridden
   // (that way, writef("%j") will still use JSON-style strings)
-  if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
+  if qio_channel_string_format(_channel_internal) == QIO_STRING_FORMAT_WORD {
     qio_channel_get_style(_channel_internal, save_style);
     var mystyle = save_style;
     mystyle.string_format = QIO_STRING_FORMAT_CHPL;
@@ -3647,7 +3648,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, par
   // Adjust the style to use Chapel strings in quotes
   // unless the string style was already overridden
   // (that way, writef("%j") will still use JSON-style strings)
-  if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
+  if qio_channel_string_format(_channel_internal) == QIO_STRING_FORMAT_WORD {
     qio_channel_get_style(_channel_internal, save_style);
     var mystyle = save_style;
     mystyle.string_format = QIO_STRING_FORMAT_CHPL;
