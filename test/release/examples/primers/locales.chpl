@@ -3,7 +3,7 @@
  *
  * This example showcases Chapel's locale types.  To run this example
  * using multiple locales set up your envionment as described in
- * README.multilocale and execute it using the "-nl #" flag to specify
+ * multilocale.rst and execute it using the "-nl #" flag to specify
  * the number of locales.  For example, to run on 2 locales, run
  * "./a.out -nl 2".
  *
