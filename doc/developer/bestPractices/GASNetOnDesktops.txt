@@ -4,7 +4,7 @@ Running Chapel Programs with GASNet on your Desktop
 
 This document give a few pointers on using Chapel with the GASNet
 communication layer on your desktop.  For more general information
-about using the GASNet communication layer, see README.multilocale in
+about using the GASNet communication layer, see multilocale.rst in
 the release docs.
 
 
@@ -12,7 +12,7 @@ RUNNING
 =======
 
 Set GASNet environment variables for simulating multiple Chapel
-locales on a single workstation as described in README.multilocale.
+locales on a single workstation as described in multilocale.rst.
 
 GASNet may detect the existence of an Infiniband network even if one
 does not exist (due to the inclusion of Infiniband in the Linux
