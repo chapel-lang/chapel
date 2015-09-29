@@ -85,7 +85,7 @@ ENVIRONMENT VARIABLES FOR OPTIONS
 
 ENVIRONMENT
 
-  See $CHPL_HOME/doc/README.chplenv for detailed information about 
+  See $CHPL_HOME/doc/chplenv.rst for detailed information about 
   general environment variable settings, legal values, and default
   settings. Run $CHPL_HOME/util/printchplenv to view your current
   settings (as explicitly set and inferred). Some of the most
@@ -100,10 +100,10 @@ ENVIRONMENT
 
 
 BUGS
-  See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
+  See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/bugs.rst
   for instructions on reporting bugs.
 SEE ALSO
-  $CHPL_HOME/README for more information on how to get started with Chapel.
+  $CHPL_HOME/README.rst for more information on how to get started with Chapel.
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
