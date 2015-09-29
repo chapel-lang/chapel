@@ -24,7 +24,7 @@ warning messages from GASNet regarding using the Infiniband conduit.
 
 DEBUGGING
 =========
-See README.executing regarding debugging with CHPL_COMM_USE_GDB.
+See executing.rst regarding debugging with CHPL_COMM_USE_GDB.
 
 Sometimes GASNet issues are general multi-locale issues that can be
 recreated by compiling the program with the --no-local flag and using
@@ -34,7 +34,7 @@ communication related calls into the code.  During program execution,
 the runtime checks to see if the reference is remote (which it will
 never will be), and if the generated code is correct, the program will
 execute without issue.  If the program does not complete as expected,
-you can use the --gdb flags to debug in gdb (see README.executing).
+you can use the --gdb flags to debug in gdb (see executing.rst).
 
 DEBUGGING WITH VALGRIND
 =======================
