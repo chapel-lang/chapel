@@ -126,6 +126,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_AND_ASSIGN:
   case PRIM_OR_ASSIGN:
   case PRIM_XOR_ASSIGN:
+  case PRIM_MOVE_TO_BUF:
+  case PRIM_MOVE_FROM_BUF:
     if (!isCallExpr(call->get(2))) { // callExprs checked in calling function
       if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
