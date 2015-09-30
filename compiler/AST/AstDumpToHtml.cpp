@@ -189,8 +189,6 @@ bool AstDumpToHtml::enterCallExpr(CallExpr* node) {
 
   }
 
-  if (node->methodTag)
-    fprintf(mFP, "(noparens) ");
   if (node->partialTag)
     fprintf(mFP, "(partial) ");
 
