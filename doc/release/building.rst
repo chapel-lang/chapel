@@ -5,10 +5,10 @@ Building Chapel
 ===============
 
 To build the Chapel compiler, set up your environment as described in
-the top-level README file (or README.chplenv), cd to $CHPL_HOME, and
-type:
+:ref:`chapelhome-readme` (or :ref:`readme-chplenv` for more settings),
+cd to ``$CHPL_HOME``, and type:
 
-.. code-block:: bash
+.. code-block:: sh
 
      gmake
 
@@ -27,11 +27,11 @@ If everything works as intended, you ought to see:
 #. the runtime support libraries being compiled, archived, and stored
    in a configuration-specific subdirectory under:
 
-     ``$CHPL_HOME/lib/$CHPL_TARGET_PLATFORM/$CHPL_TARGET_COMPILER/...``
+     ``$CHPL_HOME/lib/$CHPL_TARGET_PLATFORM.$CHPL_TARGET_COMPILER.../``
 
 If you get an error or failure during the make process, please let us
 know about it at: chapel-bugs@lists.sourceforge.net (as well as
-information about your system as described in README.bugs and any
+information about your system as described in :ref:`readme-bugs` and any
 workaround that you come up with).
 
 Note that each make command only builds the compiler and runtime for
@@ -46,12 +46,12 @@ need to reset your environment variables and re-make.
 After a successful build, you should be able to run the compiler and
 display its help message using:
 
-.. code-block:: bash
+.. code-block:: sh
 
   chpl --help
 
 In which case, you will be ready to move on to compiling with the
-Chapel compiler (described in README.compiling).  The rest of this
+Chapel compiler (see :ref:`readme-compiling`).  The rest of this
 file gives more information about Chapel's Makefiles for advanced
 users or developers of Chapel.
 
@@ -63,7 +63,7 @@ Platform Support
 Currently supported platforms include 32- and 64-bit Linux, Mac OS X,
 Cygwin (Windows), SunOS, a variety of current Cray platforms, and a
 few systems by other vendors.  Most UNIX-based environments ought to
-support Chapel (subject to the assumptions in README.prereqs), but may
+support Chapel (subject to the assumptions in :ref:`readme-prereqs`), but may
 not be supported "out-of-the-box" by our current Makefile structure.
 See the section below on platform-specific settings for more
 information on adding support for additional UNIX-compatible
@@ -118,6 +118,9 @@ are described below. Set the value to 1 to enable the feature.
   WARNINGS  Promote backend C compiler warnings to errors.
   ========  =======================================================
 
+
+.. _platform-specific-settings:
+
 --------------------------
 Platform-specific Settings
 --------------------------
@@ -127,14 +130,14 @@ compiler-specific settings in
 ``$CHPL_HOME/make/compiler/Makefile.<compiler>`` where ``<compiler>`` refers
 to ``$CHPL_HOST_COMPILER`` for the compiler sources and
 ``$CHPL_TARGET_COMPILER`` for the runtime sources and generated code.
-Refer to README.chplenv for more information about these variables and
+Refer to :ref:`readme-chplenv` for more information about these variables and
 their default settings.
 
 In addition, any architecture-specific settings are defined in
 ``$CHPL_HOME/make/platform/Makefile.<platform>``, where ``<platform>`` refers
 to ``$CHPL_HOST_PLATFORM`` for the compiler sources and
 ``$CHPL_TARGET_PLATFORM`` for the runtime sources and generated code.
-Again, README.chplenv details these variables and their default
+Again, :ref:`readme-chplenv` details these variables and their default
 settings.
 
 If you try making the compiler and runtime for an unknown platform, it

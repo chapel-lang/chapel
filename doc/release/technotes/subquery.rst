@@ -1,14 +1,15 @@
 .. _readme-subquery:
 
-=============================
-Querying a Locale's Subdomain
-=============================
+==========================
+Querying a Local Subdomain
+==========================
 
 While writing a distributed program, one might need to know the index set that
 a certain locale owns in a given distributed array. This README describes the
 initial support for this functionality.
 
-For code examples using these features, see the 'distributions.chpl' primer.
+For code examples using these features, see the
+``$CHPL_HOME/examples/primers/distributions.chpl`` primer.
 
 .. contents::
 
@@ -23,7 +24,7 @@ hasSingleLocalSubdomain
   proc [].hasSingleLocalSubdomain() : bool;
 
 This is a param function which returns a boolean. If true, then the index set
-owned by a local can be represented by a single domain.
+owned by a locale can be represented by a single domain.
 
 ============= =======================
 Distribution  hasSingleLocalSubdomain
@@ -77,10 +78,10 @@ Currently, this is a serial iterator.
 To support this iterator on a custom distributed array type, write an iterator
 named 'dsiLocalSubdomains'.
 
-Functions Supported by Distributed Arrays
+Functions Supported on Distributed Arrays
 =========================================
 
-Any functions in this section are only supported by distributed array types.
+Any functions in this section are only supported on distributed array types.
 Calling them on a non-distributed array will result in a compiler error.
 
 targetLocales

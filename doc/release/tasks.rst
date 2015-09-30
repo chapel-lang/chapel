@@ -4,9 +4,6 @@
 Chapel Tasks
 ============
 
-[NOAKES and RONAWHO: Some minor subjective concerns about putting table of
-contents here.  Helpful or distracting?].
-
 .. contents::
 
 --------
@@ -15,20 +12,17 @@ Overview
 
 Chapel programs create new tasks via the begin, cobegin, and coforall
 statements.  Tasks are computations that can conceptually execute
-concurrently, though they may or may not do so in practice.  Tasks are
-executed using threads, which are the tasking layer's mechanism for
-executing work in parallel.
+concurrently, though they may or may not do so in practice.
 
-[NOAKES and RONAWHO: This section takes some care to define
-"task" but leaves "thread" and "tasking layer" more or less undefined.
-Possibly a smal introduction to these terms?]
-
+An implementation of Chapel must include at least one tasking layer.
+A tasking layer will in turn implement *threads* which are a mechanism
+for executing work in parallel.
 
 All tasking layers support configuration constants to control system
-resources such as the number of threads used to execute tasks and the
-amount of call stack space reserved for each task.  Generally
+resources such as the number of threads that are available to execute
+tasks and the amount of call stack space reserved for each task.  Generally
 speaking, the Chapel programmer can make no assumptions about the
-scheduling of threads or the mapping of tasks to threads, apart from
+scheduling of threads or the mapping of tasks to threads other than
 those semantics defined by the language specification.
 
 This document describes the currently-supported tasking options in more
@@ -41,7 +35,7 @@ detail.  The rest of this document includes:
 * a list of tasking-related methods on the locale type
 * a brief description of future directions for the tasking layer
 
-If you have questions about task that are not covered in the following,
+If you have questions about tasks that are not covered in the following,
 please send them to chapel_info@cray.com.
 
 
@@ -49,9 +43,9 @@ please send them to chapel_info@cray.com.
 Task Implementation Layers
 --------------------------
 
-This release contains four distinct implementations of Chapel tasks.
+This release contains four distinct tasking layers for Chapel tasks.
 The user can select between these options by setting the ``CHPL_TASKS``
-environment variable to one of the following options:
+environment variable to one of the following values:
 
 :qthreads:
   best performance; default for most targets
@@ -65,7 +59,7 @@ environment variable to one of the following options:
 
 :muxed:
   available only on Cray Inc. systems; not documented here,
-  see $CHPL_HOME/doc/platforms/README.cray instead
+  see :ref:`readme-cray` instead
 
 Each tasking layer is described in more detail below:
 
@@ -92,7 +86,7 @@ To use qthreads tasking, please take the following steps:
 
      export CHPL_TASKS=qthreads
 
-3) Follow the instructions in $CHPL_HOME/doc/README.chplenv to set up,
+3) Follow the instructions in :ref:`readme-chplenv` to set up,
    compile and run your Chapel programs.
 
 Please report any apparent bugs in Qthreads tasking to the Chapel team.
@@ -185,7 +179,7 @@ works out well for Chapel programs, because normally Chapel runs with
 one process (locale) per system node.  However, with ``CHPL_COMM=gasnet``
 one can run multiple Chapel locales on a single system node, say for
 doing multilocale functional correctness testing with limited system
-resources.  (See README.multilocale for more details.)  When this is
+resources.  (See :ref:`readme-multilocale` for more details.)  When this is
 done qthreads' optimization for performance can actually greatly reduce
 performance, due to resource starvation among the multiple Chapel
 processes.  If you need qthreads to share system resources more
@@ -223,7 +217,7 @@ and is the default for Intel KNC, Cygwin, NetBSD, or when Cray is the
 target compiler.  It is attractive in its portability, though on most
 platforms it will tend to be heavier weight than Chapel strictly
 requires.  FIFO tasking is also used when Chapel is configured in
-'Quick Start' mode (see $CHPL_HOME/README for details).  To use FIFO
+'Quick Start' mode (see :ref:`chapelhome-quickstart`).  To use FIFO
 tasking, please take the following steps:
 
 1) Ensure that the environment variable ``CHPL_HOME`` points to the
@@ -235,7 +229,7 @@ tasking, please take the following steps:
 
      export CHPL_TASKS=fifo
 
-3) Follow the instructions in $CHPL_HOME/doc/README.chplenv to set up,
+3) Follow the instructions in :ref:`readme-chplenv` to set up,
    compile and run your Chapel programs.
 
 In the FIFO tasking implementation, Chapel tasks are mapped to threads
@@ -290,7 +284,7 @@ following steps:
 
      export CHPL_TASKS=massivethreads
 
-3) Follow the "Quick Start" instructions in $CHPL_HOME/README
+3) Follow the :ref:`chapelhome-quickstart` 
    to set up, compile and run your Chapel programs.
 
 For more information on MassiveThreads, please see its entry in:
@@ -369,7 +363,7 @@ Task Call Stacks
 ----------------
 
 Each task including the main Chapel program has an associated call
-stack.  As documented in README.executing, the ``CHPL_RT_CALL_STACK_SIZE``
+stack.  As documented in :ref:`readme-executing`, the ``CHPL_RT_CALL_STACK_SIZE``
 environment variable can be used to specify how big these call stacks
 will be during execution.  See there for a full description of this
 environment variable and the values it can take.
