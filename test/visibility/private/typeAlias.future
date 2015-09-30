@@ -1,4 +1,4 @@
-feature request: allow private type aliases
+unimplemented feature: allow private type aliases
 
 Right now, public and private can't be applied to type aliases.  We would like
 to be able to do that, and catch any outside use of publicly visible instances

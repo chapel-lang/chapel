@@ -97,12 +97,18 @@ TEST_COMP_OUT=${TEST_JOB}.comp.out
 COMP_FLAGS="--cc-warnings"
 
 # Compile test job into temporary directory
+echo "Compiling \$CHPL_HOME/${TEST_DIR}/${TEST_JOB}.chpl"
 ${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
 
 # Check that compile was successful
 COMPILE_STATUS=$?
 if [ ${COMPILE_STATUS} -ne 0 ]; then
-    err "Test job failed to compile, Chapel is not installed correctly"
+    err "Test job failed to compile - Chapel is not installed correctly"
+    echo "Compilation output:"
+    cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
+    exit 1
+elif [ -s ${TMP_TEST_DIR}/${TEST_COMP_OUT} ]; then
+    err "Test job compiled with output - Chapel is not installed correctly"
     echo "Compilation output:"
     cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
     exit 1
@@ -128,11 +134,12 @@ fi
 
 # Check for valid launchers
 if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "none" ]; then
-    echo "Launcher, \$CHPL_LAUNCHER = ${chpl_launcher}, is compatible with test script"
+    echo "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
 else
-    echo "This script is not compatible with the \$CHPL_LAUNCHER value of ${chpl_launcher}"
-    echo "This does not necessarily indicate that your Chapel installation is incorrect"
-    echo "See \$CHPL_HOME/doc/README.launcher for more information on how to manually run a Chapel program"
+    echo ""
+    echo "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
+    echo "This does not necessarily indicate that your Chapel installation is incorrect."
+    echo "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
     exit 10
 fi
 
@@ -144,26 +151,27 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
 
     EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
-    echo "Running test job"
-    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} > ${TEST_EXEC_OUT} 2>&1
-    echo "Test job complete"
+    echo "Running test job."
+    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} | sort > ${TEST_EXEC_OUT} 2>&1
+    echo "Test job complete."
 
-    # Quick test to verify fail case
-    #echo "this should break the test" >> ${TEST_EXEC_OUT}
+    # Check result
+    DIFF_OUTPUT=$(diff -q ${TEST_EXEC_OUT} ${GOOD})
 
-)
-
-# Check result
-DIFF_OUTPUT=$(diff -q ${TMP_TEST_DIR}/${TEST_EXEC_OUT} ${GOOD})
-
-# Return 0 if diff is good
-if [ -z "${DIFF_OUTPUT}" ]; then
+    # Return success code (0) if diff is good
+    if [ -z "${DIFF_OUTPUT}" ]; then
     echo "Installation works as expected!"
     exit 0
-else
-    echo "There was an issue with the installation, test job output incorrect"
-    echo "== Log =="
-    echo "diff ${TMP_TEST_DIR}/${TEST_EXEC_OUT} ${GOOD}"
-    echo "$(diff ${TMP_TEST_DIR}/${TEST_EXEC_OUT} ${GOOD})"
+    else
+        # Rerun test job with -v flag to help user identify discrepancy
+        echo "There was an issue with the installation, test job output incorrect."
+        echo ""
+        echo "== Verbose Test Job Execution Output =="
+        ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} -v
+        echo ""
+        echo "== Diff Log =="
+        echo "$(diff ${TEST_EXEC_OUT} ${GOOD})"
     exit 10
-fi
+    fi
+)
+

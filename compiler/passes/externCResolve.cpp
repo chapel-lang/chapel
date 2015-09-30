@@ -45,22 +45,25 @@ static int query_uid = 1;
 static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName=NULL) {
   //pointers
   if (type->isPointerType()) {
-    Expr* pointee = convertToChplType(module, type->getPointeeType().getTypePtr(), results);
-    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(pointee)) {
-      const char* name = se->unresolved;
-      //Pointers to c_char must be converted to Chapel's C string type.
-      //Question: Should this only apply to const char*?
-      if ( 0 == strcmp(name, "c_char") )
-        return new UnresolvedSymExpr("c_string"); 
+    clang::QualType pointeeType = type->getPointeeType();
+
+    //Pointers to c_char must be converted to Chapel's C string type
+    // but only if they are const char*.
+    if ( pointeeType.isConstQualified() &&
+         pointeeType.getTypePtr()->isCharType() ) {
+      return new UnresolvedSymExpr("c_string"); 
     }
+
+    Expr* pointee = convertToChplType(module, pointeeType.getTypePtr(), results);
 
     // void *  generates as c_void_ptr.
     if(!pointee) {
       return new UnresolvedSymExpr("c_void_ptr");
     }
 
+
     //Pointers (other than char*) are represented as calls to
-    //_ddata(chapel_type).
+    // c_ptr(chapel_type).
     // PRIM_ACTUALS_LIST is not needed here.
     return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
 

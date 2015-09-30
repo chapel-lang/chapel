@@ -81,12 +81,17 @@ void ConcurrencyWin::showCommBoxFor(taskData *task)
     // Add the data to the text display:
     // Title
     char tmpText[2048];
-    snprintf (tmpText, sizeof(tmpText), "Communications for task %ld on locale %d:\n\n",
-              task->taskRec->taskId(), task->taskRec->nodeId());
+    if (task->taskRec) 
+      snprintf (tmpText, sizeof(tmpText), "Communications for task %ld on locale %d:\n\n",
+                task->taskRec->taskId(), task->taskRec->nodeId());
+    else // Main should be the only one without a taskRec
+      snprintf (tmpText, sizeof(tmpText), "Communications for main task on locale 0:\n\n");
     commBox->insert(tmpText);
 
     // Time reference
-    double startTime = task->beginRec->clock_time();
+    double startTime = VisData.start_clock();
+    if (task->beginRec) 
+      startTime = task->beginRec->clock_time();
 
     // Data lines
     std::list<Event *>::iterator itr;
@@ -333,18 +338,29 @@ void ConcurrencyData::buildData(void) {
       // printf ("Building continuation for col %d\n", col);
       greedy[curCol] = greedy[col];
       greedyStart[curCol] = 0;
-      b = new Fl_Box(FL_BORDER_BOX, 15+60*curCol, 40, 60, 20, NULL);
+      btn = new Fl_Button(15+60*curCol, 40, 60, 20, NULL);
+      btn->box(FL_BORDER_BOX);
+      btn->down_box(FL_BORDER_BOX);
       if (parent->localeNum == 0 && greedy[col] == 1)
         snprintf (tmp, sizeof(tmp), "Main");
       else
-        snprintf (tmp, sizeof(tmp), "C%d", greedy[curCol]);
-      b->copy_label(tmp);
-      add(b);
+        snprintf (tmp, sizeof(tmp), "C %d", greedy[curCol]);
+      btn->copy_label(tmp);
+      add(btn);
       theTask = VisData.getTaskData(parent->localeNum, greedy[curCol]);
-      if (theTask && theTask->taskRec && theTask->taskRec->isLocal()) {
-        snprintf (tmp, sizeof(tmp), "%s:%ld", theTask->taskRec->srcName(),
-                  theTask->taskRec->srcLine());
-        b->copy_tooltip(tmp);
+      if (theTask) {
+        if (theTask->taskRec && theTask->taskRec->isLocal()) {
+          snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF\n%s:%ld",
+                    theTask->taskClock, theTask->commSum.numGets,
+                    theTask->commSum.numPuts, theTask->commSum.numForks,
+                    theTask->taskRec->srcName(), theTask->taskRec->srcLine());
+        } else {
+          snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF",
+                    theTask->taskClock, theTask->commSum.numGets,
+                    theTask->commSum.numPuts, theTask->commSum.numForks);
+        }
+        btn->copy_tooltip(tmp);
+        btn->callback(taskCallback, (void *)theTask);
       }
       if (curCol != col)
         greedy[col] = 0;
@@ -399,7 +415,7 @@ void ConcurrencyData::buildData(void) {
                     theTask->taskClock, theTask->commSum.numGets,
                     theTask->commSum.numPuts, theTask->commSum.numForks,
                     theTask->taskRec->srcName(), theTask->taskRec->srcLine());
-        } else {;
+        } else {
           snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF",
                     theTask->taskClock, theTask->commSum.numGets,
                     theTask->commSum.numPuts, theTask->commSum.numForks);

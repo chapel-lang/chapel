@@ -4,6 +4,12 @@ use CommDiagnostics;
 
 const numRemoteTasks = numLocales;
 
+proc printCommDiagnostics(diag) {
+  for i in 0..#diag.size {
+    writeln(diag(i));
+  }
+}
+
 proc remoteTestBasic(b: Barrier, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
   var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
@@ -15,7 +21,7 @@ proc remoteTestBasic(b: Barrier, numRemoteTasks) {
     b.barrier();
   }
   stopCommDiagnostics();
-  writeln(getCommDiagnostics());
+  printCommDiagnostics(getCommDiagnostics());
 }
 
 proc remoteTestSplitPhase(b: Barrier, numRemoteTasks) {
@@ -35,20 +41,24 @@ proc remoteTestSplitPhase(b: Barrier, numRemoteTasks) {
     }                     //  locale.
   }
   stopCommDiagnostics();
-  writeln(getCommDiagnostics());
+  printCommDiagnostics(getCommDiagnostics());
 }
 
 var b = new Barrier(numRemoteTasks);
+writeln("atomic remote test basic");
 remoteTestBasic(b, numRemoteTasks);
 
 b.reset(numRemoteTasks);
+writeln("atomic remote test split phase");
 remoteTestSplitPhase(b, numRemoteTasks);
 delete b;
 
 var sb1 = new Barrier(numRemoteTasks, BarrierType.Sync);
+writeln("sync remote test basic");
 remoteTestBasic(sb1, numRemoteTasks);
 delete sb1;
 
 var sb2 = new Barrier(numRemoteTasks, BarrierType.Sync);
+writeln("sync remote test split phase");
 remoteTestSplitPhase(sb2, numRemoteTasks);
 delete sb2;

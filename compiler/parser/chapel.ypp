@@ -357,7 +357,7 @@
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> private_decl
 %type <pblockstmt> extern_block_stmt
-%type <pblockstmt> type_select_stmt return_stmt
+%type <pblockstmt> return_stmt
 
 %type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt
 %type <pblockstmt> enum_decl_stmt
@@ -433,7 +433,6 @@ stmt:
 | if_stmt
 | loop_stmt
 | select_stmt
-| type_select_stmt
 | return_stmt
 | stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
 | TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
@@ -651,11 +650,6 @@ when_stmt:
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $3); }
 | TOTHERWISE stmt
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $2); }
-;
-
-type_select_stmt:
-  TTYPE TSELECT expr_ls TLCBR when_stmt_ls TRCBR
-    { USR_FATAL($3, "'type select' is no longer supported. Use 'select'"); }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/
