@@ -440,7 +440,7 @@ module CString {
   // Yes this is invoked sometimes. In the long run, however,
   // we'd like the compiler to eliminate casts to the same type instead.
   inline proc c_string.cast(type t) where t == c_string {
-    return x;
+    return this;
   }
 
   inline proc c_string.cast(type t) where t == string {
