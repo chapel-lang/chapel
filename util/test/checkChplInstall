@@ -140,7 +140,9 @@ else
     echo "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
     echo "This does not necessarily indicate that your Chapel installation is incorrect."
     echo "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
-    exit 0
+    # This exit code should be recognized as a failure to complete check, but
+    # not necessarily failure of build
+    exit 10
 fi
 
 TEST_EXEC_OUT=${TEST_JOB}.exec.out
@@ -171,7 +173,9 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
         echo ""
         echo "== Diff Log =="
         echo "$(diff ${TEST_EXEC_OUT} ${GOOD})"
-    exit 10
+        # This exit code should be recognized as successfully building, but
+        # with some errors
+        exit 20
     fi
 )
 
