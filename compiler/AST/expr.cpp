@@ -3045,25 +3045,33 @@ GenRet codegenSizeof(Type* t)
   return codegenSizeof(t->symbol->cname);
 }
 
-static
-GenRet codegenSizeof(Symbol* var)
+
+GenRet codegenSizeof(GenRet var)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+
+  // Create a temporary value if necessary.
+  // This prevents us from generating code like sizeof(1)
+  // which apparently C compilers do not like.
+  GenRet tmp = var;
+  if( tmp.isLVPtr != GEN_PTR ) {
+    tmp = createTempVarWith(tmp);
+  }
+  tmp = codegenValue(tmp);
+
   ret.chplType = SIZE_TYPE;
   if( info->cfile ) {
     ret.c = "sizeof(";
-    ret.c += var->cname;
+    ret.c += tmp.c;
     ret.c += ')';
   } else {
-#ifdef HAVE_LLVM
-    GenRet arg = var;
-    ret.val = codegenSizeofLLVM(var->val->getType());
-#endif
+ #ifdef HAVE_LLVM
+    ret.val = codegenSizeofLLVM(tmp.val->getType());
+ #endif
   }
   return ret;
 }
-
 
 // dest dest must have isLVPtr set. This function implements
 // part of codegenAssign.
@@ -4027,17 +4035,7 @@ GenRet CallExpr::codegen() {
             codegenAssign(get(1),codegenDeref(call->get(1)));
           } else {
             // set get(1) = *(call->get(1));
-            // but use memcpy if call->get(1) has FLAG_UNALIGNED_REF
-            SymExpr* se = toSymExpr(call->get(1));
-            if (se && se->var->hasFlag(FLAG_UNALIGNED_REF)) {
-              // unaligned reference case - use memcpy
-              Type* t = get(1)->typeInfo();
-              GenRet size = codegenSizeof(t);
-              codegenCallMemcpy(codegenAddrOf(get(1)), codegenValue(se), size, t);
-            } else {
-              // normal case
-              codegenAssign(get(1),codegenDeref(call->get(1)));
-            }
+            codegenAssign(get(1),codegenDeref(call->get(1)));
           }
           break;
          }
@@ -4304,18 +4302,9 @@ GenRet CallExpr::codegen() {
         break;
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
-          !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        // use memcpy if get(1) has FLAG_UNALIGNED_REF
-        SymExpr* se = toSymExpr(get(1));
-        if (se && se->var->hasFlag(FLAG_UNALIGNED_REF)) {
-          // unaligned reference case - use memcpy
-          Type* t = get(2)->typeInfo();
-          GenRet size = codegenSizeof(t);
-          codegenCallMemcpy(codegenValue(se), codegenAddrOf(codegenValuePtr(get(2))), size, t);
-        } else {
-          codegenAssign(codegenDeref(get(1)), get(2));
-        }
-      } else
+          !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
+        codegenAssign(codegenDeref(get(1)), get(2));
+      else
         codegenAssign(get(1), get(2));
       break;
     } // End of PRIM_MOVE
@@ -5376,6 +5365,51 @@ GenRet CallExpr::codegen() {
         ret = codegenBasicPrimitiveExpr(this);
       break;
     }
+    case PRIM_MOVE_TO_BUF:
+    case PRIM_MOVE_FROM_BUF:
+    {
+      // PRIM_MOVE_TO_BUF
+      // args: buffer to copy into/from (c void pointer)
+      //       variable to copy (could be lvalue or not)
+      // generates:
+      // memcpy(get(1), get(2), sizeof(get(2))
+      // PRIM_MOVE_FROM_BUF
+      // args: variable to copy (must be an lvalue)
+      //       buffer to copy from (c void pointer)
+      // generates:
+      // memcpy(get(2), get(1), sizeof(get(2))
+
+   
+      int variable = 0;
+      int buffer = 0;
+      if (primitive->tag == PRIM_MOVE_TO_BUF) {
+        buffer = 1;
+        variable = 2;
+      } else {
+        variable = 1;
+        buffer = 2;
+      }
+
+      GenRet var = get(variable);
+      GenRet buf = codegenValue(get(buffer));
+
+      // Make sure that var is an lvalue
+      // This helps codegenSizeof work right
+      // and helps with code below.
+      if( var.isLVPtr != GEN_PTR ) {
+        var = createTempVarWith(var);
+      }
+
+      GenRet size = codegenSizeof(var);
+
+      if (primitive->tag == PRIM_MOVE_TO_BUF) {
+        codegenCallMemcpy(buf, codegenAddrOf(var), size, NULL);
+      } else {
+        codegenCallMemcpy(codegenAddrOf(var), buf, size, NULL);
+      }
+      break;
+    }
+
     case PRIM_CAST_TO_VOID_STAR:
     {
       Type* t = get(1)->typeInfo();

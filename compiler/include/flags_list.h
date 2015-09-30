@@ -239,7 +239,6 @@ symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference tempo
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
-symbolFlag( FLAG_UNALIGNED_REF , ypr, "unaligned ref" , "ref variable is unaligned" )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
 // Used to mark where a compiler generated flag was removed (but is desired
 // elsewhere).
