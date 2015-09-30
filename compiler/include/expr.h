@@ -195,6 +195,10 @@ class CallExpr : public Expr {
   Expr*           get(int index);
   FnSymbol*       findFnSymbol();
 
+  bool            isCast();
+  Expr*           castFrom();
+  Expr*           castTo();
+
   bool            isPrimitive(PrimitiveTag primitiveTag);
   bool            isPrimitive(const char*  primitiveName);
 };
@@ -301,6 +305,10 @@ Expr* getNextExpr(Expr* expr);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
+
+CallExpr* createCastCallPostNormalize(BaseAST* src, BaseAST* toType);
+CallExpr* createCastCallPreNormalize(BaseAST* src, BaseAST* toType);
+
 
 GenRet codegenValue(GenRet r);
 GenRet codegenValuePtr(GenRet r);

@@ -2652,8 +2652,8 @@ record ioChar {
 // Note: This returns a c_string_copy.
 // The caller has responsibility for freeing the returned string.
 pragma "no doc"
-inline proc _cast(type t, x: ioChar) where t == c_string_copy {
-  return qio_encode_to_string(x.ch);
+inline proc ioChar.cast(type t) where t == c_string_copy {
+  return qio_encode_to_string(this.ch);
 }
 
 
@@ -2685,12 +2685,12 @@ record ioNewline {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioNewline) where t == c_string {
+inline proc ioNewline.cast(type t) where t == c_string {
   return "\n";
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
+inline proc ioNewline.cast(type t) where t == c_string_copy {
   return __primitive("string_copy", "\n");
 }
 
@@ -2718,13 +2718,13 @@ record ioLiteral {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioLiteral) where t == c_string {
-  return x.val;
+inline proc ioLiteral.cast(type t) where t == c_string {
+  return this.val;
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
-  return __primitive("string_copy", x.val);
+inline proc ioLiteral.cast(type t) where t == c_string_copy {
+  return __primitive("string_copy", this.val);
 }
 
 /*
@@ -2746,10 +2746,10 @@ record ioBits {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioBits) where t == c_string {
-  const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
+inline proc ioBits.cast(type t) where t == string {
+  const ret = "ioBits(v=" +this.v:string+ ", nbits=" +this.nbits:string+ ")";
   // FIX ME: should this be copied?
-  return ret.c_str();
+  return ret;
 }
 
 

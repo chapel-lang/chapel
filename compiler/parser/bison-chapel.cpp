@@ -6957,7 +6957,7 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 1430 "chapel.ypp"
-    { (yyval.pexpr) = new CallExpr("_cast", (yyvsp[(3) - (3)].pexpr), (yyvsp[(1) - (3)].pexpr)); }
+    { (yyval.pexpr) = createCastCallPreNormalize((yyvsp[(1) - (3)].pexpr), (yyvsp[(3) - (3)].pexpr)); }
     break;
 
   case 357:

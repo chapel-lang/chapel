@@ -68,6 +68,8 @@
  */
 class DisambiguationContext {
 public:
+  // The call itself
+  CallExpr* call;
   /// The actual arguments from the call site.
   Vec<Symbol*>* actuals;
   /// The scope in which the call is made.
@@ -84,8 +86,8 @@ public:
    * \param explain Whether or not a trace of this disambiguation process should
    *                be printed for the developer.
    */
-  DisambiguationContext(Vec<Symbol*>* actuals, Expr* scope, bool explain) :
-    actuals(actuals), scope(scope), explain(explain), i(-1), j(-1) {}
+  DisambiguationContext(CallExpr* call, Vec<Symbol*>* actuals, Expr* scope, bool explain) :
+    call(call), actuals(actuals), scope(scope), explain(explain), i(-1), j(-1) {}
 
   /** A helper function used to set the i and j members.
    *
@@ -230,6 +232,9 @@ Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotio
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
 std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
+static int maxUserCoercions = 1;
+static int nUserCoercions = 0;
+
 //#
 //# Static Function Declarations
 //#
@@ -251,7 +256,7 @@ static bool fits_in_uint(int width, Immediate* imm);
 static bool canInstantiate(Type* actualType, Type* formalType);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType);
 static bool
-moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
+moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType, const DisambiguationContext& DC);
 static bool
 computeActualFormalAlignment(FnSymbol* fn,
                              Vec<Symbol*>& alignedActuals,
@@ -311,7 +316,7 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
                  CallInfo& info);
 
-static void resolveNormalCall(CallExpr* call);
+static FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 static void lvalueCheck(CallExpr* call);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
@@ -528,7 +533,8 @@ FnSymbol* getAutoDestroy(Type* t) {
 
 
 const char* toString(Type* type) {
-  return type->getValType()->symbol->name;
+  if( type ) return type->getValType()->symbol->name;
+  return "null type";
 }
 
 
@@ -1114,6 +1120,10 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (formalType == dtIntegral && (is_int_type(actualType) || is_uint_type(actualType)))
     return true;
+  if (formalType == dtBoolean && is_bool_type(actualType))
+    return true;
+  //if (formalType == dtValue && isRecord(actualType) )
+  //  return true;
   if (formalType == dtAnyEnumerated && (is_enum_type(actualType)))
     return true;
   if (formalType == dtNumeric &&
@@ -1206,8 +1216,12 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
 // returns true iff dispatching the actualType to the formalType
 // results in a coercion.
 //
+// fn is the function being called usually but in resolveReturnType it
+// is the function we're finding return types for.
+// call is normally the CallExpr, but in resolveReturnType it is NULL.
+
 bool
-canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes) {
+canCoerce(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes) {
   if (canParamCoerce(actualType, actualSym, formalType))
     return true;
   if (is_real_type(formalType)) {
@@ -1234,10 +1248,10 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (isSyncType(actualType)) {
     Type* baseType = actualType->getField("base_type")->type;
-    return canDispatch(baseType, NULL, formalType, fn, promotes);
+    return canDispatch(call, baseType, NULL, formalType, fn, promotes);
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
-    return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
+    return canDispatch(call, actualType->getValType(), NULL, formalType, fn, promotes);
   if (// isLcnSymbol(actualSym) && // What does this exclude?
       actualType == dtStringC && formalType == dtString)
     return true;
@@ -1245,14 +1259,101 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
     return true;
   if (formalType == dtString && actualType == dtStringCopy)
     return true;
+
+  if( call && call->getStmtExpr() && nUserCoercions < maxUserCoercions ) {
+    // Check for a user-defined coercion between formalType and actualType.
+    TypeSymbol* fts = formalType->symbol;
+    SET_LINENO(call);
+    VarSymbol* tmp = newTemp("coerce_tmp", actualType);
+    tmp->addFlag(FLAG_COERCE_TEMP);
+    DefExpr* def = new DefExpr(tmp);
+    
+    CallExpr* castCall = new CallExpr("coercible", gMethodToken, tmp, fts);
+    FnSymbol *resolved_coerce = NULL;
+    FnSymbol *resolved_cast = NULL;
+    bool can_coerce = false;
+
+    // Add the cast to the AST so that it has a scope, etc.
+
+    call->getStmtExpr()->insertBefore(def);
+    call->getStmtExpr()->insertBefore(castCall);
+    
+    // HERE. 
+    nUserCoercions++;
+    resolved_coerce = tryResolveCall(castCall);
+    nUserCoercions--;
+    //FnSymbol* resolved = NULL;
+
+    /*
+    if( resolved_coerce && ! resolved_coerce->hasFlag(FLAG_COERCE_FN) ) {
+      USR_FATAL_CONT(call, "could use supplied coercion");
+      USR_FATAL(resolved_coerce, "coercible exists but was not marked as a coerce function");
+      resolved_coerce = NULL;
+    }
+    */
+
+    if( resolved_coerce && resolved_coerce->retTag != RET_PARAM ) {
+      USR_FATAL_CONT(call, "could use supplied coercion");
+      USR_FATAL(resolved_coerce, "coercible method exists but does not return a param");
+      resolved_coerce = NULL;
+    }
+ 
+    if( resolved_coerce ) {
+      // Extract the return value out of the instantiated function.
+      Expr* result = resolve_type_expr(castCall);
+
+      if( !result || !is_bool_type(result->typeInfo()) ) {
+        USR_FATAL_CONT(call, "could use supplied coercion");
+        USR_FATAL(resolved_coerce, "coercible method exists but does not return bool");
+      }
+      SymExpr* symExpr = toSymExpr(result);
+      VarSymbol* varSym = NULL;
+      if( symExpr ) varSym = toVarSymbol(symExpr->var);
+      if(varSym && varSym->immediate ) {
+        can_coerce = varSym->immediate->bool_value();
+      } else {
+        USR_FATAL_CONT(call, "could use supplied coercion");
+        USR_FATAL(resolved_coerce, "coercible method exists but does not return immediate");
+      }
+      // Remove the result from the AST
+      result->remove();
+      // don't need to remove castCall since it was replaced with result.
+    } else {
+      // Remove the test from the AST
+      castCall->remove();
+    }
+
+    if( can_coerce ) {
+      // Check also that _cast exists and resolves.
+      castCall = createCastCallPostNormalize(tmp, fts);
+      call->getStmtExpr()->insertBefore(castCall);
+
+      nUserCoercions++;
+      resolved_cast = tryResolveCall(castCall);
+      nUserCoercions--;
+   
+      castCall->remove();
+
+      if( ! resolved_cast ) {
+        USR_FATAL_CONT(call, "could use supplied coercion");
+        USR_FATAL(resolved_coerce, "coercible method exists but there was no corresponding cast method");
+      }
+    }
+
+    def->remove();
+
+    if( resolved_coerce && resolved_cast ) return true;
+    return false;
+  }
   return false;
 }
 
 // Returns true iff the actualType can dispatch to the formalType.
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
+// fn is the function being called
 bool
-canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes, bool paramCoerce) {
+canDispatch(CallExpr* call, Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes, bool paramCoerce) {
   if (promotes)
     *promotes = false;
   if (actualType == formalType)
@@ -1270,13 +1371,13 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
     return true;
   if (actualType->refType == formalType)
     return true;
-  if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, promotes))
+  if (!paramCoerce && canCoerce(call, actualType, actualSym, formalType, fn, promotes))
     return true;
   if (paramCoerce && canParamCoerce(actualType, actualSym, formalType))
     return true;
 
   forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent == formalType || canDispatch(parent, NULL, formalType, fn, promotes)) {
+    if (parent == formalType || canDispatch(call, parent, NULL, formalType, fn, promotes)) {
       return true;
     }
   }
@@ -1284,7 +1385,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   if (fn &&
       strcmp(fn->name, "=") &&
       actualType->scalarPromotionType &&
-      (canDispatch(actualType->scalarPromotionType, NULL, formalType, fn))) {
+      (canDispatch(call, actualType->scalarPromotionType, NULL, formalType, fn))) {
     if (promotes)
       *promotes = true;
     return true;
@@ -1302,8 +1403,8 @@ isDispatchParent(Type* t, Type* pt) {
 }
 
 static bool
-moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
-  if (canDispatch(actualType, NULL, formalType, fn))
+moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType, const DisambiguationContext& DC) {
+  if (canDispatch(DC.call, actualType, NULL, formalType, fn))
     return true;
   if (canInstantiate(actualType, formalType)) {
     return true;
@@ -1730,7 +1831,7 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
         return;
       }
 
-      if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+      if (!canDispatch(info.call, actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
         return;
       }
     }
@@ -1783,7 +1884,7 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
 
           }
         } else {
-          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+          if (!canDispatch(info.call, actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
             return;
           }
         }
@@ -2065,7 +2166,7 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
   TRACE_DISAMBIGUATE_BY_MATCH("Actual's type: %s\n", toString(actualType));
 
   bool formal1Promotes = false;
-  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
+  canDispatch(DC.call, actualType, actual, f1Type, fn1, &formal1Promotes);
   DS.fn1Promotes |= formal1Promotes;
 
   TRACE_DISAMBIGUATE_BY_MATCH("Formal 1's type: %s\n", toString(f1Type));
@@ -2082,7 +2183,7 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
   }
 
   bool formal2Promotes = false;
-  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes);
+  canDispatch(DC.call, actualType, actual, f2Type, fn1, &formal2Promotes);
   DS.fn2Promotes |= formal2Promotes;
 
   TRACE_DISAMBIGUATE_BY_MATCH("Formal 2's type: %s\n", toString(f2Type));
@@ -2172,11 +2273,11 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
       TRACE_DISAMBIGUATE_BY_MATCH("J: Fn %d is more specific\n", DC.j);
       DS.fn2MoreSpecific = true;
     }
-  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
+  } else if (moreSpecific(fn1, f1Type, f2Type, DC) && f2Type != f1Type) {
     TRACE_DISAMBIGUATE_BY_MATCH("K: Fn %d is more specific\n", DC.i);
     DS.fn1MoreSpecific = true;
 
-  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
+  } else if (moreSpecific(fn1, f2Type, f1Type, DC) && f2Type != f1Type) {
     TRACE_DISAMBIGUATE_BY_MATCH("L: Fn %d is more specific\n", DC.j);
     DS.fn2MoreSpecific = true;
 
@@ -2410,6 +2511,8 @@ static void
 printResolutionErrorUnresolved(
                      Vec<FnSymbol*>& visibleFns,
                      CallInfo* info) {
+  if( ! info ) INT_FATAL("CallInfo is NULL");
+  if( ! info->call ) INT_FATAL("call is NULL");
   CallExpr* call = userCall(info->call);
 
   if( developer ) {
@@ -2417,15 +2520,20 @@ printResolutionErrorUnresolved(
     USR_FATAL_CONT(call, "failed to resolve call with id %i", call->id);
   }
 
-  if (!strcmp("_cast", info->name)) {
-    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
+  if (call->isCast() ) {
+    // args are: dtMethodToken, this (from), to
+    // but actuals is 0-based, so ...
+    int from = 1;
+    int to = 2;
+
+    if (!info->actuals.v[to]->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal cast to non-type",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+                toString(info->actuals.v[from]->type),
+                toString(info->actuals.v[to]->type));
     } else {
       USR_FATAL(call, "illegal cast from %s to %s",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+                toString(info->actuals.v[from]->type),
+                toString(info->actuals.v[to]->type));
     }
   } else if (!strcmp("free", info->name)) {
     if (info->actuals.n > 0 &&
@@ -2972,6 +3080,7 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
 }
 
 
+// Resolves a param or type expression
 static Expr*
 resolve_type_expr(Expr* expr) {
   Expr* result = NULL;
@@ -3353,7 +3462,16 @@ resolveCall(CallExpr* call)
 }
 
 
-void resolveNormalCall(CallExpr* call) {
+FnSymbol* tryResolveCall(CallExpr* call) {
+  return resolveNormalCall(call, true);
+}
+
+// if checkonly is provided, don't print any errors; just check
+// to see if the particular function could be resolved.
+// returns the result of resolving - or NULL if we couldn't do it.
+// If checkonly is set, NULL can be returned - otherwise that would
+// be a fatal error.
+FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if( call->id == breakOnResolveID ) {
     printf("breaking on call:\n");
@@ -3363,7 +3481,10 @@ void resolveNormalCall(CallExpr* call) {
 
   resolveDefaultGenericType(call);
 
-  CallInfo info(call);
+  CallInfo info(call, checkonly);
+
+  // Return early if creating the call info would have been an error.
+  if( checkonly && info.badcall ) return NULL;
 
   Vec<FnSymbol*> visibleFns; // visible functions
 
@@ -3427,9 +3548,9 @@ void resolveNormalCall(CallExpr* call) {
 
   Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
   bool explain = fExplainVerbose &&
-    ((explainCallLine && explainCallMatch(call)) ||
-     info.call->id == explainCallID);
-  DisambiguationContext DC(&info.actuals, scope, explain);
+    ((explainCallLine && explainCallMatch(info.call)) ||
+     call->id == explainCallID);
+  DisambiguationContext DC(call, &info.actuals, scope, explain);
 
   ResolutionCandidate* best = disambiguateByMatch(candidates, DC);
 
@@ -3438,6 +3559,7 @@ void resolveNormalCall(CallExpr* call) {
      * Finish instantiating the body.  This is a noop if the function wasn't
      * partially instantiated.
      */
+
     instantiateBody(best->fn);
 
     if (explainCallLine && explainCallMatch(call)) {
@@ -3450,24 +3572,29 @@ void resolveNormalCall(CallExpr* call) {
   if (call->partialTag && (!best || !best->fn ||
                            !best->fn->hasFlag(FLAG_NO_PARENS))) {
     if (best != NULL) {
-      delete best;
+      //delete best; deleted below.
       best = NULL;
     }
   } else if (!best) {
     if (tryStack.n) {
-      tryFailure = true;
-      return;
+      // MPF -- doesn't this leak memory for the ResolutionCandidates?
+      if( ! checkonly ) tryFailure = true;
+      return NULL;
 
     } else {
-      if (candidates.n > 0) {
-        Vec<FnSymbol*> candidateFns;
-        forv_Vec(ResolutionCandidate*, candidate, candidates) {
-          candidateFns.add(candidate->fn);
-        }
+      // if we're just checking, don't print errors
+      if( ! checkonly ) {
 
-        printResolutionErrorAmbiguous(candidateFns, &info);
-      } else {
-        printResolutionErrorUnresolved(visibleFns, &info);
+        if (candidates.n > 0) {
+          Vec<FnSymbol*> candidateFns;
+          forv_Vec(ResolutionCandidate*, candidate, candidates) {
+            candidateFns.add(candidate->fn);
+          }
+
+          printResolutionErrorAmbiguous(candidateFns, &info);
+        } else {
+          printResolutionErrorUnresolved(visibleFns, &info);
+        }
       }
     }
   } else {
@@ -3485,48 +3612,55 @@ void resolveNormalCall(CallExpr* call) {
 
   if (call->partialTag) {
     if (!resolvedFn) {
-      return;
+      return NULL;
     }
     call->partialTag = false;
   }
 
-  if (resolvedFn &&
-      !strcmp("=", resolvedFn->name) &&
-      isRecord(resolvedFn->getFormal(1)->type) &&
-      resolvedFn->getFormal(2)->type == dtNil) {
-    USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
-              toString(resolvedFn->getFormal(1)->type));
+
+  if( ! checkonly ) {
+    if (resolvedFn &&
+        !strcmp("=", resolvedFn->name) &&
+        isRecord(resolvedFn->getFormal(1)->type) &&
+        resolvedFn->getFormal(2)->type == dtNil) {
+      USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
+                toString(resolvedFn->getFormal(1)->type));
+    }
+
+    if (!resolvedFn) {
+      INT_FATAL(call, "unable to resolve call");
+    }
   }
 
-  if (!resolvedFn) {
-    INT_FATAL(call, "unable to resolve call");
-  }
-
-  if (call->parentSymbol) {
+  if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
     call->baseExpr->replace(new SymExpr(resolvedFn));
   }
 
-  if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
-    // Not allowed if it is not called directly from a constructor.
-    if (!isInConstructorLikeFunction(call) ||
-        !getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS)
-        )
-      USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed", resolvedFn->name);
+  if( ! checkonly ) {
+    if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
+      // Not allowed if it is not called directly from a constructor.
+      if (!isInConstructorLikeFunction(call) ||
+          !getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS)
+          )
+        USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed", resolvedFn->name);
 
-  lvalueCheck(call);
-  checkForStoringIntoTuple(call, resolvedFn);
+    lvalueCheck(call);
+    checkForStoringIntoTuple(call, resolvedFn);
 
-  if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 2);
-    if (callStack.n >= 2)
-      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
-        outerCompilerWarningMap.put(fn, str);
+    if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
+      reissueCompilerWarning(str, 2);
+      if (callStack.n >= 2)
+        if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+          outerCompilerWarningMap.put(fn, str);
+    }
+
+    if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
+      reissueCompilerWarning(str, 1);
+    }
   }
 
-  if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 1);
-  }
+  return resolvedFn;
 }
 
 
@@ -4196,12 +4330,12 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 static Expr* dropUnnecessaryCast(CallExpr* call) {
   // Check for and remove casts to the original type and size
   Expr* result = call;
-  if (!call->isNamed("_cast"))
-    INT_FATAL("dropUnnecessaryCasts called on non _cast call");
+  if (! call->isCast() )
+    INT_FATAL("dropUnnecessaryCasts called on non cast call");
 
-  if (SymExpr* sym = toSymExpr(call->get(2))) {
+  if (SymExpr* sym = toSymExpr(call->castFrom())) {
     if (VarSymbol* var = toVarSymbol(sym->var)) {
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
+      if (SymExpr* sym = toSymExpr(call->castTo())) {
         Type* oldType = var->type;
         Type* newType = sym->var->type;
 
@@ -4211,7 +4345,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
         }
       }
     } else if (EnumSymbol* e = toEnumSymbol(sym->var)) {
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
+      if (SymExpr* sym = toSymExpr(call->castTo())) {
         EnumType* oldType = toEnumType(e->type);
         EnumType* newType = toEnumType(sym->var->type);
         if (newType && oldType == newType) {
@@ -5073,14 +5207,14 @@ preFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isNamed("_cast")) {
+    } else if (call->isCast()) {
       result = dropUnnecessaryCast(call);
       if (result == call) {
         // The cast was not dropped.  Remove integer casts on immediate values.
-        if (SymExpr* sym = toSymExpr(call->get(2))) {
+        if (SymExpr* sym = toSymExpr(call->castFrom())) {
           if (VarSymbol* var = toVarSymbol(sym->var)) {
             if (var->immediate) {
-              if (SymExpr* sym = toSymExpr(call->get(1))) {
+              if (SymExpr* sym = toSymExpr(call->castTo())) {
                 Type* oldType = var->type;
                 Type* newType = sym->var->type;
                 if ((is_int_type(oldType) || is_uint_type(oldType) ||
@@ -5101,7 +5235,7 @@ preFold(Expr* expr) {
                   } else if (typeenum) {
                     int64_t value, count = 0;
                     bool replaced = false;
-                    if (!get_int(call->get(2), &value)) {
+                    if (!get_int(call->castFrom(), &value)) {
                       INT_FATAL("unexpected case in cast_fold");
                     }
                     for_enums(constant, typeenum) {
@@ -5116,16 +5250,16 @@ preFold(Expr* expr) {
                       }
                     }
                     if (!replaced) {
-                      USR_FATAL(call->get(2), "enum cast out of bounds");
+                      USR_FATAL(call->castFrom(), "enum cast out of bounds");
                     }
-                  } else {
+                  } else { // error out here.
                     INT_FATAL("unexpected case in cast_fold");
                   }
                 }
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
-            if (SymExpr* sym = toSymExpr(call->get(1))) {
+            if (SymExpr* sym = toSymExpr(call->castTo())) {
               Type* newType = sym->var->type;
               if (newType == dtStringC) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
@@ -5446,6 +5580,68 @@ preFold(Expr* expr) {
           break;
         }
       }
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_CALL_RESOLVES) ||
+               call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
+      Expr* fnName = NULL;
+      Expr* callThis = NULL;
+
+      // this would be easier if we had a non-normalized AST!
+      // That is, if this call could contain a whole expression subtree.
+      int first_arg;
+      if( call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ) {
+        // get(1) should be a a receiver
+        // get(2) should be a string function name.
+        callThis = call->get(1);
+        fnName = call->get(2);
+        first_arg = 3;
+      } else {
+        // get(1) should be a string function name.
+        fnName = call->get(1);
+        first_arg = 2;
+      }
+      VarSymbol* var = toVarSymbol(toSymExpr(fnName)->var);
+      INT_ASSERT( var != NULL );
+      // the rest are arguments.
+      Immediate* imm = var->immediate;
+      // fail horribly if immediate is not a string .
+      INT_ASSERT(imm && imm->const_kind == CONST_KIND_STRING);
+      const char* name = imm->v_string;
+
+      // temporarily add a call to try resolving.
+      CallExpr* tryCall = NULL;
+      if( call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ) {
+        tryCall = new CallExpr(new UnresolvedSymExpr(name),
+                               gMethodToken,
+                               callThis->copy());
+      } else {
+        tryCall = new CallExpr(name);
+      }
+
+      // Add our new call to the AST temporarily.
+      call->getStmtExpr()->insertAfter(tryCall);
+      // normalize it (important for methods)
+      //normalize(tryCall);
+
+      // copy actual args into tryCall.
+      int i = 1;
+      for_actuals(actual, call) {
+        if( i >= first_arg ) { // skip fn name, maybe method receiver
+          tryCall->insertAtTail(actual->copy());
+        }
+        i++;
+      }
+
+      // Try to resolve it.
+      if( tryResolveCall(tryCall) ) {
+        result = new SymExpr(gTrue);
+      } else {
+        result = new SymExpr(gFalse);
+      }
+
+      // remove the call from the AST
+      tryCall->remove();
+
       call->replace(result);
     } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS) || call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
       EnumType* et = toEnumType(toSymExpr(call->get(1))->var->type);
@@ -6034,7 +6230,7 @@ postFold(Expr* expr) {
       }
 
       if (sym->var->type != dtUnknown && sym->var->type != val->type) {
-        CallExpr* cast = new CallExpr("_cast", sym->var, val);
+        CallExpr* cast = createCastCallPostNormalize(val, sym->var);
         sym->replace(cast);
         result = preFold(cast);
       } else {
@@ -6320,7 +6516,8 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               call->insertBefore(new DefExpr(tmp));
               call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
             }
-            CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
+            CallExpr* cast = createCastCallPostNormalize(
+                                          tmp, lhsType->symbol);
             call->insertAtTail(cast);
             casts.add(cast);
           }
@@ -6414,7 +6611,7 @@ static void resolveReturnType(FnSymbol* fn)
         for (int j = 0; j < retTypes.n; j++) {
           if (retTypes.v[i] != retTypes.v[j]) {
             bool requireScalarPromotion = false;
-            if (!canDispatch(retTypes.v[j], retParams.v[j], retTypes.v[i], fn, &requireScalarPromotion))
+            if (!canDispatch(NULL, retTypes.v[j], retParams.v[j], retTypes.v[i], fn, &requireScalarPromotion))
               best = false;
             if (requireScalarPromotion)
               best = false;

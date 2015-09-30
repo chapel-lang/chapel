@@ -645,17 +645,24 @@ static void build_enum_enumerate_function(EnumType* et) {
 
 static void build_enum_cast_function(EnumType* et) {
   // integral value to enumerated type cast function
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol("cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  arg1->addFlag(FLAG_TYPE_VARIABLE);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
-  fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
+  fn->addFlag(FLAG_METHOD);
+  // was arg1
+  ArgSymbol* to = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  to->addFlag(FLAG_TYPE_VARIABLE);
+  // was arg2
+  ArgSymbol* from = new ArgSymbol(INTENT_BLANK, "_from", dtIntegral);
+  from->addFlag(FLAG_ARG_THIS);
+  fn->_this = from;
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(from);
+  fn->insertFormalAtTail(to);
+  fn->where = new BlockStmt(new CallExpr("==", to, et->symbol));
   if (fNoBoundsChecks) {
     fn->addFlag(FLAG_INLINE);
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, et->symbol, arg2)));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST,
+            et->symbol, from)));
   } else {
     // Generate a select statement with when clauses for each of the
     // enumeration constants, and an otherwise clause that calls halt.
@@ -670,7 +677,7 @@ static void build_enum_cast_function(EnumType* et) {
                                   new SymExpr(new_IntSymbol(count))),
                      new CallExpr(PRIM_RETURN,
                                   new CallExpr(PRIM_CAST,
-                                               et->symbol, arg2)));
+                                               et->symbol, from)));
       whenstmts->insertAtTail(when);
     }
     const char * errorString = "enumerated type out of bounds";
@@ -679,7 +686,7 @@ static void build_enum_cast_function(EnumType* et) {
                    new BlockStmt(new CallExpr("halt",
                                  new_StringSymbol(errorString))));
     whenstmts->insertAtTail(otherwise);
-    fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
+    fn->insertAtTail(buildSelectStmt(new SymExpr(from), whenstmts));
   }
   DefExpr* def = new DefExpr(fn);
   //
@@ -691,18 +698,22 @@ static void build_enum_cast_function(EnumType* et) {
   normalize(fn);
 
   // c_string to enumerated type cast function
-  fn = new FnSymbol("_cast");
+  fn = new FnSymbol("cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  arg1->addFlag(FLAG_TYPE_VARIABLE);
-  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtStringC);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
+  fn->addFlag(FLAG_METHOD);
+  to = new ArgSymbol(INTENT_BLANK, "t", dtAny);
+  to->addFlag(FLAG_TYPE_VARIABLE);
+  from = new ArgSymbol(INTENT_BLANK, "_from", dtStringC);
+  from->addFlag(FLAG_ARG_THIS);
+  fn->_this = from;
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(from);
+  fn->insertFormalAtTail(to);
 
   CondStmt* cond = NULL;
   for_enums(constant, et) {
     cond = new CondStmt(
-             new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
+             new CallExpr("==", from, new_StringSymbol(constant->sym->name)),
              new CallExpr(PRIM_RETURN, constant->sym),
              cond);
   }
@@ -711,14 +722,14 @@ static void build_enum_cast_function(EnumType* et) {
 
   fn->insertAtTail(new CallExpr("halt",
                                 new_StringSymbol("illegal conversion of string \\\""),
-                                arg2,
+                                from,
                                 new_StringSymbol("\\\" to "),
                                 new_StringSymbol(et->symbol->name)));
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                 toDefExpr(et->constants.first())->sym));
 
-  fn->where = new BlockStmt(new CallExpr("==", arg1, et->symbol));
+  fn->where = new BlockStmt(new CallExpr("==", to, et->symbol));
   def = new DefExpr(fn);
   //
   // these cast functions need to go in the base module because they
@@ -859,18 +870,22 @@ static void build_extern_assignment_function(Type* type)
 }
 
 
-// _cast is automatically called to perform coercions.
+// cast is automatically called to perform coercions.
 // If the coercion is permissible, then the operand can be statically cast to
 // the target type.
 static void build_record_cast_function(AggregateType* ct) {
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol("cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
+  fn->addFlag(FLAG_METHOD);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
-  fn->insertFormalAtTail(t);
+  arg->addFlag(FLAG_ARG_THIS);
+  fn->_this = arg;
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(arg);
+  fn->insertFormalAtTail(t);
   fn->where = new BlockStmt(new CallExpr(PRIM_IS_SUBTYPE, ct->symbol, t));
   VarSymbol* ret = newTemp();
   fn->insertAtTail(new DefExpr(ret));
@@ -1228,17 +1243,20 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
 
 static void buildStringCastFunction(EnumType* et) {
-  if (function_exists("_cast", 2, dtStringC, et))
+  if (function_exists("cast", 3, dtMethodToken, et, dtStringC))
     return;
 
-  FnSymbol* fn = new FnSymbol("_cast");
+  FnSymbol* fn = new FnSymbol("cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_METHOD);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
-  fn->insertFormalAtTail(t);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
   arg->addFlag(FLAG_ARG_THIS);
+  fn->_this = arg;
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(arg);
+  fn->insertFormalAtTail(t);
   fn->where = new BlockStmt(new CallExpr("==", t, dtStringC->symbol));
 
   for_enums(constant, et) {

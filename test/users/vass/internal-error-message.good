@@ -1,2 +1,2 @@
 internal-error-message.chpl:72: In function 'scalar_outer_product_cholesky':
-internal-error-message.chpl:90: internal error: the type of the actual argument 'A' is generic [callInfo.cpp:56]
+internal-error-message.chpl:90: internal error: the type of the actual argument 'A' is generic [callInfo.cpp:61]

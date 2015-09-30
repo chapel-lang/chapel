@@ -21,8 +21,9 @@
 #include "callInfo.h"
 #include "expr.h"
 
-
-CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
+CallInfo::CallInfo(CallExpr* icall, bool checkonly)
+  : call(icall), scope(NULL), name(NULL),
+    actuals(), actualNames(), badcall(false) {
   if (SymExpr* se = toSymExpr(call->baseExpr))
     name = se->var->name;
   else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr))
@@ -50,10 +51,16 @@ CallInfo::CallInfo(CallExpr* icall) : call(icall), scope(NULL) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
     Type* t = se->var->type;
-    if (t == dtUnknown && ! se->var->hasFlag(FLAG_TYPE_VARIABLE) )
-      USR_FATAL(call, "use of '%s' before encountering its definition, type unknown", se->var->name);
-    if (t->symbol->hasFlag(FLAG_GENERIC))
-      INT_FATAL(call, "the type of the actual argument '%s' is generic", se->var->name);
+    if (t == dtUnknown && ! se->var->hasFlag(FLAG_TYPE_VARIABLE) ) {
+      if (checkonly) badcall = true;
+      else USR_FATAL(call, "use of '%s' before encountering its definition,"
+                           "type unknown", se->var->name);
+    }
+    if (t->symbol->hasFlag(FLAG_GENERIC)) {
+      if (checkonly) badcall = true;
+      else INT_FATAL(call, "the type of the actual argument '%s' is generic",
+                            se->var->name);
+    }
     actuals.add(se->var);
   }
 }

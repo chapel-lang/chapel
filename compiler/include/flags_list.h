@@ -62,6 +62,7 @@ symbolFlag( FLAG_CHPL__ITER , npr, "chpl__iter", "used as a marker to implement 
 symbolFlag( FLAG_VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators" )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL , npr, "cobegin or coforall" , ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL_BLOCK , npr, "cobegin or coforall block" , ncm )
+//symbolFlag( FLAG_COERCE_FN , ypr, "coerce" , "a cast function that should be considered for coercions" )
 symbolFlag( FLAG_COERCE_TEMP , npr, "coerce temp" , "a temporary that was stores the result of a coercion" )
 symbolFlag( FLAG_CODEGENNED , npr, "codegenned" , "code has been generated for this type" )
 symbolFlag( FLAG_COFORALL_INDEX_VAR , npr, "coforall index var" , ncm )

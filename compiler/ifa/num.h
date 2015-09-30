@@ -100,6 +100,7 @@ class Immediate { public:
   int64_t  int_value( void);
   uint64_t uint_value( void);
   uint64_t bool_value( void);
+  const char* string_value( void);
 
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
@@ -161,6 +162,14 @@ Immediate::uint_value( void) {
   }
   return val;
 }
+
+inline const char*
+Immediate::string_value( void) {
+  if( this->const_kind != CONST_KIND_STRING )
+    INT_FATAL("not a string");
+  return v_string;
+}
+
 
 
 class ImmHashFns { public:

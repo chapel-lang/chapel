@@ -48,6 +48,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include "view.h"
 
 //########################################################################
 //# Static Function Forward Declarations
@@ -461,13 +462,14 @@ void reorderActuals(FnSymbol* fn,
 
 
 // do we need to add some coercion from the actual to the formal?
-static bool needToAddCoercion(Type* actualType, Symbol* actualSym,
+static bool needToAddCoercion(CallExpr* call,
+                              Type* actualType, Symbol* actualSym,
                               Type* formalType, FnSymbol* fn) {
   if (actualType == formalType)
     return false;
   else
-    return canCoerce(actualType, actualSym, formalType, fn) ||
-           isDispatchParent(actualType, formalType);
+    return canCoerce(call, actualType, actualSym, formalType, fn)
+           || isDispatchParent(actualType, formalType);
 }
 
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
@@ -480,6 +482,7 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   SET_LINENO(prevActual);
   TypeSymbol* ats = actualSym->type->symbol;
   TypeSymbol* fts = formal->type->symbol;
+
   CallExpr* castCall;
   VarSymbol* castTemp = newTemp("coerce_tmp"); // ..., formal->type ?
   castTemp->addFlag(FLAG_COERCE_TEMP);
@@ -573,9 +576,20 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     castCall = NULL;
   }
 
-  if (castCall == NULL)
+  if (castCall == NULL) {
     // the common case
-    castCall = new CallExpr("_cast", fts, prevActual);
+    
+    //printf("HERE\n");
+    if( isClass(fts->type) && isClass(ats->type) &&
+        isDispatchParent(ats->type, fts->type) ) {
+      // Just use primitive cast to go from class type to object
+      castCall = new CallExpr(PRIM_CAST, fts, prevActual);
+    } else {
+      castCall = createCastCallPostNormalize(prevActual, fts);
+    }
+    //print_view(castCall);
+
+  }
 
   // move the result to the temp
   CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
@@ -649,7 +663,7 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
     do {
       c2 = false;
       Type* actualType = actualSym->type;
-      if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
+      if (needToAddCoercion(info->call, actualType, actualSym, formalType, fn)) {
         // addArgCoercion() updates currActual, actualSym, c2
         addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
       }
@@ -821,7 +835,7 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
     Type* actualType = actuals->v[j]->type;
     Symbol* actualSym = actuals->v[j];
     bool promotes = false;
-    if (canDispatch(actualType, actualSym, formal->type, fn, &promotes)){
+    if (canDispatch(info->call, actualType, actualSym, formal->type, fn, &promotes)){
       if (promotes) {
         promotion_wrapper_required = true;
         promoted_subs.put(formal, actualType->symbol);

@@ -610,20 +610,23 @@ module NewString {
   //
 
   // Cast from baseType to string
-  inline proc _cast(type t, cs: baseType) where t==string_rec {
+  // TODO -- this should work with baseType but that presents
+  // an error in resolution.
+  inline proc c_string.cast(type t) where t==string_rec {
     if debugStrings then writeln("in _cast() "+baseTypeString+"-string");
-    if cs.locale.id != here.id then
+    if this.locale.id != here.id then
       halt("Cannot cast a remote "+baseTypeString+" to string.");
     var ret: string_rec;
-    ret.len = cs.length;
-    if ret.len != 0 then ret.base = __primitive("string_copy", cs);
+    ret.len = this.length;
+    if ret.len != 0 then ret.base = __primitive("string_copy", this);
     ret.incRefCntNoAlias();
     if debugStrings then writeln("leaving _cast() "+baseTypeString+"-string");
     return ret;
   }
 
   // Other casts to strings use the baseType
-  inline proc _cast(type t, x) where t==string_rec && x.type != baseType {
+  /* Not sure what to do with this one.
+  inline proc cast(type t, x) where t==string_rec && x.type != baseType {
     if debugStrings then writeln("in _cast() ", typeToString(t), "-string");
     const cs = x:c_string_copy;
     var ret: string_rec;
@@ -635,19 +638,21 @@ module NewString {
                                  "-string");
     return ret;
   }
+  */
 
   // Cast from string to the baseType
   // This currently does not allocate a new baseType string
   // It is exactly the same as string.c_str()
-  inline proc _cast(type t, s: string_rec) where t==baseType {
+  inline proc string_rec.cast(type t, s: string_rec) where t==baseType {
     if debugStrings then writeln("in _cast() string-c_"+baseTypeString);
-    if s.home.id != here.id then
+    if this.home.id != here.id then
       halt("Cannot cast a remote string to "+baseTypeString);
     if debugStrings then writeln("leaving _cast() string-"+baseTypeString);
-    return s.base;
+    return this.base;
   }
 
   // Other casts from strings use the baseType
+  /* Not sure what to do here.
   inline proc _cast(type t, s: string_rec) where t!=baseType {
     if debugStrings then writeln("in _cast() string-", typeToString(t));
     const sremote = s.home.id != here.id;
@@ -659,7 +664,7 @@ module NewString {
     if sremote then free_baseType(sbase);
     if debugStrings then writeln("leaving _cast() string-", typeToString(t));
     return ret;
-  }
+  }*/
 
 
   // Functions that are no longer supported:

@@ -1461,6 +1461,7 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
   dtValue = createInternalType("value", "_chpl_value");
+  dtValue->symbol->addFlag(FLAG_GENERIC);
 
   INIT_PRIM_BOOL("bool(1)", 1);
   INIT_PRIM_BOOL("bool(8)", 8);
@@ -1536,6 +1537,9 @@ void initPrimitiveTypes() {
 
   dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
+
+  dtBoolean = createInternalType ("boolean", "boolean");
+  dtBoolean->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);

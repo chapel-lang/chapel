@@ -865,11 +865,11 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr->get(1), printingType);
       }
 
-      else if (strcmp(fnName, "_cast")                        == 0)
+      else if (expr->isCast())
       {
-        appendExpr(expr->get(2), printingType);
+        appendExpr(expr->castFrom(), printingType);
         mText += ": ";
-        appendExpr(expr->get(1), printingType);
+        appendExpr(expr->castTo(), printingType);
       }
 
       else if (strcmp(fnName, "chpl__atomicType")             == 0)
