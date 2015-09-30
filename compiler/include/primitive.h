@@ -218,7 +218,8 @@ enum PrimitiveTag {
   PRIM_CAPTURE_FN,
   PRIM_CREATE_FN_TYPE,
 
-  PRIM_MEMCPY,                  // memcpy(dst, src, size)
+  PRIM_MOVE_TO_BUF,
+  PRIM_MOVE_FROM_BUF,
 
   PRIM_STRING_COPY,
   PRIM_STRING_FROM_C_STRING,

@@ -3047,25 +3047,33 @@ GenRet codegenSizeof(Type* t)
   return codegenSizeof(t->symbol->cname);
 }
 
-static
-GenRet codegenSizeof(Symbol* var)
+
+GenRet codegenSizeof(GenRet var)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+
+  // Create a temporary value if necessary.
+  // This prevents us from generating code like sizeof(1)
+  // which apparently C compilers do not like.
+  GenRet tmp = var;
+  if( tmp.isLVPtr != GEN_PTR ) {
+    tmp = createTempVarWith(tmp);
+  }
+  tmp = codegenValue(tmp);
+
   ret.chplType = SIZE_TYPE;
   if( info->cfile ) {
     ret.c = "sizeof(";
-    ret.c += var->cname;
+    ret.c += tmp.c;
     ret.c += ')';
   } else {
-#ifdef HAVE_LLVM
-    GenRet arg = var;
-    ret.val = codegenSizeofLLVM(var->val->getType());
-#endif
+ #ifdef HAVE_LLVM
+    ret.val = codegenSizeofLLVM(tmp.val->getType());
+ #endif
   }
   return ret;
 }
-
 
 // dest dest must have isLVPtr set. This function implements
 // part of codegenAssign.
@@ -5399,10 +5407,48 @@ GenRet CallExpr::codegen() {
         ret = codegenBasicPrimitiveExpr(this);
       break;
     }
-    case PRIM_MEMCPY:
+    case PRIM_MOVE_TO_BUF:
+    case PRIM_MOVE_FROM_BUF:
     {
-      // memcpy(dst, src, len)
-      codegenCall("memcpy", get(1), get(2), get(3));
+      // PRIM_MOVE_TO_BUF
+      // args: buffer to copy into/from (c void pointer)
+      //       variable to copy (could be lvalue or not)
+      // generates:
+      // memcpy(get(1), get(2), sizeof(get(2))
+      // PRIM_MOVE_FROM_BUF
+      // args: variable to copy (must be an lvalue)
+      //       buffer to copy from (c void pointer)
+      // generates:
+      // memcpy(get(2), get(1), sizeof(get(2))
+
+   
+      int variable = 0;
+      int buffer = 0;
+      if (primitive->tag == PRIM_MOVE_TO_BUF) {
+        buffer = 1;
+        variable = 2;
+      } else {
+        variable = 1;
+        buffer = 2;
+      }
+
+      GenRet var = get(variable);
+      GenRet buf = codegenValue(get(buffer));
+
+      // Make sure that var is an lvalue
+      // This helps codegenSizeof work right
+      // and helps with code below.
+      if( var.isLVPtr != GEN_PTR ) {
+        var = createTempVarWith(var);
+      }
+
+      GenRet size = codegenSizeof(var);
+
+      if (primitive->tag == PRIM_MOVE_TO_BUF) {
+        codegenCallMemcpy(buf, codegenAddrOf(var), size, NULL);
+      } else {
+        codegenCallMemcpy(codegenAddrOf(var), buf, size, NULL);
+      }
       break;
     }
 
