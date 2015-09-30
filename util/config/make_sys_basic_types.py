@@ -188,9 +188,9 @@ def get_sys_c_types(docs=False):
         if chpl_type == 'c_ptr':
             handled_c_ptr = True
 
-    if not handled_c_ptr:
-        sys_c_types.append('extern type c_void_ptr; '
-                           '// opaque; no ptr arithmetic in Chapel code!')
+    #if not handled_c_ptr:
+    #    sys_c_types.append('extern type c_void_ptr; '
+    #                       '// opaque; no ptr arithmetic in Chapel code!')
 
     # Finally, print out set of asserts for module. They assert that the
     # sizeof(<extern chpl type>) matches the sizeof(<chpl type>). E.g.

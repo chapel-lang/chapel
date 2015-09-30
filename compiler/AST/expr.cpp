@@ -52,6 +52,7 @@ static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
 static GenRet codegenCast(const char* typeName, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
+static GenRet codegenCastToCharStar(GenRet value);
 static GenRet createTempVar(Type* t);
 #define createTempRef(t) createTempVar(t)
 
@@ -1506,15 +1507,6 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
 }
 
 static
-GenRet codegenFieldPtr(GenRet base, Symbol* field) {
-  const char* cname = NULL;
-  const char* name = NULL;
-  cname = field->cname;
-  name = field->name;
-  return codegenFieldPtr(base, cname, name, field_normal);
-}
-
-static
 GenRet codegenFieldPtr(GenRet base, const char* field) {
   const char* cname = NULL;
   const char* name = NULL;
@@ -1988,6 +1980,18 @@ GenRet codegenAdd(GenRet a, GenRet b)
   GenRet ret;
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
+  bool handle_void_star = false;
+
+  // allow primitive + to apply to void *
+  // which isn't allowed by all C compilers,
+  // so we cast to char* and back.
+  // This feature is used so the compiler can generate
+  // calls to autoSerialize, etc.
+  if( av.chplType == dtCVoidPtr ) {
+    handle_void_star = true;
+    av = codegenCastToCharStar(av);
+  }
+
   if( info->cfile ) ret.c = "(" + av.c + " + " + bv.c + ")";
   else {
 #ifdef HAVE_LLVM
@@ -2005,6 +2009,11 @@ GenRet codegenAdd(GenRet a, GenRet b)
     ret.isUnsigned = !values.isSigned;
 #endif
   }
+
+  if( handle_void_star ) {
+    ret = codegenCastToVoidStar(ret);
+  }
+
   return ret;
 }
 
@@ -3029,6 +3038,34 @@ GenRet codegenSizeof(Type* t)
   return codegenSizeof(t->symbol->cname);
 }
 
+
+GenRet codegenSizeof(GenRet var)
+{
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+
+  // Create a temporary value if necessary.
+  // This prevents us from generating code like sizeof(1)
+  // which apparently C compilers do not like.
+  GenRet tmp = var;
+  if( tmp.isLVPtr != GEN_PTR ) {
+    tmp = createTempVarWith(tmp);
+  }
+  tmp = codegenValue(tmp);
+
+  ret.chplType = SIZE_TYPE;
+  if( info->cfile ) {
+    ret.c = "sizeof(";
+    ret.c += tmp.c;
+    ret.c += ')';
+  } else {
+ #ifdef HAVE_LLVM
+    ret.val = codegenSizeofLLVM(tmp.val->getType());
+ #endif
+  }
+  return ret;
+}
+
 // dest dest must have isLVPtr set. This function implements
 // part of codegenAssign.
 static
@@ -3430,7 +3467,7 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 ************************************* | ************************************/
 
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3450,13 +3487,14 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 
 CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3469,12 +3507,13 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3487,13 +3526,14 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
@@ -3506,6 +3546,7 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
@@ -3820,12 +3861,17 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
     aLocal = ap;
   }
 
-  if( info->cfile ) {
-    // generate the local C statement
-    std::string stmt = codegenValue(aLocal).c + op + bv.c + ";\n";
-    info->cStatements.push_back(stmt);
+  if( a.chplType != dtCVoidPtr ) {
+    if( info->cfile ) {
+      // generate the local C statement
+      std::string stmt = codegenValue(aLocal).c + op + bv.c + ";\n";
+      info->cStatements.push_back(stmt);
+    } else {
+      // LLVM version of a += b is just a = a + b.
+      codegenAssign(aLocal, codegenOp(codegenValue(ap), bv));
+    }
   } else {
-    // LLVM version of a += b is just a = a + b.
+    // Special case: handle casting to char* to get it right.
     codegenAssign(aLocal, codegenOp(codegenValue(ap), bv));
   }
 
@@ -5226,21 +5272,31 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_SIZEOF:
     {
-      Type* type = get(1)->typeInfo();
-      if (type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          type->symbol->hasFlag(FLAG_WIDE_REF))
-        // If wide, get the value type.
-        type = toAggregateType(type)->getField("addr", true)->typeInfo();
+      // get(1) is a SymExpr(TypeSymbol) or a SymExpr(VarSymbol/ArgSymbol)
+      // if it's a TypeSymbol, we'll use the size to allocate for
+      // a class.
+      // Otherwise, actually generate the size of the variable.
+      SymExpr* symExpr = toSymExpr(get(1));
+      Symbol* var = symExpr->var;
+      TypeSymbol* ts = toTypeSymbol(var);
 
-      GenRet size;
-      if (AggregateType* ct = toAggregateType(type)) {
-        // If Chapel class or record
-        size = codegenSizeof(ct->classStructName(true));
+      if (ts) {
+        Type* type = ts->type;
+        if (ts->hasFlag(FLAG_WIDE_CLASS) ||
+            ts->hasFlag(FLAG_WIDE_REF))
+          // If wide, get the value type.
+          type = toAggregateType(type)->getField("addr", true)->typeInfo();
+
+        if (AggregateType* ct = toAggregateType(type)) {
+          // If Chapel class or record
+          ret = codegenSizeof(ct->classStructName(true));
+        } else {
+          ret = codegenSizeof(type);
+        }
       } else {
-        size = codegenSizeof(type);
+        ret = codegenSizeof(var);
       }
 
-      ret = size;
       break;
     }
     case PRIM_CAST: 
@@ -5346,6 +5402,51 @@ GenRet CallExpr::codegen() {
         ret = codegenBasicPrimitiveExpr(this);
       break;
     }
+    case PRIM_MOVE_TO_BUF:
+    case PRIM_MOVE_FROM_BUF:
+    {
+      // PRIM_MOVE_TO_BUF
+      // args: buffer to copy into/from (c void pointer)
+      //       variable to copy (could be lvalue or not)
+      // generates:
+      // memcpy(get(1), get(2), sizeof(get(2))
+      // PRIM_MOVE_FROM_BUF
+      // args: variable to copy (must be an lvalue)
+      //       buffer to copy from (c void pointer)
+      // generates:
+      // memcpy(get(2), get(1), sizeof(get(2))
+
+   
+      int variable = 0;
+      int buffer = 0;
+      if (primitive->tag == PRIM_MOVE_TO_BUF) {
+        buffer = 1;
+        variable = 2;
+      } else {
+        variable = 1;
+        buffer = 2;
+      }
+
+      GenRet var = get(variable);
+      GenRet buf = codegenValue(get(buffer));
+
+      // Make sure that var is an lvalue
+      // This helps codegenSizeof work right
+      // and helps with code below.
+      if( var.isLVPtr != GEN_PTR ) {
+        var = createTempVarWith(var);
+      }
+
+      GenRet size = codegenSizeof(var);
+
+      if (primitive->tag == PRIM_MOVE_TO_BUF) {
+        codegenCallMemcpy(buf, codegenAddrOf(var), size, NULL);
+      } else {
+        codegenCallMemcpy(codegenAddrOf(var), buf, size, NULL);
+      }
+      break;
+    }
+
     case PRIM_CAST_TO_VOID_STAR:
     {
       Type* t = get(1)->typeInfo();
@@ -5522,71 +5623,22 @@ GenRet CallExpr::codegen() {
     genFnName = "chpl_taskListAddCoStmt";
   }
   if (gotBCbCf) {
-    // get(1) is a class containing bundled arguments
+    // get(1) is an task list value
+    // get(2) is the node ID owning the task list
+    // get(3) is a buffer containing bundled arguments
+    // get(4) is the buffer's length (unused for task fns)
+    // get(5) is a dummy class type for the argument bundle
+
+    GenRet taskList = codegenValue(get(1));
+    GenRet taskListNode = codegenValue(get(2));
+    GenRet taskBundle = codegenValue(get(3));
+
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
-    args[2] = codegenCastToVoidStar(codegenValue(get(1)));
-
-    AggregateType *bundledArgsType = toAggregateType(toSymExpr(get(1))->typeInfo());
-    int endCountField = 0;
-    for (int i = 1; i <= bundledArgsType->fields.length; i++) {
-      if (strstr(bundledArgsType->getField(i)->typeInfo()->symbol->name, "_EndCount") != NULL) {
-        // Turns out there can be more than one such field. See e.g.
-        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
-        // INT_ASSERT(endCountField == 0);
-        endCountField = i;
-        // We have historically picked the first such field.
-        break;
-      }
-    }
-    // We need the endCountField.
-    INT_ASSERT(endCountField != 0);
-
-    GenRet endCountPtr =
-      codegenValue(
-          codegenFieldPtr(get(1), bundledArgsType->getField(endCountField)));
-    Type *endCountType = bundledArgsType->getField(endCountField)->typeInfo();
-    // endCount is either an address or {locale, ptr} -- it is a class.
-    GenRet endCountValue = codegenValue(endCountPtr);
-    GenRet taskList;
-
-    if (endCountType->symbol->hasFlag(FLAG_WIDE_REF)) {
-      GenRet node = codegenRnode(endCountValue);
-      while(endCountValue.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF)){
-        endCountValue = codegenLocalDeref(endCountValue);
-      }
-      // Now, we should have a wide pointer to a class
-      // make it into a local pointer to a class.
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList")); 
-      taskList = codegenTernary(
-                       codegenNotEquals(node, codegenGetNodeID()),
-                       codegenNullPointer(),
-                       taskList);
-    } else if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      GenRet node = codegenRnode(endCountValue);
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-      taskList = codegenTernary(
-                     codegenNotEquals(node, codegenGetNodeID()),
-                     codegenNullPointer(),
-                     taskList);
-    } else if (endCountType->symbol->hasFlag(FLAG_REF)) {
-      endCountValue = codegenDeref(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    } else {
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    }
-
+    args[2] = codegenCastToVoidStar(taskBundle);
     args[3] = taskList;
-
-    if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      args[4] = codegenRnode(endCountPtr);
-    } else {
-      args[4] = codegenGetNodeID();
-    }
-
+    args[4] = codegenValue(taskListNode);
     args[5] = fn->linenum();
     args[6] = fn->fname();
 
@@ -5594,6 +5646,11 @@ GenRet CallExpr::codegen() {
     codegenCall(genFnName, args);
     return ret;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    // get(1) is the locale
+    // get(2) is a buffer containing bundled arguments
+    // get(3) is a the size of the buffer
+    // get(4) is a dummy class type for the argument bundle
+
     const char* fname = NULL;
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       fname = "chpl_executeOnNB";
@@ -5602,24 +5659,13 @@ GenRet CallExpr::codegen() {
     else
       fname = "chpl_executeOn";
 
-    TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
-    if (argType == NULL) {
-      INT_FATAL("could not get a type symbol");
-    }
-    
-    AggregateType* ct = toAggregateType(argType->typeInfo());
-    if (!ct) {
-      INT_FATAL("Expected a class type in %s argument", fname);
-    }
-    std::string ctype = ct->classStructName(true);
-
     GenRet locale_id = get(1);
 
     std::vector<GenRet> args(6);
     args[0] = codegenLocalAddrOf(locale_id);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_32);
     args[2] = get(2);
-    args[3] = codegenSizeof(ctype.c_str());
+    args[3] = get(3);
     args[4] = fn->linenum();
     args[5] = fn->fname();
 
