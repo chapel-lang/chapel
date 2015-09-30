@@ -42,6 +42,7 @@ $compperformancedescription = "";
 $syncsuffix = "";
 $componly = 0;
 $futuresMode = 3;
+$checkchplinstall = 1;
 $parnodefile = "";
 $baseline = 0;
 $fast = 0;
@@ -128,6 +129,8 @@ while (@ARGV) {
         $futuresMode = 1;
     } elsif ($flag eq "-no-futures") {
         $futuresMode = 0;
+    } elsif ($flag eq "-no-checkchplinstall") {
+        $checkchplinstall = 0;
     } elsif ($flag eq "-parnodefile") {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
@@ -205,6 +208,7 @@ if ($printusage == 1) {
     print "\t-componly    : only run the compiler, not the generated binary\n";
     print "\t-futures     : run all futures, not just those with skipifs\n";
     print "\t-no-futures  : do not run future tests\n";
+    print "\t-no-checkchplinstall : do not run checkChplInstall before running tests\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
     print "\t-cron-recipient : send -cron emails to this address instead of SourceForge mailing list(s)\n";
     print "\t-junit-xml   : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
@@ -709,11 +713,16 @@ if ($runtests == 0) {
         $svnPerfDir = $ENV{'CHPL_TEST_COMP_PERF_DIR'};
     }
 
-    # Always call `make check` before start_test
-    # TODO
-
-
     $ENV{'CHPL_HOME'} = $chplhomedir;
+
+    # Always check chapel installation before start_test / paratest
+    if ($checkchplinstall eq 1) {
+        $checkinstallcommand = "bash ../test/checkChplInstall";
+        print "Executing $checkinstallcommand\n";
+        $chplinstallstatus = mysystem($checkinstallcommand);
+        print "$chplinstallstatus";
+    }
+
     if ($parnodefile eq "") {
         $testcommand = "cd $testdir && ../util/start_test $testflags";
         print "Executing $testcommand\n";
