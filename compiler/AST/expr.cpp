@@ -3045,7 +3045,7 @@ GenRet codegenSizeof(Type* t)
   return codegenSizeof(t->symbol->cname);
 }
 
-
+static
 GenRet codegenSizeof(GenRet var)
 {
   GenInfo* info = gGenInfo;
