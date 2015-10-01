@@ -1,4 +1,15 @@
 module LCALSConfiguration {
+
+  //
+  // Output directory, use stdout if left empty
+  //
+  config const output_dirname = "";
+
+  //
+  // Do Figure Of Merit calculation?
+  //
+  config const do_fom = false;
+
   //
   // Loop lengths
   //

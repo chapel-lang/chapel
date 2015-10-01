@@ -96,29 +96,21 @@ module main {
     if output_dirname.length > 0 then
       mkdir(output_dirname, parents=true);
 
-    if !run_misc {
-      if run_variantRaw then
-        run_variants.push_back(LoopVariantID.RAW);
+    if run_variantRaw then
+      run_variants.push_back(LoopVariantID.RAW);
 
-      assert(!run_variantForallLambda &&
-             !run_variantRawOmp &&
-             !run_variantForallLambdaOmp);
-      /*
-      if run_variantForallLambda then
-        run_variants.push_back(LoopVariantID.FORALL_LAMBDA);
-      if run_variantRawOmp then
-        run_variants.push_back(LoopVariantID.RAW_OMP);
-      if run_variantForallLambdaOmp then
-        run_variants.push_back(LoopVariantID.FORALL_LAMBDA_OMP);
-      */
-    } else {
-      if run_variantRaw then
-        run_variants.push_back(LoopVariantID.RAW);
-      /*
-      if run_variantForallLambda then
-        run_variants.push_back(LoopVariantID.FORALL_LAMBDA);
-      */
-    }
+    assert(!run_variantForallLambda &&
+           !run_variantRawOmp &&
+           !run_variantForallLambdaOmp);
+    /*
+    if run_variantForallLambda then
+      run_variants.push_back(LoopVariantID.FORALL_LAMBDA);
+    if run_variantRawOmp then
+      run_variants.push_back(LoopVariantID.RAW_OMP);
+    if run_variantForallLambdaOmp then
+      run_variants.push_back(LoopVariantID.FORALL_LAMBDA_OMP);
+    */
+
     const cache_size = 0;
     const host_name = here.name;
     writeln("\n Running loop suite on ", host_name);
@@ -209,7 +201,6 @@ module main {
   proc generateTimingReport(run_loop_variants: vector(string),
                             output_dirname: string) {
     if run_loop_variants.size() == 0 then return;
-    var do_fom = true;
     const ver_info = buildVersionInfo();
     var suite_run_info = getLoopSuiteRunInfo();
     const nvariants = run_loop_variants.size();
