@@ -15,6 +15,7 @@ module RunCRawLoops {
           writeln(iloop: LoopKernelID);
         select iloop {
           when LoopKernelID.HYDRO_1D {
+            loopInit(iloop, stat);
             var x => loop_data.RealArray_1D[0],
                 y => loop_data.RealArray_1D[1],
                 z => loop_data.RealArray_1D[2];
@@ -128,20 +129,25 @@ module RunCRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.ADI {
+            halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
             var du1 => loop_data.RealArray_1D[0],
                 du2 => loop_data.RealArray_1D[1],
                 du3 => loop_data.RealArray_1D[2];
-            halt("multidim cases not implemented ", iloop:LoopKernelID);
-
+            loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.INT_PREDICT {
             halt("multidim cases not implemented ", iloop:LoopKernelID);
+            loopInit(iloop, stat);
+            loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.DIFF_PREDICT {
             halt("multidim cases not implemented ", iloop:LoopKernelID);
+            loopInit(iloop, stat);
+            loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.FIRST_SUM {
+            loopInit(iloop, stat);
             var x => loop_data.RealArray_1D[0],
                 y => loop_data.RealArray_1D[1];
             ltimer.start();
@@ -169,6 +175,8 @@ module RunCRawLoops {
           }
           when LoopKernelID.PIC_2D {
             halt("multidim cases not implemented ", iloop:LoopKernelID);
+            loopInit(iloop, stat);
+            loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.PIC_1D {
             loopInit(iloop, stat);
@@ -214,6 +222,7 @@ module RunCRawLoops {
           }
           when LoopKernelID.HYDRO_2D {
             halt("multidim cases not implemented ", iloop:LoopKernelID);
+            loopInit(iloop, stat);
             ltimer.start();
             for isamp in 0..#num_samples {
             }
