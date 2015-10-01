@@ -1188,20 +1188,22 @@ module ChapelBase {
 
   pragma "compiler generated" 
   proc chpl__autoSerializeSize(x):int {
-    return __primitive("sizeof", x):int;
+    return 0;
   }
  
  pragma "donor fn"
  pragma "compiler generated" 
  proc chpl__autoSerialize(x, dst:c_void_ptr) {
-    pragma "no copy" var tmp = chpl__autoCopy(x);
-    __primitive("move to buf", dst, tmp);
+    // call autoCopy
+    return chpl__autoCopy(x);
+    //pragma "no copy" var tmp = chpl__autoCopy(x);
+    //return tmp;
   }
  
   pragma "compiler generated" 
   proc chpl__autoDeserialize(ref x, src:c_void_ptr):int {
-    __primitive("move from buf",  __primitive("deref", x), src);
-    return __primitive("sizeof", __primitive("deref", x)):int;
+    // Do nothing
+    return 0;
   }
   
   // Type functions for representing function types

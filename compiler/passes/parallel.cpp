@@ -564,7 +564,22 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     Type* t = arg->typeInfo();
     FnSymbol* autoSerialize = getAutoSerialize(t);
 
+    if( baData.useSerialize[i] && autoSerialize ) {
+      // autoSerialize(arg, bundle_buf)
+      // bundle_buf += field_serialized_size
+      VarSymbol *serialize_ret = newTemp(astr("_arg_tmp", fn->name, istr(i)),
+                                         ctype->getField(i)->typeInfo());
+      fcall->insertBefore(new DefExpr(serialize_ret));
+      CallExpr* serializeCall = new CallExpr(autoSerialize, var, bundle_buf);
+      CallExpr* move = new CallExpr(PRIM_MOVE, serialize_ret, serializeCall);
+      fcall->insertBefore(move);
+      insertReferenceTemps(serializeCall);
+
+      var = serialize_ret;
+    }
+    
     // Copy the argument into the corresponding slot in the argument bundle.
+    // (this could possible be the result of running serialize above).
     // We need to have code like this so that insertWideReferences works.
     CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
                                   tempc,
@@ -572,13 +587,6 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
                                   var);
     fcall->insertBefore(setc);
  
-    if( baData.useSerialize[i] && autoSerialize ) {
-      // autoSerialize(arg, bundle_buf)
-      // bundle_buf += field_serialized_size
-      CallExpr* serializeCall = new CallExpr(autoSerialize, var, bundle_buf);
-      fcall->insertBefore(serializeCall);
-      insertReferenceTemps(serializeCall);
-    }
     fcall->insertBefore(new CallExpr(PRIM_ADD_ASSIGN,
                                      bundle_buf, serializedSize[i]));
     i++;

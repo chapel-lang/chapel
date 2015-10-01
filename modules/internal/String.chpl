@@ -891,6 +891,7 @@ module String {
     var size_str:int = localx.length;
     memcpy(dst, size_str, size_int);
     memcpy(dst + size_int, localx.buff, size_str:size_t);
+    return x;
   }
 
   proc chpl__autoDeserialize(ref x:string, src:c_void_ptr):int {
