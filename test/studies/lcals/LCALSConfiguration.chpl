@@ -11,6 +11,11 @@ module LCALSConfiguration {
   config const do_fom = false;
 
   //
+  // Number of passes to run for each kernel and length
+  //
+  config const num_suite_passes = 1;
+
+  //
   // Loop lengths
   //
   config const run_shortLoops  = true;

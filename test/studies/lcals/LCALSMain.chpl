@@ -47,7 +47,6 @@ module main {
 
 
   proc main {
-    const num_suite_passes = 1;
     const sample_frac = 1.0;
     const loop_length_factor = 1.0;
     const run_loop_length: [0..#LoopLength.NUM_LENGTHS] bool =
