@@ -51,7 +51,7 @@ module main {
     const sample_frac = 1.0;
     const loop_length_factor = 1.0;
     const run_loop_length: [0..#LoopLength.NUM_LENGTHS] bool =
-      (run_shortLoops, run_mediumLoops, run_longLoops);
+      (run_longLoops, run_mediumLoops, run_shortLoops);
     var run_loop: [0..#LoopKernelID.NUM_LOOP_KERNELS] bool = false;
     var run_variants = new vector(LoopVariantID);
 
