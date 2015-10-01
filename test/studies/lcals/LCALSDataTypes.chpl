@@ -1,7 +1,6 @@
 module LCALSDataTypes {
   use LCALSParams;
   use LCALSEnums;
-  config const printLoopKernelIDs = false;
 
   class vector {
     type eltType;

@@ -320,29 +320,13 @@ module LCALSLoops {
       }
     }
   }
-  extern proc printf(fmt: c_string, args...);
-  extern proc printf(fmt: c_string);
-  config var printCnt = 0;
-  var numprinted = 0;
+
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: [] real, scale_factor: real = 1.0) {
     var data => ra;
     var len = ra.numElements;
     var tchk = stat.loop_chksum[ilength];
-    if printCnt > 0 {
-      for i in 1..20 do
-        printf("%ld", numprinted%10);
-      printf("\n%f, %ld\n", tchk, len);
-    }
     for (j, dat) in zip(0..#len, data) {
       tchk += (j+1)*dat*scale_factor;
-    }
-    if printCnt > 0 {
-      printf("%f\n", tchk);
-      for i in 1..20 do
-        printf("%ld", numprinted%10);
-      printf("\n");
-      printCnt -= 1;
-      numprinted += 1;
     }
     stat.loop_chksum[ilength] = tchk;
   }
@@ -355,23 +339,8 @@ module LCALSLoops {
     var data => ca;
     var len = ca.numElements;
     var tchk = stat.loop_chksum[ilength];
-    if printCnt > 0 {
-      for i in 1..20 {
-        printf("%ld", cplxCnt % 10);
-      }
-      printf("\nComplex\n");
-      printf("%f, %ld\n", tchk, len);
-    }
     for (j,dat) in zip(0..#len,data) {
       tchk += (j+1)*(dat.re + dat.im)*scale_factor;
-    }
-    if printCnt > 0 {
-      printf("%f\n", tchk);
-      for i in 1..20 {
-        printf("%ld", cplxCnt % 10);
-      }
-      printf("\n");
-      cplxCnt =+ 1;
     }
     stat.loop_chksum[ilength] = tchk;
   }

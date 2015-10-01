@@ -12,8 +12,7 @@ module RunARawLoops {
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
         var ltimer = new LoopTimer();
-        if printLoopKernelIDs then
-          writeln(iloop:LoopKernelID);
+
         select iloop {
           when LoopKernelID.PRESSURE_CALC {
             loopInit(iloop, stat);
