@@ -55,56 +55,69 @@ module main {
     var run_loop: [0..#LoopKernelID.NUM_LOOP_KERNELS] bool = false;
     var run_variants = new vector(LoopVariantID);
 
-    run_loop[LoopKernelID.REF_LOOP] = true;
+    run_loop[LoopKernelID.REF_LOOP] = run_refLoop;
 
     // Loop Subset A: Loops extracted from LLNL app codes.
-    run_loop[LoopKernelID.PRESSURE_CALC ] = false; //true; // M and S have bad checksums
-    run_loop[LoopKernelID.ENERGY_CALC   ] = true;
-    run_loop[LoopKernelID.VOL3D_CALC    ] = true;
-    run_loop[LoopKernelID.DEL_DOT_VEC_2D] = true;
-    run_loop[LoopKernelID.COUPLE        ] = true;
-    run_loop[LoopKernelID.FIR           ] = false; //true; // bad checksums
+    run_loop[LoopKernelID.PRESSURE_CALC ] = runA_pressureCalc;
+    run_loop[LoopKernelID.ENERGY_CALC   ] = runA_energyCalc;
+    run_loop[LoopKernelID.VOL3D_CALC    ] = runA_vol3DCalc;
+    run_loop[LoopKernelID.DEL_DOT_VEC_2D] = runA_delDotVec2D;
+    run_loop[LoopKernelID.COUPLE        ] = runA_couple;
+    run_loop[LoopKernelID.FIR           ] = runA_fir;
 
     // Loop Subset B: "Basic" Loops.
-    run_loop[LoopKernelID.INIT3         ] = true;
-    run_loop[LoopKernelID.MULADDSUB     ] = true;
-    run_loop[LoopKernelID.IF_QUAD       ] = true;
-    run_loop[LoopKernelID.TRAP_INT      ] = true;
+    run_loop[LoopKernelID.INIT3         ] = runB_init3;
+    run_loop[LoopKernelID.MULADDSUB     ] = runB_muladdsub;
+    run_loop[LoopKernelID.IF_QUAD       ] = runB_ifQuad;
+    run_loop[LoopKernelID.TRAP_INT      ] = runB_trapInt;
 
     // Loop Subset C: Loops from older Livermore Loops in "C" suite.
-    run_loop[LoopKernelID.HYDRO_1D      ] = true;
-    run_loop[LoopKernelID.ICCG          ] = false; //true; // segfaults
-    run_loop[LoopKernelID.INNER_PROD    ] = true;
-    run_loop[LoopKernelID.BAND_LIN_EQ   ] = false; //true; // bad checksums
-    run_loop[LoopKernelID.TRIDIAG_ELIM  ] = false; //true; // bad checksums
-    run_loop[LoopKernelID.EOS           ] = false; //true; // bad checksums
-    run_loop[LoopKernelID.ADI           ] = false; // not implemented
-    run_loop[LoopKernelID.INT_PREDICT   ] = false; // not implemented
-    run_loop[LoopKernelID.DIFF_PREDICT  ] = false; // not implemented
-    run_loop[LoopKernelID.FIRST_SUM     ] = false; //true; ???
-    run_loop[LoopKernelID.FIRST_DIFF    ] = false; //true; bad checksums
-    run_loop[LoopKernelID.PIC_2D        ] = false; // not implemented
-    run_loop[LoopKernelID.PIC_1D        ] = false; //true; // bad checksums
-    run_loop[LoopKernelID.HYDRO_2D      ] = false; // not implemented
-    run_loop[LoopKernelID.GEN_LIN_RECUR ] = false; //true; // bad checksums
-    run_loop[LoopKernelID.DISC_ORD      ] = false; //true; // bad checksums
-    run_loop[LoopKernelID.MAT_X_MAT     ] = false; // not implemented
-    run_loop[LoopKernelID.PLANCKIAN     ] = false; //true; // bad checksums
-    run_loop[LoopKernelID.IMP_HYDRO_2D  ] = false; // not implemented
-    run_loop[LoopKernelID.FIND_FIRST_MIN] = true;
+    run_loop[LoopKernelID.HYDRO_1D      ] = runC_hydro1D;
+    run_loop[LoopKernelID.ICCG          ] = runC_iccg;
+    run_loop[LoopKernelID.INNER_PROD    ] = runC_innerProd;
+    run_loop[LoopKernelID.BAND_LIN_EQ   ] = runC_bandLinEq;
+    run_loop[LoopKernelID.TRIDIAG_ELIM  ] = runC_tridiagElim;
+    run_loop[LoopKernelID.EOS           ] = runC_eos;
+    run_loop[LoopKernelID.ADI           ] = runC_adi;
+    run_loop[LoopKernelID.INT_PREDICT   ] = runC_intPredict;
+    run_loop[LoopKernelID.DIFF_PREDICT  ] = runC_diffPredict;
+    run_loop[LoopKernelID.FIRST_SUM     ] = runC_firstSum;
+    run_loop[LoopKernelID.FIRST_DIFF    ] = runC_firstDiff;
+    run_loop[LoopKernelID.PIC_2D        ] = runC_pic2D;
+    run_loop[LoopKernelID.PIC_1D        ] = runC_pic1D;
+    run_loop[LoopKernelID.HYDRO_2D      ] = runC_hydro2D;
+    run_loop[LoopKernelID.GEN_LIN_RECUR ] = runC_genLinRecur;
+    run_loop[LoopKernelID.DISC_ORD      ] = runC_discOrd;
+    run_loop[LoopKernelID.MAT_X_MAT     ] = runC_matXMat;
+    run_loop[LoopKernelID.PLANCKIAN     ] = runC_planckian;
+    run_loop[LoopKernelID.IMP_HYDRO_2D  ] = runC_impHydro2D;
+    run_loop[LoopKernelID.FIND_FIRST_MIN] = runC_findFirstMin;
 
     if output_dirname.length > 0 then
       mkdir(output_dirname, parents=true);
 
     if !run_misc {
-      run_variants.push_back(LoopVariantID.RAW);
-      //run_variants.push_back(LoopVariantID.FORALL_LAMBDA);
+      if run_variantRaw then
+        run_variants.push_back(LoopVariantID.RAW);
 
-      //run_variants.push_back(LoopVariantID.RAW_OMP);
-      //run_variants.push_back(LoopVariantID.FORALL_LAMBDA_OMP);
+      assert(!run_variantForallLambda &&
+             !run_variantRawOmp &&
+             !run_variantForallLambdaOmp);
+      /*
+      if run_variantForallLambda then
+        run_variants.push_back(LoopVariantID.FORALL_LAMBDA);
+      if run_variantRawOmp then
+        run_variants.push_back(LoopVariantID.RAW_OMP);
+      if run_variantForallLambdaOmp then
+        run_variants.push_back(LoopVariantID.FORALL_LAMBDA_OMP);
+      */
     } else {
-      run_variants.push_back(LoopVariantID.RAW);
-      //run_variants.push_back(LoopVariantID.FORALL_LAMBDA);
+      if run_variantRaw then
+        run_variants.push_back(LoopVariantID.RAW);
+      /*
+      if run_variantForallLambda then
+        run_variants.push_back(LoopVariantID.FORALL_LAMBDA);
+      */
     }
     const cache_size = 0;
     const host_name = here.name;

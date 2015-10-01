@@ -16,7 +16,7 @@ module LCALSConfiguration {
   config const runA_energyCalc   = true;
   config const runA_vol3DCalc    = true;
   config const runA_delDotVec2D  = true;
-  config const runA_couble       = true;
+  config const runA_couple       = true;
   config const runA_fir          = false; // bad checksums
 
   // Loop Subset B: "Basic" Loops.
@@ -46,4 +46,12 @@ module LCALSConfiguration {
   config const runC_planckian    = false; // bad checksums
   config const runC_impHydro2D   = false; // not implemented
   config const runC_findFirstMin = true;
+
+  //
+  // Loop Variants
+  //
+  config const run_variantRaw             = true;
+  config const run_variantForallLambda    = false; // not implemented
+  config const run_variantRawOmp          = false; // not implemented
+  config const run_variantForallLambdaOmp = false; // not implemented
 }
