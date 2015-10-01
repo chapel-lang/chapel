@@ -5,6 +5,7 @@ module main {
   use LCALSDataTypes;
   use LCALSLoops;
   use LCALSStatic;
+  use LCALSConfiguration;
 
   use RunARawLoops;
   use RunBRawLoops;
@@ -49,7 +50,8 @@ module main {
     const num_suite_passes = 1;
     const sample_frac = 1.0;
     const loop_length_factor = 1.0;
-    var run_loop_length: [0..#LoopLength.NUM_LENGTHS] bool = true;
+    const run_loop_length: [0..#LoopLength.NUM_LENGTHS] bool =
+      (runShortLoops, runMediumLoops, runLongLoops);
     var run_loop: [0..#LoopKernelID.NUM_LOOP_KERNELS] bool = false;
     var run_variants = new vector(LoopVariantID);
 
@@ -91,7 +93,8 @@ module main {
     run_loop[LoopKernelID.IMP_HYDRO_2D  ] = false; // not implemented
     run_loop[LoopKernelID.FIND_FIRST_MIN] = true;
 
-    mkdir(output_dirname, parents=true);
+    if output_dirname.length > 0 then
+      mkdir(output_dirname, parents=true);
 
     if !run_misc {
       run_variants.push_back(LoopVariantID.RAW);
@@ -233,6 +236,7 @@ module main {
     var len_names = suite_run_info.loop_length_names;
     const sepchr = " , ";
     const prec = 8;
+
     writer.write(variant_name, " Mean Run Times ");
 
     for i in 0..#len_names.size() {
