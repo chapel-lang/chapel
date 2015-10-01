@@ -876,13 +876,13 @@ module String {
     return ret;
   }
 
-  proc chpl__autoSerializeSize(ref x:string):int {
+  proc chpl__autoSerializeSize(x:string):int {
     extern proc sizeof(type x): size_t;
     return sizeof(int):int + x.length;
   }
 
   pragma "donor fn"
-  proc chpl__autoSerialize(ref x:string, dst:c_void_ptr) {
+  proc chpl__autoSerialize(x:string, dst:c_void_ptr) {
     extern proc sizeof(type x): size_t;
     extern proc memcpy(dst: c_void_ptr, src: bufferType, num: size_t);
     extern proc memcpy(dst: c_void_ptr, ref src, num: size_t);

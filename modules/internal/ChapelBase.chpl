@@ -1185,31 +1185,23 @@ module ChapelBase {
   // (used in autoSerialize functions)
   inline proc +(a: c_void_ptr, b: integral) return __primitive("+", a, b);
 
+
   pragma "compiler generated" 
-  proc chpl__autoSerializeSize(ref x):int {
-    // this might be wrong...
-    extern proc sizeof(type x): size_t;
-    return sizeof(x.type):int;
+  proc chpl__autoSerializeSize(x):int {
+    return __primitive("sizeof", x):int;
   }
  
  pragma "donor fn"
  pragma "compiler generated" 
- proc chpl__autoSerialize(ref x, dst:c_void_ptr) {
-    // this might be wrong...
-    extern proc sizeof(type x): size_t;
-    extern proc memcpy(dst: c_void_ptr, ref src, num: size_t);
+ proc chpl__autoSerialize(x, dst:c_void_ptr) {
     pragma "no copy" var tmp = chpl__autoCopy(x);
-    memcpy(dst, tmp, sizeof(tmp.type));
+    __primitive("move to buf", dst, tmp);
   }
  
   pragma "compiler generated" 
   proc chpl__autoDeserialize(ref x, src:c_void_ptr):int {
-    // this might be wrong...
-    extern proc sizeof(type x): size_t;
-    extern proc memcpy(ref dst, src: c_void_ptr, num: size_t);
-    var sz = sizeof(x.type);
-    memcpy(x, src, sz);
-    return sz:int;
+    __primitive("move from buf",  __primitive("deref", x), src);
+    return __primitive("sizeof", __primitive("deref", x)):int;
   }
   
   // Type functions for representing function types

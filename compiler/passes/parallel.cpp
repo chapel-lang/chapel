@@ -466,13 +466,14 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     create_arg_bundle_class(fn, fcall, mod, baData);
   AggregateType* ctype = baData.ctype;
 
-  // create the class variable instance. This will be used
-  // as a dummy variable. The actual arguments are in the c_void_ptr buffer.
-  VarSymbol *tempc = newTemp(astr("_dummy_arg_bundle", fn->name), ctype);
-  fcall->insertBefore( new DefExpr( tempc));
+  // We're going to create a buffer consisting of 2 pieces:
+  // 1) fixed-length data (corresponding to the ctype arg-bundle class
+  // 2) additional variable-length data (for any class that has an
+  //    autoSerializeSize call returning nonzero).
 
   // First, decide whether or not we're adding an autoCopy
-  // for each argument.
+  // for each argument, and if so, what its variable length
+  // partion is.
   std::vector<VarSymbol*> serializedSize;
   baData.useSerialize.push_back(0); // so we can count from 1
   serializedSize.push_back(NULL); // so we can count from 1
@@ -493,37 +494,36 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     fcall->insertBefore(new DefExpr(tmpfieldsz));
 
     if (autoCopyIt) {
-      // Create a reference temp for arg and call
-      // size = autoSerializeSize(ref to var)
-      VarSymbol* ref = newTemp(astr("_ref_field_a", fn->name, istr(i)),
-                               getOrMakeRefTypeDuringCodegen(arg->typeInfo()));
-      ref->addFlag(FLAG_REF_TEMP);
-      fcall->insertBefore(new DefExpr(ref));
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, ref,
-                                       new CallExpr(PRIM_ADDR_OF, var)));
-
       fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpfieldsz,
-                                       new CallExpr(autoSerializeSize, ref)));
+                                       new CallExpr(autoSerializeSize, var)));
     } else {
-      // size = sizeof(var)
+      // size = 0
       fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpfieldsz,
-                                       new CallExpr(PRIM_SIZEOF, var)));
+                                       new_IntSymbol(0, INT_SIZE_DEFAULT)));
     }
     serializedSize.push_back(tmpfieldsz);
     i++;
   }
 
   // Then, compute size of the bundle and allocate that much space.
-  // size of bundle is be computed with autoSerializeSize.
+  // We must first compute the size of the bundle by adding up
+  // the relevant sizes.
+  
+  // First, compute the size of the arg bundle class instance
+  VarSymbol *fixedsz = newTemp(astr("_args_fixed_size", fn->name),
+                               dtInt[INT_SIZE_DEFAULT]);
+  fcall->insertBefore(new DefExpr(fixedsz));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, fixedsz,
+                                   new CallExpr(PRIM_SIZEOF, ctype->symbol)));
+
+  // Next, compute the sum of fixed and variable sizes
   VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
                              dtInt[INT_SIZE_DEFAULT]);
   fcall->insertBefore(new DefExpr(tmpsz));
-  // TODO -- could check that all fields are not needing auto copy,
-  // or that all fields are using default autoSerialize...
-  // That would bring those cases down in generated size again.
+  // Start with the size of the allocated args
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz, fixedsz));
 
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz,
-                                   new_IntSymbol(0, INT_SIZE_DEFAULT)));
+  // Add in any variable-length sizes
   i = 1;
   for_actuals(arg, fcall) 
   {
@@ -539,12 +539,20 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
                       dtCVoidPtr, newMemDesc("bundled args"),
                       tmpsz);
 
-  // Copy the allocated args pointer into bundle_buf
-  // since we will update the bundle_buf pointer as we write to the buffer.
-  // Then, we'll pass allocated_args to the task/on spawn function.
+  // create the class variable pointing to the first part of the buffer.
+  VarSymbol *tempc = newTemp(astr("_arg_bundle", fn->name), ctype);
+  fcall->insertBefore(new DefExpr(tempc));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc,
+                                   new CallExpr(PRIM_CAST, ctype->symbol,
+                                                allocated_args)));
+
+  // create bundle_buf pointing to the second part of the buffer
+  // which stores variable-length arguments
   VarSymbol *bundle_buf = newTemp(astr("_args_buf_for", fn->name), dtCVoidPtr);
   fcall->insertBefore( new DefExpr(bundle_buf));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, bundle_buf, allocated_args));
+  fcall->insertBefore(
+      new CallExpr(PRIM_MOVE, bundle_buf,
+                   new CallExpr(PRIM_ADD, allocated_args, fixedsz)));
 
   // serialize the fields into the allocated space.
   i = 1;
@@ -556,39 +564,20 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     Type* t = arg->typeInfo();
     FnSymbol* autoSerialize = getAutoSerialize(t);
 
-    /*VarSymbol* ref = newTemp(astr("_ref_field_b", fn->name, istr(i)),
-                             getOrMakeRefTypeDuringCodegen(arg->typeInfo()));
-    ref->addFlag(FLAG_REF_TEMP);
-    fcall->insertBefore(new DefExpr(ref));
-    fcall->insertBefore(new CallExpr(PRIM_MOVE, ref,
-                                     new CallExpr(PRIM_ADDR_OF, var)));
-    */
-
-    Type* refType = getOrMakeRefTypeDuringCodegen(t);
-
+    // Copy the argument into the corresponding slot in the argument bundle.
+    // We need to have code like this so that insertWideReferences works.
+    CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
+                                  tempc,
+                                  ctype->getField(i),
+                                  var);
+    fcall->insertBefore(setc);
+ 
     if( baData.useSerialize[i] && autoSerialize ) {
       // autoSerialize(arg, bundle_buf)
       // bundle_buf += field_serialized_size
       CallExpr* serializeCall = new CallExpr(autoSerialize, var, bundle_buf);
       fcall->insertBefore(serializeCall);
       insertReferenceTemps(serializeCall);
-    } else {
-      // PRIM_MOVE is bit-copy, so:
-      // PRIM_MOVE (*vartype) bundle_buf var
-      // or 
-      // PRIM_MOVE (PRIM_DEREF (*vartype) bundle_buf) var
-      // This needs to translate in the C code to
-      // memcpy(bundle_buf, &var, sizeof(var))
-      // because the bundle_buf is not properly aligned.
-
-      VarSymbol* cast_buf = newTemp(astr("_ref_buf", fn->name, istr(i)),
-                                    refType);
-      cast_buf->addFlag(FLAG_UNALIGNED_REF);
-      fcall->insertBefore(new DefExpr(cast_buf));
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, cast_buf,
-                                       new CallExpr(PRIM_CAST, refType->symbol, bundle_buf)));
-
-      fcall->insertBefore(new CallExpr(PRIM_MOVE, cast_buf, var));
     }
     fcall->insertBefore(new CallExpr(PRIM_ADD_ASSIGN,
                                      bundle_buf, serializedSize[i]));
@@ -737,12 +726,37 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   wrap_c->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(wrap_c);
 
-  VarSymbol *bundle_buf = newTemp(astr("args_buf"), dtCVoidPtr);
-  wrap_fn->insertAtTail( new DefExpr(bundle_buf));
-  wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, bundle_buf, allocated_args));
-
-
   mod->block->insertAtTail(new DefExpr(wrap_fn));
+
+
+  // We will unpack the arguments from the args_buf
+  // the args_buf consists first of a fixed-length portion that
+  // matches ctype and then a variable length portion after that
+
+  // First, compute the size of the arg bundle class instance
+  VarSymbol *fixedsz = newTemp(astr("c_size"), dtInt[INT_SIZE_DEFAULT]);
+  wrap_fn->insertAtTail(new DefExpr(fixedsz));
+  wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, fixedsz,
+                                     new CallExpr(PRIM_SIZEOF, ctype->symbol)));
+
+  // Now compute the pointers into the args_buf
+  // for the fixed length portion and the variable-length portion.
+
+  // c points into the fixed-length portion.
+  VarSymbol *tempc = newTemp(astr("c"), ctype);
+  wrap_fn->insertAtTail(new DefExpr(tempc));
+  wrap_fn->insertAtTail(
+      new CallExpr(PRIM_MOVE, tempc,
+                              new CallExpr(PRIM_CAST, ctype->symbol,
+                                                      allocated_args)));
+
+  // bundle_buf points into the variable-length portion.
+  VarSymbol *bundle_buf = newTemp(astr("args_buf"), dtCVoidPtr);
+  wrap_fn->insertAtTail(new DefExpr(bundle_buf));
+  wrap_fn->insertAtTail(
+      new CallExpr(PRIM_MOVE, bundle_buf,
+                              new CallExpr(PRIM_ADD, allocated_args, fixedsz)));
+
 
   // Create a call to the original function
   CallExpr *call_orig_function = new CallExpr(fn);
@@ -759,15 +773,13 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     VarSymbol* tmp = newTemp(field->name, field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
 
-    Type* refType = getOrMakeRefTypeDuringCodegen(t);
-
-    /*
-    VarSymbol* ref = newTemp("_field_ref", getOrMakeRefTypeDuringCodegen(t));
-    ref->addFlag(FLAG_REF_TEMP);
-    wrap_fn->insertAtTail(new DefExpr(ref));
-    wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, ref,
-                                     new CallExpr(PRIM_ADDR_OF, tmp)));
-                                     */
+    // Read the value from the class instance
+    // This particular pattern is necessary to keep
+    // insertWideReferences working correctly
+    wrap_fn->insertAtTail(
+         new CallExpr(PRIM_MOVE, tmp, 
+                                 new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                              tempc, field)));
 
     FnSymbol* autoDeserialize = getAutoDeserialize(t);
 
@@ -777,25 +789,9 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
       wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz, deserCall));
       insertReferenceTemps(deserCall);
     } else {
-      // PRIM_MOVE is a bit-copy, so:
-      // PRIM_MOVE var (PRIM_DEREF (vartype*) bundle_buf)
-      // bytes_handled = sizeof(type);
-      // This needs to translate in the C code to
-      // memcpy(&var, bundle_buf, sizeof(var))
-      // because the bundle_buf is not properly aligned.
-      
-      VarSymbol* cast_buf = newTemp(astr("_ref_buf", fn->name, istr(i)),
-                                    refType);
-      cast_buf->addFlag(FLAG_UNALIGNED_REF);
-      wrap_fn->insertAtTail(new DefExpr(cast_buf));
-      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, cast_buf,
-                                       new CallExpr(PRIM_CAST, refType->symbol, bundle_buf)));
-
-      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
-                                  new CallExpr(PRIM_DEREF, cast_buf)));
-
+      // size = 0
       wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz,
-                                         new CallExpr(PRIM_SIZEOF, tmp)));
+                                       new_IntSymbol(0, INT_SIZE_DEFAULT)));
     }
 
     // add to bundle_buf the number of bytes handled
