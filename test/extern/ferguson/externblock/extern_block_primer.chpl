@@ -1,7 +1,7 @@
 /*
    This primer demonstrates how to work with C functions
    (called "extern functions" by Chapel). More information
-   is available in doc/technotes/README.extern.
+   is available in doc/technotes/extern.rst.
  */
 
 
