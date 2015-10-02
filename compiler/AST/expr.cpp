@@ -3863,6 +3863,9 @@ GenRet CallExpr::codegen() {
 
   // Note (for debugging), function name is in parentSymbol->cname.
 
+  if (id == breakOnCodegenID)
+    gdbShouldBreakHere();
+
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(this);
 
