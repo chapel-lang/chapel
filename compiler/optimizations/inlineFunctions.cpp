@@ -79,10 +79,10 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
                                       actual->typeInfo()->getValType());
       stmt->insertBefore(new DefExpr(deref_tmp));
       stmt->insertBefore(
-          new CallExpr(PRIM_MOVE, deref_tmp, 
+          new CallExpr(PRIM_MOVE, deref_tmp,
                        new CallExpr(PRIM_DEREF, se->var)) );
 
-      se = new SymExpr(deref_tmp); 
+      se = new SymExpr(deref_tmp);
     }
 
     map.put(formal, se->var);
