@@ -600,9 +600,6 @@ Domain Maps, Domains and Arrays
 - Array and domain runtime type information is not preserved through
   generic instantiation.
   # arrays/vass/initialization-mapped-1.future
-- Multidimensional Domain functions 'exterior', 'interior', and 'translate'
-  that take a single scalar operand are missing.
-  # users/kreider/bug_domfn.future
 - Modifications to Sparse domains are not thread-safe.
   # domains/sungeun/sparse/forall.future
   # domains/sungeun/sparse/stress.future
