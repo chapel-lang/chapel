@@ -208,7 +208,7 @@ if ($printusage == 1) {
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-futures                       : run all futures, not just those with skipifs\n";
     print "\t-no-futures                    : do not run future tests\n";
-    print "\t-no-buildcheck                 : do not run checkChplInstall before running tests\n";
+    print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
     print "\t-parnodefile                   : specify a node file to use for parallel testing\n";
     print "\t-cron-recipient                : send -cron emails to this address instead of SourceForge mailing list(s)\n";
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
@@ -718,7 +718,7 @@ if ($runtests == 0) {
     # Confirm Chapel built correctly before start_test / paratest
     if ($buildcheck == 1) {
         $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && make check";
-        mysystem($buildcheckcommand, "Running `make check`", 1, 1, 1);
+        mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
     }
 
     if ($parnodefile eq "") {
