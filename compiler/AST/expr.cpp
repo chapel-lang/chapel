@@ -2498,6 +2498,10 @@ GenRet codegenArgForFormal(GenRet arg,
     if (!isExtern &&
         formal->requiresCPtr() &&
         !formal->type->symbol->hasFlag(FLAG_REF)) { 
+      if( arg.isLVPtr == GEN_WIDE_PTR ) {
+        // communicate wide pointer values
+        arg = codegenValue(arg);
+      }
       if( arg.isLVPtr == GEN_VAL ) {
         arg = codegenValuePtr(arg);
       }
