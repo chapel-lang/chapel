@@ -4610,12 +4610,24 @@ GenRet CallExpr::codegen() {
         else
           codegenCall("chpl_string_widen", codegenAddrOf(get(1)), get(2),
                       get(3), get(4));
-      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(codegenDeref(get(1)), get(2));
       } else {
-        codegenAssign(get(1), get(2));
+        GenRet lhs, rhs;
+        if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+            get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+            get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          lhs = codegenDeref(get(1));
+        } else {
+          lhs = get(1);
+        }
+
+        if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+            get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+          rhs = codegenDeref(get(2));
+        } else {
+          rhs = get(2);
+        }
+
+        codegenAssign(lhs, rhs);
       }
       break;
     case PRIM_ADD_ASSIGN:
@@ -5649,6 +5661,16 @@ GenRet CallExpr::codegen() {
     SymExpr* se = toSymExpr(actual);
     if (se && isFnSymbol(se->var))
       arg = codegenCast("chpl_fn_p", arg);
+
+    // handle passing reference arguments to records
+    if (actualType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) &&
+        actualType->getValType() == formal->type &&
+        isRecord(formal->type) )
+    {
+      // Add a deref if we call a function passing in a record
+      // with a reference actual.
+      arg = codegenDeref(arg);
+    }
 
     // Handle passing strings to externs
     if (fn->hasFlag(FLAG_EXTERN)) {
