@@ -669,6 +669,13 @@ checkFormalActualTypesMatch()
                     formal->name);
         }
 
+
+        if (isRecord(formal->type) &&
+            actual->typeInfo()->getValType() == formal->type )
+          // allow ref actuals for records
+          // since they are always passed by ref
+          continue;
+
         if (formal->type != actual->typeInfo())
           INT_FATAL(call,
                     "actual formal type mismatch for %s: %s != %s",

@@ -465,9 +465,21 @@ static bool needToAddCoercion(Type* actualType, Symbol* actualSym,
                               Type* formalType, FnSymbol* fn) {
   if (actualType == formalType)
     return false;
-  else
-    return canCoerce(actualType, actualSym, formalType, fn) ||
-           isDispatchParent(actualType, formalType);
+
+  // Handle the case in which the formal is a record
+  // differently. In particular, records are always
+  // passed by reference. If a copy is created (e.g. for
+  // in intent), that copy is created in the callee.
+  // Therefore, we should not add temporary values
+  // that store record values when passing a
+  // reference to a record into a function with
+  // any record argument.
+  Type* actualValType = actualType->getValType();
+  if ( isRecord(actualValType) && actualValType == formalType )
+    return false;
+
+  return canCoerce(actualType, actualSym, formalType, fn) ||
+         isDispatchParent(actualType, formalType);
 }
 
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
