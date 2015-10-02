@@ -1,0 +1,3 @@
+--run_shortLoops=true  --run_mediumLoops=false --run_longLoops=false # LCALS-short
+--run_shortLoops=false --run_mediumLoops=true  --run_longLoops=false # LCALS-medium
+--run_shortLoops=false --run_mediumLoops=false --run_longLoops=true  # LCALS-long
