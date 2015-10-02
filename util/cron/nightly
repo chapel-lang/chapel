@@ -718,8 +718,7 @@ if ($runtests == 0) {
     # Confirm Chapel built correctly before start_test / paratest
     if ($buildcheck == 1) {
         $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && make check";
-        $buildcheckstatus = mysystem($buildcheckcommand, "Running `make check`", 1, 1, 1);
-        print "$buildcheckstatus";
+        mysystem($buildcheckcommand, "Running `make check`", 1, 1, 1);
     }
 
     if ($parnodefile eq "") {
