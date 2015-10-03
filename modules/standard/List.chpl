@@ -77,7 +77,7 @@ record list {
   /*
     Append `e` to the list.
    */
-  proc ref append(e : eltType) {
+  proc append(e : eltType) {
     if last {
       last.next = new listNode(eltType, e);
       last = last.next;
@@ -119,7 +119,7 @@ record list {
   /*
     Remove the first encountered instance of `x` from the list.
    */
-  proc ref remove(x: eltType) {
+  proc remove(x: eltType) {
     var tmp = first,
         prev: first.type = nil;
     while tmp != nil && tmp.data != x {

@@ -595,7 +595,7 @@ record regexp {
 
   // note - more = overloads are below.
   pragma "no doc"
-  proc ref ~regexp() {
+  proc ~regexp() {
     qio_regexp_release(_regexp);
     _regexp = qio_regexp_null();
   }
