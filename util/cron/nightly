@@ -717,7 +717,7 @@ if ($runtests == 0) {
 
     # Confirm Chapel built correctly before start_test / paratest
     if ($buildcheck == 1) {
-        $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && make check";
+        $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && source util/setchplenv.bash && make check";
         mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
     }
 
