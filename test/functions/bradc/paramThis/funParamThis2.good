@@ -1,1 +1,1 @@
-funParamThis2.chpl:1: error: 'this' intents can only be applied to methods
+funParamThis2.chpl:1: error: Cannot apply a 'this' intent to a standalone function
