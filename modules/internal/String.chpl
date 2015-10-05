@@ -877,39 +877,33 @@ module String {
   }
 
   proc chpl__autoSerializeSize(x:string):int {
-    extern proc sizeof(type x): size_t;
-    return sizeof(int):int + x.length;
+    return x.length;
   }
 
   pragma "donor fn"
   proc chpl__autoSerialize(x:string, dst:c_void_ptr) {
-    extern proc sizeof(type x): size_t;
     extern proc memcpy(dst: c_void_ptr, src: bufferType, num: size_t);
-    extern proc memcpy(dst: c_void_ptr, ref src, num: size_t);
-    var size_int = sizeof(int);
     var localx = x.localize();
     var size_str:int = localx.length;
-    memcpy(dst, size_str, size_int);
-    memcpy(dst + size_int, localx.buff, size_str:size_t);
+    memcpy(dst, localx.buff, size_str:size_t);
+    // Return the str value to store in the argument bundle
     return x;
   }
 
   proc chpl__autoDeserialize(ref x:string, src:c_void_ptr):int {
-    extern proc sizeof(type x): size_t;
     extern proc memcpy(ref dst, src: c_void_ptr, num: size_t);
-    var size_int = sizeof(int);
-    var len:int;
 
-    // Read the length
-    memcpy(len, src, size_int);
+    // Read the length from the already-copied x
+    var len:int = x.length;;
 
     // Get the pointer to the buffer we need to copy
-    var buff = (src + size_int):bufferType;
+    var buff = src:bufferType;
 
     // Manually set x so reinitString will work correctly.
-    // This function is passed a stack variable which is not
-    // yet initialized at all. We can't use = to set it
-    // to a default-initialized record since we overload =...
+    // This function is passed a stack variable which is
+    // a bit copy of a string from some other locale.
+    // We can't use = to set it to a default-initialized record
+    // since we overload =...
     x.len = 0;
     x._size = 0;
     x.buff = nil;
@@ -919,7 +913,7 @@ module String {
     x.reinitString(buff, len, len, true);
 
     // Return the amount of data we consumed from src.
-    return sizeof(int):int + len;
+    return len;
   }
 
   /*

@@ -292,12 +292,34 @@ taskMayOutliveTaskArg(Expr* arg, CallExpr* taskFnCall)
 //#
 //########################################################################
 
+
 static bool
 argumentNeedsAutoCopy(Expr* arg, CallExpr* taskFnCall)
 {
   Type* t = arg->typeInfo();
-  if (t->symbol->hasFlag(FLAG_NOT_POD))
-    return taskMayOutliveTaskArg(arg, taskFnCall);
+  FnSymbol* fn = taskFnCall->isResolved();
+
+  if (t->symbol->hasFlag(FLAG_NOT_POD)) {
+    // task arguments that could outlive tasks need auto copy.
+    if (taskMayOutliveTaskArg(arg, taskFnCall))
+      return true;
+
+    // always auto copy arguments for on statements
+    // so that strings can use local data
+    // TODO: only do this for records with a meaningful autoSerialize fn?
+    //        Or only for records with local data?
+    //        Or not for arrays?
+    // Note array infinite loop:
+    /*
+       chpl___TILDE__distribution ChapelArray.chpl:570
+       chpl__autoDestroy ChapelBase.chpl:1170
+       on_fn9 ChapelArray.chpl:570
+       wrapon_fn9 ChapelArray.chpl:570
+       chpl___TILDE__distribution ChapelArray.chpl:570
+    */
+    if (fn->hasFlag(FLAG_ON) && !isRecordWrappedType(t))
+      return true;
+  }
   // POD types never need an auto copy.
   return false;
 }
@@ -478,6 +500,20 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   baData.useSerialize.push_back(0); // so we can count from 1
   serializedSize.push_back(NULL); // so we can count from 1
 
+  // Compute size of the bundle and allocate that much space.
+  // We must first compute the size of the bundle by adding up
+  // the relevant sizes.
+  
+  // First, compute the size of the arg bundle class instance
+  VarSymbol *fixedsz = newTemp(astr("_args_fixed_size", fn->name),
+                               dtInt[INT_SIZE_DEFAULT]);
+  fcall->insertBefore(new DefExpr(fixedsz));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, fixedsz,
+                                   new CallExpr(PRIM_SIZEOF, ctype->symbol)));
+
+  // compute the size of each field and decide whether or
+  // not to call autoSerialize
+
   i = 1;
   for_actuals(arg, fcall) {
     bool autoCopyIt = argumentNeedsAutoCopy(arg, fcall);
@@ -505,18 +541,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     i++;
   }
 
-  // Then, compute size of the bundle and allocate that much space.
-  // We must first compute the size of the bundle by adding up
-  // the relevant sizes.
-  
-  // First, compute the size of the arg bundle class instance
-  VarSymbol *fixedsz = newTemp(astr("_args_fixed_size", fn->name),
-                               dtInt[INT_SIZE_DEFAULT]);
-  fcall->insertBefore(new DefExpr(fixedsz));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, fixedsz,
-                                   new CallExpr(PRIM_SIZEOF, ctype->symbol)));
-
-  // Next, compute the sum of fixed and variable sizes
+   // Next, compute the sum of fixed and variable sizes
   VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
                              dtInt[INT_SIZE_DEFAULT]);
   fcall->insertBefore(new DefExpr(tmpsz));
