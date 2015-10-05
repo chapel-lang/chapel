@@ -39,6 +39,7 @@ module String {
   use CString;
   use SysCTypes;
   use StringCasts;
+  use ChapelLocaleTypes;
 
   //
   // Externs and constants used to implement strings
@@ -112,9 +113,10 @@ module String {
     var _size: int = 0; // size of the buffer we own
     var buff: bufferType = nil;
     var owned: bool = true;
+    var locale_id : chpl_nodeID_t = chpl_nodeID;
 
     proc string(s: string, owned: bool = true) {
-      const sRemote = s.locale.id != chpl_nodeID;
+      const sRemote = s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.owned = owned;
       // Dont need to do anything if s is an empty string
@@ -123,7 +125,7 @@ module String {
         if !_local && sRemote {
           // ignore supplied valure of owned for remote strings so we dont leak
           this.owned = true;
-          this.buff = copyRemoteBuffer(s.locale.id, s.buff, sLen);
+          this.buff = copyRemoteBuffer(s.locale_id, s.buff, sLen);
           this._size = sLen+1;
         } else {
           if this.owned {
@@ -150,7 +152,8 @@ module String {
 
     proc ref ~string() {
       if owned && !this.isEmptyString() {
-        on this {
+        on __primitive("chpl_on_locale_num",
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
           chpl_mem_free(this.buff);
         }
       }
@@ -203,7 +206,7 @@ module String {
         return __primitive("cast", t, x);
       }
 
-      if this.locale.id != chpl_nodeID then
+      if this.locale_id != chpl_nodeID then
         halt("Cannot call .c_str() on a remote string");
 
       return this.buff:c_string;
@@ -218,7 +221,7 @@ module String {
     //TODO: specifying return types still doesn't work quite right and in this
     //      case, will cause us to return an owned copy even when this is local
     inline proc localize() /*: string*/ {
-        if _local || this.locale.id == chpl_nodeID {
+        if _local || this.locale_id == chpl_nodeID {
           return new string(this, owned=false);
         } else {
           const x:string = this; // assignment makes it local
@@ -245,9 +248,9 @@ module String {
                                 CHPL_RT_MD_STR_COPY_DATA): bufferType;
       ret.owned = true;
 
-      const remoteThis = this.locale.id != chpl_nodeID;
+      const remoteThis = this.locale_id != chpl_nodeID;
       if remoteThis {
-        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, 1);
+        chpl_string_comm_get(ret.buff, this.locale_id, this.buff, 1);
       } else {
         ret.buff[0] = this.buff[i-1];
       }
@@ -296,12 +299,12 @@ module String {
                                   CHPL_RT_MD_STR_COPY_DATA): bufferType;
 
         var thisBuff: bufferType;
-        const remoteThis = this.locale.id != chpl_nodeID;
+        const remoteThis = this.locale_id != chpl_nodeID;
         if remoteThis {
           // TODO: Could to an optimization here and only pull down the data
           // between r2.low and r2.high. Indexing for the copy below gets a bit
           // more complex when that is performed though.
-          thisBuff = copyRemoteBuffer(this.locale.id, this.buff, this.len);
+          thisBuff = copyRemoteBuffer(this.locale_id, this.buff, this.len);
         } else {
           thisBuff = this.buff;
         }
@@ -342,7 +345,8 @@ module String {
     // needles though
     inline proc _startsEndsWith(needles: string ..., param fromLeft: bool) : bool {
       var ret: bool = false;
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for needle in needles {
           if needle.isEmptyString() {
             ret = true;
@@ -386,7 +390,8 @@ module String {
                                param count: bool, param fromLeft: bool = true) {
       // needle.len is <= than this.len, so go to the home locale
       var ret: int = 0;
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         // any value > 0 means we have a solution
         // used because we cant break out of an on-clause early
         var localRet: int = -1;
@@ -557,10 +562,10 @@ module String {
           }
           var sLen = s.len;
           if sLen != 0 {
-            if _local || s.locale.id == chpl_nodeID {
+            if _local || s.locale_id == chpl_nodeID {
               memcpy(ret.buff+offset, s.buff, sLen.safeCast(size_t));
             } else {
-              chpl_string_comm_get(ret.buff+offset, s.locale.id,
+              chpl_string_comm_get(ret.buff+offset, s.locale_id,
                                   s.buff, sLen.safeCast(size_t));
             }
             offset += sLen;
@@ -630,7 +635,8 @@ module String {
       var result: bool = false;
       if this.isEmptyString() then return false;
 
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
           if _byte_isLower(b) {
@@ -648,7 +654,8 @@ module String {
       if this.isEmptyString() then return false;
       var result: bool = false;
 
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
           if _byte_isUpper(b) {
@@ -666,7 +673,8 @@ module String {
       if this.isEmptyString() then return false;
       var result: bool = true;
 
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
           if !((b == ascii(' ')) ||
@@ -684,7 +692,8 @@ module String {
       if this.isEmptyString() then return false;
       var result: bool = true;
 
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
           if !_byte_isAlpha(b) {
@@ -700,7 +709,8 @@ module String {
       if this.isEmptyString() then return false;
       var result: bool = true;
 
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
           if !_byte_isDigit(b) {
@@ -716,7 +726,8 @@ module String {
       if this.isEmptyString() then return false;
       var result: bool = true;
 
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
           if !(_byte_isAlpha(b) || _byte_isDigit(b)) {
@@ -732,7 +743,8 @@ module String {
       if this.isEmptyString() then return false;
       var result: bool = true;
 
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const char = buff[i];
           if char < 0x1f  || char == 0x7f {
@@ -748,7 +760,8 @@ module String {
       if this.isEmptyString() then return false;
       var result: bool = true;
 
-      on this {
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         param UN = 0, UPPER = 1, LOWER = 2;
         var last = UN;
         for i in 0..#this.len {
@@ -856,7 +869,7 @@ module String {
     var ret: string;
     const slen = s.len; // cache the remote copy of len
     if slen != 0 {
-      if _local || s.locale.id == chpl_nodeID {
+      if _local || s.locale_id == chpl_nodeID {
         if s.owned {
           ret.buff = chpl_mem_alloc(s._size.safeCast(size_t),
                                     CHPL_RT_MD_STR_COPY_DATA): bufferType;
@@ -867,7 +880,7 @@ module String {
         }
         ret.owned = s.owned;
       } else {
-        ret.buff = copyRemoteBuffer(s.locale.id, s.buff, slen);
+        ret.buff = copyRemoteBuffer(s.locale_id, s.buff, slen);
         ret.owned = true;
       }
       ret.len = slen;
@@ -895,7 +908,7 @@ module String {
     var ret: string;
     const slen = s.len; // cache the remote copy of len
     if slen != 0 {
-      if _local || s.locale.id == chpl_nodeID {
+      if _local || s.locale_id == chpl_nodeID {
         if s.owned {
           ret.buff = chpl_mem_alloc(s._size.safeCast(size_t),
                                     CHPL_RT_MD_STR_COPY_DATA): bufferType;
@@ -906,7 +919,7 @@ module String {
         }
         ret.owned = s.owned;
       } else {
-        ret.buff = copyRemoteBuffer(s.locale.id, s.buff, slen);
+        ret.buff = copyRemoteBuffer(s.locale_id, s.buff, slen);
         ret.owned = true;
       }
       ret.len = slen;
@@ -920,28 +933,31 @@ module String {
   //
   proc =(ref lhs: string, rhs: string) {
     inline proc helpMe(ref lhs: string, rhs: string) {
-      if _local || rhs.locale.id == chpl_nodeID {
+      if _local || rhs.locale_id == chpl_nodeID {
         lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
       } else {
         const len = rhs.len; // cache the remote copy of len
         var remote_buf:bufferType = nil;
         if len != 0 then
-          remote_buf = copyRemoteBuffer(rhs.locale.id, rhs.buff, len);
+          remote_buf = copyRemoteBuffer(rhs.locale_id, rhs.buff, len);
         lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
       }
     }
 
-    if _local || lhs.locale.id == chpl_nodeID then {
+    if _local || lhs.locale_id == chpl_nodeID then {
       helpMe(lhs, rhs);
     }
     else {
-      on lhs do helpMe(lhs, rhs);
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+        helpMe(lhs, rhs);
+      }
     }
   }
 
   proc =(ref lhs: string, rhs_c: c_string) {
     // Make this some sort of local check once we have local types/vars
-    if (rhs_c.locale.id != chpl_nodeID) || (lhs.locale.id != chpl_nodeID) then
+    if (rhs_c.locale.id != chpl_nodeID) || (lhs.locale_id != chpl_nodeID) then
       halt("Cannot assign a remote c_string to a string.");
 
     const len = rhs_c.length;
@@ -967,17 +983,17 @@ module String {
                               CHPL_RT_MD_STR_COPY_DATA): bufferType;
     ret.owned = true;
 
-    const s0remote = s0.locale.id != chpl_nodeID;
+    const s0remote = s0.locale_id != chpl_nodeID;
     if s0remote {
-      chpl_string_comm_get(ret.buff, s0.locale.id,
+      chpl_string_comm_get(ret.buff, s0.locale_id,
                            s0.buff, s0len.safeCast(size_t));
     } else {
       memcpy(ret.buff, s0.buff, s0len.safeCast(size_t));
     }
 
-    const s1remote = s1.locale.id != chpl_nodeID;
+    const s1remote = s1.locale_id != chpl_nodeID;
     if s1remote {
-      chpl_string_comm_get(ret.buff+s0len, s1.locale.id,
+      chpl_string_comm_get(ret.buff+s0len, s1.locale_id,
                            s1.buff, s1len.safeCast(size_t));
     } else {
       memcpy(ret.buff+s0len, s1.buff, s1len.safeCast(size_t));
@@ -1001,9 +1017,9 @@ module String {
                               CHPL_RT_MD_STR_COPY_DATA): bufferType;
     ret.owned = true;
 
-    const sRemote = s.locale.id != chpl_nodeID;
+    const sRemote = s.locale_id != chpl_nodeID;
     if sRemote {
-      chpl_string_comm_get(ret.buff, s.locale.id,
+      chpl_string_comm_get(ret.buff, s.locale_id,
                            s.buff, sLen.safeCast(size_t));
     } else {
       memcpy(ret.buff, s.buff, sLen.safeCast(size_t));
@@ -1112,7 +1128,8 @@ module String {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 
-    on lhs {
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
       const rhsLen = rhs.len;
       const newLength = lhs.len+rhsLen; //TODO: check for overflow
       if lhs._size <= newLength {
@@ -1133,9 +1150,9 @@ module String {
 
         lhs._size = newSize.safeCast(int);
       }
-      const rhsRemote = rhs.locale.id != chpl_nodeID;
+      const rhsRemote = rhs.locale_id != chpl_nodeID;
       if rhsRemote {
-        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale.id,
+        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale_id,
                               rhs.buff, rhsLen.safeCast(size_t));
       } else {
         memcpy(lhs.buff+lhs.len, rhs.buff, rhsLen.safeCast(size_t));
@@ -1183,9 +1200,12 @@ module String {
       return _strcmp(a, b) == 0;
     }
 
-    if a.locale.id == b.locale.id {
+    if a.locale_id == b.locale_id {
       var ret: bool = false;
-      on a do ret = doEq(a, b);
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+        ret = doEq(a, b);
+      }
       return ret;
     } else {
       var localA: string = a.localize();
@@ -1204,9 +1224,12 @@ module String {
       return _strcmp(a, b) < 0;
     }
 
-    if a.locale.id == b.locale.id {
+    if a.locale_id == b.locale_id {
       var ret: bool = false;
-      on a do ret = doLt(a, b);
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+        ret = doLt(a, b);
+      }
       return ret;
     } else {
       var localA: string = a.localize();
@@ -1221,9 +1244,12 @@ module String {
       return _strcmp(a, b) > 0;
     }
 
-    if a.locale.id == b.locale.id {
+    if a.locale_id == b.locale_id {
       var ret: bool = false;
-      on a do ret = doGt(a, b);
+      on __primitive("chpl_on_locale_num",
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+        ret = doGt(a, b);
+      }
       return ret;
     } else {
       var localA: string = a.localize();
@@ -1293,8 +1319,10 @@ module String {
 
   // Cast from c_string to string
   proc _cast(type t, cs: c_string) where t == string {
-    if cs.locale.id != chpl_nodeID then
-      halt("Cannot cast a remote c_string to string.");
+    // TODO: uncommenting this creates a circular definition loop?
+    // since LocaleModel uses this cast and this cast uses LocaleModel?
+    //if cs.locale_id != chpl_nodeID then
+    //  halt("Cannot cast a remote c_string to string.");
 
     var ret: string;
     ret.len = cs.length;
