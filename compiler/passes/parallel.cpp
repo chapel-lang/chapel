@@ -716,7 +716,7 @@ needHeapVars() {
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN) ||
+    if (
         (fn->hasFlag(FLAG_ON) &&
          (needHeapVars() || fn->hasFlag(FLAG_NON_BLOCKING)))) {
       for_formals(formal, fn) {
