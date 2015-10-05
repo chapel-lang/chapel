@@ -1733,17 +1733,13 @@ module ChapelArray {
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
-<<<<<<< HEAD
   
     // Note: Clients of this routine must update the ref count "manually".
     // Specifically, if the return value of this routine is copied into a field
     // or outer variable, then its ref count must be incremented.  The ref
     // count must be decremented when the containing location or structure is
     // deleted.
-=======
-
     pragma "no doc"
->>>>>>> upstream/master
     inline proc these() ref {
       return _value.these();
     }
