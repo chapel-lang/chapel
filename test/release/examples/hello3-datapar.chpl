@@ -16,7 +16,7 @@ config const numMessages = 100;
 // representing the number of messages to print.  In a forall loop,
 // the number of tasks used to implement the parallelism is determined
 // by the implementation of the thing driving the iteration -- in this
-// case, the range.  See $CHPL_HOME/doc/README.executing (controlling
+// case, the range.  See $CHPL_HOME/doc/executing.rst (controlling
 // degree of data parallelism) for more information about controlling
 // this number of tasks.
 //
