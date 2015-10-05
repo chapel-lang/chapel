@@ -1,0 +1,8 @@
+bug: Sync and single vars incorrectly passed to generic const intent arguments.
+
+When a 'sync' or 'single' variable is passed to a generic 'const' formal,
+it is read out and passed as its base type, rather than being passed
+as sync/single type directly, by reference.
+
+See also:
+  types/sync/vass/ref-sync-2.future
