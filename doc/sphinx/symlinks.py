@@ -41,6 +41,10 @@ def main():
                 os.remove(newpath)
             os.symlink(rstfile, newpath)
 
+    # CHPL_HOME README
+    chplhomereadme = os.path.join(chpl_home, 'README.rst')
+    os.symlink(chplhomereadme, 'source/usingchapel/README.rst')
+
 
 if __name__ == '__main__':
     main()

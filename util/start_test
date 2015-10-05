@@ -625,7 +625,11 @@ def set_up_environment():
     # memory leak log
     if args.mem_leaks_log:
         os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
-        args.execopts += " --memLeaksLog=" + os.path.abspath(args.mem_leaks_log)
+        memleaksfile = os.path.abspath(args.mem_leaks_log)
+        args.execopts += " --memLeaksLog=" + memleaksfile
+        if os.path.isfile(memleaksfile):
+            logger.write("[Error: mem leaks log file already exists: {0}]"
+                         .format(memleaksfile))
 
     # create temporary directory
     global chpl_test_tmp_dir

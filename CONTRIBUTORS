@@ -8,9 +8,11 @@ language:
 
 Contributors to the current release
 -----------------------------------
-Sean Billig, individual contributor
+Ben Albrecht, Cray Inc.
+Ian Bertolacci, Cray Inc./Colorado State University
 Kyle Brady, Cray Inc.
 Brad Chamberlain, Cray Inc.
+Cory McCartan, Cray Inc.
 Sung-Eun Choi, Cray Inc.
 Lydia Duncan, Cray Inc.
 Michael Ferguson, Cray Inc.
@@ -18,13 +20,12 @@ Ben Harshbarger, Cray Inc.
 Tom Hildebrandt, Cray Inc.
 David Iten, Cray Inc.
 Vassily Litvinov, Cray Inc.
-Simon Lund, Københavns Universitet (University of Copenhagen)
 Tom MacDonald, Cray Inc.
-Phil Nelson, Western Washington University
+Damian McGuckin, Pacific Engineering Systems International
+Phil Nelson, Western Washington University/Cray Inc.
 Michael Noakes, Cray Inc.
-Nikhil Padmanabhan, Yale University
+Konstantina Panagiotopoulou, individual contributor
 Elliot Ronaghan, Cray Inc.
-Francisco Souza, individual contributor
 Greg Titus, Cray Inc.
 Thomas Van Doren, Cray Inc.
 
@@ -34,6 +35,7 @@ Rafael Asenjo, Universidad de Málaga (University of Malaga)
 Matthew Baker, ORNL
 Steve Balensiefer, University of Washington
 Casey Battaglino, Cray Inc./Georgia Tech
+Sean Billig, individual contributor
 Robert Bocchino, Cray Inc./University of Illinois, Urbana-Champaign
 Dan Bonachea, UC Berkeley
 Daniel Buettner, LTS
@@ -59,9 +61,11 @@ John Koenig, Cray Inc.
 Rafael Larrosa Jiminez, Universidad de Málaga (University of Malaga)
 Matthew Lentz, University of Maryland
 Juan Lopez, Universidad de Málaga (University of Malaga)
+Simon Lund, Københavns Universitet (University of Copenhagen)
 Maria Angeles Navarro, Universidad de Málaga (University of Malaga)
 Jun Nakashima, University of Tokyo
 Jacob Nelson, Cray Inc./University of Washington
+Nikhil Padmanabhan, Yale University
 John Plevyak, Cray Inc.
 Lee Prokowich, Cray Inc.
 Brandon Ross, University at Buffalo
@@ -70,6 +74,7 @@ Alberto Sanz, Universidad de Málaga (University of Malaga)
 Albert Sidelnik, Cray Inc./University of Illinois, Urbana-Champaign
 Darren Smith, University of Maryland
 Rachel Sobel, Cray Inc./University of Washington
+Francisco Souza, individual contributor
 Srinivas Sridharan, University of Notre Dame/ORNL
 Andy Stone, Cray Inc./University of Colorado
 Chris Swenson, individual contributor

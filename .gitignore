@@ -148,6 +148,8 @@ tags
 /test/compflags/bradc/printstuff/zhelpvers.good
 /test/compflags/bradc/printstuff/zlicevers.good
 
+/test/compflags/lydia/library/libtesting.a
+
 /test/compflags/shannon/cpplines/cppLines.OUTPUT
 /test/compflags/shannon/cpplines/noCppLines.OUTPUT
 
@@ -455,6 +457,8 @@ test/separate_compilation/jturner/libsubclass.so.a
 /test/users/franzf/v1/c99/*.icproj
 /test/users/franzf/v1/c99/*.vcproj
 /test/users/franzf/v2/chpl/chapel.hash
+
+/test/variables/bradc/docs/pragmaMultipleVars.doc.txt
 
 /test/users/thom/returnGenericLineno/strassen
 
