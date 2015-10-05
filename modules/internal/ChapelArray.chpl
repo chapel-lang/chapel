@@ -1178,16 +1178,12 @@ module ChapelArray {
         compilerError("exterior not supported on this domain type");
     }
 
-    /* Returns a new domain that is the exterior portion of the
-       current domain with ``off(d)`` indices for each dimension
-       ``d``. If ``off(d)`` is negative, compute the exterior from
-       the low bound of the dimension; if positive, compute the
-       exterior from the high bound. */
+    pragma "no doc"
     proc exterior(off: _value.idxType ...rank) return exterior(off);
 
     /* Returns a new domain that is the exterior portion of the
-       current domain with ``off`` indices for each dimension.
-       If ``off`` is negative, compute the exterior from the low
+       current domain with ``off(d)`` indices for each dimension ``d``.
+       If ``off(d)`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
        from the high bound. */
     proc exterior(off: rank*_value.idxType) {
@@ -1200,7 +1196,19 @@ module ChapelArray {
         if (d.linksDistribution()) then
           d.dist.incRefCount();
       return _newDomain(d);
-     }
+    }
+
+    /* Returns a new domain that is the exterior portion of the
+       current domain with ``off`` indices for each dimension.
+       If ``off`` is negative, compute the exterior from the low
+       bound of the dimension; if positive, compute the exterior
+       from the high bound. */
+    proc exterior(off:_value.idxType) where rank != 1 {
+      var offTup: rank*_value.idxType;
+      for i in 1..rank do
+        offTup(i) = off;
+      return exterior(offTup);
+    }
 
     pragma "no doc"
     proc interior(off: rank*_value.idxType) where !isRectangularDom(this) {
@@ -1214,11 +1222,7 @@ module ChapelArray {
         compilerError("interior not supported on this domain type");
     }
 
-    /* Returns a new domain that is the interior portion of the
-       current domain with ``off`` indices for each dimension.
-       If ``off`` is negative, compute the interior from the low
-       bound of the dimension; if positive, compute the interior
-       from the high bound. */
+    pragma "no doc"
     proc interior(off: _value.idxType ...rank) return interior(off);
 
     /* Returns a new domain that is the interior portion of the
@@ -1242,6 +1246,18 @@ module ChapelArray {
           d.dist.incRefCount();
       return _newDomain(d);
     }
+
+    /* Returns a new domain that is the interior portion of the
+       current domain with ``off`` indices for each dimension.
+       If ``off`` is negative, compute the interior from the low
+       bound of the dimension; if positive, compute the interior
+       from the high bound. */
+    proc interior(off: _value.idxType) where rank != 1 {
+      var offTup: rank*_value.idxType;
+      for i in 1..rank do
+        offTup(i) = off;
+      return interior(offTup);
+    }
   
     //
     // NOTE: We eventually want to support translate on other domain types
@@ -1262,12 +1278,11 @@ module ChapelArray {
     // Notice that the type of the offset does not have to match the
     // index type.  This is handled in the range.translate().
     //
-    /* Returns a new domain that is the current domain translated by
-       ``off(d)`` in each dimension ``d``. */
+    pragma "no doc"
     proc translate(off: ?t ...rank) return translate(off);
 
     /* Returns a new domain that is the current domain translated by
-       ``off`` in each dimension. */
+       ``off(d)`` in each dimension ``d``. */
     proc translate(off) where isTuple(off) {
       if off.size != rank then
         compilerError("the domain and offset arguments of translate() must be of the same rank");
@@ -1281,7 +1296,16 @@ module ChapelArray {
           d.dist.incRefCount();
       return _newDomain(d);
      }
-  
+ 
+    /* Returns a new domain that is the current domain translated by
+       ``off`` in each dimension. */
+     proc translate(off) where rank != 1 && !isTuple(off) {
+       var offTup: rank*off.type;
+       for i in 1..rank do
+         offTup(i) = off;
+       return translate(offTup);
+     }
+ 
     //
     // intended for internal use only:
     //
