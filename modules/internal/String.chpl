@@ -850,7 +850,7 @@ module String {
   // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
   pragma "donor fn"
   pragma "auto copy fn"
-  proc chpl__autoCopy(s: string) {
+  proc chpl__autoCopy(const ref s: string) {
     // This pragma may be unnecessary.
     pragma "no auto destroy"
     var ret: string;
@@ -935,7 +935,7 @@ module String {
    * TODO: Do we need an initCopy for strings?  If not, this clause can be removed.
    */
   pragma "init copy fn"
-  proc chpl__initCopy(s: string) {
+  proc chpl__initCopy(const ref s: string) {
     // This pragma may be unnecessary.
     pragma "no auto destroy"
     var ret: string;
