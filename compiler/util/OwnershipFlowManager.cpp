@@ -675,11 +675,6 @@ void OwnershipFlowManager::backwardFlowUse()
 //#########################################################################
 //#
 
-static bool isRetVarInReturn(SymExpr* se);
-static bool isRetVarCopyInConstructor(SymExpr* se);
-static bool isDestructorFormal(SymExpr* se);
-static bool isDestructorArg(SymExpr* se);
-
 void OwnershipFlowManager::insertAutoCopies()
 {
   // RVV is "Return Value Variable"
@@ -696,7 +691,10 @@ void OwnershipFlowManager::insertAutoCopies()
     // We need to insert an autodestroy call for each symbol that is owned
     // (live) at the end of the block but is unowned (dead) in the OUT set.
     for_vector(Expr, expr, bb.exprs)
-      insertAutoCopy(expr, prod, live, cons, rvv, rvvIsOwned);
+    {
+      if (CallExpr* call = toCallExpr(expr))
+        insertAutoCopy(call, prod, live, cons, rvv, rvvIsOwned);
+    }
 
     delete cons;
     delete live;
@@ -704,191 +702,139 @@ void OwnershipFlowManager::insertAutoCopies()
   }
 }
 
-void OwnershipFlowManager::insertAutoCopy(Expr*   expr,
-                                          BitVec* prod,
-                                          BitVec* live,
-                                          BitVec* cons,
-                                          Symbol* rvv,
-                                          bool    rvvIsOwned)
+void OwnershipFlowManager::insertAutoCopy(CallExpr* call,
+                                          BitVec*   prod,
+                                          BitVec*   live,
+                                          BitVec*   cons,
+                                          Symbol*   rvv,
+                                          bool      rvvIsOwned)
 {
-  if      (isSimpleAssignment(expr) == true)
-  {
-    autoCopyForSimpleAssignment(toCallExpr(expr),
-                                prod,
-                                live,
-                                cons,
-                                rvv,
-                                rvvIsOwned);
-  }
+  bool isMove   = call->isPrimitive(PRIM_MOVE);
+  bool isAssign = call->isPrimitive(PRIM_ASSIGN);
 
-  else if (isMoveToRvvFromPrimop(expr, rvv)  == true)
+  if (isMove == true || isAssign == true)
   {
-    autoCopyForMoveToRvvFromPrimop(toCallExpr(expr));
+    SymExpr* lhse = toSymExpr(call->get(1));
+
+    INT_ASSERT(lhse);
+
+    if (isSymExpr(call->get(2)) == true)
+    {
+      if (isLocal(lhse) == true)
+      {
+        if (lhse->var == rvv && rvvIsOwned == true)
+          autoCopyToRvvFromSymExpr(call, prod, live, cons);
+
+        processBitwiseCopy(call, prod, live, cons);
+      }
+    }
+
+    else if (CallExpr* rhce = toCallExpr(call->get(2)))
+    {
+      if (lhse->var == rvv && isMove == true && rhce->isPrimitive() == true)
+      {
+        autoCopyToRvvFromPrimop(call);
+      }
+
+      else
+      {
+        if (lhse->var != rvv && isLocal(lhse) && isCreated(lhse))
+          processCreator(lhse, prod, live);
+
+        autoCopyForCallExpr(rhce, prod, live, cons, rvv);
+      }
+    }
+
+    else
+    {
+      INT_ASSERT(false);
+    }
   }
 
   else
   {
-    autoCopyWalkSymExprs(expr, prod, live, cons, rvv);
+    autoCopyForCallExpr(call, prod, live, cons, rvv);
   }
 }
 
-bool OwnershipFlowManager::isSimpleAssignment(Expr* expr) const
+void OwnershipFlowManager::autoCopyToRvvFromSymExpr(CallExpr* call,
+                                                    BitVec*   prod,
+                                                    BitVec*   live,
+                                                    BitVec*   cons)
 {
-  bool retval = false;
-
-  if (CallExpr* call = toCallExpr(expr))
+  if (_fn->hasFlag(FLAG_CONSTRUCTOR)  == false &&
+      _fn->hasFlag(FLAG_AUTO_COPY_FN) == false &&
+      _fn->hasFlag(FLAG_INIT_COPY_FN) == false)
   {
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+    SymExpr* rhse = toSymExpr(call->get(2));
+    Symbol*  rsym = rhse->var;
+
+    INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+    if (isLocal(rsym) == true)
     {
-      INT_ASSERT(isSymExpr(call->get(1)));
+      // The RHS is local.  We need an autocopy only if it is unowned.
+      size_t rindex = symbolIndex[rsym];
 
-      retval = isSymExpr(call->get(2));
-    }
-  }
-
-  return retval;
-}
-
-void OwnershipFlowManager::autoCopyForSimpleAssignment(CallExpr* call,
-                                                       BitVec*   prod,
-                                                       BitVec*   live,
-                                                       BitVec*   cons,
-                                                       Symbol*   rvv,
-                                                       bool      rvvIsOwned)
-{
-  SymExpr* lhse = toSymExpr(call->get(1));
-  SymExpr* rhse = toSymExpr(call->get(2));
-
-  if (symbolIndex.find(lhse->var) != symbolIndex.end())
-  {
-    if (lhse->var == rvv && rvvIsOwned == true)
-    {
-      Symbol* rsym = rhse->var;
-
-      INT_ASSERT(call->isPrimitive(PRIM_MOVE));
-
-      if (symbolIndex.find(rsym) == symbolIndex.end())
-      {
-        // The RHS is not local, so we need an autocopy.
+      if (live->get(rindex) == false)
         insertAutoCopy(rhse);
-      }
-      else
-      {
-        // The RHS is local.  We need an autocopy only if it is unowned.
-        size_t rindex = symbolIndex[rsym];
-
-        if (!live->get(rindex))
-          insertAutoCopy(rhse);
-      }
     }
-
-    processBitwiseCopy(lhse, prod, live, cons);
-  }
-}
-
-// If the RHS is a call to a function, no autocopy is needed because calls
-// are uniformly treated as returning an owned value.  If the thing being
-// copied into the RVV is owned, we don't need to insert an autoCopy.
-// But that still leaves the case where a CallExpr on the RHS returns
-// something that is unowned.
-bool OwnershipFlowManager::isMoveToRvvFromPrimop(Expr* expr, Symbol* rvv) const
-{
-  bool retval = false;
-
-  if (CallExpr* call = toCallExpr(expr))
-  {
-    if (call->isPrimitive(PRIM_MOVE) == true)
+    else
     {
-      SymExpr*  lhse = toSymExpr(call->get(1));
-      CallExpr* rhs  = toCallExpr(call->get(2));
-
-      if (lhse               != NULL &&
-          lhse->var          == rvv  &&
-          rhs->isPrimitive() == true)
-        retval = true;
+      // The RHS is not local, so we need an autocopy.
+      insertAutoCopy(rhse);
     }
   }
-
-  return retval;
 }
 
-void OwnershipFlowManager::autoCopyForMoveToRvvFromPrimop(CallExpr* call)
+void OwnershipFlowManager::autoCopyToRvvFromPrimop(CallExpr* call)
 {
-  INT_ASSERT(call != NULL && call->isPrimitive(PRIM_MOVE));
+  CallExpr*  rhs     = toCallExpr(call->get(2));
+  Expr*      stmt    = rhs->getStmtExpr();
 
-  if (CallExpr* rhs = toCallExpr(call->get(2)))
-  {
-    INT_ASSERT(rhs->isPrimitive());
+  SET_LINENO(stmt);
 
-    Expr* stmt = rhs->getStmtExpr();
+  VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
+  SymExpr*   rhse    = new SymExpr(callTmp);
 
-    SET_LINENO(stmt);
+  stmt->insertBefore(new DefExpr(callTmp));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
 
-    VarSymbol* callTmp = newTemp("call_tmp", rhs->typeInfo());
-    SymExpr*   rhse    = new SymExpr(callTmp);
+  call->insertAtTail(rhse);
 
-    stmt->insertBefore(new DefExpr(callTmp));
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, callTmp, rhs->remove()));
-
-    call->insertAtTail(rhse);
-
-    insertAutoCopy(rhse);
-  }
+  insertAutoCopy(rhse);
 }
 
-void OwnershipFlowManager::autoCopyWalkSymExprs(Expr*   expr,
-                                                BitVec* prod,
-                                                BitVec* live,
-                                                BitVec* cons,
-                                                Symbol* rvv)
+void OwnershipFlowManager::autoCopyForCallExpr(CallExpr* call,
+                                               BitVec*   prod,
+                                               BitVec*   live,
+                                               BitVec*   cons,
+                                               Symbol*   rvv)
 {
   SymExprVector symExprs;
 
-  collectSymExprs(expr, symExprs);
+  collectSymExprs(call, symExprs);
 
   for_vector(SymExpr, se, symExprs)
   {
-    // Is this symbol local?
-    if (symbolIndex.find(se->var) != symbolIndex.end())
-      insertAutoCopy(se, prod, live, cons, rvv);
-  }
-}
-
-void OwnershipFlowManager::insertAutoCopy(SymExpr* se,
-                                          BitVec*  prod,
-                                          BitVec*  live,
-                                          BitVec*  cons,
-                                          Symbol*  rvv)
-{
-  Symbol* sym = se->var;
-
-  if (sym == rvv)
-  {
-
-  }
-
-  else if (isCreated(se))
-  {
-    processCreator(se, prod, live);
-  }
-
-  else if (isConsumed(se))
-  {
-    size_t index = symbolIndex[sym];
-
-    // If the live bit is set for this symbol, leave it as a move
-    // and transfer ownership.  Otherwise, insert an autoCopy.
-    if (!live->get(index))
+    if (se->var != rvv && isLocal(se) == true && isConsumed(se) == true)
     {
-      insertAutoCopy(se);
+      size_t index = symbolIndex[se->var];
 
-      // Set the bit in the PROD set to show that ownership is
-      // produced, but since it is consumed immediately, the state of
-      // OUT and the rest of the forward-flowed bitsets are unchanged.
-      prod->set(index);
+      // If the live bit is set for this symbol, leave it as a move
+      // and transfer ownership.  Otherwise, insert an autoCopy.
+      if (live->get(index) == false)
+      {
+        insertAutoCopy(se);
+
+        // Set the bit in the PROD set to show that ownership is
+        // produced, but since it is consumed immediately, the state of
+        // OUT and the rest of the forward-flowed bitsets are unchanged.
+        prod->set(index);
+      }
+
+      processConsumer(se, live, cons);
     }
-
-    processConsumer(se, live, cons);
   }
 }
 
@@ -901,125 +847,65 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   Symbol*   sym        = se->var;
   FnSymbol* autoCopyFn = getAutoCopy(sym->type);
 
-  if (isPOD(sym->type) || autoCopyFn == NULL)
-    return;
+  // 1) There must be an auto copy function
+  // 2) Do not insert an auto copy for POD types
+  // 3) Do not copy the meme argument in a constructor.
+  // 4) Argument to a destructor function is known to be live
+  // 5) Do not insert auto-copy for an argument to a destructor
 
-  // Prevent autoCopy functions from calling themselves recursively.
-  // TODO: Remove this clause after the autoCopy function becomes a
-  // copy constructor method.
-  if (isRetVarInReturn(se))
-    return;
+  if (autoCopyFn                     != NULL  &&
+      isPOD(sym->type)               == false &&
+      se->var->hasFlag(FLAG_IS_MEME) == false &&
+      isDestructorFormal(se)         == false &&
+      isDestructorArg(se)            == false)
+  {
+    Expr*      stmt         = se->getStmtExpr();
+    VarSymbol* tmp          = newTemp("auto_copy_tmp", sym->type);
+    CallExpr*  autoCopyCall = new CallExpr(autoCopyFn, se->copy());
 
-  // We don't want to copy the meme argument in a constructor.
-  // TODO: When constructors are methods, there will be no meme argument, so
-  // this will be dead code.
-  if (se->var->hasFlag(FLAG_IS_MEME))
-    return;
+    stmt->insertBefore(new DefExpr(tmp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
 
-  // We also don't want an autocopy when we assign to the RVV in a constructor.
-  if (isRetVarCopyInConstructor(se))
-    return;
+    se->replace(new SymExpr(tmp));
 
-  // The argument to a destructor function is known to be live, so we do not
-  // need to insert an autoCopy even if one is called for.
-  // (Alternatively, we could pre-initialize the IN[0] set so the bit
-  // corresponding to the argument is true, but heading off the insertion of a
-  // called-for autoCopy seems simpler.)
-  if (isDestructorFormal(se))
-    return;
-
-  // Record destructors call the autoDestroy function recursively, loading up
-  // each field in turn (in reverse order).  We don't want to call autoCopy on
-  // these arguments, because that just undoes the effect of the field-wise
-  // destructor call.
-  // TODO: This problem only occurs for sync and referencecounted types.  If we
-  // can remove the useRefType predicate on line 687 of callDestructors.cpp and
-  // always use ref types (PRIM_GET_MEMBER), then this test can be removed.
-  if (isDestructorArg(se))
-    return;
-
-  Expr*      stmt         = se->getStmtExpr();
-  VarSymbol* tmp          = newTemp("auto_copy_tmp", sym->type);
-  CallExpr*  autoCopyCall = new CallExpr(autoCopyFn, se->copy());
-
-  stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
-
-  se->replace(new SymExpr(tmp));
-
-  insertReferenceTemps(autoCopyCall);
+    insertReferenceTemps(autoCopyCall);
+  }
 }
 
-
-static bool isRetVarInReturn(SymExpr* se)
+// The argument to a destructor function is known to be live, so we do not
+// need to insert an autoCopy even if one is called for.
+//
+// (Alternatively, we could pre-initialize the IN[0] set so the bit
+// corresponding to the argument is true, but heading off the insertion of a
+// called-for autoCopy seems simpler.)
+bool OwnershipFlowManager::isDestructorFormal(SymExpr* se) const
 {
-  if (CallExpr* call = toCallExpr(se->parentExpr))
-    if (call->isPrimitive(PRIM_RETURN))
-      // We just assume that that call->get(1) == se.
-      // What else could it be?
-      if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
-        if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
-            // Treat RTT init fns like constructors:
-            fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
-            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-            fn->hasFlag(FLAG_INIT_COPY_FN))
-        return true;
+  bool retval = false;
 
-  return false;
+  if (isArgSymbol(se->var) == true)
+    if (_fn->hasFlag(FLAG_DESTRUCTOR) || _fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+      retval = true;
+
+  return retval;
 }
 
-// Returns true if the given SymExpr is the RHS of a bitwise copy and the LHS
-// is a reference to the return value variable and the containing function is a
-// constructor (a.k.a. initCopy and autoCopy).
-static bool isRetVarCopyInConstructor(SymExpr* se)
+// Record destructors call the autoDestroy function recursively, loading up
+// each field in turn (in reverse order).  We don't want to call autoCopy on
+// these arguments, because that just undoes the effect of the field-wise
+// destructor call.
+//
+// TODO: This problem only occurs for sync and referencecounted types.  If we
+// can remove the useRefType predicate on line 687 of callDestructors.cpp and
+// always use ref types (PRIM_GET_MEMBER), then this test can be removed.
+bool OwnershipFlowManager::isDestructorArg(SymExpr* se) const
 {
-  if (CallExpr* call = toCallExpr(se->parentExpr)) // This call
-    if (call->isPrimitive(PRIM_MOVE) ||
-        call->isPrimitive(PRIM_ASSIGN)) // is a bitwise copy
-      if (se == call->get(2)) // whose RHS is the given SymExpr
-        if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) // and the
-          if (fn->hasFlag(FLAG_CONSTRUCTOR) ||             // containing
-              fn->hasFlag(FLAG_AUTO_COPY_FN) ||            // function
-              fn->hasFlag(FLAG_INIT_COPY_FN)) // is a constructor.
-            // TODO: Can the above be generalized to all functions?
-            if (SymExpr* lhse = toSymExpr(call->get(1))) // whose LHS
-              if (lhse->var == fn->getReturnSymbol()) // is the RVV.
-                return true;
-
-  return false;
-}
-
-static bool isDestructorFormal(SymExpr* se)
-{
-  if (ArgSymbol* arg = toArgSymbol(se->var))
-    if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
-      if (fn->hasFlag(FLAG_DESTRUCTOR) ||
-          fn->hasFlag(FLAG_AUTO_DESTROY_FN))
-      {
-        // We presume this is the first (and only) argument.
-        INT_ASSERT(fn->getFormal(1) == arg);
-        return true;
-      }
-
-  return false;
-}
-
-static bool isDestructorArg(SymExpr* se)
-{
-#if 0
-  // Cautiously disable the portion of this predicate that makes sure this
-  // it returns true only within a destructor or autodestroy function.
-  if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
-    if (parent->hasFlag(FLAG_DESTRUCTOR) ||
-        parent->hasFlag(FLAG_AUTO_DESTROY_FN))
-#endif
+  bool retval = false;
 
   if (CallExpr* call = toCallExpr(se->parentExpr))
-    if (FnSymbol* fn = call->isResolved())
-      if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
-        return true;
+    if (FnSymbol* target = call->isResolved())
+      retval = target->hasFlag(FLAG_AUTO_DESTROY_FN);
 
-  return false;
+  return retval;
 }
 
 //#########################################################################
@@ -1572,6 +1458,16 @@ void OwnershipFlowManager::processBitwiseCopy(SymExpr* se,
 {
   CallExpr* call = toCallExpr(se->parentExpr);
 
+  INT_ASSERT(call);
+
+  processBitwiseCopy(call, prod, live, cons);
+}
+
+void OwnershipFlowManager::processBitwiseCopy(CallExpr* call,
+                                              BitVec*   prod,
+                                              BitVec*   live,
+                                              BitVec*   cons)
+{
   SymExpr* lhs = toSymExpr(call->get(1));
   SymExpr* rhs = toSymExpr(call->get(2));
 
@@ -1667,6 +1563,16 @@ void OwnershipFlowManager::resetAliasList(BitVec*        bits,
 
     bits->reset(index);
   }
+}
+
+bool OwnershipFlowManager::isLocal(SymExpr* expr) const
+{
+  return isLocal(expr->var);
+}
+
+bool OwnershipFlowManager::isLocal(Symbol* sym) const
+{
+  return symbolIndex.find(sym) != symbolIndex.end();
 }
 
 //#########################################################################

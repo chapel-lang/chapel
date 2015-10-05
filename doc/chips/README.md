@@ -8,4 +8,5 @@ See the first CHIP for an overview.
 * [Constructor Syntax and Semantics](4.rst)
 * [Implement Object Copying Using a "Postblit" Method](5.rst)
 * [Tuples](6.rst)
+* [autoCopy insertion](7.rst)
 

@@ -240,8 +240,10 @@ Functions and Iterators
 - Actual arguments for formals with out intent do not follow implicit
   conversion rules and must match exactly in type.
   # functions/vass/out-intent-desired.future
-- Sync and single vars incorrectly passed to generic ref intent arguments.
+- Sync and single vars incorrectly passed to generic ref or const intent
+  arguments.
   # types/sync/vass/ref-sync-2.future
+  # users/vass/isX/isX.sync-by-const.future
 - Sync and single variables in records are not properly copied out
   when the record is passed as an out or inout argument.
   # types/single/sungeun/writeRecordInOutProc.future
@@ -600,9 +602,6 @@ Domain Maps, Domains and Arrays
 - Array and domain runtime type information is not preserved through
   generic instantiation.
   # arrays/vass/initialization-mapped-1.future
-- Multidimensional Domain functions 'exterior', 'interior', and 'translate'
-  that take a single scalar operand are missing.
-  # users/kreider/bug_domfn.future
 - Modifications to Sparse domains are not thread-safe.
   # domains/sungeun/sparse/forall.future
   # domains/sungeun/sparse/stress.future

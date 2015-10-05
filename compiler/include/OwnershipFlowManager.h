@@ -101,37 +101,30 @@ private:
 
 
   void insertAutoCopies();
-  void insertAutoCopy(Expr*    expr,
-                      BitVec*  prod,
-                      BitVec*  live,
-                      BitVec*  cons,
-                      Symbol*  rvv,
-                      bool     rvvIsOwned);
-  void insertAutoCopy(SymExpr* se,
-                      BitVec*  prod,
-                      BitVec*  live,
-                      BitVec*  cons,
-                      Symbol*  rvv);
+  void insertAutoCopy(CallExpr* call,
+                      BitVec*   prod,
+                      BitVec*   live,
+                      BitVec*   cons,
+                      Symbol*   rvv,
+                      bool      rvvIsOwned);
 
-  bool isSimpleAssignment(Expr* expr)                                    const;
-  void autoCopyForSimpleAssignment(CallExpr* call,
-                                   BitVec*   prod,
-                                   BitVec*   live,
-                                   BitVec*   cons,
-                                   Symbol*   rvv,
-                                   bool      rvvIsOwned);
+  void autoCopyToRvvFromSymExpr(CallExpr* call,
+                                BitVec*   prod,
+                                BitVec*   live,
+                                BitVec*   cons);
 
-  bool isMoveToRvvFromPrimop(Expr* expr, Symbol* rvv)                    const;
-  void autoCopyForMoveToRvvFromPrimop(CallExpr* call);
+  void autoCopyToRvvFromPrimop(CallExpr* call);
 
-  void autoCopyWalkSymExprs(Expr*   expr,
-                            BitVec* prod,
-                            BitVec* live,
-                            BitVec* cons,
-                            Symbol* rvv);
+  void autoCopyForCallExpr(CallExpr* call,
+                           BitVec*   prod,
+                           BitVec*   live,
+                           BitVec*   cons,
+                           Symbol*   rvv);
 
   void insertAutoCopy(SymExpr* se);
 
+  bool isDestructorFormal(SymExpr* se)                                   const;
+  bool isDestructorArg(SymExpr* se)                                      const;
 
   void iteratorInsertAutoDestroys();
   void iteratorInsertAutoDestroys(BitVec*        toCons,
@@ -163,11 +156,15 @@ private:
                        BitVec*  live,
                        BitVec*  cons);
 
-  void processBitwiseCopy(SymExpr* se,
-                          BitVec*  prod,
-                          BitVec*  live,
-                          BitVec*  cons);
+  void processBitwiseCopy(SymExpr*  se,
+                          BitVec*   prod,
+                          BitVec*   live,
+                          BitVec*   cons);
 
+  void processBitwiseCopy(CallExpr* call,
+                          BitVec*   prod,
+                          BitVec*   live,
+                          BitVec*   cons);
 
   void setAliasList  (BitVec*       bits,
                       SymbolVector& aliasList);
@@ -175,6 +172,8 @@ private:
   void resetAliasList(BitVec*       bits,
                       SymbolVector& aliasList);
 
+  bool isLocal(SymExpr* expr)                                            const;
+  bool isLocal(Symbol*  sym)                                             const;
 
   // Debug support.
   void printInfo()                                                       const;

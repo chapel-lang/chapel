@@ -81,6 +81,20 @@ function removePrefixFunctions() {
   removePattern "iter chpl_" $1
 }
 
+# Remove unwanted variables:
+#  - remove variables that start with chpl_
+#  - remove variables that start with underscores
+function removePrefixVariables() {
+  if [ $# -ne 1 ] || [ ! -f $1 ]; then
+    echo "Bad call to removePrefixVariables."
+    exit 1;
+  fi
+
+  removePattern "var _" $1
+
+  removePattern "var chpl_" $1
+}
+
 
 
 ###############################################################################
@@ -104,6 +118,27 @@ fixTitle "IO Support" $file
 ## End ChapelIO ##
 
 
+## ChapelIteratorSupport ##
+
+file="./ChapelIteratorSupport.rst"
+removePrefixFunctions $file
+fixTitle "Vectorizing Iterator" $file
+
+
+## End ChapelIteratorSupport ##
+
+
+## ChapelLocale ##
+
+file="./ChapelLocale.rst"
+fixTitle "Locales" $file
+replace "LocaleSpace = chpl__buildDomainExpr(0..numLocales-1)" \
+        "LocaleSpace = {0..numLocales-1}" $file
+
+
+## End ChapelLocale ##
+
+
 ## ChapelSyncvar ##
 
 file="./ChapelSyncvar.rst"
@@ -113,6 +148,20 @@ removePrefixFunctions $file
 fixTitle "Synchronization Variables" $file
 
 ## End ChapelSyncvar ##
+
+
+## ChapelArray ##
+file="./ChapelArray.rst"
+replace "_domain" "domain" $file
+replace "_array" "array" $file
+replace "record" "type" $file
+
+removePrefixFunctions $file
+removePrefixVariables $file
+
+fixTitle "Domain and Array Operations" $file
+
+## End ChapelArray ##
 
 
 ## Atomics ##

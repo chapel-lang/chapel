@@ -42,7 +42,7 @@ how to install libcurl, see the
 
 The environment variables CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS must be set to
 point to the include and lib directories for libcurl respectively. More
-information on these variables can be found in README.auxIO
+information on these variables can be found in auxIO.rst
 
 .. note::
 
@@ -75,7 +75,7 @@ Then, rebuild Chapel by executing 'make' from $CHPL_HOME:
 
 For information on how to enable and use Curl while also using other auxiliary
 IO extensions, as well as how to setup the CHPL_AUXIO_INCLUDE and
-CHPL_AUXIO_LIBS environment variables see doc/technotes/README.auxIO in a
+CHPL_AUXIO_LIBS environment variables see doc/technotes/auxIO.rst in a
 Chapel release.
 
 
