@@ -39,7 +39,6 @@ module String {
   use CString;
   use SysCTypes;
   use StringCasts;
-  use ChapelLocaleTypes;
 
   //
   // Externs and constants used to implement strings
@@ -113,7 +112,7 @@ module String {
     var _size: int = 0; // size of the buffer we own
     var buff: bufferType = nil;
     var owned: bool = true;
-    var locale_id : chpl_nodeID_t = chpl_nodeID;
+    var locale_id /* : chpl_nodeID_t */ = chpl_nodeID;
 
     proc string(s: string, owned: bool = true) {
       const sRemote = s.locale_id != chpl_nodeID;
