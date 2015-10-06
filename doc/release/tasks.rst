@@ -217,7 +217,7 @@ and is the default for Intel KNC, Cygwin, NetBSD, or when Cray is the
 target compiler.  It is attractive in its portability, though on most
 platforms it will tend to be heavier weight than Chapel strictly
 requires.  FIFO tasking is also used when Chapel is configured in
-'Quick Start' mode (see $CHPL_HOME/README for details).  To use FIFO
+'Quick Start' mode (see :ref:`chapelhome-quickstart`).  To use FIFO
 tasking, please take the following steps:
 
 1) Ensure that the environment variable ``CHPL_HOME`` points to the
@@ -284,7 +284,7 @@ following steps:
 
      export CHPL_TASKS=massivethreads
 
-3) Follow the "Quick Start" instructions in $CHPL_HOME/README
+3) Follow the :ref:`chapelhome-quickstart` 
    to set up, compile and run your Chapel programs.
 
 For more information on MassiveThreads, please see its entry in:

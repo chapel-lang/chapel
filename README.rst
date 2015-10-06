@@ -19,9 +19,10 @@ potential users a look at what we're doing and the opportunity to
 provide us with feedback.  See the LICENSE file for the release's
 licensing terms.
 
+.. _chapelhome-quickstart:
 
-Quick Start
------------
+Quick Start Instructions
+------------------------
 
 The following instructions are designed to get you up and running with
 Chapel with a minimum of fuss.  Note that building and using Chapel in
@@ -92,10 +93,7 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 
 
 
-5) To ensure you have installed Chapel properly, you can optionally run an
-   automatic sanity check using a few example programs. For this to work
-   correctly, you will need python, and ``python-devel`` packages installed on your
-   system. See `prereqs.rst`_ for more information.
+5) Optionally, check that your Chapel installation is working correctly:
 
         ``gmake check``
 

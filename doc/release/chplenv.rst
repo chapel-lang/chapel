@@ -312,11 +312,18 @@ CHPL_TASKS
                        pre-built module only)
         ============== ===================================================
 
-   If ``CHPL_TASKS`` is not set it defaults to ``qthreads`` unless the target
-   platform is either ``cygwin*`` or ``netbsd*``, the target compiler is
-   ``cray-prgenv-cray``, or the target architecture is ``knc``. For those
-   configurations it defaults to ``fifo``.  On Cray XC and XE\ |trade| systems
-   when using the pre-built module, it defaults to ``qthreads``.
+   If ``CHPL_TASKS`` is not set it defaults to ``qthreads`` in all cases
+   except for a few specific configurations in which it defaults to
+   ``fifo``:
+
+     * target platform is ``cygwin*``
+     * target platform is ``netbsd*``
+     * target compiler is ``cray-prgenv-cray``
+     * target architecture is ``knc``
+
+   The latter two apply independent of whether you are building Chapel
+   yourself or using the pre-built module on a Cray XC or XE\ |trade|
+   system.
 
    .. note::
      Note that the Chapel ``util/quickstart/setchplenv.*`` source scripts set

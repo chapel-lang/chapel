@@ -1,4 +1,4 @@
-proc dothis(r:[1..2] real); 
+proc dothis(r:[1..2] real): real;
 
 proc main() {
   var arr : [1..2] real;

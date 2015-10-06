@@ -5,10 +5,10 @@ Building Chapel
 ===============
 
 To build the Chapel compiler, set up your environment as described in
-:ref:`readme-chplenv`, cd to $CHPL_HOME, and
-type:
+:ref:`chapelhome-readme` (or :ref:`readme-chplenv` for more settings),
+cd to ``$CHPL_HOME``, and type:
 
-.. code-block:: bash
+.. code-block:: sh
 
      gmake
 
@@ -27,7 +27,7 @@ If everything works as intended, you ought to see:
 #. the runtime support libraries being compiled, archived, and stored
    in a configuration-specific subdirectory under:
 
-     ``$CHPL_HOME/lib/$CHPL_TARGET_PLATFORM/$CHPL_TARGET_COMPILER/...``
+     ``$CHPL_HOME/lib/$CHPL_TARGET_PLATFORM.$CHPL_TARGET_COMPILER.../``
 
 If you get an error or failure during the make process, please let us
 know about it at: chapel-bugs@lists.sourceforge.net (as well as
@@ -46,7 +46,7 @@ need to reset your environment variables and re-make.
 After a successful build, you should be able to run the compiler and
 display its help message using:
 
-.. code-block:: bash
+.. code-block:: sh
 
   chpl --help
 

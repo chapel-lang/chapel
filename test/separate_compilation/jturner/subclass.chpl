@@ -12,6 +12,6 @@ class Child : Parent {
   }
 }
 
-pragma "export" proc dothis(p : Parent) : int {
+export proc dothis(p : Parent) : int {
   return p.dothat(p.i);
 }
