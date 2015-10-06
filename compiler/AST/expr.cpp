@@ -3048,6 +3048,7 @@ GenRet codegenSizeof(Type* t)
 }
 
 
+static
 GenRet codegenSizeof(GenRet var)
 {
   GenInfo* info = gGenInfo;
