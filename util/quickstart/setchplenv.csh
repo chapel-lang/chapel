@@ -3,7 +3,7 @@
 set sourced=($_)
 set filedir = `dirname $sourced[2]`
 
-# Directory of setchplenv.bash script, will not work if script is a symlink
+# Directory of setchplenv script, will not work if script is a symlink
 set DIR = `cd $filedir && pwd`
 
 # Shallow test to see if we are in the correct directory

@@ -1,6 +1,6 @@
 # Bash shell script to set the Chapel environment variables
 
-# Directory of setchplenv.bash script, will not work if script is a symlink
+# Directory of setchplenv script, will not work if script is a symlink
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 # Shallow test to see if we are in the correct directory

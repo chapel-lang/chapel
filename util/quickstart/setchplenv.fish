@@ -1,6 +1,6 @@
 # fish shell script to set the Chapel environment variables
 
-# Directory of setchplenv.bash script, will not work if script is a symlink
+# Directory of setchplenv script, will not work if script is a symlink
 set DIR (cd (dirname (status -f)); pwd)
 
 # Shallow test to see if we are in the correct directory
