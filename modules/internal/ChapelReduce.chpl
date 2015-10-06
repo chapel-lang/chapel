@@ -21,13 +21,7 @@
 //
 module ChapelReduce {
   
-  // The insertion of const in intent here is a workaround for context in which
-  // chpl__scanIterator is called passing a data argument that is a temporary.
-  // The const in intent forces the data argument to be copied by value into
-  // the iterator record representing this iterator, so the problem of a
-  // creating a reference to temporary data is avoided.
-  // This workaround causes a deep copy of arrays and domains, so it is only temporary!
-  iter chpl__scanIteratorZip(op, const in data) {
+  iter chpl__scanIteratorZip(op, data) {
     for e in zip((...data)) {
       op.accumulate(e);
       yield op.generate();
@@ -35,8 +29,7 @@ module ChapelReduce {
     delete op;
   }
   
-  // Reason for const in intent the same as above.
-  iter chpl__scanIterator(op, const in data) {
+  iter chpl__scanIterator(op, data) {
     for e in data {
       op.accumulate(e);
       yield op.generate();
