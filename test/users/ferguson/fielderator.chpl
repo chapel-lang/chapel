@@ -1,4 +1,6 @@
 record R {
+  param param_value = 1;
+  type type_value = int;
   var x: int;
   var y: string;
   var z: real;
@@ -7,7 +9,7 @@ record R {
   }
 }
 
-var m = new R(3, "hi", 17.23);
+var m = new R(1, int, 3, "hi", 17.23);
 const epsilon = 1e-8; // for comparing reals.
 
 assert(__primitive("num fields", R) == 3);

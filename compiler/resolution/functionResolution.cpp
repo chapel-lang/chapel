@@ -4608,6 +4608,7 @@ isNormalField(Symbol* field)
 {
   if( field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ) return false;
   if( field->hasFlag(FLAG_TYPE_VARIABLE) ) return false;
+  if( field->hasFlag(FLAG_PARAM) ) return false;
   if( field->hasFlag(FLAG_SUPER_CLASS) ) return false;
   // TODO -- this will break user fields named outer!
   if( 0 == strcmp("outer", field->name)) return false;
