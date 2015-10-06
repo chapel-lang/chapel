@@ -1,25 +1,26 @@
 # fish shell script to set the Chapel environment variables
 
-# Directory where this script lives
+# Directory of setchplenv.bash script, will not work if script is a symlink
 set DIR (cd (dirname (status -f)); pwd)
 
-# shallow test to see if we are in the correct directory
+# Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
 # indicating that we are probably in a Chapel root directory.
-if [ ! -d "$DIR/../util" -o ! -d "$DIR/../compiler" -o ! -d "$DIR/../runtime" -o ! -d "$DIR/../modules" ]
+set chpl_home (fish -c "cd $DIR/../; pwd")
+if [ ! -d "$chpl_home/util" -o ! -d "$chpl_home/compiler" -o ! -d "$chpl_home/runtime" -o ! -d "$chpl_home/modules" ]
     echo "Error: \$CHPL_HOME is not where it is expected"
     exit
 end
 
 echo -n "Setting CHPL_HOME "
-set -x CHPL_HOME (fish -c "cd $DIR/../; pwd")
+set -x CHPL_HOME $chpl_home
 echo "to $CHPL_HOME"
 
 set MYPATH (eval "$CHPL_HOME/util/config/fixpath.py \"$PATH\"")
 set MYMANPATH (eval "$CHPL_HOME/util/config/fixpath.py \"$MANPATH\"")
 
 if [ (count $MYPATH) = 0 ]
-  echo "Error running ./util/config/fixpath"
+  echo "Error running \$CHPL_HOME/util/config/fixpath"
   exit
 end
 

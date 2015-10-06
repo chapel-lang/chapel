@@ -1,24 +1,31 @@
 # csh/tcsh shell script to set the Chapel environment variables
 
-# shallow test to see if we are in the correct directory
+set sourced=($_)
+set filedir = `dirname $sourced[2]`
+
+# Directory of setchplenv.bash script, will not work if script is a symlink
+set DIR = `cd $filedir && pwd`
+
+# Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
 # indicating that we are probably in a Chapel root directory.
-if ( ! -d "util" || ! -d "compiler" || ! -d "runtime" || ! -d "modules" ) then
-   echo "Error: source util/setchplenv from within the chapel directory"
-   exit
-endif
-
-set MYPATH = `./util/config/fixpath "$PATH" :`
-set MYMANPATH = `./util/config/fixpath "$MANPATH" :`
-
-if ( "$MYPATH" == "" ) then
-  echo "Error running ./util/config/fixpath"
-  exit
+set chpl_home = `cd $DIR/../../ && pwd`
+if ( ! -d "$chpl_home/util" || ! -d "$chpl_home/compiler" || ! -d "$chpl_home/runtime" || ! -d "$chpl_home/modules" ) then
+    echo "Error: \$CHPL_HOME is not where it is expected"
+    return
 endif
 
 echo -n "Setting CHPL_HOME "
-setenv CHPL_HOME "$cwd"
+setenv CHPL_HOME $chpl_home
 echo "to $CHPL_HOME"
+
+set MYPATH = `$CHPL_HOME/util/config/fixpath.py "$PATH"`
+set MYMANPATH = `$CHPL_HOME/util/config/fixpath.py "$MANPATH"`
+
+if ( "$MYPATH" == "" ) then
+  echo "Error running \$CHPL_HOME/util/config/fixpath"
+  exit
+endif
 
 echo -n "Setting CHPL_HOST_PLATFORM "
 setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/chplenv/chpl_platform.py"`

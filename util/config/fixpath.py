@@ -8,9 +8,12 @@ import sys
 
 def main(path, sep=":"):
     """
-    This script takes in two arguments: $PATH and the separator for it
-    (since fish uses ' ' and everybody else uses ':')
-    Then, we remove path components that begin with $CHPL_HOME
+    Removes path components that begin with $CHPL_HOME, to reduce
+    $PATH & $MANPATH pollution
+
+    :path: $PATH or $MANPATH
+    :sep: Expected path separator
+    :returns: new path with $CHPL_HOME components stripped
     """
     chpl_home = os.getenv("CHPL_HOME")
     newpath = [p for p in path.split(sep) if chpl_home not in p]
@@ -20,17 +23,18 @@ def main(path, sep=":"):
 if __name__ == '__main__':
 
     if len(sys.argv) < 2:
-        print("fixpath.py requires $PATH as an argument")
-        exit(1)
-
-    path = sys.argv[1]
-    if " " in path:
-        sep = " "
-    elif ":" in path:
-        sep = ":"
+        # Return empty string if len(path) == 0
+        newpath = ""
     else:
-        print("Invalid $PATH passed to fixpath.py")
-        print(sys.argv[1])
-        exit(1)
+        path = sys.argv[1]
+        if ":" in path:
+            # bash/csh/tcsh-like path
+            newpath = main(path, sep=":")
+        elif " " in path:
+            # fish-like path
+            newpath = main(path, sep=" ")
+        else:
+            # return unmodified path if len(path) == 1
+            newpath = sys.argv[1]
 
-    print(main(path, sep=sep))
+    print(newpath)

@@ -1,18 +1,20 @@
-# bash shell script to set the Chapel environment variables
+# Bash shell script to set the Chapel environment variables
 
 # Directory of setchplenv.bash script, will not work if script is a symlink
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-# shallow test to see if we are in the correct directory
+# Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
 # indicating that we are probably in a Chapel root directory.
-if [ ! -d "$DIR/../util" ] || [ ! -d "$DIR/../compiler" ] || [ ! -d "$DIR/../runtime" ] || [ ! -d "$DIR/../modules" ]; then
+chpl_home=$( cd $DIR/../ && pwd )
+if [ ! -d "$chpl_home/util" ] || [ ! -d "$chpl_home/compiler" ] || [ ! -d "$chpl_home/runtime" ] || [ ! -d "$chpl_home/modules" ]; then
     # Chapel home is assumed to be one directory up from setenvchpl.bash script
     echo "Error: \$CHPL_HOME is not where it is expected"
     return
 fi
+
     echo -n "Setting CHPL_HOME "
-    export CHPL_HOME=$( cd $DIR/../ && pwd )
+    export CHPL_HOME=$chpl_home
     echo "to $CHPL_HOME"
 
     MYPATH=`$CHPL_HOME/util/config/fixpath.py "$PATH"`
