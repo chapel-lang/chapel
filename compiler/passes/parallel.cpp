@@ -297,7 +297,7 @@ static bool
 argumentNeedsAutoCopy(Expr* arg, CallExpr* taskFnCall)
 {
   Type* t = arg->typeInfo();
-  FnSymbol* fn = taskFnCall->isResolved();
+  //FnSymbol* fn = taskFnCall->isResolved();
 
   if (t->symbol->hasFlag(FLAG_NOT_POD)) {
     // task arguments that could outlive tasks need auto copy.
@@ -317,8 +317,10 @@ argumentNeedsAutoCopy(Expr* arg, CallExpr* taskFnCall)
        wrapon_fn9 ChapelArray.chpl:570
        chpl___TILDE__distribution ChapelArray.chpl:570
     */
-    if (fn->hasFlag(FLAG_ON) && !isRecordWrappedType(t))
-      return true;
+    //if (fn->hasFlag(FLAG_ON) && !isRecordWrappedType(t))
+    //  return true;
+    // should not be necessary if we can copy across locales
+    // with bit copy?
   }
   // POD types never need an auto copy.
   return false;
