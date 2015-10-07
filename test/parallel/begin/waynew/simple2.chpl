@@ -7,13 +7,15 @@ var c = 1;
 proc work() {
   var b = 2;
 
-  begin with (ref b, ref c) {
-    go;
-    b = 2 * c;
-    writeln("b is ", b);
-    c = 2 * b;
-    a = 2 * b;
-    go = true;
+  sync {  // make sure we don't leave b's scope before begin ends
+    begin with (ref b, ref c) {
+      go;
+      b = 2 * c;
+      writeln("b is ", b);
+      c = 2 * b;
+      a = 2 * b;
+      go = true;
+    }
   }
 }
 
