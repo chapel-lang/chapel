@@ -378,6 +378,18 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     // Now get the taskList field out of the end count.
 
     taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+
+    // If the end count is a reference, dereference it.
+    // EndCount is a class.
+    if (endCount->type->symbol->hasFlag(FLAG_REF)) {
+      VarSymbol *endCountDeref = newTemp(astr("_end_count_deref", fn->name),
+                                         endCount->getValType());
+      fcall->insertBefore(new DefExpr(endCountDeref));
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, endCountDeref,
+                                         new CallExpr(PRIM_DEREF, endCount)));
+      endCount = endCountDeref;
+    }
+
     fcall->insertBefore(new DefExpr(taskList));
     fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
                                      new CallExpr(PRIM_GET_MEMBER,
