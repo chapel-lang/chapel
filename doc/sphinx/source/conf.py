@@ -14,6 +14,8 @@
 
 import sys
 import os
+import sphinx.environment
+from docutils.utils import get_source_line
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -277,3 +279,11 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+
+# Monkey patch to disable nonlocal image warning for Chapel logo
+def _warn_node(self, msg, node):
+    if not msg.startswith('nonlocal image URI found:'):
+        self._warnfunc(msg, '%s:%s' % get_source_line(node))
+
+sphinx.environment.BuildEnvironment.warn_node = _warn_node

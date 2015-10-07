@@ -1,3 +1,8 @@
+.. image:: http://chapel.cray.com/images/cray-chapel-logo.png
+    :height: 200px
+    :width: 300px
+
+
 .. _chapelhome-readme:
 
 The Chapel Language
