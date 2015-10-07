@@ -9,9 +9,11 @@ proc jam() {
   r.x = 7;
   writeln( r);
 
-  begin with (ref r) {
-    r.x = 14;
-    writeln( r);
+  sync {  // make sure we don't de-allocate 'r' prior to leaving jam()'s scope
+    begin with (ref r) {
+      r.x = 14;
+      writeln( r);
+    }
   }
 }
 
