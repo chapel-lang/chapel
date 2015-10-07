@@ -57,4 +57,3 @@ setenv CHPL_REGEXP none
 
 echo "Setting CHPL_LLVM to none"
 setenv CHPL_LLVM none
-
