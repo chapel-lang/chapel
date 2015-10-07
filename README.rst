@@ -1,6 +1,5 @@
-.. image:: http://chapel.cray.com/images/cray-chapel-logo.png
-    :height: 200px
-    :width: 300px
+.. image:: http://chapel.cray.com/images/cray-chapel-logo-200.png
+    :align: center
 
 
 .. _chapelhome-readme:
