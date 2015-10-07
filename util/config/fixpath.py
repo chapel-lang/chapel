@@ -3,7 +3,7 @@
 from __future__ import print_function
 
 import os
-import sys
+from sys import argv
 
 
 def main(path, sep=":"):
@@ -22,19 +22,18 @@ def main(path, sep=":"):
 
 if __name__ == '__main__':
 
-    if len(sys.argv) < 2:
+    if len(argv) < 2:
         # Return empty string if len(path) == 0
         newpath = ""
+    elif len(argv) < 3:
+        # Default: bash/sh/csh/tcsh-like path
+        newpath = main(argv[1], sep=":")
     else:
-        path = sys.argv[1]
-        if ":" in path:
-            # bash/csh/tcsh-like path
-            newpath = main(path, sep=":")
-        elif " " in path:
-            # fish-like path
-            newpath = main(path, sep=" ")
+        if argv[2] == "fish":
+            # fishy path (space-separated)
+            newpath = main(argv[1], sep=" ")
         else:
-            # return unmodified path if len(path) == 1
-            newpath = sys.argv[1]
+            # Default: bash/sh/csh/tcsh-like path
+            newpath = main(argv[1], sep=":")
 
     print(newpath)

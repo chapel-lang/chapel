@@ -16,8 +16,8 @@ echo -n "Setting CHPL_HOME "
 set -x CHPL_HOME $chpl_home
 echo "to $CHPL_HOME"
 
-set MYPATH (eval "$CHPL_HOME/util/config/fixpath.py \"$PATH\"")
-set MYMANPATH (eval "$CHPL_HOME/util/config/fixpath.py \"$MANPATH\"")
+set MYPATH (eval "$CHPL_HOME/util/config/fixpath.py \"$PATH\" \"fish\"")
+set MYMANPATH (eval "$CHPL_HOME/util/config/fixpath.py \"$MANPATH\" \"fish\"")
 
 if [ (count $MYPATH) = 0 ]
   echo "Error running \$CHPL_HOME/util/config/fixpath"
@@ -29,7 +29,7 @@ set -x CHPL_HOST_PLATFORM (eval "$CHPL_HOME/util/chplenv/chpl_platform.py")
 echo "to $CHPL_HOST_PLATFORM"
 
 echo -n "Updating PATH "
-eval set -x PATH $MYPATH $CHPL_HOME/bin/$CHPL_HOST_PLATFORM $CHPL_HOME/util
+eval set -x PATH $CHPL_HOME/bin/$CHPL_HOST_PLATFORM $CHPL_HOME/util $MYPATH
 echo "to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 echo "                     and $CHPL_HOME/util"
 
