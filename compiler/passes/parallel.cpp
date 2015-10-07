@@ -55,7 +55,6 @@
 //
 // MHA and IWR take care of the following, among others:
 // - heap allocation for remote access
-// - heap allocation for 'begin'
 // - change acces to variable -> access to its ._value
 // - set up wide references
 // - broadcasting of globals
@@ -67,12 +66,6 @@
 //    requireWideReferences()
 // - for a local - in MHA, if:
 //    needHeapVars() && the local can be passed to an 'on'
-//
-// Heap allocation for 'begin' is done:
-// - for globals - n/a
-//    see above instead
-// - for a local - in MHA, if:
-//    the local can be passed to a 'begin'
 //
 // Change acces to variable -> access to its ._value
 // - for globals - in MHA, if:
@@ -710,14 +703,14 @@ needHeapVars() {
 //
 
 // Traverses all 'on' task functions flagged as needing heap
-// allocation (for its formals) or flagged as nonblocking.
+// allocation (for its formals), as determined by the comm layer
+// and/or --local setting..
 // Traverses all ref formals of these functions and adds them to the refSet and
 // refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) &&
-        (needHeapVars() || fn->hasFlag(FLAG_NON_BLOCKING))) {
+    if (fn->hasFlag(FLAG_ON) && needHeapVars()) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
