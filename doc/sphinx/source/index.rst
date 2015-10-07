@@ -8,6 +8,7 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
+   Quickstart Instructions <usingchapel/README>
    usingchapel/index
    platforms/index
    modules/builtins

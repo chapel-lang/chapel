@@ -896,8 +896,8 @@ in the surrounding code, for example loop-invariant code motion.
 
 Furthermore, in the above example the scope where \chpl{i} is declared
 may exit before all the ten tasks complete.  Without task intents,
-the implementation needs to ensure that \chpl{i} can still be
-referenced by the tasks after its scope ends.
+the user would have to protect \chpl{i} to make sure its lexical scope
+doesn't exit before the tasks referencing it complete.
 
 We decided to treat \chpl{cobegin} and \chpl{coforall} statements the
 same way as \chpl{begin}. This is for consistency and to make the

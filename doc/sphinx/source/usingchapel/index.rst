@@ -9,7 +9,6 @@ Contents:
    :maxdepth: 1
    :glob:
 
-   README
    prereqs
    chplenv
    building

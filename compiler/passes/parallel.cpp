@@ -709,8 +709,8 @@ needHeapVars() {
 //   varSet, varVec - symbols that themselves need to be heap-allocated
 //
 
-// Traverses all 'begin' or 'on' task functions flagged as needing heap
-// allocation (for its formals) or flagged as nonblockikng.
+// Traverses all 'on' task functions flagged as needing heap
+// allocation (for its formals) or flagged as nonblocking.
 // Traverses all ref formals of these functions and adds them to the refSet and
 // refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)

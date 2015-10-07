@@ -144,7 +144,7 @@ This CHIP also clarifies the default behavior of
 constructing a copy of a record with a `ref` field.
 Namely, the corresponding field of the copy
 references the same variable as that field of the source.
-The contents of the referenced variable is not copied.
+The contents of the referenced variable are not copied.
 
 Such a copy is constructed in the following cases,
 unless optimized away by the compiler:
@@ -192,10 +192,17 @@ If this presents a significant user issue, we will look for solutions.
 Currently there is no way to create a tuple whose components:
 
 * reference variables of "by value" types like integers, or
-* are variables, not references to other variables", of "reference" types like arrays.
+* are variables, not references to other variables, of "reference" types like arrays.
 
 Passing a tuple literal to a function by `ref` intent is an error.
 
 Assigning to a tuple with an array component results in copying
 into that component's array, not into re-aliasing that component
 to point to the RHS array.
+
+Consider a function with a formal that has the default intent and
+is a tuple with an array component. Within the function,
+the corresponding array cannot be modified. That's because
+all the tuple formal is 'const' and so all its components are 'const' too.
+Cf. when an array is passed to a function by default intent,
+it can be modified inside the function.

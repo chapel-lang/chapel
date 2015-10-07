@@ -66,7 +66,7 @@ fi
 CHPL_DIR=${CHPL_CHECK_INSTALL_DIR:-${HOME}/.chpl}
 if [ ! -d ${CHPL_DIR} ] ; then
     echo "${CHPL_DIR} does not exist. Creating it."
-    mkdir -p ${CHPL_DIR} || { echo "Failed to create ${CHPL_DIR}." && exit 10 ; }
+    mkdir -p ${CHPL_DIR} || { echo "Failed to create ${CHPL_DIR}." && exit 1 ; }
 fi
 
 # Location of test job
@@ -134,11 +134,14 @@ fi
 
 # Check for valid launchers
 if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "none" ]; then
-    echo "\$CHPL_LAUNCHER = ${chpl_launcher} - this is compatible with test script."
+    echo "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
 else
-    echo "\$CHPL_LAUNCHER = ${chpl_launcher} - this is not compatible with test script."
+    echo ""
+    echo "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
     echo "This does not necessarily indicate that your Chapel installation is incorrect."
-    echo "See \$CHPL_HOME/doc/README.launcher for more information on how to manually run a Chapel program."
+    echo "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
+    # This exit code should be recognized as a failure to complete check, but
+    # not necessarily failure of build
     exit 10
 fi
 
@@ -151,7 +154,7 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
     EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
     echo "Running test job."
-    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} > ${TEST_EXEC_OUT} 2>&1
+    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} | sort > ${TEST_EXEC_OUT} 2>&1
     echo "Test job complete."
 
     # Check result
@@ -170,7 +173,9 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
         echo ""
         echo "== Diff Log =="
         echo "$(diff ${TEST_EXEC_OUT} ${GOOD})"
-    exit 10
+        # This exit code should be recognized as successfully building, but
+        # with some errors
+        exit 20
     fi
 )
 

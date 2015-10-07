@@ -71,7 +71,7 @@ hwloc/
 llvm/
   Summary: This directory holds LLVM and Clang.  LLVM is provided as
            an optional back-end target in place of C (see
-           doc/technotes/README.llvm for details).  CLANG is used to
+           doc/technotes/llvm.rst for details).  CLANG is used to
            support "extern blocks" within Chapel -- a capability for
            embedding C code into a Chapel source file.
 
@@ -122,7 +122,7 @@ re2/
            library will be downloaded when running 'make re2' in the
            third-party directory.  We use RE2 to support regular
            expression operations as described in
-           doc/technotes/README.regexp).
+           doc/technotes/regexp.rst).
 
   License: New BSD license (see re2/re2/LICENSE)
 
