@@ -1,10 +1,9 @@
-# bash/sh shell script to set the Chapel environment variables
+# bash shell script to set the Chapel environment variables
 
-sourced=$_
-filedir=`dirname $sourced`
 
 # Directory of setchplenv script, will not work if script is a symlink
-DIR=`cd $filedir && pwd`
+DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+echo $DIR
 
 # Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --

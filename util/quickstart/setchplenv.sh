@@ -1,9 +1,9 @@
 # POSIX-standard compatibility shell script to set the Chapel environment variables
-# Source this for POSIC-standard shells such as dash
-# This must be sourced from $CHPL_HOME
+# Source this for POSIX-standard shells such as 'sh' and 'dash'
+# Due to POSIX-standard limitations, this must be sourced from $CHPL_HOME
 
 
-# shallow test to see if we are in the correct directory
+# Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
 # indicating that we are probably in a Chapel root directory.
 if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
@@ -77,5 +77,5 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
 
         fi
    else
-      echo "Error: You must use '. util/setchplenv' from within the chapel root directory."
+      echo "Error: You must use '. util/setchplenv.sh' from within the chapel root directory."
 fi
