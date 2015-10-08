@@ -68,6 +68,6 @@ module LCALSConfiguration {
   //
   config const run_variantRaw             = true;
   config const run_variantForallLambda    = false; // not implemented
-  config const run_variantRawOmp          = false; // not implemented
+  config const run_variantRawOmp          = true;
   config const run_variantForallLambdaOmp = false; // not implemented
 }

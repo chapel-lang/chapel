@@ -10,6 +10,8 @@ module main {
   use RunARawLoops;
   use RunBRawLoops;
   use RunCRawLoops;
+  use RunParallelRawLoops;
+
   proc allocateLoopData() {
     const num_aligned_segments =
       (s_loop_data.max_loop_length + 20)/LCALS_DATA_ALIGN + 1;
@@ -97,9 +99,11 @@ module main {
 
     if run_variantRaw then
       run_variants.push_back(LoopVariantID.RAW);
+    if run_variantRawOmp then
+      run_variants.push_back(LoopVariantID.RAW_OMP);
+
 
     assert(!run_variantForallLambda &&
-           !run_variantRawOmp &&
            !run_variantForallLambdaOmp);
     /*
     if run_variantForallLambda then
@@ -415,7 +419,7 @@ module main {
                   if ref_mean[ilen] != 0.0 {
                     rel_mean_diff = 1.0 + (stat.mean[ilen]-ref_mean[ilen])/ref_mean[ilen];
                   }
-                  outchannel.writef("%*r", prec_buf, rel_mean_diff);
+                  outchannel.writef("%*s\n", prec_buf, rel_mean_diff);
                   stat.meanrel2ref[ilen] = rel_mean_diff;
                 } else {
                   outchannel.writeln();
@@ -572,14 +576,14 @@ module main {
         runBRawLoops(loop_stats, run_loop, ilength);
         runCRawLoops(loop_stats, run_loop, ilength);
       }
+      when LoopVariantID.RAW_OMP {
+        runParallelRawLoops(loop_stats, run_loop, ilength);
+      }
 /*
       when LoopVariantID.FORALL_LAMBDA {
         runAForallLambdaLoops(loop_stats, run_loop, ilength);
         runBForallLambdaLoops(loop_stats, run_loop, ilength);
         runCForallLambdaLoops(loop_stats, run_loop, ilength);
-      }
-      when LoopVariantID.RAW_OMP {
-        runOMPRawLoops(loop_stats, run_loop, ilength);
       }
       when LoopVariantID.FORALL_LAMBDA_OMP {
         runOMPForallLambdaLoops(loop_stats, run_loop, ilength);

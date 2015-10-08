@@ -18,6 +18,9 @@ module LCALSDataTypes {
     proc resize(size: int) {
       D = {0..#size};
     }
+    proc count(val: eltType) {
+      return A.count(val);
+    }
     iter these() {
       for a in A do yield a;
     }
