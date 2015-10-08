@@ -271,84 +271,6 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
 #endif
 } 
 
-// A Plain-Old Data type is one whose default-constructor, copy-constructor,
-// assignment operator and destructor are all trivial.  Trivial means that they
-// have no observable side-effects beyond the default behavior provided by
-// the compiler.
-// While it is possible for the user to write ones of these functions that
-// override the default and exhibit the same behavior as the compiler-supplied
-// ones and are thus behaviorally trivial, for practical purposes we choose to
-// treat as nontrivial any user-supplied versions of these functions.
-
-// This routine traverses all defined functions, and for those of interest
-// (being one of the four types above) determines if it is user-defined and
-// finds the class to which it belongs.  It then marks that class as being a
-// non-POD class (since the rules for it being a POD class have been violated).
-//
-// The assignment operator is not currently a member function, so we infer the
-// target type from the type LHS argument.
-// TODO: Add clauses for the copy-constructor and default-constructor.
-//
-// To yield a result that is strictly correct w.r.t. whether a class is POD or
-// non-POD, this routine should be run after resolution but before the
-// post-resolution pruning pass.  However, even though it is run after pruning,
-// the results are correct for our immediate use.  That is because if a function
-// is pruned, that means it is not called.  And if it is not called, whether it
-// is trivial or not is moot question.
-// TODO: Move this routine to a pass that precedes the post-resolution pruning pass.
-//
-static void
-markPODtypes()
-{
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    // Ignore invisible (compiler-defined) functions.
-    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
-      continue;
-
-    // Decide whether to mark a class based on this function.
-    enum Flag flag = FLAG_UNKNOWN;
-    AggregateType* ct = NULL;
-
-    if (fn->hasFlag(FLAG_DESTRUCTOR))
-    {
-      // ~chpl_destroy(_mt, obj);
-      ArgSymbol* this_arg = fn->getFormal(1);
-      INT_ASSERT(!strcmp(this_arg->name, "this"));
-      ct = toAggregateType(this_arg->type);
-      if (ct)
-        flag = FLAG_HAS_USER_DESTRUCTOR;
-    }
-
-    if (fn->hasFlag(FLAG_INIT_COPY_FN))
-    {
-      // chpl__initCopy(obj);
-      if (fn->numFormals() > 0)
-      {
-        ArgSymbol* arg = fn->getFormal(1);
-        ct = toAggregateType(arg->type);
-        if (ct)
-          flag = FLAG_HAS_USER_INIT_COPY_FN;
-      }
-    }
-
-    // We should probably use a flag to distinguish assignment operators.  Then
-    // we can test easily that fn->hasFlag(FLAG_HAS_USER_DESTRUCTOR) and
-    // fn->hasFlag(FLAG_HAS_USER_ASSIGNMENT) are mutually exclusive.
-    if (!strcmp(fn->name,"="))
-    {
-      ArgSymbol* lhs = fn->getFormal(1);
-      ct = toAggregateType(lhs->type);
-      if (ct)
-        flag = FLAG_HAS_USER_ASSIGNMENT;
-    }
-
-    if (flag != FLAG_UNKNOWN)
-      ct->symbol->addFlag(flag);
-  }
-}
-
-
 static bool
 isPrimitiveCopy(Vec<Type*>& primitiveCopyTypeSet, Type* type) {
   if (primitiveCopyTypeSet.set_in(type))
@@ -371,11 +293,8 @@ isPrimitiveCopy(Vec<Type*>& primitiveCopyTypeSet, Type* type) {
     AggregateType* ct = toAggregateType(type);
     INT_ASSERT(ct);
 
-    // If this class defines an assignment or initCopy or destructor, it is not
-    // POD.
-    if (ct->symbol->hasFlag(FLAG_HAS_USER_DESTRUCTOR) ||
-        ct->symbol->hasFlag(FLAG_HAS_USER_INIT_COPY_FN) ||
-        ct->symbol->hasFlag(FLAG_HAS_USER_ASSIGNMENT))
+    // If we marked this class as not POD, we can't do a primitive copy.
+    if (ct->symbol->hasFlag(FLAG_NOT_POD))
       return false;
 
     for_fields(field, ct) {
