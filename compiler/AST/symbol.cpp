@@ -2674,7 +2674,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   this->printTabs(file, tabs);
-  const char *moduleTitle = astr("Module: ", this->docsName().c_str());
+  const char *moduleTitle = astr(this->docsName().c_str());
   *file << moduleTitle << std::endl;
 
   if (!fDocsTextOnly) {
