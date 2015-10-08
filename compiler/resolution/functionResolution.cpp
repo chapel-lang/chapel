@@ -4999,7 +4999,6 @@ preFold(Expr* expr) {
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
       if (isAggregateType(type) || type == dtStringC || type == dtStringCopy) {
-        if (type->symbol->hasFlag(FLAG_IGNORE_NOINIT)) {
 
         bool containsNotPOD = propagateNotPOD(type);
 
