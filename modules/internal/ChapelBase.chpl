@@ -1083,7 +1083,7 @@ module ChapelBase {
     compilerError("illegal assignment of type to value");
   }
   
-  pragma "compiler generated" 
+  pragma "compiler generated"
   pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
@@ -1139,7 +1139,7 @@ module ChapelBase {
     return ir;
   }
   
-  pragma "compiler generated" 
+  pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
@@ -1151,13 +1151,13 @@ module ChapelBase {
 
   // The "compiler generated" pragma gives this lower precedence than any
   // user-defined class destructor.
-  pragma "compiler generated" 
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(x: object) { }
 
-  pragma "compiler generated" 
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(type t)  { }
 
-  pragma "compiler generated" 
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }

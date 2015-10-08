@@ -1785,7 +1785,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
       x.incRefCount();
     return x;
   }
-  
+
   proc chpl__autoDestroy(x: DefaultRectangularArr) {
     if !noRefCount {
       var cnt = x.destroyArr();

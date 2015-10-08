@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- *
+ * 
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- *
+ * 
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,7 +59,6 @@ static void cullAutoDestroyFlags()
       if (ts->hasFlag(FLAG_ARRAY) ||
           ts->hasFlag(FLAG_DOMAIN))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-      }
       // Do we need to add other record-wrapped types here?  Testing will tell.
 
       // NOTE 1: When the value of a record field is established in a default
@@ -67,7 +66,7 @@ static void cullAutoDestroyFlags()
       // of that value is shared between the formal_tmp and the record field.
       // If the autodestroy flag is left on that formal temp, then it will be
       // destroyed which -- for ref-counted types -- can result in a dangling
-      // reference.  So here, we look for that case and remove it.
+      // reference.  So here, we look for that case and remove it.  
       if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       {
         Map<Symbol*,Vec<SymExpr*>*> defMap;
