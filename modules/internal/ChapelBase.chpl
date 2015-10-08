@@ -1138,10 +1138,9 @@ module ChapelBase {
   inline proc chpl__autoDestroy(x: object) { }
 
   pragma "compiler generated" 
-  pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
+  inline proc chpl__autoDestroy(type t)  { }
 
   pragma "compiler generated" 
-  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
