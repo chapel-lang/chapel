@@ -762,434 +762,435 @@ module main {
     // ADomain::loop_length_factor = loop_length_factor;
     var weight: vector(real) = suite_info.loop_weights;
     var max_loop_length: int = 0;
-
-    for iloop in 0..#suite_info.num_loops {
-      var loop_name = (iloop:LoopKernelID):string;
-      var loop_stat = new LoopStat(suite_info.num_loop_lengths);
-      var max_loop_indx = 0;
-      if run_loop[iloop] {
-        select iloop {
-          when LoopKernelID.REF_LOOP {
-            // no op
-          }
-          when LoopKernelID.PRESSURE_CALC {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+    for ilv in 0..#run_variant_names.size() {
+      for iloop in 0..#suite_info.num_loops {
+        var loop_name = (iloop:LoopKernelID):string;
+        var loop_stat = new LoopStat(suite_info.num_loop_lengths);
+        var max_loop_indx = 0;
+        if run_loop[iloop] {
+          select iloop {
+            when LoopKernelID.REF_LOOP {
+              // no op
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 15000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 200000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 10000000;
-          }
-          when LoopKernelID.PRESSURE_CALC_ALT {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+            when LoopKernelID.PRESSURE_CALC {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 15000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 200000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 10000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 15000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 200000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 10000000;
-          }
-          when LoopKernelID.ENERGY_CALC {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+            when LoopKernelID.PRESSURE_CALC_ALT {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 15000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 200000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 10000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
+            when LoopKernelID.ENERGY_CALC {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
 
-          }
-          when LoopKernelID.ENERGY_CALC_ALT {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
-          }
-          when LoopKernelID.VOL3D_CALC {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
-
-            const ndims = 3;
-
-            var Ldomain = new ADomain(LoopLength.LONG, ndims);
-            loop_stat.loop_length[LoopLength.LONG]   = Ldomain.lpz - Ldomain.fpz + 1;
-            var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
-            loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.lpz - Mdomain.fpz + 1;
-            var Sdomain = new ADomain(LoopLength.SHORT, ndims);
-            loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.lpz - Sdomain.fpz + 1;
-
-            max_loop_indx = Ldomain.lpn;
-
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 6500;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 800000;
-          }
-          when LoopKernelID.DEL_DOT_VEC_2D {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
-
-            const ndims = 2;
-
-            var Ldomain = new ADomain(LoopLength.LONG, ndims);
-            loop_stat.loop_length[LoopLength.LONG]   = Ldomain.n_real_zones;
-            var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
-            loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.n_real_zones;
-            var Sdomain = new ADomain(LoopLength.SHORT, ndims);
-            loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.n_real_zones;
-
-            max_loop_indx = Ldomain.lrn;
-
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 25000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 2000000;
-          }
-          when LoopKernelID.COUPLE {
-            loop_stat.loop_weight = weight[WeightGroup.TRANSCENDENTAL];
-
-            const ndims = 3;
-
-            var Ldomain = new ADomain(LoopLength.LONG, ndims);
-            loop_stat.loop_length[LoopLength.LONG]   = Ldomain.lpz - Ldomain.fpz + 1;
-            var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
-            loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.lpz - Mdomain.fpz + 1;
-            var Sdomain = new ADomain(LoopLength.SHORT, ndims);
-            loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.lpz - Sdomain.fpz + 1;
-
-            max_loop_indx = Ldomain.lrn;
-
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 10000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 600000;
-          }
-          when LoopKernelID.FIR {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
-
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+            when LoopKernelID.ENERGY_CALC_ALT {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.VOL3D_CALC {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 80000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 3000000;
-          }
-          when LoopKernelID.INIT3 {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+              const ndims = 3;
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              var Ldomain = new ADomain(LoopLength.LONG, ndims);
+              loop_stat.loop_length[LoopLength.LONG]   = Ldomain.lpz - Ldomain.fpz + 1;
+              var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
+              loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.lpz - Mdomain.fpz + 1;
+              var Sdomain = new ADomain(LoopLength.SHORT, ndims);
+              loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.lpz - Sdomain.fpz + 1;
+
+              max_loop_indx = Ldomain.lpn;
+
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 6500;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 800000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.DEL_DOT_VEC_2D {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 110000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 12000000;
-          }
-          when LoopKernelID.MULADDSUB {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+              const ndims = 2;
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              var Ldomain = new ADomain(LoopLength.LONG, ndims);
+              loop_stat.loop_length[LoopLength.LONG]   = Ldomain.n_real_zones;
+              var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
+              loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.n_real_zones;
+              var Sdomain = new ADomain(LoopLength.SHORT, ndims);
+              loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.n_real_zones;
+
+              max_loop_indx = Ldomain.lrn;
+
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 25000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 2000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.COUPLE {
+              loop_stat.loop_weight = weight[WeightGroup.TRANSCENDENTAL];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 12000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 140000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 15000000;
-          }
-          when LoopKernelID.IF_QUAD {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+              const ndims = 3;
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              var Ldomain = new ADomain(LoopLength.LONG, ndims);
+              loop_stat.loop_length[LoopLength.LONG]   = Ldomain.lpz - Ldomain.fpz + 1;
+              var Mdomain = new ADomain(LoopLength.MEDIUM, ndims);
+              loop_stat.loop_length[LoopLength.MEDIUM] = Mdomain.lpz - Mdomain.fpz + 1;
+              var Sdomain = new ADomain(LoopLength.SHORT, ndims);
+              loop_stat.loop_length[LoopLength.SHORT]  = Sdomain.lpz - Sdomain.fpz + 1;
+
+              max_loop_indx = Ldomain.lrn;
+
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 10000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 600000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.FIR {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
-          }
-          when LoopKernelID.TRAP_INT {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 80000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 3000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.INIT3 {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 32000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
-          }
-          when LoopKernelID.HYDRO_1D {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 110000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 12000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.MULADDSUB {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 320000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 15000000;
-          }
-          when LoopKernelID.ICCG {
-            loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 12000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 140000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 15000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.IF_QUAD {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 20000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 200000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 6000000;
-          }
-          when LoopKernelID.INNER_PROD {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.TRAP_INT {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 50000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 600000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 30000000;
-          }
-          when LoopKernelID.BAND_LIN_EQ {
-            loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 32000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.HYDRO_1D {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 40000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 600000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 20000000;
-          }
-          when LoopKernelID.TRIDIAG_ELIM {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 320000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 15000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.ICCG {
+              loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 100000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 3000000;
-          }
-          when LoopKernelID.EOS {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 20000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 200000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 6000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.INNER_PROD {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 18000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 140000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 5000000;
-          }
-          when LoopKernelID.ADI {
-            loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 50000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 600000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 30000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.BAND_LIN_EQ {
+              loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 1000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 9000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 300000;
-          }
-          when LoopKernelID.INT_PREDICT {
-            loop_stat.loop_weight = weight[WeightGroup.POINTER_NEST];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 40000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 600000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 20000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.TRIDIAG_ELIM {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 2000000;
-          }
-          when LoopKernelID.DIFF_PREDICT {
-            loop_stat.loop_weight = weight[WeightGroup.POINTER_NEST];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 10000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 100000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 3000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.EOS {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 22000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1800000;
-          }
-          when LoopKernelID.FIRST_SUM {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 18000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 140000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 5000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.ADI {
+              loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 250000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000000;
-          }
-          when LoopKernelID.FIRST_DIFF {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 1000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 9000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 300000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.INT_PREDICT {
+              loop_stat.loop_weight = weight[WeightGroup.POINTER_NEST];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 500000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 30000000;
-          }
-          when LoopKernelID.PIC_2D {
-            loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 2000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.DIFF_PREDICT {
+              loop_stat.loop_weight = weight[WeightGroup.POINTER_NEST];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 18000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 700000;
-          }
-          when LoopKernelID.PIC_1D {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 22000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 1800000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.FIRST_SUM {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 24000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
-          }
-          when LoopKernelID.HYDRO_2D {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 250000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.FIRST_DIFF {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 300;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 2000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 50000;
-          }
-          when LoopKernelID.GEN_LIN_RECUR {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 30000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 500000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 30000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.PIC_2D {
+              loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 36000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
-          }
-          when LoopKernelID.DISC_ORD {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 2000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 18000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 700000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.PIC_1D {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 1000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 8000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 200000;
-          }
-          when LoopKernelID.MAT_X_MAT {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 3000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 24000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.HYDRO_2D {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 8;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 70;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000;
-          }
-          when LoopKernelID.PLANCKIAN {
-            loop_stat.loop_weight = weight[WeightGroup.TRANSCENDENTAL];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 300;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 2000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 50000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.GEN_LIN_RECUR {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
-          }
-          when LoopKernelID.IMP_HYDRO_2D {
-            loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 36000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.DISC_ORD {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 800;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 6000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 150000;
-          }
-          when LoopKernelID.FIND_FIRST_MIN {
-            loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
 
-            for i in 0..#LoopLength.NUM_LENGTHS {
-              loop_stat.loop_length[i] = shared_loop_length[i];
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 1000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 8000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 200000;
             }
-            max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+            when LoopKernelID.MAT_X_MAT {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-            loop_stat.samples_per_pass[LoopLength.LONG]   = 50000;
-            loop_stat.samples_per_pass[LoopLength.MEDIUM] = 330000;
-            loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000000;
-          }
-          otherwise {
-            halt("Unknown loop id: ", iloop);
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 8;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 70;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000;
+            }
+            when LoopKernelID.PLANCKIAN {
+              loop_stat.loop_weight = weight[WeightGroup.TRANSCENDENTAL];
+
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 4000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 30000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 1000000;
+            }
+            when LoopKernelID.IMP_HYDRO_2D {
+              loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
+
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 800;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 6000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 150000;
+            }
+            when LoopKernelID.FIND_FIRST_MIN {
+              loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
+
+              for i in 0..#LoopLength.NUM_LENGTHS {
+                loop_stat.loop_length[i] = shared_loop_length[i];
+              }
+              max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
+
+              loop_stat.samples_per_pass[LoopLength.LONG]   = 50000;
+              loop_stat.samples_per_pass[LoopLength.MEDIUM] = 330000;
+              loop_stat.samples_per_pass[LoopLength.SHORT]  = 8000000;
+            }
+            otherwise {
+              halt("Unknown loop id: ", iloop);
+            }
           }
         }
-      }
-      suite_info.loop_names.push_back(loop_name);
-      max_loop_length = max(max_loop_length, max_loop_indx);
+        if suite_info.loop_names.count(loop_name) == 0 then
+          suite_info.loop_names.push_back(loop_name);
+        max_loop_length = max(max_loop_length, max_loop_indx);
 
-      for i in 0..#suite_info.num_loop_lengths {
-        loop_stat.samples_per_pass[i] =
-          (loop_stat.samples_per_pass[i] * suite_info.loop_samp_frac /
-           loop_length_factor):int;
-        if suite_info.run_loop_length[i] {
-          loop_stat.loop_run_count[i] =
-            loop_stat.samples_per_pass[i] * suite_info.num_suite_passes;
-        } else {
-          loop_stat.loop_run_count[i] = 0;
+        for i in 0..#suite_info.num_loop_lengths {
+          loop_stat.samples_per_pass[i] =
+            (loop_stat.samples_per_pass[i] * suite_info.loop_samp_frac /
+             loop_length_factor):int;
+          if suite_info.run_loop_length[i] {
+            loop_stat.loop_run_count[i] =
+              loop_stat.samples_per_pass[i] * suite_info.num_suite_passes;
+          } else {
+            loop_stat.loop_run_count[i] = 0;
+          }
         }
-      }
-      for ilv in 0..#run_variant_names.size() {
         suite_info.getLoopStats(run_variant_names[ilv]).push_back(loop_stat);
       }
     }
+
     defineReferenceLoopRunInfo();
     s_loop_data = new LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
   }
