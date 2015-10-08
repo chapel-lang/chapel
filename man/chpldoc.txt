@@ -30,12 +30,9 @@ DESCRIPTION
 
   --save-sphinx <directory>  Save generated Sphinx project in directory.
 
-  --text-only       Specify that documents should use a text output file
-                    format rather than the default HTML output. This option
-                    overrides the --html flag and disables HTML generation.
+  --text-only       Generate text based documentation instead of HTML. Takes precedence over --[no-]html
 
-  --[no-]html       Specify that documents should be generated as HTML documentation.
-                    (on by default)
+  --[no-]html       [Don't] generate HTML based documentation (on by default)
 
   --[no-]print-commands  Prints the system commands that the compiler
                     executes in order to create the documentation.
