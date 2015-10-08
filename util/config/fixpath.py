@@ -2,35 +2,9 @@
 
 from __future__ import print_function
 
-import os
+from os import getenv
 from sys import argv
-
-
-def splitescaped(s, delim=":", escape='\\'):
-    """
-    Python builtin split extended to account for escaped delimiters
-
-    This should work for all cases except when s begins with '\:',
-    the '\:' will be excluded from the resulting split.
-    It is safe to assume no path will ever begin with '\:'
-
-    """
-
-    # Prepend dummy character so that we loop through all characters with c2
-    s = ' '+s
-
-    words = []
-    word = []
-    for c1, c2 in zip(s[:-1:], s[1::]):
-        if c2 not in delim or c1 in escape:
-            word.append(c2)
-        else:
-            if word:
-                words.append(''.join(word))
-                word = []
-    if word:
-        words.append(''.join(word))
-    return words
+import re
 
 
 def main(env='PATH', delim=':'):
@@ -38,16 +12,22 @@ def main(env='PATH', delim=':'):
     Removes path components that begin with $CHPL_HOME, to reduce
     $PATH & $MANPATH pollution
 
-    :env: PATH or MANPATH
-    :delim: path delimiter
-    :returns: new path with $CHPL_HOME components stripped
+    :env: path environment variable ('PATH' or 'MANPATH')
+    :delim: path delimiter (':' or ' ')
+    :returns: new path with $CHPL_HOME components removed
     """
 
-    path = os.getenv(env, default=' ')
-    chpl_home = os.getenv('CHPL_HOME', default=' ')
+    # Get environment variables, $(MAN)PATH will be always be ':' delimited
+    path = getenv(env, default=' ')
+    chpl_home = getenv('CHPL_HOME', default=' ')
 
-    newpath = [p for p in splitescaped(path) if chpl_home not in p]
+    # Find ':'s that are not escaped
+    pattern = r'(?<!\\)\:'
 
+    # Split path into list separated by non-escaped ':'s, and sieve chpl_home
+    newpath = [p for p in re.split(pattern, path) if chpl_home not in p]
+
+    # Return path delimited by shell-type (':' vs. ' ')
     return delim.join(newpath)
 
 
