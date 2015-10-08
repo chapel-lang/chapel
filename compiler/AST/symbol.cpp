@@ -823,8 +823,9 @@ void VarSymbol::codegenDefC(bool global) {
 void VarSymbol::codegenGlobalDef() {
   GenInfo* info = gGenInfo;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -1270,8 +1271,9 @@ void TypeSymbol::codegenPrototype() {
 void TypeSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -1931,8 +1933,9 @@ void FnSymbol::codegenPrototype() {
   if (hasFlag(FLAG_NO_PROTOTYPE)) return;
   if (hasFlag(FLAG_NO_CODEGEN))   return;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -2012,8 +2015,9 @@ void FnSymbol::codegenDef() {
   llvm::Function *func = NULL;
 #endif
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
