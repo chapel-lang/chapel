@@ -498,7 +498,7 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
         }
       }
     }
-  }            
+  }
 }
 
 

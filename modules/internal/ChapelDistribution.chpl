@@ -18,11 +18,11 @@
  */
 
 module ChapelDistribution {
-  
+
   use List;
-  
+
   extern proc chpl_task_yield();
-  
+
   //
   // Abstract distribution class
   //
