@@ -21,8 +21,6 @@ DESCRIPTION
   -o, --output-dir <dirname>  Specify the directory name into which documentation
                     should be saved (defaults to 'docs' if unspecified).
 
-  --save-sphinx <directory>  Save generated Sphinx project in directory.
-
   --author <authortext>  Documentation author string. authortext becomes the copyright
                     and author in the output documentation.
 
@@ -30,8 +28,14 @@ DESCRIPTION
                     sequence used to distinguish a documentation comment
                     from a normal one (defaults to '/*' if unspecified).
 
+  --save-sphinx <directory>  Save generated Sphinx project in directory.
+
   --text-only       Specify that documents should use a text output file
-                    format rather than HTML.
+                    format rather than the default HTML output. This option
+                    overrides the --html flag and disables HTML generation.
+
+  --[no-]html       Specify that documents should be generated as HTML documentation.
+                    (on by default)
 
   --[no-]print-commands  Prints the system commands that the compiler
                     executes in order to create the documentation.
