@@ -16,8 +16,8 @@ echo -n "Setting CHPL_HOME "
 set -x CHPL_HOME $chpl_home
 echo "to $CHPL_HOME"
 
-set MYPATH (eval "$CHPL_HOME/util/config/fixpath.py \"$PATH\" \"fish\"")
-set MYMANPATH (eval "$CHPL_HOME/util/config/fixpath.py \"$MANPATH\" \"fish\"")
+set MYPATH (eval "$CHPL_HOME/util/config/fixpath.py \"PATH\" \"fish\"")
+set MYMANPATH (eval "$CHPL_HOME/util/config/fixpath.py \"MANPATH\" \"fish\"")
 
 if [ (count $MYPATH) = 0 ]
   echo "Error running \$CHPL_HOME/util/config/fixpath"

@@ -19,8 +19,8 @@ echo -n "Setting CHPL_HOME "
 setenv CHPL_HOME $chpl_home
 echo "to $CHPL_HOME"
 
-set MYPATH = `$CHPL_HOME/util/config/fixpath.py "$PATH"`
-set MYMANPATH = `$CHPL_HOME/util/config/fixpath.py "$MANPATH"`
+set MYPATH = `$CHPL_HOME/util/config/fixpath.py PATH`
+set MYMANPATH = `$CHPL_HOME/util/config/fixpath.py MANPATH`
 
 if ( "$MYPATH" == "" ) then
   echo "Error running \$CHPL_HOME/util/config/fixpath"

@@ -18,8 +18,8 @@ fi
 export CHPL_HOME=$chpl_home
 echo "Setting CHPL_HOME to $CHPL_HOME"
 
-MYPATH=`$CHPL_HOME/util/config/fixpath.py "$PATH"`
-MYMANPATH=`$CHPL_HOME/util/config/fixpath.py "$MANPATH"`
+MYPATH=`$CHPL_HOME/util/config/fixpath.py PATH`
+MYMANPATH=`$CHPL_HOME/util/config/fixpath.py MANPATH`
 
 export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
 echo "Setting CHPL_HOST_PLATFORM to $CHPL_HOST_PLATFORM"

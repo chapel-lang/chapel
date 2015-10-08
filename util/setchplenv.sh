@@ -8,8 +8,8 @@
 # indicating that we are probably in a Chapel root directory.
 if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
    then
-      MYPATH=`./util/config/fixpath.py "$PATH"`
-      MYMANPATH=`./util/config/fixpath.py "$MANPATH"`
+      MYPATH=`./util/config/fixpath.py PATH`
+      MYMANPATH=`./util/config/fixpath.py MANPATH`
       if [ -z "$MYPATH" ]
         then
           echo "Error running ./util/config/fixpath";
