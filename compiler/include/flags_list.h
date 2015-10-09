@@ -107,6 +107,10 @@ symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an 
 
 // Is this type a Plain-Old Data (POD) type - ie no autocopy/destructor/=
 // need ever be called - bit copies will do.
+// Note that FLAG_POD and FLAG_NOT_POD can only be relied upon
+// after resolution. During resolution, use the propagateNotPOD
+// function. After resolution, use isPOD() to find out if something
+// is a POD type.
 symbolFlag( FLAG_POD , ypr, "plain old data" , "data can be bit copied")
 symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
 

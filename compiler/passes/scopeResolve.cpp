@@ -1046,6 +1046,9 @@ static void build_constructor(AggregateType* ct) {
         // If a type has an initialize method, it's not Plain Old Data.
         // The only time classes aren't Plain Old Data is when they have the
         // pragma "no object" associated with them.
+        // Note: the use of FLAG_NO_OBJECT here is actually intended
+        // to capture sync and single variables. At least it indicates
+        // something is not a normal class instance.
         if (!isClass(ct) || ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
           ct->symbol->addFlag(FLAG_NOT_POD);
         }

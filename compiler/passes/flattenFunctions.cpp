@@ -95,6 +95,9 @@ static bool
 passByRef(Symbol* sym) {
 
   // Is it a non-POD record type?
+  // non-POD records are passed by reference here because
+  // other code probably won't copy them correctly if they
+  // are passed by value.
   if( sym->type->symbol->hasFlag(FLAG_NOT_POD) )
     return true;
 

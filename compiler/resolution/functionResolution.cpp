@@ -7352,12 +7352,11 @@ static bool propagateNotPOD(Type* t) {
     notPOD |= propagateNotPOD(ft);
   }
 
-  // make sure we have resolve auto copy/auto destroy.
+  // Make sure we have resolved auto copy/auto destroy.
   resolveAutoCopy(t);
   resolveAutoDestroy(t);
 
-  // also check for a non-compiler generated
-  // autocopy/autodestroy.
+  // Also check for a non-compiler generated autocopy/autodestroy.
   FnSymbol* autoCopyFn = autoCopyMap.get(t);
   FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
   FnSymbol* destructor = t->destructor;
