@@ -44,7 +44,7 @@ void chpl_printMemAllocStats(int32_t lineno, c_string filename);
 void chpl_printMemAllocsByType(int32_t lineno, c_string filename);
 void chpl_printMemAllocs(int64_t threshold,
                          int32_t lineno, c_string filename);
-void chpl_printMemAllocsByDesc(const char* descString, int64_t threshold,
+void chpl_printMemAllocsByDesc(c_string descString, int64_t threshold,
                                int32_t lineno, c_string filename);
 void chpl_startVerboseMem(void);
 void chpl_stopVerboseMem(void);
