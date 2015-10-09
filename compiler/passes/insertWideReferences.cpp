@@ -739,23 +739,6 @@ static void addKnownWides() {
             }
           }
         }
-        else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                 rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
-          //
-          // TODO: Tuples fields can be accessed with an int, so we can't
-          // currently rely on propagateField to widen for us.
-          //
-          Symbol* field = getTupleField(rhs);
-
-          // If the field of the tuple is wide, so is the lhs
-          if (isFullyWide(field)) {
-            if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
-              setValWide(lhs);
-            } else {
-              setWide(lhs);
-            }
-          }
-        }
       }
     }
     else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
