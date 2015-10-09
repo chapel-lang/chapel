@@ -57,7 +57,6 @@ static WellKnownType sWellKnownTypes[] = {
   { "BaseDist",           &dtDist,         true  },
   { "Writer",             &dtWriter,       true  },
   { "Reader",             &dtReader,       true  },
-  {"_EndCount",          &dtEndCount,      true},
   { "chpl_main_argument", &dtMainArgument, false }
 };
 
