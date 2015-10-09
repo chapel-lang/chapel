@@ -14,21 +14,22 @@ if [ ! -d "$chpl_home/util" ] || [ ! -d "$chpl_home/compiler" ] || [ ! -d "$chpl
     return
 fi
 
+# Remove any previously existing CHPL_HOME paths
+MYPATH=`$chpl_home/util/config/fixpath.py PATH`
+MYMANPATH=`$chpl_home/util/config/fixpath.py MANPATH`
+
 export CHPL_HOME=$chpl_home
 echo "Setting CHPL_HOME to $CHPL_HOME"
-
-MYPATH=`$CHPL_HOME/util/config/fixpath.py PATH`
-MYMANPATH=`$CHPL_HOME/util/config/fixpath.py MANPATH`
 
 export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
 echo "Setting CHPL_HOST_PLATFORM to $CHPL_HOST_PLATFORM"
 
 export PATH="$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util:"$MYPATH"
-echo "Updating PATH to include $CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
-echo    "                     and ""$CHPL_HOME"/util
+echo "Updating PATH to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
+echo "                     and $CHPL_HOME/util"
 
 export MANPATH="$CHPL_HOME"/man:"$MYMANPATH"
-echo "Updating MANPATH to include $CHPL_HOME"/man
+echo "Updating MANPATH to include $CHPL_HOME/man"
 
 echo "Setting CHPL_COMM to none"
 export CHPL_COMM=none
