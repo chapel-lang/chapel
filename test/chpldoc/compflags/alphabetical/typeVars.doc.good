@@ -1,4 +1,4 @@
-Module: hasGlobalTypes.doc
+hasGlobalTypes.doc
    This module has some global scoped types. 
    type first
    type second

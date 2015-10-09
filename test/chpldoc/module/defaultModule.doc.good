@@ -1,4 +1,4 @@
-Module: defaultModule.doc
+defaultModule.doc
    proc foo()
       This proc doesn't matter very much 
 

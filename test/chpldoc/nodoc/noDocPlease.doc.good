@@ -1,4 +1,4 @@
-Module: Foo
+Foo
    config var blah4: int
    proc d()
    Class: bar

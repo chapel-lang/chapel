@@ -1,4 +1,4 @@
-Module: globalOrdering.doc
+globalOrdering.doc
    config var goop: bool
       hello 
    param after = 35
