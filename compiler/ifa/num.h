@@ -79,6 +79,10 @@ class Immediate { public:
   uint32_t const_kind;
   uint32_t num_index;
   union {
+    // Unions are initalized based off the first element, so we need to have
+    // the largest thing first to make sure it is all zero initalized
+    complex128 v_complex128;
+    complex64  v_complex64;
     uint64_t   v_bool;
     int8_t     v_int8;
     int16_t    v_int16;
@@ -92,8 +96,6 @@ class Immediate { public:
     // uint128    v_uint128;
     float      v_float32;
     double     v_float64;
-    complex64  v_complex64;
-    complex128 v_complex128;
     const char *v_string;
   };
 
