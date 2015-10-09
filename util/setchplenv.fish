@@ -12,12 +12,13 @@ if [ ! -d "$chpl_home/util" -o ! -d "$chpl_home/compiler" -o ! -d "$chpl_home/ru
     exit
 end
 
+# Remove any previously existing CHPL_HOME paths
+eval set MYPATH (eval "$chpl_home/util/config/fixpath.py \"PATH\" \"fish\"")
+eval set MYMANPATH (eval "$chpl_home/util/config/fixpath.py \"MANPATH\" \"fish\"")
+
 echo -n "Setting CHPL_HOME "
 set -x CHPL_HOME $chpl_home
 echo "to $CHPL_HOME"
-
-eval set MYPATH (eval "$CHPL_HOME/util/config/fixpath.py \"PATH\" \"fish\"")
-eval set MYMANPATH (eval "$CHPL_HOME/util/config/fixpath.py \"MANPATH\" \"fish\"")
 
 if [ (count $MYPATH) = 0 ]
   echo "Error running \$CHPL_HOME/util/config/fixpath"
