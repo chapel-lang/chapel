@@ -230,11 +230,11 @@ module DefaultSparse {
     proc dsiRemove(ind: rank*idxType) {
       rem_help(ind);
     }
-  
+
     proc dsiClear() {
       nnz = 0;
     }
-  
+
     iter dimIter(param d, ind) {
       if (d != rank-1) {
         compilerError("dimIter() not supported on sparse domains for dimensions other than the last");

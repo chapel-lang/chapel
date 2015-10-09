@@ -18,7 +18,7 @@
  */
 
 module ChapelDistribution {
-  
+
   use List;
 
   extern proc chpl_task_yield();
