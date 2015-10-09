@@ -5517,13 +5517,16 @@ GenRet CallExpr::codegen() {
     genFnName = "chpl_taskListAddCoStmt";
   }
   if (gotBCbCf) {
-    // get(1) is an task list value
+    // get(1) is a ref/wide ref to a task list value
     // get(2) is the node ID owning the task list
     // get(3) is a buffer containing bundled arguments
     // get(4) is the buffer's length (unused for task fns)
     // get(5) is a dummy class type for the argument bundle
 
     GenRet taskList = codegenValue(get(1));
+    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      taskList = codegenRaddr(taskList);
+    }
     GenRet taskListNode = codegenValue(get(2));
     GenRet taskBundle = codegenValue(get(3));
 
