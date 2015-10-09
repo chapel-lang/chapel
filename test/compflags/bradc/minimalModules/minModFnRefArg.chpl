@@ -6,7 +6,6 @@ proc isInt(type t) param return
 inline proc _defaultOf(type t) param where isInt(t) return 0:t;
 inline proc _defaultOf(type t) param where t: string return defaultStringValue;
 
-pragma "trivial assignment"
 inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
 
 extern proc printf(f:c_string, x...);
