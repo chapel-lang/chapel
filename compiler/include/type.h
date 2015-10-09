@@ -259,6 +259,7 @@ TYPE_EXTERN AggregateType* dtMainArgument;
 
 TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
 TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
+TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;

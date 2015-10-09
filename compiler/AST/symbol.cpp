@@ -74,6 +74,7 @@ Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
 Symbol *gStringCopy = NULL;
+Symbol *gCVoidPtr = NULL;
 Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
@@ -778,8 +779,9 @@ void VarSymbol::codegenDefC(bool global) {
 void VarSymbol::codegenGlobalDef() {
   GenInfo* info = gGenInfo;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -1223,8 +1225,9 @@ void TypeSymbol::codegenPrototype() {
 void TypeSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -1791,8 +1794,8 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     } else {
       int count = 0;
       for_formals(formal, this) {
-        if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-          continue; // do not print locale argument for on blocks
+        if (formal->hasFlag(FLAG_NO_CODEGEN))
+          continue; // do not print locale argument, end count, dummy class
         if (count > 0)
           str += ", ";
         str += formal->codegenType().c;
@@ -1812,8 +1815,8 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 
     int count = 0;
     for_formals(formal, this) {
-      if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-        continue; // do not print locale argument for on blocks
+      if (formal->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(formal->codegenType().type);
       count++;
     }
@@ -1884,8 +1887,9 @@ void FnSymbol::codegenPrototype() {
   if (hasFlag(FLAG_NO_PROTOTYPE)) return;
   if (hasFlag(FLAG_NO_CODEGEN))   return;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -1965,8 +1969,9 @@ void FnSymbol::codegenDef() {
   llvm::Function *func = NULL;
 #endif
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 

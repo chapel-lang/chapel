@@ -34,6 +34,9 @@
 #include "type.h"
 
 static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
+static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
+                                  Expr* expr, Expr* cond, Expr* indices,
+                                  bool zippered, Expr*& stmt);
 
 static void
 checkControlFlow(Expr* expr, const char* context) {

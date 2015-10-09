@@ -1512,15 +1512,6 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
 }
 
 static
-GenRet codegenFieldPtr(GenRet base, Symbol* field) {
-  const char* cname = NULL;
-  const char* name = NULL;
-  cname = field->cname;
-  name = field->name;
-  return codegenFieldPtr(base, cname, name, field_normal);
-}
-
-static
 GenRet codegenFieldPtr(GenRet base, const char* field) {
   const char* cname = NULL;
   const char* name = NULL;
@@ -3404,7 +3395,7 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 ************************************* | ************************************/
 
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3424,13 +3415,14 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 
 CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3443,12 +3435,13 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3461,13 +3454,14 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
@@ -3480,6 +3474,7 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
@@ -3846,6 +3841,9 @@ GenRet CallExpr::codegen() {
   SET_LINENO(this);
 
   // Note (for debugging), function name is in parentSymbol->cname.
+
+  if (id == breakOnCodegenID)
+    gdbShouldBreakHere();
 
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(this);
@@ -5463,71 +5461,25 @@ GenRet CallExpr::codegen() {
     genFnName = "chpl_taskListAddCoStmt";
   }
   if (gotBCbCf) {
-    // get(1) is a class containing bundled arguments
+    // get(1) is a ref/wide ref to a task list value
+    // get(2) is the node ID owning the task list
+    // get(3) is a buffer containing bundled arguments
+    // get(4) is the buffer's length (unused for task fns)
+    // get(5) is a dummy class type for the argument bundle
+
+    GenRet taskList = codegenValue(get(1));
+    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      taskList = codegenRaddr(taskList);
+    }
+    GenRet taskListNode = codegenValue(get(2));
+    GenRet taskBundle = codegenValue(get(3));
+
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
-    args[2] = codegenCastToVoidStar(codegenValue(get(1)));
-
-    AggregateType *bundledArgsType = toAggregateType(toSymExpr(get(1))->typeInfo());
-    int endCountField = 0;
-    for (int i = 1; i <= bundledArgsType->fields.length; i++) {
-      if (strstr(bundledArgsType->getField(i)->typeInfo()->symbol->name, "_EndCount") != NULL) {
-        // Turns out there can be more than one such field. See e.g.
-        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
-        // INT_ASSERT(endCountField == 0);
-        endCountField = i;
-        // We have historically picked the first such field.
-        break;
-      }
-    }
-    // We need the endCountField.
-    INT_ASSERT(endCountField != 0);
-
-    GenRet endCountPtr =
-      codegenValue(
-          codegenFieldPtr(get(1), bundledArgsType->getField(endCountField)));
-    Type *endCountType = bundledArgsType->getField(endCountField)->typeInfo();
-    // endCount is either an address or {locale, ptr} -- it is a class.
-    GenRet endCountValue = codegenValue(endCountPtr);
-    GenRet taskList;
-
-    if (endCountType->symbol->hasFlag(FLAG_WIDE_REF)) {
-      GenRet node = codegenRnode(endCountValue);
-      while(endCountValue.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF)){
-        endCountValue = codegenLocalDeref(endCountValue);
-      }
-      // Now, we should have a wide pointer to a class
-      // make it into a local pointer to a class.
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList")); 
-      taskList = codegenTernary(
-                       codegenNotEquals(node, codegenGetNodeID()),
-                       codegenNullPointer(),
-                       taskList);
-    } else if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      GenRet node = codegenRnode(endCountValue);
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-      taskList = codegenTernary(
-                     codegenNotEquals(node, codegenGetNodeID()),
-                     codegenNullPointer(),
-                     taskList);
-    } else if (endCountType->symbol->hasFlag(FLAG_REF)) {
-      endCountValue = codegenDeref(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    } else {
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    }
-
+    args[2] = codegenCastToVoidStar(taskBundle);
     args[3] = taskList;
-
-    if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      args[4] = codegenRnode(endCountPtr);
-    } else {
-      args[4] = codegenGetNodeID();
-    }
-
+    args[4] = codegenValue(taskListNode);
     args[5] = fn->linenum();
     args[6] = fn->fname();
 
@@ -5535,6 +5487,11 @@ GenRet CallExpr::codegen() {
     codegenCall(genFnName, args);
     return ret;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    // get(1) is the locale
+    // get(2) is a buffer containing bundled arguments
+    // get(3) is a the size of the buffer
+    // get(4) is a dummy class type for the argument bundle
+
     const char* fname = NULL;
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       fname = "chpl_executeOnNB";
@@ -5543,24 +5500,13 @@ GenRet CallExpr::codegen() {
     else
       fname = "chpl_executeOn";
 
-    TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
-    if (argType == NULL) {
-      INT_FATAL("could not get a type symbol");
-    }
-    
-    AggregateType* ct = toAggregateType(argType->typeInfo());
-    if (!ct) {
-      INT_FATAL("Expected a class type in %s argument", fname);
-    }
-    std::string ctype = ct->classStructName(true);
-
     GenRet locale_id = get(1);
 
     std::vector<GenRet> args(6);
     args[0] = codegenLocalAddrOf(locale_id);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_32);
     args[2] = get(2);
-    args[3] = codegenSizeof(ctype.c_str());
+    args[3] = get(3);
     args[4] = fn->linenum();
     args[5] = fn->fname();
 
