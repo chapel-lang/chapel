@@ -1,8 +1,16 @@
-# bash shell script to set the Chapel environment variables
+# bash/zsh shell script to set the Chapel environment variables
+
+# If BASH_SOURCE not defined, assume we are using zsh
+if [ ! -z ${BASH_SOURCE} ]; then
+    echo "bash"
+    filepath=${BASH_SOURCE[0]}
+else
+    echo "zsh"
+    filepath=${(%):-%N}
+fi
 
 # Directory of setchplenv script, will not work if script is a symlink
-DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-echo $DIR
+DIR=$(cd "$(dirname "${filepath}")" && pwd)
 
 # Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
