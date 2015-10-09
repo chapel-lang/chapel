@@ -188,6 +188,7 @@ def get_sys_c_types(docs=False):
         if chpl_type == 'c_ptr':
             handled_c_ptr = True
 
+    # never emit c_void_ptr since it is a built-in type now
     #if not handled_c_ptr:
     #    sys_c_types.append('extern type c_void_ptr; '
     #                       '// opaque; no ptr arithmetic in Chapel code!')
