@@ -1,12 +1,12 @@
 # bash/zsh shell script to set the Chapel environment variables
 
-# If BASH_SOURCE not defined, assume we are using zsh
-if [ ! -z ${BASH_SOURCE} ]; then
-    echo "bash"
+# Find out filepath depending on shell
+if [ -n "${BASH_VERSION}" ]; then
     filepath=${BASH_SOURCE[0]}
-else
-    echo "zsh"
+elif [ -n "${ZSH_VERSION}" ]; then
     filepath=${(%):-%N}
+else
+    echo "Error: setchplenv.bash can only be sourced from bash and zsh"
 fi
 
 # Directory of setchplenv script, will not work if script is a symlink
