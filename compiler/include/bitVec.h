@@ -26,9 +26,9 @@ class BitVec {
   size_t in_size;
   size_t ndata;
 
-  ~BitVec();
   BitVec(size_t in_size);
   BitVec(const BitVec& rhs);
+  ~BitVec();
   void operator=(const BitVec& rhs) { this->copy(rhs); }
 
   void clear();
