@@ -312,7 +312,6 @@ isPrimitiveCopy(Vec<Type*>& primitiveCopyTypeSet, Type* type) {
 // POD-typed fields (see isPODtype test above).
 static void removePODinitDestroy()
 {
-  markPODtypes();
   compute_call_sites();
 
   Vec<Type*> primitiveCopyTypeSet;
