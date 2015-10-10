@@ -32,7 +32,7 @@
 #include "optimizations.h"
 #include "view.h"
 #include "WhileStmt.h"
-#include "resolution.h" // for autoDestroyMap.
+#include "resolution.h" // for getAutoCopy etc.
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
@@ -1335,7 +1335,7 @@ rebuildIterator(IteratorInfo* ii,
     {
       VarSymbol* tmp = newTemp("RWT_ir", localValue->type);
       fn->insertAtTail(new DefExpr(tmp));
-      FnSymbol* autoCopyFn = autoCopyMap.get(localValue->type);
+      FnSymbol* autoCopyFn = getAutoCopy(localValue->type);
       // We will fail here if an array or dom implementation fails to provide
       // an autocopy function.
       fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
@@ -1365,7 +1365,7 @@ rebuildIteratorAutoDestroy(IteratorInfo* ii)
 {
   // TODO: Do we need this cast?
   AggregateType* irt = toAggregateType(ii->irecord);
-  FnSymbol* adFn = autoDestroyMap.get(irt);
+  FnSymbol* adFn = getAutoDestroy(irt);
   ArgSymbol* ir = adFn->getFormal(1);
   BlockStmt* block = new BlockStmt();
 
@@ -1379,7 +1379,7 @@ rebuildIteratorAutoDestroy(IteratorInfo* ii)
       block->insertAtTail(new DefExpr(tmp));
       CallExpr* getMbrCall = new CallExpr(PRIM_GET_MEMBER, ir, field);
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, getMbrCall));
-      FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+      FnSymbol* autoDestroyFn = getAutoDestroy(field->type);
       block->insertAtTail(new CallExpr(autoDestroyFn, tmp));
     }
   }
@@ -1415,7 +1415,7 @@ rebuildGetIterator(IteratorInfo* ii) {
     {
       VarSymbol* tmp = newTemp("RWT_tmp", field->type);
       getIterator->insertBeforeReturn(new DefExpr(tmp));
-      FnSymbol* autoCopyFn = autoCopyMap.get(field->type);
+      FnSymbol* autoCopyFn = getAutoCopy(field->type);
       // This autoCopyFn is expected to exist!
       CallExpr* autoCopyCall = new CallExpr(autoCopyFn, fieldReadTmp);
       getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
@@ -1448,7 +1448,7 @@ rebuildFreeIterator(IteratorInfo* ii) {
   for_fields(field, ii->irecord) {
     // The record and class fields have the same name and type, so we can use
     // them interchangeably.
-    FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+    FnSymbol* autoDestroyFn = getAutoDestroy(field->type);
     if (autoDestroyFn)
     {
       ArgSymbol* dtor_arg = autoDestroyFn->getFormal(1);

@@ -168,13 +168,13 @@ class CallExpr : public Expr {
   bool square; // true if call made with square brackets
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   ~CallExpr();
 
   virtual void    verify();
@@ -337,6 +337,10 @@ const char* get_string(Expr* e); // fatal on failure
 CallExpr* callChplHereAlloc(Symbol *s, VarSymbol* md = NULL);
 void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                          Type* t, VarSymbol* md = NULL);
+void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
+                         Type* t, VarSymbol* md,
+                         Symbol *sizeTmp);
+
 CallExpr* callChplHereFree(BaseAST* p);
 
 // Walk the subtree of expressions rooted at "expr" in postorder, returning the

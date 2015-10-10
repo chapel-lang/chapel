@@ -827,6 +827,7 @@ module ChapelBase {
   
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
 
+  pragma "end count"
   pragma "no default functions"
   class _EndCount {
     type iType;
@@ -1179,7 +1180,131 @@ module ChapelBase {
   proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }
+ 
+  // + operators for c_void_ptr
+  // (used in autoSerialize functions)
+  inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+  inline proc +(a: c_void_ptr, b: integral) return __primitive("+", a, b);
+
+
+  // These also exist in Types.chpl
+  private proc _isParam(param x) param return true;
+  private proc _isParam(x) param return false;
+
+  pragma "compiler generated" 
+  proc chpl__autoSerializeSize(x):int {
+    return 0;
+  }
+ 
+  pragma "compiler generated"
+  proc chpl__autoSerializeSize(x:?t):int where isRecordType(t) {
+    var size = 0;
+    for param i in 1..numFields(t) {
+      if ! _isParam(__primitive("field value by num", x, i)) {
+        size += chpl__autoSerializeSize(__primitive("field value by num", x, i));
+      }
+    }
+    return size;
+  }
+
+  pragma "compiler generated"
+  proc chpl__autoSerializeSize(x:?t):int where isTupleType(t) {
+    var size = 0;
+    for param i in 1..x.size {
+      size += chpl__autoSerializeSize(x(i));
+    }
+    return size;
+
+    return 0;
+  }
+
+  pragma "donor fn"
+  pragma "compiler generated"
+  proc chpl__autoSerialize(x, dst:c_void_ptr) {
+     // call autoCopy
+     return chpl__autoCopy(x);
+     //pragma "no copy" var tmp = chpl__autoCopy(x);
+     //return tmp;
+  }
+
+  pragma "donor fn"
+  pragma "compiler generated"
+  proc chpl__autoSerialize(x:?t, dst:c_void_ptr) where isRecordType(t) {
+    var cur = dst;
+    var ret:t;
+    // TODO: for non-POD types, noinit is ignored, but we don't
+    // want to ignore it in this function...
+    // That will produce a memory leak for any type that allocates
+    // memory in the default init function.
+    for param i in 1..numFields(t) {
+      if ! _isParam(__primitive("field value by num", x, i)) {
+        var size = chpl__autoSerializeSize(fieldValueByNum(x,i));
+        __primitive("=", __primitive("field value by num", ret, i),
+                         chpl__autoSerialize(
+                                __primitive("field value by num", x, i),
+                                cur));
+        cur += size;
+      }
+    }
+    return ret;
+  }
+
+  pragma "donor fn"
+  pragma "compiler generated"
+  proc chpl__autoSerialize(x:?t, dst:c_void_ptr) where isTupleType(t) {
+    var cur = dst;
+    var ret:t;
+    // TODO: for non-POD types, noinit is ignored, but we don't
+    // want to ignore it in this function...
+    // That will produce a memory leak for any type that allocates
+    // memory in the default init function.
+    for param i in 1..x.size {
+      var size = chpl__autoSerializeSize(x(i));
+      __primitive("=", ret(i),
+                          chpl__autoSerialize(x(i), cur) );
+      cur += size;
+    }
+    return ret;
+  }
+ 
+  pragma "compiler generated" 
+  proc chpl__autoDeserialize(ref x, src:c_void_ptr):int {
+    // Do nothing
+    return 0;
+  }
+
+  pragma "compiler generated"
+  proc chpl__autoDeserialize(ref x:?t, src:c_void_ptr):int where isRecordType(t) {
+    var cur = src;
+    var total_size = 0;
+    for param i in 1..numFields(t) {
+      if ! _isParam(__primitive("field value by num", x, i)) {
+        var size = chpl__autoDeserialize(
+                                __primitive("field value by num", x, i),
+                                cur);
+        cur += size;
+        total_size += size;
+      }
+    }
+    return total_size;
+    return 0;
+  }
+
+  pragma "compiler generated"
+  proc chpl__autoDeserialize(ref x:?t, src:c_void_ptr):int where isTupleType(t) {
+    var cur = src;
+    var total_size = 0;
+    for param i in 1..x.size {
+      var size = chpl__autoDeserialize(x(i), cur);
+      cur += size;
+      total_size += size;
+    }
+    return total_size;
+  }
   
+  // = for c_void_ptr
+  inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+
   // Type functions for representing function types
   inline proc func() type { return __primitive("create fn type", void); }
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }

@@ -845,7 +845,7 @@ void OwnershipFlowManager::insertAutoCopy(SymExpr* se)
   SET_LINENO(se);
 
   Symbol*   sym        = se->var;
-  FnSymbol* autoCopyFn = autoCopyMap.get(sym->type);
+  FnSymbol* autoCopyFn = getAutoCopy(sym->type);
 
   // 1) There must be an auto copy function
   // 2) Do not insert an auto copy for POD types
@@ -1014,7 +1014,7 @@ void OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec*        toCons,
 static void insertAutoDestroyAfterStmt(SymExpr* se)
 {
   Symbol*   sym             = se->var;
-  FnSymbol* autoDestroy     = toFnSymbol(autoDestroyMap.get(sym->type));
+  FnSymbol* autoDestroy     = toFnSymbol(getAutoDestroy(sym->type));
 
   if (isPOD(sym->type) || autoDestroy == NULL)
     // This type does not have a destructor, so we don't have to add an
@@ -1280,7 +1280,7 @@ void OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
   if (_fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED) && sym == fnRetSym)
     return;
 
-  FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
+  FnSymbol* autoDestroy = toFnSymbol(getAutoDestroy(sym->type));
 
   if (isPOD(sym->type) || autoDestroy == NULL)
     // This type does not have a destructor, so we don't have a add an

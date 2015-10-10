@@ -35,6 +35,9 @@
 #include "symbol.h"
 #include "CForLoop.h"
 
+// temporary
+#include "view.h"
+
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
 //   insertWideReferences()
@@ -98,6 +101,8 @@ typedef struct {
   bool firstCall;
   AggregateType* ctype;
   FnSymbol*  wrap_fn;
+  // one value for each of the types in ctype
+  std::vector<int> useSerialize;
 } BundleArgsFnData;
 
 // bundleArgsFnDataInit: the initial value for BundleArgsFnData
@@ -106,7 +111,7 @@ static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 static void insertEndCounts();
 static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions);
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn);
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
@@ -288,6 +293,40 @@ taskMayOutliveTaskArg(Expr* arg, CallExpr* taskFnCall)
 //########################################################################
 
 
+static bool
+argumentNeedsAutoCopy(Expr* arg, CallExpr* taskFnCall)
+{
+  Type* t = arg->typeInfo();
+  //FnSymbol* fn = taskFnCall->isResolved();
+
+  if (t->symbol->hasFlag(FLAG_NOT_POD)) {
+    // task arguments that could outlive tasks need auto copy.
+    if (taskMayOutliveTaskArg(arg, taskFnCall))
+      return true;
+
+    // always auto copy arguments for on statements
+    // so that strings can use local data
+    // TODO: only do this for records with a meaningful autoSerialize fn?
+    //        Or only for records with local data?
+    //        Or not for arrays?
+    // Note array infinite loop:
+    /*
+       chpl___TILDE__distribution ChapelArray.chpl:570
+       chpl__autoDestroy ChapelBase.chpl:1170
+       on_fn9 ChapelArray.chpl:570
+       wrapon_fn9 ChapelArray.chpl:570
+       chpl___TILDE__distribution ChapelArray.chpl:570
+    */
+    //if (fn->hasFlag(FLAG_ON) && !isRecordWrappedType(t))
+    //  return true;
+    // should not be necessary if we can copy across locales
+    // with bit copy?
+  }
+  // POD types never need an auto copy.
+  return false;
+}
+
+#if 0
 /// Optionally autoCopies an argument being inserted into an argument bundle.
 ///
 /// This routine optionally inserts an autoCopy ahead of each invocation of a
@@ -331,6 +370,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
   if (taskMayOutliveTaskArg(arg, fcall))
   {
     Type* baseType = arg->getValType();
+// TODO -- should baseType == arg->typeInfo() ?
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
 
@@ -418,10 +458,29 @@ static Symbol* insertAutoCopyDestroyForTaskArg
   }
   return var;
 }
+#endif
 
 
+static void insertAutoDestroyBeforeDownEndCount(Expr* arg, CallExpr* fcall)
+{
+  Type* t = arg->typeInfo();
+  FnSymbol* autoDestroyFn = getAutoDestroy(t);
+
+  // TODO? handle reference types for wrapper records?
+
+  // Insert a call to the autoDestroy function ahead of the return (or
+  // _downEndCount() call, if present).
+  // (But only once per function for each affected argument.)
+  FnSymbol* fn = fcall->isResolved();
+  Symbol* formal = actual_to_formal(arg);
+  CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
+  fn->insertBeforeDownEndCount(autoDestroyCall);
+  insertReferenceTemps(autoDestroyCall);
+}
+   
 static void
 bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
+  int i;
   SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();
   FnSymbol* fn = fcall->isResolved();
@@ -431,32 +490,220 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     create_arg_bundle_class(fn, fcall, mod, baData);
   AggregateType* ctype = baData.ctype;
 
-  // create the class variable instance and allocate space for it
-  VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
-  fcall->insertBefore( new DefExpr( tempc));
-  insertChplHereAlloc(fcall, false /*insertAfter*/, tempc,
-                      ctype, newMemDesc("bundled args"));
+  // We're going to create a buffer consisting of 2 pieces:
+  // 1) fixed-length data (corresponding to the ctype arg-bundle class
+  // 2) additional variable-length data (for any class that has an
+  //    autoSerializeSize call returning nonzero).
 
-  // set the references in the class instance
-  int i = 1;
+  // First, decide whether or not we're adding an autoCopy
+  // for each argument, and if so, what its variable length
+  // partion is.
+  std::vector<VarSymbol*> serializedSize;
+  baData.useSerialize.push_back(0); // so we can count from 1
+  serializedSize.push_back(NULL); // so we can count from 1
+
+  // Compute size of the bundle and allocate that much space.
+  // We must first compute the size of the bundle by adding up
+  // the relevant sizes.
+  
+  // First, compute the size of the arg bundle class instance
+  VarSymbol *fixedsz = newTemp(astr("_args_fixed_size", fn->name),
+                               dtInt[INT_SIZE_DEFAULT]);
+  fcall->insertBefore(new DefExpr(fixedsz));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, fixedsz,
+                                   new CallExpr(PRIM_SIZEOF, ctype->symbol)));
+
+  // compute the size of each field and decide whether or
+  // not to call autoSerialize
+
+  i = 1;
+  for_actuals(arg, fcall) {
+    bool autoCopyIt = argumentNeedsAutoCopy(arg, fcall);
+    baData.useSerialize.push_back(autoCopyIt);
+
+    SymExpr* s = toSymExpr(arg);
+    Symbol* var = s->var;
+
+    Type* t = arg->typeInfo();
+    FnSymbol* autoSerializeSize = getAutoSerializeSize(t);
+
+    VarSymbol *tmpfieldsz = newTemp(astr("_field_size", fn->name, istr(i)),
+                                    dtInt[INT_SIZE_DEFAULT]);
+    fcall->insertBefore(new DefExpr(tmpfieldsz));
+
+    if (autoCopyIt) {
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpfieldsz,
+                                       new CallExpr(autoSerializeSize, var)));
+    } else {
+      // size = 0
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpfieldsz,
+                                       new_IntSymbol(0, INT_SIZE_DEFAULT)));
+    }
+    serializedSize.push_back(tmpfieldsz);
+    i++;
+  }
+
+   // Next, compute the sum of fixed and variable sizes
+  VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
+                             dtInt[INT_SIZE_DEFAULT]);
+  fcall->insertBefore(new DefExpr(tmpsz));
+  // Start with the size of the allocated args
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz, fixedsz));
+
+  // Add in any variable-length sizes
+  i = 1;
   for_actuals(arg, fcall) 
   {
-    // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
-    // calls.
-    Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, firstCall);
+    fcall->insertBefore(new CallExpr(PRIM_ADD_ASSIGN,
+                                     tmpsz, serializedSize[i]));
+    i++;
+  }
 
+  // allocate space for the argument bundle
+  VarSymbol *allocated_args = newTemp(astr("_args_for", fn->name), dtCVoidPtr);
+  fcall->insertBefore( new DefExpr(allocated_args));
+  insertChplHereAlloc(fcall, false /*insertAfter*/, allocated_args,
+                      dtCVoidPtr, newMemDesc("bundled args"),
+                      tmpsz);
+
+  // create the class variable pointing to the first part of the buffer.
+  VarSymbol *tempc = newTemp(astr("_arg_bundle", fn->name), ctype);
+  fcall->insertBefore(new DefExpr(tempc));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc,
+                                   new CallExpr(PRIM_CAST, ctype->symbol,
+                                                allocated_args)));
+
+  // create bundle_buf pointing to the second part of the buffer
+  // which stores variable-length arguments
+  VarSymbol *bundle_buf = newTemp(astr("_args_buf_for", fn->name), dtCVoidPtr);
+  fcall->insertBefore( new DefExpr(bundle_buf));
+  fcall->insertBefore(
+      new CallExpr(PRIM_MOVE, bundle_buf,
+                   new CallExpr(PRIM_ADD, allocated_args, fixedsz)));
+
+  // serialize the fields into the allocated space.
+  i = 1;
+  for_actuals(arg, fcall) 
+  {
+    SymExpr* s = toSymExpr(arg);
+    Symbol* var = s->var;
+
+    Type* t = arg->typeInfo();
+    FnSymbol* autoSerialize = getAutoSerialize(t);
+
+    if( baData.useSerialize[i] && autoSerialize ) {
+      // autoSerialize(arg, bundle_buf)
+      // bundle_buf += field_serialized_size
+      VarSymbol *serialize_ret = newTemp(astr("_arg_tmp", fn->name, istr(i)),
+                                         ctype->getField(i)->typeInfo());
+      fcall->insertBefore(new DefExpr(serialize_ret));
+      CallExpr* serializeCall = new CallExpr(autoSerialize, var, bundle_buf);
+      CallExpr* move = new CallExpr(PRIM_MOVE, serialize_ret, serializeCall);
+      fcall->insertBefore(move);
+      insertReferenceTemps(serializeCall);
+
+      var = serialize_ret;
+    }
+    
     // Copy the argument into the corresponding slot in the argument bundle.
+    // (this could possible be the result of running serialize above).
+    // We need to have code like this so that insertWideReferences works.
     CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
                                   tempc,
                                   ctype->getField(i),
                                   var);
     fcall->insertBefore(setc);
+ 
+    fcall->insertBefore(new CallExpr(PRIM_ADD_ASSIGN,
+                                     bundle_buf, serializedSize[i]));
     i++;
+  }
+
+  if (firstCall) {
+    // Add autoDestroy calls
+    i = 1;
+    for_actuals(arg, fcall) 
+    {
+      if (baData.useSerialize[i]) {
+        insertAutoDestroyBeforeDownEndCount(arg, fcall);
+      }
+      i++;
+    }
+  }
+
+  // Find the _EndCount argument so we can pass that explicitly as the
+  // first argument to a task launch function.
+  Symbol* endCount = NULL;
+  VarSymbol *taskList = NULL;
+  VarSymbol *taskListNode = NULL;
+
+  if (!fn->hasFlag(FLAG_ON)) {
+    for_actuals(arg, fcall) {
+      bool strcmp_found = false;
+      bool type_found = false;
+
+      Type* baseType = arg->getValType();
+      if (baseType->symbol->hasFlag(FLAG_END_COUNT)) {
+        type_found = true;
+      }
+
+      // This strcmp code was moved from expr.cpp codegen,
+      // but there has got to be a better way to do this! 
+      if (strstr(baseType->symbol->name, "_EndCount") != NULL) {
+        strcmp_found = true;
+      }
+
+      // If this assert never fires, we can remove the strcmp version.
+      INT_ASSERT(type_found == strcmp_found);
+
+      if( type_found || strcmp_found ) {
+        SymExpr* symexp = toSymExpr(arg);
+        endCount = symexp->var;
+
+        // Turns out there can be more than one such field. See e.g.
+        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
+        // INT_ASSERT(endCountField == 0);
+        // We have historically picked the first such field.
+        break;
+      }
+    }
+
+    INT_ASSERT(endCount);
+
+    // Now get the taskList field out of the end count.
+
+    taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+
+    // If the end count is a reference, dereference it.
+    // EndCount is a class.
+    if (endCount->type->symbol->hasFlag(FLAG_REF)) {
+      VarSymbol *endCountDeref = newTemp(astr("_end_count_deref", fn->name),
+                                         endCount->getValType());
+      fcall->insertBefore(new DefExpr(endCountDeref));
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, endCountDeref,
+                                         new CallExpr(PRIM_DEREF, endCount)));
+      endCount = endCountDeref;
+    }
+
+    fcall->insertBefore(new DefExpr(taskList));
+    fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
+                                     new CallExpr(PRIM_GET_MEMBER,
+                                                  endCount,
+                                                  endCount->typeInfo()->getField("taskList"))));
+
+
+    // Now get the node ID field for the end count,
+    // which is where the task list is stored.
+    taskListNode = newTemp(astr("_taskListNode", fn->name), dtInt[INT_SIZE_DEFAULT]);
+    fcall->insertBefore(new DefExpr(taskListNode));
+    fcall->insertBefore(new CallExpr(PRIM_MOVE, taskListNode,
+                                     new CallExpr(PRIM_WIDE_GET_NODE,
+                                                  endCount)));
   }
 
   // create wrapper-function that uses the class instance
   create_block_fn_wrapper(fn, fcall, baData);
-  call_block_fn_wrapper(fn, fcall, tempc, baData.wrap_fn);
+  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, taskList, taskListNode);
   baData.firstCall = false;
 }
 
@@ -496,31 +743,114 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     // into the wrapper here, and then later on remove it completely.
     // The on_fn does not need this extra argument, and can find out its locale
     // by reading the task-private "here" pointer.
-    DefExpr* localeArg = toDefExpr(fn->formals.get(1)->copy());
+    ArgSymbol *localeArg = fn->getFormal(1)->copy();
     // The above copy() used to be a remove(), based on the assumption that there was
     // exactly one wrapper for each on.  Now, the on_fn is outlined early and has
     // several callers, therefore severall wrapon_fns are generated.
     // So, we leave the extra locale arg in place here and remove it later 
     // (see the last if (fn->hasFlag(FLAG_ON)) clause in passArgsToNestedFns()).
+    localeArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(localeArg);
+  } else {
+    // create a task list argument.
+    ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
+                                            dtTaskList->refType );
+    taskListArg->addFlag(FLAG_NO_CODEGEN);
+    wrap_fn->insertFormalAtTail(taskListArg);
+    ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 
+                                             dtInt[INT_SIZE_DEFAULT]);
+    taskListNode->addFlag(FLAG_NO_CODEGEN);
+    wrap_fn->insertFormalAtTail(taskListNode);
   }
 
-  ArgSymbol *wrap_c = new ArgSymbol( INTENT_CONST_REF, "c", ctype);
+  ArgSymbol *allocated_args = new ArgSymbol( INTENT_IN, "buf", dtCVoidPtr);
+  wrap_fn->insertFormalAtTail(allocated_args);
+  //allocated_args->addFlag(FLAG_NO_CODEGEN);
+  ArgSymbol *allocated_sz = new ArgSymbol( INTENT_IN, "buf_size",  dtInt[INT_SIZE_DEFAULT]);
+  allocated_sz->addFlag(FLAG_NO_CODEGEN);
+  wrap_fn->insertFormalAtTail(allocated_sz);
+  ArgSymbol *wrap_c = new ArgSymbol( INTENT_IN, "dummy_c", ctype);
+  wrap_c->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
 
+
+  // We will unpack the arguments from the args_buf
+  // the args_buf consists first of a fixed-length portion that
+  // matches ctype and then a variable length portion after that
+
+  // First, compute the size of the arg bundle class instance
+  VarSymbol *fixedsz = newTemp(astr("c_size"), dtInt[INT_SIZE_DEFAULT]);
+  wrap_fn->insertAtTail(new DefExpr(fixedsz));
+  wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, fixedsz,
+                                     new CallExpr(PRIM_SIZEOF, ctype->symbol)));
+
+  // Now compute the pointers into the args_buf
+  // for the fixed length portion and the variable-length portion.
+
+  // c points into the fixed-length portion.
+  VarSymbol *tempc = newTemp(astr("c"), ctype);
+  wrap_fn->insertAtTail(new DefExpr(tempc));
+  wrap_fn->insertAtTail(
+      new CallExpr(PRIM_MOVE, tempc,
+                              new CallExpr(PRIM_CAST, ctype->symbol,
+                                                      allocated_args)));
+
+  // bundle_buf points into the variable-length portion.
+  VarSymbol *bundle_buf = newTemp(astr("args_buf"), dtCVoidPtr);
+  wrap_fn->insertAtTail(new DefExpr(bundle_buf));
+  wrap_fn->insertAtTail(
+      new CallExpr(PRIM_MOVE, bundle_buf,
+                              new CallExpr(PRIM_ADD, allocated_args, fixedsz)));
+
+
   // Create a call to the original function
-  CallExpr *call_orig = new CallExpr(fn);
+  CallExpr *call_orig_function = new CallExpr(fn);
   bool first = true;
+
+  int i = 1;
   for_fields(field, ctype)
   {
-    // insert args
+    Type* t = field->typeInfo();
+    VarSymbol *tmpfieldsz = newTemp(astr("_field_size", istr(i)),
+                                    dtInt[INT_SIZE_DEFAULT]);
+    wrap_fn->insertAtTail(new DefExpr(tmpfieldsz));
+
     VarSymbol* tmp = newTemp(field->name, field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
+
+    // Read the value from the class instance
+    // This particular pattern is necessary to keep
+    // insertWideReferences working correctly
     wrap_fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-        new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+         new CallExpr(PRIM_MOVE, tmp, 
+                                 new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                              tempc, field)));
+
+    FnSymbol* autoDeserialize = getAutoDeserialize(t);
+
+    if (baData.useSerialize[i]) {
+      // bytes_handled = autoDeserialize(tmp, bundle_buf)
+      CallExpr* deserCall = new CallExpr(autoDeserialize, tmp, bundle_buf);
+      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz, deserCall));
+      insertReferenceTemps(deserCall);
+    } else {
+      // size = 0
+      wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, tmpfieldsz,
+                                       new_IntSymbol(0, INT_SIZE_DEFAULT)));
+    }
+
+    // add to bundle_buf the number of bytes handled
+    wrap_fn->insertAtTail(new CallExpr(PRIM_ADD_ASSIGN,
+                                         bundle_buf, tmpfieldsz));
+
+    // insert args
+    //VarSymbol* tmp = newTemp(field->name, field->type);
+    //wrap_fn->insertAtTail(new DefExpr(tmp));
+    //wrap_fn->insertAtTail(
+    //    new CallExpr(PRIM_MOVE, tmp,
+    //    new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
     // Special case: 
     // If this is an on block, remember the first field,
@@ -529,18 +859,19 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     if (first && fn->hasFlag(FLAG_ON))
       /* no-op */;
     else
-      call_orig->insertAtTail(tmp);
+      call_orig_function->insertAtTail(tmp);
 
     first = false;
+    i++;
   }
 
   wrap_fn->retType = dtVoid;
-  wrap_fn->insertAtTail(call_orig);     // add new call
+  wrap_fn->insertAtTail(call_orig_function);     // add new call
 
   if (fn->hasFlag(FLAG_ON))
     ; // the caller will free the actual
   else
-    wrap_fn->insertAtTail(callChplHereFree(wrap_c));
+    wrap_fn->insertAtTail(callChplHereFree(allocated_args));
 
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -553,16 +884,21 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   baData.wrap_fn = wrap_fn;
 }
 
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn)
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode)
 {
   // The wrapper function is called with the bundled argument list.
   if (fn->hasFlag(FLAG_ON)) {
     // For an on block, the first argument is also passed directly
     // to the wrapper function.
     // The forking function uses this to fork a task on the target locale.
-    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
-  } else
-    fcall->insertBefore(new CallExpr(wrap_fn, tempc));
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), args_buf, args_buf_len, tempc));
+  } else {
+    // For non-on blocks, the task list is passed directly to the function
+    // (so that codegen can find it).
+    // We need the taskList.
+    INT_ASSERT(taskList);
+    fcall->insertBefore(new CallExpr(wrap_fn, new SymExpr(taskList), new SymExpr(taskListNode), args_buf, args_buf_len, tempc));
+  }
 
   if (fn->hasFlag(FLAG_ON))
     fcall->insertAfter(callChplHereFree(tempc));
@@ -1359,7 +1695,8 @@ static void insertEndCounts()
       FnSymbol* pfn = call->getFunction();
       if (!endCountMap.get(pfn))
         insertEndCount(pfn, endCountType, queue, endCountMap);
-      call->insertAtTail(endCountMap.get(pfn));
+      Symbol* endCount = endCountMap.get(pfn);
+      call->insertAtTail(endCount);
     }
   }
 }

@@ -566,15 +566,14 @@ static void
 checkAutoCopyMap()
 {
   Vec<Type*> keys;
-  autoCopyMap.get_keys(keys);
+  getAutoFnKeys(keys);
   forv_Vec(Type, key, keys)
   {
-    FnSymbol* fn = autoCopyMap.get(key);
+    FnSymbol* fn = getAutoCopy(key);
     Type* baseType = fn->getFormal(1)->getValType();
     INT_ASSERT(baseType == key);
   }
 }
-
 
 // TODO: Can this be merged with checkFormalActualTypesMatch()?
 static void
