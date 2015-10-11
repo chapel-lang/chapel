@@ -1318,10 +1318,8 @@ module String {
 
   // Cast from c_string to string
   proc _cast(type t, cs: c_string) where t == string {
-    // TODO: uncommenting this creates a circular definition loop?
-    // since LocaleModel uses this cast and this cast uses LocaleModel?
-    //if cs.locale_id != chpl_nodeID then
-    //  halt("Cannot cast a remote c_string to string.");
+    if cs.locale.id != chpl_nodeID then
+      halt("Cannot cast a remote c_string to string.");
 
     var ret: string;
     ret.len = cs.length;
