@@ -114,7 +114,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT) \
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) \
 	$(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}

@@ -110,7 +110,7 @@ void docs(void) {
       }
     }
 
-    if (!fDocsTextOnly) {
+    if (!fDocsTextOnly && fDocsHTML) {
       generateSphinxOutput(docsSphinxDir, docsOutputDir);
     }
 
