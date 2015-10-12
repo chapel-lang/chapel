@@ -584,8 +584,23 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   call->getStmtExpr()->insertBefore(castMove);
 
   resolveCall(castCall);
-  if (castCall->isResolved())
-    resolveFns(castCall->isResolved());
+  FnSymbol* castTarget = castCall->isResolved();
+  if (castTarget) {
+    resolveFns(castTarget);
+
+    // Perhaps equivalently, we could check "if (tryToken)",
+    // except tryToken is not visible in this file.
+    if (!castTarget->hasFlag(FLAG_RESOLVED)) {
+      // This happens e.g. when castTarget itself has an error.
+      // Todo: in this case, we should report the error at the point
+      // where it arises, supposedly within resolveFns(castTarget).
+      // Why is it not reported there?
+      USR_FATAL_CONT(call, "Error resolving a cast from %s to %s",
+                     ats->name, fts->name);
+      USR_PRINT(castTarget, "  the troublesome function is here");
+      USR_STOP();
+    }
+  }
 
   resolveCall(castMove);
 }
