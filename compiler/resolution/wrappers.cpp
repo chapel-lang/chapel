@@ -584,8 +584,7 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   call->getStmtExpr()->insertBefore(castMove);
 
   resolveCall(castCall);
-  FnSymbol* castTarget = castCall->isResolved();
-  if (castTarget) {
+  if (FnSymbol* castTarget = castCall->isResolved()) {
     resolveFns(castTarget);
 
     // Perhaps equivalently, we could check "if (tryToken)",
