@@ -370,15 +370,6 @@ BlockStmt::insertAtTailBeforeFlow(Expr* ast) {
 }
 
 
-// Insert the given expression at the point in the block immediately before
-// control exits this block.
-// This may need to be overridden if the end of the body does not coincide with
-// the point at which flow exits a derived construct.  See, for example CForLoop.
-void
-BlockStmt::insertAtExit(Expr* expr)
-{ insertAtTailBeforeFlow(expr); }
-
-
 // Insert the given (presumably call) expression at the end of the given block
 // (scope) and also at any exit point in the interior of the block.
 // Right now, we define an exit point as a goto whose destination label lies
@@ -386,7 +377,7 @@ BlockStmt::insertAtExit(Expr* expr)
 // properly after all flow-control statements such as breaks, continues,
 // yields and returns have been converted into gotos.  Other cases may be added
 // as the need arises.
-void 
+void
 BlockStmt::insertAtAllExits(Expr* expr)
 {
   insertAtTail(expr);
