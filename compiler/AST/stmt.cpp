@@ -288,6 +288,19 @@ BlockStmt::canFlattenChapelStmt(const BlockStmt* stmt) const {
 }
 
 Expr*
+BlockStmt::getFirstChild() {
+  Expr* retval = NULL;
+
+  if (blockInfo)
+    retval = blockInfo;
+
+  else if (body.head)
+    retval = body.head;
+
+  return retval;
+}
+
+Expr*
 BlockStmt::getFirstExpr() {
   Expr* retval = 0;
 
@@ -301,17 +314,6 @@ BlockStmt::getFirstExpr() {
     retval = this;
 
   return retval;
-}
-
-Expr*
-BlockStmt::getFirstChild() {
-  if (blockInfo)
-    return blockInfo;
-
-  if (body.head)
-    return body.head;
-
-  return NULL;
 }
 
 Expr*
@@ -790,13 +792,13 @@ CondStmt::accept(AstVisitor* visitor) {
 }
 
 Expr*
-CondStmt::getFirstExpr() {
-  return (condExpr != 0) ? condExpr->getFirstExpr() : this;
+CondStmt::getFirstChild() {
+  return (condExpr != 0) ? condExpr : NULL ;
 }
 
 Expr*
-CondStmt::getFirstChild() {
-  return (condExpr != 0) ? condExpr : NULL ;
+CondStmt::getFirstExpr() {
+  return (condExpr != 0) ? condExpr->getFirstExpr() : this;
 }
 
 Expr*
@@ -1019,12 +1021,12 @@ void GotoStmt::accept(AstVisitor* visitor) {
   }
 }
 
-Expr* GotoStmt::getFirstExpr() {
-  return (label != 0) ? label->getFirstExpr() : this;
-}
-
 Expr* GotoStmt::getFirstChild() {
   return (label != 0) ? label : NULL;
+}
+
+Expr* GotoStmt::getFirstExpr() {
+  return (label != 0) ? label->getFirstExpr() : this;
 }
 
 /******************************** | *********************************
@@ -1072,11 +1074,11 @@ void ExternBlockStmt::accept(AstVisitor* visitor) {
   visitor->visitEblockStmt(this);
 }
 
-Expr* ExternBlockStmt::getFirstExpr() {
-  INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
+Expr* ExternBlockStmt::getFirstChild() {
   return NULL;
 }
 
-Expr* ExternBlockStmt::getFirstChild() {
+Expr* ExternBlockStmt::getFirstExpr() {
+  INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
   return NULL;
 }
