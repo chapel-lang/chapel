@@ -298,8 +298,11 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
               (keyArg->intent & INTENT_FLAG_REF))
             return value;
 
+        return value;
+        /*
         TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
         return getNewSubType(fn, key, nt);
+        */
       }
     }
   } else if (value->hasFlag(FLAG_REF) &&
