@@ -320,7 +320,8 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   // Put the bundle into a void* argument
   VarSymbol *allocated_args = newTemp(astr("_args_vfor", fn->name), dtCVoidPtr);
   fcall->insertBefore(new DefExpr(allocated_args));
-  fcall->insertBefore(new CallExpr(PRIM_MOVE, allocated_args, tempc));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, allocated_args,
+                               new CallExpr(PRIM_CAST_TO_VOID_STAR, tempc)));
 
   // Put the size of the bundle into the next argument
   VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
