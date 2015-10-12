@@ -20,9 +20,7 @@
 #include "stmt.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "codegen.h"
-#include "stmt.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
