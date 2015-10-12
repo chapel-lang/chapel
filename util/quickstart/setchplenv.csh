@@ -1,6 +1,7 @@
-# csh/tcsh shell script to set the Chapel environment variables
+# csh/tcsh-compatibility shell script to set the Chapel environment variables
+# Due to csh/tcsh limitations and inconsistencies, source this from $CHPL_HOME
 
-# shallow test to see if we are in the correct directory
+# Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
 # indicating that we are probably in a Chapel root directory.
 if ( ! -d "util" || ! -d "compiler" || ! -d "runtime" || ! -d "modules" ) then
@@ -8,11 +9,13 @@ if ( ! -d "util" || ! -d "compiler" || ! -d "runtime" || ! -d "modules" ) then
    exit
 endif
 
-set MYPATH = `./util/config/fixpath "$PATH" :`
-set MYMANPATH = `./util/config/fixpath "$MANPATH" :`
+# Remove any previously existing CHPL_HOME paths
+set MYPATH = `./util/config/fixpath.py PATH`
+set MYMANPATH = `./util/config/fixpath.py MANPATH`
 
+# Sanity check before modifying $PATH
 if ( "$MYPATH" == "" ) then
-  echo "Error running ./util/config/fixpath"
+  echo "Error running ./util/config/fixpath.py"
   exit
 endif
 
@@ -50,4 +53,3 @@ setenv CHPL_REGEXP none
 
 echo "Setting CHPL_LLVM to none"
 setenv CHPL_LLVM none
-

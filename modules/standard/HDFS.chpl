@@ -35,7 +35,7 @@ environment variables must be set as described below in
 the flags are set. As well, the HDFS functionality is also dependent upon the
 ``CHPL_AUXIO_INCLUDE`` and ``CHPL_AUXIO_LIBS`` environment variables being set
 properly. For more information on how to set these properly, see 
-doc/technotes/README.auxIO in a Chapel release.
+doc/technotes/auxIO.rst in a Chapel release.
 
 
 Enabling HDFS Support
@@ -269,7 +269,7 @@ First reflect your directory structure and version numbers (etc) in the
 6. Set up Chapel to run in distributed mode:
 
    * You'll need to set up your Chapel environment to target multiple
-     locales in the standard way (see README.multilocale and the
+     locales in the standard way (see multilocale.rst and the
      "Settings to run Chapel on multiple nodes" section of the
      .bashrc below).
 

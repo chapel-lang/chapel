@@ -1745,7 +1745,7 @@ module ChapelRange {
   
   // Write implementation for ranges
   pragma "no doc"
-  proc range.readWriteThis(f)
+  proc ref range.readWriteThis(f)
   {
     if f.writing && !aligned {
       // set things up so alignment does not get printed out
