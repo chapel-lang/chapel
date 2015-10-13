@@ -45,13 +45,13 @@ returnInfoBool(CallExpr* call) {
 }
 
 static Type*
-returnInfoStringC(CallExpr* call) {
-  return dtStringC;
+returnInfoString(CallExpr* call) {
+  return dtString;
 }
 
 static Type*
-returnInfoString(CallExpr* call) {
-  return dtString;
+returnInfoStringC(CallExpr* call) {
+  return dtStringC;
 }
 
 static Type*
