@@ -7310,8 +7310,8 @@ static void resolveAutoCopies() {
       resolveAutoDestroy(ts->type);
     }
 
-    if (isRecord(ts->type) ) {
-      // Mark record/tuple types as POD or NOT_POD
+    if (isAggregateType(ts->type) ) {
+      // Mark record/tuple/class types as POD or NOT_POD
       propagateNotPOD(ts->type);
     }
   }
@@ -7334,80 +7334,82 @@ static void resolveAutoCopies() {
    Call isPOD (or check FLAG_POD/FLAG_NOT_POD) after resolution.
  */
 static bool propagateNotPOD(Type* t) {
-  // Move past those records we've already handled
+
+  // non-aggregate types (e.g. int, bool) are POD
+  // but we don't run this function on all of them,
+  // so we don't mark them with FLAG_POD.
+  if (!isAggregateType(t))
+    return false;
+
+  // Move past any types that we've already handled
   if (t->symbol->hasFlag(FLAG_POD))
     return false;
   if (t->symbol->hasFlag(FLAG_NOT_POD))
     return true;
-
-  // Move past classes and non-aggregate types.
-  if( (!isAggregateType(t)) || isClass(t) )
-    return false;
 
   AggregateType *at = (AggregateType*) t;
   bool notPOD = false;
 
-  for_fields(field, at) {
-    Type* ft = field->typeInfo();
-    notPOD |= propagateNotPOD(ft);
+  // Some special rules for special things.
+  if (t->symbol->hasEitherFlag(FLAG_SYNC,FLAG_SINGLE))
+    // sync/single types are never POD
+    notPOD = true;
+  else if (t->symbol->hasFlag(FLAG_ATOMIC_TYPE))
+    // atomic types are never POD
+    notPOD = true;
+
+  // Most class types are POD (user classes, _ddata, c_ptr)
+  // Also, there is no need to check the fields of a class type
+  // since a variable of that type is a pointer to the instance.
+  if ( isClass(t) ) {
+    // don't enumerate sub-fields or check for autoCopy etc
+  } else {
+
+    // If any field in a record/tuple is not POD, the
+    // aggregate is not POD.
+    for_fields(field, at) {
+      Type* ft = field->typeInfo();
+      notPOD |= propagateNotPOD(ft);
+    }
+
+    // Make sure we have resolved auto copy/auto destroy.
+    resolveAutoCopy(t);
+    resolveAutoDestroy(t);
+
+    // Also check for a non-compiler generated autocopy/autodestroy.
+    FnSymbol* autoCopyFn = autoCopyMap.get(t);
+    FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
+    FnSymbol* destructor = t->destructor;
+
+    // Ignore invisible (compiler-defined) functions.
+    if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED))
+      autoCopyFn = NULL;
+    if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
+      autoDestroyFn = NULL;
+    if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED))
+      destructor = NULL;
+
+    // if it has flag ignore no-init, it's not pod
+    // if it has a user-specified auto copy / auto destroy, it's not pod
+    // if it has a user-specified destructor, it's not pod
+    if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
+        autoCopyFn || autoDestroyFn ||
+        destructor )
+      notPOD = true;
+
+    // Since hasUserAssign tries to resolve =, we only
+    // check it if we think we have a POD type.
+    if( !notPOD && hasUserAssign(t) )
+      notPOD = true;
   }
 
-  // Make sure we have resolved auto copy/auto destroy.
-  resolveAutoCopy(t);
-  resolveAutoDestroy(t);
-
-  // Also check for a non-compiler generated autocopy/autodestroy.
-  FnSymbol* autoCopyFn = autoCopyMap.get(t);
-  FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
-  FnSymbol* destructor = t->destructor;
-
-  // Ignore invisible (compiler-defined) functions.
-  if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED))
-    autoCopyFn = NULL;
-  if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
-    autoDestroyFn = NULL;
-  if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED))
-    destructor = NULL;
-
-  // if it has flag ignore no-init, it's not pod
-  // if it has a user-specified auto copy / auto destroy, it's not pod 
-  // if it has a user-specified destructor, it's not pod
-  if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
-      autoCopyFn || autoDestroyFn ||
-      destructor )
-    notPOD = true;
-
-  if( !notPOD && hasUserAssign(t) )
-    notPOD = true;
-
   if (notPOD) {
-    at->symbol->addFlag(FLAG_NOT_POD);
+    t->symbol->addFlag(FLAG_NOT_POD);
   } else {
-    at->symbol->addFlag(FLAG_POD);
+    t->symbol->addFlag(FLAG_POD);
   }
 
   return notPOD;
-}
-
-/* After resolution, other passes can call isPOD
-   in order to find out if a record type is POD.
-
-   During resolution, one should call propagateNotPOD
-   instead, so that the relevant calls can be resolved
-   and POD fields can be properly handled.
- */
-bool isPOD(Type* t)
-{
-  // things that aren't aggregate types and class types are POD
-  if( (!isAggregateType(t)) || isClass(t) )
-    return true;
-  // handle anything already marked
-  if (t->symbol->hasFlag(FLAG_POD))
-    return true;
-  if (t->symbol->hasFlag(FLAG_NOT_POD))
-    return false;
-  // otherwise, assume not.
-  return false;
 }
 
 static void resolveRecordInitializers() {

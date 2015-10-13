@@ -293,8 +293,8 @@ isPrimitiveCopy(Vec<Type*>& primitiveCopyTypeSet, Type* type) {
     AggregateType* ct = toAggregateType(type);
     INT_ASSERT(ct);
 
-    // If we marked this class as not POD, we can't do a primitive copy.
-    if (ct->symbol->hasFlag(FLAG_NOT_POD))
+    // If we marked this type as not POD, we can't do a primitive copy.
+    if (! isPOD(ct))
       return false;
 
     for_fields(field, ct) {
