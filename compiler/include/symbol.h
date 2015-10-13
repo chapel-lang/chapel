@@ -115,6 +115,9 @@ public:
 
   virtual void       codegenDef();
 
+  // Returns the scope block in which this symbol is declared.
+  BlockStmt*         getDeclarationScope()                     const;
+
   bool               hasFlag(Flag flag)                        const;
   bool               hasEitherFlag(Flag aflag, Flag bflag)     const;
 
