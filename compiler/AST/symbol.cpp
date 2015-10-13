@@ -168,17 +168,10 @@ bool Symbol::isRenameable() const {
   return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
 }
 
-
 // Returns the scope in which the given symbol is declared; NULL otherwise.
-BlockStmt*
-Symbol::getDeclarationScope() const
-{
-  if (defPoint == NULL)
-    return NULL;
-
-  return defPoint->getScopeBlock();
+BlockStmt* Symbol::getDeclarationScope() const {
+  return (defPoint != NULL) ? defPoint->getScopeBlock() : NULL;
 }
-
 
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
