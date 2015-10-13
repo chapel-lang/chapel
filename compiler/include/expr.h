@@ -72,6 +72,8 @@ public:
   bool            isStmtExpr()                                       const;
   Expr*           getStmtExpr();
 
+  BlockStmt*      getScopeBlock();
+
   Symbol*         parentSymbol;
   Expr*           parentExpr;
 

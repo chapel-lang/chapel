@@ -228,6 +228,27 @@ Expr* Expr::getNextExpr(Expr* expr) {
   return this;
 }
 
+// Returns the nearest enclosing *scoped* block statement (excluding 'this')
+// that contains 'this'
+
+// It is probably an error if there is no such BlockStmt.
+// Currently return NULL.  Consider throwing aninternal error in the future.
+BlockStmt* Expr::getScopeBlock() {
+  Expr*      expr   = this->parentExpr;
+  BlockStmt* retval = NULL;
+
+  while (expr != NULL && retval == NULL) {
+    BlockStmt* block = toBlockStmt(expr);
+
+    if (block != NULL && (block->blockTag & BLOCK_SCOPELESS) == 0)
+      retval = block;
+    else
+      expr   = expr->parentExpr;
+  }
+
+  return retval;
+}
+
 void Expr::verify() {
   if (prev || next)
     if (!list)
