@@ -1,4 +1,4 @@
-Module: classFields.doc
+classFields.doc
    Class: Parent
       var alone
          This field should be first 

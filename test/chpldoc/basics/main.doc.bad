@@ -1,4 +1,4 @@
-Module: main
+main
    This is the only valid doc string in this modules. 
    Record: beginR
       This should not be documented 

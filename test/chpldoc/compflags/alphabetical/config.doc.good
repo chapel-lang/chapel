@@ -1,4 +1,4 @@
-Module: config.doc
+config.doc
    config const constant
       This is a config const 
    config const constantTyped: bool

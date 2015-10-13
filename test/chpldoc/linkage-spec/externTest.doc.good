@@ -1,5 +1,5 @@
-Module: externTest.doc
-   Module: externTest.doc.Other
+externTest.doc
+   externTest.doc.Other
       proc inside
          Comment for method inside module 
 

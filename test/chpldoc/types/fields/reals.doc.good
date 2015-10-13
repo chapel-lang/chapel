@@ -1,4 +1,4 @@
-Module: reals.doc
+reals.doc
    Record: Foo
       var aReal: real = 2.0
       const bar = 1.0
