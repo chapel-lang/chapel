@@ -476,6 +476,21 @@ class LocCyclic {
   }
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: Cyclic) {
+  if ! noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: Cyclic) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 
 class CyclicDom : BaseRectangularDom {
   param rank: int;
@@ -492,6 +507,21 @@ class CyclicDom : BaseRectangularDom {
 }
 
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CyclicDom) {
+  if ! noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CyclicDom) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 proc CyclicDom.setup() {
   if locDoms(dist.targetLocDom.low) == nil {
     coforall localeIdx in dist.targetLocDom {
@@ -505,6 +535,19 @@ proc CyclicDom.setup() {
         locDoms(localeIdx).myBlock = chunk;
       }
     }
+  }
+}
+
+proc CyclicDom.~CyclicDom() {
+  coforall localeIdx in dist.targetLocDom {
+    if locDoms(localeIdx) != nil then
+      on locDoms(localeIdx) do
+        delete locDoms(localeIdx);
+  }
+  if ! noRefCount {
+    var cnt = dist.decRefCount();
+    if cnt==0 then
+      delete dist;
   }
 }
 
@@ -713,6 +756,21 @@ class CyclicArr: BaseArr {
   const SENTINEL = max(rank*idxType);
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CyclicArr) {
+  if !noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CyclicArr) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 proc CyclicArr.dsiSlice(d: CyclicDom) {
   var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType,
                             stridable=d.stridable, dom=d);
@@ -868,6 +926,25 @@ proc CyclicArr.setup() {
     }
   }
   if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
+}
+
+proc CyclicArr.~CyclicArr() {
+  // Delete the locArr elements
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
+
+  // Release my reference to the distributed domain.
+  on dom {
+    local dom.remove_arr(this);
+    if ! noRefCount {
+      var cnt = dom.destroyDom();
+      if cnt == 0 then
+        delete dom;
+    }
+  }
 }
 
 proc CyclicArr.dsiSupportsPrivatization() param return true;
@@ -1232,7 +1309,8 @@ proc CyclicArr.doiBulkTransferToDR(Barg)
           writeln(" A[",(...r1),"] = B[",(...r2), "]");
       
         slice.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
-        delete slice;
+// TODO: Re-enable this after dom counts in dsiSlice are corrected.
+//        delete slice;
       }
     }
 }
@@ -1277,7 +1355,8 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
         slice.adjustBlkOffStrForNewDomain(d._value, slice);
       
         A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice);
-        delete slice;
+// TODO: Re-enable this after dom counts in dsiSlice are corrected.
+//        delete slice;
       }
     }
 }

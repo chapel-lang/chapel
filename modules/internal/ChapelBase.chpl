@@ -148,7 +148,15 @@ module ChapelBase {
   config param CHPL_CACHE_REMOTE: bool = false;
 
   config param noRefCount = false;
-  
+  /* Control refCount debugging:
+   * 0 = off
+   * 1 = errors only
+   * 2 = verbose
+   */
+  config param debugArrRefCount = 0;
+  config param debugDomRefCount = 0;
+  config param debugDistRefCount = 0;
+
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                     // the iterator to yield zero times.
 
@@ -214,21 +222,13 @@ module ChapelBase {
   //
   // assignment on primitive types
   //
-  pragma "trivial assignment"
   inline proc =(ref a: bool, b: bool) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: bool(?w), b: bool) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
@@ -1084,6 +1084,7 @@ module ChapelBase {
     compilerError("illegal assignment of type to value");
   }
   
+  pragma "compiler generated"
   pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
@@ -1098,7 +1099,9 @@ module ChapelBase {
   pragma "removable auto copy"
   pragma "donor fn"
   pragma "auto copy fn" proc chpl__autoCopy(x: _distribution) {
-    if !noRefCount then x._value.incRefCount();
+    if !noRefCount then
+      if x._value != nil then
+        x._value.incRefCount();
     return x;
   }
   
@@ -1106,7 +1109,9 @@ module ChapelBase {
   pragma "removable auto copy"
   pragma "donor fn"
   pragma "auto copy fn"  proc chpl__autoCopy(x: domain) {
-    if !noRefCount then x._value.incRefCount();
+    if !noRefCount then
+      if x._value != nil then
+        x._value.incRefCount();
     return x;
   }
   
@@ -1114,11 +1119,14 @@ module ChapelBase {
   pragma "removable auto copy"
   pragma "donor fn"
   pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    if !noRefCount then x._value.incRefCount();
+    if !noRefCount then
+      if x._value != nil then
+        x._value.incRefCount();
     return x;
   }
   
 
+  pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
@@ -1132,6 +1140,7 @@ module ChapelBase {
     return ir;
   }
   
+  pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
@@ -1141,8 +1150,15 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
+  // The "compiler generated" pragma gives this lower precedence than any
+  // user-defined class destructor.
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(x: object) { }
+
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(type t)  { }
+
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }

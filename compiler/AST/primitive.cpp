@@ -390,7 +390,7 @@ initPrimitive() {
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
   prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
-  prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoString);
+  prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirst);
@@ -529,7 +529,7 @@ initPrimitive() {
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
-  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoStringC);
+  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoString);
 
   // These are the block info primitives.
   prim_def(PRIM_BLOCK_PARAM_LOOP, "param loop", returnInfoVoid);
@@ -584,8 +584,6 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoStringCopy, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
-  prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, false, true);
-  prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
   prim_def("string_select", returnInfoStringCopy, true, true);
   prim_def("sleep", returnInfoVoid, true);
@@ -615,13 +613,15 @@ initPrimitive() {
   prim_def(PRIM_VIRTUAL_METHOD_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
-  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
+  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoStringC);
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
   prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
+  
+  prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
 
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);

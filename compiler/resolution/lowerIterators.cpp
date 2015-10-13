@@ -33,6 +33,12 @@
 #include "symbol.h"
 
 
+//#
+//# Global Variables
+//#
+bool iteratorsLowered = false;
+
+
 //
 // getTheIteratorFn(): get the original (user-written) iterator function
 // that corresponds to an _iteratorClass type or symbol
@@ -61,7 +67,7 @@ FnSymbol* getTheIteratorFn(Type* icType)
   FnSymbol* getIterFn = icType->defaultInitializer;
 
   // The type of _getIterator's first formal arg is _iteratorRecord.
-  Type* irType = getIterFn->getFormal(1)->type;
+  Type* irType = getIterFn->getFormal(1)->type->getValType();
   INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
              (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
 
@@ -796,26 +802,90 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
   //
   Symbol* ret = iteratorFn->getReturnSymbol();
   Map<BlockStmt*,Symbol*> retReplacementMap;
+  Vec<Symbol*> ret_and_addr_ofs;
+
+  ret_and_addr_ofs.set_add(ret);
+
+  // Find any addr_ofs ret
+  for_vector(BaseAST, ast_, asts) {
+    if (SymExpr* se = toSymExpr(ast_)) {
+      if (se->var == ret) {
+        // Make a note of an addr_of call in case it is used in a subsequent
+        // assignment.
+        // This matches an expression like this:
+        //       ('move' _ref_tmp_ ('addr of' newRet))
+        // and extracts _ref_tmp_ and adds it to ret_and_addr_ofs.
+        CallExpr* call = toCallExpr(se->parentExpr);
+        if (call && call->isPrimitive(PRIM_ADDR_OF)) {
+          CallExpr* parentCall = toCallExpr(call->parentExpr);
+          if (parentCall && parentCall->isPrimitive(PRIM_MOVE) ) {
+            Expr* to_add = parentCall->get(1);
+            SymExpr* to_add_se = toSymExpr(to_add);
+            if (to_add_se) {
+              ret_and_addr_ofs.set_add(to_add_se->var);
+            }
+          }
+        }
+      }
+    }
+  }
+  // TODO - check for multiple definitions for one of the addr_of symbols. 
+
+  // Walk all SymExprs in the function and select those that refer to ret (the
+  // function return symbol).
   for_vector(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast)) {
-      if (se->var == ret) {
+      if (ret_and_addr_ofs.set_in(se->var)) {
+
+        // Find the nearest enclosing block.
         BlockStmt* block = NULL;
-        for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
+        for (Expr* parent = se->parentExpr;
+             parent;
+             parent = parent->parentExpr) {
           block = toBlockStmt(parent);
           if (block)
             break;
         }
         INT_ASSERT(block);
+
+        // If the enclosing block is different from (and presumably smaller
+        // than) the scope in which the RVV is declared, replace it with a
+        // localized variable.
         if (block != ret->defPoint->parentExpr) {
-          if (Symbol* repl = retReplacementMap.get(block)) {
-            se->var = repl;
-          } else {
-            SET_LINENO(se);
-            Symbol* newRet = newTemp("newRet", ret->type);
-            newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
-            block->insertAtHead(new DefExpr(newRet));
-            se->var = newRet;
-            retReplacementMap.put(block, newRet);
+          // Replace se->var with newRet, but not if se->var is a
+          // result of addr_of.
+          if( se->var == ret ) {
+            // Use a cached symbol if there is one.
+            if (Symbol* repl = retReplacementMap.get(block)) {
+              se->var = repl;
+            }
+            // Otherwise, create a new return symbol and insert it at the head
+            // of the enclosing block.  See Note #1 regarding memory management.
+            else {
+              SET_LINENO(se);
+              Symbol* newRet = newTemp("newRet", ret->type);
+              newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
+              block->insertAtHead(new DefExpr(newRet));
+              se->var = newRet;
+              retReplacementMap.put(block, newRet);
+            }
+          }
+
+          // If the se is the target of an assignment, then remove the
+          // assignment call and replace it with a MOVE.
+          // This handles LHS already being a reference with the
+          // ret_and_addr_ofs set computed above and by always
+          // using 'repl' as the destination for PRIM_MOVE.
+
+          CallExpr* call = toCallExpr(se->parentExpr);
+          if (call && call->isResolved() &&
+              !strcmp(call->isResolved()->name, "="))
+          {
+            SET_LINENO(call);
+            Expr* rhs = call->get(2);
+            Symbol* repl = retReplacementMap.get(block);
+            INT_ASSERT(repl);
+            call->replace(new CallExpr(PRIM_MOVE, repl, rhs->copy()));
           }
         }
       }
@@ -1792,7 +1862,7 @@ expandForLoop(ForLoop* forLoop) {
 
           forLoop->insertAtHead(new CondStmt(new SymExpr(isFinished),
                                              new CallExpr(PRIM_RT_ERROR,
-                                                          new_StringSymbol("zippered iterations have non-equal lengths"))));
+                                                          new_CStringSymbol("zippered iterations have non-equal lengths"))));
 
           forLoop->insertAtHead(new CallExpr(PRIM_MOVE, isFinished, new CallExpr(PRIM_UNARY_LNOT, hasMore)));
 
@@ -1800,7 +1870,7 @@ expandForLoop(ForLoop* forLoop) {
 
           forLoop->insertAfter(new CondStmt(new SymExpr(hasMore),
                                             new CallExpr(PRIM_RT_ERROR,
-                                                         new_StringSymbol("zippered iterations have non-equal lengths"))));
+                                                         new_CStringSymbol("zippered iterations have non-equal lengths"))));
 
           forLoop->insertAfter(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
         }
@@ -2125,19 +2195,19 @@ static void handlePolymorphicIterators()
         getIterator->insertBeforeReturn(new DefExpr(label));
         Symbol* ret = getIterator->getReturnSymbol();
         forv_Vec(Type, type, irecord->dispatchChildren) {
-          VarSymbol* tmp = newTemp(irecord->getField(1)->type);
+          VarSymbol* tmp = newTemp(irecord->getField(1)->type->getValType());
           VarSymbol* cid = newTemp(dtBool);
           BlockStmt* thenStmt = new BlockStmt();
           VarSymbol* recordTmp = newTemp("recordTmp", type);
-          VarSymbol* classTmp = newTemp("classTmp", type->defaultInitializer->iteratorInfo->getIterator->retType);
+          VarSymbol* classTmp = newTemp("classTmp", type->getValType()->defaultInitializer->iteratorInfo->getIterator->retType);
           thenStmt->insertAtTail(new DefExpr(recordTmp));
           thenStmt->insertAtTail(new DefExpr(classTmp));
 
           AggregateType* ct = toAggregateType(type);
           for_fields(field, ct) {
-            VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getField(field->name)->type);
+            VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getValType()->getField(field->name)->type);
             thenStmt->insertAtTail(new DefExpr(ftmp));
-            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getField(field->name))));
+            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getValType()->getField(field->name))));
             // Store temp in record field.
             if (ftmp->type == field->type) {
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp));
@@ -2148,11 +2218,11 @@ static void handlePolymorphicIterators()
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp2));
             }
           }
-          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->defaultInitializer->iteratorInfo->getIterator, recordTmp)));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->getValType()->defaultInitializer->iteratorInfo->getIterator, recordTmp)));
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
           thenStmt->insertAtTail(new GotoStmt(GOTO_GETITER_END, label));
           ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->defaultInitializer->iteratorInfo->irecord->getField(1)->type->symbol)));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->getValType()->defaultInitializer->iteratorInfo->irecord->getField(1)->type->symbol)));
           ret->defPoint->insertAfter(new DefExpr(cid));
           ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
           ret->defPoint->insertAfter(new DefExpr(tmp));
@@ -2169,10 +2239,16 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   Symbol* ret = fn->getReturnSymbol();
   BlockStmt* block = new BlockStmt();
   block->insertAtTail(ret->defPoint->remove());
-  AggregateType* irt = toAggregateType(arg->type);
+  AggregateType* irt = toAggregateType(arg->type->getValType());
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
+//    AggregateType* fat = toAggregateType(field->type);
+    FnSymbol* autoCopy = autoCopyMap.get(field->type);
+    if (autoCopy &&
+        // For now, apply the autocopy only to non-class types.'
+        // See the note in reconstructIRAutoDestroy() below.
+//        fat && fat->isRecord()) {
+        true) {
       Symbol* tmp1 = newTemp(field->name, field->type);
       Symbol* tmp2 = newTemp(autoCopy->retType);
       block->insertAtTail(new DefExpr(tmp1));
@@ -2196,10 +2272,18 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
 {
   Symbol* arg = fn->getFormal(1);
   BlockStmt* block = new BlockStmt();
-  AggregateType* irt = toAggregateType(arg->type);
+  AggregateType* irt = toAggregateType(arg->type->getValType());
   for_fields(field, irt) {
     SET_LINENO(field);
     if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
+#if 0
+      // For now, ignore class types.  At present, only nude domain and array
+      // implementation types have autoCopy and autoDestroy functions defined
+      // for them, so this test captures only those cases.
+      AggregateType* fat = toAggregateType(field->type);
+      if (!fat || !fat->isRecord())
+        continue;
+#endif
       Symbol* tmp = newTemp(field->name, field->type);
       block->insertAtTail(new DefExpr(tmp));
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
@@ -2217,7 +2301,7 @@ static void reconstructIRautoCopyAutoDestroy()
   // reconstruct autoCopy and autoDestroy for iterator records
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    if (fn->numFormals() == 1 && fn->getFormal(1)->type->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       SET_LINENO(fn);
       if (fn->hasFlag(FLAG_AUTO_COPY_FN))
         reconstructIRAutoCopy(fn);
@@ -2366,6 +2450,32 @@ void lowerIterators() {
 
   reconstructIRautoCopyAutoDestroy();
 
+  iteratorsLowered = true;
+
+  insertDerefTemps();
+  insertReferenceTemps();
+
   cleanupTemporaryVectors();
 }
 
+//////////////////////////////////////////////////////////////////////////
+// NOTES
+//
+// Note #1: In iterators where the return value type is declared, there will be
+// an initializer (constructor) call.  Corresponding updates of the RVV use
+// assignment (rather than a simple MOVE primitive).  Therefore, yields and
+// returns rely on the variable having been initialized.
+// localizeIteratorReturnSymbols() breaks this assumption because the
+// initialization is not copied when the local return symbol is created.   As
+// a result, we have to then look for places where the RVV is updated by
+// assignment and the original RVV is replaced by a new one.  We then bridge
+// out the assignment and insert a MOVE instead.
+// Note that the assignment is still required in the implementation of return
+// value inference.  It is inserted in normalize.cpp, but is no longer needed
+// after the resolution pass.
+// Localization of iterator yields was added 2013/08/11 by vass <8d3b2c4>.
+// Justification was that using a common return symbol added overhead
+// (including communication in some cases) and reduced optimization opportunities.
+// Note for future direction that eliminating the RVV and having yields and
+// returns call constructors to create the return value accomplishes the same
+// goal.

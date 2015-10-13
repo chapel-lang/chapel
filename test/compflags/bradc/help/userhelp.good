@@ -24,17 +24,15 @@ Optimization Control Options:
       --[no-]fast-followers           Enable [disable] fast followers
       --[no-]ieee-float               Generate code that is strict [lax] with
                                       respect to IEEE compliance
-      --[no-]loop-invariant-code-motion
-                                      Enable [disable] loop invariant code
-                                      motion
       --[no-]ignore-local-classes     Disable [enable] local classes
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
       --[no-]live-analysis            Enable [disable] live variable analysis
+      --[no-]loop-invariant-code-motion
+                                      Enable [disable] loop invariant code
+                                      motion
       --[no-]optimize-loop-iterators  Enable [disable] optimization of
                                       iterators composed of a single loop
-      --[no-]vectorize                Enable [disable] generation of
-                                      vectorization hints
       --[no-]optimize-on-clauses      Enable [disable] optimization of on
                                       clauses
       --optimize-on-clause-limit <limit>
@@ -42,8 +40,9 @@ Optimization Control Options:
                                       optimization search
       --[no-]privatization            Enable [disable] privatization of
                                       distributed arrays and domains
-      --[no-]remove-copy-calls        Enable [disable] remove copy calls
       --[no-]remote-value-forwarding  Enable [disable] remote value forwarding
+      --[no-]remove-copy-calls        Enable [disable] remove copy calls
+      --[no-]remove-wrap-records      Enable [disable] wrap record removal
       --[no-]scalar-replacement       Enable [disable] scalar replacement
       --scalar-replace-limit <limit>  Limit on the size of tuples being
                                       replaced during scalar replacement
@@ -54,6 +53,8 @@ Optimization Control Options:
       --[no-]use-noinit               Enable [disable] ability to skip default
                                       initialization through the keyword
                                       noinit
+      --[no-]vectorize                Enable [disable] generation of
+                                      vectorization hints
 
 Run-time Semantic Check Options:
       --no-checks                     Disable all following run-time checks

@@ -46,12 +46,15 @@ public:
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
 
   virtual Expr*   getFirstExpr()                                       = 0;
+  virtual Expr*   getFirstChild()                                      = 0;
   virtual Expr*   getNextExpr(Expr* expr);
 
   virtual bool    isNoInitExpr()                                     const;
 
   virtual void    prettyPrint(std::ostream* o);
 
+  /* Returns true if the given expressions is contained by this one. */
+  bool            contains(Expr const * const expr) const;
   bool            isModuleDefinition();
 
   void            insertBefore(Expr* new_ast);
@@ -66,6 +69,7 @@ public:
 
   bool            isStmtExpr()                                       const;
   Expr*           getStmtExpr();
+  BlockStmt*      getScopeBlock();
 
   Symbol*         parentSymbol;
   Expr*           parentExpr;
@@ -98,6 +102,7 @@ public:
   virtual GenRet  codegen();
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
 
   const char*     name()                               const;
 
@@ -125,6 +130,7 @@ class SymExpr : public Expr {
   virtual void    prettyPrint(std::ostream* o);
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
 };
 
 
@@ -144,6 +150,7 @@ class UnresolvedSymExpr : public Expr {
   virtual void    prettyPrint(std::ostream *o);
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
 };
 
 
@@ -183,6 +190,7 @@ class CallExpr : public Expr {
   virtual Type*   typeInfo();
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
   virtual Expr*   getNextExpr(Expr* expr);
 
   void            insertAtHead(BaseAST* ast);
@@ -195,8 +203,9 @@ class CallExpr : public Expr {
   Expr*           get(int index);
   FnSymbol*       findFnSymbol();
 
-  bool            isPrimitive(PrimitiveTag primitiveTag);
-  bool            isPrimitive(const char*  primitiveName);
+  bool            isPrimitive()                                          const;
+  bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
+  bool            isPrimitive(const char*  primitiveName)                const;
 };
 
 class NamedExpr : public Expr {
@@ -217,7 +226,20 @@ class NamedExpr : public Expr {
   virtual void    prettyPrint(std::ostream* o);
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getFirstChild();
 };
+
+
+// Returns true if 'this' properly contains the given expr, false otherwise.
+inline bool
+Expr::contains(Expr const * const expr) const
+{
+  Expr const * parent = expr;
+  while ((parent = parent->parentExpr))
+    if (parent == this)
+      return true;
+  return false;
+}
 
 
 // Determines whether a node is in the AST (vs. has been removed

@@ -29,7 +29,7 @@ CONFIG VARS:
                    memLeaks: bool
                      memMax: uint(64)
                memThreshold: uint(64)
-                     memLog: c_string
-                memLeaksLog: c_string
-             memLeaksByDesc: c_string
+                     memLog: c_ptr(uint(8))
+                memLeaksLog: c_ptr(uint(8))
+             memLeaksByDesc: c_ptr(uint(8))
                  numLocales: int(64)

@@ -36,6 +36,7 @@ extern int  fConditionalDynamicDispatchLimit;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
 extern bool fNoDeadCodeElimination;
+extern bool fNoRemoveWrapRecords;
 extern bool fNoGlobalConstOpt;
 extern bool fNoFastFollowers;
 extern bool fNoInlineIterators;

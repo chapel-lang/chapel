@@ -281,9 +281,15 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
                                                    c_string filename) {   \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _type(base, width) val = c_string_to_##base##width##_t_precise(str,    \
-                                                                      &invalid, \
-                                                                      invalidStr); \
+    _type(base, width) val = 0;                                         \
+    if (!str) {                                                         \
+      invalid = 1;                                                      \
+    } else {                                                            \
+      val = c_string_to_##base##width##_t_precise(str,                  \
+                                                  &invalid,             \
+                                                  invalidStr);          \
+    }                                                                   \
+                                                                        \
     if (invalid) {                                                      \
       const char* message;                                              \
       if (invalid == 2) {                                               \

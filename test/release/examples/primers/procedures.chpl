@@ -122,6 +122,7 @@ writeln("Using named arguments");
 // Creates a circle at (2.0, 0.0) with a radius of 1.5.
 var c = create_circle(diameter=3.0,2.0);
 writeln(c);
+delete c;
 writeln();
 
 //

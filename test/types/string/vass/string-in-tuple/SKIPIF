@@ -1,0 +1,2 @@
+# These tests are meaningful only with multi-locale.
+CHPL_COMM==none

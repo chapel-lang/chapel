@@ -409,6 +409,22 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   return locInd;
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockCyclic) {
+  if ! noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockCyclic) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Distribution Class
 //
@@ -480,6 +496,21 @@ class BlockCyclicDom: BaseRectangularDom {
   //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockCyclicDom) {
+  if ! noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockCyclicDom) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
 }
 
 proc BlockCyclicDom.dsiDims() return whole.dims();
@@ -624,6 +655,21 @@ proc BlockCyclicDom.setup() {
       }
   if debugBlockCyclicDist then
     enumerateBlocks();
+}
+
+proc BlockCyclicDom.~BlockCyclicDom() {
+  // Free the locDoms array.
+  coforall localeIdx in dist.targetLocDom do
+    if locDoms(localeIdx) != nil then
+      on locDoms(localeIdx) do
+        delete locDoms(localeIdx);
+
+  if ! noRefCount {
+    // Release our reference to the distribution.
+    var cnt = dist.decRefCount();
+    if cnt == 0 then
+      delete dist;
+  }
 }
 
 proc BlockCyclicDom.enumerateBlocks() {
@@ -784,6 +830,21 @@ class BlockCyclicArr: BaseArr {
   var pid: int = -1; // privatized object id
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockCyclicArr) {
+  if !noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockCyclicArr) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
 proc BlockCyclicArr.setup() {
@@ -792,6 +853,25 @@ proc BlockCyclicArr.setup() {
       locArr(localeIdx) = new LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
       if this.locale == here then
         myLocArr = locArr(localeIdx);
+    }
+  }
+}
+
+proc BlockCyclicArr.~BlockCyclicArr() {
+  // Delete the locArr elements.
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
+
+  // Release my reference to the distributed domain.
+  on dom {
+    local dom.remove_arr(this);
+    if ! noRefCount {
+      var cnt = dom.destroyDom();
+      if cnt == 0 then
+        delete dom;
     }
   }
 }

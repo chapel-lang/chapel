@@ -305,8 +305,9 @@ void normalize(BaseAST* base) {
 
   for_vector(Symbol, symbol2, symbols) {
     if (VarSymbol* var = toVarSymbol(symbol2))
-      if (isFnSymbol(var->defPoint->parentSymbol))
-        fix_def_expr(var);
+      if (FnSymbol* fn = toFnSymbol(var->defPoint->parentSymbol))
+        if (fn != stringLiteralModule->initFn)
+          fix_def_expr(var);
   }
 
   calls.clear();
@@ -541,12 +542,19 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
   {
+    // This is the case for a declared return type.
     ret->insertBefore(new CallExpr("=", retval, ret_expr));
     // Using assignment creates a new copy, which transfers ownership of *a*
     // copy to the return value variable.
     // Contrast this with a move, which merely shares ownership between the
     // bitwise copies of the object.
+
+    // We want to move toward an implementation that uses initialization for
+    // both yields and returns.  In that case, we have to extract the type of
+    // the return value variable without executing anything.
+#ifndef HILDE_MM
     retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   }
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
@@ -861,12 +869,15 @@ static void insert_call_temps(CallExpr* call)
   if (!call->parentExpr || !call->getStmtExpr())
     return;
 
+  // We are interested only in statements that are call expressions.
+  // I think Def Expressions are the only other possibility.
   Expr* stmt = call->getStmtExpr();
 
   // Call is already at statement level, so no need to flatten.
   if (call == stmt)
     return;
-  
+
+  // Skip DefExprs.
   if (toDefExpr(call->parentExpr))
     return;
 
@@ -887,13 +898,17 @@ static void insert_call_temps(CallExpr* call)
   VarSymbol* tmp = newTemp("call_tmp");
   if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
     tmp->addFlag(FLAG_EXPR_TEMP);
+#ifndef HILDE_MM
+  // Can't we figure this out later?
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+#endif
   if (call->isPrimitive(PRIM_TYPEOF))
     tmp->addFlag(FLAG_TYPE_VARIABLE);
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
   call->replace(new SymExpr(tmp));
+
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
 }
@@ -915,6 +930,7 @@ fix_def_expr(VarSymbol* var) {
   if (!type && !init)
     return; // already fixed
 
+#ifndef HILDE_MM
   //
   // add "insert auto destroy" pragma to user variables that should be
   // auto destroyed
@@ -931,6 +947,7 @@ fix_def_expr(VarSymbol* var) {
       fn->_this != var && // Note 2.
       !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
 
   //
   // handle "no copy" variables
@@ -999,13 +1016,13 @@ static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt)
     CallExpr* partial;
     if (!type) {
       partial = new CallExpr("newAlias", gMethodToken, init->remove());
-      // newAlias is not a method, so we don't set the methodTag
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
     } else {
       partial = new CallExpr("reindex", gMethodToken, init->remove());
       partial->partialTag = true;
       partial->methodTag = true;
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var,
+                                     new CallExpr(partial, type->remove())));
     }
 }
 
@@ -1050,20 +1067,20 @@ static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp)
 {
       Expr* noop = new CallExpr(PRIM_NOOP);
       Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
-                             new_StringSymbol(var->getModule()->name) :
-                             new_StringSymbol("Built-in"));
+                             new_CStringSymbol(var->getModule()->name) :
+                             new_CStringSymbol("Built-in"));
       CallExpr* strToValExpr =
         new CallExpr("_command_line_cast",
-                     new SymExpr(new_StringSymbol(var->name)),
+                     new SymExpr(new_CStringSymbol(var->name)),
                      new CallExpr(PRIM_TYPEOF, constTemp),
                      new CallExpr("chpl_config_get_value",
-                                  new_StringSymbol(var->name),
+                                  new_CStringSymbol(var->name),
                                   module_name));
       stmt->insertAfter(
         new CondStmt(
           new CallExpr("!",
                        new CallExpr("chpl_config_has_value",
-                                    new_StringSymbol(var->name),
+                                    new_CStringSymbol(var->name),
                                     module_name)),
           noop,
           new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
@@ -1191,33 +1208,9 @@ static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* 
     if (initCall && initCall->isPrimitive(PRIM_NEW)) {
       stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, init->remove()));
     } else {
-      // Non-param variables initialized with a string literal but
-      // without a type are assumed to be of type string.  This case
-      // must be handled here, rather than in resolution because we
-      // cannot recognize this situtation easily (if at all) during
-      // resolution due to PRIM_INIT handling.
-      //
-      // Note that we have to do a similar thing during scope resolve
-      // when building default type constructors.
-      if ((toSymExpr(init) && (toSymExpr(init)->typeInfo() == dtStringC)) &&
-          !var->hasFlag(FLAG_PARAM)) {
-        // This logic is the same as the case above under 'if (type)',
-        // but simplified for this specific case.
-        SET_LINENO(stmt);
-        VarSymbol* typeTemp = newTemp("type_tmp");
-        stmt->insertBefore(new DefExpr(typeTemp));
-        CallExpr* newInit;
-        newInit = new CallExpr(PRIM_MOVE, typeTemp,
-                               new CallExpr(PRIM_INIT, new SymExpr(dtString->
-                                                                   symbol)));
-        stmt->insertBefore(newInit);
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-        stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
-      } else {
-        stmt->insertAfter(
-          new CallExpr(PRIM_MOVE, constTemp,
-            new CallExpr("chpl__initCopy", init->remove())));
-      }
+      stmt->insertAfter(
+        new CallExpr(PRIM_MOVE, constTemp,
+          new CallExpr("chpl__initCopy", init->remove())));
     }
 }
 
@@ -1232,13 +1225,6 @@ static void hack_resolve_types(ArgSymbol* arg) {
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->var != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
-          if ((arg->intent != INTENT_PARAM) &&
-              se && se->var->isImmediate() &&
-              toVarSymbol(se->var)->immediate->const_kind == CONST_KIND_STRING) {
-            // String literal default expressions for non-param
-            // generic formals are converted to strings.
-            arg->defaultExpr->body.insertAtTail(new CallExpr("toString", arg->defaultExpr->body.tail->remove()));
-          }
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
         }
@@ -1295,7 +1281,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         if (queryEltType) {
           for_vector(SymExpr, se, symExprs) {
             if (se->var == queryEltType->sym)
-              se->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
+              se->replace(new CallExpr(".", arg, new_CStringSymbol("eltType")));
           }
         } else if (!noEltType) {
           // The element type is supplied, but it is null.
@@ -1311,7 +1297,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           newWhere->insertAtTail(oldWhere);
           newWhere->insertAtTail(
             new CallExpr("==", call->get(2)->remove(),
-                         new CallExpr(".", arg, new_StringSymbol("eltType"))));
+                         new CallExpr(".", arg, new_CStringSymbol("eltType"))));
         }
 
         if (queryDomain) {
@@ -1319,7 +1305,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           // If we match the domain symbol, replace it with arg._dom.
           for_vector(SymExpr, se, symExprs) {
             if (se->var == queryDomain->sym)
-              se->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
+              se->replace(new CallExpr(".", arg, new_CStringSymbol("_dom")));
           }
         } else if (!noDomain) {
           // The domain argument is supplied but NULL.
@@ -1327,7 +1313,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           
           // actualArg.chpl_checkArrArgDoms(arg->typeExpr)
           fn->insertAtHead(new CallExpr(new CallExpr(".", arg,
-                                                     new_StringSymbol("chpl_checkArrArgDoms")
+                                                     new_CStringSymbol("chpl_checkArrArgDoms")
                                                      ),
                                         call->get(1)->copy(), 
                                         (fNoFormalDomainChecks ? gFalse : gTrue)));
@@ -1500,15 +1486,15 @@ fixup_query_formals(FnSymbol* fn) {
         std::vector<SymExpr*> symExprs;
         collectSymExprs(fn, symExprs);
         if (call->isNamed("_build_tuple")) {
-          add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_StringSymbol("size")));
+          add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_CStringSymbol("size")));
           call->baseExpr->replace(new SymExpr(dtTuple->symbol));
           isTupleType = true;
         }
         CallExpr* positionQueryTemplate = new CallExpr(PRIM_QUERY);
         for_actuals(actual, call) {
           if (NamedExpr* named = toNamedExpr(actual)) {
-            positionQueryTemplate->insertAtTail(new_StringSymbol(named->name));
-            CallExpr* nameQuery = new CallExpr(PRIM_QUERY, new_StringSymbol(named->name));
+            positionQueryTemplate->insertAtTail(new_CStringSymbol(named->name));
+            CallExpr* nameQuery = new CallExpr(PRIM_QUERY, new_CStringSymbol(named->name));
             if (DefExpr* def = toDefExpr(named->actual)) {
               replace_query_uses(formal, def, nameQuery, symExprs);
             } else {

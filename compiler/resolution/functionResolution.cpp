@@ -233,16 +233,21 @@ std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 //#
 //# Static Function Declarations
 //#
+#ifndef HILDE_MM
 static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
+#endif
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
+static bool hasUserAssign(Type* type);
 static void resolveAutoCopy(Type* type);
 static void resolveAutoDestroy(Type* type);
 static void resolveOther();
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
 static void protoIteratorClass(FnSymbol* fn);
+static FnSymbol* protoGetIterator(IteratorInfo* ii, FnSymbol* fn);
+static FnSymbol* protoFreeIterator(IteratorInfo* ii, FnSymbol* fn);
 static bool isInstantiatedField(Symbol* field);
 static Symbol* determineQueriedField(CallExpr* call);
 static void resolveSpecifiedReturnType(FnSymbol* fn);
@@ -336,7 +341,6 @@ static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static bool isSubType(Type* sub, Type* super);
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
-FnSymbol* requiresImplicitDestroy(CallExpr* call);
 static Expr* postFold(Expr* expr);
 static Expr* resolveExpr(Expr* expr);
 static void
@@ -371,11 +375,12 @@ static void resolveEnumTypes();
 static void resolveDynamicDispatches();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
+static bool propagateNotPOD(Type* t);
 static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
-static Type* buildRuntimeTypeInfo(FnSymbol* fn);
+static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
-static void initializeClass(Expr* stmt, Symbol* sym);
+ static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
 static void removeCompilerWarnings();
@@ -383,6 +388,9 @@ static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
+// static void resolveRuntimeTypeDestructor(Type* type);
+// static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct);
+static void buildRuntimeTypeInitCopyFn(AggregateType* ct);
 static void removeUnusedGlobals();
 static void removeParamArgs();
 static void removeRandomPrimitives();
@@ -413,6 +421,7 @@ void ResolutionCandidate::computeSubstitutions() {
   computeGenericSubs(substitutions, fn, alignedActuals);
 }
 
+#ifndef HILDE_MM
 static bool hasRefField(Type *type) {
   if (isPrimitiveType(type)) return false;
   if (type->symbol->hasFlag(FLAG_OBJECT_CLASS)) return false;
@@ -437,24 +446,29 @@ static bool typeHasRefField(Type *type) {
   }
   return false;
 }
+#endif
 
 //
 // build reference type
 //
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
+  // In case resolveCall drops other stuff into the tree ahead of the call, we
+  // wrap everything in a block for safe removal.
+  BlockStmt* block = new BlockStmt();
+  block->insertAtHead(call);
+
   if (type->defaultInitializer) {
     if (type->defaultInitializer->instantiationPoint)
-      type->defaultInitializer->instantiationPoint->insertAtHead(call);
+      type->defaultInitializer->instantiationPoint->insertAtHead(block);
     else
-      type->symbol->defPoint->insertBefore(call);
+      type->symbol->defPoint->insertBefore(block);
   } else {
-    chpl_gen_main->insertAtHead(call);
+    chpl_gen_main->insertAtHead(block);
   }
 
   resolveCall(call);
-  call->remove();
-
+  block->remove();
   return call->isResolved();
 }
 
@@ -487,6 +501,32 @@ static void makeRefType(Type* type) {
 
   if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     type->refType->symbol->addFlag(FLAG_ATOMIC_TYPE);
+}
+
+static bool
+hasUserAssign(Type* type) {
+
+  // Workaround for problems with resolution finding =
+  // for tuples types causing compile failures.
+  // See
+  //  modules/sungeun/no-use-enum
+
+  // In the future, hasUserAssign should just return
+  // false if the = call does not resolve
+  // (instead of causing a compile error).
+  if( type->symbol->hasFlag(FLAG_TUPLE) ) return false;
+
+  SET_LINENO(type->symbol);
+  Symbol* tmp = newTemp(type);
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+  CallExpr* call = new CallExpr("=", tmp, tmp);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  // Don't think we need to resolve the whole function
+  // since we're just looking for a flag.
+  //resolveFns(fn);
+  tmp->defPoint->remove();
+  bool compilerAssign = fn->hasFlag(FLAG_COMPILER_GENERATED);
+  return !compilerAssign;
 }
 
 
@@ -605,8 +645,18 @@ const char* toString(CallInfo* info) {
 
 const char* toString(FnSymbol* fn) {
   if (fn->userString) {
-    if (developer)
-      return astr(fn->userString, " [", istr(fn->id), "]");
+    if (developer) {
+      const char* devStr;
+      devStr = astr(fn->userString);
+      if (fn->where) {
+        std::ostringstream oss;
+        oss << devStr << " where ";
+        fn->where->body.head->prettyPrint(&oss);
+        devStr = astr(oss.str().c_str());
+      }
+      devStr = astr(devStr, " [", istr(fn->id), "]");
+      return devStr;
+    }
     else
       return fn->userString;
   }
@@ -758,25 +808,58 @@ protoIteratorClass(FnSymbol* fn) {
 
   makeRefType(fn->retType);
 
-  ii->getIterator = new FnSymbol("_getIterator");
-  ii->getIterator->addFlag(FLAG_AUTO_II);
-  ii->getIterator->addFlag(FLAG_INLINE);
-  ii->getIterator->retType = ii->iclass;
-  ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
-  VarSymbol* ret = newTemp("_ic_", ii->iclass);
-  ii->getIterator->insertAtTail(new DefExpr(ret));
-  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo()->symbol);
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-  fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
-  // The _getIterator function is stashed in the defaultInitializer field of
-  // the iterator class type.  This makes it easy to obtain the iterator given
-  // just a symbol of the iterator class type.  This may include _getIterator
-  // and _getIteratorZip functions in the module code.
+  ii->getIterator = protoGetIterator(ii, fn);
+  ii->freeIterator = protoFreeIterator(ii, fn);
+
+  // This is a bit of a kludge.  The defaultInitializer field of the iterator
+  // class type is reused to stash the getIterator function for later use.
   ii->iclass->defaultInitializer = ii->getIterator;
-  normalize(ii->getIterator);
-  resolveFns(ii->getIterator);  // No shortcuts.
+}
+
+static FnSymbol* protoGetIterator(IteratorInfo* ii, FnSymbol* fn)
+{
+  FnSymbol* newFn = new FnSymbol("_getIterator");
+  newFn->addFlag(FLAG_AUTO_II);
+  newFn->addFlag(FLAG_INLINE);
+  newFn->retType = ii->iclass;
+
+  newFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
+
+  VarSymbol* ret = newTemp("_ic_", ii->iclass);
+  newFn->insertAtTail(new DefExpr(ret));
+
+  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo()->symbol);
+  newFn->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
+  newFn->insertAtTail(new CallExpr(PRIM_SETCID, ret));
+  newFn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+
+  fn->defPoint->insertBefore(new DefExpr(newFn));
+  normalize(newFn);
+  resolveFns(newFn);
+
+  return newFn;
+}
+
+
+static FnSymbol* protoFreeIterator(IteratorInfo* ii, FnSymbol* fn)
+{
+  FnSymbol* newFn = new FnSymbol("_freeIterator");
+  newFn->addFlag(FLAG_AUTO_II);
+  newFn->addFlag(FLAG_INLINE);
+  newFn->addFlag(FLAG_DESTRUCTOR);
+  newFn->retType = dtVoid;
+
+  ArgSymbol* ic = new ArgSymbol(INTENT_BLANK, "ic", ii->iclass);
+  newFn->insertFormalAtTail(ic);
+
+  newFn->insertAtTail(callChplHereFree(ic));
+  newFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  fn->defPoint->insertBefore(new DefExpr(newFn));
+  normalize(newFn);
+  resolveFns(newFn);
+
+  return newFn;
 }
 
 
@@ -938,6 +1021,10 @@ resolveFormals(FnSymbol* fn) {
       //
       if (formal->type->symbol->hasFlag(FLAG_REF))
         // Already a ref type, so done.
+        continue;
+
+      // Don't pass dtString params in by reference
+      if(formal->type == dtString && formal->hasFlag(FLAG_INSTANTIATED_PARAM))
         continue;
 
       if (formal->intent == INTENT_INOUT ||
@@ -1198,6 +1285,9 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
   }
+  if (formalType == dtStringC && actualType == dtString)
+    if (actualSym && actualSym->isImmediate())
+      return true;
   return false;
 }
 
@@ -1238,13 +1328,13 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if (// isLcnSymbol(actualSym) && // What does this exclude?
-      actualType == dtStringC && formalType == dtString)
-    return true;
-  if (formalType == dtStringC && actualType == dtStringCopy)
+  if (formalType == dtString && actualType == dtStringC)
     return true;
   if (formalType == dtString && actualType == dtStringCopy)
     return true;
+  if (formalType == dtStringC && actualType == dtStringCopy)
+    return true;
+
   return false;
 }
 
@@ -1441,21 +1531,20 @@ computeGenericSubs(SymbolMap &subs,
 
       if (alignedActuals.v[i]) {
         if (Type* type = getInstantiationType(alignedActuals.v[i]->type, formal->type)) {
-          // String literal actuals aligned with non-param generic
-          // formals of type dtAny will result in an instantiation of
-          // a dtString formal.  This is in line with variable
-          // declarations with non-typed initializing expressions and
-          // non-param formals with string literal default expressions
-          // (see fix_def_expr() and hack_resolve_types() in
-          // normalize.cpp). This conversion is not performed for extern
-          // functions.
-          if ((!fn->hasFlag(FLAG_EXTERN)) && (formal->type == dtAny) &&
-              (!formal->hasFlag(FLAG_PARAM)) && (type == dtStringC) &&
-              (alignedActuals.v[i]->type == dtStringC) &&
-              (alignedActuals.v[i]->isImmediate()))
-            subs.put(formal, dtString->symbol);
-          else
+          // String literal actuals aligned with non-param generic formals of
+          // type dtAny will result in an instantiation of dtStringC when the
+          // function is extern. In other words, let us write:
+          //   extern proc foo(str);
+          //   foo("bar");
+          // and pass "bar" as a c_string instead of a string
+          if (fn->hasFlag(FLAG_EXTERN) && (formal->type == dtAny) &&
+              (!formal->hasFlag(FLAG_PARAM)) && (type == dtString) &&
+              (alignedActuals.v[i]->type == dtString) &&
+              (alignedActuals.v[i]->isImmediate())) {
+            subs.put(formal, dtStringC->symbol);
+          } else {
             subs.put(formal, type->symbol);
+          }
         }
       } else if (formal->defaultExpr) {
 
@@ -1678,6 +1767,19 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
             typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(paramMap.get(formal))));
           }
         }
+      }
+    }
+    if (fn->getReturnSymbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+    {
+      // This happens only with runtime types.
+      // Just pass along the type arguments if there are any.
+      for_actuals(actual, info.call)
+      {
+        if (NamedExpr* ne = toNamedExpr(actual))
+          actual = ne->actual;
+        if (SymExpr* se = toSymExpr(actual))
+          if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
+            typeConstructorCall->insertAtTail(se->var);
       }
     }
     info.call->insertBefore(typeConstructorCall);
@@ -1972,6 +2074,11 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
     }
     if (is_uint_type(formalType)) {
       return fits_in_uint(get_width(formalType), imm);
+    }
+    if (imm->const_kind == CONST_KIND_STRING) {
+      if (formalType == dtStringC && actual->type == dtString) {
+        return true;
+      }
     }
   }
 
@@ -3192,6 +3299,8 @@ static void setFlagsAndCheckForConstAccess(Symbol* dest,
 
 // Report an error when storing a sync or single variable into a tuple.
 // This is because currently we deallocate memory excessively in this case.
+// TODO AMM: Review and see if this is still needed after comprehensive automatic
+// memory management is in place.
 static void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 {
   // Do not perform the checks if:
@@ -3729,7 +3838,7 @@ static void resolveTupleExpand(CallExpr* call) {
       e = new CallExpr(sym->copy(), new_IntSymbol(i));
     } else {
       e = new CallExpr(PRIM_GET_MEMBER_VALUE, sym->copy(),
-                       new_StringSymbol(astr("x", istr(i))));
+                       new_CStringSymbol(astr("x", istr(i))));
     }
     CallExpr* move = new CallExpr(PRIM_MOVE, tmp, e);
     call->getStmtExpr()->insertBefore(move);
@@ -3759,7 +3868,7 @@ static void resolveSetMember(CallExpr* call) {
     int64_t i;
     if (get_int(sym, &i)) {
       name = astr("x", istr(i));
-      call->get(2)->replace(new SymExpr(new_StringSymbol(name)));
+      call->get(2)->replace(new SymExpr(new_CStringSymbol(name)));
     }
   }
 
@@ -3901,7 +4010,7 @@ static void resolveMove(CallExpr* call) {
         // type information earlier
         SymExpr* castVar = toSymExpr(rhsCall->get(1));
         INT_ASSERT(castVar);
-        VarSymbol* derefTmp = newTemp("castDeref", castVar->typeInfo()->getValType());
+        VarSymbol* derefTmp = newTemp("castDerefTmp", castVar->typeInfo()->getValType());
         call->insertBefore(new DefExpr(derefTmp));
         call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
                                         new CallExpr(PRIM_DEREF,
@@ -4004,15 +4113,6 @@ formalRequiresTemp(ArgSymbol* formal) {
      //
      ((formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN) &&
       (backendRequiresCopyForIn(formal->type) || !fn->hasFlag(FLAG_INLINE)))
-     //
-     // The following case reduces memory leaks for zippered forall
-     // leader/follower pairs where the communicated intermediate
-     // result is a tuple of ranges, but I can't explain why it'd be
-     // needed.  Tom has said that iterators haven't really been
-     // bolted down in terms of memory leaks, so future work would be
-     // to remove this hack and close the leak properly.
-     //
-     || strcmp(formal->name, "followThis") == 0
      );
 }
 
@@ -4045,8 +4145,9 @@ insertFormalTemps(FnSymbol* fn) {
 // The copy in is needed for "inout", "in" and "const in" intents.
 // The copy out is needed for "inout" and "out" intents.
 // Blank intent is treated like "const", and normally copies the formal through
-// chpl__autoCopy.
+// chpl__autoCopy.  (Check that this is still true.)
 // Note that autoCopy is called in this case, but not for "inout", "in" and "const in".
+// TODO AMM: Check that this special behavior is correct and necessary.
 // Either record-wrapped types are always passed by ref, or some unexpected
 // behavior will result by applying "in" intents to them.
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
@@ -4069,7 +4170,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         !isRefCountedType(formalType))
     {
       tmp->addFlag(FLAG_CONST);
+#ifndef HILDE_MM
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
     }
 
     // This switch adds the extra code inside the current function necessary
@@ -4095,7 +4198,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, defaultExpr->body.tail->remove()));
         fn->insertAtHead(defaultExpr);
       } else {
-        VarSymbol* refTmp = newTemp("_formal_ref_tmp_");
+        VarSymbol* refTmp = newTemp("_formal_derefTmp");
         VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
         typeTmp->addFlag(FLAG_MAYBE_TYPE);
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTmp)));
@@ -4113,7 +4216,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
       // If the compiler verifies in a separate pass that it is never written,
       // we don't have to copy it.
       fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
+#ifndef HILDE_MM
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
       break;
 
      case INTENT_BLANK:
@@ -4125,6 +4230,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
            !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
            !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
            !getSyncFlags(ts).any()) {
+         // TODO AMM: Remove this special case and let parallel handle it.
          if (fn->hasFlag(FLAG_BEGIN)) {
            // autoCopy/autoDestroy will be added later, in parallel pass
            // by insertAutoCopyDestroyForTaskArg()
@@ -4138,6 +4244,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
            // intentional: It gives tuple-wrapped record-wrapped types different
            // behavior from bare record-wrapped types.
            fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__autoCopy", formal)));
+#ifndef HILDE_MM
            // WORKAROUND:
            // This is a temporary bug fix that results in leaked memory.
            //
@@ -4166,6 +4273,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
                  (formal->type->getModule()->modTag==MOD_STANDARD))) ||
                !typeHasRefField(formal->type))
              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
          }
        } else
        {
@@ -4200,7 +4308,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
     INT_FATAL("dropUnnecessaryCasts called on non _cast call");
 
   if (SymExpr* sym = toSymExpr(call->get(2))) {
-    if (VarSymbol* var = toVarSymbol(sym->var)) {
+    if (LcnSymbol* var = toLcnSymbol(sym->var)) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         Type* oldType = var->type;
         Type* newType = sym->var->type;
@@ -4716,9 +4824,9 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
 
   Expr* result;
   if (isReferenceType(fieldType) || intoIndexVarByVal)
-    result = new CallExpr(PRIM_GET_MEMBER_VALUE, baseVar, new_StringSymbol(field));
+    result = new CallExpr(PRIM_GET_MEMBER_VALUE, baseVar, new_CStringSymbol(field));
   else
-    result = new CallExpr(PRIM_GET_MEMBER, baseVar, new_StringSymbol(field));
+    result = new CallExpr(PRIM_GET_MEMBER, baseVar, new_CStringSymbol(field));
 
   call->replace(result);
   return result;
@@ -4970,8 +5078,11 @@ preFold(Expr* expr) {
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
-      if (isAggregateType(type)) {
-        if (type->symbol->hasFlag(FLAG_IGNORE_NOINIT)) {
+      if (isAggregateType(type) || type == dtStringC || type == dtStringCopy) {
+
+        bool containsNotPOD = propagateNotPOD(type);
+
+        if (containsNotPOD) {
           // These types deal with their uninitialized fields differently than
           // normal records/classes.  They may require special case
           // implementations, but were capable of being isolated from the new
@@ -5040,7 +5151,7 @@ preFold(Expr* expr) {
         VarSymbol* tmp = newTemp("_instantiated_field_tmp_");
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_TUPLE) && field->name[0] == 'x')
-          result = new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), new_StringSymbol(field->name));
+          result = new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), new_CStringSymbol(field->name));
         else
           result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
@@ -5087,7 +5198,7 @@ preFold(Expr* expr) {
                      is_bool_type(oldType)) &&
                     (is_int_type(newType) || is_uint_type(newType) ||
                      is_bool_type(newType) || is_enum_type(newType) ||
-                     (newType == dtStringC))) {
+                     newType == dtString || newType == dtStringC)) {
                   VarSymbol* typevar = toVarSymbol(newType->defaultValue);
                   EnumType* typeenum = toEnumType(newType);
                   if (typevar) {
@@ -5097,6 +5208,13 @@ preFold(Expr* expr) {
                     Immediate coerce = *typevar->immediate;
                     coerce_immediate(var->immediate, &coerce);
                     result = new SymExpr(new_ImmediateSymbol(&coerce));
+                    call->replace(result);
+                  } else if (newType == dtString) {
+                    // typevar will be null for dtString so we need a special
+                    // case.
+                    Immediate coerce = Immediate("", STRING_KIND_STRING);
+                    coerce_immediate(var->immediate, &coerce);
+                    result = new SymExpr(new_StringSymbol(coerce.v_string));
                     call->replace(result);
                   } else if (typeenum) {
                     int64_t value, count = 0;
@@ -5121,14 +5239,20 @@ preFold(Expr* expr) {
                   } else {
                     INT_FATAL("unexpected case in cast_fold");
                   }
+                } else if (oldType == dtString && newType == dtStringC) {
+                  result = new SymExpr(new_CStringSymbol(var->immediate->v_string));
+                  call->replace(result);
                 }
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
             if (SymExpr* sym = toSymExpr(call->get(1))) {
               Type* newType = sym->var->type;
-              if (newType == dtStringC) {
+              if (newType == dtString) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
+                call->replace(result);
+              } else if (newType == dtStringC) {
+                result = new SymExpr(new_CStringSymbol(enumSym->name));
                 call->replace(result);
               }
             }
@@ -5371,7 +5495,7 @@ preFold(Expr* expr) {
         // specified.  This is the user's error.
         USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
       }
-      result = new SymExpr(new_StringSymbol(name));
+      result = new SymExpr(new_CStringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
@@ -5392,7 +5516,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_StringSymbol(field->name));
+                                new_CStringSymbol(field->name));
           break;
         }
       }
@@ -5442,7 +5566,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
           result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_StringSymbol(field->name));
+                                new_CStringSymbol(field->name));
           break;
         }
       }
@@ -5485,7 +5609,13 @@ preFold(Expr* expr) {
       else
         result = new SymExpr(gFalse);
       call->replace(result);
-
+    } else if (call->isPrimitive(PRIM_IS_POD)) {
+      bool notPod = propagateNotPOD(call->get(1)->typeInfo());
+      if (notPod)
+        result = new SymExpr(gFalse);
+      else
+        result = new SymExpr(gTrue);
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_SYNC_TYPE)) {
       Type* syncType = call->get(1)->typeInfo();
       if (syncType->symbol->hasFlag(FLAG_SYNC))
@@ -5636,7 +5766,7 @@ static void
 insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
     if (!se->var->type->refType) {
-      VarSymbol* tmp = newTemp("_value_tmp_", se->var->getValType());
+      VarSymbol* tmp = newTemp("derefTmp", se->var->getValType());
       insertPoint->insertBefore(new DefExpr(tmp));
       insertPoint->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, se->var)));
       se->var = tmp;
@@ -5645,6 +5775,7 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 }
 
 
+#ifndef HILDE_MM
 //
 // returns resolved function if the function requires an implicit
 // destroy of its returned value (i.e. reference count)
@@ -5652,6 +5783,8 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 // Currently, FLAG_DONOR_FN is only relevant when placed on
 // chpl__autoCopy().
 //
+// TODO AMM: Would like to simplify this, so it returns true if the function
+// returns a record or tuple and false otherwise.
 FnSymbol*
 requiresImplicitDestroy(CallExpr* call) {
   if (FnSymbol* fn = call->isResolved()) {
@@ -5687,6 +5820,7 @@ requiresImplicitDestroy(CallExpr* call) {
   }
   return NULL;
 }
+#endif
 
 
 static Expr*
@@ -5816,6 +5950,7 @@ postFold(Expr* expr) {
           }
         }
         if (!set) {
+#ifndef HILDE_MM
           if (lhs->var->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->var->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
@@ -5825,7 +5960,7 @@ postFold(Expr* expr) {
               }
             }
           }
-
+#endif
           if (isReferenceType(lhs->var->type) ||
               lhs->var->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
               lhs->var->type->symbol->hasFlag(FLAG_ARRAY))
@@ -5904,7 +6039,10 @@ postFold(Expr* expr) {
       if (lhs->var->isParameter() && rhs->var->isParameter()) {
         const char* lstr = get_string(lhs);
         const char* rstr = get_string(rhs);
-        result = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+        if (lhs->var->type == dtString)
+          result = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+        else
+          result = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_length")) {
@@ -5912,7 +6050,8 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol(strlen(str), INT_SIZE_DEFAULT));
+        int length = unescapeString(str).length();
+        result = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("ascii")) {
@@ -5920,7 +6059,8 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol((int)str[0], INT_SIZE_DEFAULT));
+        const std::string unescaped = unescapeString(str);
+        result = new SymExpr(new_IntSymbol((int)unescaped[0], INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_contains")) {
@@ -6211,8 +6351,13 @@ resolveExpr(Expr* expr) {
         !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
       if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
-        if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
+        // Dont try to resolve the defaultTypeConstructor for string literals
+        // (resolution ordering issue, string literals are encoutred too early
+        // on and we dont know enough to be able to resolve them at that point)
+        if (!(ct == dtString && (sym->var->isParameter() || sym->var->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
+            !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+            !ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
@@ -6730,18 +6875,18 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (!isSubType(fn->retType->defaultInitializer->iteratorInfo->getValue->retType,
-                  pfn->retType->defaultInitializer->iteratorInfo->getValue->retType)) {
+              if (!isSubType(fn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType,
+                             pfn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType)) {
                 USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
-                               pfn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
+                               pfn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
-                               fn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
+                               fn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_STOP();
               } else {
                 pfn->retType->dispatchChildren.add_exclusive(fn->retType);
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
-                Type* pic = pfn->retType->defaultInitializer->iteratorInfo->iclass;
-                Type* ic = fn->retType->defaultInitializer->iteratorInfo->iclass;
+                Type* pic = pfn->retType->getValType()->defaultInitializer->iteratorInfo->iclass;
+                Type* ic = fn->retType->getValType()->defaultInitializer->iteratorInfo->iclass;
                 INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 
                 // Iterator classes are created as normal top-level classes (inheriting
@@ -7025,6 +7170,10 @@ resolve() {
   insertDynamicDispatchCalls();
   insertReturnTemps();
 
+  // Resolve the string literal constructors after everything else since new
+  // ones may be created during postFold
+  resolveFns(initStringLiterals);
+
   handleRuntimeTypes();
 
   pruneResolvedTree();
@@ -7134,6 +7283,12 @@ static void resolveUses(ModuleSymbol* mod)
 static void resolveExports() {
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn == initStringLiterals) {
+      // initStringLiterals is exported but is explicitly resolved last since
+      // code may be added to it in postFold calls while resolving other
+      // functions
+      continue;
+    }
     if (fn->hasFlag(FLAG_EXPORT)) {
       SET_LINENO(fn);
       resolveFormals(fn);
@@ -7267,12 +7422,113 @@ static void resolveAutoCopies() {
     if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
       continue; // Skip the "dmapped" pseudo-type.
 
-    if (isRecord(ts->type) || getSyncFlags(ts).any())
+    if (isRecord(ts->type) || getSyncFlags(ts).any() ||
+        isDomImplType(ts->type) || isArrayImplType(ts->type) ||
+        isDistImplType(ts->type))
     {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
+
+    if (isRecord(ts->type) ) {
+      // Mark record/tuple types as POD or NOT_POD
+      propagateNotPOD(ts->type);
+    }
   }
+}
+
+/* In order to correctly initialize records or tuples in which
+   a component has FLAG_IGNORE_NOINIT, we need to propagate that
+   flag to the parent types as well. While doing so, we also
+   propagate whether or not that type is not Plain-old-Data
+   (which would mean it does not need auto copies or auto
+    destroys - bit copies will do).
+
+   After this function is called on a record type, that type and any field
+   record types must have either FLAG_POD or FLAG_NOT_POD set.
+
+   After setting either FLAG_POD or FLAG_NOT_POD if necessary,
+   returns true if FLAG_NOT_POD is set, false otherwise.
+
+   This function should only be called during resolution.
+   Call isPOD (or check FLAG_POD/FLAG_NOT_POD) after resolution.
+ */
+static bool propagateNotPOD(Type* t) {
+  // Move past those records we've already handled
+  if (t->symbol->hasFlag(FLAG_POD))
+    return false;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return true;
+
+  // Move past classes and non-aggregate types.
+  if( (!isAggregateType(t)) || isClass(t) )
+    return false;
+
+  AggregateType *at = (AggregateType*) t;
+  bool notPOD = false;
+
+  for_fields(field, at) {
+    Type* ft = field->typeInfo();
+    notPOD |= propagateNotPOD(ft);
+  }
+
+  // make sure we have resolve auto copy/auto destroy.
+  resolveAutoCopy(t);
+  resolveAutoDestroy(t);
+
+  // also check for a non-compiler generated
+  // autocopy/autodestroy.
+  FnSymbol* autoCopyFn = autoCopyMap.get(t);
+  FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
+  FnSymbol* destructor = t->destructor;
+
+  // Ignore invisible (compiler-defined) functions.
+  if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED))
+    autoCopyFn = NULL;
+  if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
+    autoDestroyFn = NULL;
+  if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED))
+    destructor = NULL;
+
+  // if it has flag ignore no-init, it's not pod
+  // if it has a user-specified auto copy / auto destroy, it's not pod 
+  // if it has a user-specified destructor, it's not pod
+  if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
+      autoCopyFn || autoDestroyFn ||
+      destructor )
+    notPOD = true;
+
+  if( !notPOD && hasUserAssign(t) )
+    notPOD = true;
+
+  if (notPOD) {
+    at->symbol->addFlag(FLAG_NOT_POD);
+  } else {
+    at->symbol->addFlag(FLAG_POD);
+  }
+
+  return notPOD;
+}
+
+/* After resolution, other passes can call isPOD
+   in order to find out if a record type is POD.
+
+   During resolution, one should call propagateNotPOD
+   instead, so that the relevant calls can be resolved
+   and POD fields can be properly handled.
+ */
+bool isPOD(Type* t)
+{
+  // things that aren't aggregate types and class types are POD
+  if( (!isAggregateType(t)) || isClass(t) )
+    return true;
+  // handle anything already marked
+  if (t->symbol->hasFlag(FLAG_POD))
+    return true;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return false;
+  // otherwise, assume not.
+  return false;
 }
 
 static void resolveRecordInitializers() {
@@ -7514,11 +7770,10 @@ static void insertDynamicDispatchCalls() {
   }
 }
 
-static Type*
+static AggregateType*
 buildRuntimeTypeInfo(FnSymbol* fn) {
   SET_LINENO(fn);
   AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
     if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
       continue;
@@ -7529,9 +7784,30 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
     if (formal->hasFlag(FLAG_TYPE_VARIABLE))
       field->addFlag(FLAG_TYPE_VARIABLE);
   }
-  theProgram->block->insertAtTail(new DefExpr(ts));
+
+  // We expect the function name to start with "chpl__build" and then be
+  // followed by one of:
+  //  DomainRuntimeType
+  //  ArrayRuntimeType
+  const char prefix[] = "chpl__build";
+  const size_t prefix_len = sizeof(prefix) - 1; // Compile-time constant.  Trim
+                                                // off trailing NUL.
+  static size_t rtt_index = 0;  // Total kludge.  Would prefer to push the
+                                // definition of RTTs in to module code.
+  const size_t bufsiz = 24; // More than enough for 64 bits worth of decimal number,
+                   // terminating NUL included
+  char buffer[bufsiz]; 
+  // This probably has to be adjusted for 32-bit platforms.
+  snprintf(buffer, bufsiz, "%ld", ++rtt_index);
+  const char* name = astr(strstr(fn->name, prefix) + prefix_len, buffer);
+  TypeSymbol* ts = new TypeSymbol(name, ct);
+//  ts->addFlag(FLAG_NO_CODEGEN);
+  INT_ASSERT(ct->symbol == ts); // If so, we can just say "ts" here.
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
+  theProgram->block->insertAtTail(new DefExpr(ts));
+
   makeRefType(ts->type); // make sure the new type has a ref type.
+
   return ct;
 }
 
@@ -7659,6 +7935,8 @@ static void removeUnusedFunctions() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
+      if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
+
       if (! fn->isResolved() || fn->retTag == RET_PARAM) {
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
@@ -7817,7 +8095,8 @@ static void removeRandomPrimitive(CallExpr* call)
       // Replace string literals with field symbols in member primitives
       Type* baseType = call->get(1)->typeInfo();
       if (baseType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-        break;
+        if (call->parentSymbol->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+          break;
 
       if (!call->parentSymbol->hasFlag(FLAG_REF) &&
           baseType->symbol->hasFlag(FLAG_REF))
@@ -8011,15 +8290,24 @@ static void buildRuntimeTypeInitFns() {
         SET_LINENO(fn);
 
         // Build a new runtime type for this function
-        Type* runtimeType = buildRuntimeTypeInfo(fn);
+        AggregateType* runtimeType = buildRuntimeTypeInfo(fn);
         runtimeTypeMap.put(fn->retType, runtimeType);
 
         // Build chpl__convertRuntimeTypeToValue() instance.
         buildRuntimeTypeInitFn(fn, runtimeType);
+
+        // Build special functions for this runtime type, resolve them and add
+        // them to their respective maps for use in AMM.
+        build_constructors(runtimeType);
+        buildDefaultDestructor(runtimeType);
+        buildRuntimeTypeInitCopyFn(runtimeType);
+        resolveAutoCopy(runtimeType);
+        resolveAutoDestroy(runtimeType);
       }
     }
   }
 }
+
 
 // Build a function to return the runtime type by modifying
 // the original function.
@@ -8078,7 +8366,8 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
         ! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
       continue;
 
-    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, formal));
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var,
+                                     new_CStringSymbol(field->name), formal));
   }
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, var));
@@ -8086,6 +8375,83 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   // Replace the body of the orignal chpl__buildRuntime...Type() function.
   fn->body->replace(block);
 }
+
+
+#if 0 // Needed?
+static void
+resolveRuntimeTypeDestructor(Type* type) {
+  SET_LINENO(type->symbol);
+  Symbol* tmp = newTemp(type);
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+  CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  resolveFns(fn);
+  type->destructor = fn;
+  tmp->defPoint->remove();
+}
+#endif
+
+
+#if 0 // Needed?
+// Build an autoDestroy function for the given runtime type, and insert it into
+// the autoDestroyMap.
+static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct)
+{
+  SET_LINENO(ct->symbol);
+
+  FnSymbol* fn = new FnSymbol("chpl__autoDestroy");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_AUTO_DESTROY_FN);
+  fn->addFlag(FLAG_INLINE);
+  fn->cname = fn->name;
+  fn->retType = dtVoid;
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  fn->insertFormalAtTail(arg);
+
+  fn->insertAtTail(new CallExpr(PRIM_CALL_DESTRUCTOR, arg));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+}
+#endif
+
+
+static void buildRuntimeTypeInitCopyFn(AggregateType* ct)
+{
+  SET_LINENO(ct->symbol->defPoint);
+
+  FnSymbol* fn = new FnSymbol("chpl__initCopy");
+  fn->addFlag(FLAG_INIT_COPY_FN);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->retType = ct;
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  arg->addFlag(FLAG_MARKED_GENERIC);
+  fn->insertFormalAtTail(arg);
+
+  CallExpr* call = new CallExpr(ct->defaultInitializer);
+  for_fields(field, ct)
+  {
+    VarSymbol* tmp = newTemp(field->type);
+    if (field->hasFlag(FLAG_TYPE_VARIABLE))
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
+    fn->insertAtTail(new DefExpr(tmp));
+    Symbol* fieldName = new_CStringSymbol(field->name);
+    CallExpr* rhs = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fieldName);
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, rhs));
+    call->insertAtTail(new NamedExpr(field->name, new SymExpr(tmp)));
+  }
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+
+  reset_ast_loc(def, ct->symbol);
+  normalize(fn);
+}
+
 
 static void removeFormalTypeAndInitBlocks()
 {
@@ -8248,7 +8614,7 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
             VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, field)));
+                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, new_CStringSymbol(field->name))));
             if (formal->hasFlag(FLAG_TYPE_VARIABLE))
               tmp->addFlag(FLAG_TYPE_VARIABLE);
             runtimeTypeToValueCall->insertAtTail(tmp);
@@ -8256,8 +8622,7 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
           VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
-          INT_ASSERT(autoCopyMap.get(tmp->type));
-          call->replace(new CallExpr(autoCopyMap.get(tmp->type), tmp));
+          call->replace(new SymExpr(tmp));
         } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           //
           // This is probably related to a comment that used to handle
@@ -8369,6 +8734,13 @@ static void removeMootFields() {
   }
 }
 
+
+// Calls to initializeClass are needed for now, because at least "record-wrapped
+// types" depend on the class fields being initialized to nil.  Otherwise,
+// assignments to such types end up reading uninitialized memory, which is "undesirable".
+// This zero-initialization should not be needed after
+// initialization-is-construction.  The need for this zero initialization is
+// currently created by the use of assignment in initialization....
 static void expandInitFieldPrims()
 {
   forv_Vec(CallExpr, call, gCallExprs) {

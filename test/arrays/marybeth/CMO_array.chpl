@@ -8,6 +8,21 @@ class CMODist : BaseDist {
   proc dsiClone() return this;
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CMODist) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CMODist) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 class CMODom: BaseRectangularDom {
   param rank : int;
   type idxType;
@@ -175,6 +190,21 @@ class CMODom: BaseRectangularDom {
     for i in 1..rank do
       x.ranges(i) = ranges(i) by str(i);
     return x;
+  }
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CMODom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CMODom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
   }
 }
 
@@ -399,6 +429,21 @@ proc CMOArr.dsiSerialWrite(f: Writer) {
       }
       break;
     }
+  }
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CMOArr) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CMOArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
   }
 }
 

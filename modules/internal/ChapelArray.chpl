@@ -235,39 +235,75 @@ module ChapelArray {
     }
   }
   
+  // This works like a constructor, and should probably be converted into one.
   proc _newArray(value) {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _array, which contains a new reference to this
+        // array representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _array(value, value);
+    }
   }
   
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _domain, which contains a new reference to this
+        // domain representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _domain(value, value);
+    }
   }
   
   proc _getDomain(value) {
     if _isPrivatized(value) then
       return new _domain(value.pid, value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _domain record, which contains a new reference to this
+        // domain representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _domain(value, value);
+    }
   }
   
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _distribution, which contains a new reference to this
+        // distribution representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _distribution(value, value);
+    }
   }
   
   proc _getDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(value.pid, value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _distribution, which contains a new reference to this
+        // distribution representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _distribution(value, value);
+    }
   }
   
   
@@ -364,7 +400,7 @@ module ChapelArray {
       type currType = _getLiteralType(elems(i).type);
 
       if currType != elemType {
-        compilerError( "Array literal element " + i:c_string +
+        compilerError( "Array literal element " + i +
                        " expected to be of type " + typeToString(elemType) +
                        " but is of type " + typeToString(currType) );
       }
@@ -427,59 +463,6 @@ module ChapelArray {
   }
 
 
-  //
-  // These routines increment and decrement the reference count
-  // for a domain that is part of an array's element type.
-  // Prior to introducing these routines and calls, we would
-  // increment/decrement the reference count based on the
-  // number of indices in the outer domain instead; this could
-  // cause the domain to be deallocated prematurely in the
-  // case the the outer domain was empty.  For example:
-  //
-  //   var D = {1..0};   // start empty; we'll resize later
-  //   var A: [D] [1..2] real;
-  //
-  // The anonymous domain {1..2} must be kept alive as a result
-  // of being part of A's type even though D is initially empty.
-  // Thus, {1..2} should remain alive as long as A is.  By
-  // incrementing and decrementing its reference counts based
-  // on A's lifetime rather than the number of elements in domain
-  // D, we ensure that is kept alive.  See
-  // test/users/bugzilla/bug794133/ for more details and examples.
-  //
-  proc chpl_incRefCountsForDomainsInArrayEltTypes(type eltType) {
-    compilerAssert(!noRefCount);
-    if (isArrayType(eltType)) {
-      var ev: eltType;
-      ev.domain._value.incRefCount();
-      //
-      // In addition to incrementing the domain's reference, count, we also
-      // have to increment the distribution's.  The primary motivation for
-      // this at present is:
-      //
-      //   test/arrays/deitz/part4/test_array_of_associative_arrays.chpl
-      //
-      // and we suspect that once the reference counting code is cleaned up,
-      // this can be too.  See this comment's commit message for more
-      // details.
-      //
-      ev.domain.dist._value.incRefCount();
-      chpl_incRefCountsForDomainsInArrayEltTypes(ev.eltType);
-    }
-  }
-
-  proc chpl_decRefCountsForDomainsInArrayEltTypes(type eltType) {
-    compilerAssert(!noRefCount);
-    if (isArrayType(eltType)) {
-      var ev: eltType;
-      const refcount = ev.domain._value.destroyDom();
-      if !noRefCount then
-        if refcount == 0 then
-          delete ev.domain._value;
-      chpl_decRefCountsForDomainsInArrayEltTypes(ev.eltType);
-    }
-  }
-  
   //
   // Support for subdomain types
   //
@@ -765,6 +748,12 @@ module ChapelArray {
         if !noRefCount then
           _value.incRefCount();
       }
+      // We have to bump the ref count on x to keep it in existence while it is
+      // being iterated over.
+      // TODO: need to add a corresponding decrement downstream.  Adding it at
+      // the end of this routine will cause premature deletion.
+      if !noRefCount then
+        x.incRefCount();
       const enumTuple = chpl_enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
         x.dsiAdd(enumTuple(i));
@@ -1556,12 +1545,14 @@ module ChapelArray {
     var _value;     // stores array class, may be privatized
     var _valueType; // stores type of privatized arrays
     var _promotionType: _value.eltType;
- 
+
+    /* initialize not needed on string-as-rec?
     pragma "no doc"
     proc initialize() {
      if !noRefCount then
       chpl_incRefCountsForDomainsInArrayEltTypes(_value.eltType);
     }
+    */
 
     inline proc _value {
       if _isPrivatized(_valueType) {
@@ -1580,11 +1571,18 @@ module ChapelArray {
     //
     proc ~_array() {
      if !noRefCount {
+       // removeWrapRecords replaces the following conditional with "true",
+       // which is not what we want.
+       //       if _valueType == nil then
+       //         return;
       if !_isPrivatized(_valueType) {
+        if _value == nil then
+         // This happens e.g. for delete on an array field whose default
+         // initializer is a forall expr. [arrayInClassRecord.chpl]
+          return;
         on _value {
           var cnt = _value.destroyArr();
           if cnt == 0 then {
-            chpl_decRefCountsForDomainsInArrayEltTypes(_value.eltType);
             delete _value;
           }
         }
@@ -1735,7 +1733,12 @@ module ChapelArray {
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
-
+  
+    // Note: Clients of this routine must update the ref count "manually".
+    // Specifically, if the return value of this routine is copied into a field
+    // or outer variable, then its ref count must be incremented.  The ref
+    // count must be decremented when the containing location or structure is
+    // deleted.
     pragma "no doc"
     inline proc these() ref {
       return _value.these();
@@ -2469,7 +2472,14 @@ module ChapelArray {
   }
   
   proc =(ref a: domain, b: domain) {
-    if !isIrregularDom(a) && !isIrregularDom(b) {
+    if (b._value == nil) {
+      // In some places, we use assignment where we should be using initialization.
+      // When the RHS is nil (uninitialized), it is permissible to do nothing
+      // if the left side is also nil.
+      if (a._value != nil) then
+        halt("Cannot overwrite a valid domain with 'nil'.");
+    }
+    else if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
         on e do e.dsiReallocate(b);
       }
@@ -2601,7 +2611,18 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isComplexType(t) return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) || isTupleType(t) {
+    // TODO: The current implementations of isPODType and
+    //       supportedDataTypeForBulkTransfer do not completely align. I'm
+    //       leaving it as future work to enable bulk transfer for other types
+    //       that are POD. In the long run it seems like we should be able to
+    //       have only one method for supportedDataType that just calls
+    //       isPODType.
+
+    // We can bulk transfer any record or tuple that is 'Plain Old Data' ie. a
+    // bag of bits
+    return isPODType(t);
+  }
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;

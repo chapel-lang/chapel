@@ -86,13 +86,13 @@ static memTableEntry** memTable = NULL;
 
 static _Bool memStats = false;
 static _Bool memLeaksByType = false;
-static c_string memLeaksByDesc = "";
+static c_string memLeaksByDesc = NULL;
 static _Bool memLeaks = false;
 static size_t memMax = 0;
 static size_t memThreshold = 0;
-static c_string memLog = "";
+static c_string memLog = NULL;
 static FILE* memLogFile = NULL;
-static c_string memLeaksLog = "";
+static c_string memLeaksLog = NULL;
 
 static size_t totalMem = 0;       /* total memory currently allocated */
 static size_t maxMem = 0;         /* maximum total memory during run  */
@@ -134,14 +134,14 @@ void chpl_setMemFlags(void) {
   if (local_memTrack
       || memStats
       || memLeaksByType
-      || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
+      || memLeaksByDesc
       || memLeaks
       || memMax > 0
-      || (memLeaksLog && strcmp(memLeaksLog, ""))) {
+      || memLeaksLog != NULL) {
     chpl_memTrack = true;
   }
 
-  if (strcmp(memLog, "") == 0) {
+  if (!memLog) {
     memLogFile = stdout;
   } else {
     if (chpl_numNodes == 1) {
@@ -549,7 +549,7 @@ void chpl_reportMemInfo() {
     fprintf(memLogFile, "\n");
     printMemAllocsByType(true /* forLeaks */, 0, 0);
   }
-  if (memLeaksByDesc && strcmp(memLeaksByDesc, "")) {
+  if (memLeaksByDesc) {
     fprintf(memLogFile, "\n");
     chpl_printMemAllocsByDesc(memLeaksByDesc, memThreshold, 0, 0);
   }

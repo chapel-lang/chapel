@@ -93,6 +93,11 @@ passableByVal(Type* type) {
 // Otherwise passing by value is more efficient.
 static bool
 passByRef(Symbol* sym) {
+
+  // Is it a non-POD record type?
+  if( sym->type->symbol->hasFlag(FLAG_NOT_POD) )
+    return true;
+
   //
   // If it's constant (in the sense that the value will not change),
   // there's no need to pass it by reference
@@ -214,21 +219,22 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               CallExpr* call = toCallExpr(se->parentExpr);
               INT_ASSERT(call);
               FnSymbol* fnc = call->isResolved();
-              if ((call->isPrimitive(PRIM_MOVE) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_ASSIGN) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
-                  (call->isPrimitive(PRIM_GET_MEMBER)) ||
+              if ((call->isPrimitive(PRIM_GET_MEMBER)) ||
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
                   (call->isPrimitive(PRIM_WIDE_GET_NODE)) ||
                   (fnc && arg->type == actual_to_formal(se)->type)) {
                 se->var = arg; // do not dereference argument in these cases
-              } else if (call->isPrimitive(PRIM_ADDR_OF)) {
+              } 
+              // The following two clauses may be redundant, since
+              // insertReferenceTemps() and insertDerefTemps() now do the same
+              // thing.
+              else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
                 call->replace(new SymExpr(arg));
               } else {
                 SET_LINENO(se);
-                VarSymbol* tmp = newTemp(sym->type);
+                VarSymbol* tmp = newTemp("derefTmp", sym->type);
                 se->getStmtExpr()->insertBefore(new DefExpr(tmp));
                 se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
                 se->var = tmp;
@@ -380,4 +386,8 @@ void flattenFunctions(void) {
   }
 
   flattenNestedFunctions(nestedFunctions);
+
+  // Insert dereference and reference temporaries as needed.
+  insertReferenceTemps();
+  insertDerefTemps();
 }

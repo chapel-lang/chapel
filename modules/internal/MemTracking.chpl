@@ -28,11 +28,11 @@ module MemTracking
     memLeaks: bool = false,
     memMax: uint = 0,
     memThreshold: uint = 0,
-    memLog: c_string = "";
+    memLog: c_ptr(uint(8)) = nil;
 
   pragma "no auto destroy"
   config const
-    memLeaksLog: c_string = "";
+    memLeaksLog: c_ptr(uint(8)) = nil;
 
   /* Causes the contents of the memory tracking array to be printed at the end
      of the program.
@@ -49,17 +49,16 @@ module MemTracking
   */
   pragma "no auto destroy"
   config const
-    memLeaksByDesc: c_string = "";
+    memLeaksByDesc: c_ptr(uint(8)) = nil;
 
   // Safely cast to size_t instances of memMax and memThreshold.
   const cMemMax = memMax.safeCast(size_t),
     cMemThreshold = memThreshold.safeCast(size_t);
 
   // Globally accessible copy of the corresponding c_string consts
-  use NewString;
-  const s_memLeaksByDesc: string_rec = memLeaksByDesc;
-  const s_memLog: string_rec = memLog;
-  const s_memLeaksLog: string_rec = memLeaksLog;
+  const s_memLog: string;
+  const s_memLeaksLog: string;
+  const s_memLeaksByDesc: string;
 
   //
   // This communicates the settings of the various memory tracking
@@ -77,15 +76,16 @@ module MemTracking
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
                                          ref ret_memLeaksByType: bool,
-                                         ref ret_memLeaksByDesc: c_string,
+                                         ref ret_memLeaksByDesc: c_ptr(uint(8)),
                                          ref ret_memLeaks: bool,
                                          ref ret_memMax: size_t,
                                          ref ret_memThreshold: size_t,
-                                         ref ret_memLog: c_string,
-                                         ref ret_memLeaksLog: c_string) {
+                                         ref ret_memLog: c_ptr(uint(8)),
+                                         ref ret_memLeaksLog: c_ptr(uint(8))) {
     ret_memTrack = memTrack;
     ret_memStats = memStats;
     ret_memLeaksByType = memLeaksByType;
+    ret_memLeaksByDesc = memLeaksByDesc;
     ret_memLeaks = memLeaks;
     ret_memMax = cMemMax;
     ret_memThreshold = cMemThreshold;
@@ -93,20 +93,20 @@ module MemTracking
     if (here.id != 0) {
       // These c_strings are going to be leaked
       if s_memLeaksByDesc.len != 0 then
-        ret_memLeaksByDesc = remoteStringCopy(s_memLeaksByDesc.home.id,
-                                      s_memLeaksByDesc.base,
-                                      s_memLeaksByDesc.len);
-      else ret_memLeaksByDesc = "";
+        ret_memLeaksByDesc = copyRemoteBuffer(s_memLeaksByDesc.locale.id,
+                                              s_memLeaksByDesc.buff,
+                                              s_memLeaksByDesc.len);
+      else ret_memLeaksByDesc = nil;
       if s_memLog.len != 0 then
-        ret_memLog = remoteStringCopy(s_memLog.home.id,
-                                      s_memLog.base,
+        ret_memLog = copyRemoteBuffer(s_memLog.locale.id,
+                                      s_memLog.buff,
                                       s_memLog.len);
-      else ret_memLog = "";
+      else ret_memLog = nil;
       if s_memLeaksLog.len != 0 then
-        ret_memLeaksLog = remoteStringCopy(s_memLeaksLog.home.id,
-                                           s_memLeaksLog.base,
+        ret_memLeaksLog = copyRemoteBuffer(s_memLeaksLog.locale.id,
+                                           s_memLeaksLog.buff,
                                            s_memLeaksLog.len);
-      else ret_memLeaksLog = "";
+      else ret_memLeaksLog = nil;
     } else {
       ret_memLeaksByDesc = memLeaksByDesc;
       ret_memLog = memLog;

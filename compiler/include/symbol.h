@@ -113,6 +113,9 @@ public:
   virtual bool       isParameter()                             const;
           bool       isRenameable()                            const;
 
+  // Returns the scope block in which this symbol is declared.
+          BlockStmt* getDeclarationScope()                     const;
+
   virtual void       codegenDef();
 
   bool               hasFlag(Flag flag)                        const;
@@ -145,6 +148,9 @@ private:
 
   virtual void       codegenPrototype(); // ie type decl
 };
+
+// An STL vector of symbols
+typedef std::vector<Symbol*> SymbolVector;
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -513,8 +519,14 @@ class LabelSymbol : public Symbol {
 *                                                                   *
 ********************************* | ********************************/
 
+// Processes a char* to replace any escape sequences with the actual bytes
+std::string unescapeString(const char* const str);
+
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
+
+// Creates a new C string literal with the given value.
+VarSymbol *new_CStringSymbol(const char *s);
 
 // Creates a new boolean literal with the given value and bit-width.
 VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
@@ -568,12 +580,15 @@ bool argMustUseCPtr(Type* t);
 extern bool localTempNames;
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+extern HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 extern StringChainHash uniqueStringHash;
 
 extern ModuleSymbol* rootModule;
 extern ModuleSymbol* theProgram;
 extern ModuleSymbol* mainModule;
 extern ModuleSymbol* baseModule;
+extern ModuleSymbol* stringLiteralModule;
+extern FnSymbol* initStringLiterals;
 extern ModuleSymbol* standardModule;
 extern ModuleSymbol* printModuleInitModule;
 extern Symbol *gNil;

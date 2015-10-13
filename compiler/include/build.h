@@ -51,6 +51,7 @@ Expr* buildIntLiteral(const char* pch);
 Expr* buildRealLiteral(const char* pch);
 Expr* buildImagLiteral(const char* pch);
 Expr* buildStringLiteral(const char* pch);
+Expr* buildCStringLiteral(const char* pch);
 
 Expr* buildDotExpr(BaseAST* base, const char* member);
 Expr* buildDotExpr(const char* base, const char* member);

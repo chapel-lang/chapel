@@ -1,0 +1,7 @@
+bug: a string in a tuple does not cross locales properly
+
+This test is a variation on basic-test.chpl
+that adds one more level of tuples around a string.
+For details, see:
+
+   ./s8.future

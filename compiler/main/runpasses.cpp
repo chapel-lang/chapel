@@ -61,7 +61,6 @@ struct PassInfo {
 #define LOG_prune                              'X'
 #define LOG_complex2record                     'C'
 #define LOG_bulkCopyRecords                    'B'
-#define LOG_removeUnnecessaryAutoCopyCalls     'U'
 #define LOG_inlineFunctions                    'I'
 #define LOG_scalarReplace                      'r'
 #define LOG_refPropagation                     'g'
@@ -127,7 +126,6 @@ static PassInfo sPassList[] = {
   // Optimizations
   RUN(complex2record),          // change complex numbers into records
   RUN(bulkCopyRecords),         // replace simple assignments with PRIM_ASSIGN.
-  RUN(removeUnnecessaryAutoCopyCalls),
   RUN(inlineFunctions),         // function inlining
   RUN(scalarReplace),           // scalar replace all tuples
   RUN(refPropagation),          // reference propagation

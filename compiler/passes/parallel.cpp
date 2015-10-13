@@ -33,6 +33,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "CForLoop.h"
 
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
@@ -160,11 +161,134 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 }
 
 
+//########################################################################
+//# Begin cruft
+//#
+//# The searches and predicates below, up to the matching "End cruft" label are
+//# here as compensation for the lack of direct representation in the AST of
+//# cobegin and coforall blocks.
+//# The implementation of these parallel constructs is rendered very early in
+//# translation (in build???() actions in the parser), so they have already
+//# been flattened somewhat immediately after parsing.  It would be desirable
+//# to use a more high-level representation for these parallel constructs early
+//# in translation, and even up to this point.  That would allow the
+//# taskMayOutliveTaskArg() predicate to be computed very cheaply, rather than
+//# using these somewhat involved tree searches.
+//#
+
+
+// Given a (cobegin or coforall) task function call, find the correponding call
+// to _upEndCount().  We assume that the _upEndCount() call is at the same
+// level as the task function call and precedes it in the tree.
+// Or it could be inside a sibling 'local' block.
+// TODO: This general utility can be moved to expr.cpp.
+static CallExpr*
+containsSiblingCall(const char* name, Expr* aExp) {
+  if (CallExpr* call = toCallExpr(aExp)) {
+    if (call->isNamed(name))
+      return call;
+  } else if (BlockStmt* block = toBlockStmt(aExp)) {
+    if (CallExpr* blockInfo = block->blockInfoGet())
+      if (blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+        for (Expr* nExp = block->body.head; nExp; nExp = nExp->next)
+          if (CallExpr* foundit = containsSiblingCall(name, nExp))
+            return foundit;
+  }
+  return NULL;
+}
+
+static CallExpr*
+findSiblingCallPreceding(const char* name, CallExpr* taskFnCall)
+{
+  Expr* expr = taskFnCall->prev;
+  while ((expr = expr->prev))
+    if (CallExpr* foundit = containsSiblingCall(name, expr))
+      return foundit;
+
+  // Returns NULL if no such call was found.
+  return NULL;
+}
+
+
+static BlockStmt*
+findTaskScope(CallExpr* taskFnCall)
+{
+  CallExpr* upEndCountCall = findSiblingCallPreceding("_upEndCount", taskFnCall);
+  if (upEndCountCall == NULL)
+    INT_FATAL(taskFnCall, "Could not find an _upEndCount call for this task function call");
+
+  // This is the task counter for this parallel construct
+  Symbol* count = toSymExpr(upEndCountCall->get(1))->var;
+
+  // We assume that the task count is declared just inside the block
+  // representing the parallel construct.
+  BlockStmt* taskScope = toBlockStmt(count->defPoint->parentExpr);
+
+  return taskScope;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// Returns true if the task function fn may outlive the given task arg (passed
+// to it through fcall); false otherwise.
+//
+// Inside a cobegin or coforall block, execution of the task will not outlive
+// the _waitEndCount() call at the end of the block representing the
+// corresponding parallel construct.  So, we proceed by finding the block
+// containing the declaration of arg and the block containing the task call's
+// corresponding _waitEndCount() call.  If the latter block properly contains
+// the former, then we return true.
+// Viewed another way: Variables with the same scope as the counter used in the
+// _waitEndCount() call are guaranteed to outlast all tasks called by the
+// cobegin or coforall.
+//
+static bool
+taskMayOutliveTaskArg(Expr* arg, CallExpr* taskFnCall)
+{
+  // Get the task function.
+  FnSymbol* fn = taskFnCall->isResolved();
+
+  // "begin" functions are asynchronous -- no telling when they will terminate
+  // relative to their calling context.  Therefore, a copy is always required.
+  if (fn->hasFlag(FLAG_BEGIN))
+    return true;
+
+  // Ditto for non-blocking "on" functions.
+  if (fn->hasFlag(FLAG_NON_BLOCKING))
+    return true;
+
+  // For cobegin or coforall functions, we are a bit more picky.
+  // We only have to copy the arg if it may be deleted before the corresponding
+  // parallel construct is exited.
+  if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))
+  {
+    DefExpr* argDef = toSymExpr(arg)->var->defPoint;
+    Expr* argScope = toBlockStmt(argDef->parentExpr);
+    BlockStmt* taskScope = findTaskScope(taskFnCall);
+
+    if (argScope)
+      // Ignore cases where the argument scope is not a containing block.
+      if (taskScope->contains(argScope))
+        return true;
+  }
+
+  return false;
+}
+
+//#
+//# End cruft
+//#
+//########################################################################
+
+
 /// Optionally autoCopies an argument being inserted into an argument bundle.
 ///
 /// This routine optionally inserts an autoCopy ahead of each invocation of a
-/// task function that begins asynchronous execution (currently just "begin" and
-/// "nonblocking on" functions).  
+/// task function where it is needed.  These cases currently include:
+///  - All record arguments to a begin or nonblock "on" function; and
+///  - Record arguments to a cobegin or coforall task function only if the
+///    argument's scope is inside the body of the coforall or cobegin.
+///    (See Note #1.)
 /// If such an autoCopy call is inserted, a matching autoDestroy call is placed
 /// at the end of the tasking routine before the call to _downEndCount.  Since a
 /// tasking function may be called from several call sites, the task function is
@@ -181,18 +305,23 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 /// given task function and \p false thereafter.
 /// \ret Returns the result of calling autoCopy on the given arg, if necessary;
 /// otherwise, just returns 
+/// TODO: The autocopy/autodestroy pairs are necessary on coforalls, but
+/// probably not cobegins.  We need to split that flag to handle the two cases
+/// separately.
+/// TODO: This routine is only necessary because the parallel pass is run after
+/// insertAutoCopyAutoDestroy().  Try moving that pass after parallel and
+/// removing this code.
 static Symbol* insertAutoCopyDestroyForTaskArg
   (Expr* arg, ///< The actual argument being passed.
    CallExpr* fcall, ///< The call that invokes the task function.
-   FnSymbol* fn, ///< The task function.
    bool firstCall)
 {
   SymExpr* s = toSymExpr(arg);
   Symbol* var = s->var;
 
-  // This applies only to arguments being passed to asynchronous task functions.
-  // No need to increment+decrement the reference counters for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN))
+  // Call autoCopy/autoDestroy on task arguments that potentially require deep
+  // copy semantics.
+  if (taskMayOutliveTaskArg(arg, fcall))
   {
     Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
@@ -206,7 +335,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       {
         // For internally reference-counted types, this punches through
         // references to bump the reference count.
-        VarSymbol* derefTmp = newTemp(baseType);
+        VarSymbol* derefTmp = newTemp("derefTmp", baseType);
         fcall->insertBefore(new DefExpr(derefTmp));
         fcall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
                                          new CallExpr(PRIM_DEREF, var)));
@@ -234,10 +363,11 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       {
         // The task function may be called from several call sites, so insert
         // the autodestroy call only once (when processing the first fcall).
+        FnSymbol* fn = fcall->isResolved();
         Symbol* formal = actual_to_formal(arg);
         if (arg->typeInfo() != baseType)
         {
-          VarSymbol* derefTmp = newTemp(baseType);
+          VarSymbol* derefTmp = newTemp("derefTmp", baseType);
           fn->insertBeforeDownEndCount(new DefExpr(derefTmp));
           fn->insertBeforeDownEndCount(
             new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF,  formal)));
@@ -267,8 +397,10 @@ static Symbol* insertAutoCopyDestroyForTaskArg
 
         if (firstCall)
         {
-          // Insert a call to the autoDestroy function ahead of the return.
+          // Insert a call to the autoDestroy function ahead of the return (or
+          // _downEndCount() call, if present).
           // (But only once per function for each affected argument.)
+          FnSymbol* fn = fcall->isResolved();
           Symbol* formal = actual_to_formal(arg);
           CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
           fn->insertBeforeDownEndCount(autoDestroyCall);
@@ -304,7 +436,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   {
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
     // calls.
-    Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, fn, firstCall);
+    Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, firstCall);
 
     // Copy the argument into the corresponding slot in the argument bundle.
     CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
@@ -567,14 +699,20 @@ insertEndCount(FnSymbol* fn,
 static void
 replicateGlobalRecordWrappedVars(DefExpr *def) {
   ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
-  Expr* stmt = mod->initFn->body->body.head;
+  Expr* found_stmt = NULL;
   Expr* useFirst = NULL;
   Symbol *currDefSym = def->sym;
   bool found = false;
   // Try to find the first definition of this variable in the
   //   module initialization function
-  while (stmt && !found)
+  std::vector<Expr*> stmts;
+  collect_stmts(mod->initFn->body, stmts);
+  for_vector(Expr, stmt, stmts)
   {
+    // Ignore all but CallExprs.
+    if (! isCallExpr(stmt))
+      continue;
+
     std::vector<SymExpr*> symExprs;
     collectSymExprs(stmt, symExprs);
     for_vector(SymExpr, se, symExprs) {
@@ -584,6 +722,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
         if (result & 1) {
           // first use/def of the variable is a def (normal case)
           INT_ASSERT(useFirst==NULL);
+          found_stmt = stmt;
           found = true;
           break;
         } else if (result & 2) {
@@ -611,6 +750,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
             // depending on how we add array literals to the language
             INT_ASSERT(toCallExpr(stmt));
             INT_ASSERT(toCallExpr(stmt)->primitive==NULL);
+            found_stmt = stmt;
             found = true;
             break;
           }
@@ -619,11 +759,10 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
     }
     if (found)
       break;
-
-    stmt = stmt->next;
   }
+
   if (found)
-    stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+    found_stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
   else
     mod->initFn->insertBeforeReturn(new CallExpr
                                     (PRIM_PRIVATE_BROADCAST, def->sym));
@@ -705,6 +844,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                   call->isPrimitive(PRIM_WIDE_GET_NODE))
@@ -770,12 +910,34 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         SET_LINENO(var);
         if (fn && innermostBlock == fn->body)
+          // The block is a function body.
           fn->insertBeforeReturnAfterLabel(callChplHereFree(move->get(1)->copy()));
         else {
-          BlockStmt* block = toBlockStmt(innermostBlock);
-          INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+          // The block is some other kind of block.
+          if (CForLoop* cfl = toCForLoop(innermostBlock))
+          {
+            // The logical end of the loop block is as at the end of the
+            // increment clause.  It is assumed here, that if the innerMost
+            // block contained the entire for loop, then that block would not
+            // be the CForLoop block itself.  If a block contains nothing but a
+            // CForLoop and then the block structure is smashed flat, we lose
+            // the ability to distinguish these two cases.
+            BlockStmt* incr = cfl->incrBlockGet();
+            incr->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
+          }
+          // Other cases may need to be added here.
+          else
+          {
+            // A "normal" block.
+            BlockStmt* block = toBlockStmt(innermostBlock);
+            INT_ASSERT(block);
+            block->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
+          }
         }
+      }
+      else
+      {
+        // Free the variable at the end of the task function.
       }
     }
     // else ... 
@@ -875,7 +1037,10 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !isSyncType(def->sym->type)))) {
+            !isSyncType(def->sym->type) &&
+            // Dont try to broadcast string literals, they'll get fixed in
+            // another manner
+            (def->sym->type != dtString)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {
@@ -912,6 +1077,9 @@ makeHeapAllocations() {
     if (ArgSymbol* arg = toArgSymbol(ref)) {
       FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
       forv_Vec(CallExpr, call, *fn->calledBy) {
+        if (! call->parentSymbol)
+          continue;
+
         SymExpr* se = NULL;
         for_formals_actuals(formal, actual, call) {
           if (formal == arg)
@@ -1025,6 +1193,14 @@ makeHeapAllocations() {
       }
     }
 
+    // Special case for string literals: Do not heap-allocate them.
+    // Instead, string literal values are moved into local temporaries that are
+    // widened.
+    if (var->type == dtString)
+      if (VarSymbol* v = toVarSymbol(var))
+        if (v->immediate)
+          continue;
+
     SET_LINENO(var);
 
     if (ArgSymbol* arg = toArgSymbol(var)) {
@@ -1067,7 +1243,8 @@ makeHeapAllocations() {
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
-          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
+          Expr* value = call->get(2)->remove();
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, value));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
         } else if (call->isPrimitive(PRIM_ASSIGN)) {
           // ensure what we assign into is what we expect
@@ -1218,6 +1395,18 @@ reprivatizeIterators() {
 
 void
 parallel(void) {
+
+#ifdef HILDE_MM
+  // This is here just because it depends on the cleanup after lowerIterators
+  // having been performed, and it depends on lower iterators to get the basic
+  // block structure of iterator functions right.
+  // In other words, it could be moved back to the end of callDestructors.cpp
+  // if basic block analysis were modified to treat a PRIM_YIELD as an
+  // end-of-block and treat all blocks within an iterator function as
+  // successors of a faked-in start block.
+  insertAutoCopyAutoDestroy();
+#endif
+
   Vec<FnSymbol*> taskFunctions;
 
   // Collect the task functions for processing.
@@ -1367,30 +1556,25 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   return wide;
 }
 
- 
+////////////////////////////////////////////////////////////////////////////////
+// NOTES
 //
-// Returns true if the type t is a reference to a wide string
+// Note #1:
+//  The need for an autoCopy call arises because a variable scoped to the body
+//  of a coforall (e.g.) will be deleted when one traversal of the body
+//  completes.  All the body of a coforall does in reality is to queue up a
+//  task to be run when the coforall loop completes.
+//  Which means that the original variable is long gone by the time the task
+//  runs.  A shallow (i.e. bitwise) copy will not suffice, because class
+//  variables in the record might point to class objects that have since been
+//  reclaimed.
 //
-// This is used to handle cases where wide strings are passed to
-// functions that require local arguments.  If strings were a little
-// better behaved, it arguably wouldn't/shouldn't be required.
-//
-bool isRefWideString(Type* t) {
-  if (isReferenceType(t)) {
-    AggregateType* ct = toAggregateType(t);
-    INT_ASSERT(ct);
-    Symbol* valField = ct->getField("_val", false);
-    INT_ASSERT(valField);
-    return isWideString(valField->type);
-  }
-  return false;
-}
-
-bool isWideString(Type* t) {
-  if (!requireWideReferences()) return false; // no wide string type will exist if wide references weren't created
-  INT_ASSERT(wideStringType); // should only be called after it exists!
-  if (t == NULL) return false;
-  if( t == wideStringType ) return true;
-  return false;
-}
-
+//  The cases in which the autoCopy/autoDestroy on task args can be avoided can
+//  be considered an optimization:  As long is the lifetime of the variable
+//  used as an argument is guaranteed to exceed the lifetime of the task, then
+//  a deep copy (through autoCopy) is not necessary.  The implicit sync at the
+//  end of cobegins and coforalls means that all tasks generated by these
+//  constructs will complete before the construct is exited.  Therefore a
+//  variable declared outside of a cobegin or coforall is guaranteed to outlast
+//  any task it spawns.  Therefore it is legal to apply the optimization in
+//  this case.

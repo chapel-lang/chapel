@@ -86,10 +86,8 @@ refNecessary(SymExpr* se,
 }
 
 
-//
-// removes references that are not necessary
-//
-void cullOverReferences() {
+static void callGetterForValueReturn()
+{
   //
   // change call of reference function to value function
   //
@@ -108,11 +106,24 @@ void cullOverReferences() {
             SymExpr* base = toSymExpr(call->baseExpr);
             base->var = copy;
             VarSymbol* tmp = newTemp(copy->retType);
-            move->insertBefore(new DefExpr(tmp));
+            // Danger, Will Robinson! We are about to take the address of this
+            // temporary.  The temporary must remain in-scope for as long as
+            // anything referred to in the return value of the original 'fn'.
+            // We need to select a scope that contains all uses of the original
+            // LHS se, and put the declaration for our temp variable there --
+            // to make sure that the deref temp does not go out of scope before
+            // references to it do.  Note #1.
+            // For now, we just use the declaration scope of the original se.
+            se->var->defPoint->insertAfter(new DefExpr(tmp));
+#ifndef HILDE_MM
+            // Why is this here?
+            // Marking variables for autocopy/autodestroy ought to be done in
+            // one place once and for all.  Is this that place?
             if (requiresImplicitDestroy(call)) {
               tmp->addFlag(FLAG_INSERT_AUTO_COPY);
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
             }
+#endif
             if (useMap.get(se->var) && useMap.get(se->var)->n > 0) {
               move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
                                   new CallExpr(PRIM_ADDR_OF, tmp)));
@@ -127,7 +138,11 @@ void cullOverReferences() {
     }
   }
   freeDefUseMaps(defMap, useMap);
+}
 
+
+static void removeRefsToWrappedTypes()
+{
   //
   // remove references to array wrapper records, domain wrapper
   // records, and iterator records; otherwise we can end up returning
@@ -177,3 +192,93 @@ void cullOverReferences() {
     }
   }
 }
+
+
+// Look for and replace the pattern:
+//  ('move' ref_tmp ('addr of' var1))
+//  ('move' var2 ('deref' ref_tmp))
+// with
+//  ('move' var2 var1)
+//
+static void removeRefDerefPairs()
+{
+  // Walk all "addr of" primitives.
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (! call->isPrimitive(PRIM_ADDR_OF))
+      continue;
+
+    // Ignore calls that are not in the tree.
+    if (! call->parentExpr)
+      continue;
+
+    // Get the statement-level expression containing this primitive.
+    CallExpr* addrOfStmt = toCallExpr(call->getStmtExpr());
+    INT_ASSERT(addrOfStmt);
+    INT_ASSERT(addrOfStmt->isPrimitive(PRIM_MOVE));
+
+    // Get the next statement.
+    if (CallExpr* derefStmt = toCallExpr(addrOfStmt->next))
+    {
+      // Make sure it is a move
+      if (! derefStmt->isPrimitive(PRIM_MOVE))
+        continue;
+      
+      // See if it contains a deref
+      if (CallExpr* deref = toCallExpr(derefStmt->get(2)))
+      {
+        // Make sure it is a deref primitive
+        if (! deref->isPrimitive(PRIM_DEREF))
+          continue;
+
+        // See if its arg is the LHS of the addrOfStmt
+        SymExpr* derefArg = toSymExpr(deref->get(1));
+        INT_ASSERT(derefArg);
+        SymExpr* refTmp = toSymExpr(addrOfStmt->get(1));
+        INT_ASSERT(refTmp);
+        if (derefArg->var == refTmp->var)
+        {
+          // Bingo.  Let's do the transformation.
+
+          // Actually, we leave the deref in place in case there are other uses
+          // of the refTmp.  But we replace the deref call with
+          // the (non-ref) operand of the 'addr of' primitive.
+
+          SymExpr* addrOfArg = toSymExpr(call->get(1));
+          // We expect the argument of the "addr of" primitive to be a SymExpr.
+          INT_ASSERT(addrOfArg);
+
+          SET_LINENO(derefStmt);
+          deref->replace(new SymExpr(addrOfArg->var));
+        }
+      }
+    }
+  }
+}
+
+
+//
+// Replace getter calls with setter calls where the return type is only read.
+// Also convert some references to values, to get required semantics.
+//
+void cullOverReferences() {
+  callGetterForValueReturn();
+  removeRefsToWrappedTypes();
+  removeRefDerefPairs();
+}
+
+
+//########################################################################
+//# NOTES
+//#
+//# Note #1: In places where the return value of a setter is immediately
+//# dereferenced, we get code that looks like this:
+//#      (875642 'move' tmp[954861](875648 call dsiAccess[875924] call_tmp[875634] i[875526]))
+//#      (954865 'move' call_tmp[875531](954863 'addr of' tmp[954861]))
+//#      (875650 'move' ret[875535](875652 'deref' call_tmp[875531]))
+//# i.e. a getter followed by 'addr of' followed by 'deref'.
+//# A later pass apparently knows how to collapse this out, but it creates
+//# problems for AMM (as implemented).  It would probably be good to follow
+//# the setter -> getter replacement with a pass that looks for this kind of
+//# no-op and removes them.
+//#

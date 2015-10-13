@@ -58,10 +58,7 @@ void BitVec::clear() {
 
 
 bool BitVec::get(size_t i) const {
-#if DEBUG
-  if (i >= in_size) 
-    INT_FATAL("BitVec::get -- operand out of range.");
-#endif
+  INT_ASSERT(i < in_size);
   size_t j = i / (sizeof(TYPE)<<3);
   size_t k = i - j*(sizeof(TYPE)<<3);
   return data[j] & (1 << k);
@@ -69,6 +66,7 @@ bool BitVec::get(size_t i) const {
 
 
 void BitVec::unset(size_t i) {
+  INT_ASSERT(i < in_size);
   size_t j = i / (sizeof(TYPE)<<3);
   size_t k = i - j*(sizeof(TYPE)<<3);
   data[j] &= ((TYPE)-1) - (1 << k);
@@ -76,20 +74,14 @@ void BitVec::unset(size_t i) {
 
 
 void BitVec::disjunction(const BitVec& other) {
-#if DEBUG
-  if (other.in_size != in_size)
-    INT_FATAL("BitVec::disjunction -- operand lengths must be equal.");
-#endif
+  INT_ASSERT(other.in_size == in_size);
   for (size_t i = 0; i < ndata; i++)
     data[i] |= other.data[i];
 }
 
 
 void BitVec::intersection(const BitVec& other) {
-#if DEBUG
-  if (other.in_size != in_size)
-    INT_FATAL("BitVec::intersection -- operand lengths must be equal.");
-#endif
+  INT_ASSERT(other.in_size == in_size);
   for (size_t i = 0; i < ndata; i++)
     data[i] &= other.data[i];
 }
@@ -106,10 +98,7 @@ void BitVec::intersection(const BitVec& other) {
 
 
 bool BitVec::equals(const BitVec& other) const {
-#if DEBUG
-  if (other.in_size != in_size)
-    INT_FATAL("BitVec::disjunction -- operand lengths must be equal.");
-#endif
+  INT_ASSERT(other.in_size == in_size);
   for(size_t i = 0; i < ndata; i++) {
     if(data[i] != other.data[i]) {
       return false;
@@ -126,6 +115,7 @@ void BitVec::set() {
 
 
 void BitVec::set(size_t i) {
+  INT_ASSERT(i < in_size);
   size_t j = i / (sizeof(TYPE)<<3);
   size_t k = i - j*(sizeof(TYPE)<<3);
   data[j] |= 1 << k;
@@ -139,6 +129,7 @@ void BitVec::reset() {
       
         
 void BitVec::reset(size_t i) {
+  INT_ASSERT(i < in_size);
   size_t j = i / (sizeof(TYPE)<<3);
   size_t k = i - j*(sizeof(TYPE)<<3);
   data[j] &= ((size_t)-1) - (1 << k);
@@ -146,12 +137,14 @@ void BitVec::reset(size_t i) {
 
 
 void BitVec::copy(const BitVec& other) {
+  INT_ASSERT(other.in_size == in_size);
   for (size_t i = 0; i < ndata; ++i)
     data[i] = other.data[i];
 }
 
 
 void BitVec::copy(size_t i, bool value) {
+  INT_ASSERT(i < in_size);
   size_t j = i / (sizeof(TYPE)<<3);
   size_t k = i - j*(sizeof(TYPE)<<3);
   data[j] &= ~(1 << k);
@@ -167,6 +160,7 @@ void BitVec::flip() {
 
 
 void BitVec::flip(size_t i) {
+  INT_ASSERT(i < in_size);
   size_t j = i / (sizeof(TYPE)<<3);
   size_t k = i - j*(sizeof(TYPE)<<3);
   data[j] ^= 1 << k;

@@ -83,9 +83,9 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 
      /* Do the op at the root  */
      select what {
-         when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
+         when vis_op.v_start    do chpl_vdebug_start (name.localize().c_str(), time);
          when vis_op.v_stop     do chpl_vdebug_stop ();
-         when vis_op.v_tag      do chpl_vdebug_tag (name.c_str());
+         when vis_op.v_tag      do chpl_vdebug_tag (name.localize().c_str());
          when vis_op.v_pause    do chpl_vdebug_pause ();
      }
 }

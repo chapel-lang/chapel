@@ -9,6 +9,13 @@ record myR {
   proc ~myR() { delete c; }
 }
 
+inline proc chpl__autoCopy(x: myR)
+{
+  var r:myR;
+  r = x;
+  return r;
+}
+
 inline proc chpl__autoDestroy(x: myR) { }
 
 proc =(ref a: myR, b: myR) {

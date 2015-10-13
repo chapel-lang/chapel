@@ -1,0 +1,8 @@
+intents.chpl:11: error: non-lvalue actual is passed to 'out' formal 's' of fo()
+intents.chpl:12: error: non-lvalue actual is passed to 'inout' formal 's' of fio()
+intents.chpl:13: error: non-lvalue actual is passed to 'ref' formal 's' of fr()
+intents.chpl:23: error: non-lvalue actual is passed to 'out' formal 's' of go()
+intents.chpl:24: error: non-lvalue actual is passed to 'inout' formal 's' of gio()
+intents.chpl:25: error: non-lvalue actual is passed to 'ref' formal 's' of gr()
+intents.chpl:31: error: unresolved call 'fo(c_string)'
+intents.chpl:5: note: candidates are: fo(out s: string)

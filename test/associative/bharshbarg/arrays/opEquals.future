@@ -1,0 +1,33 @@
+bug: Initialization expression persists to end of function.
+
+Under the new AMM model, this test fails because the insertion of autoDestroys is delayed
+to the end of the enclosing function.  The difference with the trunk version is that
+changeRetToArgAndClone has pulled the autoCopy of the return value into the
+chpl__buildAssociativeArrayExpr() routine, so when autoDestroys are added there, the
+autoDestroy appears in the called function, not in the caller.
+
+Opportunities for avoid autoCopies are increased if the destruction is pushed up the call
+tree, so the AMM approach has advantages.  I think that if variable initialization were
+implemented as a constructor call at the top level, then this particular problem would
+disappear.  Optimizations we have discussed involve collapsing
+
+  var A = new A(<args>);
+
+down to what is effectively.
+
+  var A = noinit;
+  A.ctor(<args>);
+
+In that case, there is only ever one copy of the object.  The initialization routine
+(chpl__buildAssociativeArrayExpr()) returns an anonymous object.  But rather than copying
+the anonymous object in to a named object that has been default-initialized, what the
+compiler will do is effectively apply the name "A" to the anonymous object.  Since there
+is only ever one object, the internal consistency test will pass.  The verbatim copy will
+be eliminated as well.
+
+Implementing the new constructor story is probably a more effective approach than trying
+to find a workaround for the existing behavior.  The routine changeRetToArgAndClone has
+been a fertile source of bugs.  When the "return record values by ref args" optimization
+is re-enabled, it will probably be done in a way that leaves the autoCopy call in the
+caller rather than pulling it into the callee.  So simply reenabling the optimization is
+not a good solution to the problem.

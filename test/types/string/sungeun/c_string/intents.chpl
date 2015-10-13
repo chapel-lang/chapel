@@ -12,14 +12,6 @@ fo("hi");
 fio("hi");
 fr("hi");
 
-var s: c_string = "hi";
-s += s;
-f(s);
-fi(s);
-fo(s);
-fio(s);
-fr(s);
-
 proc g(s) {  checkType(s.type); }
 proc gi(in s) { checkType(s.type); }
 proc go(out s) { checkType(s.type); }
@@ -31,3 +23,11 @@ gi("hi");
 go("hi");
 gio("hi");
 gr("hi");
+
+var s: c_string = "hi";
+s += s;
+f(s);
+fi(s);
+fo(s);
+fio(s);
+fr(s);

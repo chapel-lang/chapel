@@ -22,11 +22,14 @@
 
 #include "symbol.h"
 
+//
+// Global symbols set to true after the corresponding class is complete
+//
 extern bool parsed;
 extern bool normalized;
 extern bool resolved;
 extern bool intentsResolved;
-
+extern bool iteratorsLowered;
 
 //
 // prototypes of functions that are called as passes (alphabetical)
@@ -50,6 +53,7 @@ void expandExternArrayCalls();
 void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();
+void insertAutoCopyAutoDestroy();
 void insertLineNumbers();
 void insertWideReferences();
 void localizeGlobals();
@@ -66,7 +70,6 @@ void prune2();
 void readExternC();
 void refPropagation();
 void removeEmptyRecords();
-void removeUnnecessaryAutoCopyCalls();
 void removeWrapRecords();
 void resolve();
 void resolveIntents();
@@ -108,10 +111,13 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 // callDestructors.cpp
 void insertReferenceTemps(CallExpr* call);
+void insertReferenceTemps();
+
+void insertDerefTemps(CallExpr* call);
+void insertDerefTemps(FnSymbol* fn);
+void insertDerefTemps();
 
 // parallel.cpp
-bool isRefWideString(Type* t);
-bool isWideString(Type* t);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 

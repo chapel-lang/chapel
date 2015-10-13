@@ -1,0 +1,5 @@
+(hi there declared)
+(hi there inferred copy noinit assign)
+(hi there inferred initcopy)
+(hi there inferred copy defaultinit assign)
+(hi there inferred)

@@ -855,6 +855,19 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 }
 
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DimensionalDom) {
+  x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DimensionalDom) {
+  var cnt = x.destroyDom();
+  if cnt == 0 then
+    delete x;
+}
+
+
 //== serial iterator - array
 
 // note: no 'on' clauses - they not allowed by the compiler
@@ -898,6 +911,20 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
             yield locAdesc.myStorageArr(i1:stoSzT, i2:stoSzT);
       }
 }
+
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DimensionalArr) {
+  x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DimensionalArr) {
+  var cnt = x.destroyArr();
+  if cnt == 0 then
+    delete x;
+}
+
 
 //=============================================================================
 

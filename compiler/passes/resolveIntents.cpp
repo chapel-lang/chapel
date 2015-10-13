@@ -25,8 +25,7 @@ bool intentsResolved = false;
 static IntentTag constIntentForType(Type* t) {
   if (isSyncType(t) ||
       isRecordWrappedType(t) ||  // domain, array, or distribution
-      isRecord(t) ||  // may eventually want to decide based on size
-      is_string_type(t)) {  
+      isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
   } else if (is_bool_type(t) ||
              is_int_type(t) ||
@@ -65,7 +64,6 @@ IntentTag blankIntentForType(Type* t) {
              is_imag_type(t) ||
              is_complex_type(t) ||
              is_enum_type(t) ||
-             is_string_type(t) ||
              t == dtStringC ||
              t == dtStringCopy ||
              t == dtCVoidPtr ||
@@ -108,9 +106,55 @@ void resolveArgIntent(ArgSymbol* arg) {
     concreteIntent(arg->intent, arg->type);
 }
 
+// In Chapel, there is only one reference level: there are no references to
+// references (ignoring the wide case and class variables for simplicity).
+// This routine adjusts the type of the argument to match the REF flag of its
+// concrete intent, which in turn controls how the argument is passed in the
+// generated code.
+//
+// Application of this function to various arguments will temporarily violate
+// the invariant that the types of formal and actual arguments match.  The calls
+// to insertReferenceTemps() and insertDerefTemps() will correct that.
+static void adjustRefLevel(ArgSymbol* arg)
+{
+  if (arg->intent & INTENT_FLAG_REF)
+  {
+    // This conditional is only present for debugging purposes.
+    // It may be removed when this change-of-type seems obvious.
+    Type* t = arg->type;
+
+    // There is only one level of referencing in Chapel, so of this arg is
+    // already a ref type, we are done.
+    if (t->symbol->hasFlag(FLAG_REF))
+      return;
+
+    // Type arguments are always passed by "value".
+    // TODO: This test should really be:
+    //    if (arg->hasFlag(FLAG_TYPE_VARIABLE))
+    // but this causes many more arguments to be passed by reference, and about
+    // 150 standard test cases fail as a result.
+    if (t->symbol->hasFlag(FLAG_TYPE_VARIABLE))
+      return;
+
+    // Do not do this for record-wrapped types, because somewhere else we
+    // believe that RWTs should always be passed around by value(!?)
+    if (isRecordWrappedType(t))
+        return;
+
+    // This argument wants to be passed by ref.
+    // But is not.  Let's fix that.
+    INT_ASSERT(arg->type->refType);
+    arg->type = arg->type->refType;
+  }
+}
+
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     resolveArgIntent(arg);
+    adjustRefLevel(arg);
   }
+  insertReferenceTemps();
+  insertDerefTemps();
+
   intentsResolved = true;
 }

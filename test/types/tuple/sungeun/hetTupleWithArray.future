@@ -1,3 +1,0 @@
-bug: Heterogeneous tuples with array elements declared with a type result in null pointer dereference at runtime.
-
-We are trying to free the array, which was never allocated.

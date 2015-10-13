@@ -7,3 +7,4 @@ cmui = os.getenv('CHPL_MUNGE_USER_IDENTS')
 print(cmui == '0' or cmui == 'off' or cmui == 'no' or
       '--no-munge-user-idents' in os.getenv('COMPOPTS'))
                                           
+

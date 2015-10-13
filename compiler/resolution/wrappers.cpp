@@ -154,6 +154,39 @@ insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call) {
 //// default wrapper code
 ////
 
+#if 0
+// Work-in-progress:
+// This unfortunately fails in the backend compiler, because one side of the
+// nil assignment gets converted from runtime type to its concrete counterpart
+// while the other does not.
+static void
+zeroInitializeArrayFields(FnSymbol* wrapper)
+{
+  SET_LINENO(wrapper);
+  Symbol* _this = wrapper->_this;
+  AggregateType* at = toAggregateType(_this->type);
+  for_fields(field, at)
+  {
+    Type* fieldType = field->type;
+    // Skip type fields like "eltType".
+    if (fieldType->symbol->hasFlag(FLAG_ARRAY))
+    {
+      // Copy a nil into the _value field of the record-wrapped array type.
+      // Don't bother to initialize the other fields in the record wrapper.
+      AggregateType* fieldRecordWrapperType = toAggregateType(fieldType);
+      INT_ASSERT(isRecord(fieldRecordWrapperType));
+      VarSymbol* tmp = newTemp("array_init_tmp", fieldRecordWrapperType);
+      wrapper->insertAtTail(new DefExpr(tmp));
+      wrapper->insertAtTail(new CallExpr(PRIM_SET_MEMBER, tmp,
+                                         new_StringSymbol("_value"),
+                                         gNil));
+      wrapper->insertAtTail(new CallExpr(PRIM_SET_MEMBER, _this,
+                                         new_StringSymbol(field->name), tmp));
+    }
+  }
+}
+#endif
+
 
 static FnSymbol*
 buildDefaultWrapper(FnSymbol* fn,
@@ -189,7 +222,34 @@ buildDefaultWrapper(FnSymbol* fn,
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
-    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
+//    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
+    // WORKAROUND: If an array appears as a field in a class or record and it
+    // has a forall initializer expression (see e.g. arrayInClassRecord), then
+    // the initializer expression will be converted into a forall loop that
+    // references the yet-to-be-initialized array field.  The forall loop is
+    // intended to copy array elements in the initializer expression into the
+    // array that is supposed to be already there (somehow initialized before
+    // it is initialized).
+    // The whole problem stems from the confusion of assignment with
+    // initialization.  Array assignment is element-by-element.  For array
+    // initialization, however, it would be legal to gin up a whole initialized
+    // array from scratch and then move it into the uninitialized array field
+    // by a pointer copy.
+    // The code that was here before basically zero-initialized the fields in
+    // the class or record, and then a special test on line 2389 of
+    // ChapelArray.chpl skips the assignment-to-the-array-that-aint-yet-there
+    // to avoid a crash.  
+    // As the new constructor story is implemented, propagation of the
+    // distinction between assignment and initialization ought to make it
+    // easier to do the right thing.  For now, the solution is to detect the
+    // failing case and zero-initialize the corresponding field(s).
+//    zeroInitializeArrayFields(wrapper);
+    // This does not work due to interference with the "runtime type"
+    // transformations.  I also tried inserting a call to PRIM_INIT_FIELDS, but
+    // that no longer works on the string-as-rec branch, probably because
+    // correct AMM inserts more constructor calls and this in turn puts more
+    // pressure on the correctness of the type system.  Translation: the
+    // earlier implementation of initializeClass() worked by accident.
   }
   CallExpr* call = new CallExpr(fn);
   call->square = info->call->square;    // Copy square brackets call flag.
@@ -227,9 +287,11 @@ buildDefaultWrapper(FnSymbol* fn,
                  isRefCountedType(wrapper_formal->type)) {
         // Formal has a type expression attached and is reference counted (?).
         temp = newTemp("wrap_type_arg");
+#ifndef HILDE_MM
         if (Symbol* field = fn->_this->type->getField(formal->name, false))
           if (field->defPoint->parentSymbol == fn->_this->type->symbol)
             temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
         wrapper->insertAtTail(new DefExpr(temp));
 
         // Give the formal its own copy of the type expression.
@@ -275,19 +337,20 @@ buildDefaultWrapper(FnSymbol* fn,
       // into the wrapper formal as well.
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
+
+      // Copy temp into the field, if necessary.
       if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
+        // Select only formals carrying values.
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
+          // See if the name of the formal matches a field name.
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
+            // I think this test ensures that the field is an immediate child
+            // of _this.
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
             {
-              Symbol* copyTemp = newTemp("wrap_arg");
-              wrapper->insertAtTail(new DefExpr(copyTemp));
-              wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), copyTemp));
-              copy_map.put(formal, copyTemp);
-              call->argList.tail->replace(new SymExpr(copyTemp));
+                             new_CStringSymbol(field->name), temp));
             }
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
@@ -353,7 +416,7 @@ buildDefaultWrapper(FnSymbol* fn,
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), temp));
+                             new_CStringSymbol(formal->name), temp));
     }
   }
   update_symbols(wrapper->body, &copy_map);
@@ -664,8 +727,18 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
       c2 = false;
       Type* actualType = actualSym->type;
       if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
-        // addArgCoercion() updates currActual, actualSym, c2
-        addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        if (formalType == dtStringC && actualType == dtString && actualSym->isImmediate()) {
+          // We do this swap since we know the string is a valid literal
+          // There also is no cast defined for string->c_string on purpose (you
+          // need to use .c_str()) so the common case below does not work.
+          VarSymbol *var = toVarSymbol(actualSym);
+          SymExpr *newActual = new SymExpr(new_CStringSymbol(var->immediate->v_string));
+          currActual->replace(newActual);
+          currActual = newActual;
+        } else {
+          // addArgCoercion() updates currActual, actualSym, c2
+          addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        }
       }
     } while (c2 && --checksLeft > 0);
 

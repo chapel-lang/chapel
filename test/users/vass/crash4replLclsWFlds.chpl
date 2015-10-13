@@ -311,6 +311,21 @@ proc DimensionalDist.dsiIndexToLocale(indexx: indexT): locale {
                        di2.dsiIndexToLocale1d(indexx(2)):int);
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DimensionalDist) {
+  if ! noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DimensionalDist) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 // Find ix such that targetLocales(ix) == here.
 // If there is more than one answer, return one of them.
 // 'targetLocales' is passed explicitly because the caller may have
@@ -381,6 +396,20 @@ proc _passLocalLocIDsDom1d(dom1d, dist1d) {
 
 /// domain //////////////////////////////////////////////////////////////////
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DimensionalDom) {
+  if ! noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DimensionalDom) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
 
 //== privatization
 
@@ -599,6 +628,20 @@ proc DimensionalDom.dsiGetIndices(): domainT {
 
 /// array ///////////////////////////////////////////////////////////////////
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DimensionalArr) {
+  if !noRefCount && ! _isPrivatized(x) then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DimensionalArr) {
+  if !noRefCount && ! _isPrivatized(x) {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
 
 //== privatization
 

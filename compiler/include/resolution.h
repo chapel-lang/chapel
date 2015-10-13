@@ -33,7 +33,9 @@ extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
 extern std::map<CallExpr*,CallExpr*> eflopiMap;
 
+#ifndef HILDE_MM
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
+#endif
 bool isLeaderIterator(FnSymbol* fn);
 bool isStandaloneIterator(FnSymbol* fn);
 
@@ -74,5 +76,7 @@ FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
+
+bool isPOD(Type* t);
 
 #endif

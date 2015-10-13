@@ -92,14 +92,34 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
+      if debugDistRefCount > 0 {
+        const cnt = _distCnt.read();
+        if debugDistRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- INC _distCnt (%016lx) was %ld\n",
+                 __primitive("_wide_get_addr", this), cnt);
+        }
+        if cnt < 0 || cnt > 10000 then
+          halt("_distCnt ", cnt, " is bogus!");
+      }
       _distCnt.inc(cnt);
     }
 
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
       const cnt = _distCnt.dec();
-      if cnt < 0 then
-          halt("distribution reference count is negative!");
+      if debugDistRefCount > 0 {
+        if debugDistRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- DEC _distCnt (%016lx) now %ld\n",
+                 __primitive("_wide_get_addr", this), cnt);
+        }
+        if cnt < 0 || cnt > 10000 then
+          halt("_distCnt ", cnt, " is bogus!");
+        // Poison the distCount, so an attempt to move it away from zero a
+        // second time will fail
+        if cnt == 0 then _distCnt.dec();
+      }
       return cnt;
     }
 
@@ -131,19 +151,9 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc destroyDom(): int {
       compilerAssert(!noRefCount);
-      var cnt = decRefCount();
-      if cnt == 0 && dsiLinksDistribution() {
-          var dist = dsiMyDist();
-          on dist {
-            local dist.remove_dom(this);
-            var cnt = dist.destroyDist();
-            if cnt == 0 then
-              delete dist;
-          }
-      }
-      return cnt;
+      return decRefCount();
     }
-  
+
     inline proc remove_arr(x) {
       on this {
         _lock_arrs();
@@ -190,14 +200,34 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
+      if debugDomRefCount > 0 {
+        const cnt = _domCnt.read();
+        if debugDomRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- INC _domCnt (%016lx) was %ld\n", 
+                 __primitive("_wide_get_addr", this), cnt);
+        }
+        if cnt < 0 || cnt > 10000 then
+          halt("_domCnt ", cnt, " is bogus!");
+      }
       _domCnt.inc(cnt);
     }
 
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
       const cnt = _domCnt.dec(); //_domCnt.fetchSub(1)-1;
-      if cnt < 0 then
-          halt("domain reference count is negative!");
+      if debugDomRefCount > 0 {
+        if debugDomRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- DEC _domCnt (%016lx) now %ld\n", 
+                 __primitive("_wide_get_addr", this), cnt);
+        }
+        if cnt < 0 || cnt > 10000 then
+          halt("_domCnt ", cnt, " is bogus!");
+        // Poison the domCount, so an attempt to move it away from zero a
+        // second time will fail
+        if cnt == 0 then _domCnt.dec();
+      }
       return cnt;
     }
 
@@ -296,15 +326,6 @@ module ChapelDistribution {
           dsiDestroyData();
         }
       }
-      if cnt == 0 {
-          var dom = dsiGetBaseDom();
-          on dom {
-            local dom.remove_arr(this);
-            var cnt = dom.destroyDom();
-            if cnt == 0 then
-              delete dom;
-          }
-      }
       return cnt;
     }
   
@@ -363,14 +384,34 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       compilerAssert(!noRefCount);
+      if debugArrRefCount > 0 {
+        const cnt = _arrCnt.read();
+        if debugArrRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- INC _arrCnt (%016lx) was %ld\n",
+                 __primitive("_wide_get_addr", this), cnt);
+        }
+        if cnt < 0 || cnt > 10000 then
+          halt("_arrCnt ", cnt, " is bogus!");
+      }
       _arrCnt.inc(cnt);
     }
 
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
       const cnt = _arrCnt.dec(); //_arrCnt.fetchSub(1)-1;
-      if cnt < 0 then
-          halt("array reference count is negative!");
+      if debugArrRefCount > 0 {
+        if debugArrRefCount > 1 {
+          extern proc printf(fmt: c_string, arg...);
+          printf("----- DEC _arrCnt (%016lx) now %ld\n",
+                 __primitive("_wide_get_addr", this), cnt);
+        }
+        if cnt < 0 || cnt > 10000 then
+          halt("_arrCnt ", cnt, " is bogus!");
+        // Poison the arrCount, so an attempt to move it away from zero a
+        // second time will fail
+        if cnt == 0 then _arrCnt.dec();
+      }
       return cnt;
     }
 

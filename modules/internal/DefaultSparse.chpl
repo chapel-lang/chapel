@@ -245,6 +245,21 @@ module DefaultSparse {
   }
 
 
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultSparseDom) {
+    if ! noRefCount then
+      x.incRefCount();
+    return x;
+  }
+  
+  proc chpl__autoDestroy(x: DefaultSparseDom) {
+    if !noRefCount {
+      var cnt = x.destroyDom();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
   class DefaultSparseArr: BaseArr {
     type eltType;
     param rank : int;
@@ -256,6 +271,17 @@ module DefaultSparse {
 
     proc dsiGetBaseDom() return dom;
 
+    proc ~DefaultSparseArr() {
+      on dom {
+        local dom.remove_arr(this);
+        if ! noRefCount {
+          var cnt = dom.destroyDom();
+          if cnt == 0 then
+            delete dom;
+        }
+      }
+    }
+  
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box
       if boundsChecking then
@@ -398,6 +424,21 @@ module DefaultSparse {
     }
   }
 
+
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultSparseArr) {
+    if !noRefCount then
+      x.incRefCount();
+    return x;
+  }
+  
+  proc chpl__autoDestroy(x: DefaultSparseArr) {
+    if !noRefCount {
+      var cnt = x.destroyArr();
+      if cnt == 0 then
+        delete x;
+    }
+  }
 
   proc DefaultSparseArr.dsiSerialWrite(f: Writer) {
     if (rank == 1) {

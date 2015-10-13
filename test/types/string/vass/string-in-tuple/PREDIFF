@@ -1,0 +1,47 @@
+#!/bin/bash
+
+testname=$1
+outputfile=$2
+compiler=$3
+
+goodfile=$testname.good
+saveout=$outputfile.orig
+
+cp -p $outputfile $saveout
+echo retained the original output in $saveout
+
+case $testname in
+
+  (basic-test|extended-test|global-test)
+    expected='^starting: hi'
+    ;;
+
+  (s8) 
+    sort $saveout > $outputfile
+    expected='^   1   LOCALE0 LOCALE1 LOCALE2 LOCALE3$'
+    ;;
+
+  (*)
+    # Unsupported test - issue a gentle warning message.
+    echo PREDIFF is not provided for this test - no changes to $outputfile
+    exit
+    ;;
+
+esac
+
+if cmp -s $goodfile $outputfile; then
+  # The test is successful. Retain the output for sub_test.
+  true
+
+else
+  # The test failed. Failure output may vary, so there is no single .bad
+  # that would match. So we ensure at least that the test compiled
+  # and started running.
+  #
+  if grep -q "$expected" $saveout; then
+    echo "The test printed out the expected line." > $outputfile
+  else
+    echo "The test did NOT print out the expected line." > $outputfile
+  fi
+
+fi

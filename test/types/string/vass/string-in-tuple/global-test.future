@@ -1,0 +1,5 @@
+bug: strings in global tuples do not broadcast properly
+
+When a global variable, e.g. const ATUPLE = (12345, "hi");
+is broadcast, its string component does not make it correctly
+to remote nodes. I.e. on a non-0 locale the string has garbage.

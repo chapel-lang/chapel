@@ -278,6 +278,7 @@ proc destroyChameneos(ca: [] Chameneos) {
   for c in ca do delete c;
 }
 
+
 //
 // getNewColor() returns the complement of two colors; if the two colors
 // are the same value, the color stays the same; otherwise, it becomes the
@@ -363,9 +364,9 @@ proc spellInt(n) {
   // Cast n to a string in order to process its characters one by one
   //
   var s = n:string;
-
+  //writeln(n, ' ', s);
   for i in 1..s.length do
-    write(" ", (s.substring(i):int):Digit);
+    write(" ", (s[i]:int):Digit);
   writeln();
 }
 

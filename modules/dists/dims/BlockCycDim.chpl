@@ -126,14 +126,14 @@ class BlockCyclic1locdom {
 proc BlockCyclicDim.dsiSupportsPrivatization1d() param return true;
 
 proc BlockCyclicDim.dsiGetPrivatizeData1d() {
-  return (lowIdx, blockSize, numLocales, name);
+  return (lowIdx, blockSize, numLocales);
 }
 
 proc BlockCyclicDim.dsiPrivatize1d(privatizeData) {
   return new BlockCyclicDim(lowIdx = privatizeData(1),
                    blockSize = privatizeData(2),
                    numLocales = privatizeData(3),
-                   name = privatizeData(4));
+                   name = "");
 }
 
 proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
@@ -141,7 +141,7 @@ proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
 proc BlockCyclic1dom.dsiSupportsPrivatization1d() param return true;
 
 proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
-  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx, name);
+  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx);
 }
 
 proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
@@ -149,7 +149,7 @@ proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
   return new BlockCyclic1dom(idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
-                  name            = privatizeData(5),
+                  name            = "",
                   wholeR          = privatizeData(1),
                   wholeRstrideAbs = privatizeData(2),
                   storagePerCycle = privatizeData(3),

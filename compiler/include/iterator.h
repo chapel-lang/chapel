@@ -40,6 +40,7 @@ public:
 
   FnSymbol*      iterator;
   FnSymbol*      getIterator;
+  FnSymbol*      freeIterator;
   AggregateType* iclass;
   AggregateType* irecord;
   FnSymbol*      advance;

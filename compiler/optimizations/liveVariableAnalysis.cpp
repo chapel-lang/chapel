@@ -41,6 +41,120 @@
 // if OUT(i)(j) is true then the jth local variable is live at the
 // exit of basic block i
 //
+#if HILDE_MM
+static void
+addUsesForNamedLocals(Vec<Symbol*>& locals, BasicBlock* bb, BitVec* use)
+{
+  if (bb->exprs.size() > 0)
+  {
+    Expr* last = bb->exprs.back();
+    for (int j = 0; j < locals.n; ++j)
+    {
+      Symbol* sym = locals.v[j];
+
+      // Skip unnamed temporaries.
+      if (sym->hasFlag(FLAG_TEMP))
+        continue;
+
+      if (BlockStmt* scope = toBlockStmt(sym->defPoint->parentExpr))
+        if (scope->contains(last))
+          use->set(j);
+    }
+  }
+}
+
+
+void
+liveVariableAnalysis(FnSymbol* fn,
+                     Vec<Symbol*>& locals,
+                     Map<Symbol*,int>& localMap,
+                     Vec<SymExpr*>& useSet,
+                     Vec<SymExpr*>& defSet,
+                     std::vector<BitVec*>& OUT)
+{
+  BasicBlock::buildLocalsVectorMap(fn, locals, localMap);
+
+#ifdef DEBUG_LIVE
+  BasicBlock::printLocalsVector(locals, localMap);
+#endif
+
+  // This is only done because the useSet is used in the special case for
+  // variables in the initializer clause of a C-style for loop.
+  buildDefUseSets(locals, fn, defSet, useSet);
+
+  // Under AMM, a symbol is potentially deleted at the end of its scope.
+  // Therefore, it is live to the end of its scope, regardless whether its last
+  // use comes somewhere before that.
+  // As a heuristic, we assume that only named variables have this
+  // property.  That is, an unnamed temporary is effectively dead after its
+  // last use.
+
+  std::vector<BitVec*> USE;
+  std::vector<BitVec*> DEF;
+  std::vector<BitVec*> IN;
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
+  {
+    BitVec* use = new BitVec(locals.n);
+    BitVec* def = new BitVec(locals.n);
+    BitVec* lvin = new BitVec(locals.n);
+    BitVec* lvout = new BitVec(locals.n);
+
+    for_vector(Expr, expr, bb->exprs)
+    {
+      std::vector<BaseAST*> asts;
+      collect_asts(expr, asts);
+
+      // Compute the use set for this block: Every symbol that is used in this
+      // block.
+      for_vector(BaseAST, ast, asts)
+      {
+        if (SymExpr* se = toSymExpr(ast))
+        {
+          if (useSet.set_in(se))
+          {
+            int id = localMap.get(se->var);
+            if (!def->get(id)) // TODO: Can this condition be removed?
+              use->set(id);
+          }
+        }
+      }
+
+      // Compute the def set for this block: Every symbol the is defined in
+      // this block.
+      for_vector(BaseAST, ast1, asts)
+      {
+        if (SymExpr* se = toSymExpr(ast1))
+        {
+          if (defSet.set_in(se))
+          {
+            int id = localMap.get(se->var);
+            if (!use->get(id)) // TODO: Can this condition be removed?
+              def->set(id);
+          }
+        }
+      }
+    }
+
+    addUsesForNamedLocals(locals, bb, use);
+
+    USE.push_back(use);
+    DEF.push_back(def);
+    IN.push_back(lvin);
+    OUT.push_back(lvout);
+  }
+
+  BasicBlock::backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
+
+  for_vector(BitVec, use, USE)
+    delete use, use = 0;
+
+  for_vector(BitVec, def, DEF)
+    delete def, def = 0;
+
+  for_vector(BitVec, in, IN)
+    delete in, in = 0;
+}
+#else
 void
 liveVariableAnalysis(FnSymbol* fn,
                      Vec<Symbol*>& locals,
@@ -117,3 +231,9 @@ liveVariableAnalysis(FnSymbol* fn,
   for_vector(BitVec, in, IN)
     delete in, in = 0;
 }
+#endif
+
+// TODO: liveVariableAnalysis is used only in iterator.cpp, and the
+// backwardFlowAnalysis in bb.cpp is only used here.  Both should be moved to
+// iterator.cpp.
+

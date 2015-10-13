@@ -1,0 +1,7 @@
+feature request: record construction should not invoke assignment
+
+This is related to the original version of
+ test/classes/bradc/compilerErrorInMethod/testClear-snap1.chpl
+ test/classes/bradc/compilerErrorInMethod/testClear.chpl
+ ...
+

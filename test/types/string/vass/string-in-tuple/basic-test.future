@@ -1,0 +1,68 @@
+bug: a string in a tuple does not cross locales properly
+
+This bug was encountered in test/distributions/dm/s8.chpl
+This test is a distilled version that triggers the bug.
+For details, see:
+
+   ./s8.future
+
+In this program:
+
+  proc main {
+    const ATUPLE = (12345, "hi");
+    on Locales[1] {
+      writeln(ATUPLE(2));
+    }
+  }
+
+When creating an argument bundle for the on-function,
+'ATUPLE', being a record, is stored by value.
+
+Why do we store records by value? Or is it just tuples?
+I am sure there is a good reason for that.
+Alas it bites us here.
+
+Within the on-function, nothing hints at remote-ness
+of the corresponding tuple. So the generated code is this:
+
+
+static void chpl_user_main(void) {
+  _tuple_2_int64_t_string ATUPLE;
+  ...
+  (_args_foron_fn)->_1_ATUPLE = ATUPLE;
+  chpl_executeOn(..., _args_foron_fn, ...)
+  ...
+}
+
+static void on_fn67(_tuple_2_int64_t_string* const ATUPLE) {
+  _ref_string call_tmp = NULL;
+  call_tmp = &((&ATUPLE)->x2);
+  writeln2(call_tmp);
+  return;
+}
+
+static void wrapon_fn67(_class_localson_fn67 c) {
+  _tuple_2_int64_t_string _1_ATUPLE;
+  _1_ATUPLE = (c)->_1_ATUPLE;
+  on_fn67(&_1_ATUPLE);
+  return;
+}
+
+
+where the _1_ATUPLE field is indeed by value:
+
+typedef struct chpl__class_localson_fn67_s* _class_localson_fn67;
+typedef struct chpl__class_localson_fn67_s {
+  chpl_localeID_t _0_tmp;
+  _tuple_2_int64_t_string _1_ATUPLE;
+} chpl__class_localson_fn67_object;
+
+
+In this line above:
+
+  call_tmp = &((&ATUPLE)->x2);
+
+'call_tmp' ends up pointing to a local bitwise copy
+of the string from Locale 0. Its 'buff' pointer
+comes from Locale 0 although is treated as a local pointer
+and the result is garbage or segfault.

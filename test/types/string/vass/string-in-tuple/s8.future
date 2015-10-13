@@ -1,0 +1,130 @@
+bug: a string in a tuple does not cross locales properly
+
+This test triggers the bug originally exposed by:
+
+  test/distributions/dm/s8.chpl
+
+The tests in this directory:
+
+  basic-test.chpl
+  extended-test.chpl
+
+are distilled versions of s8.chpl that trigger this bug.
+
+Once this bug is fixed and this test s8.chpl works properly, do this:
+
+* Revert the following files to what there were prior to the commit
+that added this .future:
+
+  modules/dists/DimensionalDist2D.chpl
+  modules/dists/dims/BlockCycDim.chpl
+
+The files OrigDimensionalDist2D.chpl and OrigBlockCycDim.chpl
+in this directory are snapshots of those files prior to this commit.
+Or revert the patch included below.
+
+* Assuming that the tests in test/distributions/dm that use Dimensional
+all pass, remove these files in this directory, as they should all get
+tested by test/distributions/dm/s8.chpl:
+
+  OrigBlockCycDim.*
+  OrigDimensionalDist2D.*
+  s8.*
+  u.*
+
+* When the bug in question is fixed, all other tests in this directory
+should also be passing. So this entire directory can be removed.
+In particular, s8.chpl provides testing coverage for code
+basic-test.chpl and extended-test.chpl, so these latter ones
+do not need to be tested separately.
+
+The patch is:
+
+-----------------------------------------------------------------------------
+diff --git modules/dists/DimensionalDist2D.chpl modules/dists/DimensionalDist2D.chpl
+--- modules/dists/DimensionalDist2D.chpl
++++ modules/dists/DimensionalDist2D.chpl
+@@ -305,7 +305,7 @@
+     then di2.dsiGetPrivatizeData1d()
+     else 0;
+ 
+-  return (targetLocales, name, dataParTasksPerLocale,
++  return (targetLocales, dataParTasksPerLocale,
+           dataParIgnoreRunningTasks, dataParMinGranularity,
+           di1, di1pd, di2, di2pd);
+ }
+@@ -322,13 +322,13 @@
+                               ) = pdTargetLocales.domain;
+   const privTargetLocales: [privTargetIds] locale = pdTargetLocales;
+ 
+-  proc di1orig return privatizeData(6);
+-  proc di1pd   return privatizeData(7);
++  proc di1orig return privatizeData(5);
++  proc di1pd   return privatizeData(6);
+   const di1new = if di1.dsiSupportsPrivatization1d()
+     then di1orig.dsiPrivatize1d(di1pd) else di1orig;
+ 
+-  proc di2orig  return privatizeData(8);
+-  proc di2pd    return privatizeData(9);
++  proc di2orig  return privatizeData(7);
++  proc di2pd    return privatizeData(8);
+   const di2new = if di2.dsiSupportsPrivatization1d()
+     then di2orig.dsiPrivatize1d(di2pd) else di2orig;
+ 
+@@ -338,13 +338,13 @@
+                        privTargetLocales, false, plliddDummy);
+ 
+   return new DimensionalDist2D(targetLocales = privTargetLocales,
+-                             name          = privatizeData(2),
++                             name          = "",
+                              idxType       = this.idxType,
+                              di1           = di1new,
+                              di2           = di2new,
+-                             dataParTasksPerLocale     = privatizeData(3),
+-                             dataParIgnoreRunningTasks = privatizeData(4),
+-                             dataParMinGranularity     = privatizeData(5),
++                             dataParTasksPerLocale     = privatizeData(2),
++                             dataParIgnoreRunningTasks = privatizeData(3),
++                             dataParMinGranularity     = privatizeData(4),
+                              dummy = 0);
+ }
+ 
+diff --git modules/dists/dims/BlockCycDim.chpl modules/dists/dims/BlockCycDim.chpl
+--- modules/dists/dims/BlockCycDim.chpl
++++ modules/dists/dims/BlockCycDim.chpl
+@@ -84,14 +84,14 @@
+ proc BlockCyclicDim.dsiSupportsPrivatization1d() param return true;
+ 
+ proc BlockCyclicDim.dsiGetPrivatizeData1d() {
+-  return (lowIdx, blockSize, numLocales, name);
++  return (lowIdx, blockSize, numLocales);
+ }
+ 
+ proc BlockCyclicDim.dsiPrivatize1d(privatizeData) {
+   return new BlockCyclicDim(lowIdx = privatizeData(1),
+                    blockSize = privatizeData(2),
+                    numLocales = privatizeData(3),
+-                   name = privatizeData(4));
++                   name = "");
+ }
+ 
+ proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
+@@ -99,7 +99,7 @@
+ proc BlockCyclic1dom.dsiSupportsPrivatization1d() param return true;
+ 
+ proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
+-  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx, name);
++  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx);
+ }
+ 
+ proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
+@@ -107,7 +107,7 @@
+   return new BlockCyclic1dom(idxType   = this.idxType,
+                   stoIndexT = this.stoIndexT,
+                   stridable = this.stridable,
+-                  name            = privatizeData(5),
++                  name            = "",
+                   wholeR          = privatizeData(1),
+                   wholeRstrideAbs = privatizeData(2),
+                   storagePerCycle = privatizeData(3),
+-----------------------------------------------------------------------------
