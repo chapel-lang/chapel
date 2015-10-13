@@ -20,9 +20,7 @@
 #include "stmt.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "codegen.h"
-#include "stmt.h"
 #include "expr.h"
 #include "files.h"
 #include "misc.h"
@@ -290,6 +288,19 @@ BlockStmt::canFlattenChapelStmt(const BlockStmt* stmt) const {
 }
 
 Expr*
+BlockStmt::getFirstChild() {
+  Expr* retval = NULL;
+
+  if (blockInfo)
+    retval = blockInfo;
+
+  else if (body.head)
+    retval = body.head;
+
+  return retval;
+}
+
+Expr*
 BlockStmt::getFirstExpr() {
   Expr* retval = 0;
 
@@ -303,17 +314,6 @@ BlockStmt::getFirstExpr() {
     retval = this;
 
   return retval;
-}
-
-Expr*
-BlockStmt::getFirstChild() {
-  if (blockInfo)
-    return blockInfo;
-
-  if (body.head)
-    return body.head;
-
-  return NULL;
 }
 
 Expr*
@@ -358,6 +358,33 @@ BlockStmt::insertAtTail(const char* format, ...) {
 }
 
 
+// Returns true if this statement (expression) causes a change in flow.
+// When inserting cleanup code, it must be placed ahead of such flow
+// statements, or it will be skipped (which means it's in the wrong place).
+static bool isFlowStmt(Expr* stmt) {
+  bool retval = false;
+
+  // A goto is definitely a jump.
+  if (isGotoStmt(stmt)) {
+    retval = true;
+
+  // A return primitive works like a jump. (Nothing should appear after it.)
+  } else if (CallExpr* call = toCallExpr(stmt)) {
+    if (call->isPrimitive(PRIM_RETURN))
+      retval = true;
+
+    // _downEndCount is treated like a flow statement because we do not want to
+    // insert autoDestroys after the task says "I'm done."  This can result in
+    // false-positive memory allocation errors because the waiting (parent
+    // task) can then proceed to test that the subtask has not leaked before
+    // the subtask release locally-(dynamically-)allocated memory.
+    else if (FnSymbol* fn = call->isResolved())
+      retval = (strcmp(fn->name, "_downEndCount") == 0) ? true : false;
+  }
+
+  return retval;
+}
+
 // Insert an expression at the end of a block, but before a flow statement at
 // the end of the block.  The two cases we are concerned with are a goto or a
 // return appearing at the end of a block
@@ -368,47 +395,6 @@ BlockStmt::insertAtTailBeforeFlow(Expr* ast) {
   else
     body.insertAtTail(ast);
 }
-
-
-// Insert the given expression at the point in the block immediately before
-// control exits this block.
-// This may need to be overridden if the end of the body does not coincide with
-// the point at which flow exits a derived construct.  See, for example CForLoop.
-void
-BlockStmt::insertAtExit(Expr* expr)
-{ insertAtTailBeforeFlow(expr); }
-
-
-// Insert the given (presumably call) expression at the end of the given block
-// (scope) and also at any exit point in the interior of the block.
-// Right now, we define an exit point as a goto whose destination label lies
-// outside of the given block.  This means that it is only expected to work
-// properly after all flow-control statements such as breaks, continues,
-// yields and returns have been converted into gotos.  Other cases may be added
-// as the need arises.
-void 
-BlockStmt::insertAtAllExits(Expr* expr)
-{
-  insertAtTail(expr);
-
-  std::vector<GotoStmt*> gotoStmts;
-  collectGotoStmts(this, gotoStmts);
-  for_vector(GotoStmt, gotoStmt, gotoStmts)
-  {
-    SymExpr* label = toSymExpr(gotoStmt->label);
-    INT_ASSERT(label);
-    DefExpr* def = toDefExpr(label->var->defPoint);
-    INT_ASSERT(def);
-    if (! contains(def))
-    {
-      // This BlockStmt does not contain the DefExpr definition the target of
-      // the goto.  So we treat this as an exit point.
-      // Insert a copy of the given expression there as well.
-      gotoStmt->insertBefore(expr->copy());
-    }
-  }
-}
-
 
 bool
 BlockStmt::isRealBlockStmt() const {
@@ -806,13 +792,13 @@ CondStmt::accept(AstVisitor* visitor) {
 }
 
 Expr*
-CondStmt::getFirstExpr() {
-  return (condExpr != 0) ? condExpr->getFirstExpr() : this;
+CondStmt::getFirstChild() {
+  return (condExpr != 0) ? condExpr : NULL ;
 }
 
 Expr*
-CondStmt::getFirstChild() {
-  return (condExpr != 0) ? condExpr : NULL ;
+CondStmt::getFirstExpr() {
+  return (condExpr != 0) ? condExpr->getFirstExpr() : this;
 }
 
 Expr*
@@ -1035,12 +1021,12 @@ void GotoStmt::accept(AstVisitor* visitor) {
   }
 }
 
-Expr* GotoStmt::getFirstExpr() {
-  return (label != 0) ? label->getFirstExpr() : this;
-}
-
 Expr* GotoStmt::getFirstChild() {
   return (label != 0) ? label : NULL;
+}
+
+Expr* GotoStmt::getFirstExpr() {
+  return (label != 0) ? label->getFirstExpr() : this;
 }
 
 /******************************** | *********************************
@@ -1088,11 +1074,11 @@ void ExternBlockStmt::accept(AstVisitor* visitor) {
   visitor->visitEblockStmt(this);
 }
 
-Expr* ExternBlockStmt::getFirstExpr() {
-  INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
+Expr* ExternBlockStmt::getFirstChild() {
   return NULL;
 }
 
-Expr* ExternBlockStmt::getFirstChild() {
+Expr* ExternBlockStmt::getFirstExpr() {
+  INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
   return NULL;
 }

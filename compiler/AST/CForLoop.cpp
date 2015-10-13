@@ -157,9 +157,6 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
   return retval;
 }
 
-void CForLoop::insertAtExit(Expr* expr)
-{ incrBlockGet()->insertAtTail(expr); }
-
 bool CForLoop::isCForLoop() const
 {
   return true;
