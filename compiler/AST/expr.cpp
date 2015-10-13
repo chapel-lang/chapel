@@ -140,6 +140,17 @@ const char* DefExpr::name() const {
   return retval;
 }
 
+// Returns true if 'this' properly contains the given expr, false otherwise.
+bool Expr::contains(const Expr* expr) const {
+  const Expr* parent = expr->parentExpr;
+
+  while (parent != NULL && parent != this) {
+    parent = parent->parentExpr;
+  }
+
+  return (parent == this) ? true : false;
+}
+
 // Return true if this expression is a ModuleDefinition i.e. it
 // is a DefExpr and the referenced symbol is a Module Symbol
 

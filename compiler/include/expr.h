@@ -54,8 +54,9 @@ public:
 
   virtual void    prettyPrint(std::ostream* o);
 
-  /* Returns true if the given expressions is contained by this one. */
-  bool            contains(Expr const * const expr) const;
+  /* Returns true if the given expression is contained by this one. */
+  bool            contains(const Expr* expr)                         const;
+
   bool            isModuleDefinition();
 
   void            insertBefore(Expr* new_ast);
@@ -234,18 +235,6 @@ class NamedExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 };
-
-
-// Returns true if 'this' properly contains the given expr, false otherwise.
-inline bool
-Expr::contains(Expr const * const expr) const
-{
-  Expr const * parent = expr;
-  while ((parent = parent->parentExpr))
-    if (parent == this)
-      return true;
-  return false;
-}
 
 
 // Determines whether a node is in the AST (vs. has been removed
