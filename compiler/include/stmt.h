@@ -77,6 +77,7 @@ public:
 
   // Interface to Expr
   virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+  virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
@@ -150,6 +151,7 @@ public:
   virtual void        verify();
   virtual void        accept(AstVisitor* visitor);
 
+  virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
@@ -193,6 +195,7 @@ class GotoStmt : public Stmt {
   virtual void        verify();
   virtual void        accept(AstVisitor* visitor);
 
+  virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
 
   const char*         getName();
@@ -217,6 +220,7 @@ public:
   // Interface to Expr
   virtual void        replaceChild(Expr* oldAst, Expr* newAst);
 
+  virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
 
   // Local interface
