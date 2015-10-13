@@ -5714,13 +5714,15 @@ GenRet CallExpr::codegen() {
   return ret;
 }
 
+bool CallExpr::isPrimitive() const {
+  return primitive != NULL;
+}
 
-bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
+bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
   return primitive && primitive->tag == primitiveTag;
 }
 
-
-bool CallExpr::isPrimitive(const char* primitiveName) {
+bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
 }
 
