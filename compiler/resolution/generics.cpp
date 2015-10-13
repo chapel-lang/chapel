@@ -278,14 +278,10 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
-  if (getSyncFlags(value).any() &&
-      strcmp(fn->name, "_construct__tuple") &&
-      !fn->hasFlag(FLAG_REF)) {
-    return value;
-  } else if (value->hasFlag(FLAG_REF) &&
-             !fn->hasFlag(FLAG_REF) &&
-             !fn->hasFlag(FLAG_ALLOW_REF) &&
-             !fn->hasFlag(FLAG_TUPLE)) {
+  if (value->hasFlag(FLAG_REF) &&
+      !fn->hasFlag(FLAG_REF) &&
+      !fn->hasFlag(FLAG_ALLOW_REF) &&
+      !fn->hasFlag(FLAG_TUPLE)) {
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, key, value->getValType()->symbol);
   }
