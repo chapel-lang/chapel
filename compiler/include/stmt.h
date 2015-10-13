@@ -100,7 +100,7 @@ public:
 
   void                insertAtHead(Expr* ast);
   void                insertAtTail(Expr* ast);
-  void                insertAtTailBeforeGoto(Expr* ast);
+  void                insertAtTailBeforeFlow(Expr* ast);
 
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);

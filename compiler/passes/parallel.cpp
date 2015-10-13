@@ -774,18 +774,18 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         else {
           BlockStmt* block = toBlockStmt(innermostBlock);
           INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+          block->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
         }
       }
     }
-    // else ... 
+    // else ...
     // TODO: After the new constructor story is implemented, every declaration
     // should have exactly one definition associated with it, so the
     // (defs-> == 1) test above can be replaced by an assertion.
   }
 }
 
-// Returns false if 
+// Returns false if
 //  fLocal == true
 // or
 //  CHPL_COMM == "ugni"

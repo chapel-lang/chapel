@@ -345,14 +345,43 @@ BlockStmt::insertAtTail(const char* format, ...) {
 }
 
 
+// Returns true if this statement (expression) causes a change in flow.
+// When inserting cleanup code, it must be placed ahead of such flow
+// statements, or it will be skipped (which means it's in the wrong place).
+static bool isFlowStmt(Expr* stmt) {
+  bool retval = false;
+
+  // A goto is definitely a jump.
+  if (isGotoStmt(stmt)) {
+    retval = true;
+
+  // A return primitive works like a jump. (Nothing should appear after it.)
+  } else if (CallExpr* call = toCallExpr(stmt)) {
+    if (call->isPrimitive(PRIM_RETURN))
+      retval = true;
+
+    // _downEndCount is treated like a flow statement because we do not want to
+    // insert autoDestroys after the task says "I'm done."  This can result in
+    // false-positive memory allocation errors because the waiting (parent
+    // task) can then proceed to test that the subtask has not leaked before
+    // the subtask release locally-(dynamically-)allocated memory.
+    else if (FnSymbol* fn = call->isResolved())
+      retval = (strcmp(fn->name, "_downEndCount") == 0) ? true : false;
+  }
+
+  return retval;
+}
+
+// Insert an expression at the end of a block, but before a flow statement at
+// the end of the block.  The two cases we are concerned with are a goto or a
+// return appearing at the end of a block
 void
-BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
-  if (isGotoStmt(body.tail))
+BlockStmt::insertAtTailBeforeFlow(Expr* ast) {
+  if (isFlowStmt(body.tail))
     body.tail->insertBefore(ast);
   else
     body.insertAtTail(ast);
 }
-
 
 bool
 BlockStmt::isRealBlockStmt() const {
