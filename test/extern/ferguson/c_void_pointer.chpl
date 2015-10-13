@@ -41,6 +41,7 @@ extern proc printf(fmt:c_string, ptr:c_void_ptr);
   var x:c_void_ptr;
   x = mytest(x);
   x = mytest4(x);
+  x = mytest(x);
   printf("%p\n", x);
 }
 
