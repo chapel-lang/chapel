@@ -1,6 +1,6 @@
-Module: outer
+outer
    This is the outer module's comment 
-   Module: outer.inner
+   outer.inner
       This is the inner module's comment 
-      Module: outer.inner.innermost
+      outer.inner.innermost
          This is the innermost module's comment 

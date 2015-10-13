@@ -1,9 +1,16 @@
-# bash shell script to set the Chapel environment variables
+# bash/zsh shell script to set the Chapel environment variables
 
+# Find out filepath depending on shell
+if [ -n "${BASH_VERSION}" ]; then
+    filepath=${BASH_SOURCE[0]}
+elif [ -n "${ZSH_VERSION}" ]; then
+    filepath=${(%):-%N}
+else
+    echo "Error: setchplenv.bash can only be sourced from bash and zsh"
+fi
 
 # Directory of setchplenv script, will not work if script is a symlink
-DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-echo $DIR
+DIR=$(cd "$(dirname "${filepath}")" && pwd)
 
 # Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
@@ -15,17 +22,18 @@ if [ ! -d "$chpl_home/util" ] || [ ! -d "$chpl_home/compiler" ] || [ ! -d "$chpl
     return
 fi
 
+# Remove any previously existing CHPL_HOME paths
+MYPATH=`$chpl_home/util/config/fixpath.py PATH`
+MYMANPATH=`$chpl_home/util/config/fixpath.py MANPATH`
+
 export CHPL_HOME=$chpl_home
 echo "Setting CHPL_HOME to $CHPL_HOME"
-
-MYPATH=`$CHPL_HOME/util/config/fixpath.py PATH`
-MYMANPATH=`$CHPL_HOME/util/config/fixpath.py MANPATH`
 
 export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
 echo "Setting CHPL_HOST_PLATFORM to $CHPL_HOST_PLATFORM"
 
 export PATH="$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util:"$MYPATH"
-echo "Updating PATH to include $CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
+echo "Updating PATH to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 echo "                     and $CHPL_HOME/util"
 
 export MANPATH="$CHPL_HOME"/man:"$MYMANPATH"

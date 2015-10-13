@@ -1,4 +1,4 @@
-Module: ordering.doc
+ordering.doc
    proc second()
       This is a proc... 
 

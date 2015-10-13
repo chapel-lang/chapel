@@ -1,4 +1,4 @@
-Module: classFields
+classFields
    Class: Parent
       var niece
          This field should be third 
