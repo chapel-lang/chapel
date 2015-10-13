@@ -224,6 +224,9 @@ Expr* Expr::getStmtExpr() {
   return NULL;
 }
 
+Expr* Expr::getNextExpr(Expr* expr) {
+  return this;
+}
 
 // Returns the nearest enclosing block statement (excluding 'this') that
 // contains 'this' and is a scoped block.
@@ -245,10 +248,6 @@ BlockStmt* Expr::getScopeBlock()
   return NULL;
 }
 
-
-Expr* Expr::getNextExpr(Expr* expr) {
-  return this;
-}
 
 void Expr::verify() {
   if (prev || next)
