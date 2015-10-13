@@ -140,6 +140,17 @@ const char* DefExpr::name() const {
   return retval;
 }
 
+// Returns true if 'this' properly contains the given expr, false otherwise.
+bool Expr::contains(const Expr* expr) const {
+  const Expr* parent = expr->parentExpr;
+
+  while (parent != NULL && parent != this) {
+    parent = parent->parentExpr;
+  }
+
+  return (parent == this) ? true : false;
+}
+
 // Return true if this expression is a ModuleDefinition i.e. it
 // is a DefExpr and the referenced symbol is a Module Symbol
 
@@ -213,30 +224,29 @@ Expr* Expr::getStmtExpr() {
   return NULL;
 }
 
-
-// Returns the nearest enclosing block statement (excluding 'this') that
-// contains 'this' and is a scoped block.
-// Returns NULL if no such scope exists (which probably represents an error in
-// the structure of the AST.
-BlockStmt* Expr::getScopeBlock()
-{
-  Expr* expr = this;
-  while ((expr = expr->parentExpr))
-  {
-    BlockStmt* block = toBlockStmt(expr);
-    if (block && ! (block->blockTag & BLOCK_SCOPELESS))
-      // This is a scoped block containing the Expr, so this is what we want.
-      return block;
-  }
-
-  // The symbol has no scope associated with it.  Maybe we can add an assert
-  // here.
-  return NULL;
-}
-
-
 Expr* Expr::getNextExpr(Expr* expr) {
   return this;
+}
+
+// Returns the nearest enclosing *scoped* block statement (excluding 'this')
+// that contains 'this'
+
+// It is probably an error if there is no such BlockStmt.
+// Currently return NULL.  Consider throwing aninternal error in the future.
+BlockStmt* Expr::getScopeBlock() {
+  Expr*      expr   = this->parentExpr;
+  BlockStmt* retval = NULL;
+
+  while (expr != NULL && retval == NULL) {
+    BlockStmt* block = toBlockStmt(expr);
+
+    if (block != NULL && (block->blockTag & BLOCK_SCOPELESS) == 0)
+      retval = block;
+    else
+      expr   = expr->parentExpr;
+  }
+
+  return retval;
 }
 
 void Expr::verify() {
@@ -460,12 +470,12 @@ void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
-Expr* SymExpr::getFirstExpr() {
-  return this;
-}
-
 Expr* SymExpr::getFirstChild() {
   return NULL;
+}
+
+Expr* SymExpr::getFirstExpr() {
+  return this;
 }
 
 void SymExpr::verify() {
@@ -563,12 +573,12 @@ UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Expr* UnresolvedSymExpr::getFirstExpr() {
-  return this;
-}
-
 Expr* UnresolvedSymExpr::getFirstChild() {
   return NULL;
+}
+
+Expr* UnresolvedSymExpr::getFirstExpr() {
+  return this;
 }
 
 void
@@ -649,12 +659,12 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   gDefExprs.add(this);
 }
 
-Expr* DefExpr::getFirstExpr() {
-  return this;
-}
-
 Expr* DefExpr::getFirstChild() {
   return NULL;
+}
+
+Expr* DefExpr::getFirstExpr() {
+  return this;
 }
 
 void DefExpr::verify() {
@@ -3483,6 +3493,18 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
 CallExpr::~CallExpr() { }
 
 
+Expr* CallExpr::getFirstChild() {
+  Expr* retval = NULL;
+
+  if (baseExpr)
+    retval = baseExpr;
+
+  else if (argList.head)
+    retval = argList.head;
+
+  return retval;
+}
+
 Expr* CallExpr::getFirstExpr() {
   Expr* retval = NULL;
 
@@ -3496,16 +3518,6 @@ Expr* CallExpr::getFirstExpr() {
     retval = this;
 
   return retval;
-}
-
-Expr* CallExpr::getFirstChild() {
-  if (baseExpr)
-    return baseExpr;
-
-  if (argList.head)
-    return argList.head;
-
-  return NULL;
 }
 
 Expr* CallExpr::getNextExpr(Expr* expr) {
@@ -5592,7 +5604,6 @@ GenRet CallExpr::codegen() {
   return ret;
 }
 
-
 bool CallExpr::isPrimitive() const {
   return primitive != NULL;
 }
@@ -5600,7 +5611,6 @@ bool CallExpr::isPrimitive() const {
 bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
   return primitive != NULL && primitive->tag == primitiveTag;
 }
-
 
 bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive != NULL && !strcmp(primitive->name, primitiveName);
@@ -5620,12 +5630,12 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
 }
 
 
-Expr* NamedExpr::getFirstExpr() {
-  return (actual != NULL) ? actual->getFirstExpr() : this;
-}
-
 Expr* NamedExpr::getFirstChild() {
   return (actual != NULL) ? actual : NULL ;
+}
+
+Expr* NamedExpr::getFirstExpr() {
+  return (actual != NULL) ? actual->getFirstExpr() : this;
 }
 
 void NamedExpr::verify() {
