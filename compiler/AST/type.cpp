@@ -1500,7 +1500,6 @@ void initPrimitiveTypes() {
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
   dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
-  dtCVoidPtr->symbol->addFlag(FLAG_IGNORE_NOINIT);
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gOpaque;
   CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
