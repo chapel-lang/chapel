@@ -1625,7 +1625,6 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", leadIdx, leadIter);
   leadBlock->insertAtTail(leadBody);
   leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
-  serialBlock->insertAtHead("compilerWarning('reduce has been serialized (see note in $CHPL_HOME/STATUS)')");
 
   fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leadBlock, serialBlock));
 
