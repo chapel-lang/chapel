@@ -81,21 +81,33 @@ class Immediate { public:
   union {
     // Unions are initalized based off the first element, so we need to have
     // the largest thing first to make sure it is all zero initalized
+
+    // complex values
     complex128 v_complex128;
     complex64  v_complex64;
-    uint64_t   v_bool;
-    int8_t     v_int8;
-    int16_t    v_int16;
-    int32_t    v_int32;
-    int64_t    v_int64;
-    // int128     v_int128;
-    uint8_t    v_uint8;
-    uint16_t   v_uint16;
-    uint32_t   v_uint32;
-    uint64_t   v_uint64;
-    // uint128    v_uint128;
-    float      v_float32;
+
+    // floating-point values
     double     v_float64;
+    float      v_float32;
+
+    // signed integer values
+    // int128     v_int128;
+    int64_t    v_int64;
+    int32_t    v_int32;
+    int16_t    v_int16;
+    int8_t     v_int8;
+
+    // unsigned integer values
+    // uint128    v_uint128;
+    uint64_t   v_uint64;
+    uint32_t   v_uint32;
+    uint16_t   v_uint16;
+    uint8_t    v_uint8;
+
+    // boolean value
+    uint64_t   v_bool;
+
+    // string value
     const char *v_string;
   };
 
