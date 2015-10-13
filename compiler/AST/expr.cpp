@@ -460,12 +460,12 @@ void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
-Expr* SymExpr::getFirstExpr() {
-  return this;
-}
-
 Expr* SymExpr::getFirstChild() {
   return NULL;
+}
+
+Expr* SymExpr::getFirstExpr() {
+  return this;
 }
 
 void SymExpr::verify() {
@@ -563,12 +563,12 @@ UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Expr* UnresolvedSymExpr::getFirstExpr() {
-  return this;
-}
-
 Expr* UnresolvedSymExpr::getFirstChild() {
   return NULL;
+}
+
+Expr* UnresolvedSymExpr::getFirstExpr() {
+  return this;
 }
 
 void
@@ -649,12 +649,12 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   gDefExprs.add(this);
 }
 
-Expr* DefExpr::getFirstExpr() {
-  return this;
-}
-
 Expr* DefExpr::getFirstChild() {
   return NULL;
+}
+
+Expr* DefExpr::getFirstExpr() {
+  return this;
 }
 
 void DefExpr::verify() {
@@ -3483,6 +3483,18 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
 CallExpr::~CallExpr() { }
 
 
+Expr* CallExpr::getFirstChild() {
+  Expr* retval = NULL;
+
+  if (baseExpr)
+    retval = baseExpr;
+
+  else if (argList.head)
+    retval = argList.head;
+
+  return retval;
+}
+
 Expr* CallExpr::getFirstExpr() {
   Expr* retval = NULL;
 
@@ -3496,16 +3508,6 @@ Expr* CallExpr::getFirstExpr() {
     retval = this;
 
   return retval;
-}
-
-Expr* CallExpr::getFirstChild() {
-  if (baseExpr)
-    return baseExpr;
-
-  if (argList.head)
-    return argList.head;
-
-  return NULL;
 }
 
 Expr* CallExpr::getNextExpr(Expr* expr) {
@@ -5620,12 +5622,12 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
 }
 
 
-Expr* NamedExpr::getFirstExpr() {
-  return (actual != NULL) ? actual->getFirstExpr() : this;
-}
-
 Expr* NamedExpr::getFirstChild() {
   return (actual != NULL) ? actual : NULL ;
+}
+
+Expr* NamedExpr::getFirstExpr() {
+  return (actual != NULL) ? actual->getFirstExpr() : this;
 }
 
 void NamedExpr::verify() {
