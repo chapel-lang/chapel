@@ -839,7 +839,6 @@ static void build_extern_assignment_function(Type* type)
 
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
-  // instead of marking fn with FLAG_TRIVIAL_ASSIGNMENT, mark the type as POD
   type->symbol->addFlag(FLAG_POD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);

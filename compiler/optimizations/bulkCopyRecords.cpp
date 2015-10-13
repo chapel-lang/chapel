@@ -59,12 +59,13 @@ static bool isTrivialAssignment(FnSymbol* fn)
   // The base argument types must match.
   ArgSymbol* lhs = fn->getFormal(1);
   ArgSymbol* rhs = fn->getFormal(2);
-  if (lhs->type->getValType() != rhs->type->getValType())
+  Type* argType = lhs->type->getValType();
+  if (argType != rhs->type->getValType())
     return false;
 
   // Both argument types must be POD types
   // (but at this point they are the same type, so we only check one)
-  if (isPOD(lhs->type->getValType()))
+  if (isPOD(argType))
     return true;
 
   return false;
