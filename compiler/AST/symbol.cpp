@@ -168,6 +168,11 @@ bool Symbol::isRenameable() const {
 }
 
 
+// Returns the scope in which the given symbol is declared; NULL otherwise.
+BlockStmt* Symbol::getDeclarationScope() const {
+  return (defPoint != NULL) ? defPoint->getScopeBlock() : NULL;
+}
+
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
   GenRet ret;
