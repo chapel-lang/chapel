@@ -54,6 +54,9 @@ public:
 
   virtual void    prettyPrint(std::ostream* o);
 
+  /* Returns true if the given expression is contained by this one. */
+  bool            contains(const Expr* expr)                         const;
+
   bool            isModuleDefinition();
 
   void            insertBefore(Expr* new_ast);
