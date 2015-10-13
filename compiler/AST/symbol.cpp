@@ -1953,9 +1953,8 @@ void FnSymbol::codegenPrototype() {
 
     int numArgs = 0;
     for_formals(arg, this) {
-      if(arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK)) {
-        continue;
-      }
+      if (arg->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(arg->codegenType().type);
       argumentNames.push_back(arg->cname);
       numArgs++;
@@ -2052,8 +2051,8 @@ void FnSymbol::codegenDef() {
 
     llvm::Function::arg_iterator ai = func->arg_begin();
     for_formals(arg, this) {
-      if (arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-        continue; // do not print locale argument for on blocks
+      if (arg->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
 
       if (arg->requiresCPtr()){
         info->lvt->addValue(arg->cname, ai,  GEN_PTR, !is_signed(type));
