@@ -228,26 +228,26 @@ Expr* Expr::getNextExpr(Expr* expr) {
   return this;
 }
 
-// Returns the nearest enclosing block statement (excluding 'this') that
-// contains 'this' and is a scoped block.
-// Returns NULL if no such scope exists (which probably represents an error in
-// the structure of the AST.
-BlockStmt* Expr::getScopeBlock()
-{
-  Expr* expr = this;
-  while ((expr = expr->parentExpr))
-  {
+// Returns the nearest enclosing *scoped* block statement (excluding 'this')
+// that contains 'this'
+
+// It is probably an error if there is no such BlockStmt.
+// Currently return NULL.  Consider throwing aninternal error in the future.
+BlockStmt* Expr::getScopeBlock() {
+  Expr*      expr   = this->parentExpr;
+  BlockStmt* retval = NULL;
+
+  while (expr != NULL && retval == NULL) {
     BlockStmt* block = toBlockStmt(expr);
-    if (block && ! (block->blockTag & BLOCK_SCOPELESS))
-      // This is a scoped block containing the Expr, so this is what we want.
-      return block;
+
+    if (block != NULL && (block->blockTag & BLOCK_SCOPELESS) == 0)
+      retval = block;
+    else
+      expr   = expr->parentExpr;
   }
 
-  // The symbol has no scope associated with it.  Maybe we can add an assert
-  // here.
-  return NULL;
+  return retval;
 }
-
 
 void Expr::verify() {
   if (prev || next)
