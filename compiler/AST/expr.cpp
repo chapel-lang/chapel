@@ -438,6 +438,10 @@ void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
+Expr* SymExpr::getFirstChild() {
+  return NULL;
+}
+
 Expr* SymExpr::getFirstExpr() {
   return this;
 }
@@ -537,6 +541,10 @@ UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
+Expr* UnresolvedSymExpr::getFirstChild() {
+  return NULL;
+}
+
 Expr* UnresolvedSymExpr::getFirstExpr() {
   return this;
 }
@@ -617,6 +625,10 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
     INT_FATAL(this, "DefExpr of ArgSymbol cannot have either exprType or init");
 
   gDefExprs.add(this);
+}
+
+Expr* DefExpr::getFirstChild() {
+  return NULL;
 }
 
 Expr* DefExpr::getFirstExpr() {
@@ -3509,6 +3521,18 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
 CallExpr::~CallExpr() { }
 
 
+Expr* CallExpr::getFirstChild() {
+  Expr* retval = NULL;
+
+  if (baseExpr)
+    retval = baseExpr;
+
+  else if (argList.head)
+    retval = argList.head;
+
+  return retval;
+}
+
 Expr* CallExpr::getFirstExpr() {
   Expr* retval = NULL;
 
@@ -5681,6 +5705,10 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   gNamedExprs.add(this);
 }
 
+
+Expr* NamedExpr::getFirstChild() {
+  return (actual != NULL) ? actual : NULL ;
+}
 
 Expr* NamedExpr::getFirstExpr() {
   return (actual != NULL) ? actual->getFirstExpr() : this;
