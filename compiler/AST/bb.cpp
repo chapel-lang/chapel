@@ -29,6 +29,9 @@
 #include "view.h"
 #include "WhileDoStmt.h"
 
+#include <queue>
+
+
 int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
 Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
@@ -224,7 +227,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
     restart(fn);
 
   } else {
-    DefExpr*      def = toDefExpr(stmt);
+    DefExpr*              def = toDefExpr(stmt);
     std::vector<BaseAST*> asts;
 
     collect_asts(stmt, asts);
@@ -240,7 +243,8 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
           mark = true;
 
         // mark assignments to global variables as essential
-        else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+        else if (call->isPrimitive(PRIM_MOVE) ||
+                 call->isPrimitive(PRIM_ASSIGN)) {
           if (SymExpr* se = toSymExpr(call->get(1))) {
             if (se->var->type->refType == NULL)
               mark = true;
@@ -256,6 +260,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
         BasicBlock* top = basicBlock;
 
         restart(fn);
+
         thread(top, basicBlock);
       }
 
@@ -302,43 +307,42 @@ void BasicBlock::thread(BasicBlock* src, BasicBlock* dst) {
 // We have to wait until basic block analysis is done, because we don't know if
 // a block has predecessors until after threading is performed, and this is
 // sometimes delayed.
-void BasicBlock::removeEmptyBlocks(FnSymbol* fn)
-{
+void BasicBlock::removeEmptyBlocks(FnSymbol* fn) {
   // Create a new vector that contains just the items we want to preserve.
-  int new_id = 0;
-  BasicBlockVector* new_blocks = new BasicBlockVector();
-  for_vector(BasicBlock, bb, *fn->basicBlocks)
-  {
-    // Skip empty blocks with no predecessors.
-    if (bb->ins.size() == 0 &&
-        bb->exprs.size() == 0)
-    {
+  int               newId     = 0;
+  BasicBlockVector* newBlocks = new BasicBlockVector();
+
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    // Look for empty blocks with no predecessors.
+    if (bb->ins.size() == 0 && bb->exprs.size() == 0) {
       // This block will be removed.  It is no longer a predecessor of anyone,
       // so we must update the back links.
-      for_vector(BasicBlock, succ, bb->outs)
-      {
+      for_vector(BasicBlock, succ, bb->outs) {
         BasicBlockVector::iterator i;
+
         for (i = succ->ins.begin(); i != succ->ins.end(); ++i)
           if (*i == bb)
             break;
 
         INT_ASSERT(i != succ->ins.end());
-        succ->ins.erase(i);
+
+       succ->ins.erase(i);
       }
-    }
-    else
-    {
-      bb->id = new_id++;
-      new_blocks->push_back(bb);
+
+    } else {
+      bb->id = newId++;
+      newBlocks->push_back(bb);
     }
   }
-  delete fn->basicBlocks; fn->basicBlocks = new_blocks;
+
+  delete fn->basicBlocks;
+
+  fn->basicBlocks = newBlocks;
 }
 
 // Returns true if the basic block structure is OK, false otherwise.
 bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
-  for_vector(BasicBlock, bb, *fn->basicBlocks)
-  {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
     if (bb->isOK() == false)
       return false;
   }
