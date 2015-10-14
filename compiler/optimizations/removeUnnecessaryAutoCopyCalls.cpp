@@ -271,61 +271,18 @@ static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
 #endif
 } 
 
-static bool
-isPrimitiveCopy(Vec<Type*>& primitiveCopyTypeSet, Type* type) {
-  if (primitiveCopyTypeSet.set_in(type))
-    return true;
-  if (is_bool_type(type) || is_int_type(type) || is_uint_type(type) ||
-      is_real_type(type) || is_imag_type(type) || is_complex_type(type) ||
-      is_enum_type(type) ||
-      (isClass(type)))
-    return true;
-// These cases should be captured by the test for nontrivial assignment and/or
-//  destruction below.  Those cases still appearing in the conditional are
-//  implemented internally, rather than in module code, so until they are
-//  implemented in module code we have to carry along these special cases.
-//  if (isRecordWrappedType(type) ||
-//      type->symbol->hasFlag(FLAG_REF) ||
-//      type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-  if (isSyncType(type))
-    return false;
-  if (isRecord(type)) {
-    AggregateType* ct = toAggregateType(type);
-    INT_ASSERT(ct);
-
-    // If we marked this type as not POD, we can't do a primitive copy.
-    if (! isPOD(ct))
-      return false;
-
-    for_fields(field, ct) {
-      if (!isPrimitiveCopy(primitiveCopyTypeSet, field->type))
-        return false;
-    }
-    return true;
-  }
-  return false;
-}
-
 // We can remove the calls to chpl__initCopy (should actually be chpl__autoCopy)
 // and corresponding calls to chpl__autoDestroy for Plain-Old-Data (POD) types.
-// POD types are fundamental types, class types, and records that contain only
-// POD-typed fields (see isPODtype test above).
+// See isPOD() and propagateNotPOD().
 static void removePODinitDestroy()
 {
   compute_call_sites();
 
-  Vec<Type*> primitiveCopyTypeSet;
-  
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_INIT_COPY_FN) || fn->hasFlag(FLAG_AUTO_COPY_FN))
     {
       // We expect both initCopy and autoCopy functions to have one argument
       // whose type is the same as the return type.
-      if (fn->numFormals() == 0 && fn->retType == dtNil)
-        // This is an oddity.  It should probably be pruned earlier, and this
-        // test turned into a per-pass verification or removed entirely.
-        continue; 
-
       INT_ASSERT(fn->numFormals() == 1);
 
       if (fn->getFormal(1)->type != fn->retType)
@@ -335,7 +292,7 @@ static void removePODinitDestroy()
         // type mismatch at the call sites, so we just punt.
         continue;
 
-      if (isPrimitiveCopy(primitiveCopyTypeSet, fn->retType)) {
+      if (isPOD(fn->retType)) {
         forv_Vec(CallExpr, call, *fn->calledBy) {
           Expr* actual = call->get(1);
           ArgSymbol* arg = actual_to_formal(actual);
