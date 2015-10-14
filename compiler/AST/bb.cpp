@@ -260,6 +260,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
         BasicBlock* top = basicBlock;
 
         restart(fn);
+
         thread(top, basicBlock);
       }
 
@@ -286,13 +287,15 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       // end of the function and the start of the function to the block
       // following the yield, but just putting in a block break is good enough
       // for now.
-      if (CallExpr* call = toCallExpr(stmt))
-        if (call->isPrimitive(PRIM_YIELD))
-        {
+      if (CallExpr* call = toCallExpr(stmt)) {
+        if (call->isPrimitive(PRIM_YIELD)) {
           BasicBlock* curr = basicBlock;
+
           restart(fn);
+
           thread(curr, basicBlock);
         }
+      }
     }
   }
 }
