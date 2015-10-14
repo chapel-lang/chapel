@@ -63,6 +63,12 @@ static bool isTrivialAssignment(FnSymbol* fn)
   if (argType != rhs->type->getValType())
     return false;
 
+  // Skip this optimization for string/wide string types
+  // (due to problems providing additional arguments for
+  //  PRIM_ASSIGN).
+  if (argType == dtString)
+    return false;
+
   // Both argument types must be POD types
   // (but at this point they are the same type, so we only check one)
   if (isPOD(argType))
