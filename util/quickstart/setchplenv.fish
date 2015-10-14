@@ -1,12 +1,13 @@
 # fish shell script to set the Chapel environment variables
 
 # Directory of setchplenv script, will not work if script is a symlink
-set DIR (cd (dirname (status -f)); pwd)
+set DIRNAME (dirname (status -f))
+set DIRPATH (fish -c "cd $DIRNAME; pwd")
 
 # Shallow test to see if we are in the correct directory
 # Just probe to see if we have a few essential subdirectories --
 # indicating that we are probably in a Chapel root directory.
-set chpl_home (fish -c "cd $DIR/../../; pwd")
+set chpl_home (fish -c "cd $DIRPATH/../../; pwd")
 if [ ! -d "$chpl_home/util" -o ! -d "$chpl_home/compiler" -o ! -d "$chpl_home/runtime" -o ! -d "$chpl_home/modules" ]
     echo "Error: \$CHPL_HOME is not where it is expected"
     exit 1
