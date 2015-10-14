@@ -834,6 +834,8 @@ Miscellaneous
   # types/tuple/diten/tupleOfArray2.future
   # types/tuple/diten/tupleOfArrayReturnType.future
   # types/tuple/stonea/returnArrayTuple.future
+- Comm=ugni network atomic ops fail for vars on tasks=qthreads stacks
+  # runtime/gbt/atomic-on-stack.future
 
 
 Performance

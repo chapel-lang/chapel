@@ -1,0 +1,3 @@
+# Currently we only have a problem with comm=ugni, tasks=qthreads.
+CHPL_COMM!=ugni
+CHPL_TASKS!=qthreads
