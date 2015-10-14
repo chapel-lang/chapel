@@ -280,6 +280,22 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       labelMaps.put(label, basicBlock);
     } else {
       append(stmt, mark);
+
+      // For the sake of live variable analysis, a yield ends one block and
+      // begins another.  For now, we just thread one block into the next.
+      // We could get fancier and thread the block containing the yield to the
+      // end of the function and the start of the function to the block
+      // following the yield, but just putting in a block break is good enough
+      // for now.
+      if (CallExpr* call = toCallExpr(stmt)) {
+        if (call->isPrimitive(PRIM_YIELD)) {
+          BasicBlock* curr = basicBlock;
+
+          restart(fn);
+
+          thread(curr, basicBlock);
+        }
+      }
     }
   }
 }
@@ -353,20 +369,12 @@ void BasicBlock::removeEmptyBlocks(FnSymbol* fn) {
     if (bb->ins.size() == 0 && bb->exprs.size() == 0) {
       // This block will be removed.  It is no longer a predecessor of anyone,
       // so we must update the back links.
-      for_vector(BasicBlock, succ, bb->outs) {
-        BasicBlockVector::iterator i;
+      bb->remove();
 
-        for (i = succ->ins.begin(); i != succ->ins.end(); ++i)
-          if (*i == bb)
-            break;
-
-        INT_ASSERT(i != succ->ins.end());
-
-       succ->ins.erase(i);
-      }
-
+      delete bb;
     } else {
       bb->id = newId++;
+
       newBlocks->push_back(bb);
     }
   }
@@ -438,6 +446,7 @@ bool BasicBlock::isOK() {
 
   return true;
 }
+
 
 // This routine removes unreachable (interior) blocks from the flow graph
 // without modifying the underlying AST.  It is a workaround for the fact that
