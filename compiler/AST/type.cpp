@@ -2125,7 +2125,9 @@ bool isPOD(Type* t)
   if (t->symbol->hasFlag(FLAG_NOT_POD))
     return false;
 
-  // otherwise, assume not.
+  // if we have not calculated POD-ness,
+  // we should not be calling this function
+  INT_ASSERT(false);
   return false;
 }
 

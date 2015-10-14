@@ -7324,8 +7324,10 @@ static void resolveAutoCopies() {
    (which would mean it does not need auto copies or auto
     destroys - bit copies will do).
 
-   After this function is called on a record type, that type and any field
-   record types must have either FLAG_POD or FLAG_NOT_POD set.
+   After this function is called on an aggregate type, that type
+   will be marked FLAG_POD and FLAG_NOT_POD, and this function
+   will be called recursively to also mark any aggregate type
+   fields with FLAG_POD or FLAG_NOT_POD.
 
    After setting either FLAG_POD or FLAG_NOT_POD if necessary,
    returns true if FLAG_NOT_POD is set, false otherwise.
@@ -7373,8 +7375,12 @@ static bool propagateNotPOD(Type* t) {
     }
 
     // Make sure we have resolved auto copy/auto destroy.
-    resolveAutoCopy(t);
-    resolveAutoDestroy(t);
+    // Except not for runtime types, because that causes
+    // some sort of fatal resolution error. This is a workaround.
+    if (! t->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+      resolveAutoCopy(t);
+      resolveAutoDestroy(t);
+    }
 
     // Also check for a non-compiler generated autocopy/autodestroy.
     FnSymbol* autoCopyFn = autoCopyMap.get(t);
@@ -7669,6 +7675,7 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   theProgram->block->insertAtTail(new DefExpr(ts));
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
   makeRefType(ts->type); // make sure the new type has a ref type.
+  propagateNotPOD(ts->type); // mark the runtime type as POD/NOT_POD
   return ct;
 }
 
