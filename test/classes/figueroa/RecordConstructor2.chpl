@@ -1,4 +1,3 @@
-pragma "plain old data"
 record R {
   var c: int;
   proc initialize () {c = 2;}
