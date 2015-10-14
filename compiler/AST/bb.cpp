@@ -301,6 +301,42 @@ void BasicBlock::thread(BasicBlock* src, BasicBlock* dst) {
   src->outs.push_back(dst);
 }
 
+// Removes a block from the basic block structure by traversing its lists of
+// predecessors and successors and removing any back-links.
+// The caller must then remove this block from any container and free it.
+void BasicBlock::remove() {
+  for_vector(BasicBlock, pred, this->ins) {
+    BasicBlockVector& pred_outs = pred->outs;
+
+    // Look for this block in the list of successors of this predecessor.
+    BasicBlockVector::iterator i;
+
+    for (i = pred_outs.begin(); i != pred_outs.end(); ++i) {
+      if (*i == this)
+        break;
+    }
+
+    // This block is in the list, right?
+    INT_ASSERT(i != pred_outs.end());
+
+    pred_outs.erase(i);
+  }
+
+  for_vector(BasicBlock, succ, this->outs) {
+    BasicBlockVector&          succ_ins = succ->ins;
+    BasicBlockVector::iterator i;
+
+    // Look for this block in the list of predecessors of this successor.
+    for (i = succ_ins.begin(); i != succ_ins.end(); ++i)
+      if (*i == this)
+        break;
+
+    INT_ASSERT(i != succ_ins.end());
+
+    succ_ins.erase(i);
+  }
+}
+
 // Look for and remove empty blocks with no predecessor and whose successor is
 // the next block in sequence.  These blocks get created when a block ends in a
 // goto statement and the enclosing construct calls restart immediately.
@@ -401,6 +437,65 @@ bool BasicBlock::isOK() {
   }
 
   return true;
+}
+
+// This routine removes unreachable (interior) blocks from the flow graph
+// without modifying the underlying AST.  It is a workaround for the fact that
+// dead block removal does not succeed in removing all unreachable blocks from
+// the tree.
+void BasicBlock::ignoreUnreachableBlocks(FnSymbol* fn) {
+  BasicBlockSet     reachable;
+  int               newId     = 0;
+  BasicBlockVector* newBlocks = new BasicBlockVector();
+
+  BasicBlock::getReachableBlocks(fn, reachable);
+
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    if (reachable.count(bb)) {
+      // Add reachable blocks to the new BB vector.
+      bb->id = newId++;
+
+      newBlocks->push_back(bb);
+
+    } else {
+      // Remove unreachable blocks from the flow graph.
+      bb->remove();
+    }
+  }
+
+  delete fn->basicBlocks;
+
+  fn->basicBlocks = newBlocks;
+}
+
+
+// Populates the passed-in basic block set with blocks that are reachable from
+// the root (block 0).  The blocks which are not in this set are unreachable
+// and may be removed.
+void BasicBlock::getReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable) {
+  // We set up a work queue to perform a BFS on reachable blocks, and seed it
+  // with the first block in the function.
+  std::queue<BasicBlock*> workQueue;
+
+  workQueue.push((*fn->basicBlocks)[0]);
+
+  // Then we iterate until there are no more blocks to visit.
+  while (!workQueue.empty()) {
+    // Fetch and remove the next block.
+    BasicBlock* bb = workQueue.front();
+
+    workQueue.pop();
+
+    // Ignore it if we've already seen it.
+    if (reachable.count(bb) == 0) {
+      // Otherwise, mark it as reachable,
+      // and append all of its successors to the work queue.
+      reachable.insert(bb);
+
+      for_vector(BasicBlock, out, bb->outs)
+        workQueue.push(out);
+    }
+  }
 }
 
 void BasicBlock::buildLocalsVectorMap(FnSymbol*          fn,
