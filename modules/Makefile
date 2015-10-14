@@ -16,7 +16,19 @@
 # limitations under the License.
 
 ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/..
+    export CHPL_MAKE_HOME=$(shell pwd)/..
+endif
+
+# Generate tags only if $TAGS turned on explicitly, or if $CHPL_DEVELOPER is on
+ifndef TAGS
+    ifdef CHPL_DEVELOPER
+        export TAGS=true
+    endif
+endif
+
+# Generate tags command, dependent on if $TAGS is true
+ifeq ($(TAGS), true)
+    TAGS_COMMAND=-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS...")
 endif
 
 CHPL_MAKE_HOST_TARGET = --target
@@ -32,7 +44,7 @@ DOC_SPHINX=${CHPL_MAKE_HOME}/doc/sphinx
 default: all
 
 all: $(SYS_CTYPES_MODULE)
-	-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS...")
+	$(TAGS_COMMAND)
 
 clean: FORCE
 
@@ -40,6 +52,7 @@ cleanall: FORCE
 
 clobber: FORCE clean-documentation
 	rm -rf standard/gen
+	rm -f TAGS tags
 
 depend:
 

@@ -23,6 +23,19 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 
+# Generate tags only if $TAGS turned on explicitly, or if $CHPL_DEVELOPER is on
+ifndef TAGS
+    ifdef CHPL_DEVELOPER
+        export TAGS=true
+    endif
+endif
+
+# Generate tags command, dependent on if $TAGS is true
+ifeq ($(TAGS), true)
+    TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+    EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
+endif
+
 COMPILER_ROOT=.
 COMPILER_SUBDIR = .
 
@@ -115,12 +128,14 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -f $(CHPL_CONFIG_CHECK_PREFIX)-*
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
-$(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
+$(CHPL): TAGS $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
 	rm -f $(CHPLIPE)
 	ln -s $(notdir $(CHPL)) $(CHPLIPE)
-	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
-	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
+
+TAGS:
+	$(TAGS_COMMAND)
+	$(EBROWSE_COMMAND)
 
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
