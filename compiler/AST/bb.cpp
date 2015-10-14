@@ -493,15 +493,14 @@ void BasicBlock::getReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable) {
     workQueue.pop();
 
     // Ignore it if we've already seen it.
-    if (reachable.count(bb))
-      continue;
+    if (reachable.count(bb) == 0) {
+      // Otherwise, mark it as reachable,
+      // and append all of its successors to the work queue.
+      reachable.insert(bb);
 
-    // Otherwise, mark it as reachable,
-    // and append all of its successors to the work queue.
-    reachable.insert(bb);
-
-    for_vector(BasicBlock, out, bb->outs)
-      workQueue.push(out);
+      for_vector(BasicBlock, out, bb->outs)
+        workQueue.push(out);
+    }
   }
 }
 
