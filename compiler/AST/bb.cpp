@@ -280,6 +280,22 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       labelMaps.put(label, basicBlock);
     } else {
       append(stmt, mark);
+
+      // For the sake of live variable analysis, a yield ends one block and
+      // begins another.  For now, we just thread one block into the next.
+      // We could get fancier and thread the block containing the yield to the
+      // end of the function and the start of the function to the block
+      // following the yield, but just putting in a block break is good enough
+      // for now.
+      if (CallExpr* call = toCallExpr(stmt)) {
+        if (call->isPrimitive(PRIM_YIELD)) {
+          BasicBlock* curr = basicBlock;
+
+          restart(fn);
+
+          thread(curr, basicBlock);
+        }
+      }
     }
   }
 }
