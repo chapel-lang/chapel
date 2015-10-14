@@ -5517,11 +5517,13 @@ preFold(Expr* expr) {
         result = new SymExpr(gFalse);
       call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_POD)) {
-      bool notPod = propagateNotPOD(call->get(1)->typeInfo());
-      if (notPod)
-        result = new SymExpr(gFalse);
-      else
+      Type* t = call->get(1)->typeInfo();
+      // call propagateNotPOD to set FLAG_POD/FLAG_NOT_POD
+      propagateNotPOD(t);
+      if (isPOD(t))
         result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
       call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_SYNC_TYPE)) {
       Type* syncType = call->get(1)->typeInfo();
