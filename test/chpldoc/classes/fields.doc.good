@@ -1,4 +1,4 @@
-Module: fields.doc
+fields.doc
    Class: fullOfFields
       type eltType
          This is a generic type. 

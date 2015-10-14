@@ -1496,6 +1496,16 @@ void initPrimitiveTypes() {
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = NULL;
 
+  // Like c_string_copy but unowned.
+  // Could be == c_ptr(int(8)) e.g.
+  // used in some runtime interfaces
+  dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCVoidPtr->defaultValue = gOpaque;
+  CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
+  gCVoidPtr->cname = "NULL";
+  gCVoidPtr->addFlag(FLAG_EXTERN);
+
   dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
   dtFile = createPrimitiveType ("_file", "_cfile");
@@ -1639,16 +1649,13 @@ DefExpr* defineObjectClass() {
 }
 
 void initChplProgram(DefExpr* objectDef) {
-  CallExpr* base = 0;
-  CallExpr* std  = 0;
-
   theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
 
   theProgram->block->insertAtTail(base);
 

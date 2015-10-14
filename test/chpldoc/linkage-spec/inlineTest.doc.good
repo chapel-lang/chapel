@@ -1,5 +1,5 @@
-Module: inlineTest.doc
-   Module: inlineTest.doc.Other
+inlineTest.doc
+   inlineTest.doc.Other
       proc inside
          Comment for inline method inside module 
 

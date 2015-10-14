@@ -73,6 +73,7 @@ Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
 Symbol *gStringCopy = NULL;
+Symbol *gCVoidPtr = NULL;
 Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
@@ -166,6 +167,11 @@ bool Symbol::isRenameable() const {
   return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
 }
 
+
+// Returns the scope in which the given symbol is declared; NULL otherwise.
+BlockStmt* Symbol::getDeclarationScope() const {
+  return (defPoint != NULL) ? defPoint->getScopeBlock() : NULL;
+}
 
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
@@ -1840,8 +1846,8 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     } else {
       int count = 0;
       for_formals(formal, this) {
-        if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-          continue; // do not print locale argument for on blocks
+        if (formal->hasFlag(FLAG_NO_CODEGEN))
+          continue; // do not print locale argument, end count, dummy class
         if (count > 0)
           str += ", ";
         str += formal->codegenType().c;
@@ -1861,8 +1867,8 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 
     int count = 0;
     for_formals(formal, this) {
-      if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-        continue; // do not print locale argument for on blocks
+      if (formal->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(formal->codegenType().type);
       count++;
     }
@@ -1952,9 +1958,8 @@ void FnSymbol::codegenPrototype() {
 
     int numArgs = 0;
     for_formals(arg, this) {
-      if(arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK)) {
-        continue;
-      }
+      if (arg->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(arg->codegenType().type);
       argumentNames.push_back(arg->cname);
       numArgs++;
@@ -2051,8 +2056,8 @@ void FnSymbol::codegenDef() {
 
     llvm::Function::arg_iterator ai = func->arg_begin();
     for_formals(arg, this) {
-      if (arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-        continue; // do not print locale argument for on blocks
+      if (arg->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
 
       if (arg->requiresCPtr()){
         info->lvt->addValue(arg->cname, ai,  GEN_PTR, !is_signed(type));
@@ -2236,15 +2241,31 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 }
 
 
+// Inserts the given ast ahead of the _downEndCount call at the end of this
+// function, if present.  Otherwise, inserts it ahead of the return.
 void
 FnSymbol::insertBeforeDownEndCount(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());
+
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
-  CallExpr* last = toCallExpr(ret->prev);
-  if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
-    INT_FATAL(last, "Expected call to _downEndCount");
-  last->insertBefore(ast);
+
+  Expr* prev = ret->prev;
+
+  while (isBlockStmt(prev))
+    prev = toBlockStmt(prev)->body.last();
+
+  CallExpr* last = toCallExpr(prev);
+
+  if (last               &&
+      last->isResolved() &&
+      strcmp(last->isResolved()->name, "_downEndCount") == 0) {
+    last->insertBefore(ast);
+
+  } else {
+    // No _downEndCount() call, so insert the ast before the return.
+    ret->insertBefore(ast);
+  }
 }
 
 
@@ -2678,7 +2699,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   this->printTabs(file, tabs);
-  const char *moduleTitle = astr("Module: ", this->docsName().c_str());
+  const char *moduleTitle = astr(this->docsName().c_str());
   *file << moduleTitle << std::endl;
 
   if (!fDocsTextOnly) {

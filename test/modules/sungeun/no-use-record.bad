@@ -92,7 +92,6 @@ $CHPL_HOME/modules/standard/IO.chpl:2845: note:                 _defaultOf(type 
 $CHPL_HOME/modules/standard/IO.chpl:2874: note:                 _defaultOf(type t)
 $CHPL_HOME/modules/standard/IO.chpl:4559: note:                 _defaultOf(type t)
 $CHPL_HOME/modules/standard/IO.chpl:4609: note:                 _defaultOf(type t)
-$CHPL_HOME/modules/standard/gen/linux64-gnu/SysCTypes.chpl:33: note:                 _defaultOf(type t)
 $CHPL_HOME/modules/standard/Regexp.chpl:341: note:                 _defaultOf(type t)
 $CHPL_HOME/modules/standard/Regexp.chpl:344: note:                 _defaultOf(type t)
 $CHPL_HOME/modules/standard/Regexp.chpl:391: note:                 _defaultOf(type t)
