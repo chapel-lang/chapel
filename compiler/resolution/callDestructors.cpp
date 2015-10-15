@@ -770,7 +770,7 @@ static void insertDerefTemp(Expr* expr)
                                   new CallExpr(PRIM_DEREF, expr)));
 }
 
-void insertDerefTemps(CallExpr* call)
+static void insertDerefTemps(CallExpr* call)
 {
   if (call->isResolved() || call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
   {
@@ -859,19 +859,10 @@ void insertDerefTemps(CallExpr* call)
   // string_literal)), so they are niether primitives nor resolved calls.
 }
 
-void insertDerefTemps(FnSymbol* fn)
+void insertDerefTemps()
 {
-  std::vector<CallExpr*> callExprs;
-
-  collectCallExprs(fn, callExprs);
-
-  for_vector(CallExpr, call, callExprs)
-    insertDerefTemps(call);
-}
-
-
-void insertDerefTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
     if (call->parentSymbol != NULL)
       insertDerefTemps(call);
   }
