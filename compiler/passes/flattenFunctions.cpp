@@ -93,14 +93,6 @@ passableByVal(Type* type) {
 // Otherwise passing by value is more efficient.
 static bool
 passByRef(Symbol* sym) {
-
-  // Is it a non-POD record type?
-  // non-POD records/tuples are passed by reference here because
-  // other code probably won't copy them correctly if they
-  // are passed by value.
-  if( isRecord(sym->type) && !isPOD(sym->type) )
-    return true;
-
   //
   // If it's constant (in the sense that the value will not change),
   // there's no need to pass it by reference
