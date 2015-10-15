@@ -675,8 +675,6 @@ static void addAutoDestroyCallsForModule(FnSymbol* fn)
   std::set<ModuleSymbol*> visited;
 
   addAutoDestroyCallsForModule(fn,  mainModule, visited);
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 static void addAutoDestroyCallsForModule(FnSymbol*                fn,
@@ -956,12 +954,14 @@ static void insertGlobalAutoDestroyCalls() {
   const char* name = "chpl__autoDestroyGlobals";
   FnSymbol*   fn   = new FnSymbol(name);
 
-  addAutoDestroyCallsForModule(fn);
-
   fn->retType = dtVoid;
 
   chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
   chpl_gen_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
+
+  addAutoDestroyCallsForModule(fn);
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
