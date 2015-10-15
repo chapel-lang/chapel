@@ -1092,11 +1092,19 @@ void insertReferenceTemps(CallExpr* call) {
   }
 }
 
-
 void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     // Is call in the tree?
     if (call->parentSymbol != NULL) {
+      // NOAKES 2015/10/15
+      //
+      // On master this function is static and is called just once.
+      // On string-as-rec this function is called several times before
+      // the callDestructors pass and then is called from lowerIterators
+      // and OwnershipFlowManager.
+      //
+      // This guard should not be ported to master at this time
+      //
       // Do not insert reference temps on _toLeader and _toFollower calls
       // before iterator lowering is complete.
       // A certain structure for these calls is expected in
