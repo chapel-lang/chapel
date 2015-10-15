@@ -112,9 +112,6 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 // callDestructors.cpp
 void insertReferenceTemps(CallExpr* call);
 void insertReferenceTemps();
-
-void insertDerefTemps(CallExpr* call);
-void insertDerefTemps(FnSymbol* fn);
 void insertDerefTemps();
 
 // parallel.cpp
