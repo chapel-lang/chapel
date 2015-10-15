@@ -954,8 +954,9 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
   //      T3 = (T == T2);   // not actual LLVM syntax
   // in LLVM, boolean type is i1
   if (val.val->getType() != ptrValType){
-    val.val = convertValueToType(val.val, ptrValType, !val.isUnsigned);
-    INT_ASSERT(val.val);
+    llvm::Value* v = convertValueToType(val.val, ptrValType, !val.isUnsigned);
+    INT_ASSERT(v);
+    val.val = v;
   }
 
   return codegenStoreLLVM(val.val, ptr.val, valType);
@@ -5609,11 +5610,11 @@ bool CallExpr::isPrimitive() const {
 }
 
 bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
-  return primitive != NULL && primitive->tag == primitiveTag;
+  return primitive && primitive->tag == primitiveTag;
 }
 
 bool CallExpr::isPrimitive(const char* primitiveName) const {
-  return primitive != NULL && !strcmp(primitive->name, primitiveName);
+  return primitive && !strcmp(primitive->name, primitiveName);
 }
 
 /************************************ | *************************************
