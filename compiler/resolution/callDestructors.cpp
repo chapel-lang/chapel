@@ -770,7 +770,7 @@ static void insertDerefTemp(Expr* expr)
                                   new CallExpr(PRIM_DEREF, expr)));
 }
 
-void insertDerefTemps(CallExpr* call)
+static void insertDerefTemps(CallExpr* call)
 {
   if (call->isResolved() || call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
   {
@@ -859,19 +859,10 @@ void insertDerefTemps(CallExpr* call)
   // string_literal)), so they are niether primitives nor resolved calls.
 }
 
-void insertDerefTemps(FnSymbol* fn)
+void insertDerefTemps()
 {
-  std::vector<CallExpr*> callExprs;
-
-  collectCallExprs(fn, callExprs);
-
-  for_vector(CallExpr, call, callExprs)
-    insertDerefTemps(call);
-}
-
-
-void insertDerefTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
     if (call->parentSymbol != NULL)
       insertDerefTemps(call);
   }
@@ -1092,11 +1083,19 @@ void insertReferenceTemps(CallExpr* call) {
   }
 }
 
-
 void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     // Is call in the tree?
     if (call->parentSymbol != NULL) {
+      // NOAKES 2015/10/15
+      //
+      // On master this function is static and is called just once.
+      // On string-as-rec this function is called several times before
+      // the callDestructors pass and then is called from lowerIterators
+      // and OwnershipFlowManager.
+      //
+      // This guard should not be ported to master at this time
+      //
       // Do not insert reference temps on _toLeader and _toFollower calls
       // before iterator lowering is complete.
       // A certain structure for these calls is expected in
