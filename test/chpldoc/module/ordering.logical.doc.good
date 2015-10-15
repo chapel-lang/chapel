@@ -1,4 +1,4 @@
-Module: ordering
+ordering
    config var first: string
       This config var should be printed first 
    proc second()

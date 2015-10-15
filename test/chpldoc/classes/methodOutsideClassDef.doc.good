@@ -1,4 +1,4 @@
-Module: methodOutsideClassDef.doc
+methodOutsideClassDef.doc
    Class: Foo
       This class will declare a method inside itself, but will have a
       method declared outside it as well 
