@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,9 +27,10 @@
 #include "stmt.h"
 #include "symbol.h"
 
+#include <set>
 
-// Clear autoDestroy flags on variables that get assigned to the return value of
-// certain functions.
+// Clear autoDestroy flags on variables that get assigned to the return value
+// of certain functions.
 //
 // FLAG_INSERT_AUTO_DESTROY is applied to some variables early in compilation,
 // before the type of the variable is known (e.g. in the build and normalize
@@ -49,8 +50,8 @@ static void cullAutoDestroyFlags()
       if (fn->hasFlag(FLAG_INIT_COPY_FN))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
-      // This is just a workaround for memory management being handled specially
-      // for internally reference-counted types. (sandboxing)
+      // This is just a workaround for memory management being handled
+      // specially for internally reference-counted types. (sandboxing)
       TypeSymbol* ts = ret->type->symbol;
       if (ts->hasFlag(FLAG_ARRAY) ||
           ts->hasFlag(FLAG_DOMAIN))
@@ -58,11 +59,13 @@ static void cullAutoDestroyFlags()
       // Do we need to add other record-wrapped types here?  Testing will tell.
 
       // NOTE 1: When the value of a record field is established in a default
-      // constructor, it is initialized using a MOVE.  That means that ownership
-      // of that value is shared between the formal_tmp and the record field.
+      // constructor, it is initialized using a MOVE.  That means that
+      // ownership of that value is shared between the formal_tmp and the
+      // record field.
+
       // If the autodestroy flag is left on that formal temp, then it will be
       // destroyed which -- for ref-counted types -- can result in a dangling
-      // reference.  So here, we look for that case and remove it.  
+      // reference.  So here, we look for that case and remove it.
       if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       {
         Map<Symbol*,Vec<SymExpr*>*> defMap;
@@ -274,7 +277,7 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
         forv_Vec(VarSymbol, var, vars) {
           if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
             SET_LINENO(var);
-            
+
             gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
           }
         }
@@ -285,7 +288,7 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
 
 // The outer loop of this business logic is walking a given BlockStmt
 // and is inspecting every goto-stmt that is recursively within this
-// block.  
+// block.
 
 // This function is testing with a particular goto jumps to a point
 // outside the block being tested.
@@ -413,7 +416,7 @@ replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
 
 
 // Clone fn, add a ref arg to the end of the argument list, remove the return
-// primitive and change the return type of the function to void.  
+// primitive and change the return type of the function to void.
 // In the body of the clone, replace updates to the return value variable with
 // calls to the useFn in the calling context.
 //
@@ -421,7 +424,7 @@ replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
 // return-by-reference through the new argument.  It allows the result to be
 // written directly into sapce allocated in the caller, thus avoiding a
 // verbatim copy.
-// 
+//
 static FnSymbol*
 createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 {
@@ -662,7 +665,6 @@ returnRecordsByReferenceArguments() {
   freeDefUseMaps(defMap, useMap);
 }
 
-
 static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -698,12 +700,12 @@ fixupDestructors() {
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
         } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-// Temporary expedient: Leak strings like crazy.
-//          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
-//          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-//          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-//            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-//          fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
+          // Temporary expedient: Leak strings like crazy.
+          //          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
+          //          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+          //          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+          //            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+          //          fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
         }
       }
 
@@ -734,12 +736,16 @@ static void insertGlobalAutoDestroyCalls() {
   if (chpl_gen_main == NULL)
     return;
 
-  const char* name = "chpl__autoDestroyGlobals";
   SET_LINENO(baseModule);
-  FnSymbol* fn = new FnSymbol(name);
+
+  const char* name = "chpl__autoDestroyGlobals";
+  FnSymbol*   fn   = new FnSymbol(name);
+
   fn->retType = dtVoid;
+
   chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
   chpl_gen_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
+
   forv_Vec(DefExpr, def, gDefExprs) {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)
@@ -751,12 +757,12 @@ static void insertGlobalAutoDestroyCalls() {
                 fn->insertAtTail(new CallExpr(autoDestroy, var));
               }
   }
+
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
 
 
-static void insertDestructorCalls()
-{
+static void insertDestructorCalls() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
       Type* type = call->get(1)->typeInfo();
@@ -770,9 +776,7 @@ static void insertDestructorCalls()
   }
 }
 
-
-static void insertAutoCopyTemps()
-{
+static void insertAutoCopyTemps() {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap);
@@ -842,6 +846,7 @@ static void insertYieldTemps()
     // The transformation is applied only if is has a normal record type
     // (passed by value).
     Type* type = yieldExpr->var->type;
+
     if (isRecord(type) &&
         !type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
@@ -867,8 +872,7 @@ static void insertYieldTemps()
 //
 // Insert reference temps for function arguments that expect them.
 //
-void insertReferenceTemps(CallExpr* call)
-{
+void insertReferenceTemps(CallExpr* call) {
   for_formals_actuals(formal, actual, call) {
     if (formal->type == actual->typeInfo()->refType) {
       SET_LINENO(call);
@@ -886,16 +890,18 @@ void insertReferenceTemps(CallExpr* call)
 
 static void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if ((call->parentSymbol && call->isResolved()) ||
-        call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      insertReferenceTemps(call);
+    // Is call in the tree?
+    if (call->parentSymbol != NULL) {
+      if (call->isResolved() ||
+          call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        insertReferenceTemps(call);
+      }
     }
   }
 }
 
 
-void
-callDestructors() {
+void callDestructors() {
   fixupDestructors();
   insertDestructorCalls();
   insertAutoCopyTemps();
