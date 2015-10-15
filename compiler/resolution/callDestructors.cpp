@@ -890,9 +890,12 @@ void insertReferenceTemps(CallExpr* call) {
 
 static void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if ((call->parentSymbol && call->isResolved()) ||
-        call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      insertReferenceTemps(call);
+    // Is call in the tree?
+    if (call->parentSymbol != NULL) {
+      if (call->isResolved() ||
+          call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        insertReferenceTemps(call);
+      }
     }
   }
 }
