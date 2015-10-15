@@ -1,23 +1,21 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#define HILDE_MM 1
 
 #include "passes.h"
 
@@ -32,8 +30,8 @@
 #include <set>
 
 #ifndef HILDE_MM
-// Clear autoDestroy flags on variables that get assigned to the return value of
-// certain functions.
+// Clear autoDestroy flags on variables that get assigned to the return value
+// of certain functions.
 //
 // FLAG_INSERT_AUTO_DESTROY is applied to some variables early in compilation,
 // before the type of the variable is known (e.g. in the build and normalize
@@ -53,8 +51,8 @@ static void cullAutoDestroyFlags()
       if (fn->hasFlag(FLAG_INIT_COPY_FN))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
-      // This is just a workaround for memory management being handled specially
-      // for internally reference-counted types. (sandboxing)
+      // This is just a workaround for memory management being handled
+      // specially for internally reference-counted types. (sandboxing)
       TypeSymbol* ts = ret->type->symbol;
       if (ts->hasFlag(FLAG_ARRAY) ||
           ts->hasFlag(FLAG_DOMAIN))
@@ -62,11 +60,13 @@ static void cullAutoDestroyFlags()
       // Do we need to add other record-wrapped types here?  Testing will tell.
 
       // NOTE 1: When the value of a record field is established in a default
-      // constructor, it is initialized using a MOVE.  That means that ownership
-      // of that value is shared between the formal_tmp and the record field.
+      // constructor, it is initialized using a MOVE.  That means that
+      // ownership of that value is shared between the formal_tmp and the
+      // record field.
+
       // If the autodestroy flag is left on that formal temp, then it will be
       // destroyed which -- for ref-counted types -- can result in a dangling
-      // reference.  So here, we look for that case and remove it.  
+      // reference.  So here, we look for that case and remove it.
       if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       {
         Map<Symbol*,Vec<SymExpr*>*> defMap;
@@ -278,7 +278,7 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
         forv_Vec(VarSymbol, var, vars) {
           if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
             SET_LINENO(var);
-            
+
             gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
           }
         }
@@ -289,7 +289,7 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
 
 // The outer loop of this business logic is walking a given BlockStmt
 // and is inspecting every goto-stmt that is recursively within this
-// block.  
+// block.
 
 // This function is testing with a particular goto jumps to a point
 // outside the block being tested.
@@ -417,7 +417,7 @@ replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
 
 
 // Clone fn, add a ref arg to the end of the argument list, remove the return
-// primitive and change the return type of the function to void.  
+// primitive and change the return type of the function to void.
 // In the body of the clone, replace updates to the return value variable with
 // calls to the useFn in the calling context.
 //
@@ -425,7 +425,7 @@ replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
 // return-by-reference through the new argument.  It allows the result to be
 // written directly into sapce allocated in the caller, thus avoiding a
 // verbatim copy.
-// 
+//
 static FnSymbol*
 createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 {
@@ -463,7 +463,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
             (!parent || !parent->isPrimitive(PRIM_MOVE))) {
           replacementHelper(move, ret, arg, useFn);
         } else {
-          Symbol* tmp = newTemp("ret_to_arg_derefTmp", useFn->retType);
+          Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
           se->getStmtExpr()->insertBefore(new DefExpr(tmp));
           se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
           se->var = tmp;
@@ -665,15 +665,225 @@ returnRecordsByReferenceArguments() {
   }
   freeDefUseMaps(defMap, useMap);
 }
+#else
+static void addAutoDestroyCallsForModule(FnSymbol*                fn,
+                                         ModuleSymbol*            mod,
+                                         std::set<ModuleSymbol*>& visited);
+
+static void addAutoDestroyCallsForModule(FnSymbol* fn)
+{
+  std::set<ModuleSymbol*> visited;
+
+  addAutoDestroyCallsForModule(fn,  mainModule, visited);
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+}
+
+static void addAutoDestroyCallsForModule(FnSymbol*                fn,
+                                         ModuleSymbol*            mod,
+                                         std::set<ModuleSymbol*>& visited)
+{
+  // Termination
+  if (visited.count(mod) > 0)
+    return;
+
+  visited.insert(mod);
+
+  // Recursion
+  // Visit my parent.
+  if (ModuleSymbol* parent = mod->defPoint->getModule())
+    if (parent != theProgram && parent != rootModule)
+      addAutoDestroyCallsForModule(fn, parent, visited);
+
+  // Visit my explicit dependencies.
+  forv_Vec(ModuleSymbol, usedMod, mod->modUseList)
+    addAutoDestroyCallsForModule(fn, usedMod, visited);
+
+  // Real work
+  for_alist(expr, mod->block->body)
+  {
+    if (DefExpr* def = toDefExpr(expr))
+      if (VarSymbol* var = toVarSymbol(def->sym))
+      {
+        if (var->hasFlag(FLAG_NO_AUTO_DESTROY))
+          continue;
+
+        // Don't destroy type variables (they have no run-time representation).
+        if (var->hasFlag(FLAG_TYPE_VARIABLE))
+          continue;
+
+        if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type))
+        {
+          // Skip destructors for class types (only nude RWT types at this point).
+          if (AggregateType* at = toAggregateType(var->type))
+            if (isClass(at))
+              continue;
+
+          SET_LINENO(var);
+          fn->insertAtHead(new CallExpr(autoDestroy, var));
+        }
+      }
+  }
+}
+
+static bool isLeaderFollowerIteratorCall(CallExpr* call) {
+  // These tests are copied verbatim from the tests that select the calls
+  // of interest in cleanupLeaderFollowerIteratorCalls().
+  if (FnSymbol* fn = call->isResolved()) {
+    if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+        (isDefExpr(fn->formals.tail) &&
+         !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
+         toDefExpr(fn->formals.tail)->sym->getValType() &&
+         toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
+      if (!strcmp(call->parentSymbol->name, "_toLeader") ||
+          !strcmp(call->parentSymbol->name, "_toFollower") ||
+          !strcmp(call->parentSymbol->name, "_toFastFollower") ||
+          !strcmp(call->parentSymbol->name, "_toStandalone")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+//
+// Insert dereference temps as needed to make reference arguments and variables
+// match formals that expect their arguments by value
+// (This should be rare, except for fundamental types, small records and
+//  task arguments passed using remote value forwarding.)
+//
+
+static void insertDerefTemp(Expr* expr)
+{
+  Expr* stmt = expr->getStmtExpr();
+  SET_LINENO(stmt);
+
+  Type* t = expr->typeInfo();
+  INT_ASSERT(t->symbol->hasFlag(FLAG_REF));
+
+  VarSymbol* tmp = newTemp("derefTmp", t->getValType());
+
+  stmt->insertBefore(new DefExpr(tmp));
+
+  expr->replace(new SymExpr(tmp));
+
+  stmt->insertBefore(new CallExpr(PRIM_MOVE,
+                                  tmp,
+                                  new CallExpr(PRIM_DEREF, expr)));
+}
+
+void insertDerefTemps(CallExpr* call)
+{
+  if (call->isResolved() || call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+  {
+    // This is a function call (not a primitive).
+    for_formals_actuals(formal, actual, call)
+    {
+      if (actual->typeInfo() == formal->type->refType)
+      {
+        // A deref temp is needed.
+        insertDerefTemp(actual);
+      }
+    }
+  }
+
+  if (call->primitive)
+  {
+    // A primitive.
+    // Do nothing in the general case.
+    // In specific cases, insert a deref temp if required.
+    switch (call->primitive->tag)
+    {
+     default:
+      // Default: Do not insert a deref temp.
+      break;
+
+     case PRIM_ADDR_OF:
+      {
+        Expr* actual = call->get(1);
+
+        if (isReferenceType(actual->typeInfo()))
+        {
+          // Can't take the address of a reference, so just remove this call.
+          call->replace(actual->remove());
+        }
+      }
+      break;
+
+     case PRIM_MOVE:
+      {
+        Expr* actual = call->get(2);
+        // If the RHS of the move is an addr-of call, we skip it.
+        //  - It will be removed by the PRIM_ADDR_OF clause if its operand is
+        //    already a reference, and
+        //  - Calling typeInfo on an 'addr of' primitive whose argument is
+        //    already of ref cause a compiler error.  (Chapel only supports one
+        //    level of references.)
+        if (CallExpr* aoc = toCallExpr(actual))
+          if (aoc->isPrimitive(PRIM_ADDR_OF))
+            break;
+
+        Expr* lhs = call->get(1);
+
+        if (actual->typeInfo() == lhs->typeInfo()->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+
+     case PRIM_RETURN:
+      {
+        // The type of the argument to the return primitive should match the
+        // return type of the function that contains it.
+        Expr*     actual = call->get(1);
+        FnSymbol* fn     = toFnSymbol(call->parentSymbol);
+
+        INT_ASSERT(fn);
+
+        if (actual->typeInfo() == fn->retType->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+
+     case PRIM_SET_MEMBER:
+      {
+        Expr* actual = call->get(3);
+        Expr* field  = call->get(2);
+        Type* target = field->typeInfo();
+
+        if (actual->typeInfo() == target->refType)
+          insertDerefTemp(actual);
+      }
+      break;
+    }
+  }
+
+  // String literals are represented as DefExpr(CallExpr('_construct_string',
+  // string_literal)), so they are niether primitives nor resolved calls.
+}
+
+void insertDerefTemps(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for_vector(CallExpr, call, callExprs)
+    insertDerefTemps(call);
+}
+
+
+void insertDerefTemps() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol != NULL)
+      insertDerefTemps(call);
+  }
+}
 #endif
 
 static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_DESTRUCTOR) &&
-        // TODO: Right now, we flesh out the body of a freeIterator function
-        // "by hand".  But if we can reuse this code, that would be much better.
-        !fn->hasFlag(FLAG_AUTO_II)) {
+    if (fn->hasFlag(FLAG_DESTRUCTOR) && !fn->hasFlag(FLAG_AUTO_II)) {
       AggregateType* ct = toAggregateType(fn->_this->getValType());
       INT_ASSERT(ct);
 
@@ -704,6 +914,13 @@ fixupDestructors() {
                 new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
+        } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
+          // Temporary expedient: Leak strings like crazy.
+          //          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
+          //          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+          //          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
+          //            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
+          //          fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
         }
       }
 
@@ -729,52 +946,6 @@ fixupDestructors() {
 }
 
 
-static void addAutoDestroyCallsForModule(ModuleSymbol* mod, FnSymbol* fn,
-                                         std::set<ModuleSymbol*>& visited)
-{
-// Termination
-  if (visited.count(mod) > 0)
-    return;
-  visited.insert(mod);
-
-// Recursion
-  // Visit my parent.
-  if (ModuleSymbol* parent = mod->defPoint->getModule())
-    if (parent != theProgram && parent != rootModule)
-      addAutoDestroyCallsForModule(parent, fn, visited);
-
-  // Visit my explicit dependencies.
-  forv_Vec(ModuleSymbol, usedMod, mod->modUseList)
-    addAutoDestroyCallsForModule(usedMod, fn, visited);
-
-// Real work
-  for_alist(expr, mod->block->body)
-  {
-    if (DefExpr* def = toDefExpr(expr))
-      if (VarSymbol* var = toVarSymbol(def->sym))
-      {
-        if (var->hasFlag(FLAG_NO_AUTO_DESTROY))
-          continue;
-
-        // Don't destroy type variables (they have no run-time representation).
-        if (var->hasFlag(FLAG_TYPE_VARIABLE))
-          continue;
-
-        if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type))
-        {
-          // Skip destructors for class types (only nude RWT types at this point).
-          if (AggregateType* at = toAggregateType(var->type))
-            if (isClass(at))
-              continue;
-
-          SET_LINENO(var);
-          fn->insertAtHead(new CallExpr(autoDestroy, var));
-        }
-      }
-  }
-}
-
-
 static void insertGlobalAutoDestroyCalls() {
   // --ipe does not build chpl_gen_main
   if (chpl_gen_main == NULL)
@@ -783,13 +954,10 @@ static void insertGlobalAutoDestroyCalls() {
   SET_LINENO(baseModule);
 
   const char* name = "chpl__autoDestroyGlobals";
-  FnSymbol* fn = new FnSymbol(name);
+  FnSymbol*   fn   = new FnSymbol(name);
 
-  // TODO: Would like to use unordered_set (C++11) instead, when it is available.
-  std::set<ModuleSymbol*> visited;
-  addAutoDestroyCallsForModule(mainModule, fn, visited);
+  addAutoDestroyCallsForModule(fn);
 
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   fn->retType = dtVoid;
 
   chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
@@ -797,8 +965,7 @@ static void insertGlobalAutoDestroyCalls() {
 }
 
 
-static void insertDestructorCalls()
-{
+static void insertDestructorCalls() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_CALL_DESTRUCTOR)) {
       Type* type = call->get(1)->typeInfo();
@@ -813,8 +980,7 @@ static void insertDestructorCalls()
 }
 
 #ifndef HILDE_MM
-static void insertAutoCopyTemps()
-{
+static void insertAutoCopyTemps() {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
   buildDefUseMaps(defMap, useMap);
@@ -858,12 +1024,6 @@ static void insertAutoCopyTemps()
 
   freeDefUseMaps(defMap, useMap);
 }
-#endif
-
-#ifndef HILDE_MM
-//
-// NOAKES 2015/09/04: AMM should be handling these autoCopies now
-//
 
 
 // This routine inserts autoCopy calls ahead of yield statements as necessary,
@@ -917,8 +1077,7 @@ static void insertYieldTemps()
 //
 // Insert reference temps for function arguments that expect them.
 //
-void insertReferenceTemps(CallExpr* call)
-{
+void insertReferenceTemps(CallExpr* call) {
   for_formals_actuals(formal, actual, call) {
     if (formal->type == actual->typeInfo()->refType) {
       SET_LINENO(call);
@@ -934,181 +1093,23 @@ void insertReferenceTemps(CallExpr* call)
 }
 
 
-static bool isLeaderFollowerIteratorCall(CallExpr* call)
-{
-  // These tests are copied verbatim from the tests that select the calls
-  // of interest in cleanupLeaderFollowerIteratorCalls().
-  if (FnSymbol* fn = call->isResolved()) {
-    if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
-        (isDefExpr(fn->formals.tail) &&
-         !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
-         toDefExpr(fn->formals.tail)->sym->getValType() &&
-         toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
-      if (!strcmp(call->parentSymbol->name, "_toLeader") ||
-          !strcmp(call->parentSymbol->name, "_toFollower") ||
-          !strcmp(call->parentSymbol->name, "_toFastFollower") ||
-          !strcmp(call->parentSymbol->name, "_toStandalone")) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-
 void insertReferenceTemps() {
-  forv_Vec(CallExpr, call, gCallExprs)
-  {
-    // Skip calls that are not in the tree.
-    if (! call->parentSymbol)
-      continue;
-
-    // Do not insert reference temps on _toLeader and _toFollower calls before
-    // iterator lowering is complete.
-    // A certain structure for these calls is expected in
-    // cleanupLeaderFollowerIteratorCalls() and inserting deref temps disturbs
-    // that form.
-    // TODO: The design for LeaderFollower 2.0 should avoid these nonconforming
-    // modifications of the AST.
-    if (! iteratorsLowered)
-      if (isLeaderFollowerIteratorCall(call))
+  forv_Vec(CallExpr, call, gCallExprs) {
+    // Is call in the tree?
+    if (call->parentSymbol != NULL) {
+      // Do not insert reference temps on _toLeader and _toFollower calls
+      // before iterator lowering is complete.
+      // A certain structure for these calls is expected in
+      // cleanupLeaderFollowerIteratorCalls() and inserting deref temps
+      // disturbs that form.
+      if (iteratorsLowered == false && isLeaderFollowerIteratorCall(call))
         continue;
 
-    if (call->isResolved() ||
-        call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
-    {
-      insertReferenceTemps(call);
-    }
-  }
-}
-
-
-//
-// Insert dereference temps as needed to make reference arguments and variables
-// match formals that expect their arguments by value
-// (This should be rare, except for fundamental types, small records and
-//  task arguments passed using remote value forwarding.)
-//
-
-static inline void
-insertDerefTemp(Expr* expr)
-{
-  Expr* stmt = expr->getStmtExpr();
-  SET_LINENO(stmt);
-
-  Type* t = expr->typeInfo();
-  INT_ASSERT(t->symbol->hasFlag(FLAG_REF));
-
-  VarSymbol* tmp = newTemp("derefTmp", t->getValType());
-  stmt->insertBefore(new DefExpr(tmp));
-
-  expr->replace(new SymExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                  new CallExpr(PRIM_DEREF, expr)));
-}
-
-void insertDerefTemps(CallExpr* call)
-{
-  if ((call->isResolved()) ||
-      call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
-  {
-    // This is a function call (not a primitive).
-    for_formals_actuals(formal, actual, call)
-    {
-      if (actual->typeInfo() == formal->type->refType)
-      {
-        // A deref temp is needed.
-        insertDerefTemp(actual);
+      if (call->isResolved() ||
+          call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        insertReferenceTemps(call);
       }
     }
-  }
-
-  if (call->primitive)
-  {
-    // A primitive.
-    // Do nothing in the general case.
-    // In specific cases, insert a deref temp if required.
-    switch (call->primitive->tag)
-    {
-     default:
-      // Default: Do not insert a deref temp.
-      break;
-
-     case PRIM_ADDR_OF:
-      {
-        Expr* actual = call->get(1);
-        if (isReferenceType(actual->typeInfo()))
-        {
-          // Can't take the address of a reference, so just remove this call.
-          call->replace(actual->remove());
-        }
-      }
-      break;
-
-     case PRIM_MOVE:
-      {
-        Expr* actual = call->get(2);
-        // If the RHS of the move is an addr-of call, we skip it.
-        //  - It will be removed by the PRIM_ADDR_OF clause if its operand is
-        //    already a reference, and
-        //  - Calling typeInfo on an 'addr of' primitive whose argument is
-        //    already of ref cause a compiler error.  (Chapel only supports one
-        //    level of references.)
-        if (CallExpr* aoc = toCallExpr(actual))
-          if (aoc->isPrimitive(PRIM_ADDR_OF))
-            break;
-
-        Expr* lhs = call->get(1);
-        if (actual->typeInfo() == lhs->typeInfo()->refType)
-          insertDerefTemp(actual);
-      }
-      break;
-
-     case PRIM_RETURN:
-      {
-        // The type of the argument to the return primitive should match the
-        // return type of the function that contains it.
-        Expr* actual = call->get(1);
-        FnSymbol* fn = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(fn);
-        if (actual->typeInfo() == fn->retType->refType)
-          insertDerefTemp(actual);
-      }
-      break;
-
-     case PRIM_SET_MEMBER:
-      {
-        Expr* actual = call->get(3);
-        Expr* field = call->get(2);
-        Type* target = field->typeInfo();
-        if (actual->typeInfo() == target->refType)
-          insertDerefTemp(actual);
-      }
-      break;
-    }
-  }
-
-  // String literals are represented as DefExpr(CallExpr('_construct_string',
-  // string_literal)), so they are niether primitives nor resolved calls.
-}
-
-
-void insertDerefTemps(FnSymbol* fn)
-{
-  std::vector<CallExpr*> callExprs;
-  collectCallExprs(fn, callExprs);
-  for_vector(CallExpr, call, callExprs)
-    insertDerefTemps(call);
-}
-
-
-void insertDerefTemps() {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (! call->parentSymbol)
-      // Not in tree, so skip
-      continue;
-
-    insertDerefTemps(call);
   }
 }
 
