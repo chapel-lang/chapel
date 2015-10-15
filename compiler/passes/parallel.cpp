@@ -940,14 +940,14 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         // Free the variable at the end of the task function.
       }
     }
-    // else ... 
+    // else ...
     // TODO: After the new constructor story is implemented, every declaration
     // should have exactly one definition associated with it, so the
     // (defs-> == 1) test above can be replaced by an assertion.
   }
 }
 
-// Returns false if 
+// Returns false if
 //  fLocal == true
 // or
 //  CHPL_COMM == "ugni"
