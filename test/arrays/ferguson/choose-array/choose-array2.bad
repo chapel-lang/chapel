@@ -1,0 +1,5 @@
+9 1 1 1 1 1 1 1 1 1
+8 2 2 2 2 2 2 2 2 2
+8 2 2 2 2 2 2 2 2 2
+9 1 1 1 1 1 1 1 1 1
+choose-array2.chpl:14: error: halt reached - array reference count is negative!
