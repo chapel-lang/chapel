@@ -23,10 +23,11 @@
 #include <cstddef>
 
 class BitVec {
- public:
+public:
   unsigned* data;
   size_t    in_size;
   size_t    ndata;
+
 
          BitVec(size_t in_size);
          BitVec(const BitVec& rhs);

@@ -204,7 +204,7 @@ size_t BitVec::count() const {
     size_t x          = data[i];
 
     for (localCount = 0; x; localCount++) {
-      x &= x-1;
+      x &= x - 1;
     }
 
     count += localCount;
