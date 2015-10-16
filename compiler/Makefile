@@ -24,12 +24,6 @@ export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 
 
-# Generate tags command, dependent on if Make variable, TAGS == 1
-ifeq ($(TAGS), 1)
-TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
-EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
-endif
-
 COMPILER_ROOT=.
 COMPILER_SUBDIR = .
 
@@ -53,6 +47,12 @@ SUBDIRS = \
 # include standard header for compiler
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
+# Generate tags command, dependent on if Make variable, TAGS == 1
+ifeq ($(TAGS), 1)
+TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
+endif
 
 #
 # the location of the BUILD_VERSION file
@@ -95,7 +95,7 @@ CHPL_OBJS = \
 EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
 
 PRETARGETS = $(BUILD_VERSION_FILE) third-party-pkgs
-TARGETS = $(CHPL)
+TARGETS = COMPILER
 
 
 #
@@ -122,14 +122,17 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -f $(CHPL_CONFIG_CHECK_PREFIX)-*
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
-$(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR) TAGS
+$(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
 	rm -f $(CHPLIPE)
 	ln -s $(notdir $(CHPL)) $(CHPLIPE)
 
 TAGS:
+	echo "TAGS: $(TAGS)"
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
+
+COMPILER: $(CHPL) TAGS
 
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
