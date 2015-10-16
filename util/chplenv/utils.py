@@ -1,6 +1,9 @@
-import os, re, subprocess
-from distutils.spawn import find_executable
+import os
+import re
+import subprocess
 from collections import namedtuple
+from distutils.spawn import find_executable
+
 
 def memoize(func):
     cache = func.cache = {}
@@ -83,5 +86,3 @@ def run_command(command, stdout=True, stderr=False):
 def compiler_is_prgenv(compiler_val):
   return (compiler_val.startswith('cray-prgenv') or
      os.environ.get('CHPL_ORIG_TARGET_COMPILER','').startswith('cray-prgenv'))
-
-

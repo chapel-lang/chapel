@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-import sys, os
+import os
+import sys
 
 from utils import memoize
+
 
 @memoize
 def get():

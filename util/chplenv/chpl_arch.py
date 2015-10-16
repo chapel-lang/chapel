@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
-import os, optparse
-from sys import stdout, stderr
+import optparse
+import os
 from string import punctuation
+from sys import stderr, stdout
 
-from . import utils, chpl_platform, chpl_comm, chpl_compiler
-from utils import memoize, CompVersion
+from utils import CompVersion, memoize
+
+from . import chpl_comm, chpl_compiler, chpl_platform, utils
+
 
 class argument_map(object):
     # intel does not support amd archs... it may be worth testing setting the

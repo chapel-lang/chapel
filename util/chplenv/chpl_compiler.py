@@ -1,9 +1,12 @@
 #!/usr/bin/env python
-import os, optparse
-from sys import stdout, stderr
+import optparse
+import os
+from sys import stderr, stdout
+
+from utils import memoize
 
 from . import chpl_platform, utils
-from utils import memoize
+
 
 @memoize
 def get(flag='host'):

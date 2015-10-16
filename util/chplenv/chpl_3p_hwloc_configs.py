@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-from . import utils
 from utils import memoize
-from . import third_party_utils
+
+from . import third_party_utils, utils
+
 
 @memoize
 def get_uniq_cfg_path():

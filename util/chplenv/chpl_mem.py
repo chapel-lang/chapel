@@ -1,8 +1,13 @@
 #!/usr/bin/env python
-import sys, os, optparse
+import optparse
+import os
+import sys
 
-from . import chpl_arch, chpl_comm, chpl_comm_segment, chpl_compiler, chpl_platform
 from utils import memoize
+
+from . import (chpl_arch, chpl_comm, chpl_comm_segment, chpl_compiler,
+               chpl_platform)
+
 
 @memoize
 def get(flag='host'):
