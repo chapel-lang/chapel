@@ -103,7 +103,6 @@ int fConditionalDynamicDispatchLimit = 0;
 bool fUseNoinit = true;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
-bool fNoRemoveWrapRecords = false;
 bool fNoScalarReplacement = false;
 bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
@@ -568,7 +567,6 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   // an appropriate level of optimization.
   fNoCopyPropagation = false;
   fNoDeadCodeElimination = false;
-  fNoRemoveWrapRecords = false;
   fNoFastFollowers = false;
   fNoloopInvariantCodeMotion= false;
   fNoInline = false;
@@ -611,7 +609,6 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   fBaseline = true;
   fNoCopyPropagation = true;
   fNoDeadCodeElimination = true;
-  fNoRemoveWrapRecords = true;
   fNoFastFollowers = true;
   fNoloopInvariantCodeMotion = true;
   fNoInline = true;
@@ -720,7 +717,6 @@ static ArgumentDescription arg_desc[] = {
  {"privatization", ' ', NULL, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", NULL},
  {"remote-value-forwarding", ' ', NULL, "Enable [disable] remote value forwarding", "n", &fNoRemoteValueForwarding, "CHPL_DISABLE_REMOTE_VALUE_FORWARDING", NULL},
  {"remove-copy-calls", ' ', NULL, "Enable [disable] remove copy calls", "n", &fNoRemoveCopyCalls, "CHPL_DISABLE_REMOVE_COPY_CALLS", NULL},
- {"remove-wrap-records", ' ', NULL, "Enable [disable] wrap record removal", "n", &fNoRemoveWrapRecords, "CHPL_REMOVE_WRAP_RECORDS", NULL},
  {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
  {"scalar-replace-limit", ' ', "<limit>", "Limit on the size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", NULL},
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
@@ -731,7 +727,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
- {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL}, 
+ {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},

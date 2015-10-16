@@ -42,7 +42,6 @@ Optimization Control Options:
                                       distributed arrays and domains
       --[no-]remote-value-forwarding  Enable [disable] remote value forwarding
       --[no-]remove-copy-calls        Enable [disable] remove copy calls
-      --[no-]remove-wrap-records      Enable [disable] wrap record removal
       --[no-]scalar-replacement       Enable [disable] scalar replacement
       --scalar-replace-limit <limit>  Limit on the size of tuples being
                                       replaced during scalar replacement
