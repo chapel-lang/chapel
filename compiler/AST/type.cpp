@@ -38,6 +38,7 @@
 
 #include "AstVisitor.h"
 
+static bool isDerivedType(Type* type, Flag flag);
 
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   BaseAST(astTag),
@@ -1855,16 +1856,9 @@ bool isRecordWrappedType(Type* t) {
 // dsiNew*Dom() functions; false otherwise.
 // This check is performed by looking to see if the given type derives from the
 // BaseDom class.
- bool isDomImplType(Type* type)
+bool isDomImplType(Type* type)
 {
-  while (AggregateType* at = toAggregateType(type))
-  {
-    if (at->symbol->hasFlag(FLAG_BASE_DOMAIN))
-      return true;
-    // Lazily assume single-inheritance.
-    type = at->dispatchParents.only();
-  }
-  return false;
+  return isDerivedType(type, FLAG_BASE_DOMAIN);
 }
 
 // Returns true if the given type is one which can be returned by
@@ -1872,28 +1866,30 @@ bool isRecordWrappedType(Type* t) {
 // false otherwise.
 // The test is actually performed by looking to see if the given type derives
 // from the BaseArr class.
- bool isArrayImplType(Type* type)
+bool isArrayImplType(Type* type)
 {
-  while (AggregateType* at = toAggregateType(type))
-  {
-    if (at->symbol->hasFlag(FLAG_BASE_ARRAY))
-      return true;
-    // Lazily assume single-inheritance.
-    type = at->dispatchParents.only();
-  }
-  return false;
+  return isDerivedType(type, FLAG_BASE_ARRAY);
 }
 
 bool isDistImplType(Type* type)
 {
-  while (AggregateType* at = toAggregateType(type))
+  return isDerivedType(type, FLAG_BASE_DIST);
+}
+
+static bool isDerivedType(Type* type, Flag flag)
+{
+  AggregateType* at     =  NULL;
+  bool           retval = false;
+
+  while ((at = toAggregateType(type)) != NULL && retval == false)
   {
-    if (at->symbol->hasFlag(FLAG_BASE_DIST))
-      return true;
-    // Lazily assume single-inheritance.
-    type = at->dispatchParents.only();
+    if (at->symbol->hasFlag(flag) == true)
+      retval = true;
+    else
+      type   = at->dispatchParents.only();
   }
-  return false;
+
+  return retval;
 }
 
 bool isSyncType(Type* t) {
