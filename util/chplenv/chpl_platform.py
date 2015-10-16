@@ -1,7 +1,13 @@
 #!/usr/bin/env python
-import platform, os, os.path, re, sys, optparse
+import optparse
+import os
+import os.path
+import platform
+import re
+import sys
 
 from utils import memoize
+
 
 @memoize
 def get(flag='host'):

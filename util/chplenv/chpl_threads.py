@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import os
-from sys import stdout, stderr
+from sys import stderr, stdout
 
-import chpl_tasks
 from utils import memoize
+
+from . import chpl_tasks
+
 
 @memoize
 def get():

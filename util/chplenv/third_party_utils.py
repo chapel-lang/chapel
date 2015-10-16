@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-import os, re
+import os
+import re
 
-import utils
 from utils import memoize
 
-import chpl_arch, chpl_compiler, chpl_platform
-import chpl_locale_model
+from . import chpl_arch, chpl_compiler, chpl_locale_model, chpl_platform, utils
 
 
 #

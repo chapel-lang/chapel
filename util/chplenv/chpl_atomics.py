@@ -1,8 +1,12 @@
 #!/usr/bin/env python
-import sys, os, optparse
+import optparse
+import os
+import sys
 
-import chpl_platform, chpl_comm, chpl_compiler, utils
-from utils import memoize, CompVersion
+from utils import CompVersion, memoize
+
+from . import chpl_comm, chpl_compiler, chpl_platform, utils
+
 
 @memoize
 def get(flag='target'):

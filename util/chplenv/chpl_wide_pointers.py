@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-import os, re, optparse
-from sys import stdout, stderr
+import optparse
+import os
+import re
+from sys import stderr, stdout
 
 from utils import memoize
+
 
 @memoize
 def get(flag='wide'):
