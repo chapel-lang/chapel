@@ -380,7 +380,7 @@ static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
- static void initializeClass(Expr* stmt, Symbol* sym);
+static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
 static void removeCompilerWarnings();
@@ -388,8 +388,6 @@ static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
-// static void resolveRuntimeTypeDestructor(Type* type);
-// static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct);
 static void buildRuntimeTypeInitCopyFn(AggregateType* ct);
 static void removeUnusedGlobals();
 static void removeParamArgs();
@@ -654,8 +652,7 @@ const char* toString(FnSymbol* fn) {
         fn->where->body.head->prettyPrint(&oss);
         devStr = astr(oss.str().c_str());
       }
-      devStr = astr(devStr, " [", istr(fn->id), "]");
-      return devStr;
+      return astr(devStr, " [", istr(fn->id), "]");
     }
     else
       return fn->userString;
@@ -808,7 +805,7 @@ protoIteratorClass(FnSymbol* fn) {
 
   makeRefType(fn->retType);
 
-  ii->getIterator = protoGetIterator(ii, fn);
+  ii->getIterator  = protoGetIterator(ii, fn);
   ii->freeIterator = protoFreeIterator(ii, fn);
 
   // This is a bit of a kludge.  The defaultInitializer field of the iterator
@@ -1531,9 +1528,10 @@ computeGenericSubs(SymbolMap &subs,
 
       if (alignedActuals.v[i]) {
         if (Type* type = getInstantiationType(alignedActuals.v[i]->type, formal->type)) {
-          // String literal actuals aligned with non-param generic formals of
-          // type dtAny will result in an instantiation of dtStringC when the
-          // function is extern. In other words, let us write:
+          // String literal actuals aligned with non-param generic
+          // formals of type dtAny will result in an instantiation of
+          // a dtStringC when the function is extern. In other words,
+          // let us write:
           //   extern proc foo(str);
           //   foo("bar");
           // and pass "bar" as a c_string instead of a string
@@ -4010,7 +4008,7 @@ static void resolveMove(CallExpr* call) {
         // type information earlier
         SymExpr* castVar = toSymExpr(rhsCall->get(1));
         INT_ASSERT(castVar);
-        VarSymbol* derefTmp = newTemp("castDerefTmp", castVar->typeInfo()->getValType());
+        VarSymbol* derefTmp = newTemp("castDeref", castVar->typeInfo()->getValType());
         call->insertBefore(new DefExpr(derefTmp));
         call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
                                         new CallExpr(PRIM_DEREF,
@@ -4145,9 +4143,8 @@ insertFormalTemps(FnSymbol* fn) {
 // The copy in is needed for "inout", "in" and "const in" intents.
 // The copy out is needed for "inout" and "out" intents.
 // Blank intent is treated like "const", and normally copies the formal through
-// chpl__autoCopy.  (Check that this is still true.)
+// chpl__autoCopy.
 // Note that autoCopy is called in this case, but not for "inout", "in" and "const in".
-// TODO AMM: Check that this special behavior is correct and necessary.
 // Either record-wrapped types are always passed by ref, or some unexpected
 // behavior will result by applying "in" intents to them.
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
@@ -4198,7 +4195,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, defaultExpr->body.tail->remove()));
         fn->insertAtHead(defaultExpr);
       } else {
-        VarSymbol* refTmp = newTemp("_formal_derefTmp");
+        VarSymbol* refTmp = newTemp("_formal_ref_tmp_");
         VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
         typeTmp->addFlag(FLAG_MAYBE_TYPE);
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTmp)));
@@ -4230,7 +4227,6 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
            !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
            !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
            !getSyncFlags(ts).any()) {
-         // TODO AMM: Remove this special case and let parallel handle it.
          if (fn->hasFlag(FLAG_BEGIN)) {
            // autoCopy/autoDestroy will be added later, in parallel pass
            // by insertAutoCopyDestroyForTaskArg()
@@ -5766,7 +5762,7 @@ static void
 insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
     if (!se->var->type->refType) {
-      VarSymbol* tmp = newTemp("derefTmp", se->var->getValType());
+      VarSymbol* tmp = newTemp("_value_tmp_", se->var->getValType());
       insertPoint->insertBefore(new DefExpr(tmp));
       insertPoint->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, se->var)));
       se->var = tmp;
