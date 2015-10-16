@@ -128,7 +128,6 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	ln -s $(notdir $(CHPL)) $(CHPLIPE)
 
 TAGS:
-	echo "TAGS: $(TAGS)"
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
