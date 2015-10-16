@@ -454,10 +454,6 @@ module RunParallelRawLoops {
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
-/*
-          // The forall reduce intent variable in this kernel is currently
-          // causing an internal compiler error.  Leave this kernel out
-          // for now
           when LoopKernelID.TRAP_INT {
             loopInit(iloop, stat);
             var xn = loop_data.scalar_Real[0];
@@ -475,7 +471,7 @@ module RunParallelRawLoops {
             var val = 0.0;
             ltimer.start();
             for isamp in 0..#num_samples {
-              forall i in 0..#len with (+ reduce sumx) { // INTERNAL error
+              forall i in 0..#len with (+ reduce sumx) {
                 var x = x0 + i*h;
                 sumx += trap_int_func(x, y, xp, yp);
               }
@@ -486,7 +482,6 @@ module RunParallelRawLoops {
             loop_data.scalar_Real[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
-*/
           when LoopKernelID.PIC_2D {
             halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
