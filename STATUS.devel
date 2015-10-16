@@ -435,6 +435,10 @@ Classes, Records, and Unions
 - Generic types in default value for type fields result in a compile time error
   # functions/typeMethods/genericRecordTypeMethod.future
   # users/ferguson/generic_type_method.future
+- Some records with param members fail to compile because the compiler
+  does not generate assignment operators for them.
+  # functions/ferguson/generic-record-assign.future
+  # param/nelson/defaultParamValue.future
 - Record and class members that are defined to be array aliases fail
   to compile without an explicitly specified element type.
   # classes/stonea/arrayAliasRecordMember.future
@@ -467,7 +471,7 @@ Classes, Records, and Unions
   # types/records/sungeun/constructor2.future
   # users/vass/km/array-of-records-crash-1.explicit-type.future
   # users/vass/km/array-of-records-crash-1.future
-- Generic methods called with params actuals may result in "unresolved
+- Generic methods called with param actuals may result in "unresolved
   call" error at compile time or incorrect generated code.
   # classes/vass/generic-method-with-param-arg-1.future
   # classes/vass/generic-method-with-param-arg-2.future

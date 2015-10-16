@@ -315,6 +315,8 @@ Type* getNamedType(std::string name);
 bool needsCapture(Type* t);
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 
+bool isPOD(Type* t);
+
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]

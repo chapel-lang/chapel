@@ -2107,3 +2107,40 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
   return NULL;
 }
 
+
+/* After resolution, other passes can call isPOD
+   in order to find out if a record type is POD.
+
+   During resolution, one should call propagateNotPOD
+   instead, so that the relevant calls can be resolved
+   and POD fields can be properly handled.
+ */
+bool isPOD(Type* t)
+{
+  // Strings and wide strings aren't POD
+  // These need to be special-cases as long
+  // as code generation treats strings specially.
+  if( t == wideStringType || t == dtString )
+    return false;
+
+  // things that aren't aggregate types are POD
+  //   e.g. int, boolean, complex, etc
+  if (!isAggregateType(t))
+    return true;
+
+  // sync/single and atomic types are not POD
+  // but they should be marked with FLAG_NOT_POD
+  // by propagateNotPOD in function resolution.
+
+  // handle anything already marked
+  if (t->symbol->hasFlag(FLAG_POD))
+    return true;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return false;
+
+  // if we have not calculated POD-ness,
+  // we should not be calling this function
+  INT_ASSERT(false);
+  return false;
+}
+
