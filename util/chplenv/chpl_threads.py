@@ -2,7 +2,7 @@
 import os
 from sys import stdout, stderr
 
-import chpl_tasks
+from . import chpl_tasks
 from utils import memoize
 
 @memoize

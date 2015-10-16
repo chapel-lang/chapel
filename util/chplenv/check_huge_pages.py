@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import os
-from sys import stdout, stderr
+from sys import stderr, stdout
 
-import chpl_platform, chpl_comm, chpl_comm_substrate
 from utils import memoize
+
+from . import chpl_comm, chpl_comm_substrate, chpl_platform
+
 
 # this one doesnt really need to cache anything, but it doesnt need to run more
 # than once to print out any warnings

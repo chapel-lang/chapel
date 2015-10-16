@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-import utils
+from . import utils
 from utils import memoize
-import chpl_compiler, chpl_llvm, chpl_locale_model
-import third_party_utils
+from . import chpl_compiler, chpl_llvm, chpl_locale_model
+from . import third_party_utils
 
 @memoize
 def get_uniq_cfg_path():

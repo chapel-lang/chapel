@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os
 
-import chpl_platform, chpl_compiler, utils
+from . import chpl_platform, chpl_compiler, utils
 from utils import memoize
 
 @memoize

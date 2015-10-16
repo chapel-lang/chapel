@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os, optparse
 
-import chpl_arch, chpl_comm, chpl_comm_segment, chpl_compiler, chpl_platform
+from . import chpl_arch, chpl_comm, chpl_comm_segment, chpl_compiler, chpl_platform
 from utils import memoize
 
 @memoize

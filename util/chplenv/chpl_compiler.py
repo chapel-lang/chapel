@@ -2,7 +2,7 @@
 import os, optparse
 from sys import stdout, stderr
 
-import chpl_platform, utils
+from . import chpl_platform, utils
 from utils import memoize
 
 @memoize

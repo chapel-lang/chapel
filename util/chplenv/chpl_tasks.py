@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 import sys, os
 
-import chpl_arch, chpl_platform, chpl_compiler, chpl_comm
+from . import chpl_arch, chpl_platform, chpl_compiler, chpl_comm, utils
 from utils import memoize
-import utils
 
 @memoize
 def get():

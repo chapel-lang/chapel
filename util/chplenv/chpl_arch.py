@@ -4,7 +4,7 @@ import os, optparse
 from sys import stdout, stderr
 from string import punctuation
 
-import utils, chpl_platform, chpl_comm, chpl_compiler
+from . import utils, chpl_platform, chpl_comm, chpl_compiler
 from utils import memoize, CompVersion
 
 class argument_map(object):

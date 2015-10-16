@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os
 
-import chpl_comm, chpl_comm_substrate
+from . import chpl_comm, chpl_comm_substrate
 from utils import memoize
 
 @memoize
