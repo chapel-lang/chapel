@@ -11,6 +11,7 @@ var B:[1..10] int;
 A = 1;
 B = 2;
 
+// C = something creates a copy for arrays
 var C = chooseArray(A, B, false);
 C[1] = 8;
 
