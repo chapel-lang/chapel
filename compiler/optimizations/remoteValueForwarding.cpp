@@ -243,7 +243,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
               INT_ASSERT(call);
               SET_LINENO(call);
               if (call->isPrimitive(PRIM_SET_MEMBER)) {
-                Symbol* tmp = newTemp("derefTmp", vt);
+                Symbol* tmp = newTemp(vt);
                 call->insertBefore(new DefExpr(tmp));
                 call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, call->get(3)->remove())));
                 call->insertAtTail(tmp);
@@ -306,7 +306,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
         //
         // Insert de-reference temp of value.
         //
-        VarSymbol* deref = newTemp("RVFderefTmp", arg->type);
+        VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
         call->insertBefore(new DefExpr(deref));
         call->insertBefore(new CallExpr(PRIM_MOVE, deref,
                                         new CallExpr(PRIM_DEREF, actual->var)));
@@ -325,7 +325,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
             use->replace(new CallExpr(PRIM_ADDR_OF, arg));
           } else {
             Expr* stmt = use->getStmtExpr();
-            VarSymbol* reref = newTemp("RVFrerefTmp", prevArgType);
+            VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
             stmt->insertBefore(new DefExpr(reref));
             stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
                                             new CallExpr(PRIM_ADDR_OF, arg)));
