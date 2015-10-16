@@ -115,6 +115,9 @@ public:
 
   virtual void       codegenDef();
 
+  // Returns the scope block in which this symbol is declared.
+  BlockStmt*         getDeclarationScope()                     const;
+
   bool               hasFlag(Flag flag)                        const;
   bool               hasEitherFlag(Flag aflag, Flag bflag)     const;
 
@@ -586,6 +589,7 @@ extern Symbol *gNoInit;
 extern Symbol *gVoid;
 extern Symbol *gStringC;
 extern Symbol *gStringCopy;
+extern Symbol *gCVoidPtr;
 extern Symbol *gFile;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;

@@ -21,8 +21,6 @@ DESCRIPTION
   -o, --output-dir <dirname>  Specify the directory name into which documentation
                     should be saved (defaults to 'docs' if unspecified).
 
-  --save-sphinx <directory>  Save generated Sphinx project in directory.
-
   --author <authortext>  Documentation author string. authortext becomes the copyright
                     and author in the output documentation.
 
@@ -30,8 +28,11 @@ DESCRIPTION
                     sequence used to distinguish a documentation comment
                     from a normal one (defaults to '/*' if unspecified).
 
-  --text-only       Specify that documents should use a text output file
-                    format rather than HTML.
+  --save-sphinx <directory>  Save generated Sphinx project in directory.
+
+  --text-only       Generate text based documentation instead of HTML. Takes precedence over --[no-]html
+
+  --[no-]html       [Don't] generate HTML based documentation (on by default)
 
   --[no-]print-commands  Prints the system commands that the compiler
                     executes in order to create the documentation.
@@ -85,7 +86,7 @@ ENVIRONMENT VARIABLES FOR OPTIONS
 
 ENVIRONMENT
 
-  See $CHPL_HOME/doc/README.chplenv for detailed information about 
+  See $CHPL_HOME/doc/chplenv.rst for detailed information about 
   general environment variable settings, legal values, and default
   settings. Run $CHPL_HOME/util/printchplenv to view your current
   settings (as explicitly set and inferred). Some of the most
@@ -100,10 +101,10 @@ ENVIRONMENT
 
 
 BUGS
-  See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
+  See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/bugs.rst
   for instructions on reporting bugs.
 SEE ALSO
-  $CHPL_HOME/README for more information on how to get started with Chapel.
+  $CHPL_HOME/README.rst for more information on how to get started with Chapel.
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT

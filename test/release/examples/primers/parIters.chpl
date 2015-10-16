@@ -363,7 +363,7 @@ writeln();
 // A's leader iterator (defined as part of its domain map) is invoked.
 // For standard Chapel arrays and domain maps, these leader-follower
 // iterators are controlled by the dataPar* configuration constants
-// as described in doc/README.executing.
+// as described in doc/executing.rst.
 //
 forall (a, i) in zip(A, count(probSize)) do
   a = i/100.0;

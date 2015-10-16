@@ -1043,6 +1043,10 @@ static void build_constructor(AggregateType* ct) {
       if (method->numFormals() == 2) {
         CallExpr* init = new CallExpr("initialize", gMethodToken, fn->_this);
         fn->insertAtTail(init);
+        // If a record type has an initialize method, it's not Plain Old Data.
+        if (!isClass(ct)) {
+          ct->symbol->addFlag(FLAG_NOT_POD);
+        }
         break;
       }
     }

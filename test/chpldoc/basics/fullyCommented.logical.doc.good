@@ -1,4 +1,4 @@
-Module: fullyCommented
+fullyCommented
    proc method1()
       Comment for method1 
 
@@ -11,7 +11,7 @@ Module: fullyCommented
    proc argAndBody(val: int)
       Comment for method with argument and body 
 
-   Module: fullyCommented.Other
+   fullyCommented.Other
       proc inside
          Comment for method inside module 
 

@@ -1,4 +1,4 @@
-Module: methods.doc
+methods.doc
    Class: fullOfMethods
       proc commentless()
       proc hasComment()

@@ -99,7 +99,7 @@ module DefaultRectangular {
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
     }
-  
+
     proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }

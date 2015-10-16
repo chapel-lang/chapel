@@ -140,6 +140,17 @@ const char* DefExpr::name() const {
   return retval;
 }
 
+// Returns true if 'this' properly contains the given expr, false otherwise.
+bool Expr::contains(const Expr* expr) const {
+  const Expr* parent = expr->parentExpr;
+
+  while (parent != NULL && parent != this) {
+    parent = parent->parentExpr;
+  }
+
+  return (parent == this) ? true : false;
+}
+
 // Return true if this expression is a ModuleDefinition i.e. it
 // is a DefExpr and the referenced symbol is a Module Symbol
 
@@ -215,6 +226,27 @@ Expr* Expr::getStmtExpr() {
 
 Expr* Expr::getNextExpr(Expr* expr) {
   return this;
+}
+
+// Returns the nearest enclosing *scoped* block statement (excluding 'this')
+// that contains 'this'
+
+// It is probably an error if there is no such BlockStmt.
+// Currently return NULL.  Consider throwing aninternal error in the future.
+BlockStmt* Expr::getScopeBlock() {
+  Expr*      expr   = this->parentExpr;
+  BlockStmt* retval = NULL;
+
+  while (expr != NULL && retval == NULL) {
+    BlockStmt* block = toBlockStmt(expr);
+
+    if (block != NULL && (block->blockTag & BLOCK_SCOPELESS) == 0)
+      retval = block;
+    else
+      expr   = expr->parentExpr;
+  }
+
+  return retval;
 }
 
 void Expr::verify() {
@@ -438,6 +470,10 @@ void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
+Expr* SymExpr::getFirstChild() {
+  return NULL;
+}
+
 Expr* SymExpr::getFirstExpr() {
   return this;
 }
@@ -537,6 +573,10 @@ UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
+Expr* UnresolvedSymExpr::getFirstChild() {
+  return NULL;
+}
+
 Expr* UnresolvedSymExpr::getFirstExpr() {
   return this;
 }
@@ -617,6 +657,10 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
     INT_FATAL(this, "DefExpr of ArgSymbol cannot have either exprType or init");
 
   gDefExprs.add(this);
+}
+
+Expr* DefExpr::getFirstChild() {
+  return NULL;
 }
 
 Expr* DefExpr::getFirstExpr() {
@@ -914,8 +958,9 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
   //      T3 = (T == T2);   // not actual LLVM syntax
   // in LLVM, boolean type is i1
   if (val.val->getType() != ptrValType){
-    val.val = convertValueToType(val.val, ptrValType, !val.isUnsigned);
-    INT_ASSERT(val.val);
+    llvm::Value* v = convertValueToType(val.val, ptrValType, !val.isUnsigned);
+    INT_ASSERT(v);
+    val.val = v;
   }
 
   return codegenStoreLLVM(val.val, ptr.val, valType);
@@ -1502,15 +1547,6 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
   } else {
     INT_FATAL("Unknown field in codegenFieldPtr");
   }
-  return codegenFieldPtr(base, cname, name, field_normal);
-}
-
-static
-GenRet codegenFieldPtr(GenRet base, Symbol* field) {
-  const char* cname = NULL;
-  const char* name = NULL;
-  cname = field->cname;
-  name = field->name;
   return codegenFieldPtr(base, cname, name, field_normal);
 }
 
@@ -3430,7 +3466,7 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 ************************************* | ************************************/
 
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3450,13 +3486,14 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 
 CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3469,12 +3506,13 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -3487,13 +3525,14 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
   Expr(E_CallExpr),
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
@@ -3506,6 +3545,7 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
   argList.parent = this;
   gCallExprs.add(this);
 }
@@ -3513,6 +3553,18 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
 
 CallExpr::~CallExpr() { }
 
+
+Expr* CallExpr::getFirstChild() {
+  Expr* retval = NULL;
+
+  if (baseExpr)
+    retval = baseExpr;
+
+  else if (argList.head)
+    retval = argList.head;
+
+  return retval;
+}
 
 Expr* CallExpr::getFirstExpr() {
   Expr* retval = NULL;
@@ -3862,6 +3914,9 @@ GenRet CallExpr::codegen() {
   SET_LINENO(this);
 
   // Note (for debugging), function name is in parentSymbol->cname.
+
+  if (id == breakOnCodegenID)
+    gdbShouldBreakHere();
 
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(this);
@@ -4353,8 +4408,11 @@ GenRet CallExpr::codegen() {
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ret = codegenRaddr(get(1));
       } else {
-        ret = get(1);
+        ret = codegenValue(get(1));
       }
+      // _wide_get_addr promises to return a uint.  Hence the cast.
+      ret = codegenCast(dtUInt[INT_SIZE_64], ret);
+      ret.isUnsigned = true;
       break;
     }
     case PRIM_ADDR_OF:
@@ -4591,28 +4649,43 @@ GenRet CallExpr::codegen() {
       ret = codegenXor(get(1), get(2));
       break;
     case PRIM_ASSIGN:
-      // The original, simplistic implementation.  Works but may be slow.
-      // (See the implementation of PRIM_MOVE above for several peephole
-      // optimizations depending on specifics of the RHS expression.)
+      {
+        Expr* lhs = get(1);
+        Expr* rhs = get(2);
+        TypeSymbol* lhsTypeSym = lhs->typeInfo()->symbol;
+        TypeSymbol* rhsTypeSym = rhs->typeInfo()->symbol;
 
-      // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(get(1), get(2));
-      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-                 !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        // This case was taken from PRIM_MOVE unfortunately
-        if (get(2)->typeInfo() != dtString)
-          codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
-        else
-          codegenCall("chpl_string_widen", codegenAddrOf(get(1)), get(2),
-                      get(3), get(4));
-      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(codegenDeref(get(1)), get(2));
-      } else {
-        codegenAssign(get(1), get(2));
+        // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
+        // objects.  PRIM_MOVE can be used to copy a pointer (i.e. reference)
+        // into another pointer, but if you try this with PRIM_ASSIGN, instead
+        // it will overwrite what the LHS points to with what the RHS points to.
+
+        // TODO:  Works but may be slow.
+        // (See the implementation of PRIM_MOVE above for several peephole
+        // optimizations depending on specifics of the RHS expression.)
+
+        // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
+        if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) &&
+            rhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          codegenAssign(lhs, rhs);
+        } else if ( lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) &&
+                   !rhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          // This case was taken from PRIM_MOVE unfortunately
+          if (rhs->typeInfo() != dtString)
+            codegenAssign(lhs, codegenAddrOf(codegenWideHere(rhs)));
+          else
+            codegenCall("chpl_string_widen",
+                        codegenAddrOf(lhs), rhs, get(3), get(4));
+        } else if (lhsTypeSym->hasFlag(FLAG_REF) ||
+                   lhsTypeSym->hasFlag(FLAG_WIDE_REF) ||
+                   lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          if (rhsTypeSym->hasFlag(FLAG_REF))
+            codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
+          else
+            codegenAssign(codegenDeref(lhs), rhs);
+        } else {
+          codegenAssign(lhs, rhs);
+        }
       }
       break;
     case PRIM_ADD_ASSIGN:
@@ -5522,71 +5595,25 @@ GenRet CallExpr::codegen() {
     genFnName = "chpl_taskListAddCoStmt";
   }
   if (gotBCbCf) {
-    // get(1) is a class containing bundled arguments
+    // get(1) is a ref/wide ref to a task list value
+    // get(2) is the node ID owning the task list
+    // get(3) is a buffer containing bundled arguments
+    // get(4) is the buffer's length (unused for task fns)
+    // get(5) is a dummy class type for the argument bundle
+
+    GenRet taskList = codegenValue(get(1));
+    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      taskList = codegenRaddr(taskList);
+    }
+    GenRet taskListNode = codegenValue(get(2));
+    GenRet taskBundle = codegenValue(get(3));
+
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
-    args[2] = codegenCastToVoidStar(codegenValue(get(1)));
-
-    AggregateType *bundledArgsType = toAggregateType(toSymExpr(get(1))->typeInfo());
-    int endCountField = 0;
-    for (int i = 1; i <= bundledArgsType->fields.length; i++) {
-      if (strstr(bundledArgsType->getField(i)->typeInfo()->symbol->name, "_EndCount") != NULL) {
-        // Turns out there can be more than one such field. See e.g.
-        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
-        // INT_ASSERT(endCountField == 0);
-        endCountField = i;
-        // We have historically picked the first such field.
-        break;
-      }
-    }
-    // We need the endCountField.
-    INT_ASSERT(endCountField != 0);
-
-    GenRet endCountPtr =
-      codegenValue(
-          codegenFieldPtr(get(1), bundledArgsType->getField(endCountField)));
-    Type *endCountType = bundledArgsType->getField(endCountField)->typeInfo();
-    // endCount is either an address or {locale, ptr} -- it is a class.
-    GenRet endCountValue = codegenValue(endCountPtr);
-    GenRet taskList;
-
-    if (endCountType->symbol->hasFlag(FLAG_WIDE_REF)) {
-      GenRet node = codegenRnode(endCountValue);
-      while(endCountValue.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF)){
-        endCountValue = codegenLocalDeref(endCountValue);
-      }
-      // Now, we should have a wide pointer to a class
-      // make it into a local pointer to a class.
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList")); 
-      taskList = codegenTernary(
-                       codegenNotEquals(node, codegenGetNodeID()),
-                       codegenNullPointer(),
-                       taskList);
-    } else if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      GenRet node = codegenRnode(endCountValue);
-      endCountValue = codegenRaddr(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-      taskList = codegenTernary(
-                     codegenNotEquals(node, codegenGetNodeID()),
-                     codegenNullPointer(),
-                     taskList);
-    } else if (endCountType->symbol->hasFlag(FLAG_REF)) {
-      endCountValue = codegenDeref(endCountValue);
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    } else {
-      taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
-    }
-
+    args[2] = codegenCastToVoidStar(taskBundle);
     args[3] = taskList;
-
-    if (endCountType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      args[4] = codegenRnode(endCountPtr);
-    } else {
-      args[4] = codegenGetNodeID();
-    }
-
+    args[4] = codegenValue(taskListNode);
     args[5] = fn->linenum();
     args[6] = fn->fname();
 
@@ -5594,6 +5621,11 @@ GenRet CallExpr::codegen() {
     codegenCall(genFnName, args);
     return ret;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    // get(1) is the locale
+    // get(2) is a buffer containing bundled arguments
+    // get(3) is a the size of the buffer
+    // get(4) is a dummy class type for the argument bundle
+
     const char* fname = NULL;
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       fname = "chpl_executeOnNB";
@@ -5602,24 +5634,13 @@ GenRet CallExpr::codegen() {
     else
       fname = "chpl_executeOn";
 
-    TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
-    if (argType == NULL) {
-      INT_FATAL("could not get a type symbol");
-    }
-    
-    AggregateType* ct = toAggregateType(argType->typeInfo());
-    if (!ct) {
-      INT_FATAL("Expected a class type in %s argument", fname);
-    }
-    std::string ctype = ct->classStructName(true);
-
     GenRet locale_id = get(1);
 
     std::vector<GenRet> args(6);
     args[0] = codegenLocalAddrOf(locale_id);
     args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_32);
     args[2] = get(2);
-    args[3] = codegenSizeof(ctype.c_str());
+    args[3] = get(3);
     args[4] = fn->linenum();
     args[5] = fn->fname();
 
@@ -5709,13 +5730,15 @@ GenRet CallExpr::codegen() {
   return ret;
 }
 
+bool CallExpr::isPrimitive() const {
+  return primitive != NULL;
+}
 
-bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
+bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
   return primitive && primitive->tag == primitiveTag;
 }
 
-
-bool CallExpr::isPrimitive(const char* primitiveName) {
+bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
 }
 
@@ -5732,6 +5755,10 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   gNamedExprs.add(this);
 }
 
+
+Expr* NamedExpr::getFirstChild() {
+  return (actual != NULL) ? actual : NULL ;
+}
 
 Expr* NamedExpr::getFirstExpr() {
   return (actual != NULL) ? actual->getFirstExpr() : this;

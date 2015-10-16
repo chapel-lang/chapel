@@ -134,6 +134,7 @@ module ChapelRange {
   // I think the record itself should not be documented, but the above comment
   // should be moved to the top-level module documentation.
   pragma "no doc"
+  pragma "plain old data"
   pragma "range"
   record range
   {
@@ -1745,7 +1746,7 @@ module ChapelRange {
   
   // Write implementation for ranges
   pragma "no doc"
-  proc range.readWriteThis(f)
+  proc ref range.readWriteThis(f)
   {
     if f.writing && !aligned {
       // set things up so alignment does not get printed out

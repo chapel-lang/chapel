@@ -1496,6 +1496,16 @@ void initPrimitiveTypes() {
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = NULL;
 
+  // Like c_string_copy but unowned.
+  // Could be == c_ptr(int(8)) e.g.
+  // used in some runtime interfaces
+  dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCVoidPtr->defaultValue = gOpaque;
+  CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
+  gCVoidPtr->cname = "NULL";
+  gCVoidPtr->addFlag(FLAG_EXTERN);
+
   dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
   dtFile = createPrimitiveType ("_file", "_cfile");
@@ -1639,16 +1649,13 @@ DefExpr* defineObjectClass() {
 }
 
 void initChplProgram(DefExpr* objectDef) {
-  CallExpr* base = 0;
-  CallExpr* std  = 0;
-
   theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
 
   theProgram->block->insertAtTail(base);
 
@@ -2098,5 +2105,42 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
     }
   }
   return NULL;
+}
+
+
+/* After resolution, other passes can call isPOD
+   in order to find out if a record type is POD.
+
+   During resolution, one should call propagateNotPOD
+   instead, so that the relevant calls can be resolved
+   and POD fields can be properly handled.
+ */
+bool isPOD(Type* t)
+{
+  // Strings and wide strings aren't POD
+  // These need to be special-cases as long
+  // as code generation treats strings specially.
+  if( t == wideStringType || t == dtString )
+    return false;
+
+  // things that aren't aggregate types are POD
+  //   e.g. int, boolean, complex, etc
+  if (!isAggregateType(t))
+    return true;
+
+  // sync/single and atomic types are not POD
+  // but they should be marked with FLAG_NOT_POD
+  // by propagateNotPOD in function resolution.
+
+  // handle anything already marked
+  if (t->symbol->hasFlag(FLAG_POD))
+    return true;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return false;
+
+  // if we have not calculated POD-ness,
+  // we should not be calling this function
+  INT_ASSERT(false);
+  return false;
 }
 

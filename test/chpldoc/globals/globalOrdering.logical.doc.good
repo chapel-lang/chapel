@@ -1,4 +1,4 @@
-Module: globalOrdering
+globalOrdering
    config var goop: bool
       I should be first 
    config const resorted

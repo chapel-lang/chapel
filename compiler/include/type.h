@@ -262,6 +262,7 @@ TYPE_EXTERN AggregateType* dtMainArgument;
 
 TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
 TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
+TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
@@ -313,6 +314,8 @@ Type* getNamedType(std::string name);
 
 bool needsCapture(Type* t);
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
+
+bool isPOD(Type* t);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);

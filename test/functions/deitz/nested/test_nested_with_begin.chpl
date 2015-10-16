@@ -3,13 +3,13 @@ var s: sync bool;
 proc foo() {
   var i: int = 2;
 
-  proc bar() {
-    writeln(i);
+  proc bar(x) {
+    writeln(x);
   }
 
   begin {
     s;
-    bar();
+    bar(i);
   }
 }
 

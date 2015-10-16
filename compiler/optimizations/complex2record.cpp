@@ -40,6 +40,10 @@ buildComplexRecord(const char* name, Type* real) {
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("re", real)));
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("im", real)));
   ts->addFlag(FLAG_NO_CODEGEN);
+  // since complex records are added after function resolution,
+  // we need to explicitly mark them with FLAG_POD or FLAG_NOT_POD.
+  // The are POD.
+  ts->addFlag(FLAG_POD);
   rootModule->block->insertAtTail(new DefExpr(ts));
   return ct;
 }

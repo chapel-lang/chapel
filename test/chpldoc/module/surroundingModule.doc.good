@@ -1,8 +1,8 @@
-Module: surroundingModule.doc
+surroundingModule.doc
    proc before()
       This comment and its proc lies before the defined module 
 
-   Module: surroundingModule.doc.Middle
+   surroundingModule.doc.Middle
       proc inside()
          This comment and its proc lies inside the defined module 
 
