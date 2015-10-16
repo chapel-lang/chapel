@@ -38,11 +38,6 @@ static Type* getWrapRecordBaseType(Type* type);
 //
 void
 removeWrapRecords() {
-
-  // Honor the -no-remove-wrap-records if present
-  if (fNoRemoveWrapRecords)
-    return;
-
   //
   // do not remove wrap records if dead code elimination is disabled
   // (or weakened because inlining or copy propagation is disabled)
@@ -62,6 +57,9 @@ removeWrapRecords() {
     }
   }
 
+  //
+  // remove defs of _valueType field
+  //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_SET_MEMBER) ||
         call->isPrimitive(PRIM_GET_MEMBER) ||
@@ -129,7 +127,9 @@ removeWrapRecords() {
       if (!strcmp(formal->name, "_valueType")) {
         // Remove all uses of _valueType within the body of this function.
         std::vector<SymExpr*> symExprs;
+
         collectSymExprs(fn->body, symExprs);
+
         for_vector(SymExpr, se, symExprs) {
           // Ignore dead ones.
           if (se->parentSymbol == NULL)
@@ -141,6 +141,7 @@ removeWrapRecords() {
           Expr* stmt = se->getStmtExpr();
           stmt->remove();
         }
+
         formal->defPoint->remove();
       }
     }
@@ -248,6 +249,6 @@ getWrapRecordBaseType(Type* type) {
       return vt->getField("_value")->type->refType;
     }
   }
+
   return NULL;
 }
-
