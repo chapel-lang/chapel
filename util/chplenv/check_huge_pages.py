@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import os
+import sys
 from sys import stderr, stdout
 
-from utils import memoize
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from . import chpl_comm, chpl_comm_substrate, chpl_platform
+import chpl_comm, chpl_comm_substrate, chpl_platform
+from utils import memoize
 
 
 # this one doesnt really need to cache anything, but it doesnt need to run more

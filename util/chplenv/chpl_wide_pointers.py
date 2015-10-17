@@ -3,6 +3,10 @@ import optparse
 import os
 import re
 from sys import stderr, stdout
+import sys
+
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 from utils import memoize
 

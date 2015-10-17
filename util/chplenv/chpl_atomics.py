@@ -5,7 +5,10 @@ import sys
 
 from utils import CompVersion, memoize
 
-from . import chpl_comm, chpl_compiler, chpl_platform, utils
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_comm, chpl_compiler, chpl_platform, utils
 
 
 @memoize

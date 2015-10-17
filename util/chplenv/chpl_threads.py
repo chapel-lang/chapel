@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import os
 from sys import stderr, stdout
+import sys
 
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_tasks
 from utils import memoize
-
-from . import chpl_tasks
 
 
 @memoize

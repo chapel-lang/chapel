@@ -1,7 +1,12 @@
 #!/usr/bin/env python
-from utils import memoize
+import sys
+import os
 
-from . import third_party_utils, utils
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import third_party_utils, utils
+from utils import memoize
 
 
 @memoize
