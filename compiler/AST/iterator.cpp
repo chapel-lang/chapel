@@ -1153,59 +1153,56 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
 
       Vec<SymExpr*>* defs = defMap.get(sym);
 
-      if (defs && defs->n == 1)
+      if (defs == NULL || defs->n != 1) {
+        INT_FATAL(sym, "Expected sym to have exactly one definition");
+      }
+
+      // Do we need to consider PRIM_ASSIGN as well?
+      CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+
+      if (SymExpr* se = toSymExpr(move->get(2)))
       {
-        // Do we need to consider PRIM_ASSIGN as well?
-        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-
-        if (SymExpr* se = toSymExpr(move->get(2)))
-        {
-          // The symbol is defined through a bitwise (pointer) copy.
-          INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
-          if (se->var->defPoint->parentSymbol == fn) {
-            syms.add_exclusive(se->var);
-          }
+        // The symbol is defined through a bitwise (pointer) copy.
+        INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
+        if (se->var->defPoint->parentSymbol == fn) {
+          syms.add_exclusive(se->var);
         }
-        else if (CallExpr* call = toCallExpr(move->get(2)))
-        {
-          // The RHS is a function call.
-          if (FnSymbol* fn = call->isResolved()) {
-            for_actuals(actual, call) {
-              SymExpr* se = toSymExpr(actual);
-              if (se->var->defPoint->parentSymbol == fn) {
-                syms.add_exclusive(se->var);
-              }
-            }
-          }
-          else
-          {
-            // The RHS is not a function call: it must be a primitive instead.
-
-            if (call->isPrimitive(PRIM_ADDR_OF) ||
-                call->isPrimitive(PRIM_GET_MEMBER) ||
-                // If we are reading a reference out of a field, I'm not sure we
-                // capture the right rhs below.  (The actual target of the ref lies
-                // outside the struct that contains the ref.)
-                call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-              SymExpr* rhs = toSymExpr(call->get(1));
-              syms.add_exclusive(rhs->var);
-            }
-            else
-            {
-              INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
+      }
+      else if (CallExpr* call = toCallExpr(move->get(2)))
+      {
+        // The RHS is a function call.
+        if (FnSymbol* fn = call->isResolved()) {
+          for_actuals(actual, call) {
+            SymExpr* se = toSymExpr(actual);
+            if (se->var->defPoint->parentSymbol == fn) {
+              syms.add_exclusive(se->var);
             }
           }
         }
         else
         {
-          // What else could it be?
-          INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
+          // The RHS is not a function call: it must be a primitive instead.
+
+          if (call->isPrimitive(PRIM_ADDR_OF) ||
+              call->isPrimitive(PRIM_GET_MEMBER) ||
+              // If we are reading a reference out of a field, I'm not sure we
+              // capture the right rhs below.  (The actual target of the ref lies
+              // outside the struct that contains the ref.)
+              call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+            SymExpr* rhs = toSymExpr(call->get(1));
+            syms.add_exclusive(rhs->var);
+          }
+          else
+          {
+            INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
+          }
         }
       }
       else
       {
-        INT_FATAL(sym, "Expected sym to have exactly one definition");
+        // What else could it be?
+        INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
       }
     }
   }
