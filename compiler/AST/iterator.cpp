@@ -1136,11 +1136,13 @@ static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
 }
 
 
-static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
+static void insertLocalsForRefs(Vec<Symbol*>& syms,
+                                FnSymbol*     fn,
                                 Vec<Symbol*>& yldSymSet)
 {
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
+
   buildDefUseMaps(fn, defMap, useMap);
 
   // Walk the variables in this (iterator) function
@@ -1150,7 +1152,6 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
       continue;
 
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
-
       Vec<SymExpr*>* defs = defMap.get(sym);
 
       if (defs == NULL || defs->n != 1) {
@@ -1159,12 +1160,14 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
 
       // Do we need to consider PRIM_ASSIGN as well?
       CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
+
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 
       if (SymExpr* se = toSymExpr(move->get(2)))
       {
         // The symbol is defined through a bitwise (pointer) copy.
         INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
+
         if (se->var->defPoint->parentSymbol == fn) {
           syms.add_exclusive(se->var);
         }
@@ -1175,6 +1178,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
         if (FnSymbol* fn = call->isResolved()) {
           for_actuals(actual, call) {
             SymExpr* se = toSymExpr(actual);
+
             if (se->var->defPoint->parentSymbol == fn) {
               syms.add_exclusive(se->var);
             }
@@ -1183,29 +1187,31 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
         else
         {
           // The RHS is not a function call: it must be a primitive instead.
-
-          if (call->isPrimitive(PRIM_ADDR_OF) ||
+          if (call->isPrimitive(PRIM_ADDR_OF)    ||
               call->isPrimitive(PRIM_GET_MEMBER) ||
-              // If we are reading a reference out of a field, I'm not sure we
-              // capture the right rhs below.  (The actual target of the ref lies
-              // outside the struct that contains the ref.)
+              // If we are reading a reference out of a field, I'm not sure
+              // we capture the right rhs below.  (The actual target of the
+              // ref lies outside the struct that contains the ref.)
               call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* rhs = toSymExpr(call->get(1));
+
             syms.add_exclusive(rhs->var);
           }
           else
           {
-            INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
+            INT_FATAL(sym,
+                      "Unhandled case: Ref returned by a primitive "
+                      "from which we did not expect one.");
           }
         }
       }
       else
       {
-        // What else could it be?
         INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
       }
     }
   }
+
   freeDefUseMaps(defMap, useMap);
 }
 
