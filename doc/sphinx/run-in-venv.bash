@@ -7,7 +7,7 @@ if [ -z "$CHPL_HOME" ]; then
   exit 1
 fi
 
-platform=$("$CHPL_HOME/util/chplenv/chpl_platform.py" --target)
+platform=$("$CHPL_HOME/util/chplenv/chpl_platform.py" --host)
 venv_path="$CHPL_HOME/third-party/chpl-venv/install/$platform/chpl-virtualenv/"
 
 if [ ! -d "$venv_path" ]; then

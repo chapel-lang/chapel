@@ -15,7 +15,7 @@ import chpl_make
 # Activate a virtualenv that has testing infrastructure requirements installed
 #
 # By default, we will try to use 
-#   $CHPL_HOME/third-party/chpl-venv/install/$CHPL_TARGET_PLATFORM/chpl-virtualenv 
+#   $CHPL_HOME/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/chpl-virtualenv 
 # as our virtualenv. We then check for a sentinel file that test-venv
 # creates when it's been successfully installed and finally activate
 # the virtualenv.
@@ -58,10 +58,10 @@ def activate_venv():
         else:
             chpl_home = os.path.join(utils.get_chpl_home(), '')
             third_party = os.path.join(chpl_home, 'third-party')
-            target_platform = chpl_platform.get('target')
+            host_platform = chpl_platform.get('host')
 
             venv_dir = os.path.join(third_party, 'chpl-venv', 'install',
-                                    target_platform, 'chpl-virtualenv')
+                                    host_platform, 'chpl-virtualenv')
             sentinel_file = os.path.join(venv_dir, 'chpl-test-reqs')
             if not os.path.isfile(sentinel_file):
                 error('Chapel test virtualenv is not available, run `{0} '

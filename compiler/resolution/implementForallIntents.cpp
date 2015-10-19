@@ -1032,7 +1032,13 @@ static CallExpr* findCallToParallelIterator(ForLoop* forLoop) {
             asgnToCallTemp = call;
             break;
           }
-  INT_ASSERT(asgnToCallTemp);
+
+  // Sometimes, e.g. forall over a range - ri-5-c.chpl, _getIterator is invoked
+  // on a non-temp. We notice this by the absence of asgnToCallTemp.
+  // In such a case, the iterator will be nontemp.these(),
+  // which is not a parallel iterator.
+  if (!asgnToCallTemp)
+    return NULL;
 
   CallExpr* iterCall = toCallExpr(asgnToCallTemp->get(2));
   INT_ASSERT(iterCall);
