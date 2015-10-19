@@ -1152,6 +1152,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
 
       Vec<SymExpr*>* defs = defMap.get(sym);
+
       if (defs && defs->n == 1)
       {
         // Do we need to consider PRIM_ASSIGN as well?
@@ -1204,27 +1205,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
       }
       else
       {
-        // defs.n was not exactly 1.
-        // Assume that this ref is a local passed with the equivalent of "out"
-        // intent.
-        // TODO: How does this happen?  Shouldn't a ref variable always have an
-        // lvalue that it refers to?
-        // In expandIteratorInline(), apparently when the iterator body is
-        // expanded inline, ref variables get converted into ref arguments --
-        // which is probably part of the reason this fixup is necessary.
-
-        // I don't know what about the recent AMM work exposed this problem,
-        // but we can work around it by inserting an lvalue at each use and
-        // fixing up the ref variable to point to it.
-        for_uses(use, useMap, sym)
-        {
-          Expr* stmt = use->getStmtExpr();
-          SET_LINENO(stmt);
-          VarSymbol* tmp = newTemp(sym->type->getValType());
-          stmt->insertBefore(new DefExpr(tmp));
-          stmt->insertBefore(new CallExpr(PRIM_MOVE, sym,
-                                          new CallExpr(PRIM_ADDR_OF, tmp)));
-        }
+        INT_FATAL(sym, "Expected sym to have exactly one definition");
       }
     }
   }
