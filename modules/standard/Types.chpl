@@ -147,10 +147,13 @@ A record, tuple, or union type in Chapel is a POD type if:
     for POD types)
   * it contains only POD type fields
 
-Class types in Chapel are always considered POD types (because an instance of
-the class is actually a pointer to the class object, and this pointer is POD).
+User class types in Chapel are always considered POD types (because an instance
+of the class is actually a pointer to the class object, and this pointer is
+POD).
 
-Primitive numeric Chapel types are POD types as well.
+c_ptr is a POD type.
+
+Primitive numeric/boolean/enumerated Chapel types are POD types as well.
  */
 pragma "no instantiation limit"
 pragma "no doc" // I don't think we want to make this public yet

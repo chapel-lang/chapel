@@ -43,7 +43,14 @@ static bool isAssignment(FnSymbol* fn)
   return true;
 }
 
+/* Find assignment functions that this optimization
+   should replace with bit copies.
 
+   This function returns true if all of these conditions are met:
+    - fn is an assignment function
+    - the lhs and rhs arguments have the same type
+    - the lhs and rhs arguments are POD types
+ */
 static bool isTrivialAssignment(FnSymbol* fn)
 {
   if (! isAssignment(fn))
@@ -52,19 +59,13 @@ static bool isTrivialAssignment(FnSymbol* fn)
   // The base argument types must match.
   ArgSymbol* lhs = fn->getFormal(1);
   ArgSymbol* rhs = fn->getFormal(2);
-  if (lhs->type->getValType() != rhs->type->getValType())
-    return false;
-
-  // Don't consider assignment for class types to be trivial.
-  // That is because a class type represents a pointer, so
-  // we don't really track whether or not it is POD.
-  // See
-  //   test/classes/hilde/freeAssignment.chpl
-  if (isClass(lhs->type->getValType()))
+  Type* argType = lhs->type->getValType();
+  if (argType != rhs->type->getValType())
     return false;
 
   // Both argument types must be POD types
-  if (isPOD(lhs->type->getValType()) && isPOD(rhs->type->getValType()))
+  // (but at this point they are the same type, so we only check one)
+  if (isPOD(argType))
     return true;
 
   return false;

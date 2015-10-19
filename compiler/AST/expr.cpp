@@ -4531,32 +4531,43 @@ GenRet CallExpr::codegen() {
       ret = codegenXor(get(1), get(2));
       break;
     case PRIM_ASSIGN:
-      // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
-      // objects.
-      // PRIM_MOVE can be used to copy a pointer (i.e. reference) into another
-      // pointer, but if you try this with PRIM_ASSIGN, instead it will
-      // overwrite what the LHS points to with what the RHS points to.
+      {
+        Expr* lhs = get(1);
+        Expr* rhs = get(2);
+        TypeSymbol* lhsTypeSym = lhs->typeInfo()->symbol;
+        TypeSymbol* rhsTypeSym = rhs->typeInfo()->symbol;
 
-      // TODO:  Works but may be slow.
-      // (See the implementation of PRIM_MOVE above for several peephole
-      // optimizations depending on specifics of the RHS expression.)
+        // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
+        // objects.  PRIM_MOVE can be used to copy a pointer (i.e. reference)
+        // into another pointer, but if you try this with PRIM_ASSIGN, instead
+        // it will overwrite what the LHS points to with what the RHS points to.
 
-      // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(get(1), get(2));
-      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-                 !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
-      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF))
-          codegenAssign(codegenDeref(get(1)), codegenDeref(get(2)));
-        else
-          codegenAssign(codegenDeref(get(1)), get(2));
-      } else {
-        codegenAssign(get(1), get(2));
+        // TODO:  Works but may be slow.
+        // (See the implementation of PRIM_MOVE above for several peephole
+        // optimizations depending on specifics of the RHS expression.)
+
+        // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
+        if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) &&
+            rhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          codegenAssign(lhs, rhs);
+        } else if ( lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) &&
+                   !rhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          // This case was taken from PRIM_MOVE unfortunately
+          if (rhs->typeInfo() != dtString)
+            codegenAssign(lhs, codegenAddrOf(codegenWideHere(rhs)));
+          else
+            codegenCall("chpl_string_widen",
+                        codegenAddrOf(lhs), rhs, get(3), get(4));
+        } else if (lhsTypeSym->hasFlag(FLAG_REF) ||
+                   lhsTypeSym->hasFlag(FLAG_WIDE_REF) ||
+                   lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          if (rhsTypeSym->hasFlag(FLAG_REF))
+            codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
+          else
+            codegenAssign(codegenDeref(lhs), rhs);
+        } else {
+          codegenAssign(lhs, rhs);
+        }
       }
       break;
     case PRIM_ADD_ASSIGN:
