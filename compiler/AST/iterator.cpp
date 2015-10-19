@@ -123,7 +123,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           // We already saw a yield stmt.  This is the second one, so fail.
           return NULL;
         }
-        
+
         // Select yield statements whose parent expression is a loop statement
         // (except for dowhile statements, for some reason....
 
@@ -327,7 +327,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
 // Upon each yield, ic.value aka valField is explicitly updated
 // with yield's expression.
 // E.g. 'yield localvar' is converted to ic.value = ic.FNN_localvar.
-// 
+//
 
 
 // In the body of an iterator function, replace references to local variables
@@ -947,7 +947,7 @@ static bool isLocalLivenessBarrier(BasicBlock* bb)
     if (call && call->isPrimitive(PRIM_YIELD))
       return true;
   }
-  
+
   // Case 3: The current block is at the end of a loop.
   //  If the OUT set of this block has any back edges in it, then it lies at
   //  the end of a loop.
@@ -1152,7 +1152,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
 
       Vec<SymExpr*>* defs = defMap.get(sym);
-      if (defs && defs->n == 1) 
+      if (defs && defs->n == 1)
       {
         // Do we need to consider PRIM_ASSIGN as well?
         CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
@@ -1340,7 +1340,7 @@ rebuildIterator(IteratorInfo* ii,
 
   // For each live argument
   forv_Vec(Symbol, local, locals) {
-    if (!toArgSymbol(local)) 
+    if (!toArgSymbol(local))
       continue;
 
     // Get the corresponding field in the iterator class
@@ -1407,7 +1407,7 @@ rebuildGetIterator(IteratorInfo* ii) {
     getIterator->insertBeforeReturn(new DefExpr(fieldReadTmp));
     CallExpr* fieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
     getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, fieldReadTmp, fieldRead));
-    
+
     // Very special iterator-only MM code!  See Note #3.
     VarSymbol* fieldWriteTmp = fieldReadTmp;
     if (isDomImplType(field->type) ||
@@ -1435,7 +1435,7 @@ rebuildGetIterator(IteratorInfo* ii) {
 // auto-copied when the class instance is created.
 // You don't see this explicitly in rebuildGetIterator above, because automatic
 // memory management (AMM) adds these autocopy calls later (see
-// insertAutoCopyAutoDestroy()).  
+// insertAutoCopyAutoDestroy()).
 static void
 rebuildFreeIterator(IteratorInfo* ii) {
   FnSymbol* freeIterator = ii->freeIterator;
@@ -1550,10 +1550,10 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   return field;
 }
 
-// Fills in the iterator class and record types with fields corresponding to the 
+// Fills in the iterator class and record types with fields corresponding to the
 // local variables defined in the iterator function (or its static context)
 // and live at any yield.
-static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn, 
+static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
                                       Vec<Symbol*>& yldSymSet, Type* yieldedType,
                                       Symbol** valFieldRef, bool oneLocalYS,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
@@ -1717,7 +1717,7 @@ void lowerIterator(FnSymbol* fn) {
 //  A call to "proc these()" on an array or dom returns the underlying class
 //  object rather than the record-wrapped version.  The record wrapping is
 //  used for performing memory management, so without it the "nude" array or
-//  dom is unmanaged.  
+//  dom is unmanaged.
 //  Since the underlying object is a class object rather than a record
 //  object, it is invisible to the AMM implementation in
 //  insertAutoCopyAutoDestroy().  That is, all MM on class objects has to be
