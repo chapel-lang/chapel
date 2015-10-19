@@ -20,19 +20,19 @@
 #include "iterator.h"
 
 #include "astutil.h"
-#include "oldCollectors.h"
 #include "bb.h"
 #include "bitVec.h"
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
-#include "stmt.h"
-#include "stlUtil.h"
-#include "stringutil.h"
+#include "oldCollectors.h"
 #include "optimizations.h"
+#include "resolution.h"
+#include "stlUtil.h"
+#include "stmt.h"
+#include "stringutil.h"
 #include "view.h"
 #include "WhileStmt.h"
-#include "resolution.h" // for autoDestroyMap.
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
