@@ -4561,10 +4561,7 @@ GenRet CallExpr::codegen() {
         } else if (lhsTypeSym->hasFlag(FLAG_REF) ||
                    lhsTypeSym->hasFlag(FLAG_WIDE_REF) ||
                    lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
-          if (rhsTypeSym->hasFlag(FLAG_REF))
-            codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
-          else
-            codegenAssign(codegenDeref(lhs), rhs);
+          codegenAssign(codegenDeref(lhs), rhs);
         } else {
           codegenAssign(lhs, rhs);
         }
