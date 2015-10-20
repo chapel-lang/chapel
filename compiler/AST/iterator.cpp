@@ -1124,36 +1124,44 @@ noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
 }
 
 
-// Preceding calls to the various build...() functions have copied out interesting parts
-// of the iterator function.
-// This function rips the guts out of the original iterator function and replaces them
-// with a simple function that just initializes the fields in the iterator record
-// with formal arguments of the original iterator that are live at yield sites within it.
+// Preceding calls to the various build...() functions have copied out
+// interesting parts of the iterator function.
+//
+// This function rips the guts out of the original iterator function and
+// replaces them with a simple function that just initializes the fields
+// in the iterator record with formal arguments of the original iterator
+// that are live at yield sites within it.
 static void
 rebuildIterator(IteratorInfo* ii,
-                SymbolMap& local2field,
+                SymbolMap&    local2field,
                 Vec<Symbol*>& locals) {
-
   // Remove the original iterator function.
-  FnSymbol* fn = ii->iterator;
+  FnSymbol*      fn = ii->iterator;
   Vec<CallExpr*> icalls;
+
   collectCallExprs(fn, icalls);
+
   // ... and the task functions that it calls.
   forv_Vec(CallExpr, call, icalls) {
     if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
       // What to do if multiple calls? may or may not cause unwanted deletion.
       if (fVerify) // this assert is expensive to compute
         INT_ASSERT(noOtherCalls(taskFn, call));
+
       taskFn->defPoint->remove();
     }
   }
+
   for_alist(expr, fn->body->body)
     expr->remove();
+
   fn->defPoint->remove();
 
   // Now the iterator creates and returns a copy of the iterator record.
   fn->retType = ii->irecord;
+
   Symbol* iterator = newTemp("_ir", ii->irecord);
+
   fn->insertAtTail(new DefExpr(iterator));
 
   // For each live argument
@@ -1163,25 +1171,30 @@ rebuildIterator(IteratorInfo* ii,
 
     // Get the corresponding field in the iterator class
     Symbol* field = local2field.get(local);
+    Symbol* value = local;
 
     if (local->type == field->type->refType) {
-      // If a ref var,
-      // load the local into a temp and then set the value of the corresponding field.
+      // If a ref var, load the local in to a temp and
+      // then set the value of the corresponding field.
       Symbol* tmp = newTemp(field->type);
+
       fn->insertAtTail(new DefExpr(tmp));
-      fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-                     new CallExpr(PRIM_DEREF, local)));
-      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, tmp));
-    } else {
-      // Otherwise, just set the iterator class field directly.
-      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, local));
+
+      fn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                    tmp,
+                                    new CallExpr(PRIM_DEREF, local)));
+
+      value = tmp;
     }
+
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, value));
   }
 
   // Return the filled-in iterator record.
   fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
+
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
+
   fn->addFlag(FLAG_INLINE);
 }
 
