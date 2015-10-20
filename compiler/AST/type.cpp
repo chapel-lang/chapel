@@ -1435,7 +1435,7 @@ void initPrimitiveTypes() {
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
-  dtStringC->defaultValue              = new_StringSymbol("");
+  dtStringC->defaultValue              = new_CStringSymbol("");
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];
 

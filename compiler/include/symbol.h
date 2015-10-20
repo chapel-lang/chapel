@@ -519,6 +519,9 @@ class LabelSymbol : public Symbol {
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
 
+// Creates a new C string literal with the given value.
+VarSymbol *new_CStringSymbol(const char *s);
+
 // Creates a new boolean literal with the given value and bit-width.
 VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
 

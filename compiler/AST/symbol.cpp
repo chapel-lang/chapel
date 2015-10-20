@@ -3042,6 +3042,10 @@ VarSymbol *new_StringSymbol(const char *str) {
   return s;
 }
 
+VarSymbol *new_CStringSymbol(const char *str) {
+  return new_StringSymbol(str);
+}
+
 
 VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   Immediate imm;
