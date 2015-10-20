@@ -1495,21 +1495,9 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
 
   if (local) {
     type = local->type;
-    // If the iterator is a method and the local variable is _this and it is a
-    // reference but the method is not a var method, then capture that value in
-    // a local variable and then use that to set the _this field in the IR.
-    // For var iterators, the user must ensure that the referenced object
-    // remains valid over the entire iteration.
+    // The return value is automatically dereferenced (I guess).
     if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
-    {
-      if (! (fn->thisTag & INTENT_FLAG_REF))
-        type = type->getValType();
-
-      // Debug only.  I want to expose cases where var iterator this fields are
-      // being copied by value.
-      else
-        INT_ASSERT(false);
-    }
+      type = type->getValType();
   }
 
   // Add a field to the class
