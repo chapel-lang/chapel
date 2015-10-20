@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+from glob import glob
 from sys import stdout, stderr
 
 from utils import memoize
@@ -20,6 +21,24 @@ def get():
             stderr.write("Warning: Can't find your Java installation\n")
         if not found_hdfs:
             stderr.write("Warning: Can't find your Hadoop installation\n")
+
+    elif aux_fs == 'hdfs3':
+        def fetchInfo(env, val, err):
+            stripstr = (env.find('INCLUDE') > 0 and '-I' or '-L')
+            files = map(lambda z: z.lstrip(stripstr), os.environ.get(env, '').split())
+            res = 0
+            for f in files:
+               res += sum(map(lambda x: 1, filter(lambda z: z.find(val) > 0 and 1 or 0, glob("%s/*" % (f,)))))
+
+            if res < 1:
+                stderr.write(err)
+                return False
+
+            return True
+
+        fetchInfo('CHPL_AUXIO_INCLUDE', 'hdfs', "Warning: Can't find your HDFS3 header file installation\n")
+        fetchInfo('CHPL_AUXIO_LIBS', 'hdfs3', "Warning: Can't find your HDFS3 static library installation\n")
+
     return aux_fs
 
 

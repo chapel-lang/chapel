@@ -138,6 +138,25 @@ qioerr hdfs_writev(void* fl, const struct iovec* iov, int iovcnt, ssize_t* num_w
   return err_out;
 }
 
+/* 
+   the HDFS3 variable is provided by build system found in files:
+
+   $CHPL_HOME/runtime/etc/Makefile.auxFilesys
+   $CHPL_HOME/runtime/src/qio/auxFilesys/hdfs/Makefile.share
+
+   this slice of code is a simple implementation of an hdfs function 
+   is not currently supported by libhdfs3
+*/
+
+#ifdef HDFS3
+
+tSize hdfsPread(hdfsFS fs, hdfsFile file, tOffset position, void* buffer, tSize length) {
+   hdfsSeek(fs, file, position);
+   return hdfsRead(fs, file, buffer, length);
+}
+
+#endif
+
 qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t offset, ssize_t* num_read_out, void* fs)
 {
   ssize_t got;
@@ -296,7 +315,7 @@ qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
   qioerr err_out = 0;
 
   // We cannot seek unless we are in read mode! (HDFS restriction)
-  if (to_hdfs_file(fl)->file->type != INPUT)
+  if (hdfsFileIsOpenForRead(to_hdfs_file(fl)->file))
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Seeking is not supported in write mode in HDFS");
 
   STARTING_SLOW_SYSCALL;

@@ -2249,7 +2249,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     var port = new_str.substring(0..portidx_end-1);
 
     //the file path is whatever we have left
-    var file_path = new_str.substring(portidx_end+1..new_str.length);
+    var file_path = new_str.substring(portidx_end..new_str.length);
 
     return (host, port:int, file_path);
   }
