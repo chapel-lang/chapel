@@ -1092,36 +1092,6 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   }
 }
 
-#if 0
-static void
-rebuildIteratorAutoDestroy(IteratorInfo* ii)
-{
-  // TODO: Do we need this cast?
-  AggregateType* irt = toAggregateType(ii->irecord);
-  FnSymbol* adFn = autoDestroyMap.get(irt);
-  ArgSymbol* ir = adFn->getFormal(1);
-  BlockStmt* block = new BlockStmt();
-
-  for_fields(field, irt)
-  {
-    if (isDomImplType(field->type) ||
-        isArrayImplType(field->type) ||
-        isDistImplType(field->type))
-    {
-      VarSymbol* tmp = newTemp("ref_RWT_ir", field->type->refType);
-      block->insertAtTail(new DefExpr(tmp));
-      CallExpr* getMbrCall = new CallExpr(PRIM_GET_MEMBER, ir, field);
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, getMbrCall));
-      FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
-      block->insertAtTail(new CallExpr(autoDestroyFn, tmp));
-    }
-  }
-
-  adFn->insertAtHead(block);
-}
-#endif
-
-
 #endif
 
 static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
@@ -1685,7 +1655,6 @@ void lowerIterator(FnSymbol* fn) {
     buildIncr(ii, singleLoop);
   }
   rebuildIterator(ii, local2rfield, locals);
-//  rebuildIteratorAutoDestroy(ii);
   rebuildGetIterator(ii);
   rebuildFreeIterator(ii);
 }
