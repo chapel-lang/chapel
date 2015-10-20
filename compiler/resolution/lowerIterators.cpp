@@ -33,12 +33,6 @@
 #include "symbol.h"
 
 
-//#
-//# Global Variables
-//#
-bool iteratorsLowered = false;
-
-
 //
 // getTheIteratorFn(): get the original (user-written) iterator function
 // that corresponds to an _iteratorClass type or symbol
@@ -67,7 +61,7 @@ FnSymbol* getTheIteratorFn(Type* icType)
   FnSymbol* getIterFn = icType->defaultInitializer;
 
   // The type of _getIterator's first formal arg is _iteratorRecord.
-  Type* irType = getIterFn->getFormal(1)->type->getValType();
+  Type* irType = getIterFn->getFormal(1)->type;
   INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
              (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
 
@@ -2195,19 +2189,19 @@ static void handlePolymorphicIterators()
         getIterator->insertBeforeReturn(new DefExpr(label));
         Symbol* ret = getIterator->getReturnSymbol();
         forv_Vec(Type, type, irecord->dispatchChildren) {
-          VarSymbol* tmp = newTemp(irecord->getField(1)->type->getValType());
+          VarSymbol* tmp = newTemp(irecord->getField(1)->type);
           VarSymbol* cid = newTemp(dtBool);
           BlockStmt* thenStmt = new BlockStmt();
           VarSymbol* recordTmp = newTemp("recordTmp", type);
-          VarSymbol* classTmp = newTemp("classTmp", type->getValType()->defaultInitializer->iteratorInfo->getIterator->retType);
+          VarSymbol* classTmp = newTemp("classTmp", type->defaultInitializer->iteratorInfo->getIterator->retType);
           thenStmt->insertAtTail(new DefExpr(recordTmp));
           thenStmt->insertAtTail(new DefExpr(classTmp));
 
           AggregateType* ct = toAggregateType(type);
           for_fields(field, ct) {
-            VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getValType()->getField(field->name)->type);
+            VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getField(field->name)->type);
             thenStmt->insertAtTail(new DefExpr(ftmp));
-            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getValType()->getField(field->name))));
+            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getField(field->name))));
             // Store temp in record field.
             if (ftmp->type == field->type) {
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp));
@@ -2218,11 +2212,11 @@ static void handlePolymorphicIterators()
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp2));
             }
           }
-          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->getValType()->defaultInitializer->iteratorInfo->getIterator, recordTmp)));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->defaultInitializer->iteratorInfo->getIterator, recordTmp)));
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
           thenStmt->insertAtTail(new GotoStmt(GOTO_GETITER_END, label));
           ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->getValType()->defaultInitializer->iteratorInfo->irecord->getField(1)->type->symbol)));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->defaultInitializer->iteratorInfo->irecord->getField(1)->type->symbol)));
           ret->defPoint->insertAfter(new DefExpr(cid));
           ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
           ret->defPoint->insertAfter(new DefExpr(tmp));
@@ -2239,7 +2233,7 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   Symbol* ret = fn->getReturnSymbol();
   BlockStmt* block = new BlockStmt();
   block->insertAtTail(ret->defPoint->remove());
-  AggregateType* irt = toAggregateType(arg->type->getValType());
+  AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
 //    AggregateType* fat = toAggregateType(field->type);
@@ -2272,7 +2266,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
 {
   Symbol* arg = fn->getFormal(1);
   BlockStmt* block = new BlockStmt();
-  AggregateType* irt = toAggregateType(arg->type->getValType());
+  AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
     if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
@@ -2301,7 +2295,7 @@ static void reconstructIRautoCopyAutoDestroy()
   // reconstruct autoCopy and autoDestroy for iterator records
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->numFormals() == 1 && fn->getFormal(1)->type->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       SET_LINENO(fn);
       if (fn->hasFlag(FLAG_AUTO_COPY_FN))
         reconstructIRAutoCopy(fn);
@@ -2449,11 +2443,6 @@ void lowerIterators() {
   handlePolymorphicIterators();
 
   reconstructIRautoCopyAutoDestroy();
-
-  iteratorsLowered = true;
-
-  insertDerefTemps();
-  insertReferenceTemps();
 
   cleanupTemporaryVectors();
 }

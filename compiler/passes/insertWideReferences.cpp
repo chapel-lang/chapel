@@ -1303,7 +1303,7 @@ static void derefWideRefsToWideClasses()
       if (isRef(call->get(1)) &&
           valIsWideClass(call->get(1))) {
         SET_LINENO(call);
-        VarSymbol* tmp = newTemp("wideDerefTmp", call->get(1)->getValType());
+        VarSymbol* tmp = newTemp(call->get(1)->getValType());
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, call->get(1)->remove())));
         call->insertAtHead(tmp);

@@ -6873,18 +6873,18 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (!isSubType(fn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType,
-                             pfn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType)) {
+              if (!isSubType(fn->retType->defaultInitializer->iteratorInfo->getValue->retType,
+                  pfn->retType->defaultInitializer->iteratorInfo->getValue->retType)) {
                 USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
-                               pfn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
+                               pfn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
-                               fn->retType->getValType()->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
+                               fn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_STOP();
               } else {
                 pfn->retType->dispatchChildren.add_exclusive(fn->retType);
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
-                Type* pic = pfn->retType->getValType()->defaultInitializer->iteratorInfo->iclass;
-                Type* ic = fn->retType->getValType()->defaultInitializer->iteratorInfo->iclass;
+                Type* pic = pfn->retType->defaultInitializer->iteratorInfo->iclass;
+                Type* ic = fn->retType->defaultInitializer->iteratorInfo->iclass;
                 INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 
                 // Iterator classes are created as normal top-level classes (inheriting

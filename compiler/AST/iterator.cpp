@@ -1316,6 +1316,17 @@ rebuildIterator(IteratorInfo* ii,
     Symbol* field = local2field.get(local);
     Symbol* localValue = local;
 
+    if (local->type == field->type->refType) {
+      // If a ref var, 
+      // load the local into a temp and then set the value of the corresponding field.
+      Symbol* tmp = newTemp(field->type);
+      fn->insertAtTail(new DefExpr(tmp));
+      fn->insertAtTail(
+        new CallExpr(PRIM_MOVE, tmp,
+                     new CallExpr(PRIM_DEREF, local)));
+      localValue = tmp;
+    }
+
     // Very special code for record-wrapped types:
     // This is a workaround for weirdness in how record-wrapped types are
     // handled in iterator records.  Calls to the these() method on arrays and
@@ -1346,8 +1357,7 @@ rebuildIterator(IteratorInfo* ii,
     // that are autocopied here will be leaked.  More work to do.  Correctness
     // first; zero leaks second; optimization third.
 
-    CallExpr* call = new CallExpr(PRIM_SET_MEMBER, iterator, field, localValue);
-    fn->insertAtTail(call);
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, localValue));
   }
 
   // Return the filled-in iterator record.
@@ -1530,15 +1540,20 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
 
   if (local) {
     type = local->type;
-
-    // If the iterator is a method and the local variable is _this and the
-    // iterator method is a var method, we store it by reference.
-    // Otherwise, we want to capture its value in the iterator class, so we
-    // force the type of the field to be the value type.
-    if (local == fn->_this && ! (fn->thisTag & INTENT_FLAG_REF))
+    // If the iterator is a method and the local variable is _this and it is a
+    // reference but the method is not a var method, then capture that value in
+    // a local variable and then use that to set the _this field in the IR.
+    // For var iterators, the user must ensure that the referenced object
+    // remains valid over the entire iteration.
+    if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
     {
-      // not tagged as ref this, store 'this' by value.
-      type = type->getValType();
+      if (! (fn->thisTag & INTENT_FLAG_REF))
+        type = type->getValType();
+
+      // Debug only.  I want to expose cases where var iterator this fields are
+      // being copied by value.
+      else
+        INT_ASSERT(false);
     }
   }
 
@@ -1732,16 +1747,4 @@ void lowerIterator(FnSymbol* fn) {
 //  consistent with their use w.r.t. records.  The only downside is that
 //  autoCopy and autoDestroy functions now have to be added explicilty to
 //  each RWT implementation.
-//
-// Note #4:
-//  The problem that needs to be solved is that the values referenced by the
-//  iterator record need to outlast the iterator record itself.  In the case
-//  that an argument to an iterator is local to the body of a containing
-//  coforall, what happens is that the value of the variable goes away before
-//  the iterator is entered in the body of the task function implementing each
-//  iteration of the coforall.
-//  A more elegant solution involves capturing values needed for iteration
-//  within a coforall so that locals are guaranteed to survive.  The solution
-//  here can be considered a workaround until that task argument capture is in
-//  place.
 ////////////////////////////////////////////////////////////////////////////////

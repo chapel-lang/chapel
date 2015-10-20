@@ -813,25 +813,6 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
 }
 
 
-//
-// build serial iterator function
-//
-static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
-                                  Expr* expr, Expr* cond, Expr* indices,
-                                  bool zippered, Expr*& stmt)
-{
-  FnSymbol* sifn = new FnSymbol(iteratorName);
-  sifn->addFlag(FLAG_ITERATOR_FN);
-  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
-  sifn->insertFormalAtTail(sifnIterator);
-  fn->insertAtHead(new DefExpr(sifn));
-  stmt = new CallExpr(PRIM_YIELD, expr);
-  if (cond)
-    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  sifn->insertAtTail(ForLoop::buildForLoop(indices, new SymExpr(sifnIterator), new BlockStmt(stmt), false, zippered));
-}
-
-
 static int loopexpr_uid = 1;
 
 // builds body of for expression iterator
@@ -853,10 +834,29 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
-  Expr* stmt = NULL; // Initialized by buldSerialIteratorFn
+  Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
   buildSerialIteratorFn(fn, iteratorName, expr, cond, indices, zippered, stmt);
 
   return new CallExpr(new DefExpr(fn));
+}
+
+
+//
+// build serial iterator function
+//
+static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
+                                  Expr* expr, Expr* cond, Expr* indices,
+                                  bool zippered, Expr*& stmt)
+{
+  FnSymbol* sifn = new FnSymbol(iteratorName);
+  sifn->addFlag(FLAG_ITERATOR_FN);
+  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
+  sifn->insertFormalAtTail(sifnIterator);
+  fn->insertAtHead(new DefExpr(sifn));
+  stmt = new CallExpr(PRIM_YIELD, expr);
+  if (cond)
+    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
+  sifn->insertAtTail(ForLoop::buildForLoop(indices, new SymExpr(sifnIterator), new BlockStmt(stmt), false, zippered));
 }
 
 
