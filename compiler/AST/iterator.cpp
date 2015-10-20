@@ -20,19 +20,19 @@
 #include "iterator.h"
 
 #include "astutil.h"
-#include "oldCollectors.h"
 #include "bb.h"
 #include "bitVec.h"
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
-#include "stmt.h"
-#include "stlUtil.h"
-#include "stringutil.h"
+#include "oldCollectors.h"
 #include "optimizations.h"
+#include "resolution.h"
+#include "stlUtil.h"
+#include "stmt.h"
+#include "stringutil.h"
 #include "view.h"
 #include "WhileStmt.h"
-#include "resolution.h" // for autoDestroyMap.
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
@@ -123,7 +123,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           // We already saw a yield stmt.  This is the second one, so fail.
           return NULL;
         }
-        
+
         // Select yield statements whose parent expression is a loop statement
         // (except for dowhile statements, for some reason....
 
@@ -327,7 +327,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
 // Upon each yield, ic.value aka valField is explicitly updated
 // with yield's expression.
 // E.g. 'yield localvar' is converted to ic.value = ic.FNN_localvar.
-// 
+//
 
 
 // In the body of an iterator function, replace references to local variables
@@ -947,7 +947,7 @@ static bool isLocalLivenessBarrier(BasicBlock* bb)
     if (call && call->isPrimitive(PRIM_YIELD))
       return true;
   }
-  
+
   // Case 3: The current block is at the end of a loop.
   //  If the OUT set of this block has any back edges in it, then it lies at
   //  the end of a loop.
@@ -1091,6 +1091,37 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
     }
   }
 }
+
+#if 0
+static void
+rebuildIteratorAutoDestroy(IteratorInfo* ii)
+{
+  // TODO: Do we need this cast?
+  AggregateType* irt = toAggregateType(ii->irecord);
+  FnSymbol* adFn = autoDestroyMap.get(irt);
+  ArgSymbol* ir = adFn->getFormal(1);
+  BlockStmt* block = new BlockStmt();
+
+  for_fields(field, irt)
+  {
+    if (isDomImplType(field->type) ||
+        isArrayImplType(field->type) ||
+        isDistImplType(field->type))
+    {
+      VarSymbol* tmp = newTemp("ref_RWT_ir", field->type->refType);
+      block->insertAtTail(new DefExpr(tmp));
+      CallExpr* getMbrCall = new CallExpr(PRIM_GET_MEMBER, ir, field);
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, getMbrCall));
+      FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+      block->insertAtTail(new CallExpr(autoDestroyFn, tmp));
+    }
+  }
+
+  adFn->insertAtHead(block);
+}
+#endif
+
+
 #endif
 
 static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
@@ -1105,11 +1136,13 @@ static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
 }
 
 
-static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
+static void insertLocalsForRefs(Vec<Symbol*>& syms,
+                                FnSymbol*     fn,
                                 Vec<Symbol*>& yldSymSet)
 {
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
+
   buildDefUseMaps(fn, defMap, useMap);
 
   // Walk the variables in this (iterator) function
@@ -1119,84 +1152,66 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
       continue;
 
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
-
       Vec<SymExpr*>* defs = defMap.get(sym);
-      if (defs && defs->n == 1) 
+
+      if (defs == NULL || defs->n != 1) {
+        INT_FATAL(sym, "Expected sym to have exactly one definition");
+      }
+
+      // Do we need to consider PRIM_ASSIGN as well?
+      CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
+
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+
+      if (SymExpr* se = toSymExpr(move->get(2)))
       {
-        // Do we need to consider PRIM_ASSIGN as well?
-        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+        // The symbol is defined through a bitwise (pointer) copy.
+        INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
 
-        if (SymExpr* se = toSymExpr(move->get(2)))
-        {
-          // The symbol is defined through a bitwise (pointer) copy.
-          INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
-          if (se->var->defPoint->parentSymbol == fn) {
-            syms.add_exclusive(se->var);
-          }
+        if (se->var->defPoint->parentSymbol == fn) {
+          syms.add_exclusive(se->var);
         }
-        else if (CallExpr* call = toCallExpr(move->get(2)))
-        {
-          // The RHS is a function call.
-          if (FnSymbol* fn = call->isResolved()) {
-            for_actuals(actual, call) {
-              SymExpr* se = toSymExpr(actual);
-              if (se->var->defPoint->parentSymbol == fn) {
-                syms.add_exclusive(se->var);
-              }
-            }
-          }
-          else
-          {
-            // The RHS is not a function call: it must be a primitive instead.
+      }
+      else if (CallExpr* call = toCallExpr(move->get(2)))
+      {
+        // The RHS is a function call.
+        if (FnSymbol* fn = call->isResolved()) {
+          for_actuals(actual, call) {
+            SymExpr* se = toSymExpr(actual);
 
-            if (call->isPrimitive(PRIM_ADDR_OF) ||
-                call->isPrimitive(PRIM_GET_MEMBER) ||
-                // If we are reading a reference out of a field, I'm not sure we
-                // capture the right rhs below.  (The actual target of the ref lies
-                // outside the struct that contains the ref.)
-                call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-              SymExpr* rhs = toSymExpr(call->get(1));
-              syms.add_exclusive(rhs->var);
-            }
-            else
-            {
-              INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
+            if (se->var->defPoint->parentSymbol == fn) {
+              syms.add_exclusive(se->var);
             }
           }
         }
         else
         {
-          // What else could it be?
-          INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
+          // The RHS is not a function call: it must be a primitive instead.
+          if (call->isPrimitive(PRIM_ADDR_OF)    ||
+              call->isPrimitive(PRIM_GET_MEMBER) ||
+              // If we are reading a reference out of a field, I'm not sure
+              // we capture the right rhs below.  (The actual target of the
+              // ref lies outside the struct that contains the ref.)
+              call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+            SymExpr* rhs = toSymExpr(call->get(1));
+
+            syms.add_exclusive(rhs->var);
+          }
+          else
+          {
+            INT_FATAL(sym,
+                      "Unhandled case: Ref returned by a primitive "
+                      "from which we did not expect one.");
+          }
         }
       }
       else
       {
-        // defs.n was not exactly 1.
-        // Assume that this ref is a local passed with the equivalent of "out"
-        // intent.
-        // TODO: How does this happen?  Shouldn't a ref variable always have an
-        // lvalue that it refers to?
-        // In expandIteratorInline(), apparently when the iterator body is
-        // expanded inline, ref variables get converted into ref arguments --
-        // which is probably part of the reason this fixup is necessary.
-
-        // I don't know what about the recent AMM work exposed this problem,
-        // but we can work around it by inserting an lvalue at each use and
-        // fixing up the ref variable to point to it.
-        for_uses(use, useMap, sym)
-        {
-          Expr* stmt = use->getStmtExpr();
-          SET_LINENO(stmt);
-          VarSymbol* tmp = newTemp(sym->type->getValType());
-          stmt->insertBefore(new DefExpr(tmp));
-          stmt->insertBefore(new CallExpr(PRIM_MOVE, sym,
-                                          new CallExpr(PRIM_ADDR_OF, tmp)));
-        }
+        INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
       }
     }
   }
+
   freeDefUseMaps(defMap, useMap);
 }
 
@@ -1309,7 +1324,7 @@ rebuildIterator(IteratorInfo* ii,
 
   // For each live argument
   forv_Vec(Symbol, local, locals) {
-    if (!toArgSymbol(local)) 
+    if (!toArgSymbol(local))
       continue;
 
     // Get the corresponding field in the iterator class
@@ -1369,36 +1384,6 @@ rebuildIterator(IteratorInfo* ii,
   fn->addFlag(FLAG_INLINE);
 }
 
-#if 0
-static void
-rebuildIteratorAutoDestroy(IteratorInfo* ii)
-{
-  // TODO: Do we need this cast?
-  AggregateType* irt = toAggregateType(ii->irecord);
-  FnSymbol* adFn = autoDestroyMap.get(irt);
-  ArgSymbol* ir = adFn->getFormal(1);
-  BlockStmt* block = new BlockStmt();
-
-  for_fields(field, irt)
-  {
-    if (isDomImplType(field->type) ||
-        isArrayImplType(field->type) ||
-        isDistImplType(field->type))
-    {
-      VarSymbol* tmp = newTemp("ref_RWT_ir", field->type->refType);
-      block->insertAtTail(new DefExpr(tmp));
-      CallExpr* getMbrCall = new CallExpr(PRIM_GET_MEMBER, ir, field);
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, getMbrCall));
-      FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
-      block->insertAtTail(new CallExpr(autoDestroyFn, tmp));
-    }
-  }
-
-  adFn->insertAtHead(block);
-}
-#endif
-
-
 // Fills in the body of the getIterator function.
 static void
 rebuildGetIterator(IteratorInfo* ii) {
@@ -1416,7 +1401,7 @@ rebuildGetIterator(IteratorInfo* ii) {
     getIterator->insertBeforeReturn(new DefExpr(fieldReadTmp));
     CallExpr* fieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
     getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, fieldReadTmp, fieldRead));
-    
+
     // Very special iterator-only MM code!  See Note #3.
     VarSymbol* fieldWriteTmp = fieldReadTmp;
     if (isDomImplType(field->type) ||
@@ -1444,7 +1429,7 @@ rebuildGetIterator(IteratorInfo* ii) {
 // auto-copied when the class instance is created.
 // You don't see this explicitly in rebuildGetIterator above, because automatic
 // memory management (AMM) adds these autocopy calls later (see
-// insertAutoCopyAutoDestroy()).  
+// insertAutoCopyAutoDestroy()).
 static void
 rebuildFreeIterator(IteratorInfo* ii) {
   FnSymbol* freeIterator = ii->freeIterator;
@@ -1564,10 +1549,10 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   return field;
 }
 
-// Fills in the iterator class and record types with fields corresponding to the 
+// Fills in the iterator class and record types with fields corresponding to the
 // local variables defined in the iterator function (or its static context)
 // and live at any yield.
-static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn, 
+static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
                                       Vec<Symbol*>& yldSymSet, Type* yieldedType,
                                       Symbol** valFieldRef, bool oneLocalYS,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
@@ -1731,7 +1716,7 @@ void lowerIterator(FnSymbol* fn) {
 //  A call to "proc these()" on an array or dom returns the underlying class
 //  object rather than the record-wrapped version.  The record wrapping is
 //  used for performing memory management, so without it the "nude" array or
-//  dom is unmanaged.  
+//  dom is unmanaged.
 //  Since the underlying object is a class object rather than a record
 //  object, it is invisible to the AMM implementation in
 //  insertAutoCopyAutoDestroy().  That is, all MM on class objects has to be
