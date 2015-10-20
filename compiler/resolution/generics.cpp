@@ -217,7 +217,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   for_formals(formal, ct->defaultInitializer) {
     VarSymbol* tmp = newTemp(formal->name);
     if (!strcmp(formal->name, "size"))
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_StringSymbol(formal->name))));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_CStringSymbol(formal->name))));
     else if (!formal->hasFlag(FLAG_IS_MEME)) {
       if (formal->isParameter()) {
         tmp->addFlag(FLAG_PARAM);
