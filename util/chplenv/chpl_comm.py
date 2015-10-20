@@ -2,12 +2,11 @@
 import os
 import sys
 
-from utils import memoize
-
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_compiler, chpl_platform, utils
+from utils import memoize
 
 
 @memoize
