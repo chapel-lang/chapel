@@ -225,12 +225,9 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
 
   if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
     // Get member returns the address of the member, so we convert the
-    // type of the corresponding temp to a reference type if necessary.
-    if (! tmp->type->symbol->hasFlag(FLAG_REF))
-    {
-      INT_ASSERT(tmp->type->refType);
-      tmp->type = tmp->type->refType;
-    }
+    // type of the corresponding temp to a reference type.
+    INT_ASSERT(tmp->type->refType);
+    tmp->type = tmp->type->refType;
   }
 
   // OK, insert the declaration.
@@ -1318,7 +1315,7 @@ rebuildIterator(IteratorInfo* ii,
 
     if (local->type == field->type->refType) {
       // If a ref var, 
-      // load the local into a temp and use this to set the value of the corresponding field.
+      // load the local into a temp and then set the value of the corresponding field.
       Symbol* tmp = newTemp(field->type);
       fn->insertAtTail(new DefExpr(tmp));
       fn->insertAtTail(

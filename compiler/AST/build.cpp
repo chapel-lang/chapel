@@ -834,18 +834,9 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
-  //
-  // build serial iterator function
-  //
-  FnSymbol* sifn = new FnSymbol(iteratorName);
-  sifn->addFlag(FLAG_ITERATOR_FN);
-  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
-  sifn->insertFormalAtTail(sifnIterator);
-  fn->insertAtHead(new DefExpr(sifn));
-  Expr* stmt = new CallExpr(PRIM_YIELD, expr);
-  if (cond)
-    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  sifn->insertAtTail(ForLoop::buildForLoop(indices, new SymExpr(sifnIterator), new BlockStmt(stmt), false, zippered));
+  Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
+  buildSerialIteratorFn(fn, iteratorName, expr, cond, indices, zippered, stmt);
+
   return new CallExpr(new DefExpr(fn));
 }
 
@@ -955,7 +946,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
-  Expr* stmt; // Initialized by buildSerialIteratorFn.
+  Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
   buildSerialIteratorFn(fn, iteratorName, expr, cond, indices, zippered, stmt);
   buildLeaderIteratorFn(fn, iteratorName, zippered);
   VarSymbol* followerIterator; // Initialized by buildFollowerIteratorFn.
