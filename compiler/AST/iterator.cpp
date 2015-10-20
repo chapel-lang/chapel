@@ -1092,36 +1092,6 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   }
 }
 
-#if 0
-static void
-rebuildIteratorAutoDestroy(IteratorInfo* ii)
-{
-  // TODO: Do we need this cast?
-  AggregateType* irt = toAggregateType(ii->irecord);
-  FnSymbol* adFn = autoDestroyMap.get(irt);
-  ArgSymbol* ir = adFn->getFormal(1);
-  BlockStmt* block = new BlockStmt();
-
-  for_fields(field, irt)
-  {
-    if (isDomImplType(field->type) ||
-        isArrayImplType(field->type) ||
-        isDistImplType(field->type))
-    {
-      VarSymbol* tmp = newTemp("ref_RWT_ir", field->type->refType);
-      block->insertAtTail(new DefExpr(tmp));
-      CallExpr* getMbrCall = new CallExpr(PRIM_GET_MEMBER, ir, field);
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, getMbrCall));
-      FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
-      block->insertAtTail(new CallExpr(autoDestroyFn, tmp));
-    }
-  }
-
-  adFn->insertAtHead(block);
-}
-#endif
-
-
 #endif
 
 static bool containsRefVar(Vec<Symbol*>& syms, FnSymbol* fn,
@@ -1290,36 +1260,44 @@ noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
 }
 
 
-// Preceding calls to the various build...() functions have copied out interesting parts
-// of the iterator function.
-// This function rips the guts out of the original iterator function and replaces them
-// with a simple function that just initializes the fields in the iterator record
-// with formal arguments of the original iterator that are live at yield sites within it.
+// Preceding calls to the various build...() functions have copied out
+// interesting parts of the iterator function.
+//
+// This function rips the guts out of the original iterator function and
+// replaces them with a simple function that just initializes the fields
+// in the iterator record with formal arguments of the original iterator
+// that are live at yield sites within it.
 static void
 rebuildIterator(IteratorInfo* ii,
-                SymbolMap& local2field,
+                SymbolMap&    local2field,
                 Vec<Symbol*>& locals) {
-
   // Remove the original iterator function.
-  FnSymbol* fn = ii->iterator;
+  FnSymbol*      fn = ii->iterator;
   Vec<CallExpr*> icalls;
+
   collectCallExprs(fn, icalls);
+
   // ... and the task functions that it calls.
   forv_Vec(CallExpr, call, icalls) {
     if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
       // What to do if multiple calls? may or may not cause unwanted deletion.
       if (fVerify) // this assert is expensive to compute
         INT_ASSERT(noOtherCalls(taskFn, call));
+
       taskFn->defPoint->remove();
     }
   }
+
   for_alist(expr, fn->body->body)
     expr->remove();
+
   fn->defPoint->remove();
 
   // Now the iterator creates and returns a copy of the iterator record.
   fn->retType = ii->irecord;
+
   Symbol* iterator = newTemp("_ir", ii->irecord);
+
   fn->insertAtTail(new DefExpr(iterator));
 
   // For each live argument
@@ -1329,17 +1307,20 @@ rebuildIterator(IteratorInfo* ii,
 
     // Get the corresponding field in the iterator class
     Symbol* field = local2field.get(local);
-    Symbol* localValue = local;
+    Symbol* value = local;
 
     if (local->type == field->type->refType) {
-      // If a ref var, 
-      // load the local into a temp and then set the value of the corresponding field.
+      // If a ref var, load the local in to a temp and
+      // then set the value of the corresponding field.
       Symbol* tmp = newTemp(field->type);
+
       fn->insertAtTail(new DefExpr(tmp));
-      fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-                     new CallExpr(PRIM_DEREF, local)));
-      localValue = tmp;
+
+      fn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                    tmp,
+                                    new CallExpr(PRIM_DEREF, local)));
+
+      value = tmp;
     }
 
     // Very special code for record-wrapped types:
@@ -1355,34 +1336,42 @@ rebuildIterator(IteratorInfo* ii,
     // true).  Fixing the iterator code so that it could tolerate "these" items
     // passed by value might also work -- provided the rule is obeyed that the
     // referent outlasts any reference generated from it.
-    if (isDomImplType(localValue->type) ||
-        isArrayImplType(localValue->type) ||
-        isDistImplType(localValue->type))
+
+    // Note that there is no corresponding destructor function,
+    // so values that are autocopied here will be leaked. More work to do.
+    // Correctness first; zero leaks second; optimization third.
+    if (isDomImplType(value->type)   ||
+        isArrayImplType(value->type) ||
+        isDistImplType(value->type))
     {
-      VarSymbol* tmp = newTemp("RWT_ir", localValue->type);
+      VarSymbol* tmp = newTemp("RWT_ir", value->type);
+
       fn->insertAtTail(new DefExpr(tmp));
-      FnSymbol* autoCopyFn = autoCopyMap.get(localValue->type);
+
+      FnSymbol* autoCopyFn = autoCopyMap.get(value->type);
+
       // We will fail here if an array or dom implementation fails to provide
       // an autocopy function.
-      fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
-                                    new CallExpr(autoCopyFn, localValue)));
-      localValue = tmp;
-    }
-    // Note that there is no corresponding destructor function, so thingies
-    // that are autocopied here will be leaked.  More work to do.  Correctness
-    // first; zero leaks second; optimization third.
+      fn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                    tmp,
+                                    new CallExpr(autoCopyFn, value)));
 
-    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, localValue));
+      value = tmp;
+    }
+
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, value));
   }
 
   // Return the filled-in iterator record.
   fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
-  // TODO: Add a consistency check to ensure that the two clauses in
-  // getReturnSymbol() (retSymbol!=NULL versus ==NULL) always agree.
-  fn->retSymbol = iterator;
+
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
+
   fn->addFlag(FLAG_INLINE);
+
+  fn->retSymbol = iterator;
 }
+
 
 // Fills in the body of the getIterator function.
 static void
@@ -1525,21 +1514,9 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
 
   if (local) {
     type = local->type;
-    // If the iterator is a method and the local variable is _this and it is a
-    // reference but the method is not a var method, then capture that value in
-    // a local variable and then use that to set the _this field in the IR.
-    // For var iterators, the user must ensure that the referenced object
-    // remains valid over the entire iteration.
+    // The return value is automatically dereferenced (I guess).
     if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
-    {
-      if (! (fn->thisTag & INTENT_FLAG_REF))
-        type = type->getValType();
-
-      // Debug only.  I want to expose cases where var iterator this fields are
-      // being copied by value.
-      else
-        INT_ASSERT(false);
-    }
+      type = type->getValType();
   }
 
   // Add a field to the class
@@ -1685,7 +1662,6 @@ void lowerIterator(FnSymbol* fn) {
     buildIncr(ii, singleLoop);
   }
   rebuildIterator(ii, local2rfield, locals);
-//  rebuildIteratorAutoDestroy(ii);
   rebuildGetIterator(ii);
   rebuildFreeIterator(ii);
 }
