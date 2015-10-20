@@ -5,12 +5,12 @@ from __future__ import print_function
 import os
 import sys
 
-chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import utils
-import chpl_platform
-import chpl_make
+from chplenv import utils
+from chplenv import chpl_platform
+from chplenv import chpl_make
 
 # Activate a virtualenv that has testing infrastructure requirements installed
 #
