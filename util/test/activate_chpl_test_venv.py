@@ -5,7 +5,7 @@ from __future__ import print_function
 import os
 import sys
 
-chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 from chplenv import utils
