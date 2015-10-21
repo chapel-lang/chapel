@@ -11,6 +11,7 @@ module main {
   use RunBRawLoops;
   use RunCRawLoops;
   use RunParallelRawLoops;
+  use RunVectorizeOnlyRawLoops;
 
   proc allocateLoopData() {
     const num_aligned_segments =
@@ -101,6 +102,8 @@ module main {
       run_variants.push_back(LoopVariantID.RAW);
     if run_variantRawOmp then
       run_variants.push_back(LoopVariantID.RAW_OMP);
+    if run_variantRawVectorizeOnly then
+      run_variants.push_back(LoopVariantID.RAW_VECTOR_ONLY);
 
 
     assert(!run_variantForallLambda &&
@@ -491,8 +494,8 @@ module main {
       max_var_name_len = max(max_var_name_len, run_loop_variants[ilv].length);
     }
 
-    var var_field = "Variant(length #)";
-    var var_field_len = var_field.length;
+    var var_field = "Variant(length id)";
+    var var_field_len = max(var_field.length, max reduce [ilv in 0..#nvariants]  run_loop_variants[ilv].length + 3);
     var prec = 32;
     var prec_buf = prec + 8;
 
@@ -578,6 +581,9 @@ module main {
       }
       when LoopVariantID.RAW_OMP {
         runParallelRawLoops(loop_stats, run_loop, ilength);
+      }
+      when LoopVariantID.RAW_VECTOR_ONLY {
+        runVectorizeOnlyRawLoops(loop_stats, run_loop, ilength);
       }
 /*
       when LoopVariantID.FORALL_LAMBDA {

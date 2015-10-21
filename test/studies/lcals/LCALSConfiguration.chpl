@@ -66,8 +66,9 @@ module LCALSConfiguration {
   //
   // Loop Variants
   //
-  config const run_variantRaw             = true;
-  config const run_variantForallLambda    = false; // not implemented
-  config const run_variantRawOmp          = true;
-  config const run_variantForallLambdaOmp = false; // not implemented
+  config const run_variantRaw              = true;
+  config const run_variantForallLambda     = false; // not implemented
+  config const run_variantRawOmp           = true;
+  config const run_variantRawVectorizeOnly = true;
+  config const run_variantForallLambdaOmp  = false; // not implemented
 }
