@@ -5951,7 +5951,8 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol(strlen(str), INT_SIZE_DEFAULT));
+        int length = unescapeString(str).length();
+        result = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("ascii")) {
@@ -5959,7 +5960,8 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol((int)str[0], INT_SIZE_DEFAULT));
+        const std::string unescaped = unescapeString(str);
+        result = new SymExpr(new_IntSymbol((int)unescaped[0], INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_contains")) {
