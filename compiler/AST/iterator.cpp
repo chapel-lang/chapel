@@ -1376,40 +1376,59 @@ rebuildIterator(IteratorInfo* ii,
 // Fills in the body of the getIterator function.
 static void
 rebuildGetIterator(IteratorInfo* ii) {
-  FnSymbol* getIterator = ii->getIterator;
-  Symbol* ret = getIterator->getReturnSymbol();
-  ArgSymbol* arg = getIterator->getFormal(1);   // This is the iterator record instance.
+  FnSymbol*  getIterator = ii->getIterator;
+  Symbol*    ret         = getIterator->getReturnSymbol();
 
-  // Set it iterator class (state object) so it initially signals more elements available.
-  getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField("more"), new_IntSymbol(1)));
+  // This is the iterator record instance.
+  ArgSymbol* arg         = getIterator->getFormal(1);
+
+  // Set the iterator class (state object) so that it
+  // initially signals that more elements available.
+  getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER,
+                                               ret,
+                                               ii->iclass->getField("more"),
+                                               new_IntSymbol(1)));
 
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
-    // Load the record field into a temp, and then use that to set the corresponding class field.
-    VarSymbol* fieldReadTmp = newTemp(field->type);
+    // Load the record field into a temp,
+    // and then use that to set the corresponding class field.
+    VarSymbol* fieldReadTmp  = newTemp(field->type);
+    CallExpr*  fieldRead     = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
+    VarSymbol* fieldWriteTmp = fieldReadTmp;
+
     getIterator->insertBeforeReturn(new DefExpr(fieldReadTmp));
-    CallExpr* fieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, fieldReadTmp, fieldRead));
+
+    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE,
+                                                 fieldReadTmp,
+                                                 fieldRead));
 
     // Very special iterator-only MM code!  See Note #3.
-    VarSymbol* fieldWriteTmp = fieldReadTmp;
-    if (isDomImplType(field->type) ||
+    if (isDomImplType(field->type)   ||
         isArrayImplType(field->type) ||
         isDistImplType(field->type))
     {
-      VarSymbol* tmp = newTemp("RWT_tmp", field->type);
+      VarSymbol* tmp          = newTemp("RWT_tmp", field->type);
+      FnSymbol*  autoCopyFn   = autoCopyMap.get(field->type);
+      CallExpr*  autoCopyCall = new CallExpr(autoCopyFn, fieldReadTmp);
+
       getIterator->insertBeforeReturn(new DefExpr(tmp));
-      FnSymbol* autoCopyFn = autoCopyMap.get(field->type);
-      // This autoCopyFn is expected to exist!
-      CallExpr* autoCopyCall = new CallExpr(autoCopyFn, fieldReadTmp);
-      getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
+      getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE,
+                                                   tmp,
+                                                   autoCopyCall));
+
       fieldWriteTmp = tmp;
     }
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField(field->name), fieldWriteTmp));
+
+    getIterator->insertBeforeReturn(
+                             new CallExpr(PRIM_SET_MEMBER,
+                                          ret,
+                                          ii->iclass->getField(field->name),
+                                          fieldWriteTmp));
   }
 
-  // The return is supplied in the shell function created during functionResolution.
-  // (See protoIteratorClass().)
+  // The return is supplied in the shell function created during
+  // functionResolution. (See protoIteratorClass().)
 }
 
 
