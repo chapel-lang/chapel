@@ -105,6 +105,10 @@ module Spawn {
                                    ref pid:int(64)):syserr;
   private extern proc qio_waitpid(pid:int(64),
     blocking:c_int, ref done:c_int, ref exitcode:c_int):syserr;
+  private extern proc qio_proc_communicate(threadsafe:c_int,
+                                           input:qio_channel_ptr_t,
+                                           output:qio_channel_ptr_t,
+                                           error:qio_channel_ptr_t):syserr;
 
   // When spawning, we need to allocate the command line
   // and environment to spawn with the C allocator (instead
@@ -552,7 +556,12 @@ module Spawn {
     :arg error: optional argument to capture any error encountered
                 when waiting for the child process.
    */
-  proc subprocess.wait(out error:syserr) {
+  proc subprocess.wait(out error:syserr, buffer=false) {
+
+    if buffer {
+      this.communicate(error);
+      return;
+    }
 
     error = this.spawn_error;
     if !running then return;
@@ -580,7 +589,7 @@ module Spawn {
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.wait() {
+  proc subprocess.wait(buffer=true) {
     var err:syserr = ENOERR;
 
     this.wait(error=err);
@@ -621,7 +630,7 @@ module Spawn {
   proc subprocess.communicate() {
     var err:syserr = ENOERR;
 
-    this.wait(error=err);
+    this.communicate(error=err);
     if err then halt("Error in subprocess.communicate: " + errorToString(err));
   }
 
