@@ -1202,24 +1202,41 @@ rebuildIterator(IteratorInfo* ii,
 // Fills in the body of the getIterator function.
 static void
 rebuildGetIterator(IteratorInfo* ii) {
-  FnSymbol* getIterator = ii->getIterator;
-  Symbol* ret = getIterator->getReturnSymbol();
-  ArgSymbol* arg = getIterator->getFormal(1);   // This is the iterator record instance.
+  FnSymbol*  getIterator = ii->getIterator;
+  Symbol*    ret         = getIterator->getReturnSymbol();
 
-  // Set it iterator class (state object) so it initially signals more elements available.
-  getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField("more"), new_IntSymbol(1)));
+  // This is the iterator record instance.
+  ArgSymbol* arg         = getIterator->getFormal(1);
+
+  // Set the iterator class (state object) so that it
+  // initially signals that more elements available.
+  getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER,
+                                               ret,
+                                               ii->iclass->getField("more"),
+                                               new_IntSymbol(1)));
 
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
-    // Load the record field into a temp, and then use that to set the corresponding class field.
-    VarSymbol* tmp = newTemp(field->type);
-    getIterator->insertBeforeReturn(new DefExpr(tmp));
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField(field->name), tmp));
+    // Load the record field into a temp,
+    // and then use that to set the corresponding class field.
+    VarSymbol* fieldReadTmp  = newTemp(field->type);
+    CallExpr*  fieldRead     = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
+
+    getIterator->insertBeforeReturn(new DefExpr(fieldReadTmp));
+
+    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE,
+                                                 fieldReadTmp,
+                                                 fieldRead));
+
+    getIterator->insertBeforeReturn(
+                             new CallExpr(PRIM_SET_MEMBER,
+                                          ret,
+                                          ii->iclass->getField(field->name),
+                                          fieldReadTmp));
   }
 
-  // The return is supplied in the shell function created during functionResolution.
-  // (See protoIteratorClass().)
+  // The return is supplied in the shell function created during
+  // functionResolution. (See protoIteratorClass().)
 }
 
 
