@@ -516,6 +516,9 @@ class LabelSymbol : public Symbol {
 *                                                                   *
 ********************************* | ********************************/
 
+// Processes a char* to replace any escape sequences with the actual bytes
+std::string unescapeString(const char* const str);
+
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
 
