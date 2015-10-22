@@ -83,6 +83,9 @@ all:
   09/09/15:
     - text: ubuntu update to 15.04 (gcc upgraded to 4.9.2)
       config: shootout
+  10/19/15:
+    - text: simplification of comm domain descriptor management
+      config: 16 node XC
 
 AllCompTime:
   11/09/14:
@@ -140,6 +143,9 @@ fannkuch-redux:
     - LICM no longer hoisting globals (bug fix related to hoisting wide things)
   03/10/15:
     - Allow LICM to hoist some global variable (#1524)
+  10/16/15:
+    - test: Plain Old Data type improvement (#2752)
+      config: chap04
 
 fasta:
   01/14/14:
@@ -186,6 +192,11 @@ jacobi:
     - disable the task table by default
   01/30/15:
     - param protect all calls to chpl__testPar (#1200)
+
+knucleotide:
+  10/16/15:
+    - text: Plain Old Data type improvement (#2752)
+      config: chap04
 
 lulesh:
   03/15/14:
