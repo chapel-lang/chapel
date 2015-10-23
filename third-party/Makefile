@@ -59,7 +59,7 @@ clobber: FORCE
 depend:
 
 test-venv: $(CHPL_VENV_TEST_REQS)
-$(CHPL_VENV_TEST_REQS):
+$(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) test-venv
 
 chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
