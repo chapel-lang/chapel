@@ -144,7 +144,7 @@ fannkuch-redux:
   03/10/15:
     - Allow LICM to hoist some global variable (#1524)
   10/16/15:
-    - test: Plain Old Data type improvement (#2752)
+    - text: Plain Old Data type improvement (#2752)
       config: chap04
 
 fasta:
