@@ -45,7 +45,6 @@ module main {
       initData(s_loop_data.RealArray_3D_2xNx4[i], i+1);
     }
     initData(s_loop_data.scalar_Real, 21);
-    // ?? s_loop_data->RealArray_scalars;
   }
 
 
@@ -341,7 +340,7 @@ module main {
     outchannel.write(equal_line);
 
     outchannel.writeln("LCALS run summary: ");
-    outchannel.writeln("sizeof(Real_type) = ", 8 /*sizeof(Real_type)*/);
+    outchannel.writeln("sizeof(Real_type) = ", numBytes(real));
     outchannel.writeln("     num suite passes = ", suite_run_info.num_suite_passes);
     outchannel.writeln("     loop sample fraction = ", suite_run_info.loop_samp_frac);
     outchannel.write("     loop variants run : ");
@@ -528,7 +527,6 @@ module main {
               if stat.loop_run_count[ilen] > 0 {
                 var var_string = run_loop_variants[ilv] + "(" + len_id[ilen] + ")";
                 outchannel.writef("%-*s", var_field_len+1, var_string);
-                //outchannel.writef("%*s", prec_buf, stat.loop_chksum[ilen]);
                 outchannel.writef("%{#########.#######################}", stat.loop_chksum[ilen]);
                 if ilv > 0 {
                   var chksum_diff = abs(stat.loop_chksum[ilen] - ref_chksum[ilen]);
@@ -536,19 +534,6 @@ module main {
                 } else {
                   outchannel.writeln();
                 }
-/*
-                outchannel.writeln(stat.mean[ilen]);
-                outchannel.writeln(stat.min[ilen]);
-                outchannel.writeln(stat.max[ilen]);
-                outchannel.writeln(stat.std_dev[ilen]);
-                if ilv > 0 {
-                  var rel_mean_diff = 0.0;
-                  if ref_mean[ilen] != 0.0 {
-                    rel_mean_diff = 1.0 + (stat.mean[ilen] - ref_mean[ilen])/ref_mean[ilen];
-                  }
-                  outchannel.writeln(rel_mean_diff);
-                }
-*/
               }
             }
           }

@@ -264,7 +264,6 @@ module LCALSDataTypes {
     // pointer based versions of arrays
     var scalar_Real: [0..#s_num_Real_scalars] real;
 
-    // 
     var RealArray_1D: [0..#s_num_1D_Real_arrays][0..#aligned_chunksize] real;
     var RealArray_1D_Nx4: [0..#s_num_1D_Nx4_Real_arrays][0..#4*aligned_chunksize] real;
     var IndxArray_1D: [0..#s_num_1D_Indx_arrays][0..#aligned_chunksize] int;
