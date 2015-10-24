@@ -956,8 +956,8 @@ module String {
 
   proc =(ref lhs: string, rhs_c: c_string) {
     // Make this some sort of local check once we have local types/vars
-    if (rhs_c.locale.id != chpl_nodeID) || (lhs.locale_id != chpl_nodeID) then
-      halt("Cannot assign a remote c_string to a string.");
+    if !_local && (lhs.locale_id != chpl_nodeID) then
+      halt("Cannot assign a c_string to a remote string.");
 
     const len = rhs_c.length;
     const buff:bufferType = rhs_c:bufferType;
@@ -1293,7 +1293,13 @@ module String {
   inline proc ascii(a: string) : int(32) {
     if a.isEmptyString() then return 0;
 
-    return a.buff[0]:int(32);
+    if _local || a.locale_id == chpl_nodeID {
+      // the string must be local so we can index into buff
+      return a.buff[0]:int(32);
+    } else {
+      // a[1] grabs the first character as a string (making it local)
+      return a[1].buff[0]:int(32);
+    }
   }
 
 
@@ -1318,9 +1324,6 @@ module String {
 
   // Cast from c_string to string
   proc _cast(type t, cs: c_string) where t == string {
-    if cs.locale.id != chpl_nodeID then
-      halt("Cannot cast a remote c_string to string.");
-
     var ret: string;
     ret.len = cs.length;
     ret._size = ret.len+1;
