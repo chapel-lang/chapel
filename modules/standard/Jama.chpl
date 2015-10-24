@@ -39,12 +39,12 @@ Authors
 JAMA's initial design, as well as this reference implementation, was developed by
 Joe Hicklin
 Cleve Moler
-Peter Webb 	... from The MathWorks 	  	
+Peter Webb      ... from The MathWorks             
 
 Ronald F. Boisvert
 Bruce Miller
 Roldan Pozo
-Karin Remington 	... from NIST
+Karin Remington      ... from NIST
 
 Copyright Notice
 
@@ -258,30 +258,30 @@ class CholeskyDecomposition {
       var X = B.getArrayCopy();
       var nx = B.getColumnDimension();
 
-	      // Solve L*Y = B;
-	      //for (int k = 0; k < n; k++) {
-	      for k in 1..n {
-	        //for (int j = 0; j < nx; j++) {
-	        for j in 1..nx {
-	           //for (int i = 0; i < k ; i++) {
-	           for i in 1..k {
-	               X[k,j] -= X[i,j]*L[k,i];
-	           }
-	           X[k,j] /= L[k,k];
-	        }
-	      }
-	
-	      // Solve L'*X = Y;
-	      //for (int k = n-1; k >= 0; k--) {
-	      for k in 1..n-1 by -1 {
-	        //for (int j = 0; j < nx; j++) {
-	        for j in 1..nx {
-	           for i in k+1..n {
-	               X[k,j] -= X[i,j]*L[i,k];
-	           }
-	           X[k,j] /= L[k,k];
-	        }
-	      }
+           // Solve L*Y = B;
+           //for (int k = 0; k < n; k++) {
+           for k in 1..n {
+             //for (int j = 0; j < nx; j++) {
+             for j in 1..nx {
+                //for (int i = 0; i < k ; i++) {
+                for i in 1..k {
+                    X[k,j] -= X[i,j]*L[k,i];
+                }
+                X[k,j] /= L[k,k];
+             }
+           }
+     
+           // Solve L'*X = Y;
+           //for (int k = n-1; k >= 0; k--) {
+           for k in 1..n-1 by -1 {
+             //for (int j = 0; j < nx; j++) {
+             for j in 1..nx {
+                for i in k+1..n {
+                    X[k,j] -= X[i,j]*L[i,k];
+                }
+                X[k,j] /= L[k,k];
+             }
+           }
       
       return new Matrix(X,n,nx);
    }
@@ -800,8 +800,8 @@ class EigenvalueDecomposition {
          if (l == n) {
             H[n,n] = H[n,n] + exshift;
             d[n] = H[n,n];
-	    e[n] = 0.0;
-	    n-=1;
+         e[n] = 0.0;
+         n-=1;
             itr = 0;
    
          // Two roots found
@@ -2747,7 +2747,7 @@ class Matrix {
       // Ignore initial empty lines
       while (tokenizer.nextToken() == StreamTokenizer.TT_EOL);
       if (tokenizer.ttype == StreamTokenizer.TT_EOF)
-	throw new java.io.IOException("Unexpected EOF on matrix read.");
+     throw new java.io.IOException("Unexpected EOF on matrix read.");
       do {
          vD.addElement(Double.valueOf(tokenizer.sval)); // Read & store 1st row.
       } while (tokenizer.nextToken() == StreamTokenizer.TT_WORD);
@@ -3136,9 +3136,9 @@ class SingularValueDecomposition {
       //var A : [aDom] real = Arg.getArrayCopy();
 
       /* Apparently the failing cases are only a proper subset of (m<n), 
-	 so let's not throw error.  Correct fix to come later?
+      so let's not throw error.  Correct fix to come later?
       if (m<n) {
-	  throw new IllegalArgumentException("Jama SVD only works for m >= n"); }
+       throw new IllegalArgumentException("Jama SVD only works for m >= n"); }
       */
       var nu = min(m,n);
 
