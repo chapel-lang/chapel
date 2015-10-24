@@ -1,4 +1,4 @@
 all:
-	chpl -M .. TestMatrix.chpl -g -o TestMatrix
+	chpl TestMatrix.chpl -g -o TestMatrix
 clean:
-	rm a.out
+	rm TestMatrix 
