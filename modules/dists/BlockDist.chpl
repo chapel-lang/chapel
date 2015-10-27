@@ -1120,16 +1120,9 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     //
     // we don't necessarily own all the elements we're following
     //
-    proc accessHelper(i) ref {
-      if myLocArr then local {
-        if myLocArr.locDom.member(i) then
-          return myLocArr.this(i);
-      }
-      return dsiAccess(i);
-    }
     const myFollowThisDom = {(...myFollowThis)};
     for i in myFollowThisDom {
-      yield accessHelper(i);
+      yield dsiAccess(i);
     }
   }
 }
