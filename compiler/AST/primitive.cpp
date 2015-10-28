@@ -303,6 +303,13 @@ returnInfoVirtualMethodCall(CallExpr* call) {
   return fn->retType;
 }
 
+static Type*
+returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
+  SymExpr* se = toSymExpr(call->get(2));
+  INT_ASSERT(se);
+  return se->var->type;
+}
+
 // print the number of each type of primitive present in the AST
 void printPrimitiveCounts(const char* passName) {
   int primCounts[NUM_KNOWN_PRIMS];
@@ -619,6 +626,7 @@ initPrimitive() {
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
   prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
+  prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
