@@ -10,7 +10,7 @@ started.  It prints is argument(s) to the console, followed by a
 newline.  Thus, the following statement will print a greeting to the
 console:
 
-.. code-include::../code/01-hello.chpl
+.. code-include::../../../../../test/release/examples/guide/base/01-hello.chpl
   :lexer: chapel
 
 We'll talk in more detail about program structure later, but for now,
@@ -33,7 +33,7 @@ using:
 
 which should print the greeting to your console as follows:
 
-.. code-include::../code/01-hello.good
+.. code-include::../../../../../test/release/examples/guide/base/01-hello.good
 
 Note that writeln() takes an arbitrary number of arguments and will
 print them to the console one after the other without spaces, followed
