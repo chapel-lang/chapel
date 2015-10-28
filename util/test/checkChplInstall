@@ -183,12 +183,12 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
     else
         # Rerun test job with -v flag to help user identify discrepancy
         log_info "There was an issue with the installation, test job output incorrect."
-        log_info ""
-        log_info "== Verbose Test Job Execution Output =="
+        echo ""
+        echo "== Verbose Test Job Execution Output =="
         ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} -v
-        log_info ""
-        log_info "== Diff Log =="
-        log_info "$(diff ${TEST_EXEC_OUT} ${GOOD})"
+        echo ""
+        echo "== Diff Log =="
+        echo "$(diff ${TEST_EXEC_OUT} ${GOOD})"
         # This exit code should be recognized as successfully building, but
         # with some errors
         exit 20
