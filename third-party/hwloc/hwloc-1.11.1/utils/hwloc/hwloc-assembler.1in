@@ -1,0 +1,81 @@
+.\" -*- nroff -*-
+.\" Copyright © 2011 inria.  All rights reserved.
+.\" See COPYING in top-level directory.
+.TH HWLOC-ASSEMBLER "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
+.SH NAME
+hwloc-assembler \- Assemble multiple XML topologies
+.
+.\" **************************
+.\"    Synopsis Section
+.\" **************************
+.SH SYNOPSIS
+.B hwloc-assembler
+[\fIoptions\fR]
+output.xml
+[--name <name1>] input1.xml
+[--name <name2>] input2.xml
+\fR...
+.
+.\" **************************
+.\"    Options Section
+.\" **************************
+.SH OPTIONS
+.TP
+\fB\-n \-\-name <name>\fR
+Set <name> in the \fIAssemblerName\fR info attribute of the next
+input topology root to ease identification within the final global
+topology.
+.TP
+\fB\-f \-\-force\fR
+Ignore errors while reading input files.
+.TP
+\fB\-v \-\-verbose\fR
+Verbose messages.
+.
+.\" **************************
+.\"    Description Section
+.\" **************************
+.SH DESCRIPTION
+.
+hwloc-assembler combines the input XML topologies and exports the
+resulting global topologies to a new XML file.
+All inputs are inserting as children of the global root object.
+.
+.PP
+Each input topology root is annotated with info attributes
+before insertion.
+\fIAssemblerIndex\fR is set to the index within the list of inputs.
+\fIAssemblerName\fR is set to the name given with \fB--name\fR if any.
+.
+.PP
+hwloc-assembler-remote offers a frontend for assembling remote nodes
+topologies without having to manually gather and transfer each of them.
+.
+.\" **************************
+.\"    Examples Section
+.\" **************************
+.SH EXAMPLES
+.PP
+To assemble two nodes topologies:
+
+    $ hwloc-assembler output.xml --name host1 host1.xml --name host2 host2.xml
+.
+.
+.\" **************************
+.\"    Return value section
+.\" **************************
+.SH RETURN VALUE
+Upon successful execution, hwloc-assembler returns 0.
+.
+.PP
+hwloc-assembler will return nonzero if any kind of error occurs, such as
+(but not limited to) failure to parse the command line.
+.
+.\" **************************
+.\"    See also section
+.\" **************************
+.SH SEE ALSO
+.
+.ft R
+hwloc(7), lstopo(1), hwloc-assembler-remote(1)
+.sp

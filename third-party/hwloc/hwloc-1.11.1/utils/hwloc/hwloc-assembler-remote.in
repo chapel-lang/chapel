@@ -1,0 +1,121 @@
+#!/bin/sh
+#-*-sh-*-
+
+#
+# Copyright © 2011-2013 Inria.  All rights reserved.
+# See COPYING in top-level directory.
+#
+
+HWLOC_top_builddir="@HWLOC_top_builddir@"
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+bindir="@bindir@"
+# this will be changed into $bindir/lstopo during make install
+locallstopo="$HWLOC_top_builddir/utils/lstopo/lstopo"
+assembler="$HWLOC_top_builddir/utils/hwloc/hwloc-assembler"
+
+force=0
+show=0
+ssh=ssh
+remotelstopo=lstopo
+remotelstopoopts=
+inputs=
+inputopts=
+failedhosts=
+output=
+
+error()
+{
+	echo $@ 2>&1
+}
+
+usage()
+{
+	echo "$0 [options] <output> <host1> <host2> ..."
+	echo "  Gathers the topology of remote hosts and assembles them into the"
+	echo "  <output> XML topology."
+	echo "Options:"
+	echo "  --ssh <ssh>		Use the given ssh command (and options) to connect to remote hosts"
+	echo "  --lstopo-path <path>	Use the given path as the remote lstopo command"
+	echo "  --lstopo-opts <opts>	Pass the given lstopo options when gathering remote topologies"
+	echo "  --show			Display the resulting topology before exit"
+	echo "  -f --force		Ignore failure to load a remote host topology"
+}
+
+while test $# -gt 0 ; do
+	case "$1" in
+	--ssh)
+		ssh="$2"
+		shift
+		;;
+	--lstopo-path)
+		remotelstopo="$2"
+		shift
+		;;
+	--lstopo-opts)
+		remotelstopoopts="$2"
+		shift
+		;;
+	-s|--show)
+		show=1
+		;;
+	-f|--force)
+		force=1
+		;;
+	-h)
+		usage
+		exit 0
+		;;
+	-*)
+		error "Unrecognized option: $1"
+		usage
+		exit 1
+		;;
+	*)
+		if test -z "$output" ; then
+			output="$1"
+		else
+			file=`mktemp --tmpdir hwloc-assembler-remote.$1.XXXXXXXX.xml`
+			echo -n "Exporting host $1 topology to $file ..."
+			if "$ssh" "$1" "$remotelstopo" "$remotelstopoopts" -.xml > $file ; then
+				echo "done"
+				inputs="$inputs $file"
+				inputopts="$inputopts --name $1 $file"
+			else
+				echo "failed!"
+				rm "$file"
+				failedhosts="$failedhosts $1"
+				test $force -eq 0 && exit -1;
+			fi
+		fi
+		;;
+	esac
+	shift
+done
+
+if test -z "$output" ; then
+	error "Missing output filename"
+	rm -f $inputs
+	usage
+	exit 1
+fi
+
+test $force -eq 1 && assembleropts="$assembleropts -f"
+
+echo "$assembler" $assembleropts "$output" $inputopts
+"$assembler" $assembleropts "$output" $inputopts
+ret=$?
+
+rm -f $inputs
+
+if test $ret -eq 0 ; then
+	echo "Assembled into $output"
+else
+	echo "Failed to assemble into $output"
+fi
+
+if test -n "$failedhosts" ; then
+	error "Failed to contact hosts:$failedhosts"
+fi
+
+if test $ret -eq 0 -a $show -eq 1 ; then "$locallstopo" -i "$output" ; fi
