@@ -53,7 +53,7 @@ function log_success()
 TEST_JOB_BASENAME=hello6-taskpar-dist
 
 # Notify user we are running this script
-log_info "Running minimal test script: checkChplInstall"
+log_info "Running minimal test script: \$CHPL_HOME/util/test/checkChplInstall"
 
 BIN_NAME=chpl
 
