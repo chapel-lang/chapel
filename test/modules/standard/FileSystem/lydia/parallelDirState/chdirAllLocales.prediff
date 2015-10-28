@@ -3,7 +3,7 @@
 import os, os.path, sys
 import fileinput
 
-parentDir = os.getenv('PWD')
+parentDir = os.getcwd()
 parentDir = os.path.realpath(parentDir)
 
 for line in fileinput.input(sys.argv[2], inplace=True):

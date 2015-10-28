@@ -1,4 +1,4 @@
-use "foo.h", "bar.h", "bar.c", "baz.h", "baz.o";
+require "foo.h", "bar.h", "bar.c", "baz.h", "baz.o";
 
 extern proc foo(x: c_int);
 extern proc bar(x: c_int);

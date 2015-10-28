@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
+
+# Validate Chapel installation by compiling and executing an example job.
 #
-# Portable script to validate chapel installation by compiling and executing
-# the hello world examples. Exits with zero status code when compilation and
-# execution work as expected. Expects that chpl is available on the PATH and
-# that CHPL_HOME is set correctly.
 #
-# This is morally equivalent to running start_test against the
-# examples/hello*.chpl tests. It works by copying the tests from $CHPL_HOME,
-# which can either be an installation from source/rpm or a working copy of the
-# source repo, to a temporary directory in $HOME/.chpl/. start_test is then run
-# from that temporary directory.
+# Exits with zero status code when compilation and execution work as
+# expected. Expects that chpl is available on the PATH and that CHPL_HOME is
+# set correctly.
+#
+# It works by copying the test from $CHPL_HOME, which can  either be an
+# installation from source/rpm or a working copy of the source repo, to a
+# temporary directory in $HOME/.chpl/, then executing the binary and diffing
+# the output with the .good file.
 #
 # Using a temporary directory is necessary for most installations, since the
 # user running the tests will not have the permissions to modify $CHPL_HOME
@@ -23,213 +24,158 @@
 #
 # To use something other than $HOME/.chpl, set the CHPL_CHECK_INSTALL_DIR
 # environment variable.
-#
-# To have the start_test logs printed when one or more tests fail, set
-# CHPL_CHECK_INSTALL_PRINT_ERROR to "true". The log file will be kept in
-# $CHPL_CHECK_INSTALL_DIR when there are failures, regardless of the print
-# error setting.
-#
-# There is an undocumented --debug flag, which is useful for development. It
-# produces more verbose output and does not delete the temporary working
-# directory when the script exits.
 
-function log_debug()
-{
-    local msg=$@
-    if [ -n "${debug_chpl_test}" ] ; then
-        echo "[DEBUG] ${msg}"
-    fi
-}
-function log_error()
-{
-    local msg=$@
-    echo "[ERROR] ${msg}" 1>&2
+
+# Base name for test job in $CHPL_HOME/test/release/examples
+TEST_JOB_BASENAME=hello6-taskpar-dist
+
+err() {
+    echo "error: $@" >&2
 }
 
-bin_name=chpl
+# Notify user we are running this script
+echo "Running minimal test script: checkChplInstall"
 
-for opt in ${*:1} ; do
-case $opt in
-    --debug)
-        debug_chpl_test=true
-        ;;
-    --chpldoc)
-        bin_name=chpldoc
-        ;;
-    --help|-h|*)
-        cat<<EOF
-usage: $0
+BIN_NAME=chpl
 
-  Runs hello world example programs to verify chpl installation is working
-  correctly. Exits with zero status code when successful. Expects chpl to be on
-  the PATH and CHPL_HOME to be set correctly.
+CHPL_BIN="$(which ${BIN_NAME} 2> /dev/null)"
 
-  By default, programs are compiled and run from \$HOME/.chpl/. Set
-  CHPL_CHECK_INSTALL_DIR environment variable to use an alternate location.
-
-  --chpldoc  Test chpldoc with the chpldoc primer, instead of the chpl.
-
-EOF
-        exit 0
-        ;;
-esac
-done
-
-CHPL_BIN=$(which ${bin_name} 2> /dev/null)
-
-# Verify chpl binary exists and is executable.
+# Verify chpl is in $PATH
 if [ -z "${CHPL_BIN}" ] ; then
-    log_error "${bin_name} not found. Make sure it available in the current PATH."
+    err "${BIN_NAME} not found. Make sure it available in the current PATH."
     exit 1
-elif [ ! -x $CHPL_BIN ] ; then
-    log_error "Found ${bin_name} at ${CHPL_BIN} but it is not executable."
+elif [ ! -x ${CHPL_BIN} ] ; then
+    err "Found ${BIN_NAME} at ${CHPL_BIN} but it is not executable."
     exit 1
 else
-    log_debug "Found ${bin_name} at: ${CHPL_BIN}"
+    echo "Found executable ${BIN_NAME} in ${CHPL_BIN}."
 fi
 
 # Verify CHPL_HOME is correctly set.
 if [ -z "${CHPL_HOME+x}" ] ; then
-    log_error "CHPL_HOME is not set in environment."
+    err "CHPL_HOME is not set in environment."
     exit 1
-elif [ ! -d $CHPL_HOME ] ; then
-    log_error "CHPL_HOME is not a directory: ${CHPL_HOME}"
+elif [ ! -d ${CHPL_HOME} ] ; then
+    err "CHPL_HOME is not a directory: ${CHPL_HOME}"
     exit 1
 else
-    log_debug "CHPL_HOME is set to: ${CHPL_HOME}"
+    echo "Found \$CHPL_HOME directory: ${CHPL_HOME}"
 fi
 
-# Find examples test directory.
-if [ -d $CHPL_HOME/test/release/examples ] ; then
+# Create ~/.chpl directory, if it does not already exist
+CHPL_DIR=${CHPL_CHECK_INSTALL_DIR:-${HOME}/.chpl}
+if [ ! -d ${CHPL_DIR} ] ; then
+    echo "${CHPL_DIR} does not exist. Creating it."
+    mkdir -p ${CHPL_DIR} || { echo "Failed to create ${CHPL_DIR}." && exit 1 ; }
+fi
+
+# Location of test job
+if [ -d ${CHPL_HOME}/test/release/examples ] ; then
     # Install from source repo.
-    TEST_DIR=$CHPL_HOME/test/release/examples
-elif [ -d $CHPL_HOME/examples ] ; then
+    TEST_DIR=${CHPL_HOME}/test/release/examples
+elif [ -d ${CHPL_HOME}/examples ] ; then
     # Install from tarball.
-    TEST_DIR=$CHPL_HOME/examples
+    TEST_DIR=${CHPL_HOME}/examples
 else
-    log_error "Could not find test cases in CHPL_HOME: ${CHPL_HOME}."
+    err "Could not find test cases in CHPL_HOME: ${CHPL_HOME}."
     exit 1
 fi
 
-# For chpldoc, only test the primers/chpldoc.doc.chpl test.
-if [ "${bin_name}" = "chpldoc" ] ; then
-    test_name="chpldoc"
-    TESTS=$TEST_DIR/primers/chpldoc.doc.*
+TMP_TEST_DIR="$(mktemp -d ${CHPL_DIR}/chapel-test-XXXXX)"
+echo "Temporary test job directory: ${TMP_TEST_DIR}"
 
-# List all the files in the examples dir. Do not list any subdirectories,
-# though.
+TEST_JOB=${TEST_JOB_BASENAME}
+
+# Collect comm protocol environment variables (lowercase to avoid conflicts)
+chpl_comm="$($CHPL_HOME/util/chplenv/chpl_comm.py)"
+chpl_launcher="$($CHPL_HOME/util/chplenv/chpl_launcher.py)"
+
+# Log file for compile output
+TEST_COMP_OUT=${TEST_JOB}.comp.out
+
+# Necessary to suppress warnings when WARNINGS=1 (e.g. nightly build settings)
+COMP_FLAGS="--cc-warnings"
+
+# Compile test job into temporary directory
+echo "Compiling \$CHPL_HOME/${TEST_DIR}/${TEST_JOB}.chpl"
+${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
+
+# Check that compile was successful
+COMPILE_STATUS=$?
+if [ ${COMPILE_STATUS} -ne 0 ]; then
+    err "Test job failed to compile - Chapel is not installed correctly"
+    echo "Compilation output:"
+    cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
+    exit 1
+elif [ -s ${TMP_TEST_DIR}/${TEST_COMP_OUT} ]; then
+    err "Test job compiled with output - Chapel is not installed correctly"
+    echo "Compilation output:"
+    cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
+    exit 1
 else
-    test_name="hello world"
-    TESTS=$(find $TEST_DIR -maxdepth 1 -mindepth 1 -type f)
+    echo "Test job compiled into ${TMP_TEST_DIR}/${TEST_JOB}"
 fi
 
-# Copy these tests to a temp file.
-
-chpl_dir=${CHPL_CHECK_INSTALL_DIR:-$HOME/.chpl}
-if [ ! -d $chpl_dir ] ; then
-    log_debug "${chpl_dir} does not exist. Creating it."
-    mkdir -p $chpl_dir || { log_error "Failed to create ${chpl_dir}." && exit 10 ; }
-fi
-
-TMP_TEST_DIR=$(mktemp -d ${chpl_dir}/chapel-test-XXXXX)
-log_debug "TMP_TEST_DIR: ${TMP_TEST_DIR}"
-
-# Ensure the tmp dir is deleted when script exits.
+# Cleanup the tmp directory whenever exit is invoked
 function cleanup_tmp_dir()
 {
-    # Leave the directory when using --debug.
-    if [ -z "${debug_chpl_test}" ] ; then
-        rm -rf $TMP_TEST_DIR || :
-    else
-        log_debug "Leaving tmp test dir: ${TMP_TEST_DIR}"
-    fi
+    rm -rf ${TMP_TEST_DIR}
 }
 trap cleanup_tmp_dir EXIT
 
-test_output_log=$TMP_TEST_DIR/test_output.log
-cp $TESTS $TMP_TEST_DIR/
-
-# Move to the temp directory and run the tests!
-(
-    cd $TMP_TEST_DIR
-    export CHPL_TEST_UTIL_DIR=$CHPL_HOME/util
-
-    # Run the tests.
-    echo "Running the ${test_name} tests found in: $TEST_DIR"
-
-    $CHPL_HOME/util/start_test --no-chpl-home-warn --progress $CHPL_START_TEST_ARGS *.chpl > $test_output_log
-
-    test_status=$?
-    log_debug "start_test exit code: ${test_status}"
-)
-
-# Vars for capturing status info.
-success_key="^\[Success matching"
-error_key="^\[Error"
-warning_key="^\[Warning"
-summary_key="^\[Summary"
-summary_start_key="^\[Test Summary"
-
-function find_test_lines()
-{
-    local key="${1}"
-    local count_arg="${2}"
-
-    # Find the "[Start Summary ...]" line, then grep for $key after it. 100000
-    # is an arbitrarily large number that should include the rest of the file
-    # after [Start Summary ...].
-    grep -A100000 -E "${summary_start_key}" $test_output_log | \
-        grep $count_arg -E "${key}"
-}
-
-successes=$(grep -c -E "${success_key}" $test_output_log)
-errors=$(find_test_lines "${error_key}" -c)
-warnings=$(find_test_lines "${warning_key}" -c)
-
-log_debug "successes: ${successes}"
-log_debug "errors: ${errors}"
-log_debug "warnings: ${warnings}"
-
-# First, check for errors and warnings. Then make sure there was at least one success.
-if (( $errors )) && (( $errors > 0 )) ; then
-    log_error "${errors} tests failed:"
-    find_test_lines "${error_key}"
-    success=false
-elif (( $warnings )) && (( $warnings > 0 )) ; then
-    log_error "${warnings} tests produced warnings:"
-    find_test_lines "${warning_key}"
-    success=false
-elif (( $successes < 1 )) ; then
-    log_error "No tests ran."
-    success=false
+# Find number of locales and .good file
+if [ ${chpl_comm} == "none" ]; then
+    NUMLOCALES=1
+    GOOD=${TEST_DIR}/${TEST_JOB}.comm-none.good
 else
-    success=true
+    NUMLOCALES="$(cat ${TEST_DIR}/NUMLOCALES)"
+    GOOD=${TEST_DIR}/${TEST_JOB}.good
 fi
 
-# Print out the summary line.
-log_debug $(grep -E "${summary_key}" $test_output_log)
+# Check for valid launchers
+if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "none" ]; then
+    echo "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
+else
+    echo ""
+    echo "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
+    echo "This does not necessarily indicate that your Chapel installation is incorrect."
+    echo "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
+    # This exit code should be recognized as a failure to complete check, but
+    # not necessarily failure of build
+    exit 10
+fi
 
-case $success in
-    true)
-        echo "${bin_name} installation works as expected!"
-        exit 0
-        ;;
-    false|*)
-        # Print the log file if CHPL_CHECK_INSTALL_PRINT_ERROR is set to true.
-        if [ "${CHPL_CHECK_INSTALL_PRINT_ERROR}" = "true" ] ; then
-            cat $test_output_log
-        fi
+TEST_EXEC_OUT=${TEST_JOB}.exec.out
 
-        echo "Found issues with ${bin_name} installation."
-        echo "  ${bin_name} path: ${CHPL_BIN}"
-        echo "  CHPL_HOME: ${CHPL_HOME}"
+# Run compiled binary with parsed execution options
+(
+    cd ${TMP_TEST_DIR}
 
-        # Copy the output log file to a non-temp location to make it available
-        # for the user.
-        failure_log=$chpl_dir/$(basename $0)-failure.log
-        cp $test_output_log $failure_log
-        echo "Storing complete log in ${failure_log}"
+    EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
-        exit 10
-        ;;
-esac
+    echo "Running test job."
+    ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} | sort > ${TEST_EXEC_OUT} 2>&1
+    echo "Test job complete."
+
+    # Check result
+    DIFF_OUTPUT=$(diff -q ${TEST_EXEC_OUT} ${GOOD})
+
+    # Return success code (0) if diff is good
+    if [ -z "${DIFF_OUTPUT}" ]; then
+    echo "Installation works as expected!"
+    exit 0
+    else
+        # Rerun test job with -v flag to help user identify discrepancy
+        echo "There was an issue with the installation, test job output incorrect."
+        echo ""
+        echo "== Verbose Test Job Execution Output =="
+        ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} -v
+        echo ""
+        echo "== Diff Log =="
+        echo "$(diff ${TEST_EXEC_OUT} ${GOOD})"
+        # This exit code should be recognized as successfully building, but
+        # with some errors
+        exit 20
+    fi
+)
+

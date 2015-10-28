@@ -8,14 +8,14 @@ use CommDiagnostics;
     Dimensions are set up by M x N x P. If the data structure is 2D, then M x N. 
     If the data structue is 1D, then M.
     M: 1st dimension
-        Default = 128
-	N: 2nd dimension 
-		Default = 128
+        Default = 64
+  N: 2nd dimension 
+    Default = 64
     P: 3rd dimension
-        Default = 128
+        Default = 64
     
-	printData: Set to false if you don't want to see the data printed
-		Default = false
+  printData: Set to false if you don't want to see the data printed
+    Default = false
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -25,9 +25,9 @@ config var messages = false;
 config var printData: bool = false;
 config var dist: string = "C";
 
-config var M: int = 128;
-config var N: int = 128;
-config var P: int = 128;
+config var M: int = 64;
+config var N: int = 64;
+config var P: int = 64;
 
 const mui: int = 2341;
 const ch: int = 42;
@@ -57,6 +57,10 @@ proc initialize_3D(distribution, adder_1: int, adder_2: int, divider: int) {
         matrix[i,j,k] = (((i - 1.0) * ((j - 1.0) + adder_1)) + ((k - 1.0) + adder_2)) / divider;
     }
     return matrix;
+}
+
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
 }
 
 /* Prints out the 1D structure passed in */
@@ -92,21 +96,21 @@ proc print_3D(A: [], m_dim: int, n_dim: int, p_dim: int) {
 
 /* The process which runs the benchmark */
 proc kernel_fdtdapml(dist_1D, dist_2D, dist_3D, m_dim: int, n_dim: int, p_dim: int) {
-	var still_correct = true;
+  var still_correct = true;
     var t:Timer;
-	
-	if messages {
-		resetCommDiagnostics();
-		startCommDiagnostics();
-	}
-	
+  
+  if messages {
+    resetCommDiagnostics();
+    startCommDiagnostics();
+  }
+  
     /******* Start the timer: this is where we do work *******/
-	if timeit {
-		t = new Timer();
-		t.start();
-	}
-	
-	/* 1D variables */
+  if timeit {
+    t = new Timer();
+    t.start();
+  }
+  
+  /* 1D variables */
     var czm = initialize_1D(dist_1D, 1, m_dim);
     var czp = initialize_1D(dist_1D, 2, m_dim);
     var cxmh = initialize_1D(dist_1D, 3, m_dim);
@@ -167,24 +171,24 @@ proc kernel_fdtdapml(dist_1D, dist_2D, dist_3D, m_dim: int, n_dim: int, p_dim: i
             Bza[iz, n_dim + 1, m_dim + 1] = tmp[iz, iy]; 
         }                  
     }
-	
+  
     /******* End the timer *******/
-	if timeit {
-	    t.stop();
-		writeln("took ", t.elapsed(), " seconds");
-	}
-	
-	//Print out communication counts (gets and puts)
-	if messages {
-		stopCommDiagnostics();	
-		var messages=0;
-		var coms=getCommDiagnostics();
-		for i in 0..numLocales-1 {
-			messages+=coms(i).get:int;
-			messages+=coms(i).put:int;
-		}
-		writeln('message count=', messages);	
-	}
+  if timeit {
+      t.stop();
+    writeln("took ", t.elapsed(), " seconds");
+  }
+  
+  //Print out communication counts (gets and puts)
+  if messages {
+    stopCommDiagnostics();  
+    var messages=0;
+    var coms=getCommDiagnostics();
+    for i in 0..numLocales-1 {
+      messages+=coms(i).get:int;
+      messages+=coms(i).put:int;
+    }
+    writeln('message count=', messages);  
+  }
     
     if (printData) {
         writeln("czm:");
@@ -212,95 +216,97 @@ proc kernel_fdtdapml(dist_1D, dist_2D, dist_3D, m_dim: int, n_dim: int, p_dim: i
        writeln("Bza:");
        print_3D(Bza, m_dim + 1, n_dim + 1, p_dim + 1);
     }
-	
-	if correct {
-		/* 1D variables */
-	    var czmTest = initialize_1D({1..M+1}, 1, m_dim);
-	    var czpTest = initialize_1D({1..M+1}, 2, m_dim);
-	    var cxmhTest = initialize_1D({1..M+1}, 3, m_dim);
-	    var cxphTest = initialize_1D({1..M+1}, 4, m_dim);
-	    var cymhTest = initialize_1D({1..M+1}, 5, m_dim);
-	    var cyphTest = initialize_1D({1..M+1}, 6, m_dim);
+  
+  if correct {
+    /* 1D variables */
+      var czmTest = initialize_1D({1..M+1}, 1, m_dim);
+      var czpTest = initialize_1D({1..M+1}, 2, m_dim);
+      var cxmhTest = initialize_1D({1..M+1}, 3, m_dim);
+      var cxphTest = initialize_1D({1..M+1}, 4, m_dim);
+      var cymhTest = initialize_1D({1..M+1}, 5, m_dim);
+      var cyphTest = initialize_1D({1..M+1}, 6, m_dim);
     
-	    /* 2D variables */
-	    var AxTest = initialize_2D({1..M+1, 1..N+1}, 2, 11, m_dim);
-	    var RyTest = initialize_2D({1..M+1, 1..N+1}, 1, 10, n_dim);
-	    var clfTest: [{1..M+1, 1..N+1}] real = 0.0; 
-	    var tmpTest: [{1..M+1, 1..N+1}] real = 0.0;
+      /* 2D variables */
+      var AxTest = initialize_2D({1..M+1, 1..N+1}, 2, 11, m_dim);
+      var RyTest = initialize_2D({1..M+1, 1..N+1}, 1, 10, n_dim);
+      var clfTest: [{1..M+1, 1..N+1}] real = 0.0; 
+      var tmpTest: [{1..M+1, 1..N+1}] real = 0.0;
     
-	    /* 3D variables */
-	    var ExTest = initialize_3D({1..M+1, 1..N+1, 1..P+1}, 3, 1, m_dim);
-	    var EyTest = initialize_3D({1..M+1, 1..N+1, 1..P+1}, 4, 2, n_dim);
-	    var HzTest = initialize_3D({1..M+1, 1..N+1, 1..P+1}, 5, 3, p_dim);
-	    var BzaTest: [{1..M+1, 1..N+1, 1..P+1}] real = 0.0;
+      /* 3D variables */
+      var ExTest = initialize_3D({1..M+1, 1..N+1, 1..P+1}, 3, 1, m_dim);
+      var EyTest = initialize_3D({1..M+1, 1..N+1, 1..P+1}, 4, 2, n_dim);
+      var HzTest = initialize_3D({1..M+1, 1..N+1, 1..P+1}, 5, 3, p_dim);
+      var BzaTest: [{1..M+1, 1..N+1, 1..P+1}] real = 0.0;
     
-	    /* Lock */
-	    var lockTest: sync bool;
+      /* Lock */
+      var lockTest: sync bool;
     
-	    for iz in 1..p_dim {
-	        for iy in 1..n_dim {
-	            forall(a, b, c, d, e) in zip(ExTest[iz, iy, 1..m_dim], ExTest[iz, iy + 1, 1..m_dim],
-	                EyTest[iz, iy, 2..m_dim + 1], EyTest[iz, iy, 1..m_dim], 1..) {
-	                clfTest[iz, iy] = a - b + c - d;
-	                tmpTest[iz, iy] = (cymhTest[iy] / cyphTest[iy]) * BzaTest[iz, iy, e] - (ch / cyphTest[iy]) * clfTest[iz, iy];  
-	            }
+      for iz in 1..p_dim {
+          for iy in 1..n_dim {
+              forall(a, b, c, d, e) in zip(ExTest[iz, iy, 1..m_dim], ExTest[iz, iy + 1, 1..m_dim],
+                  EyTest[iz, iy, 2..m_dim + 1], EyTest[iz, iy, 1..m_dim], 1..) {
+                  clfTest[iz, iy] = a - b + c - d;
+                  tmpTest[iz, iy] = (cymhTest[iy] / cyphTest[iy]) * BzaTest[iz, iy, e] - (ch / cyphTest[iy]) * clfTest[iz, iy];  
+              }
             
-	            forall (a, b, c) in zip(HzTest[iz,iy, 1..m_dim], BzaTest[iz,iy,1..m_dim], 1..) {
-	                a = (cxmhTest[c] / cxphTest[c]) * a + (mui * czpTest[iz] / cxphTest[c]) * tmpTest[iz, iy] - (mui * czmTest[iz] / cxphTest[c]) * b;
-	                b = tmpTest[iz,iy];
-	            }    
+              forall (a, b, c) in zip(HzTest[iz,iy, 1..m_dim], BzaTest[iz,iy,1..m_dim], 1..) {
+                  a = (cxmhTest[c] / cxphTest[c]) * a + (mui * czpTest[iz] / cxphTest[c]) * tmpTest[iz, iy] - (mui * czmTest[iz] / cxphTest[c]) * b;
+                  b = tmpTest[iz,iy];
+              }    
             
-	            clfTest[iz, iy] = ExTest[iz, iy, m_dim + 1] - ExTest[iz, iy+1, m_dim + 1] + RyTest[iz, iy] - EyTest[iz, iy, m_dim + 1];
-	            tmpTest[iz, iy] = (cymhTest[iy] / cyphTest[iy]) * BzaTest[iz, iy, m_dim + 1] - (ch / cyphTest[iy]) * clfTest[iz, iy];
-	            HzTest[iz, iy, m_dim + 1]= (cxmhTest[m_dim + 1] / cxphTest[m_dim + 1]) * HzTest[iz, iy, m_dim + 1]
-	              + (mui * czpTest[iz] / cxphTest[m_dim + 1]) * tmpTest[iz, iy]
-	              - (mui * czmTest[iz] / cxphTest[m_dim + 1]) * BzaTest[iz, iy, m_dim + 1];
-	            BzaTest[iz, iy, m_dim + 1] = tmpTest[iz, iy]; 
+              clfTest[iz, iy] = ExTest[iz, iy, m_dim + 1] - ExTest[iz, iy+1, m_dim + 1] + RyTest[iz, iy] - EyTest[iz, iy, m_dim + 1];
+              tmpTest[iz, iy] = (cymhTest[iy] / cyphTest[iy]) * BzaTest[iz, iy, m_dim + 1] - (ch / cyphTest[iy]) * clfTest[iz, iy];
+              HzTest[iz, iy, m_dim + 1]= (cxmhTest[m_dim + 1] / cxphTest[m_dim + 1]) * HzTest[iz, iy, m_dim + 1]
+                + (mui * czpTest[iz] / cxphTest[m_dim + 1]) * tmpTest[iz, iy]
+                - (mui * czmTest[iz] / cxphTest[m_dim + 1]) * BzaTest[iz, iy, m_dim + 1];
+              BzaTest[iz, iy, m_dim + 1] = tmpTest[iz, iy]; 
             
-	            forall(a, b, c, d, e, f, g) in zip(ExTest[iz, n_dim + 1, 1..m_dim], EyTest[iz, n_dim + 1, 2..m_dim + 1],
-	                EyTest[iz, n_dim + 1, 1..m_dim], AxTest[iz, 1..], 1.., HzTest[iz, n_dim + 1, 1..m_dim], BzaTest[iz, n_dim + 1, 1..m_dim]) {
-	                lockTest = true;
-	                clfTest[iz, iy] = a + b - c - d;
-	                tmpTest[iz, iy] = (cymhTest[n_dim + 1] / cyphTest[iy]) * BzaTest[iz, iy, e] - (ch / cyphTest[iy]) * clfTest[iz, iy];  
-	                f = (cxmhTest[e] / cxphTest[e]) * f + (mui * czpTest[iz] / cxphTest[e]) * tmpTest[iz, iy] - (mui * czmTest[iz] / cxphTest[e]) * g;
-	                g = tmpTest[iz,iy];
-	                var unlockTest = lockTest;
-	            }        
+              forall(a, b, c, d, e, f, g) in zip(ExTest[iz, n_dim + 1, 1..m_dim], EyTest[iz, n_dim + 1, 2..m_dim + 1],
+                  EyTest[iz, n_dim + 1, 1..m_dim], AxTest[iz, 1..], 1.., HzTest[iz, n_dim + 1, 1..m_dim], BzaTest[iz, n_dim + 1, 1..m_dim]) {
+                  lockTest = true;
+                  clfTest[iz, iy] = a + b - c - d;
+                  tmpTest[iz, iy] = (cymhTest[n_dim + 1] / cyphTest[iy]) * BzaTest[iz, iy, e] - (ch / cyphTest[iy]) * clfTest[iz, iy];  
+                  f = (cxmhTest[e] / cxphTest[e]) * f + (mui * czpTest[iz] / cxphTest[e]) * tmpTest[iz, iy] - (mui * czmTest[iz] / cxphTest[e]) * g;
+                  g = tmpTest[iz,iy];
+                  var unlockTest = lockTest;
+              }        
             
-	            clfTest[iz, iy] = ExTest[iz, n_dim + 1, m_dim + 1] - AxTest[iz, n_dim + 1] + RyTest[iz, n_dim + 1] - EyTest[iz, n_dim + 1, m_dim + 1];
-	            tmpTest[iz, iy] = (cymhTest[n_dim + 1] / cyphTest[n_dim + 1]) * BzaTest[iz, n_dim + 1, m_dim + 1] - (ch / cyphTest[n_dim + 1]) * clfTest[iz, iy];
-	            HzTest[iz, n_dim + 1, m_dim + 1]= (cxmhTest[m_dim + 1] / cxphTest[m_dim + 1]) * HzTest[iz, n_dim + 1, m_dim + 1]
-	              + (mui * czpTest[iz] / cxphTest[m_dim + 1]) * tmpTest[iz, iy]
-	              - (mui * czmTest[iz] / cxphTest[m_dim + 1]) * BzaTest[iz, n_dim + 1, m_dim + 1];
-	            BzaTest[iz, n_dim + 1, m_dim + 1] = tmpTest[iz, iy]; 
-	        }                  
-	    }
-		
-		//check the 1-d arrays for correctness
-		for ii in 1..m_dim {
-			still_correct &&= (czmTest[ii] == czm[ii]) && (czpTest[ii] == czp[ii]) && (cxmhTest[ii] == cxmh[ii])
-				              && (cxphTest[ii] == cxph[ii]) && (cymhTest[ii] == cymh[ii]) && (cyphTest[ii] == cyph[ii]); 
-		}
-		
-		//check the 2-d arrays for correctness
-		for ii in 1..m_dim {
-			for jj in 1..n_dim {
-				still_correct &&= (AxTest[ii,jj] == Ax[ii,jj]) && (RyTest[ii,jj] == Ry[ii,jj]) && (clfTest[ii,jj] == clf[ii,jj])
-					              && (tmpTest[ii,jj] == tmp[ii,jj]);
-			}
-		}
-		//check the 3-d arrays for correctness
-		for ii in 1..m_dim {
-			for jj in 1..n_dim {
-				for kk in 1..p_dim {
-					still_correct &&= (ExTest[ii,jj,kk] == Ex[ii,jj,kk]) && (EyTest[ii,jj,kk] == Ey[ii,jj,kk])
-									  && (HzTest[ii,jj,kk] == Hz[ii,jj,kk]) && (BzaTest[ii,jj,kk] == Bza[ii,jj,kk]);
-				}
-			}
-		}
-		writeln("Is the calculation correct? ", still_correct);
-		writeln("fdtd-ampl computation complete");
-	}
+              clfTest[iz, iy] = ExTest[iz, n_dim + 1, m_dim + 1] - AxTest[iz, n_dim + 1] + RyTest[iz, n_dim + 1] - EyTest[iz, n_dim + 1, m_dim + 1];
+              tmpTest[iz, iy] = (cymhTest[n_dim + 1] / cyphTest[n_dim + 1]) * BzaTest[iz, n_dim + 1, m_dim + 1] - (ch / cyphTest[n_dim + 1]) * clfTest[iz, iy];
+              HzTest[iz, n_dim + 1, m_dim + 1]= (cxmhTest[m_dim + 1] / cxphTest[m_dim + 1]) * HzTest[iz, n_dim + 1, m_dim + 1]
+                + (mui * czpTest[iz] / cxphTest[m_dim + 1]) * tmpTest[iz, iy]
+                - (mui * czmTest[iz] / cxphTest[m_dim + 1]) * BzaTest[iz, n_dim + 1, m_dim + 1];
+              BzaTest[iz, n_dim + 1, m_dim + 1] = tmpTest[iz, iy]; 
+          }                  
+      }
+    
+    //check the 1-d arrays for correctness
+    for ii in 1..m_dim {
+      still_correct &&= (czmTest[ii] == czm[ii]) && (czpTest[ii] == czp[ii]) && (cxmhTest[ii] == cxmh[ii])
+                      && (cxphTest[ii] == cxph[ii]) && (cymhTest[ii] == cymh[ii]) && (cyphTest[ii] == cyph[ii]); 
+    }
+    
+    //check the 2-d arrays for correctness
+    for ii in 1..m_dim {
+      for jj in 1..n_dim {
+        still_correct &&= (AxTest[ii,jj] == Ax[ii,jj]) && (RyTest[ii,jj] == Ry[ii,jj]) && (clfTest[ii,jj] == clf[ii,jj])
+                        && (tmpTest[ii,jj] == tmp[ii,jj]);
+      }
+    }
+    //check the 3-d arrays for correctness
+    for ii in 1..m_dim {
+      for jj in 1..n_dim {
+        for kk in 1..p_dim {
+          still_correct &&= within_epsilon(ExTest[ii,jj,kk], Ex[ii,jj,kk]) &&
+                            within_epsilon(EyTest[ii,jj,kk], Ey[ii,jj,kk]) &&
+                            within_epsilon(HzTest[ii,jj,kk], Hz[ii,jj,kk]) &&
+                            within_epsilon(BzaTest[ii,jj,kk], Bza[ii,jj,kk]);
+        }
+      }
+    }
+    writeln("Is the calculation correct? ", still_correct);
+    writeln("fdtd-ampl computation complete");
+  }
 }
 
 proc main() {

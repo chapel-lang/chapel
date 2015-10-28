@@ -42,6 +42,7 @@ extern bool fNoInlineIterators;
 extern bool fNoloopInvariantCodeMotion;
 extern bool fNoInline;
 extern bool fNoLiveAnalysis;
+extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
@@ -133,6 +134,7 @@ extern bool fCacheRemote;
 // with clang and then added to the enclosing module's scope
 extern bool externC;
 extern char breakOnCodegenCname[256];
+extern int breakOnCodegenID;
 
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 

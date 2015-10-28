@@ -1,9 +1,13 @@
 #!/usr/bin/env python
-import sys, os
+import os
+import sys
 
-import chpl_arch, chpl_platform, chpl_compiler, chpl_comm
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_arch, chpl_comm, chpl_compiler, chpl_platform, utils
 from utils import memoize
-import utils
+
 
 @memoize
 def get():
@@ -14,14 +18,7 @@ def get():
         compiler_val = chpl_compiler.get('target')
         comm_val = chpl_comm.get()
 
-        # use muxed on cray-x* machines using the module and supported compiler
-        if (comm_val == 'ugni' and
-                platform_val.startswith('cray-x') and
-                utils.using_chapel_module() and
-                compiler_val in ('cray-prgenv-gnu', 'cray-prgenv-intel') and
-                arch_val != 'knc'):
-            tasks_val = 'muxed'
-        elif (arch_val == 'knc' or
+        if (arch_val == 'knc' or
                 platform_val.startswith('cygwin') or
                 platform_val.startswith('netbsd') or
                 compiler_val == 'cray-prgenv-cray'):

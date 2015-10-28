@@ -27,7 +27,7 @@ LocaleWin::LocaleWin (int x, int y, int W, int H, const char *l)
 {
 }
 
-void LocaleWin::updateWin()
+void LocaleWin::updateWin(localeData *l)
 {
   //  Write the data to the window
   const int msgsize = 1024;
@@ -36,15 +36,18 @@ void LocaleWin::updateWin()
   title->copy_label(mesg);
   
   // Create the text
-  snprintf (mesg, msgsize, "Number of Tasks: %d\n"
+  loc = l;
+  snprintf (mesg, msgsize, "Number of Tasks: %ld\n"
             "CPU:  User %lf\n"
             "      Sys %lf\n"
             "      Total %lf\n"
-            "Clock: %lf\n",
+            "Clock: %lf\n"
+            "Concurrency: %ld\n",
             loc->numTasks,
             loc->userCpu,
             loc->sysCpu,
             loc->Cpu,
-            loc->clockTime);
+            loc->clockTime,
+            loc->maxConc);
   info->value(mesg);
 }

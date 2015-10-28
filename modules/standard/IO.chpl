@@ -1395,6 +1395,8 @@ pragma "no doc"
 extern const QIO_HINT_DIRECT:c_int;
 pragma "no doc"
 extern const QIO_HINT_NOREUSE:c_int;
+pragma "no doc"
+extern const QIO_HINT_OWNED:c_int;
 
 /*  IOHINT_NONE means normal operation, nothing special
     to hint. Expect to use NONE most of the time.
@@ -1577,6 +1579,7 @@ extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
 
 pragma "no doc"
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
+
 
 private extern proc qio_file_lock(f:qio_file_ptr_t):syserr;
 private extern proc qio_file_unlock(f:qio_file_ptr_t);
@@ -1989,7 +1992,7 @@ proc file.check() {
 }
 
 pragma "no doc"
-proc file.~file() {
+proc ref file.~file() {
   on this.home {
     qio_file_release(_file_internal);
     this._file_internal = QIO_FILE_PTR_NULL;
@@ -2623,7 +2626,7 @@ proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, 
 }
 
 pragma "no doc"
-proc channel.~channel() {
+proc ref channel.~channel() {
   on this.home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
@@ -3767,7 +3770,7 @@ pragma "no doc"
 proc channel.read(ref args ...?k,
                   style:iostyle):bool {
   var e:syserr = ENOERR;
-  this.read((...args), style=iostyle, error=e);
+  this.read((...args), style=style, error=e);
   if !e then return true;
   else if e == EEOF then return false;
   else {

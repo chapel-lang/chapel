@@ -228,6 +228,7 @@ Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
+std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 
 //#
 //# Static Function Declarations
@@ -236,6 +237,7 @@ static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
+static bool hasUserAssign(Type* type);
 static void resolveAutoCopy(Type* type);
 static void resolveAutoDestroy(Type* type);
 static void resolveOther();
@@ -370,6 +372,7 @@ static void resolveEnumTypes();
 static void resolveDynamicDispatches();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
+static bool propagateNotPOD(Type* t);
 static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
@@ -488,6 +491,32 @@ static void makeRefType(Type* type) {
     type->refType->symbol->addFlag(FLAG_ATOMIC_TYPE);
 }
 
+static bool
+hasUserAssign(Type* type) {
+
+  // Workaround for problems with resolution finding =
+  // for tuples types causing compile failures.
+  // See
+  //  modules/sungeun/no-use-enum
+
+  // In the future, hasUserAssign should just return
+  // false if the = call does not resolve
+  // (instead of causing a compile error).
+  if( type->symbol->hasFlag(FLAG_TUPLE) ) return false;
+
+  SET_LINENO(type->symbol);
+  Symbol* tmp = newTemp(type);
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+  CallExpr* call = new CallExpr("=", tmp, tmp);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  // Don't think we need to resolve the whole function
+  // since we're just looking for a flag.
+  //resolveFns(fn);
+  tmp->defPoint->remove();
+  bool compilerAssign = fn->hasFlag(FLAG_COMPILER_GENERATED);
+  return !compilerAssign;
+}
+
 
 static void
 resolveAutoCopy(Type* type) {
@@ -509,6 +538,7 @@ resolveAutoDestroy(Type* type) {
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
+  fn->addFlag(FLAG_AUTO_DESTROY_FN);
   resolveFns(fn);
   autoDestroyMap.put(type, fn);
   tmp->defPoint->remove();
@@ -3727,7 +3757,7 @@ static void resolveTupleExpand(CallExpr* call) {
       e = new CallExpr(sym->copy(), new_IntSymbol(i));
     } else {
       e = new CallExpr(PRIM_GET_MEMBER_VALUE, sym->copy(),
-                       new_StringSymbol(astr("x", istr(i))));
+                       new_CStringSymbol(astr("x", istr(i))));
     }
     CallExpr* move = new CallExpr(PRIM_MOVE, tmp, e);
     call->getStmtExpr()->insertBefore(move);
@@ -3757,7 +3787,7 @@ static void resolveSetMember(CallExpr* call) {
     int64_t i;
     if (get_int(sym, &i)) {
       name = astr("x", istr(i));
-      call->get(2)->replace(new SymExpr(new_StringSymbol(name)));
+      call->get(2)->replace(new SymExpr(new_CStringSymbol(name)));
     }
   }
 
@@ -4714,9 +4744,9 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
 
   Expr* result;
   if (isReferenceType(fieldType) || intoIndexVarByVal)
-    result = new CallExpr(PRIM_GET_MEMBER_VALUE, baseVar, new_StringSymbol(field));
+    result = new CallExpr(PRIM_GET_MEMBER_VALUE, baseVar, new_CStringSymbol(field));
   else
-    result = new CallExpr(PRIM_GET_MEMBER, baseVar, new_StringSymbol(field));
+    result = new CallExpr(PRIM_GET_MEMBER, baseVar, new_CStringSymbol(field));
 
   call->replace(result);
   return result;
@@ -4968,8 +4998,11 @@ preFold(Expr* expr) {
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
-      if (isAggregateType(type)) {
-        if (type->symbol->hasFlag(FLAG_IGNORE_NOINIT)) {
+      if (isAggregateType(type) || type == dtStringC || type == dtStringCopy) {
+
+        bool containsNotPOD = propagateNotPOD(type);
+
+        if (containsNotPOD) {
           // These types deal with their uninitialized fields differently than
           // normal records/classes.  They may require special case
           // implementations, but were capable of being isolated from the new
@@ -4994,7 +5027,7 @@ preFold(Expr* expr) {
             }
           }
           if (!nowarn)
-            USR_WARN(type->symbol, "type %s does not currently support noinit, using default initialization", type->symbol->name);
+            USR_WARN(call, "type %s does not currently support noinit, using default initialization", type->symbol->name);
           result = new CallExpr(PRIM_INIT, call->get(1)->remove());
           call->replace(result);
           inits.add((CallExpr *)result);
@@ -5038,7 +5071,7 @@ preFold(Expr* expr) {
         VarSymbol* tmp = newTemp("_instantiated_field_tmp_");
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_TUPLE) && field->name[0] == 'x')
-          result = new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), new_StringSymbol(field->name));
+          result = new CallExpr(PRIM_GET_MEMBER_VALUE, call->get(1)->remove(), new_CStringSymbol(field->name));
         else
           result = new CallExpr(field->name, gMethodToken, call->get(1)->remove());
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
@@ -5369,7 +5402,7 @@ preFold(Expr* expr) {
         // specified.  This is the user's error.
         USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
       }
-      result = new SymExpr(new_StringSymbol(name));
+      result = new SymExpr(new_CStringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
@@ -5390,7 +5423,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_StringSymbol(field->name));
+                                new_CStringSymbol(field->name));
           break;
         }
       }
@@ -5440,7 +5473,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
           result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_StringSymbol(field->name));
+                                new_CStringSymbol(field->name));
           break;
         }
       }
@@ -5477,6 +5510,21 @@ preFold(Expr* expr) {
         result = new SymExpr(gFalse);
       call->replace(result);
 
+    } else if (call->isPrimitive(PRIM_IS_REF_ITER_TYPE)) {
+      if (isRefIterType(call->get(1)->typeInfo()))
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_IS_POD)) {
+      Type* t = call->get(1)->typeInfo();
+      // call propagateNotPOD to set FLAG_POD/FLAG_NOT_POD
+      propagateNotPOD(t);
+      if (isPOD(t))
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_SYNC_TYPE)) {
       Type* syncType = call->get(1)->typeInfo();
       if (syncType->symbol->hasFlag(FLAG_SYNC))
@@ -5903,7 +5951,8 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol(strlen(str), INT_SIZE_DEFAULT));
+        int length = unescapeString(str).length();
+        result = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("ascii")) {
@@ -5911,7 +5960,8 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol((int)str[0], INT_SIZE_DEFAULT));
+        const std::string unescaped = unescapeString(str);
+        result = new SymExpr(new_IntSymbol((int)unescaped[0], INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_contains")) {
@@ -6144,23 +6194,6 @@ resolveExpr(Expr* expr) {
       issueCompilerError(call);
     }
 
-    // Resolve expressions of the form:  <type> ( args )
-    // These will be constructor calls (or type constructor calls) that slipped
-    // past normalization due to the use of typedefs.
-    if (SymExpr* se = toSymExpr(call->baseExpr)) {
-      if (TypeSymbol* ts = toTypeSymbol(se->var)) {
-        if (call->numActuals() == 0 ||
-            (call->numActuals() == 2 && isSymExpr(call->get(1)) &&
-             toSymExpr(call->get(1))->var == gMethodToken)) {
-          // This looks like a typedef, so ignore it.
-
-        } else {
-          // More needed here ... .
-          INT_FATAL(ts, "not yet implemented.");
-        }
-      }
-    }
-
     callStack.add(call);
 
     resolveCall(call);
@@ -6169,6 +6202,10 @@ resolveExpr(Expr* expr) {
       if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
         // ForallLeaderArgs: process the leader that 'call' invokes.
         implementForallIntents2(call, origToLeaderCall);
+
+      else if (CallExpr* eflopiHelper = eflopiMap[call]) {
+        implementForallIntents2wrapper(call, eflopiHelper);
+      }
 
       resolveFns(call->isResolved());
     }
@@ -6456,14 +6493,22 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   }
   return false;
 }
-static bool isLeaderIterator(FnSymbol* fn) {
+bool isLeaderIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gLeaderTag);
 }
 static bool isFollowerIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gFollowerTag);
 }
-static bool isStandaloneIterator(FnSymbol* fn) {
+bool isStandaloneIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gStandaloneTag);
+}
+
+// helper to identify explicitly vectorized iterators
+static bool isVecIterator(FnSymbol* fn) {
+  if (fn->isIterator()) {
+    return fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS);
+  }
+  return false;
 }
 
 void
@@ -6483,14 +6528,15 @@ resolveFns(FnSymbol* fn) {
     return;
 
   //
-  // Mark serial loops that yield inside of follower and standalone iterators
-  // as order independent. By using a forall loop, a user is asserting that
-  // their loop is order independent. Here we just mark the serial loops inside
-  // of the "follower" with this information. Note that only loops that yield
-  // are marked since other loops are not necessarily order independent. Only
-  // the inner most loop of a loop nest will be marked.
+  // Mark serial loops that yield inside of follower, standalone, and
+  // explicitly vectorized iterators as order independent. By using a forall
+  // loop or a loop over a vectorized iterator, a user is asserting that the
+  // loop can be executed in any iteration order. Here we just mark the
+  // iterator's yielding loops as order independent as they are ones that will
+  // actually execute the body of the loop that invoked the iterator. Note that
+  // for nested loops with a single yield, only the inner most loop is marked.
   //
-  if (isFollowerIterator(fn) || isStandaloneIterator(fn)) {
+  if (isFollowerIterator(fn) || isStandaloneIterator(fn) || isVecIterator(fn)) {
     std::vector<CallExpr*> callExprs;
     collectCallExprs(fn->body, callExprs);
 
@@ -7267,7 +7313,113 @@ static void resolveAutoCopies() {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
+
+    if (isAggregateType(ts->type) ) {
+      // Mark record/tuple/class types as POD or NOT_POD
+      propagateNotPOD(ts->type);
+    }
   }
+}
+
+/* In order to correctly initialize records or tuples in which
+   a component has FLAG_IGNORE_NOINIT, we need to propagate that
+   flag to the parent types as well. While doing so, we also
+   propagate whether or not that type is not Plain-old-Data
+   (which would mean it does not need auto copies or auto
+    destroys - bit copies will do).
+
+   After this function is called on an aggregate type, that type
+   will be marked FLAG_POD and FLAG_NOT_POD, and this function
+   will be called recursively to also mark any aggregate type
+   fields with FLAG_POD or FLAG_NOT_POD.
+
+   After setting either FLAG_POD or FLAG_NOT_POD if necessary,
+   returns true if FLAG_NOT_POD is set, false otherwise.
+
+   This function should only be called during resolution.
+   Call isPOD (or check FLAG_POD/FLAG_NOT_POD) after resolution.
+ */
+static bool propagateNotPOD(Type* t) {
+
+  // non-aggregate types (e.g. int, bool) are POD
+  // but we don't run this function on all of them,
+  // so we don't mark them with FLAG_POD.
+  if (!isAggregateType(t))
+    return false;
+
+  // Move past any types that we've already handled
+  if (t->symbol->hasFlag(FLAG_POD))
+    return false;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return true;
+
+  AggregateType *at = (AggregateType*) t;
+  bool notPOD = false;
+
+  // Some special rules for special things.
+  if (t->symbol->hasEitherFlag(FLAG_SYNC,FLAG_SINGLE))
+    // sync/single types are never POD
+    notPOD = true;
+  else if (t->symbol->hasFlag(FLAG_ATOMIC_TYPE))
+    // atomic types are never POD
+    notPOD = true;
+
+  // Most class types are POD (user classes, _ddata, c_ptr)
+  // Also, there is no need to check the fields of a class type
+  // since a variable of that type is a pointer to the instance.
+  if ( isClass(t) ) {
+    // don't enumerate sub-fields or check for autoCopy etc
+  } else {
+
+    // If any field in a record/tuple is not POD, the
+    // aggregate is not POD.
+    for_fields(field, at) {
+      Type* ft = field->typeInfo();
+      notPOD |= propagateNotPOD(ft);
+    }
+
+    // Make sure we have resolved auto copy/auto destroy.
+    // Except not for runtime types, because that causes
+    // some sort of fatal resolution error. This is a workaround.
+    if (! t->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+      resolveAutoCopy(t);
+      resolveAutoDestroy(t);
+    }
+
+    // Also check for a non-compiler generated autocopy/autodestroy.
+    FnSymbol* autoCopyFn = autoCopyMap.get(t);
+    FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
+    FnSymbol* destructor = t->destructor;
+
+    // Ignore invisible (compiler-defined) functions.
+    if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED))
+      autoCopyFn = NULL;
+    if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
+      autoDestroyFn = NULL;
+    if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED))
+      destructor = NULL;
+
+    // if it has flag ignore no-init, it's not pod
+    // if it has a user-specified auto copy / auto destroy, it's not pod
+    // if it has a user-specified destructor, it's not pod
+    if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
+        autoCopyFn || autoDestroyFn ||
+        destructor )
+      notPOD = true;
+
+    // Since hasUserAssign tries to resolve =, we only
+    // check it if we think we have a POD type.
+    if( !notPOD && hasUserAssign(t) )
+      notPOD = true;
+  }
+
+  if (notPOD) {
+    t->symbol->addFlag(FLAG_NOT_POD);
+  } else {
+    t->symbol->addFlag(FLAG_POD);
+  }
+
+  return notPOD;
 }
 
 static void resolveRecordInitializers() {
@@ -7527,6 +7679,7 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   theProgram->block->insertAtTail(new DefExpr(ts));
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
   makeRefType(ts->type); // make sure the new type has a ref type.
+  propagateNotPOD(ts->type); // mark the runtime type as POD/NOT_POD
   return ct;
 }
 

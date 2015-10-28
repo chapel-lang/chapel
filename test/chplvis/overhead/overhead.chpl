@@ -1,6 +1,8 @@
+config var dir = "OH";
+
 use VisualDebug;
 
-startVdebug("OH");
+startVdebug(dir);
 tagVdebug("tag 1");
 pauseVdebug();
 resumeVdebug("resume 1");

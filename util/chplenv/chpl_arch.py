@@ -1,11 +1,16 @@
 #!/usr/bin/env python
-
-import os, optparse
-from sys import stdout, stderr
+import optparse
+import os
 from string import punctuation
+from sys import stderr, stdout
+import sys
 
-import utils, chpl_platform, chpl_comm, chpl_compiler
-from utils import memoize
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_comm, chpl_compiler, chpl_platform, utils
+from utils import CompVersion, memoize
+
 
 class argument_map(object):
     # intel does not support amd archs... it may be worth testing setting the
@@ -109,15 +114,12 @@ class argument_map(object):
             return arch
 
         if compiler == 'gnu':
-            if version.major > 4:
+            if version >= CompVersion('4.9'):
                 return cls.gcc49.get(arch, '')
-            elif version.major == 4:
-                if version.minor >= 9:
-                    return cls.gcc49.get(arch, '')
-                elif version.minor >= 7:
-                    return cls.gcc47.get(arch, '')
-                elif version.minor >= 3:
-                    return cls.gcc43.get(arch, '')
+            elif version >= CompVersion('4.7'):
+                return cls.gcc47.get(arch, '')
+            elif version >= CompVersion('4.3'):
+                return cls.gcc43.get(arch, '')
             return 'none'
         elif compiler == 'intel':
             return cls.intel.get(arch, '')

@@ -12,7 +12,12 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_HWLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
 
-CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci --disable-cairo
+CHPL_HWLOC_CFG_OPTIONS += --enable-static \
+                          --disable-shared \
+                          --disable-cairo \
+                          --disable-libxml2 \
+                          --disable-opencl \
+                          --disable-pci
 
 CHPL_HWLOC_CFG_OPTIONS += $(CHPL_HWLOC_MORE_CFG_OPTIONS)
 

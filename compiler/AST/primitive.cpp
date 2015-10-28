@@ -96,16 +96,17 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
+static Type*
+returnInfoUInt64(CallExpr* call) {
+  return dtUInt[INT_SIZE_64];
+}
+
 /*
 static Type*
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
-static Type*
-returnInfoUInt64(CallExpr* call) {
-  return dtUInt[INT_SIZE_64];
-}
 
 static Type*
 returnInfoReal32(CallExpr* call) {
@@ -281,9 +282,11 @@ static Type*
 returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
-    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-      if (!strcmp(ts->name, "_EndCount")) {
-        endCountType = ts->type;
+    // Look for the type var `_remoteEndCountType` in ChapelBase.
+    forv_Vec(VarSymbol, var, gVarSymbols) {
+      const char* searchStr = "_remoteEndCountType";
+      if (strcmp(var->cname, searchStr) == 0) {
+        endCountType = var->type;
         break;
       }
     }
@@ -556,10 +559,12 @@ initPrimitive() {
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
   prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
-  // This will be unnecessary once the module code calls the corresponding
-  // function directly.
+  // MPF - 10/9/2015 - neither _wide_get_node nor _wide_get_addr
+  // is used in the module or test code. insertWideReferences uses
+  // PRIM_WIDE_GET_NODE. It might make sense to keep both of these
+  // functions for debugging.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
-  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
+  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoUInt64, false, true);
 
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
@@ -616,6 +621,9 @@ initPrimitive() {
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
+  prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
+  
+  prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
 
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);

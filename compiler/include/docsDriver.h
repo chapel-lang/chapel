@@ -30,6 +30,7 @@ extern char fDocsCommentLabel[256];
 extern char fDocsFolder[256];
 extern bool fDocsTextOnly;
 extern char fDocsSphinxDir[256];
+extern bool fDocsHTML;
 
 // TODO: Whether or not to support this flag is an open discussion. Currently,
 //       it is not supported, so the flag is always true.
