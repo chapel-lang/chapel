@@ -25,26 +25,31 @@
 # To use something other than $HOME/.chpl, set the CHPL_CHECK_INSTALL_DIR
 # environment variable.
 
-function log_date()
-{
-    echo -n "$(date '+%Y-%m-%d %H:%M:%S') "
-}
-
 function log_info()
 {
     local msg=$@
-    log_date
     echo "[INFO] ${msg}"
+}
+
+function log_warning()
+{
+    local msg=$@
+    echo "[WARNING] ${msg}"
 }
 
 function log_error()
 {
     local msg=$@
-    log_date
     echo "[ERROR] ${msg}" >&2
 }
 
-# Base name for test job in $CHPL_HOME/test/release/examples
+function log_success()
+{
+    local msg=$@
+    echo "[SUCCESS] ${msg}"
+}
+
+# Base name for test job in examples
 TEST_JOB_BASENAME=hello6-taskpar-dist
 
 # Notify user we are running this script
@@ -152,10 +157,9 @@ fi
 if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "none" ]; then
     log_info "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
 else
-    log_info ""
-    log_info "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
-    log_info "This does not necessarily indicate that your Chapel installation is incorrect."
-    log_info "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
+    log_warning "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
+    log_warning "This does not necessarily indicate that your Chapel installation is incorrect."
+    log_warning "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
     # This exit code should be recognized as a failure to complete check, but
     # not necessarily failure of build
     exit 10
@@ -178,7 +182,7 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
 
     # Return success code (0) if diff is good
     if [ -z "${DIFF_OUTPUT}" ]; then
-    log_info "Installation works as expected!"
+    log_success "Installation works as expected!"
     exit 0
     else
         # Rerun test job with -v flag to help user identify discrepancy
