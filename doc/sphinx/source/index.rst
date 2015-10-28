@@ -15,3 +15,4 @@ Contents:
    modules/standardlibrary
    technotes/index
    tools/index
+   users-guide/index
