@@ -4,7 +4,6 @@
 
 config const debug = false;
 
-pragma "ignore noinit"
 record R {
   var x: int = 0;
   var canary: int = 42;
@@ -91,7 +90,8 @@ proc chpl__initCopy(arg: R) {
 
   var ret: R;
 
-  ret.init(x = arg.x);
+  // allow copies of a default-initialized record.
+  ret.init(x = arg.x, true);
 
   if debug {
     writeln("leaving init copy");
