@@ -3984,6 +3984,7 @@ static void resolveMove(CallExpr* call) {
     SymExpr* toCoerceSE = toSymExpr(rhsCall->get(1));
     if (toCoerceSE) {
       Symbol* toCoerceSym = toCoerceSE->var;
+      bool promotes = false;
       // This transformation is normally handled in insertCasts
       // but we need to do it earlier for parameters. We can't just
       // call insertCasts here since that would dramatically change the
@@ -3999,13 +4000,10 @@ static void resolveMove(CallExpr* call) {
           // some reason replacing the whole move doesn't.
           call->get(1)->replace(new SymExpr(lhs));
           call->get(2)->replace(new SymExpr(toCoerceSym));
-        } else if ((toCoerceSym->type == dtStringC ||
-                    toCoerceSym->type == dtString) &&
-                   (rhsType == dtString ||
-                    rhsType == dtStringCopy ) ) {
-          // ignore string literal conversions
-          // these will be handled in insertCasts.
-          // (note - this case won't be necessary with improved strings)
+        } else if (canCoerce(toCoerceSym->type, toCoerceSym, rhsType,
+                             NULL, &promotes)) {
+          // any case that doesn't param coerce but does coerce will
+          // be handled in insertCasts later.
         } else {
           USR_FATAL(userCall(call), "type mismatch in return from %s to %s",
                     toString(toCoerceSym->type), toString(rhsType));
