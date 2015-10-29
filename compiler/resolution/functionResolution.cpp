@@ -754,12 +754,16 @@ protoIteratorClass(FnSymbol* fn) {
   ii->iclass = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
+  cts->addFlag(FLAG_POD);
   add_root_type(ii->iclass);    // Add super : dtObject.
   fn->defPoint->insertBefore(new DefExpr(cts));
 
   ii->irecord = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
   rts->addFlag(FLAG_ITERATOR_RECORD);
+  // TODO -- do a better job of deciding if an iterator record is
+  // POD or not POD.
+  rts->addFlag(FLAG_NOT_POD);
   if (fn->retTag == RET_REF)
     rts->addFlag(FLAG_REF_ITERATOR_CLASS);
   fn->defPoint->insertBefore(new DefExpr(rts));
@@ -888,18 +892,34 @@ okToConvertFormalToRefType(Type* type) {
 
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
+  Type* retType;
+
   resolveBlockStmt(fn->retExprType);
-  fn->retType = fn->retExprType->body.tail->typeInfo();
-  if (fn->retType != dtUnknown) {
+  retType = fn->retExprType->body.tail->typeInfo();
+  fn->retType = retType;
+
+  if (retType != dtUnknown) {
     if (fn->retTag == RET_REF) {
-      makeRefType(fn->retType);
-      fn->retType = fn->retType->refType;
+      makeRefType(retType);
+      retType = fn->retType->refType;
+      fn->retType = retType;
     }
     fn->retExprType->remove();
     if (fn->isIterator() && !fn->iteratorInfo) {
+      // Note: protoIteratorClass changes fn->retType
+      // to the iterator record. The original return type
+      // is stored here in retType.
       protoIteratorClass(fn);
     }
   }
+
+   // Also update the return symbol type
+   Symbol* ret = fn->getReturnSymbol();
+   if (ret->type == dtUnknown) {
+     // uses the local variable saving the resolved declared return type
+     // since for iterators, fn->retType is the iterator record.
+     ret->type = retType;
+   }
 }
 
 
@@ -5790,7 +5810,7 @@ postFold(Expr* expr) {
           if (paramMap.get(lhs->var))
             INT_FATAL(call, "parameter set multiple times");
           VarSymbol* lhsVar = toVarSymbol(lhs->var);
-          // We are expecting the LHS to be a var (what else could it be?
+          // We are expecting the LHS to be a var (what else could it be? )
           if (lhsVar->immediate) {
             // The value of the LHS of this move has already been
             // established, most likely through a construct like
@@ -6423,6 +6443,9 @@ static void buildValueFunction(FnSymbol* fn) {
       fn->defPoint->insertBefore(new DefExpr(copy));
       fn->valueFunction = copy;
       Symbol* ret = copy->getReturnSymbol();
+      // Reset the type sof the return symbol and any declared return type.
+      ret->type = dtUnknown;
+      copy->retType = dtUnknown;
       replaceSetterArgWithFalse(copy, copy, ret);
       replaceSetterArgWithTrue(fn, fn);
     } else {
@@ -6515,6 +6538,12 @@ void
 resolveFns(FnSymbol* fn) {
   if (fn->isResolved())
     return;
+
+  if (fn->id == breakOnResolveID) {
+    printf("breaking on resolve fn:\n");
+    print_view(fn);
+    gdbShouldBreakHere();
+  }
 
   fn->addFlag(FLAG_RESOLVED);
 
