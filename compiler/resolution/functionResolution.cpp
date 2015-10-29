@@ -6539,6 +6539,12 @@ resolveFns(FnSymbol* fn) {
   if (fn->isResolved())
     return;
 
+  if (fn->id == breakOnResolveID) {
+    printf("breaking on resolve fn:\n");
+    print_view(fn);
+    gdbShouldBreakHere();
+  }
+
   fn->addFlag(FLAG_RESOLVED);
 
   if (fn->hasFlag(FLAG_EXTERN)) {
