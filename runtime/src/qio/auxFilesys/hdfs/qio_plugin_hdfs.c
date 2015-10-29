@@ -339,7 +339,8 @@ qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
   qioerr err_out = 0;
 
   // We cannot seek unless we are in read mode! (HDFS restriction)
-  if (to_hdfs_file(fl)->file->type != INPUT)
+  //if (to_hdfs_file(fl)->file->type != INPUT)
+  if(!hdfsFileIsOpenForRead(to_hdfs_file(fl)->file)) // hdfs provides a function for this already
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Seeking is not supported in write mode in HDFS");
 
   STARTING_SLOW_SYSCALL;
