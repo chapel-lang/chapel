@@ -2963,6 +2963,9 @@ int _use_buffered(qio_channel_t* ch, ssize_t len)
   else if (offset == ch->end_pos) return 0; 
   else if (offset > ch->start_pos ||
            offset + len < ch->end_pos) return 1;
+  else if (ch->file->fd == -1) {  // support for 'foreign' file descriptors
+    if(ch->file->fsfns) { return 1; } 
+  }
   else return 0;
 }
 
