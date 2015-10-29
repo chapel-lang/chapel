@@ -160,6 +160,7 @@ module main {
     writeln("\n freeLoopSuiteRunInfo...");
     freeLoopSuiteRunInfo();
     writeln("\n DONE!!! ");
+    delete run_variant_names;
     delete run_variants;
   }
 
@@ -558,7 +559,7 @@ module main {
   }
 
   proc freeLoopSuiteRunInfo() {
-    delete s_loop_suite_run_info;
+    delete getLoopSuiteRunInfo();
   }
 
   proc runLoopVariant(lvid: LoopVariantID, run_loop:[] bool, ilength: LoopLength) {
@@ -751,8 +752,7 @@ module main {
       suite_info.fom_rate[ilv].resize(LoopLength.NUM_LENGTHS);
     }
 
-    var shared_loop_length = new vector(int);
-    shared_loop_length.resize(LoopLength.NUM_LENGTHS);
+    var shared_loop_length: [0..#LoopLength.NUM_LENGTHS] int;
     shared_loop_length[LoopLength.LONG]   = (44217 * loop_length_factor):int;
     shared_loop_length[LoopLength.MEDIUM] = (5001 * loop_length_factor):int;
     shared_loop_length[LoopLength.SHORT]  = (171 * loop_length_factor):int;
@@ -1188,8 +1188,9 @@ module main {
         suite_info.getLoopStats(run_variant_names[ilv]).push_back(loop_stat);
       }
     }
-
     defineReferenceLoopRunInfo();
     s_loop_data = new LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
+
+    delete run_variant_names;
   }
 }

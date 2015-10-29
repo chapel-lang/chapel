@@ -70,23 +70,31 @@ module LCALSDataTypes {
       if ref_loop_stat != nil then delete ref_loop_stat;
       if loop_weights != nil then delete loop_weights;
       if num_loops_run != nil {
-        // TODO: delete the sub-vectors
+        for nlr in num_loops_run do
+          if nlr != nil then delete nlr;
         delete num_loops_run;
       }
       if tot_time != nil {
-        // TODO: delete the sub-vectors
+        for tt in tot_time do
+          if tt != nil then delete tt;
         delete tot_time;
       }
       if fom_rel != nil {
-        // TODO: delete the sub-vectors
+        for fr in fom_rel do
+          if fr != nil then delete fr;
         delete fom_rel;
       }
       if fom_rate != nil {
-        // TODO: delete the sub-vectors
+        for fr in fom_rate do
+          if fr != nil then delete fr;
         delete fom_rate;
       }
       for idx in loop_test_stats_dom {
-        if loop_test_stats[idx] != nil then delete loop_test_stats[idx];
+        if loop_test_stats[idx] != nil {
+          for stat in loop_test_stats[idx] do
+            if stat != nil then delete stat;
+          delete loop_test_stats[idx];
+        }
       }
     }
   }
@@ -131,7 +139,8 @@ module LCALSDataTypes {
     }
     proc ~LoopStat() {
       if loop_run_time != nil {
-        // TODO: delete the sub-vectors
+        for lrt in loop_run_time do
+          if lrt != nil then delete lrt;
         delete loop_run_time;
       }
       if loop_run_count != nil then delete loop_run_count;
