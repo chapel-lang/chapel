@@ -24,6 +24,11 @@ record R {
 proc ref R.init(x:int, allow_zero:bool=false) {
   if !allow_zero then assert(x != 0);
 
+  if debug {
+    printf("in init deallocating c=%p ", c);
+    writeln(c);
+  }
+
   if this.c then trackFree(this.c, this.c.id, this.x);
   delete this.c;
   this.c = nil;
@@ -58,7 +63,7 @@ proc R.~R() {
   extern proc printf(fmt:c_string, arg:C);
   if debug {
     printf("in destructor for c=%p ", c);
-    writeln(c);
+    writeln("x=", x, " ", c);
   }
 
   if c then trackFree(c, c.id, this.x);
@@ -93,7 +98,7 @@ proc chpl__autoCopy(arg: R) {
   extern proc printf(fmt:c_string, arg:C, arg2:C);
   if debug {
     printf("in auto copy from arg.c=%p ", arg.c);
-    writeln(arg.c);
+    writeln("x=", arg.x, " ", arg.c);
   }
 
   // TODO - is no auto destroy necessary here?
