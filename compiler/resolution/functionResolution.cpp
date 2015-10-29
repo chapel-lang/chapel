@@ -5794,7 +5794,7 @@ postFold(Expr* expr) {
           if (paramMap.get(lhs->var))
             INT_FATAL(call, "parameter set multiple times");
           VarSymbol* lhsVar = toVarSymbol(lhs->var);
-          // We are expecting the LHS to be a var (what else could it be?
+          // We are expecting the LHS to be a var (what else could it be? )
           if (lhsVar->immediate) {
             // The value of the LHS of this move has already been
             // established, most likely through a construct like
