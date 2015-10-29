@@ -391,7 +391,8 @@ checkUseBeforeDefs() {
                   (sym->var->defPoint->parentSymbol == fn ||
                    (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
                 if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                  if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN)) {
+                  if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
+                      !sym->var->hasFlag(FLAG_TEMP)) {
                     USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                     undefined.set_add(sym->var);
                   }
@@ -541,12 +542,10 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
   {
-    ret->insertBefore(new CallExpr("=", retval, ret_expr));
-    // Using assignment creates a new copy, which transfers ownership of *a*
-    // copy to the return value variable.
-    // Contrast this with a move, which merely shares ownership between the
-    // bitwise copies of the object.
-    retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    // This is the case for a declared return type.
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval,
+                      new CallExpr(PRIM_COERCE, ret_expr,
+                        fn->retExprType->body.tail->copy())));
   }
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
@@ -675,26 +674,6 @@ static void normalize_returns(FnSymbol* fn) {
           returnTypeIsArray(retExprType))
         // Treat iterators returning arrays as if they are always returned by ref.
         fn->retTag = RET_REF;
-      else
-      {
-        CallExpr* initExpr;
-        // In most cases, we do not need to default initialize the return temps,
-        // as they will be assigned to before they are returned.  We cannot
-        // check against the specific types that do not allow the use of noinit
-        // here (that happens in function resolution), but we do know whether
-        // the function expects a param or type variable as its result and these
-        // cases would become confused if noinit was used with them (since
-        // noinit is not allowed on param or type variables).  So default
-        // initialize in those cases but in all others insert noinit and trust
-        // it will be handled correctly for types that do not allow it.
-        if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE) {
-          initExpr = new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
-        } else {
-          initExpr = new CallExpr(PRIM_NO_INIT,
-                                  retExprType->body.tail->remove());
-        }
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
-      }
     }
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));

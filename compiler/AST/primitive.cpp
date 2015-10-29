@@ -303,6 +303,13 @@ returnInfoVirtualMethodCall(CallExpr* call) {
   return fn->retType;
 }
 
+static Type*
+returnInfoSecondType(CallExpr* call) {
+  Type* t = call->get(2)->typeInfo();
+  return t;
+}
+
+
 // print the number of each type of primitive present in the AST
 void printPrimitiveCounts(const char* passName) {
   int primCounts[NUM_KNOWN_PRIMS];
@@ -624,6 +631,13 @@ initPrimitive() {
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
   
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
+
+  // This primitive allows normalize to request function resolution
+  // coerce a return value to the declared return type, even though
+  // the declared return type is not really known until function
+  // resolution.
+  // It coerces its first argument to the type stored in the second argument.
+  prim_def(PRIM_COERCE, "coerce", returnInfoSecondType);
 
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
