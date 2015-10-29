@@ -1006,6 +1006,10 @@ proc BlockArr.dsiAccess(i: rank*idxType) ref {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
   }
+  return generalAccess(i);
+}
+
+proc BlockArr.generalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
       if boundsChecking then
