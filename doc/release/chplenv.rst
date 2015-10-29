@@ -319,7 +319,6 @@ CHPL_TASKS
      * target platform is ``cygwin*``
      * target platform is ``netbsd*``
      * target compiler is ``cray-prgenv-cray``
-     * target architecture is ``knc``
 
    The latter two apply independent of whether you are building Chapel
    yourself or using the pre-built module on a Cray XC or XE\ |trade|
@@ -476,13 +475,11 @@ CHPL_HWLOC
        ======= ==============================================================
 
    If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if :ref:`CHPL_TASKS` is
-   ``qthreads``, unless the target platform is knc.  In all other cases it
-   defaults to ``none``.  In the unlikely event the bundled hwloc distribution
-   does not build successfully, it should still be possible to use qthreads.
-   Manually set ``CHPL_HWLOC`` to ``none`` and rebuild in this case (and please
-   file a bug with the Chapel team.)  Building without hwloc should not have a
-   large performance impact when :ref:`CHPL_LOCALE_MODEL` is ``flat`` but will
-   drastically hurt performance for ``numa``.
+   ``qthreads``.  In all other cases it defaults to ``none``.  In the unlikely
+   event the bundled hwloc distribution does not build successfully, it should
+   still be possible to use qthreads.  To do this, manually set ``CHPL_HWLOC``
+   to ``none`` and rebuild (and please file a bug with the Chapel team.) Note
+   that building without hwloc will have a negative impact on performance.
 
 
 CHPL_REGEXP
