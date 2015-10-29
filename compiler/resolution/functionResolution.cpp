@@ -892,18 +892,34 @@ okToConvertFormalToRefType(Type* type) {
 
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
+  Type* retType;
+
   resolveBlockStmt(fn->retExprType);
-  fn->retType = fn->retExprType->body.tail->typeInfo();
-  if (fn->retType != dtUnknown) {
+  retType = fn->retExprType->body.tail->typeInfo();
+  fn->retType = retType;
+
+  if (retType != dtUnknown) {
     if (fn->retTag == RET_REF) {
-      makeRefType(fn->retType);
-      fn->retType = fn->retType->refType;
+      makeRefType(retType);
+      retType = fn->retType->refType;
+      fn->retType = retType;
     }
     fn->retExprType->remove();
     if (fn->isIterator() && !fn->iteratorInfo) {
+      // Note: protoIteratorClass changes fn->retType
+      // to the iterator record. The original return type
+      // is stored here in retType.
       protoIteratorClass(fn);
     }
   }
+
+   // Also update the return symbol type
+   Symbol* ret = fn->getReturnSymbol();
+   if (ret->type == dtUnknown) {
+     // uses the local variable saving the resolved declared return type
+     // since for iterators, fn->retType is the iterator record.
+     ret->type = retType;
+   }
 }
 
 
@@ -6427,6 +6443,9 @@ static void buildValueFunction(FnSymbol* fn) {
       fn->defPoint->insertBefore(new DefExpr(copy));
       fn->valueFunction = copy;
       Symbol* ret = copy->getReturnSymbol();
+      // Reset the type sof the return symbol and any declared return type.
+      ret->type = dtUnknown;
+      copy->retType = dtUnknown;
       replaceSetterArgWithFalse(copy, copy, ret);
       replaceSetterArgWithTrue(fn, fn);
     } else {
