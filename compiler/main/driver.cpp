@@ -459,6 +459,18 @@ static void setCCFlags(const ArgumentState* state, const char* arg) {
   }
 }
 
+static void setHome(const ArgumentState* state, const char* arg) {
+  // Wipe previous CHPL_HOME when comp flag is given
+  memset(CHPL_HOME, '\0', strlen(CHPL_HOME));
+
+  // Copy arg into CHPL_HOME
+  int arglen = strlen(arg);
+  if(arglen <= sizeof(CHPL_HOME)) {
+    memcpy(&CHPL_HOME[0], arg, arglen);
+  } else {
+    USR_FATAL("CHPL_HOME argument too long");
+  }
+}
 
 static void handleLibrary(const ArgumentState* state, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
@@ -686,6 +698,9 @@ Record components:
 */
 
 static ArgumentDescription arg_desc[] = {
+ {"", ' ', NULL, "Main Configuration Options", NULL, NULL, NULL, NULL},
+ {"home", ' ', "<path>", "Path to Chapel home directory", "S", NULL , "CHPL_HOME", setHome},
+
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
