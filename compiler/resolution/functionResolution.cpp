@@ -3391,6 +3391,7 @@ resolveCall(CallExpr* call)
      case PRIM_TYPE_INIT:
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
      case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
+     case PRIM_COERCE:              resolveDefaultGenericType(call);    break;
      case PRIM_NEW:                 resolveNew(call);                   break;
     }
   }
