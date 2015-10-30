@@ -1340,6 +1340,8 @@ proc BlockArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
+// TODO: Should this be inlined?
+//
 proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
