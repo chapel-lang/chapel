@@ -7,6 +7,8 @@
 //   https://github.com/ParRes/ISx
 //
 
+use BlockDist;
+
 //enum scaling {strong, weak, weakiso, debug};
 
 //const ScalingSpace = domain(scaling);
@@ -29,7 +31,8 @@ config const // scalingMode = scaling.debug,
              keysPerLocale = 32, //2**27,
              totalKeys = keysPerLocale*numLocales,
              maxKeyVal = 32, // 2**23,
-             bucketWidth = maxKeyVal / numLocales;
+             bucketWidth = maxKeyVal / numLocales,
+             recvBuffFactor = 2;
 
 config const printConfig = true,
              debug = false;
@@ -42,12 +45,29 @@ if printConfig {
   writeln("numLocales = ", numLocales);
 }
 
+//
+// TODO: Need to make this distributed
+//
+const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
+
+var myBucketKeys: [OnePerLocale] [0..#totalKeys*recvBuffFactor] int;
+var recvOffset: [OnePerLocale] atomic int;
+
+
 coforall loc in Locales do
   on loc {
     // SPMD here
+    if myBucketKeys[here.id][0].locale != here then
+      warning("Need to distribute myBucketKeys");
     bucketSort();
   }
 
+if debug {
+  writeln("myBucketKeys =\n");
+  for i in LocaleSpace do
+    writeln(myBucketKeys[i]);
+}
+  
 
 proc bucketSort() {
   var myKeys = makeInput();
@@ -61,11 +81,12 @@ proc bucketSort() {
   //
   // TODO: We really want an exclusive scan, but Chapel's is inclusive... :(
   //
-  var bucketOffsets: [LocaleSpace] int = + scan bucketSizes.read();
-  bucketOffsets -= bucketSizes.read();
-  if debug then writeln(here.id, ": bucketOffsets = ", bucketOffsets);
+  var sendOffsets: [LocaleSpace] int = + scan bucketSizes.read();
+  sendOffsets -= bucketSizes.read();
+  if debug then writeln(here.id, ": sendOffsets = ", sendOffsets);
 
-  var myBucketedKeys = bucketizeLocalKeys(myKeys, bucketOffsets);
+  var myBucketedKeys = bucketizeLocalKeys(myKeys, sendOffsets);
+  exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys);
 }
 
 
@@ -77,8 +98,7 @@ proc bucketSort() {
 inline proc bucketizeLocalKeys(myKeys, sendOffsets) {
   var bucketOffsets: [LocaleSpace] atomic int;
 
-  forall (b,s) in zip(bucketOffsets, sendOffsets) do
-    b.write(s);
+  bucketOffsets.write(sendOffsets);
 
   var myBucketedKeys: [0..#keysPerLocale] keyType;
   
@@ -108,6 +128,21 @@ inline proc countLocalBucketSizes(myKeys) {
 }
 
 // TODO: does emacs not highlight 'here'?
+
+
+inline proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
+  forall locid in LocaleSpace {
+    //
+    // perturb the destination locale by our ID to avoid bottlenecks
+    //
+    const dstlocid = (locid+here.id) % numLocales;
+    const transferSize = bucketSizes[dstlocid].read();
+    const dstOffset = recvOffset[dstlocid].fetchAdd(transferSize);
+    const srcOffset = sendOffsets[dstlocid];
+    myBucketKeys[dstlocid][dstOffset..#transferSize] = 
+            myBucketedKeys[srcOffset..#transferSize];
+  }
+}
 
 
 inline proc makeInput() {
