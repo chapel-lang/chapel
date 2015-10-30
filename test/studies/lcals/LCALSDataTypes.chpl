@@ -63,6 +63,40 @@ module LCALSDataTypes {
       loop_test_stats_dom += name;
       loop_test_stats[name] = new vector(LoopStat);
     }
+    proc ~LoopSuiteRunInfo() {
+      if loop_names != nil then delete loop_names;
+      if run_loop_length != nil then delete run_loop_length;
+      if loop_length_names != nil then delete loop_length_names;
+      if ref_loop_stat != nil then delete ref_loop_stat;
+      if loop_weights != nil then delete loop_weights;
+      if num_loops_run != nil {
+        for nlr in num_loops_run do
+          if nlr != nil then delete nlr;
+        delete num_loops_run;
+      }
+      if tot_time != nil {
+        for tt in tot_time do
+          if tt != nil then delete tt;
+        delete tot_time;
+      }
+      if fom_rel != nil {
+        for fr in fom_rel do
+          if fr != nil then delete fr;
+        delete fom_rel;
+      }
+      if fom_rate != nil {
+        for fr in fom_rate do
+          if fr != nil then delete fr;
+        delete fom_rate;
+      }
+      for idx in loop_test_stats_dom {
+        if loop_test_stats[idx] != nil {
+          for stat in loop_test_stats[idx] do
+            if stat != nil then delete stat;
+          delete loop_test_stats[idx];
+        }
+      }
+    }
   }
 
   class LoopStat {
@@ -102,6 +136,23 @@ module LCALSDataTypes {
       samples_per_pass.resize(num_loop_lengths);
 
       loop_chksum.resize(num_loop_lengths);
+    }
+    proc ~LoopStat() {
+      if loop_run_time != nil {
+        for lrt in loop_run_time do
+          if lrt != nil then delete lrt;
+        delete loop_run_time;
+      }
+      if loop_run_count != nil then delete loop_run_count;
+      if mean != nil then delete mean;
+      if std_dev != nil then delete std_dev;
+      if min != nil then delete min;
+      if max != nil then delete max;
+      if harm_mean != nil then delete harm_mean;
+      if meanrel2ref != nil then delete meanrel2ref;
+      if loop_length != nil then delete loop_length;
+      if samples_per_pass != nil then delete samples_per_pass;
+      if loop_chksum != nil then delete loop_chksum;
     }
   }
 
