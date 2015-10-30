@@ -5560,6 +5560,10 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr(fngen, args, fn, true);
       break;
     }
+    case PRIM_FIND_FILENAME_IDX:
+    case PRIM_LOOKUP_FILENAME:
+      ret = codegenBasicPrimitiveExpr(this);
+      break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "impossible");
       break;
