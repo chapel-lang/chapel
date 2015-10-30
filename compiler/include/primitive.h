@@ -255,6 +255,8 @@ enum PrimitiveTag {
 
   PRIM_IS_POD,
 
+  PRIM_COERCE,
+
   PRIM_ENUM_MIN_BITS,
   PRIM_ENUM_IS_SIGNED,
 

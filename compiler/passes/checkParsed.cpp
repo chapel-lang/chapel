@@ -193,9 +193,6 @@ checkFunction(FnSymbol* fn) {
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
-  if (fn->retTag == RET_PARAM && fn->retExprType != NULL)
-    USR_WARN(fn, "providing an explicit return type on a 'param' function currently leads to incorrect results; as a workaround, remove the return type specification in function '%s'", fn->name);
-
   if (fn->thisTag != INTENT_BLANK && !fn->hasFlag(FLAG_METHOD)) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
   }
