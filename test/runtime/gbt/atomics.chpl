@@ -3,20 +3,20 @@ config const verbose = false;
 var pass = true;
 
 var i32_glb: [0..2] atomic int(32);
-pass &&= test_i32();
+pass &&= test_i32(i32_glb);
 
 var i64_glb: [0..2] atomic int(64);
-pass &&= test_i64();
+pass &&= test_i64(i64_glb);
 
 var ui32_glb: [0..2] atomic uint(32);
-pass &&= test_ui32();
+pass &&= test_ui32(ui32_glb);
 
 var ui64_glb: [0..2] atomic uint(64);
-pass &&= test_ui64();
+pass &&= test_ui64(ui64_glb);
 
 if false then {
   var r32_glb: [0..2] atomic real(32);
-  pass &&= test_r32();
+  pass &&= test_r32(r32_glb);
 }
 
 if CHPL_COMM == 'ugni' then {
@@ -27,14 +27,14 @@ if CHPL_COMM == 'ugni' then {
 writeln(if pass then "pass" else "fail");
 
 
-proc test_i32() {
+proc test_i32(ref nonstack_var) {
   var pass = true;
 
-  pass = test_i32_var(i32_glb, 'global int(32)');
+  pass = test_i32_var(nonstack_var, 'global int(32)');
 
   on Locales[numLocales - 1] {
-    var i32_stk: [0..2] atomic int(32);
-    on Locales[0] do pass &&= test_i32_var(i32_stk, 'stack int(32)');
+    var stack_var: [0..2] atomic int(32);
+    on Locales[0] do pass &&= test_i32_var(stack_var, 'stack int(32)');
   }
 
   return pass;
@@ -61,14 +61,14 @@ proc test_i32_var(ref x, what) {
 }
 
 
-proc test_i64() {
+proc test_i64(ref nonstack_var) {
   var pass = true;
 
-  pass = test_i64_var(i64_glb, 'global int(64)');
+  pass = test_i64_var(nonstack_var, 'global int(64)');
 
   on Locales[numLocales - 1] {
-    var i64_stk: [0..2] atomic int(64);
-    on Locales[0] do pass &&= test_i64_var(i64_stk, 'stack int(64)');
+    var stack_var: [0..2] atomic int(64);
+    on Locales[0] do pass &&= test_i64_var(stack_var, 'stack int(64)');
   }
 
   return pass;
@@ -95,14 +95,14 @@ proc test_i64_var(ref x, what) {
 }
 
 
-proc test_ui32() {
+proc test_ui32(ref nonstack_var) {
   var pass = true;
 
-  pass = test_ui32_var(ui32_glb, 'global uint(32)');
+  pass = test_ui32_var(nonstack_var, 'global uint(32)');
 
   on Locales[numLocales - 1] {
-    var ui32_stk: [0..2] atomic uint(32);
-    on Locales[0] do pass &&= test_ui32_var(ui32_stk, 'stack uint(32)');
+    var stack_var: [0..2] atomic uint(32);
+    on Locales[0] do pass &&= test_ui32_var(stack_var, 'stack uint(32)');
   }
 
   return pass;
@@ -129,14 +129,14 @@ proc test_ui32_var(ref x, what) {
 }
 
 
-proc test_ui64() {
+proc test_ui64(ref nonstack_var) {
   var pass = true;
 
-  pass = test_ui64_var(ui64_glb, 'global uint(64)');
+  pass = test_ui64_var(nonstack_var, 'global uint(64)');
 
   on Locales[numLocales - 1] {
-    var ui64_stk: [0..2] atomic uint(64);
-    on Locales[0] do pass &&= test_ui64_var(ui64_stk, 'stack uint(64)');
+    var stack_var: [0..2] atomic uint(64);
+    on Locales[0] do pass &&= test_ui64_var(stack_var, 'stack uint(64)');
   }
 
   return pass;
@@ -163,14 +163,14 @@ proc test_ui64_var(ref x, what) {
 }
 
 
-//proc test_r32() {
+//proc test_r32(ref nonstack_var) {
 //  var pass = true;
 //
-//  pass = test_r32_var(r32_glb, 'global real(32)');
+//  pass = test_r32_var(nonstack_var, 'global real(32)');
 //
 //  on Locales[numLocales - 1] {
-//    var r32_stk: [0..2] atomic real(32);
-//    on Locales[0] do pass &&= test_r32_var(r32_stk, 'stack real(32)');
+//    var stack_var: [0..2] atomic real(32);
+//    on Locales[0] do pass &&= test_r32_var(stack_var, 'stack real(32)');
 //  }
 //
 //  return pass;
