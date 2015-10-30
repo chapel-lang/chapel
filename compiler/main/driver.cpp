@@ -311,8 +311,6 @@ static void setupChplHome(const char* argv0) {
 
   if( guess )
     free(guess);
-
-  parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
 }
 
 
@@ -467,6 +465,7 @@ static void setHome(const ArgumentState* state, const char* arg) {
   int arglen = strlen(arg);
   if(arglen <= sizeof(CHPL_HOME)) {
     memcpy(&CHPL_HOME[0], arg, arglen);
+    parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
   } else {
     USR_FATAL("CHPL_HOME argument too long");
   }
