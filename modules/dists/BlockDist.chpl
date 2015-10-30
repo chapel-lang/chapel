@@ -1001,11 +1001,18 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-proc BlockArr.dsiAccess(i: rank*idxType) ref {
+// By splitting the non-local case into its own function, we can inline the
+// fast/local path and get better performance.
+//
+inline proc BlockArr.dsiAccess(i: rank*idxType) ref {
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
   }
+  return nonLocalAccess(i);
+}
+
+proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
       if boundsChecking then
@@ -1332,6 +1339,8 @@ proc BlockArr.setRADOpt(val=true) {
 
 //
 // the accessor for the local array -- assumes the index is local
+//
+// TODO: Should this be inlined?
 //
 proc LocBlockArr.this(i) ref {
   return myElems(i);
