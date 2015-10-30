@@ -151,24 +151,15 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
 
   DO_RETAIN(((hdfs_fs*)fs));
   
-  hdfs_file* hfl = (hdfs_file*)qio_calloc(sizeof(to_hdfs_file(file)), 1);
-  qio_memcpy(hfl, to_hdfs_file(file), sizeof(to_hdfs_file(file)));
-  qio_memcpy(&(hfl->file), &(to_hdfs_file(file)->file), sizeof(hdfsFile));
-  const int pathnmlen = strlen(to_hdfs_file(file)->pathnm);
-  hfl->pathnm = (char*)qio_calloc(sizeof(char), pathnmlen);
-  qio_memcpy(&(hfl->pathnm), &(to_hdfs_File(file)->pathnm), sizeof(char)*pathnmlen);
+  hdfs_file hfl = *to_hdfs_file(file);
+  hdfs_fs hfs = *to_hdfs_fs(fs);
 
-  hdfs_fs* hfs = (hdfs_fs*)qio_calloc(sizeof(to_hdfs_fs(fs)), 1);
-  qio_memcpy(hfs, to_hdfs_fs(fs), sizeof(to_hdfs_fs(fs)));
-  qio_memcpy(&(hfs->hfs), &(to_hdfs_fs(fs)->hfs), sizeof(hdfsFS));
-  qio_memcpy(&(hfs->fs_name), &(to_hdfs_fs(fs)->fs_name), sizeof(char)*strlen(to_hdfs_fs(fs)->fs_name));
-
-  hfl->file = hdfsOpenFile(hfs->hfs, hfl->pathnm, O_RDONLY, 0, 0, 0);
+  hfl.file = hdfsOpenFile(hfs.hfs, hfl.pathnm, O_RDONLY, 0, 0, 0);
 
   //assert connection
-  CREATE_ERROR((hfs->hfs == NULL), err_out, ECONNREFUSED, "Unable to read HDFS file", error);
+  CREATE_ERROR((hfs.hfs == NULL), err_out, ECONNREFUSED, "Unable to read HDFS file", error);
 
-  if(hfl->file == NULL) {
+  if(hfl.file == NULL) {
     err_out = qio_mkerror_errno();
     goto error;
   }
@@ -179,9 +170,9 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
   got_total = 0;
   for(i = 0; i < count; i++) {
 
-#ifndef HDFS3
-  hdfsSeek(hfs->hfs, hfl->file, offset+got_total);
-  got = hdfsRead(hfs->hfs, hfl->file, (void*)vector[i].iov_base, vector[i].iov_len);
+#ifdef HDFS3
+  hdfsSeek(hfs.hfs, hfl.file, offset+got_total);
+  got = hdfsRead(hfs.hfs, hfl.file, (void*)vector[i].iov_base, vector[i].iov_len);
 #else
     got = hdfsPread(to_hdfs_fs(fs)->hfs, to_hdfs_file(file)->file, offset + got_total, (void*)vector[i].iov_base, vector[i].iov_len);
 #endif
@@ -202,12 +193,10 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
 
   *num_read_out = got_total;
 
-#ifndef HDFS3
-  got = hdfsCloseFile(hfs->hfs, hfl->file);
+#ifdef HDFS3
+  got = hdfsCloseFile(hfs.hfs, hfl.file);
   if(got == -1) { err_out = qio_mkerror_errno(); }
 
-  qio_free(hfl);
-  qio_free(hfs);
 #endif
 
   DONE_SLOW_SYSCALL;
