@@ -4103,6 +4103,7 @@ formalRequiresTemp(ArgSymbol* formal) {
 static void
 insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
+
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
       SET_LINENO(formal);
@@ -4110,6 +4111,7 @@ insertFormalTemps(FnSymbol* fn) {
       formals2vars.put(formal, tmp);
     }
   }
+
   if (formals2vars.n > 0) {
     // The names of formals in the body of this function are replaced with the
     // names of their corresponding local temporaries.
@@ -4138,7 +4140,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
   // Enumerate the formals that have local temps.
   form_Map(SymbolMapElem, e, formals2vars) {
     ArgSymbol* formal = toArgSymbol(e->key); // Get the formal.
-    Symbol* tmp = e->value; // Get the temp.
+    Symbol*    tmp    = e->value; // Get the temp.
 
     SET_LINENO(formal);
 
@@ -4146,6 +4148,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     // whether tmp owns its value or not.  That is, push setting these flags
     // (or not) into the cases below, as appropriate.
     Type* formalType = formal->type->getValType();
+
     if ((formal->intent == INTENT_BLANK ||
          formal->intent == INTENT_CONST ||
          formal->intent == INTENT_CONST_IN) &&
@@ -4176,18 +4179,23 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
      case INTENT_OUT:
       if (formal->defaultExpr && formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
         BlockStmt* defaultExpr = formal->defaultExpr->copy();
+
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, defaultExpr->body.tail->remove()));
         fn->insertAtHead(defaultExpr);
       } else {
-        VarSymbol* refTmp = newTemp("_formal_ref_tmp_");
+        VarSymbol* refTmp  = newTemp("_formal_ref_tmp_");
         VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
+
         typeTmp->addFlag(FLAG_MAYBE_TYPE);
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTmp)));
+
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,     new CallExpr(PRIM_INIT, typeTmp)));
         fn->insertAtHead(new CallExpr(PRIM_MOVE, typeTmp, new CallExpr(PRIM_TYPEOF, refTmp)));
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_DEREF, formal)));
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, refTmp,  new CallExpr(PRIM_DEREF, formal)));
         fn->insertAtHead(new DefExpr(refTmp));
         fn->insertAtHead(new DefExpr(typeTmp));
       }
+
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
 
      case INTENT_INOUT:
