@@ -2964,7 +2964,17 @@ int _use_buffered(qio_channel_t* ch, ssize_t len)
   else if (offset > ch->start_pos ||
            offset + len < ch->end_pos) return 1;
   else if (ch->file->fd == -1) {  // support for 'foreign' file descriptors
-    if(ch->file->fsfns) { return 1; } 
+    if(ch->file->fsfns) { 
+       // this use case exists for segmented reads on foreign file descriptors
+       // segmented reads will be treated as buffered reads a qio_channel 
+       // needs to be allocated or else a close operation on the buffered
+       // reader will cause a segfault while it attempts to free a buffer that
+       // has not be allocated for this channel
+       //
+       const qioerr err = _qio_channel_needbuffer_unlocked(ch);
+       // TODO: add error handling in here...
+       return 1; 
+    } 
   }
   else return 0;
 }
