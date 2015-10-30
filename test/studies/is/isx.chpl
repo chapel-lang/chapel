@@ -7,6 +7,12 @@
 //   https://github.com/ParRes/ISx
 //
 
+//
+// Top priorities:
+// - LocaleSpace -> BucketSpace/Buckets
+// - timer insertion
+// - performance analysis / chplvis
+
 
 // TODO:
 // * variants that we should try
@@ -14,11 +20,31 @@
 //   - some sort of hybrid between the current 1 bucket per locale scheme
 //     and the previous?
 
+
+//
+// TODO: What are the potential performance issues?
+// * put as one message?
+// * how do Ben's locality optimizations do?
+// * does returning arrays cost us anything?  Do we leak them?
+// * other?
+// * (this would be a good chplvis demo)
+//
+
 use BlockDist, Barrier;
 
 //enum scaling {strong, weak, weakiso, debug};
 
+// strong:
+// - totkeys = 2**27
+// - compute keys per locale
+
+// weak*:
+// - keys per pe = 2**27
+// - compute totkeys
+
+
 //const ScalingSpace = domain(scaling);
+
 
 
 /*
@@ -32,7 +58,8 @@ const defaultTotalKeys: [ScalingSpace] int = [keysPer,
 
 config type keyType = int(32);
 
-// TODO: replace 'numLocales' below with 'numBuckets' ??
+// TODO: replace 'numLocales' below with 'numBuckets' and LocaleSpace
+// with BucketSpace (or somesuch)??
 
 config const // scalingMode = scaling.debug,
              keysPerLocale = 32, //2**27,
@@ -47,7 +74,11 @@ config const numBurnInRuns = 1,
 config const printConfig = true,
              debug = false;
 
+
+// TODO: add timers and timing printouts
+
 if printConfig {
+  // TODO: print out scaling mode
   writeln("total keys = ", totalKeys);
   writeln("keys per locale = ", keysPerLocale);
   writeln("bucketWidth = ", bucketWidth);
@@ -55,9 +86,6 @@ if printConfig {
   writeln("numLocales = ", numLocales);
 }
 
-//
-// TODO: Need to make this distributed
-//
 const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 
 var myBucketKeys: [OnePerLocale] [0..#totalKeys*recvBuffFactor] int;
@@ -104,12 +132,22 @@ proc bucketSort(verify = false) {
   if debug then writeln(here.id, ": sendOffsets = ", sendOffsets);
 
   //
-  // TODO: should we pass our globals into/out of these routines
+  // TODO: should we pass our globals into/out of these routines?
   //
   var myBucketedKeys = bucketizeLocalKeys(myKeys, sendOffsets);
   exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys);
 
   barrier.barrier();
+
+  //
+  // TODO: discussed with Jake a version in which the histogramming
+  // (countLocalKeys) was done in parallel with the exchangeKeys;
+  // the exchange keys task would write a "done"-style sync variable
+  // when a put was complete and the task could begin aggressively
+  // histogramming the next buffer's worth of data.  Use a cobegin
+  // to kick off both of these tasks in parallel and know when they're
+  // both done.
+  //
 
   const keysInMyBucket = recvOffset[here.id].read();
   var myLocalKeyCounts = countLocalKeys(keysInMyBucket);
@@ -177,6 +215,10 @@ inline proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
     const transferSize = bucketSizes[dstlocid].read();
     const dstOffset = recvOffset[dstlocid].fetchAdd(transferSize);
     const srcOffset = sendOffsets[dstlocid];
+    //
+    // TODO: are we implementing this with one communication?
+    // If not, and we turn on Rafa's optimization, is it better?
+    //
     myBucketKeys[dstlocid][dstOffset..#transferSize] = 
             myBucketedKeys[srcOffset..#transferSize];
   }
