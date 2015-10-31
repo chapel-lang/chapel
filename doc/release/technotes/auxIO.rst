@@ -51,7 +51,7 @@ file would be:
 
 ``cc $CHPL_AUXIO_LIBS $CHPL_AUXIO_INCLUDE <any libraries> <the .c file>``
 
-where <any libraries> might be ``-lcurl``, ``-lhdfs``, ``-ljvm`` etc.
+where <any libraries> might be ``-lcurl``, ``-lhdfs``, ``-lhdfs3``, ``-ljvm`` etc.
 
 .. note::
 
