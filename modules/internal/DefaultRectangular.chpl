@@ -828,7 +828,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
 
     inline proc initShiftedData() {
       if earlyShiftData && !stridable {
-//        if dom.dsiNumIndices > 0 { // This is not an optimization
+        if dom.dsiNumIndices > 0 {
           if isIntType(idxType) then
             shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
           else
@@ -836,7 +836,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
             shiftedData = _ddata_shift(eltType, data,
                                        origin:chpl__signedType(idxType)-
                                        factoredOffs:chpl__signedType(idxType));
-//        }
+        }
       }
     }
 
