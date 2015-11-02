@@ -84,7 +84,7 @@ all:
     - text: ubuntu update to 15.04 (gcc upgraded to 4.9.2)
       config: shootout
   10/19/15:
-    - text: simplification of comm domain descriptor management
+    - text: can't repro old performance
       config: 16 node XC
   10/29/15:
     - PR 2850 to split up and inline BlockArr.dsiAccess
