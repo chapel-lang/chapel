@@ -836,16 +836,16 @@ static void applyGetterTransform(CallExpr* call) {
 
 static void insert_call_temps(CallExpr* call)
 {
-  // Ignore call if it is not in the tree.
-  if (!call->parentExpr || !call->getStmtExpr())
-    return;
-
   Expr* stmt = call->getStmtExpr();
+
+  // Ignore call if it is not in the tree.
+  if (call->parentExpr == NULL || stmt == NULL)
+    return;
 
   // Call is already at statement level, so no need to flatten.
   if (call == stmt)
     return;
-  
+
   if (toDefExpr(call->parentExpr))
     return;
 
@@ -858,21 +858,38 @@ static void insert_call_temps(CallExpr* call)
 
   // TODO: Check if we need a call temp for PRIM_ASSIGN.
   CallExpr* parentCall = toCallExpr(call->parentExpr);
+
   if (parentCall && (parentCall->isPrimitive(PRIM_MOVE) ||
                      parentCall->isPrimitive(PRIM_NEW)))
     return;
 
   SET_LINENO(call);
+
   VarSymbol* tmp = newTemp("call_tmp");
+
   if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
     tmp->addFlag(FLAG_EXPR_TEMP);
+
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
   if (call->isPrimitive(PRIM_TYPEOF))
     tmp->addFlag(FLAG_TYPE_VARIABLE);
+
+  // NOAKES 2015/11/02
+  //   The expansion of _build_tuple() creates temps that need to be
+  //   autoDestroyed.  This is a short-cut to arrange for that to occur.
+  //   A better long term solution would be preferred
+  if (call->isNamed("chpl__initCopy")       == true &&
+      parentCall                            != NULL &&
+      parentCall->isNamed("_build_tuple")   == true)
+    tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
+
   call->replace(new SymExpr(tmp));
+
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
 }
