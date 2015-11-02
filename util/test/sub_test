@@ -1612,20 +1612,32 @@ for testname in testsrc:
             if systemPreexec:
                 sys.stdout.write('[Executing system-wide preexec]\n')
                 sys.stdout.flush()
-                subprocess.Popen([systemPreexec,
-                                  execname,execlog,compiler]).wait()
+                p = subprocess.Popen([systemPreexec,
+                                      execname,execlog,compiler],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
                 sys.stdout.flush()
-                subprocess.Popen(['./PREEXEC',
-                                  execname,execlog,compiler]).wait()
+                p = subprocess.Popen(['./PREEXEC',
+                                      execname,execlog,compiler],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             if preexec:
                 sys.stdout.write('[Executing preexec %s.preexec]\n'%(test_filename))
                 sys.stdout.flush()
-                subprocess.Popen(['./'+test_filename+'.preexec',
-                                  execname,execlog,compiler]).wait()
+                p = subprocess.Popen(['./'+test_filename+'.preexec',
+                                      execname,execlog,compiler],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             pre_exec_output = ''
             if os.path.exists(execlog):
