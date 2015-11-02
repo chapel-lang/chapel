@@ -214,21 +214,13 @@ module ChapelBase {
   //
   // assignment on primitive types
   //
-  pragma "trivial assignment"
   inline proc =(ref a: bool, b: bool) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: bool(?w), b: bool) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
-  pragma "trivial assignment"
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
@@ -827,6 +819,7 @@ module ChapelBase {
   
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
 
+  pragma "end count"
   pragma "no default functions"
   class _EndCount {
     type iType;
@@ -983,7 +976,7 @@ module ChapelBase {
 
   inline proc _cast(type t, x) where t:object && x:t
     return __primitive("cast", t, x);
-  
+
   inline proc _cast(type t, x) where t:object && x:_nilType
     return __primitive("cast", t, x);
   
@@ -1077,12 +1070,13 @@ module ChapelBase {
     pragma "no auto destroy" var x: t;
     return x;
   }
-  
+
   pragma "init copy fn"
   inline proc chpl__initCopy(type t) {
     compilerError("illegal assignment of type to value");
   }
   
+  pragma "compiler generated"
   pragma "init copy fn"
   inline proc chpl__initCopy(x: _tuple) { 
     // body inserted during generic instantiation
@@ -1118,6 +1112,7 @@ module ChapelBase {
   }
   
 
+  pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: _tuple) {
@@ -1131,6 +1126,7 @@ module ChapelBase {
     return ir;
   }
   
+  pragma "compiler generated"
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
@@ -1141,7 +1137,11 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
   inline proc chpl__autoDestroy(x: object) { }
+
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(type t)  { }
+
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
@@ -1164,6 +1164,9 @@ module ChapelBase {
     __primitive("call destructor", x);
   }
   
+  // = for c_void_ptr
+  inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+
   // Type functions for representing function types
   inline proc func() type { return __primitive("create fn type", void); }
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }

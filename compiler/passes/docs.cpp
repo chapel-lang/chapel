@@ -110,7 +110,7 @@ void docs(void) {
       }
     }
 
-    if (!fDocsTextOnly) {
+    if (!fDocsTextOnly && fDocsHTML) {
       generateSphinxOutput(docsSphinxDir, docsOutputDir);
     }
 
@@ -305,7 +305,7 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
 
   const char * venvDir = astr(
     CHPL_HOME, "/third-party/chpl-venv/install/",
-    CHPL_TARGET_PLATFORM, "/chpl-virtualenv");
+    CHPL_HOST_PLATFORM, "/chpl-virtualenv");
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
 

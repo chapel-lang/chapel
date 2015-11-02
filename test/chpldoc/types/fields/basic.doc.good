@@ -1,4 +1,4 @@
-Module: basic.doc
+basic.doc
    Class: Other
       var isInt: int
          Comment for field that is an int 

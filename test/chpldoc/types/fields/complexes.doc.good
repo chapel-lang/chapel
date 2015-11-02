@@ -1,4 +1,4 @@
-Module: complexes.doc
+complexes.doc
    Record: Foo
       var aComplex: complex = 1.0+2.0i
       const bar = 0.0+1.0i

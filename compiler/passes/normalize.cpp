@@ -391,7 +391,8 @@ checkUseBeforeDefs() {
                   (sym->var->defPoint->parentSymbol == fn ||
                    (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
                 if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                  if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN)) {
+                  if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
+                      !sym->var->hasFlag(FLAG_TEMP)) {
                     USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                     undefined.set_add(sym->var);
                   }
@@ -541,12 +542,10 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
   {
-    ret->insertBefore(new CallExpr("=", retval, ret_expr));
-    // Using assignment creates a new copy, which transfers ownership of *a*
-    // copy to the return value variable.
-    // Contrast this with a move, which merely shares ownership between the
-    // bitwise copies of the object.
-    retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    // This is the case for a declared return type.
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval,
+                      new CallExpr(PRIM_COERCE, ret_expr,
+                        fn->retExprType->body.tail->copy())));
   }
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
@@ -675,26 +674,6 @@ static void normalize_returns(FnSymbol* fn) {
           returnTypeIsArray(retExprType))
         // Treat iterators returning arrays as if they are always returned by ref.
         fn->retTag = RET_REF;
-      else
-      {
-        CallExpr* initExpr;
-        // In most cases, we do not need to default initialize the return temps,
-        // as they will be assigned to before they are returned.  We cannot
-        // check against the specific types that do not allow the use of noinit
-        // here (that happens in function resolution), but we do know whether
-        // the function expects a param or type variable as its result and these
-        // cases would become confused if noinit was used with them (since
-        // noinit is not allowed on param or type variables).  So default
-        // initialize in those cases but in all others insert noinit and trust
-        // it will be handled correctly for types that do not allow it.
-        if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE) {
-          initExpr = new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
-        } else {
-          initExpr = new CallExpr(PRIM_NO_INIT,
-                                  retExprType->body.tail->remove());
-        }
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
-      }
     }
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
@@ -1050,20 +1029,20 @@ static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp)
 {
       Expr* noop = new CallExpr(PRIM_NOOP);
       Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
-                             new_StringSymbol(var->getModule()->name) :
-                             new_StringSymbol("Built-in"));
+                             new_CStringSymbol(var->getModule()->name) :
+                             new_CStringSymbol("Built-in"));
       CallExpr* strToValExpr =
         new CallExpr("_command_line_cast",
-                     new SymExpr(new_StringSymbol(var->name)),
+                     new SymExpr(new_CStringSymbol(var->name)),
                      new CallExpr(PRIM_TYPEOF, constTemp),
                      new CallExpr("chpl_config_get_value",
-                                  new_StringSymbol(var->name),
+                                  new_CStringSymbol(var->name),
                                   module_name));
       stmt->insertAfter(
         new CondStmt(
           new CallExpr("!",
                        new CallExpr("chpl_config_has_value",
-                                    new_StringSymbol(var->name),
+                                    new_CStringSymbol(var->name),
                                     module_name)),
           noop,
           new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
@@ -1295,7 +1274,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         if (queryEltType) {
           for_vector(SymExpr, se, symExprs) {
             if (se->var == queryEltType->sym)
-              se->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
+              se->replace(new CallExpr(".", arg, new_CStringSymbol("eltType")));
           }
         } else if (!noEltType) {
           // The element type is supplied, but it is null.
@@ -1311,7 +1290,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           newWhere->insertAtTail(oldWhere);
           newWhere->insertAtTail(
             new CallExpr("==", call->get(2)->remove(),
-                         new CallExpr(".", arg, new_StringSymbol("eltType"))));
+                         new CallExpr(".", arg, new_CStringSymbol("eltType"))));
         }
 
         if (queryDomain) {
@@ -1319,7 +1298,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           // If we match the domain symbol, replace it with arg._dom.
           for_vector(SymExpr, se, symExprs) {
             if (se->var == queryDomain->sym)
-              se->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
+              se->replace(new CallExpr(".", arg, new_CStringSymbol("_dom")));
           }
         } else if (!noDomain) {
           // The domain argument is supplied but NULL.
@@ -1327,7 +1306,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           
           // actualArg.chpl_checkArrArgDoms(arg->typeExpr)
           fn->insertAtHead(new CallExpr(new CallExpr(".", arg,
-                                                     new_StringSymbol("chpl_checkArrArgDoms")
+                                                     new_CStringSymbol("chpl_checkArrArgDoms")
                                                      ),
                                         call->get(1)->copy(), 
                                         (fNoFormalDomainChecks ? gFalse : gTrue)));
@@ -1500,15 +1479,15 @@ fixup_query_formals(FnSymbol* fn) {
         std::vector<SymExpr*> symExprs;
         collectSymExprs(fn, symExprs);
         if (call->isNamed("_build_tuple")) {
-          add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_StringSymbol("size")));
+          add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_CStringSymbol("size")));
           call->baseExpr->replace(new SymExpr(dtTuple->symbol));
           isTupleType = true;
         }
         CallExpr* positionQueryTemplate = new CallExpr(PRIM_QUERY);
         for_actuals(actual, call) {
           if (NamedExpr* named = toNamedExpr(actual)) {
-            positionQueryTemplate->insertAtTail(new_StringSymbol(named->name));
-            CallExpr* nameQuery = new CallExpr(PRIM_QUERY, new_StringSymbol(named->name));
+            positionQueryTemplate->insertAtTail(new_CStringSymbol(named->name));
+            CallExpr* nameQuery = new CallExpr(PRIM_QUERY, new_CStringSymbol(named->name));
             if (DefExpr* def = toDefExpr(named->actual)) {
               replace_query_uses(formal, def, nameQuery, symExprs);
             } else {

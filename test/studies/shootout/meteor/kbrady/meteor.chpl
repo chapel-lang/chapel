@@ -298,8 +298,8 @@ module meteor {
    * trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
    * can split the board in half where both halves are viable.
    */
+  var tempBoard: [0..49] int(8);
   proc hasIsland(cell: [0..4] int(8), piece: int) : bool {
-    var tempBoard: [0..49] int(8);
     var c: int(8);
 
     for i in 0..49 do

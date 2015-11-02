@@ -14,6 +14,7 @@
 
 import sys
 import os
+import sphinx.environment
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -131,7 +132,7 @@ if not on_rtd:
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = None
+html_title = version
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -277,3 +278,12 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+## Monkey patch to disable nonlocal image warning for Chapel logo
+original_warn_mode = sphinx.environment.BuildEnvironment.warn_node
+
+def allow_nonlocal_image_warn_node(self, msg, node):
+    if not msg.startswith('nonlocal image URI found:'):
+        original_warn_mode(self, msg, node)
+
+sphinx.environment.BuildEnvironment.warn_node = allow_nonlocal_image_warn_node

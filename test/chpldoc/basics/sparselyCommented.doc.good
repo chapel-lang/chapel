@@ -1,5 +1,5 @@
-Module: sparselyCommented.doc
-   Module: sparselyCommented.doc.Other
+sparselyCommented.doc
+   sparselyCommented.doc.Other
       proc inside()
          Comment for method inside module 
 

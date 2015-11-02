@@ -25,3 +25,7 @@ These tests were generated automatically by running:
   src/isX.gen
 
 and added to version control for ease of use.
+
+* isX.sync-by-const.chpl
+
+This test is a bug future, created by hand.

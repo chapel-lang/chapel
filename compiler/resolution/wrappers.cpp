@@ -285,7 +285,7 @@ buildDefaultWrapper(FnSymbol* fn,
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), copyTemp));
+                             new_CStringSymbol(formal->name), copyTemp));
               copy_map.put(formal, copyTemp);
               call->argList.tail->replace(new SymExpr(copyTemp));
             }
@@ -353,7 +353,7 @@ buildDefaultWrapper(FnSymbol* fn,
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), temp));
+                             new_CStringSymbol(formal->name), temp));
     }
   }
   update_symbols(wrapper->body, &copy_map);
@@ -584,8 +584,22 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   call->getStmtExpr()->insertBefore(castMove);
 
   resolveCall(castCall);
-  if (castCall->isResolved())
-    resolveFns(castCall->isResolved());
+  if (FnSymbol* castTarget = castCall->isResolved()) {
+    resolveFns(castTarget);
+
+    // Perhaps equivalently, we could check "if (tryToken)",
+    // except tryToken is not visible in this file.
+    if (!castTarget->hasFlag(FLAG_RESOLVED)) {
+      // This happens e.g. when castTarget itself has an error.
+      // Todo: in this case, we should report the error at the point
+      // where it arises, supposedly within resolveFns(castTarget).
+      // Why is it not reported there?
+      USR_FATAL_CONT(call, "Error resolving a cast from %s to %s",
+                     ats->name, fts->name);
+      USR_PRINT(castTarget, "  the troublesome function is here");
+      USR_STOP();
+    }
+  }
 
   resolveCall(castMove);
 }

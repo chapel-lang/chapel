@@ -31,13 +31,14 @@
 #include "intlimits.h"
 #include "ipe.h"
 #include "misc.h"
-#include "passes.h" // for isWideString
+#include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
 
 #include "AstVisitor.h"
 
+static bool isDerivedType(Type* type, Flag flag);
 
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   BaseAST(astTag),
@@ -1434,7 +1435,7 @@ void initPrimitiveTypes() {
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
-  dtStringC->defaultValue              = new_StringSymbol("");
+  dtStringC->defaultValue              = new_CStringSymbol("");
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];
 
@@ -1495,6 +1496,16 @@ void initPrimitiveTypes() {
 
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = NULL;
+
+  // Like c_string_copy but unowned.
+  // Could be == c_ptr(int(8)) e.g.
+  // used in some runtime interfaces
+  dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCVoidPtr->defaultValue = gOpaque;
+  CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
+  gCVoidPtr->cname = "NULL";
+  gCVoidPtr->addFlag(FLAG_EXTERN);
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
@@ -1639,16 +1650,13 @@ DefExpr* defineObjectClass() {
 }
 
 void initChplProgram(DefExpr* objectDef) {
-  CallExpr* base = 0;
-  CallExpr* std  = 0;
-
   theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
 
   theProgram->block->insertAtTail(base);
 
@@ -1841,6 +1849,46 @@ bool isRefCountedType(Type* t) {
 
 bool isRecordWrappedType(Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
+}
+
+// Returns true if the given type is one which can be returned by one of the
+// dsiNew*Dom() functions; false otherwise.
+// This check is performed by looking to see if the given type derives from the
+// BaseDom class.
+bool isDomImplType(Type* type)
+{
+  return isDerivedType(type, FLAG_BASE_DOMAIN);
+}
+
+// Returns true if the given type is one which can be returned by
+// dsiBuildArray() or similar function returning a "nude" array implementation;
+// false otherwise.
+// The test is actually performed by looking to see if the given type derives
+// from the BaseArr class.
+bool isArrayImplType(Type* type)
+{
+  return isDerivedType(type, FLAG_BASE_ARRAY);
+}
+
+bool isDistImplType(Type* type)
+{
+  return isDerivedType(type, FLAG_BASE_DIST);
+}
+
+static bool isDerivedType(Type* type, Flag flag)
+{
+  AggregateType* at     =  NULL;
+  bool           retval = false;
+
+  while ((at = toAggregateType(type)) != NULL && retval == false)
+  {
+    if (at->symbol->hasFlag(flag) == true)
+      retval = true;
+    else
+      type   = at->dispatchParents.only();
+  }
+
+  return retval;
 }
 
 bool isSyncType(Type* t) {
@@ -2098,5 +2146,42 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
     }
   }
   return NULL;
+}
+
+
+/* After resolution, other passes can call isPOD
+   in order to find out if a record type is POD.
+
+   During resolution, one should call propagateNotPOD
+   instead, so that the relevant calls can be resolved
+   and POD fields can be properly handled.
+ */
+bool isPOD(Type* t)
+{
+  // Strings and wide strings aren't POD
+  // These need to be special-cases as long
+  // as code generation treats strings specially.
+  if( t == wideStringType || t == dtString )
+    return false;
+
+  // things that aren't aggregate types are POD
+  //   e.g. int, boolean, complex, etc
+  if (!isAggregateType(t))
+    return true;
+
+  // sync/single and atomic types are not POD
+  // but they should be marked with FLAG_NOT_POD
+  // by propagateNotPOD in function resolution.
+
+  // handle anything already marked
+  if (t->symbol->hasFlag(FLAG_POD))
+    return true;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return false;
+
+  // if we have not calculated POD-ness,
+  // we should not be calling this function
+  INT_ASSERT(false);
+  return false;
 }
 

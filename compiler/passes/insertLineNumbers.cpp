@@ -129,7 +129,7 @@ insertLineNumber(CallExpr* call) {
       INT_ASSERT(var);
       INT_ASSERT(var->immediate);
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
-      call->insertAtTail(new_StringSymbol(astr("<command line setting of '",
+      call->insertAtTail(new_CStringSymbol(astr("<command line setting of '",
                                                var->immediate->v_string,
                                                "'>")));
     } else {
@@ -144,7 +144,7 @@ insertLineNumber(CallExpr* call) {
         call->insertAtTail(gCFile);
       } else {
         call->insertAtTail(new_IntSymbol(call->linenum()));
-        call->insertAtTail(new_StringSymbol(call->fname()));
+        call->insertAtTail(new_CStringSymbol(call->fname()));
       }
     }
   } else if (file) {
@@ -271,8 +271,8 @@ static void moveLinenoInsideArgBundle()
     //  than the expected number.  Both block types below expect an
     //  argument bundle, and the on-block expects an additional argument
     //  that is the locale on which it should be executed.
-    if ((fn->numFormals() > 2 && fn->hasFlag(FLAG_ON_BLOCK)) ||
-        (fn->numFormals() > 1 && !fn->hasFlag(FLAG_ON_BLOCK) &&
+    if ((fn->numFormals() > 4 && fn->hasFlag(FLAG_ON_BLOCK)) ||
+        (fn->numFormals() > 5 && !fn->hasFlag(FLAG_ON_BLOCK) &&
          (fn->hasFlag(FLAG_BEGIN_BLOCK) ||
           fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)))) {
 

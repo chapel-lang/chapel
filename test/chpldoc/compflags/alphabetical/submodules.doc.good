@@ -1,7 +1,7 @@
-Module: Parent.doc
-   Module: Parent.Caroline
+Parent.doc
+   Parent.Caroline
       This child should be listed first 
-   Module: Parent.Elaine
+   Parent.Elaine
       This child should be in the middle 
-   Module: Parent.Frank
+   Parent.Frank
       This child should be listed last 

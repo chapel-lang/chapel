@@ -591,7 +591,7 @@ record regexp {
 
   // note - more = overloads are below.
   pragma "no doc"
-  proc ~regexp() {
+  proc ref ~regexp() {
     qio_regexp_release(_regexp);
     _regexp = qio_regexp_null();
   }
@@ -933,7 +933,7 @@ record regexp {
   /*
      Find matches to this regular expression and create a new string in which
      those matches are replaced by repl.
-     
+
      :arg repl: replace matches with this string
      :arg text: the text to search and replace within
      :type text: string

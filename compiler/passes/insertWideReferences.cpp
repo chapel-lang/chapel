@@ -681,7 +681,8 @@ static void addKnownWides() {
       // Get the arg bundle type for an on-stmt. Testing against a name like
       // "_class_localson_fn" is NOT enough, because sometimes the name is
       // a bit more complicated. Recursive iterators may introduce this.
-      AggregateType* ag = toAggregateType(fn->getFormal(2)->type);
+      ArgSymbol* bundle_class = toArgSymbol(toDefExpr(fn->formals.tail)->sym);
+      AggregateType* ag = toAggregateType(bundle_class->type);
 
       for_fields(fi, ag) {
         if (isRecord(fi->type)) {
@@ -882,7 +883,14 @@ static void propagateVar(Symbol* sym) {
           setWide(lhs);
         }
         else if (isRef(lhs) && isRef(rhs)) {
-          widenRef(sym, lhs);
+          // Here is a place where PRIM_MOVE and PRIM_ASSIGN diverge.
+          // PRIM_MOVE between two references means that one reference is copied
+          // into the other; this is a pointer copy.
+          // PRIM_ASSIGN means that the contents of the value or reference on the
+          // RHS are copied into the object pointed to by the LHS.
+          // Therefore, this clause applies only to PRIM_MOVE.
+          if (call->isPrimitive(PRIM_MOVE))
+            widenRef(sym, lhs);
         }
         else if (isRef(lhs) && isObj(rhs)) {
           debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
@@ -1692,7 +1700,7 @@ static void insertNodeComparison(Expr* stmt, SymExpr* lhs, SymExpr* rhs) {
   stmt->insertBefore(new CondStmt(new CallExpr(PRIM_NOTEQUAL,
                                   new SymExpr(left),
                                   new SymExpr(right)),
-    new CallExpr(PRIM_RT_ERROR, new_StringSymbol("Attempted to assign to local class field with remote class"))));
+    new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Attempted to assign to local class field with remote class"))));
 }
 
 

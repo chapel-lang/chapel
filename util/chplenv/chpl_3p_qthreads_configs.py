@@ -1,8 +1,13 @@
 #!/usr/bin/env python
-import utils
+import os
+import sys
+
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_compiler, chpl_llvm, chpl_locale_model, third_party_utils, utils
 from utils import memoize
-import chpl_compiler, chpl_llvm, chpl_locale_model
-import third_party_utils
+
 
 @memoize
 def get_uniq_cfg_path():
