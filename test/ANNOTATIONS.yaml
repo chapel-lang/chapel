@@ -86,6 +86,8 @@ all:
   10/19/15:
     - text: simplification of comm domain descriptor management
       config: 16 node XC
+  10/29/15:
+    - PR 2850 to split up and inline BlockArr.dsiAccess
 
 AllCompTime:
   11/09/14:
