@@ -229,27 +229,27 @@ module DefaultAssociative {
   
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
-      if followThisDom != this {
-        // check to see if domains match
-        var followThisTab = followThisDom.table;
-        var myTab = table;
-        var mismatch = false;
-        // could use a reduction
-        for slot in chunk.low..chunk.high do
-          if followThisTab[slot].status != myTab[slot].status {
-            mismatch = true;
-            break;
-          }
-        if mismatch then
-          halt("zippered associative domains do not match");
-      }
-  
+
       if debugDefaultAssoc then
         writeln("In domain follower code: Following ", chunk);
-  
-      for slot in chunk.low..chunk.high do
-        if table[slot].status == chpl__hash_status.full then
-          yield table[slot].idx;
+      
+      if followThisDom.dsiNumIndices != this.dsiNumIndices then
+        halt("zippered associative domains do not match");
+
+      const sameDom = followThisDom == this;
+
+      var otherTable = followThisDom.table;
+      for slot in chunk.low..chunk.high {
+        if otherTable[slot].status == chpl__hash_status.full {
+          var idx = slot;
+          if !sameDom {
+            const (match, loc) = _findFilledSlot(otherTable[slot].idx, haveLock=true);
+            if !match then halt("zippered associative domains do not match");
+            idx = loc;
+          }
+          yield table[idx].idx;
+        }
+      }
     }
   
     //
@@ -584,26 +584,27 @@ module DefaultAssociative {
   
     iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
-      if followThisDom != dom {
-        // check to see if domains match
-        var followThisTab = followThisDom.table;
-        var myTab = dom.table;
-        var mismatch = false;
-        // could use a reduction
-        for slot in chunk.low..chunk.high do
-          if followThisTab[slot].status != myTab[slot].status {
-            mismatch = true;
-            break;
-          }
-        if mismatch then
-          halt("zippered associative array does not match the iterated domain");
-      }
+
       if debugDefaultAssoc then
         writeln("In array follower code: Following ", chunk);
-      var tab = dom.table;  // cache table for performance
-      for slot in chunk.low..chunk.high do
-        if tab[slot].status == chpl__hash_status.full then
-          yield data(slot);
+
+      if followThisDom.dsiNumIndices != this.dom.dsiNumIndices then
+        halt("zippered associative array does not match the iterated domain");
+
+      const sameDom = followThisDom == this;
+
+      var otherTable = followThisDom.table;
+      for slot in chunk.low..chunk.high {
+        if otherTable[slot].status == chpl__hash_status.full {
+          var idx = slot;
+          if !sameDom {
+            const (match, loc) = dom._findFilledSlot(otherTable[slot].idx, haveLock=true);
+            if !match then halt("zippered associative array does not match the iterated domain");
+            idx = loc;
+          }
+          yield data[idx];
+        }
+      }
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
