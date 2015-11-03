@@ -1401,7 +1401,6 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     if (sym->type != 0)
     {
-      writeLongString("      ", "");
       writeType(sym->type);
     }
 
