@@ -197,7 +197,14 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       if (vs->type->symbol->hasFlag(FLAG_SINGLE))
         write("single");
 
+
       writeSymbol("var", sym, true);
+
+      if (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY))
+        write("insert-auto-destroy");
+
+      if (sym->hasFlag(FLAG_INSERT_AUTO_COPY))
+        write("insert-auto-copy");
 
     } else if (isLabelSymbol(sym)) {
       writeSymbol("label", sym, true);
