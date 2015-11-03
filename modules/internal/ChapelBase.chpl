@@ -1136,6 +1136,7 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
+  pragma "compiler generated"
   inline proc chpl__autoDestroy(x: object) { }
 
   pragma "compiler generated"
