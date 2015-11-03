@@ -1075,7 +1075,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
       rad.factoredOffs = factoredOffs;
       rad.data = data;
       if earlyShiftData && !stridable then
-//        if dom.dsiNumIndices > 0 then
+        if dom.dsiNumIndices > 0 then
           rad.shiftedData = shiftedData;
       return rad;
     }
