@@ -56,6 +56,7 @@ module ChapelStandard {
   use MemTracking;
   use ChapelUtil;
   use ChapelDynDispHack;
+  use ChapelEnv;
 
   // Standard modules.
   use Assert;

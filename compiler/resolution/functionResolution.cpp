@@ -44,11 +44,13 @@
 #include "WhileStmt.h"
 #include "../ifa/prim_data.h"
 #include "view.h"
+#include "driver.h"
 
 #include <inttypes.h>
 #include <map>
 #include <sstream>
 #include <vector>
+#include <string>
 
 // Allow disambiguation tracing to be controlled by the command-line option
 // --explain-verbose.
@@ -2665,7 +2667,7 @@ static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
 static Vec<BlockStmt*> standardModuleSet;
 
 //
-// return true if expr is a CondStmt with chpl__tryToken as its condition 
+// return true if expr is a CondStmt with chpl__tryToken as its condition
 //
 static bool isTryTokenCond(Expr* expr) {
   CondStmt* cond = toCondStmt(expr);
@@ -3161,7 +3163,7 @@ static Symbol* getBaseSymForConstCheck(CallExpr* call) {
   INT_ASSERT(baseExpr); // otherwise, cannot do the checking
   return baseExpr->var;
 }
- 
+
 
 // If 'call' is an access to a const thing, for example a const field
 // or a field of a const record, set const flag(s) on the symbol
@@ -5151,6 +5153,30 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
       result = createFunctionAsValue(call);
       call->replace(result);
+
+    } else if (call->isPrimitive(PRIM_GET_COMPILER_VAR)) {
+
+      // Resolving Primitive PRIM_GET_COMPILER_VAR
+      Immediate* chplEnv = toVarSymbol(toSymExpr(call->get(1))->var)->immediate;
+      std::string envKey;
+
+      // Check if this immediate is a string
+      if (chplEnv->const_kind == CONST_KIND_STRING) {
+        envKey = chplEnv->v_string;
+      } else {
+        USR_FATAL(call, "expected immediate of type string");
+      }
+
+      // Check table, get actual string out of table and replace call
+      // Use std::map, check if it's in a map, else throw error
+      if (EnvMap.find(envKey) != EnvMap.end()) {
+        printf("[DEBUG] %s : EnvMap[%s] = %s\n", __FILE__, envKey.c_str(), EnvMap[envKey]);
+        result = new SymExpr(new_StringSymbol(EnvMap[envKey]));
+        call->replace(result);
+      } else {
+        USR_FATAL(call, "primitive string does not match any environment variable");
+      }
+
     } else if (call->isPrimitive(PRIM_CREATE_FN_TYPE)) {
       AggregateType *parent = createOrFindFunTypeFromAnnotation(call->argList, call);
 

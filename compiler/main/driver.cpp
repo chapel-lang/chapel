@@ -47,8 +47,12 @@
 #include <inttypes.h>
 #include <string>
 #include <sstream>
+#include <map>
+
+std::map<std::string, const char*> EnvMap;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
+char chpl_comm[FILENAME_MAX+1] = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
@@ -230,6 +234,7 @@ static bool isMaybeChplHome(const char* path)
   return ret;
 }
 
+
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
   char*       guess     = NULL;
@@ -325,7 +330,9 @@ static void setupEnvVar(std::istringstream& iss, const char** var, const char* v
   value = line.substr(line.find('=')+1, std::string::npos);
 
   *var = astr(value.c_str());  // astr call is to canonicalize
-  parseCmdLineConfig(varname, astr("\"", *var, "\""));
+  if (strcmp("CHPL_COMM", varname) != 0) {
+    parseCmdLineConfig(varname, astr("\"", *var, "\""));
+  }
 }
 
 #define SETUP_ENV_VAR(varname) \
@@ -334,6 +341,7 @@ static void setupEnvVar(std::istringstream& iss, const char** var, const char* v
   chpl_env_var_names[num_chpl_env_vars] = #varname; \
   chpl_env_vars[num_chpl_env_vars] = varname; \
   num_chpl_env_vars++;
+
 
 static void setupEnvVars() {
   std::string vars = runUtilScript("printchplenv --simple");
@@ -362,6 +370,31 @@ static void setupEnvVars() {
   SETUP_ENV_VAR(CHPL_WIDE_POINTERS);
   SETUP_ENV_VAR(CHPL_LLVM);
   SETUP_ENV_VAR(CHPL_AUX_FILESYS);
+
+  strcpy(chpl_comm, CHPL_COMM);
+//EnvMap["CHPL_COMM"] = CHPL_COMM;
+//EnvMap["CHPL_HOST_PLATFORM"]
+//EnvMap["CHPL_HOST_COMPILER"]
+//EnvMap["CHPL_TARGET_PLATFORM"]
+//EnvMap["CHPL_TARGET_COMPILER"]
+//EnvMap["CHPL_TARGET_ARCH"]
+//EnvMap["CHPL_LOCALE_MODEL"]
+//EnvMap["CHPL_COMM_SUBSTRATE"]
+//EnvMap["CHPL_GASNET_SEGMENT"]
+//EnvMap["CHPL_TASKS"]
+//EnvMap["CHPL_THREADS"]
+//EnvMap["CHPL_LAUNCHER"]
+//EnvMap["CHPL_TIMERS"]
+//EnvMap["CHPL_MEM"]
+//EnvMap["CHPL_MAKE"]
+//EnvMap["CHPL_ATOMICS"]
+//EnvMap["CHPL_NETWORK_ATOMICS"]
+//EnvMap["CHPL_GMP"]
+//EnvMap["CHPL_HWLOC"]
+//EnvMap["CHPL_REGEXP"]
+//EnvMap["CHPL_WIDE_POINTERS"]
+//EnvMap["CHPL_LLVM"]
+//EnvMap["CHPL_AUX_FILESYS"]
 }
 
 
@@ -459,15 +492,29 @@ static void setCCFlags(const ArgumentState* state, const char* arg) {
 
 static void setHome(const ArgumentState* state, const char* arg) {
   // Wipe previous CHPL_HOME when comp flag is given
-  memset(CHPL_HOME, '\0', strlen(CHPL_HOME));
+  CHPL_HOME[0] = '\0';
 
   // Copy arg into CHPL_HOME
-  int arglen = strlen(arg);
+  size_t arglen = strlen(arg) + 1; // room for \0
   if(arglen <= sizeof(CHPL_HOME)) {
-    memcpy(&CHPL_HOME[0], arg, arglen);
-    parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
+    memcpy(CHPL_HOME, arg, arglen);
+    //parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
   } else {
     USR_FATAL("CHPL_HOME argument too long");
+  }
+}
+
+static void setComm(const ArgumentState* state, const char* arg) {
+  // Wipe previous CHPL_HOME when comp flag is given
+  chpl_comm[0] = '\0';
+
+  // Copy arg into CHPL_COMM
+  size_t arglen = strlen(arg) + 1; // room for \0
+  if(arglen <= sizeof(CHPL_COMM)) {
+    memcpy(chpl_comm, arg, arglen);
+    //parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
+  } else {
+    USR_FATAL("CHPL_COMM argument too long");
   }
 }
 
@@ -699,6 +746,7 @@ Record components:
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Main Configuration Options", NULL, NULL, NULL, NULL},
  {"home", ' ', "<path>", "Path to Chapel home directory", "S", NULL , "CHPL_HOME", setHome},
+ {"comm", ' ', "<path>", "Path to Chapel comm directory", "S", NULL , "CHPL_COMM", setComm},
 
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
@@ -983,6 +1031,9 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     initCompilerGlobals(); // must follow argument parsing
+
+    EnvMap["CHPL_HOME"] = CHPL_HOME;
+    EnvMap["CHPL_COMM"] = chpl_comm;
 
     setupDependentVars();
     setupModulePaths();

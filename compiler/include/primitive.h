@@ -29,6 +29,7 @@ class VarSymbol;
 enum PrimitiveTag {
   PRIM_UNKNOWN = 0,    // use for any primitives not in this list
 
+  PRIM_GET_COMPILER_VAR,
   PRIM_ACTUALS_LIST,
   PRIM_NOOP,
   PRIM_MOVE,

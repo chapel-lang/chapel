@@ -22,10 +22,14 @@
 
 #include "chpl.h"
 #include "map.h"
+#include <map>
+#include <string>
 
 #include <cstdio>
 
 class Timer;
+
+extern std::map<std::string, const char*> EnvMap;
 
 
 extern int  instantiation_limit;
@@ -67,6 +71,7 @@ extern int  tuple_copy_limit;
 
 extern bool report_inlining;
 extern char CHPL_HOME[FILENAME_MAX+1];
+extern char chpl_comm[FILENAME_MAX+1];
 
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;

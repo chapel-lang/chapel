@@ -391,6 +391,8 @@ void
 initPrimitive() {
   primitives[PRIM_UNKNOWN] = NULL;
 
+
+  prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoStringC);
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);

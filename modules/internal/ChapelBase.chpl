@@ -25,11 +25,6 @@ module ChapelBase {
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
 
-  config param CHPL_HOME = "unset";
-  if (CHPL_HOME == "unset") {
-    compilerWarning("CHPL_HOME not set");
-  }
-
   config param CHPL_HOST_PLATFORM = "unset";
   if (CHPL_HOST_PLATFORM == "unset") {
     compilerWarning("CHPL_HOST_PLATFORM not set");
@@ -59,10 +54,10 @@ module ChapelBase {
     compilerWarning("CHPL_LOCALE_MODEL not set");
   }
 
-  config param CHPL_COMM = "unset";
-  if (CHPL_COMM == "unset") {
-    compilerWarning("CHPL_COMM not set");
-  }
+  //config param CHPL_COMM = "unset";
+  //if (CHPL_COMM == "unset") {
+  //  compilerWarning("CHPL_COMM not set");
+  //}
 
   config param CHPL_COMM_SUBSTRATE = "unset";
   if (CHPL_COMM_SUBSTRATE == "unset") {
