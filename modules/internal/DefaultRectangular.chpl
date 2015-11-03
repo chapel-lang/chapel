@@ -1050,7 +1050,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
         // has not yet been updated (this is called from within the
         // = function for domains.
         if earlyShiftData && !d._value.stridable then
-//          if d.numIndices > 0 then
+          if d.numIndices > 0 then
             shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
 // This breaks some routines.  We will leak the copies for now, and
