@@ -16,6 +16,8 @@ while !different {
   A.clear();
   B.clear();
 
+  n += 1;
+
   //
   // Add in a different order to try and cause hash collisions resulting in
   // a different storage order.
@@ -29,10 +31,6 @@ while !different {
       different = true;
       break;
     }
-
-  if different then break;
-
-  n += 1;
 }
 
 assert(A == B);
