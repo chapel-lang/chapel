@@ -111,7 +111,7 @@ proc =(ref lhs: R, rhs: R) {
     assert(rhs.canary == 42);
   }
 
-  lhs.init(x = rhs.x);
+  lhs.init(x = rhs.x, true);
 
   if debug {
     writeln("leaving assign");

@@ -131,7 +131,7 @@ proc chpl__initCopy(arg: R) {
 
   var ret: R;
 
-  ret.init(x = arg.x);
+  ret.init(x = arg.x, true);
 
   if debug {
     printf("leaving init copy from arg.c=%p to ret.c=%p ", arg.c, ret.c);
@@ -149,7 +149,7 @@ proc =(ref lhs: R, rhs: R) {
     writeln(rhs.c);
   }
 
-  lhs.init(x = rhs.x);
+  lhs.init(x = rhs.x, true);
 
   if debug {
     printf("leaving assign lhs.c %p = rhs.c %p ", lhs.c, rhs.c);
