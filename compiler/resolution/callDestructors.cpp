@@ -26,6 +26,9 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "bb.h"
+#include "bitVec.h"
+#include "optimizations.h"
 
 #include <set>
 
@@ -139,7 +142,7 @@ static void cullExplicitAutoDestroyFlags()
         for_uses(se, useMap, var)
         {
           CallExpr* call = toCallExpr(se->parentExpr);
-          if (call->isPrimitive(PRIM_MOVE) &&
+          if (call && call->isPrimitive(PRIM_MOVE) &&
               toSymExpr(call->get(1))->var == retVar)
           {
             var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -158,7 +161,7 @@ static void cullExplicitAutoDestroyFlags()
 *                                                                   *
 * A set of functions that scan every BlockStmt to determine whether *
 * it is necessary to insert autoDestroy calls at any of the exit    *
-* points rom the block.                                             *
+* points from the block.                                             *
 *                                                                   *
 * This computation consists of a linear scan of every BlockStmt     *
 * scanning for                                                      *
@@ -900,13 +903,361 @@ static void insertReferenceTemps() {
   }
 }
 
+// Replace patterns like this:
+//   move tmp, someCall();
+//   = (variable, tmp)
+//   (destroy tmp)
+//
+// or
+//   move tmp, someCall();
+//   move variable, initCopy(tmp)
+//   (destroy tmp)
+//
+// where tmp:
+//  * is dead once it is copied to "variable"
+//
+// with this:
+//   move tmp, someCall();
+//   move variable, tmp
+//   (don't destroy tmp)
+static void expiringValueOptimization(FnSymbol* fn) {
+
+  // This is the preferred version of the optimization
+#if 1
+
+  Vec<Symbol*> locals; // index -> local var Symbol*
+  Map<Symbol*,int> localMap; // local var Symbol* -> index
+  Vec<SymExpr*> useSet;
+  Vec<SymExpr*> defSet;
+  std::vector<BitVec*> OUT;
+  // if OUT(i)(j) is true then the jth local variable is live at
+  // the exit of basic block i.
+
+  std::vector<SymExpr*> expiringRHSes;
+
+  BasicBlock::buildBasicBlocks(fn);
+
+  liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
+
+  int block_index = 0;
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    int expr_index = 0;
+    for_vector(Expr, expr, bb->exprs) {
+      // is there a call to =, autoCopy, initCopy ?
+
+      SymExpr* LHS = NULL;
+      SymExpr* RHS = NULL;
+      CallExpr* copyCall = NULL;
+      CallExpr* move = NULL;
+      CallExpr* call = toCallExpr(expr);
+      if (call) {
+        if (call->isPrimitive(PRIM_MOVE) ) {
+          move = call;
+          if (CallExpr *callInMove = toCallExpr(move->get(2))) {
+            if (callInMove->isNamed("chpl__initCopy") ||
+                callInMove->isNamed("chpl__autoCopy") ) {
+              // Is the called function = autoCopy initCopy?
+              // (we could use FLAG_AUTO_COPY_FN but
+              //  FLAG_INIT_COPY_FN is not consistently applied right now)
+              LHS = toSymExpr(move->get(1));
+              RHS = toSymExpr(callInMove->get(1));
+              copyCall = callInMove;
+            }
+          }
+        } else if (call->isNamed("=") ) {
+          LHS = toSymExpr(call->get(1));
+          RHS = toSymExpr(call->get(2));
+          // Don't do this optimization if the LHS and RHS have
+          // different types.
+          if (LHS->typeInfo() == RHS->typeInfo()) {
+            // For now, disable the optimization for types that
+            // have runtime types. We could enable it - we would
+            // just need to check array bounds...
+            if (!LHS->typeInfo()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+              copyCall = call;
+          }
+        }
+      }
+
+      if (copyCall) {
+        // We found a call to = etc
+        // Is it copying a temporary value, like this:
+
+        //   move tmp, someCall();
+        //   move variable, initCopy(tmp)
+        //   (tmp dead)
+
+        Symbol* rhsSym = RHS->var;
+
+        // Is RHS a value we would auto destroy?
+        // Is it a local variable?
+        if ( rhsSym->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+             rhsSym->defPoint->parentSymbol == fn ) {
+          // Is RHS dead at this point?
+          int index = localMap.get(rhsSym);
+          bool live = OUT[block_index]->get(index);
+          if (!live) {
+            // Check if it is live in the rest of the current basic block
+            // Note that this could be more efficient...
+
+            for (size_t k = expr_index+1; k < bb->exprs.size(); k++) {
+              Expr* expr_k = bb->exprs[k];
+              std::vector<SymExpr*> symExprs;
+              collectSymExprs(expr_k, symExprs);
+              for_vector(SymExpr, se, symExprs) {
+                // Is there a use of rhs?
+                if (se->var == rhsSym && useSet.set_in(se))
+                  live = true;
+              }
+            }
+          }
+
+          // If it is still not live, we can do the AST transformation
+          if (!live) {
+            expiringRHSes.push_back(RHS);
+          }
+        }
+      }
+      expr_index++;
+    }
+    block_index++;
+  }
+
+  for_vector(SymExpr, se, expiringRHSes) {
+    //   move tmp, someCall();
+    //   move variable, initCopy(tmp)     (this is 'call')
+    //   (tmp dead)
+
+    // or
+
+    //   move tmp, someCall();
+    //   = variable tmp              (this is 'call')
+    //   (tmp dead)
+
+    //   ->
+
+    //   move tmp, someCall();
+    //   move variable, tmp
+    //   (do not destroy tmp)
+
+    // I don't think we want to change FLAG_INSERT_AUTO_COPY
+    // since it affects only moves *to* the variable
+    // and right now we're just reading the variable.
+
+    // Remove FLAG_INSERT_AUTO_DESTROY since we transfer
+    // the responsibility of freeing to the LHS
+    se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+
+    // replace the initCopy/assign with a move
+    CallExpr* parentExpr = toCallExpr(se->parentExpr);
+    if (parentExpr) {
+      SET_LINENO(parentExpr);
+
+      if (parentExpr->isNamed("=") ) {
+        SymExpr* lhs = toSymExpr(parentExpr->get(1));
+        SymExpr* rhs = toSymExpr(parentExpr->get(2));
+        INT_ASSERT(se == rhs);
+        CallExpr *newMove = new CallExpr(PRIM_MOVE, lhs->var, rhs->var);
+        //printf("REPLACING =\n");
+        //nprint_view(parentExpr);
+        //printf("WITH\n");
+        //nprint_view(newMove);
+
+        parentExpr->replace(newMove);
+        if( lhs->var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ) {
+          FnSymbol* autoDestroy = getAutoDestroy(lhs->typeInfo());
+          if (autoDestroy) {
+            CallExpr* destroyLHS;
+            destroyLHS = new CallExpr(autoDestroy, lhs->var);
+            newMove->insertBefore(destroyLHS);
+          }
+        }
+      } else if( parentExpr->isNamed("chpl__initCopy") ||
+                 parentExpr->isNamed("chpl__autoCopy") ) {
+
+        CallExpr* grandparentExpr = toCallExpr(parentExpr->parentExpr);
+
+        INT_ASSERT(grandparentExpr->isPrimitive(PRIM_MOVE));
+        SymExpr* lhs = toSymExpr(grandparentExpr->get(1));
+        SymExpr* rhs = toSymExpr(parentExpr->get(1));
+        INT_ASSERT(se == rhs);
+        CallExpr *newMove = new CallExpr(PRIM_MOVE, lhs->var, rhs->var);
+
+        //printf("REPLACING init/auto copy\n");
+        //nprint_view(grandparentExpr);
+        //printf("WITH\n");
+        //nprint_view(newMove);
+
+        grandparentExpr->replace(newMove);
+      }
+    }
+  }
+
+  for_vector(BitVec, out, OUT)
+    delete out;
+
+#else
+  // This is a weaker version of the optimization
+
+  // If the temporary variable is defined more than once,
+  // it will confuse matters to remove FLAG_INSERT_AUTO_DESTROY
+  // from it, so this optimization only applies to temporaries
+  // that are defined once.
+
+  // Therefore, we use a simple definition of "live" for the
+  // variable: namely, it is live if it has more than one use.
+  // We could use liveVariableAnalysis here, but there is an
+  // issue with removing FLAG_INSERT_AUTO_COPY since that
+  // affects the operation of the variable *before* it gets
+  // its final value and is consumed.
+
+  // AUTO_DESTROY only affects the variable after it is
+  // consumed, variable dead -> OK
+
+  // AUTO_COPY affects the variable's definition.
+  // This transformation need not change AUTO_COPY for the
+  // temporary variable going out of scope.
+
+  Vec<Symbol*> candidateVarSet;
+  Vec<SymExpr*> candidateSymExprs;
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+
+  //
+  // compute varSet
+  //
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(fn->body, symExprs);
+
+  for_vector(SymExpr, se, symExprs) {
+    CallExpr* call = toCallExpr(se->parentExpr);
+
+    if (call) {
+      if ((call->isNamed("chpl__initCopy") && se == call->get(1)) ||
+          (call->isNamed("chpl__autoCopy") && se == call->get(1)) ||
+          (call->isNamed("=") && se == call->get(2))) {
+        printf("Adding %i to candidates\n", se->id);
+        candidateVarSet.set_add(se->var);
+        candidateSymExprs.add(se);
+      }
+    }
+  }
+
+  //
+  // build def/use maps for candidate variables
+  //
+  //buildDefUseMaps(candidateVarSet, defMap, useMap);
+  buildDefUseMaps(fn, defMap, useMap);
+
+  // Replace patterns like this:
+  //   move tmp, someCall();
+  //   = (variable, tmp)
+  //   (destroy tmp)
+  //
+  // or
+  //   move tmp, someCall();
+  //   move variable, initCopy(tmp)
+  //   (destroy tmp)
+  //
+  // where tmp:
+  //  * is dead once it is copied to "variable"
+  //
+  // with this:
+  //   move tmp, someCall();
+  //   move variable, tmp
+  //   (don't destroy tmp)
+
+  forv_Vec(SymExpr, se, candidateSymExprs) {
+    SymExpr* the_use = NULL;
+    SymExpr* the_def = NULL;
+    bool multiple_uses = false;
+    bool multiple_defs = false;
+
+    for_uses(use, useMap, se->var) {
+      if (the_use) multiple_uses = true;
+      the_use = use;
+      printf("found use %i\n", use->id);
+    }
+    for_defs(def, defMap, se->var) {
+      if (the_def) multiple_defs = true;
+      the_def = def;
+      printf("found def %i\n", def->id);
+    }
+
+    if (the_use && the_def && !multiple_uses && !multiple_defs &&
+        se->var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ) {
+      // TODO -- handle ref temps
+      // I don't think we want to change FLAG_INSERT_AUTO_COPY
+      // since it affects only moves *to* the variable
+      // and right now we're just reading the variable.
+      //
+      //se->var->removeFlag(FLAG_INSERT_AUTO_COPY);
+      se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+      // replace the initCopy/assign with a move
+      CallExpr* parentExpr = toCallExpr(se->parentExpr);
+      if (parentExpr) {
+        SET_LINENO(parentExpr);
+
+        if (parentExpr->isNamed("=") ) {
+          SymExpr* lhs = toSymExpr(parentExpr->get(1));
+          SymExpr* rhs = toSymExpr(parentExpr->get(2));
+          // TODO -- handle ref temps
+          CallExpr *newMove = new CallExpr(PRIM_MOVE, lhs->var, rhs->var);
+          printf("REPLACING =\n");
+          nprint_view(parentExpr);
+          printf("WITH\n");
+          nprint_view(newMove);
+
+          parentExpr->replace(newMove);
+          if( lhs->var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ) {
+            CallExpr* destroyLHS;
+            destroyLHS = new CallExpr(getAutoDestroy(lhs->typeInfo()), lhs);
+            newMove->insertBefore(destroyLHS);
+          }
+        } else if( parentExpr->isNamed("chpl__initCopy") ||
+                   parentExpr->isNamed("chpl__autoCopy") ) {
+
+          CallExpr* grandparentExpr = toCallExpr(parentExpr->parentExpr);
+
+          INT_ASSERT(grandparentExpr->isPrimitive(PRIM_MOVE));
+          SymExpr* lhs = toSymExpr(grandparentExpr->get(1));
+          SymExpr* rhs = toSymExpr(parentExpr->get(1));
+          CallExpr *newMove = new CallExpr(PRIM_MOVE, lhs->var, rhs->var);
+
+          printf("REPLACING init/auto copy\n");
+          nprint_view(grandparentExpr);
+          printf("WITH\n");
+          nprint_view(newMove);
+
+          grandparentExpr->replace(newMove);
+        }
+      }
+    }
+  }
+
+
+  //
+  // cleanup
+  //
+  freeDefUseMaps(defMap, useMap);
+
+#endif
+
+}
 
 void callDestructors() {
+
+  cullAutoDestroyFlags();
+  cullExplicitAutoDestroyFlags();
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    expiringValueOptimization(fn);
+  }
+
   fixupDestructors();
   insertDestructorCalls();
   insertAutoCopyTemps();
-  cullAutoDestroyFlags();
-  cullExplicitAutoDestroyFlags();
+
   insertAutoDestroyCalls();
   returnRecordsByReferenceArguments();
   insertYieldTemps();
