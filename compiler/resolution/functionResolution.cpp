@@ -3392,6 +3392,7 @@ resolveCall(CallExpr* call)
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
      case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
      case PRIM_COERCE:              resolveDefaultGenericType(call);    break;
+     case PRIM_COERCE_INIT_COPY:    resolveDefaultGenericType(call);    break;
      case PRIM_NEW:                 resolveNew(call);                   break;
     }
   }
@@ -3981,7 +3982,9 @@ static void resolveMove(CallExpr* call) {
   // Fix up PRIM_COERCE : remove it if it has a param RHS.
   CallExpr* rhsCall = toCallExpr(rhs);
 
-  if (rhsCall && rhsCall->isPrimitive(PRIM_COERCE)) {
+  if (rhsCall &&
+      (rhsCall->isPrimitive(PRIM_COERCE) ||
+       rhsCall->isPrimitive(PRIM_COERCE_INIT_COPY)) ){
     SymExpr* toCoerceSE = toSymExpr(rhsCall->get(1));
     if (toCoerceSE) {
       Symbol* toCoerceSym = toCoerceSE->var;
@@ -4001,12 +4004,21 @@ static void resolveMove(CallExpr* call) {
           // some reason replacing the whole move doesn't.
           call->get(1)->replace(new SymExpr(lhs));
           call->get(2)->replace(new SymExpr(toCoerceSym));
-        } else if (canCoerce(toCoerceSym->type, toCoerceSym, rhsType,
+        } else if (isRecordWrappedType(rhsType) ||
+                   isAtomicType(rhsType) ||
+                   isSyncType(rhsType) ||
+                   canCoerce(toCoerceSym->type, toCoerceSym, rhsType,
                              NULL, &promotes)) {
-          // any case that doesn't param coerce but does coerce will
+          // Any case that doesn't param coerce but does coerce will
           // be handled in insertCasts later.
+          // Also any case with a record wrapped type won't be handled
+          // at compile-time, so put it off until insertCasts.
+          // That is important for scalar -> array promotion.
+          // Also atomic, sync types don't need to be handled at
+          // compile-time. Putting off the error lets us give
+          // a better error message.
         } else {
-          USR_FATAL(userCall(call), "type mismatch in return from %s to %s",
+          USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
                     toString(toCoerceSym->type), toString(rhsType));
         }
       }
@@ -6401,6 +6413,41 @@ replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret) {
   AST_CHILDREN_CALL(ast, replaceSetterArgWithFalse, fn, ret);
 }
 
+static void
+removeCoerceTypeTemps(CallExpr* move)
+{
+  // Search backwards from move, ending at the block start,
+  // for DefExpr, or a PRIM_MOVE where the LHS
+  // is marked with FLAG_COERCE_TYPE_TEMP.
+
+  Expr* cur = move->prev;
+  while (cur) {
+    DefExpr* def = toDefExpr(cur);
+    CallExpr* call = toCallExpr(cur);
+    Symbol* sym = NULL;
+    if (call && call->isPrimitive(PRIM_MOVE)) {
+      SymExpr* lhs = toSymExpr(call->get(1));
+      if (lhs)
+        sym = lhs->var;
+    }
+    if (def) {
+      sym = def->sym;
+    }
+
+    // Make a note of the previous before we remove cur.
+    Expr* prev = cur->prev;
+
+    if (sym && sym->hasFlag(FLAG_COERCE_TYPE_TEMP)) {
+      // remove this expression.
+      cur->remove();
+    } else {
+      // Assume we have moved up beyond the type temps.
+      break;
+    }
+
+    cur = prev;
+  }
+}
 
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
@@ -6414,8 +6461,20 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
             Type* rhsType = rhs->typeInfo();
             CallExpr* rhsCall = toCallExpr(rhs);
 
-            if (rhsCall && rhsCall->isPrimitive(PRIM_COERCE)) {
-              rhsType = rhsCall->get(1)->typeInfo();
+            bool iscoerce = false;
+            bool isinitcopy = false;
+
+            if (call->id == 503301)
+              gdbShouldBreakHere();
+
+            if (rhsCall) {
+              if (rhsCall->isPrimitive(PRIM_COERCE)) iscoerce = true;
+              if (rhsCall->isPrimitive(PRIM_COERCE_INIT_COPY)) {
+                iscoerce = true;
+                isinitcopy = true;
+              }
+              if (iscoerce || isinitcopy )
+                rhsType = rhsCall->get(1)->typeInfo();
             }
 
             // would this be simpler with getValType?
@@ -6432,31 +6491,77 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
             // different. It could use a _cast call if the types are different,
             // but the = call works better in cases where an array is returned.
 
-            if (rhsCall && rhsCall->isPrimitive(PRIM_COERCE)) {
+            if (iscoerce || isinitcopy) {
               // handle move lhs, coerce rhs
               SymExpr* fromExpr = toSymExpr(rhsCall->get(1));
-              SymExpr* fromTypeExpr = toSymExpr(rhsCall->get(2));
               Symbol* from = fromExpr->var;
-              Symbol* fromType = fromTypeExpr->var;
               Symbol* to = lhs->var;
+
+              // PRIM_COERCE and PRIM_COERCE_INIT_COPY have a 2nd arg
+              // indicating the type. PRIM_INIT_COPY does not.
+              SymExpr* fromTypeExpr = NULL;
+              Symbol* fromType = NULL;
+              if (iscoerce) {
+                fromTypeExpr = toSymExpr(rhsCall->get(2));
+                fromType = fromTypeExpr->var;
+                iscoerce = true;
+              }
 
               // Check that lhsType == the result of coercion
               INT_ASSERT(lhsType == rhsCall->typeInfo());
 
-              if (!typesDiffer) {
-                // types are the same. remove coerce and
-                // handle reference level adjustments. No cast necessary.
+              if (iscoerce &&
+                  lhsType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ) {
+                typesDiffer = true;
+                // Arrays etc have a runtime type component (e.g. length).
+                // When we compared the type, this runtime type component
+                // was not included.
+                // Ideally, we could determine if two arrays must have
+                // the same runtime type at this point...
+                // if (runtimeTypesDefinatelySame(call, lhsType, fromTypeExpr))
+                //    typesDiffer = false;
+                // Alternatively, we could check if the types are
+                // compatible at runtime... and possibly fail if not.
+              }
 
-                if (rhsType == lhsType)
-                  rhs = new SymExpr(from);
-                else if (rhsType == lhsType->refType)
-                  rhs = new CallExpr(PRIM_DEREF, new SymExpr(from));
-                else if (rhsType->refType == lhsType)
-                  rhs = new CallExpr(PRIM_ADDR_OF, new SymExpr(from));
+              if (!iscoerce || !typesDiffer) {
+                // types are the same or PRIM_INIT_COPY.
+                // remove coerce and handle reference level adjustments.
+                // No cast necessary.
 
-                CallExpr* move = new CallExpr(PRIM_MOVE, to, rhs);
-                call->replace(move);
-                casts.add(move);
+                // We won't need the type part of the coerce
+                // primitive. So remove any AST elements that resulted
+                // from that when normalizing.
+                if (iscoerce)
+                  removeCoerceTypeTemps(call);
+
+                bool needsInitCopy;
+                needsInitCopy = isinitcopy;
+
+                if (needsInitCopy) {
+                  CallExpr* initCopy = new CallExpr("chpl__initCopy", from);
+                  CallExpr* move = new CallExpr(PRIM_MOVE, to, initCopy);
+                  call->replace(move);
+
+                  // Resolve each of the new CallExprs They need to be resolved
+                  // separately since resolveExpr does not recurse.
+                  resolveExpr(initCopy);
+                  resolveExpr(move);
+                  // (alternatively we could add these calls to casts
+                  //  to be resolved in the caller)
+
+                } else {
+                  if (rhsType == lhsType)
+                    rhs = new SymExpr(from);
+                  else if (rhsType == lhsType->refType)
+                    rhs = new CallExpr(PRIM_DEREF, new SymExpr(from));
+                  else if (rhsType->refType == lhsType)
+                    rhs = new CallExpr(PRIM_ADDR_OF, new SymExpr(from));
+
+                  CallExpr* move = new CallExpr(PRIM_MOVE, to, rhs);
+                  call->replace(move);
+                  casts.add(move);
+                }
               } else {
 
                 // Use = if the types differ.  This should cause the 'from'
@@ -6465,7 +6570,13 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // better with returning arrays. We could probably use _cast
                 // instead of = if fromType does not have a runtime type.
 
-                CallExpr* init = new CallExpr(PRIM_NO_INIT, fromType);
+                bool containsNotPOD = propagateNotPOD(fromType->typeInfo());
+                CallExpr* init;
+                if (containsNotPOD)
+                  init = new CallExpr(PRIM_INIT, fromType);
+                else
+                  init = new CallExpr(PRIM_NO_INIT, fromType);
+
                 CallExpr* moveInit = new CallExpr(PRIM_MOVE, to, init);
                 call->insertBefore(moveInit);
 
@@ -6479,15 +6590,17 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 resolveExpr(init);
                 resolveExpr(moveInit);
                 resolveExpr(assign);
+                // (alternatively we could add these calls to casts
+                //  to be resolved in the caller)
 
                 // We've replaced the move with no-init/assign, so remove it.
                 call->remove();
               }
             } else {
               // handle adding casts for a regular PRIM_MOVE
-
               if (typesDiffer) {
                 // Add a cast if the types don't match
+                rhs->remove();
                 Symbol* tmp = NULL;
                 if (SymExpr* se = toSymExpr(rhs)) {
                   tmp = se->var;
@@ -6497,7 +6610,7 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
                 }
                 CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
-                rhs->replace(cast);
+                call->insertAtTail(cast);
                 casts.add(cast);
               }
             }

@@ -638,6 +638,10 @@ initPrimitive() {
   // resolution.
   // It coerces its first argument to the type stored in the second argument.
   prim_def(PRIM_COERCE, "coerce", returnInfoSecondType);
+  // Like coerce, but calls initCopy in the case that the types
+  // are the same. Used for var r:R = expr()
+  // instead of for return types.
+  prim_def(PRIM_COERCE_INIT_COPY, "coerce copy", returnInfoSecondType);
 
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);

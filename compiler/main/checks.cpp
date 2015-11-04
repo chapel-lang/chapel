@@ -494,6 +494,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_ERROR:
         case PRIM_FORALL_LOOP:
         case PRIM_COERCE:
+        case PRIM_COERCE_INIT_COPY:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");
           break;
