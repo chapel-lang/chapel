@@ -101,22 +101,63 @@ static bool isDeadVariable(Symbol* var,
 // when a is not otherwise used, the rationale being that no value is added
 // by its existence as an intermediary step.
 //
-static void removeAutoCopyDestroyPair(Symbol* var, Vec<SymExpr*>* defs,
-                                    Vec<SymExpr*>* uses) {
+static void removeAutoCopyDestroyPair(Symbol* var,
+                                      Vec<SymExpr*>* defs,
+                                      Vec<SymExpr*>* uses,
+                                      Map<Symbol*,Vec<SymExpr*>*> & defMap,
+                                      Map<Symbol*,Vec<SymExpr*>*> & useMap) {
   // Eliminates cases with more than 2 uses, as we only want to remove an
   // autoCopy/autoDestroy pair if they are the only uses of that variable
   if (uses && uses->n == 2) {
     CallExpr* copyCall = NULL;
     CallExpr* destroyCall = NULL;
+    CallExpr* copyAddrOfCall = NULL;
+    CallExpr* destroyAddrOfCall = NULL;
+
     // Traverse the two uses and save a single autoCopy and autoDestroy.
     forv_Vec(SymExpr, se, *uses) {
       if (se->parentExpr) {
         if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          if (FnSymbol* fn = call->isResolved()) {
-            if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
-              copyCall = call;
-            } else if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-              destroyCall = call;
+          CallExpr* addrOfCall = NULL;
+
+          if (call->isPrimitive(PRIM_ADDR_OF)) {
+            // Handle ADDR_OF for temporary for calling copy
+            // constructor or destructor.
+
+            // Switch call to the variable defining whatever
+            // we got the addr of.
+
+            // If there is a single use of the reference temporary,
+            // set call to it, so the optimization can proceed.
+            CallExpr* parentMove = toCallExpr(call->parentExpr);
+            if (parentMove) {
+              addrOfCall = parentMove;
+
+              SymExpr* refTmp = toSymExpr(parentMove->get(1));
+
+              Vec<SymExpr*>* refTmpDefs = defMap.get(refTmp->var);
+              Vec<SymExpr*>* refTmpUses = useMap.get(refTmp->var);
+              if (refTmpDefs && refTmpUses &&
+                  refTmpDefs->n == 1 && refTmpUses->n == 1) {
+                Expr *firstUse = refTmpUses->first();
+                CallExpr *maybeDestructor = toCallExpr(firstUse->parentExpr);
+                if (maybeDestructor) call = maybeDestructor;
+              }
+            }
+          }
+
+          if(FnSymbol* fn = call->isResolved()) {
+            if (call->numActuals() == 1) {
+              if (fn->hasFlag(FLAG_AUTO_COPY_FN)) {
+                copyCall = call;
+                copyAddrOfCall = addrOfCall;
+              } else if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+                destroyCall = call;
+                destroyAddrOfCall = addrOfCall;
+              } else if (fn == se->typeInfo()->destructor) {
+                destroyCall = call;
+                destroyAddrOfCall = addrOfCall;
+              }
             }
           }
         }
@@ -154,6 +195,10 @@ static void removeAutoCopyDestroyPair(Symbol* var, Vec<SymExpr*>* defs,
                 copyCall->get(1)->replace(replacement);
                 // The autoDestroy we will no longer need, so remove it
                 destroyCall->remove();
+                // Also remove addrOf calls since we don't need the
+                // reference temporary either.
+                if (destroyAddrOfCall) destroyAddrOfCall->remove();
+                if (copyAddrOfCall) copyAddrOfCall->remove();
                 // Remove var's defExpr.
                 var->defPoint->remove();
               }
@@ -201,7 +246,7 @@ void deadVariableElimination(FnSymbol* fn) {
       }
       sym->defPoint->remove();
     } else {
-      removeAutoCopyDestroyPair(sym, defs, uses);
+      removeAutoCopyDestroyPair(sym, defs, uses, defMap, useMap);
     }
   }
 
