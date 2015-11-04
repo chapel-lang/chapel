@@ -19,14 +19,14 @@ iter myiter() ref :R {
 
 
 proc run() {
-  var tot:atomic int;
-  coforall r in myiter() {
-    tot.add(r.x);
+  var tot: int;
+  for r in myiter() {
+    tot += r.x;
     var tmp: R;
     r = tmp;
     if verbose then writeln(r);
   }
-  writeln(tot.read());
+  writeln(tot);
 }
 
 run();
