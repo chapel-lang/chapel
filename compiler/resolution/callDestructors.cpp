@@ -963,16 +963,18 @@ static void expiringValueOptimization(FnSymbol* fn) {
         } else if (call->isNamed("=") ) {
           LHS = toSymExpr(call->get(1));
           RHS = toSymExpr(call->get(2));
-          // Don't do this optimization if the LHS and RHS have
-          // different types.
-          if (LHS->typeInfo() == RHS->typeInfo()) {
-            // For now, disable the optimization for types that
-            // have runtime types. We could enable it - we would
-            // just need to check array bounds...
-            if (!LHS->typeInfo()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-              copyCall = call;
-          }
+          // For now, disable the optimization for types that
+          // have runtime types. We could enable it - we would
+          // just need to check array bounds...
+          if (!LHS->typeInfo()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+            copyCall = call;
         }
+      }
+
+      // Don't do this optimization if the LHS and RHS have
+      // different types.
+      if (LHS && RHS && LHS->typeInfo() != RHS->typeInfo()) {
+        copyCall = NULL;
       }
 
       if (copyCall) {
