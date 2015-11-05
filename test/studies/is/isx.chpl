@@ -32,8 +32,6 @@
 
 use BlockDist, Barrier;
 
-//enum scaling {strong, weak, weakiso, debug};
-
 // strong:
 // - totkeys = 2**27
 // - compute keys per locale
@@ -61,35 +59,95 @@ config type keyType = int(32);
 // TODO: replace 'numLocales' below with 'numBuckets' and LocaleSpace
 // with BucketSpace (or somesuch)??
 
-config const // scalingMode = scaling.debug,
-             keysPerLocale = 32, //2**27,
-             totalKeys = keysPerLocale*numLocales,
-             maxKeyVal = 32, // 2**23,
-             bucketWidth = maxKeyVal / numLocales,
-             recvBuffFactor = 2;
+//
+// The following options respectively control...
+// - whether or not to print debug information
+// - whether or not to do a test run (results in small problem sizes)
+// - whether or not to run quietly (squashes successful verification messages)
+// - whether or not to print the execution time configuration
+// - whether or not to print the number of locales used to run
+//
+config const debug = false,
+             testrun = debug,
+             quiet = false,
+             printConfig = !quiet,
+             printNumLocales = !quiet;
 
+
+//
+// Define three scaling modes: strong scaling, weak scaling, and
+// weakISO (in which the number of buckets per locale is held
+// constant.
+//
+enum scaling {strong, weak, weakISO};
+
+//
+// Which scaling mode should the program be run in?
+//
+config const mode = scaling.weak;
+
+//
+// The number of keys is defined in terms of 'n', though whether this
+// represents the total number of keys or the number of keys per
+// bucket depends on whether we're running in a strong or weak scaling
+// mode.  When debugging, we run a smaller problem size.
+//
+config const n = if testrun then 32 else 2**27;
+
+//
+// The total number of keys
+//
+config const totalKeys = if mode == scaling.strong then n
+                                                   else n * numLocales;
+
+//
+// The number of keys per locale -- this is approximate for strong
+// scaling if the number of locales doesn't divide 'n' evenly.
+//
+config const keysPerLocale = if mode == scaling.strong then n/numLocales
+                                                       else n;
+
+//
+// The maximum key value to use.  When debugging, use a small size.
+//
+config const maxKeyVal = if testrun then 32 else 2**28;
+
+//
+// When running in the weakISO scaling mode, this width of each bucket
+// is fixed.  Otherwise, it's the largest key value divided by the
+// number of locales.
+//
+config const bucketWidth = if mode == scaling.weakISO then 8192
+                                                      else maxKeyVal/numLocales;
+
+//
+// This tells how large the receive buffer should be relative to the
+// average number of keys per locale.
+//
+config const recvBuffFactor = 2.0,
+             recvBuffSize = (totalKeys * recvBuffFactor): int;
+
+//
+// These specify the number of burn-in runs and number of experimental
+// trials, respectively.  If the number of trials is zero, we exit
+// after printing the configuration (useful for debugging problem size
+// logic without doing anything intense).
+//
 config const numBurnInRuns = 1,
              numTrials = 1;
-
-config const printConfig = true,
-             debug = false,
-             quiet = false;
 
 
 // TODO: add timers and timing printouts
 
-if printConfig {
-  // TODO: print out scaling mode
-  writeln("total keys = ", totalKeys);
-  writeln("keys per locale = ", keysPerLocale);
-  writeln("bucketWidth = ", bucketWidth);
-  writeln("maxKeyVal = ", maxKeyVal);
-  writeln("numLocales = ", numLocales);
-}
+if printConfig then
+  printConfiguration();
+
+if numTrials == 0 then
+  exit(0);
 
 const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 
-var myBucketKeys: [OnePerLocale] [0..#totalKeys*recvBuffFactor] int;
+var myBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
 var recvOffset: [OnePerLocale] atomic int;
 var verifyKeyCount: atomic int;
 
@@ -101,12 +159,13 @@ coforall loc in Locales do
     // SPMD here
     if myBucketKeys[here.id][0].locale != here then
       warning("Need to distribute myBucketKeys");
-    for i in 1..numBurnInRuns do
-      bucketSort();
-    for i in 1..numTrials {
-      // TODO: Timing stuff
-      bucketSort(verify = i==numTrials);
-    }
+    //
+    // The non-positive iterations represent burn-in runs, so don't
+    // time those.  To reduce time spent in verification, verify only
+    // the final timed run.
+    //
+    for i in 1-numBurnInRuns..numTrials do
+      bucketSort(time=(i>0), verify=(i==numTrials));
   }
 
 if debug {
@@ -116,7 +175,7 @@ if debug {
 }
   
 
-proc bucketSort(verify = false) {
+proc bucketSort(time = false, verify = false) {
   var myKeys = makeInput();
 
   var bucketSizes = countLocalBucketSizes(myKeys);
@@ -317,6 +376,17 @@ inline proc makeInput() {
     writeln(here.id, ": myKeys: ", myKeys);
 
   return myKeys;
+}
+
+proc printConfiguration() {
+  // TODO: print out scaling mode
+  writeln("total keys = ", totalKeys);
+  writeln("keys per locale = ", keysPerLocale);
+  writeln("bucketWidth = ", bucketWidth);
+  writeln("maxKeyVal = ", maxKeyVal);
+  if printNumLocales then
+    writeln("numLocales = ", numLocales);
+  writeln("numTrials = ", numTrials);
 }
 
              

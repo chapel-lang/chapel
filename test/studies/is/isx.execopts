@@ -1,1 +1,6 @@
---printConfig=false
+--printNumLocales=false --testrun=true --mode=strong  # isx-test-strong.good
+--printNumLocales=false --testrun=true --mode=weak    # isx-test-weak.good
+--printNumLocales=false --testrun=true --mode=weakISO # isx-test-weakISO.good
+--printNumLocales=false --numTrials=0 --mode=strong # isx-strong-probsize.good
+--printNumLocales=false --numTrials=0 --mode=weak # isx-weakISO-probsize.good
+--printNumLocales=false --numTrials=0 --mode=weakISO # isx-weakISO-probsize.good
