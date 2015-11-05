@@ -1,0 +1,9 @@
+Creating a symlink
+hasLink exists: true
+hasLink/amALink exists: true
+linksSrc/linked.txt exists: true
+Post rmTree call
+hasLink exists: false
+hasLink/amALink exists: false
+linksSrc/linked.txt exists: true
+A link to me exists in another directory
