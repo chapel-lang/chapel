@@ -2902,17 +2902,40 @@ module ChapelArray {
     return b;
   }
 
+  //
+  // Noakes 2015/11/05
+  //
+  // This function is invoked to implement for expressions and
+  // forall expressions. An iterator is invoked that generates
+  // the elements of the resulting array.
+  //
+  // Although it appears to be a copy constructor, it is in fact
+  // an Array constructor.  It appears to me that this implementation
+  // it due to an artifact in the interaction between normalize and
+  // function resolution; the latter inserts calls to initCopy() without
+  // understanding the types involved.  This in turn leads to some
+  // confusion for the compiler is resolved by the liberal use of
+  // pragmas.
+  //
+
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
+
+    // The use of an explicit initCopy() is required
+    // to support nested for/forall expressions.
     iter _ir_copy_recursive(ir) {
       for e in ir do
         yield chpl__initCopy(e);
     }
 
-    pragma "no copy" var irc = _ir_copy_recursive(ir);
+    pragma "no copy"
+    var irc  = _ir_copy_recursive(ir);
 
-    var i = 1, size = 4;
-    pragma "insert auto destroy" var D = {1..size};
+    var i    = 1;
+    var size = 4;
+
+    pragma "insert auto destroy"
+    var D    = {1..size};
 
     // note that _getIterator is called in order to copy the iterator
     // class since for arrays we need to iterate once to get the
@@ -2924,16 +2947,18 @@ module ChapelArray {
     var A: [D] iteratorIndexType(irc);
 
     for e in irc {
-      //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
+      // The resulting array grows dynamically
       if i > size {
-        size = size * 2;
-        D = {1..size};
+        size = 2 * size;
+        D    = { 1 .. size };
       }
-      //A(i) = ee;
+
       A(i) = e;
-      i = i + 1;
+      i    = i + 1;
     }
-    D = {1..i-1};
+
+    D = { 1 .. i - 1 };
+
     return A;
   }
 
