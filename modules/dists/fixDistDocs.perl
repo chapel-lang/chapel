@@ -14,6 +14,7 @@ $#ARGV == 0 or die "Error: This script takes one argument," .
 my $TEMPDIR = "$ARGV[0]/source/modules/dists";
 chdir $TEMPDIR or die "Could not cd to $TEMPDIR";
 
+
 my $errors = 0;
 
 process("../layouts/LayoutCSR.rst");
@@ -41,6 +42,9 @@ sub errorNF { print "Error: ", @_, "\n"; $errors++; }
 
 sub process {
    my ($rst) = @_;
+   # extract module name from file name
+   $rst =~ m@([^/.]*)\.rst$@ or die "Could not extract module name from file name $rst";
+   my $mod = $1;
    my $tmp = "$rst.tmp";
    #print "processing $rst\n";
 
@@ -49,24 +53,24 @@ sub process {
    open MOD, ">", $tmp or
        ( errorNF("could not open the temp file '$tmp'"), close RST, return );
 
-   # Print all lines until the one after "Module:",
+   # Print all lines until the one after the module name heading,
    # which is the underline.
    while (<RST>) {
       print MOD;
-      if (/^Module:/) {
-	 my $next = <RST>;
-	 $next =~ /^=+$/ or die "Expected a line after Module:, got $next";
-	 print MOD $next;
-	 last;
+      if (m@^$mod$@) {
+         my $next = <RST>;
+         $next =~ /^=+$/ or die "Expected an underline after module name, got $next";
+         print MOD $next;
+         last;
       }
    }
 
    # Skip everything until "class::", edit that line and print.
    while (<RST>) {
       if (/^.. class::/) {
-	 s/ : Base.*//;
-	 print MOD;
-	 last;
+         s/ : Base.*//;
+         print MOD;
+         last;
       }
    }
 
