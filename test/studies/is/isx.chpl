@@ -72,7 +72,8 @@ config const numBurnInRuns = 1,
              numTrials = 1;
 
 config const printConfig = true,
-             debug = false;
+             debug = false,
+             quiet = false;
 
 
 // TODO: add timers and timing printouts
@@ -272,6 +273,9 @@ inline proc verifyResults(myBucketSize, myLocalKeyCounts) {
   barrier.barrier();
   if verifyKeyCount.read() != totalKeys then
     halt("total key count mismatch: " + verifyKeyCount.read() + " != " + totalKeys);
+
+  if (!quiet && here.id == 0) then
+    writeln("Verification successful!");
 }
 
 
@@ -281,7 +285,7 @@ inline proc makeInput() {
   // extern {
   // #include "pcg_basic.h"
   // }
-  require "pcg_basic.h", "pcg_basic.c";
+  require "ref-version/pcg_basic.h", "ref-version/pcg_basic.c";
 
   extern type pcg32_random_t;
   extern proc pcg32_srandom_r(ref rng: pcg32_random_t, 
