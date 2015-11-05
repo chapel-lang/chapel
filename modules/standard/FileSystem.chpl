@@ -436,6 +436,7 @@ private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySy
 
   for dirname in listdir(path=src, dirs=true, files=false, listlinks=copySymbolically) {
     copyTreeHelper(error, src+"/"+dirname, dest+"/"+dirname, copySymbolically);
+    if (error != ENOERR) then return;
   }
 }
 
