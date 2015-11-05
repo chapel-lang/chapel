@@ -232,18 +232,20 @@ module DefaultAssociative {
 
       if debugDefaultAssoc then
         writeln("In domain follower code: Following ", chunk);
-      
-      if followThisDom.dsiNumIndices != this.dsiNumIndices then
-        halt("zippered associative domains do not match");
 
       const sameDom = followThisDom == this;
+      
+      if !sameDom then
+        if followThisDom.dsiNumIndices != this.dsiNumIndices then
+          halt("zippered associative domains do not match");
 
       var otherTable = followThisDom.table;
       for slot in chunk.low..chunk.high {
-        if otherTable[slot].status == chpl__hash_status.full {
+        var entry = otherTable[slot];
+        if entry.status == chpl__hash_status.full {
           var idx = slot;
           if !sameDom {
-            const (match, loc) = _findFilledSlot(otherTable[slot].idx, haveLock=true);
+            const (match, loc) = _findFilledSlot(entry.idx, haveLock=true);
             if !match then halt("zippered associative domains do not match");
             idx = loc;
           }
@@ -588,17 +590,19 @@ module DefaultAssociative {
       if debugDefaultAssoc then
         writeln("In array follower code: Following ", chunk);
 
-      if followThisDom.dsiNumIndices != this.dom.dsiNumIndices then
-        halt("zippered associative array does not match the iterated domain");
+      const sameDom = followThisDom == this.dom;
 
-      const sameDom = followThisDom == this;
+      if !sameDom then
+        if followThisDom.dsiNumIndices != this.dom.dsiNumIndices then
+          halt("zippered associative array does not match the iterated domain");
 
       var otherTable = followThisDom.table;
       for slot in chunk.low..chunk.high {
-        if otherTable[slot].status == chpl__hash_status.full {
+        var entry = otherTable[slot];
+        if entry.status == chpl__hash_status.full {
           var idx = slot;
           if !sameDom {
-            const (match, loc) = dom._findFilledSlot(otherTable[slot].idx, haveLock=true);
+            const (match, loc) = dom._findFilledSlot(entry.idx, haveLock=true);
             if !match then halt("zippered associative array does not match the iterated domain");
             idx = loc;
           }
