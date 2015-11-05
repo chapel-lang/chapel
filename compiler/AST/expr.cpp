@@ -3889,7 +3889,6 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
 }
 
 static GenRet codegen_prim_get_real(GenRet arg, Type* type, bool real) {
-// DITEN
   GenRet ret;
   const char* realOrImag;
   char fnName[21];
