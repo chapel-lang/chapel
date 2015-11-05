@@ -1,0 +1,1 @@
+badAssocZip.chpl:4: error: halt reached - zippered associative array does not match the iterated domain
