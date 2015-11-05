@@ -592,7 +592,7 @@ GenRet baseASTCodegenInt(int x)
 
 GenRet baseASTCodegenString(const char* str)
 {
-  return baseASTCodegen(new_StringSymbol(str));
+  return baseASTCodegen(new_CStringSymbol(str));
 }
 
 /************************************* | **************************************

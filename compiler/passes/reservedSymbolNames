@@ -282,4 +282,5 @@
   mkfifo
   mknod
   stat
+  symlink
   umask

@@ -1,4 +1,4 @@
-Module: recordsAndClasses.doc
+recordsAndClasses.doc
    Record: thingy
    Class: whatchamacallit
       var aThingy: thingy

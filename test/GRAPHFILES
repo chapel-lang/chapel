@@ -111,6 +111,8 @@ studies/parboil/stencil/stencil.graph
 # suite: PARSEC benchmarks
 studies/parsec/blackscholes.graph
 studies/parsec/blackscholes_promote.graph
+# suite: LCALS benchmarks
+studies/lcals/LCALSMain.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
 npb/ep/ep.graph

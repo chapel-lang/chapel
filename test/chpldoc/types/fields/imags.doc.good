@@ -1,4 +1,4 @@
-Module: imags.doc
+imags.doc
    Record: Foo
       var anImag: imag = 2.0i
       const bar = 1.0i

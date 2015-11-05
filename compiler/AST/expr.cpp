@@ -141,6 +141,17 @@ const char* DefExpr::name() const {
   return retval;
 }
 
+// Returns true if 'this' properly contains the given expr, false otherwise.
+bool Expr::contains(const Expr* expr) const {
+  const Expr* parent = expr->parentExpr;
+
+  while (parent != NULL && parent != this) {
+    parent = parent->parentExpr;
+  }
+
+  return (parent == this) ? true : false;
+}
+
 // Return true if this expression is a ModuleDefinition i.e. it
 // is a DefExpr and the referenced symbol is a Module Symbol
 
@@ -216,6 +227,27 @@ Expr* Expr::getStmtExpr() {
 
 Expr* Expr::getNextExpr(Expr* expr) {
   return this;
+}
+
+// Returns the nearest enclosing *scoped* block statement (excluding 'this')
+// that contains 'this'
+
+// It is probably an error if there is no such BlockStmt.
+// Currently return NULL.  Consider throwing aninternal error in the future.
+BlockStmt* Expr::getScopeBlock() {
+  Expr*      expr   = this->parentExpr;
+  BlockStmt* retval = NULL;
+
+  while (expr != NULL && retval == NULL) {
+    BlockStmt* block = toBlockStmt(expr);
+
+    if (block != NULL && (block->blockTag & BLOCK_SCOPELESS) == 0)
+      retval = block;
+    else
+      expr   = expr->parentExpr;
+  }
+
+  return retval;
 }
 
 void Expr::verify() {
@@ -439,6 +471,10 @@ void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
+Expr* SymExpr::getFirstChild() {
+  return NULL;
+}
+
 Expr* SymExpr::getFirstExpr() {
   return this;
 }
@@ -538,6 +574,10 @@ UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
+Expr* UnresolvedSymExpr::getFirstChild() {
+  return NULL;
+}
+
 Expr* UnresolvedSymExpr::getFirstExpr() {
   return this;
 }
@@ -618,6 +658,10 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
     INT_FATAL(this, "DefExpr of ArgSymbol cannot have either exprType or init");
 
   gDefExprs.add(this);
+}
+
+Expr* DefExpr::getFirstChild() {
+  return NULL;
 }
 
 Expr* DefExpr::getFirstExpr() {
@@ -915,8 +959,9 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
   //      T3 = (T == T2);   // not actual LLVM syntax
   // in LLVM, boolean type is i1
   if (val.val->getType() != ptrValType){
-    val.val = convertValueToType(val.val, ptrValType, !val.isUnsigned);
-    INT_ASSERT(val.val);
+    llvm::Value* v = convertValueToType(val.val, ptrValType, !val.isUnsigned);
+    INT_ASSERT(v);
+    val.val = v;
   }
 
   return codegenStoreLLVM(val.val, ptr.val, valType);
@@ -3510,6 +3555,18 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
 CallExpr::~CallExpr() { }
 
 
+Expr* CallExpr::getFirstChild() {
+  Expr* retval = NULL;
+
+  if (baseExpr)
+    retval = baseExpr;
+
+  else if (argList.head)
+    retval = argList.head;
+
+  return retval;
+}
+
 Expr* CallExpr::getFirstExpr() {
   Expr* retval = NULL;
 
@@ -4654,28 +4711,43 @@ GenRet CallExpr::codegen() {
       ret = codegenXor(get(1), get(2));
       break;
     case PRIM_ASSIGN:
-      // The original, simplistic implementation.  Works but may be slow.
-      // (See the implementation of PRIM_MOVE above for several peephole
-      // optimizations depending on specifics of the RHS expression.)
+      {
+        Expr* lhs = get(1);
+        Expr* rhs = get(2);
+        TypeSymbol* lhsTypeSym = lhs->typeInfo()->symbol;
+        TypeSymbol* rhsTypeSym = rhs->typeInfo()->symbol;
 
-      // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(get(1), get(2));
-      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-                 !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        // This case was taken from PRIM_MOVE unfortunately
-        if (get(2)->typeInfo() != dtString)
-          codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
-        else
-          codegenCall("chpl_string_widen", codegenAddrOf(get(1)), get(2),
-                      get(3), get(4));
-      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(codegenDeref(get(1)), get(2));
-      } else {
-        codegenAssign(get(1), get(2));
+        // PRIM_ASSIGN differs from PRIM_MOVE in that PRIM_ASSIGN always copies
+        // objects.  PRIM_MOVE can be used to copy a pointer (i.e. reference)
+        // into another pointer, but if you try this with PRIM_ASSIGN, instead
+        // it will overwrite what the LHS points to with what the RHS points to.
+
+        // TODO:  Works but may be slow.
+        // (See the implementation of PRIM_MOVE above for several peephole
+        // optimizations depending on specifics of the RHS expression.)
+
+        // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
+        if (lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) &&
+            rhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          codegenAssign(lhs, rhs);
+        } else if ( lhsTypeSym->hasFlag(FLAG_WIDE_CLASS) &&
+                   !rhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          // This case was taken from PRIM_MOVE unfortunately
+          if (rhs->typeInfo() != dtString)
+            codegenAssign(lhs, codegenAddrOf(codegenWideHere(rhs)));
+          else
+            codegenCall("chpl_string_widen",
+                        codegenAddrOf(lhs), rhs, get(3), get(4));
+        } else if (lhsTypeSym->hasFlag(FLAG_REF) ||
+                   lhsTypeSym->hasFlag(FLAG_WIDE_REF) ||
+                   lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
+          if (rhsTypeSym->hasFlag(FLAG_REF))
+            codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
+          else
+            codegenAssign(codegenDeref(lhs), rhs);
+        } else {
+          codegenAssign(lhs, rhs);
+        }
       }
       break;
     case PRIM_ADD_ASSIGN:
@@ -5401,7 +5473,7 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_INT_ERROR:
       codegenCall("chpl_internal_error",
-                  new_StringSymbol("compiler generated error"));
+                  new_CStringSymbol("compiler generated error"));
       break;
     case PRIM_STRING_COPY:
     {
@@ -5724,13 +5796,15 @@ GenRet CallExpr::codegen() {
   return ret;
 }
 
+bool CallExpr::isPrimitive() const {
+  return primitive != NULL;
+}
 
-bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) {
+bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
   return primitive && primitive->tag == primitiveTag;
 }
 
-
-bool CallExpr::isPrimitive(const char* primitiveName) {
+bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
 }
 
@@ -5747,6 +5821,10 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   gNamedExprs.add(this);
 }
 
+
+Expr* NamedExpr::getFirstChild() {
+  return (actual != NULL) ? actual : NULL ;
+}
 
 Expr* NamedExpr::getFirstExpr() {
   return (actual != NULL) ? actual->getFirstExpr() : this;

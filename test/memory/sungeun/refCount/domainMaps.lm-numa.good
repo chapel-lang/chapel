@@ -53,8 +53,8 @@ Copy of domain map:
 Return domain map:
 	248 bytes leaked
 Create domain:
-	408 bytes leaked
+	288 bytes leaked
 Create domain and array:
-	1240 bytes leaked
+	1120 bytes leaked
 total:
-	2646 bytes leaked
+	2406 bytes leaked

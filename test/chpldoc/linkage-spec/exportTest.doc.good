@@ -1,5 +1,5 @@
-Module: exportTest.doc
-   Module: exportTest.doc.Other
+exportTest.doc
+   exportTest.doc.Other
       export proc inside()
          Comment for method inside module 
 

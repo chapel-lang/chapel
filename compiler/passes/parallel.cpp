@@ -774,18 +774,18 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         else {
           BlockStmt* block = toBlockStmt(innermostBlock);
           INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+          block->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
         }
       }
     }
-    // else ... 
+    // else ...
     // TODO: After the new constructor story is implemented, every declaration
     // should have exactly one definition associated with it, so the
     // (defs-> == 1) test above can be replaced by an assertion.
   }
 }
 
-// Returns false if 
+// Returns false if
 //  fLocal == true
 // or
 //  CHPL_COMM == "ugni"
@@ -810,16 +810,15 @@ needHeapVars() {
 //   varSet, varVec - symbols that themselves need to be heap-allocated
 //
 
-// Traverses all 'on' task functions flagged as nonblocking or
-// as needing heap allocation (for its formals), as determined
-// by the comm layer and/or --local setting..
+// Traverses all 'on' task functions flagged as needing heap
+// allocation (for its formals), as determined by the comm layer
+// and/or --local setting..
 // Traverses all ref formals of these functions and adds them to the refSet and
 // refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) &&
-        (needHeapVars() || fn->hasFlag(FLAG_NON_BLOCKING))) {
+    if (fn->hasFlag(FLAG_ON) && needHeapVars()) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);

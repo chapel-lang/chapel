@@ -1,4 +1,4 @@
-Module: hasGlobalVariables.doc
+hasGlobalVariables.doc
    This module has some global scoped variables. 
    var fifth
       This variable has an associated comment and a value 

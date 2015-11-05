@@ -2133,7 +2133,7 @@ proc file.getPath(out error:syserr) : string {
       ret = "unknown";
     }
   }
- return ret; 
+  return ret;
 }
 
 /*

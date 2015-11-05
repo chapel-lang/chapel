@@ -296,6 +296,9 @@ bool isReferenceType(Type* t);
 
 bool isRefCountedType(Type* t);
 bool isRecordWrappedType(Type* t);
+bool isDomImplType(Type* t);
+bool isArrayImplType(Type* t);
+bool isDistImplType(Type* t);
 bool isSyncType(Type* t);
 bool isAtomicType(Type* t);
 bool isRefIterType(Type* t);
@@ -314,6 +317,8 @@ Type* getNamedType(std::string name);
 
 bool needsCapture(Type* t);
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
+
+bool isPOD(Type* t);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);

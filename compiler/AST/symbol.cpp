@@ -168,6 +168,11 @@ bool Symbol::isRenameable() const {
 }
 
 
+// Returns the scope in which the given symbol is declared; NULL otherwise.
+BlockStmt* Symbol::getDeclarationScope() const {
+  return (defPoint != NULL) ? defPoint->getScopeBlock() : NULL;
+}
+
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
   GenRet ret;
@@ -530,69 +535,12 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       }
       break;
     case CONST_KIND_STRING:
-
-        // Note that string immediate values are stored
-        // with C escapes - that is newline is 2 chars \ n
-        // so we have to convert to a sequence of bytes
-        // for LLVM (the C backend can just print it out).
-
-        std::string newString = "";
-        char nextChar;
-        int pos = 0;
-
-        while((nextChar = i->v_string[pos++]) != '\0') {
-          if(nextChar != '\\') {
-            newString += nextChar;
-            continue;
-          }
-
-          nextChar = i->v_string[pos++];
-          switch(nextChar) {
-            case '\'':
-            case '\"':
-            case '?':
-            case '\\':
-              newString += nextChar;
-              break;
-            case 'a':
-              newString += '\a';
-              break;
-            case 'b':
-              newString += '\b';
-              break;
-            case 'f':
-              newString += '\f';
-              break;
-            case 'n':
-              newString += '\n';
-              break;
-            case 'r':
-              newString += '\r';
-              break;
-            case 't':
-              newString += '\t';
-              break;
-            case 'v':
-              newString += '\v';
-              break;
-            case 'x':
-              {
-                char buf[3];
-                long num;
-                buf[0] = buf[1] = buf[2] = '\0';
-                if( i->v_string[pos] ) buf[0] = i->v_string[pos++];
-                if( i->v_string[pos] ) buf[1] = i->v_string[pos++];
-                num = strtol(buf, NULL, 16);
-                newString += (char) num;
-              }
-              break;
-            default:
-              INT_FATAL("Unknown C string escape");
-              break;
-          }
-        }
-
-        ret = info->builder->CreateGlobalString(newString);
+      // Note that string immediate values are stored
+      // with C escapes - that is newline is 2 chars \ n
+      // so we have to convert to a sequence of bytes
+      // for LLVM (the C backend can just print it out).
+      std::string newString = unescapeString(i->v_string);
+      ret = info->builder->CreateGlobalString(newString);
       break;
   }
 
@@ -1953,9 +1901,8 @@ void FnSymbol::codegenPrototype() {
 
     int numArgs = 0;
     for_formals(arg, this) {
-      if(arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK)) {
-        continue;
-      }
+      if (arg->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(arg->codegenType().type);
       argumentNames.push_back(arg->cname);
       numArgs++;
@@ -2052,8 +1999,8 @@ void FnSymbol::codegenDef() {
 
     llvm::Function::arg_iterator ai = func->arg_begin();
     for_formals(arg, this) {
-      if (arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-        continue; // do not print locale argument for on blocks
+      if (arg->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
 
       if (arg->requiresCPtr()){
         info->lvt->addValue(arg->cname, ai,  GEN_PTR, !is_signed(type));
@@ -2237,15 +2184,31 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 }
 
 
+// Inserts the given ast ahead of the _downEndCount call at the end of this
+// function, if present.  Otherwise, inserts it ahead of the return.
 void
 FnSymbol::insertBeforeDownEndCount(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());
+
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
-  CallExpr* last = toCallExpr(ret->prev);
-  if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
-    INT_FATAL(last, "Expected call to _downEndCount");
-  last->insertBefore(ast);
+
+  Expr* prev = ret->prev;
+
+  while (isBlockStmt(prev))
+    prev = toBlockStmt(prev)->body.last();
+
+  CallExpr* last = toCallExpr(prev);
+
+  if (last               &&
+      last->isResolved() &&
+      strcmp(last->isResolved()->name, "_downEndCount") == 0) {
+    last->insertBefore(ast);
+
+  } else {
+    // No _downEndCount() call, so insert the ast before the return.
+    ret->insertBefore(ast);
+  }
 }
 
 
@@ -2679,7 +2642,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   this->printTabs(file, tabs);
-  const char *moduleTitle = astr("Module: ", this->docsName().c_str());
+  const char *moduleTitle = astr(this->docsName().c_str());
   *file << moduleTitle << std::endl;
 
   if (!fDocsTextOnly) {
@@ -2999,6 +2962,65 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 *                                                                   *
 ********************************* | ********************************/
 
+std::string unescapeString(const char* const str) {
+  std::string newString = "";
+  char nextChar;
+  int pos = 0;
+
+  while((nextChar = str[pos++]) != '\0') {
+    if(nextChar != '\\') {
+      newString += nextChar;
+      continue;
+    }
+
+    nextChar = str[pos++];
+    switch(nextChar) {
+      case '\'':
+      case '\"':
+      case '?':
+      case '\\':
+        newString += nextChar;
+        break;
+      case 'a':
+        newString += '\a';
+        break;
+      case 'b':
+        newString += '\b';
+        break;
+      case 'f':
+        newString += '\f';
+        break;
+      case 'n':
+        newString += '\n';
+        break;
+      case 'r':
+        newString += '\r';
+        break;
+      case 't':
+        newString += '\t';
+        break;
+      case 'v':
+        newString += '\v';
+        break;
+      case 'x':
+        {
+          char buf[3];
+          long num;
+          buf[0] = buf[1] = buf[2] = '\0';
+          if( str[pos] ) buf[0] = str[pos++];
+          if( str[pos] ) buf[1] = str[pos++];
+          num = strtol(buf, NULL, 16);
+          newString += (char) num;
+        }
+        break;
+      default:
+        INT_FATAL("Unknown C string escape");
+        break;
+    }
+  }
+  return newString;
+}
+
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 
@@ -3020,6 +3042,10 @@ VarSymbol *new_StringSymbol(const char *str) {
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
+}
+
+VarSymbol *new_CStringSymbol(const char *str) {
+  return new_StringSymbol(str);
 }
 
 

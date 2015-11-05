@@ -105,12 +105,6 @@ symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
-
-// If any of the following three flags is attached to a class (resp. record or
-// union), then that type is not a Plain-Old Data (POD) type.
-symbolFlag( FLAG_HAS_USER_ASSIGNMENT , npr, "has user assignment" , "applied to classes and records for which assignment is explicitly defined")
-symbolFlag( FLAG_HAS_USER_DESTRUCTOR , npr, "has user destructor" , "applied to classes that define a destructor explicitly" )
-symbolFlag( FLAG_HAS_USER_INIT_COPY_FN , npr, "has user init copy fn" , "applied to classes that define an init copy function explicitly" )
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
@@ -171,6 +165,10 @@ symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
+
+// See FLAG_POD below
+symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
+
 symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )
 symbolFlag( FLAG_OMIT_FROM_CONSTRUCTOR , ypr, "omit from constructor" , ncm )
 
@@ -199,13 +197,24 @@ symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )
 symbolFlag( FLAG_PARTIAL_COPY, npr, "partial copy", ncm )
 symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)
 
+// Is this type a Plain-Old Data (POD) type - ie no autocopy/destructor/=
+// need ever be called - bit copies will do.
+// Each aggregate type gets either FLAG_POD or FLAG_NOT_POD during resolution.
+// To check POD-ness of an aggregate type:
+//  * during resolution: use propagateNotPOD()
+//  * after resolution: use isPOD()
+// To check POD-ness of an arbitrary type after resolution:
+//  * use isPOD()
+symbolFlag( FLAG_POD , ypr, "plain old data" , "data can be bit copied")
+
+
 symbolFlag( FLAG_PRIMITIVE_TYPE , ypr, "primitive type" , "attached to primitive types to keep them from being deleted" )
 symbolFlag( FLAG_PRINT_MODULE_INIT_FN , ypr, "print module init fn" , ncm )
 symbolFlag( FLAG_PRINT_MODULE_INIT_INDENT_LEVEL , ypr, "print module init indent level" , ncm )
 symbolFlag( FLAG_PRIVATIZED_CLASS , ypr, "privatized class" , "privatized array or domain class" )
 symbolFlag( FLAG_PRIVATE, npr, "private", ncm )
 symbolFlag( FLAG_PROMOTION_WRAPPER , npr, "promotion wrapper" , ncm )
-symbolFlag( FLAG_RANGE , ypr, "range" , "indicates that this type can be iterated" )
+symbolFlag( FLAG_RANGE , ypr, "range" , "indicates the range type" )
 symbolFlag( FLAG_RECURSIVE_ITERATOR , npr, "recursive iterator" , "iterators which call themselves" )
 symbolFlag( FLAG_REDUCESCANOP , ypr, "ReduceScanOp" , "the ReduceScanOp class" )
 symbolFlag( FLAG_REF , ypr, "ref" , ncm )
@@ -232,7 +241,6 @@ symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
 symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference temporary" )
-symbolFlag( FLAG_TRIVIAL_ASSIGNMENT, ypr, "trivial assignment", "an assignment which may be replaced by a bulk copy without changing its semantics")
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
