@@ -2924,8 +2924,12 @@ module ChapelArray {
     // The use of an explicit initCopy() is required
     // to support nested for/forall expressions.
     iter _ir_copy_recursive(ir) {
-      for e in ir do
-        yield chpl__initCopy(e);
+      for e in ir {
+        pragma "no copy"
+	var ee = chpl__initCopy(e);
+
+        yield ee;
+      }
     }
 
     pragma "no copy"
