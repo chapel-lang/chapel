@@ -826,6 +826,8 @@ static void propagateVar(Symbol* sym) {
               case PRIM_DEREF:
               case PRIM_GET_SVEC_MEMBER:
               case PRIM_GET_SVEC_MEMBER_VALUE:
+              case PRIM_GET_REAL:
+              case PRIM_GET_IMAG:
               case PRIM_VIRTUAL_METHOD_CALL:
                 debug(sym, "Setting %s (%d) to wide\n", lhs->cname, lhs->id);
                 setWide(lhs);

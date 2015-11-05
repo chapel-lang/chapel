@@ -101,6 +101,7 @@ static GenRet codegenOne();
 static GenRet codegenNullPointer();
 
 static GenRet codegenFieldPtr(GenRet base, const char* field);
+static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
 
@@ -3830,6 +3831,33 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
   }
 }
 
+static GenRet codegen_prim_get_real(GenRet arg, Type* type, bool real) {
+// DITEN
+  GenRet ret;
+  const char* realOrImag;
+  char fnName[21];
+  if (real) {
+    realOrImag = "Real";
+  } else {
+    realOrImag = "Imag";
+  }
+  if (type == dtComplex[COMPLEX_SIZE_64]->refType) {
+    snprintf(fnName, 21, "complex64Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, arg);
+  } else if (type == dtComplex[COMPLEX_SIZE_128]->refType) {
+    snprintf(fnName, 21, "complex128Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, arg);
+  } else if (type == dtComplex[COMPLEX_SIZE_64]) {
+    snprintf(fnName, 21, "complex64Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, codegenAddrOf(arg));
+  } else if (type == dtComplex[COMPLEX_SIZE_128]) {
+    snprintf(fnName, 21, "complex128Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, codegenAddrOf(arg));
+  } else {
+    INT_FATAL("Unsupported type in PRIM_GET_REAL");
+  }
+  return ret;
+}
 
 /* Notes about code generation:
  *  Intermediate expressions are returned from Expr::codegen
@@ -3964,6 +3992,40 @@ GenRet CallExpr::codegen() {
         bool handled = true;
         switch (call->primitive->tag)
         {
+         case PRIM_GET_REAL:
+         case PRIM_GET_IMAG:
+         {
+           bool isReal = call->primitive->tag == PRIM_GET_REAL;
+           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+             // move(wide_real, prim_get_real(wide_complex));
+             // turns into: wide_real.locale = wide_complex.locale;
+             //             wide_real.addr = prim_get_real(wide_complex.addr);
+             GenRet t1 = createTempVar(call->get(1)->typeInfo()->getRefType()); // ref(complex)
+             codegenAssign(t1, codegenRaddr(call->get(1)));               // t1 = wide_complex.addr
+             GenRet t2 = createTempVar(get(1)->typeInfo()->getRefType());       // ref(real)
+             codegenAssign(t2, codegen_prim_get_real(t1, call->get(1)->typeInfo()->getRefType(), isReal)); // t2 = prim_get_real(t1)
+            if( info->cfile ) {
+              GenRet to_ptr = get(1);
+              GenRet from = codegenWideAddr(codegenRlocale(call->get(1)), codegenDeref(t2));
+              std::string stmt = codegenValue(to_ptr).c + " = ";
+              stmt += from.c;
+              stmt += ";\n";
+              info->cStatements.push_back(stmt);
+            } else {
+#ifdef HAVE_LLVM
+              GenRet to_ptr = get(1);
+              GenRet from = codegenWideAddr(codegenRlocale(call->get(1)), codegenDeref(t2));
+              // LLVM codegen assignment (non-wide, non-tuple)
+              assert(from.val);
+
+              codegenStoreLLVM(from, to_ptr, type);
+#endif
+            }
+           } else {
+             codegenAssign(get(1), codegen_prim_get_real(call->get(1), call->get(1)->typeInfo(), isReal));
+           }
+           break;
+         }
          case PRIM_DEREF:
          {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
@@ -4806,30 +4868,8 @@ GenRet CallExpr::codegen() {
       codegenCall("chpl_check_nil", ptr, info->lineno, info->filename); 
       break; }
     case PRIM_GET_REAL:
-      if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_64]->refType) {
-        ret = codegenCallExpr("complex64GetRealRef", get(1));
-      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_128]->refType) {
-        ret = codegenCallExpr("complex128GetRealRef", get(1));
-      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_64]) {
-        ret = codegenCallExpr("complex64GetRealRef", codegenAddrOf(get(1)));
-      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_128]) {
-        ret = codegenCallExpr("complex128GetRealRef", codegenAddrOf(get(1)));
-      } else {
-        INT_FATAL("Unsupported type in PRIM_GET_REAL");
-      }
-      break;
     case PRIM_GET_IMAG:
-      if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_64]->refType) {
-        ret = codegenCallExpr("complex64GetImagRef", get(1));
-      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_128]->refType) {
-        ret = codegenCallExpr("complex128GetImagRef", get(1));
-      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_64]) {
-        ret = codegenCallExpr("complex64GetImagRef", codegenAddrOf(get(1)));
-      } else if (get(1)->typeInfo() == dtComplex[COMPLEX_SIZE_128]) {
-        ret = codegenCallExpr("complex128GetImagRef", codegenAddrOf(get(1)));
-      } else {
-        INT_FATAL("Unsupported type in PRIM_GET_IMAG");
-      }
+      INT_ASSERT(0); // shouldn't reach this
       break;
     case PRIM_LOCAL_CHECK:
     {
