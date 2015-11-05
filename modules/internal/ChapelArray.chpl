@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -113,7 +113,7 @@
    domain. The domains of ``A`` and ``B`` are not modified by ``op``.
 
    There are also op= variants that store the result into the first operand.
-   
+
    Consider the following code where ``A`` and ``B`` are associative arrays:
 
    .. code-block:: chapel
@@ -208,7 +208,7 @@ module ChapelArray {
       }
     }
   }
-  
+
   //
   // Take a rank and value and check that the value is a rank-tuple or not a
   // tuple. If the value is not a tuple and expand is true, copy the value into
@@ -217,11 +217,11 @@ module ChapelArray {
   proc _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank == t.size {
     return t;
   }
-  
+
   proc _makeIndexTuple(param rank, t: _tuple, param expand: bool=false) where rank != t.size {
     compilerError("index rank must match domain rank");
   }
-  
+
   proc _makeIndexTuple(param rank, val:integral, param expand: bool=false) {
     if expand || rank == 1 {
       var t: rank*val.type;
@@ -234,43 +234,43 @@ module ChapelArray {
       return val;
     }
   }
-  
+
   proc _newArray(value) {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
     else
       return new _array(value, value);
   }
-  
+
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
     else
       return new _domain(value, value);
   }
-  
+
   proc _getDomain(value) {
     if _isPrivatized(value) then
       return new _domain(value.pid, value);
     else
       return new _domain(value, value);
   }
-  
+
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
     else
       return new _distribution(value, value);
   }
-  
+
   proc _getDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(value.pid, value);
     else
       return new _distribution(value, value);
   }
-  
-  
+
+
   //
   // Support for domain types
   //
@@ -279,18 +279,18 @@ module ChapelArray {
                                    type idxType = int,
                                    param stridable: bool = false)
     return _newDomain(d.newRectangularDom(rank, idxType, stridable));
-  
+
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
                                     param parSafe: bool = true)
     return _newDomain(d.newAssociativeDom(idxType, parSafe));
-  
+
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
                                     param parSafe: bool = true)
    where idxType == _OpaqueIndex
     return _newDomain(d.newOpaqueDom(idxType, parSafe));
-  
+
   // This function has no 'runtime type init fn' pragma since the idxType of
   // opaque domains is _OpaqueIndex, not opaque.  This function is
   // essentially a wrapper around the function that actually builds up
@@ -300,31 +300,31 @@ module ChapelArray {
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
 
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) 
+  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
-  
+
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where dom._value:BaseRectangularDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
                               dom._value.idxType, dom._value.stridable);
-  
+
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where dom._value:BaseAssociativeDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
-  
+
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where dom._value:BaseOpaqueDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
-  
+
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where dom._value:BaseSparseDom
     return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
-  
+
   proc chpl__convertValueToRuntimeType(dom: domain) type {
     compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
     return 0; // dummy
   }
-  
+
   //
   // Support for array types
   //
@@ -339,12 +339,12 @@ module ChapelArray {
   /*
    * Support for array literal expressions.
    *
-   * Array literals are detected during parsing and converted 
-   * to a call expr.  Array values pass through the various  
-   * compilation phases as regular parameters. 
+   * Array literals are detected during parsing and converted
+   * to a call expr.  Array values pass through the various
+   * compilation phases as regular parameters.
    *
    * NOTE:  It would be nice to define a second, less specific, function
-   *        to handle the case of multiple types, however this is not 
+   *        to handle the case of multiple types, however this is not
    *        possible atm due to using var args with a query type. */
   pragma "no doc"
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
@@ -353,13 +353,13 @@ module ChapelArray {
     if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(1)) {
       compilerWarning("Encountered an array literal with range element(s).",
                       " Did you mean a domain literal here?",
-                      " If so, use {...} instead of [...]."); 
+                      " If so, use {...} instead of [...].");
     }
 
     // elements of string literals are assumed to be of type string
     type elemType = _getLiteralType(elems(1).type);
     var A : [1..k] elemType;  //This is unfortunate, can't use t here...
-  
+
     for param i in 1..k {
       type currType = _getLiteralType(elems(i).type);
 
@@ -392,8 +392,8 @@ module ChapelArray {
       type elemValType = _getLiteralType(elemVal.type);
 
       if elemKeyType != keyType {
-         compilerError("Associative array key element " + (i+2)/2 + 
-                       " expected to be of type " + typeToString(keyType) + 
+         compilerError("Associative array key element " + (i+2)/2 +
+                       " expected to be of type " + typeToString(keyType) +
                        " but is of type " + typeToString(elemKeyType));
       }
 
@@ -413,7 +413,7 @@ module ChapelArray {
 
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
-  
+
   proc chpl__getDomainFromArrayType(type arrayType) {
     var A: arrayType;
     pragma "no copy" var D = A.domain;
@@ -479,7 +479,7 @@ module ChapelArray {
       chpl_decRefCountsForDomainsInArrayEltTypes(ev.eltType);
     }
   }
-  
+
   //
   // Support for subdomain types
   //
@@ -487,7 +487,7 @@ module ChapelArray {
   //
   proc chpl__buildSubDomainType(dom: domain) type
     return chpl__convertValueToRuntimeType(dom);
-  
+
   //
   // Support for domain expressions, e.g., {1..3, 1..3}
   //
@@ -503,14 +503,14 @@ module ChapelArray {
     d.setIndices(ranges);
     return d;
   }
-  
+
   proc chpl__buildDomainExpr(keys: ?t ...?count) {
     // keyType of string literals is assumed to be type string
     type keyType = _getLiteralType(keys(1).type);
     for param i in 2..count do
       if keyType != _getLiteralType(keys(i).type) {
-        compilerError("Associative domain element " + i + 
-                      " expected to be of type " + typeToString(keyType) + 
+        compilerError("Associative domain element " + i +
+                      " expected to be of type " + typeToString(keyType) +
                       " but is of type " +
                       typeToString(_getLiteralType(keys(i).type)));
       }
@@ -536,7 +536,7 @@ module ChapelArray {
   proc chpl__ensureDomainExpr(x...) {
     return chpl__buildDomainExpr((...x));
   }
-  
+
   //
   // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
@@ -549,21 +549,21 @@ module ChapelArray {
       return distDom;
     }
   }
-  
+
   proc chpl__distributed(d: _distribution, ranges: range(?) ...?rank) {
     return chpl__distributed(d, chpl__buildDomainExpr((...ranges)));
   }
-  
+
   proc chpl__isRectangularDomType(type domainType) param {
     var dom: domainType;
     return isRectangularDom(dom);
   }
-  
+
   proc chpl__isSparseDomType(type domainType) param {
     var dom: domainType;
     return isSparseDom(dom);
   }
-  
+
   proc chpl__distributed(d: _distribution, type domainType) type {
     if !isDomainType(domainType) then
       compilerError("cannot apply 'dmapped' to the non-domain type ",
@@ -585,7 +585,7 @@ module ChapelArray {
       return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
     }
   }
-  
+
   //
   // Support for index types
   //
@@ -593,23 +593,23 @@ module ChapelArray {
     var x: idxType;
     return x.type;
   }
-  
+
   proc chpl__buildIndexType(param rank: int, type idxType) type where rank > 1 {
     var x: rank*idxType;
     return x.type;
   }
-  
+
   proc chpl__buildIndexType(param rank: int) type
     return chpl__buildIndexType(rank, int);
-  
+
   proc chpl__buildIndexType(d: domain) type
     return chpl__buildIndexType(d.rank, d._value.idxType);
-  
+
   proc chpl__buildIndexType(type idxType) type where idxType == opaque
     return _OpaqueIndex;
 
   /* Return true if the argument ``d`` is a rectangular domain.
-     Otherwise return false.  */ 
+     Otherwise return false.  */
   proc isRectangularDom(d: domain) param {
     proc isRectangularDomClass(dc: BaseRectangularDom) param return true;
     proc isRectangularDomClass(dc) param return false;
@@ -650,7 +650,7 @@ module ChapelArray {
   /* Return true if ``a`` is an array with an enumerated domain. Otherwise
      return false. */
   proc isEnumArr(a: []) param return isEnumDom(a.domain);
- 
+
   /* Return true if ``d`` is an opaque domain. Otherwise return false. */
   proc isOpaqueDom(d: domain) param {
     proc isOpaqueDomClass(dc: BaseOpaqueDom) param return true;
@@ -666,34 +666,34 @@ module ChapelArray {
   }
 
   /* Return true if ``a`` is an array with a sparse domain. Otherwise
-     return false. */  
+     return false. */
   proc isSparseArr(a: []) param return isSparseDom(a.domain);
-  
+
   //
   // Support for distributions
   //
   pragma "no doc"
   pragma "syntactic distribution"
   record dmap { }
-  
+
   proc chpl__buildDistType(type t) type where t: BaseDist {
     var x: t;
     var y = _newDistribution(x);
     return y.type;
   }
-  
+
   proc chpl__buildDistType(type t) {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
-  
+
   proc chpl__buildDistValue(x) where x: BaseDist {
     return _newDistribution(x);
   }
-  
+
   proc chpl__buildDistValue(x) {
     compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
   }
-  
+
   //
   // Distribution wrapper record
   //
@@ -703,11 +703,11 @@ module ChapelArray {
   record _distribution {
     var _value;
     var _valueType;
-  
+
     // Never, ever create a distribution directly.
     // Always call _newDistribution() to obtain  one.
     proc _distribution(_value, _valueType) { }
-  
+
     inline proc _value {
       if _isPrivatized(_valueType) {
         return chpl_getPrivatizedCopy(_valueType.type, _value);
@@ -715,7 +715,7 @@ module ChapelArray {
         return _value;
       }
     }
-  
+
     // Destruction of a distribution causes its ref count to be decremented by 1.
     // If the count reaches zero, then the contained implementation (_value) is
     // destroyed.
@@ -732,11 +732,11 @@ module ChapelArray {
       }
      }
     }
-  
+
     proc clone() {
       return _newDistribution(_value.dsiClone());
     }
-  
+
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
       var x = _value.dsiNewRectangularDom(rank, idxType, stridable);
       if x.linksDistribution() {
@@ -746,7 +746,7 @@ module ChapelArray {
       }
       return x;
     }
-  
+
     proc newAssociativeDom(type idxType, param parSafe: bool=true) {
       var x = _value.dsiNewAssociativeDom(idxType, parSafe);
       if x.linksDistribution() {
@@ -756,7 +756,7 @@ module ChapelArray {
       }
       return x;
     }
-  
+
     proc newAssociativeDom(type idxType, param parSafe: bool=true)
     where isEnumType(idxType) {
       var x = _value.dsiNewAssociativeDom(idxType, parSafe);
@@ -770,7 +770,7 @@ module ChapelArray {
         x.dsiAdd(enumTuple(i));
       return x;
     }
-  
+
     proc newOpaqueDom(type idxType, param parSafe: bool=true) {
       var x = _value.dsiNewOpaqueDom(idxType, parSafe);
       if x.linksDistribution() {
@@ -780,7 +780,7 @@ module ChapelArray {
       }
       return x;
     }
-  
+
     proc newSparseDom(param rank: int, type idxType, dom: domain) {
       var x = _value.dsiNewSparseDom(rank, idxType, dom);
       if x.linksDistribution() {
@@ -790,13 +790,13 @@ module ChapelArray {
       }
       return x;
     }
-  
+
     proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
-  
+
     proc readWriteThis(f) {
       f <~> _value;
     }
-  
+
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
   }  // record _distribution
 
@@ -834,7 +834,7 @@ module ChapelArray {
     var _value;     // stores domain class, may be privatized
     var _valueType; // stores type of privatized domains
     var _promotionType: index(rank, _value.idxType);
-  
+
     inline proc _value {
       if _isPrivatized(_valueType) {
         return chpl_getPrivatizedCopy(_valueType.type, _value);
@@ -856,9 +856,9 @@ module ChapelArray {
      }
     }
 
-    /* Return the domain map that implements this domain */ 
+    /* Return the domain map that implements this domain */
     proc dist return _getDistribution(_value.dist);
-  
+
     /* Return the number of dimensions in this domain */
     proc rank param {
       if isRectangularDom(this) || isSparseDom(this) then
@@ -883,27 +883,27 @@ module ChapelArray {
     proc stridable param where isSparseDom(this) {
       compilerError("sparse domains do not currently support .stridable");
     }
-  
+
     pragma "no doc"
     proc stridable param where isOpaqueDom(this) {
-      compilerError("opaque domains do not support .stridable");  
+      compilerError("opaque domains do not support .stridable");
     }
 
     pragma "no doc"
     proc stridable param where isEnumDom(this) {
-      compilerError("enumerated domains do not support .stridable");  
+      compilerError("enumerated domains do not support .stridable");
     }
-  
+
     pragma "no doc"
     proc stridable param where isAssociativeDom(this) {
-      compilerError("associative domains do not support .stridable");  
+      compilerError("associative domains do not support .stridable");
     }
 
     pragma "no doc"
     inline proc these() {
       return _value.these();
     }
-  
+
     // see comments for the same method in _array
     //
     pragma "no doc"
@@ -920,7 +920,7 @@ module ChapelArray {
       var r: rank*range(_value.idxType,
                         BoundedRangeType.bounded,
                         stridable);
-  
+
       for param i in 1..rank {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
@@ -940,7 +940,7 @@ module ChapelArray {
       var newDist = _getNewDist(newDistVal);
       var j = 1;
       var makeEmpty = false;
-  
+
       for param i in 1..rank {
         if !isCollapsedDimension(args(i)) {
           newRanges(j) = dim(i)(args(i));
@@ -958,7 +958,7 @@ module ChapelArray {
       var d = {(...newRanges)} dmapped newDist;
       return d;
     }
-  
+
     // anything that is not covered by the above
     pragma "no doc"
     proc this(args ...?numArgs) {
@@ -971,13 +971,13 @@ module ChapelArray {
     pragma "no doc"
     proc dims() return _value.dsiDims();
 
-    pragma "no doc"  
+    pragma "no doc"
     proc dim(d : int) return _value.dsiDim(d);
 
     pragma "no doc"
     proc dim(param d : int) return _value.dsiDim(d);
 
-    pragma "no doc"  
+    pragma "no doc"
     iter dimIter(param d, ind) {
       for i in _value.dimIter(d, ind) do yield i;
     }
@@ -994,7 +994,7 @@ module ChapelArray {
       help();
       return _newArray(x);
     }
-    /* Remove all indices from this domain, leaving it empty */  
+    /* Remove all indices from this domain, leaving it empty */
     proc clear() {
       _value.dsiClear();
     }
@@ -1005,7 +1005,7 @@ module ChapelArray {
         compilerError("domain.create() only applies to opaque domains");
       return _value.dsiCreate();
     }
-  
+
     /* Add index ``i`` to this domain */
     proc add(i) {
       _value.dsiAdd(i);
@@ -1015,7 +1015,7 @@ module ChapelArray {
     proc remove(i) {
       _value.dsiRemove(i);
     }
-  
+
     pragma "no doc"
     proc requestCapacity(i) {
 
@@ -1049,7 +1049,7 @@ module ChapelArray {
     proc alignedLow return _value.dsiAlignedLow;
     /* Return the high index in this domain factoring in alignment */
     proc alignedHigh return _value.dsiAlignedHigh;
-  
+
     pragma "no doc"
     proc member(i: rank*_value.idxType) {
       if isRectangularDom(this) || isSparseDom(this) then
@@ -1147,7 +1147,7 @@ module ChapelArray {
           halt("***Error: Degenerate dimension created in dimension ", i, "***");
         }
       }
-  
+
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
       if !noRefCount then
@@ -1241,7 +1241,7 @@ module ChapelArray {
         if ((off(i) > 0) && (dim(i).high+1-off(i) < dim(i).low) ||
             (off(i) < 0) && (dim(i).low-1-off(i) > dim(i).high)) {
           halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
-        } 
+        }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
@@ -1263,7 +1263,7 @@ module ChapelArray {
         offTup(i) = off;
       return interior(offTup);
     }
-  
+
     //
     // NOTE: We eventually want to support translate on other domain types
     //
@@ -1301,7 +1301,7 @@ module ChapelArray {
           d.dist.incRefCount();
       return _newDomain(d);
      }
- 
+
     /* Returns a new domain that is the current domain translated by
        ``off`` in each dimension. */
      proc translate(off) where rank != 1 && !isTuple(off) {
@@ -1310,7 +1310,7 @@ module ChapelArray {
          offTup(i) = off;
        return translate(offTup);
      }
- 
+
     //
     // intended for internal use only:
     //
@@ -1327,7 +1327,7 @@ module ChapelArray {
       return _newDomain(d);
     }
 
-    pragma "no doc" 
+    pragma "no doc"
     proc setIndices(x) {
       _value.dsiSetIndices(x);
       if _isPrivatized(_valueType) {
@@ -1335,7 +1335,7 @@ module ChapelArray {
       }
     }
 
-    pragma "no doc"  
+    pragma "no doc"
     proc getIndices()
       return _value.dsiGetIndices();
 
@@ -1357,7 +1357,7 @@ module ChapelArray {
       return this((...r));
     }
 
-    pragma "no doc"  
+    pragma "no doc"
     proc localSlice(r: range(?)... rank) {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
     }
@@ -1366,7 +1366,7 @@ module ChapelArray {
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
-  
+
     // associative array interface
     /* Yield the domain indices in sorted order */
     iter sorted() {
@@ -1378,63 +1378,63 @@ module ChapelArray {
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
   }  // record _domain
-  
+
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
     for param i in 1..dom.rank do
       ranges(i) = ranges(i) # counts(i);
     return dom[(...ranges)];
-  }  
-  
+  }
+
   proc #(dom: domain, counts: integral) where isRectangularDom(dom) && dom.rank == 1 {
     return chpl_countDomHelp(dom, (counts,));
   }
-  
+
   proc #(dom: domain, counts) where isRectangularDom(dom) && isTuple(counts) {
     if (counts.size != dom.rank) then
       compilerError("the domain and tuple arguments of # must have the same rank");
     return chpl_countDomHelp(dom, counts);
   }
-  
+
   proc #(arr: [], counts: integral) where isRectangularArr(arr) && arr.rank == 1 {
     return arr[arr.domain#counts];
   }
-  
+
   proc #(arr: [], counts) where isRectangularArr(arr) && isTuple(counts) {
     if (counts.size != arr.rank) then
       compilerError("the domain and array arguments of # must have the same rank");
     return arr[arr.domain#counts];
   }
-  
-  
+
+
   proc _getNewDist(value) {
     return new dmap(value);
   }
-  
+
   proc +(d: domain, i: index(d)) {
     if isRectangularDom(d) then
       compilerError("Cannot add indices to a rectangular domain");
     else
       compilerError("Cannot add indices to this domain type");
   }
-  
+
   proc +(i, d: domain) where i: index(d) {
     if isRectangularDom(d) then
       compilerError("Cannot add indices to a rectangular domain");
     else
       compilerError("Cannot add indices to this domain type");
   }
-  
+
   proc +(d: domain, i: index(d)) where isIrregularDom(d) {
     d.add(i);
     return d;
   }
-  
+
   proc +(i, d: domain) where i:index(d) && isIrregularDom(d) {
     d.add(i);
     return d;
   }
-  
+
   proc +(d1: domain, d2: domain) where
                                    (d1.type == d2.type) &&
                                    (isIrregularDom(d1) && isIrregularDom(d2)) {
@@ -1444,26 +1444,26 @@ module ChapelArray {
     for e in d2 do d3.add(e);
     return d3;
   }
-  
+
   proc +(d1: domain, d2: domain) {
     if (isRectangularDom(d1) || isRectangularDom(d2)) then
       compilerError("Cannot add indices to a rectangular domain");
     else
       compilerError("Cannot add indices to this domain type");
   }
-  
+
   proc -(d: domain, i: index(d)) {
     if isRectangularDom(d) then
       compilerError("Cannot remove indices from a rectangular domain");
     else
       compilerError("Cannot remove indices from this domain type");
   }
-  
+
   proc -(d: domain, i: index(d)) where isIrregularDom(d) {
     d.remove(i);
     return d;
   }
-  
+
   proc -(d1: domain, d2: domain) where
                                    (d1.type == d2.type) &&
                                    (isSparseDom(d1) || isOpaqueDom(d1)) {
@@ -1473,14 +1473,14 @@ module ChapelArray {
     for e in d2 do d3.remove(e);
     return d3;
   }
-  
+
   proc -(d1: domain, d2: domain) {
     if (isRectangularDom(d1) || isRectangularDom(d2)) then
       compilerError("Cannot remove indices from a rectangular domain");
     else
       compilerError("Cannot remove indices from this domain type");
   }
-  
+
   inline proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                         isRectangularDom(d2) {
     if d1._value.rank != d2._value.rank then return false;
@@ -1489,7 +1489,7 @@ module ChapelArray {
       if (d1.dim(i) != d2.dim(i)) then return false;
     return true;
   }
-  
+
   inline proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                         isRectangularDom(d2) {
     if d1._value.rank != d2._value.rank then return true;
@@ -1498,7 +1498,7 @@ module ChapelArray {
       if (d1.dim(i) != d2.dim(i)) then return true;
     return false;
   }
-  
+
   inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                          isAssociativeDom(d2)) {
     if d1._value == d2._value then return true;
@@ -1507,7 +1507,7 @@ module ChapelArray {
       if !d2.member(idx) then return false;
     return true;
   }
-  
+
   inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                          isAssociativeDom(d2)) {
     if d1._value == d2._value then return false;
@@ -1516,7 +1516,7 @@ module ChapelArray {
       if !d2.member(idx) then return true;
     return false;
   }
-  
+
   inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                          isSparseDom(d2)) {
     if d1._value == d2._value then return true;
@@ -1526,7 +1526,7 @@ module ChapelArray {
       if !d2.member(idx) then return false;
     return true;
   }
-  
+
   inline proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                          isSparseDom(d2)) {
     if d1._value == d2._value then return false;
@@ -1536,18 +1536,18 @@ module ChapelArray {
       if !d2.member(idx) then return true;
     return false;
   }
-  
+
   // any combinations not handled by the above
-  
+
   inline proc ==(d1: domain, d2: domain) param {
     return false;
   }
-  
+
   inline proc !=(d1: domain, d2: domain) param {
     return true;
   }
-  
-  
+
+
   // Array wrapper record
   pragma "array"
   pragma "has runtime type"
@@ -1556,7 +1556,7 @@ module ChapelArray {
     var _value;     // stores array class, may be privatized
     var _valueType; // stores type of privatized arrays
     var _promotionType: _value.eltType;
- 
+
     pragma "no doc"
     proc initialize() {
      if !noRefCount then
@@ -1592,14 +1592,14 @@ module ChapelArray {
      }
     }
 
-    /* The type of elements contained in the array */ 
+    /* The type of elements contained in the array */
     proc eltType type return _value.eltType;
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
-  
+
     // When 'this' is 'const', so is the returned l-value.
     pragma "no doc"
     pragma "reference to const when const this"
@@ -1628,7 +1628,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
-  
+
     //
     // requires dense domain implementation that returns a tuple of
     // ranges via the getIndices() method; domain indexing is difficult
@@ -1694,7 +1694,7 @@ module ChapelArray {
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
-  
+
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
     pragma "no doc"
@@ -1705,16 +1705,16 @@ module ChapelArray {
       var dom = _dom((...r));
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
-  
+
     pragma "no doc"
     pragma "reference to const when const this"
     proc localSlice(d: domain) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...d.getIndices()));
-  
+
       return chpl__localSliceDefaultArithArrHelp(d);
     }
-  
+
     proc chpl__localSliceDefaultArithArrHelp(d: domain) {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of an array on locale ",
@@ -1740,7 +1740,7 @@ module ChapelArray {
     inline proc these() ref {
       return _value.these();
     }
-  
+
     // 1/5/10: do we need this since it always returns domain.numIndices?
     /* Return the number of elements in the array */
     proc numElements return _value.dom.dsiNumIndices;
@@ -1772,7 +1772,7 @@ module ChapelArray {
       // It's a compile-time error if the ranks don't match
       //
       if (formalDom.rank != this.domain.rank) then
-        compilerError("Rank mismatch passing array argument: expected " + 
+        compilerError("Rank mismatch passing array argument: expected " +
                       formalDom.rank + " but got " + this.domain.rank, errorDepth=2);
 
       //
@@ -1818,9 +1818,9 @@ module ChapelArray {
       where isRectangularDom(this.domain) && isRectangularDom(d)
     {
       if rank != d.rank then
-        compilerError("rank mismatch: cannot reindex() from " + rank + 
+        compilerError("rank mismatch: cannot reindex() from " + rank +
                       " dimension(s) to " + d.rank);
-  
+
       // Optimization: Just return an alias of this array when
       // reindexing to the same domain. We skip same-ness test
       // if the domain descriptors' types are disjoint.
@@ -1829,11 +1829,11 @@ module ChapelArray {
       then
         if _value.dom:object == d._value:object then
           return newAlias();
-  
+
       for param i in 1..rank do
         if d.dim(i).length != _value.dom.dsiDim(i).length then
           halt("extent in dimension ", i, " does not match actual");
-  
+
       var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
                                                                   _value.dom.dsiDims()));
       var newDom = {(...d.dims())} dmapped newDist;
@@ -1848,7 +1848,7 @@ module ChapelArray {
         help();
       return _newArray(x);
     }
-  
+
     // reindex for all non-rectangular domain types.
     // See above for the rectangular version.
     pragma "no doc"
@@ -1868,13 +1868,13 @@ module ChapelArray {
     proc readThis(f: Reader) {
       _value.dsiSerialRead(f);
     }
-  
+
     // sparse array interface
     /* Return the Implicitly Represented Value for sparse arrays */
     proc IRV ref {
       return _value.IRV;
     }
-  
+
     /* Yield the array elements in sorted order. */
     iter sorted() {
       for i in _value.dsiSorted() {
@@ -1882,7 +1882,7 @@ module ChapelArray {
       }
     }
 
-    pragma "no doc"  
+    pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
     // the locale grid
@@ -1902,12 +1902,12 @@ module ChapelArray {
         compilerError("Array's local domain is not a single domain");
       return _value.dsiLocalSubdomain();
     }
-    
+
     /* Yield the subdomains that are local to the current locale */
     iter localSubdomains() {
-      if _value.dsiHasSingleLocalSubdomain() then 
+      if _value.dsiHasSingleLocalSubdomain() then
         yield _value.dsiLocalSubdomain();
-      else 
+      else
         for d in _value.dsiLocalSubdomains() do yield d;
     }
 
@@ -2164,8 +2164,8 @@ module ChapelArray {
     //
     return && reduce (this == that);
   }
-  
-  
+
+
 
 
   //
@@ -2190,7 +2190,7 @@ module ChapelArray {
     proc isDomainHelp(type t)          param  return false;
     return isDomainHelp(t);
   }
-  
+
   pragma "no doc"
   proc isDomainValue(e: domain) param  return true;
   /* Return true if ``e`` is a domain. Otherwise return false. */
@@ -2314,7 +2314,7 @@ module ChapelArray {
       if a.member(e) then
         a.remove(e);
   }
-  
+
   proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     return a + b;
   }
@@ -2336,7 +2336,7 @@ module ChapelArray {
   proc &(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     var newDom : a.type;
 
-    serial !newDom._value.parSafe do 
+    serial !newDom._value.parSafe do
       forall k in a with (ref newDom) do // no race - in 'serial'
         if b.member(k) then newDom += k;
     return newDom;
@@ -2381,8 +2381,8 @@ module ChapelArray {
   proc isCollapsedDimension(r: range(?e,?b,?s,?a)) param return false;
   pragma "no doc"
   proc isCollapsedDimension(r) param return true;
-  
-  
+
+
   // computes || reduction over stridable of ranges
   proc chpl__anyStridable(ranges, param d: int = 1) param {
     for param i in 1..ranges.size do
@@ -2390,7 +2390,7 @@ module ChapelArray {
         return true;
     return false;
   }
-  
+
   // given a tuple args, returns true if the tuple contains only
   // integers and ranges; that is, it is a valid argument list for rank
   // change
@@ -2398,7 +2398,7 @@ module ChapelArray {
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
     proc _validRankChangeArg(type idxType, x) param return false;
-  
+
     proc help(param dim: int) param {
       if !_validRankChangeArg(idxType, args(dim)) then
         return false;
@@ -2407,10 +2407,10 @@ module ChapelArray {
       else
         return true;
     }
-  
+
     return help(1);
   }
-  
+
   proc _getRankChangeRanges(args) {
     proc _tupleize(x) {
       var y: 1*x.type;
@@ -2442,7 +2442,7 @@ module ChapelArray {
     }
     return collectRanges(1);
   }
-  
+
   //
   // Assignment of domains and arrays
   //
@@ -2467,7 +2467,7 @@ module ChapelArray {
       halt("assignment to distributions with declared domains is not yet supported");
     }
   }
-  
+
   proc =(ref a: domain, b: domain) {
     if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
@@ -2507,14 +2507,14 @@ module ChapelArray {
       }
     }
   }
-  
+
   proc =(ref a: domain, b: _tuple) {
     a._value.clearForIteratableAssign();
     for ind in 1..b.size {
       a.add(b(ind));
     }
   }
-  
+
   proc =(ref d: domain, r: range(?)) {
     d = {r};
   }
@@ -2532,10 +2532,10 @@ module ChapelArray {
                  isRange(first) && isRange(rest(1));
       }
       proc peelArgs(first) param return isRange(first);
-  
+
       return if !isTuple(a) then false else peelArgs((...a));
     }
-  
+
     proc strideSafe(d, rt, param dim: int=1) param {
       return if dim == d.rank then
                d.dim(dim).stridable || !rt(dim).stridable
@@ -2544,22 +2544,22 @@ module ChapelArray {
     }
     return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
   }
-  
+
   proc =(ref d: domain, rt: _tuple) where chpl__isLegalRectTupDomAssign(d, rt) {
     d = {(...rt)};
   }
-  
+
   proc =(ref a: domain, b) {  // b is iteratable
     a._value.clearForIteratableAssign();
     for ind in b {
       a.add(ind);
     }
   }
-  
+
   proc chpl__serializeAssignment(a: [], b) param {
     if a.rank != 1 && isRange(b) then
       return true;
-  
+
     // Sparse and Opaque arrays do not yet support parallel iteration.  We
     // could let them fall through, but then we get multiple warnings for a
     // single assignment statement which feels like overkill
@@ -2570,7 +2570,7 @@ module ChapelArray {
       return true;
     return false;
   }
-  
+
   // This must be a param function
   proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
     if a.eltType != b.eltType then return false;
@@ -2579,7 +2579,7 @@ module ChapelArray {
     if !a._value.dsiSupportsBulkTransfer() then return false;
     return true;
   }
-  
+
   proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
     if a.eltType != b.eltType then return false;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
@@ -2588,7 +2588,7 @@ module ChapelArray {
     if !b._value.dsiSupportsBulkTransferInterface() then return false;
     return true;
   }
-  
+
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
     var x:t;
@@ -2616,30 +2616,30 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
-  
+
   proc chpl__useBulkTransfer(a:[], b:[]) {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
-  
+
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransfer() then return false;
     if !b._value.doiCanBulkTransfer() then return false;
-  
+
     return true;
   }
-  
-  //NOTE: This function also checks for equal lengths in all dimensions, 
+
+  //NOTE: This function also checks for equal lengths in all dimensions,
   //as the previous one (chpl__useBulkTransfer) so depending on the order they
   //are called, this can be factored out.
   proc chpl__useBulkTransferStride(a:[], b:[]) {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
-    
+
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransferStride() then return false;
     if !b._value.doiCanBulkTransferStride() then return false;
-    
+
     return true;
   }
-  
+
   inline proc chpl__bulkTransferHelper(a, b) {
     if a._value.isDefaultRectangular() {
       if b._value.isDefaultRectangular() {
@@ -2678,11 +2678,11 @@ module ChapelArray {
       // todo: compilerError if one is rectangular and the other isn't?
     }
   }
-  
+
   inline proc =(ref a: [], b:[]) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
-    
+
     if b._value == nil then
       // This happens e.g. for 'new' on a record with an array field whose
       // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
@@ -2701,7 +2701,7 @@ module ChapelArray {
 
     if boundsChecking then
       checkArrayShapesUponAssignment(a, b);
-  
+
     // try bulk transfer
     if !chpl__serializeAssignment(a, b) then
       // Do bulk transfer.
@@ -2710,7 +2710,7 @@ module ChapelArray {
       // Do non-bulk transfer.
       chpl__transferArray(a, b);
   }
-  
+
   inline proc chpl__bulkTransferArray(a: [], b) {
     if (useBulkTransfer &&
         chpl__compatibleForBulkTransfer(a, b) &&
@@ -2750,17 +2750,17 @@ module ChapelArray {
         aa = bb;
     }
   }
-  
+
   inline proc =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
     chpl__transferArray(a, b);
   }
-  
+
   inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
     chpl__transferArray(a, b);
   }
-  
+
   inline proc =(ref a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
       halt("tuple array initializer size mismatch");
@@ -2768,12 +2768,12 @@ module ChapelArray {
       a(i) = b(j);
     }
   }
-  
+
   proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
     proc chpl__tupleInit(j, param rank: int, b: _tuple) {
       type idxType = a.domain.idxType,
            strType = chpl__signedType(idxType);
-           
+
       const stride = a.domain.dim(a.rank-rank+1).stride,
             start = a.domain.dim(a.rank-rank+1).first;
 
@@ -2792,17 +2792,17 @@ module ChapelArray {
     var j: a.rank*a.domain.idxType;
     chpl__tupleInit(j, a.rank, b);
   }
-  
+
   proc _desync(type t) where t: _syncvar || t: _singlevar {
     var x: t;
     return x.value;
   }
-  
+
   proc _desync(type t) {
     var x: t;
     return x;
   }
-  
+
   proc =(ref a: [], b: _desync(a.eltType)) {
     if isRectangularArr(a) {
       forall e in a do
@@ -2813,7 +2813,7 @@ module ChapelArray {
         e = b;
     }
   }
-  
+
   proc by(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
@@ -2827,13 +2827,13 @@ module ChapelArray {
         d.dist.incRefCount();
     return _newDomain(d);
   }
-  
+
   //
   // index for all opaque domains
   //
   pragma "no doc"
   class _OpaqueIndex { }
-  
+
   //
   // Swap operator for arrays
   //
@@ -2841,7 +2841,7 @@ module ChapelArray {
     forall (a,b) in zip(x, y) do
       a <=> b;
   }
-  
+
   /* Returns a copy of the array containing the same values but
      in the shape of the new domain. The number of indices in the
      domain must equal the number of elements in the array. The
@@ -2869,7 +2869,7 @@ module ChapelArray {
     pragma "no copy" var b = chpl__autoCopy(a.clone());
     return b;
   }
-  
+
   pragma "init copy fn"
   proc chpl__initCopy(a: domain) {
     var b: a.type;
@@ -2887,7 +2887,7 @@ module ChapelArray {
     }
     return b;
   }
-  
+
   pragma "init copy fn"
   proc chpl__initCopy(a: []) {
     var b : [a._dom] a.eltType;
@@ -2901,19 +2901,46 @@ module ChapelArray {
     chpl__transferArray(b, a);
     return b;
   }
-  
+
+  //
+  // Noakes 2015/11/05
+  //
+  // This function is invoked to implement for expressions and
+  // forall expressions. An iterator is invoked that generates
+  // the elements of the resulting array.
+  //
+  // Although it appears to be a copy constructor, it is in fact
+  // an Array constructor.  It appears to me that this implementation
+  // it due to an artifact in the interaction between normalize and
+  // function resolution; the former inserts calls to initCopy() without
+  // understanding the types involved.  This in turn leads to some
+  // confusion for the compiler is resolved by the liberal use of
+  // pragmas.
+  //
+
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
+
+    // The use of an explicit initCopy() is required
+    // to support nested for/forall expressions.
     iter _ir_copy_recursive(ir) {
-      for e in ir do
-        yield chpl__initCopy(e);
+      for e in ir {
+        pragma "no copy"
+        var ee = chpl__initCopy(e);
+
+        yield ee;
+      }
     }
-  
-    pragma "no copy" var irc = _ir_copy_recursive(ir);
-  
-    var i = 1, size = 4;
-    pragma "insert auto destroy" var D = {1..size};
-  
+
+    pragma "no copy"
+    var irc  = _ir_copy_recursive(ir);
+
+    var i    = 1;
+    var size = 4;
+
+    pragma "insert auto destroy"
+    var D    = {1..size};
+
     // note that _getIterator is called in order to copy the iterator
     // class since for arrays we need to iterate once to get the
     // element type (at least for now); this also means that if this
@@ -2922,18 +2949,20 @@ module ChapelArray {
     // array) and use a primitive to set the array's element; that may
     // also handle skyline arrays
     var A: [D] iteratorIndexType(irc);
-  
+
     for e in irc {
-      //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
+      // The resulting array grows dynamically
       if i > size {
-        size = size * 2;
-        D = {1..size};
+        size = 2 * size;
+        D    = { 1 .. size };
       }
-      //A(i) = ee;
+
       A(i) = e;
-      i = i + 1;
+      i    = i + 1;
     }
-    D = {1..i-1};
+
+    D = { 1 .. i - 1 };
+
     return A;
   }
 
