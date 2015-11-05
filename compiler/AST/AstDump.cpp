@@ -200,12 +200,7 @@ bool AstDump::enterDefExpr(DefExpr* node) {
 
       writeSymbol("var", sym, true);
 
-      if (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY))
-        write("insert-auto-destroy");
-
-      if (sym->hasFlag(FLAG_INSERT_AUTO_COPY))
-        write("insert-auto-copy");
-
+      writeFlags(mFP, sym);
     } else if (isLabelSymbol(sym)) {
       writeSymbol("label", sym, true);
 
@@ -536,6 +531,8 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
   if (fn->retType && fn->retType->symbol) {
     writeSymbol(":", fn->retType->symbol, false);
   }
+
+  writeFlags(mFP, fn);
 }
 
 void AstDump::writeSymbol(const char* tag, Symbol* sym, bool def) {
