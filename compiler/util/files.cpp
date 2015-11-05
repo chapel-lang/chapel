@@ -424,13 +424,13 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
-const std::string runUtilScript(const char* script) {
+std::string runUtilScript(const std::string script) {
   char buffer[256];
   std::string result = "";
 
-  FILE* pipe = popen(astr(CHPL_HOME, "/util/", script), "r");
+  FILE* pipe = popen(astr(CHPL_HOME, "/util/", script.c_str()), "r");
   if (!pipe) {
-    USR_FATAL(astr("running $CHPL_HOME/util/", script));
+    USR_FATAL(astr("running $CHPL_HOME/util/", script.c_str()));
   }
 
   while (!feof(pipe)) {
@@ -439,7 +439,7 @@ const std::string runUtilScript(const char* script) {
     }
   }
   if (pclose(pipe)) {
-    USR_FATAL(astr("'$CHPL_HOME/util/", script, "' did not run successfully"));
+    USR_FATAL(astr("'$CHPL_HOME/util/", script.c_str(), "' did not run successfully"));
   }
 
   return result;

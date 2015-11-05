@@ -31,6 +31,7 @@
 #include "caches.h"
 #include "callInfo.h"
 #include "CForLoop.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -44,7 +45,6 @@
 #include "WhileStmt.h"
 #include "../ifa/prim_data.h"
 #include "view.h"
-#include "driver.h"
 
 #include <inttypes.h>
 #include <map>
@@ -5167,11 +5167,9 @@ preFold(Expr* expr) {
         USR_FATAL(call, "expected immediate of type string");
       }
 
-      // Check table, get actual string out of table and replace call
-      // Use std::map, check if it's in a map, else throw error
-      if (EnvMap.find(envKey) != EnvMap.end()) {
-        printf("[DEBUG] %s : EnvMap[%s] = %s\n", __FILE__, envKey.c_str(), EnvMap[envKey]);
-        result = new SymExpr(new_StringSymbol(EnvMap[envKey]));
+      // Check if string is in envMap, and replace result with mapped value
+      if (envMap.find(envKey) != envMap.end()) {
+        result = new SymExpr(new_StringSymbol(envMap[envKey]));
         call->replace(result);
       } else {
         USR_FATAL(call, "primitive string does not match any environment variable");

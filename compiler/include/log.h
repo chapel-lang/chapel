@@ -50,14 +50,14 @@
   specifies AST log level 2 and IF1 log level 1
  */
 
-struct ArgumentState;
+struct ArgumentDescription;
 
 #ifndef NUL
  #define NUL '\0'
 #endif
 
 // Driver uses this to configure the logger
-void  log_flags_arg(const ArgumentState* state, const char* arg);
+void  log_flags_arg(const ArgumentDescription* desc, const char* arg);
 
 void  setupLogfiles();
 void  teardownLogfiles();

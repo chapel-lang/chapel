@@ -29,7 +29,7 @@
 
 class Timer;
 
-extern std::map<std::string, const char*> EnvMap;
+extern std::map<std::string, const char*> envMap;
 
 
 extern int  instantiation_limit;
@@ -69,9 +69,13 @@ extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
 extern int  tuple_copy_limit;
 
+
 extern bool report_inlining;
+
+// Chapel Envs
+std::map<std::string, const char*> populateMap(std::string);
+
 extern char CHPL_HOME[FILENAME_MAX+1];
-extern char chpl_comm[FILENAME_MAX+1];
 
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;

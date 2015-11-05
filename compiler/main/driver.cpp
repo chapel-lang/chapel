@@ -49,10 +49,9 @@
 #include <sstream>
 #include <map>
 
-std::map<std::string, const char*> EnvMap;
+std::map<std::string, const char*> envMap;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
-char chpl_comm[FILENAME_MAX+1] = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
@@ -318,96 +317,88 @@ static void setupChplHome(const char* argv0) {
     free(guess);
 }
 
+std::map<std::string, const char*> populateEnvMap(std::string output)
+{
+    // Destructively parses string output for environment variables (keys)
+    // and their values according to printchplenv (values), and returns an
+    // std::map populated with the key/value pairs
 
-static void setupEnvVar(std::istringstream& iss, const char** var, const char* varname) {
-  std::string line;
-  std::string value;
+    std::map<std::string, const char*> env;
 
-  std::getline(iss, line);
-  if (!iss.good() || line.find(varname) == std::string::npos) {
-    INT_FATAL(astr("Parsing ", varname));
-  }
-  value = line.substr(line.find('=')+1, std::string::npos);
+    // Lines
+    std::string line= "";
+    std::string lineDelimiter = "\n";
+    size_t linePos = 0;        // Line break position
 
-  *var = astr(value.c_str());  // astr call is to canonicalize
-  if (strcmp("CHPL_COMM", varname) != 0) {
-    parseCmdLineConfig(varname, astr("\"", *var, "\""));
-  }
+    // Tokens
+    std::string tokenDelimiter = "=";
+    size_t delimiterPos = 0;    // Position of delimiter
+    size_t valuePos = 0;        // Position of value
+
+    std::string key = "";
+    std::string value = "";
+
+    while ((linePos = output.find(lineDelimiter)) != std::string::npos)
+    {
+        line = output.substr(0, linePos);
+
+        // Key is substring up until "=" on a given line
+        delimiterPos = line.find(tokenDelimiter);
+        key = line.substr(0, delimiterPos);
+
+        // value is substring up after "=" on a given line
+        valuePos = delimiterPos + tokenDelimiter.length();
+        value = line.substr(valuePos);
+
+        // Populate map, duplicating string, because output is destroyed in memory
+        env[key] = strdup(value.c_str());
+        output.erase(0, linePos + lineDelimiter.length());
+    }
+    // TODO Error checking - Check number of env vars?
+    return env;
 }
 
-#define SETUP_ENV_VAR(varname) \
-  INT_ASSERT(num_chpl_env_vars < MAX_CHPL_ENV_VARS); \
-  setupEnvVar(iss, &varname, #varname); \
-  chpl_env_var_names[num_chpl_env_vars] = #varname; \
-  chpl_env_vars[num_chpl_env_vars] = varname; \
-  num_chpl_env_vars++;
+//static void printEnvMap() {
+//    printf("envMap:\n");
+//    for( std::map<std::string, const char *>::iterator ii=envMap.begin(); ii!=envMap.end(); ++ii)
+//    {
+//        printf("%s : %s\n", (*ii).first.c_str(), (*ii).second);
+//    }
+//}
 
-
-static void setupEnvVars() {
-  std::string vars = runUtilScript("printchplenv --simple");
-  std::istringstream iss(vars);
-
-  SETUP_ENV_VAR(CHPL_HOST_PLATFORM);
-  SETUP_ENV_VAR(CHPL_HOST_COMPILER);
-  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM);
-  SETUP_ENV_VAR(CHPL_TARGET_COMPILER);
-  SETUP_ENV_VAR(CHPL_TARGET_ARCH);
-  SETUP_ENV_VAR(CHPL_LOCALE_MODEL);
-  SETUP_ENV_VAR(CHPL_COMM);
-  SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE);
-  SETUP_ENV_VAR(CHPL_GASNET_SEGMENT);
-  SETUP_ENV_VAR(CHPL_TASKS);
-  SETUP_ENV_VAR(CHPL_THREADS);
-  SETUP_ENV_VAR(CHPL_LAUNCHER);
-  SETUP_ENV_VAR(CHPL_TIMERS);
-  SETUP_ENV_VAR(CHPL_MEM);
-  SETUP_ENV_VAR(CHPL_MAKE);
-  SETUP_ENV_VAR(CHPL_ATOMICS);
-  SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS);
-  SETUP_ENV_VAR(CHPL_GMP);
-  SETUP_ENV_VAR(CHPL_HWLOC);
-  SETUP_ENV_VAR(CHPL_REGEXP);
-  SETUP_ENV_VAR(CHPL_WIDE_POINTERS);
-  SETUP_ENV_VAR(CHPL_LLVM);
-  SETUP_ENV_VAR(CHPL_AUX_FILESYS);
-
-  strcpy(chpl_comm, CHPL_COMM);
-//EnvMap["CHPL_COMM"] = CHPL_COMM;
-//EnvMap["CHPL_HOST_PLATFORM"]
-//EnvMap["CHPL_HOST_COMPILER"]
-//EnvMap["CHPL_TARGET_PLATFORM"]
-//EnvMap["CHPL_TARGET_COMPILER"]
-//EnvMap["CHPL_TARGET_ARCH"]
-//EnvMap["CHPL_LOCALE_MODEL"]
-//EnvMap["CHPL_COMM_SUBSTRATE"]
-//EnvMap["CHPL_GASNET_SEGMENT"]
-//EnvMap["CHPL_TASKS"]
-//EnvMap["CHPL_THREADS"]
-//EnvMap["CHPL_LAUNCHER"]
-//EnvMap["CHPL_TIMERS"]
-//EnvMap["CHPL_MEM"]
-//EnvMap["CHPL_MAKE"]
-//EnvMap["CHPL_ATOMICS"]
-//EnvMap["CHPL_NETWORK_ATOMICS"]
-//EnvMap["CHPL_GMP"]
-//EnvMap["CHPL_HWLOC"]
-//EnvMap["CHPL_REGEXP"]
-//EnvMap["CHPL_WIDE_POINTERS"]
-//EnvMap["CHPL_LLVM"]
-//EnvMap["CHPL_AUX_FILESYS"]
+static void setChapelEnvs() {
+    // TODO - error checking - maybe put in helper functions?
+    CHPL_HOST_PLATFORM   = envMap["CHPL_HOST_PLATFORM"];
+    CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
+    CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
+    CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
+    CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
+    CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
+    CHPL_COMM            = envMap["CHPL_COMM"];
+    CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
+    CHPL_GASNET_SEGMENT  = envMap["CHPL_GASNET_SEGMENT"];
+    CHPL_TASKS           = envMap["CHPL_TASKS"];
+    CHPL_THREADS         = envMap["CHPL_THREADS"];
+    CHPL_LAUNCHER        = envMap["CHPL_LAUNCHER"];
+    CHPL_TIMERS          = envMap["CHPL_TIMERS"];
+    CHPL_MEM             = envMap["CHPL_MEM"];
+    CHPL_MAKE            = envMap["CHPL_MAKE"];
+    CHPL_ATOMICS         = envMap["CHPL_ATOMICS"];
+    CHPL_NETWORK_ATOMICS = envMap["CHPL_NETWORK_ATOMICS"];
+    CHPL_GMP             = envMap["CHPL_GMP"];
+    CHPL_HWLOC           = envMap["CHPL_HWLOC"];
+    CHPL_REGEXP          = envMap["CHPL_REGEXP"];
+    CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
+    CHPL_LLVM            = envMap["CHPL_LLVM"];
+    CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
 }
-
 
 //
 // Can't rely on a variable initialization order for globals, so any
 // variables that need to be initialized in a particular order go here
 //
-static void setupOrderedGlobals(const char* argv0) {
-  // Set up CHPL_HOME first
-  setupChplHome(argv0);
-
-  // Then CHPL_* variables
-  setupEnvVars();
+static void setupOrderedGlobals() {
+  setChapelEnvs();
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
@@ -423,6 +414,23 @@ static void setupOrderedGlobals(const char* argv0) {
   }
 }
 
+
+static void setupChapelEnvDefaults(const char* argv0) {
+  // Set up CHPL_HOME first
+  setupChplHome(argv0);
+
+  // Call printchplenv and pipe output into string
+  std::string output = runUtilScript("printchplenv --simple");
+
+  // Parse output and populate map with CHPL_* variables
+  envMap = populateEnvMap(output);
+
+  // Add CHPL_HOME to envMap
+  envMap["CHPL_HOME"] = CHPL_HOME;
+
+  // Populate CHPL_* variables
+  setChapelEnvs();
+}
 
 // NOTE: We are leaking memory here by dropping astr() results on the ground.
 static void recordCodeGenStrings(int argc, char* argv[]) {
@@ -453,30 +461,41 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   get_version(compileVersion);
 }
 
-static void setStaticLink(const ArgumentState* state, const char* arg_unused) {
-  if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
-    USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-    fLinkStyle = LS_DEFAULT;
+static void setHome(const ArgumentDescription* desc, const char* arg) {
+  // Wipe previous CHPL_HOME when comp flag is given
+  CHPL_HOME[0] = '\0';
+
+  // Copy arg into CHPL_HOME
+  size_t arglen = strlen(arg) + 1; // room for \0
+  if(arglen <= sizeof(CHPL_HOME)) {
+    memcpy(CHPL_HOME, arg, arglen);
   } else {
-    fLinkStyle = LS_STATIC;
+    USR_FATAL("CHPL_HOME argument too long");
   }
 }
 
-static void setDynamicLink(const ArgumentState* state, const char* arg_unused) {
+static void setEnv(const ArgumentDescription* desc, const char* arg) {
+  // TODO: Check if desc->env is in envMap
+  // Potentially switch statement to error check values
+  envMap.erase(desc->env);
+  envMap[desc->env] = strdup(arg);
+}
+
+
+static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unused) {
   fLinkStyle = LS_DYNAMIC;
 }
 
-static void setChapelDebug(const ArgumentState* state, const char* arg_unused) {
+static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
 }
-
 
 // In order to handle accumulating ccflags arguments, the argument
 // processing calls this function. This function appends the flags
 // to the ccflags variable, so that multiple --ccflags arguments
 // all end up together in the ccflags variable (and will end up
 // being passed to the backend C compiler).
-static void setCCFlags(const ArgumentState* state, const char* arg) {
+static void setCCFlags(const ArgumentDescription* desc, const char* arg) {
   // Append arg to the end of ccflags.
   int curlen = strlen(ccflags);
   int space = sizeof(ccflags) - curlen - 1 - 1; // room for ' ' and \0
@@ -490,48 +509,20 @@ static void setCCFlags(const ArgumentState* state, const char* arg) {
   }
 }
 
-static void setHome(const ArgumentState* state, const char* arg) {
-  // Wipe previous CHPL_HOME when comp flag is given
-  CHPL_HOME[0] = '\0';
-
-  // Copy arg into CHPL_HOME
-  size_t arglen = strlen(arg) + 1; // room for \0
-  if(arglen <= sizeof(CHPL_HOME)) {
-    memcpy(CHPL_HOME, arg, arglen);
-    //parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
-  } else {
-    USR_FATAL("CHPL_HOME argument too long");
-  }
-}
-
-static void setComm(const ArgumentState* state, const char* arg) {
-  // Wipe previous CHPL_HOME when comp flag is given
-  chpl_comm[0] = '\0';
-
-  // Copy arg into CHPL_COMM
-  size_t arglen = strlen(arg) + 1; // room for \0
-  if(arglen <= sizeof(CHPL_COMM)) {
-    memcpy(chpl_comm, arg, arglen);
-    //parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
-  } else {
-    USR_FATAL("CHPL_COMM argument too long");
-  }
-}
-
-static void handleLibrary(const ArgumentState* state, const char* arg_unused) {
+static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
 }
 
-static void handleLibPath(const ArgumentState* state, const char* arg_unused) {
+static void handleLibPath(const ArgumentDescription* desc, const char* arg_unused) {
   addLibInfo(astr("-L", libraryFilename));
 }
 
-static void handleMake(const ArgumentState* state, const char* arg_unused) {
+static void handleMake(const ArgumentDescription* desc, const char* arg_unused) {
   CHPL_MAKE = makeArgument;
 }
 
 
-static void handleIncDir(const ArgumentState* state, const char* arg_unused) {
+static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
   addIncInfo(incFilename);
 }
 
@@ -553,7 +544,7 @@ static void runCompilerInLLDB(int argc, char* argv[]) {
 }
 
 
-static void readConfig(const ArgumentState* state, const char* arg_unused) {
+static void readConfig(const ArgumentDescription* desc, const char* arg_unused) {
   // Expect arg_unused to be a string of either of these forms:
   // 1. name=value -- set the config param "name" to "value"
   // 2. name       -- set the boolean config param "name" to NOT("name")
@@ -578,15 +569,15 @@ static void readConfig(const ArgumentState* state, const char* arg_unused) {
   }
 }
 
-static void addModulePath(const ArgumentState* state, const char* newpath) {
+static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
   addFlagModulePath(newpath);
 }
 
-static void noteCppLinesSet(const ArgumentState* state, const char* unused) {
+static void noteCppLinesSet(const ArgumentDescription* desc, const char* unused) {
   userSetCppLineno = true;
 }
 
-static void verifySaveCDir(const ArgumentState* state, const char* unused) {
+static void verifySaveCDir(const ArgumentDescription* desc, const char* unused) {
   if (saveCDir[0] == '-') {
     USR_FATAL("--savec takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
@@ -594,7 +585,7 @@ static void verifySaveCDir(const ArgumentState* state, const char* unused) {
   }
 }
 
-static void turnOffChecks(const ArgumentState* state, const char* unused) {
+static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
   fNoFormalDomainChecks = true;
@@ -603,19 +594,7 @@ static void turnOffChecks(const ArgumentState* state, const char* unused) {
   fNoCastChecks = true;
 }
 
-static void handleStackCheck(const ArgumentState* state, const char* unused) {
-  if (!fNoStackChecks && strcmp(CHPL_TASKS, "massivethreads") == 0) {
-    USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
-  }
-}
-
-static void handleTaskTracking(const ArgumentState* state, const char* unused) {
-  if (fEnableTaskTracking && strcmp(CHPL_TASKS, "fifo") != 0) {
-    USR_WARN("Enabling task tracking with CHPL_TASKS=%s has no effect other than to slow down compilation", CHPL_TASKS);
-  }
-}
-
-static void setFastFlag(const ArgumentState* state, const char* unused) {
+static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   //
   // Enable all compiler optimizations, disable all runtime checks
   //
@@ -642,10 +621,10 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
-  turnOffChecks(state, unused);
+  turnOffChecks(desc, unused);
 }
 
-static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
+static void setFloatOptFlag(const ArgumentDescription* desc, const char* unused) {
   // It would be nicer if arg.cpp could handle
   // 3-value variables like this (set to false, set to true, not set)
   // But if this is the only such case, having a set function is an OK plan.
@@ -660,7 +639,7 @@ static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
   }
 }
 
-static void setBaselineFlag(const ArgumentState* state, const char* unused) {
+static void setBaselineFlag(const ArgumentDescription* desc, const char* unused) {
   //
   // disable all chapel compiler optimizations
   //
@@ -684,38 +663,38 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   fConditionalDynamicDispatchLimit = 0;
 }
 
-static void setCacheEnable(const ArgumentState* state, const char* unused) {
+static void setCacheEnable(const ArgumentDescription* desc, const char* unused) {
   const char *val = fCacheRemote ? "true" : "false";
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
 
 
-static void setHtmlUser(const ArgumentState* state, const char* unused) {
+static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html = true;
   fdump_html_include_system_modules = false;
 }
 
-static void setWarnTupleIteration(const ArgumentState* state, const char* unused) {
+static void setWarnTupleIteration(const ArgumentDescription* desc, const char* unused) {
   const char *val = fNoWarnTupleIteration ? "false" : "true";
   parseCmdLineConfig("CHPL_WARN_TUPLE_ITERATION", astr("\"", val, "\""));
 }
 
-static void setWarnDomainLiteral(const ArgumentState* state, const char* unused) {
+static void setWarnDomainLiteral(const ArgumentDescription* desc, const char* unused) {
   const char *val = fNoWarnDomainLiteral ? "false" : "true";
   parseCmdLineConfig("CHPL_WARN_DOMAIN_LITERAL", astr("\"", val, "\""));
 }
 
-static void setWarnSpecial(const ArgumentState* state, const char* unused) {
+static void setWarnSpecial(const ArgumentDescription* desc, const char* unused) {
   fNoWarnSpecial = false;
 
   fNoWarnDomainLiteral = false;
-  setWarnDomainLiteral(state, unused);
+  setWarnDomainLiteral(desc, unused);
 
   fNoWarnTupleIteration = false;
-  setWarnTupleIteration(state, unused);
+  setWarnTupleIteration(desc, unused);
 }
 
-static void setPrintPassesFile(const ArgumentState* state, const char* fileName) {
+static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
   if(printPassesFile == NULL) {
@@ -744,9 +723,18 @@ Record components:
 */
 
 static ArgumentDescription arg_desc[] = {
- {"", ' ', NULL, "Main Configuration Options", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Primary Configuration Options", NULL, NULL, NULL, NULL},
  {"home", ' ', "<path>", "Path to Chapel home directory", "S", NULL , "CHPL_HOME", setHome},
- {"comm", ' ', "<path>", "Path to Chapel comm directory", "S", NULL , "CHPL_COMM", setComm},
+ {"comm", ' ', "<comm-layer>", "Path to Chapel comm directory", "S", NULL , "CHPL_COMM", setEnv},
+ {"tasks", ' ', "<>", "Description", "S", NULL , "CHPL_TASKS", setEnv},
+ {"locale_model", ' ', "<>", "Description", "S", NULL , "CHPL_LOCALE_MODEL", setEnv},
+ {"launcher", ' ', "<>", "Description", "S", NULL , "CHPL_LAUNCHER", setEnv},
+ {"timers", ' ', "<>", "Description", "S", NULL , "CHPL_TIMERS", setEnv},
+ {"hwloc", ' ', "<>", "Description", "S", NULL , "CHPL_HWLOC", setEnv},
+ {"atomics", ' ', "<>", "Description", "S", NULL , "CHPL_ATOMICS", setEnv},
+ {"mem", ' ', "<>", "Description", "S", NULL , "CHPL_MEM", setEnv},
+ {"comm_substrate", ' ', "<>", "Description", "S", NULL , "CHPL_COMM_SUBSTRATE", setEnv},
+ {"gasnet_segment", ' ', "<>", "Description", "S", NULL , "CHPL_GASNET_SEGMENT", setEnv},
 
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
@@ -792,7 +780,7 @@ static ArgumentDescription arg_desc[] = {
  {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
- {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},
+ {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", NULL},
  {"cast-checks", ' ', NULL, "Enable [disable] checks in safeCast calls", "n", &fNoCastChecks, NULL, NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
@@ -814,7 +802,7 @@ static ArgumentDescription arg_desc[] = {
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_ARCH", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
- {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, setStaticLink},
+ {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
@@ -836,7 +824,7 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
- {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", handleTaskTracking},
+ {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
@@ -993,6 +981,40 @@ static void printStuff(const char* argv0) {
   }
 }
 
+static void postStackCheck() {
+  if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
+    USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
+  }
+}
+
+static void postTaskTracking() {
+  if (strcmp(CHPL_TASKS, "fifo") != 0) {
+    USR_WARN("Enabling task tracking with CHPL_TASKS=%s has no effect other than to slow down compilation", CHPL_TASKS);
+  }
+}
+
+static void postStaticLink() {
+  if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
+    USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
+    fLinkStyle = LS_DEFAULT;
+  } else {
+    fLinkStyle = LS_STATIC;
+  }
+}
+
+static void postprocess_args() {
+    /* Here is a long description of why this function must exists */
+
+    // Updates CHPL_envs
+    setupOrderedGlobals();
+
+    if (fEnableTaskTracking) postTaskTracking();
+
+    if (!fNoStackChecks) postStackCheck();
+
+    if (fLinkStyle != LS_DEFAULT) postStaticLink();
+
+}
 
 int main(int argc, char* argv[]) {
   PhaseTracker tracker;
@@ -1026,14 +1048,16 @@ int main(int argc, char* argv[]) {
 
     initChplProgram(objectClass);
 
-    setupOrderedGlobals(argv[0]);
+    // Populates envMap and default CHPL_envs
+    setupChapelEnvDefaults(argv[0]);
 
+    // Overwrite envMap values if flag provided
     process_args(&sArgState, argc, argv);
+
+    postprocess_args();
 
     initCompilerGlobals(); // must follow argument parsing
 
-    EnvMap["CHPL_HOME"] = CHPL_HOME;
-    EnvMap["CHPL_COMM"] = chpl_comm;
 
     setupDependentVars();
     setupModulePaths();
