@@ -2926,7 +2926,7 @@ module ChapelArray {
     iter _ir_copy_recursive(ir) {
       for e in ir {
         pragma "no copy"
-	var ee = chpl__initCopy(e);
+        var ee = chpl__initCopy(e);
 
         yield ee;
       }
