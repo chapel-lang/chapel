@@ -5,6 +5,7 @@ if (!exists(emptyName)) {
   mkdir(emptyName);
 } else if (isFile(emptyName)) {
   writeln("removing file named " + emptyName);
+  remove(emptyName);
   mkdir(emptyName);
 }
 
