@@ -1,0 +1,7 @@
+total keys = 32
+keys per locale = 32
+maxKeyVal = 8192
+bucketWidth = 8192
+numTrials = 1
+numLocales = 1
+Verification successful!
