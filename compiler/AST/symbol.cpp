@@ -1196,12 +1196,20 @@ void TypeSymbol::verify() {
 
 TypeSymbol*
 TypeSymbol::copyInner(SymbolMap* map) {
-  Type* new_type = COPY_INT(type);
-  TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
-  new_type->addSymbol(new_type_symbol);
-  new_type_symbol->copyFlags(this);
-  new_type_symbol->cname = cname;
-  return new_type_symbol;
+  //
+  // extern symbols are out of our control; let's not copy them, one
+  // copy seems like plenty.
+  //
+  if (this->hasFlag(FLAG_EXTERN)) {
+    return this;
+  } else {
+    Type* new_type = COPY_INT(type);
+    TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
+    new_type->addSymbol(new_type_symbol);
+    new_type_symbol->copyFlags(this);
+    new_type_symbol->cname = cname;
+    return new_type_symbol;
+  }
 }
 
 
