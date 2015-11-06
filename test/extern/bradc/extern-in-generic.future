@@ -1,0 +1,5 @@
+bug: extern types in generic => internal error
+
+Apparently, putting an extern type into a generic function causes an
+internal error because we try to make a second copy of the type and
+it's a primitive type so this triggers an error.  :(
