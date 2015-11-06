@@ -1124,8 +1124,16 @@ private proc rmTreeHelper(out error: syserr, root: string) {
   }
   // Then traverse all the directories within this current directory and have
   // them handle cleaning up their contents and themselves
-  for dirname in listdir(path=root, dirs=true, files=false, listlinks=false) {
-    rmTreeHelper(error, root+"/"+dirname);
+  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true) {
+    var fullpath = root + "/" + dirname;
+    var dirIsLink = isLink(error, fullpath);
+    if (error != ENOERR) then return;
+    // Did something go wrong when checking against link status?
+    if (dirIsLink) {
+      remove(error, fullpath);
+    } else {
+      rmTreeHelper(error, fullpath);
+    }
     if (error != ENOERR) then return;
   }
   // Once everything else has been removed, remove ourself.
