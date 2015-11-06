@@ -65,13 +65,11 @@ config type keyType = int(32);
 // - whether or not to do a test run (results in small problem sizes)
 // - whether or not to run quietly (squashes successful verification messages)
 // - whether or not to print the execution time configuration
-// - whether or not to print the number of locales used to run
 //
 config const debug = false,
              testrun = debug,
              quiet = false,
-             printConfig = !quiet,
-             printNumLocales = !quiet;
+             printConfig = !quiet;
 
 
 //
@@ -107,17 +105,30 @@ config const totalKeys = if mode == scaling.strong then n
 config const keysPerLocale = if mode == scaling.strong then n/numLocales
                                                        else n;
 
+
+//
+// The bucket width to use per locale when running in weakISO mode
+//
+config const isoBucketWidth = if mode == scaling.weakISO then 8192 else 0;
+//
+// Issue a warning if this has been set in modes other than weakISO
+//
+if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
+  warning("Note that isoBucketWidth has no effect for weakISO scaling mode");
+
 //
 // The maximum key value to use.  When debugging, use a small size.
 //
-config const maxKeyVal = if testrun then 32 else 2**28;
+config const maxKeyVal = if mode == scaling.weakISO 
+                           then numLocales * isoBucketWidth
+			   else (if testrun then 32 else 2**28);
 
 //
 // When running in the weakISO scaling mode, this width of each bucket
 // is fixed.  Otherwise, it's the largest key value divided by the
 // number of locales.
 //
-config const bucketWidth = if mode == scaling.weakISO then 8192
+config const bucketWidth = if mode == scaling.weakISO then isoBucketWidth
                                                       else maxKeyVal/numLocales;
 
 //
@@ -216,7 +227,7 @@ proc bucketSort(time = false, verify = false) {
     verifyResults(keysInMyBucket, myLocalKeyCounts);
 
   //
-  // reset for next iteration
+  // reset the receive offsets for the next iteration
   //
   recvOffset[here.id].write(0);
   barrier.barrier();
@@ -382,11 +393,10 @@ proc printConfiguration() {
   // TODO: print out scaling mode
   writeln("total keys = ", totalKeys);
   writeln("keys per locale = ", keysPerLocale);
-  writeln("bucketWidth = ", bucketWidth);
   writeln("maxKeyVal = ", maxKeyVal);
-  if printNumLocales then
-    writeln("numLocales = ", numLocales);
+  writeln("bucketWidth = ", bucketWidth);
   writeln("numTrials = ", numTrials);
+  writeln("numLocales = ", numLocales);
 }
 
              
