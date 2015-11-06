@@ -4056,27 +4056,26 @@ GenRet CallExpr::codegen() {
              // move(wide_real, prim_get_real(wide_complex));
              // turns into: wide_real.locale = wide_complex.locale;
              //             wide_real.addr = prim_get_real(wide_complex.addr);
-             GenRet t1 = createTempVar(call->get(1)->typeInfo()->getRefType()); // ref(complex)
-             codegenAssign(t1, codegenRaddr(call->get(1)));               // t1 = wide_complex.addr
-             GenRet t2 = createTempVar(get(1)->typeInfo()->getRefType());       // ref(real)
-             codegenAssign(t2, codegen_prim_get_real(t1, call->get(1)->typeInfo()->getRefType(), isReal)); // t2 = prim_get_real(t1)
-            if( info->cfile ) {
-              GenRet to_ptr = get(1);
-              GenRet from = codegenWideAddr(codegenRlocale(call->get(1)), codegenDeref(t2));
-              std::string stmt = codegenValue(to_ptr).c + " = ";
-              stmt += from.c;
-              stmt += ";\n";
-              info->cStatements.push_back(stmt);
-            } else {
-#ifdef HAVE_LLVM
-              GenRet to_ptr = get(1);
-              GenRet from = codegenWideAddr(codegenRlocale(call->get(1)), codegenDeref(t2));
-              // LLVM codegen assignment (non-wide, non-tuple)
-              assert(from.val);
+             GenRet t1 = createTempVar(call->get(1)->typeInfo()->getRefType());
+             Type* cplxType = call->get(1)->typeInfo()->getRefType();
+             codegenAssign(t1, codegenRaddr(call->get(1)));
+             GenRet t2 = createTempVar(get(1)->typeInfo()->getRefType());
+             codegenAssign(t2, codegen_prim_get_real(t1, cplxType, isReal));
 
-              codegenStoreLLVM(from, to_ptr, type);
+             GenRet to_ptr = get(1);
+             GenRet from = codegenWideAddr(codegenRlocale(call->get(1)),
+                                           codegenDeref(t2));
+             assert(from.val);
+             if( info->cfile ) {
+               std::string stmt = codegenValue(to_ptr).c + " = ";
+               stmt += from.c;
+               stmt += ";\n";
+               info->cStatements.push_back(stmt);
+             } else {
+#ifdef HAVE_LLVM
+               codegenStoreLLVM(from, to_ptr, type);
 #endif
-            }
+             }
            } else {
              codegenAssign(get(1), codegen_prim_get_real(call->get(1), call->get(1)->typeInfo(), isReal));
            }
@@ -4938,10 +4937,6 @@ GenRet CallExpr::codegen() {
         ptr = codegenRaddr(ptr);
       codegenCall("chpl_check_nil", ptr, info->lineno, info->filename); 
       break; }
-    case PRIM_GET_REAL:
-    case PRIM_GET_IMAG:
-      INT_ASSERT(0); // shouldn't reach this
-      break;
     case PRIM_LOCAL_CHECK:
     {
       // arguments are (wide ptr, line, function/file, error string)
