@@ -3988,7 +3988,6 @@ static void resolveMove(CallExpr* call) {
     SymExpr* toCoerceSE = toSymExpr(rhsCall->get(1));
     if (toCoerceSE) {
       Symbol* toCoerceSym = toCoerceSE->var;
-      bool promotes = false;
       // This transformation is normally handled in insertCasts
       // but we need to do it earlier for parameters. We can't just
       // call insertCasts here since that would dramatically change the
@@ -4007,11 +4006,7 @@ static void resolveMove(CallExpr* call) {
           // some reason replacing the whole move doesn't.
           call->get(1)->replace(new SymExpr(lhs));
           call->get(2)->replace(new SymExpr(toCoerceSym));
-        } else if (isRecordWrappedType(rhsType) ||
-                   isAtomicType(rhsType) ||
-                   isSyncType(rhsType) ||
-                   canCoerce(toCoerceSym->type, toCoerceSym, rhsType,
-                             NULL, &promotes)) {
+        } else  {
           // Any case that doesn't param coerce but does coerce will
           // be handled in insertCasts later.
           // Also any case with a record wrapped type won't be handled
@@ -4020,9 +4015,6 @@ static void resolveMove(CallExpr* call) {
           // Also atomic, sync types don't need to be handled at
           // compile-time. Putting off the error lets us give
           // a better error message.
-        } else {
-          USR_FATAL(userCall(call), "type mismatch in assignment from %s to %s",
-                    toString(toCoerceSym->type), toString(rhsType));
         }
       }
     }
