@@ -1,7 +1,8 @@
-total keys = 32
-keys per locale = 32
-maxKeyVal = 32
-bucketWidth = 32
+scaling mode = weak
+total keys = 32 (2**5)
+keys per locale = 32 (2**5)
+maxKeyVal = 32 (2**5)
+bucketWidth = 32 (2**5)
 numTrials = 1
 numLocales = 1
 Verification successful!
