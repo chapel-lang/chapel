@@ -32,28 +32,9 @@
 
 use BlockDist, Barrier;
 
-// strong:
-// - totkeys = 2**27
-// - compute keys per locale
-
-// weak*:
-// - keys per pe = 2**27
-// - compute totkeys
-
-
-//const ScalingSpace = domain(scaling);
-
-
-
-/*
-config const keysPer = 2**23
-
-const defaultTotalKeys: [ScalingSpace] int = [keysPer, 
-                                              keysPer*numLocales, 
-                                              keysPer*numLocales,
-                                              32];
-*/
-
+//
+// The type of key to use when sorting.
+//
 config type keyType = int(32);
 
 // TODO: replace 'numLocales' below with 'numBuckets' and LocaleSpace
@@ -161,7 +142,7 @@ const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 var myBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
 var recvOffset: [OnePerLocale] atomic int;
 var verifyKeyCount: atomic int;
-
+  
 // TODO: better name?
 var barrier = new Barrier(numLocales);
 
@@ -242,7 +223,7 @@ proc bucketSort(time = false, verify = false) {
 //
 // const BucketSpace = {0..#numBuckets);
 
-inline proc bucketizeLocalKeys(myKeys, sendOffsets) {
+proc bucketizeLocalKeys(myKeys, sendOffsets) {
   var bucketOffsets: [LocaleSpace] atomic int;
 
   bucketOffsets.write(sendOffsets);
@@ -262,7 +243,7 @@ inline proc bucketizeLocalKeys(myKeys, sendOffsets) {
 }
 
 
-inline proc countLocalBucketSizes(myKeys) {
+proc countLocalBucketSizes(myKeys) {
   // TODO: if adding numBuckets, change to that here
   var bucketSizes: [LocaleSpace] atomic int;
 
@@ -277,7 +258,7 @@ inline proc countLocalBucketSizes(myKeys) {
 // TODO: does emacs not highlight 'here'?
 
 
-inline proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
+proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
   forall locid in LocaleSpace {
     //
     // perturb the destination locale by our ID to avoid bottlenecks
@@ -297,7 +278,7 @@ inline proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
 }
 
 
-inline proc countLocalKeys(myBucketSize) {
+proc countLocalKeys(myBucketSize) {
   // TODO: what if we used a global histogram here instead?
   // Note that if we did so and moved this outside of the coforall,
   // we could also remove the barrier from within the coforall
@@ -317,7 +298,8 @@ inline proc countLocalKeys(myBucketSize) {
   return myLocalKeyCounts;
 }
 
-inline proc verifyResults(myBucketSize, myLocalKeyCounts) {
+
+proc verifyResults(myBucketSize, myLocalKeyCounts) {
   //
   // verify that all of my keys are in the expected range (myKeys)
   //
@@ -349,7 +331,7 @@ inline proc verifyResults(myBucketSize, myLocalKeyCounts) {
 }
 
 
-inline proc makeInput() {
+proc makeInput() {
   //
   // TODO: can we get this to work?
   // extern {
@@ -389,43 +371,22 @@ inline proc makeInput() {
   return myKeys;
 }
 
+
 proc printConfiguration() {
-  // TODO: print out scaling mode
-  writeln("total keys = ", totalKeys);
-  writeln("keys per locale = ", keysPerLocale);
-  writeln("maxKeyVal = ", maxKeyVal);
-  writeln("bucketWidth = ", bucketWidth);
+  writeln("scaling mode = ", mode);
+  writelnPotentialPowerOfTwo("total keys = ", totalKeys);
+  writelnPotentialPowerOfTwo("keys per locale = ", keysPerLocale);
+  writelnPotentialPowerOfTwo("maxKeyVal = ", maxKeyVal);
+  writelnPotentialPowerOfTwo("bucketWidth = ", bucketWidth);
   writeln("numTrials = ", numTrials);
   writeln("numLocales = ", numLocales);
 }
 
-             
-/*
-const keysPerLocale = totalKeys / 
 
-                                                      
-proc defaultBucketWidth(mode: scaling) {
-  select (mode) {
-  when mode.strong:
-  when mode.weak:
-  when mode.weakiso:
-  when mode.debug:
-    return 32;
-  otherwise:
-    halt("Unexpected scaling mode in defaultMaxKeyVal()");
-  }
+proc writelnPotentialPowerOfTwo(desc, n) {
+  write(desc, n);
+  const lgn = log2(n);
+  if 2**lgn == n then
+    write(" (2**", lgn, ")");
+  writeln();
 }
-                                                      
-proc defaultMaxKeyVal(mode: scaling) {
-  select (mode) {
-  when mode.strong:
-  when mode.weak:
-  when mode.weakiso:
-  when mode.debug:
-    return 32;
-  otherwise:
-    halt("Unexpected scaling mode in defaultMaxKeyVal()");
-  }
-}
-
-*/
