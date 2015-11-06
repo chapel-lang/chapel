@@ -834,6 +834,29 @@ static void applyGetterTransform(CallExpr* call) {
   }
 }
 
+static bool is_in_move_to_ret(CallExpr* call)
+{
+  CallExpr* parentCall = toCallExpr(call->parentExpr);
+  FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+  Symbol* ret = NULL;
+  CallExpr* grandparentCall = NULL;
+  if (parentFn)
+    ret = parentFn->getReturnSymbol();
+  if (parentCall)
+    grandparentCall = toCallExpr(parentCall->parentExpr);
+
+
+  if (grandparentCall && grandparentCall->isPrimitive(PRIM_MOVE)) {
+    SymExpr* lhs = toSymExpr(grandparentCall->get(1));
+    CallExpr* rhs = toCallExpr(grandparentCall->get(2));
+    if (lhs && lhs->var == ret && rhs)
+      if (rhs->isPrimitive(PRIM_COERCE) || rhs->isPrimitive(PRIM_DEREF))
+        return true;
+  }
+
+  return false;
+}
+
 static void insert_call_temps(CallExpr* call)
 {
   Expr* stmt = call->getStmtExpr();
@@ -867,8 +890,18 @@ static void insert_call_temps(CallExpr* call)
 
   VarSymbol* tmp = newTemp("call_tmp");
 
-  if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
+
+  if (!parentCall || !parentCall->isNamed("chpl__initCopy")) {
+    // is the parent call PRIM_DEREF or PRIM_COERCE
+    // and the grandparent call a move to the return symbol?
+    // If so, don't add FLAG_EXPR_TEMP in order to avoid
+    // extra auto-copies to the return symbol.
+
+    if (is_in_move_to_ret(call))
+      tmp->addFlag(FLAG_RET_EXPR_TEMP);
+
     tmp->addFlag(FLAG_EXPR_TEMP);
+  }
 
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
