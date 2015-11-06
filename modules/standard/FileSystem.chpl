@@ -1134,17 +1134,17 @@ private proc rmTreeHelper(out error: syserr, root: string) {
 
 pragma "no doc"
 proc rmTree(out error: syserr, root: string) {
-  var expectedErrorCases = !exists(error, root);
+  var rootMissing = !exists(error, root);
   if (error != ENOERR) then return; // Some error occurred in checking the existence of root.
-  else if (expectedErrorCases) {
-    // dest doesn't exist.  We can't remove something that isn't there
+  else if (rootMissing) {
+    // root doesn't exist.  We can't remove something that isn't there
     error = ENOENT;
     return;
   }
 
-  expectedErrorCases = !isDir(error, root);
+  var rootNotDir = !isDir(error, root);
   if error != ENOERR then return; // Some error occurred in checking if root was a dir
-  else if (expectedErrorCases) {
+  else if (rootNotDir) {
     // We need it to be a directory!
     error = ENOTDIR;
     return;
