@@ -1115,6 +1115,67 @@ proc remove(name: string) {
   if err != ENOERR then ioerror(err, "in remove", name);
 }
 
+private proc rmTreeHelper(out error: syserr, root: string) {
+  // Go through all the files in this current directory and remove them
+  for filename in listdir(path=root, dirs=false, files=true, listlinks=true) {
+    var name = root + "/" + filename;
+    remove(error, name);
+    if (error != ENOERR) then return;
+  }
+  // Then traverse all the directories within this current directory and have
+  // them handle cleaning up their contents and themselves
+  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true) {
+    var fullpath = root + "/" + dirname;
+    var dirIsLink = isLink(error, fullpath);
+    if (error != ENOERR) then return;
+    // Did something go wrong when checking against link status?
+    if (dirIsLink) {
+      remove(error, fullpath);
+    } else {
+      rmTreeHelper(error, fullpath);
+    }
+    if (error != ENOERR) then return;
+  }
+  // Once everything else has been removed, remove ourself.
+  remove(error, root);
+}
+
+pragma "no doc"
+proc rmTree(out error: syserr, root: string) {
+  var rootMissing = !exists(error, root);
+  if (error != ENOERR) then return; // Some error occurred in checking the existence of root.
+  else if (rootMissing) {
+    // root doesn't exist.  We can't remove something that isn't there
+    error = ENOENT;
+    return;
+  }
+
+  var rootNotDir = !isDir(error, root);
+  if error != ENOERR then return; // Some error occurred in checking if root was a dir
+  else if (rootNotDir) {
+    // We need it to be a directory!
+    error = ENOTDIR;
+    return;
+  }
+
+  var rootPath = realPath(root);
+  rmTreeHelper(error, rootPath);
+}
+
+/* Delete the entire directory tree specified by root.
+
+   Will halt with an error message if one is detected.
+
+   :arg root: path name representing a directory that should be deleted along
+              with its entire contents.
+   :type root: string
+*/
+proc rmTree(root: string) {
+  var err: syserr = ENOERR;
+  rmTree(err, root);
+  if err != ENOERR then ioerror(err, "in rmTree(" + root + ")");
+}
+
 pragma "no doc"
 proc sameFile(out error: syserr, file1: string, file2: string): bool {
   extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
