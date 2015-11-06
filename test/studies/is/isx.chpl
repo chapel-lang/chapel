@@ -6,10 +6,11 @@
 //
 //   https://github.com/ParRes/ISx
 //
+// Later cleanups done by Brad Chamberlain.
+//
 
 //
 // Top priorities:
-// - LocaleSpace -> BucketSpace/Buckets
 // - timer insertion
 // - performance analysis / chplvis
 
@@ -37,9 +38,6 @@ use BlockDist, Barrier;
 //
 config type keyType = int(32);
 
-// TODO: replace 'numLocales' below with 'numBuckets' and LocaleSpace
-// with BucketSpace (or somesuch)??
-
 //
 // The following options respectively control...
 // - whether or not to print debug information
@@ -55,8 +53,7 @@ config const debug = false,
 
 //
 // Define three scaling modes: strong scaling, weak scaling, and
-// weakISO (in which the number of buckets per locale is held
-// constant.
+// weakISO (in which the width of the buckets is held constant).
 //
 enum scaling {strong, weak, weakISO};
 
@@ -148,7 +145,10 @@ var barrier = new Barrier(numLocales);
 
 coforall loc in Locales do
   on loc {
-    // SPMD here
+    // SPMD-style across locales
+    //
+    // TODO: remove this
+    //
     if allBucketKeys[here.id][0].locale != here then
       warning("Need to distribute allBucketKeys");
     //
@@ -218,8 +218,6 @@ proc bucketSort(time = false, verify = false) {
 // TODO: Is all this returning of local arrays going to cause problems?
 
 
-//
-// TODO: introduce BucketSpace domain instead of LocaleSpace
 //
 // const BucketSpace = {0..#numBuckets);
 
