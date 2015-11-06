@@ -10,18 +10,18 @@ the next statement.  For example, the following program creates a task
 to execute the first call to writeln() while the original task goes on
 to execute the second call.
 
-.. code-include::../code/10-begin.chpl
-  :lexer: chapel
+.. literalinclude:: ../../../../../test/release/examples/guide/taskpar/10-begin.chpl
+  :language: chapel
 
 Because these two tasks are not synchronized in any way, their calls
 to writeln() could execute in any order.  As a result, their messages
 could be printed to the console in either order:
 
-.. code-include::../code/10-begin-alt.good
+.. literalinclude:: ../../../../../test/release/examples/guide/taskpar/10-begin-alt.good
 
 or:
 
-.. code-include::../code/10-begin.good
+.. literalinclude:: ../../../../../test/release/examples/guide/taskpar/10-begin.good
 
 Happily, the writeln() routine is written in a parallel-safe manner,
 so there is no danger of the two messages getting jumbled up with one
@@ -37,8 +37,8 @@ messages using a compound statement and a second that prints some
 using a procedure call, while the original task prints messages of its
 own.
 
-.. code-include:../code/10-beginBiggerStatements.chpl
-  :lexer: chapel
+.. literalinclude:: ../../../../../test/release/examples/guide/taskpar/10-beginBiggerStatements.chpl
+  :language: chapel
 
 
 Nested Tasks
@@ -49,10 +49,9 @@ may itself create other tasks.  For example, the following routine
 uses recursion and 'begin' statements to create a distinct task to
 process each node in a binary tree:
 
-.. code-include:../code/10-walkTreeUsingBegins.chpl
-  :lexer: chapel
-  :start-line: 23
-  :end-line: 32
+.. literalinclude:: ../../../../../test/release/examples/guide/taskpar/10-walkTreeUsingBegins.chpl
+  :language: chapel
+  :lines: 24-31
 
 (Whether or not this is an appropriate use of tasks depends on the
 size of the tree, the processTasks() computation, the system, etc.)

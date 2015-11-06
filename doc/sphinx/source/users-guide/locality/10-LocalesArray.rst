@@ -13,12 +13,12 @@ an integer indicating the number of locales specified by the user on
 the command-line.  For example, given the 4-locale execution from the
 previous page, the following program:
 
-.. code-include::../code/10-numLocales.chpl
-  :lexer: chapel
+.. literalinclude:: ../../../../../test/release/examples/guide/locality/10-numLocales.chpl
+  :language: chapel
 
 would generate:
 
-.. code-include::../code/10-numLocales.good
+.. literalinclude:: ../../../../../test/release/examples/guide/locality/10-numLocales.good
 
 
 The 'Locales' Array

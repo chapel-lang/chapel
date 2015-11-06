@@ -10,8 +10,9 @@ started.  It prints is argument(s) to the console, followed by a
 newline.  Thus, the following statement will print a greeting to the
 console:
 
-.. code-include::../../../../../test/release/examples/guide/base/01-hello.chpl
-  :lexer: chapel
+.. literalinclude:: ../../../../../test/release/examples/guide/base/01-hello.chpl
+  :language: chapel
+  :lines: 1-1
 
 We'll talk in more detail about program structure later, but for now,
 it's sufficient to know that a Chapel program can simply be a list of
@@ -33,7 +34,7 @@ using:
 
 which should print the greeting to your console as follows:
 
-.. code-include::../../../../../test/release/examples/guide/base/01-hello.good
+.. literalinclude:: ../../../../../test/release/examples/guide/base/01-hello.good
 
 Note that writeln() takes an arbitrary number of arguments and will
 print them to the console one after the other without spaces, followed

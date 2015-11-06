@@ -1,8 +1,8 @@
 begin {
-        for i in 1..10 do
-          writeln("Hi there!");
-        writeln("Oh, I forgot to say something!");
-      }
+  for i in 1..10 do
+    writeln("Hi there!");
+  writeln("Oh, I forgot to say something!");
+}
 
 begin sayHiBack();
 

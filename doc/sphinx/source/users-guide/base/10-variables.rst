@@ -10,21 +10,19 @@ Variables are declared in Chapel using the 'var' keyword.  As an
 example, the following statement declares a variable of integer type
 ('int') named 'x' and initializes it to 42:
 
-.. code-include::../code/10-intVarTypeInit.chpl
-  :lexer: chapel
-  :start-line: 0
-  :end-line: 1
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarTypeInit.chpl
+  :language: chapel
+  :lines: 1
 
 We can verify its value by printing it out:
 
-.. code-include::../code/10-intVarTypeInit.chpl
-  :lexer: chapel
-  :start-line: 1
-  :end-line: 2
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarTypeInit.chpl
+  :language: chapel
+  :lines: 2
 
 Compiling and running this program results in:
 
-.. code-include::../code/10-intVarTypeInit.good
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarTypeInit.good
 
 As we will see in the next two sections, a variable declaration may
 omit its initializer or its type, but not both.
@@ -37,14 +35,13 @@ If the programmer does not initialize a variable, the compiler will
 initialize it to a default value based on its type.  For example, the
 default value for integers is zero, so if we had declared:
 
-.. code-include:../code/10-intVarDefaultInit.chpl
-  :lexer: chapel
-  :start-line: 0
-  :end-line: 1
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarDefaultInit.chpl
+  :language: chapel
+  :lines: 1
 
 We would see:
 
-.. code-include::../code/10-intVarDefaultInit.good
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarDefaultInit.good
 
 
 Type-inferred Variables
@@ -55,14 +52,13 @@ which case the compiler will infer the variable's type based on the
 type of its initializzation expression.  Thus, we could have written
 the original program simply as:
 
-.. code-include:../code/10-intVarInferType.chpl
-  :lexer: chapel
-  :start-line: 0
-  :end-line: 1
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarInferType.chpl
+  :language: chapel
+  :lines: 1
 
 Which would produce:
 
-.. code-include::../code/10-intVarInferType.good
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarInferType.good
 
 In this case, the compiler knows that '42' is an integer, therefore it
 infers that the type of 'x' is 'int'.
@@ -82,28 +78,25 @@ The 'var' keyword can also be used to create more than one variable at
 a time.  For example, the following statement will create three
 integer variables, 'a', 'b', and 'c', all initialized to '42':
 
-.. code-include:../code/10-compoundVarDecls.chpl
-  :lexer: chapel
-  :start-line: 0
-  _end-line: 1
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-compoundVarDecls.chpl
+  :language: chapel
+  :lines: 1
 
 As before, initialization and type information may be omitted, so the
 following statement creates three integer variables, 'i', 'j', and
 'k', all default-initialized to zero:
 
-.. code-include:../code/10-compoundVarDecls.chpl
-  :lexer: chapel
-  :start-line: 1
-  _end-line: 2
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-compoundVarDecls.chpl
+  :language: chapel
+  :lines: 2
 
 And this third line will create three variables, 'x', 'y', and 'z',
 all inferred to be integers due to being initialized with the integer
 42:
 
-.. code-include:../code/10-compoundVarDecls.chpl
-  :lexer: chapel
-  :start-line: 1
-  _end-line: 2
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-compoundVarDecls.chpl
+  :language: chapel
+  :lines: 3
 
 Finally, a variable declaration statement may contain several type and
 initializer expressions.  For example, the following statement
@@ -112,7 +105,9 @@ and 'k' to be integer variables initialized to zero; 's' and 't' to be
 string variables initialized to "hi"; and 'x', 'y', and 'z' to be
 inferred integer variables initialized to 42:
 
-.. code-include:../code/10-compoundVarDecls2.chpl
+.. literalinclude:: ../../../../../test/release/examples/guide/base/10-compoundVarDecls2.chpl
+  :language: chapel
+  :lines: 1-4
 
 
 Note that whitespae doesn't matter in Chapel, so the use of linefeeds
