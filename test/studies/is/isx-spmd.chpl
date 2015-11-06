@@ -330,20 +330,7 @@ proc verifyResults(myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput() {
-  //
-  // TODO: can we get this to work?
-  // extern {
-  // #include "pcg_basic.h"
-  // }
-  require "ref-version/pcg_basic.h", "ref-version/pcg_basic.c";
-
-  extern type pcg32_random_t;
-  extern proc pcg32_srandom_r(ref rng: pcg32_random_t, 
-                              initstate: uint(64),
-                              initseq: uint(64));
-  extern proc pcg32_boundedrand_r(ref rng: pcg32_random_t, 
-                                  bound: uint(32)
-                                 ): uint(32);
+  use PCG;
 
   var rng: pcg32_random_t;
   var myKeys: [0..#keysPerLocale] keyType;
@@ -388,3 +375,22 @@ proc writelnPotentialPowerOfTwo(desc, n) {
     write(" (2**", lgn, ")");
   writeln();
 }
+
+
+module PCG {
+  //
+  // TODO: can we get this to work?
+  // extern {
+  // #include "pcg_basic.h"
+  // }
+  require "ref-version/pcg_basic.h", "ref-version/pcg_basic.c";
+
+  extern type pcg32_random_t;
+  extern proc pcg32_srandom_r(ref rng: pcg32_random_t, 
+                              initstate: uint(64),
+                              initseq: uint(64));
+  extern proc pcg32_boundedrand_r(ref rng: pcg32_random_t, 
+                                  bound: uint(32)
+				  ): uint(32);
+}
+
