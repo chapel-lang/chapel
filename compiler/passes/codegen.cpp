@@ -434,11 +434,8 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
   // never codegen definitions of primitive or arithmetic types.
   if( toPrimitiveType(ct) ) return false;
 
-  // Needed special handling for complex types, since after complex2record
-  // they appear like normal records but we must not define them
-  // since they are defined in the runtime headers
-  // Added a flag, FLAG_NO_CODEGEN, to handle this case.
-  // This flag could be used for other similar cases if necessary.
+  // Don't codegen types with FLAG_NO_CODEGEN.  This is used for
+  // types that are defined in the runtime for example.
   if( ct->symbol->hasFlag(FLAG_NO_CODEGEN) ) return false;
 
   // Don't visit classes since they are prototyped individually all at once..
