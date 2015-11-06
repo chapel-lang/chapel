@@ -117,7 +117,7 @@ config const bucketWidth = if mode == scaling.weakISO then isoBucketWidth
 // average number of keys per locale.
 //
 config const recvBuffFactor = 2.0,
-             recvBuffSize = (totalKeys * recvBuffFactor): int;
+             recvBuffSize = (keysPerLocale * recvBuffFactor): int;
 
 //
 // These specify the number of burn-in runs and number of experimental
@@ -139,7 +139,7 @@ if numTrials == 0 then
 
 const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 
-var myBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
+var allBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
 var recvOffset: [OnePerLocale] atomic int;
 var verifyKeyCount: atomic int;
   
@@ -149,8 +149,8 @@ var barrier = new Barrier(numLocales);
 coforall loc in Locales do
   on loc {
     // SPMD here
-    if myBucketKeys[here.id][0].locale != here then
-      warning("Need to distribute myBucketKeys");
+    if allBucketKeys[here.id][0].locale != here then
+      warning("Need to distribute allBucketKeys");
     //
     // The non-positive iterations represent burn-in runs, so don't
     // time those.  To reduce time spent in verification, verify only
@@ -161,9 +161,9 @@ coforall loc in Locales do
   }
 
 if debug {
-  writeln("myBucketKeys =\n");
-  for i in LocaleSpace do
-    writeln(myBucketKeys[i]);
+  writeln("final buckets =\n");
+  for (i,b) in zip(LocaleSpace, allBucketKeys) do
+    writeln("Bucket ", i, " (owned by ", b.locale.id, "): ", b);
 }
   
 
@@ -271,8 +271,8 @@ proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
     // TODO: are we implementing this with one communication?
     // If not, and we turn on Rafa's optimization, is it better?
     //
-    myBucketKeys[dstlocid][dstOffset..#transferSize] = 
-            myBucketedKeys[srcOffset..#transferSize];
+    allBucketKeys[dstlocid][dstOffset..#transferSize] = 
+             myBucketedKeys[srcOffset..#transferSize];
   }
 
 }
@@ -289,7 +289,7 @@ proc countLocalKeys(myBucketSize) {
   // redundant indexing?
   //
   forall i in 0..#myBucketSize do
-    myLocalKeyCounts[myBucketKeys[here.id][i]].add(1);
+    myLocalKeyCounts[allBucketKeys[here.id][i]].add(1);
 
   if debug then
     writeln(here.id, ": myLocalKeyCounts[", myMinKeyVal, "..] = ", 
@@ -306,7 +306,7 @@ proc verifyResults(myBucketSize, myLocalKeyCounts) {
   const myMinKeyVal = here.id * bucketWidth;
   const myKeys = myMinKeyVal..#bucketWidth;
   forall i in 0..#myBucketSize {
-    const key = myBucketKeys[here.id][i];
+    const key = allBucketKeys[here.id][i];
     if !myKeys.member(key) then
       halt("got key value outside my range: "+key + " not in " + myKeys);
   }
