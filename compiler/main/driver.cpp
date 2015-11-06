@@ -51,8 +51,10 @@
 
 std::map<std::string, const char*> envMap;
 
-char CHPL_HOME[FILENAME_MAX+1] = "";
 
+const int NUM_CHPL_ENVS = 23;
+
+char CHPL_HOME[FILENAME_MAX+1] = "";
 const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
@@ -76,12 +78,6 @@ const char* CHPL_REGEXP = NULL;
 const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
-
-// quick and dirty
-#define MAX_CHPL_ENV_VARS 50
-int num_chpl_env_vars = 0;
-const char *chpl_env_vars[MAX_CHPL_ENV_VARS];
-const char *chpl_env_var_names[MAX_CHPL_ENV_VARS];
 
 bool widePointersStruct;
 
@@ -354,20 +350,26 @@ std::map<std::string, const char*> populateEnvMap(std::string output)
         env[key] = strdup(value.c_str());
         output.erase(0, linePos + lineDelimiter.length());
     }
+    if( env.size() != NUM_CHPL_ENVS ) {
+        USR_FATAL("Did not parse %d CHPL_* vars", NUM_CHPL_ENVS);
+    }
     // TODO Error checking - Check number of env vars?
     return env;
 }
 
-//static void printEnvMap() {
-//    printf("envMap:\n");
-//    for( std::map<std::string, const char *>::iterator ii=envMap.begin(); ii!=envMap.end(); ++ii)
-//    {
-//        printf("%s : %s\n", (*ii).first.c_str(), (*ii).second);
-//    }
-//}
+static const char* getEnvMap(std::string key)
+{
+    if( envMap.find(key) != envMap.end() ) {
+
+    } else {
+        USR_FATAL("Variable, %s was not defined", key);
+    }
+
+
+}
 
 static void setChapelEnvs() {
-    // TODO - error checking - maybe put in helper functions?
+    // Set the CHPL_* envs from envMap values
     CHPL_HOST_PLATFORM   = envMap["CHPL_HOST_PLATFORM"];
     CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
     CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
@@ -467,7 +469,7 @@ static void setHome(const ArgumentDescription* desc, const char* arg) {
 
   // Copy arg into CHPL_HOME
   size_t arglen = strlen(arg) + 1; // room for \0
-  if(arglen <= sizeof(CHPL_HOME)) {
+  if( arglen <= sizeof(CHPL_HOME) ) {
     memcpy(CHPL_HOME, arg, arglen);
   } else {
     USR_FATAL("CHPL_HOME argument too long");
@@ -475,12 +477,15 @@ static void setHome(const ArgumentDescription* desc, const char* arg) {
 }
 
 static void setEnv(const ArgumentDescription* desc, const char* arg) {
-  // TODO: Check if desc->env is in envMap
-  // Potentially switch statement to error check values
-  envMap.erase(desc->env);
-  envMap[desc->env] = strdup(arg);
+  // Check if environment variable is in envMap and copy in the arg value
+  if( envMap.find(desc->env) != envMap.end() )
+  {
+    envMap.erase(desc->env);
+    envMap[desc->env] = strdup(arg);
+  } else {
+    USR_FATAL("%s not a valid environment variable", desc->env);
+  }
 }
-
 
 static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unused) {
   fLinkStyle = LS_DYNAMIC;
@@ -725,16 +730,16 @@ Record components:
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Primary Configuration Options", NULL, NULL, NULL, NULL},
  {"home", ' ', "<path>", "Path to Chapel home directory", "S", NULL , "CHPL_HOME", setHome},
- {"comm", ' ', "<comm-layer>", "Path to Chapel comm directory", "S", NULL , "CHPL_COMM", setEnv},
- {"tasks", ' ', "<>", "Description", "S", NULL , "CHPL_TASKS", setEnv},
- {"locale_model", ' ', "<>", "Description", "S", NULL , "CHPL_LOCALE_MODEL", setEnv},
- {"launcher", ' ', "<>", "Description", "S", NULL , "CHPL_LAUNCHER", setEnv},
- {"timers", ' ', "<>", "Description", "S", NULL , "CHPL_TIMERS", setEnv},
- {"hwloc", ' ', "<>", "Description", "S", NULL , "CHPL_HWLOC", setEnv},
- {"atomics", ' ', "<>", "Description", "S", NULL , "CHPL_ATOMICS", setEnv},
- {"mem", ' ', "<>", "Description", "S", NULL , "CHPL_MEM", setEnv},
- {"comm_substrate", ' ', "<>", "Description", "S", NULL , "CHPL_COMM_SUBSTRATE", setEnv},
- {"gasnet_segment", ' ', "<>", "Description", "S", NULL , "CHPL_GASNET_SEGMENT", setEnv},
+ {"comm", ' ', "{none, gasnet, ugni}", "Path to Chapel comm directory", "S", NULL , "CHPL_COMM", setEnv},
+ {"tasks", ' ', "{qthreads, fifo, massivethreads, muxed}", "Description", "S", NULL , "CHPL_TASKS", setEnv},
+ {"locale_model", ' ', "{flat, numa}", "", "S", NULL , "CHPL_LOCALE_MODEL", setEnv},
+ {"launcher", ' ', "<launcher>", "Chapel launcher", "S", NULL , "CHPL_LAUNCHER", setEnv},
+ {"timers", ' ', "{generic}", "Implementation of Chapel's timers", "S", NULL , "CHPL_TIMERS", setEnv},
+ {"hwloc", ' ', "{none, hwloc}", "HWLOC support", "S", NULL , "CHPL_HWLOC", setEnv},
+ {"atomics", ' ', "{intrinsics, locks}", "Implementation of atomic operations", "S", NULL , "CHPL_ATOMICS", setEnv},
+ {"mem", ' ', "{cstdlib, dlmalloc, tcmalloc}", "Memory management layer", "S", NULL , "CHPL_MEM", setEnv},
+ {"comm_substrate", ' ', "<comm-substrate>", "Choice of GASNet conduit", "S", NULL , "CHPL_COMM_SUBSTRATE", setEnv},
+ {"gasnet_segment", ' ', "{fast, large, everything}", "Choice of GASNet memory segment", "S", NULL , "CHPL_GASNET_SEGMENT", setEnv},
 
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
@@ -982,23 +987,29 @@ static void printStuff(const char* argv0) {
 }
 
 static void postStackCheck() {
-  if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
-    USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
+  if (!fNoStackChecks) {
+    if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
+      USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
+    }
   }
 }
 
 static void postTaskTracking() {
-  if (strcmp(CHPL_TASKS, "fifo") != 0) {
-    USR_WARN("Enabling task tracking with CHPL_TASKS=%s has no effect other than to slow down compilation", CHPL_TASKS);
+  if (fEnableTaskTracking) {
+    if (strcmp(CHPL_TASKS, "fifo") != 0) {
+      USR_WARN("Enabling task tracking with CHPL_TASKS=%s has no effect other than to slow down compilation", CHPL_TASKS);
+    }
   }
 }
 
 static void postStaticLink() {
-  if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
-    USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-    fLinkStyle = LS_DEFAULT;
-  } else {
-    fLinkStyle = LS_STATIC;
+  if (fLinkStyle != LS_DEFAULT) {
+    if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
+      USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
+      fLinkStyle = LS_DEFAULT;
+    } else {
+      fLinkStyle = LS_STATIC;
+    }
   }
 }
 
@@ -1008,11 +1019,11 @@ static void postprocess_args() {
     // Updates CHPL_envs
     setupOrderedGlobals();
 
-    if (fEnableTaskTracking) postTaskTracking();
+    postTaskTracking();
 
-    if (!fNoStackChecks) postStackCheck();
+    postStackCheck();
 
-    if (fLinkStyle != LS_DEFAULT) postStaticLink();
+    postStaticLink();
 
 }
 
