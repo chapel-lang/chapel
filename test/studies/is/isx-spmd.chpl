@@ -1,4 +1,4 @@
-// isx.chpl
+// isx-spmd.chpl
 // 
 // Port of ISx to Chapel, co-developed by Brad Chamberlain,
 // Lydia Duncan, and Jacob Hemstad on 2015-10-30.  Based on
@@ -6,7 +6,9 @@
 //
 //   https://github.com/ParRes/ISx
 //
-// Later cleanups done by Brad Chamberlain.
+// This version is very literally SPMD, using a task per locale
+// (and parallel loops to get multicore parallelism within each
+// locale).  Later cleanups done by Brad Chamberlain.
 //
 
 //

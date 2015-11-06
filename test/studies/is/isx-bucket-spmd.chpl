@@ -1,12 +1,12 @@
-// isx.chpl
+// isx-bucket-spmd.chpl
 // 
-// Port of ISx to Chapel, co-developed by Brad Chamberlain,
-// Lydia Duncan, and Jacob Hemstad on 2015-10-30.  Based on
-// the OpenSHMEM version available from:
-//
-//   https://github.com/ParRes/ISx
-//
-// Later cleanups done by Brad Chamberlain.
+// Port of ISx to Chapel, developed by Brad Chamberlain as a variant
+// of the version co-developed by Brad Chamberlain, Lydia Duncan, and
+// Jacob Hemstad on 2015-10-30.  The difference between this version
+// and isx-spmd.chpl is that the SPMD in the original version was
+// written in terms of locales whereas here it is written in terms of
+// more abstract "buckets", permitting multiple buckets to be mapped
+// to each locale.
 //
 
 //
