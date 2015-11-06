@@ -3998,8 +3998,11 @@ static void resolveMove(CallExpr* call) {
         // Can we coerce from the argument to the function return type?
         // Note that rhsType here is the function return type (since
         // that is what the primitive returns as its type).
-        if (toCoerceSym->type == rhsType ||
-            canParamCoerce(toCoerceSym->type, toCoerceSym, rhsType)) {
+        if (toCoerceSym->hasFlag(FLAG_TYPE_VARIABLE) &&
+            !lhs->hasFlag(FLAG_TYPE_VARIABLE) ) {
+          USR_FATAL(userCall(call), "illegal assignment of type to value");
+        } else if (toCoerceSym->type == rhsType ||
+                   canParamCoerce(toCoerceSym->type, toCoerceSym, rhsType)) {
           // Replacing the arguments to the move works, but for
           // some reason replacing the whole move doesn't.
           call->get(1)->replace(new SymExpr(lhs));
