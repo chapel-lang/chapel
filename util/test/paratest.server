@@ -443,7 +443,9 @@ sub find_subdirs {
             next if $skip > '0' or $skip =~ m/true/i;
         }
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
-	    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
+            if (! -l "$targetdir/$filen") {
+                push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
+            }
         }
     }
     return @founddirs;
