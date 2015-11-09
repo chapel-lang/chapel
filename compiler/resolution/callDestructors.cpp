@@ -989,8 +989,11 @@ static void expiringValueOptimization(FnSymbol* fn) {
 
         // Is RHS a value we would auto destroy?
         // Is it a local variable?
+        // Is the initialization or assignment occurring in
+        // the same block as the variable definition for the RHS?
         if ( rhsSym->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-             rhsSym->defPoint->parentSymbol == fn ) {
+             rhsSym->defPoint->parentSymbol == fn &&
+             RHS->getScopeBlock() == RHS->var->defPoint->getScopeBlock() ) {
           // Is RHS dead at this point?
           int index = localMap.get(rhsSym);
           bool live = OUT[block_index]->get(index);
