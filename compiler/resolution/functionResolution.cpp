@@ -5923,8 +5923,13 @@ postFold(Expr* expr) {
               !lhs->var->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
               if (requiresImplicitDestroy(rhsCall)) {
-                lhs->var->addFlag(FLAG_INSERT_AUTO_COPY);
-                lhs->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+                if (lhs->var->hasFlag(FLAG_RET_EXPR_TEMP) &&
+                    !isRecordWrappedType(lhs->typeInfo()) ) {
+                  // do nothing
+                } else {
+                  lhs->var->addFlag(FLAG_INSERT_AUTO_COPY);
+                  lhs->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+                }
               }
             }
           }
