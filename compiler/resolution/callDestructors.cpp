@@ -42,6 +42,10 @@ static void cullAutoDestroyFlags()
   {
     if (VarSymbol* ret = toVarSymbol(fn->getReturnSymbol()))
     {
+      // MPF: if this assert never fires, much of the code
+      // below is no longer necessary.
+      INT_ASSERT(! ret->hasFlag(FLAG_INSERT_AUTO_DESTROY));
+
       // The return value of an initCopy function should not be autodestroyed.
       // Normally, the return value of a function is autoCopied, but since
       // autoCopy is typically defined in terms of initCopy, this would lead to
@@ -139,7 +143,7 @@ static void cullExplicitAutoDestroyFlags()
         for_uses(se, useMap, var)
         {
           CallExpr* call = toCallExpr(se->parentExpr);
-          if (call->isPrimitive(PRIM_MOVE) &&
+          if (call && call->isPrimitive(PRIM_MOVE) &&
               toSymExpr(call->get(1))->var == retVar)
           {
             var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -158,7 +162,7 @@ static void cullExplicitAutoDestroyFlags()
 *                                                                   *
 * A set of functions that scan every BlockStmt to determine whether *
 * it is necessary to insert autoDestroy calls at any of the exit    *
-* points rom the block.                                             *
+* points from the block.                                             *
 *                                                                   *
 * This computation consists of a linear scan of every BlockStmt     *
 * scanning for                                                      *
@@ -776,6 +780,59 @@ static void insertDestructorCalls() {
   }
 }
 
+/* For a variable marked with FLAG_INSERT_AUTO_COPY,
+   call autoCopy when there is a MOVE to that variable
+   from another expression (variable or call).
+
+   Note that FLAG_INSERT_AUTO_COPY is only ever set for
+   lhs variables in moves such as
+      move lhs, someCall()
+   where requiresImplicitDestroy(someCall). requiresImplicitDestroy is
+   described as checking "if the function requires an implicit
+   destroy of its returned value (i.e. reference count)".
+
+   The code checks:
+    - not in a "donor fn" (auto copy fn)
+    - called function returns a record or ref-counted type by ref
+    - called function does not have FLAG_NO_IMPLICIT_COPY (getter fn)
+    - called function is not an iterator
+    - called function is not returning a runtime type value
+    - called function is not a "donor fn" (autocopy fns in modules)
+    - called function is not init copy
+    - called function is not =
+    - called function is not _defaultOf
+    - called function does not have FLAG_AUTO_II
+    - called function is not a constructor
+    - called function is not a type constructor
+
+   Relevant commits are
+     3788ee34fa created
+     70d5ea4040 bug fix/workarounds
+     93d5338f8a switch to using flags
+     57a13e7c22 fix compiler warning
+     c27afd6b4f adds FLAG_NO_IMPLICIT_COPY == FLAG_RETURN_VALUE_IS_NOT_OWNED?
+     adfb566b00 FLAG_ITERATOR_FN -> isIterator
+     a43758e6aa adds check for defaultOf, "fixes 4 test failures"
+     61db88b637 flag cleanups
+
+
+   Anyway, insertAutoCopyTemps does the following:
+
+   when x has FLAG_INSERT_AUTO_COPY
+
+   move x, y
+   ->
+   move atmp, y
+   move x, autoCopy(atmp)
+
+   or
+
+   move x, someCall()      (where requiresImplicitDestroy(someCall))
+   ->
+   move atmp, someCall()
+   move x, autoCopy(atmp)
+
+ */
 static void insertAutoCopyTemps() {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
@@ -789,6 +846,17 @@ static void insertAutoCopyTemps() {
         if (defCall->isPrimitive(PRIM_MOVE)) {
           CallExpr* rhs = toCallExpr(defCall->get(2));
           if (!rhs || !rhs->isNamed("=")) {
+            // We enter this block if:
+            // - rhs is a variable (!rhs), or
+            // - rhs is a call but not to =
+            //
+            // I think that calls to = no longer appear
+            // in PRIM_MOVE in the AST, so I think that
+            // this is actually if (!rhs || rhs)
+            // since = used to return a value but no longer does.
+
+            // This check ensures that there is only a single PRIM_MOVE
+            // definition of a variable marked with FLAG_INSERT_AUTO_COPY.
             INT_ASSERT(!move);
             move = defCall;
           }
