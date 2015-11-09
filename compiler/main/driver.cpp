@@ -359,40 +359,39 @@ std::map<std::string, const char*> populateEnvMap(std::string output)
 
 static const char* getEnvMap(std::string key)
 {
-    if( envMap.find(key) != envMap.end() ) {
-
-    } else {
-        USR_FATAL("Variable, %s was not defined", key);
+    if( envMap.find(key) == envMap.end() ) {
+        USR_FATAL("Variable, %s was not defined", key.c_str());
     }
 
+    return envMap[key];
 
 }
 
 static void setChapelEnvs() {
     // Set the CHPL_* envs from envMap values
-    CHPL_HOST_PLATFORM   = envMap["CHPL_HOST_PLATFORM"];
-    CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
-    CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
-    CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
-    CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
-    CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
-    CHPL_COMM            = envMap["CHPL_COMM"];
-    CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
-    CHPL_GASNET_SEGMENT  = envMap["CHPL_GASNET_SEGMENT"];
-    CHPL_TASKS           = envMap["CHPL_TASKS"];
-    CHPL_THREADS         = envMap["CHPL_THREADS"];
-    CHPL_LAUNCHER        = envMap["CHPL_LAUNCHER"];
-    CHPL_TIMERS          = envMap["CHPL_TIMERS"];
-    CHPL_MEM             = envMap["CHPL_MEM"];
-    CHPL_MAKE            = envMap["CHPL_MAKE"];
-    CHPL_ATOMICS         = envMap["CHPL_ATOMICS"];
-    CHPL_NETWORK_ATOMICS = envMap["CHPL_NETWORK_ATOMICS"];
-    CHPL_GMP             = envMap["CHPL_GMP"];
-    CHPL_HWLOC           = envMap["CHPL_HWLOC"];
-    CHPL_REGEXP          = envMap["CHPL_REGEXP"];
-    CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
-    CHPL_LLVM            = envMap["CHPL_LLVM"];
-    CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
+    CHPL_HOST_PLATFORM   = getEnvMap("CHPL_HOST_PLATFORM");
+    CHPL_HOST_COMPILER   = getEnvMap("CHPL_HOST_COMPILER");
+    CHPL_TARGET_PLATFORM = getEnvMap("CHPL_TARGET_PLATFORM");
+    CHPL_TARGET_COMPILER = getEnvMap("CHPL_TARGET_COMPILER");
+    CHPL_TARGET_ARCH     = getEnvMap("CHPL_TARGET_ARCH");
+    CHPL_LOCALE_MODEL    = getEnvMap("CHPL_LOCALE_MODEL");
+    CHPL_COMM            = getEnvMap("CHPL_COMM");
+    CHPL_COMM_SUBSTRATE  = getEnvMap("CHPL_COMM_SUBSTRATE");
+    CHPL_GASNET_SEGMENT  = getEnvMap("CHPL_GASNET_SEGMENT");
+    CHPL_TASKS           = getEnvMap("CHPL_TASKS");
+    CHPL_THREADS         = getEnvMap("CHPL_THREADS");
+    CHPL_LAUNCHER        = getEnvMap("CHPL_LAUNCHER");
+    CHPL_TIMERS          = getEnvMap("CHPL_TIMERS");
+    CHPL_MEM             = getEnvMap("CHPL_MEM");
+    CHPL_MAKE            = getEnvMap("CHPL_MAKE");
+    CHPL_ATOMICS         = getEnvMap("CHPL_ATOMICS");
+    CHPL_NETWORK_ATOMICS = getEnvMap("CHPL_NETWORK_ATOMICS");
+    CHPL_GMP             = getEnvMap("CHPL_GMP");
+    CHPL_HWLOC           = getEnvMap("CHPL_HWLOC");
+    CHPL_REGEXP          = getEnvMap("CHPL_REGEXP");
+    CHPL_WIDE_POINTERS   = getEnvMap("CHPL_WIDE_POINTERS");
+    CHPL_LLVM            = getEnvMap("CHPL_LLVM");
+    CHPL_AUX_FILESYS     = getEnvMap("CHPL_AUX_FILESYS");
 }
 
 //

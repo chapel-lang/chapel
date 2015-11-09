@@ -584,11 +584,15 @@ static void codegen_header_compilation_config() {
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
-    genGlobalString("CHPL_HOME",           CHPL_HOME);
+    //genGlobalString("CHPL_HOME",           CHPL_HOME);
 
-    for (int i = 0; i < num_chpl_env_vars; i++) {
-      genGlobalString(chpl_env_var_names[i], chpl_env_vars[i]);
-    }
+
+    //for (std::map<std::string, const char*>::iterator env = envMap.begin(); env != envMap.end(); ++env) {
+    //  genGlobalString((*env).first.c_str(), (*env).second);
+    //}
+    //for (int i = 0; i < num_chpl_env_vars; i++) {
+    //  genGlobalString(chpl_env_var_names[i], chpl_env_vars[i]);
+    //}
 
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks);
     genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote);
@@ -607,11 +611,12 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr,
             "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
             CHPL_HOME);
-    for (int i = 0; i < num_chpl_env_vars; i++) {
+    //for (int i = 0; i < num_chpl_env_vars; i++) {
+    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
       fprintf(cfgfile.fptr,
               "printf(\"%%s\", \"  %s: %s\\n\");\n",
-              chpl_env_var_names[i],
-              chpl_env_vars[i]);
+              (*env).first.c_str(),
+              (*env).second);
     }
 
     fprintf(cfgfile.fptr, "}\n");
