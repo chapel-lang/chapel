@@ -1,5 +1,3 @@
-config param workaround = false;
-
 makeInput(1);
 
 // WORKAROUND: 

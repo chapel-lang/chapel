@@ -844,11 +844,17 @@ static void propagateVar(Symbol* sym) {
             // ref_wide_T, we'll take the easy way out and make the field
             // have wide semantics.
             if (call->isPrimitive(PRIM_GET_MEMBER) || call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-              SymExpr* field = toSymExpr(call->get(2));
-              if (isRef(field)) {
-                setValWide(field);
+              if (!hasSomeWideness(lhs) && isRecord(lhs->type)) {
+                // This record's fields need to be wide to preserve locality
+                // information.
+                widenSubAggregateTypes(lhs->type);
+              } else {
+                SymExpr* field = toSymExpr(call->get(2));
+                if (isRef(field)) {
+                  setValWide(field);
+                }
+                fieldsToMakeWide.insert(field->var);
               }
-              fieldsToMakeWide.insert(field->var);
             }
             else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                      call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
