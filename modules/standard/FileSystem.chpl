@@ -1092,9 +1092,17 @@ proc moveDir(out error: syserr, src: string, dest: string) {
       // Note: Python gives EEXISTS in this case, but I think ENOTDIR is
       // clearer.
     } else if (aDir) {
-      // dest is a directory, we'll copy src inside it
-      error = EISDIR;
-      // NOT YET SUPPORTED.  Requires basename and joinPath
+      if (sameFile(src, dest)) {
+        // Python's behavior when calling move over the same directory for
+        // source and destination is to fail with a helpful error message.
+        // Since this error code shouldn't occur otherwise, it signals to
+        // the wrapper function what has happened.
+        error = EEXIST;
+      } else {
+        // dest is a directory, we'll copy src inside it
+        error = EISDIR;
+        // NOT YET SUPPORTED.  Requires basename and joinPath
+      }
     } else {
       // What we've been provided is both not a file and not a directory.  Given
       // the expected behavior of isFile and isDir when it comes to symlinks,
@@ -1128,6 +1136,9 @@ proc moveDir(out error: syserr, src: string, dest: string) {
 proc moveDir(src: string, dest: string) {
   var err: syserr = ENOERR;
   moveDir(err, src, dest);
+  if err == EEXIST {
+    halt("Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+  }
   if err != ENOERR then ioerror(err, "in moveDir(" + src + ", " + dest + ")");
 }
 
