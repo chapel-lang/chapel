@@ -112,9 +112,11 @@ insertLineNumber(CallExpr* call) {
       call->replace(new SymExpr(line));
     }
   } else if (fn->hasFlag(FLAG_EXTERN) ||
+             (fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO)) ||
              !strcmp(fn->name, "chpl__heapAllocateGlobals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
              !strcmp(fn->name, "chpl_gen_main") ||
+             ftableMap.count(fn) ||
              (mod->modTag == MOD_USER && 
               !fn->hasFlag(FLAG_COMPILER_GENERATED) && !fn->hasFlag(FLAG_INLINE)) ||
              (developer && strcmp(fn->name, "halt"))) {
@@ -122,6 +124,7 @@ insertLineNumber(CallExpr* call) {
 
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
+    // or the call is via the ftable
     if (call->isResolved() &&
         call->isResolved()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
       call->insertAtTail(new_IntSymbol(0));

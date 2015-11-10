@@ -997,7 +997,7 @@ static void codegen_header() {
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
     ftableVec.add(fn2);
-    ftableMap.put(fn2, ftableVec.n-1);
+    ftableMap[fn2] = ftableVec.n-1;
     }
   }
 
