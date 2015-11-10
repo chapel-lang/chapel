@@ -4065,7 +4065,6 @@ GenRet CallExpr::codegen() {
              GenRet to_ptr = get(1);
              GenRet from = codegenWideAddr(codegenRlocale(call->get(1)),
                                            codegenDeref(t2));
-             assert(from.val);
              if( info->cfile ) {
                std::string stmt = codegenValue(to_ptr).c + " = ";
                stmt += from.c;
