@@ -427,15 +427,32 @@ private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySy
   if error != ENOERR then return;
   // Create dest
 
-  for filename in listdir(path=src, dirs=false, files=true, listlinks=copySymbolically) {
+  for filename in listdir(path=src, dirs=false, files=true, listlinks=true) {
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
-    copy(error, src + "/" + filename, fileDestName, metadata=true);
+    var fileSrcName = src + "/" + filename;
+    if (isLink(fileSrcName) && copySymbolically) {
+      // Copy symbolically means symlinks should be copied as symlinks
+      symlink(error, realPath(fileSrcName), fileDestName);
+    } else {
+      // Either we didn't find a link, or copy symbolically is false, which
+      // means we want the contents of the linked file, not a link itself.
+      copy(error, fileSrcName, fileDestName, metadata=true);
+    }
     if (error != ENOERR) then return;
   }
 
-  for dirname in listdir(path=src, dirs=true, files=false, listlinks=copySymbolically) {
-    copyTreeHelper(error, src+"/"+dirname, dest+"/"+dirname, copySymbolically);
+  for dirname in listdir(path=src, dirs=true, files=false, listlinks=true) {
+    var dirDestName = dest+"/"+dirname;
+    var dirSrcName = src+"/"+dirname;
+    if (isLink(dirSrcName) && copySymbolically) {
+      // Copy symbolically means symlinks should be copied as symlinks
+      symlink(error, realPath(dirSrcName), dirDestName);
+    } else {
+      // Either we didn't find a link, or copy symbolically is false, which
+      // means we want the contents of the linked directory, not a link itself.
+      copyTreeHelper(error, dirSrcName, dirDestName, copySymbolically);
+    }
     if (error != ENOERR) then return;
   }
 }
