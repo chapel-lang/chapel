@@ -15,7 +15,7 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
+all: test-venv chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm libhdfs3
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
@@ -29,6 +29,7 @@ clean: FORCE
 	cd re2 && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
 	cd fltk && $(MAKE) clean
+	cd libhdfs3 && $(MAKE) clean
 
 cleanall: FORCE
 	cd chpl-venv && $(MAKE) cleanall
@@ -42,6 +43,7 @@ cleanall: FORCE
 	cd re2 && $(MAKE) cleanall
 	cd tcmalloc && $(MAKE) cleanall
 	cd fltk && $(MAKE) cleanall
+	cd libhdfs3 && $(MAKE) cleanall
 
 clobber: FORCE
 	cd chpl-venv && $(MAKE) clobber
@@ -55,11 +57,12 @@ clobber: FORCE
 	cd re2 && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
 	cd fltk && $(MAKE) clobber
+	cd libhdfs3 && $(MAKE) clobber
 
 depend:
 
 test-venv: $(CHPL_VENV_TEST_REQS)
-$(CHPL_VENV_TEST_REQS):
+$(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) test-venv
 
 chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
@@ -110,6 +113,9 @@ $(TCMALLOC_INSTALL_DIR):
 
 llvm: FORCE
 	cd llvm && $(MAKE)
+
+libhdfs3: FORCE
+	cd libhdfs3 && $(MAKE)
 
 try-re2: FORCE
 ifeq ($(wildcard $(RE2_BUILD_DIR)),)
