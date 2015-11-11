@@ -644,6 +644,9 @@ initPrimitive() {
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
+
+  prim_def(PRIM_FIND_FILENAME_IDX, "chpl_findFilenameIdx", returnInfoUInt64, false, false);
+  prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

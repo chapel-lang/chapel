@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "insertLineNumbers.h"
+
 #include "passes.h"
 
 #include "astutil.h"
@@ -35,6 +37,7 @@
 // number and a filename.
 //
 
+std::set<std::string> gFilenameLookup;
 static void moveLinenoInsideArgBundle();
 
 //
@@ -109,9 +112,11 @@ insertLineNumber(CallExpr* call) {
       call->replace(new SymExpr(line));
     }
   } else if (fn->hasFlag(FLAG_EXTERN) ||
+             (fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO)) ||
              !strcmp(fn->name, "chpl__heapAllocateGlobals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
              !strcmp(fn->name, "chpl_gen_main") ||
+             ftableMap.count(fn) ||
              (mod->modTag == MOD_USER && 
               !fn->hasFlag(FLAG_COMPILER_GENERATED) && !fn->hasFlag(FLAG_INLINE)) ||
              (developer && strcmp(fn->name, "halt"))) {
@@ -119,6 +124,7 @@ insertLineNumber(CallExpr* call) {
 
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
+    // or the call is via the ftable
     if (call->isResolved() &&
         call->isResolved()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
       call->insertAtTail(new_IntSymbol(0));
@@ -129,9 +135,10 @@ insertLineNumber(CallExpr* call) {
       INT_ASSERT(var);
       INT_ASSERT(var->immediate);
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
-      call->insertAtTail(new_CStringSymbol(astr("<command line setting of '",
-                                               var->immediate->v_string,
-                                               "'>")));
+      const char *cmdLineSetting =
+          astr("<command line setting of '", var->immediate->v_string, "'>");
+      call->insertAtTail(new_CStringSymbol(cmdLineSetting));
+      gFilenameLookup.insert(cmdLineSetting);
     } else {
       if (fCLineNumbers) {
         if (!gCLine) {
@@ -284,20 +291,46 @@ static void moveLinenoInsideArgBundle()
       DefExpr* lineArg = toDefExpr(fn->formals.tail);
       lineArg->remove();
 
-      // In the body of the wrapper, create local lineno and fname variables 
-      // initialized from the corresponding fields in the argument bundle.
+      // In the body of the wrapper, create a local lineno variable initialized
+      // from the new corresponding field in the argument bundle.
       DefExpr* bundleArg = toDefExpr(fn->formals.tail);
       AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
+
       VarSymbol* lineField = newTemp("_ln", lineArg->sym->typeInfo());
       bundleType->fields.insertAtTail(new DefExpr(lineField));
-      VarSymbol* fileField = newTemp("_fn", fileArg->sym->typeInfo());
-      bundleType->fields.insertAtTail(new DefExpr(fileField));
-      VarSymbol* fileLocal = newTemp("_fn", fileArg->sym->typeInfo());
+
       VarSymbol* lineLocal = newTemp("_ln", lineArg->sym->typeInfo());
-      fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym, fileField);
-      fn->insertAtHead(new DefExpr(fileLocal));
+
       fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym, lineField);
       fn->insertAtHead(new DefExpr(lineLocal));
+
+      // Now perform a similar operation for filenames
+      // filenames can not be passed directly via argument bundles since they
+      // are (local only) c_strings. Instead we need to map them from integers
+      // via a lookup table.
+      // We only do this if we are using chapel line numbers, when using C line
+      // numbers we will just use __FILE__ and we dont have to put anything in
+      // the bundle
+      VarSymbol* fileLocal = NULL;
+      VarSymbol* fileIdxField = NULL;
+      if (!fCLineNumbers) {
+        fileIdxField = newTemp("_fnIdx", dtUInt[INT_SIZE_64]);
+        bundleType->fields.insertAtTail(new DefExpr(fileIdxField));
+
+        VarSymbol* fileIdxLocal = newTemp("_fnIdx", dtUInt[INT_SIZE_64]);
+        fileLocal = newTemp("_fn", fileArg->sym->typeInfo());
+
+        fn->insertAtHead(
+            new CallExpr(PRIM_MOVE, fileLocal,
+                        new CallExpr(PRIM_LOOKUP_FILENAME,
+                                      new SymExpr(fileIdxLocal))));
+
+        fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileIdxLocal, bundleArg->sym, fileIdxField);
+        fn->insertAtHead(new DefExpr(fileLocal));
+        fn->insertAtHead(new DefExpr(fileIdxLocal));
+      } else {
+        fileLocal = toVarSymbol(gCFile); // __FILE__
+      }
 
       // Replace references to the (removed) arguments with
       // references to these local variables.
@@ -314,8 +347,21 @@ static void moveLinenoInsideArgBundle()
         Expr* fileActual = call->argList.tail->remove();
         Expr* lineActual = call->argList.tail->remove();
         Expr* bundleActual = call->argList.tail;
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(), lineField, lineActual));
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(), fileField, fileActual));
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER,
+              bundleActual->copy(), lineField, lineActual));
+
+        // As above, we cant use the file directly with the bundle
+        // Instead we will perform a lookup to find it's index in the table and
+        // pass that along instead. If we are using C line numbers we dont need
+        // to pass anything.
+        if (!fCLineNumbers) {
+          VarSymbol* fileIdxTemp = newTemp("fnIdx_tmp", dtUInt[INT_SIZE_64]);
+          call->insertBefore(new DefExpr(fileIdxTemp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, fileIdxTemp,
+                new CallExpr(PRIM_FIND_FILENAME_IDX, fileActual)));
+          call->insertBefore(new CallExpr(PRIM_SET_MEMBER,
+              bundleActual->copy(), fileIdxField, new SymExpr(fileIdxTemp)));
+        }
       }
     }
   }
