@@ -4056,8 +4056,8 @@ GenRet CallExpr::codegen() {
              // move(wide_real, prim_get_real(wide_complex));
              // turns into: wide_real.locale = wide_complex.locale;
              //             wide_real.addr = prim_get_real(wide_complex.addr);
-             GenRet t1 = createTempVar(call->get(1)->typeInfo()->getRefType());
              Type* cplxType = call->get(1)->typeInfo()->getRefType();
+             GenRet t1 = createTempVar(cplxType);
              codegenAssign(t1, codegenRaddr(call->get(1)));
              GenRet t2 = createTempVar(get(1)->typeInfo()->getRefType());
              codegenAssign(t2, codegen_prim_get_real(t1, cplxType, isReal));
