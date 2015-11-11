@@ -101,6 +101,7 @@ static GenRet codegenOne();
 static GenRet codegenNullPointer();
 
 static GenRet codegenFieldPtr(GenRet base, const char* field);
+static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
 
@@ -3887,6 +3888,32 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
   }
 }
 
+static GenRet codegen_prim_get_real(GenRet arg, Type* type, bool real) {
+  GenRet ret;
+  const char* realOrImag;
+  char fnName[21];
+  if (real) {
+    realOrImag = "Real";
+  } else {
+    realOrImag = "Imag";
+  }
+  if (type == dtComplex[COMPLEX_SIZE_64]->refType) {
+    snprintf(fnName, 21, "complex64Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, arg);
+  } else if (type == dtComplex[COMPLEX_SIZE_128]->refType) {
+    snprintf(fnName, 21, "complex128Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, arg);
+  } else if (type == dtComplex[COMPLEX_SIZE_64]) {
+    snprintf(fnName, 21, "complex64Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, codegenAddrOf(arg));
+  } else if (type == dtComplex[COMPLEX_SIZE_128]) {
+    snprintf(fnName, 21, "complex128Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, codegenAddrOf(arg));
+  } else {
+    INT_FATAL("Unsupported type in PRIM_GET_REAL");
+  }
+  return ret;
+}
 
 /* Notes about code generation:
  *  Intermediate expressions are returned from Expr::codegen
@@ -4021,6 +4048,38 @@ GenRet CallExpr::codegen() {
         bool handled = true;
         switch (call->primitive->tag)
         {
+         case PRIM_GET_REAL:
+         case PRIM_GET_IMAG:
+         {
+           bool isReal = call->primitive->tag == PRIM_GET_REAL;
+           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+             // move(wide_real, prim_get_real(wide_complex));
+             // turns into: wide_real.locale = wide_complex.locale;
+             //             wide_real.addr = prim_get_real(wide_complex.addr);
+             Type* cplxType = call->get(1)->typeInfo()->getRefType();
+             GenRet t1 = createTempVar(cplxType);
+             codegenAssign(t1, codegenRaddr(call->get(1)));
+             GenRet t2 = createTempVar(get(1)->typeInfo()->getRefType());
+             codegenAssign(t2, codegen_prim_get_real(t1, cplxType, isReal));
+
+             GenRet to_ptr = get(1);
+             GenRet from = codegenWideAddr(codegenRlocale(call->get(1)),
+                                           codegenDeref(t2));
+             if( info->cfile ) {
+               std::string stmt = codegenValue(to_ptr).c + " = ";
+               stmt += from.c;
+               stmt += ";\n";
+               info->cStatements.push_back(stmt);
+             } else {
+#ifdef HAVE_LLVM
+               codegenStoreLLVM(from, to_ptr, type);
+#endif
+             }
+           } else {
+             codegenAssign(get(1), codegen_prim_get_real(call->get(1), call->get(1)->typeInfo(), isReal));
+           }
+           break;
+         }
          case PRIM_DEREF:
          {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
