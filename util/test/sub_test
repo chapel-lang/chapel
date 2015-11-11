@@ -240,11 +240,30 @@ def PerfDirFile(s):
 def PerfTFile(test_filename, sfx):
     return test_filename + '.' + perflabel + sfx
 
-# read file with comments
+# Read a file or if the file is executable read its output. If the file is
+# executable, the current chplenv is copied into the env before executing.
+# Expands shell variables and strip out comments/whitespace. Returns a list of
+# string, one per line in the file.
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
-    # sys.stdout.write('Opening: %s\n'%(f))
-    with open(f, 'r') as myfile:
-      mylines = myfile.readlines()
+    mylines = ""
+    # if the file is executable, run it and grab the output
+    if os.access(f, os.X_OK):
+        # grab the chplenv so it can be stuffed into the subprocess env
+        env_cmd = [os.path.join(utildir, 'printchplenv'), '--simple']
+        chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
+        chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
+        file_env = os.environ.copy()
+        file_env.update(chpl_env)
+
+        # execute the file and grab its output
+        cmd = subprocess.Popen([os.path.abspath(f)], stdout=subprocess.PIPE, env=file_env)
+        mylines = cmd.communicate()[0].splitlines()
+
+    # otherwise, just read the file
+    else:
+        with open(f, 'r') as myfile:
+            mylines = myfile.readlines()
+
     mylist=list()
     for line in mylines:
         line = line.rstrip()
