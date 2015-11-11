@@ -162,7 +162,7 @@ static void cullExplicitAutoDestroyFlags()
 *                                                                   *
 * A set of functions that scan every BlockStmt to determine whether *
 * it is necessary to insert autoDestroy calls at any of the exit    *
-* points from the block.                                             *
+* points from the block.                                            *
 *                                                                   *
 * This computation consists of a linear scan of every BlockStmt     *
 * scanning for                                                      *
@@ -213,7 +213,10 @@ static void insertAutoDestroyCalls() {
         // It is appropriate to skip this analysis if there aren't
         // currently any variables that need autoDestroy calls
         if (vars.n > 0) {
-          updateJumpsFromBlockStmt(stmt, block, vars);
+
+          // Do not process jumps from a function's top level block statement
+          if (isFnSymbol(block->parentSymbol) == false)
+            updateJumpsFromBlockStmt(stmt, block, vars);
         }
 
         if (stmtMustExitBlock(stmt) == true) {
@@ -291,10 +294,9 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
 }
 
 // The outer loop of this business logic is walking a given BlockStmt
-// and is inspecting every goto-stmt that is recursively within this
-// block.
+// and is inspecting every goto-stmt that is within this block.
 
-// This function is testing with a particular goto jumps to a point
+// This function is testing whether a particular goto jumps to a point
 // outside the block being tested.
 
 static bool gotoExitsBlock(GotoStmt* gotoStmt, BlockStmt* block) {
@@ -303,7 +305,7 @@ static bool gotoExitsBlock(GotoStmt* gotoStmt, BlockStmt* block) {
   // Every GOTO that implements a RETURN is sure to be exiting the
   // block.  This test is necessary to handle an edge case in the more
   // general logic below; a return from the outer-most BlockStmt
-  // for a procedure.  It also provides a small performance gain.
+  // for a procedure.
   if (gotoStmt->gotoTag == GOTO_RETURN) {
     retval = true;
 
