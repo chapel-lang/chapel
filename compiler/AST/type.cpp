@@ -117,8 +117,6 @@ PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
 
 PrimitiveType*
 PrimitiveType::copyInner(SymbolMap* map) {
-  PrimitiveType* copy;
-
   //
   // If we're trying to make a copy of an internal Chapel primitive
   // type (say 'int'), that's a sign that something is wrong.  For
@@ -134,8 +132,7 @@ PrimitiveType::copyInner(SymbolMap* map) {
     INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
   }
 
-  copy = new PrimitiveType(NULL);
-  return copy;
+  return new PrimitiveType(NULL);
 }
 
 
