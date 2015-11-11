@@ -1127,7 +1127,7 @@ proc moveDir(out error: syserr, src: string, dest: string) {
       error = ENOTDIR;
     }
   } else {
-    copyTree(error, src, dest);
+    copyTree(error, src, dest, true);
     if (error != ENOERR) then return; // Error when copying into dest.
     rmTree(error, src);
     // Any errors from cleaning src up will be reported.
