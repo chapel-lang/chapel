@@ -79,7 +79,7 @@ runtime: FORCE
 third-party: FORCE
 	cd third-party && $(MAKE)
 
-third-party-try-opt: third-party-try-re2 third-party-try-gmp
+third-party-try-opt: third-party-try-re2 third-party-try-gmp third-party-try-libhdfs3
 
 third-party-try-re2: FORCE
 	-@if [ -z "$$CHPL_REGEXP" ]; then \
@@ -87,6 +87,17 @@ third-party-try-re2: FORCE
 	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
 	source ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
 	$(MAKE) try-re2; \
+	fi \
+	fi
+
+third-party-try-libhdfs3: FORCE
+	-@if [ -n "$$CHPL_AUX_FILESYS" ]; then \
+	if [ "$$CHPL_AUX_FILESYS" == "libhdfs3" ]; then \
+	cd third-party && $(MAKE) libhdfs3; \
+	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	source ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
+	$(MAKE) try-re2; \
+	fi \
 	fi \
 	fi
 
