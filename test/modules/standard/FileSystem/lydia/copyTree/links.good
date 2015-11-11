@@ -1,0 +1,6 @@
+copying symbolically, copy exists: true
+and is a link: true
+copying un-symbolically, copy exists: true
+and is a link: false
+A link to me exists in another directory
+A link to me exists in another directory
