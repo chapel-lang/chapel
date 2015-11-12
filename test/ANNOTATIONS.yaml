@@ -109,6 +109,8 @@ assign.1024:
 bfs:
   09/25/14:
     - addition of octal to, reformatting of format printing.
+  10/29/15:
+    - Difficult to consistently replicate
 
 binary-trees:
   12/05/14:
@@ -217,12 +219,16 @@ mandelbrot:
     - Bulk IO optimization
   09/05/14:
     - maxTaskPar change delayed fifo->qthreads performance hit
+  11/11/15:
+    - Initial commit of C complexes
 
 mandelbrot-extras:
   01/03/14:
     - Chapel level improvement by using a nonlocking writer
   09/05/14:
     - maxTaskPar change delayed fifo->qthreads performance hit
+  11/11/15:
+    - Initial commit of C complexes
 
 memleaks:
   11/13/13:
@@ -285,6 +291,8 @@ regexdna:
 revcomp:
   05/11/15:
     - various qio changes motivated by cygwin failures (#1943)
+  10/29/15:
+    - Difficult to consistently replicate
 
 spectralnorm:
   01/21/15:
