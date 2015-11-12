@@ -550,6 +550,9 @@ def check_environment():
         if not os.path.isdir(home):
             print("Error: CHPL_HOME must be a legal directory.")
             sys.exit(1)
+    else:
+        print("Error: CHPL_HOME is not set.")
+        sys.exit(1)
 
     # Allow for utility directory override.
     # Useful when running more recent testing system on an older version of

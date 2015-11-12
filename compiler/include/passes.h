@@ -40,7 +40,6 @@ void checkParsed();
 void checkResolved();
 void cleanup();
 void codegen();
-void complex2record();
 void copyPropagation();
 void createTaskFunctions();
 void cullOverReferences();
