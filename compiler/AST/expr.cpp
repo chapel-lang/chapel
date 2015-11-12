@@ -4072,7 +4072,7 @@ GenRet CallExpr::codegen() {
                info->cStatements.push_back(stmt);
              } else {
 #ifdef HAVE_LLVM
-               codegenStoreLLVM(from, to_ptr, type);
+               codegenStoreLLVM(from, to_ptr);
 #endif
              }
            } else {
