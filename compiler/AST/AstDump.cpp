@@ -197,10 +197,9 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       if (vs->type->symbol->hasFlag(FLAG_SINGLE))
         write("single");
 
-
       writeSymbol("var", sym, true);
-
       writeFlags(mFP, sym);
+
     } else if (isLabelSymbol(sym)) {
       writeSymbol("label", sym, true);
 

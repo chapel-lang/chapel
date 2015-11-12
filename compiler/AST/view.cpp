@@ -342,7 +342,6 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     writeFlags(stdout, def->sym);
   }
 
-
   if (toExpr(ast))
     printf(")");
 }
