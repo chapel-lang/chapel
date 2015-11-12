@@ -345,7 +345,7 @@ module NewString {
    * used by initCopy().
    */
   pragma "init copy fn"
-  inline proc chpl__initCopy(ref s: string_rec) {
+  inline proc chpl__initCopy(const ref s: string_rec) {
     if debugStrings then writeln("in initCopy()");
     var ret: string_rec;
     if !s.isEmptyString() {
