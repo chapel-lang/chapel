@@ -215,15 +215,6 @@ void check_prune()
   // Suggestion: Ensure no dead classes or functions.
 }
 
-void check_complex2record()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterCallDestructors();
-  check_afterLowerIterators();
-  // Suggestion: Ensure no more constants or variables of complex type.
-}
-
 void check_bulkCopyRecords()
 {
   check_afterEveryPass();

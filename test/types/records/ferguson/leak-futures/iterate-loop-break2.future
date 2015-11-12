@@ -1,0 +1,1 @@
+bug: iterator 2 leaks memory if caller breaks out of loop

@@ -285,6 +285,9 @@ tags
 /test/modules/standard/FileSystem/lydia/copyTree/denseDest
 /test/modules/standard/FileSystem/lydia/copyTree/cutoffDest
 /test/modules/standard/FileSystem/lydia/copyTree/existing_dir
+/test/modules/standard/FileSystem/lydia/copyTree/hasLink
+/test/modules/standard/FileSystem/lydia/copyTree/willLink
+/test/modules/standard/FileSystem/lydia/copyTree/willCopy
 /test/modules/standard/FileSystem/lydia/exists/broken_link
 /test/modules/standard/FileSystem/lydia/exists/dir
 /test/modules/standard/FileSystem/lydia/exists/dir_link

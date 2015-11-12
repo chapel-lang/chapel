@@ -51,15 +51,19 @@ _real32 c_string_to_real32_precise(c_string str, int* invalid, char* invalidCh);
 _real64 c_string_to_real64_precise(c_string str, int* invalid, char* invalidCh);
 _imag32 c_string_to_imag32_precise(c_string str, int* invalid, char* invalidCh);
 _imag64 c_string_to_imag64_precise(c_string str, int* invalid, char* invalidCh);
+#ifndef __cplusplus
 _complex64 c_string_to_complex64_precise(c_string str, int* invalid, char* invalidCh);
 _complex128 c_string_to_complex128_precise(c_string str, int* invalid, char* invalidCh);
+#endif
 
 _real32 c_string_to_real32(c_string str, int lineno, c_string filename);
 _real64 c_string_to_real64(c_string str, int lineno, c_string filename);
 _imag32 c_string_to_imag32(c_string str, int lineno, c_string filename);
 _imag64 c_string_to_imag64(c_string str, int lineno, c_string filename);
+#ifndef __cplusplus
 _complex64 c_string_to_complex64(c_string str, int lineno, c_string filename);
 _complex128 c_string_to_complex128(c_string str, int lineno, c_string filename);
+#endif
 
 
 /* every other primitive type to string */
