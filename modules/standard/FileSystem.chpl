@@ -1130,7 +1130,7 @@ proc moveDir(out error: syserr, src: string, dest: string) {
     copyTree(error, src, dest, true);
     if (error != ENOERR) then return; // Error when copying into dest.
     rmTree(error, src);
-    // Any errors from cleaning src up will be reported.
+    if (error != ENOERR) then return; // Error when removing src.
   }
 }
 
@@ -1140,8 +1140,9 @@ proc moveDir(out error: syserr, src: string, dest: string) {
 
    .. note::
 
-      In the future, when the :mod:`Path` module has been expanded further,
-      this function will be able to support directories for the dest argument.
+      We do not currently support the case where the dest argument already
+      exists and is a directory.  When the :mod:`Path` module has been
+      expanded further, this support can be enabled.
 
    Will halt with an error message if one is detected.
 
