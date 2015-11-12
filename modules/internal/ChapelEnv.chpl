@@ -21,7 +21,9 @@
 //
 
 module ChapelEnv {
+  param CHPL_HOME            = __primitive("get compiler variable", "CHPL_HOME");
   param CHPL_TARGET_PLATFORM = __primitive("get compiler variable", "CHPL_TARGET_PLATFORM");
+  param CHPL_HOST_PLATFORM   = __primitive("get compiler variable", "CHPL_HOST_PLATFORM");
   param CHPL_HOST_COMPILER   = __primitive("get compiler variable", "CHPL_HOST_COMPILER");
   param CHPL_TARGET_COMPILER = __primitive("get compiler variable", "CHPL_TARGET_COMPILER");
   param CHPL_TARGET_ARCH     = __primitive("get compiler variable", "CHPL_TARGET_ARCH");

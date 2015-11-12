@@ -82,8 +82,6 @@ const char* CHPL_AUX_FILESYS = NULL;
 
 bool widePointersStruct;
 
-static char makeArgument[256] = "";
-
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
@@ -225,7 +223,7 @@ static void initStringBuffer() {
     // and relies upon this call to setup the global state, specifically
     // allocating stringBuffer. We make a dummy call to
     // parseString here to allocate stringBuffer for the chpldoc case.
-    parseString("bar=\"foo\";", "", "");
+    if (fDocs) parseString("bar=\"foo\";", "", "");
 }
 
 static bool isMaybeChplHome(const char* path)
@@ -535,11 +533,6 @@ static void handleLibPath(const ArgumentDescription* desc, const char* arg_unuse
   addLibInfo(astr("-L", libraryFilename));
 }
 
-static void handleMake(const ArgumentDescription* desc, const char* arg_unused) {
-  CHPL_MAKE = makeArgument;
-}
-
-
 static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
   addIncInfo(incFilename);
 }
@@ -742,17 +735,26 @@ Record components:
 
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Primary Configuration Options", NULL, NULL, NULL, NULL},
- {"home", ' ', "<path>", "Path to Chapel home directory", "S", NULL , "CHPL_HOME", setHome},
- {"comm", ' ', "{none, gasnet, ugni}", "Path to Chapel comm directory", "S", NULL , "CHPL_COMM", setEnv},
- {"tasks", ' ', "{qthreads, fifo, massivethreads, muxed}", "Description", "S", NULL , "CHPL_TASKS", setEnv},
- {"locale_model", ' ', "{flat, numa}", "", "S", NULL , "CHPL_LOCALE_MODEL", setEnv},
- {"launcher", ' ', "<launcher>", "Chapel launcher", "S", NULL , "CHPL_LAUNCHER", setEnv},
- {"timers", ' ', "{generic}", "Implementation of Chapel's timers", "S", NULL , "CHPL_TIMERS", setEnv},
- {"hwloc", ' ', "{none, hwloc}", "HWLOC support", "S", NULL , "CHPL_HWLOC", setEnv},
- {"atomics", ' ', "{intrinsics, locks}", "Implementation of atomic operations", "S", NULL , "CHPL_ATOMICS", setEnv},
- {"mem", ' ', "{cstdlib, dlmalloc, tcmalloc}", "Memory management layer", "S", NULL , "CHPL_MEM", setEnv},
- {"comm_substrate", ' ', "<comm-substrate>", "Choice of GASNet conduit", "S", NULL , "CHPL_COMM_SUBSTRATE", setEnv},
- {"gasnet_segment", ' ', "{fast, large, everything}", "Choice of GASNet memory segment", "S", NULL , "CHPL_GASNET_SEGMENT", setEnv},
+ {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "CHPL_HOME", setHome},
+ {"atomics", ' ', "<atomics-impl>", "Specify atomics implementation", "S", NULL, "CHPL_ATOMICS", setEnv},
+ {"network-atomics", ' ', "<network>", "Specify network atomics implementation", "S", NULL, "CHPL_NETWORK_ATOMICS", setEnv},
+ {"aux-filesys", ' ', "<aio-system>", "Specify auxiliary I/O system", "S", NULL, "CHPL_AUX_FILESYS", setEnv},
+ {"comm", ' ', "<comm-impl>", "Specify communication implementation", "S", NULL, "CHPL_COMM", setEnv},
+ {"comm-substrate", ' ', "<conduit>", "Specify communication conduit", "S", NULL, "CHPL_COMM_SUBSTRATE", setEnv},
+ {"gasnet-segment", ' ', "<segment>", "Specify GASNet memory segment", "S", NULL, "CHPL_GASNET_SEGMENT", setEnv},
+ {"gmp", ' ', "<gmp-version>", "Specify GMP library", "S", NULL, "CHPL_GMP", setEnv},
+ {"hwloc", ' ', "<hwloc-impl>", "Specify whether to use hwloc", "S", NULL, "CHPL_HWLOC", setEnv},
+ {"launcher", ' ', "<launcher-system>", "Specify how to launch programs", "S", NULL, "CHPL_LAUNCHER", setEnv},
+ {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", NULL, "CHPL_LOCALE_MODEL", setEnv},
+ {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "CHPL_MAKE", setEnv},
+ {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "CHPL_MEM", setEnv},
+ {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", NULL, "CHPL_REGEXP", setEnv},
+ {"target-arch", ' ', "<architecture>", "Target architecture to optimize for", "S", NULL, "CHPL_TARGET_ARCH", setEnv},
+ {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "CHPL_TARGET_COMPILER", setEnv},
+ {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "CHPL_TARGET_PLATFORM", setEnv},
+ {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "CHPL_TASKS", setEnv},
+ {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "CHPL_TIMERS", setEnv},
+ {"wide-pointers", ' ', "<format>", "Specify wide pointer format", "S", NULL, "CHPL_WIDE_POINTERS", setEnv},
 
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
@@ -816,7 +818,6 @@ static ArgumentDescription arg_desc[] = {
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
- {"make", ' ', "<make utility>", "Make utility for generated code", "S256", makeArgument, "CHPL_MAKE", handleMake},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_ARCH", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
