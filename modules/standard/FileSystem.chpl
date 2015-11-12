@@ -1090,6 +1090,77 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
 }
 
 pragma "no doc"
+proc moveDir(out error: syserr, src: string, dest: string) {
+  var destExists = exists(error, dest);
+  // Did some error occurred in checking the existance of dest, perhaps a
+  // permissions error?  If so, return.
+  if (error != ENOERR) then return;
+
+  if (destExists) {
+    // dest already existed
+    var aFile = isFile(error, dest);
+    if (error != ENOERR) then return; // Return error messages as encountered
+    var aDir = isDir(error, dest);
+    if (error != ENOERR) then return;
+
+    if (aFile) {
+      // dest is a file, we can't move src within it!
+      error = ENOTDIR;
+      // Note: Python gives EEXISTS in this case, but I think ENOTDIR is
+      // clearer.
+    } else if (aDir) {
+      if (sameFile(src, dest)) {
+        // Python's behavior when calling move over the same directory for
+        // source and destination is to fail with a helpful error message.
+        // Since this error code shouldn't occur otherwise, it signals to
+        // the wrapper function what has happened.
+        error = EEXIST;
+      } else {
+        // dest is a directory, we'll copy src inside it
+        error = EISDIR;
+        // NOT YET SUPPORTED.  Requires basename and joinPath
+      }
+    } else {
+      // What we've been provided is both not a file and not a directory.  Given
+      // the expected behavior of isFile and isDir when it comes to symlinks,
+      // I'm not sure how this case would arise.
+      error = ENOTDIR;
+    }
+  } else {
+    copyTree(error, src, dest, true);
+    if (error != ENOERR) then return; // Error when copying into dest.
+    rmTree(error, src);
+    if (error != ENOERR) then return; // Error when removing src.
+  }
+}
+
+/* Recursively moves the directory indicated by `src` and its contents to the
+   destination denoted by `dest`.  If `dest` is a directory, `src` is moved
+   inside of it.
+
+   .. note::
+
+      We do not currently support the case where the dest argument already
+      exists and is a directory.  When the :mod:`Path` module has been
+      expanded further, this support can be enabled.
+
+   Will halt with an error message if one is detected.
+
+   :arg src: the location of the directory to be moved
+   :type src: string
+   :arg dest: the location to move it to.
+   :type dest: string
+*/
+proc moveDir(src: string, dest: string) {
+  var err: syserr = ENOERR;
+  moveDir(err, src, dest);
+  if err == EEXIST {
+    halt("Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+  }
+  if err != ENOERR then ioerror(err, "in moveDir(" + src + ", " + dest + ")");
+}
+
+pragma "no doc"
 proc rename(out error: syserr, oldname, newname: string) {
   extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
 
