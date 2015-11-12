@@ -6423,9 +6423,6 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
             bool iscoerce = false;
             bool isinitcopy = false;
 
-            if (call->id == 503301)
-              gdbShouldBreakHere();
-
             if (rhsCall) {
               if (rhsCall->isPrimitive(PRIM_COERCE)) iscoerce = true;
               if (rhsCall->isPrimitive(PRIM_COERCE_INIT_COPY)) {
@@ -6457,7 +6454,7 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               Symbol* to = lhs->var;
 
               // PRIM_COERCE and PRIM_COERCE_INIT_COPY have a 2nd arg
-              // indicating the type. PRIM_INIT_COPY does not.
+              // indicating the type.
               SymExpr* fromTypeExpr = NULL;
               Symbol* fromType = NULL;
               if (iscoerce) {
