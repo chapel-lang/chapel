@@ -257,11 +257,11 @@ number of arguments. See:
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 .flush() method. Flushing the buffer will make all writes available to other
 applications or other views of the file (ie, it will call e.g. the OS call
-pwrite).  It is also possible to close a channel, which will flush it and
-release any buffer memory used by the channel.  Note that if you need to ensure
-that data from a channel is on disk, you'll have to call :proc:`channel.flush`
-or :proc:`channel.close` and then :proc:`file.fsync` on the related file.
-
+pwrite).  It is also possible to close a channel, which will implicitly
+flush it and release any buffer memory used by the channel.  Note that if you
+need to ensure that data from a channel is on disk, you'll have to call
+:proc:`channel.flush` or :proc:`channel.close` and then :proc:`file.fsync` on
+the related file.
 
 .. _about-io-closing-channels:
 
@@ -328,6 +328,8 @@ are described in :mod:`SysBasic`. Some of these error codes that are commonly us
 An error code can be converted to a string using the function
 :proc:`Error.errorToString`.
 
+.. _about-io-ensuring-successful-io:
+
 Ensuring Successful I/O
 -----------------------
 
@@ -340,7 +342,7 @@ system during :proc:`file.close` or even :proc:`file.fsync`.
 
 When a file (or channel) is closed, data written to that file will be written
 to disk eventually by the operating system. If an application needs to be sure
-that the data is written to persistent storage, it should use
+that the data is immediately written to persistent storage, it should use
 :proc:`file.fsync` prior to closing the file.
 
 
@@ -2041,9 +2043,13 @@ proc file._style:iostyle {
    It is an error to close a file when it has channels that
    have not been closed.
 
-   Closing a file does not guarantee persistence of the performed updates, if
-   any.  :proc:`file.fsync` should be used for that purpose prior to closing
-   the file.
+   Closing a file does not guarantee immediate persistence of the performed
+   updates, if any. In cases where immediate persistence is important,
+   :proc:`file.fsync` should be used for that purpose prior to closing the file.
+   In particular, even though closing the file might complete without errors,
+   the data written might not persist in the event of a severe error like
+   running out of storage space or power loss. See also
+   :ref:`about-io-ensuring-successful-io`.
 
    In the future, we hope to automatically close files when the file variable
    goes out of scope and all channels using that file are closed. The ability
@@ -4353,7 +4359,7 @@ proc channel.assertEOF() {
 }
 
 /*
-  Close a channel after performing the :proc:`channel.flush` operation
+  Close a channel. Implicitly performs the :proc:`channel.flush` operation
   (see :ref:`about-io-channel-synchronization`).
 
   :arg error: optional argument to capture an error code. If this argument

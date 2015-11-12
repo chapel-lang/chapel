@@ -28,6 +28,7 @@
 #include <bitset>
 #include <iostream>
 #include <vector>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -619,7 +620,7 @@ extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
 
-extern Map<FnSymbol*,int> ftableMap;
+extern std::map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;
 
 //
