@@ -1023,7 +1023,7 @@ for testname in testsrc:
             suffix=='.compopts' or suffix=='.perfcompopts' or
             suffix=='.chpldocopts' or
             suffix=='.execenv' or suffix=='.perfexecenv' or
-            suffix=='.compenv' or suffix=='.compexecenv' or
+            suffix=='.compenv' or suffix=='.perfcompenv' or
             suffix=='.execopts' or suffix=='.perfexecopts'):
             continue # on to next file
 
