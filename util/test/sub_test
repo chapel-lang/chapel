@@ -246,18 +246,25 @@ def PerfTFile(test_filename, sfx):
 # string, one per line in the file.
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     mylines = ""
-    # if the file is executable, run it and grab the output
+    # if the file is executable, run it and grab the output. If we get an
+    # OSError while trying to run, report it and try to keep going
     if os.access(f, os.X_OK):
-        # grab the chplenv so it can be stuffed into the subprocess env
-        env_cmd = [os.path.join(utildir, 'printchplenv'), '--simple']
-        chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
-        chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
-        file_env = os.environ.copy()
-        file_env.update(chpl_env)
+        try:
+            # grab the chplenv so it can be stuffed into the subprocess env
+            env_cmd = [os.path.join(utildir, 'printchplenv'), '--simple']
+            chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
+            chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
+            file_env = os.environ.copy()
+            file_env.update(chpl_env)
 
-        # execute the file and grab its output
-        cmd = subprocess.Popen([os.path.abspath(f)], stdout=subprocess.PIPE, env=file_env)
-        mylines = cmd.communicate()[0].splitlines()
+            # execute the file and grab its output
+            cmd = subprocess.Popen([os.path.abspath(f)], stdout=subprocess.PIPE, env=file_env)
+            mylines = cmd.communicate()[0].splitlines()
+
+        except OSError as e:
+            global localdir
+            f_name = os.path.join(localdir, f)
+            sys.stdout.write("[Error trying to execute '{0}': {1}]\n".format(f_name, str(e)))
 
     # otherwise, just read the file
     else:
