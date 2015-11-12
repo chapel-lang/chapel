@@ -26,6 +26,7 @@
 #include "flex-chapel.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "insertLineNumbers.h"
 
 #include <cstdlib>
 
@@ -127,6 +128,8 @@ ModuleSymbol* parseFile(const char* filename,
   ModuleSymbol* retval = NULL;
 
   if (FILE* fp = openInputFile(filename)) {
+    gFilenameLookup.insert(filename);
+
     // State for the lexer
     int             lexerStatus  = 100;
 

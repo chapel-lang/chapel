@@ -5619,6 +5619,10 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr(fngen, args, fn, true);
       break;
     }
+    case PRIM_FIND_FILENAME_IDX:
+    case PRIM_LOOKUP_FILENAME:
+      ret = codegenBasicPrimitiveExpr(this);
+      break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "impossible");
       break;
@@ -5669,7 +5673,7 @@ GenRet CallExpr::codegen() {
 
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
-    args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
+    args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
     args[2] = codegenCastToVoidStar(taskBundle);
     args[3] = taskList;
     args[4] = codegenValue(taskListNode);
@@ -5697,7 +5701,7 @@ GenRet CallExpr::codegen() {
 
     std::vector<GenRet> args(6);
     args[0] = codegenLocalAddrOf(locale_id);
-    args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_32);
+    args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_32);
     args[2] = get(2);
     args[3] = get(3);
     args[4] = fn->linenum();

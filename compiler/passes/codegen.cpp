@@ -34,6 +34,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "insertLineNumbers.h"
 
 #include <inttypes.h>
 
@@ -181,6 +182,23 @@ genGlobalInt(const char* cname, int value) {
 #endif
   }
 }
+
+static void genGlobalInt64(const char *cname, int value) {
+  GenInfo *info = gGenInfo;
+  if (info->cfile) {
+    fprintf(info->cfile, "const int64_t %s = %d;\n", cname, value);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::GlobalVariable *globalInt =
+        llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+            cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    globalInt->setInitializer(info->builder->getInt64(value));
+    globalInt->setConstant(true);
+    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false);
+#endif
+  }
+}
+
 static void
 genClassIDs(Vec<TypeSymbol*> & typeSymbols) {
   genComment("Class Type Identification Numbers");
@@ -336,6 +354,59 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
     info->lvt->addGlobalValue(vmt, vmtElmPtr, GEN_VAL, true);
 #endif
   }
+}
+
+static void genFilenameTable() {
+  GenInfo *info = gGenInfo;
+  const char *tableName = "chpl_filenameTable";
+  const char *sizeName = "chpl_filenameTableSize";
+  // make sure the internal filename is added to the table
+  gFilenameLookup.insert("<internal>");
+  if (info->cfile) {
+    FILE *hdrfile = info->cfile;
+
+    fprintf(hdrfile, "c_string %s[] = {\n", tableName);
+
+    bool first = true;
+    for (std::set<std::string>::iterator it = gFilenameLookup.begin();
+         it != gFilenameLookup.end(); it++) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "    \"%s\"", (*it).c_str());
+      first = false;
+    }
+
+    fprintf(hdrfile, "\n};\n");
+  } else {
+#ifdef HAVE_LLVM
+    std::vector<llvm::Constant *> table(gFilenameLookup.size());
+
+    llvm::Type *c_stringType = info->lvt->getType("c_string");
+
+    int idx = 0;
+    for (std::set<std::string>::iterator it = gFilenameLookup.begin();
+         it != gFilenameLookup.end(); it++) {
+      table[idx++] = llvm::cast<llvm::Constant>(
+          new_CStringSymbol((*it).c_str())->codegen().val);
+    }
+
+    llvm::ArrayType *filenameTableType =
+        llvm::ArrayType::get(c_stringType, table.size());
+
+    if (llvm::GlobalVariable *filenameTable =
+            info->module->getNamedGlobal(tableName)) {
+      filenameTable->eraseFromParent();
+    }
+
+    llvm::GlobalVariable *filenameTable = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(tableName, filenameTableType));
+    filenameTable->setInitializer(
+        llvm::ConstantArray::get(filenameTableType, table));
+    filenameTable->setConstant(true);
+    info->lvt->addGlobalValue(tableName, filenameTable, GEN_PTR, true);
+#endif
+  }
+  genGlobalInt64(sizeName, gFilenameLookup.size());
 }
 
 static int
@@ -923,7 +994,7 @@ static void codegen_header() {
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
     ftableVec.add(fn2);
-    ftableMap.put(fn2, ftableVec.n-1);
+    ftableMap[fn2] = ftableVec.n-1;
     }
   }
 
@@ -931,6 +1002,9 @@ static void codegen_header() {
 
   genComment("Virtual Method Table");
   genVirtualMethodTable(types);
+
+  genComment("Filename Lookup Table");
+  genFilenameTable();
 
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {

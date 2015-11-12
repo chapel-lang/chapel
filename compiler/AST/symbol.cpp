@@ -96,7 +96,7 @@ FnSymbol* gChplHereFree = NULL;
 Symbol *gCLine = NULL;
 Symbol *gCFile = NULL;
 
-Map<FnSymbol*,int> ftableMap;
+std::map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
 
 Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
