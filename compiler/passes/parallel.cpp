@@ -606,11 +606,7 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
             // This statement builds the initializing expression, so
             // we can insert the broadcast after this statement
 
-            // These checks may need to change if we change the way
-            // we handle domain literals, forall expressions, and/or
-            // depending on how we add array literals to the language
-            INT_ASSERT(toCallExpr(stmt));
-            INT_ASSERT(toCallExpr(stmt)->primitive==NULL);
+            // Note that this statement might be a block statement.
             found = true;
             break;
           }
