@@ -865,8 +865,6 @@ if os.access('./COMPENV',os.R_OK):
 else:
     globalCompenv=list()
 
-# sys.stdout.write('globalExecenv=%s\n'%(globalExecenv))
-
 #
 # Global EXECOPTS/PERFEXECOPTS
 #
@@ -1211,9 +1209,9 @@ for testname in testsrc:
         execenv = list()
 
     if os.access(test_filename+compenvsuffix, os.R_OK):
-        execenv = ReadFileWithComments(test_filename+compenvsuffix)
+        compenv = ReadFileWithComments(test_filename+compenvsuffix)
     else:
-        execenv = list()
+        compenv = list()
 
     testenv = {}
     if len(globalExecenv)!=0 or len(execenv)!=0:
@@ -1226,12 +1224,10 @@ for testname in testsrc:
     testcompenv = {}
     if len(globalCompenv)!=0 or len(compenv)!=0:
         for cev in globalCompenv:
-            compenv[cev.split('=')[0].strip()] = cev.split('=')[1].strip()
+            testcompenv[cev.split('=')[0].strip()] = cev.split('=')[1].strip()
         for cev in compenv:
-            compenv[cev.split('=')[0].strip()] = cev.split('=')[1].strip()
+            testcompenv[cev.split('=')[0].strip()] = cev.split('=')[1].strip()
         del cev
-    print 'testcompenv: '
-    print testcompenv
 
     # Get list of test specific exec options
     if os.access(test_filename+execoptssuffix, os.R_OK):
