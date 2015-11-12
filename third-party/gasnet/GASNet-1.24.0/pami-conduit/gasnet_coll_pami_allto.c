@@ -140,11 +140,11 @@ gasnete_coll_exchange_pami(gasnet_team_handle_t team,
                            void *dst, void *src, size_t nbytes,
                            int flags GASNETE_THREAD_FARG)
 {
-  if ((team->pami.geom == PAMI_GEOMETRY_NULL) || !gasnete_use_pami_allto
+  int execute = (team->pami.geom == PAMI_GEOMETRY_NULL) || !gasnete_use_pami_allto;
   #if GASNET_PAR
-      || (team->multi_images_any && (nbytes > team->pami.scratch_max_nbytes_allto))
+  execute = execute || (team->multi_images_any && (nbytes > team->pami.scratch_max_nbytes_allto));
   #endif
-     ) {
+  if (execute) {
     /* Use generic implementation for cases we don't (yet) handle, or when disabled */
     gasnet_coll_handle_t handle;
     handle = gasnete_coll_exchange_nb_default(team,dst,src,nbytes,flags,0 GASNETE_THREAD_PASS);
