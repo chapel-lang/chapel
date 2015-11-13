@@ -779,35 +779,35 @@ else:
 printpassesfile = None
 if os.getenv('CHPL_TEST_COMP_PERF')!=None:
     compperftest=True
-    
+
     # check for the main compiler performance directory
     if os.getenv('CHPL_TEST_COMP_PERF_DIR')!=None:
         compperfdir=os.getenv('CHPL_TEST_COMP_PERF_DIR')
     else:
         compperfdir=chpl_home+'/test/compperfdat/' 
-    
+
     # The env var CHPL_PRINT_PASSES_FILE will cause the 
     # compiler to save the pass timings to specified file.
     if os.getenv('CHPL_PRINT_PASSES_FILE')!=None:
         printpassesfile=os.getenv('CHPL_PRINT_PASSES_FILE')
     else:
         printpassesfile='timing.txt'
-        os.putenv('CHPL_PRINT_PASSES_FILE', 'timing.txt')
-      
+        os.environ['CHPL_PRINT_PASSES_FILE'] = 'timing.txt'
+
     # check for the perfkeys file
     if os.getenv('CHPL_TEST_COMP_PERF_KEYS')!=None:
         keyfile=os.getenv('CHPL_TEST_COMP_PERF_KEYS')
-    else: 
+    else:
         keyfile=chpl_home+'/test/performance/compiler/compilerPerformance.perfkeys'
-        
+
     # Check for the directory to store the tempory .dat files that will get 
-    # combined into one.    
+    # combined into one.
     if os.getenv('CHPL_TEST_COMP_PERF_TEMP_DAT_DIR')!=None:
         tempDatFilesDir = os.getenv('CHPL_TEST_COMP_PERF_TEMP_DAT_DIR')
-    else: 
+    else:
         tempDatFilesDir = compperfdir + 'tempCompPerfDatFiles/'
-        
-else: 
+
+else:
     compperftest=False
 
 #
@@ -1231,6 +1231,7 @@ for testname in testsrc:
         testcompenv[var.strip()] = val.strip()
     for var, val in [env.split('=') for env in compenv]:
         testcompenv[var.strip()] = val.strip()
+
 
     # Get list of test specific exec options
     if os.access(test_filename+execoptssuffix, os.R_OK):
