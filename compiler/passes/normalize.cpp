@@ -303,6 +303,10 @@ void normalize(BaseAST* base) {
       normalize_returns(fn);
   }
 
+  // Since we already collected the symbols,
+  // before running normalize_returns, the
+  // return symbol is not considered in
+  // fix_def_expr.
   for_vector(Symbol, symbol2, symbols) {
     if (VarSymbol* var = toVarSymbol(symbol2))
       if (isFnSymbol(var->defPoint->parentSymbol))
@@ -1137,20 +1141,23 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
       // Create an empty type block.
       BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
 
-      VarSymbol* typeTemp = newTemp("type_tmp");
-      block->insertAtTail(new DefExpr(typeTemp));
-
-      CallExpr* initCall;
-      initCall = new CallExpr(PRIM_MOVE, typeTemp,
-                   new CallExpr(PRIM_INIT, type->remove()));
-
-      block->insertAtTail(initCall);
-
       if (init) {
-        // This should be copy-initialization, not assignment.
-        block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
-        block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+        block->insertAtTail(
+          new CallExpr(PRIM_MOVE, constTemp,
+            new CallExpr(PRIM_COERCE_INIT_COPY,
+                         init->remove(),
+                         type->remove())));
       } else {
+        // no specified initializer or noinit and !fUseNoinit
+        VarSymbol* typeTemp = newTemp("type_tmp");
+        block->insertAtTail(new DefExpr(typeTemp));
+
+        CallExpr* initCall;
+        initCall = new CallExpr(PRIM_MOVE, typeTemp,
+                     new CallExpr(PRIM_INIT, type->remove()));
+
+        block->insertAtTail(initCall);
+
         if (constTemp->isType())
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
                                            new CallExpr(PRIM_TYPEOF, typeTemp)));
