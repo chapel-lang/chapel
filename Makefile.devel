@@ -45,3 +45,9 @@ FUTURES:
 
 future_stats: FUTURES
 	./util/devel/test/future_stats STATUS.devel test/FUTURES
+
+%.docs: FORCE
+#	$(CHPL_VENV_INSTALL_DIR)/chpl-virtualenv/bin/sphinx-build -c doc/sphinx/source doc/sphinx/source/%< doc/sphinx/build/html/%<
+#	third-party/chpl-venv/install/$(CHPL_MAKE_HOST_PLATFORM)/chpl-virtualenv/bin/sphinx-build -c doc/sphinx/source doc/sphinx/source/$@ doc/sphinx/build/html/$@
+# TODO: Need to remove hard-coded CHPL_MAKE_HOST_PLATFORM below...
+	third-party/chpl-venv/install/linux64/chpl-virtualenv/bin/sphinx-build -c doc/sphinx/source doc/sphinx/source/$* doc/sphinx/build/html/$*
