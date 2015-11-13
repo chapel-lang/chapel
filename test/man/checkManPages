@@ -160,10 +160,10 @@ def check_chpl_env_vars(bin_name):
         _warn('Did not find ENVIRONMENT section.')
         envSection = 0
 
-    chplenv, _ = _run_cmd([chpl_home+'/util/printchplenv', '--simple'])
+    chplenv, _ = _run_cmd([chpl_home+'/util/printchplenv'])
 
     envlist = [env for env in chplenv.split('\n') if env[:5] == 'CHPL_']
-    for var, _ in [env.split('=') for env in envlist]:
+    for var, _ in [env.split(':') for env in envlist]:
         found = bool([m for m in manPage if var in m])
         if not found:
             numErrors += 1
