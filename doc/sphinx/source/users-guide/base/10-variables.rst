@@ -114,7 +114,7 @@ initialized to 42:
   :lines: 1-4
 
 
-Note that whitespae doesn't matter in Chapel, so the use of linefeeds
+Note that whitespace doesn't matter in Chapel, so the use of linefeeds
 in this example is simply for readability and has no practical impact.
 The rule of thumb is that any variable which has neither a type
 specification nor an initializer will share any type and/or
