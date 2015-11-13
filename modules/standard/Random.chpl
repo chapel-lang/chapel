@@ -69,6 +69,7 @@ enum RNG {
   NPB = 2
 }
 
+param defaultRNG = RNG.NPB;
 
 // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the 
 // :arg <type> <name>: form or else switching the order to 
@@ -105,7 +106,8 @@ proc isSupportedNumericType(type t) param
   :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`.
   :type seed: int(64)
 */
-proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime, param algorithm=RNG.PCG)
+proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime, param
+    algorithm=defaultRNG)
   where isSupportedNumericType(arr.eltType) {
   var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
   randNums.fillRandom(arr);
@@ -113,7 +115,8 @@ proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime, param algori
 }
 
 pragma "no doc"
-proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime, param algorithm=RNG.PCG) {
+proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime, param
+    algorithm=defaultRNG) {
   compilerError("Random.fillRandom is only defined for numeric arrays");
 }
 
@@ -293,11 +296,11 @@ class RandomStreamInterface {
 proc makeRandomStream(seed: int(64) = SeedGenerator.currentTime,
                       param parSafe: bool = true,
                       type eltType = real(64),
-                      param algorithm: RNG ) {
+                      param algorithm = defaultRNG) {
   if algorithm == RNG.PCG then
     return new PCGRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
   else if algorithm == RNG.NPB then
-    return new NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+    return new /*NPB*/RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
   else
     compilerError("Unknown random number generator");
 }

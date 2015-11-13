@@ -132,7 +132,7 @@ writeln("Checking 2x 32-bit RNG seq 1 seq 2");
 // TODO - bug in resolution?
 /*{
   var expect:[1..6] real(32);
-  fillRandom(expect, seed=seed);
+  fillRandom(expect, seed=seed, algorithm=RNG.PCG);
   var rs = new RandomStream(seed = seed, eltType = real(32));
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
@@ -158,7 +158,7 @@ writeln("Checking real(64)");
 // check that real(64) reproduces
 {
   var expect:[1..6] real(64);
-  fillRandom(expect, seed=seed);
+  fillRandom(expect, seed=seed, algorithm=RNG.PCG);
   var rs = new PCGRandomStream(seed = seed, eltType = real(64));
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
