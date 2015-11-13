@@ -37,9 +37,11 @@ capabilities in the interest of a simple and clean build.
 
 
 0) See `prereqs.rst`_ for more information about packages you
-   might need to have installed for Chapel to work.
+   might need to have installed for Chapel to work. Download
+   a Chapel source release from `download.html`_ if you haven't already.
 
 .. _prereqs.rst: http://chapel.cray.com/docs/1.12/usingchapel/prereqs.html
+.. _download.html: http://chapel.cray.com/download.html
 
 
 
