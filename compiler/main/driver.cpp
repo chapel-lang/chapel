@@ -100,6 +100,7 @@ static bool fBaseline = false;
 bool fCacheRemote = false;
 bool fFastFlag = false;
 int fConditionalDynamicDispatchLimit = 0;
+bool fNoExpiringValueOpt = false;
 bool fUseNoinit = true;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
@@ -624,6 +625,7 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   fNoOptimizeOnClauses = true;
   fIgnoreLocalClasses = true;
   fConditionalDynamicDispatchLimit = 0;
+  fNoExpiringValueOpt = true;
 }
 
 static void setCacheEnable(const ArgumentState* state, const char* unused) {

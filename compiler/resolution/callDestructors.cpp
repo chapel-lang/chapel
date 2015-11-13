@@ -1173,8 +1173,10 @@ void callDestructors() {
   cullAutoDestroyFlags();
   cullExplicitAutoDestroyFlags();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    expiringValueOptimization(fn);
+  if (! fNoExpiringValueOpt) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      expiringValueOptimization(fn);
+    }
   }
 
   fixupDestructors();
