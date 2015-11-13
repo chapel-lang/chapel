@@ -36,6 +36,7 @@ the program using::
 The program should then print the greeting to your console as follows:
 
 .. literalinclude:: ../../../../../test/release/examples/guide/base/01-hello.good
+  :language: text
 
 Note that writeln() takes an arbitrary number of arguments and will
 print them to the console one after the other without spaces, followed
