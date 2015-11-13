@@ -214,9 +214,20 @@ static void insertAutoDestroyCalls() {
         // currently any variables that need autoDestroy calls
         if (vars.n > 0) {
 
+#if 0
+          // Noakes: 2015/11/13
+          // This recent change, to address a double free when a
+          // record is passed by out-intent, causes a significant
+          // leak for some programs.
+          //
+          // Reverting and working on a full solution.
+          //
           // Do not process jumps from a function's top level block statement
           if (isFnSymbol(block->parentSymbol) == false)
             updateJumpsFromBlockStmt(stmt, block, vars);
+#else
+          updateJumpsFromBlockStmt(stmt, block, vars);
+#endif
         }
 
         if (stmtMustExitBlock(stmt) == true) {
