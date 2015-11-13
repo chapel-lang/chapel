@@ -240,7 +240,6 @@ static bool isMaybeChplHome(const char* path)
   return ret;
 }
 
-
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
   char*       guess     = NULL;
@@ -324,107 +323,6 @@ static void setupChplHome(const char* argv0) {
     free(guess);
 }
 
-std::map<std::string, const char*> populateEnvMap(std::string output)
-{
-    // Destructively parses string output for environment variables (keys)
-    // and their values according to printchplenv (values), and returns an
-    // std::map populated with the key/value pairs
-
-    std::map<std::string, const char*> env;
-
-    // Lines
-    std::string line= "";
-    std::string lineDelimiter = "\n";
-    size_t linePos = 0;        // Line break position
-
-    // Tokens
-    std::string tokenDelimiter = "=";
-    size_t delimiterPos = 0;    // Position of delimiter
-    size_t valuePos = 0;        // Position of value
-
-    std::string key = "";
-    std::string value = "";
-
-    while ((linePos = output.find(lineDelimiter)) != std::string::npos)
-    {
-        line = output.substr(0, linePos);
-
-        // Key is substring up until "=" on a given line
-        delimiterPos = line.find(tokenDelimiter);
-        key = line.substr(0, delimiterPos);
-
-        // value is substring up after "=" on a given line
-        valuePos = delimiterPos + tokenDelimiter.length();
-        value = line.substr(valuePos);
-
-        // Populate map, duplicating string, because output is destroyed in memory
-        env[key] = strdup(value.c_str());
-        output.erase(0, linePos + lineDelimiter.length());
-    }
-    if( env.size() != NUM_CHPL_ENVS ) {
-        USR_FATAL("Did not parse %d CHPL_* vars", NUM_CHPL_ENVS);
-    }
-    // TODO Error checking - Check number of env vars?
-    return env;
-}
-
-static const char* getEnvMap(std::string key)
-{
-    if( envMap.find(key) == envMap.end() ) {
-        USR_FATAL("Variable, %s was not defined", key.c_str());
-    }
-
-    return envMap[key];
-
-}
-
-static void setChapelEnvs() {
-    // Set the CHPL_* envs from envMap values
-    CHPL_HOST_PLATFORM   = getEnvMap("CHPL_HOST_PLATFORM");
-    CHPL_HOST_COMPILER   = getEnvMap("CHPL_HOST_COMPILER");
-    CHPL_TARGET_PLATFORM = getEnvMap("CHPL_TARGET_PLATFORM");
-    CHPL_TARGET_COMPILER = getEnvMap("CHPL_TARGET_COMPILER");
-    CHPL_TARGET_ARCH     = getEnvMap("CHPL_TARGET_ARCH");
-    CHPL_LOCALE_MODEL    = getEnvMap("CHPL_LOCALE_MODEL");
-    CHPL_COMM            = getEnvMap("CHPL_COMM");
-    CHPL_COMM_SUBSTRATE  = getEnvMap("CHPL_COMM_SUBSTRATE");
-    CHPL_GASNET_SEGMENT  = getEnvMap("CHPL_GASNET_SEGMENT");
-    CHPL_TASKS           = getEnvMap("CHPL_TASKS");
-    CHPL_THREADS         = getEnvMap("CHPL_THREADS");
-    CHPL_LAUNCHER        = getEnvMap("CHPL_LAUNCHER");
-    CHPL_TIMERS          = getEnvMap("CHPL_TIMERS");
-    CHPL_MEM             = getEnvMap("CHPL_MEM");
-    CHPL_MAKE            = getEnvMap("CHPL_MAKE");
-    CHPL_ATOMICS         = getEnvMap("CHPL_ATOMICS");
-    CHPL_NETWORK_ATOMICS = getEnvMap("CHPL_NETWORK_ATOMICS");
-    CHPL_GMP             = getEnvMap("CHPL_GMP");
-    CHPL_HWLOC           = getEnvMap("CHPL_HWLOC");
-    CHPL_REGEXP          = getEnvMap("CHPL_REGEXP");
-    CHPL_WIDE_POINTERS   = getEnvMap("CHPL_WIDE_POINTERS");
-    CHPL_LLVM            = getEnvMap("CHPL_LLVM");
-    CHPL_AUX_FILESYS     = getEnvMap("CHPL_AUX_FILESYS");
-}
-
-
-static void setupChapelEnvDefaults(const char* argv0) {
-
-  // Set up CHPL_HOME first
-  setupChplHome(argv0);
-
-  // Call printchplenv and pipe output into string
-  std::string output = runUtilScript("printchplenv --simple");
-
-  // Parse output and populate map with CHPL_* variables
-  envMap = populateEnvMap(output);
-
-  // Add CHPL_HOME to envMap
-  envMap["CHPL_HOME"] = CHPL_HOME;
-
-  // Populate CHPL_* variables
-  setChapelEnvs();
-
-}
-
 // NOTE: We are leaking memory here by dropping astr() results on the ground.
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
@@ -462,20 +360,15 @@ static void setHome(const ArgumentDescription* desc, const char* arg) {
   size_t arglen = strlen(arg) + 1; // room for \0
   if( arglen <= sizeof(CHPL_HOME) ) {
     memcpy(CHPL_HOME, arg, arglen);
+    // Update envMap
+    envMap["CHPL_HOME"] = CHPL_HOME;
   } else {
     USR_FATAL("CHPL_HOME argument too long");
   }
 }
 
 static void setEnv(const ArgumentDescription* desc, const char* arg) {
-  // Check if environment variable is in envMap and copy in the arg value
-  if( envMap.find(desc->env) != envMap.end() )
-  {
-    envMap.erase(desc->env);
     envMap[desc->env] = strdup(arg);
-  } else {
-    USR_FATAL("%s not a valid environment variable", desc->env);
-  }
 }
 
 static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unused) {
@@ -985,6 +878,115 @@ static void printStuff(const char* argv0) {
   }
 }
 
+std::map<std::string, const char*> populateMap(std::string output)
+{
+    // Destructively parses string output for environment variables (keys)
+    // and their values according to printchplenv (values), and returns an
+    // std::map populated with the key/value pairs
+
+    std::map<std::string, const char*> env;
+
+    // Lines
+    std::string line= "";
+    std::string lineDelimiter = "\n";
+    size_t linePos = 0;        // Line break position
+
+    // Tokens
+    std::string tokenDelimiter = "=";
+    size_t delimiterPos = 0;    // Position of delimiter
+    size_t valuePos = 0;        // Position of value
+
+    std::string key = "";
+    std::string value = "";
+
+    while ((linePos = output.find(lineDelimiter)) != std::string::npos)
+    {
+        line = output.substr(0, linePos);
+
+        // Key is substring up until "=" on a given line
+        delimiterPos = line.find(tokenDelimiter);
+        key = line.substr(0, delimiterPos);
+
+        // value is substring up after "=" on a given line
+        valuePos = delimiterPos + tokenDelimiter.length();
+        value = line.substr(valuePos);
+
+        // Populate map, duplicating string, because output is destroyed in memory
+        env[key] = strdup(value.c_str());
+        output.erase(0, linePos + lineDelimiter.length());
+    }
+    if( env.size() != NUM_CHPL_ENVS ) {
+        USR_FATAL("Did not parse %d CHPL_* vars", NUM_CHPL_ENVS);
+    }
+    // TODO Error checking - Check number of env vars?
+    return env;
+}
+
+static const char* getEnvMap(std::string key, std::map<std::string, const char*> parsedMap)
+{
+  // Update envMap from parsed princhplenv if it was not defined
+  if( envMap.find(key) == envMap.end() ) {
+    if( parsedMap.find(key) == parsedMap.end() ) {
+      USR_FATAL("Variable, %s was not defined", key.c_str());
+    }
+    envMap[key] = strdup(parsedMap[key]);
+  }
+  printf("getEnvMap: envMap[%s] = %s\n", key.c_str(), envMap[key]);
+  return envMap[key];
+}
+
+static void setChapelEnvs() {
+  // Set the CHPL_* envs from envMap values
+  // Call printchplenv and pipe output into string
+  std::string output = runUtilScript("printchplenv --simple");
+
+  printf("output: %s", output.c_str());
+  // Parse output and populate map with CHPL_* variables
+  std::map<std::string, const char*> parsedMap = populateMap(output);
+
+  CHPL_HOST_PLATFORM   = getEnvMap("CHPL_HOST_PLATFORM", parsedMap);
+  CHPL_HOST_COMPILER   = getEnvMap("CHPL_HOST_COMPILER", parsedMap);
+  CHPL_TARGET_PLATFORM = getEnvMap("CHPL_TARGET_PLATFORM", parsedMap);
+  CHPL_TARGET_COMPILER = getEnvMap("CHPL_TARGET_COMPILER", parsedMap);
+  CHPL_TARGET_ARCH     = getEnvMap("CHPL_TARGET_ARCH", parsedMap);
+  CHPL_LOCALE_MODEL    = getEnvMap("CHPL_LOCALE_MODEL", parsedMap);
+  CHPL_COMM            = getEnvMap("CHPL_COMM", parsedMap);
+  CHPL_COMM_SUBSTRATE  = getEnvMap("CHPL_COMM_SUBSTRATE", parsedMap);
+  CHPL_GASNET_SEGMENT  = getEnvMap("CHPL_GASNET_SEGMENT", parsedMap);
+  CHPL_TASKS           = getEnvMap("CHPL_TASKS", parsedMap);
+  CHPL_THREADS         = getEnvMap("CHPL_THREADS", parsedMap);
+  CHPL_LAUNCHER        = getEnvMap("CHPL_LAUNCHER", parsedMap);
+  CHPL_TIMERS          = getEnvMap("CHPL_TIMERS", parsedMap);
+  CHPL_MEM             = getEnvMap("CHPL_MEM", parsedMap);
+  CHPL_MAKE            = getEnvMap("CHPL_MAKE", parsedMap);
+  CHPL_ATOMICS         = getEnvMap("CHPL_ATOMICS", parsedMap);
+  CHPL_NETWORK_ATOMICS = getEnvMap("CHPL_NETWORK_ATOMICS", parsedMap);
+  CHPL_GMP             = getEnvMap("CHPL_GMP", parsedMap);
+  CHPL_HWLOC           = getEnvMap("CHPL_HWLOC", parsedMap);
+  CHPL_REGEXP          = getEnvMap("CHPL_REGEXP", parsedMap);
+  CHPL_WIDE_POINTERS   = getEnvMap("CHPL_WIDE_POINTERS", parsedMap);
+  CHPL_LLVM            = getEnvMap("CHPL_LLVM", parsedMap);
+  CHPL_AUX_FILESYS     = getEnvMap("CHPL_AUX_FILESYS", parsedMap);
+}
+
+static void setupChplGlobals(const char* argv0) {
+  // Update the values of CHPL_* global variables and run postprocessing
+  // functions for any arguments that depend on CHPL_* variables
+
+  // No CHPL_HOME set via args
+  if( envMap.find("CHPL_HOME") == envMap.end() )
+  {
+    // Set up CHPL_HOME first
+    setupChplHome(argv0);
+
+    // Update envMap
+    envMap["CHPL_HOME"] = CHPL_HOME;
+  }
+
+  // Get default values of CHPL_vars not parsed from args and populate envMap
+  setChapelEnvs();
+}
+
 static void postStackCheck() {
   if (!fNoStackChecks) {
     if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
@@ -1011,36 +1013,39 @@ static void postStaticLink() {
 }
 
 static void postLocal() {
-    // Default value of fLocal
-    if (!fSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
+  // Default value of fLocal
+  if (!fSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
+}
+
+static void setMaxCIndentLen() {
+  // These depend on the environment variables being set
+  bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
+             || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
+  // conservatively how much is needed for the current PGI compiler
+  if (gotPGI) fMaxCIdentLen = 1020;
+}
+
+static void setWidePointersStruct() {
+  if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
+    widePointersStruct = true;
+  } else {
+    widePointersStruct = false;
+  }
 }
 
 static void postprocess_args() {
-    // Update the values of CHPL_* global variables and run postprocessing
-    // functions for any arguments that depend on CHPL_* variables
 
-    // Updates CHPL_envs
-    setChapelEnvs();
+  setMaxCIndentLen();
 
-    // These depend on the environment variables being set
-    bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
-               || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
-    // conservatively how much is needed for the current PGI compiler
-    if (gotPGI) fMaxCIdentLen = 1020;
+  setWidePointersStruct();
 
-    if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
-      widePointersStruct = true;
-    } else {
-      widePointersStruct = false;
-    }
+  postLocal();
 
-    postLocal();
+  postTaskTracking();
 
-    postTaskTracking();
+  postStackCheck();
 
-    postStackCheck();
-
-    postStaticLink();
+  postStaticLink();
 
 }
 
@@ -1078,16 +1083,15 @@ int main(int argc, char* argv[]) {
 
     initChplProgram(objectClass);
 
-    // Populates envMap and default CHPL_envs
-    setupChapelEnvDefaults(argv[0]);
-
-    // Overwrite envMap values if flag provided
     process_args(&sArgState, argc, argv);
 
+    // Set global CHPL_vars from parsed args and printchplenv
+    setupChplGlobals(argv[0]);
+
+    // Handle logic of any args that depend on CHPL_vars
     postprocess_args();
 
     initCompilerGlobals(); // must follow argument parsing
-
 
     setupDependentVars();
     setupModulePaths();
