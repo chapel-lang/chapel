@@ -147,6 +147,7 @@ int scalar_replace_limit = 8;
 int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
+bool fSetLocal = false;
 bool fLocal;   // initialized in setupOrderedGlobals() below
 bool fIgnoreLocalClasses = false;
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
@@ -402,27 +403,6 @@ static void setChapelEnvs() {
     CHPL_WIDE_POINTERS   = getEnvMap("CHPL_WIDE_POINTERS");
     CHPL_LLVM            = getEnvMap("CHPL_LLVM");
     CHPL_AUX_FILESYS     = getEnvMap("CHPL_AUX_FILESYS");
-}
-
-//
-// Can't rely on a variable initialization order for globals, so any
-// variables that need to be initialized in a particular order go here
-//
-static void setupOrderedGlobals() {
-  setChapelEnvs();
-
-  // These depend on the environment variables being set
-  fLocal = !strcmp(CHPL_COMM, "none");
-  bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
-             || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
-  // conservatively how much is needed for the current PGI compiler
-  if (gotPGI) fMaxCIdentLen = 1020;
-
-  if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
-    widePointersStruct = true;
-  } else {
-    widePointersStruct = false;
-  }
 }
 
 
@@ -713,6 +693,11 @@ static void setPrintPassesFile(const ArgumentDescription* desc, const char* file
   }
 }
 
+static void setLocal (const ArgumentDescription* desc, const char* unused) {
+  // Used in postLocal
+  fSetLocal = true;
+}
+
 
 /*
 Flag types:
@@ -765,7 +750,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
- {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
+ {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
@@ -1017,21 +1002,39 @@ static void postTaskTracking() {
 }
 
 static void postStaticLink() {
-  if (fLinkStyle != LS_DEFAULT) {
+  if (fLinkStyle == LS_STATIC) {
     if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
       fLinkStyle = LS_DEFAULT;
-    } else {
-      fLinkStyle = LS_STATIC;
     }
   }
 }
 
+static void postLocal() {
+    // Default value of fLocal
+    if (!fSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
+}
+
 static void postprocess_args() {
-    /* Here is a long description of why this function must exists */
+    // Update the values of CHPL_* global variables and run postprocessing
+    // functions for any arguments that depend on CHPL_* variables
 
     // Updates CHPL_envs
-    setupOrderedGlobals();
+    setChapelEnvs();
+
+    // These depend on the environment variables being set
+    bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
+               || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
+    // conservatively how much is needed for the current PGI compiler
+    if (gotPGI) fMaxCIdentLen = 1020;
+
+    if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
+      widePointersStruct = true;
+    } else {
+      widePointersStruct = false;
+    }
+
+    postLocal();
 
     postTaskTracking();
 

@@ -22,6 +22,7 @@
 
 module ChapelEnv {
   param CHPL_HOME            = __primitive("get compiler variable", "CHPL_HOME");
+  param CHPL_AUX_FILESYS     = __primitive("get compiler variable", "CHPL_AUX_FILESYS");
   param CHPL_TARGET_PLATFORM = __primitive("get compiler variable", "CHPL_TARGET_PLATFORM");
   param CHPL_HOST_PLATFORM   = __primitive("get compiler variable", "CHPL_HOST_PLATFORM");
   param CHPL_HOST_COMPILER   = __primitive("get compiler variable", "CHPL_HOST_COMPILER");
@@ -44,5 +45,4 @@ module ChapelEnv {
   param CHPL_REGEXP          = __primitive("get compiler variable", "CHPL_REGEXP");
   param CHPL_WIDE_POINTERS   = __primitive("get compiler variable", "CHPL_WIDE_POINTERS");
   param CHPL_LLVM            = __primitive("get compiler variable", "CHPL_LLVM");
-  param CHPL_AUX_FILESYS     = __primitive("get compiler variable", "CHPL_AUX_FILESYS");
 }

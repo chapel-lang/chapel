@@ -613,10 +613,12 @@ static void codegen_header_compilation_config() {
             CHPL_HOME);
     //for (int i = 0; i < num_chpl_env_vars; i++) {
     for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-      fprintf(cfgfile.fptr,
-              "printf(\"%%s\", \"  %s: %s\\n\");\n",
-              (*env).first.c_str(),
-              (*env).second);
+      if (strcmp((*env).first.c_str(), "CHPL_HOME") != 0) {
+        fprintf(cfgfile.fptr,
+          "printf(\"%%s\", \"  %s: %s\\n\");\n",
+          (*env).first.c_str(),
+          (*env).second);
+      }
     }
 
     fprintf(cfgfile.fptr, "}\n");
