@@ -257,8 +257,11 @@ tags
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
 /test/io/ferguson/asserteof.test.nums
+/test/io/ferguson/ctests/test.bin
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
+/test/io/ferguson/test.txt
+/test/io/ferguson/test_file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
 
@@ -331,6 +334,7 @@ tags
 /test/release/examples/benchmarks/hpcc/variants/stream-promoted
 /test/release/examples/benchmarks/hpcc/variants/ra-cleanloop
 /test/release/examples/benchmarks/lulesh/coords.out
+/test/release/examples/patterns/test.txt
 /test/release/examples/primers/docs
 /test/release/examples/primers/Arr.dat
 /test/release/examples/primers/arrays
@@ -369,6 +373,8 @@ tags
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
 /test/runtime/kbrady/goodAllocSize.good
+/test/runtime/sungeun/chpl-env-gen.h
+/test/runtime/sungeun/chpl-env-gen.test.gen.c
 
 test/separate_compilation/jturner/libclassextern2.so.a
 test/separate_compilation/jturner/libfcfunc.so.a
