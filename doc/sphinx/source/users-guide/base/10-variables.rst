@@ -124,4 +124,4 @@ initializer; *i* and *j* share *k*'s type; *s* shares *t*'s
 initializer; and *x* and *y* share *z*'s initializer.
 
 Needless to say, the last variable in a declaration must have a type
-and/or initalizer.
+and/or initializer.
