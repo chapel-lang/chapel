@@ -1240,6 +1240,7 @@ void AstDumpToNode::visitEnumSym(EnumSymbol* node)
 void AstDumpToNode::visitLabelSym(LabelSymbol* node)
 {
   enterNode(node);
+  fputc(' ', mFP);
   mOffset = mOffset + 2;
   ast_symbol(node, true);
   mOffset = mOffset - 2;
