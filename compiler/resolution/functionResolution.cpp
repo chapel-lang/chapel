@@ -4196,9 +4196,15 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
       }
 
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      tmp->addFlag(FLAG_FORMAL_TEMP);
       break;
 
      case INTENT_INOUT:
+      fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      tmp->addFlag(FLAG_FORMAL_TEMP);
+      break;
+
      case INTENT_IN:
      case INTENT_CONST_IN:
       // TODO: Adding a formal temp for INTENT_CONST_IN is conservative.
