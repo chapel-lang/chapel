@@ -190,6 +190,7 @@ static bool       stmtMustExitBlock(Expr* stmt);
 static bool       stmtIsLabelDefnBeforeReturn(Expr* stmt);
 static bool       stmtIsLabelDefn(Expr* stmt);
 static bool       stmtIsReturn(Expr* stmt);
+static bool       stmtSetsFormalTemp(Expr* stmt);
 static bool       stmtIsDownEndCount(Expr* stmt);
 
 static void       updateBlockExit(Expr*            stmt,
@@ -202,23 +203,40 @@ static void insertAutoDestroyCalls() {
     if (isModuleSymbol(block->parentSymbol) == false) {
 
       Vec<VarSymbol*> vars;
+      bool            primaryDestroys = false;
 
       // A linear traversal of the statements in the body
       for_alist(stmt, block->body) {
+        if (primaryDestroys == false) {
+          if (stmtDefinesAnAutoDestroyedVariable(stmt) == true) {
+            vars.add(stmtTheDefinedVariable(stmt));
+          }
 
-        if (stmtDefinesAnAutoDestroyedVariable(stmt) == true) {
-          vars.add(stmtTheDefinedVariable(stmt));
+          // It is appropriate to skip this analysis if there aren't
+          // currently any variables that need autoDestroy calls
+          if (vars.n > 0) {
+            updateJumpsFromBlockStmt(stmt, block, vars);
+          }
+
+          if (stmtMustExitBlock(stmt) == true) {
+            updateBlockExit(stmt, block, vars);
+            primaryDestroys = true;
+          }
         }
 
-        // It is appropriate to skip this analysis if there aren't
-        // currently any variables that need autoDestroy calls
-        if (vars.n > 0) {
-          updateJumpsFromBlockStmt(stmt, block, vars);
-        }
+        if (primaryDestroys == true) {
+          if (stmtIsReturn(stmt) == true) {
+            forv_Vec(VarSymbol, var, vars) {
+              if (var->hasFlag(FLAG_FORMAL_TEMP) == true) {
+                if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+                  SET_LINENO(var);
+                  stmt->insertBefore(new CallExpr(autoDestroyFn, var));
+                }
+              }
+            }
 
-        if (stmtMustExitBlock(stmt) == true) {
-          updateBlockExit(stmt, block, vars);
-          break;
+            break;
+          }
         }
       }
     }
@@ -338,18 +356,34 @@ static bool stmtMustExitBlock(Expr* stmt) {
   Expr* next   = stmt->next;
   bool  retval = false;
 
-  if (next == 0                         ||
-      isGotoStmt(next)                  ||
-      stmtIsLabelDefnBeforeReturn(next) ||
-      stmtIsReturn(next)                ||
-      stmtIsDownEndCount(next))
+  if (next                              == NULL ||
+      isGotoStmt(next)                  == true ||
+      stmtIsLabelDefnBeforeReturn(next) == true ||
+      stmtIsReturn(next)                == true ||
+      stmtIsDownEndCount(next)          == true)
     retval = true;
 
   return retval;
 }
 
+// Return true if this is a label statement that marks the function
+// epilogue.  The epilogue might be just a return statement or it
+// might contain a list of statements that copy into formal temps
+// followed by a return statement
+
 static bool stmtIsLabelDefnBeforeReturn(Expr* stmt) {
-  return stmtIsLabelDefn(stmt) && stmtIsReturn(stmt->next);
+  Expr* ptr    = stmt->next;
+  bool  retval = stmtIsLabelDefn(stmt);
+
+  while (retval == true && ptr != NULL) {
+    if (stmtIsReturn(ptr)       == false &&
+        stmtSetsFormalTemp(ptr) == false)
+      retval = false;
+
+    ptr = ptr->next;
+  }
+
+  return retval;
 }
 
 static bool stmtIsLabelDefn(Expr* stmt) {
@@ -372,6 +406,23 @@ static bool stmtIsReturn(Expr* stmt) {
   return retval;
 }
 
+// Check for an assign with a RHS that is a FORMAL_TEMP
+static bool stmtSetsFormalTemp(Expr* stmt) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (FnSymbol* fn = call->isResolved()) {
+      if (fn->hasFlag(FLAG_ASSIGNOP) == true) {
+        if (SymExpr* expr = toSymExpr(call->get(2))) {
+          retval = expr->var->hasFlag(FLAG_FORMAL_TEMP);
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
 static bool stmtIsDownEndCount(Expr* stmt) {
   bool retval = false;
 
@@ -388,9 +439,11 @@ static void updateBlockExit(Expr*            stmt,
                             BlockStmt*       block,
                             Vec<VarSymbol*>& vars) {
   forv_Vec(VarSymbol, var, vars) {
-    if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-      SET_LINENO(var);
-      stmt->insertAfter(new CallExpr(autoDestroyFn, var));
+    if (var->hasFlag(FLAG_FORMAL_TEMP) == false) {
+      if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+        SET_LINENO(var);
+        stmt->insertAfter(new CallExpr(autoDestroyFn, var));
+      }
     }
   }
 }
