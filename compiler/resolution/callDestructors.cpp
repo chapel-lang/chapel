@@ -293,10 +293,12 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
     for_vector(GotoStmt, gotoStmt, gotoStmts) {
       if (gotoExitsBlock(gotoStmt, block)) {
         forv_Vec(VarSymbol, var, vars) {
-          if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-            SET_LINENO(var);
+          if (var->hasFlag(FLAG_FORMAL_TEMP) == false) {
+            if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+              SET_LINENO(var);
 
-            gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
+              gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
+            }
           }
         }
       }
