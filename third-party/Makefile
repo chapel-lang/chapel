@@ -15,7 +15,7 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm libhdfs3
+all: test-venv chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
@@ -29,7 +29,6 @@ clean: FORCE
 	cd re2 && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
 	cd fltk && $(MAKE) clean
-	cd libhdfs3 && $(MAKE) clean
 
 cleanall: FORCE
 	cd chpl-venv && $(MAKE) cleanall
@@ -43,7 +42,6 @@ cleanall: FORCE
 	cd re2 && $(MAKE) cleanall
 	cd tcmalloc && $(MAKE) cleanall
 	cd fltk && $(MAKE) cleanall
-	cd libhdfs3 && $(MAKE) cleanall
 
 clobber: FORCE
 	cd chpl-venv && $(MAKE) clobber
@@ -57,7 +55,6 @@ clobber: FORCE
 	cd re2 && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
 	cd fltk && $(MAKE) clobber
-	cd libhdfs3 && $(MAKE) clobber
 
 depend:
 

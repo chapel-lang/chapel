@@ -19,10 +19,10 @@ cleanall: FORCE
 	rm -rf build
 
 clobber: FORCE
-	rm -rf build install llvm
+	rm -rf build install libhdfs3
 
 $(LIBHDFS3_FILE):
-	if [ ! -d llvm ]; then ./fetch-libhdfs3.sh; fi
+	if [ ! -d libhdfs3 ]; then ./fetch-libhdfs3.sh; fi
 	mkdir -p libhdfs3/build
 	cd libhdfs3/build && ../bootstrap
 	cd libhdfs3/build && $(MAKE)
