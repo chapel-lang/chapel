@@ -931,7 +931,6 @@ static const char* getEnvMap(std::string key, std::map<std::string, const char*>
     }
     envMap[key] = strdup(parsedMap[key]);
   }
-  printf("getEnvMap: envMap[%s] = %s\n", key.c_str(), envMap[key]);
   return envMap[key];
 }
 
@@ -940,7 +939,6 @@ static void setChapelEnvs() {
   // Call printchplenv and pipe output into string
   std::string output = runUtilScript("printchplenv --simple");
 
-  printf("output: %s", output.c_str());
   // Parse output and populate map with CHPL_* variables
   std::map<std::string, const char*> parsedMap = populateMap(output);
 

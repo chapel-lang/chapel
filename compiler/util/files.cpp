@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <string>
+#include <map>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -525,8 +526,23 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   const char* exeExt = "";
   const char* tmpbin = "";
 
+  std::string makevar = "\0";
+
   fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
-  fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
+  fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
+
+  // Write our parsed and stored CHPL_vars as CHPL_MAKE_vars
+  for( std::map<std::string, const char*>::iterator ii=envMap.begin(); ii!=envMap.end(); ++ii)
+  {
+    makevar = (*ii).first;
+    makevar.insert(5, "MAKE_");
+    fprintf(makefile.fptr,"%s = %s\n", makevar.c_str(), (*ii).second);
+  }
+
+  // Prevent reading CHPL_vars from printchplenv again
+  fprintf(makefile.fptr, "\n%s\n", "define CHPL_MAKE_SETTINGS_NO_NEWLINES");
+  fprintf(makefile.fptr, "%s\n\n", "endef");
+
 
   // LLVM builds just use the makefile for the launcher and
   // so want to skip the actual program generation.
