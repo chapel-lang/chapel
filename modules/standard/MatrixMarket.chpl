@@ -121,6 +121,7 @@ class MMReader {
 
       // didn't find a precentage, rewind channel by length of read string...
       if percentfound != "%\n" {
+         fin.close();
          fin = fd.reader(start=offset);
       }
    }
