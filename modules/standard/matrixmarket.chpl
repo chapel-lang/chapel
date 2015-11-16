@@ -159,7 +159,7 @@ class MMReader {
 
 proc mmread(const fname:string) {
    var mr = new MMReader(fname);
-   var toret = mr.read_file();
+   var toret => mr.read_file();
    return toret;
 }
 
