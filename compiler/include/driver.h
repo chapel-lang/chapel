@@ -22,14 +22,12 @@
 
 #include "chpl.h"
 #include "map.h"
+
+#include <cstdio>
 #include <map>
 #include <string>
 
-#include <cstdio>
-
 class Timer;
-
-extern std::map<std::string, const char*> envMap;
 
 
 extern int  instantiation_limit;
@@ -73,7 +71,7 @@ extern int  tuple_copy_limit;
 extern bool report_inlining;
 
 // Chapel Envs
-std::map<std::string, const char*> populateMap(std::string);
+extern std::map<std::string, const char*> envMap;
 
 extern char CHPL_HOME[FILENAME_MAX+1];
 
@@ -100,9 +98,6 @@ extern const char* CHPL_REGEXP;
 extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
-extern int num_chpl_env_vars;
-extern const char* chpl_env_vars[];
-extern const char* chpl_env_var_names[];
 
 extern bool  printPasses;
 extern FILE* printPassesFile;

@@ -52,10 +52,8 @@
 
 std::map<std::string, const char*> envMap;
 
-
-const int NUM_CHPL_ENVS = 23;
-
 char CHPL_HOME[FILENAME_MAX+1] = "";
+
 const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
@@ -802,25 +800,6 @@ static ArgumentState sArgState = {
   NULL
 };
 
-
-static void setupDependentVars() {
-  if (developer && !userSetCppLineno) {
-    printCppLineno = false;
-  }
-
-#ifndef HAVE_LLVM
-  if (llvmCodegen)
-    USR_FATAL("This compiler was built without LLVM support");
-#endif
-
-  if (specializeCCode && (strcmp(CHPL_TARGET_ARCH, "unknown") == 0)) {
-    USR_WARN("--specialize was set, but CHPL_TARGET_ARCH is 'unknown'. If "
-              "you want any specialization to occur please set CHPL_TARGET_ARCH "
-              "to a proper value.");
-  }
-}
-
-
 static void printStuff(const char* argv0) {
   bool shouldExit       = false;
   bool printedSomething = false;
@@ -878,110 +857,93 @@ static void printStuff(const char* argv0) {
   }
 }
 
-std::map<std::string, const char*> populateMap(std::string output)
+static void populateEnvMap()
 {
-    // Destructively parses string output for environment variables (keys)
-    // and their values according to printchplenv (values), and returns an
-    // std::map populated with the key/value pairs
+  // Destructively parses output of 'printchplenv --simple' for "key=value"
+  // pairs and populates global envMap if the key has not been already set from
+  // argument processing
 
-    std::map<std::string, const char*> env;
-
-    // Lines
-    std::string line= "";
-    std::string lineDelimiter = "\n";
-    size_t linePos = 0;        // Line break position
-
-    // Tokens
-    std::string tokenDelimiter = "=";
-    size_t delimiterPos = 0;    // Position of delimiter
-    size_t valuePos = 0;        // Position of value
-
-    std::string key = "";
-    std::string value = "";
-
-    while ((linePos = output.find(lineDelimiter)) != std::string::npos)
-    {
-        line = output.substr(0, linePos);
-
-        // Key is substring up until "=" on a given line
-        delimiterPos = line.find(tokenDelimiter);
-        key = line.substr(0, delimiterPos);
-
-        // value is substring up after "=" on a given line
-        valuePos = delimiterPos + tokenDelimiter.length();
-        value = line.substr(valuePos);
-
-        // Populate map, duplicating string, because output is destroyed in memory
-        env[key] = strdup(value.c_str());
-        output.erase(0, linePos + lineDelimiter.length());
-    }
-    if( env.size() != NUM_CHPL_ENVS ) {
-        USR_FATAL("Did not parse %d CHPL_* vars", NUM_CHPL_ENVS);
-    }
-    // TODO Error checking - Check number of env vars?
-    return env;
-}
-
-static const char* getEnvMap(std::string key, std::map<std::string, const char*> parsedMap)
-{
-  // Update envMap from parsed princhplenv if it was not defined
-  if( envMap.find(key) == envMap.end() ) {
-    if( parsedMap.find(key) == parsedMap.end() ) {
-      USR_FATAL("Variable, %s was not defined", key.c_str());
-    }
-    envMap[key] = strdup(parsedMap[key]);
-  }
-  return envMap[key];
-}
-
-static void setChapelEnvs() {
-  // Set the CHPL_* envs from envMap values
   // Call printchplenv and pipe output into string
   std::string output = runUtilScript("printchplenv --simple");
 
-  // Parse output and populate map with CHPL_* variables
-  std::map<std::string, const char*> parsedMap = populateMap(output);
+  // Lines
+  std::string line= "";
+  std::string lineDelimiter = "\n";
+  size_t linePos = 0;        // Line break position
 
-  CHPL_HOST_PLATFORM   = getEnvMap("CHPL_HOST_PLATFORM", parsedMap);
-  CHPL_HOST_COMPILER   = getEnvMap("CHPL_HOST_COMPILER", parsedMap);
-  CHPL_TARGET_PLATFORM = getEnvMap("CHPL_TARGET_PLATFORM", parsedMap);
-  CHPL_TARGET_COMPILER = getEnvMap("CHPL_TARGET_COMPILER", parsedMap);
-  CHPL_TARGET_ARCH     = getEnvMap("CHPL_TARGET_ARCH", parsedMap);
-  CHPL_LOCALE_MODEL    = getEnvMap("CHPL_LOCALE_MODEL", parsedMap);
-  CHPL_COMM            = getEnvMap("CHPL_COMM", parsedMap);
-  CHPL_COMM_SUBSTRATE  = getEnvMap("CHPL_COMM_SUBSTRATE", parsedMap);
-  CHPL_GASNET_SEGMENT  = getEnvMap("CHPL_GASNET_SEGMENT", parsedMap);
-  CHPL_TASKS           = getEnvMap("CHPL_TASKS", parsedMap);
-  CHPL_THREADS         = getEnvMap("CHPL_THREADS", parsedMap);
-  CHPL_LAUNCHER        = getEnvMap("CHPL_LAUNCHER", parsedMap);
-  CHPL_TIMERS          = getEnvMap("CHPL_TIMERS", parsedMap);
-  CHPL_MEM             = getEnvMap("CHPL_MEM", parsedMap);
-  CHPL_MAKE            = getEnvMap("CHPL_MAKE", parsedMap);
-  CHPL_ATOMICS         = getEnvMap("CHPL_ATOMICS", parsedMap);
-  CHPL_NETWORK_ATOMICS = getEnvMap("CHPL_NETWORK_ATOMICS", parsedMap);
-  CHPL_GMP             = getEnvMap("CHPL_GMP", parsedMap);
-  CHPL_HWLOC           = getEnvMap("CHPL_HWLOC", parsedMap);
-  CHPL_REGEXP          = getEnvMap("CHPL_REGEXP", parsedMap);
-  CHPL_WIDE_POINTERS   = getEnvMap("CHPL_WIDE_POINTERS", parsedMap);
-  CHPL_LLVM            = getEnvMap("CHPL_LLVM", parsedMap);
-  CHPL_AUX_FILESYS     = getEnvMap("CHPL_AUX_FILESYS", parsedMap);
+  // Tokens
+  std::string tokenDelimiter = "=";
+  size_t delimiterPos = 0;    // Position of delimiter
+  size_t valuePos = 0;        // Position of value
+
+  std::string key = "";
+  std::string value = "";
+
+  while ((linePos = output.find(lineDelimiter)) != std::string::npos)
+  {
+    line = output.substr(0, linePos);
+
+    // Key is substring up until "=" on a given line
+    delimiterPos = line.find(tokenDelimiter);
+    key = line.substr(0, delimiterPos);
+
+    // Value is substring after "=" on a given line
+    valuePos = delimiterPos + tokenDelimiter.length();
+    value = line.substr(valuePos);
+
+    // If key does not have a value in envMap, map it the parsed value
+    if( envMap.find(key) == envMap.end() ) {
+      envMap[key] = strdup(value.c_str());
+    }
+
+    output.erase(0, linePos + lineDelimiter.length());
+  }
+}
+
+static void setChapelEnvs() {
+  // Update compiler global CHPL_vars with envMap values
+
+  CHPL_HOST_PLATFORM   = envMap["CHPL_HOST_PLATFORM"];
+  CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
+  CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
+  CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
+  CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
+  CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
+  CHPL_COMM            = envMap["CHPL_COMM"];
+  CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
+  CHPL_GASNET_SEGMENT  = envMap["CHPL_GASNET_SEGMENT"];
+  CHPL_TASKS           = envMap["CHPL_TASKS"];
+  CHPL_THREADS         = envMap["CHPL_THREADS"];
+  CHPL_LAUNCHER        = envMap["CHPL_LAUNCHER"];
+  CHPL_TIMERS          = envMap["CHPL_TIMERS"];
+  CHPL_MEM             = envMap["CHPL_MEM"];
+  CHPL_MAKE            = envMap["CHPL_MAKE"];
+  CHPL_ATOMICS         = envMap["CHPL_ATOMICS"];
+  CHPL_NETWORK_ATOMICS = envMap["CHPL_NETWORK_ATOMICS"];
+  CHPL_GMP             = envMap["CHPL_GMP"];
+  CHPL_HWLOC           = envMap["CHPL_HWLOC"];
+  CHPL_REGEXP          = envMap["CHPL_REGEXP"];
+  CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
+  CHPL_LLVM            = envMap["CHPL_LLVM"];
+  CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
 }
 
 static void setupChplGlobals(const char* argv0) {
-  // Update the values of CHPL_* global variables and run postprocessing
-  // functions for any arguments that depend on CHPL_* variables
+  // Set CHPL_HOME, populate envMap with defaults, and set global CHPL_vars
 
-  // No CHPL_HOME set via args
+  // Set CHPL_HOME the traditional way if it was not passed as an argument
   if( envMap.find("CHPL_HOME") == envMap.end() )
   {
-    // Set up CHPL_HOME first
     setupChplHome(argv0);
 
-    // Update envMap
+    // Keep envMap updated
     envMap["CHPL_HOME"] = CHPL_HOME;
   }
 
-  // Get default values of CHPL_vars not parsed from args and populate envMap
+  // Populate envMap from printchplenv, never overwriting existing elements
+  populateEnvMap();
+
+  // Set global CHPL_vars with updated envMap values
   setChapelEnvs();
 }
 
@@ -1011,12 +973,10 @@ static void postStaticLink() {
 }
 
 static void postLocal() {
-  // Default value of fLocal
   if (!fSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
 }
 
 static void setMaxCIndentLen() {
-  // These depend on the environment variables being set
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
@@ -1031,7 +991,26 @@ static void setWidePointersStruct() {
   }
 }
 
+static void setPrintCppLineno() {
+  if (developer && !userSetCppLineno) printCppLineno = false;
+}
+
+static void checkLLVMCodeGen() {
+#ifndef HAVE_LLVM
+ if (llvmCodegen) USR_FATAL("This compiler was built without LLVM support");
+#endif
+}
+
+static void checkTargetArch() {
+  if (specializeCCode && (strcmp(CHPL_TARGET_ARCH, "unknown") == 0)) {
+    USR_WARN("--specialize was set, but CHPL_TARGET_ARCH is 'unknown'. If "
+              "you want any specialization to occur please set CHPL_TARGET_ARCH "
+              "to a proper value.");
+  }
+}
+
 static void postprocess_args() {
+  // Processes that depend on results of passed arguments or values of CHPL_vars
 
   setMaxCIndentLen();
 
@@ -1045,6 +1024,11 @@ static void postprocess_args() {
 
   postStaticLink();
 
+  setPrintCppLineno();
+
+  checkLLVMCodeGen();
+
+  checkTargetArch();
 }
 
 int main(int argc, char* argv[]) {
@@ -1083,15 +1067,12 @@ int main(int argc, char* argv[]) {
 
     process_args(&sArgState, argc, argv);
 
-    // Set global CHPL_vars from parsed args and printchplenv
     setupChplGlobals(argv[0]);
 
-    // Handle logic of any args that depend on CHPL_vars
     postprocess_args();
 
     initCompilerGlobals(); // must follow argument parsing
 
-    setupDependentVars();
     setupModulePaths();
 
     recordCodeGenStrings(argc, argv);
