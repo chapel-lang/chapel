@@ -17,16 +17,18 @@
  * limitations under the License.
  */
 
-/*
-This code is based on the gensim implementation of the matrix market file format for matrices - it can currently store real/general matrixmarket data sets to disk. code was unit tested against the gensim implementation
-*/
+/* This code is based on the gensim implementation of the matrix market file 
+format for matrices - it can currently store real/general matrixmarket 
+data sets to disk. code was unit tested against the gensim implementation */
 
-module matrixmarket {
+module MatrixMarket {
+
    use Math;
    use IO;
 
    class MMWriter {
-      var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
+      // currently the only supported MM format in this module
+      var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; 
 
       var fd:file;
       var fout:channel(true, iokind.dynamic, true);
