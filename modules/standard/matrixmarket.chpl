@@ -76,7 +76,7 @@ module matrixmarket {
       proc close() { fout.flush(); fout.close(); }
    }
 
-proc mm_write(const fname:string, mat:[?Dmat] real, _num_cols=-1) where mat.domain.rank == 2 {
+proc mmwrite(const fname:string, mat:[?Dmat] real, _num_cols=-1) where mat.domain.rank == 2 {
    var mw = new MMWriter(fname);
    mw.write_headers(-1,-1,-1);
    var (ncols, nnz) = (0,0);
@@ -112,6 +112,16 @@ class MMReader {
       var header:string;
       assert(fin.readline(header) == true, "MMReader I/O error!");
       assert(header == "%%MatrixMarket matrix coordinate real general\n", "attempted to load an unsupported file");
+
+      // test for files that have a % beneath the matrix market format header
+      var percentfound:string;
+      var offset = fin._offset();
+      fin.readline(percentfound);
+
+      // didn't find a precentage, rewind channel by length of read string...
+      if percentfound != "%\n" {
+         fin = fd.reader(start=offset);
+      }
    }
 
    proc read_matrix_info() {
@@ -147,7 +157,7 @@ class MMReader {
    }
 }
 
-proc mm_read(const fname:string) {
+proc mmread(const fname:string) {
    var mr = new MMReader(fname);
    var toret = mr.read_file();
    return toret;
