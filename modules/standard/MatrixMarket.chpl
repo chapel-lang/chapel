@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-/* This code is based on the gensim implementation of the matrix market file 
-format for matrices - it can currently store real/general matrixmarket 
-data sets to disk. code was unit tested against the gensim implementation */
+/*
+This code is based on the gensim implementation of the matrix market file format for matrices - it can currently store real/general matrixmarket data sets to disk. code was unit tested against the gensim implementation
+*/
 
 module MatrixMarket {
 
@@ -27,8 +27,7 @@ module MatrixMarket {
    use IO;
 
    class MMWriter {
-      // currently the only supported MM format in this module
-      var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; 
+      var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
 
       var fd:file;
       var fout:channel(true, iokind.dynamic, true);
@@ -44,6 +43,7 @@ module MatrixMarket {
 
       proc write_headers(nrows, ncols, nnz=-1) {
          fout.write(HEADER_LINE);
+         fout.write("%\n");
 
          if nnz < 0 {
             var blank = "                                                  \n";
@@ -65,7 +65,7 @@ module MatrixMarket {
 
       proc write_vector(i:int, jvec:[?Djvec] ?T) where Djvec.rank == 1 {
          assert(last_rowno < i, "rows %i and %i not in sequential order!", last_rowno, i);
-         for (j,w) in zip(1..Djvec.size, jvec) {
+         for (j,w) in zip(Djvec, jvec) {
             if abs(w) > 1e-12 { fout.writef("%i %i %s\n", i, j, w); }
          }
 
@@ -84,17 +84,16 @@ proc mmwrite(const fname:string, mat:[?Dmat] real, _num_cols=-1) where mat.domai
    var (ncols, nnz) = (0,0);
    var (nrows, poslast) = (-1,-1);
    var n_cols = _num_cols;
-
    for r in 1..Dmat.high(1) {
       var row = mat(r,..);
       var (max_id, veclen) = mw.write_vector(r, row);
-      n_cols = max(n_cols, 1+max_id);
+      n_cols = max(n_cols, max_id);
       nnz += veclen;
       ncols = r;
    }
 
    nrows = mw.last_rowno;
-   ncols = if ncols != 0 then ncols else n_cols;
+   ncols = n_cols; //if ncols != 0 then ncols else n_cols;
 
    mw.fake_headers(nrows, ncols, nnz);
    mw.close();
