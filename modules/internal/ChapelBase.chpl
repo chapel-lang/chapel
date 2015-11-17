@@ -720,6 +720,12 @@ module ChapelBase {
     // stone, we could do parallel init for plain old data (POD) types.
     //
 
+    // for uints we need to check that s > 0, so the `s-1` in the following
+    // loops doesn't overflow.
+    if isUint(s) && s == 0 {
+      return;
+    }
+
     if parallelInitElts && isNumericType(t) {
 
       param elemsizeInBytes = numBytes(t);
@@ -728,24 +734,23 @@ module ChapelBase {
       const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
 
       if heuristicWantsPar && here != dummyLocale {
-        forall i in 1..s {
+        forall i in 0..s-1 {
           pragma "no auto destroy" var y: t;
-          __primitive("array_set_first", x, i-1, y);
+          __primitive("array_set_first", x, i, y);
         }
 
       } else {
-        for i in 1..s {
+        for i in 0..s-1 {
           pragma "no auto destroy" var y: t;
-          __primitive("array_set_first", x, i-1, y);
+          __primitive("array_set_first", x, i, y);
         }
       }
     } else {
-      for i in 1..s {
+      for i in 0..s-1 {
         pragma "no auto destroy" var y: t;
-        __primitive("array_set_first", x, i-1, y);
+        __primitive("array_set_first", x, i, y);
       }
     }
-
   }
   
   // dynamic data block class
