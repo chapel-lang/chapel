@@ -425,7 +425,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
-std::string runUtilScript(const std::string script) {
+std::string runUtilScript(const std::string& script) {
   char buffer[256];
   std::string result = "";
 
