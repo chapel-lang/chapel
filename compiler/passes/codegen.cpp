@@ -381,13 +381,14 @@ static void genFilenameTable() {
 #ifdef HAVE_LLVM
     std::vector<llvm::Constant *> table(gFilenameLookup.size());
 
-    llvm::Type *c_stringType = info->lvt->getType("c_string");
+    llvm::Type *c_stringType =
+        llvm::IntegerType::getInt8PtrTy(info->module->getContext());
 
     int idx = 0;
     for (std::set<std::string>::iterator it = gFilenameLookup.begin();
          it != gFilenameLookup.end(); it++) {
-      table[idx++] = llvm::cast<llvm::Constant>(
-          new_CStringSymbol((*it).c_str())->codegen().val);
+      table[idx++] = llvm::cast<llvm::GlobalVariable>(
+              new_CStringSymbol((*it).c_str())->codegen().val)->getInitializer();
     }
 
     llvm::ArrayType *filenameTableType =
