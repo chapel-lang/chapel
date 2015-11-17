@@ -60,7 +60,7 @@ module MatrixMarket {
       proc fake_headers(nrows, ncols, nnz) {
          var tfout = fd.writer(start=HEADER_LINE.size);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
-         tfout.flush(); tfout.close();
+         tfout.close();
       }
 
       proc write_vector(i:int, jvec:[?Djvec] ?T) where Djvec.rank == 1 {
@@ -75,7 +75,8 @@ module MatrixMarket {
          return ret;
       }
 
-      proc close() { fout.flush(); fout.close(); }
+      proc close() { fout.close(); fd.close(); }
+      proc ~MMWriter() { this.close(); }
    }
 
 proc mmwrite(const fname:string, mat:[?Dmat] real, _num_cols=-1) where mat.domain.rank == 2 {
@@ -157,6 +158,9 @@ class MMReader {
 
       return toret;
    }
+
+   proc close() { fin.close(); fd.close(); }
+   proc ~MMReader() { this.close(); }
 }
 
 proc mmread(const fname:string) {
