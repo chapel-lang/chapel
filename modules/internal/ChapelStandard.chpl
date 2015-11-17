@@ -24,6 +24,7 @@ module ChapelStandard {
   use startInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
+  use ChapelEnv;
   use ChapelBase;
   use String;
   use MemConsistency;
@@ -56,7 +57,6 @@ module ChapelStandard {
   use MemTracking;
   use ChapelUtil;
   use ChapelDynDispHack;
-  use ChapelEnv;
 
   // Standard modules.
   use Assert;
