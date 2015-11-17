@@ -1104,6 +1104,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     lowIdx(i) = myFollowThis(i).low;
   }
 
+  const myFollowThisDom = {(...myFollowThis)};
   if fast {
     //
     // TODO: The following is a buggy hack that will only work when we're
@@ -1119,15 +1120,20 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     //
     if arrSection.locale.id != here.id then
       arrSection = myLocArr;
+
+    //
+    // Slicing arrSection.myElems will require reference counts to be updated.
+    // If myElems is an array of arrays, the inner array's domain or dist may
+    // live on a different locale and require communication for reference
+    // counting. Simply put: don't slice inside a local block.
+    //
     local {
-      for e in arrSection.myElems((...myFollowThis)) do
-        yield e;
+      for i in myFollowThisDom do yield arrSection.this(i);
     }
   } else {
     //
     // we don't necessarily own all the elements we're following
     //
-    const myFollowThisDom = {(...myFollowThis)};
     for i in myFollowThisDom {
       yield dsiAccess(i);
     }
