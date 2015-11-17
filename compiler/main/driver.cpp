@@ -144,10 +144,10 @@ int scalar_replace_limit = 8;
 int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
-bool fSetLocal = false;
-bool fLocal;   // initialized in setupOrderedGlobals() below
+bool fUserSetLocal = false;
+bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
-bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
+bool fHeterogeneous = false;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
@@ -573,8 +573,8 @@ static void setPrintPassesFile(const ArgumentDescription* desc, const char* file
 }
 
 static void setLocal (const ArgumentDescription* desc, const char* unused) {
-  // Used in postLocal
-  fSetLocal = true;
+  // Used in postLocal() to set fLocal if user threw --[no]local
+  fUserSetLocal = true;
 }
 
 
@@ -961,7 +961,7 @@ static void postStaticLink() {
 }
 
 static void postLocal() {
-  if (!fSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
+  if (!fUserSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
 }
 
 static void setMaxCIndentLen() {

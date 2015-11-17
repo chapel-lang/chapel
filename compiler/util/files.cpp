@@ -534,9 +534,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   // Write our parsed and stored CHPL_vars as CHPL_MAKE_vars
   for( std::map<std::string, const char*>::iterator ii=envMap.begin(); ii!=envMap.end(); ++ii)
   {
-    makevar = (*ii).first;
+    makevar = ii->first;
     makevar.insert(5, "MAKE_");
-    fprintf(makefile.fptr,"%s = %s\n", makevar.c_str(), (*ii).second);
+    fprintf(makefile.fptr,"%s = %s\n", makevar.c_str(), ii->second);
   }
 
   // Prevent reading CHPL_vars from printchplenv again
