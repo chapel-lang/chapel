@@ -35,7 +35,6 @@
 #include "log.h"
 #include "misc.h"
 #include "mysystem.h"
-#include "parser.h"
 #include "PhaseTracker.h"
 #include "primitive.h"
 #include "runpasses.h"
@@ -213,17 +212,6 @@ llvm::sys::Path GetExecutablePath(const char *Argv0) {
   return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
 }
 */
-
-static void initStringBuffer() {
-    // This is a kludge, which can be explained as follows:
-    // The lexer and parser have a fundamental problem of manipulating and
-    // relying upon global states. For the case of chpldoc, the parser
-    // expects parseString to have been called before parsing any files
-    // and relies upon this call to setup the global state, specifically
-    // allocating stringBuffer. We make a dummy call to
-    // parseString here to allocate stringBuffer for the chpldoc case.
-    if (fDocs) parseString("bar=\"foo\";", "", "");
-}
 
 static bool isMaybeChplHome(const char* path)
 {
@@ -1057,7 +1045,6 @@ int main(int argc, char* argv[]) {
 
     initFlags();
     initRootModule();
-    initStringBuffer();
     initPrimitive();
     initPrimitiveTypes();
 
