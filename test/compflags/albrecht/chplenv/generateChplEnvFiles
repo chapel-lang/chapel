@@ -14,9 +14,10 @@ function generateGood {
         good="${good}${var}\n"
     done
 
-    good="${good}CHPL_HOME=${CHPL_HOME}"
+    good="${good}CHPL_HOME=${CHPL_HOME}\n"
 
-    echo "${good}"
+    # Use print so that newlines (\n) are recognized
+    printf "${good}"
 }
 
 
