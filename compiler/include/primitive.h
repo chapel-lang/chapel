@@ -29,7 +29,6 @@ class VarSymbol;
 enum PrimitiveTag {
   PRIM_UNKNOWN = 0,    // use for any primitives not in this list
 
-  PRIM_GET_COMPILER_VAR,
   PRIM_ACTUALS_LIST,
   PRIM_NOOP,
   PRIM_MOVE,
@@ -268,6 +267,8 @@ enum PrimitiveTag {
                           // used when converting line/file info into a form
                           // that can be passed into argument bundles
   PRIM_LOOKUP_FILENAME,   // Given an index, get a given filename (c_string)
+
+  PRIM_GET_COMPILER_VAR,
 
   NUM_KNOWN_PRIMS
 };
