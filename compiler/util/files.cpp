@@ -427,12 +427,9 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
 
 std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   // Run printchplenv script, passing currently known CHPL_vars as well
-
   std::string command = "";
-  std::string result = "";
-  char buffer[256];
 
-  // Pass known variables into printchplenv via command
+  // Pass known variables in varMap into printchplenv by appending to command
   for( std::map<std::string, const char*>::iterator ii=varMap.begin(); ii!=varMap.end(); ++ii)
   {
     command += ii->first + "=" + std::string(ii->second) + " ";
@@ -440,42 +437,32 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
 
   command += std::string(CHPL_HOME) + "/util/printchplenv --simple";
 
+  return runCommand(command);
+}
+
+std::string runCommand(std::string& command) {
+  // Run arbitrary command and return result
+  char buffer[256];
+  std::string result = "";
+  std::string error = "";
+
   // Call command
   FILE* pipe = popen(command.c_str(), "r");
-  if (!pipe) {
-    USR_FATAL("running $CHPL_HOME/util/printchplenv");
+  if(!pipe) {
+    error = "running " + command;
+    USR_FATAL(error.c_str());
   }
 
   // Read output of command into result via buffer
-  while (!feof(pipe)) {
-    if (fgets(buffer, 256, pipe) != NULL) {
+  while(!feof(pipe)) {
+    if(fgets(buffer, 256, pipe) != NULL) {
       result += buffer;
     }
   }
 
-  if (pclose(pipe)) {
-    USR_FATAL("'$CHPL_HOME/util/printchplenv' did not run successfully");
-  }
-
-  return result;
-}
-
-std::string runUtilScript(const std::string& script) {
-  char buffer[256];
-  std::string result = "";
-
-  FILE* pipe = popen(astr(CHPL_HOME, "/util/", script.c_str()), "r");
-  if (!pipe) {
-    USR_FATAL(astr("running $CHPL_HOME/util/", script.c_str()));
-  }
-
-  while (!feof(pipe)) {
-    if (fgets(buffer, 256, pipe) != NULL) {
-      result += buffer;
-    }
-  }
-  if (pclose(pipe)) {
-    USR_FATAL(astr("'$CHPL_HOME/util/", script.c_str(), "' did not run successfully"));
+  if(pclose(pipe)) {
+    error = command + " did not run successfully";
+    USR_FATAL(error.c_str());
   }
 
   return result;
