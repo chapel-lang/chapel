@@ -852,7 +852,7 @@ static void populateEnvMap()
   // argument processing
 
   // Call printchplenv and pipe output into string
-  std::string output = runUtilScript("printchplenv --simple");
+  std::string output = runPrintChplEnv(envMap);
 
   // Lines
   std::string line= "";

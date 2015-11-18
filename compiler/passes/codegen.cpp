@@ -603,11 +603,11 @@ static void codegen_header_compilation_config() {
             "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
             CHPL_HOME);
     for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-      if (strcmp((*env).first.c_str(), "CHPL_HOME") != 0) {
+      if (env->first != "CHPL_HOME") {
         fprintf(cfgfile.fptr,
           "printf(\"%%s\", \"  %s: %s\\n\");\n",
-          (*env).first.c_str(),
-          (*env).second);
+          env->first.c_str(),
+          env->second);
       }
     }
 

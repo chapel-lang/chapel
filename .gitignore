@@ -131,7 +131,6 @@ tags
 /test/chplvis/overhead/OH
 /test/chplvis/overhead/OH2
 
-/test/compflags/albrecht/chplenv/chplenv.compopts
 /test/compflags/albrecht/chplenv/chplenv.good
 
 /test/compflags/bradc/savecDirExists

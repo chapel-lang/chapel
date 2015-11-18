@@ -21,8 +21,9 @@
 #define _files_H_
 
 #include <cstdio>
-#include <vector>
+#include <map>
 #include <string>
+#include <vector>
 #include "vec.h"
 
 extern char executableFilename[FILENAME_MAX+1];
@@ -75,6 +76,8 @@ void addIncInfo(const char* incDir);
 void genIncludeCommandLineHeaders(FILE* outfile);
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
+
+std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
 
 std::string runUtilScript(const std::string& script);
 

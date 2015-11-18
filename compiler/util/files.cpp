@@ -425,6 +425,41 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
+std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
+  // Run printchplenv script, passing currently known CHPL_vars as well
+
+  std::string command = "";
+  std::string result = "";
+  char buffer[256];
+
+  // Pass known variables into printchplenv via command
+  for( std::map<std::string, const char*>::iterator ii=varMap.begin(); ii!=varMap.end(); ++ii)
+  {
+    command += ii->first + "=" + std::string(ii->second) + " ";
+  }
+
+  command += std::string(CHPL_HOME) + "/util/printchplenv --simple";
+
+  // Call command
+  FILE* pipe = popen(command.c_str(), "r");
+  if (!pipe) {
+    USR_FATAL("running $CHPL_HOME/util/printchplenv");
+  }
+
+  // Read output of command into result via buffer
+  while (!feof(pipe)) {
+    if (fgets(buffer, 256, pipe) != NULL) {
+      result += buffer;
+    }
+  }
+
+  if (pclose(pipe)) {
+    USR_FATAL("'$CHPL_HOME/util/printchplenv' did not run successfully");
+  }
+
+  return result;
+}
+
 std::string runUtilScript(const std::string& script) {
   char buffer[256];
   std::string result = "";
@@ -525,23 +560,22 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = "";
   const char* tmpbin = "";
+  std::string chplmakeallvars = "\0";
 
-  std::string makevar = "\0";
 
   fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
 
-  // Write our parsed and stored CHPL_vars as CHPL_MAKE_vars
+  // Generate one variable containing all envMap information to pass to printchplenv
   for( std::map<std::string, const char*>::iterator ii=envMap.begin(); ii!=envMap.end(); ++ii)
   {
-    makevar = ii->first;
-    makevar.insert(5, "MAKE_");
-    fprintf(makefile.fptr,"%s = %s\n", makevar.c_str(), ii->second);
+    // Avoid passing CHPL_THREADS because printchplenv will throw warning
+    if (ii->first != "CHPL_THREADS") {
+      chplmakeallvars += ii->first + "=" + std::string(ii->second) + " ";
+    }
   }
 
-  // Prevent reading CHPL_vars from printchplenv again
-  fprintf(makefile.fptr, "\n%s\n", "define CHPL_MAKE_SETTINGS_NO_NEWLINES");
-  fprintf(makefile.fptr, "%s\n\n", "endef");
+  fprintf(makefile.fptr, "\nCHPL_MAKE_ALL_VARS = %s\n", chplmakeallvars.c_str());
 
 
   // LLVM builds just use the makefile for the launcher and
