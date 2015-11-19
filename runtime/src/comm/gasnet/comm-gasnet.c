@@ -253,7 +253,7 @@ static void fork_large_wrapper(fork_t* f) {
   chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
   chpl_comm_get(arg, f->caller, f_arg,
-                f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
+                f->arg_size, -1 /*typeIndex: unused*/, 0, "fork large");
   chpl_ftable_call(f->fid, arg);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
@@ -304,7 +304,7 @@ static void fork_nb_large_wrapper(fork_t* f) {
   chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
   chpl_comm_get(arg, f->caller, f_arg,
-                f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
+                f->arg_size, -1 /*typeIndex: unused*/, 0, "fork large");
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       FREE,
                                       &(f->ack),
@@ -432,17 +432,15 @@ static gasnet_handlerentry_t ftable[] = {
 // Chapel interface starts here
 //
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       size_t elemSize, int32_t typeIndex,
-                                       size_t len,
+                                       size_t size, int32_t typeIndex,
                                        int ln, c_string fn)
 {
-  size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
 
   // Should be in the compiler macros file?
-  chpl_vdebug_log_put_nb(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+  chpl_vdebug_log_put_nb(addr, node, raddr, size, typeIndex, ln, fn);
 
-  ret = gasnet_put_nb_bulk(node, raddr, addr, nbytes);
+  ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
@@ -454,17 +452,15 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 }
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       size_t elemSize, int32_t typeIndex,
-                                       size_t len,
+                                       size_t size, int32_t typeIndex,
                                        int ln, c_string fn)
 {
-  size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
 
   // Visual Debug Support
-  chpl_vdebug_log_get_nb(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+  chpl_vdebug_log_get_nb(addr, node, raddr, size, typeIndex, ln, fn);
 
-  ret = gasnet_get_nb_bulk(addr, node, raddr, nbytes);
+  ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
@@ -718,7 +714,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0,
                     &((wide_ptr_t*)seginfo_table[0].addr)[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 1, 0, "");
+                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 0, "");
     }
   }
 }
@@ -881,16 +877,15 @@ void chpl_comm_exit(int all, int status) {
 }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t elemSize, int32_t typeIndex, size_t len,
+                    size_t size, int32_t typeIndex,
                     int ln, c_string fn) {
-  const size_t size = elemSize*len;
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
   } else {
     // Visual Debug support
-    chpl_vdebug_log_put(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_vdebug_log_put(addr, node, raddr, size, typeIndex, ln, fn);
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", chpl_nodeID, fn, ln, node);
@@ -958,16 +953,15 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
-                    size_t elemSize, int32_t typeIndex, size_t len,
+                    size_t size, int32_t typeIndex,
                     int ln, c_string fn) {
-  const size_t size = elemSize*len;
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
   } else {
     // Visual Debug support
-    chpl_vdebug_log_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_vdebug_log_get(addr, node, raddr, size, typeIndex, ln, fn);
     
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, node);

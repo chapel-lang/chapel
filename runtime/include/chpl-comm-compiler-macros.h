@@ -42,32 +42,31 @@
 
 static inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                       size_t elemSize, int32_t typeIndex, size_t len,
+                       size_t size, int32_t typeIndex,
                        int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
-    chpl_memcpy(addr, raddr, elemSize*len);
+    chpl_memcpy(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_cache_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_GET
-    chpl_task_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_task_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
 #else
-    chpl_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
 #endif
   }
 }
 
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
-                            size_t elemSize, int32_t typeIndex, size_t len,
+                            size_t size, int32_t typeIndex,
                             int ln, c_string fn)
 {
   const size_t MAX_BYTES_LOCAL_PREFETCH = 1024;
   size_t offset;
-  size_t size = elemSize*len;
 
   if (chpl_nodeID == node) {
     // Prefetch only the first part since we don't want to blow
@@ -79,7 +78,7 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
     }
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_prefetch(node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_cache_comm_prefetch(node, raddr, size, typeIndex, ln, fn);
 #endif
   } else {
     // Can't do anything if we don't have a remote data cache
@@ -90,20 +89,20 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                       size_t elemSize, int32_t typeIndex, size_t len,
+                       size_t size, int32_t typeIndex,
                        int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
-    chpl_memcpy(raddr, addr, elemSize*len);
+    chpl_memcpy(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_put(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_cache_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
 #endif
   } else {
 #ifdef CHPL_TASK_COMM_PUT
-    chpl_task_comm_put(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_task_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
 #else
-    chpl_comm_put(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
 #endif
   }
 }
