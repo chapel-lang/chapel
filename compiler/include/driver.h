@@ -29,7 +29,6 @@
 
 class Timer;
 
-
 extern int  instantiation_limit;
 
 // optimization control flags
@@ -71,6 +70,8 @@ extern int  tuple_copy_limit;
 extern bool report_inlining;
 
 // Chapel Envs
+bool useDefaultEnv(std::string key);
+
 extern std::map<std::string, const char*> envMap;
 
 extern char CHPL_HOME[FILENAME_MAX+1];
