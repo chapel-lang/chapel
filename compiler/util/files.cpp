@@ -430,12 +430,12 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   std::string command = "";
 
   // Pass known variables in varMap into printchplenv by appending to command
-  for( std::map<std::string, const char*>::iterator ii=varMap.begin(); ii!=varMap.end(); ++ii)
+  for (std::map<std::string, const char*>::iterator ii=varMap.begin(); ii!=varMap.end(); ++ii)
   {
     command += ii->first + "=" + std::string(ii->second) + " ";
   }
 
-  // We don't want stderr until printchplenv supports a --suppresswarnings flag
+  // Toss stderr away until printchplenv supports a '--suppresswarnings' flag
   command += std::string(CHPL_HOME) + "/util/printchplenv --simple 2> /dev/null";
 
   return runCommand(command);
@@ -449,19 +449,19 @@ std::string runCommand(std::string& command) {
 
   // Call command
   FILE* pipe = popen(command.c_str(), "r");
-  if(!pipe) {
+  if (!pipe) {
     error = "running " + command;
     USR_FATAL(error.c_str());
   }
 
   // Read output of command into result via buffer
-  while(!feof(pipe)) {
-    if(fgets(buffer, 256, pipe) != NULL) {
+  while (!feof(pipe)) {
+    if (fgets(buffer, 256, pipe) != NULL) {
       result += buffer;
     }
   }
 
-  if(pclose(pipe)) {
+  if (pclose(pipe)) {
     error = command + " did not run successfully";
     USR_FATAL(error.c_str());
   }
@@ -555,7 +555,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
 
   // Generate one variable containing all envMap information to pass to printchplenv
-  for( std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env)
+  for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env)
   {
     if(!useDefaultEnv(env->first)) {
       chplmakeallvars += env->first + "=" + std::string(env->second) + " ";
