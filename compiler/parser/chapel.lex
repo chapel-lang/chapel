@@ -321,6 +321,7 @@ int processNewline(yyscan_t scanner) {
 void stringBufferInit() {
   if (stringBuffer == NULL) {
     stringBuffer  = (char*) malloc(1024);
+    stringBuffer[0] = "\0";
   }
 }
 

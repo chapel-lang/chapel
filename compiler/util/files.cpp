@@ -555,11 +555,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n\n", tmpDirName);
 
   // Generate one variable containing all envMap information to pass to printchplenv
-  for( std::map<std::string, const char*>::iterator ii=envMap.begin(); ii!=envMap.end(); ++ii)
+  for( std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env)
   {
-    // Avoid passing CHPL_THREADS because printchplenv will throw warning
-    if (ii->first != "CHPL_THREADS") {
-      chplmakeallvars += ii->first + "=" + std::string(ii->second) + " ";
+    if(!useDefaultEnv(env->first)) {
+      chplmakeallvars += env->first + "=" + std::string(env->second) + " ";
     }
   }
 

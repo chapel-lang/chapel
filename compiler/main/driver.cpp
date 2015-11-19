@@ -853,15 +853,20 @@ static void printStuff(const char* argv0) {
   }
 }
 
-static bool useDefaultEnv(std::string key) {
+bool useDefaultEnv(std::string key) {
   // Check conditions for which default value should override argument provided
 
-  // For Cray programming environments, we must infer target_arch from default
-  // Note: When CHPL_TARGET_ARCH is processed, CHPL_HOST_COMPILER is already set in envMap, due to the order of printchplenv output 
+  // For Cray programming environments, we must infer CHPL_TARGET_ARCH
+  // Note: When CHPL_TARGET_ARCH is processed, CHPL_HOST_COMPILER is already
+  // set in envMap, due to the order of printchplenv output
   if(key == "CHPL_TARGET_ARCH") {
-    if(strstr(envMap["CHPL_HOST_COMPILER"], "cray-prgenv") != NULL) {
+    if(strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
       return true;
     }
+  }
+  // CHPL_THREADS should always be inferred
+  else if(key == "CHPL_THREADS") {
+    return true;
   }
 
   return false;

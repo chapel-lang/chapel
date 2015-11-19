@@ -29,6 +29,7 @@
 
 class Timer;
 
+bool useDefaultEnv(std::string key);
 
 extern int  instantiation_limit;
 
