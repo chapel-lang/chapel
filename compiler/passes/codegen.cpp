@@ -585,6 +585,7 @@ static void codegen_header_compilation_config() {
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
+    genGlobalString("CHPL_HOME",           CHPL_HOME);
 
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks);
     genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote);
@@ -605,6 +606,7 @@ static void codegen_header_compilation_config() {
             CHPL_HOME);
     for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
       if (env->first != "CHPL_HOME") {
+        genGlobalString(env->first.c_str(), env->second);
         fprintf(cfgfile.fptr,
           "printf(\"%%s\", \"  %s: %s\\n\");\n",
           env->first.c_str(),

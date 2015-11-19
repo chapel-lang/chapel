@@ -853,8 +853,24 @@ static void printStuff(const char* argv0) {
   }
 }
 
-static void populateEnvMap()
-{
+static bool useDefaultEnv(std::string key) {
+  // Check conditions for which default value should override argument provided
+
+  // For Cray programming environments, we must infer target_arch from default
+  // Note: When CHPL_TARGET_ARCH is processed, CHPL_HOST_COMPILER is already set in envMap, due to the order of printchplenv output 
+  if(key == "CHPL_TARGET_ARCH") {
+    if(strstr(envMap["CHPL_HOST_COMPILER"], "cray-prgenv") != NULL) {
+      return true;
+    }
+  }
+
+  return false;
+
+
+
+}
+
+static void populateEnvMap() {
   // Destructively parses output of 'printchplenv --simple' for "key=value"
   // pairs and populates global envMap if the key has not been already set from
   // argument processing
@@ -888,7 +904,10 @@ static void populateEnvMap()
     value = line.substr(valuePos);
 
     // If key does not have a value in envMap, map it to the parsed value
-    if( envMap.find(key) == envMap.end() ) {
+    if(envMap.find(key) == envMap.end()) {
+      envMap[key] = strdup(value.c_str());
+    } else if(useDefaultEnv(key)) {
+      envMap.erase(key);
       envMap[key] = strdup(value.c_str());
     }
 

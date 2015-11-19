@@ -435,7 +435,8 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
     command += ii->first + "=" + std::string(ii->second) + " ";
   }
 
-  command += std::string(CHPL_HOME) + "/util/printchplenv --simple";
+  // We don't want stderr until printchplenv supports a --suppresswarnings flag
+  command += std::string(CHPL_HOME) + "/util/printchplenv --simple 2> /dev/null";
 
   return runCommand(command);
 }
