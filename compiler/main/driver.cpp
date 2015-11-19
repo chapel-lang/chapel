@@ -344,7 +344,7 @@ static void setHome(const ArgumentDescription* desc, const char* arg) {
 
   // Copy arg into CHPL_HOME
   size_t arglen = strlen(arg) + 1; // room for \0
-  if( arglen <= sizeof(CHPL_HOME) ) {
+  if (arglen <= sizeof(CHPL_HOME)) {
     memcpy(CHPL_HOME, arg, arglen);
     // Update envMap
     envMap["CHPL_HOME"] = CHPL_HOME;
@@ -571,7 +571,7 @@ static void setWarnSpecial(const ArgumentDescription* desc, const char* unused) 
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
-  if(printPassesFile == NULL) {
+  if (printPassesFile == NULL) {
     USR_WARN("Error opening printPassesFile: %s.", fileName);
   }
 }
@@ -859,13 +859,13 @@ bool useDefaultEnv(std::string key) {
   // For Cray programming environments, we must infer CHPL_TARGET_ARCH
   // Note: When CHPL_TARGET_ARCH is processed, CHPL_HOST_COMPILER is already
   // set in envMap, due to the order of printchplenv output
-  if(key == "CHPL_TARGET_ARCH") {
-    if(strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
+  if (key == "CHPL_TARGET_ARCH") {
+    if (strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
       return true;
     }
   }
   // CHPL_THREADS should always be inferred
-  else if(key == "CHPL_THREADS") {
+  else if (key == "CHPL_THREADS") {
     return true;
   }
 
@@ -909,9 +909,9 @@ static void populateEnvMap() {
     value = line.substr(valuePos);
 
     // If key does not have a value in envMap, map it to the parsed value
-    if(envMap.find(key) == envMap.end()) {
+    if (envMap.find(key) == envMap.end()) {
       envMap[key] = strdup(value.c_str());
-    } else if(useDefaultEnv(key)) {
+    } else if (useDefaultEnv(key)) {
       envMap.erase(key);
       envMap[key] = strdup(value.c_str());
     }
@@ -952,7 +952,7 @@ static void setupChplGlobals(const char* argv0) {
   // Set CHPL_HOME, populate envMap with defaults, and set global CHPL_vars
 
   // Set CHPL_HOME the traditional way if it was not passed as an argument
-  if( envMap.find("CHPL_HOME") == envMap.end() )
+  if (envMap.find("CHPL_HOME") == envMap.end())
   {
     setupChplHome(argv0);
 
@@ -1004,7 +1004,7 @@ static void setMaxCIndentLen() {
 }
 
 static void setWidePointersStruct() {
-  if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
+  if (0 == strcmp(CHPL_WIDE_POINTERS, "struct")) {
     widePointersStruct = true;
   } else {
     widePointersStruct = false;
