@@ -6089,6 +6089,17 @@ is equivalent to
   block->insertAtTail(new CallExpr("foo", tmp));
   block->insertAtTail(new CallExpr("foo", call));
 
+UNRESOLVED SYMBOLS
+
+An unresolved symbol can be referenced via its name without quotes.
+For example, the code
+
+  block->insertAtTail("foo(bar)");
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr("foo", new UnresolvedSymExpr("bar")));
+
 PRIMITIVES
 
 Primitives can be defined by enclosing the name of the primitive in
