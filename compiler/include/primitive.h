@@ -268,6 +268,8 @@ enum PrimitiveTag {
                           // that can be passed into argument bundles
   PRIM_LOOKUP_FILENAME,   // Given an index, get a given filename (c_string)
 
+  PRIM_GET_COMPILER_VAR,
+
   NUM_KNOWN_PRIMS
 };
 

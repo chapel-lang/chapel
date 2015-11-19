@@ -38,7 +38,7 @@ extern bool fDocsHTML;
 extern bool fDocsIncludeExterns;
 
 
-void docsArgSetCommentLabel(const ArgumentState* arg_state, const char* label);
+void docsArgSetCommentLabel(const ArgumentDescription* desc, const char* label);
 
 
 extern ArgumentDescription docs_arg_desc[];

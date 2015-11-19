@@ -391,6 +391,7 @@ void
 initPrimitive() {
   primitives[PRIM_UNKNOWN] = NULL;
 
+
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
@@ -647,6 +648,8 @@ initPrimitive() {
 
   prim_def(PRIM_FIND_FILENAME_IDX, "chpl_findFilenameIdx", returnInfoUInt64, false, false);
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
+
+  prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoStringC);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;
