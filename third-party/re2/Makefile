@@ -17,9 +17,11 @@ endif
 #
 ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
 ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
-CHPL_RE2_CXXFLAGS=-mmic
+CHPL_RE2_CXXFLAGS += -mmic
 endif
 endif
+
+CHPL_RE2_CXXFLAGS += $(CFLAGS)
 
 default: all
 
