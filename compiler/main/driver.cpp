@@ -112,6 +112,7 @@ bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
+bool fUserSetStackChecks = false;
 bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
 bool fEnableTaskTracking = false;
@@ -576,10 +577,14 @@ static void setPrintPassesFile(const ArgumentDescription* desc, const char* file
 }
 
 static void setLocal (const ArgumentDescription* desc, const char* unused) {
-  // Used in postLocal() to set fLocal if user threw --[no]local
+  // Used in postLocal() to set fLocal if user threw flag
   fUserSetLocal = true;
 }
 
+static void setStackChecks (const ArgumentDescription* desc, const char* unused) {
+  // Used in postStackChecks() to set fNoStackChecks if user threw flag
+  fUserSetStackChecks= true;
+}
 
 /*
 Flag types:
@@ -671,7 +676,7 @@ static ArgumentDescription arg_desc[] = {
  {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
- {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", NULL},
+ {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", setStackChecks},
  {"cast-checks", ' ', NULL, "Enable [disable] checks in safeCast calls", "n", &fNoCastChecks, NULL, NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
@@ -959,7 +964,7 @@ static void setupChplGlobals(const char* argv0) {
 }
 
 static void postStackCheck() {
-  if (!fNoStackChecks) {
+  if (!fNoStackChecks && fUserSetStackChecks) {
     if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
       USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
     }
