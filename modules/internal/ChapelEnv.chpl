@@ -33,7 +33,6 @@ module ChapelEnv {
   param CHPL_COMM_SUBSTRATE  = __primitive("get compiler variable", "CHPL_COMM_SUBSTRATE");
   param CHPL_GASNET_SEGMENT  = __primitive("get compiler variable", "CHPL_GASNET_SEGMENT");
   param CHPL_TASKS           = __primitive("get compiler variable", "CHPL_TASKS");
-  param CHPL_THREADS         = __primitive("get compiler variable", "CHPL_THREADS");
   param CHPL_LAUNCHER        = __primitive("get compiler variable", "CHPL_LAUNCHER");
   param CHPL_TIMERS          = __primitive("get compiler variable", "CHPL_TIMERS");
   param CHPL_MEM             = __primitive("get compiler variable", "CHPL_MEM");

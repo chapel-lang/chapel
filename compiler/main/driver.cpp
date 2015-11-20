@@ -63,7 +63,6 @@ const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
 const char* CHPL_GASNET_SEGMENT = NULL;
 const char* CHPL_TASKS = NULL;
-const char* CHPL_THREADS = NULL;
 const char* CHPL_LAUNCHER = NULL;
 const char* CHPL_TIMERS = NULL;
 const char* CHPL_MEM = NULL;
@@ -864,15 +863,8 @@ bool useDefaultEnv(std::string key) {
       return true;
     }
   }
-  // CHPL_THREADS should always be inferred
-  else if (key == "CHPL_THREADS") {
-    return true;
-  }
 
   return false;
-
-
-
 }
 
 static void populateEnvMap() {
@@ -933,7 +925,6 @@ static void setChapelEnvs() {
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
   CHPL_GASNET_SEGMENT  = envMap["CHPL_GASNET_SEGMENT"];
   CHPL_TASKS           = envMap["CHPL_TASKS"];
-  CHPL_THREADS         = envMap["CHPL_THREADS"];
   CHPL_LAUNCHER        = envMap["CHPL_LAUNCHER"];
   CHPL_TIMERS          = envMap["CHPL_TIMERS"];
   CHPL_MEM             = envMap["CHPL_MEM"];
