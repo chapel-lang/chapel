@@ -1727,12 +1727,11 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
                  page+start, entry->base.node, (void*) (entry->raddr+start),
                  (int) got_len));
 
-          handle = 
+          handle =
             chpl_comm_put_nb(page+start, /*local addr*/
                              entry->base.node,
                              (void*)(entry->raddr+start),
-                             1 /*elmsize*/, -1/*typei*/,
-                             got_len /*len*/,
+                             got_len /*size*/, -1/*typei*/,
                              -1, NULL);
 
           // Save the handle in the list of pending requests.
@@ -2475,8 +2474,8 @@ void cache_get(struct rdcache_s* cache,
 #endif
     handle = 
       chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
-                       node, (void*) ra_line, 1 /*elmsize*/, -1/*typei*/,
-                       ra_line_end - ra_line /*len*/,
+                       node, (void*) ra_line,
+                       ra_line_end - ra_line /*size*/, -1/*typei*/,
                        ln, fn);
 #ifdef TIME
     clock_gettime(CLOCK_REALTIME, &start_get2);
@@ -2789,13 +2788,12 @@ void chpl_cache_fence(int acquire, int release, int ln, c_string fn)
 }
 
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                         size_t elemSize, int32_t typeIndex, size_t len,
+                         size_t size, int32_t typeIndex,
                          int ln, c_string fn)
 {
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  size_t size = elemSize*len;
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p from %p\n", chpl_nodeID, (int) chpl_task_getId(), fn?fn:"", ln, (int) size, node, raddr, addr));
   if (chpl_verbose_comm)
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn?fn:"", ln, node);
@@ -2811,13 +2809,12 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                         size_t elemSize, int32_t typeIndex, size_t len,
+                         size_t size, int32_t typeIndex,
                          int ln, c_string fn)
 {
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  size_t size = elemSize*len;
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from %d:%p to %p\n", chpl_nodeID, (int) chpl_task_getId(), fn?fn:"", ln, (int) size, node, raddr, addr));
   if (chpl_verbose_comm)
     printf("%d: %s:%d: remote put to %d\n", chpl_nodeID, fn?fn:"", ln, node);
@@ -2832,12 +2829,11 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t elemSize, int32_t typeIndex, size_t len,
+                              size_t size, int32_t typeIndex,
                               int ln, c_string fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  size_t size = elemSize*len;
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
   if (chpl_verbose_comm)
     printf("%d: %s:%d: remote prefetch from %d\n", chpl_nodeID, fn?fn:"", ln, node);
