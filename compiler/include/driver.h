@@ -86,7 +86,6 @@ extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_TASKS;
-extern const char* CHPL_THREADS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
 extern const char* CHPL_MEM;

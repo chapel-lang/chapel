@@ -746,8 +746,6 @@ void setupModulePaths() {
                       CHPL_LOCALE_MODEL));
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/tasktable/",
                       fEnableTaskTracking ? "on" : "off"));
-  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/threads/",
-                      CHPL_THREADS));
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/tasks/",
                       CHPL_TASKS));
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/comm/",
