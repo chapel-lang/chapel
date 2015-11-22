@@ -3,8 +3,8 @@
 User's Guide
 ============
 
-Base Language:
---------------
+Base Language
+-------------
 
 .. toctree::
    :maxdepth: 1
@@ -13,8 +13,8 @@ Base Language:
    base/01-consoleOutput
    base/10-variables
 
-Task Parallelism:
------------------
+Task Parallelism
+----------------
 
 .. toctree::
    :maxdepth: 1
@@ -24,17 +24,17 @@ Task Parallelism:
    taskpar/10-begin
 
 
-Data Parallelism:
------------------
+Data Parallelism
+----------------
 
 
-Locality:
----------
+Locality
+--------
 
 .. toctree::
    :maxdepth: 1
    :glob:
 
    locality/01-locales
+   locality/05-multilocale
    locality/10-LocalesArray
-   
