@@ -1,7 +1,14 @@
 :title: Users Guide: Locale Type and Variables
 
+.. default-domain:: chpl
+
 Locale Type and Variables
 =========================
+
+Chapel supports a locale type and a number of built-in variables that
+permit a programmer to refer to, and reason about, the locales on
+which the program is running.  These are as follows:
+
 
 The Locale Type
 ---------------
@@ -17,15 +24,8 @@ memory.
 
 .. TODO: Fix the following hyperlink.  Ideally, would want it to point directly to the 'class locale'
 
-For details on this interface, refer to :ref:ChapelLocale:class:locale:.
+For details on this interface, refer to :chpl:class:`ChapelLocale.locale`.
 
-
-Built-in Locale Variables
-=========================
-
-Chapel supports a number of built-in variables that permit a
-programmer to refer abstractly to the locales on which the program is
-running.  These are as follows:
 
 *numLocales*
 ------------
