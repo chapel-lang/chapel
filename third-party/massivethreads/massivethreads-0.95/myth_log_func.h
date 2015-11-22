@@ -227,12 +227,12 @@ static inline void myth_log_flush_body(void)
 			char n[100];
 			myth_log_get_thread_annotation(all_logs,n_annotation,le2->u.ctx_switch.th,le2->u.ctx_switch.recycle_count,n);
 #endif
-			if (rank!=le2->rank ||
-				le2->u.ctx_switch.th==THREAD_PTR_SCHED_TERM ||
+			int break_execution = (rank!=le2->rank) || (le2->u.ctx_switch.th==THREAD_PTR_SCHED_TERM);
 #ifdef MYTH_LOG_MERGE_SAME_NAME_THREADS
-				strcmp(th_name,n)!=0 ||
+			break_execution = break_execution || (strcmp(th_name,n)!=0);
 #endif
-				i==n_switch+n_annotation-1-1){
+			break_execution = break_execution || (i==n_switch+n_annotation-1-1);
+			if (break_execution){
 				break;
 			}
 			i++;
