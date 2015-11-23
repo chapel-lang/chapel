@@ -1676,7 +1676,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     }
     GEPLocs.push_back(index.val);
 
-    ret.val = info->builder->CreateInBoundsGEP(base.val, GEPLocs);
+    ret.val = info->builder->CreateGEP(base.val, GEPLocs);
 #endif
   }
 
@@ -5531,7 +5531,7 @@ GenRet CallExpr::codegen() {
         GEPLocs[0] = llvm::Constant::getNullValue(
             llvm::IntegerType::getInt64Ty(info->module->getContext()));
         GEPLocs[1] = index.val;
-        fnPtrPtr = info->builder->CreateInBoundsGEP(ftable.val, GEPLocs);
+        fnPtrPtr = info->builder->CreateGEP(ftable.val, GEPLocs);
         fnPtr = info->builder->CreateLoad(fnPtrPtr);
         // Tell TBAA ftable ptrs don't alias other things, are constant
         fnPtr->setMetadata(llvm::LLVMContext::MD_tbaa, info->tbaaFtableNode);
@@ -5594,7 +5594,7 @@ GenRet CallExpr::codegen() {
         //GEPLocs[0] = llvm::Constant::getNullValue(
         //    llvm::IntegerType::getInt64Ty(info->module->getContext()));
         GEPLocs[0] = index.val;
-        fnPtrPtr = info->builder->CreateInBoundsGEP(table.val, GEPLocs);
+        fnPtrPtr = info->builder->CreateGEP(table.val, GEPLocs);
         llvm::Instruction* fnPtrV = info->builder->CreateLoad(fnPtrPtr);
         // Tell TBAA vmtable loads don't alias anything else, are constant 
         fnPtrV->setMetadata(llvm::LLVMContext::MD_tbaa, info->tbaaVmtableNode);
