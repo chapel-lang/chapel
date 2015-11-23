@@ -87,6 +87,7 @@ static void cullAutoDestroyFlags()
   }
 }
 
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -101,7 +102,10 @@ static void cullExplicitAutoDestroyFlags()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (fn->hasFlag(FLAG_INIT_COPY_FN) == true)
+    Symbol* retVar = fn->getReturnSymbol();
+
+    if (fn->hasFlag(FLAG_INIT_COPY_FN) == true ||
+        isString(retVar)               == true)
     {
       cullTransitively(fn);
     }
@@ -113,32 +117,46 @@ static void cullTransitively(FnSymbol* fn)
   Map<Symbol*, Vec<SymExpr*>*> defMap;
   Map<Symbol*, Vec<SymExpr*>*> useMap;
   std::vector<DefExpr*>        defs;
-  Symbol*                      retVar = fn->getReturnSymbol();
+  std::set<Symbol*>            exclude;
+
+  Symbol*                      retVar     = fn->getReturnSymbol();
+  bool                         hasChanged = true;
 
   buildDefUseMaps(fn, defMap, useMap);
 
   collectDefExprs(fn, defs);
 
-  for_vector(DefExpr, def, defs)
+  exclude.insert(retVar);
+
+  while (hasChanged == true)
   {
-    if (VarSymbol* var = toVarSymbol(def->sym))
+    hasChanged = false;
+
+    for_vector(DefExpr, def, defs)
     {
-      // Examine only those bearing an autodestroy flag.
-      if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-          ! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
-        continue;
-
-      // Look for the specific breaking case and amend that.
-      for_uses(se, useMap, var)
+      if (VarSymbol* var = toVarSymbol(def->sym))
       {
-        CallExpr* call = toCallExpr(se->parentExpr);
-
-        if (call                         &&
-            call->isPrimitive(PRIM_MOVE) &&
-            toSymExpr(call->get(1))->var == retVar)
+        for_uses(se, useMap, var)
         {
-          var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-          var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+          CallExpr* call = toCallExpr(se->parentExpr);
+
+          if (call != NULL && call->isPrimitive(PRIM_MOVE) == true)
+          {
+            SymExpr* expr = toSymExpr(call->get(1));
+            Symbol*  dst  = expr->var;
+
+            if (exclude.find(dst) != exclude.end())
+            {
+              var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+              var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
+              if (exclude.find(var) == exclude.end())
+              {
+                exclude.insert(var);
+                hasChanged = true;
+              }
+            }
+          }
         }
       }
     }
