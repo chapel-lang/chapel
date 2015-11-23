@@ -827,9 +827,9 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
 // the return statement in that function with a copy of the call which uses
 // the result of the above call to that function.  Maybe a picture would
 // help.
-//   ('move' lhs (fn args ...))
+//   ('move' lhs    (fn args ...))
 //   . . .
-//   ('move useLhs (useFn lhs))
+//   ('move' useLhs (useFn lhs))
 // gets converted to
 //   (newFn args ... useLhs)
 //   . . .
@@ -1017,13 +1017,6 @@ fixupDestructors() {
                 new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
-        } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-          // Temporary expedient: Leak strings like crazy.
-          //          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
-          //          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          //          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-          //            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-          //          fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
         }
       }
 
@@ -1193,9 +1186,14 @@ static void insertAutoCopyTemps() {
 
       INT_ASSERT(move);
       SET_LINENO(move);
+
       Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
+
       move->insertBefore(new DefExpr(tmp));
-      move->insertAfter(new CallExpr(PRIM_MOVE, sym, new CallExpr(autoCopyMap.get(sym->type), tmp)));
+      move->insertAfter(new CallExpr(PRIM_MOVE,
+                                     sym,
+                                     new CallExpr(autoCopyMap.get(sym->type),
+                                                  tmp)));
       move->get(1)->replace(new SymExpr(tmp));
     }
   }
