@@ -480,6 +480,7 @@ static bool       stmtIsLabelDefnBeforeReturn(Expr* stmt);
 static bool       stmtIsLabelDefn(Expr* stmt);
 static bool       stmtIsReturn(Expr* stmt);
 static bool       stmtSetsFormalTemp(Expr* stmt);
+static bool       stmtMovesToReturnArg(Expr* stmt);
 static bool       stmtIsDownEndCount(Expr* stmt);
 
 static void       updateBlockExit(Expr*            stmt,
@@ -490,7 +491,6 @@ static void insertAutoDestroyCalls() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     // Ignore BlockStmts for a Module
     if (isModuleSymbol(block->parentSymbol) == false) {
-
       Vec<VarSymbol*> vars;
       bool            primaryDestroys = false;
 
@@ -656,20 +656,30 @@ static bool stmtMustExitBlock(Expr* stmt) {
 }
 
 // Return true if this is a label statement that marks the function
-// epilogue.  The epilogue might be just a return statement or it
-// might contain a list of statements that copy into formal temps
-// followed by a return statement
+// epilogue. The epilogue might be
+//   1) a return statement
+//
+//   2) a list of statements that copy into formal temps
+//      followed by a return statement
+//
+//   3) a move that copies that write the return-value-variable
+//      followed by a void return
 
 static bool stmtIsLabelDefnBeforeReturn(Expr* stmt) {
-  Expr* ptr    = stmt->next;
-  bool  retval = stmtIsLabelDefn(stmt);
+  bool retval = stmtIsLabelDefn(stmt);
 
-  while (retval == true && ptr != NULL) {
-    if (stmtIsReturn(ptr)       == false &&
-        stmtSetsFormalTemp(ptr) == false)
-      retval = false;
+  if (retval == true) {
+    Expr* ptr = stmt->next;
 
-    ptr = ptr->next;
+    while (retval == true && ptr != NULL) {
+      if (stmtIsReturn(ptr)         == false &&
+          stmtSetsFormalTemp(ptr)   == false &&
+          stmtMovesToReturnArg(ptr) == false)
+
+        retval = false;
+
+      ptr = ptr->next;
+    }
   }
 
   return retval;
@@ -705,6 +715,23 @@ static bool stmtSetsFormalTemp(Expr* stmt) {
         if (SymExpr* expr = toSymExpr(call->get(2))) {
           retval = expr->var->hasFlag(FLAG_FORMAL_TEMP);
         }
+      }
+    }
+  }
+
+  return retval;
+}
+
+static bool stmtMovesToReturnArg(Expr* stmt) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (call->isPrimitive(PRIM_MOVE) == true) {
+      SymExpr* lhs = toSymExpr(call->get(1));
+      SymExpr* rhs = toSymExpr(call->get(2));
+
+      if (lhs != NULL && rhs != NULL) {
+        retval = rhs->var->hasFlag(FLAG_RVV);
       }
     }
   }
