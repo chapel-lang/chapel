@@ -137,25 +137,306 @@ static void cullExplicitAutoDestroyFlags()
 }
 
 
-/******************************** | *********************************
-*                                                                   *
-* A set of functions that scan every BlockStmt to determine whether *
-* it is necessary to insert autoDestroy calls at any of the exit    *
-* points from the block.                                            *
-*                                                                   *
-* This computation consists of a linear scan of every BlockStmt     *
-* scanning for                                                      *
-*                                                                   *
-*    1) Statements that define a variable that requires an          *
-*       autoDestroy operation.                                      *
-*                                                                   *
-*    2) Statements that contain, recursively, a transfer of         *
-*       control that exits the BlockStmt being scanned.             *
-*                                                                   *
-*    3) Statements "at the end" of the BlockStmt.                   *
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+* Noakes 2015/11/23                                                           *
+*                                                                             *
+* The transformation beginning at returnRecordsByReferenceArguments() locates *
+* a subset of the calls to functions that return a record-like type by value  *
+* and creates a clone of the function that                                    *
+*                                                                             *
+*   a) adds a formal with ref-intent                                          *
+*   b) has return type void                                                   *
+*   c) integrates a small amount of code past the call site in to the tail    *
+*      of the cloned function.                                                *
+*                                                                             *
+* and then adjusts the neighborhood near the call-site appropriately.         *
+*                                                                             *
+* It has been determined that this transformation should be applied uniformly *
+* to record-like types.  This new implementation follows the theme of the     *
+* the current transformation but                                              *
+*                                                                             *
+*   1) Modifies the function rather than creating a clone                     *
+*   2) Does not fold any other code in to the tail                            *
+*                                                                             *
+* This implementation should be broadly applicable to record-like types but   *
+* is only applied to the new string-as-record type during the initial         *
+* integration.                                                                *
+*                                                                             *
+************************************** | *************************************/
+
+//
+// Capture a function and all of the calls to it
+//
+class ReturnByRef
+{
+  //
+  // Class interface
+  //
+public:
+  static void             apply();
+
+private:
+  typedef std::map<int, ReturnByRef*> RefMap;
+
+  static void             returnByRefCollectCalls(RefMap& calls);
+  static FnSymbol*        theTransformableFunction(CallExpr* call);
+  static bool             isTransformableFunction(FnSymbol* fn);
+  static void             transformFunction(FnSymbol* fn);
+  static ArgSymbol*       addFormal(FnSymbol* fn);
+  static void             insertAssignmentToFormal(FnSymbol*  fn,
+                                                   ArgSymbol* formal);
+  static void             updateReturnStatement(FnSymbol* fn);
+  static void             updateReturnType(FnSymbol* fn);
+
+  //
+  // Instance interface
+  //
+private:
+
+                          ReturnByRef(FnSymbol* fn);
+                          ReturnByRef();
+
+  void                    addCall(CallExpr* call);
+
+  void                    transform();
+  void                    transformMove(CallExpr* moveExpr);
+
+  FnSymbol*               mFunction;
+  std::vector<CallExpr*>  mCalls;
+};
+
+void ReturnByRef::apply()
+{
+  RefMap           map;
+  RefMap::iterator iter;
+
+  returnByRefCollectCalls(map);
+
+  for (iter = map.begin(); iter != map.end(); iter++)
+    iter->second->transform();
+
+  for (int i = 0; i < virtualMethodTable.n; i++)
+  {
+    if (virtualMethodTable.v[i].key)
+    {
+      int  numFns = virtualMethodTable.v[i].value->n;
+
+      for (int j = 0; j < numFns; j++)
+      {
+        FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
+
+        if (isTransformableFunction(fn))
+          transformFunction(fn);
+      }
+    }
+  }
+}
+
+//
+// Collect functions that should be converted to return by ref
+// and all calls to these functions.
+//
+
+void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
+{
+  RefMap::iterator iter;
+
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (FnSymbol* fn = theTransformableFunction(call))
+    {
+      RefMap::iterator iter = calls.find(fn->id);
+      ReturnByRef*     info = NULL;
+
+      if (iter == calls.end())
+      {
+        info          = new ReturnByRef(fn);
+        calls[fn->id] = info;
+      }
+      else
+      {
+        info          = iter->second;
+      }
+
+      info->addCall(call);
+    }
+  }
+}
+
+FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
+{
+  // The common case of a user-level call to a resolved function
+  FnSymbol* theCall = call->isResolved();
+
+  // Also handle the PRIMOP for a virtual method call
+  if (theCall == NULL)
+  {
+    if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) == true)
+    {
+      SymExpr* arg1 = toSymExpr(call->get(1));
+
+      theCall = toFnSymbol(arg1->var);
+    }
+  }
+
+  return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
+}
+
+//
+// In this first effort, only functions that return strings
+//
+
+bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
+{
+  bool retval = false;
+
+  if (AggregateType* type = toAggregateType(fn->retType))
+  {
+    if      (fn->hasFlag(FLAG_INIT_COPY_FN) == true)
+      retval = false;
+
+    else if (fn->hasFlag(FLAG_AUTO_COPY_FN) == true)
+      retval = false;
+
+    // Function is an iterator "helper"
+    else if (fn->hasFlag(FLAG_AUTO_II)      == true)
+      retval = false;
+
+    // Noakes: 2015/11/23.  Only new string type for now
+    else if (isString(type)                 == true)
+      retval = true;
+
+    else
+      retval = false;
+  }
+
+  return retval;
+}
+
+void ReturnByRef::transformFunction(FnSymbol* fn)
+{
+  ArgSymbol* formal = addFormal(fn);
+
+  insertAssignmentToFormal(fn, formal);
+  updateReturnStatement(fn);
+  updateReturnType(fn);
+}
+
+ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
+{
+  SET_LINENO(fn);
+
+  Type*          type    = fn->retType;
+  AggregateType* refType = type->refType;
+  IntentTag      intent  = blankIntentForType(refType);
+  ArgSymbol*     formal  = new ArgSymbol(intent, "_retArg", refType);
+
+  fn->insertFormalAtTail(formal);
+
+  return formal;
+}
+
+void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
+{
+  Expr*     returnPrim  = fn->body->body.tail;
+
+  SET_LINENO(returnPrim);
+
+  CallExpr* returnCall  = toCallExpr(returnPrim);
+  Expr*     returnValue = returnCall->get(1)->remove();
+  CallExpr* moveExpr    = new CallExpr(PRIM_MOVE, formal, returnValue);
+
+  returnPrim->insertBefore(moveExpr);
+}
+
+void ReturnByRef::updateReturnStatement(FnSymbol* fn)
+{
+  Expr* returnPrim  = fn->body->body.tail;
+
+  SET_LINENO(returnPrim);
+
+  returnPrim->replace(new CallExpr(PRIM_RETURN, gVoid));
+}
+
+void ReturnByRef::updateReturnType(FnSymbol* fn)
+{
+  fn->retType = dtVoid;
+}
+
+ReturnByRef::ReturnByRef(FnSymbol* fn)
+{
+  mFunction = fn;
+}
+
+void ReturnByRef::addCall(CallExpr* call)
+{
+  mCalls.push_back(call);
+}
+
+void ReturnByRef::transform()
+{
+  // Update the function
+  transformFunction(mFunction);
+
+  // And all of the call sites
+  for (size_t i = 0; i < mCalls.size(); i++)
+  {
+    CallExpr* call   = mCalls[i];
+    Expr*     parent = call->parentExpr;
+
+    if (CallExpr* parentCall = toCallExpr(parent))
+    {
+      if (parentCall->isPrimitive(PRIM_MOVE))
+      {
+        transformMove(parentCall);
+      }
+      else
+      {
+        assert(false);
+      }
+    }
+    else
+    {
+      assert(false);
+    }
+  }
+}
+
+void ReturnByRef::transformMove(CallExpr* moveExpr)
+{
+  SET_LINENO(moveExpr);
+
+  Expr*     lhs      = moveExpr->get(1);
+  CallExpr* callExpr = toCallExpr(moveExpr->get(2));
+  Symbol*   useLhs   = toSymExpr(lhs)->var;
+  Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+
+  moveExpr->insertBefore(new DefExpr(refVar));
+  moveExpr->insertBefore(new CallExpr(PRIM_MOVE,
+                                      refVar,
+                                      new CallExpr(PRIM_ADDR_OF, useLhs)));
+
+  moveExpr->replace(callExpr->remove());
+  callExpr->insertAtTail(refVar);
+}
+
+/************************************* | **************************************
+*                                                                             *
+* A set of functions that scan every BlockStmt to determine whether it is     *
+* necessary to insert autoDestroy calls at any of the exit points from the    *
+* block.                                                                      *
+*                                                                             *
+* Perform a linear scan of every BlockStmt scanning for                       *
+*                                                                             *
+*    1) Statements that define a variable that requires an autoDestroy        *
+*                                                                             *
+*    2) Statements that contain, recursively, a transfer of control that      *
+*       exits the BlockStmt being scanned                                     *
+*                                                                             *
+*    3) Statements "at the end" of the BlockStmt.                             *
+*                                                                             *
+************************************** | *************************************/
 
 static bool       stmtDefinesAnAutoDestroyedVariable(Expr* stmt);
 static VarSymbol* stmtTheDefinedVariable(Expr* stmt);
@@ -1004,12 +1285,19 @@ static void insertReferenceTemps() {
 
 void callDestructors() {
   fixupDestructors();
+
   insertDestructorCalls();
   insertAutoCopyTemps();
+
   cullAutoDestroyFlags();
   cullExplicitAutoDestroyFlags();
+
+  ReturnByRef::apply();
+
   insertAutoDestroyCalls();
+
   returnRecordsByReferenceArguments();
+
   insertYieldTemps();
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();
