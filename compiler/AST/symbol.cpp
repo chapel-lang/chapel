@@ -515,7 +515,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               llvm::Type::getFloatTy(info->module->getContext()),
               i->v_complex64.i);
           ret = llvm::ConstantStruct::get(
-              llvm::cast<llvm::StructType>(getTypeLLVM("complex(64)")),
+              llvm::cast<llvm::StructType>(getTypeLLVM("_complex64")),
               elements);
           break;
         }
@@ -528,7 +528,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               llvm::Type::getDoubleTy(info->module->getContext()),
               i->v_complex128.i);
           ret = llvm::ConstantStruct::get(
-              llvm::cast<llvm::StructType>(getTypeLLVM("complex(128)")),
+              llvm::cast<llvm::StructType>(getTypeLLVM("_complex128")),
               elements);
           break;
         }
