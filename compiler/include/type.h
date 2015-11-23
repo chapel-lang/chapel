@@ -308,6 +308,8 @@ bool isDistClass(Type* type);
 bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
 
+bool isString(Type* type);
+
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);
 void codegenTypeStructures(FILE* hdrfile);

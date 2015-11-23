@@ -231,6 +231,9 @@ bool Symbol::isImmediate() const {
   return false;
 }
 
+bool isString(Symbol* symbol) {
+  return isString(symbol->type);
+}
 
 /******************************** | *********************************
 *                                                                   *
