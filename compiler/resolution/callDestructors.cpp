@@ -27,8 +27,6 @@
 #include "stmt.h"
 #include "symbol.h"
 
-#include <set>
-
 // Clear autoDestroy flags on variables that get assigned to the return value
 // of certain functions.
 //
@@ -40,28 +38,8 @@ static void cullAutoDestroyFlags()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (VarSymbol* ret = toVarSymbol(fn->getReturnSymbol()))
+    if (isVarSymbol(fn->getReturnSymbol()))
     {
-      // MPF: if this assert never fires, much of the code
-      // below is no longer necessary.
-      INT_ASSERT(! ret->hasFlag(FLAG_INSERT_AUTO_DESTROY));
-
-      // The return value of an initCopy function should not be autodestroyed.
-      // Normally, the return value of a function is autoCopied, but since
-      // autoCopy is typically defined in terms of initCopy, this would lead to
-      // infinite recursion.  That is, the return value of initCopy must be
-      // handled specially.
-      if (fn->hasFlag(FLAG_INIT_COPY_FN))
-        ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-
-      // This is just a workaround for memory management being handled
-      // specially for internally reference-counted types. (sandboxing)
-      TypeSymbol* ts = ret->type->symbol;
-      if (ts->hasFlag(FLAG_ARRAY) ||
-          ts->hasFlag(FLAG_DOMAIN))
-        ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-      // Do we need to add other record-wrapped types here?  Testing will tell.
-
       // NOTE 1: When the value of a record field is established in a default
       // constructor, it is initialized using a MOVE.  That means that
       // ownership of that value is shared between the formal_tmp and the
@@ -72,11 +50,12 @@ static void cullAutoDestroyFlags()
       // reference.  So here, we look for that case and remove it.
       if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       {
-        Map<Symbol*,Vec<SymExpr*>*> defMap;
-        Map<Symbol*,Vec<SymExpr*>*> useMap;
+        Map<Symbol*, Vec<SymExpr*>*> defMap;
+        Map<Symbol*, Vec<SymExpr*>*> useMap;
+        std::vector<DefExpr*>        defs;
+
         buildDefUseMaps(fn, defMap, useMap);
 
-        std::vector<DefExpr*> defs;
         collectDefExprs(fn, defs);
 
         for_vector(DefExpr, def, defs)
@@ -88,12 +67,13 @@ static void cullAutoDestroyFlags()
               continue;
 
             // Look for a use in a PRIM_SET_MEMBER where the field is a record
-            // type, and remove the flag.
-            // (We don't actually check that var is of record type, because
-            // chpl__autoDestroy() does nothing when applied to all other types.
+            // type, and remove the flag. (We don't actually check that var is
+            // of record type, because chpl__autoDestroy() is a NO-OP when
+            // applied to all other types.
             for_uses(se, useMap, var)
             {
               CallExpr* call = toCallExpr(se->parentExpr);
+
               if (call->isPrimitive(PRIM_SET_MEMBER) &&
                   toSymExpr(call->get(3))->var == var)
                 var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -108,12 +88,9 @@ static void cullAutoDestroyFlags()
 }
 
 
-// Clear autodestroy flags on variables that get assigned to the return symbols
-// of a function.
+// Clear autodestroy flags on variables that get assigned to the
+// return symbols of a function.
 //
-// Such a variable cannot be autodestroyed because its contents are owned by the
-// caller.  This weirdness is caused by changeRetToArgAndClone() when it pulls
-// the call utilizing a return value into the callee.
 static void cullExplicitAutoDestroyFlags()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
@@ -121,14 +98,14 @@ static void cullExplicitAutoDestroyFlags()
     if (! fn->hasFlag(FLAG_INIT_COPY_FN))
       continue;
 
-    Map<Symbol*,Vec<SymExpr*>*> defMap;
-    Map<Symbol*,Vec<SymExpr*>*> useMap;
+    Map<Symbol*, Vec<SymExpr*>*> defMap;
+    Map<Symbol*, Vec<SymExpr*>*> useMap;
+    std::vector<DefExpr*>        defs;
+    Symbol*                      retVar = fn->getReturnSymbol();
+
     buildDefUseMaps(fn, defMap, useMap);
 
-    std::vector<DefExpr*> defs;
     collectDefExprs(fn, defs);
-
-    Symbol* retVar = fn->getReturnSymbol();
 
     for_vector(DefExpr, def, defs)
     {
@@ -143,7 +120,9 @@ static void cullExplicitAutoDestroyFlags()
         for_uses(se, useMap, var)
         {
           CallExpr* call = toCallExpr(se->parentExpr);
-          if (call && call->isPrimitive(PRIM_MOVE) &&
+
+          if (call                         &&
+              call->isPrimitive(PRIM_MOVE) &&
               toSymExpr(call->get(1))->var == retVar)
           {
             var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
