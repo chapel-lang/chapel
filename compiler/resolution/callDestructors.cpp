@@ -87,53 +87,64 @@ static void cullAutoDestroyFlags()
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-// Clear autodestroy flags on variables that get assigned to the
-// return symbols of a function.
-//
+static void cullTransitively(FnSymbol* fn);
+
+// Clear autodestroy flags on variables that get
+// assigned to the return symbols of a function.
 static void cullExplicitAutoDestroyFlags()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (! fn->hasFlag(FLAG_INIT_COPY_FN))
-      continue;
-
-    Map<Symbol*, Vec<SymExpr*>*> defMap;
-    Map<Symbol*, Vec<SymExpr*>*> useMap;
-    std::vector<DefExpr*>        defs;
-    Symbol*                      retVar = fn->getReturnSymbol();
-
-    buildDefUseMaps(fn, defMap, useMap);
-
-    collectDefExprs(fn, defs);
-
-    for_vector(DefExpr, def, defs)
+    if (fn->hasFlag(FLAG_INIT_COPY_FN) == true)
     {
-      if (VarSymbol* var = toVarSymbol(def->sym))
+      cullTransitively(fn);
+    }
+  }
+}
+
+static void cullTransitively(FnSymbol* fn)
+{
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
+  std::vector<DefExpr*>        defs;
+  Symbol*                      retVar = fn->getReturnSymbol();
+
+  buildDefUseMaps(fn, defMap, useMap);
+
+  collectDefExprs(fn, defs);
+
+  for_vector(DefExpr, def, defs)
+  {
+    if (VarSymbol* var = toVarSymbol(def->sym))
+    {
+      // Examine only those bearing an autodestroy flag.
+      if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+          ! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+        continue;
+
+      // Look for the specific breaking case and amend that.
+      for_uses(se, useMap, var)
       {
-        // Examine only those bearing an autodestroy flag.
-        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-            ! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
-          continue;
+        CallExpr* call = toCallExpr(se->parentExpr);
 
-        // Look for the specific breaking case and amend that.
-        for_uses(se, useMap, var)
+        if (call                         &&
+            call->isPrimitive(PRIM_MOVE) &&
+            toSymExpr(call->get(1))->var == retVar)
         {
-          CallExpr* call = toCallExpr(se->parentExpr);
-
-          if (call                         &&
-              call->isPrimitive(PRIM_MOVE) &&
-              toSymExpr(call->get(1))->var == retVar)
-          {
-            var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-            var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
-          }
+          var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+          var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
         }
       }
     }
-
-    freeDefUseMaps(defMap, useMap);
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 
