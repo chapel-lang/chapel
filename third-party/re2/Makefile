@@ -21,6 +21,27 @@ CHPL_RE2_CXXFLAGS=-mmic
 endif
 endif
 
+
+# re2's makefile throws gcc specific flags that are not supported by the cray
+# compiler. This is intended to effectively replace the re2 makefile lines:
+#
+#     CXXFLAGS?=-Wall -O3 -g -pthread # can override
+#     RE2_CXXFLAGS?=-Wsign-compare -c -I. $(CCPCRE)  # required
+#     LDFLAGS?=-pthread
+#
+# with:
+#
+#     CXXFLAGS?= -O3
+#     RE2_CXXFLAGS?= -c -I. $(CCPCRE)
+#     LDFLAGS?=
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
+CHPL_RE2_CXXFLAGS=-O3
+CHPL_RE2_CFG_OPTIONS += LDFLAGS=
+CHPL_RE2_CFG_OPTIONS += 'RE2_CXXFLAGS= -c -I. $$(CCPCRE)'
+endif
+
+CHPL_RE2_CFG_OPTIONS += $(CHPL_RE2_MORE_CFG_OPTIONS)
+
 default: all
 
 all: re2
@@ -40,8 +61,8 @@ $(RE2_BUILD_SUBDIR):
 $(RE2_H_FILE): $(RE2_BUILD_SUBDIR)
 	cd re2 && \
 	$(MAKE) clean && \
-	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' obj/libre2.a && \
-	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' prefix=$(RE2_INSTALL_DIR) install-static && \
+	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) obj/libre2.a && \
+	$(MAKE) CXX='$(CXX)' NODEBUG= CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) prefix=$(RE2_INSTALL_DIR) install-static && \
 	mkdir -p ../build/$(RE2_UNIQUE_SUBDIR) && \
 	rm -rf ../build/$(RE2_UNIQUE_SUBDIR) && \
 	mv obj ../build/$(RE2_UNIQUE_SUBDIR)
