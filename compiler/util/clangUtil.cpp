@@ -1651,6 +1651,13 @@ void makeBinaryLLVM(void) {
     }
   }
 
+  // Start linker options with C args
+  // This is important to get e.g. -O3 -march=native
+  // since with LLVM we are doing link-time optimization.
+  // We know it's OK to inclued -I (e.g.) since we're calling
+  // clang++ to link so that it can optimize the .bc files.
+  options = cargs;
+
   if(debugCCode) {
     options += " -g";
   }
