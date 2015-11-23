@@ -648,6 +648,8 @@ static void normalize_returns(FnSymbol* fn) {
     // Handle declared return type.
     retval = newTemp("ret", fn->retType);
 
+    retval->addFlag(FLAG_RVV);
+
     if (fn->retTag == RET_PARAM)
       retval->addFlag(FLAG_PARAM);
 
