@@ -992,10 +992,11 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     //
     // TODO: Can myLocArr be used here to simplify things?
     //
+    const follow = arrSection.locDom.myBlock(myFollowThis);
     if arrSection.locale.id == here.id then local {
-      for i in myFollowThis do yield arrSection.myElems.this(i);
+      for i in follow do yield arrSection.myElems.this(i);
     } else {
-      for i in myFollowThis do yield arrSection.myElems.this(i);
+      for i in follow do yield arrSection.myElems.this(i);
     }
   } else {
     proc accessHelper(i) ref {

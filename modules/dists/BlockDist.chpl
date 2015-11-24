@@ -1128,7 +1128,8 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // counting. Simply put: don't slice inside a local block.
     //
     local {
-      for i in myFollowThisDom do yield arrSection.this(i);
+      const follow = arrSection.locDom.myBlock(myFollowThisDom);
+      for i in follow do yield arrSection.this(i);
     }
   } else {
     //
