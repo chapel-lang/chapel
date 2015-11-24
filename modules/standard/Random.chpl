@@ -665,11 +665,9 @@ class PCGRandomStream {
     //if arr.domain.type.strideable then
     //  compilerError("Shuffle requires non-strideable 1-D array");
 
-    var j = high;
-    while j > low {
-      var k = randlc(arr.domain.idxType, PCGRandomStreamPrivate_rngs, 1, j);
+    for j in low+1..high by -1 {
+      var k = randlc(arr.domain.idxType, PCGRandomStreamPrivate_rngs, low, j);
       arr[k] <=> arr[j];
-      j -= 1;
     }
   }
   /* Produce a random permutation.
