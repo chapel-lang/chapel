@@ -422,12 +422,12 @@ void ReturnByRef::transform()
       }
       else
       {
-        assert(false);
+        INT_ASSERT(false);
       }
     }
     else
     {
-      assert(false);
+      INT_ASSERT(false);
     }
   }
 }
