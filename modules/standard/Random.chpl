@@ -54,6 +54,10 @@
    for initializing the random stream seed, but only one option is
    implemented at present.
 
+   3. The :class:`RandomStreamInterface` is included here only
+   for documentation and does not help with compilation in any way.
+   In the future, we hope to turn it into an interface.
+
 */
 module Random {
 
@@ -86,8 +90,8 @@ const SeedGenerator: SeedGenerators;
 record SeedGenerators {
   /*
     Generate a seed based on the current time in microseconds as
-    reported by :proc:`Time.getCurrentTime`, ensuring that it
-    meets the PRNG's requirements.
+    reported by :proc:`Time.getCurrentTime`. Each RNG should
+    adjust a given seed to meet any requirements.
   */
   proc currentTime: int(64) {
     use Time;
@@ -102,16 +106,13 @@ record SeedGenerators {
 
 
 /*
-   Support for pseudorandom number generation
+   NAS Parallel Benchmark RNG
 
    The pseudorandom number generator (PRNG) implemented by
    this module uses the algorithm from the NAS Parallel Benchmarks
    (NPB, available at: http://www.nas.nasa.gov/publications/npb.html),
    which can be used to generate random values of type `real(64)`,
-   `imag(64)`, and `complex(128)`.  The longer-term intention is to
-   add knobs to select between a menu of additional PRNG algorithms
-   (such as the Mersenne twister) and element types (such as integer
-   types and other floating point widths).
+   `imag(64)`, and `complex(128)`.
 
    Paraphrasing the comments from the NPB reference implementation:
 
@@ -134,18 +135,6 @@ record SeedGenerators {
    `imag(64)`, and `complex(128)` complex values using a single PRNG
    algorithm.  As noted above, we would like to extend this support to
    include other algorithms and primitive types over time.
-
-   2. We plan to support general serial and parallel iterator methods
-   on :class:`RandomStream`; however, providing the full suite of
-   iterators is not possible with our current parallel iterator
-   framework.  Specifically, if :class:`RandomStream` is a follower in
-   a zippered iteration context, there is no way for it to update the
-   total number of random numbers generated in a safe/sane/coordinated
-   way.  We are exploring a revised leader-follower iterator framework
-   that would support this idiom (and other cursor-based ones).  With
-   Chapel's recent support for standalone parallel iterators, one
-   could define a standalone parallel iterator for
-   :class:`RandomStream`, but this effort has not yet been taken on.
 
 
 */
@@ -483,28 +472,12 @@ iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
 
 
 /*
-   Support for pseudorandom number generation
+   Permuted Linear Congurential Random Number Generator
 
-   This module provides PCG random number generation routines
+   This module provides PCG random number generation routines.
    See http://www.pcg-random.org/
    and the paper, "PCG: A Family of Simple Fast Space-Efficient Statistically
    Good Algorithms for Random Number Generation" by M.E. O'Neill.
-
-
-   Here is a list of currently open issues (TODOs) for this module:
-
-   1. We plan to support general serial and parallel iterator methods
-   on :class:`RandomStream`; however, providing the full suite of
-   iterators is not possible with our current parallel iterator
-   framework.  Specifically, if :class:`RandomStream` is a follower in
-   a zippered iteration context, there is no way for it to update the
-   total number of random numbers generated in a safe/sane/coordinated
-   way.  We are exploring a revised leader-follower iterator framework
-   that would support this idiom (and other cursor-based ones).  With
-   Chapel's recent support for standalone parallel iterators, one
-   could define a standalone parallel iterator for
-   :class:`RandomStream`, but this effort has not yet been taken on.
-
 */
 module PCGRandom {
 
