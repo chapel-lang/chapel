@@ -16,7 +16,6 @@ __all__ = [
     'chpl_mem',
     'chpl_regexp',
     'chpl_tasks',
-    'chpl_threads',
     'chpl_timers',
     'chpl_wide_pointers',
     'utils',

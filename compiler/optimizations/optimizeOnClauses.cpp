@@ -192,6 +192,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
 
   case PRIM_CHPL_COMM_GET:
   case PRIM_CHPL_COMM_PUT:
+  case PRIM_CHPL_COMM_ARRAY_GET:
+  case PRIM_CHPL_COMM_ARRAY_PUT:
   case PRIM_CHPL_COMM_REMOTE_PREFETCH:
   case PRIM_CHPL_COMM_GET_STRD:
   case PRIM_CHPL_COMM_PUT_STRD:

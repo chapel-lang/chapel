@@ -47,6 +47,9 @@
 #include <inttypes.h>
 #include <string>
 #include <sstream>
+#include <map>
+
+std::map<std::string, const char*> envMap;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
 
@@ -60,7 +63,6 @@ const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
 const char* CHPL_GASNET_SEGMENT = NULL;
 const char* CHPL_TASKS = NULL;
-const char* CHPL_THREADS = NULL;
 const char* CHPL_LAUNCHER = NULL;
 const char* CHPL_TIMERS = NULL;
 const char* CHPL_MEM = NULL;
@@ -74,15 +76,7 @@ const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 
-// quick and dirty
-#define MAX_CHPL_ENV_VARS 50
-int num_chpl_env_vars = 0;
-const char *chpl_env_vars[MAX_CHPL_ENV_VARS];
-const char *chpl_env_var_names[MAX_CHPL_ENV_VARS];
-
 bool widePointersStruct;
-
-static char makeArgument[256] = "";
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -118,6 +112,7 @@ bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
+bool fUserSetStackChecks = false;
 bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
 bool fEnableTaskTracking = false;
@@ -149,9 +144,10 @@ int scalar_replace_limit = 8;
 int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
-bool fLocal;   // initialized in setupOrderedGlobals() below
+bool fUserSetLocal = false;
+bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
-bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
+bool fHeterogeneous = false;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
 bool report_inlining = false;
@@ -311,87 +307,7 @@ static void setupChplHome(const char* argv0) {
 
   if( guess )
     free(guess);
-
-  parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
 }
-
-
-static void setupEnvVar(std::istringstream& iss, const char** var, const char* varname) {
-  std::string line;
-  std::string value;
-
-  std::getline(iss, line);
-  if (!iss.good() || line.find(varname) == std::string::npos) {
-    INT_FATAL(astr("Parsing ", varname));
-  }
-  value = line.substr(line.find('=')+1, std::string::npos);
-
-  *var = astr(value.c_str());  // astr call is to canonicalize
-  parseCmdLineConfig(varname, astr("\"", *var, "\""));
-}
-
-#define SETUP_ENV_VAR(varname) \
-  INT_ASSERT(num_chpl_env_vars < MAX_CHPL_ENV_VARS); \
-  setupEnvVar(iss, &varname, #varname); \
-  chpl_env_var_names[num_chpl_env_vars] = #varname; \
-  chpl_env_vars[num_chpl_env_vars] = varname; \
-  num_chpl_env_vars++;
-
-static void setupEnvVars() {
-  std::string vars = runUtilScript("printchplenv --simple");
-  std::istringstream iss(vars);
-
-  SETUP_ENV_VAR(CHPL_HOST_PLATFORM);
-  SETUP_ENV_VAR(CHPL_HOST_COMPILER);
-  SETUP_ENV_VAR(CHPL_TARGET_PLATFORM);
-  SETUP_ENV_VAR(CHPL_TARGET_COMPILER);
-  SETUP_ENV_VAR(CHPL_TARGET_ARCH);
-  SETUP_ENV_VAR(CHPL_LOCALE_MODEL);
-  SETUP_ENV_VAR(CHPL_COMM);
-  SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE);
-  SETUP_ENV_VAR(CHPL_GASNET_SEGMENT);
-  SETUP_ENV_VAR(CHPL_TASKS);
-  SETUP_ENV_VAR(CHPL_THREADS);
-  SETUP_ENV_VAR(CHPL_LAUNCHER);
-  SETUP_ENV_VAR(CHPL_TIMERS);
-  SETUP_ENV_VAR(CHPL_MEM);
-  SETUP_ENV_VAR(CHPL_MAKE);
-  SETUP_ENV_VAR(CHPL_ATOMICS);
-  SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS);
-  SETUP_ENV_VAR(CHPL_GMP);
-  SETUP_ENV_VAR(CHPL_HWLOC);
-  SETUP_ENV_VAR(CHPL_REGEXP);
-  SETUP_ENV_VAR(CHPL_WIDE_POINTERS);
-  SETUP_ENV_VAR(CHPL_LLVM);
-  SETUP_ENV_VAR(CHPL_AUX_FILESYS);
-}
-
-
-//
-// Can't rely on a variable initialization order for globals, so any
-// variables that need to be initialized in a particular order go here
-//
-static void setupOrderedGlobals(const char* argv0) {
-  // Set up CHPL_HOME first
-  setupChplHome(argv0);
-
-  // Then CHPL_* variables
-  setupEnvVars();
-
-  // These depend on the environment variables being set
-  fLocal = !strcmp(CHPL_COMM, "none");
-  bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
-             || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
-  // conservatively how much is needed for the current PGI compiler
-  if (gotPGI) fMaxCIdentLen = 1020;
-
-  if( 0 == strcmp(CHPL_WIDE_POINTERS, "struct") ) {
-    widePointersStruct = true;
-  } else {
-    widePointersStruct = false;
-  }
-}
-
 
 // NOTE: We are leaking memory here by dropping astr() results on the ground.
 static void recordCodeGenStrings(int argc, char* argv[]) {
@@ -422,30 +338,43 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   get_version(compileVersion);
 }
 
-static void setStaticLink(const ArgumentState* state, const char* arg_unused) {
-  if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
-    USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
-    fLinkStyle = LS_DEFAULT;
+static void setHome(const ArgumentDescription* desc, const char* arg) {
+  // Wipe previous CHPL_HOME when comp flag is given
+  CHPL_HOME[0] = '\0';
+
+  // Copy arg into CHPL_HOME
+  size_t arglen = strlen(arg) + 1; // room for \0
+  if (arglen <= sizeof(CHPL_HOME)) {
+    memcpy(CHPL_HOME, arg, arglen);
+    // Update envMap
+    envMap["CHPL_HOME"] = CHPL_HOME;
   } else {
-    fLinkStyle = LS_STATIC;
+    USR_FATAL("CHPL_HOME argument too long");
   }
 }
 
-static void setDynamicLink(const ArgumentState* state, const char* arg_unused) {
+static void setEnv(const ArgumentDescription* desc, const char* arg) {
+    // Copy desc->env because it is 'const char *'
+    std::string env = std::string(desc->env);
+    // Cut off underscore prefix so we are left with variable name
+    env.erase(0, 1);
+    envMap[env] = strdup(arg);
+}
+
+static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unused) {
   fLinkStyle = LS_DYNAMIC;
 }
 
-static void setChapelDebug(const ArgumentState* state, const char* arg_unused) {
+static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
 }
-
 
 // In order to handle accumulating ccflags arguments, the argument
 // processing calls this function. This function appends the flags
 // to the ccflags variable, so that multiple --ccflags arguments
 // all end up together in the ccflags variable (and will end up
 // being passed to the backend C compiler).
-static void setCCFlags(const ArgumentState* state, const char* arg) {
+static void setCCFlags(const ArgumentDescription* desc, const char* arg) {
   // Append arg to the end of ccflags.
   int curlen = strlen(ccflags);
   int space = sizeof(ccflags) - curlen - 1 - 1; // room for ' ' and \0
@@ -459,21 +388,15 @@ static void setCCFlags(const ArgumentState* state, const char* arg) {
   }
 }
 
-
-static void handleLibrary(const ArgumentState* state, const char* arg_unused) {
+static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
 }
 
-static void handleLibPath(const ArgumentState* state, const char* arg_unused) {
+static void handleLibPath(const ArgumentDescription* desc, const char* arg_unused) {
   addLibInfo(astr("-L", libraryFilename));
 }
 
-static void handleMake(const ArgumentState* state, const char* arg_unused) {
-  CHPL_MAKE = makeArgument;
-}
-
-
-static void handleIncDir(const ArgumentState* state, const char* arg_unused) {
+static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
   addIncInfo(incFilename);
 }
 
@@ -495,7 +418,7 @@ static void runCompilerInLLDB(int argc, char* argv[]) {
 }
 
 
-static void readConfig(const ArgumentState* state, const char* arg_unused) {
+static void readConfig(const ArgumentDescription* desc, const char* arg_unused) {
   // Expect arg_unused to be a string of either of these forms:
   // 1. name=value -- set the config param "name" to "value"
   // 2. name       -- set the boolean config param "name" to NOT("name")
@@ -520,15 +443,15 @@ static void readConfig(const ArgumentState* state, const char* arg_unused) {
   }
 }
 
-static void addModulePath(const ArgumentState* state, const char* newpath) {
+static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
   addFlagModulePath(newpath);
 }
 
-static void noteCppLinesSet(const ArgumentState* state, const char* unused) {
+static void noteCppLinesSet(const ArgumentDescription* desc, const char* unused) {
   userSetCppLineno = true;
 }
 
-static void verifySaveCDir(const ArgumentState* state, const char* unused) {
+static void verifySaveCDir(const ArgumentDescription* desc, const char* unused) {
   if (saveCDir[0] == '-') {
     USR_FATAL("--savec takes a directory name as its argument\n"
               "       (you specified '%s', assumed to be another flag)",
@@ -536,7 +459,7 @@ static void verifySaveCDir(const ArgumentState* state, const char* unused) {
   }
 }
 
-static void turnOffChecks(const ArgumentState* state, const char* unused) {
+static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
   fNoNilChecks    = true;
   fNoBoundsChecks = true;
   fNoFormalDomainChecks = true;
@@ -545,19 +468,7 @@ static void turnOffChecks(const ArgumentState* state, const char* unused) {
   fNoCastChecks = true;
 }
 
-static void handleStackCheck(const ArgumentState* state, const char* unused) {
-  if (!fNoStackChecks && strcmp(CHPL_TASKS, "massivethreads") == 0) {
-    USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
-  }
-}
-
-static void handleTaskTracking(const ArgumentState* state, const char* unused) {
-  if (fEnableTaskTracking && strcmp(CHPL_TASKS, "fifo") != 0) {
-    USR_WARN("Enabling task tracking with CHPL_TASKS=%s has no effect other than to slow down compilation", CHPL_TASKS);
-  }
-}
-
-static void setFastFlag(const ArgumentState* state, const char* unused) {
+static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   //
   // Enable all compiler optimizations, disable all runtime checks
   //
@@ -584,10 +495,10 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
-  turnOffChecks(state, unused);
+  turnOffChecks(desc, unused);
 }
 
-static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
+static void setFloatOptFlag(const ArgumentDescription* desc, const char* unused) {
   // It would be nicer if arg.cpp could handle
   // 3-value variables like this (set to false, set to true, not set)
   // But if this is the only such case, having a set function is an OK plan.
@@ -602,7 +513,7 @@ static void setFloatOptFlag(const ArgumentState* state, const char* unused) {
   }
 }
 
-static void setBaselineFlag(const ArgumentState* state, const char* unused) {
+static void setBaselineFlag(const ArgumentDescription* desc, const char* unused) {
   //
   // disable all chapel compiler optimizations
   //
@@ -626,45 +537,54 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   fConditionalDynamicDispatchLimit = 0;
 }
 
-static void setCacheEnable(const ArgumentState* state, const char* unused) {
+static void setCacheEnable(const ArgumentDescription* desc, const char* unused) {
   const char *val = fCacheRemote ? "true" : "false";
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
 
 
-static void setHtmlUser(const ArgumentState* state, const char* unused) {
+static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html = true;
   fdump_html_include_system_modules = false;
 }
 
-static void setWarnTupleIteration(const ArgumentState* state, const char* unused) {
+static void setWarnTupleIteration(const ArgumentDescription* desc, const char* unused) {
   const char *val = fNoWarnTupleIteration ? "false" : "true";
   parseCmdLineConfig("CHPL_WARN_TUPLE_ITERATION", astr("\"", val, "\""));
 }
 
-static void setWarnDomainLiteral(const ArgumentState* state, const char* unused) {
+static void setWarnDomainLiteral(const ArgumentDescription* desc, const char* unused) {
   const char *val = fNoWarnDomainLiteral ? "false" : "true";
   parseCmdLineConfig("CHPL_WARN_DOMAIN_LITERAL", astr("\"", val, "\""));
 }
 
-static void setWarnSpecial(const ArgumentState* state, const char* unused) {
+static void setWarnSpecial(const ArgumentDescription* desc, const char* unused) {
   fNoWarnSpecial = false;
 
   fNoWarnDomainLiteral = false;
-  setWarnDomainLiteral(state, unused);
+  setWarnDomainLiteral(desc, unused);
 
   fNoWarnTupleIteration = false;
-  setWarnTupleIteration(state, unused);
+  setWarnTupleIteration(desc, unused);
 }
 
-static void setPrintPassesFile(const ArgumentState* state, const char* fileName) {
+static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
-  if(printPassesFile == NULL) {
+  if (printPassesFile == NULL) {
     USR_WARN("Error opening printPassesFile: %s.", fileName);
   }
 }
 
+static void setLocal (const ArgumentDescription* desc, const char* unused) {
+  // Used in postLocal() to set fLocal if user threw flag
+  fUserSetLocal = true;
+}
+
+static void setStackChecks (const ArgumentDescription* desc, const char* unused) {
+  // Used in postStackChecks() to set fNoStackChecks if user threw flag
+  fUserSetStackChecks= true;
+}
 
 /*
 Flag types:
@@ -685,7 +605,33 @@ Record components:
  {"long option" (or "" for separators), 'short option', "description of option argument(s), if any", "option description", "option type", &affectedVariable, "environment variable name", setter_function},
 */
 
+// The setEnv args use _ variable prefix (_CHPL_HOME) to ensure that setEnv is
+// only called when a flag is passed - otherwise arg functions are  called if
+// their environment variable is set
+
 static ArgumentDescription arg_desc[] = {
+ {"", ' ', NULL, "Primary Configuration Options", NULL, NULL, NULL, NULL},
+ {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome},
+ {"atomics", ' ', "<atomics-impl>", "Specify atomics implementation", "S", NULL, "_CHPL_ATOMICS", setEnv},
+ {"network-atomics", ' ', "<network>", "Specify network atomics implementation", "S", NULL, "_CHPL_NETWORK_ATOMICS", setEnv},
+ {"aux-filesys", ' ', "<aio-system>", "Specify auxiliary I/O system", "S", NULL, "_CHPL_AUX_FILESYS", setEnv},
+ {"comm", ' ', "<comm-impl>", "Specify communication implementation", "S", NULL, "_CHPL_COMM", setEnv},
+ {"comm-substrate", ' ', "<conduit>", "Specify communication conduit", "S", NULL, "_CHPL_COMM_SUBSTRATE", setEnv},
+ {"gasnet-segment", ' ', "<segment>", "Specify GASNet memory segment", "S", NULL, "_CHPL_GASNET_SEGMENT", setEnv},
+ {"gmp", ' ', "<gmp-version>", "Specify GMP library", "S", NULL, "_CHPL_GMP", setEnv},
+ {"hwloc", ' ', "<hwloc-impl>", "Specify whether to use hwloc", "S", NULL, "_CHPL_HWLOC", setEnv},
+ {"launcher", ' ', "<launcher-system>", "Specify how to launch programs", "S", NULL, "_CHPL_LAUNCHER", setEnv},
+ {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", NULL, "_CHPL_LOCALE_MODEL", setEnv},
+ {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setEnv},
+ {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setEnv},
+ {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", NULL, "_CHPL_REGEXP", setEnv},
+ {"target-arch", ' ', "<architecture>", "Target architecture to optimize for", "S", NULL, "_CHPL_TARGET_ARCH", setEnv},
+ {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setEnv},
+ {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setEnv},
+ {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setEnv},
+ {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "_CHPL_TIMERS", setEnv},
+ {"wide-pointers", ' ', "<format>", "Specify wide pointer format", "S", NULL, "_CHPL_WIDE_POINTERS", setEnv},
+
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
@@ -695,7 +641,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
- {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
+ {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
@@ -730,7 +676,7 @@ static ArgumentDescription arg_desc[] = {
  {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
- {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},
+ {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", setStackChecks},
  {"cast-checks", ' ', NULL, "Enable [disable] checks in safeCast calls", "n", &fNoCastChecks, NULL, NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
@@ -748,11 +694,10 @@ static ArgumentDescription arg_desc[] = {
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
- {"make", ' ', "<make utility>", "Make utility for generated code", "S256", makeArgument, "CHPL_MAKE", handleMake},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_ARCH", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
- {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, setStaticLink},
+ {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
@@ -774,7 +719,7 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
- {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", handleTaskTracking},
+ {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
@@ -855,25 +800,6 @@ static ArgumentState sArgState = {
   NULL
 };
 
-
-static void setupDependentVars() {
-  if (developer && !userSetCppLineno) {
-    printCppLineno = false;
-  }
-
-#ifndef HAVE_LLVM
-  if (llvmCodegen)
-    USR_FATAL("This compiler was built without LLVM support");
-#endif
-
-  if (specializeCCode && (strcmp(CHPL_TARGET_ARCH, "unknown") == 0)) {
-    USR_WARN("--specialize was set, but CHPL_TARGET_ARCH is 'unknown'. If "
-              "you want any specialization to occur please set CHPL_TARGET_ARCH "
-              "to a proper value.");
-  }
-}
-
-
 static void printStuff(const char* argv0) {
   bool shouldExit       = false;
   bool printedSomething = false;
@@ -931,6 +857,195 @@ static void printStuff(const char* argv0) {
   }
 }
 
+bool useDefaultEnv(std::string key) {
+  // Check conditions for which default value should override argument provided
+
+  // For Cray programming environments, we must infer CHPL_TARGET_ARCH
+  // Note: When CHPL_TARGET_ARCH is processed, CHPL_HOST_COMPILER is already
+  // set in envMap, due to the order of printchplenv output
+  if (key == "CHPL_TARGET_ARCH") {
+    if (strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static void populateEnvMap() {
+  // Destructively parses output of 'printchplenv --simple' for "key=value"
+  // pairs and populates global envMap if the key has not been already set from
+  // argument processing
+
+  // Call printchplenv and pipe output into string
+  std::string output = runPrintChplEnv(envMap);
+
+  // Lines
+  std::string line= "";
+  std::string lineDelimiter = "\n";
+  size_t linePos = 0;        // Line break position
+
+  // Tokens
+  std::string tokenDelimiter = "=";
+  size_t delimiterPos = 0;    // Position of delimiter
+  size_t valuePos = 0;        // Position of value
+
+  std::string key = "";
+  std::string value = "";
+
+  while ((linePos = output.find(lineDelimiter)) != std::string::npos)
+  {
+    line = output.substr(0, linePos);
+
+    // Key is substring up until "=" on a given line
+    delimiterPos = line.find(tokenDelimiter);
+    key = line.substr(0, delimiterPos);
+
+    // Value is substring after "=" on a given line
+    valuePos = delimiterPos + tokenDelimiter.length();
+    value = line.substr(valuePos);
+
+    // If key does not have a value in envMap, map it to the parsed value
+    if (envMap.find(key) == envMap.end()) {
+      envMap[key] = strdup(value.c_str());
+    } else if (useDefaultEnv(key)) {
+      envMap.erase(key);
+      envMap[key] = strdup(value.c_str());
+    }
+
+    output.erase(0, linePos + lineDelimiter.length());
+  }
+}
+
+static void setChapelEnvs() {
+  // Update compiler global CHPL_vars with envMap values
+
+  CHPL_HOST_PLATFORM   = envMap["CHPL_HOST_PLATFORM"];
+  CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
+  CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
+  CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
+  CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
+  CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
+  CHPL_COMM            = envMap["CHPL_COMM"];
+  CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
+  CHPL_GASNET_SEGMENT  = envMap["CHPL_GASNET_SEGMENT"];
+  CHPL_TASKS           = envMap["CHPL_TASKS"];
+  CHPL_LAUNCHER        = envMap["CHPL_LAUNCHER"];
+  CHPL_TIMERS          = envMap["CHPL_TIMERS"];
+  CHPL_MEM             = envMap["CHPL_MEM"];
+  CHPL_MAKE            = envMap["CHPL_MAKE"];
+  CHPL_ATOMICS         = envMap["CHPL_ATOMICS"];
+  CHPL_NETWORK_ATOMICS = envMap["CHPL_NETWORK_ATOMICS"];
+  CHPL_GMP             = envMap["CHPL_GMP"];
+  CHPL_HWLOC           = envMap["CHPL_HWLOC"];
+  CHPL_REGEXP          = envMap["CHPL_REGEXP"];
+  CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
+  CHPL_LLVM            = envMap["CHPL_LLVM"];
+  CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
+}
+
+static void setupChplGlobals(const char* argv0) {
+  // Set CHPL_HOME, populate envMap with defaults, and set global CHPL_vars
+
+  // Set CHPL_HOME the traditional way if it was not passed as an argument
+  if (envMap.find("CHPL_HOME") == envMap.end())
+  {
+    setupChplHome(argv0);
+
+    // Keep envMap updated
+    envMap["CHPL_HOME"] = CHPL_HOME;
+  }
+
+  // Populate envMap from printchplenv, never overwriting existing elements
+  populateEnvMap();
+
+  // Set global CHPL_vars with updated envMap values
+  setChapelEnvs();
+}
+
+static void postStackCheck() {
+  if (!fNoStackChecks && fUserSetStackChecks) {
+    if (strcmp(CHPL_TASKS, "massivethreads") == 0) {
+      USR_WARN("CHPL_TASKS=%s cannot do stack checks.", CHPL_TASKS);
+    }
+  }
+}
+
+static void postTaskTracking() {
+  if (fEnableTaskTracking) {
+    if (strcmp(CHPL_TASKS, "fifo") != 0) {
+      USR_WARN("Enabling task tracking with CHPL_TASKS=%s has no effect other than to slow down compilation", CHPL_TASKS);
+    }
+  }
+}
+
+static void postStaticLink() {
+  if (fLinkStyle == LS_STATIC) {
+    if (strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0) {
+      USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
+      fLinkStyle = LS_DEFAULT;
+    }
+  }
+}
+
+static void postLocal() {
+  if (!fUserSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
+}
+
+static void setMaxCIndentLen() {
+  bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
+             || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
+  // conservatively how much is needed for the current PGI compiler
+  if (gotPGI) fMaxCIdentLen = 1020;
+}
+
+static void setWidePointersStruct() {
+  if (0 == strcmp(CHPL_WIDE_POINTERS, "struct")) {
+    widePointersStruct = true;
+  } else {
+    widePointersStruct = false;
+  }
+}
+
+static void setPrintCppLineno() {
+  if (developer && !userSetCppLineno) printCppLineno = false;
+}
+
+static void checkLLVMCodeGen() {
+#ifndef HAVE_LLVM
+ if (llvmCodegen) USR_FATAL("This compiler was built without LLVM support");
+#endif
+}
+
+static void checkTargetArch() {
+  if (specializeCCode && (strcmp(CHPL_TARGET_ARCH, "unknown") == 0)) {
+    USR_WARN("--specialize was set, but CHPL_TARGET_ARCH is 'unknown'. If "
+              "you want any specialization to occur please set CHPL_TARGET_ARCH "
+              "to a proper value.");
+  }
+}
+
+static void postprocess_args() {
+  // Processes that depend on results of passed arguments or values of CHPL_vars
+
+  setMaxCIndentLen();
+
+  setWidePointersStruct();
+
+  postLocal();
+
+  postTaskTracking();
+
+  postStackCheck();
+
+  postStaticLink();
+
+  setPrintCppLineno();
+
+  checkLLVMCodeGen();
+
+  checkTargetArch();
+}
 
 int main(int argc, char* argv[]) {
   PhaseTracker tracker;
@@ -955,6 +1070,7 @@ int main(int argc, char* argv[]) {
       init_arg_desc(&sArgState, arg_desc);
     }
 
+
     initFlags();
     initRootModule();
     initPrimitive();
@@ -964,13 +1080,14 @@ int main(int argc, char* argv[]) {
 
     initChplProgram(objectClass);
 
-    setupOrderedGlobals(argv[0]);
-
     process_args(&sArgState, argc, argv);
+
+    setupChplGlobals(argv[0]);
+
+    postprocess_args();
 
     initCompilerGlobals(); // must follow argument parsing
 
-    setupDependentVars();
     setupModulePaths();
 
     recordCodeGenStrings(argc, argv);

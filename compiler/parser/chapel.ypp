@@ -52,6 +52,7 @@
   typedef void* yyscan_t;
 
   int processNewline(yyscan_t scanner);
+  void stringBufferInit();
 
   #endif
 }

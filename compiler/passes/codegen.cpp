@@ -381,13 +381,14 @@ static void genFilenameTable() {
 #ifdef HAVE_LLVM
     std::vector<llvm::Constant *> table(gFilenameLookup.size());
 
-    llvm::Type *c_stringType = info->lvt->getType("c_string");
+    llvm::Type *c_stringType =
+        llvm::IntegerType::getInt8PtrTy(info->module->getContext());
 
     int idx = 0;
     for (std::set<std::string>::iterator it = gFilenameLookup.begin();
          it != gFilenameLookup.end(); it++) {
-      table[idx++] = llvm::cast<llvm::Constant>(
-          new_CStringSymbol((*it).c_str())->codegen().val);
+      table[idx++] = llvm::cast<llvm::GlobalVariable>(
+              new_CStringSymbol((*it).c_str())->codegen().val)->getInitializer();
     }
 
     llvm::ArrayType *filenameTableType =
@@ -586,12 +587,14 @@ static void codegen_header_compilation_config() {
     genGlobalString("chpl_compileVersion", compileVersion);
     genGlobalString("CHPL_HOME",           CHPL_HOME);
 
-    for (int i = 0; i < num_chpl_env_vars; i++) {
-      genGlobalString(chpl_env_var_names[i], chpl_env_vars[i]);
-    }
-
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks);
     genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote);
+
+    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+      if (env->first != "CHPL_HOME" && !useDefaultEnv(env->first)) {
+        genGlobalString(env->first.c_str(), env->second);
+      }
+    }
 
     // generate the "about" function
     fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
@@ -607,11 +610,13 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr,
             "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
             CHPL_HOME);
-    for (int i = 0; i < num_chpl_env_vars; i++) {
-      fprintf(cfgfile.fptr,
-              "printf(\"%%s\", \"  %s: %s\\n\");\n",
-              chpl_env_var_names[i],
-              chpl_env_vars[i]);
+    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+      if (env->first != "CHPL_HOME") {
+        fprintf(cfgfile.fptr,
+          "printf(\"%%s\", \"  %s: %s\\n\");\n",
+          env->first.c_str(),
+          env->second);
+      }
     }
 
     fprintf(cfgfile.fptr, "}\n");

@@ -1,5 +1,27 @@
 Usage: chpl [flags] [source files]
 
+Primary Configuration Options:
+      --home <path>                   Path to Chapel's home directory
+      --atomics <atomics-impl>        Specify atomics implementation
+      --network-atomics <network>     Specify network atomics implementation
+      --aux-filesys <aio-system>      Specify auxiliary I/O system
+      --comm <comm-impl>              Specify communication implementation
+      --comm-substrate <conduit>      Specify communication conduit
+      --gasnet-segment <segment>      Specify GASNet memory segment
+      --gmp <gmp-version>             Specify GMP library
+      --hwloc <hwloc-impl>            Specify whether to use hwloc
+      --launcher <launcher-system>    Specify how to launch programs
+      --locale-model <locale-model>   Specify locale model to use
+      --make <make utility>           Make utility for generated code
+      --mem <mem-impl>                Specify the memory manager
+      --regexp <regexp>               Specify whether to use regexp support
+      --target-arch <architecture>    Target architecture to optimize for
+      --target-compiler <compiler>    Compiler for generated code
+      --target-platform <platform>    Platform for cross-compilation
+      --tasks <task-impl>             Specify tasking implementation
+      --timers <timer-impl>           Specify timer implementation
+      --wide-pointers <format>        Specify wide pointer format
+
 Module Processing Options:
       --[no-]count-tokens             [Don't] count tokens in main modules
       --main-module <module>          Specify entry point module
@@ -83,7 +105,6 @@ C Code Compilation Options:
       --ldflags <flags>               Back-end C linker flags
   -l, --lib-linkage <library>         C library linkage
   -L, --lib-search-path <directory>   C library search path
-      --make <make utility>           Make utility for generated code
   -O, --[no-]optimize                 [Don't] Optimize generated C code
       --[no-]specialize               [Don't] Specialize generated C code for
                                       CHPL_TARGET_ARCH

@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -98,6 +98,7 @@ symbolFlag( FLAG_EXTERN , npr, "extern" , "extern variables, types, and function
 symbolFlag( FLAG_FAST_ON , npr, "fast on" , "with FLAG_ON/FLAG_ON_BLOCK, \"on block\" , use fast spawning option (if available)" )
 symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter function, user-declared or compiler-generated" )
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
+symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an in, out, or inout argument" )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for function prototypes" )
 // When applied to an argument, this flag means that the arg accepts a value
@@ -105,6 +106,7 @@ symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
+symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
