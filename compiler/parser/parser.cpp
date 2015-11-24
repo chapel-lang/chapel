@@ -168,6 +168,7 @@ ModuleSymbol* parseFile(const char* filename,
     }
 
     yylex_init(&context.scanner);
+    stringBufferInit();
     yyset_in(fp, context.scanner);
 
     while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
@@ -364,6 +365,7 @@ BlockStmt* parseString(const char* string,
   ParserContext   context;
 
   yylex_init(&(context.scanner));
+  stringBufferInit();
 
   handle              = yy_scan_string(string, context.scanner);
 

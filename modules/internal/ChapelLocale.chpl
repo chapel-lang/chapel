@@ -331,11 +331,11 @@ module ChapelLocale {
       // We must directly implement a bulk copy here, as the mechanisms
       // for doing so via a whole array assignment are not initialized
       // yet and copying element-by-element via a for loop is is costly.
-      __primitive("chpl_comm_get",
+      __primitive("chpl_comm_array_get",
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
                   __primitive("array_get", origRL, 0), 
-                  numLocales.safeCast(size_t));
+                  numLocales:size_t);
       // Set the rootLocale to the local copy
       rootLocale = newRootLocale;
     }

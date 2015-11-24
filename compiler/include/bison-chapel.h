@@ -56,9 +56,10 @@ extern int yydebug;
   typedef void* yyscan_t;
 
   int processNewline(yyscan_t scanner);
+  void stringBufferInit();
 
   #endif
-#line 63 "chapel.ypp" /* yacc.c:1915  */
+#line 64 "chapel.ypp" /* yacc.c:1915  */
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
@@ -109,7 +110,7 @@ extern int yydebug;
   };
 
   #endif
-#line 119 "chapel.ypp" /* yacc.c:1915  */
+#line 120 "chapel.ypp" /* yacc.c:1915  */
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -126,7 +127,7 @@ extern int yydebug;
   #define YYLTYPE_IS_TRIVIAL  1
 
   #endif
-#line 141 "chapel.ypp" /* yacc.c:1915  */
+#line 142 "chapel.ypp" /* yacc.c:1915  */
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -154,7 +155,7 @@ extern int yydebug;
 
   #endif
 
-#line 158 "../include/bison-chapel.h" /* yacc.c:1915  */
+#line 159 "../include/bison-chapel.h" /* yacc.c:1915  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -326,7 +327,7 @@ int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLT
 yypstate * yypstate_new (void);
 void yypstate_delete (yypstate *ps);
 /* "%code provides" blocks.  */
-#line 172 "chapel.ypp" /* yacc.c:1915  */
+#line 173 "chapel.ypp" /* yacc.c:1915  */
 
   extern int yydebug;
 
@@ -334,6 +335,6 @@ void yypstate_delete (yypstate *ps);
                ParserContext* context,
                const char*    str);
 
-#line 338 "../include/bison-chapel.h" /* yacc.c:1915  */
+#line 339 "../include/bison-chapel.h" /* yacc.c:1915  */
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */

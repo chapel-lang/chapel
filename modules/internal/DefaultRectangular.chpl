@@ -1254,7 +1254,7 @@ module DefaultRectangular {
       const dest = this.theData;
       const src = B._value.theData;
       if dest != src {
-        __primitive("chpl_comm_get",
+        __primitive("chpl_comm_array_get",
                   __primitive("array_get", dest, getDataIndex(Alo)),
                   B._value.data.locale.id,
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),
@@ -1265,7 +1265,7 @@ module DefaultRectangular {
         writeln("\tlocal put() to ", this.locale.id);
       const dest = this.theData;
       const src = B._value.theData;
-      __primitive("chpl_comm_put",
+      __primitive("chpl_comm_array_put",
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),
                   this.data.locale.id,
                   __primitive("array_get", dest, getDataIndex(Alo)),
@@ -1275,7 +1275,7 @@ module DefaultRectangular {
         writeln("\tremote get() on ", here.id, " from ", B.locale.id);
       const dest = this.theData;
       const src = B._value.theData;
-      __primitive("chpl_comm_get",
+      __primitive("chpl_comm_array_get",
                   __primitive("array_get", dest, getDataIndex(Alo)),
                   B._value.data.locale.id,
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),

@@ -1938,34 +1938,46 @@ bool isSubClass(Type* type, Type* baseType)
   return false;
 }
 
-bool
-isDistClass(Type* type) {
+bool isDistClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DIST))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDistClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isDomainClass(Type* type) {
+bool isDomainClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DOMAIN))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDomainClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isArrayClass(Type* type) {
+bool isArrayClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_ARRAY))
     return true;
+
   forv_Vec(Type, t, type->dispatchParents)
     if (isArrayClass(t))
       return true;
+
   return false;
+}
+
+bool isString(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* aggr = toAggregateType(type))
+    retval = strcmp(aggr->symbol->name, "string") == 0;
+
+  return retval;
 }
 
 static Vec<TypeSymbol*> typesToStructurallyCodegen;

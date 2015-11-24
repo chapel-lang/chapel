@@ -1501,7 +1501,7 @@ proc BlockArr.doiBulkTransfer(B) {
           // once that is fixed.
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       rid,
@@ -1524,7 +1524,7 @@ proc BlockArr.doiBulkTransfer(B) {
                                         );
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       dom.dist.targetLocales(rid).id,

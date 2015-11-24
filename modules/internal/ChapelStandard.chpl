@@ -24,6 +24,7 @@ module ChapelStandard {
   use startInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
+  use ChapelEnv;
   use ChapelBase;
   use String;
   use MemConsistency;

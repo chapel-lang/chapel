@@ -51,15 +51,14 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
 // In chpl_comm_wide_get_string() a buffer of the right size is allocated 
 // to receive the bytes copied from the remote node.  This buffer will be leaked,
 // since no corresponding free is added to the generated code.
-void chpl_gen_comm_wide_string_get(void* addr,
-  c_nodeid_t node, void* raddr, size_t elemSize, int32_t typeIndex, size_t len,
-  int ln, chpl_string fn)
-{
+void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
+                                   size_t size, int32_t typeIndex,
+                                   int ln, chpl_string fn) {
   // This part just copies the descriptor.
   if (chpl_nodeID == node) {
-    chpl_memcpy(addr, raddr, elemSize*len);
+    chpl_memcpy(addr, raddr, size);
   } else {
-    chpl_gen_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
+    chpl_gen_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
   }
 
   // And now we copy the bytes in the string itself.
@@ -113,10 +112,10 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
   if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
     chpl_memcpy(chpl_macro_tmp, x->addr, x->size);
   else
-    chpl_gen_comm_get((void*) &(*chpl_macro_tmp),
-                  chpl_rt_nodeFromLocaleID(x->locale),
-                  (void*)(x->addr),
-                  sizeof(char), tid, x->size, lineno, filename);
+    chpl_gen_comm_get((void *)&(*chpl_macro_tmp),
+                      chpl_rt_nodeFromLocaleID(x->locale), (void *)(x->addr),
+                      sizeof(char) * x->size, tid,
+                      lineno, filename);
   *local = chpl_macro_tmp;
 }
 
@@ -234,7 +233,7 @@ c_string_copy remoteStringCopy(c_nodeid_t src_locale,
   if (src_addr == NULL) return NULL;
   ret = chpl_mem_alloc(src_len+1, CHPL_RT_MD_STR_COPY_REMOTE,
                        lineno, filename);
-  chpl_gen_comm_get((void*)ret, src_locale, (void*)src_addr, sizeof(char),
-                    CHPL_TYPE_uint8_t, src_len+1, lineno, filename);
+  chpl_gen_comm_get((void*)ret, src_locale, (void*)src_addr, sizeof(char)*(src_len+1),
+                    CHPL_TYPE_uint8_t, lineno, filename);
   return (c_string)ret;
 }
