@@ -151,15 +151,16 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
 
   DO_RETAIN(((hdfs_fs*)fs));
   
-  hdfs_file hfl = *to_hdfs_file(file);
-  hdfs_fs hfs = *to_hdfs_fs(fs);
+  const hdfs_file orig_hfl = *to_hdfs_file(file);
+  const hdfs_fs orig_hfs = *to_hdfs_fs(fs);
 
-  hfl.file = hdfsOpenFile(hfs.hfs, hfl.pathnm, O_RDONLY, 0, 0, 0);
+  hdfsFS hfs = hdfsConnect(orig_hfs.fs_name, orig_hfs.fs_port);
+  hdfsFile hfl = hdfsOpenFile(hfs, orig_hfl.pathnm, O_RDONLY, 0, 0, 0);
 
   //assert connection
-  CREATE_ERROR((hfs.hfs == NULL), err_out, ECONNREFUSED, "Unable to read HDFS file", error);
+  CREATE_ERROR((hfs == NULL), err_out, ECONNREFUSED, "Unable to read HDFS file", error);
 
-  if(hfl.file == NULL) {
+  if(hfl == NULL) {
     err_out = qio_mkerror_errno();
     goto error;
   }
@@ -171,8 +172,8 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
   for(i = 0; i < count; i++) {
 
 #ifdef HDFS3
-  hdfsSeek(hfs.hfs, hfl.file, offset+got_total);
-  got = hdfsRead(hfs.hfs, hfl.file, (void*)vector[i].iov_base, vector[i].iov_len);
+  hdfsSeek(hfs, hfl, offset+got_total);
+  got = hdfsRead(hfs, hfl, (void*)vector[i].iov_base, vector[i].iov_len);
 #else
     got = hdfsPread(to_hdfs_fs(fs)->hfs, to_hdfs_file(file)->file, offset + got_total, (void*)vector[i].iov_base, vector[i].iov_len);
 #endif
@@ -194,7 +195,10 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
   *num_read_out = got_total;
 
 #ifdef HDFS3
-  got = hdfsCloseFile(hfs.hfs, hfl.file);
+  got = hdfsCloseFile(hfs, hfl);
+  if(got == -1) { err_out = qio_mkerror_errno(); }
+
+  got = hdfsDisconnect(hfs);
   if(got == -1) { err_out = qio_mkerror_errno(); }
 
 #endif
