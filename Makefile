@@ -161,6 +161,7 @@ clobber: FORCE
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
+	rm -f util/chplenv/*.pyc
 
 depend:
 	@echo "make depend has been deprecated for the time being"
