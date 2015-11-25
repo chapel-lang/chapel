@@ -43,9 +43,9 @@ Return domain map:
 Create domain:
 	592 bytes leaked
 Create domain and array:
-	2392 bytes leaked
+	2384 bytes leaked
 total:
-	3510 bytes leaked
+	3502 bytes leaked
 Replicated Dist
 ===============
 Copy of domain map:
