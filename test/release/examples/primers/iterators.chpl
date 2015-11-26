@@ -24,10 +24,10 @@ iter fibonacci(n: int) {
     yield current;
       // When this iterator runs, it proceeds this far
       // and then yields (generates) the first value of current (== 0).
-      // current and next are saved, and the control and the yielded
-      // value are passed into the loop body.
+      // current and next are saved. The control and the yielded value
+      // are passed into the loop body, and one loop iteration executes.
       //
-      // When the loop iteration completes, execution resumes here
+      // When the iteration completes, execution resumes here
       // and continues until another yield is reached, etc.
       //
       // This statement updates current and next from their saved values.
@@ -53,6 +53,8 @@ writeln();
 //
 // This example uses zipper iteration to iterate over the unbounded range 1..
 // and the fibonacci iterator with n set to ten.
+// Ranges, as well as arrays and domains, can be used as iterators in loops.
+//
 // Zipper iteration means that each iterator is advanced to the next yield
 // and the two values they yield are combined into a tuple.
 //
