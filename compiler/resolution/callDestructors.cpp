@@ -215,6 +215,8 @@ private:
   static ArgSymbol*       addFormal(FnSymbol* fn);
   static void             insertAssignmentToFormal(FnSymbol*  fn,
                                                    ArgSymbol* formal);
+  static void             updateAssignmentsFromRefToValue(FnSymbol* fn);
+  static void             updateAssignmentsFromModuleLevelValue(FnSymbol* fn);
   static void             updateReturnStatement(FnSymbol* fn);
   static void             updateReturnType(FnSymbol* fn);
 
@@ -348,6 +350,8 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
   ArgSymbol* formal = addFormal(fn);
 
   insertAssignmentToFormal(fn, formal);
+  updateAssignmentsFromRefToValue(fn);
+  updateAssignmentsFromModuleLevelValue(fn);
   updateReturnStatement(fn);
   updateReturnType(fn);
 }
@@ -377,6 +381,106 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
   CallExpr* moveExpr    = new CallExpr(PRIM_MOVE, formal, returnValue);
 
   returnPrim->insertBefore(moveExpr);
+}
+
+//
+// Consider a function that takes a formal of type Record by const ref
+// and that returns that value from the function.  The compiler inserts
+// a PRIM_MOVE operation.
+//
+// This work-around inserts an autoCopy to compensate
+//
+void ReturnByRef::updateAssignmentsFromRefToValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr* lhs = toSymExpr(move->get(1));
+      SymExpr* rhs = toSymExpr(move->get(2));
+
+      if (lhs != NULL && rhs != NULL)
+      {
+        VarSymbol* symLhs = toVarSymbol(lhs->var);
+        ArgSymbol* symRhs = toArgSymbol(rhs->var);
+
+        if (symLhs != NULL && symRhs != NULL)
+        {
+          if (isString(symLhs->type) == true && isString(symRhs->type) == true)
+          {
+            if (symLhs->hasFlag(FLAG_ARG_THIS) == false &&
+                (symRhs->intent == INTENT_REF ||
+                 symRhs->intent == INTENT_CONST_REF))
+            {
+              SET_LINENO(move);
+
+              CallExpr* autoCopy = NULL;
+
+              rhs->remove();
+              autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
+              move->insertAtTail(autoCopy);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+//
+// Consider a function that returns a module-level variable as the value
+// for the function.  The compiler inserts a PRIM_MOVE operation.
+//
+// This work-around inserts an autoCopy to compensate
+//
+void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr* lhs = toSymExpr(move->get(1));
+      SymExpr* rhs = toSymExpr(move->get(2));
+
+      if (lhs != NULL && rhs != NULL)
+      {
+        VarSymbol* symLhs = toVarSymbol(lhs->var);
+        VarSymbol* symRhs = toVarSymbol(rhs->var);
+
+        if (symLhs != NULL && symRhs != NULL)
+        {
+          if (isString(symLhs->type) == true && isString(symRhs->type) == true)
+          {
+            DefExpr* def = symRhs->defPoint;
+
+            if (isModuleSymbol(def->parentSymbol) == true &&
+                def->parentSymbol                 != rootModule)
+            {
+              SET_LINENO(move);
+
+              CallExpr* autoCopy = NULL;
+
+              rhs->remove();
+              autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
+              move->insertAtTail(autoCopy);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 void ReturnByRef::updateReturnStatement(FnSymbol* fn)
