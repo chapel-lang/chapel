@@ -438,8 +438,44 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
   Expr*     lhs      = moveExpr->get(1);
   CallExpr* callExpr = toCallExpr(moveExpr->get(2));
+  CallExpr* copyExpr = NULL;
   Symbol*   useLhs   = toSymExpr(lhs)->var;
   Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+  FnSymbol* fn       = callExpr->isResolved();
+
+  if (fn == NULL)
+  {
+
+  }
+
+  else if (fn->hasFlag(FLAG_CONSTRUCTOR) == true)
+  {
+
+  }
+
+  // The compiler may have inserted an unnecessary initCopy/autoCopy
+  // immediately after the move. This cause a leak.  As a work-around,
+  // find this case and remove the copy.
+  else if (Expr* next = moveExpr->next)
+  {
+    if (CallExpr* callNext = toCallExpr(next))
+    {
+      if (callNext->isPrimitive(PRIM_MOVE) == true)
+      {
+        if (CallExpr* rhsCall = toCallExpr(callNext->get(2)))
+        {
+          FnSymbol* rhsFn = rhsCall->isResolved();
+
+          if (rhsFn                              != NULL &&
+              (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
+               rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
+          {
+            copyExpr = rhsCall;
+          }
+        }
+      }
+    }
+  }
 
   moveExpr->insertBefore(new DefExpr(refVar));
   moveExpr->insertBefore(new CallExpr(PRIM_MOVE,
@@ -448,6 +484,9 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
   moveExpr->replace(callExpr->remove());
   callExpr->insertAtTail(refVar);
+
+  if (copyExpr)
+    copyExpr->replace(copyExpr->get(1)->remove());
 }
 
 /************************************* | **************************************
