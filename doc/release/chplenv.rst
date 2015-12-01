@@ -149,7 +149,7 @@ CHPL_*_COMPILER
         gnu                The GNU compiler suite -- gcc and g++
         ibm                The IBM compiler suite -- xlc and xlC
         intel              The Intel compiler suite -- icc and icpc
-        pgi                The PGI compiler suite -- pgcc and pgCC
+        pgi                The PGI compiler suite -- pgcc and pgc++
         =================  ===================================================
 
    The default for ``CHPL_*_COMPILER`` depends on the value of the corresponding

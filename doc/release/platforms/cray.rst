@@ -132,7 +132,7 @@ Building Chapel for a Cray System from Source
 
      :``gnu``: the GNU compiler suite -- ``gcc`` and ``g++``
      :``intel``: the Intel compiler suite -- ``icc`` and ``icpc``
-     :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgCC``
+     :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgc++``
 
 
 5) Optionally, set one or more of the following environment variables to
