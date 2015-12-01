@@ -992,7 +992,6 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     //
     // TODO: Can myLocArr be used here to simplify things?
     //
-    const follow = arrSection.locDom.myBlock(myFollowThis);
     var chunk => arrSection.myElems(myFollowThis);
     if arrSection.locale.id == here.id then local {
       for i in chunk do yield i;
