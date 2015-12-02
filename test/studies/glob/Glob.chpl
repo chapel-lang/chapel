@@ -39,7 +39,10 @@ iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory
 
   err = chpl_wordexp((directory + pattern).c_str(), flags:c_int, glb);
 
-  for i in 0..wordexp_num(glb) -1 {
+  const wordexpNum = wordexp_num(glb);
+
+  if wordexpNum then
+  for i in 0..wordexpNum -1 {
     tx = wordexp_index(glb, i);
     if recursive && chpl_isdir(tx) == 1 {
       const pth = toString(tx) + "/";
