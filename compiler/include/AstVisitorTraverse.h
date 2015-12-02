@@ -87,6 +87,8 @@ public:
 
   virtual void   visitUsymExpr    (UnresolvedSymExpr* node);
 
+  virtual void   visitUseExpr     (UseExpr*           node);
+
   //
   // The sub-classes of Stmt
   //

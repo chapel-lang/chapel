@@ -68,6 +68,8 @@ public:
 
   virtual void     visitUsymExpr    (UnresolvedSymExpr* node);
 
+  virtual void     visitUseExpr     (UseExpr*           node);
+
   virtual bool     enterBlockStmt   (BlockStmt*         node);
   virtual void     exitBlockStmt    (BlockStmt*         node);
 

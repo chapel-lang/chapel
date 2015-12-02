@@ -31,6 +31,7 @@
 #include "genret.h"
 #include "misc.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
@@ -43,6 +44,7 @@
 #include <inttypes.h>
 #include <ostream>
 #include <stack>
+#include <vector>
 
 class FnSymbol;
 
@@ -5877,6 +5879,21 @@ void NamedExpr::accept(AstVisitor* visitor) {
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
+UseExpr::UseExpr(BaseAST* mod):
+  Expr(E_UseExpr),
+  includes(),
+  excludes(),
+  mod(NULL)
+{
+  if (Symbol* b = toSymbol(mod)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(mod)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseExpr constructor");
+  }
+}
+
 
 // Will destroy "args" argument when finished with it.
 UseExpr::UseExpr(BaseAST* mod, Vec<const char*>* args, bool exclude) :
@@ -5896,16 +5913,16 @@ UseExpr::UseExpr(BaseAST* mod, Vec<const char*>* args, bool exclude) :
   if (exclude) {
     // Symbols to exclude when searching this module's scope from an outside
     // scope
-    if ((*args)->n == 0) {
+    if (args->n == 0) {
       INT_FATAL(this, "In UseExpr constructor, exclude should not be true without names to exclude!");
     }
-    forv_Vec(const char, str, args) {
+    forv_Vec(const char, str, *args) {
       excludes.push_back(str);
     }
   } else if (args->n > 0) {
     // Symbols to search when going through this module's scope from an outside
     // scope
-    forv_Vec(const char, str, args) {
+    forv_Vec(const char, str, *args) {
       includes.push_back(str);
     }
   }
@@ -5917,9 +5934,9 @@ UseExpr::UseExpr(BaseAST* mod, Vec<const char*>* args, bool exclude) :
 // deleted when the original UseExpr is deleted.
 UseExpr::UseExpr(BaseAST* mod, std::vector<const char*>* args, bool exclude) :
   Expr(E_UseExpr),
-  mod(NULL),
   includes(),
-  excludes()
+  excludes(),
+  mod(NULL)
 {
   if (Symbol* b = toSymbol(mod)) {
     mod = new SymExpr(b);
@@ -5932,16 +5949,16 @@ UseExpr::UseExpr(BaseAST* mod, std::vector<const char*>* args, bool exclude) :
   if (exclude) {
     // Symbols to exclude when searching this module's scope from an outside
     // scope
-    if (args.size() == 0) {
+    if (args->size() == 0) {
       INT_FATAL(this, "In UseExpr constructor, exclude should not be true without names to exclude!");
     }
-    for_vector(const char, str, args) {
+    for_vector(const char, str, *args) {
       excludes.push_back(str);
     }
-  } else if (args.size() > 0) {
+  } else if (args->size() > 0) {
     // Symbols to search when going through this module's scope from an outside
     // scope
-    for_vector(const char, str, args) {
+    for_vector(const char, str, *args) {
       includes.push_back(str);
     }
   }
@@ -5950,11 +5967,11 @@ UseExpr::UseExpr(BaseAST* mod, std::vector<const char*>* args, bool exclude) :
 UseExpr* UseExpr::copyInner(SymbolMap* map) {
   UseExpr *_this = 0;
   if (excludes.size() > 0) {
-    _this = new UseExpr(COPY_INT(mod), excludes, true);
+    _this = new UseExpr(COPY_INT(mod), &excludes, true);
   } else if (includes.size() > 0) {
-    _this = new UseExpr(COPY_INT(mod), includes, false);
+    _this = new UseExpr(COPY_INT(mod), &includes, false);
   } else {
-    _this = new UseExpr(COPY_INT(mod), NULL, false);
+    _this = new UseExpr(COPY_INT(mod));
   }
   return _this;
 }
@@ -5972,7 +5989,7 @@ void UseExpr::verify() {
   }
 }
 
-void replaceChild(Expr* old_ast, Expr* new_ast) {
+void UseExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == mod) {
     mod = new_ast;
   } else {
@@ -5990,8 +6007,10 @@ Expr* UseExpr::getFirstExpr() {
   return this;
 }
 
-// Don't need to recurse into the symbols known to a UseExpr, their plaintext
-// is sufficient for most purposes
+Expr* UseExpr::getFirstChild() {
+  return NULL;
+}
+
 void UseExpr::accept(AstVisitor* visitor) {
   visitor->visitUseExpr(this);
 }

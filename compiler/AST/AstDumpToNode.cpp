@@ -27,6 +27,7 @@
 #include "ForLoop.h"
 #include "log.h"
 #include "ParamForLoop.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -966,6 +967,42 @@ void AstDumpToNode::visitUsymExpr(UnresolvedSymExpr* node)
 {
   enterNode(node);
   fprintf(mFP, " \"%s\"", node->unresolved);
+  exitNode(node);
+}
+
+void AstDumpToNode::visitUseExpr(UseExpr* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+
+  if (compact)
+  {
+    mNeedSpace = true;
+    fprintf(mFP, " 'use'");
+  }
+
+  newline();
+  node->mod->accept(this);
+
+  if (node->includes.size() > 0) {
+    fprintf(mFP, " 'only' ");
+    for_vector(const char, str, node->includes) {
+      newline();
+      fprintf(mFP, "%s", str);
+    }
+  }
+
+  if (node->excludes.size() > 0) {
+    fprintf(mFP, " 'except' ");
+    for_vector(const char, str, node->excludes) {
+      newline();
+      fprintf(mFP, "%s", str);
+    }
+  }
+
+  mOffset = mOffset - 2;
+  newline();
   exitNode(node);
 }
 

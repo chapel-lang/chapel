@@ -311,6 +311,11 @@ void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node)
 
 }
 
+void CollapseBlocks::visitUseExpr(UseExpr* node)
+{
+
+}
+
 void CollapseBlocks::exitBlockStmt(BlockStmt* node)
 {
 

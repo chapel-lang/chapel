@@ -36,6 +36,8 @@
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 
+#include "stlUtil.h"
+
 #include <cstdio>
 #include <inttypes.h>
 
@@ -375,6 +377,40 @@ void AstDumpToHtml::visitUsymExpr(UnresolvedSymExpr* node) {
   }
 
   fprintf(mFP, " <FONT COLOR=\"red\">%s</FONT>", node->unresolved);
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
+// UseExpr
+//
+void AstDumpToHtml::visitUseExpr(UseExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
+
+  fprintf(mFP, " (%d 'use' ", node->id);
+
+  node->mod->accept(this);
+
+  if (node->includes.size() > 0) {
+    fprintf(mFP, " 'only' ");
+    for_vector(const char, str, node->includes) {
+      fprintf(mFP, "%s", str);
+    }
+  }
+
+  if (node->excludes.size() > 0) {
+    fprintf(mFP, " 'except' ");
+    for_vector(const char, str, node->excludes) {
+      fprintf(mFP, "%s", str);
+    }
+  }
+
+  fprintf(mFP, ")");
 
   if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "</DL>\n");

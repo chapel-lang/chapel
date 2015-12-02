@@ -35,6 +35,8 @@
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 
+#include "stlUtil.h"
+
 AstDump::AstDump() {
   mName      =     0;
   mPath      =     0;
@@ -267,6 +269,47 @@ void AstDump::visitUsymExpr(UnresolvedSymExpr* node) {
   }
 
   write(node->unresolved);
+}
+
+//
+// UseExpr
+//
+void AstDump::visitUseExpr(UseExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    newline();
+  }
+
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+    mNeedSpace = false;
+  } else {
+    write(true, "(", false);
+  }
+
+  if (mNeedSpace)
+    fputc(' ', mFP);
+
+  fprintf(mFP, "'use'");
+
+  mNeedSpace = true;
+
+  node->mod->accept(this);
+
+  if (node->includes.size() > 0) {
+    fprintf(mFP, " 'only' ");
+    for_vector(const char, str, node->includes) {
+      fprintf(mFP, "%s", str);
+    }
+  }
+
+  if (node->excludes.size() > 0) {
+    fprintf(mFP, " 'except' ");
+    for_vector(const char, str, node->excludes) {
+      fprintf(mFP, "%s", str);
+    }
+  }
+
+  write(false, ")", true);
 }
 
 
