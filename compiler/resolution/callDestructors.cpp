@@ -536,33 +536,53 @@ void ReturnByRef::transform()
   }
 }
 
+//
+// Transform a call to a function that returns a record to be a call
+// to a revied function that does not return a value and that accepts
+// a reference to the destination i.e.
+//
+// replace
+//
+//     move dst func(a, b, c)
+//
+// with
+//
+//     define ref;
+//
+//     ref = &dst;
+//     func(a, b, c, ref);
+//
+// In some cases the statement after the move is another move
+// with a RHS that performs a superfluous initCopy/autoCopy.
+// If so reduce to a simple move.  The called-function is responsible
+// for performing a copy when needed.
+//
+
 void ReturnByRef::transformMove(CallExpr* moveExpr)
 {
   SET_LINENO(moveExpr);
 
   Expr*     lhs      = moveExpr->get(1);
+
   CallExpr* callExpr = toCallExpr(moveExpr->get(2));
-  CallExpr* copyExpr = NULL;
-  Symbol*   useLhs   = toSymExpr(lhs)->var;
-  Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
   FnSymbol* fn       = callExpr->isResolved();
 
-  if (fn == NULL)
+  Expr*     nextExpr = moveExpr->next;
+  CallExpr* copyExpr = NULL;
+
+  Symbol*   useLhs   = toSymExpr(lhs)->var;
+  Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+
+
+  // Determine if
+  //   a) current call is not a PRIMOP
+  //   a) current call is not to a constructor
+  //   c) the subsequent statement is PRIM_MOVE for an initCopy/autoCopy
+  if (fn                            != NULL  &&
+      fn->hasFlag(FLAG_CONSTRUCTOR) == false &&
+      nextExpr                      != NULL)
   {
-
-  }
-
-  else if (fn->hasFlag(FLAG_CONSTRUCTOR) == true)
-  {
-
-  }
-
-  // The compiler may have inserted an unnecessary initCopy/autoCopy
-  // immediately after the move. This cause a leak.  As a work-around,
-  // find this case and remove the copy.
-  else if (Expr* next = moveExpr->next)
-  {
-    if (CallExpr* callNext = toCallExpr(next))
+    if (CallExpr* callNext = toCallExpr(nextExpr))
     {
       if (callNext->isPrimitive(PRIM_MOVE) == true)
       {
@@ -581,14 +601,17 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
     }
   }
 
+  // Introduce a reference to the return value
   moveExpr->insertBefore(new DefExpr(refVar));
   moveExpr->insertBefore(new CallExpr(PRIM_MOVE,
                                       refVar,
                                       new CallExpr(PRIM_ADDR_OF, useLhs)));
 
+  // Convert the by-value call to a void call with an additional formal
   moveExpr->replace(callExpr->remove());
   callExpr->insertAtTail(refVar);
 
+  // Possibly reduce a copy operation to a simple move
   if (copyExpr)
     copyExpr->replace(copyExpr->get(1)->remove());
 }
