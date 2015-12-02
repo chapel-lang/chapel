@@ -98,7 +98,10 @@ iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:st
 
   err = chpl_study_glob((directory + pattern).c_str(), flags:c_int, glb);
 
-  for i in 0..glob_num(glb) - 1 {
+  const globNum = glob_num(glb);
+
+  if globNum then
+  for i in 0..globNum - 1 {
     tx = glob_index(glb, i);
     if recursive && chpl_isdir(tx) == 1 {
       const pth = toString(tx) + "/";
