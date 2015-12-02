@@ -59,15 +59,21 @@ iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
 
   dirBuff += directory;
 
-  do {
+  while (true) {
 
     // No more work left to accomplish
     if (dirBuff.numIndices == 0) then
       break;
 
+    //
+    // make a copy of the directory buffer to avoid modifying a
+    // collection while iterating over it.
+    //
+    const dirBuffCopy = dirBuff;
+    dirBuff.clear();
+
     // Now spawn off tasks for each dir
-    coforall dir in dirBuff {
-      dirBuff -= dir;
+    coforall dir in dirBuffCopy {
       for flConst in my_wordexp(pattern, false, flags, dir) {
         var fl = flConst;
         if recursive && chpl_isdir(fl.c_str()) == 1 {
@@ -77,7 +83,7 @@ iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
         yield fl;
       }
     }
-  } while (true);
+  }
 }
 
 iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
@@ -113,15 +119,21 @@ iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
   // We start out with the current directory
   dirBuff += directory;
 
-  do {
+  while (true) {
 
     // No more work left to accomplish
     if (dirBuff.numIndices == 0) then
       break;
 
+    //
+    // make a copy of the directory buffer to avoid modifying a
+    // collection while iterating over it.
+    //
+    const dirBuffCopy = dirBuff;
+    dirBuff.clear();
+
     // Now spawn off tasks for each dir
-    coforall dir in dirBuff {
-      dirBuff -= dir;
+    coforall dir in dirBuffCopy {
       for flConst in my_glob(pattern, false, flags, dir) {
         var fl = flConst;
         if recursive && chpl_isdir(fl.c_str()) == 1 {
@@ -131,7 +143,7 @@ iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
         yield fl;
       }
     }
-  } while (true);
+  }
 }
 
 iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
