@@ -595,6 +595,8 @@ Domain Maps, Domains and Arrays
   # functions/iterators/bradc/badzip/misZipArrays.future
 - Arrays of subdomains may not work.
   # users/jglewis/bfs_102207/driver_breadth_first_search.future
+- Indexing of array literals may be mis-parsed.
+  # arrays/vass/literal-indexing.future
 - Arrays declared over domains with negative strides may result in errors.
   # users/weili/arrNegDom-blc.future
   # users/weili/arrNegDom2.future
