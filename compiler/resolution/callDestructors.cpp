@@ -215,7 +215,7 @@ private:
   static ArgSymbol*       addFormal(FnSymbol* fn);
   static void             insertAssignmentToFormal(FnSymbol*  fn,
                                                    ArgSymbol* formal);
-  static void             updateAssignmentsFromRefToValue(FnSymbol* fn);
+  static void             updateAssignmentsFromRefArgToValue(FnSymbol* fn);
   static void             updateAssignmentsFromModuleLevelValue(FnSymbol* fn);
   static void             updateReturnStatement(FnSymbol* fn);
   static void             updateReturnType(FnSymbol* fn);
@@ -350,7 +350,7 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
   ArgSymbol* formal = addFormal(fn);
 
   insertAssignmentToFormal(fn, formal);
-  updateAssignmentsFromRefToValue(fn);
+  updateAssignmentsFromRefArgToValue(fn);
   updateAssignmentsFromModuleLevelValue(fn);
   updateReturnStatement(fn);
   updateReturnType(fn);
@@ -390,7 +390,7 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
 //
 // This work-around inserts an autoCopy to compensate
 //
-void ReturnByRef::updateAssignmentsFromRefToValue(FnSymbol* fn)
+void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 {
   std::vector<CallExpr*> callExprs;
 
