@@ -382,7 +382,7 @@ BlockStmt* buildChapelStmt(Expr* expr) {
 }
 
 
-static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
+static void addModuleToSearchList(UseExpr* newUse, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
     addModuleToParseList(modNameExpr->unresolved, newUse);
@@ -393,7 +393,7 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 
 
 static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
-  CallExpr* newUse = new CallExpr(PRIM_USE, module);
+  UseExpr* newUse = new UseExpr(module);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);

@@ -123,7 +123,7 @@ public:
 
   BlockTag            blockTag;
   AList               body;
-  CallExpr*           modUses;       // module uses via PRIM_USE
+  UseExpr*            modUses;       // module uses
   const char*         userLabel;
   CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
 

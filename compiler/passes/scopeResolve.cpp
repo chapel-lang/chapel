@@ -304,23 +304,21 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
 
 static void processImportExprs() {
   // handle "use mod;" where mod is a module
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_USE)) {
-      SET_LINENO(call);
+  forv_Vec(UseExpr, use, gUseExprs) {
+    SET_LINENO(use);
 
-      ModuleSymbol* mod = getUsedModule(call);
+    ModuleSymbol* mod = getUsedModule(use);
 
-      if (!mod)
-        USR_FATAL(call, "Cannot find module");
+    if (!mod)
+      USR_FATAL(use, "Cannot find module");
 
-      ModuleSymbol* enclosingModule = call->getModule();
+    ModuleSymbol* enclosingModule = use->getModule();
 
-      enclosingModule->moduleUseAdd(mod);
+    enclosingModule->moduleUseAdd(mod);
 
-      getVisibilityBlock(call)->moduleUseAdd(mod);
+    getVisibilityBlock(use)->moduleUseAdd(mod);
 
-      call->getStmtExpr()->remove();
-    }
+    use->getStmtExpr()->remove();
   }
 }
 
@@ -329,22 +327,19 @@ static void processImportExprs() {
 // nested: e.g. "use outermost.middle.innermost;"
 //
 static ModuleSymbol* getUsedModule(Expr* expr) {
-  CallExpr* call = toCallExpr(expr);
+  UseExpr* use = toUseExpr(expr);
 
-  if (!call)
-    INT_FATAL(call, "Bad use statement in getUsedModule");
+  if (!use)
+    INT_FATAL(use, "Bad use statement in getUsedModule");
 
-  if (!call->isPrimitive(PRIM_USE))
-    INT_FATAL(call, "Bad use statement in getUsedModule");
-
-  return getUsedModule(call->get(1), call);
+  return getUsedModule(use->mod, use);
 }
 
 //
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
-static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
+static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall) {
   ModuleSymbol* mod    = NULL;
   Symbol*       symbol = NULL;
 

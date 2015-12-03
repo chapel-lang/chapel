@@ -25,8 +25,8 @@ bool isUseStmt(Expr* expr)
 {
   bool retval = false;
 
-  if (CallExpr* callExpr = toCallExpr(expr))
-    retval = callExpr->isPrimitive(PRIM_USE);
+  if (UseExpr* useExpr = toUseExpr(expr))
+    retval = true;
 
   return retval;
 }

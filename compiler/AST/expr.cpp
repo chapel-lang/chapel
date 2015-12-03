@@ -5892,6 +5892,7 @@ UseExpr::UseExpr(BaseAST* mod):
   } else {
     INT_FATAL(this, "Bad mod in UseExpr constructor");
   }
+  gUseExprs.add(this);
 }
 
 
@@ -5928,6 +5929,7 @@ UseExpr::UseExpr(BaseAST* mod, Vec<const char*>* args, bool exclude) :
   }
   delete args;
   // args shouldn't be needed any more, it has served its purpose
+  gUseExprs.add(this);
 }
 
 // This should only be used when copying UseExprs, so the args value will be
@@ -5962,6 +5964,7 @@ UseExpr::UseExpr(BaseAST* mod, std::vector<const char*>* args, bool exclude) :
       includes.push_back(str);
     }
   }
+  gUseExprs.add(this);
 }
 
 UseExpr* UseExpr::copyInner(SymbolMap* map) {
