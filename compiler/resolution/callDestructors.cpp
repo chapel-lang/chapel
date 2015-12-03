@@ -215,7 +215,8 @@ private:
   static ArgSymbol*       addFormal(FnSymbol* fn);
   static void             insertAssignmentToFormal(FnSymbol*  fn,
                                                    ArgSymbol* formal);
-  static void             updateAssignmentsFromRefToValue(FnSymbol* fn);
+  static void             updateAssignmentsFromRefArgToValue(FnSymbol* fn);
+  static void             updateAssignmentsFromRefTypeToValue(FnSymbol* fn);
   static void             updateAssignmentsFromModuleLevelValue(FnSymbol* fn);
   static void             updateReturnStatement(FnSymbol* fn);
   static void             updateReturnType(FnSymbol* fn);
@@ -350,7 +351,8 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
   ArgSymbol* formal = addFormal(fn);
 
   insertAssignmentToFormal(fn, formal);
-  updateAssignmentsFromRefToValue(fn);
+  updateAssignmentsFromRefArgToValue(fn);
+  updateAssignmentsFromRefTypeToValue(fn);
   updateAssignmentsFromModuleLevelValue(fn);
   updateReturnStatement(fn);
   updateReturnType(fn);
@@ -390,7 +392,7 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
 //
 // This work-around inserts an autoCopy to compensate
 //
-void ReturnByRef::updateAssignmentsFromRefToValue(FnSymbol* fn)
+void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 {
   std::vector<CallExpr*> callExprs;
 
@@ -426,6 +428,62 @@ void ReturnByRef::updateAssignmentsFromRefToValue(FnSymbol* fn)
               autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
               move->insertAtTail(autoCopy);
             }
+          }
+        }
+      }
+    }
+  }
+}
+
+//
+// Consider a function that assigns a class-ref wrapper for a record to
+// a value of that record type.  The compiler represents this as a
+//
+//      move dst PRIM_DEREF(src)
+//
+// but fails to insert the required autoCopy.
+//
+// This transformation adds a move/autoCopy statement immediately after
+// the targetted statement.  The <dst> symbol is updated in place in the
+// new statement
+//
+//
+
+void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr*  symLhs  = toSymExpr (move->get(1));
+      CallExpr* callRhs = toCallExpr(move->get(2));
+
+      if (symLhs && callRhs && callRhs->isPrimitive(PRIM_DEREF))
+      {
+        VarSymbol* varLhs = toVarSymbol(symLhs->var);
+        SymExpr*   symRhs = toSymExpr(callRhs->get(1));
+        VarSymbol* varRhs = toVarSymbol(symRhs->var);
+
+        if (varLhs != NULL && varRhs != NULL)
+        {
+          if (isString(varLhs->type) == true &&
+              varRhs->type           == varLhs->type->refType)
+          {
+            SET_LINENO(move);
+
+            SymExpr*  lhsCopy0 = symLhs->copy();
+            SymExpr*  lhsCopy1 = symLhs->copy();
+            FnSymbol* autoCopy = autoCopyMap.get(varLhs->type);
+            CallExpr* copyExpr = new CallExpr(autoCopy, lhsCopy0);
+            CallExpr* moveExpr = new CallExpr(PRIM_MOVE,lhsCopy1, copyExpr);
+
+            move->insertAfter(moveExpr);
           }
         }
       }
