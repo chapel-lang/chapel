@@ -67,8 +67,8 @@ correctness test on the entire chapel test suite::
     # Used to store permanent log files (and to diff runs night to night)
     export CHPL_NIGHTLY_LOG_PREFIX=~/chapel_logs/
 
-    # Can be used to explicitly select a tmp dir. This is where chapel will
-    # be downloaded to and tested from
+    # Used to explicitly set a tmp dir. This is where chapel is downloaded
+    # to and tested from. Defaults to $TMPDIR if set, otherwise /tmp
     export CHPL_NIGHTLY_TMPDIR=
 
     # Used to select which git repo and branch to clone
@@ -134,7 +134,7 @@ correctness test on the entire chapel test suite::
 
 
     #
-    # Lets do some testing!
+    # Let's do some testing!
     #
 
     # setup chpl_home and stuff
