@@ -200,7 +200,6 @@ void checkPrimitives()
      case PRIM_CAST:
      case PRIM_DYNAMIC_CAST:
      case PRIM_TYPEOF:
-     case PRIM_USE:
      case PRIM_USED_MODULES_LIST:       // used modules in BlockStmt::modUses
      case PRIM_TUPLE_EXPAND:
      case PRIM_TUPLE_AND_EXPAND:
