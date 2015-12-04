@@ -156,26 +156,24 @@ BlockStmt::copyInner(SymbolMap* map) {
 
 // Note that newAst can be NULL to reflect deletion
 void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  if (CallExpr* oldExpr = toCallExpr(oldAst)) {
-    CallExpr* newExpr = (newAst != NULL) ? toCallExpr(newAst) : NULL;
+  CallExpr* oldExpr = toCallExpr(oldAst);
+  CallExpr* newExpr = (newAst != NULL) ? toCallExpr(newAst) : NULL;
 
-    if (oldExpr == blockInfo)
-      blockInfo = newExpr;
+  if (oldExpr == NULL)
+    INT_FATAL(this, "BlockStmt::replaceChild. oldAst is not a CallExpr");
 
-    else if (oldExpr == byrefVars)
-      byrefVars = newExpr;
+  else if (oldExpr == blockInfo)
+    blockInfo = newExpr;
 
-    else
-      INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
-  } else if (UseExpr* oldExpr = toUseExpr(oldAst)) {
-    if (oldExpr == modUses)
-      modUses   = newExpr;
+  else if (oldExpr == modUses)
+    modUses   = newExpr;
 
-    else
-      INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
-  } else {
-    INT_FATAL(this, "BlockStmt::replaceChild. oldAst is not a CallExpr or UseExpr");
-  }
+  else if (oldExpr == byrefVars)
+    byrefVars = newExpr;
+
+  else
+    INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
+
   // TODO: Handle the above special cases uniformly by specializing the
   // traversal of the children by block statement type.  I think blockInfo is
   // being deprecated anyway....

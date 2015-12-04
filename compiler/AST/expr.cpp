@@ -5879,15 +5879,15 @@ void NamedExpr::accept(AstVisitor* visitor) {
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
-UseExpr::UseExpr(BaseAST* mod):
+UseExpr::UseExpr(BaseAST* module):
   Expr(E_UseExpr),
   includes(),
   excludes(),
   mod(NULL)
 {
-  if (Symbol* b = toSymbol(mod)) {
+  if (Symbol* b = toSymbol(module)) {
     mod = new SymExpr(b);
-  } else if (Expr* b = toExpr(mod)) {
+  } else if (Expr* b = toExpr(module)) {
     mod = b;
   } else {
     INT_FATAL(this, "Bad mod in UseExpr constructor");
@@ -5897,15 +5897,15 @@ UseExpr::UseExpr(BaseAST* mod):
 
 
 // Will destroy "args" argument when finished with it.
-UseExpr::UseExpr(BaseAST* mod, Vec<const char*>* args, bool exclude) :
+UseExpr::UseExpr(BaseAST* module, Vec<const char*>* args, bool exclude) :
   Expr(E_UseExpr),
   includes(),
   excludes(),
   mod(NULL)
 {
-  if (Symbol* b = toSymbol(mod)) {
+  if (Symbol* b = toSymbol(module)) {
     mod = new SymExpr(b);
-  } else if (Expr* b = toExpr(mod)) {
+  } else if (Expr* b = toExpr(module)) {
     mod = b;
   } else {
     INT_FATAL(this, "Bad mod in UseExpr constructor");
@@ -5934,15 +5934,15 @@ UseExpr::UseExpr(BaseAST* mod, Vec<const char*>* args, bool exclude) :
 
 // This should only be used when copying UseExprs, so the args value will be
 // deleted when the original UseExpr is deleted.
-UseExpr::UseExpr(BaseAST* mod, std::vector<const char*>* args, bool exclude) :
+UseExpr::UseExpr(BaseAST* module, std::vector<const char*>* args, bool exclude) :
   Expr(E_UseExpr),
   includes(),
   excludes(),
   mod(NULL)
 {
-  if (Symbol* b = toSymbol(mod)) {
+  if (Symbol* b = toSymbol(module)) {
     mod = new SymExpr(b);
-  } else if (Expr* b = toExpr(mod)) {
+  } else if (Expr* b = toExpr(module)) {
     mod = b;
   } else {
     INT_FATAL(this, "Bad mod in UseExpr constructor");

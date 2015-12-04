@@ -300,7 +300,7 @@ static void addOneToSymbolTable(DefExpr* def)
 ************************************* | ************************************/
 
 static ModuleSymbol* getUsedModule(Expr* expr);
-static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
+static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall);
 
 static void processImportExprs() {
   // handle "use mod;" where mod is a module

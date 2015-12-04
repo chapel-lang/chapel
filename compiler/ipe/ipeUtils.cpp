@@ -25,7 +25,7 @@ bool isUseStmt(Expr* expr)
 {
   bool retval = false;
 
-  if (UseExpr* useExpr = toUseExpr(expr))
+  if (toUseExpr(expr))
     retval = true;
 
   return retval;

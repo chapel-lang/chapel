@@ -245,9 +245,9 @@ class UseExpr: public Expr {
   Expr* mod; // Can be either an UnresolvedSymExpr, SymExpr, or CallExpr to
   // specify an explicit module name.
 
-  UseExpr(BaseAST* mod);
-  UseExpr(BaseAST* mod, Vec<const char*>* args, bool exclude);
-  UseExpr(BaseAST* mod, std::vector<const char*>* args, bool exclude);
+  UseExpr(BaseAST* module);
+  UseExpr(BaseAST* module, Vec<const char*>* args, bool exclude);
+  UseExpr(BaseAST* module, std::vector<const char*>* args, bool exclude);
 
   virtual void    verify();
 
