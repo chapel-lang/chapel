@@ -37,4 +37,4 @@ Locality
 
    locality/01-locales
    locality/05-multilocale
-   locality/10-LocalesArray
+   locality/10-localeTypeVars
