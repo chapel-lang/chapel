@@ -205,6 +205,9 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
 
   DONE_SLOW_SYSCALL;
 
+#ifdef HDFS3
+error:
+#endif
   return err_out;
 }
 
