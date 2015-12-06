@@ -136,3 +136,7 @@ work on "standard" file systems as well).
    for Apache Hadoop libhdfs, and set ``CHPL_AUX_FILESYS=hdfs3``
 
  - When building Chapel HDFS support, select *one* libhdfs implementation!
+
+ - To use Chapel's third-party build support (in the event you do not have or 
+   would like avoid performing a system build of libhdfs) review the ``README`` 
+   file in ``$CHPL_HOME/third-party/libhdfs3``

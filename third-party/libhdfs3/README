@@ -20,3 +20,20 @@ libhdfs3 has the following build dependencies:
     libuuid                         http://sourceforge.net/projects/libuuid/
     libgsasl                        http://www.gnu.org/software/gsasl/
 
+To use Chapel's third-party build support, change directory to 
+$CHPL_HOME/third-party/libhdfs3 and type 'make'.
+
+When the build completes all of libhdfs3's header files and library files 
+will be installed into a subdirectory in $CHPL_HOME/third-party/libhdfs3/install
+
+To complete building Chapel with libhdfs3 support, set the following
+environment variables - this README assumes a linux64-gnu build environment:
+
+export CHPL_AUX_FILESYS=hdfs3
+export CHPL_AUXIO_INCLUDE=$CHPL_HOME/third-party/libhdfs3/install/linux64-gnu/include
+export CHPL_AUXIO_LIBS=$CHPL_HOME/third-party/libhdfs3/install/linux64-gnu/lib
+
+Change directory to $CHPL_HOME, complete setting the rest of your Chapel runtime 
+build configuration variables (as needed), and follow the remaining Chapel compile
+instructions.
+
