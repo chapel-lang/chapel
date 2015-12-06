@@ -30,7 +30,7 @@ To complete building Chapel with libhdfs3 support, set the following
 environment variables - this README assumes a linux64-gnu build environment:
 
 export CHPL_AUX_FILESYS=hdfs3
-export CHPL_AUXIO_INCLUDE=$CHPL_HOME/third-party/libhdfs3/install/linux64-gnu/include
+export CHPL_AUXIO_INCLUDE=$CHPL_HOME/third-party/libhdfs3/install/linux64-gnu/include/hdfs
 export CHPL_AUXIO_LIBS=$CHPL_HOME/third-party/libhdfs3/install/linux64-gnu/lib
 
 Change directory to $CHPL_HOME, complete setting the rest of your Chapel runtime 
