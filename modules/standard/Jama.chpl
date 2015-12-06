@@ -1608,9 +1608,10 @@ class LUDecomposition {
       var p : [1..m] int;
 
       //for (int i = 0; i < m; i++) {
-      for i in 1..m {
-         p[i] = piv[i];
-      }
+      //for i in 1..m {
+      //   p[i] = piv[i];
+      //}
+      p(..) = piv(..);
       return p;
    }
 
