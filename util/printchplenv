@@ -59,7 +59,7 @@ def print_mode(mode='list'):
         print_var('CHPL_LOCALE_MODEL', locale_model, mode, 'loc')
 
     comm = chpl_comm.get()
-    print_var('CHPL_COMM', comm, mode, 'comm', ('runtime',))
+    print_var('CHPL_COMM', comm, mode, 'comm', ('runtime', 'launcher'))
     if m == 'make' or (comm != 'none' and comm != 'ugni'):
         comm_substrate = chpl_comm_substrate.get()
         print_var('  CHPL_COMM_SUBSTRATE', comm_substrate, mode, filters=('runtime',))
