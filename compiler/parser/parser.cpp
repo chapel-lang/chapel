@@ -95,9 +95,9 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
         hasOther = true;
       }
 
-    } else if (CallExpr* callexpr = toCallExpr(stmt)) {
+    } else if (toCallExpr(stmt)) {
       hasOther = true;
-    } else if (UseExpr* useexpr = toUseExpr(stmt)) {
+    } else if (toUseExpr(stmt)) {
       hasUses = true;
     } else {
       hasOther = true;
