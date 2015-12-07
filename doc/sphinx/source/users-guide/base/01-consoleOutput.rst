@@ -5,7 +5,7 @@ Simple Console Output: Hello world
 
 A good feature to learn first in any language is how to print things
 out to the console.  Although Chapel has a sophisticated set of I/O
-features, we'll just focus on a simple common case to get started.
+features, let's just focus on a simple capability to get started.
 
 
 The ``writeln()`` routine prints its list of comma-separated
@@ -17,12 +17,12 @@ the console:
   :language: chapel
   :lines: 1-1
 
-We'll cover Chapel program structure in more detail later; for now,
-it's sufficient to know that a Chapel program can simply be a sequence
-of statements in a file.  Thus, the statement above is a complete
-Chapel program.  If you type or paste it into a text editor and save
-it into a file, say ``hello.chpl``, you'll have written your first
-Chapel program.
+This guide will cover Chapel program structure in more detail later;
+for now, it's sufficient to know that a Chapel program can simply be a
+sequence of statements in a file.  Thus, the statement above is a
+complete Chapel program.  If you type or paste it into a text editor
+and save it into a file, say ``hello.chpl``, you'll have written your
+first Chapel program.
 
 Given a working Chapel compiler (see `Installing Chapel
 <http://chapel.cray.com/install.html>`_ for details), you can compile
