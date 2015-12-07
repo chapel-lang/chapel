@@ -59,7 +59,6 @@ struct PassInfo {
 #define LOG_lowerIterators                     'L'
 #define LOG_parallel                           'P'
 #define LOG_prune                              'X'
-#define LOG_complex2record                     'C'
 #define LOG_bulkCopyRecords                    'B'
 #define LOG_removeUnnecessaryAutoCopyCalls     'U'
 #define LOG_inlineFunctions                    'I'
@@ -125,7 +124,6 @@ static PassInfo sPassList[] = {
   RUN(prune),                   // prune AST of dead functions and types
 
   // Optimizations
-  RUN(complex2record),          // change complex numbers into records
   RUN(bulkCopyRecords),         // replace simple assignments with PRIM_ASSIGN.
   RUN(removeUnnecessaryAutoCopyCalls),
   RUN(inlineFunctions),         // function inlining

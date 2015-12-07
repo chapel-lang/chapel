@@ -30,6 +30,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <math.h>
+#include <complex.h>
 
 static int scanningNCounts(void) {
   static int answer = -1;
@@ -202,22 +203,24 @@ _define_string_to_imag_precise(imag, 64, "%lf")
 
 
 #define _define_string_to_complex_precise(base, width, format, halfwidth) \
-  _real_type(base, width) c_string_to_##base##width##_precise(c_string str, \
-                                                              int* invalid,   \
-                                                              char* invalidCh) { \
-    _real_type(base, width) val = {0.0, 0.0};                           \
+  _##base##width c_string_to_##base##width##_precise(c_string str,      \
+                                                     int* invalid,      \
+                                                     char* invalidCh) { \
+    _##base##width val = 0.0;                                           \
+    _real_type(real, halfwidth) val_re = 0.0;                           \
+    _real_type(real, halfwidth) val_im = 0.0;                           \
     /* check for pure imaginary case first */                           \
-    val.im = c_string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
+    val_im = c_string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
     if (*invalid) {                                                     \
       int numbytes = -1;                                                \
       char sign = '\0';                                                 \
       char i = '\0';                                                    \
       int numitems;                                                     \
       int posAfterReal, posBeforeSign, posBeforeImag;                   \
-      val.im = 0.0; /* reset */                                         \
+      val_im = 0.0; /* reset */                                         \
       numitems = sscanf(str, format"%n %n%c %n"format"%c%n",            \
-                        &(val.re), &posAfterReal, &posBeforeSign,       \
-                        &sign, &posBeforeImag, &(val.im), &i,           \
+                        &(val_re), &posAfterReal, &posBeforeSign,       \
+                        &sign, &posBeforeImag, &(val_im), &i,           \
                         &numbytes);                                     \
       if (scanningNCounts()) {                                          \
         if (numitems == 3) {                                            \
@@ -254,7 +257,7 @@ _define_string_to_imag_precise(imag, 64, "%lf")
           *invalidCh = i;                                               \
         } else if (numbytes == strlen(str)) {                           \
           if (sign == '-') {                                            \
-            val.im = -val.im;                                           \
+            val_im = -val_im;                                           \
           }                                                             \
           *invalid = 0;                                                 \
           *invalidCh = '\0';                                            \
@@ -267,6 +270,7 @@ _define_string_to_imag_precise(imag, 64, "%lf")
         *invalidCh = *str;                                              \
       }                                                                 \
     }                                                                   \
+    val = val_re + val_im*_Complex_I;                                   \
     return val;                                                         \
   }
 
@@ -312,13 +316,13 @@ _define_string_to_type(uint, 32)
 _define_string_to_type(uint, 64)
 
 #define _define_string_to_real_type(base, width)                        \
-  _real_type(base, width) c_string_to_##base##width(c_string str, int lineno, \
-                                                    c_string filename) {   \
+  _##base##width c_string_to_##base##width(c_string str, int lineno,    \
+                                           c_string filename) {         \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _real_type(base, width) val = c_string_to_##base##width##_precise(str,    \
-                                                                         &invalid, \
-                                                                         invalidStr); \
+    _##base##width val = c_string_to_##base##width##_precise(str,       \
+                                                             &invalid, \
+                                                             invalidStr); \
     if (invalid) {                                                      \
       const char* message;                                              \
       if (invalid == 2) {                                               \

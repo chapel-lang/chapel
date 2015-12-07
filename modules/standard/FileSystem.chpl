@@ -427,15 +427,33 @@ private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySy
   if error != ENOERR then return;
   // Create dest
 
-  for filename in listdir(path=src, dirs=false, files=true, listlinks=copySymbolically) {
+  for filename in listdir(path=src, dirs=false, files=true, listlinks=true) {
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
-    copy(error, src + "/" + filename, fileDestName, metadata=true);
+    var fileSrcName = src + "/" + filename;
+    if (isLink(fileSrcName) && copySymbolically) {
+      // Copy symbolically means symlinks should be copied as symlinks
+      symlink(error, realPath(fileSrcName), fileDestName);
+    } else {
+      // Either we didn't find a link, or copy symbolically is false, which
+      // means we want the contents of the linked file, not a link itself.
+      copy(error, fileSrcName, fileDestName, metadata=true);
+    }
     if (error != ENOERR) then return;
   }
 
-  for dirname in listdir(path=src, dirs=true, files=false, listlinks=copySymbolically) {
-    copyTreeHelper(error, src+"/"+dirname, dest+"/"+dirname, copySymbolically);
+  for dirname in listdir(path=src, dirs=true, files=false, listlinks=true) {
+    var dirDestName = dest+"/"+dirname;
+    var dirSrcName = src+"/"+dirname;
+    if (isLink(dirSrcName) && copySymbolically) {
+      // Copy symbolically means symlinks should be copied as symlinks
+      symlink(error, realPath(dirSrcName), dirDestName);
+    } else {
+      // Either we didn't find a link, or copy symbolically is false, which
+      // means we want the contents of the linked directory, not a link itself.
+      copyTreeHelper(error, dirSrcName, dirDestName, copySymbolically);
+    }
+    if (error != ENOERR) then return;
   }
 }
 
@@ -1072,6 +1090,77 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
 }
 
 pragma "no doc"
+proc moveDir(out error: syserr, src: string, dest: string) {
+  var destExists = exists(error, dest);
+  // Did some error occurred in checking the existance of dest, perhaps a
+  // permissions error?  If so, return.
+  if (error != ENOERR) then return;
+
+  if (destExists) {
+    // dest already existed
+    var aFile = isFile(error, dest);
+    if (error != ENOERR) then return; // Return error messages as encountered
+    var aDir = isDir(error, dest);
+    if (error != ENOERR) then return;
+
+    if (aFile) {
+      // dest is a file, we can't move src within it!
+      error = ENOTDIR;
+      // Note: Python gives EEXISTS in this case, but I think ENOTDIR is
+      // clearer.
+    } else if (aDir) {
+      if (sameFile(src, dest)) {
+        // Python's behavior when calling move over the same directory for
+        // source and destination is to fail with a helpful error message.
+        // Since this error code shouldn't occur otherwise, it signals to
+        // the wrapper function what has happened.
+        error = EEXIST;
+      } else {
+        // dest is a directory, we'll copy src inside it
+        error = EISDIR;
+        // NOT YET SUPPORTED.  Requires basename and joinPath
+      }
+    } else {
+      // What we've been provided is both not a file and not a directory.  Given
+      // the expected behavior of isFile and isDir when it comes to symlinks,
+      // I'm not sure how this case would arise.
+      error = ENOTDIR;
+    }
+  } else {
+    copyTree(error, src, dest, true);
+    if (error != ENOERR) then return; // Error when copying into dest.
+    rmTree(error, src);
+    if (error != ENOERR) then return; // Error when removing src.
+  }
+}
+
+/* Recursively moves the directory indicated by `src` and its contents to the
+   destination denoted by `dest`.  If `dest` is a directory, `src` is moved
+   inside of it.
+
+   .. note::
+
+      We do not currently support the case where the dest argument already
+      exists and is a directory.  When the :mod:`Path` module has been
+      expanded further, this support can be enabled.
+
+   Will halt with an error message if one is detected.
+
+   :arg src: the location of the directory to be moved
+   :type src: string
+   :arg dest: the location to move it to.
+   :type dest: string
+*/
+proc moveDir(src: string, dest: string) {
+  var err: syserr = ENOERR;
+  moveDir(err, src, dest);
+  if err == EEXIST {
+    halt("Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+  }
+  if err != ENOERR then ioerror(err, "in moveDir(" + src + ", " + dest + ")");
+}
+
+pragma "no doc"
 proc rename(out error: syserr, oldname, newname: string) {
   extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
 
@@ -1112,6 +1201,67 @@ proc remove(name: string) {
   var err:syserr = ENOERR;
   remove(err, name);
   if err != ENOERR then ioerror(err, "in remove", name);
+}
+
+private proc rmTreeHelper(out error: syserr, root: string) {
+  // Go through all the files in this current directory and remove them
+  for filename in listdir(path=root, dirs=false, files=true, listlinks=true) {
+    var name = root + "/" + filename;
+    remove(error, name);
+    if (error != ENOERR) then return;
+  }
+  // Then traverse all the directories within this current directory and have
+  // them handle cleaning up their contents and themselves
+  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true) {
+    var fullpath = root + "/" + dirname;
+    var dirIsLink = isLink(error, fullpath);
+    if (error != ENOERR) then return;
+    // Did something go wrong when checking against link status?
+    if (dirIsLink) {
+      remove(error, fullpath);
+    } else {
+      rmTreeHelper(error, fullpath);
+    }
+    if (error != ENOERR) then return;
+  }
+  // Once everything else has been removed, remove ourself.
+  remove(error, root);
+}
+
+pragma "no doc"
+proc rmTree(out error: syserr, root: string) {
+  var rootMissing = !exists(error, root);
+  if (error != ENOERR) then return; // Some error occurred in checking the existence of root.
+  else if (rootMissing) {
+    // root doesn't exist.  We can't remove something that isn't there
+    error = ENOENT;
+    return;
+  }
+
+  var rootNotDir = !isDir(error, root);
+  if error != ENOERR then return; // Some error occurred in checking if root was a dir
+  else if (rootNotDir) {
+    // We need it to be a directory!
+    error = ENOTDIR;
+    return;
+  }
+
+  var rootPath = realPath(root);
+  rmTreeHelper(error, rootPath);
+}
+
+/* Delete the entire directory tree specified by root.
+
+   Will halt with an error message if one is detected.
+
+   :arg root: path name representing a directory that should be deleted along
+              with its entire contents.
+   :type root: string
+*/
+proc rmTree(root: string) {
+  var err: syserr = ENOERR;
+  rmTree(err, root);
+  if err != ENOERR then ioerror(err, "in rmTree(" + root + ")");
 }
 
 pragma "no doc"

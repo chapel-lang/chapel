@@ -96,7 +96,7 @@ FnSymbol* gChplHereFree = NULL;
 Symbol *gCLine = NULL;
 Symbol *gCFile = NULL;
 
-Map<FnSymbol*,int> ftableMap;
+std::map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
 
 Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
@@ -231,6 +231,9 @@ bool Symbol::isImmediate() const {
   return false;
 }
 
+bool isString(Symbol* symbol) {
+  return isString(symbol->type);
+}
 
 /******************************** | *********************************
 *                                                                   *
@@ -515,7 +518,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               llvm::Type::getFloatTy(info->module->getContext()),
               i->v_complex64.i);
           ret = llvm::ConstantStruct::get(
-              llvm::cast<llvm::StructType>(getTypeLLVM("complex(64)")),
+              llvm::cast<llvm::StructType>(getTypeLLVM("_complex64")),
               elements);
           break;
         }
@@ -528,7 +531,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               llvm::Type::getDoubleTy(info->module->getContext()),
               i->v_complex128.i);
           ret = llvm::ConstantStruct::get(
-              llvm::cast<llvm::StructType>(getTypeLLVM("complex(128)")),
+              llvm::cast<llvm::StructType>(getTypeLLVM("_complex128")),
               elements);
           break;
         }

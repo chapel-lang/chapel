@@ -28,6 +28,7 @@
 #include <bitset>
 #include <iostream>
 #include <vector>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -150,6 +151,8 @@ private:
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
+
+bool isString(Symbol* symbol);
 
 /******************************** | *********************************
 *                                                                   *
@@ -619,7 +622,7 @@ extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
 
-extern Map<FnSymbol*,int> ftableMap;
+extern std::map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;
 
 //

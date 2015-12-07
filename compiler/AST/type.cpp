@@ -117,8 +117,22 @@ PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
 
 PrimitiveType*
 PrimitiveType::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
-  return this;
+  //
+  // If we're trying to make a copy of an internal Chapel primitive
+  // type (say 'int'), that's a sign that something is wrong.  For
+  // external primitive types, it should be OK to make such copies.
+  // This may be desired/required if the extern type declaration is
+  // local to a generic Chapel procedure for example and we're
+  // creating multiple instantiations of that procedure, each of which
+  // wants/needs its own local type symbol.  This exception may
+  // suggest that external primitive types should really be
+  // represented as their own ExternType class...
+  //
+  if (!symbol->hasFlag(FLAG_EXTERN)) {
+    INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
+  }
+
+  return new PrimitiveType(NULL);
 }
 
 
@@ -1924,34 +1938,46 @@ bool isSubClass(Type* type, Type* baseType)
   return false;
 }
 
-bool
-isDistClass(Type* type) {
+bool isDistClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DIST))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDistClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isDomainClass(Type* type) {
+bool isDomainClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DOMAIN))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDomainClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isArrayClass(Type* type) {
+bool isArrayClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_ARRAY))
     return true;
+
   forv_Vec(Type, t, type->dispatchParents)
     if (isArrayClass(t))
       return true;
+
   return false;
+}
+
+bool isString(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* aggr = toAggregateType(type))
+    retval = strcmp(aggr->symbol->name, "string") == 0;
+
+  return retval;
 }
 
 static Vec<TypeSymbol*> typesToStructurallyCodegen;

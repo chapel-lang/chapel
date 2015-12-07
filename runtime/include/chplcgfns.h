@@ -50,7 +50,6 @@ extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_TASKS;
-extern const char* CHPL_THREADS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
 extern const char* CHPL_MEM;
@@ -71,6 +70,11 @@ extern char* chpl_executionCommand;
 
 /* generated */
 extern chpl_fn_p chpl_ftable[];
+
+// Sorted lookup table of filenames used with insertLineNumbers for error
+// messages and logging
+extern c_string chpl_filenameTable[];
+extern const int64_t chpl_filenameTableSize;
 
 void chpl__init_preInit(int64_t _ln, c_string _fn);
 void chpl__init_PrintModuleInitOrder(int64_t _ln, c_string _fn);

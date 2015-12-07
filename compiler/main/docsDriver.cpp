@@ -38,7 +38,7 @@ bool fDocsHTML = true;
 bool fDocsIncludeExterns = true;
 
 
-void docsArgSetCommentLabel(const ArgumentState* arg_state, const char* label) {
+void docsArgSetCommentLabel(const ArgumentDescription* desc, const char* label) {
   assert(label != NULL);
   size_t len = strlen(label);
   if (len != 0) {

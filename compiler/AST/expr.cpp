@@ -97,10 +97,11 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
 
 static GenRet codegenZero();
-static GenRet codegenOne();
+//static GenRet codegenOne();
 static GenRet codegenNullPointer();
 
 static GenRet codegenFieldPtr(GenRet base, const char* field);
+static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
 
@@ -2834,6 +2835,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8)
@@ -2850,7 +2852,6 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
-/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -2938,11 +2939,13 @@ GenRet codegenZero()
   return new_IntSymbol(0, INT_SIZE_64)->codegen();
 }
 
+/*
 static
 GenRet codegenOne()
 {
   return new_IntSymbol(1, INT_SIZE_64)->codegen();
 }
+*/
 
 static
 GenRet codegenNullPointer()
@@ -3382,7 +3385,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                     codegenRaddr(from),
                     codegenSizeof(type),
                     genTypeStructureIndex(type->symbol),
-                    codegenOne(),
                     info->lineno, info->filename );
       } else {
         if (forceWidePtrsForLocal()) {
@@ -3401,7 +3403,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                         codegenRaddr(from),
                         codegenSizeof(type),
                         genTypeStructureIndex(type->symbol),
-                        codegenOne(),
                         info->lineno, info->filename );
           }
         }
@@ -3425,7 +3426,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRaddr(to_ptr),
                       codegenSizeof(type),
                       genTypeStructureIndex(type->symbol),
-                      codegenOne(),
                       info->lineno, info->filename);
         }
       }
@@ -3887,6 +3887,32 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
   }
 }
 
+static GenRet codegen_prim_get_real(GenRet arg, Type* type, bool real) {
+  GenRet ret;
+  const char* realOrImag;
+  char fnName[21];
+  if (real) {
+    realOrImag = "Real";
+  } else {
+    realOrImag = "Imag";
+  }
+  if (type == dtComplex[COMPLEX_SIZE_64]->refType) {
+    snprintf(fnName, 21, "complex64Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, arg);
+  } else if (type == dtComplex[COMPLEX_SIZE_128]->refType) {
+    snprintf(fnName, 21, "complex128Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, arg);
+  } else if (type == dtComplex[COMPLEX_SIZE_64]) {
+    snprintf(fnName, 21, "complex64Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, codegenAddrOf(arg));
+  } else if (type == dtComplex[COMPLEX_SIZE_128]) {
+    snprintf(fnName, 21, "complex128Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, codegenAddrOf(arg));
+  } else {
+    INT_FATAL("Unsupported type in PRIM_GET_REAL");
+  }
+  return ret;
+}
 
 /* Notes about code generation:
  *  Intermediate expressions are returned from Expr::codegen
@@ -4021,6 +4047,38 @@ GenRet CallExpr::codegen() {
         bool handled = true;
         switch (call->primitive->tag)
         {
+         case PRIM_GET_REAL:
+         case PRIM_GET_IMAG:
+         {
+           bool isReal = call->primitive->tag == PRIM_GET_REAL;
+           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+             // move(wide_real, prim_get_real(wide_complex));
+             // turns into: wide_real.locale = wide_complex.locale;
+             //             wide_real.addr = prim_get_real(wide_complex.addr);
+             Type* cplxType = call->get(1)->typeInfo()->getRefType();
+             GenRet t1 = createTempVar(cplxType);
+             codegenAssign(t1, codegenRaddr(call->get(1)));
+             GenRet t2 = createTempVar(get(1)->typeInfo()->getRefType());
+             codegenAssign(t2, codegen_prim_get_real(t1, cplxType, isReal));
+
+             GenRet to_ptr = get(1);
+             GenRet from = codegenWideAddr(codegenRlocale(call->get(1)),
+                                           codegenDeref(t2));
+             if( info->cfile ) {
+               std::string stmt = codegenValue(to_ptr).c + " = ";
+               stmt += from.c;
+               stmt += ";\n";
+               info->cStatements.push_back(stmt);
+             } else {
+#ifdef HAVE_LLVM
+               codegenStoreLLVM(from, to_ptr);
+#endif
+             }
+           } else {
+             codegenAssign(get(1), codegen_prim_get_real(call->get(1), call->get(1)->typeInfo(), isReal));
+           }
+           break;
+         }
          case PRIM_DEREF:
          {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
@@ -5065,11 +5123,15 @@ GenRet CallExpr::codegen() {
       codegenCall("chpl_task_setSerial", codegenValue(get(1)));
       break;
     case PRIM_CHPL_COMM_GET:
-    case PRIM_CHPL_COMM_PUT: {
+    case PRIM_CHPL_COMM_PUT:
+    case PRIM_CHPL_COMM_ARRAY_GET:
+    case PRIM_CHPL_COMM_ARRAY_PUT: {
       // args are:
-      //   localvar, locale, remote addr, (eltSize), get(4)==length, line, file
+      //   localvar, locale, remote addr, get(4)==size, line, file
+      //                                  get(4)==len  for array_get/put
       const char* fn;
-      if (primitive->tag == PRIM_CHPL_COMM_GET) {
+      if (primitive->tag == PRIM_CHPL_COMM_GET ||
+          primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
         fn = "chpl_gen_comm_get";
       } else {
         fn = "chpl_gen_comm_put";
@@ -5109,22 +5171,25 @@ GenRet CallExpr::codegen() {
           remoteAddr = codegenAddrOf(remoteAddr);
         }
       }
-      /*if( remoteAddrArg.isLVPtr == GEN_WIDE_PTR ) {
-        remoteAddr = codegenRaddr(remoteAddrArg);
-      } else {
-        remoteAddr = codegenValuePtr(remoteAddrArg);
-      }*/
-      GenRet eltSize = codegenSizeof(dt->typeInfo());
+
       GenRet len;
-      if( get(4)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
+      GenRet size;
+      if (get(4)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_REF)) {
         len = codegenValue(codegenDeref(get(4)));
       } else {
         len = codegenValue(get(4));
       }
+      if (primitive->tag == PRIM_CHPL_COMM_ARRAY_PUT ||
+          primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
+        GenRet eltSize = codegenSizeof(dt->typeInfo());
+        size = codegenMul(eltSize, len);
+      } else {
+        size = len;
+      }
+
       if (!fLLVMWideOpt ){
-        codegenCall(fn, codegenCastToVoidStar(localAddr), locale, remoteAddr, 
-            eltSize,genTypeStructureIndex(dt), len,
-            get(5), get(6));
+        codegenCall(fn, codegenCastToVoidStar(localAddr), locale, remoteAddr,
+                    size, genTypeStructureIndex(dt), get(5), get(6));
       } else {
         // Figure out the locale-struct value to put into the wide address
         // (instead of just using the node number)
@@ -5135,30 +5200,19 @@ GenRet CallExpr::codegen() {
           localAddr = codegenRaddr( localAddr );
 
         if (primitive->tag == PRIM_CHPL_COMM_GET) {
-          codegenCallMemcpy(localAddr, 
+          codegenCallMemcpy(localAddr,
                             codegenAddrOf(codegenWideAddr(lc, remoteAddr)),
-                            codegenMul(eltSize, len), NULL);
+                            size, NULL);
         } else {
           codegenCallMemcpy(codegenAddrOf(codegenWideAddr(lc, remoteAddr)),
-                            localAddr, 
-                            codegenMul(eltSize, len), NULL);
+                            localAddr, size, NULL);
         }
       }
       break;
     }
     case PRIM_CHPL_COMM_REMOTE_PREFETCH: {
       // args are:
-      //   locale, remote addr, (eltSize), get(3)==length, line, file
-
-      TypeSymbol *dt;
-      // Get the element type.
-      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        Symbol *sym = get(2)->typeInfo()->getField("addr", true);
-        INT_ASSERT(sym);
-        dt = sym->typeInfo()->getValType()->symbol;
-      } else {
-        dt = get(2)->typeInfo()->getValType()->symbol;
-      }
+      //   locale, remote addr, get(3)==size, line, file
 
       // Get the locale
       GenRet locale;
@@ -5179,15 +5233,14 @@ GenRet CallExpr::codegen() {
           remoteAddr = codegenAddrOf(remoteAddr);
         }
       }
-      GenRet eltSize = codegenSizeof(dt->typeInfo());
       GenRet len;
       if( get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
         len = codegenValue(codegenDeref(get(3)));
       } else {
         len = codegenValue(get(3));
       }
-      codegenCall("chpl_gen_comm_prefetch", locale, remoteAddr, 
-          eltSize, genTypeStructureIndex(dt), len, get(4), get(5));
+      codegenCall("chpl_gen_comm_prefetch", locale, remoteAddr, len, -1, get(4),
+                  get(5));
       break;
     }
       //Strided versions of get and put
@@ -5560,6 +5613,10 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr(fngen, args, fn, true);
       break;
     }
+    case PRIM_FIND_FILENAME_IDX:
+    case PRIM_LOOKUP_FILENAME:
+      ret = codegenBasicPrimitiveExpr(this);
+      break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "impossible");
       break;
@@ -5610,7 +5667,7 @@ GenRet CallExpr::codegen() {
 
     std::vector<GenRet> args(7);
     args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
-    args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
+    args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
     args[2] = codegenCastToVoidStar(taskBundle);
     args[3] = taskList;
     args[4] = codegenValue(taskListNode);
@@ -5638,7 +5695,7 @@ GenRet CallExpr::codegen() {
 
     std::vector<GenRet> args(6);
     args[0] = codegenLocalAddrOf(locale_id);
-    args[1] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_32);
+    args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_32);
     args[2] = get(2);
     args[3] = get(3);
     args[4] = fn->linenum();
@@ -6025,6 +6082,17 @@ is equivalent to
 
   block->insertAtTail(new CallExpr("foo", tmp));
   block->insertAtTail(new CallExpr("foo", call));
+
+UNRESOLVED SYMBOLS
+
+An unresolved symbol can be referenced via its name without quotes.
+For example, the code
+
+  block->insertAtTail("foo(bar)");
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr("foo", new UnresolvedSymExpr("bar")));
 
 PRIMITIVES
 

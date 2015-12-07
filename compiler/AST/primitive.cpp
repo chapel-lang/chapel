@@ -303,6 +303,13 @@ returnInfoVirtualMethodCall(CallExpr* call) {
   return fn->retType;
 }
 
+static Type*
+returnInfoSecondType(CallExpr* call) {
+  Type* t = call->get(2)->typeInfo();
+  return t;
+}
+
+
 // print the number of each type of primitive present in the AST
 void printPrimitiveCounts(const char* passName) {
   int primCounts[NUM_KNOWN_PRIMS];
@@ -383,6 +390,7 @@ prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
 void
 initPrimitive() {
   primitives[PRIM_UNKNOWN] = NULL;
+
 
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
@@ -512,6 +520,8 @@ initPrimitive() {
 
   prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_ARRAY_GET, "chpl_comm_array_get", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_ARRAY_PUT, "chpl_comm_array_put", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_REMOTE_PREFETCH, "chpl_comm_remote_prefetch", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_GET_STRD, "chpl_comm_get_strd", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
@@ -625,11 +635,23 @@ initPrimitive() {
   
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
 
+  // This primitive allows normalize to request function resolution
+  // coerce a return value to the declared return type, even though
+  // the declared return type is not really known until function
+  // resolution.
+  // It coerces its first argument to the type stored in the second argument.
+  prim_def(PRIM_COERCE, "coerce", returnInfoSecondType);
+
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
+
+  prim_def(PRIM_FIND_FILENAME_IDX, "chpl_findFilenameIdx", returnInfoUInt64, false, false);
+  prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
+
+  prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoStringC);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

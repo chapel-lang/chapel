@@ -34,6 +34,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "insertLineNumbers.h"
 
 #include <inttypes.h>
 
@@ -181,6 +182,23 @@ genGlobalInt(const char* cname, int value) {
 #endif
   }
 }
+
+static void genGlobalInt64(const char *cname, int value) {
+  GenInfo *info = gGenInfo;
+  if (info->cfile) {
+    fprintf(info->cfile, "const int64_t %s = %d;\n", cname, value);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::GlobalVariable *globalInt =
+        llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+            cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    globalInt->setInitializer(info->builder->getInt64(value));
+    globalInt->setConstant(true);
+    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false);
+#endif
+  }
+}
+
 static void
 genClassIDs(Vec<TypeSymbol*> & typeSymbols) {
   genComment("Class Type Identification Numbers");
@@ -338,6 +356,60 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
   }
 }
 
+static void genFilenameTable() {
+  GenInfo *info = gGenInfo;
+  const char *tableName = "chpl_filenameTable";
+  const char *sizeName = "chpl_filenameTableSize";
+  // make sure the internal filename is added to the table
+  gFilenameLookup.insert("<internal>");
+  if (info->cfile) {
+    FILE *hdrfile = info->cfile;
+
+    fprintf(hdrfile, "c_string %s[] = {\n", tableName);
+
+    bool first = true;
+    for (std::set<std::string>::iterator it = gFilenameLookup.begin();
+         it != gFilenameLookup.end(); it++) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "    \"%s\"", (*it).c_str());
+      first = false;
+    }
+
+    fprintf(hdrfile, "\n};\n");
+  } else {
+#ifdef HAVE_LLVM
+    std::vector<llvm::Constant *> table(gFilenameLookup.size());
+
+    llvm::Type *c_stringType =
+        llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+
+    int idx = 0;
+    for (std::set<std::string>::iterator it = gFilenameLookup.begin();
+         it != gFilenameLookup.end(); it++) {
+      table[idx++] = llvm::cast<llvm::GlobalVariable>(
+              new_CStringSymbol((*it).c_str())->codegen().val)->getInitializer();
+    }
+
+    llvm::ArrayType *filenameTableType =
+        llvm::ArrayType::get(c_stringType, table.size());
+
+    if (llvm::GlobalVariable *filenameTable =
+            info->module->getNamedGlobal(tableName)) {
+      filenameTable->eraseFromParent();
+    }
+
+    llvm::GlobalVariable *filenameTable = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(tableName, filenameTableType));
+    filenameTable->setInitializer(
+        llvm::ConstantArray::get(filenameTableType, table));
+    filenameTable->setConstant(true);
+    info->lvt->addGlobalValue(tableName, filenameTable, GEN_PTR, true);
+#endif
+  }
+  genGlobalInt64(sizeName, gFilenameLookup.size());
+}
+
 static int
 compareSymbol(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -434,11 +506,8 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
   // never codegen definitions of primitive or arithmetic types.
   if( toPrimitiveType(ct) ) return false;
 
-  // Needed special handling for complex types, since after complex2record
-  // they appear like normal records but we must not define them
-  // since they are defined in the runtime headers
-  // Added a flag, FLAG_NO_CODEGEN, to handle this case.
-  // This flag could be used for other similar cases if necessary.
+  // Don't codegen types with FLAG_NO_CODEGEN.  This is used for
+  // types that are defined in the runtime for example.
   if( ct->symbol->hasFlag(FLAG_NO_CODEGEN) ) return false;
 
   // Don't visit classes since they are prototyped individually all at once..
@@ -518,12 +587,14 @@ static void codegen_header_compilation_config() {
     genGlobalString("chpl_compileVersion", compileVersion);
     genGlobalString("CHPL_HOME",           CHPL_HOME);
 
-    for (int i = 0; i < num_chpl_env_vars; i++) {
-      genGlobalString(chpl_env_var_names[i], chpl_env_vars[i]);
-    }
-
     genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks);
     genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote);
+
+    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+      if (env->first != "CHPL_HOME") {
+        genGlobalString(env->first.c_str(), env->second);
+      }
+    }
 
     // generate the "about" function
     fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
@@ -539,11 +610,13 @@ static void codegen_header_compilation_config() {
     fprintf(cfgfile.fptr,
             "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
             CHPL_HOME);
-    for (int i = 0; i < num_chpl_env_vars; i++) {
-      fprintf(cfgfile.fptr,
-              "printf(\"%%s\", \"  %s: %s\\n\");\n",
-              chpl_env_var_names[i],
-              chpl_env_vars[i]);
+    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+      if (env->first != "CHPL_HOME") {
+        fprintf(cfgfile.fptr,
+          "printf(\"%%s\", \"  %s: %s\\n\");\n",
+          env->first.c_str(),
+          env->second);
+      }
     }
 
     fprintf(cfgfile.fptr, "}\n");
@@ -926,7 +999,7 @@ static void codegen_header() {
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
     ftableVec.add(fn2);
-    ftableMap.put(fn2, ftableVec.n-1);
+    ftableMap[fn2] = ftableVec.n-1;
     }
   }
 
@@ -934,6 +1007,9 @@ static void codegen_header() {
 
   genComment("Virtual Method Table");
   genVirtualMethodTable(types);
+
+  genComment("Filename Lookup Table");
+  genFilenameTable();
 
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {
