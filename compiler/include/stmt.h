@@ -115,6 +115,7 @@ public:
   int                 length()                                     const;
 
   void                moduleUseAdd(ModuleSymbol* mod);
+  void                moduleUseAdd(UseExpr* use);
   bool                moduleUseRemove(ModuleSymbol* mod);
   void                moduleUseClear();
 
@@ -128,6 +129,8 @@ public:
   CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
 
 private:
+  void                createModUses();
+
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
 
   CallExpr*           blockInfo;

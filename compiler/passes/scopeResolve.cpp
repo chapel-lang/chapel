@@ -312,13 +312,23 @@ static void processImportExprs() {
     if (!mod)
       USR_FATAL(use, "Cannot find module");
 
+    // We don't need to perform any resolution on the default use of the
+    // rootModule, so don't add it to the current module's use list or that
+    // of its block (it should already be in the latter).
+    if (mod == rootModule)
+      continue;
+
+    use->mod->replace(new SymExpr(mod));
+    // Need to update the use now that we've found what it refers to
+
     ModuleSymbol* enclosingModule = use->getModule();
 
     enclosingModule->moduleUseAdd(mod);
 
-    getVisibilityBlock(use)->moduleUseAdd(mod);
-
+    BlockStmt* useParent = getVisibilityBlock(use);
     use->getStmtExpr()->remove();
+
+    useParent->moduleUseAdd(use);
   }
 }
 
@@ -1931,7 +1941,10 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
           modules = new Vec<ModuleSymbol*>();
 
           for_actuals(expr, block->modUses) {
-            SymExpr* se = toSymExpr(expr);
+            UseExpr* use = toUseExpr(expr);
+            INT_ASSERT(use);
+
+            SymExpr* se = toSymExpr(use->mod);
             INT_ASSERT(se);
 
             ModuleSymbol* mod = toModuleSymbol(se->var);
@@ -2080,7 +2093,10 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
       break;
     } else if (module->block->modUses) {
       for_actuals(expr, module->block->modUses) {
-        SymExpr*      se  = toSymExpr(expr);
+        UseExpr*      use = toUseExpr(expr);
+        INT_ASSERT(use);
+
+        SymExpr*      se  = toSymExpr(use->mod);
         INT_ASSERT(se);
 
         ModuleSymbol* mod = toModuleSymbol(se->var);
