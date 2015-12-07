@@ -10,8 +10,8 @@ Base Language
    :maxdepth: 1
    :glob:
 
-   base/01-consoleOutput
-   base/10-variables
+   base/simpleConsoleOutput
+   base/variableDeclarations
 
 Task Parallelism
 ----------------
@@ -20,8 +20,8 @@ Task Parallelism
    :maxdepth: 1
    :glob:
 
-   taskpar/01-tasks
-   taskpar/10-begin
+   taskpar/taskParallelismOverview
+   taskpar/theBeginStatement
 
 
 Data Parallelism
@@ -35,6 +35,6 @@ Locality
    :maxdepth: 1
    :glob:
 
-   locality/01-locales
-   locality/05-multilocale
-   locality/10-localeTypeVars
+   locality/localesInChapel
+   locality/compilingAndExecutingMultiLocalePrograms
+   locality/localeTypeAndVariables
