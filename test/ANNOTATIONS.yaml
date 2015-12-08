@@ -290,6 +290,8 @@ parOpEquals:
 regexdna:
   10/07/14:
     - Add c_string_copy type
+  11/29/15:
+    - started building re2 with optimizations (#2930)
 
 revcomp:
   05/11/15:

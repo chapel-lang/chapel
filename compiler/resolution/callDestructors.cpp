@@ -215,6 +215,9 @@ private:
   static ArgSymbol*       addFormal(FnSymbol* fn);
   static void             insertAssignmentToFormal(FnSymbol*  fn,
                                                    ArgSymbol* formal);
+  static void             updateAssignmentsFromRefArgToValue(FnSymbol* fn);
+  static void             updateAssignmentsFromRefTypeToValue(FnSymbol* fn);
+  static void             updateAssignmentsFromModuleLevelValue(FnSymbol* fn);
   static void             updateReturnStatement(FnSymbol* fn);
   static void             updateReturnType(FnSymbol* fn);
 
@@ -348,6 +351,9 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
   ArgSymbol* formal = addFormal(fn);
 
   insertAssignmentToFormal(fn, formal);
+  updateAssignmentsFromRefArgToValue(fn);
+  updateAssignmentsFromRefTypeToValue(fn);
+  updateAssignmentsFromModuleLevelValue(fn);
   updateReturnStatement(fn);
   updateReturnType(fn);
 }
@@ -377,6 +383,162 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
   CallExpr* moveExpr    = new CallExpr(PRIM_MOVE, formal, returnValue);
 
   returnPrim->insertBefore(moveExpr);
+}
+
+//
+// Consider a function that takes a formal of type Record by const ref
+// and that returns that value from the function.  The compiler inserts
+// a PRIM_MOVE operation.
+//
+// This work-around inserts an autoCopy to compensate
+//
+void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr* lhs = toSymExpr(move->get(1));
+      SymExpr* rhs = toSymExpr(move->get(2));
+
+      if (lhs != NULL && rhs != NULL)
+      {
+        VarSymbol* symLhs = toVarSymbol(lhs->var);
+        ArgSymbol* symRhs = toArgSymbol(rhs->var);
+
+        if (symLhs != NULL && symRhs != NULL)
+        {
+          if (isString(symLhs->type) == true && isString(symRhs->type) == true)
+          {
+            if (symLhs->hasFlag(FLAG_ARG_THIS) == false &&
+                (symRhs->intent == INTENT_REF ||
+                 symRhs->intent == INTENT_CONST_REF))
+            {
+              SET_LINENO(move);
+
+              CallExpr* autoCopy = NULL;
+
+              rhs->remove();
+              autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
+              move->insertAtTail(autoCopy);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+//
+// Consider a function that assigns a class-ref wrapper for a record to
+// a value of that record type.  The compiler represents this as a
+//
+//      move dst PRIM_DEREF(src)
+//
+// but fails to insert the required autoCopy.
+//
+// This transformation adds a move/autoCopy statement immediately after
+// the targetted statement.  The <dst> symbol is updated in place in the
+// new statement
+//
+//
+
+void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr*  symLhs  = toSymExpr (move->get(1));
+      CallExpr* callRhs = toCallExpr(move->get(2));
+
+      if (symLhs && callRhs && callRhs->isPrimitive(PRIM_DEREF))
+      {
+        VarSymbol* varLhs = toVarSymbol(symLhs->var);
+        SymExpr*   symRhs = toSymExpr(callRhs->get(1));
+        VarSymbol* varRhs = toVarSymbol(symRhs->var);
+
+        if (varLhs != NULL && varRhs != NULL)
+        {
+          if (isString(varLhs->type) == true &&
+              varRhs->type           == varLhs->type->refType)
+          {
+            SET_LINENO(move);
+
+            SymExpr*  lhsCopy0 = symLhs->copy();
+            SymExpr*  lhsCopy1 = symLhs->copy();
+            FnSymbol* autoCopy = autoCopyMap.get(varLhs->type);
+            CallExpr* copyExpr = new CallExpr(autoCopy, lhsCopy0);
+            CallExpr* moveExpr = new CallExpr(PRIM_MOVE,lhsCopy1, copyExpr);
+
+            move->insertAfter(moveExpr);
+          }
+        }
+      }
+    }
+  }
+}
+
+//
+// Consider a function that returns a module-level variable as the value
+// for the function.  The compiler inserts a PRIM_MOVE operation.
+//
+// This work-around inserts an autoCopy to compensate
+//
+void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr* lhs = toSymExpr(move->get(1));
+      SymExpr* rhs = toSymExpr(move->get(2));
+
+      if (lhs != NULL && rhs != NULL)
+      {
+        VarSymbol* symLhs = toVarSymbol(lhs->var);
+        VarSymbol* symRhs = toVarSymbol(rhs->var);
+
+        if (symLhs != NULL && symRhs != NULL)
+        {
+          if (isString(symLhs->type) == true && isString(symRhs->type) == true)
+          {
+            DefExpr* def = symRhs->defPoint;
+
+            if (isModuleSymbol(def->parentSymbol) == true &&
+                def->parentSymbol                 != rootModule)
+            {
+              SET_LINENO(move);
+
+              CallExpr* autoCopy = NULL;
+
+              rhs->remove();
+              autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
+              move->insertAtTail(autoCopy);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 void ReturnByRef::updateReturnStatement(FnSymbol* fn)
@@ -432,22 +594,84 @@ void ReturnByRef::transform()
   }
 }
 
+//
+// Transform a call to a function that returns a record to be a call
+// to a revied function that does not return a value and that accepts
+// a reference to the destination i.e.
+//
+// replace
+//
+//     move dst func(a, b, c)
+//
+// with
+//
+//     define ref;
+//
+//     ref = &dst;
+//     func(a, b, c, ref);
+//
+// In some cases the statement after the move is another move
+// with a RHS that performs a superfluous initCopy/autoCopy.
+// If so reduce to a simple move.  The called-function is responsible
+// for performing a copy when needed.
+//
+
 void ReturnByRef::transformMove(CallExpr* moveExpr)
 {
   SET_LINENO(moveExpr);
 
   Expr*     lhs      = moveExpr->get(1);
+
   CallExpr* callExpr = toCallExpr(moveExpr->get(2));
+  FnSymbol* fn       = callExpr->isResolved();
+
+  Expr*     nextExpr = moveExpr->next;
+  CallExpr* copyExpr = NULL;
+
   Symbol*   useLhs   = toSymExpr(lhs)->var;
   Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
 
+
+  // Determine if
+  //   a) current call is not a PRIMOP
+  //   a) current call is not to a constructor
+  //   c) the subsequent statement is PRIM_MOVE for an initCopy/autoCopy
+  if (fn                            != NULL  &&
+      fn->hasFlag(FLAG_CONSTRUCTOR) == false &&
+      nextExpr                      != NULL)
+  {
+    if (CallExpr* callNext = toCallExpr(nextExpr))
+    {
+      if (callNext->isPrimitive(PRIM_MOVE) == true)
+      {
+        if (CallExpr* rhsCall = toCallExpr(callNext->get(2)))
+        {
+          FnSymbol* rhsFn = rhsCall->isResolved();
+
+          if (rhsFn                              != NULL &&
+              (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
+               rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
+          {
+            copyExpr = rhsCall;
+          }
+        }
+      }
+    }
+  }
+
+  // Introduce a reference to the return value
   moveExpr->insertBefore(new DefExpr(refVar));
   moveExpr->insertBefore(new CallExpr(PRIM_MOVE,
                                       refVar,
                                       new CallExpr(PRIM_ADDR_OF, useLhs)));
 
+  // Convert the by-value call to a void call with an additional formal
   moveExpr->replace(callExpr->remove());
   callExpr->insertAtTail(refVar);
+
+  // Possibly reduce a copy operation to a simple move
+  if (copyExpr)
+    copyExpr->replace(copyExpr->get(1)->remove());
 }
 
 /************************************* | **************************************

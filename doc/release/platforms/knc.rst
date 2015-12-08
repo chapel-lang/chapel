@@ -33,7 +33,6 @@ There are currently a number of limitations for KNC builds:
   =================  ================================
   CHPL_MEM=tcmalloc  lfence not supported
   CHPL_REGEXP=re2    sfence not supported
-  CHPL_HWLOC=hwloc   undiagnosed build issues
   CHPL_GMP=system    system version not built for KNC
   =================  ================================
 
@@ -57,14 +56,14 @@ For vanilla Intel compiler:
     CHPL_TARGET_ARCH: knc
     CHPL_LOCALE_MODEL: flat
     CHPL_COMM: none
-    CHPL_TASKS: fifo
+    CHPL_TASKS: qthreads
     CHPL_LAUNCHER: none
     CHPL_TIMERS: generic
     CHPL_MEM: cstdlib
     CHPL_MAKE: gmake
     CHPL_ATOMICS: intrinsics
     CHPL_GMP: none
-    CHPL_HWLOC: none
+    CHPL_HWLOC: hwloc
     CHPL_REGEXP: none
     CHPL_WIDE_POINTERS: struct
     CHPL_LLVM: none
@@ -112,7 +111,7 @@ For Cray machines, only the ``aprun`` launcher is supported.  In addition,
     CHPL_COMM: gasnet
       CHPL_COMM_SUBSTRATE: mpi
       CHPL_GASNET_SEGMENT: everything
-    CHPL_TASKS: fifo
+    CHPL_TASKS: qthreads
     CHPL_LAUNCHER: aprun
     CHPL_TIMERS: generic
     CHPL_MEM: cstdlib
@@ -120,7 +119,7 @@ For Cray machines, only the ``aprun`` launcher is supported.  In addition,
     CHPL_ATOMICS: intrinsics
       CHPL_NETWORK_ATOMICS: none
     CHPL_GMP: gmp
-    CHPL_HWLOC: none
+    CHPL_HWLOC: hwloc
     CHPL_REGEXP: none
     CHPL_WIDE_POINTERS: struct
     CHPL_LLVM: none
