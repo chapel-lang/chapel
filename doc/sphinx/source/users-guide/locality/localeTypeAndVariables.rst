@@ -37,12 +37,12 @@ The variable *numLocales* is a built-in integer constant indicating
 the number of locales on which the program is running.  For example,
 when run on four locales, the following program:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/locality/10-numLocales.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/numLocales.chpl
   :language: chapel
 
 would generate:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/locality/10-numLocales.good
+.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/numLocales.good
   :language: text
 
 
@@ -60,12 +60,12 @@ array.  This is demonstrated by the following program which first
 prints the *LocaleSpace* domain and then iterates over it, showing
 that the ID of each value in *Locales* corresponds to its index:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/locality/12-localesDomArr.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/localesDomArr.chpl
   :language: chapel
 
 Running on four locales, its output is:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/locality/12-localesDomArr.good
+.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/localesDomArr.good
   :language: text
 
 
@@ -82,10 +82,10 @@ As an example, the following program demonstrates that Chapel programs
 begin their execution on locale 0:
 
 
-.. literalinclude:: ../../../../../test/release/examples/guide/locality/09-here-id.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/here-id.chpl
   :language: chapel
 
 Running it on any number of locales generates:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/locality/09-here-id.good
+.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/here-id.good
   :language: text

@@ -7,19 +7,19 @@ Chapel variables are declared using the **var** keyword.  As an
 example, the following statement declares a variable named *x* of
 integer type (``int``) and initializes it to 42:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarTypeInit.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/intVarTypeInit.chpl
   :language: chapel
   :lines: 1
 
 We can verify its value by printing it out using ``writeln()``:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarTypeInit.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/intVarTypeInit.chpl
   :language: chapel
   :lines: 2
 
 Compiling and running this program results in:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarTypeInit.good
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/intVarTypeInit.good
   :language: text
 
 As we will see in the following sections, a variable declaration may
@@ -34,13 +34,13 @@ compiler will initialize the variable to a default value based on its
 type.  For example, the default value for integers is zero, so if we
 had instead declared *x* as:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarDefaultInit.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/intVarDefaultInit.chpl
   :language: chapel
   :lines: 1-2
 
 We would get:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarDefaultInit.good
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/intVarDefaultInit.good
   :language: text
 
 
@@ -52,7 +52,7 @@ type specification.  In this case, the compiler will infer the
 variable's type to be the same as its initialization expression's.
 Thus, we could have written the original program simply as:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarInferType.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/intVarInferType.chpl
   :language: chapel
   :lines: 1-2
 
@@ -60,7 +60,7 @@ In this case, the compiler knows that 42 is a value of integer type
 (``int``), therefore it infers that the type of *x* is also ``int``.
 Running this program, once again produces:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-intVarInferType.good
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/intVarInferType.good
   :language: text
 
 In practice, this style of coding is often used for brevity, resulting
@@ -78,7 +78,7 @@ The **var** keyword can also be used to create more than one variable
 at a time.  For example, the following statement will create three
 integer variables, *a*, *b*, and *c*, all initialized to 42:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-compoundVarDecls.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/compoundVarDecls.chpl
   :language: chapel
   :lines: 1
 
@@ -86,7 +86,7 @@ As before, initialization and type information may be omitted.  For
 example, the following statement creates three integer variables, *i*,
 *j*, and *k*, all default-initialized to zero:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-compoundVarDecls.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/compoundVarDecls.chpl
   :language: chapel
   :lines: 2
 
@@ -94,7 +94,7 @@ Similarly, the following declaration creates three variables, *x*,
 *y*, and *z*, all inferred to be of type ``int`` due to being
 initialized with the integer 42:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-compoundVarDecls.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/compoundVarDecls.chpl
   :language: chapel
   :lines: 3
 
@@ -106,7 +106,7 @@ default-initialized to zero; *s* and *t* to be string variables
 initialized to "hi"; and *x*, *y*, and *z* to be inferred integer
 variables initialized to 42:
 
-.. literalinclude:: ../../../../../test/release/examples/guide/base/10-compoundVarDecls2.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/base/compoundVarDecls2.chpl
   :language: chapel
   :lines: 1-4
 
