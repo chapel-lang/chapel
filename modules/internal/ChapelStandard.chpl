@@ -26,13 +26,14 @@ module ChapelStandard {
   // Internal modules.
   use ChapelEnv;
   use ChapelBase;
+  use CPtr;
+  use CString;
   use String;
   use MemConsistency;
   use Atomics;
   use NetworkAtomics;
   use NetworkAtomicTypes;
   use AtomicsCommon;
-  use NewString;
   use ChapelIteratorSupport;
   use ChapelThreads;
   use ChapelThreadsInternal;

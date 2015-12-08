@@ -94,9 +94,10 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
 }
 
 static inline
-void* chpl_mem_calloc(size_t size, chpl_mem_descInt_t description,
+void* chpl_mem_calloc(size_t number, size_t size,
+                      chpl_mem_descInt_t description,
                       int32_t lineno, c_string filename) {
-  return chpl_mem_allocManyZero(1, size, description, lineno, filename);
+  return chpl_mem_allocManyZero(number, size, description, lineno, filename);
 }
 
 static inline
