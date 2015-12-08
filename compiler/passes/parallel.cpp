@@ -164,7 +164,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 ///
 /// This routine optionally inserts an autoCopy ahead of each invocation of a
 /// task function that begins asynchronous execution (currently just "begin" and
-/// "nonblocking on" functions).  
+/// "nonblocking on" functions).
 /// If such an autoCopy call is inserted, a matching autoDestroy call is placed
 /// at the end of the tasking routine before the call to _downEndCount.  Since a
 /// tasking function may be called from several call sites, the task function is
@@ -180,21 +180,22 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 /// \param firstCall Should be set to \p true for the first invocation of a
 /// given task function and \p false thereafter.
 /// \ret Returns the result of calling autoCopy on the given arg, if necessary;
-/// otherwise, just returns 
+/// otherwise, just returns
 static Symbol* insertAutoCopyDestroyForTaskArg
   (Expr* arg, ///< The actual argument being passed.
    CallExpr* fcall, ///< The call that invokes the task function.
    FnSymbol* fn, ///< The task function.
    bool firstCall)
 {
-  SymExpr* s = toSymExpr(arg);
-  Symbol* var = s->var;
+  SymExpr* s        = toSymExpr(arg);
+  Symbol*  var      = s->var;
+  Type*    baseType = arg->getValType();
 
-  // This applies only to arguments being passed to asynchronous task functions.
-  // No need to increment+decrement the reference counters for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN))
+  // This applies only to arguments being passed to asynchronous task
+  // functions. No need to increment+decrement the reference counters
+  // for cobegins/coforalls.
+  if (fn->hasFlag(FLAG_BEGIN) || isString(baseType))
   {
-    Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
 
@@ -248,7 +249,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         insertReferenceTemps(autoDestroyCall);
       }
     }
-    else if (isRecord(baseType))
+
+    else if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
+             isString(baseType))
     {
       // Do this only if the record is passed by value.
       if (arg->typeInfo() == baseType)
@@ -277,6 +280,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       }
     }
   }
+
   return var;
 }
 
