@@ -130,6 +130,7 @@ do               return processToken(yyscanner, TDO);
 domain           return processToken(yyscanner, TDOMAIN);
 else             return processToken(yyscanner, TELSE);
 enum             return processToken(yyscanner, TENUM);
+except           return processToken(yyscanner, TEXCEPT);
 export           return processToken(yyscanner, TEXPORT);
 extern           return processExtern(yyscanner);
 for              return processToken(yyscanner, TFOR);

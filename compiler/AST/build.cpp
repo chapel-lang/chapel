@@ -422,6 +422,27 @@ static void processStringInRequireStmt(const char* str) {
   }
 }
 
+//
+// Build a 'use' statement with an 'except' list
+//
+BlockStmt* buildUseStmt(Expr* mod, CallExpr* names) {
+  Vec<const char*> namesList;
+
+  // Iterate through the list of names to exclude when using mod
+  for_actuals(expr, names) {
+    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(expr)) {
+      namesList.add(name->unresolved);
+      name->remove();
+    } else {
+      // Currently we expect only unresolved sym exprs
+      USR_FATAL(expr, "Bad specifier for 'except' statement");
+    }
+  }
+
+  UseExpr* newUse = new UseExpr(mod, &namesList, true);
+
+  return buildChapelStmt(newUse);
+}
 
 //
 // Build a 'use' statement

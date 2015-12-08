@@ -5896,7 +5896,7 @@ UseExpr::UseExpr(BaseAST* module):
 }
 
 
-// Will destroy "args" argument when finished with it.
+//
 UseExpr::UseExpr(BaseAST* module, Vec<const char*>* args, bool exclude) :
   Expr(E_UseExpr),
   includes(),
@@ -5927,7 +5927,6 @@ UseExpr::UseExpr(BaseAST* module, Vec<const char*>* args, bool exclude) :
       includes.push_back(str);
     }
   }
-  delete args;
   // args shouldn't be needed any more, it has served its purpose
   gUseExprs.add(this);
 }
