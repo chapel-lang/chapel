@@ -2840,7 +2840,6 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     block->moduleUseAdd(rootModule);
-    block->moduleUseAdd(stringLiteralModule);
   }
 }
 
