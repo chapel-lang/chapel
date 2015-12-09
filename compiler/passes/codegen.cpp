@@ -591,7 +591,7 @@ static void codegen_header_compilation_config() {
     genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote);
 
     for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-      if (env->first != "CHPL_HOME" && !useDefaultEnv(env->first)) {
+      if (env->first != "CHPL_HOME") {
         genGlobalString(env->first.c_str(), env->second);
       }
     }
