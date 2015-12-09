@@ -2842,7 +2842,7 @@ void ModuleSymbol::addDefaultUses() {
     block->moduleUseAdd(rootModule);
 
     UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
-    block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+    block->insertAtHead(new UseExpr(modRef));
   }
 }
 
