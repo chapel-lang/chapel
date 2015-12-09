@@ -20,7 +20,7 @@ config var n = 10;
 
 //
 // Rectangular domains are used to represent rectangular index sets.
-// Each dimesion of a rectangular domain is specified by a range and
+// Each dimension of a rectangular domain is specified by a range and
 // thus can take on the shape of any range.  See the Ranges primer
 // (ranges.chpl) for more information.
 //
