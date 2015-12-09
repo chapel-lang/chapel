@@ -414,7 +414,7 @@ BlockStmt* buildUseStmt(Expr* mod, CallExpr* names) {
       name->remove();
     } else {
       // Currently we expect only unresolved sym exprs
-      USR_FATAL(expr, "Bad specifier for 'except' statement");
+      USR_FATAL(expr, "incorrect expression in 'except' list, identifier expected");
     }
   }
 
