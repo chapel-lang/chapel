@@ -251,7 +251,7 @@ module String {
 
       const remoteThis = this.locale_id != chpl_nodeID;
       if remoteThis {
-        chpl_string_comm_get(ret.buff, this.locale_id, this.buff, 1);
+        chpl_string_comm_get(ret.buff, this.locale_id, this.buff + i - 1, 1);
       } else {
         ret.buff[0] = this.buff[i-1];
       }
