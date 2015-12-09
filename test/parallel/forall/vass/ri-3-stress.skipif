@@ -11,4 +11,4 @@ import os
 machine=os.uname()[1].split('.', 1)[0]
 targ_comp = os.environ.get('CHPL_TARGET_COMPILER', '')
 
-print (machine =='chpbld01' and targ_comp == 'cray-prgenv-cray')
+print (machine.startswith('chpbld') and targ_comp == 'cray-prgenv-cray')

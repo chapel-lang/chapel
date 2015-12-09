@@ -813,7 +813,6 @@ void AggregateType::codegenDef() {
   } else {
     if( outfile ) {
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -930,7 +929,6 @@ void AggregateType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -1361,6 +1359,12 @@ void initRootModule() {
   rootModule->filename = astr("<internal>");
 }
 
+void initStringLiteralModule() {
+  stringLiteralModule = new ModuleSymbol("ChapelStringLiterals", MOD_INTERNAL, new BlockStmt());
+  stringLiteralModule->filename = astr("<internal>");
+  theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
+}
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -1425,6 +1429,8 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+
+  dtString                             = new AggregateType(AGGREGATE_RECORD);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -1507,9 +1513,6 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL(dtStringCopy, gStringCopy, "_nullString");
   gStringCopy->cname = "NULL";
   gStringCopy->addFlag(FLAG_EXTERN);
-
-  dtString = createPrimitiveType( "string", "chpl_string");
-  dtString->defaultValue = NULL;
 
   // Like c_string_copy but unowned.
   // Could be == c_ptr(int(8)) e.g.
@@ -1790,10 +1793,6 @@ bool is_enum_type(Type *t) {
   return toEnumType(t);
 }
 
-bool is_string_type(Type *t) {
-  return t == dtString;
-}
-
 int get_width(Type *t) {
   if (t == dtBools[BOOL_SIZE_SYS]) {
     return 1;
@@ -1995,20 +1994,12 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if (fHeterogeneous) {
-    // strings are special
-    if (toPrimitiveType(typesym) == dtString) {
-      if( info->cfile )
-        ret.c = std::string("-") + typesym->cname;
-      else
-        INT_FATAL("TODO: genTypeStructureIndex llvm strings");
-    } else {
-      if( info->cfile )
-        ret.c = genChplTypeEnumString(typesym);
-      else {
+    if( info->cfile )
+      ret.c = genChplTypeEnumString(typesym);
+    else {
 #ifdef HAVE_LLVM
-        ret = info->lvt->getValue(genChplTypeEnumString(typesym));
+      ret = info->lvt->getValue(genChplTypeEnumString(typesym));
 #endif
-      }
     }
   } else {
     if( info->cfile )
@@ -2137,7 +2128,6 @@ bool needsCapture(Type* t) {
       is_imag_type(t) ||
       is_complex_type(t) ||
       is_enum_type(t) ||
-      is_string_type(t) ||
       t == dtStringC ||
       isClass(t) ||
       isRecord(t) ||
@@ -2184,12 +2174,6 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
  */
 bool isPOD(Type* t)
 {
-  // Strings and wide strings aren't POD
-  // These need to be special-cases as long
-  // as code generation treats strings specially.
-  if( t == wideStringType || t == dtString )
-    return false;
-
   // things that aren't aggregate types are POD
   //   e.g. int, boolean, complex, etc
   if (!isAggregateType(t))

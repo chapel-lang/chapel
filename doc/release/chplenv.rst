@@ -318,11 +318,6 @@ CHPL_TASKS
 
      * target platform is ``cygwin*``
      * target platform is ``netbsd*``
-     * target compiler is ``cray-prgenv-cray``
-
-   The latter two apply independent of whether you are building Chapel
-   yourself or using the pre-built module on a Cray XC or XE\ |trade|
-   system.
 
    .. note::
      Note that the Chapel ``util/quickstart/setchplenv.*`` source scripts set

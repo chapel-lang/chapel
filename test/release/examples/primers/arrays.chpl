@@ -41,7 +41,7 @@ writeln("Initially, A2 is: ", A2);
 
 //
 // Arrays can be accessed using scalar index values of the appropriate
-// type, using either parenthesis or square brackets:
+// type, using either parentheses or square brackets:
 //
 
 A[1] = 1.1;
@@ -60,7 +60,7 @@ writeln("After assigning its interior values, A is: ", A);
 writeln();
 
 //
-// Just like with array indexing, either square brackets or parenthesis
+// Just like with array indexing, either square brackets or parentheses
 // can be used for array slicing:
 //
 
@@ -241,7 +241,7 @@ writeln("After being assigned a slice of B, A is:\n", A, "\n");
 // index set and the specified slice.
 //
 // Domain slicing, like array indexing and slicing, can be written
-// with either square brackets or parenthesis.
+// with either square brackets or parentheses.
 //
 
 writeln("ProbSpace[1..n-2, 3..] is: ", ProbSpace[1..n-2, 3..], "\n");

@@ -842,6 +842,8 @@ Miscellaneous
   # types/tuple/stonea/returnArrayTuple.future
 - Comm=ugni network atomic ops fail for vars on tasks=qthreads stacks
   # runtime/gbt/atomic-on-stack.future
+- Indexing string literals results in a parse error
+  # types/string/sungeun/c_string/substr.future
 
 
 Performance

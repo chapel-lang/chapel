@@ -95,32 +95,44 @@ void cullOverReferences() {
   //
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
+
   buildDefUseMaps(defMap, useMap);
+
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->isResolved()) {
       if (FnSymbol* copy = fn->valueFunction) {
         if (CallExpr* move = toCallExpr(call->parentExpr)) {
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
+
           INT_ASSERT(se);
           SET_LINENO(move);
+
           if (!refNecessary(se, defMap, useMap)) {
-            SymExpr* base = toSymExpr(call->baseExpr);
+            SymExpr*   base = toSymExpr(call->baseExpr);
+            VarSymbol* tmp  = newTemp(copy->retType);
+
             base->var = copy;
-            VarSymbol* tmp = newTemp(copy->retType);
+
             move->insertBefore(new DefExpr(tmp));
+
             if (requiresImplicitDestroy(call)) {
               if (isString(copy->retType) == false) {
                 tmp->addFlag(FLAG_INSERT_AUTO_COPY);
                 tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              } else {
+                tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
               }
             }
+
             if (useMap.get(se->var) && useMap.get(se->var)->n > 0) {
-              move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
-                                  new CallExpr(PRIM_ADDR_OF, tmp)));
+              move->insertAfter(new CallExpr(PRIM_MOVE,
+                                             se->var,
+                                             new CallExpr(PRIM_ADDR_OF, tmp)));
             } else {
               se->var->defPoint->remove();
             }
+
             se->var = tmp;
           }
         } else
@@ -128,6 +140,7 @@ void cullOverReferences() {
       }
     }
   }
+
   freeDefUseMaps(defMap, useMap);
 
   //

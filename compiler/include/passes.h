@@ -109,8 +109,6 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 void insertReferenceTemps(CallExpr* call);
 
 // parallel.cpp
-bool isRefWideString(Type* t);
-bool isWideString(Type* t);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 

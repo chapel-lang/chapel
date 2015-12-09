@@ -18,6 +18,14 @@ CFLAGS += -mmic
 endif
 endif
 
+#
+# Something with ffsl is broken with cce >= 8.4.0 (and older
+# versions with -hgnu thrown.)
+#
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
+CFLAGS += -DHWLOC_HAVE_BROKEN_FFS
+endif
+
 CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-shared \
                           --disable-cairo \

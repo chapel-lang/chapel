@@ -15,5 +15,5 @@ proc Power(n : int) : int
 var n   : int = 10;
 var pow : int = Power(n);
 
-writeln('Pow: ', pow);
+writeln(c'Pow: ', pow);
 quit();
