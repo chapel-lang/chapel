@@ -2840,7 +2840,9 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     block->moduleUseAdd(rootModule);
-    block->moduleUseAdd(stringLiteralModule);
+
+    UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
+    block->insertAtHead(new CallExpr(PRIM_USE, modRef));
   }
 }
 

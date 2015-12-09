@@ -2001,14 +2001,33 @@ GenRet codegenAdd(GenRet a, GenRet b)
     bool b_signed = false;
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
-    PromotedPair values =
-      convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
-    if(values.a->getType()->isFPOrFPVectorTy()) {
-      ret.val = info->builder->CreateFAdd(values.a, values.b);
+
+    // Handle pointer arithmetic ( e.g. int8* + int64)
+    if(av.val->getType()->isPointerTy() || bv.val->getType()->isPointerTy()) {
+      // We must have one integer and one pointer, not two pointers.
+      GenRet *ptr = NULL;
+      GenRet *i = NULL;
+      if(av.val->getType()->isPointerTy()) ptr = &av;
+      else i = &av;
+      if(bv.val->getType()->isPointerTy()) ptr = &bv;
+      else i = &bv;
+
+      // We must have a pointer and an integer.
+      INT_ASSERT(ptr && i);
+
+      // Emit a GEP instruction to do the addition.
+      ret.isUnsigned = true; // returning a pointer, consider them unsigned
+      ret.val = info->builder->CreateInBoundsGEP(ptr->val, i->val);
     } else {
-      ret.val = info->builder->CreateAdd(values.a, values.b);
+      PromotedPair values =
+        convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
+      if(values.a->getType()->isFPOrFPVectorTy()) {
+        ret.val = info->builder->CreateFAdd(values.a, values.b);
+      } else {
+        ret.val = info->builder->CreateAdd(values.a, values.b);
+      }
+      ret.isUnsigned = !values.isSigned;
     }
-    ret.isUnsigned = !values.isSigned;
 #endif
   }
   return ret;
@@ -2028,14 +2047,25 @@ GenRet codegenSub(GenRet a, GenRet b)
     bool b_signed = false;
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
-    PromotedPair values =
-      convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
-    if(values.a->getType()->isFPOrFPVectorTy()) {
-      ret.val = info->builder->CreateFSub(values.a, values.b);
+
+    if(av.val->getType()->isPointerTy()) {
+      // Handle pointer arithmetic by calling codegenAdd
+      // with a negative value.
+      INT_ASSERT(bv.val->getType()->isIntegerTy());
+      GenRet negbv;
+      negbv.val = info->builder->CreateNeg(bv.val);
+      negbv.isUnsigned = false;
+      ret = codegenAdd(av, negbv);
     } else {
-      ret.val = info->builder->CreateSub(values.a, values.b);
+      PromotedPair values =
+        convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
+      if(values.a->getType()->isFPOrFPVectorTy()) {
+        ret.val = info->builder->CreateFSub(values.a, values.b);
+      } else {
+        ret.val = info->builder->CreateSub(values.a, values.b);
+      }
+      ret.isUnsigned = !values.isSigned;
     }
-    ret.isUnsigned = !values.isSigned;
 #endif
   }
   return ret;
