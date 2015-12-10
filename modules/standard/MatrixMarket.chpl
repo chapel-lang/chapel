@@ -178,18 +178,19 @@ class MMReader {
 
 class LargeMMReader : MMReader {
 
-   var fdescptr, mmfdesc:c_void_ptr;
-   var fdesc:fd_t;
+   //var fdescptr, mmfdesc:c_void_ptr;
+   //var fdesc:fd_t;
    var mmap_sz:size_t;
    var file_sz:int;
 
    proc LargeMMReader(const fname:string, const mmapsz=(1024*25)) {
       file_sz = getFileSize(fname);
       mmap_sz=mmapsz:size_t;
-      sys_open(fname.c_str(), 0:c_int, O_RDONLY:mode_t, fdesc);
-      sys_mmap(fdescptr, mmap_sz, PROT_READ:c_int, MAP_SHARED|MAP_FILE:c_int, fdesc, 0:off_t, mmfdesc);
-      fd = openfd(fdesc, hints=iokind.native);
-      fin = fd.reader(start=0);
+      //sys_open(fname.c_str(), 0:c_int, O_RDONLY:mode_t, fdesc);
+      //sys_mmap(fdescptr, mmap_sz, PROT_READ:c_int, MAP_SHARED|MAP_FILE:c_int, fdesc, 0:off_t, mmfdesc);
+      //fd = openfd(fdesc, hints=iokind.native);
+      fd = openfd(fname, mode=iomode.r, hints=IOHINT_CACHED|IOHINT_PARALLEL|IOHINT_RANDOM); 
+      fin = fd.reader(start=0, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
    }
 
    proc read_file() {
@@ -214,7 +215,7 @@ class LargeMMReader : MMReader {
 
          var done:bool = true;
          var line:string;
-         var eolReader = fd.reader(start=i, end=i+numBytesPerThread);
+         var eolReader = fd.reader(start=i, end=i+numBytesPerThread, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
 
          // that ugly while loop in a parallel thread of execution... 
          while done { 
@@ -234,7 +235,7 @@ class LargeMMReader : MMReader {
 
       forall mk in eolMarkersList {
          var i, j:int; var w:real;
-         var blkreader = fd.reader(start=mk);
+         var blkreader = fd.reader(start=mk, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
          blkreader.readf("%i %i %r\n", i, j, w);
          toret(i, j) = w;
          blkreader.close();
@@ -244,8 +245,8 @@ class LargeMMReader : MMReader {
    }
 
    proc close() {
-      sys_munmap(mmfdesc, mmap_sz);
-      sys_close(fdesc);
+      //sys_munmap(mmfdesc, mmap_sz);
+      //sys_close(fdesc);
       fin.close();
       fd.close();
    }
