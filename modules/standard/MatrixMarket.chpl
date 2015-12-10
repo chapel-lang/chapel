@@ -27,8 +27,8 @@ module MatrixMarket {
    use Math;
    use IO;
    use Sys;
-   use Regexp;
-   use RecordParser;
+   //use Regexp;
+   //use RecordParser;
    use List;
 
 extern var PROT_READ:c_int;
@@ -115,8 +115,8 @@ class MMReader {
    var fin:channel(false, iokind.dynamic, true);
 
    proc MMReader(const fname:string) {
-      fd = open(fname, iomode.r, hints=IOHINT_RANDOM|IOHINT_CACHED|iokind.native);
-      fin = fd.reader(start=0);
+      fd = open(fname, iomode.r, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+      fin = fd.reader(start=0, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
    }
 
    proc read_header() {
@@ -132,7 +132,7 @@ class MMReader {
       // didn't find a precentage, rewind channel by length of read string...
       if percentfound != "%\n" {
          fin.close();
-         fin = fd.reader(start=offset);
+         fin = fd.reader(start=offset, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
       }
    }
 
@@ -188,8 +188,8 @@ class LargeMMReader : MMReader {
       mmap_sz=mmapsz:size_t;
       //sys_open(fname.c_str(), 0:c_int, O_RDONLY:mode_t, fdesc);
       //sys_mmap(fdescptr, mmap_sz, PROT_READ:c_int, MAP_SHARED|MAP_FILE:c_int, fdesc, 0:off_t, mmfdesc);
-      //fd = openfd(fdesc, hints=iokind.native);
-      fd = openfd(fname, mode=iomode.r, hints=IOHINT_CACHED|IOHINT_PARALLEL|IOHINT_RANDOM); 
+      //fd = openfd(fdesc, mode=iomode.r, hints=IOHINT_CACHED|IOHINT_PARALLEL|IOHINT_RANDOM);
+      fd = open(fname, mode=iomode.r, hints=IOHINT_CACHED|IOHINT_PARALLEL|IOHINT_RANDOM); 
       fin = fd.reader(start=0, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
    }
 
