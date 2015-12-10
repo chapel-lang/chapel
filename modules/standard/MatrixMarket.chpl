@@ -23,8 +23,17 @@ This code is based on the gensim implementation of the matrix market file format
 
 module MatrixMarket {
 
+   use FileSystem;
    use Math;
    use IO;
+   use Sys;
+   use Regexp;
+   use RecordParser;
+   use List;
+
+extern var PROT_READ:c_int;
+extern var MAP_SHARED:c_int;
+extern var MAP_FILE:c_int;
 
    class MMWriter {
       var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
@@ -106,7 +115,7 @@ class MMReader {
    var fin:channel(false, iokind.dynamic, true);
 
    proc MMReader(const fname:string) {
-      fd = open(fname, iomode.r, iokind.native);
+      fd = open(fname, iomode.r, hints=IOHINT_RANDOM|IOHINT_CACHED|iokind.native);
       fin = fd.reader(start=0);
    }
 
@@ -159,13 +168,99 @@ class MMReader {
       return toret;
    }
 
-   proc close() { fin.close(); fd.close(); }
+   proc close() { 
+      fin.close(); 
+      fd.close(); 
+   }
+
    proc ~MMReader() { this.close(); }
 }
 
-proc mmread(const fname:string) {
+class LargeMMReader : MMReader {
+
+   var fdescptr, mmfdesc:c_void_ptr;
+   var fdesc:fd_t;
+   var mmap_sz:size_t;
+   var file_sz:int;
+
+   proc LargeMMReader(const fname:string, const mmapsz=(1024*25)) {
+      file_sz = getFileSize(fname);
+      mmap_sz=mmapsz:size_t;
+      sys_open(fname.c_str(), 0:c_int, O_RDONLY:mode_t, fdesc);
+      sys_mmap(fdescptr, mmap_sz, PROT_READ:c_int, MAP_SHARED|MAP_FILE:c_int, fdesc, 0:off_t, mmfdesc);
+      fd = openfd(fdesc, hints=iokind.native);
+      fin = fd.reader(start=0);
+   }
+
+   proc read_file() {
+      read_header();
+      var (nrows, ncols, nnz) = read_matrix_info();
+
+      // start orchestration of parallel reads; preprocess
+      // file to figure out where end-of-line markers are 
+      // in order to expedite reads 
+      //
+      const numBytesPerThread = (file_sz - fin._offset)/numThreadsPerLocale;
+      const threadDom = {1..numThreadsPerLocale};
+      var eolMarkers:[threadDom] list(int);
+
+      // lock per thread, control accessto eolMarker list for a thread
+      var lock : sync [threadDom] bool; 
+
+      forall i in fin._offset..file_sz by numBytesPerThread {
+         const threadid = i % numThreadsPerLocale;
+         lock(threadid) = true; // lock grab
+         if eolMarkers[threadid].length < 1 { eolMarkers[threadid] = new list(int); }
+
+         var done:bool = true;
+         var line:string;
+         var eolReader = fd.reader(start=i, end=i+numBytesPerThread);
+
+         // that ugly while loop in a parallel thread of execution... 
+         while done { 
+            eolMarkers(threadid).append(eolReader._offset());
+            done = eolReader.readline(line); 
+         }
+
+         eolReader.close();
+         const lock_release = lock(threadid); // lock release
+      }
+
+      var eolMarkersList = new list(int);
+      for i in threadDom { eolMarkersList.concat(eolMarkers(i)); }
+
+      const Dtoret = {1..nrows, 1..ncols}; // maybe look for sparse matrix support here?
+      var toret:[Dtoret] real;
+
+      forall mk in eolMarkersList {
+         var i, j:int; var w:real;
+         var blkreader = fd.reader(start=mk);
+         blkreader.readf("%i %i %r\n", i, j, w);
+         toret(i, j) = w;
+         blkreader.close();
+      }
+
+      return toret;
+   }
+
+   proc close() {
+      sys_munmap(mmfdesc, mmap_sz);
+      sys_close(fdesc);
+      fin.close();
+      fd.close();
+   }
+
+   proc ~LargeMMReader() { this.close(); }
+
+}
+
+proc mmread(const fname:string, const mmap_sz:int=-1) {
+   //var mr = if mmap_sz < 0 then new MMReader(fname) else new LargeMMReader(fname, mmapsz=mmap_sz);
    var mr = new MMReader(fname);
-   var toret => mr.read_file();
+   var toret = mr.read_file();
+writeln("file read!\t1");
+   delete mr;
+writeln("file read!\t2");
    return toret;
 }
 
