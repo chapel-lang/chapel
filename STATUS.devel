@@ -263,7 +263,6 @@ Functions and Iterators
   for the type.
   # functions/vass/paramret-1.future
   # functions/vass/paramret-diten.future
-  # users/bartosz/paramfn2.future
 - Var functions returning multiple class types should be illegal, but
   instead they are compiled and result in runtime error.
   # functions/diten/varFnRetClasses.future
@@ -335,9 +334,6 @@ Strings
 - Implicit conversion of c_string to string does not work for ref,
   out, or inout intents.
   # types/string/sungeun/c_string/intents.future
-- Implicit conversion of string literals returned from functions does
-  not work.
-  # types/string/sungeun/c_string/returnString.future
 - c_string variable are sometimes copied to remote locales.
   # types/string/sungeun/c_string/multilocale/c_str_on_remote_global_string.future
   # types/string/sungeun/c_string/multilocale/remote_assign_c_string.future
