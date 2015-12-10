@@ -690,12 +690,12 @@ static void build_enum_cast_function(EnumType* et) {
   reset_ast_loc(def, et->symbol);
   normalize(fn);
 
-  // c_string to enumerated type cast function
+  // string to enumerated type cast function
   fn = new FnSymbol("_cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
-  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtStringC);
+  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
 
@@ -1228,7 +1228,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
 
 static void buildStringCastFunction(EnumType* et) {
-  if (function_exists("_cast", 2, dtStringC, et))
+  if (function_exists("_cast", 2, dtString, et))
     return;
 
   FnSymbol* fn = new FnSymbol("_cast");
@@ -1239,7 +1239,7 @@ static void buildStringCastFunction(EnumType* et) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
   arg->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr("==", t, dtStringC->symbol));
+  fn->where = new BlockStmt(new CallExpr("==", t, dtString->symbol));
 
   for_enums(constant, et) {
     fn->insertAtTail(

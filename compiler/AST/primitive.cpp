@@ -80,6 +80,11 @@ returnInfoInt64(CallExpr* call) {
 }
 
 static Type*
+returnInfoUInt64(CallExpr* call) {
+  return dtUInt[INT_SIZE_64];
+}
+
+static Type*
 returnInfoSizeType(CallExpr* call) {
   return SIZE_TYPE;
 }
@@ -96,17 +101,11 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
-static Type*
-returnInfoUInt64(CallExpr* call) {
-  return dtUInt[INT_SIZE_64];
-}
-
 /*
 static Type*
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
-
 
 static Type*
 returnInfoReal32(CallExpr* call) {
@@ -303,6 +302,13 @@ returnInfoVirtualMethodCall(CallExpr* call) {
   return fn->retType;
 }
 
+static Type*
+returnInfoSecondType(CallExpr* call) {
+  Type* t = call->get(2)->typeInfo();
+  return t;
+}
+
+
 // print the number of each type of primitive present in the AST
 void printPrimitiveCounts(const char* passName) {
   int primCounts[NUM_KNOWN_PRIMS];
@@ -384,13 +390,14 @@ void
 initPrimitive() {
   primitives[PRIM_UNKNOWN] = NULL;
 
+
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
   prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
-  prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoString);
+  prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirst);
@@ -512,6 +519,8 @@ initPrimitive() {
 
   prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_ARRAY_GET, "chpl_comm_array_get", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_ARRAY_PUT, "chpl_comm_array_put", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_REMOTE_PREFETCH, "chpl_comm_remote_prefetch", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_GET_STRD, "chpl_comm_get_strd", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
@@ -529,7 +538,7 @@ initPrimitive() {
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
-  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoStringC);
+  prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoString);
 
   // These are the block info primitives.
   prim_def(PRIM_BLOCK_PARAM_LOOP, "param loop", returnInfoVoid);
@@ -584,8 +593,6 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoStringCopy, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
-  prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, false, true);
-  prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
   prim_def("string_select", returnInfoStringCopy, true, true);
   prim_def("sleep", returnInfoVoid, true);
@@ -615,7 +622,7 @@ initPrimitive() {
   prim_def(PRIM_VIRTUAL_METHOD_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
-  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
+  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoStringC);
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
   prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
@@ -625,11 +632,23 @@ initPrimitive() {
   
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
 
+  // This primitive allows normalize to request function resolution
+  // coerce a return value to the declared return type, even though
+  // the declared return type is not really known until function
+  // resolution.
+  // It coerces its first argument to the type stored in the second argument.
+  prim_def(PRIM_COERCE, "coerce", returnInfoSecondType);
+
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
+
+  prim_def(PRIM_FIND_FILENAME_IDX, "chpl_findFilenameIdx", returnInfoUInt64, false, false);
+  prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
+
+  prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoStringC);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

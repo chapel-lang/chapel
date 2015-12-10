@@ -117,8 +117,22 @@ PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
 
 PrimitiveType*
 PrimitiveType::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
-  return this;
+  //
+  // If we're trying to make a copy of an internal Chapel primitive
+  // type (say 'int'), that's a sign that something is wrong.  For
+  // external primitive types, it should be OK to make such copies.
+  // This may be desired/required if the extern type declaration is
+  // local to a generic Chapel procedure for example and we're
+  // creating multiple instantiations of that procedure, each of which
+  // wants/needs its own local type symbol.  This exception may
+  // suggest that external primitive types should really be
+  // represented as their own ExternType class...
+  //
+  if (!symbol->hasFlag(FLAG_EXTERN)) {
+    INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
+  }
+
+  return new PrimitiveType(NULL);
 }
 
 
@@ -799,7 +813,6 @@ void AggregateType::codegenDef() {
   } else {
     if( outfile ) {
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -916,7 +929,6 @@ void AggregateType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -1347,6 +1359,12 @@ void initRootModule() {
   rootModule->filename = astr("<internal>");
 }
 
+void initStringLiteralModule() {
+  stringLiteralModule = new ModuleSymbol("ChapelStringLiterals", MOD_INTERNAL, new BlockStmt());
+  stringLiteralModule->filename = astr("<internal>");
+  theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
+}
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -1411,6 +1429,8 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+
+  dtString                             = new AggregateType(AGGREGATE_RECORD);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -1493,9 +1513,6 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL(dtStringCopy, gStringCopy, "_nullString");
   gStringCopy->cname = "NULL";
   gStringCopy->addFlag(FLAG_EXTERN);
-
-  dtString = createPrimitiveType( "string", "chpl_string");
-  dtString->defaultValue = NULL;
 
   // Like c_string_copy but unowned.
   // Could be == c_ptr(int(8)) e.g.
@@ -1776,10 +1793,6 @@ bool is_enum_type(Type *t) {
   return toEnumType(t);
 }
 
-bool is_string_type(Type *t) {
-  return t == dtString;
-}
-
 int get_width(Type *t) {
   if (t == dtBools[BOOL_SIZE_SYS]) {
     return 1;
@@ -1924,34 +1937,46 @@ bool isSubClass(Type* type, Type* baseType)
   return false;
 }
 
-bool
-isDistClass(Type* type) {
+bool isDistClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DIST))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDistClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isDomainClass(Type* type) {
+bool isDomainClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DOMAIN))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDomainClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isArrayClass(Type* type) {
+bool isArrayClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_ARRAY))
     return true;
+
   forv_Vec(Type, t, type->dispatchParents)
     if (isArrayClass(t))
       return true;
+
   return false;
+}
+
+bool isString(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* aggr = toAggregateType(type))
+    retval = strcmp(aggr->symbol->name, "string") == 0;
+
+  return retval;
 }
 
 static Vec<TypeSymbol*> typesToStructurallyCodegen;
@@ -1969,20 +1994,12 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if (fHeterogeneous) {
-    // strings are special
-    if (toPrimitiveType(typesym) == dtString) {
-      if( info->cfile )
-        ret.c = std::string("-") + typesym->cname;
-      else
-        INT_FATAL("TODO: genTypeStructureIndex llvm strings");
-    } else {
-      if( info->cfile )
-        ret.c = genChplTypeEnumString(typesym);
-      else {
+    if( info->cfile )
+      ret.c = genChplTypeEnumString(typesym);
+    else {
 #ifdef HAVE_LLVM
-        ret = info->lvt->getValue(genChplTypeEnumString(typesym));
+      ret = info->lvt->getValue(genChplTypeEnumString(typesym));
 #endif
-      }
     }
   } else {
     if( info->cfile )
@@ -2111,7 +2128,6 @@ bool needsCapture(Type* t) {
       is_imag_type(t) ||
       is_complex_type(t) ||
       is_enum_type(t) ||
-      is_string_type(t) ||
       t == dtStringC ||
       isClass(t) ||
       isRecord(t) ||
@@ -2158,12 +2174,6 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
  */
 bool isPOD(Type* t)
 {
-  // Strings and wide strings aren't POD
-  // These need to be special-cases as long
-  // as code generation treats strings specially.
-  if( t == wideStringType || t == dtString )
-    return false;
-
   // things that aren't aggregate types are POD
   //   e.g. int, boolean, complex, etc
   if (!isAggregateType(t))

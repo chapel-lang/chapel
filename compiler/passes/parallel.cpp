@@ -164,7 +164,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 ///
 /// This routine optionally inserts an autoCopy ahead of each invocation of a
 /// task function that begins asynchronous execution (currently just "begin" and
-/// "nonblocking on" functions).  
+/// "nonblocking on" functions).
 /// If such an autoCopy call is inserted, a matching autoDestroy call is placed
 /// at the end of the tasking routine before the call to _downEndCount.  Since a
 /// tasking function may be called from several call sites, the task function is
@@ -180,21 +180,22 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 /// \param firstCall Should be set to \p true for the first invocation of a
 /// given task function and \p false thereafter.
 /// \ret Returns the result of calling autoCopy on the given arg, if necessary;
-/// otherwise, just returns 
+/// otherwise, just returns
 static Symbol* insertAutoCopyDestroyForTaskArg
   (Expr* arg, ///< The actual argument being passed.
    CallExpr* fcall, ///< The call that invokes the task function.
    FnSymbol* fn, ///< The task function.
    bool firstCall)
 {
-  SymExpr* s = toSymExpr(arg);
-  Symbol* var = s->var;
+  SymExpr* s        = toSymExpr(arg);
+  Symbol*  var      = s->var;
+  Type*    baseType = arg->getValType();
 
-  // This applies only to arguments being passed to asynchronous task functions.
-  // No need to increment+decrement the reference counters for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN))
+  // This applies only to arguments being passed to asynchronous task
+  // functions. No need to increment+decrement the reference counters
+  // for cobegins/coforalls.
+  if (fn->hasFlag(FLAG_BEGIN) || isString(baseType))
   {
-    Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
 
@@ -248,7 +249,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         insertReferenceTemps(autoDestroyCall);
       }
     }
-    else if (isRecord(baseType))
+
+    else if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
+             isString(baseType))
     {
       // Do this only if the record is passed by value.
       if (arg->typeInfo() == baseType)
@@ -277,6 +280,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       }
     }
   }
+
   return var;
 }
 
@@ -810,16 +814,15 @@ needHeapVars() {
 //   varSet, varVec - symbols that themselves need to be heap-allocated
 //
 
-// Traverses all 'on' task functions flagged as nonblocking or
-// as needing heap allocation (for its formals), as determined
-// by the comm layer and/or --local setting..
+// Traverses all 'on' task functions flagged as needing heap
+// allocation (for its formals), as determined by the comm layer
+// and/or --local setting..
 // Traverses all ref formals of these functions and adds them to the refSet and
 // refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) &&
-        (needHeapVars() || fn->hasFlag(FLAG_NON_BLOCKING))) {
+    if (fn->hasFlag(FLAG_ON) && needHeapVars()) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
@@ -875,7 +878,10 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !isSyncType(def->sym->type)))) {
+            !isSyncType(def->sym->type) &&
+            // Dont try to broadcast string literals, they'll get fixed in
+            // another manner
+            (def->sym->type != dtString)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {
@@ -1365,32 +1371,5 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
     wideRefMap.put(refType, wide);
   }
   return wide;
-}
-
- 
-//
-// Returns true if the type t is a reference to a wide string
-//
-// This is used to handle cases where wide strings are passed to
-// functions that require local arguments.  If strings were a little
-// better behaved, it arguably wouldn't/shouldn't be required.
-//
-bool isRefWideString(Type* t) {
-  if (isReferenceType(t)) {
-    AggregateType* ct = toAggregateType(t);
-    INT_ASSERT(ct);
-    Symbol* valField = ct->getField("_val", false);
-    INT_ASSERT(valField);
-    return isWideString(valField->type);
-  }
-  return false;
-}
-
-bool isWideString(Type* t) {
-  if (!requireWideReferences()) return false; // no wide string type will exist if wide references weren't created
-  INT_ASSERT(wideStringType); // should only be called after it exists!
-  if (t == NULL) return false;
-  if( t == wideStringType ) return true;
-  return false;
 }
 

@@ -5,4 +5,4 @@
 
 unset CHPL_TARGET_ARCH
 
-nightly_args="-fast"
+nightly_args="${nightly_args} -fast"

@@ -213,8 +213,6 @@ Timer debugTimer;
 static std::set<Symbol*> _todo_set;
 static std::queue<Symbol*> _todo_queue;
 
-AggregateType* wideStringType = NULL;
-
 static Map<Symbol*,Vec<SymExpr*>*> defMap;
 static Map<Symbol*,Vec<SymExpr*>*> useMap;
 
@@ -233,7 +231,6 @@ static void insertStringLiteralTemps();
 static void narrowWideClassesThroughCalls();
 static void insertWideClassTempsForNil();
 static void insertWideCastTemps();
-static void derefWideStringActuals();
 static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
 static void moveAddressSourcesToTemp();
@@ -288,8 +285,7 @@ static bool typeCanBeWide(Symbol *sym) {
   return !bad &&
          (isObj(sym) ||
           isRef(sym) ||
-          ts->hasFlag(FLAG_DATA_CLASS) ||
-          sym->type == dtString);
+          ts->hasFlag(FLAG_DATA_CLASS));
 }
 
 static Symbol* getTupleField(CallExpr* call) {
@@ -360,7 +356,7 @@ static bool queueEmpty() {
 static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
   if (isFullyWide(sym) || !typeCanBeWide(sym)) return;
 
-  if ((isObj(sym) || sym->type == dtString) && mustBeWide) {
+  if (isObj(sym) && mustBeWide) {
     if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol)) {
       if (isFullyWide(ts)) return; // Don't widen a field in a wide type.
 
@@ -374,9 +370,6 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
 
     if (Type* wide = wideClassMap.get(sym->type)) {
       sym->type = wide;
-    } else {
-      INT_ASSERT(sym->type == dtString);
-      sym->type = wideStringType;
     }
   }
   else if (isRef(sym)) {
@@ -407,7 +400,7 @@ static void setWide(SymExpr* se) { setWide(se->var); }
 static void setValWide(Symbol* sym) {
   Type* valType = sym->type->getValType();
   if (!typeCanBeWide(sym)) return;
-  if (valType != dtString && !isClass(valType)) return;
+  if (!isClass(valType)) return;
   if (isArgSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) return;
   if (!valIsWideClass(sym)) {
     fixType(sym, false, true);
@@ -544,17 +537,6 @@ static void buildWideClass(Type* type) {
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
 
   //
-  // Strings need an extra field in their wide class to hold their length
-  //
-  if (type == dtString) {
-    wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_DEFAULT])));
-    if (wideStringType) {
-      INT_FATAL("Created two wide string types");
-    }
-    wideStringType = wide;
-  }
-
-  //
   // set reference type of wide class to reference type of class since
   // it will be widened
   //
@@ -576,7 +558,6 @@ static void buildWideClasses()
       buildWideClass(ct);
     }
   }
-  buildWideClass(dtString);
 }
 
 
@@ -759,13 +740,10 @@ static void addKnownWides() {
             }
           }
         }
-        else if (rhs->isPrimitive(PRIM_STRING_FROM_C_STRING)) {
-          // We seem to avoid memory leaks by making the lhs wide
-          setWide(lhs);
-        }
       }
     }
     else if (call->isPrimitive(PRIM_HEAP_REGISTER_GLOBAL_VAR) ||
+             call->isPrimitive(PRIM_CHPL_COMM_ARRAY_GET) ||
              call->isPrimitive(PRIM_CHPL_COMM_GET)) { // TODO: Is this necessary?
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
@@ -826,6 +804,8 @@ static void propagateVar(Symbol* sym) {
               case PRIM_DEREF:
               case PRIM_GET_SVEC_MEMBER:
               case PRIM_GET_SVEC_MEMBER_VALUE:
+              case PRIM_GET_REAL:
+              case PRIM_GET_IMAG:
               case PRIM_VIRTUAL_METHOD_CALL:
                 debug(sym, "Setting %s (%d) to wide\n", lhs->cname, lhs->id);
                 setWide(lhs);
@@ -844,11 +824,17 @@ static void propagateVar(Symbol* sym) {
             // ref_wide_T, we'll take the easy way out and make the field
             // have wide semantics.
             if (call->isPrimitive(PRIM_GET_MEMBER) || call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-              SymExpr* field = toSymExpr(call->get(2));
-              if (isRef(field)) {
-                setValWide(field);
+              if (!hasSomeWideness(lhs) && isRecord(lhs->type)) {
+                // This record's fields need to be wide to preserve locality
+                // information.
+                widenSubAggregateTypes(lhs->type);
+              } else {
+                SymExpr* field = toSymExpr(call->get(2));
+                if (isRef(field)) {
+                  setValWide(field);
+                }
+                fieldsToMakeWide.insert(field->var);
               }
-              fieldsToMakeWide.insert(field->var);
             }
             else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                      call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
@@ -895,12 +881,6 @@ static void propagateVar(Symbol* sym) {
         else if (isRef(lhs) && isObj(rhs)) {
           debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
           setValWide(lhs);
-        }
-        else if (lhs->type == dtString) {
-          // isObj doesn't handle dtStrings. This case handles a previously
-          // overlooked case of string assignment from a wide string to a
-          // narrow string.
-          setWide(lhs);
         }
         else {
           DEBUG_PRINTF("Unhandled assign: %s = %s\n", lhs->type->symbol->cname, rhs->type->symbol->cname);
@@ -1090,9 +1070,9 @@ static void insertStringLiteralTemps()
   // be widened.
   //
   forv_Vec(SymExpr, se, gSymExprs) {
-    if ((se->var->type == dtStringC) || (se->var->type == dtString)) {
+    if (se->var->type == dtStringC) {
       if (VarSymbol* var = toVarSymbol(se->var)) {
-        if (var->immediate || (var == dtString->defaultValue)) {
+        if (var->immediate) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
             SET_LINENO(se);
             if (call->isResolved())
@@ -1202,8 +1182,7 @@ static void narrowWideClassesThroughCalls()
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
 
-          if ((narrowType->symbol->hasFlag(FLAG_EXTERN)) ||
-              isRefWideString(narrowType)) {
+          if (narrowType->symbol->hasFlag(FLAG_EXTERN)) {
 
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
@@ -1316,32 +1295,6 @@ static void insertWideCastTemps()
 }
 
 
-//
-// dereference wide string actual argument to primitive
-//
-static void derefWideStringActuals()
-{
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->primitive) {
-      if (call->primitive->tag == PRIM_UNKNOWN ||
-          call->isPrimitive(PRIM_CAST)) {
-        for_actuals(actual, call) {
-          if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            if (getNarrowType(actual) == dtString) {
-              SET_LINENO(call);
-              VarSymbol* tmp = newTemp(getNarrowType(actual));
-              call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, actual->copy())));
-              actual->replace(new SymExpr(tmp));
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
 static void derefWideRefsToWideClasses()
 {
   //
@@ -1356,9 +1309,7 @@ static void derefWideRefsToWideClasses()
         call->isPrimitive(PRIM_WIDE_GET_ADDR)    ||
         call->isPrimitive(PRIM_SET_MEMBER)) {
       if (isRef(call->get(1)) &&
-          valIsWideClass(call->get(1)) &&
-          // This should be removed when string_rec is the default string type
-          call->get(1)->getValType() != wideStringType) {
+          valIsWideClass(call->get(1))) {
         SET_LINENO(call);
         VarSymbol* tmp = newTemp(call->get(1)->getValType());
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1413,11 +1364,6 @@ static void localizeCall(CallExpr* call) {
         if (rhs->isPrimitive(PRIM_DEREF)) {
           if (isFullyWide(rhs->get(1))) {
             insertLocalTemp(rhs->get(1));
-            if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-              INT_ASSERT(rhs->get(1)->typeInfo() == dtString);
-              // special handling for wide strings
-              rhs->replace(rhs->get(1)->remove());
-            }
           }
           break;
         }
@@ -1997,7 +1943,6 @@ insertWideReferences(void) {
   narrowWideClassesThroughCalls();
   insertWideClassTempsForNil();
   insertWideCastTemps();
-  derefWideStringActuals();
   derefWideRefsToWideClasses();
 
   handleLocalBlocks();

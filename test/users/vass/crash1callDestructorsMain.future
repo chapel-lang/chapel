@@ -6,6 +6,15 @@ Once this test works for --local, enable it for --no-local and re-test.
 NOTE: crash1callDestructorsAddon.chpl replicates half of
 crash1callDestructorsMain.chpl *intentionally*.
 
+12/9/2015: the failure mode is:
+
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:132: In function 'destroyDom':
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:141: internal error: EXP0492 chpl Version 1.12.0.42c96ad
+
+or, with --devel:
+
+SymExpr::verify      1539462:  var->defPoint is not in AST [expr.cpp:492]
+
 11/19/2014: the failure mode is:
 internal error: assertion error [callDestructors.cpp:671]
 

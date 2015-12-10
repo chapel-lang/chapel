@@ -64,6 +64,7 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
+sys-ctypes-docs: $(SYS_CTYPES_MODULE_DOC)
 
 MODULES_TO_DOCUMENT = \
 	standard/AdvancedIters.chpl \

@@ -3006,6 +3006,13 @@ int processNewline(yyscan_t scanner) {
 *                                                                           *
 ************************************* | ************************************/
 
+void stringBufferInit() {
+  if (stringBuffer == NULL) {
+    stringBuffer  = (char*) malloc(1024);
+    stringBuffer[0] = '\0';
+  }
+}
+
 static int  processIdentifier(yyscan_t scanner) {
   YYSTYPE* yyLval = yyget_lval(scanner);
   int      retval = processToken(scanner, TIDENT);

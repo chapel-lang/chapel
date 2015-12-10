@@ -27,8 +27,6 @@
 #include "stmt.h"
 #include "symbol.h"
 
-#include <set>
-
 // Clear autoDestroy flags on variables that get assigned to the return value
 // of certain functions.
 //
@@ -40,24 +38,8 @@ static void cullAutoDestroyFlags()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (VarSymbol* ret = toVarSymbol(fn->getReturnSymbol()))
+    if (isVarSymbol(fn->getReturnSymbol()))
     {
-      // The return value of an initCopy function should not be autodestroyed.
-      // Normally, the return value of a function is autoCopied, but since
-      // autoCopy is typically defined in terms of initCopy, this would lead to
-      // infinite recursion.  That is, the return value of initCopy must be
-      // handled specially.
-      if (fn->hasFlag(FLAG_INIT_COPY_FN))
-        ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-
-      // This is just a workaround for memory management being handled
-      // specially for internally reference-counted types. (sandboxing)
-      TypeSymbol* ts = ret->type->symbol;
-      if (ts->hasFlag(FLAG_ARRAY) ||
-          ts->hasFlag(FLAG_DOMAIN))
-        ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-      // Do we need to add other record-wrapped types here?  Testing will tell.
-
       // NOTE 1: When the value of a record field is established in a default
       // constructor, it is initialized using a MOVE.  That means that
       // ownership of that value is shared between the formal_tmp and the
@@ -68,11 +50,12 @@ static void cullAutoDestroyFlags()
       // reference.  So here, we look for that case and remove it.
       if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       {
-        Map<Symbol*,Vec<SymExpr*>*> defMap;
-        Map<Symbol*,Vec<SymExpr*>*> useMap;
+        Map<Symbol*, Vec<SymExpr*>*> defMap;
+        Map<Symbol*, Vec<SymExpr*>*> useMap;
+        std::vector<DefExpr*>        defs;
+
         buildDefUseMaps(fn, defMap, useMap);
 
-        std::vector<DefExpr*> defs;
         collectDefExprs(fn, defs);
 
         for_vector(DefExpr, def, defs)
@@ -84,12 +67,13 @@ static void cullAutoDestroyFlags()
               continue;
 
             // Look for a use in a PRIM_SET_MEMBER where the field is a record
-            // type, and remove the flag.
-            // (We don't actually check that var is of record type, because
-            // chpl__autoDestroy() does nothing when applied to all other types.
+            // type, and remove the flag. (We don't actually check that var is
+            // of record type, because chpl__autoDestroy() is a NO-OP when
+            // applied to all other types.
             for_uses(se, useMap, var)
             {
               CallExpr* call = toCallExpr(se->parentExpr);
+
               if (call->isPrimitive(PRIM_SET_MEMBER) &&
                   toSymExpr(call->get(3))->var == var)
                 var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -104,75 +88,608 @@ static void cullAutoDestroyFlags()
 }
 
 
-// Clear autodestroy flags on variables that get assigned to the return symbols
-// of a function.
-//
-// Such a variable cannot be autodestroyed because its contents are owned by the
-// caller.  This weirdness is caused by changeRetToArgAndClone() when it pulls
-// the call utilizing a return value into the callee.
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void cullTransitively(FnSymbol* fn);
+
+// Clear autodestroy flags on variables that get
+// assigned to the return symbols of a function.
 static void cullExplicitAutoDestroyFlags()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (! fn->hasFlag(FLAG_INIT_COPY_FN))
-      continue;
-
-    Map<Symbol*,Vec<SymExpr*>*> defMap;
-    Map<Symbol*,Vec<SymExpr*>*> useMap;
-    buildDefUseMaps(fn, defMap, useMap);
-
-    std::vector<DefExpr*> defs;
-    collectDefExprs(fn, defs);
-
     Symbol* retVar = fn->getReturnSymbol();
+
+    if (fn->hasFlag(FLAG_INIT_COPY_FN) == true ||
+        isString(retVar)               == true)
+    {
+      cullTransitively(fn);
+    }
+  }
+}
+
+static void cullTransitively(FnSymbol* fn)
+{
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
+  std::vector<DefExpr*>        defs;
+  std::set<Symbol*>            exclude;
+
+  Symbol*                      retVar     = fn->getReturnSymbol();
+  bool                         hasChanged = true;
+
+  buildDefUseMaps(fn, defMap, useMap);
+
+  collectDefExprs(fn, defs);
+
+  exclude.insert(retVar);
+
+  while (hasChanged == true)
+  {
+    hasChanged = false;
 
     for_vector(DefExpr, def, defs)
     {
       if (VarSymbol* var = toVarSymbol(def->sym))
       {
-        // Examine only those bearing an autodestroy flag.
-        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-            ! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
-          continue;
-
-        // Look for the specific breaking case and amend that.
         for_uses(se, useMap, var)
         {
           CallExpr* call = toCallExpr(se->parentExpr);
-          if (call->isPrimitive(PRIM_MOVE) &&
-              toSymExpr(call->get(1))->var == retVar)
+
+          if (call != NULL && call->isPrimitive(PRIM_MOVE) == true)
           {
-            var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-            var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+            SymExpr* expr = toSymExpr(call->get(1));
+            Symbol*  dst  = expr->var;
+
+            if (exclude.find(dst) != exclude.end())
+            {
+              var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+              var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
+              if (exclude.find(var) == exclude.end())
+              {
+                exclude.insert(var);
+                hasChanged = true;
+              }
+            }
           }
         }
       }
     }
-
-    freeDefUseMaps(defMap, useMap);
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
 
-/******************************** | *********************************
-*                                                                   *
-* A set of functions that scan every BlockStmt to determine whether *
-* it is necessary to insert autoDestroy calls at any of the exit    *
-* points rom the block.                                             *
-*                                                                   *
-* This computation consists of a linear scan of every BlockStmt     *
-* scanning for                                                      *
-*                                                                   *
-*    1) Statements that define a variable that requires an          *
-*       autoDestroy operation.                                      *
-*                                                                   *
-*    2) Statements that contain, recursively, a transfer of         *
-*       control that exits the BlockStmt being scanned.             *
-*                                                                   *
-*    3) Statements "at the end" of the BlockStmt.                   *
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+* Noakes 2015/11/23                                                           *
+*                                                                             *
+* The transformation beginning at returnRecordsByReferenceArguments() locates *
+* a subset of the calls to functions that return a record-like type by value  *
+* and creates a clone of the function that                                    *
+*                                                                             *
+*   a) adds a formal with ref-intent                                          *
+*   b) has return type void                                                   *
+*   c) integrates a small amount of code past the call site in to the tail    *
+*      of the cloned function.                                                *
+*                                                                             *
+* and then adjusts the neighborhood near the call-site appropriately.         *
+*                                                                             *
+* It has been determined that this transformation should be applied uniformly *
+* to record-like types.  This new implementation follows the theme of the     *
+* the current transformation but                                              *
+*                                                                             *
+*   1) Modifies the function rather than creating a clone                     *
+*   2) Does not fold any other code in to the tail                            *
+*                                                                             *
+* This implementation should be broadly applicable to record-like types but   *
+* is only applied to the new string-as-record type during the initial         *
+* integration.                                                                *
+*                                                                             *
+************************************** | *************************************/
+
+//
+// Capture a function and all of the calls to it
+//
+class ReturnByRef
+{
+  //
+  // Class interface
+  //
+public:
+  static void             apply();
+
+private:
+  typedef std::map<int, ReturnByRef*> RefMap;
+
+  static void             returnByRefCollectCalls(RefMap& calls);
+  static FnSymbol*        theTransformableFunction(CallExpr* call);
+  static bool             isTransformableFunction(FnSymbol* fn);
+  static void             transformFunction(FnSymbol* fn);
+  static ArgSymbol*       addFormal(FnSymbol* fn);
+  static void             insertAssignmentToFormal(FnSymbol*  fn,
+                                                   ArgSymbol* formal);
+  static void             updateAssignmentsFromRefArgToValue(FnSymbol* fn);
+  static void             updateAssignmentsFromRefTypeToValue(FnSymbol* fn);
+  static void             updateAssignmentsFromModuleLevelValue(FnSymbol* fn);
+  static void             updateReturnStatement(FnSymbol* fn);
+  static void             updateReturnType(FnSymbol* fn);
+
+  //
+  // Instance interface
+  //
+private:
+
+                          ReturnByRef(FnSymbol* fn);
+                          ReturnByRef();
+
+  void                    addCall(CallExpr* call);
+
+  void                    transform();
+  void                    transformMove(CallExpr* moveExpr);
+
+  FnSymbol*               mFunction;
+  std::vector<CallExpr*>  mCalls;
+};
+
+void ReturnByRef::apply()
+{
+  RefMap           map;
+  RefMap::iterator iter;
+
+  returnByRefCollectCalls(map);
+
+  for (iter = map.begin(); iter != map.end(); iter++)
+    iter->second->transform();
+
+  for (int i = 0; i < virtualMethodTable.n; i++)
+  {
+    if (virtualMethodTable.v[i].key)
+    {
+      int  numFns = virtualMethodTable.v[i].value->n;
+
+      for (int j = 0; j < numFns; j++)
+      {
+        FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
+
+        if (isTransformableFunction(fn))
+          transformFunction(fn);
+      }
+    }
+  }
+}
+
+//
+// Collect functions that should be converted to return by ref
+// and all calls to these functions.
+//
+
+void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
+{
+  RefMap::iterator iter;
+
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (FnSymbol* fn = theTransformableFunction(call))
+    {
+      RefMap::iterator iter = calls.find(fn->id);
+      ReturnByRef*     info = NULL;
+
+      if (iter == calls.end())
+      {
+        info          = new ReturnByRef(fn);
+        calls[fn->id] = info;
+      }
+      else
+      {
+        info          = iter->second;
+      }
+
+      info->addCall(call);
+    }
+  }
+}
+
+FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
+{
+  // The common case of a user-level call to a resolved function
+  FnSymbol* theCall = call->isResolved();
+
+  // Also handle the PRIMOP for a virtual method call
+  if (theCall == NULL)
+  {
+    if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) == true)
+    {
+      SymExpr* arg1 = toSymExpr(call->get(1));
+
+      theCall = toFnSymbol(arg1->var);
+    }
+  }
+
+  return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
+}
+
+//
+// In this first effort, only functions that return strings
+//
+
+bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
+{
+  bool retval = false;
+
+  if (AggregateType* type = toAggregateType(fn->retType))
+  {
+    if      (fn->hasFlag(FLAG_INIT_COPY_FN) == true)
+      retval = false;
+
+    else if (fn->hasFlag(FLAG_AUTO_COPY_FN) == true)
+      retval = false;
+
+    // Function is an iterator "helper"
+    else if (fn->hasFlag(FLAG_AUTO_II)      == true)
+      retval = false;
+
+    // Noakes: 2015/11/23.  Only new string type for now
+    else if (isString(type)                 == true)
+      retval = true;
+
+    else
+      retval = false;
+  }
+
+  return retval;
+}
+
+void ReturnByRef::transformFunction(FnSymbol* fn)
+{
+  ArgSymbol* formal = addFormal(fn);
+
+  insertAssignmentToFormal(fn, formal);
+  updateAssignmentsFromRefArgToValue(fn);
+  updateAssignmentsFromRefTypeToValue(fn);
+  updateAssignmentsFromModuleLevelValue(fn);
+  updateReturnStatement(fn);
+  updateReturnType(fn);
+}
+
+ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
+{
+  SET_LINENO(fn);
+
+  Type*          type    = fn->retType;
+  AggregateType* refType = type->refType;
+  IntentTag      intent  = blankIntentForType(refType);
+  ArgSymbol*     formal  = new ArgSymbol(intent, "_retArg", refType);
+
+  fn->insertFormalAtTail(formal);
+
+  return formal;
+}
+
+void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
+{
+  Expr*     returnPrim  = fn->body->body.tail;
+
+  SET_LINENO(returnPrim);
+
+  CallExpr* returnCall  = toCallExpr(returnPrim);
+  Expr*     returnValue = returnCall->get(1)->remove();
+  CallExpr* moveExpr    = new CallExpr(PRIM_MOVE, formal, returnValue);
+
+  returnPrim->insertBefore(moveExpr);
+}
+
+//
+// Consider a function that takes a formal of type Record by const ref
+// and that returns that value from the function.  The compiler inserts
+// a PRIM_MOVE operation.
+//
+// This work-around inserts an autoCopy to compensate
+//
+void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr* lhs = toSymExpr(move->get(1));
+      SymExpr* rhs = toSymExpr(move->get(2));
+
+      if (lhs != NULL && rhs != NULL)
+      {
+        VarSymbol* symLhs = toVarSymbol(lhs->var);
+        ArgSymbol* symRhs = toArgSymbol(rhs->var);
+
+        if (symLhs != NULL && symRhs != NULL)
+        {
+          if (isString(symLhs->type) == true && isString(symRhs->type) == true)
+          {
+            if (symLhs->hasFlag(FLAG_ARG_THIS) == false &&
+                (symRhs->intent == INTENT_REF ||
+                 symRhs->intent == INTENT_CONST_REF))
+            {
+              SET_LINENO(move);
+
+              CallExpr* autoCopy = NULL;
+
+              rhs->remove();
+              autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
+              move->insertAtTail(autoCopy);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+//
+// Consider a function that assigns a class-ref wrapper for a record to
+// a value of that record type.  The compiler represents this as a
+//
+//      move dst PRIM_DEREF(src)
+//
+// but fails to insert the required autoCopy.
+//
+// This transformation adds a move/autoCopy statement immediately after
+// the targetted statement.  The <dst> symbol is updated in place in the
+// new statement
+//
+//
+
+void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr*  symLhs  = toSymExpr (move->get(1));
+      CallExpr* callRhs = toCallExpr(move->get(2));
+
+      if (symLhs && callRhs && callRhs->isPrimitive(PRIM_DEREF))
+      {
+        VarSymbol* varLhs = toVarSymbol(symLhs->var);
+        SymExpr*   symRhs = toSymExpr(callRhs->get(1));
+        VarSymbol* varRhs = toVarSymbol(symRhs->var);
+
+        if (varLhs != NULL && varRhs != NULL)
+        {
+          if (isString(varLhs->type) == true &&
+              varRhs->type           == varLhs->type->refType)
+          {
+            SET_LINENO(move);
+
+            SymExpr*  lhsCopy0 = symLhs->copy();
+            SymExpr*  lhsCopy1 = symLhs->copy();
+            FnSymbol* autoCopy = autoCopyMap.get(varLhs->type);
+            CallExpr* copyExpr = new CallExpr(autoCopy, lhsCopy0);
+            CallExpr* moveExpr = new CallExpr(PRIM_MOVE,lhsCopy1, copyExpr);
+
+            move->insertAfter(moveExpr);
+          }
+        }
+      }
+    }
+  }
+}
+
+//
+// Consider a function that returns a module-level variable as the value
+// for the function.  The compiler inserts a PRIM_MOVE operation.
+//
+// This work-around inserts an autoCopy to compensate
+//
+void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
+{
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn, callExprs);
+
+  for (size_t i = 0; i < callExprs.size(); i++)
+  {
+    CallExpr* move = callExprs[i];
+
+    if (move->isPrimitive(PRIM_MOVE) == true)
+    {
+      SymExpr* lhs = toSymExpr(move->get(1));
+      SymExpr* rhs = toSymExpr(move->get(2));
+
+      if (lhs != NULL && rhs != NULL)
+      {
+        VarSymbol* symLhs = toVarSymbol(lhs->var);
+        VarSymbol* symRhs = toVarSymbol(rhs->var);
+
+        if (symLhs != NULL && symRhs != NULL)
+        {
+          if (isString(symLhs->type) == true && isString(symRhs->type) == true)
+          {
+            DefExpr* def = symRhs->defPoint;
+
+            if (isModuleSymbol(def->parentSymbol) == true &&
+                def->parentSymbol                 != rootModule)
+            {
+              SET_LINENO(move);
+
+              CallExpr* autoCopy = NULL;
+
+              rhs->remove();
+              autoCopy = new CallExpr(autoCopyMap.get(symRhs->type), rhs);
+              move->insertAtTail(autoCopy);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void ReturnByRef::updateReturnStatement(FnSymbol* fn)
+{
+  Expr* returnPrim  = fn->body->body.tail;
+
+  SET_LINENO(returnPrim);
+
+  returnPrim->replace(new CallExpr(PRIM_RETURN, gVoid));
+}
+
+void ReturnByRef::updateReturnType(FnSymbol* fn)
+{
+  fn->retType = dtVoid;
+}
+
+ReturnByRef::ReturnByRef(FnSymbol* fn)
+{
+  mFunction = fn;
+}
+
+void ReturnByRef::addCall(CallExpr* call)
+{
+  mCalls.push_back(call);
+}
+
+void ReturnByRef::transform()
+{
+  // Update the function
+  transformFunction(mFunction);
+
+  // And all of the call sites
+  for (size_t i = 0; i < mCalls.size(); i++)
+  {
+    CallExpr* call   = mCalls[i];
+    Expr*     parent = call->parentExpr;
+
+    if (CallExpr* parentCall = toCallExpr(parent))
+    {
+      if (parentCall->isPrimitive(PRIM_MOVE))
+      {
+        transformMove(parentCall);
+      }
+      else
+      {
+        INT_ASSERT(false);
+      }
+    }
+    else
+    {
+      INT_ASSERT(false);
+    }
+  }
+}
+
+//
+// Transform a call to a function that returns a record to be a call
+// to a revied function that does not return a value and that accepts
+// a reference to the destination i.e.
+//
+// replace
+//
+//     move dst func(a, b, c)
+//
+// with
+//
+//     define ref;
+//
+//     ref = &dst;
+//     func(a, b, c, ref);
+//
+// In some cases the statement after the move is another move
+// with a RHS that performs a superfluous initCopy/autoCopy.
+// If so reduce to a simple move.  The called-function is responsible
+// for performing a copy when needed.
+//
+
+void ReturnByRef::transformMove(CallExpr* moveExpr)
+{
+  SET_LINENO(moveExpr);
+
+  Expr*     lhs      = moveExpr->get(1);
+
+  CallExpr* callExpr = toCallExpr(moveExpr->get(2));
+  FnSymbol* fn       = callExpr->isResolved();
+
+  Expr*     nextExpr = moveExpr->next;
+  CallExpr* copyExpr = NULL;
+
+  Symbol*   useLhs   = toSymExpr(lhs)->var;
+  Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
+
+
+  // Determine if
+  //   a) current call is not a PRIMOP
+  //   a) current call is not to a constructor
+  //   c) the subsequent statement is PRIM_MOVE for an initCopy/autoCopy
+  if (fn                            != NULL  &&
+      fn->hasFlag(FLAG_CONSTRUCTOR) == false &&
+      nextExpr                      != NULL)
+  {
+    if (CallExpr* callNext = toCallExpr(nextExpr))
+    {
+      if (callNext->isPrimitive(PRIM_MOVE) == true)
+      {
+        if (CallExpr* rhsCall = toCallExpr(callNext->get(2)))
+        {
+          FnSymbol* rhsFn = rhsCall->isResolved();
+
+          if (rhsFn                              != NULL &&
+              (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
+               rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
+          {
+            copyExpr = rhsCall;
+          }
+        }
+      }
+    }
+  }
+
+  // Introduce a reference to the return value
+  moveExpr->insertBefore(new DefExpr(refVar));
+  moveExpr->insertBefore(new CallExpr(PRIM_MOVE,
+                                      refVar,
+                                      new CallExpr(PRIM_ADDR_OF, useLhs)));
+
+  // Convert the by-value call to a void call with an additional formal
+  moveExpr->replace(callExpr->remove());
+  callExpr->insertAtTail(refVar);
+
+  // Possibly reduce a copy operation to a simple move
+  if (copyExpr)
+    copyExpr->replace(copyExpr->get(1)->remove());
+}
+
+/************************************* | **************************************
+*                                                                             *
+* A set of functions that scan every BlockStmt to determine whether it is     *
+* necessary to insert autoDestroy calls at any of the exit points from the    *
+* block.                                                                      *
+*                                                                             *
+* Perform a linear scan of every BlockStmt scanning for                       *
+*                                                                             *
+*    1) Statements that define a variable that requires an autoDestroy        *
+*                                                                             *
+*    2) Statements that contain, recursively, a transfer of control that      *
+*       exits the BlockStmt being scanned                                     *
+*                                                                             *
+*    3) Statements "at the end" of the BlockStmt.                             *
+*                                                                             *
+************************************** | *************************************/
 
 static bool       stmtDefinesAnAutoDestroyedVariable(Expr* stmt);
 static VarSymbol* stmtTheDefinedVariable(Expr* stmt);
@@ -186,6 +703,8 @@ static bool       stmtMustExitBlock(Expr* stmt);
 static bool       stmtIsLabelDefnBeforeReturn(Expr* stmt);
 static bool       stmtIsLabelDefn(Expr* stmt);
 static bool       stmtIsReturn(Expr* stmt);
+static bool       stmtSetsFormalTemp(Expr* stmt);
+static bool       stmtMovesToReturnArg(Expr* stmt);
 static bool       stmtIsDownEndCount(Expr* stmt);
 
 static void       updateBlockExit(Expr*            stmt,
@@ -196,25 +715,41 @@ static void insertAutoDestroyCalls() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     // Ignore BlockStmts for a Module
     if (isModuleSymbol(block->parentSymbol) == false) {
-
       Vec<VarSymbol*> vars;
+      bool            primaryDestroys = false;
 
       // A linear traversal of the statements in the body
       for_alist(stmt, block->body) {
+        if (primaryDestroys == false) {
+          if (stmtDefinesAnAutoDestroyedVariable(stmt) == true) {
+            vars.add(stmtTheDefinedVariable(stmt));
+          }
 
-        if (stmtDefinesAnAutoDestroyedVariable(stmt) == true) {
-          vars.add(stmtTheDefinedVariable(stmt));
+          // It is appropriate to skip this analysis if there aren't
+          // currently any variables that need autoDestroy calls
+          if (vars.n > 0) {
+            updateJumpsFromBlockStmt(stmt, block, vars);
+          }
+
+          if (stmtMustExitBlock(stmt) == true) {
+            updateBlockExit(stmt, block, vars);
+            primaryDestroys = true;
+          }
         }
 
-        // It is appropriate to skip this analysis if there aren't
-        // currently any variables that need autoDestroy calls
-        if (vars.n > 0) {
-          updateJumpsFromBlockStmt(stmt, block, vars);
-        }
+        if (primaryDestroys == true) {
+          if (stmtIsReturn(stmt) == true) {
+            forv_Vec(VarSymbol, var, vars) {
+              if (var->hasFlag(FLAG_FORMAL_TEMP) == true) {
+                if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+                  SET_LINENO(var);
+                  stmt->insertBefore(new CallExpr(autoDestroyFn, var));
+                }
+              }
+            }
 
-        if (stmtMustExitBlock(stmt) == true) {
-          updateBlockExit(stmt, block, vars);
-          break;
+            break;
+          }
         }
       }
     }
@@ -275,10 +810,12 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
     for_vector(GotoStmt, gotoStmt, gotoStmts) {
       if (gotoExitsBlock(gotoStmt, block)) {
         forv_Vec(VarSymbol, var, vars) {
-          if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-            SET_LINENO(var);
+          if (var->hasFlag(FLAG_FORMAL_TEMP) == false) {
+            if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+              SET_LINENO(var);
 
-            gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
+              gotoStmt->insertBefore(new CallExpr(autoDestroyFn, var));
+            }
           }
         }
       }
@@ -287,10 +824,9 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
 }
 
 // The outer loop of this business logic is walking a given BlockStmt
-// and is inspecting every goto-stmt that is recursively within this
-// block.
+// and is inspecting every goto-stmt that is within this block.
 
-// This function is testing with a particular goto jumps to a point
+// This function is testing whether a particular goto jumps to a point
 // outside the block being tested.
 
 static bool gotoExitsBlock(GotoStmt* gotoStmt, BlockStmt* block) {
@@ -299,7 +835,7 @@ static bool gotoExitsBlock(GotoStmt* gotoStmt, BlockStmt* block) {
   // Every GOTO that implements a RETURN is sure to be exiting the
   // block.  This test is necessary to handle an edge case in the more
   // general logic below; a return from the outer-most BlockStmt
-  // for a procedure.  It also provides a small performance gain.
+  // for a procedure.
   if (gotoStmt->gotoTag == GOTO_RETURN) {
     retval = true;
 
@@ -333,18 +869,44 @@ static bool stmtMustExitBlock(Expr* stmt) {
   Expr* next   = stmt->next;
   bool  retval = false;
 
-  if (next == 0                         ||
-      isGotoStmt(next)                  ||
-      stmtIsLabelDefnBeforeReturn(next) ||
-      stmtIsReturn(next)                ||
-      stmtIsDownEndCount(next))
+  if (next                              == NULL ||
+      isGotoStmt(next)                  == true ||
+      stmtIsLabelDefnBeforeReturn(next) == true ||
+      stmtIsReturn(next)                == true ||
+      stmtIsDownEndCount(next)          == true)
     retval = true;
 
   return retval;
 }
 
+// Return true if this is a label statement that marks the function
+// epilogue. The epilogue might be
+//   1) a return statement
+//
+//   2) a list of statements that copy into formal temps
+//      followed by a return statement
+//
+//   3) a move that copies that write the return-value-variable
+//      followed by a void return
+
 static bool stmtIsLabelDefnBeforeReturn(Expr* stmt) {
-  return stmtIsLabelDefn(stmt) && stmtIsReturn(stmt->next);
+  bool retval = stmtIsLabelDefn(stmt);
+
+  if (retval == true) {
+    Expr* ptr = stmt->next;
+
+    while (retval == true && ptr != NULL) {
+      if (stmtIsReturn(ptr)         == false &&
+          stmtSetsFormalTemp(ptr)   == false &&
+          stmtMovesToReturnArg(ptr) == false)
+
+        retval = false;
+
+      ptr = ptr->next;
+    }
+  }
+
+  return retval;
 }
 
 static bool stmtIsLabelDefn(Expr* stmt) {
@@ -367,6 +929,40 @@ static bool stmtIsReturn(Expr* stmt) {
   return retval;
 }
 
+// Check for an assign with a RHS that is a FORMAL_TEMP
+static bool stmtSetsFormalTemp(Expr* stmt) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (FnSymbol* fn = call->isResolved()) {
+      if (fn->hasFlag(FLAG_ASSIGNOP) == true) {
+        if (SymExpr* expr = toSymExpr(call->get(2))) {
+          retval = expr->var->hasFlag(FLAG_FORMAL_TEMP);
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+static bool stmtMovesToReturnArg(Expr* stmt) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (call->isPrimitive(PRIM_MOVE) == true) {
+      SymExpr* lhs = toSymExpr(call->get(1));
+      SymExpr* rhs = toSymExpr(call->get(2));
+
+      if (lhs != NULL && rhs != NULL) {
+        retval = rhs->var->hasFlag(FLAG_RVV);
+      }
+    }
+  }
+
+  return retval;
+}
+
 static bool stmtIsDownEndCount(Expr* stmt) {
   bool retval = false;
 
@@ -383,9 +979,11 @@ static void updateBlockExit(Expr*            stmt,
                             BlockStmt*       block,
                             Vec<VarSymbol*>& vars) {
   forv_Vec(VarSymbol, var, vars) {
-    if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-      SET_LINENO(var);
-      stmt->insertAfter(new CallExpr(autoDestroyFn, var));
+    if (var->hasFlag(FLAG_FORMAL_TEMP) == false) {
+      if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+        SET_LINENO(var);
+        stmt->insertAfter(new CallExpr(autoDestroyFn, var));
+      }
     }
   }
 }
@@ -509,9 +1107,9 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
 // the return statement in that function with a copy of the call which uses
 // the result of the above call to that function.  Maybe a picture would
 // help.
-//   ('move' lhs (fn args ...))
+//   ('move' lhs    (fn args ...))
 //   . . .
-//   ('move useLhs (useFn lhs))
+//   ('move' useLhs (useFn lhs))
 // gets converted to
 //   (newFn args ... useLhs)
 //   . . .
@@ -699,13 +1297,6 @@ fixupDestructors() {
                 new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
-        } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-          // Temporary expedient: Leak strings like crazy.
-          //          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
-          //          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          //          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-          //            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-          //          fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
         }
       }
 
@@ -776,6 +1367,59 @@ static void insertDestructorCalls() {
   }
 }
 
+/* For a variable marked with FLAG_INSERT_AUTO_COPY,
+   call autoCopy when there is a MOVE to that variable
+   from another expression (variable or call).
+
+   Note that FLAG_INSERT_AUTO_COPY is only ever set for
+   lhs variables in moves such as
+      move lhs, someCall()
+   where requiresImplicitDestroy(someCall). requiresImplicitDestroy is
+   described as checking "if the function requires an implicit
+   destroy of its returned value (i.e. reference count)".
+
+   The code checks:
+    - not in a "donor fn" (auto copy fn)
+    - called function returns a record or ref-counted type by ref
+    - called function does not have FLAG_NO_IMPLICIT_COPY (getter fn)
+    - called function is not an iterator
+    - called function is not returning a runtime type value
+    - called function is not a "donor fn" (autocopy fns in modules)
+    - called function is not init copy
+    - called function is not =
+    - called function is not _defaultOf
+    - called function does not have FLAG_AUTO_II
+    - called function is not a constructor
+    - called function is not a type constructor
+
+   Relevant commits are
+     3788ee34fa created
+     70d5ea4040 bug fix/workarounds
+     93d5338f8a switch to using flags
+     57a13e7c22 fix compiler warning
+     c27afd6b4f adds FLAG_NO_IMPLICIT_COPY == FLAG_RETURN_VALUE_IS_NOT_OWNED?
+     adfb566b00 FLAG_ITERATOR_FN -> isIterator
+     a43758e6aa adds check for defaultOf, "fixes 4 test failures"
+     61db88b637 flag cleanups
+
+
+   Anyway, insertAutoCopyTemps does the following:
+
+   when x has FLAG_INSERT_AUTO_COPY
+
+   move x, y
+   ->
+   move atmp, y
+   move x, autoCopy(atmp)
+
+   or
+
+   move x, someCall()      (where requiresImplicitDestroy(someCall))
+   ->
+   move atmp, someCall()
+   move x, autoCopy(atmp)
+
+ */
 static void insertAutoCopyTemps() {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
@@ -789,6 +1433,17 @@ static void insertAutoCopyTemps() {
         if (defCall->isPrimitive(PRIM_MOVE)) {
           CallExpr* rhs = toCallExpr(defCall->get(2));
           if (!rhs || !rhs->isNamed("=")) {
+            // We enter this block if:
+            // - rhs is a variable (!rhs), or
+            // - rhs is a call but not to =
+            //
+            // I think that calls to = no longer appear
+            // in PRIM_MOVE in the AST, so I think that
+            // this is actually if (!rhs || rhs)
+            // since = used to return a value but no longer does.
+
+            // This check ensures that there is only a single PRIM_MOVE
+            // definition of a variable marked with FLAG_INSERT_AUTO_COPY.
             INT_ASSERT(!move);
             move = defCall;
           }
@@ -811,9 +1466,14 @@ static void insertAutoCopyTemps() {
 
       INT_ASSERT(move);
       SET_LINENO(move);
+
       Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
+
       move->insertBefore(new DefExpr(tmp));
-      move->insertAfter(new CallExpr(PRIM_MOVE, sym, new CallExpr(autoCopyMap.get(sym->type), tmp)));
+      move->insertAfter(new CallExpr(PRIM_MOVE,
+                                     sym,
+                                     new CallExpr(autoCopyMap.get(sym->type),
+                                                  tmp)));
       move->get(1)->replace(new SymExpr(tmp));
     }
   }
@@ -903,12 +1563,19 @@ static void insertReferenceTemps() {
 
 void callDestructors() {
   fixupDestructors();
+
   insertDestructorCalls();
   insertAutoCopyTemps();
+
   cullAutoDestroyFlags();
   cullExplicitAutoDestroyFlags();
+
+  ReturnByRef::apply();
+
   insertAutoDestroyCalls();
+
   returnRecordsByReferenceArguments();
+
   insertYieldTemps();
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();

@@ -150,10 +150,6 @@ if ($status == 0) {
     print MAIL "--- New Failing Future tests -----------------\n";
     print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
     print MAIL "\n";
-
-    print MAIL "--- Unresolved Future tests ------------------\n";
-    print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
-    print MAIL "\n";    
 }
 
 print MAIL endMailChplenv();

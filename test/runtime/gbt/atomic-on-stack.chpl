@@ -1,6 +1,8 @@
 proc main() {
-  var x: atomic int;
-  on Locales[numLocales-1] do
-    x.add(1);
-  writeln(x.read());
+  on Locales[numLocales-1] {
+    var x: atomic int;
+    on Locales[0] do
+      x.add(1);
+    writeln(x.read());
+  }
 }

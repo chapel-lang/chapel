@@ -48,7 +48,7 @@ char             deletedIdFilename[FILENAME_MAX + 1]    =      "";
 static Vec<char> valid_log_flags;
 static Vec<char> log_flags;
 
-void log_flags_arg(const ArgumentState* state, const char* arg) {
+void log_flags_arg(const ArgumentDescription* desc, const char* arg) {
   if (valid_log_flags.count() == 0)
     initLogFlags(valid_log_flags);
 

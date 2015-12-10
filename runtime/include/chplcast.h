@@ -51,15 +51,19 @@ _real32 c_string_to_real32_precise(c_string str, int* invalid, char* invalidCh);
 _real64 c_string_to_real64_precise(c_string str, int* invalid, char* invalidCh);
 _imag32 c_string_to_imag32_precise(c_string str, int* invalid, char* invalidCh);
 _imag64 c_string_to_imag64_precise(c_string str, int* invalid, char* invalidCh);
+#ifndef __cplusplus
 _complex64 c_string_to_complex64_precise(c_string str, int* invalid, char* invalidCh);
 _complex128 c_string_to_complex128_precise(c_string str, int* invalid, char* invalidCh);
+#endif
 
 _real32 c_string_to_real32(c_string str, int lineno, c_string filename);
 _real64 c_string_to_real64(c_string str, int lineno, c_string filename);
 _imag32 c_string_to_imag32(c_string str, int lineno, c_string filename);
 _imag64 c_string_to_imag64(c_string str, int lineno, c_string filename);
+#ifndef __cplusplus
 _complex64 c_string_to_complex64(c_string str, int lineno, c_string filename);
 _complex128 c_string_to_complex128(c_string str, int lineno, c_string filename);
+#endif
 
 
 /* every other primitive type to string */
@@ -98,26 +102,4 @@ c_string chpl_bool64_to_c_string(chpl_bool64 x) {
 }
 
 #include "chpl-string.h"
-
-// Note that this routine returns a reference to the character buffer in the
-// underlying chpl_string, so the chpl_string must last longer than the
-// returned c_string or the caller must make a copy of the result.  The caller
-// should not free the returned string.
-static inline
-c_string chpl_string_to_c_string(chpl_string s, int lineno, c_string filename) {
-  c_string ret;
-  c_string_from_string(&ret, &s, lineno, filename);
-  return ret; // leaky? No. (see above)
-}
-
-// This routine returns a chpl_string containing a verbatim copy of the
-// passed-in C string.  The (chpl_)string destructor will take care of
-// deallocating that memory.
-static inline
-chpl_string c_string_to_chpl_string(c_string s, int lineno, c_string filename) {
-  chpl_string ret;
-  string_from_c_string(&ret, s, 0, -1, lineno, filename);
-  return ret; // leaky? No. (see above)
-}
-
 #endif // _chplcast_h_

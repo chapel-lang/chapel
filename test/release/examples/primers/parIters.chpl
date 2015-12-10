@@ -1,5 +1,5 @@
 //
-// This example shows how to use paralell iterators in Chapel.
+// This example shows how to use parallel iterators in Chapel.
 // Leader-follower iterators are used to implement zippered
 // forall loops in Chapel over data structures or iterators.
 // Standalone parallel iterators are used to implement non-zippered
@@ -285,7 +285,7 @@ iter count(param tag: iterKind, n: int, low: int=1, followThis)
 // The standalone parallel iterator is another overload of the same name,
 // taking the iterKind.standalone param enumeration as its first argument.
 // The next arguments again match the serial iterator exactly. This iterator
-// generates paralellism and yields single elements in the low-based
+// generates parallelism and yields single elements in the low-based
 // coordinate system. The standalone parallel iterator is invoked in
 // forall loops that are not zippered.  Because this iterator will not
 // be zippered with others, it doesn't need to go to the trouble of

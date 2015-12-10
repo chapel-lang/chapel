@@ -101,7 +101,7 @@ module ChapelTuple {
     return false;
   
   pragma "no doc"
-  proc isHomogeneousTupleValue(x: _tuple) param
+  proc isHomogeneousTupleValue(x) param
     return __primitive("is star tuple type", x);
   
   /*
