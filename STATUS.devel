@@ -888,11 +888,6 @@ Developer
 
 LLVM (experimental)
 -------------------
-- Extern C blocks do not properly handle C "void *" types.
-  # extern/tzakian/void_ptr.future
-- The LLVM backend does not properly handle C macros (and for that
-  reason will not work with GMP)
-
 
 Multi-locale/GASNet executions
 ------------------------------
