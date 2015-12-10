@@ -346,9 +346,12 @@ qioerr qio_waitpid(int64_t pid,
 
 
 // commit input, sending any data to the subprocess.
-// While sending that data, read output and error channels.
+// once input is sent, close input channel and file.
+// While sending that data, read output and error channels,
+// buffering up the read data.
 qioerr qio_proc_communicate(
     const int threadsafe,
+    qio_file_t* input_file,
     qio_channel_t* restrict input,
     qio_channel_t* restrict output,
     qio_channel_t* restrict error) {
@@ -447,7 +450,14 @@ qioerr qio_proc_communicate(
   while( do_input || do_output || do_error ) {
     if( do_input ) {
       err = _qio_channel_flush_qio_unlocked(input);
-      if( !err ) do_input = false;
+      if( !err ) {
+        qioerr err2 = 0;
+        do_input = false;
+        // Close input channel.
+        err = qio_channel_close(false, input);
+        err2 = qio_file_close(input_file);
+        if( err2 && !err ) err = err2;
+      }
       if( qio_err_to_int(err) == EAGAIN ) err = 0;
       if( err ) break;
     }
@@ -455,7 +465,10 @@ qioerr qio_proc_communicate(
     if( do_output ) {
       // read some into our buffer.
       err = qio_channel_advance(false, output, qbytes_iobuf_size);
-      if( qio_err_to_int(err) == EEOF ) do_output = false;
+      if( qio_err_to_int(err) == EEOF ) {
+        do_output = false;
+        err = 0;
+      }
       if( qio_err_to_int(err) == EAGAIN ) err = 0;
       if( err ) break;
     }
@@ -463,7 +476,10 @@ qioerr qio_proc_communicate(
     if( do_error ) {
       // read some into our buffer.
       err = qio_channel_advance(false, error, qbytes_iobuf_size);
-      if( qio_err_to_int(err) == EEOF ) do_error = false;
+      if( qio_err_to_int(err) == EEOF ) {
+        do_error = false;
+        err = 0;
+      }
       if( qio_err_to_int(err) == EAGAIN ) err = 0;
       if( err ) break;
     }
@@ -487,7 +503,12 @@ qioerr qio_proc_communicate(
       FD_SET(error_fd, &rfds);
       FD_SET(error_fd, &efds);
     }
-    rc = select(nfds, &rfds, &wfds, &efds, NULL);
+
+    // Run select to wait for something
+    if( do_input || do_output || do_error ) {
+      // TODO -- use sys_select so threading can interact
+      rc = select(nfds, &rfds, &wfds, &efds, NULL);
+    }
 
     if( rc == -1 ) {
       err = qio_int_to_err(errno);
