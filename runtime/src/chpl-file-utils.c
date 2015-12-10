@@ -85,10 +85,12 @@ qioerr chpl_fs_cwd(const char** working_dir) {
   char* bufptr;
   char* pathbuf = (char *)qio_malloc(bufsize);
   bufptr = getcwd(pathbuf, bufsize);
-  if (bufptr == NULL)
+  if (bufptr == NULL) {
     err = qio_mkerror_errno();
-  else
+    qio_free(pathbuf);
+  } else {
     *working_dir = pathbuf;
+  }
   return err;
 }
 
@@ -341,6 +343,7 @@ qioerr chpl_fs_realpath(const char* path, const char **shortened) {
     // If an error occurred, bufptr will be NULL.  Otherwise, it will
     // point to pathbuf anyways
     err = qio_mkerror_errno();
+    qio_free(pathbuf);
   } else {
     *shortened = pathbuf;
   }
