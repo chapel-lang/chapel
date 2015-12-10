@@ -3495,11 +3495,13 @@ qioerr qio_channel_mark(const int threadsafe, qio_channel_t* ch)
  * because it presumably will come up again in a call
  * to read/write/flush.
  *
+ * Calls qio_channel_require_read for a read-only channel.
+ *
  * Returns EEOF if we got to EOF before advancing that many bytes.
  */
 qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
 {
-  int use_buffered;
+  int use_buffered = 0;
   qioerr err = 0;
 
   // clear out any bits.
@@ -3514,24 +3516,34 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
     return 0;
   }
 
-  // Slow path: not all data is available in the cached area.
-  use_buffered = _use_buffered(ch, nbytes);
-  if( use_buffered ) {
-    err = _qio_channel_needbuffer_unlocked(ch);
+  if( ch->flags & QIO_FDFLAG_READABLE ) {
+    // Read some data
+    err = _qio_channel_require_unlocked(ch, nbytes, false);
     if( err ) return err;
+  }
 
-    _qio_buffered_advance_cached(ch);
+  if( ch->flags & QIO_FDFLAG_WRITEABLE ) {
+    // Slow path: not all data is available in the cached area.
+    use_buffered = _use_buffered(ch, nbytes);
+    if( use_buffered ) {
+      err = _qio_channel_needbuffer_unlocked(ch);
+      if( err ) return err;
+
+      _qio_buffered_advance_cached(ch);
+    }
   }
 
   _add_right_mark_start(ch, nbytes);
 
-  // If qio_buffered_behind fails, it will presumably
-  // fail again on flush/close. So it is OK to
-  // ignore the error code.
-  //
-  // _qio_buffered_behind calls _qio_buffered_setup_cached
-  if( use_buffered ) {
-    err = _qio_buffered_behind(ch, false);
+  if( ch->flags & QIO_FDFLAG_WRITEABLE ) {
+    // If qio_buffered_behind fails, it will presumably
+    // fail again on flush/close. So it is OK to
+    // ignore the error code.
+    //
+    // _qio_buffered_behind calls _qio_buffered_setup_cached
+    if( use_buffered ) {
+      err = _qio_buffered_behind(ch, false);
+    }
   }
   return err;
 }
