@@ -174,13 +174,14 @@ What's next?
     Chapel modes for emacs and vim              ``etc/README.md``
     example Chapel programs                     ``examples/README``
     a quick reference for Chapel syntax         `doc/quickReference.pdf`_
-    the Chapel language specification           ``doc/chapelLanguageSpec.pdf``
+    the Chapel language specification           `doc/chapelLanguageSpec.pdf`_
     other Chapel Documentation                  `chapel.cray.com/docs`_
     third-party software that we use            ``third-party/README``
 =============================================== =====================================
 
 
 .. _doc/quickReference.pdf: http://chapel.cray.com/spec/quickReference.pdf
+.. _doc/chapelLanguageSpec.pdf: http://chapel.cray.com/spec/spec-0.98.pdf
 .. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.12/
 .. _building.rst: http://chapel.cray.com/docs/1.12/usingchapel/building.html
 .. _compiling.rst: http://chapel.cray.com/docs/1.12/usingchapel/compiling.html
