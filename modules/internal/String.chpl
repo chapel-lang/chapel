@@ -1205,19 +1205,25 @@ module String {
       return _strcmp(a, b) == 0;
     }
 
-    if a.locale_id == b.locale_id {
+    // At the moment, this commented out section will not work correctly. If a
+    // and b are on the same locale, we will go to that locale, but an autoCopy
+    // will localize a and b, before they are placed into the on bundle,
+    // causing us to access garbage data inside the doEq routine. Always
+    // localize for now.
+    //
+    /* if a.locale_id == b.locale_id {
       var ret: bool = false;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
         ret = doEq(a, b);
       }
       return ret;
-    } else {
-      var localA: string = a.localize();
-      var localB: string = b.localize();
+    } else { */
 
-      return doEq(localA, localB);
-    }
+    var localA: string = a.localize();
+    var localB: string = b.localize();
+
+    return doEq(localA, localB);
   }
 
   inline proc !=(a: string, b: string) : bool {
@@ -1229,19 +1235,10 @@ module String {
       return _strcmp(a, b) < 0;
     }
 
-    if a.locale_id == b.locale_id {
-      var ret: bool = false;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
-        ret = doLt(a, b);
-      }
-      return ret;
-    } else {
-      var localA: string = a.localize();
-      var localB: string = b.localize();
+    var localA: string = a.localize();
+    var localB: string = b.localize();
 
-      return doLt(localA, localB);
-    }
+    return doLt(localA, localB);
   }
 
   inline proc >(a: string, b: string) : bool {
@@ -1249,19 +1246,10 @@ module String {
       return _strcmp(a, b) > 0;
     }
 
-    if a.locale_id == b.locale_id {
-      var ret: bool = false;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
-        ret = doGt(a, b);
-      }
-      return ret;
-    } else {
-      var localA: string = a.localize();
-      var localB: string = b.localize();
+    var localA: string = a.localize();
+    var localB: string = b.localize();
 
-      return doGt(localA, localB);
-    }
+    return doGt(localA, localB);
   }
 
   inline proc <=(a: string, b: string) : bool {
