@@ -66,7 +66,11 @@ compiler: FORCE
 parser: FORCE
 	cd compiler && $(MAKE) parser
 
-modules: FORCE
+# modules calls make_sys_basic_types.py which needs to have the subset of
+# third-party libraries the runtime builds available. The easiest way to get
+# this behavior is to just depend on runtime. Depending on third-party would
+# cause all third party libs to be built.
+modules: runtime
 	cd modules && $(MAKE)
 
 runtime: FORCE
@@ -107,7 +111,8 @@ third-party-chpldoc-venv: FORCE
 
 test-venv: third-party-test-venv
 
-chpldoc: compiler third-party-chpldoc-venv
+# depens on runtime for the same reasons as the module target above.
+chpldoc: compiler runtime third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
 	cd modules && $(MAKE) sys-ctypes-docs
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
