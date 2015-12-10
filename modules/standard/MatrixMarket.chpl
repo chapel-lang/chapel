@@ -27,13 +27,11 @@ module MatrixMarket {
    use Math;
    use IO;
    use Sys;
-   //use Regexp;
-   //use RecordParser;
    use List;
 
-extern var PROT_READ:c_int;
+/* extern var PROT_READ:c_int;
 extern var MAP_SHARED:c_int;
-extern var MAP_FILE:c_int;
+extern var MAP_FILE:c_int; */
 
    class MMWriter {
       var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
@@ -116,7 +114,7 @@ class MMReader {
 
    proc MMReader(const fname:string) {
       fd = open(fname, iomode.r, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
-      fin = fd.reader(start=0, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+      fin = fd.reader(start=0, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
    }
 
    proc read_header() {
@@ -132,7 +130,7 @@ class MMReader {
       // didn't find a precentage, rewind channel by length of read string...
       if percentfound != "%\n" {
          fin.close();
-         fin = fd.reader(start=offset, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+         fin = fd.reader(start=offset, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
       }
    }
 
@@ -180,17 +178,17 @@ class LargeMMReader : MMReader {
 
    //var fdescptr, mmfdesc:c_void_ptr;
    //var fdesc:fd_t;
-   var mmap_sz:size_t;
+   //var mmap_sz:size_t;
    var file_sz:int;
 
    proc LargeMMReader(const fname:string, const mmapsz=(1024*25)) {
       file_sz = getFileSize(fname);
-      mmap_sz=mmapsz:size_t;
+      //mmap_sz=mmapsz:size_t;
       //sys_open(fname.c_str(), 0:c_int, O_RDONLY:mode_t, fdesc);
       //sys_mmap(fdescptr, mmap_sz, PROT_READ:c_int, MAP_SHARED|MAP_FILE:c_int, fdesc, 0:off_t, mmfdesc);
       //fd = openfd(fdesc, mode=iomode.r, hints=IOHINT_CACHED|IOHINT_PARALLEL|IOHINT_RANDOM);
       fd = open(fname, mode=iomode.r, hints=IOHINT_CACHED|IOHINT_PARALLEL|IOHINT_RANDOM); 
-      fin = fd.reader(start=0, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+      fin = fd.reader(start=0, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
    }
 
    proc read_file() {
@@ -201,21 +199,21 @@ class LargeMMReader : MMReader {
       // file to figure out where end-of-line markers are 
       // in order to expedite reads 
       //
-      const numBytesPerThread = (file_sz - fin._offset)/numThreadsPerLocale;
-      const threadDom = {1..numThreadsPerLocale};
+      const numBytesPerThread = (file_sz - fin._offset())/here.numCores;
+      const threadDom = {1..here.numCores};
       var eolMarkers:[threadDom] list(int);
 
       // lock per thread, control accessto eolMarker list for a thread
-      var lock : sync [threadDom] bool; 
+      var lock$ : [threadDom] sync bool; 
 
-      forall i in fin._offset..file_sz by numBytesPerThread {
-         const threadid = i % numThreadsPerLocale;
-         lock(threadid) = true; // lock grab
+      forall i in fin._offset()..file_sz by numBytesPerThread {
+         const threadid = i % here.numCores;
+         lock$(threadid) = true; // lock grab
          if eolMarkers[threadid].length < 1 { eolMarkers[threadid] = new list(int); }
 
          var done:bool = true;
          var line:string;
-         var eolReader = fd.reader(start=i, end=i+numBytesPerThread, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+         var eolReader = fd.reader(start=i, end=i+numBytesPerThread, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
 
          // that ugly while loop in a parallel thread of execution... 
          while done { 
@@ -224,23 +222,27 @@ class LargeMMReader : MMReader {
          }
 
          eolReader.close();
-         const lock_release = lock(threadid); // lock release
+         const lock_release = lock$(threadid); // lock release
       }
 
       var eolMarkersList = new list(int);
-      for i in threadDom { eolMarkersList.concat(eolMarkers(i)); }
+      for i in threadDom { eolMarkersList.concat(eolMarkers(i)); eolMarkers.destroy(); }
+
+      var eolMarkersArr : [1..eolMarkersList.length] int;
+      for (i,j) in zip(1..eolMarkersList.length, eolMarkersList) { eolMarkersArr(i) = j; }
 
       const Dtoret = {1..nrows, 1..ncols}; // maybe look for sparse matrix support here?
       var toret:[Dtoret] real;
 
-      forall mk in eolMarkersList {
+      forall mk in eolMarkersArr {
          var i, j:int; var w:real;
-         var blkreader = fd.reader(start=mk, style=iostyle.text, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+         var blkreader = fd.reader(start=mk, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
          blkreader.readf("%i %i %r\n", i, j, w);
          toret(i, j) = w;
          blkreader.close();
       }
 
+      eolMarkersList.destroy();
       return toret;
    }
 
@@ -259,9 +261,7 @@ proc mmread(const fname:string, const mmap_sz:int=-1) {
    //var mr = if mmap_sz < 0 then new MMReader(fname) else new LargeMMReader(fname, mmapsz=mmap_sz);
    var mr = new MMReader(fname);
    var toret = mr.read_file();
-writeln("file read!\t1");
    delete mr;
-writeln("file read!\t2");
    return toret;
 }
 
