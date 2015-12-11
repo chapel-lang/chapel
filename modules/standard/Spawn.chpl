@@ -108,7 +108,9 @@ module Spawn {
   private extern proc qio_proc_communicate(threadsafe:c_int,
                                            input_file:qio_file_ptr_t,
                                            input:qio_channel_ptr_t,
+                                           output_file:qio_file_ptr_t,
                                            output:qio_channel_ptr_t,
+                                           error_file:qio_file_ptr_t,
                                            error:qio_channel_ptr_t):syserr;
 
   // When spawning, we need to allocate the command line
@@ -592,6 +594,15 @@ module Spawn {
         this.running = false;
         this.exit_status = exitcode;
       }
+
+      // Close stdout/stderr files.
+      if this.stdout_pipe {
+        this.stdout_file.close(error=error);
+      }
+      if this.stderr_pipe {
+        this.stderr_file.close(error=error);
+      }
+
     }
   }
 
@@ -632,7 +643,9 @@ module Spawn {
         locking,
         stdin_file._file_internal,
         stdin._channel_internal,
+        stdout_file._file_internal,
         stdout._channel_internal,
+        stderr_file._file_internal,
         stderr._channel_internal);
     }
 

@@ -349,12 +349,16 @@ qioerr qio_waitpid(int64_t pid,
 // once input is sent, close input channel and file.
 // While sending that data, read output and error channels,
 // buffering up the read data.
+// once output/error reads EOF, close output/error file (not channel
+// since output channel has the buffered data).
 qioerr qio_proc_communicate(
     const int threadsafe,
     qio_file_t* input_file,
-    qio_channel_t* restrict input,
-    qio_channel_t* restrict output,
-    qio_channel_t* restrict error) {
+    qio_channel_t* input,
+    qio_file_t* output_file,
+    qio_channel_t* output,
+    qio_file_t* error_file,
+    qio_channel_t* error) {
 
   qioerr err = 0;
   int rc;
@@ -467,7 +471,13 @@ qioerr qio_proc_communicate(
       err = qio_channel_advance(false, output, qbytes_iobuf_size);
       if( qio_err_to_int(err) == EEOF ) {
         do_output = false;
-        err = 0;
+        // close the output file (not channel), in case closing output
+        // causes the program to output on stderr, e.g.
+        err = qio_file_close(output_file);
+        // Set the output channel maximum position
+        // This prevents a read on output from trying to get
+        // more data from the (now closed) file.
+        output->end_pos = qio_channel_offset_unlocked(output);
       }
       if( qio_err_to_int(err) == EAGAIN ) err = 0;
       if( err ) break;
@@ -478,7 +488,10 @@ qioerr qio_proc_communicate(
       err = qio_channel_advance(false, error, qbytes_iobuf_size);
       if( qio_err_to_int(err) == EEOF ) {
         do_error = false;
-        err = 0;
+        // close the error file (not channel)
+        err = qio_file_close(error_file);
+        // Set the error channel maximum position
+        error->end_pos = qio_channel_offset_unlocked(error);
       }
       if( qio_err_to_int(err) == EAGAIN ) err = 0;
       if( err ) break;
