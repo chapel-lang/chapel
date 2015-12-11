@@ -37,12 +37,12 @@ The variable *numLocales* is a built-in integer constant indicating
 the number of locales on which the program is running.  For example,
 when run on four locales, the following program:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/numLocales.chpl
+.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/numLocalesVar.chpl
   :language: chapel
 
 would generate:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/numLocales.good
+.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/numLocalesVar.good
   :language: text
 
 
