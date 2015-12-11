@@ -76,8 +76,8 @@ static SymbolTable symbolTable;
 // Note that this caching is not enabled until after use expression
 // have been resolved.
 //
-static std::map<BlockStmt*,Vec<ModuleSymbol*>*> moduleUsesCache;
-static bool                                     enableModuleUsesCache = false;
+static std::map<BlockStmt*,Vec<UseExpr*>*> moduleUsesCache;
+static bool                                enableModuleUsesCache = false;
 
 //
 // The aliasFieldSet is a set of names of fields for which arrays may
@@ -1656,7 +1656,7 @@ static void destroyTable() {
 // delete the module uses cache
 //
 static void destroyModuleUsesCaches() {
-  std::map<BlockStmt*,Vec<ModuleSymbol*>*>::iterator use;
+  std::map<BlockStmt*,Vec<UseExpr*>*>::iterator use;
 
   for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
     delete use->second;
@@ -1702,10 +1702,10 @@ static void lookup(BaseAST* scope, const char * name,
 
 
 
-static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules);
+static void    buildBreadthFirstModuleList(Vec<UseExpr*>* modules);
 
-static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
-                                           Vec<ModuleSymbol*>* current,
+static void    buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
+                                           Vec<UseExpr*>* current,
                                            Vec<ModuleSymbol*>* alreadySeen);
 
 // Given a name and a scope, determine the symbol referred by that name in the
@@ -1912,36 +1912,34 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
     // Nothing found so far, look into the uses.
     if (BlockStmt* block = toBlockStmt(scope)) {
       if (block->modUses) {
-        Vec<ModuleSymbol*>* modules = NULL;
+        Vec<UseExpr*>* moduleUses = NULL;
 
         if (moduleUsesCache.count(block) == 0) {
-          modules = new Vec<ModuleSymbol*>();
+          moduleUses = new Vec<UseExpr*>();
 
           for_actuals(expr, block->modUses) {
             UseExpr* use = toUseExpr(expr);
             INT_ASSERT(use);
 
-            SymExpr* se = toSymExpr(use->mod);
-            INT_ASSERT(se);
-
-            ModuleSymbol* mod = toModuleSymbol(se->var);
-            INT_ASSERT(mod);
-
-            modules->add(mod);
+            moduleUses->add(use);
           }
 
-          INT_ASSERT(modules->n);
+          INT_ASSERT(moduleUses->n);
 
-          buildBreadthFirstModuleList(modules);
+          buildBreadthFirstModuleList(moduleUses);
 
           if (enableModuleUsesCache)
-            moduleUsesCache[block] = modules;
+            moduleUsesCache[block] = moduleUses;
         } else {
-          modules = moduleUsesCache[block];
+          moduleUses = moduleUsesCache[block];
         }
 
-        forv_Vec(ModuleSymbol, mod, *modules) {
-          if (mod) {
+        forv_Vec(UseExpr, use, *moduleUses) {
+          if (use) {
+            SymExpr* se = toSymExpr(use->mod);
+            INT_ASSERT(se);
+            ModuleSymbol* mod = toModuleSymbol(se->var);
+            INT_ASSERT(mod);
             if (Symbol* sym = inSymbolTable(mod->block, name)) {
               if (sym->hasFlag(FLAG_PRIVATE)) {
                 if (rejectedPrivateIds.find(sym->id) ==
@@ -2049,7 +2047,7 @@ static void lookup(BaseAST* scope, const char * name,
   }
 }
 
-static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {
+static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules) {
   Vec<ModuleSymbol*> seen;
 
   return buildBreadthFirstModuleList(modules, modules, &seen);
@@ -2058,38 +2056,49 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {
 // If the uses of a particular module are considered its level 1 uses, then
 // this function will only add level 2 and lower uses to the modules vector
 // argument.
-static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
-                                        Vec<ModuleSymbol*>* current,
+static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
+                                        Vec<UseExpr*>* current,
                                         Vec<ModuleSymbol*>* alreadySeen) {
   modules->add(NULL); // use NULL sentinel to identify modules of equal depth
 
-  Vec<ModuleSymbol*> next;
+  Vec<UseExpr*> next;
 
-  forv_Vec(ModuleSymbol, module, *current) {
+  forv_Vec(UseExpr, module, *current) {
     if (!module) {
       break;
-    } else if (module->block->modUses) {
-      for_actuals(expr, module->block->modUses) {
-        UseExpr*      use = toUseExpr(expr);
-        INT_ASSERT(use);
+    } else {
+      SymExpr* se = toSymExpr(module->mod);
+      INT_ASSERT(se);
+      ModuleSymbol* mod = toModuleSymbol(se->var);
+      INT_ASSERT(mod);
+      if (mod->block->modUses) {
+        for_actuals(expr, mod->block->modUses) {
+          UseExpr*      use = toUseExpr(expr);
+          INT_ASSERT(use);
 
-        SymExpr*      se  = toSymExpr(use->mod);
-        INT_ASSERT(se);
+          SymExpr* useSE = toSymExpr(use->mod);
+          INT_ASSERT(useSE);
 
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
+          ModuleSymbol* useMod = toModuleSymbol(useSE->var);
+          INT_ASSERT(useMod);
 
-        if (!alreadySeen->set_in(mod)) {
-          if (!mod->hasFlag(FLAG_PRIVATE)) {
-            // Uses of private modules are not transitive - the symbols in the
-            // private modules are only visible to itself and its immediate
-            // parent.  Therefore, if the symbol is private, we will not
-            // traverse it further and will merely add it to the alreadySeen
-            // vector.
-            next.add(mod);
-            modules->add(mod);
+          if (!alreadySeen->set_in(useMod)) {
+            if (!useMod->hasFlag(FLAG_PRIVATE)) {
+              // Uses of private modules are not transitive - the symbols in the
+              // private modules are only visible to itself and its immediate
+              // parent.  Therefore, if the symbol is private, we will not
+              // traverse it further and will merely add it to the alreadySeen
+              // vector.
+              next.add(use);
+              modules->add(use);
+            }
+            // If the use statement was made with except or only, we can't
+            // guarantee that a later use of this module will be a waste of
+            // time to traverse, so only add it to the alreadySeen vector if
+            // *all* its symbols were seen.
+            if (use->excludes.size() == 0 && use->includes.size() == 0)
+              alreadySeen->set_add(toModuleSymbol(useMod));
           }
-          alreadySeen->set_add(mod);
         }
       }
     }
