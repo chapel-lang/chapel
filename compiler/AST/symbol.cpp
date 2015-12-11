@@ -701,7 +701,11 @@ GenRet VarSymbol::codegen() {
                   (name, info->builder->getInt8PtrTy()));
         globalValue->setConstant(true);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->builder->CreateConstInBoundsGEP2_32(constString, 0, 0)));
+              info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                NULL,
+#endif
+                constString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -858,7 +862,11 @@ void VarSymbol::codegenDef() {
           llvm::GlobalVariable *globalString =
             llvm::cast<llvm::GlobalVariable>(constString);
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP2_32(globalString, 0, 0)));
+                info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                  NULL,
+#endif
+                  globalString, 0, 0)));
         } else {
           llvm::GlobalVariable *globalString =
             new llvm::GlobalVariable(

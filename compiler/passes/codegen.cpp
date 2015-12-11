@@ -526,6 +526,7 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
 
 
 static void codegen_aggregate_def(AggregateType* ct) {
+  //DFS, check visited
   if (!shouldCodegenAggregate(ct)) return;
   if (ct->symbol->hasFlag(FLAG_CODEGENNED)) return;
   ct->symbol->addFlag(FLAG_CODEGENNED);
@@ -1248,7 +1249,11 @@ codegen_config() {
     info->builder->SetInsertPoint(createConfigBlock);
 
     llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
+#if HAVE_LLVM_VER >= 37
+    info->builder->CreateCall(initConfigFunc, {} );
+#else
     info->builder->CreateCall(initConfigFunc);
+#endif
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
