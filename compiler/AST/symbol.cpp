@@ -40,6 +40,9 @@
 #include "stringutil.h"
 #include "type.h"
 
+// LLVM debugging support
+#include "llvmDebug.h"
+
 #include "AstToText.h"
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
@@ -283,7 +286,9 @@ VarSymbol::VarSymbol(const char *init_name,
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
   doc(NULL),
-  isField(false)
+  isField(false),
+  llvmDIGlobalVariable(NULL),
+  llvmDIVariable(NULL)
 {
   gVarSymbols.add(this);
 }
@@ -827,8 +832,11 @@ void VarSymbol::codegenGlobalDef() {
                                  : llvm::GlobalVariable::InternalLinkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
-
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
+
+      if(debug_info){
+	debug_info->get_global_variable(this);
+      }
     }
 #endif
   }
@@ -871,13 +879,16 @@ void VarSymbol::codegenDef() {
           globalString->setInitializer(llvm::Constant::getNullValue(
                 llvm::IntegerType::getInt8Ty(info->module->getContext())));
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP1_32(globalString, 0)));
+                info->builder->CreateConstInBoundsGEP1_32(
+#if HAVE_LLVM_VER >= 37
+                  NULL,
+#endif
+                  globalString, 0)));
         }
       } else {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               codegenImmediateLLVM(immediate)));
       }
-
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
     llvm::Type *varType = type->codegen().type;
@@ -893,6 +904,9 @@ void VarSymbol::codegenDef() {
               llvm::Constant::getNullValue(varType), varAlloca);
         }
       }
+    }
+    if(debug_info){
+      debug_info->get_variable(this);
     }
 #endif
   }
@@ -920,7 +934,8 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   typeExpr(NULL),
   defaultExpr(NULL),
   variableExpr(NULL),
-  instantiatedFrom(NULL)
+  instantiatedFrom(NULL),
+  llvmDIFormal(NULL)
 {
   if (intentsResolved) {
     if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
@@ -1176,6 +1191,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmType(NULL),
     llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
     llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    llvmDIType(NULL),
     doc(NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
@@ -1246,6 +1262,7 @@ void TypeSymbol::codegenDef() {
     }
 
     llvmType = type;
+    if(debug_info) debug_info->get_type(this->type);
 #endif
   }
 }
@@ -1387,7 +1404,7 @@ GenRet TypeSymbol::codegen() {
       // code generated, so code generate it now. This can get called
       // when adding types partway through code generation.
       codegenDef();
-      // codegenMetadata(); TODO -- enable TBAA generation in the future.
+       codegenMetadata(); //TODO -- enable TBAA generation in the future.
     }
     ret.type = llvmType;
 #endif
@@ -1434,6 +1451,10 @@ FnSymbol::FnSymbol(const char* initName) :
   doc(NULL),
   partialCopySource(NULL),
   retSymbol(NULL)
+#ifdef HAVE_LLVM
+  ,
+  llvmDISubprogram(NULL)
+#endif
 {
   substitutions.clear();
   gFnSymbols.add(this);
@@ -1999,7 +2020,14 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
+    if(debug_info) {
+      LLVM_DISUBPROGRAM dbgScope = debug_info->get_function(this);
+      info->builder->SetCurrentDebugLocation(
+        llvm::DebugLoc::get(linenum(),0,dbgScope));
+    }
+
     llvm::Function::arg_iterator ai = func->arg_begin();
+    unsigned int ArgNo = 1; //start from 1 to cooperate with createLocalVariable
     for_formals(arg, this) {
       if (arg->hasFlag(FLAG_NO_CODEGEN))
         continue; // do not print locale argument, end count, dummy class
@@ -2014,8 +2042,13 @@ void FnSymbol::codegenDef() {
 
         info->lvt->addValue(arg->cname, tempVar.val,
                             tempVar.isLVPtr, !is_signed(type));
+	// debug info for formal arguments
+	if(debug_info){
+	  debug_info->get_formal_arg(arg, ArgNo);
+	}
       }
       ++ai;
+      ArgNo++;
     }
 
 #endif
@@ -2045,9 +2078,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
     if( developer ) {
-      bool problems;
+      bool problems = false;
 #if HAVE_LLVM_VER >= 35
-      problems = llvm::verifyFunction(*func, &llvm::errs());
+      // Debug info generation creates metadata nodes that won't be
+      // finished until the whole codegen is complete and finalize
+      // is called.
+      if( ! debug_info )
+        problems = llvm::verifyFunction(*func, &llvm::errs());
 #else
       problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
 #endif
@@ -2500,6 +2537,7 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     filename(NULL),
     doc(NULL),
     extern_info(NULL),
+    llvmDINameSpace(NULL),
     moduleNamePrefix("")
 {
 
@@ -2567,6 +2605,12 @@ void ModuleSymbol::codegenDef() {
   }
 
   std::sort(fns.begin(), fns.end(), compareLineno);
+
+#ifdef HAVE_LLVM
+  if(debug_info && info->filename) {
+    debug_info->get_module_scope(this);
+  }
+#endif
 
   for_vector(FnSymbol, fn, fns) {
     fn->codegenDef();

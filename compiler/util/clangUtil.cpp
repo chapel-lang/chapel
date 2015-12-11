@@ -45,6 +45,8 @@
 
 #include "build.h"
 
+#include "llvmDebug.h"
+
 typedef Type ChapelType;
 
 #ifndef HAVE_LLVM
@@ -80,6 +82,7 @@ using namespace llvm;
 // and not normally installed in the include directory.
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
+#include "CGDebugInfo.h"
 #include "clang/CodeGen/BackendUtil.h"
 
 static void setupForGlobalToWide();
@@ -791,11 +794,14 @@ void finishCodegenLLVM() {
   // Now finish any Clang code generation.
   cleanupClang(info);
 
+  if(debug_info)debug_info->finalize();
+
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
 #if HAVE_LLVM_VER >= 35
     problems = verifyModule(*info->module, &errs());
+    //problems = false;
 #else
     problems = verifyModule(*info->module, PrintMessageAction);
 #endif
