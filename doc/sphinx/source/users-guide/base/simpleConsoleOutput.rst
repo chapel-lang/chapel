@@ -8,7 +8,7 @@ out to the console.  Although Chapel has a sophisticated set of I/O
 features, let's just focus on a simple capability to get started.
 
 
-The ``writeln()`` routine prints its list of comma-separated
+The ``writeln()`` procedure prints its list of comma-separated
 arguments to the console, one after the other without spaces, followed
 by a newline.  Thus, the following statement will print a greeting to
 the console:

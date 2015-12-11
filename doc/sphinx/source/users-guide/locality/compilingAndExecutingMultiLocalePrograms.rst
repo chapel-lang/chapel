@@ -40,12 +40,12 @@ versus multi-locale executables.  This mode can be selected via the
 ``--[no-]local`` flag, whose default setting is based on the choice of
 communication mechanism above.  Specifically, when the communication
 is ``none``, the compiler defaults to ``--local`` compilation.  When
-it is set to anything else, the compiler defaults to ``-no-local``
+it is set to anything else, the compiler defaults to ``--no-local``
 compilation.  Due to this default, this flag rarely needs to be used
 in practice.
 
 Executables compiled in ``--local`` mode can only execute using a
-single locale.  Executables compiled in ``-no-local`` mode can be
+single locale.  Executables compiled in ``--no-local`` mode can be
 executed on one or more locales, but typically incur overhead when run
 on a single locale as compared to those compiled in ``--local`` mode.
 

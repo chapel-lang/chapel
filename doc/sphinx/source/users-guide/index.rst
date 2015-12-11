@@ -1,7 +1,12 @@
 .. _users-guide-index:
 
-User's Guide
-============
+Chapel Users Guide
+==================
+
+.. toctree::
+   :maxdepth: 1
+
+   overview
 
 Base Language
 -------------
