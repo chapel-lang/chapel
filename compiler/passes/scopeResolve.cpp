@@ -1936,6 +1936,24 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
 
         forv_Vec(UseExpr, use, *moduleUses) {
           if (use) {
+            // Make sure we skip the symbols we should skip
+            if (use->excludes.size() > 0) {
+              bool matched = false;
+              for_vector(const char, toExclude, use->excludes) {
+                if (!strcmp(toExclude, name)) {
+                  matched = true;
+                  break;
+                  // Need to break with the information, since we want to
+                  // continue to the next use statement, but don't need to
+                  // keep looking through the excludes list.
+                }
+              }
+              // If we had a match, move on to the next use statement instead
+              // of checking for the match.
+              if (matched)
+                continue;
+            }
+
             SymExpr* se = toSymExpr(use->mod);
             INT_ASSERT(se);
             ModuleSymbol* mod = toModuleSymbol(se->var);
