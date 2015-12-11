@@ -3497,15 +3497,14 @@ qioerr qio_channel_mark(const int threadsafe, qio_channel_t* ch)
 }
 
 /* For a non-readable channel, advances even if there was
- * an I/O error or EOF -
- * may call qio_buffered_behind and
- * then returns an error code. This error code may be ignored
+ * an I/O error or EOF - may call qio_buffered_behind and
+ * then return an error code. This error code may be ignored
  * because it presumably will come up again in a call
  * to read/write/flush.
  *
  * For a readable channel, calls qio_channel_require_read.
- * for a read-only channel, and leaves the channel position
- * at the minimum of cur+nbytes or wherever EOF was encountered.
+ * Leaves the channel position at the minimum of cur+nbytes
+ * or wherever EOF was encountered.
  *
  * Returns EEOF if we got to EOF before advancing that many bytes.
  * Advances the channel position even if we got to EOF.
