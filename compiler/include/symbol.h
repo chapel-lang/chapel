@@ -30,6 +30,14 @@
 #include <vector>
 #include <map>
 
+#ifdef HAVE_LLVM
+// Forward declare MDNode.
+namespace llvm
+{
+  class MDNode;
+}
+#endif
+
 //
 // The function that represents the compiler-generated entry point
 //
@@ -228,6 +236,16 @@ private:
 
   virtual std::string docsDirective();
   bool isField;
+
+public:
+#ifdef HAVE_LLVM
+  llvm::MDNode *llvmDIGlobalVariable;
+  llvm::MDNode *llvmDIVariable;
+#else
+  void* llvmDIGlobalVariable;
+  void* llvmDIVariable;
+#endif
+
 };
 
 /******************************** | *********************************
@@ -243,6 +261,7 @@ public:
             Expr*       iTypeExpr     = NULL,
             Expr*       iDefaultExpr  = NULL,
             Expr*       iVariableExpr = NULL);
+
 
   // Interface for BaseAST
   virtual GenRet  codegen();
@@ -278,6 +297,12 @@ public:
 
   Type*           instantiatedFrom;
 
+public:
+#ifdef HAVE_LLVM
+  llvm::MDNode *llvmDIFormal;
+#else
+  void* llvmDIFormal;
+#endif
 };
 
 /******************************** | *********************************
@@ -296,6 +321,7 @@ class TypeSymbol : public Symbol {
   llvm::MDNode* llvmConstTbaaNode;
   llvm::MDNode* llvmTbaaStructNode;
   llvm::MDNode* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmDIType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
@@ -304,6 +330,7 @@ class TypeSymbol : public Symbol {
   void* llvmConstTbaaNode;
   void* llvmTbaaStructNode;
   void* llvmConstTbaaStructNode;
+  void* llvmDIType;
 #endif
 
   TypeSymbol(const char* init_name, Type* init_type);
@@ -369,6 +396,13 @@ class FnSymbol : public Symbol {
   Symbol* retSymbol;
   /// Number of formals before tuple type constructor formals are added.
   int numPreTupleFormals;
+
+#ifdef HAVE_LLVM
+  llvm::MDNode* llvmDISubprogram;
+#else
+  void* llvmDISubprogram;
+#endif
+
 
                   FnSymbol(const char* initName);
                  ~FnSymbol();
@@ -499,7 +533,13 @@ public:
   const char*          doc;
 
   // LLVM uses this for extern C blocks.
+#ifdef HAVE_LLVM
   ExternBlockInfo*     extern_info;
+  llvm::MDNode* llvmDINameSpace;
+#else
+  void* extern_info;
+  void* llvmDINameSpace;
+#endif
 
   void                 printDocs(std::ostream *file, unsigned int tabs, std::string parentName);
   void                 printTableOfContents(std::ostream *file);
