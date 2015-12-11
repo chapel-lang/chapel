@@ -1525,6 +1525,12 @@ qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
 
   qbuffer_reposition(&ch->buf, start);
 
+  // Since we are just making the buffer, make sure that the
+  // available position is to the right of the start position.
+  if( ch->av_end < start ) {
+    ch->av_end = start;
+  }
+
   // Further matters... if the file has been MMAP'd,
   // put the mmap'd region into our buffer.
   err = 0;
@@ -2961,7 +2967,7 @@ int _use_buffered(qio_channel_t* ch, ssize_t len)
   // Do not bother initializing the buffer if we are going
   // to read outside of the channel's region.
   else if (offset == ch->end_pos) return 0; 
-  else if (offset > ch->start_pos ||
+  else if (offset > ch->start_pos &&
            offset + len < ch->end_pos) return 1;
   else return 0;
 }
@@ -3490,16 +3496,22 @@ qioerr qio_channel_mark(const int threadsafe, qio_channel_t* ch)
   return qio_channel_mark_maybe_flush_bits(threadsafe, ch, 1);
 }
 
-/* Always advances, may call qio_buffered_behind and
- * then returns an error code. This error code may be ignored
+/* For a non-readable channel, advances even if there was
+ * an I/O error or EOF - may call qio_buffered_behind and
+ * then return an error code. This error code may be ignored
  * because it presumably will come up again in a call
  * to read/write/flush.
  *
+ * For a readable channel, calls qio_channel_require_read.
+ * Leaves the channel position at the minimum of cur+nbytes
+ * or wherever EOF was encountered.
+ *
  * Returns EEOF if we got to EOF before advancing that many bytes.
+ * Advances the channel position even if we got to EOF.
  */
 qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
 {
-  int use_buffered;
+  int use_buffered = 0;
   qioerr err = 0;
 
   // clear out any bits.
@@ -3517,21 +3529,48 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
   // Slow path: not all data is available in the cached area.
   use_buffered = _use_buffered(ch, nbytes);
   if( use_buffered ) {
+
     err = _qio_channel_needbuffer_unlocked(ch);
     if( err ) return err;
 
     _qio_buffered_advance_cached(ch);
   }
 
-  _add_right_mark_start(ch, nbytes);
+  if( ch->flags & QIO_FDFLAG_READABLE ) {
+    if (use_buffered) {
+      // Read some data
+      err = _qio_channel_require_unlocked(ch, nbytes, false);
+      if( err ) return err;
+      // Set the channel position to be the minimum
+      // of EOF read and cur+nbytes
+      {
+        // update right mark start += nbytes
+        // but no more than EOF.
+        int64_t avail = ch->av_end - _right_mark_start(ch);
+        int64_t advance;
+        if(nbytes > avail) advance = avail;
+        else advance = nbytes;
 
-  // If qio_buffered_behind fails, it will presumably
-  // fail again on flush/close. So it is OK to
-  // ignore the error code.
-  //
-  // _qio_buffered_behind calls _qio_buffered_setup_cached
-  if( use_buffered ) {
-    err = _qio_buffered_behind(ch, false);
+        _add_right_mark_start(ch, advance);
+      }
+    } else {
+      // for a nonbuffered reading channel, just add to the position
+      _add_right_mark_start(ch, nbytes);
+    }
+  } else {
+    // For writing channels, just add to the position
+    _add_right_mark_start(ch, nbytes);
+  }
+
+  if( ch->flags & QIO_FDFLAG_WRITEABLE ) {
+    // If qio_buffered_behind fails, it will presumably
+    // fail again on flush/close. So it is OK to
+    // ignore the error code.
+    //
+    // _qio_buffered_behind calls _qio_buffered_setup_cached
+    if( use_buffered ) {
+      err = _qio_buffered_behind(ch, false);
+    }
   }
   return err;
 }
