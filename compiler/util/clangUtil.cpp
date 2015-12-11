@@ -80,6 +80,7 @@ using namespace llvm;
 // and not normally installed in the include directory.
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
+#include "CGDebugInfo.h"
 #include "clang/CodeGen/BackendUtil.h"
 
 static void setupForGlobalToWide();
