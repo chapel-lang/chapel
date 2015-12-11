@@ -1,2 +1,0 @@
-bug: Implicit conversion of c_string to string does not work for ref, out, or inout intents.
-
