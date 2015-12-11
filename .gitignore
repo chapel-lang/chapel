@@ -88,7 +88,6 @@ tags
 /runtime/include/chpl_rt_utils.h
 /runtime/include/comm/ugni
 /runtime/include/tasks/muxed
-/runtime/include/tasks/qthreads/
 /runtime/include/threads/soft-threads
 /runtime/src/comm/ugni
 /runtime/src/tasks/muxed

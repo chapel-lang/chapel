@@ -517,7 +517,7 @@ proc locale.cwd(out error: syserr): string {
       ret = "";
     } else {
       var tmp_len = tmp.length;
-      ret = new string(tmp:c_ptr(uint(8)), tmp_len, tmp_len,
+      ret = new string(tmp:c_ptr(uint(8)), tmp_len, tmp_len+1,
                        owned=true, needToCopy=false);
     }
   }
