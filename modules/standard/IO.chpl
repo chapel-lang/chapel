@@ -2134,7 +2134,7 @@ proc file.getPath(out error:syserr) : string {
     if !error {
       // This uses the version of toString that steals its operand.
       // No need to free.
-      ret = toString(tmp2);
+      ret = tmp2:string;
     } else {
       ret = "unknown";
     }
@@ -2244,20 +2244,20 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
   // hdfs://<host>:<port>/<path>
   proc parse_hdfs_path(path:string): (string, int, string) {
 
-    var hostidx_start = path.indexOf("//");
-    var new_str = path.substring(hostidx_start+2..path.length);
-    var hostidx_end = new_str.indexOf(":");
-    var host = new_str.substring(0..hostidx_end-1);
+    var hostidx_start = path.find("//");
+    var new_str = path[hostidx_start+2..path.length];
+    var hostidx_end = new_str.find(":");
+    var host = new_str[0..hostidx_end-1];
 
-    new_str = new_str.substring(hostidx_end+1..new_str.length);
+    new_str = new_str[hostidx_end+1..new_str.length];
 
-    var portidx_end = new_str.indexOf("/");
-    var port = new_str.substring(0..portidx_end-1);
+    var portidx_end = new_str.find("/");
+    var port = new_str[0..portidx_end-1];
 
     //the file path is whatever we have left
-    var file_path = new_str.substring(portidx_end+1..new_str.length);
+    var file_path = new_str[portidx_end+1..new_str.length];
 
-    return (host, port:int, file_path);
+    return (host, /*port:int*/0, file_path);
   }
 
   var local_style = style;
@@ -2401,9 +2401,9 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
-    if e2 then path = "unknown".c_str();
+    if e2 then path = c"unknown";
     // FIX ME: could use a toString() that doesn't allocate space
-    ioerror(err, "in openfd", toString(path));
+    ioerror(err, "in openfd", path:string);
   }
   return ret;
 }
@@ -2456,8 +2456,8 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
-    if e2 then path = "unknown".c_str();
-    ioerror(err, "in openfp", toString(path));
+    if e2 then path = c"unknown";
+    ioerror(err, "in openfp", path:string);
     // c_string path leaked, but ioerror will exit
   }
   return ret;
@@ -2655,11 +2655,12 @@ record ioChar {
   }
 }
 
-// Note: This returns a c_string_copy.
-// The caller has responsibility for freeing the returned string.
 pragma "no doc"
-inline proc _cast(type t, x: ioChar) where t == c_string_copy {
-  return qio_encode_to_string(x.ch);
+inline proc _cast(type t, x: ioChar) where t == string {
+  var csc: c_string_copy =  qio_encode_to_string(x.ch);
+  var len = csc.length;
+  // The caller has responsibility for freeing the returned string.
+  return new string(csc:c_ptr(uint(8)), len, len, owned=true);
 }
 
 
@@ -2691,14 +2692,10 @@ record ioNewline {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioNewline) where t == c_string {
+inline proc _cast(type t, x: ioNewline) where t == string {
   return "\n";
 }
 
-pragma "no doc"
-inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
-  return __primitive("string_copy", "\n");
-}
 
 /*
 
@@ -2724,13 +2721,11 @@ record ioLiteral {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioLiteral) where t == c_string {
-  return x.val;
-}
-
-pragma "no doc"
-inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
-  return __primitive("string_copy", x.val);
+inline proc _cast(type t, x: ioLiteral) where t == string {
+  var len = x.val.length;
+  // need to copy the string out of the literal
+  return new string(x.val:c_ptr(uint(8)), len, len+1,
+                    owned=true, needToCopy=true);
 }
 
 /*
@@ -2751,11 +2746,9 @@ record ioBits {
   }
 }
 
-pragma "no doc"
-inline proc _cast(type t, x: ioBits) where t == c_string {
+inline proc _cast(type t, x: ioBits) where t == string {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
-  // FIX ME: should this be copied?
-  return ret.c_str();
+  return ret;
 }
 
 
@@ -2769,7 +2762,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = toString(tmp_path);
+      path = tmp_path:string;
       offset = tmp_offset;
     }
   }
@@ -2787,7 +2780,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = toString(tmp_path);
+      path = tmp_path:string;
       offset = tmp_offset;
     }
   }
@@ -3310,12 +3303,12 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
     var err:syserr = ENOERR;
     var got:bool = false;
 
-    err = qio_channel_scan_literal(false, _channel_internal, "true", "true".length:ssize_t, 1);
+    err = qio_channel_scan_literal(false, _channel_internal, c"true", "true".length:ssize_t, 1);
     if !err {
       got = true;
     } else if err == EFORMAT {
       // try reading false instead.
-      err = qio_channel_scan_literal(false, _channel_internal, "false", "false".length:ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, c"false", "false".length:ssize_t, 1);
       // got is already false, so we don't need to set it.
     }
     if !err then x = got;
@@ -3341,16 +3334,17 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
     var len:int(64);
     var tx: c_string_copy;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
+    // TODO: make this better
     // FIX ME: Should deprecate the t == c_string path, because we always
     // return an "owned" char* buffer (or NULL).
-    x = toString(tx);
+    x = tx:string;
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     for i in chpl_enumerate(t) {
-      var str = i:c_string;
-      var slen:ssize_t = str.length:ssize_t;
-      err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
+      var str = i:string;
+      var slen:ssize_t = str.length.safeCast(ssize_t);
+      err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
       // Do not free str, because enum literals are C string literals
       if !err {
         x = i;
@@ -3367,9 +3361,9 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
 private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, "true", "true".length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, c"true", "true".length:ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, "false", "false".length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, c"false", "false".length:ssize_t);
     }
   } else if isIntegralType(t) {
     // handles int types
@@ -3390,10 +3384,11 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     return qio_channel_print_string(false, _channel_internal, x, x.length:ssize_t);
   } else if t == string {
     // handle string
-    return qio_channel_print_string(false, _channel_internal, x.c_str(), x.length:ssize_t);
+    const local_x = x.localize();
+    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
   } else if isEnumType(t) {
-    var s = x:c_string;
-    return qio_channel_print_literal(false, _channel_internal, s, s.length:ssize_t);
+    var s = x:string;
+    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
   }
@@ -3473,7 +3468,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     // TODO: Deprecate the c_string return type, since this routine always
     // returns an "owned" string thingy.  Using the c_string return type will
     // cause leaks.
-    x = toString(tx);
+    x = tx:string;
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -3540,7 +3535,8 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
   } else if t == c_string {
     return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length: ssize_t);
   } else if t == string {
-    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x.c_str(), x.length: ssize_t);
+    var local_x = x.localize();
+    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.length: ssize_t);
   } else if isEnumType(t) {
     var i:enum_mintype(t) = x:enum_mintype(t);
     // call the integer version
@@ -3704,17 +3700,15 @@ private proc _args_to_proto(args ...?k,
                     preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handlling so maybe we don't care.
-  var err_args:c_string;
+  var err_args: string;
   for param i in 1..k {
-    var name:c_string;
+    var name: string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:c_string_copy;
-    // FIX ME: leak c_string due to concatenation
-    // Actually, don't fix me.  Fix concatenation to consume its c_string_copy args.
-    err_args += preArg + name + ":" + typeToString(args(i).type);
+    else name = "x" + i:string;
+    err_args += preArg + name + ":" + typeToString(args(i).type):string;
     if i != k then err_args += ", ";
   }
-  const ret = toString(err_args);
+  const ret = err_args:string;
   return ret;
 }
 
@@ -3934,7 +3928,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 
     this.unlock();
 
-    str_out = toString(tx);
+    str_out = tx:string;
   }
 
   return !error;
@@ -4653,7 +4647,7 @@ class ChannelReader : Reader {
 // TODO -- change to FileSystem.remove
 proc unlink(path:string, out error:syserr) {
   extern proc sys_unlink(path:c_string):err_t;
-  error = sys_unlink(path.c_str());
+  error = sys_unlink(path.localize().c_str());
 }
 
 // documented in the error= version
@@ -4881,7 +4875,8 @@ proc _toChar(x:?t) where t == string
 {
   var chr:int(32);
   var nbytes:c_int;
-  qio_decode_char_buf(chr, nbytes, x.c_str(), x.length:ssize_t);
+  var local_x = x.localize();
+  qio_decode_char_buf(chr, nbytes, local_x.c_str(), local_x.length:ssize_t);
   return (chr, true);
 }
 private inline
@@ -5515,7 +5510,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
                will halt with an error message.
  */
 proc channel.writef(fmt:string, args ...?k, out error:syserr):bool {
-  return this.writef(fmt.c_str(), (...args), error);
+  return this.writef(fmt.localize().c_str(), (...args), error);
 }
 
 // documented in string error= version
@@ -5677,7 +5672,7 @@ proc channel.writef(fmt:c_string, args ...?k, out error:syserr):bool {
 // documented in string error= version
 pragma "no doc"
 proc channel.writef(fmt:string, out error:syserr):bool {
-  return this.writef(fmt.c_str(), error);
+  return this.writef(fmt.localize().c_str(), error);
 }
 
 // documented in string error= version
@@ -5740,7 +5735,7 @@ proc channel.writef(fmt:c_string, out error:syserr):bool {
  */
 
 proc channel.readf(fmt:string, ref args ...?k, out error:syserr):bool {
-  return this.readf(fmt.c_str(), (...args), error);
+  return this.readf(fmt.localize().c_str(), (...args), error);
 }
 
 // documented in string error= version
@@ -5987,7 +5982,7 @@ proc channel.readf(fmt:c_string, ref args ...?k, out error:syserr):bool {
 // documented in string error= version
 pragma "no doc"
 proc channel.readf(fmt:string, out error:syserr):bool {
-  return this.readf(fmt.c_str(), error);
+  return this.readf(fmt.localize().c_str(), error);
 }
 
 // documented in string error= version
@@ -6042,7 +6037,7 @@ proc channel.readf(fmt:c_string, out error:syserr):bool {
 // documented in string error= version
 pragma "no doc"
 proc channel.writef(fmt: string, args ...?k) {
-  return this.writef(fmt.c_str(), (...args));
+  return this.writef(fmt.localize().c_str(), (...args));
 }
 
 // documented in string error= version
@@ -6060,7 +6055,7 @@ proc channel.writef(fmt:c_string, args ...?k) {
 // documented in string error= version
 pragma "no doc"
 proc channel.writef(fmt: string) {
-  return this.writef(fmt.c_str());
+  return this.writef(fmt.localize().c_str());
 }
 
 // documented in string error= version
@@ -6078,7 +6073,7 @@ proc channel.writef(fmt:c_string) {
 // documented in string error= version
 pragma "no doc"
 proc channel.readf(fmt:string, ref args ...?k) {
-  return this.readf(fmt.c_str(), (...args));
+  return this.readf(fmt.localize().c_str(), (...args));
 }
 
 // documented in string error= version
@@ -6097,7 +6092,7 @@ proc channel.readf(fmt:c_string, ref args ...?k) {
 // documented in string error= version
 pragma "no doc"
 proc channel.readf(fmt:string) {
-  return this.readf(fmt.c_str());
+  return this.readf(fmt.localize().c_str());
 }
 
 // documented in string error= version
@@ -6154,7 +6149,7 @@ proc readf(fmt:string):bool {
 }
 
 
-private inline proc _do_format(fmt:string, args ...?k, out error:syserr):string {
+private inline proc _do_format(fmt:c_string, args ...?k, out error:syserr):string {
   // Open a memory buffer to store the result
   var f = openmem();
 
@@ -6164,7 +6159,7 @@ private inline proc _do_format(fmt:string, args ...?k, out error:syserr):string 
 
   var offset = w.offset();
 
-  var buf = c_calloc(int(8), offset+1);
+  var buf = c_calloc(uint(8), offset+1);
 
   // you might need a flush here if
   // close went away
@@ -6177,8 +6172,7 @@ private inline proc _do_format(fmt:string, args ...?k, out error:syserr):string 
 
   f.close();
 
-  var cstrcopy = __primitive("cast", c_string_copy, buf);
-  return toString(cstrcopy);
+  return new string(buf, offset, offset+1, owned=true, needToCopy=false);
 }
 
 
@@ -6203,12 +6197,27 @@ proc format(fmt:string, args ...?k):string {
  */
 
 proc string.format(args ...?k, out error:syserr):string {
-  return _do_format(this, (...args), error);
+  return _do_format(this.localize().c_str(), (...args), error);
 }
 
 // documented in the error= version
 pragma "no doc"
 proc string.format(args ...?k):string {
+  var err:syserr = ENOERR;
+  var ret = _do_format(this.localize().c_str(), (...args), error=err);
+  if err then ioerror(err, "in string.format");
+  return ret;
+}
+
+// documented in the string version
+proc c_string.format(args ...?k, out error:syserr):string {
+  return _do_format(this, (...args), error);
+}
+
+
+// documented in the error= string version
+pragma "no doc"
+proc c_string.format(args ...?k):string {
   var err:syserr = ENOERR;
   var ret = _do_format(this, (...args), error=err);
   if err then ioerror(err, "in string.format");
@@ -6262,7 +6271,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     var gotlen:int(64);
     var ts: c_string_copy;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
-    s = toString(ts);
+    s = ts:string;
   }
  
   if ! error {

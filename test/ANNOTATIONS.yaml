@@ -91,6 +91,12 @@ all:
   11/19/15:
     - text: ubuntu update to 15.10 (gcc upgraded to 5.2)
       config: shootout
+  12/05/15:
+    - text: improve comm=ugni comm domain handling
+      config: 16 node XC
+  12/08/15:
+    - text: default to qthreads+hwloc for cce (#2972)
+      config: Single node XC
 
 AllCompTime:
   11/09/14:

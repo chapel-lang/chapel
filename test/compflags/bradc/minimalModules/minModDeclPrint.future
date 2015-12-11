@@ -1,0 +1,4 @@
+bug: --minimal-modules has been disabled
+
+minimal-modules is diabled until a solution is found to deal with strings being
+records in the compiler.

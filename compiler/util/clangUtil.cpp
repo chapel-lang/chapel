@@ -260,7 +260,8 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   GenInfo* info = gGenInfo;
   Preprocessor &preproc = info->Clang->getPreprocessor();
   VarSymbol* varRet = NULL;
-  NamedDecl* cdeclRet = NULL;
+  TypeDecl* cTypeRet = NULL;
+  ValueDecl* cValueRet = NULL;
 
   const bool debugPrint = false;
 
@@ -393,9 +394,9 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       // already parsed in C
       varRet = info->lvt->getVarSymbol(idName);
       if( !varRet ) {
-        cdeclRet = info->lvt->getCDecl(idName);
+        info->lvt->getCDecl(idName, &cTypeRet, &cValueRet);
       }
-      if( !varRet && !cdeclRet ) {
+      if( !varRet && !cTypeRet && !cValueRet ) {
         // Check to see if it's another macro.
         MacroInfo* otherMacro = preproc.getMacroInfo(tokId);
         if( otherMacro && otherMacro != macro ) {
@@ -406,13 +407,19 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
           // Get whatever was added in the recursive call
           // so that we can add it under the new name.
           varRet = info->lvt->getVarSymbol(idName);
-          cdeclRet = info->lvt->getCDecl(idName);
+          info->lvt->getCDecl(idName, &cTypeRet, &cValueRet);
         }
       }
-      if( debugPrint && varRet ) printf("found var %s\n", varRet->cname);
-      if( debugPrint && cdeclRet ) {
-        std::string s = cdeclRet->getName();
-        printf("found cdecl %s\n", s.c_str());
+      if( debugPrint ) {
+        if( varRet ) printf("found var %s\n", varRet->cname);
+        if( cTypeRet ) {
+          std::string s = cTypeRet->getName();
+          printf("found cdecl type %s\n", s.c_str());
+        }
+        if( cValueRet ) {
+          std::string s = cValueRet->getName();
+          printf("found cdecl value %s\n", s.c_str());
+        }
       }
       break;
     }
@@ -424,15 +431,20 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     std::string s = id->getName();
     const char* kind = NULL;
     if( varRet ) kind = "var";
-    if( cdeclRet ) kind = "cdecl";
+    if( cTypeRet ) kind = "cdecl type";
+    if( cValueRet ) kind = "cdecl value";
     if( kind ) printf("%s: adding an %s to the lvt\n", s.c_str(), kind);
   }
   if( varRet ) {
     info->lvt->addGlobalVarSymbol(id->getName(), varRet);
   }
-  if( cdeclRet ) {
-    info->lvt->addGlobalCDecl(id->getName(), cdeclRet);
+  if( cTypeRet ) {
+    info->lvt->addGlobalCDecl(id->getName(), cTypeRet);
   }
+  if( cValueRet ) {
+    info->lvt->addGlobalCDecl(id->getName(), cValueRet);
+  }
+
 }
 
 
@@ -525,8 +537,8 @@ class CCodeGenConsumer : public ASTConsumer {
          } else if(VarDecl *vd = dyn_cast<VarDecl>(*I)) {
            info->lvt->addGlobalCDecl(vd);
          } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(*I)) {
-           //Allow structs without typedefs
-           info->lvt->addGlobalCDecl(rd); 
+           // Handle forward declaration for structs
+           info->lvt->addGlobalCDecl(rd);
          }
          if( info->parseOnly ) continue;
          // End custom to Chapel
@@ -846,14 +858,15 @@ typedef module_set_t::iterator module_set_iterator_t;
 module_set_t gModulesWithExternBlocks;
 
 bool lookupInExternBlock(ModuleSymbol* module, const char* name,
-                         clang::NamedDecl** cDecl,
-                         ChapelType** chplType)
+                         clang::TypeDecl** cTypeOut,
+                         clang::ValueDecl** cValueOut,
+                         ChapelType** chplTypeOut)
 {
   if( ! module->extern_info ) return false;
-  *cDecl = module->extern_info->gen_info->lvt->getCDecl(name);
+  module->extern_info->gen_info->lvt->getCDecl(name, cTypeOut, cValueOut);
   VarSymbol* var = module->extern_info->gen_info->lvt->getVarSymbol(name);
-  if( var ) *chplType = var->typeInfo();
-  return ( (*chplType) || (*cDecl) );
+  if( var ) *chplTypeOut = var->typeInfo();
+  return ( (*cTypeOut) || (*cValueOut) || (*chplTypeOut) );
 }
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name)
 {
@@ -1252,15 +1265,37 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type) {
 }
 
 void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
-  Storage store;
-  store.u.cdecl = cdecl;
-  (layers.back())[cdecl->getName()] = store;
+  addGlobalCDecl(cdecl->getName(), cdecl);
+
+  // Also file structs under 'struct struct_name'
+  if(isa<RecordDecl>(cdecl)) {
+    std::string sname = "struct ";
+    sname += cdecl->getName();
+    addGlobalCDecl(sname, cdecl);
+  }
 }
 
 void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl) {
-  Storage store;
-  store.u.cdecl = cdecl;
-  (layers.back())[name] = store;
+
+  if(RecordDecl *rd = dyn_cast<RecordDecl>(cdecl)) {
+    // For record decls, always use the completed definition
+    // if it is available.
+    // E.g., we might visit decls in this order:
+    //   struct stat { ... }
+    //   struct stat;
+
+    RecordDecl* completed = rd->getDefinition();
+    if (completed) {
+      // Use the completed version below.
+      cdecl = completed;
+    }
+  }
+
+  // Add to an existing Storage record, so that it can store
+  // both a type and a value (e.g. struct stat and function stat).
+  Storage & store = (layers.back())[name];
+  if (isa<TypeDecl>(cdecl)) store.u.cTypeDecl = cast<TypeDecl>(cdecl);
+  if (isa<ValueDecl>(cdecl)) store.u.cValueDecl = cast<ValueDecl>(cdecl);
 }
 
 
@@ -1284,24 +1319,22 @@ void LayeredValueTable::addBlock(StringRef name, llvm::BasicBlock *block) {
 
 GenRet LayeredValueTable::getValue(StringRef name) {
   if(Storage *store = get(name)) {
-    if( store->u.value && isa<Value>(store->u.value) ) {
+    if( store->u.value ) {
+      INT_ASSERT(isa<Value>(store->u.value));
       GenRet ret;
       ret.val = store->u.value;
       ret.isLVPtr = store->isLVPtr;
       ret.isUnsigned = store->isUnsigned;
       return ret;
     }
-    if( store->u.cdecl && isa<NamedDecl>(store->u.cdecl) ) {
-      // we have a clang named decl.
-      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,
-      // VarDecl,EnumConstantDecl
-      if( isa<ValueDecl>(store->u.cdecl) ) {
-        ValueDecl* vd = cast<ValueDecl>(store->u.cdecl);
+    if( store->u.cValueDecl ) {
+      INT_ASSERT(isa<ValueDecl>(store->u.cValueDecl));
+      // we have a clang value decl.
+      // maybe FunctionDecl,VarDecl,EnumConstantDecl
 
-        // Convert it to an LLVM value
-        // should support FunctionDecl,VarDecl,EnumConstantDecl
-        return codegenCValue(vd);
-      }
+      // Convert it to an LLVM value
+      // should support FunctionDecl,VarDecl,EnumConstantDecl
+      return codegenCValue(store->u.cValueDecl);
     }
     if( store->u.chplVar && isVarSymbol(store->u.chplVar) ) {
       VarSymbol* var = store->u.chplVar;
@@ -1323,33 +1356,49 @@ llvm::BasicBlock *LayeredValueTable::getBlock(StringRef name) {
 
 llvm::Type *LayeredValueTable::getType(StringRef name) {
   if(Storage *store = get(name)) {
-    if( store->u.type && isa<llvm::Type>(store->u.type) )
+    if( store->u.type ) {
+      INT_ASSERT(isa<llvm::Type>(store->u.type));
       return store->u.type;
-    if( store->u.cdecl && isa<NamedDecl>(store->u.cdecl) ) {
-      // we have a clang named decl.
-      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,
-      // VarDecl,EnumConstantDecl
-      if( isa<TypeDecl>(store->u.cdecl) ) {
-        TypeDecl* td = cast<TypeDecl>(store->u.cdecl);
-        // Convert it to an LLVM type.
-        // should support TypedefDecl,EnumDecl,RecordDecl
-        return codegenCType(td);
-      }
+    }
+    if( store->u.cTypeDecl ) {
+      INT_ASSERT(isa<TypeDecl>(store->u.cTypeDecl));
+      // we have a clang type decl.
+      // maybe TypedefDecl,EnumDecl,RecordDecl
+
+      // Convert it to an LLVM type.
+      return codegenCType(store->u.cTypeDecl);
     }
   }
   return NULL;
 }
 
-NamedDecl* LayeredValueTable::getCDecl(StringRef name) {
+// Returns a type or a name decl for a given name
+// Note that C can have a function and a type sharing the same name
+// (e.g. stat/struct stat).
+// Sets the output arguments to NULL if a type/value was not found.
+// Either output argument can be NULL.
+void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
+    ValueDecl** cValueOut) {
+
+  if (cValueOut) *cValueOut = NULL;
+  if (cTypeOut) *cTypeOut = NULL;
+
   if(Storage *store = get(name)) {
-    if( store->u.cdecl && isa<NamedDecl>(store->u.cdecl) ) {
-      // we have a clang named decl.
-      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,
-      // VarDecl,EnumConstantDecl
-      return store->u.cdecl;
+    if( store->u.cValueDecl ) {
+      INT_ASSERT(isa<ValueDecl>(store->u.cValueDecl));
+      // we have a clang value decl.
+      // maybe FunctionDecl,VarDecl,EnumConstantDecl
+
+      if (cValueOut) *cValueOut = store->u.cValueDecl;
+    }
+    if( store->u.cTypeDecl ) {
+      INT_ASSERT(isa<TypeDecl>(store->u.cTypeDecl));
+      // we have a clang type decl.
+      // maybe TypedefDecl,EnumDecl,RecordDecl
+
+      if (cTypeOut) *cTypeOut = store->u.cTypeDecl;
     }
   }
-  return NULL;
 }
 
 VarSymbol* LayeredValueTable::getVarSymbol(StringRef name) {
@@ -1408,8 +1457,10 @@ void LayeredValueTable::swap(LayeredValueTable* other)
 int getCRecordMemberGEP(const char* typeName, const char* fieldName)
 {
   GenInfo* info = gGenInfo;
-  NamedDecl* d = info->lvt->getCDecl(typeName);
+  TypeDecl* d = NULL;
   int ret;
+
+  info->lvt->getCDecl(typeName, &d, NULL);
   INT_ASSERT(d);
   if( isa<TypedefDecl>(d) ) {
     TypedefDecl* td = cast<TypedefDecl>(d);
@@ -1650,6 +1701,13 @@ void makeBinaryLLVM(void) {
       dotOFiles.push_back(inputFilename);
     }
   }
+
+  // Start linker options with C args
+  // This is important to get e.g. -O3 -march=native
+  // since with LLVM we are doing link-time optimization.
+  // We know it's OK to inclued -I (e.g.) since we're calling
+  // clang++ to link so that it can optimize the .bc files.
+  options = cargs;
 
   if(debugCCode) {
     options += " -g";
