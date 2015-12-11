@@ -813,13 +813,12 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   GenRet ret;
   GenInfo* info = gGenInfo;
   Type* wideRefType = NULL;
-  // what is the local reference type?
-  Type* refType = NULL;
 
   if( locale.chplType ) INT_ASSERT(locale.chplType == dtLocaleID->typeInfo());
 
   if( raddr.chplType && !wideType ) {
     INT_ASSERT(raddr.isLVPtr != GEN_WIDE_PTR);
+    Type* refType = NULL;
     if( raddr.isLVPtr == GEN_VAL ) {
       // Then we should have a ref or a class.
       INT_ASSERT(raddr.chplType == dtNil ||
@@ -837,8 +836,6 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   }
 
   INT_ASSERT(wideRefType);
-  refType = wideRefType->getRefType();
-  INT_ASSERT(refType);
 
   locale = codegenValue(locale);
   if( widePointersStruct ) {

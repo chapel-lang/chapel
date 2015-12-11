@@ -534,8 +534,6 @@ class CCodeGenConsumer : public ASTConsumer {
   public:
     CCodeGenConsumer()
       : ASTConsumer(), info(gGenInfo), HandlingTopLevelDecls(0) {
-
-      assert(info->module);
     }
 
     virtual ~CCodeGenConsumer() { }
@@ -715,6 +713,8 @@ class CCodeGenConsumer : public ASTConsumer {
     virtual void HandleTagDeclRequiredDefinition(const TagDecl *D) LLVM_CXX_OVERRIDE {
       if (Diags.hasErrorOccurred())
         return;
+
+      if( info->parseOnly ) return;
 
       if (CodeGen::CGDebugInfo *DI = Builder->getModuleDebugInfo())
         if (const RecordDecl *RD = dyn_cast<RecordDecl>(D))
