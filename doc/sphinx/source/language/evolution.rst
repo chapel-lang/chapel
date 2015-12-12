@@ -76,10 +76,10 @@ generating syntactic ambiguities for other additions we wished to make to the
 language.
 
 For these reasons, a new task intent syntax was designed to cleanly support
-intents other than '``ref``' (particularly in looping contexts), to address the
+intents other than ``ref`` (particularly in looping contexts), to address the
 pending ambiguity, and to better reflect the similarity of task intents to
 formal argument lists. Where previously, task constructs could be followed by a
-'``ref``' clause, they can now be followed by a ``'with'`` clause that takes a list of
+``ref`` clause, they can now be followed by a ``with`` clause that takes a list of
 intents and variables, specifying how to pass them into the task.
 
 Thus, where one would have previously written:
@@ -114,23 +114,23 @@ you would now write:
         }
 
 
-As of the 1.10 release, only '``ref``' intents are supported, though we plan to
+As of the 1.10 release, only ``ref`` intents are supported, though we plan to
 expand this set of intents for the 1.11 release while also extending
 forall-loops to support task intents.
 
 'var' function return intents changed to 'ref'
 **********************************************
 
-A '``var``' function return intent has traditionally been used to indicate that
+A ``var`` function return intent has traditionally been used to indicate that
 a call to the function (referred to as a *var function*) could appear in either
-an r-value or l-value context. The '``var``' keyword was chosen since the function
+an r-value or l-value context. The ``var`` keyword was chosen since the function
 could be used in the same contexts as a variable could.
 
-Since that time, the '``ref``' keyword has been introduced into Chapel to
+Since that time, the ``ref`` keyword has been introduced into Chapel to
 support passing variables by reference to functions. Since returning an
 expression by reference supports similar capabilities as ``var`` functions require,
-while also being less unusual/more orthogonal, this release replaces '``var``'
-function return intents with '``ref``' intents.
+while also being less unusual/more orthogonal, this release replaces ``var``
+function return intents with ``ref`` intents.
 
 Thus, where one would previously write:
 
@@ -146,7 +146,7 @@ now you would write:
         proc getFoo() ref { ... }
 
 
-The '``var``' as a return intent is deprecated and generates a warning for the
+The ``var`` as a return intent is deprecated and generates a warning for the
 current release, after which it will be removed.
 
 
@@ -163,7 +163,7 @@ following an established convention would be better than forging our own path.
 With this change, we modified the precedence of bitwise operators to better
 reflect what we think it intuitive to users and correct what is viewed in many
 circles to be a regrettable mistake in C. At the same time, we changed the
-binding of 'in' and '..' to support some other Chapel idioms more naturally,
+binding of ``in`` and ``..`` to support some other Chapel idioms more naturally,
 like ``1..10 == 1..10``. To see the current operator precedence, refer to the
 :download:Quick Reference <http://chapel.cray.com/spec/quickReference.pdf> sheet.
 
