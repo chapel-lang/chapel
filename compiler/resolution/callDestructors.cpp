@@ -455,6 +455,10 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
 
   collectCallExprs(fn, callExprs);
 
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(fn, defMap, useMap);
+
   for (size_t i = 0; i < callExprs.size(); i++)
   {
     CallExpr* move = callExprs[i];
@@ -475,15 +479,34 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
           if (isString(varLhs->type) == true &&
               varRhs->type           == varLhs->type->refType)
           {
-            SET_LINENO(move);
 
-            SymExpr*  lhsCopy0 = symLhs->copy();
-            SymExpr*  lhsCopy1 = symLhs->copy();
-            FnSymbol* autoCopy = autoCopyMap.get(varLhs->type);
-            CallExpr* copyExpr = new CallExpr(autoCopy, lhsCopy0);
-            CallExpr* moveExpr = new CallExpr(PRIM_MOVE,lhsCopy1, copyExpr);
+            // HARSHBARGER 2015-12-11:
+            // `init_untyped_var` in the `normalize` pass may insert an
+            // initCopy, which means that we should not insert an autocopy
+            // for that same variable.
+            bool initCopied = false;
+            for_uses(use, useMap, varLhs) {
+              if (CallExpr* call = toCallExpr(use->parentExpr)) {
+                if (FnSymbol* parentFn = call->isResolved()) {
+                  if (parentFn->hasFlag(FLAG_INIT_COPY_FN)) {
+                    initCopied = true;
+                    break;
+                  }
+                }
+              }
+            }
 
-            move->insertAfter(moveExpr);
+            if (!initCopied) {
+              SET_LINENO(move);
+
+              SymExpr*  lhsCopy0 = symLhs->copy();
+              SymExpr*  lhsCopy1 = symLhs->copy();
+              FnSymbol* autoCopy = autoCopyMap.get(varLhs->type);
+              CallExpr* copyExpr = new CallExpr(autoCopy, lhsCopy0);
+              CallExpr* moveExpr = new CallExpr(PRIM_MOVE,lhsCopy1, copyExpr);
+
+              move->insertAfter(moveExpr);
+            }
           }
         }
       }
