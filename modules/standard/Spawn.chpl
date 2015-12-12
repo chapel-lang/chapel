@@ -545,7 +545,7 @@ module Spawn {
     :attr:`~subprocess.exit_status` stores the exit code returned
     by the subprocess.
 
-    If :arg:`buffer` is `true`, then this call will handle cases in which
+    If `buffer` is `true`, then this call will handle cases in which
     stdin, stdout, or stderr for the child process is :const:`PIPE` by writing
     any input to the child process and buffering up the output of the child
     process as necessary while waiting for it to terminate. It will do
@@ -554,8 +554,8 @@ module Spawn {
 
     .. note::
      
-        Do not use :arg:`buffer` `false` when using :const:`PIPE` for stdin,
-        stdout, or stderr.  If :arg:`buffer` is `false`, this function does not
+        Do not use `buffer` `false` when using :const:`PIPE` for stdin,
+        stdout, or stderr.  If `buffer` is `false`, this function does not
         try to send any buffered input to the child process and so could result
         in a hang if the child process is waiting for input to finish.
         Similarly, this function does not consume the output from the child
