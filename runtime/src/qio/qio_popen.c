@@ -361,7 +361,7 @@ qioerr qio_proc_communicate(
     qio_channel_t* error) {
 
   qioerr err = 0;
-  int rc;
+  int rc = 0;
   bool do_input;
   bool do_output;
   bool do_error;
