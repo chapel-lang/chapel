@@ -114,6 +114,7 @@ insertLineNumber(CallExpr* call) {
   } else if (fn->hasFlag(FLAG_EXTERN) ||
              (fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO)) ||
              !strcmp(fn->name, "chpl__heapAllocateGlobals") ||
+             !strcmp(fn->name, "chpl__initStringLiterals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
              !strcmp(fn->name, "chpl_gen_main") ||
              ftableMap.count(fn) ||

@@ -105,7 +105,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_FINISH_RMEM_FENCE:
 
   case PRIM_STRING_COPY:
-  case PRIM_C_STRING_FROM_STRING:
   case PRIM_CAST_TO_VOID_STAR:
   case PRIM_SIZEOF:
 
@@ -192,6 +191,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
 
   case PRIM_CHPL_COMM_GET:
   case PRIM_CHPL_COMM_PUT:
+  case PRIM_CHPL_COMM_ARRAY_GET:
+  case PRIM_CHPL_COMM_ARRAY_PUT:
   case PRIM_CHPL_COMM_REMOTE_PREFETCH:
   case PRIM_CHPL_COMM_GET_STRD:
   case PRIM_CHPL_COMM_PUT_STRD:
@@ -295,7 +296,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
   case PRIM_ARRAY_FREE_ELTS:
-  case PRIM_STRING_FROM_C_STRING:
     return false;
 
     // Temporarily unclassified (legacy) cases.

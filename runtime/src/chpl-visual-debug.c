@@ -237,21 +237,24 @@ void chpl_vdebug_pause (void) {
 
 // Routines to log data ... put here so other places can
 // just call this code to get things logged.
+// FIXME: the size argument (size_t) is being cast to int here. chplvis needs
+//        to be updated to take in size_t. The elemsize field is no longer
+//        relevant as well.
 
 // Record>  nb_put: time.sec srcNodeId dstNodeId commTaskId addr raddr elemsize 
 //                  typeIndex length lineNumber fileName
 //
 
 void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                            int32_t elemSize, int32_t typeIndex,
-                            int32_t len, int ln, c_string fn) {
+                            size_t size, int32_t typeIndex,
+                            int ln, c_string fn) {
   if (chpl_vdebug) {
     struct timeval tv;
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-                  (unsigned long) commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
+                  (unsigned long) commTask, (long) addr, (long) raddr, 1, typeIndex, (int)size,
                   ln, fn);
   }
 }
@@ -262,15 +265,15 @@ void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
 // Note: dstNodeId is node requesting Get
 
 void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                            int32_t elemSize, int32_t typeIndex,
-                            int32_t len, int ln, c_string fn) {
+                            size_t size, int32_t typeIndex,
+                            int ln, c_string fn) {
   if (chpl_vdebug) {
     struct timeval tv;
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-                  (unsigned long)commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
+                  (unsigned long)commTask, (long) addr, (long) raddr, 1, typeIndex, (int)size,
                   ln, fn);
   }
 }
@@ -280,7 +283,7 @@ void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
 
 
 void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
-                         int32_t elemSize, int32_t typeIndex, int32_t len,
+                         size_t size, int32_t typeIndex,
                          int ln, c_string fn) {
   if (chpl_vdebug) {
     struct timeval tv;
@@ -288,7 +291,7 @@ void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node,
-                  (unsigned long) commTask, (long) addr, (long) raddr, elemSize, typeIndex, len,
+                  (unsigned long) commTask, (long) addr, (long) raddr, 1, typeIndex, (int)size,
                   ln, fn);
   }
 }
@@ -299,7 +302,7 @@ void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
 // Note:  dstNodeId is for the node makeing the request
 
 void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
-                         int32_t elemSize, int32_t typeIndex, int32_t len,
+                         size_t size, int32_t typeIndex,
                          int ln, c_string fn) {
   if (chpl_vdebug) {
     struct timeval tv;
@@ -308,8 +311,8 @@ void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
     chpl_dprintf (chpl_vdebug_fd,
              "get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
              (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
-             (unsigned long) commTask, (long) addr, (long) raddr, elemSize,
-             typeIndex, len, ln, fn); 
+             (unsigned long) commTask, (long) addr, (long) raddr, 1,
+             typeIndex, (int)size, ln, fn); 
   }
 }
 

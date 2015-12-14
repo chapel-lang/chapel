@@ -20,4 +20,4 @@
 3.14 + 2.1i
 true
 false
-test_string2prims.chpl:42: error: Unexpected value when converting from string to bool: 'maybe'
+test_string2prims.chpl:42: error: halt reached - Unexpected value when converting from string to bool: 'maybe'

@@ -198,27 +198,28 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
   //  avoid multiple Chapel definitions.
   if( alreadyConvertedExtern(module, name) ) return;
 
-  clang::NamedDecl* cdecl = NULL;
+  clang::TypeDecl* cType = NULL;
+  clang::ValueDecl* cValue = NULL;
   Type* chplType = NULL;
 
   // If we've got nothing... give up.
-  if(!lookupInExternBlock(module, name, &cdecl, &chplType)) return;
+  if(!lookupInExternBlock(module, name, &cType, &cValue, &chplType)) return;
 
   // Now, if we have no cdecl, it may be a macro.
-  if( ! cdecl ) {
+  if( (!cType) && (!cValue) ) {
     convertMacroToChpl(module, name, chplType, results);
     return;
   }
 
   //struct
-  if (clang::RecordDecl *rd = llvm::dyn_cast<clang::RecordDecl>(cdecl)) {
+  if (clang::RecordDecl *rd =
+      llvm::dyn_cast_or_null<clang::RecordDecl>(cType)) {
     results.add(convertToChplType(module, rd->getTypeForDecl(), results));
   }
 
   //enum constant
   if (clang::EnumConstantDecl *ed = 
-      llvm::dyn_cast<clang::EnumConstantDecl>(cdecl)) {
-    //results.add(convertToChplType(module, rd->getTypeForDecl(), results));
+      llvm::dyn_cast_or_null<clang::EnumConstantDecl>(cValue)) {
     VarSymbol* v = new VarSymbol(name);
     v->addFlag(FLAG_EXTERN);
     v->addFlag(FLAG_CONST);
@@ -227,14 +228,16 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
 
 
   //vars
-  else if (clang::VarDecl *vd = llvm::dyn_cast<clang::VarDecl>(cdecl)) {
+  if (clang::VarDecl *vd =
+      llvm::dyn_cast_or_null<clang::VarDecl>(cValue)) {
     VarSymbol* v = new VarSymbol(name);
     v->addFlag(FLAG_EXTERN);
     results.add(new DefExpr(v, NULL, convertToChplType(module, vd->getType().getTypePtr(), results)));
   }
 
   //typedefs
-  else if (clang::TypedefNameDecl *tdn = llvm::dyn_cast<clang::TypedefNameDecl>(cdecl)) {
+  if (clang::TypedefNameDecl *tdn =
+      llvm::dyn_cast_or_null<clang::TypedefNameDecl>(cType)) {
 
     bool do_typedef = true;
     const clang::Type* contents_type = tdn->getUnderlyingType().getTypePtr();
@@ -268,7 +271,10 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
     }
     
   //functions
-  } else if (clang::FunctionDecl *fd = llvm::dyn_cast<clang::FunctionDecl>(cdecl)) { 
+  }
+
+  if (clang::FunctionDecl *fd =
+      llvm::dyn_cast_or_null<clang::FunctionDecl>(cValue)) {
 #if HAVE_LLVM_VER >= 35
     clang::QualType resultType = fd->getReturnType();
 #else

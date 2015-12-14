@@ -8,7 +8,7 @@
 //
 // Variables are declared with the 'var' keyword.  Variable
 // declarations must have a type, initializer, or both.  Here, we
-// declare myVariable to be an int.  Since there was no initializer,
+// declare myVariable1 to be an int.  Since there was no initializer,
 // it is initialized to the default value for the int type: 0.
 //
 var myVariable1: int;

@@ -153,7 +153,7 @@ proc locale.chdir(out error: syserr, name: string) {
   extern proc chpl_fs_chdir(name: c_string):syserr;
 
   on this {
-    error = chpl_fs_chdir(name.c_str());
+    error = chpl_fs_chdir(name.localize().c_str());
   }
 }
 
@@ -180,7 +180,7 @@ pragma "no doc"
 proc chmod(out error: syserr, name: string, mode: int) {
   extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 
-  error = chpl_fs_chmod(name.c_str(), mode);
+  error = chpl_fs_chmod(name.localize().c_str(), mode);
 }
 
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
@@ -209,7 +209,7 @@ pragma "no doc"
 proc chown(out error: syserr, name: string, uid: int, gid: int) {
   extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 
-  error = chpl_fs_chown(name.c_str(), uid:c_int, gid:c_int);
+  error = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
 }
 
 /* Change one or both of the owner and group id of the named file or directory
@@ -264,7 +264,7 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
 
     // Copies the access time, and time of last modification.
     // Does not copy uid, gid, or mode
-    error = chpl_fs_copy_metadata(src.c_str(), dest.c_str());
+    error = chpl_fs_copy_metadata(src.localize().c_str(), dest.localize().c_str());
 
     // Get uid and gid from src
     var uid = getUID(error, src);
@@ -516,8 +516,9 @@ proc locale.cwd(out error: syserr): string {
     if (error != ENOERR) {
       ret = "";
     } else {
-      // This version of toString steals its operand.  No need to free.
-      ret = toString(tmp);
+      var tmp_len = tmp.length;
+      ret = new string(tmp:c_ptr(uint(8)), tmp_len, tmp_len+1,
+                       owned=true, needToCopy=false);
     }
   }
   return ret;
@@ -548,7 +549,7 @@ proc exists(out error: syserr, name: string): bool {
   extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
-  error = chpl_fs_exists(ret, name.c_str());
+  error = chpl_fs_exists(ret, name.localize().c_str());
   return ret != 0;
 }
 
@@ -621,7 +622,7 @@ proc getGID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
 
   var result: c_int;
-  error = chpl_fs_get_gid(result, name.c_str());
+  error = chpl_fs_get_gid(result, name.localize().c_str());
   return result;
 }
 
@@ -648,7 +649,7 @@ proc getMode(out error: syserr, name: string): int {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
-  error = chpl_fs_viewmode(ret, name.c_str());
+  error = chpl_fs_viewmode(ret, name.localize().c_str());
   return ret;
 }
 
@@ -678,7 +679,7 @@ proc getFileSize(out error: syserr, name: string): int {
   extern proc chpl_fs_get_size(ref result: int, filename: c_string):syserr;
 
   var result: int;
-  error = chpl_fs_get_size(result, name.c_str());
+  error = chpl_fs_get_size(result, name.localize().c_str());
   return result;
 }
 
@@ -705,7 +706,7 @@ proc getUID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
 
   var result: c_int;
-  error = chpl_fs_get_uid(result, name.c_str());
+  error = chpl_fs_get_uid(result, name.localize().c_str());
   return result;
 }
 
@@ -757,10 +758,9 @@ iter glob(pattern: string = "*"): string {
   use chpl_glob_c_interface;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
-  // TODO: Handle error cases better
+  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   //
   // Use safeCast here, and then back again, in order to avoid conditional
   // in iterator in order to get better generated code, and to support
@@ -783,7 +783,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
   const err = chpl_glob(pattern:c_string, 0, glb);
   // TODO: Handle error cases better
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb).safeCast(int);
   forall i in 0..num-1 do
     yield chpl_glob_index(glb, i.safeCast(size_t)): string;
@@ -806,10 +806,9 @@ iter glob(pattern: string = "*", param tag: iterKind)
   use chpl_glob_c_interface;
   var glb : glob_t;
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
-  // TODO: Handle error cases better
+  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   //
   // cast is used here to ensure we create an int-based leader
   //
@@ -832,10 +831,9 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
     compilerError("glob() iterator can only be zipped with 1D iterators");
   var r = followThis(1);
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
-  // TODO: Handle error cases better
+  const err = chpl_glob(pattern.localize().c_str(), 0, glb);
   if (err != 0 && err != GLOB_NOMATCH) then
-    __primitive("chpl_error", "unhandled error in glob()");
+    __primitive("chpl_error", c"unhandled error in glob()");
   const num = chpl_glob_num(glb);
   if (r.high >= num.safeCast(int)) then
     halt("glob() is being zipped with something too big; it only has ", num, " matches");
@@ -858,7 +856,7 @@ proc isDir(out error:syserr, name:string):bool {
   if (error != ENOERR || !doesExist) {
     return false;
   }
-  error = chpl_fs_is_dir(ret, name.c_str());
+  error = chpl_fs_is_dir(ret, name.localize().c_str());
   return ret != 0;
 }
 
@@ -890,7 +888,7 @@ proc isFile(out error:syserr, name:string):bool {
   if (error != ENOERR || !doesExist) {
     return false;
   }
-  error = chpl_fs_is_file(ret, name.c_str());
+  error = chpl_fs_is_file(ret, name.localize().c_str());
   return ret != 0;
 }
 
@@ -918,7 +916,7 @@ proc isLink(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
-  error = chpl_fs_is_link(ret, name.c_str());
+  error = chpl_fs_is_link(ret, name.localize().c_str());
   return ret != 0;
 }
 
@@ -956,7 +954,7 @@ proc isMount(out error:syserr, name: string): bool {
     return false;
   }
   var ret:c_int;
-  error = chpl_fs_is_mount(ret, name.c_str());
+  error = chpl_fs_is_mount(ret, name.localize().c_str());
   return ret != 0;
 }
 
@@ -1020,12 +1018,12 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
   var dir: DIRptr;
   var ent: direntptr;
-  dir = opendir(path:c_string);
+  dir = opendir(path.localize().c_str());
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = ent.d_name();
-      if (hidden || filename.substring(1) != '.') {
+      const filename = ent.d_name():string;
+      if (hidden || filename[1] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 
@@ -1052,7 +1050,7 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
   extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
 
-  error = chpl_fs_mkdir(name.c_str(), mode, parents);
+  error = chpl_fs_mkdir(name.localize().c_str(), mode, parents);
 }
 
 /* Attempt to create a directory with the given path, `name`.  If `parents`
@@ -1090,10 +1088,81 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
 }
 
 pragma "no doc"
+proc moveDir(out error: syserr, src: string, dest: string) {
+  var destExists = exists(error, dest);
+  // Did some error occurred in checking the existance of dest, perhaps a
+  // permissions error?  If so, return.
+  if (error != ENOERR) then return;
+
+  if (destExists) {
+    // dest already existed
+    var aFile = isFile(error, dest);
+    if (error != ENOERR) then return; // Return error messages as encountered
+    var aDir = isDir(error, dest);
+    if (error != ENOERR) then return;
+
+    if (aFile) {
+      // dest is a file, we can't move src within it!
+      error = ENOTDIR;
+      // Note: Python gives EEXISTS in this case, but I think ENOTDIR is
+      // clearer.
+    } else if (aDir) {
+      if (sameFile(src, dest)) {
+        // Python's behavior when calling move over the same directory for
+        // source and destination is to fail with a helpful error message.
+        // Since this error code shouldn't occur otherwise, it signals to
+        // the wrapper function what has happened.
+        error = EEXIST;
+      } else {
+        // dest is a directory, we'll copy src inside it
+        error = EISDIR;
+        // NOT YET SUPPORTED.  Requires basename and joinPath
+      }
+    } else {
+      // What we've been provided is both not a file and not a directory.  Given
+      // the expected behavior of isFile and isDir when it comes to symlinks,
+      // I'm not sure how this case would arise.
+      error = ENOTDIR;
+    }
+  } else {
+    copyTree(error, src, dest, true);
+    if (error != ENOERR) then return; // Error when copying into dest.
+    rmTree(error, src);
+    if (error != ENOERR) then return; // Error when removing src.
+  }
+}
+
+/* Recursively moves the directory indicated by `src` and its contents to the
+   destination denoted by `dest`.  If `dest` is a directory, `src` is moved
+   inside of it.
+
+   .. note::
+
+      We do not currently support the case where the dest argument already
+      exists and is a directory.  When the :mod:`Path` module has been
+      expanded further, this support can be enabled.
+
+   Will halt with an error message if one is detected.
+
+   :arg src: the location of the directory to be moved
+   :type src: string
+   :arg dest: the location to move it to.
+   :type dest: string
+*/
+proc moveDir(src: string, dest: string) {
+  var err: syserr = ENOERR;
+  moveDir(err, src, dest);
+  if err == EEXIST {
+    halt("Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+  }
+  if err != ENOERR then ioerror(err, "in moveDir(" + src + ", " + dest + ")");
+}
+
+pragma "no doc"
 proc rename(out error: syserr, oldname, newname: string) {
   extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
 
-  error = chpl_fs_rename(oldname.c_str(), newname.c_str());
+  error = chpl_fs_rename(oldname.localize().c_str(), newname.localize().c_str());
 }
 
 /* Renames the file specified by `oldname` to `newname`.  The file is not
@@ -1116,7 +1185,7 @@ pragma "no doc"
 proc remove(out error: syserr, name: string) {
   extern proc chpl_fs_remove(name: c_string):syserr;
 
-  error = chpl_fs_remove(name.c_str());
+  error = chpl_fs_remove(name.localize().c_str());
 }
 
 /* Removes the file or directory specified by `name`
@@ -1198,7 +1267,7 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
   extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
 
   var ret:c_int;
-  error = chpl_fs_samefile_string(ret, file1.c_str(), file2.c_str());
+  error = chpl_fs_samefile_string(ret, file1.localize().c_str(), file2.localize().c_str());
   return ret != 0;
 }
 
@@ -1281,7 +1350,7 @@ pragma "no doc"
 proc symlink(out error: syserr, oldName: string, newName: string) {
   extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
 
-  error = chpl_fs_symlink(oldName.c_str(), newName.c_str());
+  error = chpl_fs_symlink(oldName.localize().c_str(), newName.localize().c_str());
 }
 
 /* Create a symbolic link pointing to `oldName` with the path `newName`.

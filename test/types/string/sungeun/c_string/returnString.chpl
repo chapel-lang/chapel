@@ -28,7 +28,7 @@ proc rs(t: bool) {
   if t then
     return "blah";
   else
-    return toString("blah");
+    return "blah":string;
 }
 
 checkType(rs(true).type);

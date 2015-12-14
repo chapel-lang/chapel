@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -95,30 +95,44 @@ void cullOverReferences() {
   //
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
+
   buildDefUseMaps(defMap, useMap);
+
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->isResolved()) {
       if (FnSymbol* copy = fn->valueFunction) {
         if (CallExpr* move = toCallExpr(call->parentExpr)) {
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
+
           INT_ASSERT(se);
           SET_LINENO(move);
+
           if (!refNecessary(se, defMap, useMap)) {
-            SymExpr* base = toSymExpr(call->baseExpr);
+            SymExpr*   base = toSymExpr(call->baseExpr);
+            VarSymbol* tmp  = newTemp(copy->retType);
+
             base->var = copy;
-            VarSymbol* tmp = newTemp(copy->retType);
+
             move->insertBefore(new DefExpr(tmp));
+
             if (requiresImplicitDestroy(call)) {
-              tmp->addFlag(FLAG_INSERT_AUTO_COPY);
-              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              if (isString(copy->retType) == false) {
+                tmp->addFlag(FLAG_INSERT_AUTO_COPY);
+                tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              } else {
+                tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+              }
             }
+
             if (useMap.get(se->var) && useMap.get(se->var)->n > 0) {
-              move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
-                                  new CallExpr(PRIM_ADDR_OF, tmp)));
+              move->insertAfter(new CallExpr(PRIM_MOVE,
+                                             se->var,
+                                             new CallExpr(PRIM_ADDR_OF, tmp)));
             } else {
               se->var->defPoint->remove();
             }
+
             se->var = tmp;
           }
         } else
@@ -126,6 +140,7 @@ void cullOverReferences() {
       }
     }
   }
+
   freeDefUseMaps(defMap, useMap);
 
   //

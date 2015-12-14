@@ -90,9 +90,9 @@ static c_string memLeaksByDesc = "";
 static _Bool memLeaks = false;
 static size_t memMax = 0;
 static size_t memThreshold = 0;
-static c_string memLog = "";
+static c_string memLog = NULL;
 static FILE* memLogFile = NULL;
-static c_string memLeaksLog = "";
+static c_string memLeaksLog = NULL;
 
 static size_t totalMem = 0;       /* total memory currently allocated */
 static size_t maxMem = 0;         /* maximum total memory during run  */
@@ -137,11 +137,11 @@ void chpl_setMemFlags(void) {
       || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
       || memLeaks
       || memMax > 0
-      || (memLeaksLog && strcmp(memLeaksLog, ""))) {
+      || memLeaksLog != NULL) {
     chpl_memTrack = true;
   }
 
-  if (strcmp(memLog, "") == 0) {
+  if (!memLog) {
     memLogFile = stdout;
   } else {
     if (chpl_numNodes == 1) {
@@ -320,10 +320,10 @@ void chpl_printMemAllocStats(int32_t lineno, c_string filename) {
     fprintf(memLogFile, "==============================================================\n");
     for (i = 0; i < chpl_numNodes; i++) {
       static size_t m1, m2, m3, m4;
-      chpl_gen_comm_get(&m1, i, &totalMem, sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
-      chpl_gen_comm_get(&m2, i, &maxMem, sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
-      chpl_gen_comm_get(&m3, i, &totalAllocated,  sizeof(size_t), -1 /* broke for hetero */, 1, lineno, filename);
-      chpl_gen_comm_get(&m4, i, &totalFreed, sizeof(size_t), -1 /*broke for hetero */, 1, lineno, filename);
+      chpl_gen_comm_get(&m1, i, &totalMem, sizeof(size_t), -1 /* broke for hetero */, lineno, filename);
+      chpl_gen_comm_get(&m2, i, &maxMem, sizeof(size_t), -1 /* broke for hetero */, lineno, filename);
+      chpl_gen_comm_get(&m3, i, &totalAllocated,  sizeof(size_t), -1 /* broke for hetero */, lineno, filename);
+      chpl_gen_comm_get(&m4, i, &totalFreed, sizeof(size_t), -1 /*broke for hetero */, lineno, filename);
       fprintf(memLogFile, "%-9d  %-9zu  %-9zu  %-9zu  %-9zu\n", i, m1, m2, m3, m4);
     }
     fprintf(memLogFile, "==============================================================\n");

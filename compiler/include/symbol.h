@@ -152,6 +152,8 @@ private:
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
+bool isString(Symbol* symbol);
+
 /******************************** | *********************************
 *                                                                   *
 * This class has two roles:                                         *
@@ -578,12 +580,15 @@ bool argMustUseCPtr(Type* t);
 extern bool localTempNames;
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+extern HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 extern StringChainHash uniqueStringHash;
 
 extern ModuleSymbol* rootModule;
 extern ModuleSymbol* theProgram;
 extern ModuleSymbol* mainModule;
 extern ModuleSymbol* baseModule;
+extern ModuleSymbol* stringLiteralModule;
+extern FnSymbol* initStringLiterals;
 extern ModuleSymbol* standardModule;
 extern ModuleSymbol* printModuleInitModule;
 extern Symbol *gNil;
