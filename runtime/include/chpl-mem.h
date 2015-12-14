@@ -129,7 +129,7 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
 static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
-  assert(dest != src);
+  assert(dest != src || num == 0);
   return memcpy(dest, src, num);
 }
 
