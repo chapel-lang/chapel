@@ -2432,6 +2432,7 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
     // before a read or a write, we'll recompute it in a jiffy.
     ch->cached_cur = NULL;
     ch->cached_end = NULL;
+    ch->cached_start = NULL;
   }
 
   _qio_channel_set_error_unlocked(ch, err);
