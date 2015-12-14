@@ -287,15 +287,6 @@ const Z: [ProbSpace] complex = [(i,j) in ProbSpace] i + j*1.0i;
 writeln("Z is initialized to be:\n", Z, "\n");
 
 //
-// This is simply shorthand for:
-//   const Z: [ProbSpace] complex = [i,j in ProbSpace] i + j*1.0i;
-// or more generally:
-//   [const|var] <ident>: [<ind> in <dom>] <elemtype> = <expr>;
-// is equivalent to:
-//   [const|var] <ident>: [<dom>] <elemtype> = [<ind> in <dom>] <expr>;
-//
-
-//
 // Another advantage to declaring named domain variables is that their
 // index sets can be reassigned.  This results in a logical
 // re-allocation of the array variable in question, preserving array
