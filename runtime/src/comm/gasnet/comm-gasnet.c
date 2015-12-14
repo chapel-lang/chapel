@@ -192,19 +192,22 @@ typedef struct {
 //
 // AM functions
 //
-#define FORK          128 // synchronous fork
-#define FORK_LARGE    129 // synchronous fork with a huge argument
-#define FORK_NB       130 // non-blocking fork 
-#define FORK_NB_LARGE 131 // non-blocking fork with a huge argument
-#define FORK_FAST     132 // run the function in the handler (use with care)
-#define SIGNAL        133 // ack of synchronous fork
-#define PRIV_BCAST    134 // put data at addr (used for private broadcast)
-#define PRIV_BCAST_LARGE 135 // put data at addr (used for private broadcast)
-#define FREE          136 // free data at addr
-#define EXIT_ANY      137 // free data at addr
-#define BCAST_SEGINFO 138 // broadcast for segment info table
-#define DO_REPLY_PUT  139 // do a PUT here from another locale
-#define DO_COPY_PAYLOAD 140 // copy AM payload to another address
+typedef enum {
+  FORK = 128,           // synchronous fork
+  FORK_LARGE,           // synchronous fork with a huge argument
+  FORK_NB,              // non-blocking fork
+  FORK_NB_LARGE,        // non-blocking fork with a huge argument
+  FORK_FAST,            // run the function in the handler (use with care)
+  SIGNAL,               // ack to a done_t via gasnet_AMReplyShortM()
+  SIGNAL_LONG,          // ack to a done_t via gasnet_AMReplyLongM()
+  PRIV_BCAST,           // put data at addr (used for private broadcast)
+  PRIV_BCAST_LARGE,     // put data at addr (used for private broadcast)
+  FREE,                 // free data at addr
+  EXIT_ANY,             // <unused> to be used for exit_any() cleanup
+  BCAST_SEGINFO,        // broadcast for segment info table
+  DO_REPLY_PUT,         // do a PUT here from another locale
+  DO_COPY_PAYLOAD       // copy AM payload to another address
+} AM_handler_function_idx_t;
 
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = buf;
@@ -333,6 +336,16 @@ static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handl
     done->flag = 1;
 }
 
+static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
+                           gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
+  done_t* done = (done_t*) get_ptr_from_args(a0, a1);
+  uint_least32_t prev;
+  prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
+                                                  memory_order_seq_cst);
+  if (prev + 1 == done->target)
+    done->flag = 1;
+}
+
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
   chpl_memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
@@ -394,7 +407,7 @@ static void AM_reply_put(gasnet_token_t token, void* buf, size_t nbytes) {
 
   assert(nbytes == sizeof(xfer_info_t));
 
-  GASNET_Safe(gasnet_AMReplyLong2(token, SIGNAL,
+  GASNET_Safe(gasnet_AMReplyLong2(token, SIGNAL_LONG,
                                   x->src, x->size, x->tgt,
                                   AckArg0(x->ack), AckArg1(x->ack)));
 }
@@ -419,6 +432,7 @@ static gasnet_handlerentry_t ftable[] = {
   {FORK_NB_LARGE, AM_fork_nb_large},
   {FORK_FAST,     AM_fork_fast},
   {SIGNAL,        AM_signal},
+  {SIGNAL_LONG,   AM_signal_long},
   {PRIV_BCAST,    AM_priv_bcast},
   {PRIV_BCAST_LARGE, AM_priv_bcast_large},
   {FREE,          AM_free},
@@ -1044,6 +1058,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
         init_done_obj(&done, 1);
 
+        info.ack = &done;
         info.tgt = local_buf?local_buf:addr_chunk;
         info.src = ((char*) raddr) + start;
         info.size = this_size;

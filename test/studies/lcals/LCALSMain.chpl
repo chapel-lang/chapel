@@ -325,7 +325,7 @@ module main {
     var len_id = new vector(string);
     len_id.resize(suite_run_info.loop_length_names.size());
     for ilen in 0..#len_id.size() {
-      len_id[ilen] = suite_run_info.loop_length_names[ilen].substring(1);
+      len_id[ilen] = suite_run_info.loop_length_names[ilen][1];
     }
 
     var ver_info = buildVersionInfo();
@@ -469,7 +469,7 @@ module main {
 
     len_id.resize(suite_run_info.loop_length_names.size());
     for ilen in 0..#len_id.size() {
-      len_id[ilen] = suite_run_info.loop_length_names[ilen].substring(1);
+      len_id[ilen] = suite_run_info.loop_length_names[ilen][1];
     }
 
 

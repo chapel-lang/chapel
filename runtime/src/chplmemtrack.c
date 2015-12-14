@@ -90,9 +90,9 @@ static c_string memLeaksByDesc = "";
 static _Bool memLeaks = false;
 static size_t memMax = 0;
 static size_t memThreshold = 0;
-static c_string memLog = "";
+static c_string memLog = NULL;
 static FILE* memLogFile = NULL;
-static c_string memLeaksLog = "";
+static c_string memLeaksLog = NULL;
 
 static size_t totalMem = 0;       /* total memory currently allocated */
 static size_t maxMem = 0;         /* maximum total memory during run  */
@@ -137,11 +137,11 @@ void chpl_setMemFlags(void) {
       || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
       || memLeaks
       || memMax > 0
-      || (memLeaksLog && strcmp(memLeaksLog, ""))) {
+      || memLeaksLog != NULL) {
     chpl_memTrack = true;
   }
 
-  if (strcmp(memLog, "") == 0) {
+  if (!memLog) {
     memLogFile = stdout;
   } else {
     if (chpl_numNodes == 1) {
