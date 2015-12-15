@@ -96,6 +96,23 @@ void debug_print_bytes(qbytes_t* b)
           b->free_function, b->flags);
 }
 
+void debug_print_iovec(const struct iovec* iov, int iovcnt, size_t maxbytes)
+{
+  int i;
+  size_t j;
+  size_t nb = 0;
+  for( i = 0; i < iovcnt; i++ ) {
+    for( j = 0; j < iov[i].iov_len && nb < maxbytes; j++,nb++) {
+      char* buf = (char*) iov[i].iov_base;
+      char c = '.';
+      if (isprint(buf[j]))
+        c = buf[j];
+      printf("%c", c);
+    }
+  }
+  printf("\n");
+}
+
 // On return the ref count is 1.
 // The callee owns the returned qbytes buffer until qbytes_release is called.
 void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_free_t free_function)
