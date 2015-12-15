@@ -1,0 +1,35 @@
+README file for mxm-conduit
+============================================
+
+Header Files
+------------
+
+    <gasnet_core_fwd.h>
+        Definitions of basic constants and types used by the core API and
+        included early in the gasnet.h file (gasnet.h provides some default
+        values for various constants and types that can be overridden here).
+
+    <gasnet_core.h>
+        Provides the public interface for the GASNet core API (function
+        prototypes and/or inline functions for implementing the core API).
+
+    <gasnet_core_help.h>
+        This is the core's entry point to provide access to private symbols
+        which might be required by the core header (e.g.: node's node id,
+        number of nodes in job), but which should not really be publicly
+        visible to client code (i.e. not part of GASNet API).
+
+    <gasnet_extended.h>
+        Provides the public interface for the GASNet extended API
+
+    <gasnet_core_internal.h>
+        This file is NOT included by gasnet.h (and therefore not visible to
+        client code) and are exclusively for use in building the conduit
+        libraries.
+        <gasnet_internal.h> is the conduit-independent version of this file
+        at the top level.
+        Internal GASNet implementation should include <gasnet_internal.h>
+        instead of <gasnet.h>.
+
+
+<< TBD >>

@@ -1,0 +1,248 @@
+GASNet Release Procedure
+------------------------
+
+The purpose of this document is to record the steps required for a public
+release of GASNet.  This is NOT required reading for most developers.
+
+See also:
+ + README: includes GASNet's coding standards
+ + README-devel: rules developers are expected to follow when committing
+ + README-git: overview and examples of GASNet's recommended git workflow
+
+
+* Start from a *clean* clone of the git repo.
+  Either start from a NEW clone, or use one of "git clean" or "git stash -o"
+  to remove untracked files.  Otherwise it's very easy for stray files to end
+  up in the release.
+
+* Under normal circumstances you will generating a release on the 'master'
+  branch after use of a "release branch" to merge in all the new work from
+  'develop' and update version numbers, etc.  This procedure begins with the
+  creation of the "release branch" for a hypothetical 9.8.0 release:
+  If using git-flow:
+    $ git flow release start 9.8.0
+  If NOT using git-flow:
+    $ git checkout -b release/9.8.0 develop
+
+* To allow collaboration on the release work, one may optionally "publish"
+  the release branch on bitbucket:
+    $ git push -u origin release/9.8.0
+
+* Increment the version number for each item or software module that has
+  changed since the last public release:
+  Overall public release version number, in configure.in:
+    GASNET_RELEASE_VERSION_MAJOR
+    GASNET_RELEASE_VERSION_MINOR
+    GASNET_RELEASE_VERSION_PATCH
+  - this should be 1.3.x for development, then 1.4.0 for release based on
+    1.3.x code (i.e. use odd minor version number for development).
+  - For bug-fix release patches, update the patch number for each (ex: 1.4.1).
+  - For development, update the patch number whenever it's useful (new feature,
+    big bugfix), and/or whenever we put out a new 'stable' release (or hand
+    out a snapshot to a user). The patch-level should be even for beta versions
+    marked as "stable" for users, or odd for general development.
+  GASNet spec version numbers, in configure.in:
+    GASNET_SPEC_VERSION_MAJOR - increment on backwards compatibility break
+    GASNET_SPEC_VERSION_MINOR - increment for new features that don't break
+                                backwards compatibility, zero on MAJOR change
+  GASNet tools spec version numbers, in configure.in:
+    GASNETT_SPEC_VERSION_MAJOR - increment on backward compatibility break
+    GASNETT_SPEC_VERSION_MINOR - increment for new features that don't break
+                                 backwards compatibility, zero on MAJOR change
+  Conduits: */gasnet_core_fwd.h, */gasnet_extended_fwd.h
+  GASNet document spec version: docs/gasnet.texi
+  GASNet tools document spec version: README-tools
+
+* Review commit messages and write a summary of user-visible changes and 
+  bug fixes since last public release - add to ChangeLog
+
+* Update license.txt with any new authorship credits
+
+* Commit all changes made in the previous steps
+
+* ./Bootstrap the sources
+
+* From a separate builddir, do a configure, then
+    $ gmake all distcheck [GASNET_DOCS=PATH_TO_GASNET_DOCUMENTATION]
+  the release candidate archive.  See below for info on the optional
+  GASNET_DOCS setting.
+
+* Unpack the archive and diff against the source tree to find missing files,
+  especially documentation and auxiliary files.  Check that other/contrib
+  contains any cross-configure scripts that are intended for distribution.
+  The following command may be used to list any files which have been
+  added to the Git repository since the previous release:
+    $ git diff --name-status [prevous-release-tag] | grep ^A
+
+* Verify that ./unBootstrap removes all generated files:
+  In the repository directory:
+    $ ./unBootstrap
+    $ git status --ignored
+  If "git status" listed any "ignored files" then you need to update
+  unBootstrap (and if it lists any "untracked files" then you didn't
+  start with a clean repo).
+
+* If the spec has not changed since the previous release, consider reusing
+  the generated files from a past release.  That can be automated by adding
+     GASNET_DOCS=PATH_TO_GASNET_DOCUMENTATION
+  to the distcheck step, above.
+  Otherwise, check the spec documents were generated correctly & clean up
+  if necessary (regenerate the .ps on Linux).
+
+* Test the release candidate on all directly supported systems and conduits,
+  with both debug+stats+trace and ndebug configs, and all supported backend
+  C compilers:
+   IBM BG/Q: pami (and mpi if time/allocation allows)
+   Cray XE: gemini (and mpi if time/allocation allows)
+   Cray XC: aries (and mpi if time/allocation allows)
+   Linux-Ethernet: mpi, udp
+   Linux-InfiniBand: mpi, ibv (and portals4 & mxm, if possible)
+   Linux-Altix: smp, shmem
+   Windows/Cygwin: smp+pthreads
+   Mac OS X: smp+pthreads
+  In most cases these test will be conducted as part of Berkeley UPC's
+  release testing (the "gasnet-tests" suite of the BUPC test harness).
+
+* Install the release candidate and ensure that share/docs/gasnet contains
+  all the intended documentation, including any files referenced by README.
+  Any missing should be added to INSTALL_DOCS in the top-level Makefile.am
+
+* Resolutions for any "issues" (bugs, missing docs, etc.) should be fixed
+  on the release branch and re-tested as necessary.  These will be merged
+  back to 'develop' at the end of this procedure.  However, if there is
+  something critical, it can be cherry-picked to 'develop' without any
+  problems (git is smart enough to deal with this at the later merge step).
+
+* Clone a *second* copy of the repository for the tools-only distribution:
+    $ git clone --branch release/9.8.0 \
+            https://bitbucket.org/berkeleylab/gasnet gasnet-tools
+    $ cd gasnet-tools
+    $ ./Bootstrap -o
+  make a separate build directory, configure and "gmake all distcheck"
+  to build the tools-only tarball.
+  The use of the URL for anonymous access to BitBucket is INTENTIONAL,
+  so that you cannot accidentally commit the re-writes done by the
+  "-o" option to ./Bootstrap.
+
+* Merge with Titanium and test SEGMENT_EVERYTHING functionality 
+
+* Iterate the appropriate steps above until you have final release
+  tarballs for both GASNet and GASNet_Tools
+
+* Before merging the release branch be sure you have up-to-date clones of both
+  'master' and 'develop'.  While it is unlikely that 'master' has changed since
+  you began, concurrent development on 'develop' should be considered normal.
+  Since you haven't committed anything to either branch in your local repo,
+  the following should be safe:
+    $ git checkout develop
+    $ git pull --ff-only
+    $ git checkout master
+    $ git pull --ff-only
+
+* Advanced warning #1:
+  If there were any "hot fixes" on 'master' since the previous release
+  then you will may need to resolve conflicts in the "git ... finish ..." or
+  "git merge ..." step below.  If you are motivated to accept any conflict
+  resolution other than "-X theirs" (meaning: "use the release branch in the
+  case of all conflicts") then you should abort the merge and resolve the
+  conflict through changes to the release branch (and generate new tarballs).
+
+[TODO: need explicit commands for reverse-the-revert below]
+* Advanced warning #2:
+  In the event that any feature on 'develop' was reverted on the release branch
+  (e.g. due to test failures) but you wish to retain the feature on 'develop',
+  you will need to take extra steps to deal with this.  If using git-flow then
+  your only opportunity is to fix things up on 'develop' after the "git ...
+  finish ..." but before the "git push ...".  If not using git-flow, then the
+  preferred sequence would be to fix things up on the release branch after it
+  is merged to 'master' but before it is merged to 'develop'.  This is preferred
+  because is keeps the "messy bits" of history off the main-line of 'develop'.
+
+* Advanced warning #3:
+  Git-flow is not magical.  If it encounters a merge conflict you will need to
+  resolve the conflict(s) and run "git commit" to complete the merge.  After
+  that, there are two choices: you can simply reissue the "git ... finish ..."
+  which should be able to pick up where it left off, OR you can complete the
+  remaining step(s) using the non-git-flow steps, below.
+
+* Now merge the release branch to 'master' (where the general public will
+  expect to find sources intended for general consumption), tag the release,
+  merge back to 'develop' as well, and delete the transient release branch.
+  With git-flow this all happens in one step:
+    $ git flow release finish -m "GASNet release 9.8.0" 9.8.0
+  Without git-flow it is six:
+    $ git checkout master
+    $ git merge --edit --no-ff release/9.8.0
+    $ git tag -a gasnet-9.8.0 -m "GASNet release 9.8.0" master
+    $ git checkout develop
+    $ git merge --edit --no-ff release/9.8.0
+    $ git branch -d release/9.8.0
+
+* The use of "git flow release finish..." has sometimes been seen to place the
+  tag on the wrong commit (rather than on the merge commit, it was applied to
+  its parent on the release branch).  Check this as follows:
+    $ git show gasnet-9.8.0
+  The output should show the commit message for the *merge*.  If it shows any
+  of the earlier commits, move it using "--force":
+    $ git tag --force -a gasnet-9.8.0 -m "GASNet release 9.8.0" master
+  OR, just "--force" it without checking - this is perfectly safe.
+
+* Check carefully that everything is exactly as you wish before you push:
+    $ git push origin master gasnet-9.8.0
+  This is the only step of this entire procedure that cannot be undone.
+
+* If you chose to "publish" the release branch on bitbucket, then use the
+  following command to delete the (now unused) release branch:
+    $ git push --delete origin release/9.8.0
+
+* Generate ("gmake dist") the GASNet and GASNet_Tools tarballs one more
+  time from a checkout of the tagged commit to embed the proper git version
+  info.  This must be done before any more annotated tags are generated
+  in the following steps, to ensure the git-describe output uses the new
+  release tag.
+
+* If the GASNet or tools spec versions have changed, they get tags too:
+    $ git tag gasnet-spec-2.1 master
+    $ git push origin gasnetspec-2.1
+  and/or
+    $ git tag gasnet-tools-spec-1.32 master
+    $ git push origin gasnettools-1.32
+
+* If this GASNet release has a paired Berkeley UPC release, then one should
+  apply a tag to mark the correlation:
+    $ git tag berkeley-upc-2.34.0 master
+    $ git push origin berkeley-upc-2.34.0
+  We avoid using an annotated tag here so that "git describe" won't use it.
+
+* On 'develop' advance the version numbers in configure.in (odd minor and patch
+  numbers for development), and apply a corresponding annotated tag for use by
+  the "git describe" command:
+    $ git checkout develop
+    [ edit GASNET_RELEASE_VERSION_* in configure.in, and commit it ]
+    $ git tag -a -m "GASNet development version 9.9.1" gasnet-9.9.1 develop
+    $ git push origin develop gasnet-9.9.1
+  Please resist the urge to make this change right after creating the release
+  branch.  While that might seem logical, it will cause an entirely unnecessary
+  merge conflict at the "finish" step.
+
+* In Bugzilla (before publishing the release):
+  + Add the version number of this release
+  + Add a milestone for the next release
+
+* In gasnet-web CVS repository:
+  + Add both tarballs (GASNet and GASNet_Tools) to CVS
+  + Update index.html for the new release
+    Minimum update is new versions and MD5s for the tarballs
+
+* On the gasnet.lbl.gov server:
+  + "cvs up" to get the new tarballs and index.html
+  + "tar xfz ..." to extract the new GASNet release (not Tools)
+  + Move the "dist" symbolic link:
+    $ ln -sf GASNet-9.8.0 dist
+
+* Email a release notice with the most recent ChangeLog entry
+
+* In Bugzilla CLOSE the bugs resolved in this release (not time critical).
+  BUPC's release procedure contains recommended text for the bug closures.
+
+* Revise this document with any additions, corrections or changes
