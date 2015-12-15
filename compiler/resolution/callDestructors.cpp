@@ -1598,6 +1598,11 @@ static void insertReferenceTemps() {
 //
 // where tmp:
 //  * is dead once it is copied to "variable"
+//  * and every path through the function that writes
+//    to tmp ends up in the basic block with the pattern
+//    (ie the pattern block postdominates any writes to tmp).
+//    This inhibits the optimization for early returns, since
+//    we either auto destroy the variable or do not on all paths.
 //
 // with this:
 //   move tmp, someCall();
@@ -1617,6 +1622,28 @@ static void expiringValueOptimization(FnSymbol* fn) {
   BasicBlock::buildBasicBlocks(fn);
 
   liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
+
+  //
+  // build def/use maps for candidate variables
+  //
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+
+  buildDefUseMaps(fn, defMap, useMap);
+
+  // build a mapping from SymExpr to Basic Block ID
+  // we use this below to find out which defs are
+  // in which basic blocks
+  std::map<SymExpr*, int> symeToBlockID;
+  for_vector(BasicBlock, bb1, *fn->basicBlocks) {
+    for_vector(Expr, expr, bb1->exprs) {
+      std::vector<SymExpr*> symExprs;
+      collectSymExprs(expr, symExprs);
+      for_vector(SymExpr, se, symExprs) {
+        symeToBlockID[se] = bb1->id;
+      }
+    }
+  }
 
   int block_index = 0;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
@@ -1696,9 +1723,25 @@ static void expiringValueOptimization(FnSymbol* fn) {
             }
           }
 
-          // If it is still not live, we can do the AST transformation
+          // If it is still not live, maybe we can do the AST transformation
           if (!live) {
-            expiringRHSes.push_back(RHS);
+
+            // check: does RHS post-dominate all writes
+            // RHS->var? For now, we just check that all writes
+            // to that variable are in the same basic block.
+
+            bool postDominates = true;
+            int rhsBlockID = symeToBlockID[RHS];
+
+            for_defs(def, defMap, RHS->var) {
+              int defBlockID = symeToBlockID[def];
+              // def is a SymExpr
+              if (defBlockID != rhsBlockID) {
+                postDominates = false;
+              }
+            }
+
+            if (postDominates) expiringRHSes.push_back(RHS);
           }
         }
       }
@@ -1782,22 +1825,21 @@ static void expiringValueOptimization(FnSymbol* fn) {
 }
 
 void callDestructors() {
+  fixupDestructors();
+
+  insertDestructorCalls();
+  insertAutoCopyTemps();
 
   cullAutoDestroyFlags();
   cullExplicitAutoDestroyFlags();
+
+  ReturnByRef::apply();
 
   if (! fNoExpiringValueOpt) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       expiringValueOptimization(fn);
     }
   }
-
-  fixupDestructors();
-
-  insertDestructorCalls();
-  insertAutoCopyTemps();
-
-  ReturnByRef::apply();
 
   insertAutoDestroyCalls();
 
