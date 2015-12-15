@@ -81,11 +81,11 @@ c_string_copy chpl_format(c_string format, ...)
 char* chpl_glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(c_string x, c_string y);
-c_string_copy string_copy(c_string x, int32_t lineno, c_string filename);
-c_string_copy string_concat(c_string x, c_string y, int32_t lineno, c_string filename);
+c_string_copy string_copy(c_string x, int32_t lineno, int32_t filename);
+c_string_copy string_concat(c_string x, c_string y, int32_t lineno, int32_t filename);
 int string_index_of(c_string x, c_string y);
-c_string_copy string_index(c_string x, int i, int32_t lineno, c_string filename);
+c_string_copy string_index(c_string x, int i, int32_t lineno, int32_t filename);
 // TODO: A separate unstrided version could return a c_string instead.
-c_string_copy string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename);
+c_string_copy string_select(c_string x, int low, int high, int stride, int32_t lineno, int32_t filename);
 
 #endif

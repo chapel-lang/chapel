@@ -208,7 +208,7 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
       char warning[128];
       sprintf(warning, "call stack size capped at %lu\n", 
               (unsigned long)rlim.rlim_max);
-      chpl_warning(warning, 0, NULL);
+      chpl_warning(warning, 0, 0);
 
       css = rlim.rlim_max;
     }

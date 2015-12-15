@@ -987,7 +987,8 @@ module ChapelIO {
   pragma "no doc"
   proc chpl__testPar(args...) {
     if chpl__testParFlag && chpl__testParOn {
-      const file : c_string = __primitive("_get_user_file");
+      const file : c_string = __primitive("chpl_lookupFilename",
+                                          __primitive("_get_user_file"));
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }
