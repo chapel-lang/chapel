@@ -556,6 +556,32 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
 
     AMUDP_SPMDRedirectStdsockets = strcmp(AMUDP_getenv_prefixed_withdefault("ROUTE_OUTPUT",(DISABLE_STDSOCKET_REDIRECT?"0":"1")),"0");
 
+    //
+    // For ease-of-debugging with Chapel, hacked this so that GASNet
+    // will launch each task in an xterm running gdb if
+    // CHPL_COMM_USE_GDB is set.
+    //
+    if (getenv("CHPL_COMM_USE_GDB")) {
+      //
+      // Create a new argv with space for -E options for the env vars.
+      //
+      int new_argc = 4 + *argc;
+      char** new_argv = (char**) AMUDP_malloc(new_argc * sizeof((*new_argv)));
+
+      //
+      // Instead of running the program directly, run an xterm which
+      // runs gdb on the program and its args.
+      //
+      new_argv[0] = (char *) "/usr/bin/xterm";
+      new_argv[1] = (char *) "-e";
+      new_argv[2] = (char *) "gdb";
+      new_argv[3] = (char *) "--args";
+      memcpy(&new_argv[4], *argv, *argc * sizeof(*new_argv));
+
+      *argc = new_argc;
+      *argv = new_argv;
+    }
+
     // call system-specific spawning routine
     AMUDP_SPMDSpawnRunning = TRUE;
     if (!spawnfn(AMUDP_SPMDNUMPROCS, *argc, *argv, extra_env))
