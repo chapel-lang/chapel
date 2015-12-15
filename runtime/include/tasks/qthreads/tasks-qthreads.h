@@ -31,6 +31,7 @@
 #include "chpltypes.h"
 
 #include "qthread.h"
+#include "qthread-chapel.h"
 
 #include <assert.h>
 #include <pthread.h>
@@ -435,10 +436,9 @@ c_sublocid_t chpl_task_getRequestedSubloc(void)
 #else
 #define CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL 1
 #endif
-extern int chpl_qthread_supports_remote_cache;
 static inline
 int chpl_task_supportsRemoteCache(void) {
-  return chpl_qthread_supports_remote_cache;
+  return CHPL_QTHREAD_SUPPORTS_REMOTE_CACHE;
 }
 
 #endif // ifndef _tasks_qthreads_h_

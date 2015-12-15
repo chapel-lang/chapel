@@ -63,12 +63,6 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=$(SCHEDULER)
 
-ifeq (nemesis,$(SCHEDULER))
-CFLAGS += -DQTHREADS_SUPPORTS_REMOTE_CACHE=1
-else
-CFLAGS += -DQTHREADS_SUPPORTS_REMOTE_CACHE=0
-endif
-
 # spawn-caching has a semantic mismatch with chapel (and leads to deadlock with
 # some applications.) Qthreads team tends to build with spawn cache off too
 CHPL_QTHREAD_CFG_OPTIONS += --disable-spawn-cache
@@ -115,13 +109,47 @@ qthread-config: FORCE
 # Then configure
 #
 	mkdir -p $(QTHREAD_BUILD_DIR)
-	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CHPL_MAKE_HOME) $(CHPL_QTHREAD_CFG_OPTIONS) 
+	cd $(QTHREAD_BUILD_DIR) \
+	&& $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' \
+	       CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' \
+	       --prefix=$(QTHREAD_INSTALL_DIR) CHPL_HOME=$(CHPL_MAKE_HOME) \
+	       $(CHPL_QTHREAD_CFG_OPTIONS) 
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE) install
 
-qthread: qthread-config qthread-build
+#
+# The if-checks on the scheduler value look the same here, but they're
+# actually asking different questions.  In the first, it's "Will remote
+# caching work with this Qthreads build?", which is true iff qthreads do
+# not move from one worker to another (thus invalidating TLS).  In the
+# second, it's "Is there only one worker per shepherd?", which changes
+# how the shim sets certain QT_* environment variables to parameterize
+# Qthreads behavior.  These have the same answer now, but in a future
+# scheduler they could differ.
+#
+ifeq (,$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
+SUPPORTS_REMOTE_CACHE = 0
+else
+SUPPORTS_REMOTE_CACHE = 1
+endif
+
+ifeq (,$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
+ONE_WORKER_PER_SHEPHERD = 0
+else
+ONE_WORKER_PER_SHEPHERD = 1
+endif
+
+qthread-chapel-h: FORCE
+	echo "#define CHPL_QTHREAD_SUPPORTS_REMOTE_CACHE" \
+	     $(SUPPORTS_REMOTE_CACHE) \
+	     > $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD" \
+	     $(ONE_WORKER_PER_SHEPHERD) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+
+qthread: qthread-config qthread-build qthread-chapel-h
 
 qthread-reconfig:
 	cd $(QTHREAD_SUBDIR) && autoreconf -f -i

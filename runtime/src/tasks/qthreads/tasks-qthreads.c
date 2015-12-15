@@ -48,6 +48,7 @@
 
 #include "qthread.h"
 #include "qthread/qtimer.h"
+#include "qthread-chapel.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -147,12 +148,6 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
     PRV_DATA_IMPL_VAL("<comm thread>", 0, chpl_nullTaskID, false,
                       c_sublocid_any_val, false),
     NULL, 0 };
-
-//
-// QTHREADS_SUPPORTS_REMOTE_CACHE is set in the Chapel Qthreads
-// Makefile, based on the Qthreads scheduler configuration.
-//
-int chpl_qthread_supports_remote_cache = QTHREADS_SUPPORTS_REMOTE_CACHE;
 
 //
 // structs chpl_task_prvDataImpl_t, chpl_qthread_wrapper_args_t and
@@ -558,7 +553,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
         chpl_qt_unsetenv("NUM_WORKERS_PER_SHEPHERD");
 
         snprintf(newenv_workers, sizeof(newenv_workers), "%i", (int)hwpar);
-        if (THREADQUEUE_POLICY_TRUE == qt_threadqueue_policy(SINGLE_WORKER)) {
+        if (CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD) {
             chpl_qt_setenv("NUM_SHEPHERDS", newenv_workers, 1);
             chpl_qt_setenv("NUM_WORKERS_PER_SHEPHERD", "1", 1);
         } else {
