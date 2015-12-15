@@ -2,9 +2,10 @@ use Spawn;
 
 var sub = spawnshell("cat 1>&2", stdin=PIPE, stdout=FORWARD, stderr=PIPE);
 
+assert(sub.running == true);
+
 config const n = 10000;
 for i in 1..n {
-  writeln("writing line: ", i);
   sub.stdin.writeln(i);
 }
 
