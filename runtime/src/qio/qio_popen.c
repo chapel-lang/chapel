@@ -365,6 +365,9 @@ qioerr qio_proc_communicate(
   bool do_input;
   bool do_output;
   bool do_error;
+  bool input_ready;
+  bool output_ready;
+  bool error_ready;
   fd_set rfds, wfds, efds;
   int nfds = 1;
 
@@ -452,50 +455,6 @@ qioerr qio_proc_communicate(
   do_error = (error != NULL);
 
   while( do_input || do_output || do_error ) {
-    if( do_input ) {
-      err = _qio_channel_flush_qio_unlocked(input);
-      if( !err ) {
-        qioerr err2 = 0;
-        do_input = false;
-        // Close input channel.
-        err = qio_channel_close(false, input);
-        err2 = qio_file_close(input_file);
-        if( err2 && !err ) err = err2;
-      }
-      if( qio_err_to_int(err) == EAGAIN ) err = 0;
-      if( err ) break;
-    }
-
-    if( do_output ) {
-      // read some into our buffer.
-      err = qio_channel_advance(false, output, qbytes_iobuf_size);
-      if( qio_err_to_int(err) == EEOF ) {
-        do_output = false;
-        // close the output file (not channel), in case closing output
-        // causes the program to output on stderr, e.g.
-        err = qio_file_close(output_file);
-        // Set the output channel maximum position
-        // This prevents a read on output from trying to get
-        // more data from the (now closed) file.
-        output->end_pos = qio_channel_offset_unlocked(output);
-      }
-      if( qio_err_to_int(err) == EAGAIN ) err = 0;
-      if( err ) break;
-    }
-
-    if( do_error ) {
-      // read some into our buffer.
-      err = qio_channel_advance(false, error, qbytes_iobuf_size);
-      if( qio_err_to_int(err) == EEOF ) {
-        do_error = false;
-        // close the error file (not channel)
-        err = qio_file_close(error_file);
-        // Set the error channel maximum position
-        error->end_pos = qio_channel_offset_unlocked(error);
-      }
-      if( qio_err_to_int(err) == EAGAIN ) err = 0;
-      if( err ) break;
-    }
 
     // Now call select to wait for one of the descriptors to
     // become ready.
@@ -517,10 +476,20 @@ qioerr qio_proc_communicate(
       FD_SET(error_fd, &efds);
     }
 
+    input_ready = false;
+    output_ready = false;
+    error_ready = false;
+
     // Run select to wait for something
     if( do_input || do_output || do_error ) {
       // TODO -- use sys_select so threading can interact
       rc = select(nfds, &rfds, &wfds, &efds, NULL);
+      if (rc > 0) {
+        // read ready file descriptors
+        input_ready = FD_ISSET(input_fd, &wfds);
+        output_ready = FD_ISSET(output_fd, &rfds);
+        error_ready = FD_ISSET(error_fd, &rfds);
+      }
       // Ignore EAGAIN and EINTR
       if (rc == EAGAIN || rc == EINTR) rc = 0;
     }
@@ -530,11 +499,51 @@ qioerr qio_proc_communicate(
       break;
     }
 
-    if( rc == 0 ) break;
+    if( do_input && input_ready ) {
+      err = _qio_channel_flush_qio_unlocked(input);
+      if( !err ) {
+        qioerr err2 = 0;
+        do_input = false;
+        // Close input channel.
+        err = qio_channel_close(false, input);
+        err2 = qio_file_close(input_file);
+        if( err2 && !err ) err = err2;
+      }
+      if( qio_err_to_int(err) == EAGAIN ) err = 0;
+      if( err ) break;
+    }
 
-    // we don't actually care about which fds are ready,
-    // we'll just try to work with all of them each time through the
-    // loop.
+    if( do_output && output_ready ) {
+      // read some into our buffer.
+      err = qio_channel_advance(false, output, qbytes_iobuf_size);
+      if( qio_err_to_int(err) == EEOF ) {
+        do_output = false;
+        // close the output file (not channel), in case closing output
+        // causes the program to output on stderr, e.g.
+        err = qio_file_close(output_file);
+        // Set the output channel maximum position
+        // This prevents a read on output from trying to get
+        // more data from the (now closed) file.
+        output->end_pos = qio_channel_offset_unlocked(output);
+      }
+      if( qio_err_to_int(err) == EAGAIN ) err = 0;
+      if( err ) break;
+    }
+
+    if( do_error && error_ready ) {
+      // read some into our buffer.
+      err = qio_channel_advance(false, error, qbytes_iobuf_size);
+      if( qio_err_to_int(err) == EEOF ) {
+        do_error = false;
+        // close the error file (not channel)
+        err = qio_file_close(error_file);
+        // Set the error channel maximum position
+        error->end_pos = qio_channel_offset_unlocked(error);
+      }
+      if( qio_err_to_int(err) == EAGAIN ) err = 0;
+      if( err ) break;
+    }
+
   }
 
   // we could close the file descriptors at this point,
