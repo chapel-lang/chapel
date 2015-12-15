@@ -2631,6 +2631,8 @@ static void issueCompilerError(CallExpr* call) {
     INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
     str = astr(str, var->immediate->v_string);
   }
+  // collapse newlines and other escape sequences before printing
+  str = astr(unescapeString(str).c_str());
   if (call->isPrimitive(PRIM_ERROR)) {
     USR_FATAL(from, "%s", str);
   } else {
