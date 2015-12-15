@@ -276,15 +276,7 @@ writeln("After negating B, it is:\n", B, "\n");
 
 //
 // Note that this shorthand resembles the array type definition in
-// a variable declaration.  Due to this similarity, and for
-// convenience, we allow the indices in an array type specifier to be
-// named in order to support in-place initialization of the array.
-// For example:
-//
-
-const Z: [ProbSpace] complex = [(i,j) in ProbSpace] i + j*1.0i;
-
-writeln("Z is initialized to be:\n", Z, "\n");
+// a variable declaration.
 
 //
 // Another advantage to declaring named domain variables is that their
