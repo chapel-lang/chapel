@@ -1,0 +1,139 @@
+GASNet Revision Control Practices
+---------------------------------
+
+The purpose of this document is to list practices that GASNet developers are
+expected to follow when committing code to the public repository.  It is a
+companion to, but distinct from, the coding standards and the git workflow
+description.
+
+See also:
+ + README: includes GASNet's coding standards
+ + README-git: overview and examples of GASNet's recommended git workflow
+ + README-release: detailed release procedure
+
+
+* All developers doing commits must be on the upc-devel@lbl.gov email list,
+  which receives GASNet commit messages.
+
+* You should commit only to the 'develop' branch - do NOT commit to 'master'
+  except for stable public releases (may include snapshots, etc. but NOT normal
+  day-to-day development work).
+
+* Anything that is not a "trivial" change (such as correcting a typo or a small
+  1 or 2 line bug fix) should be performed on a "feature branch" and merged back
+  to 'develop' following the git-flow workflow as described in more detail in
+  the file README-git.  This allows the "feature" to be developed over multiple
+  commits while clearly identifying the start and end of the work, preventing
+  interleaving of commits with the work of other developers, and provides a
+  commit message that can summarize the purpose of the change(s).
+
+* When merging your feature branch to 'develop' don't include any extra changes
+  that might confuse a review, or be lost if your feature must be reverted.  For
+  instance if during the merge you notice a bug in the feature, go back to the
+  branch and fix it before restarting the merge.  If you encounter a bug, a typo
+  or other "issue" in 'develop' that is not related to your feature, then fix it
+  either before merging your branch (requiring an additional rebase), or else
+  fix it after your merge is completed.
+
+* You must include an explanatory log message for every commit you make.  It
+  should describe the high-level of what you did, and why you did it (e.g. to
+  solve a particular bug, etc).  Generally larger changes deserve more detailed
+  log messages - remember the idea is to keep other developers apprised of
+  changes you've made that could affect their work somehow.  Commit messages
+  should reference any particular bug ID's that they address.  When doing work
+  as multiple commits to a feature branch, this rule applies NOT only to the
+  final merge commit, but also to the individual commits on the branch which
+  should each be reviewable individually.  Remember that somebody you've never
+  met may read your log message years after you write it.  So, make everything
+  explicit, avoiding phrases like "Apply Jane's idea from last week's meeting".
+
+* The rule on log messages above applies to anything that will become publicly
+  visible.  For your work in a local git repo you are welcome to practice any
+  discipline that works for you.  HOWEVER, when it is time to merge work back to
+  'develop' one should use git to edit commit messages or squash commits to
+  ensure your work meets these standards.  Anything on 'develop' is
+  world-visible.
+
+* To ensure things work nicely with all of the git-related tools, log messages
+  should follow the format (without the leading 5 columns of indent) of the
+  canonical model below, taken from
+  http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
+  ---begin example---
+     Capitalized, short (50 chars or less) summary
+     
+     More detailed explanatory text, if necessary.  Wrap it to about 72
+     characters or so.  In some contexts, the first line is treated as the
+     subject of an email and the rest of the text as the body.  The blank
+     line separating the summary from the body is critical (unless you omit
+     the body entirely); tools like rebase can get confused if you run the
+     two together.
+     
+     Write your commit message in the imperative: "Fix bug" and not "Fixed bug"
+     or "Fixes bug."  This convention matches up with commit messages generated
+     by commands like git merge and git revert.
+     
+     Further paragraphs come after blank lines.
+     
+     - Bullet points are okay, too
+     
+     - Typically a hyphen or asterisk is used for the bullet, followed by a
+       single space, with blank lines in between, but conventions vary here
+     
+     - Use a hanging indent
+  ---end example---
+  In the case of a "Merge branch ..." commit, it is often helpful to to include
+  the 50-character summaries from the commits that comprise the branch.  The
+  message can be seeded with those summaries by passing "--log" to "git merge".
+  Similarly the commit message for a "git cherry-pick" can be seeded with the
+  SHA1 of the cherry-picked commit by passing "-x" (which should only be used
+  to reference commits which have been pushed to BitBucket).
+
+* Our git repository at BitBucket is configure to DENY any history re-writes on
+  the 'develop' branch.  This means you cannot 'git amend' or otherwise make
+  any modifications to history once you've pushed to 'origin/develop'.  Keep
+  this in mind along with the fact that anything you push to the server is
+  visible to the entire world.
+
+* You should only commit *working* code to 'develop' - do NOT commit untested or
+  flagrantly broken code that could affect system stability.  The idea is to
+  ensure the 'develop' branch of the repository is mostly-working at all times.
+  To do otherwise renders the powerful 'git bisect' command essentially useless.
+  So, try to make sure your commits leave the repository in at least as working
+  a state as you found it.  We understand that it may not be practical to test
+  a given change on all platforms, but you should at least test it thoroughly on
+  your development platform, and any other platforms that you have reason to
+  believe may be affected (this is especially true for configure scripts and
+  Makefiles).
+
+* If you wish to share intermediate or untested versions of your code for review
+  or testing by other developers, you can push your feature branch to BitBucket.
+  Once there, a Pull Request can be used to provide a forum for review if this
+  is desired.  However, we are not currently imposing any formal requirement for
+  use of Pull Requests.
+
+* Whenever you "git add" any new (previously untracked) files to the
+  repository, make sure they also get added to the Makefile.am file (if any)
+  for the enclosing directory.  Otherwise your added file won't be included in
+  the public release.  Of course there are files (this developer documentation
+  for instance) which we don't distribute, but that is the UNcommon case.
+
+* When we were using CVS, we recommended frequent use of tags, such as any time
+  you begin a branch or merge your branch to or from HEAD.  This is not nearly
+  as necessary in git because there is always a hash to identify the state of
+  the entire repository after any given commit, and tools to find them easily.
+  Additionally our use of the git-flow workflow ensures that even after merging,
+  the sequence of commits that comprise a given feature branch is easily
+  identifiable (and therefore can quickly be reverted or applied to 'master' if
+  necessary).  This is not to say that there is NO use for tags with git.  They
+  are especially important when you want to be able to correlate points in time
+  across multiple repositories (e.g. a GASNet commit which provides a feature
+  required for Berkeley UPC).
+
+* GASNet supports both a regular and tools-only (conduit-free) distribution.
+  The Bootstrap -o option activates tools-only mode for a given source tree
+  by MODIFYING several source files, but the git repo is always kept in regular
+  distribution mode. This means if you use tools-only mode, you MUST Bootstrap
+  back to regular mode (without -o) before committing any changes to the repo.
+
+* All GASNet developers are required to follow the GASNet coding standards
+  outlined in the top-level README.
