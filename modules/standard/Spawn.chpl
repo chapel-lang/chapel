@@ -518,7 +518,9 @@ module Spawn {
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
     args.push_front(executable);
-    return spawn(args, env, executable, kind=kind, locking=locking);
+    return spawn(args, env, executable,
+                 stdin=stdin, stdout=stdout, stderr=stderr,
+                 kind=kind, locking=locking);
   }
 
   /*
