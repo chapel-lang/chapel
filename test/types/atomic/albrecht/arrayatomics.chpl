@@ -1,24 +1,62 @@
-var a: atomic int;
+use Sort;
+
 const n = 5;
-const D: domain(1) = {1..n};
+
+var a: atomic int;
+
+const D = 1..n;
 
 var inputs: [D] int = [i in D] i;
-var outputs: [D] int;
+var outputs: [1..n+1] int;
+var diffs: [D] int;
+
+
+//
+// Longhand - just  to demonstrate what we want the shorthand do to
+//
 
 a.write(0);
 
-// Long hand
-for i in D {
+coforall i in D {
   outputs[i] = a.fetchAdd(inputs[i]);
-  writeln(outputs[i]);
 }
 
-// Clear outputs and 'a'
-outputs = [i in D] 0;
+// Get remaining value in a
+outputs[n+1] = a.read();
+
+QuickSort(outputs);
+
+for i in D {
+  diffs[i] = outputs[i+1] - outputs[i];
+}
+
+QuickSort(diffs);
+
+// 1 2 3 4 5
+writeln(diffs);
+
+
+// Zero out things for the real future test
+outputs = 0;
+diffs = 0;
 a.write(0);
 
-// Short hand (this is what the future is for)
+//
+// Shorthand - this is what the future is testing for
+//
+
 outputs[D] = a.fetchAdd(inputs);
+
+// Get remaining value in a
+outputs[n+1] = a.read();
+
+QuickSort(outputs);
+
 for i in D {
-  writeln(outputs[i]);
+  diffs[i] = outputs[i+1] - outputs[i];
 }
+
+QuickSort(diffs);
+
+// 1 2 3 4 5
+writeln(diffs);
