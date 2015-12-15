@@ -836,13 +836,13 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
                               chpl_taskID_t  id,
                               chpl_bool      serial_state)
 {
-    assert(subloc != c_sublocid_none);
-    assert(id == chpl_nullTaskID);
-
     chpl_qthread_wrapper_args_t wrapper_args =
         {fp, arg, canCountRunningTasks,
          PRV_DATA_IMPL_VAL("<unknown>", 0, chpl_nullTaskID, true,
                            subloc, serial_state) };
+
+    assert(subloc != c_sublocid_none);
+    assert(id == chpl_nullTaskID);
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
