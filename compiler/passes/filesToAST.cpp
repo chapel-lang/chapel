@@ -69,10 +69,11 @@ void parse() {
     countTokensInCmdLineFiles();
 
   //
-  // If we're running chpldoc, we don't want to bring in all the base,
-  // standard, etc. modules -- just the file we're documenting.
+  // If we're running chpldoc on just a single file, we don't want to
+  // bring in all the base, standard, etc. modules -- just the file
+  // we're documenting.
   //
-  if (!fDocs) {
+  if (fDocs == false || fDocsProcessUsedModules) {
     baseModule            = parseMod("ChapelBase",           MOD_INTERNAL);
     INT_ASSERT(baseModule);
 
@@ -116,10 +117,11 @@ void parse() {
   }
 
   //
-  // When generating chpldocs, we don't want to parse dependent
-  // modules, as we're just documenting the module at hand.
+  // When generating chpldocs for just a single file, we don't want to
+  // parse dependent modules, as we're just documenting the file at
+  // hand.
   //
-  if (!fDocs) {
+  if (fDocs == false || fDocsProcessUsedModules) {
     parseDependentModules(MOD_USER);
 
     forv_Vec(ModuleSymbol, mod, allModules) {
