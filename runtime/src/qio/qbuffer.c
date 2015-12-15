@@ -32,6 +32,7 @@
 #include <limits.h>
 #include <sys/mman.h>
 
+#include <ctype.h>
 #include <assert.h>
 
 // 64kb blocks... note tile64 page size is 64K
