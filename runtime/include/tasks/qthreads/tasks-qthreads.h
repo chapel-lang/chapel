@@ -27,15 +27,15 @@
 #ifndef _tasks_qthreads_h_
 #define _tasks_qthreads_h_
 
-#include <stdint.h>
+#include "chpl-tasks-prvdata.h"
+#include "chpltypes.h"
+
+#include "qthread.h"
 
 #include <assert.h>
-#include <qthread.h>
-#include <stdio.h>
 #include <pthread.h>
-
-#include "chpltypes.h"
-#include "chpl-tasks-prvdata.h"
+#include <stdint.h>
+#include <stdio.h>
 
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);

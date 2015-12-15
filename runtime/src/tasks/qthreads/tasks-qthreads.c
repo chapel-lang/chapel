@@ -34,42 +34,32 @@
 #endif
 
 #include "chplrt.h"
-#include "chplsys.h"
-#include "tasks-qthreads.h"
+
+#include "arg.h"
+#include "error.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
+#include "chplexit.h"
 #include "chpl-locale-model.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
-#include "config.h"
-#include "error.h"
-#include "arg.h"
-#include "signal.h"
-#include "chplexit.h"
+#include "tasks-qthreads.h"
+
+#include "qthread.h"
+#include "qthread/qtimer.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <inttypes.h>
-#include <errno.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <sched.h>
 
-#include "qthread/qthread.h"
-#include "qthread/qtimer.h"
-#include "qt_feb.h"
-#include "qt_syncvar.h"
-#include "qt_hash.h"
-#include "qt_atomics.h"
-#include "qt_shepherd_innards.h"
-#include "qt_envariables.h"
-#include "qt_debug.h"
-
-#ifdef QTHREAD_MULTINODE
-#include "qthread/spr.h"
-#endif /* QTHREAD_MULTINODE */
-
-#include <pthread.h>
 
 #ifdef CHAPEL_PROFILE
 # define PROFILE_INCR(counter,count) do { (void)qthread_incr(&counter,count); } while (0)
@@ -126,9 +116,7 @@ static void profile_print(void)
 # define PROFILE_INCR(counter,count)
 #endif /* CHAPEL_PROFILE */
 
-#ifndef QTHREAD_MULTINODE
 volatile int chpl_qthread_done_initializing;
-#endif
 
 // Make qt env sizes uniform. Same as qt, but they use the literal everywhere
 #define QT_ENV_S 100
@@ -355,7 +343,6 @@ static void SIGINT_handler(int sig)
 
 // Tasks
 
-#ifndef QTHREAD_MULTINODE
 static syncvar_t canexit            = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 static volatile int done_finalizing = 0;
 
@@ -372,7 +359,6 @@ static void *initializer(void *junk)
     done_finalizing = 1;
     return NULL;
 }
-#endif /* ! QTHREAD_MULTINODE */
 
 // Helper function to set a qthreads env var. This is meant to mirror setenv
 // functionality, but qthreads has two environment variables for every setting:
@@ -628,8 +614,6 @@ void chpl_task_exit(void)
     profile_print();
 #endif /* CHAPEL_PROFILE */
 
-#ifdef QTHREAD_MULTINODE
-#else
     if (qthread_shep() == NO_SHEPHERD) {
         /* sometimes, tasking is told to shutdown even though it hasn't been
          * told to start yet */
@@ -640,7 +624,6 @@ void chpl_task_exit(void)
     } else {
         qthread_syncvar_fill(&exit_ret);
     }
-#endif /* QTHREAD_MULTINODE */
 }
 
 static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
@@ -709,12 +692,6 @@ void chpl_task_callMain(void (*chpl_main)(void))
 
     qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_nodeID);
 
-#ifdef QTHREAD_MULTINODE
-    qthread_debug(CHAPEL_BEHAVIOR, "[%d] calling spr_unify\n", chpl_nodeID);
-    int const rc = spr_unify();
-    assert(SPR_OK == rc);
-#endif /* QTHREAD_MULTINODE */
-
     wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
 
     qthread_fork_syncvar(chapel_wrapper, &wrapper_args, &exit_ret);
@@ -738,7 +715,6 @@ void chpl_task_stdModulesInitialized(void)
 int chpl_task_createCommTask(chpl_fn_p fn,
                              void     *arg)
 {
-#ifndef QTHREAD_MULTINODE
     //
     // The wrapper info must be static because it won't be referred to
     // until the new pthread calls comm_task_wrapper().  And, it is
@@ -751,9 +727,6 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     wrapper_info.arg = arg;
     return pthread_create(&chpl_qthread_comm_pthread,
                           NULL, comm_task_wrapper, &wrapper_info);
-#else
-    return 0;
-#endif
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
