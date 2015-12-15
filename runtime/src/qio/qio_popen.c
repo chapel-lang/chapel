@@ -521,6 +521,8 @@ qioerr qio_proc_communicate(
     if( do_input || do_output || do_error ) {
       // TODO -- use sys_select so threading can interact
       rc = select(nfds, &rfds, &wfds, &efds, NULL);
+      // Ignore EAGAIN and EINTR
+      if (rc == EAGAIN || rc == EINTR) rc = 0;
     }
 
     if( rc == -1 ) {
