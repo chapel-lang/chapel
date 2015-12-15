@@ -60,6 +60,50 @@ _real32* complex64GetImagRef(_complex64* cplx) {
   return ((_real32*)cplx) + 1;
 }
 
+/* 128 bit complex operators for LLVM use */
+
+_complex128 complexMultiply128(_complex128 c1, _complex128 c2) {
+  return c1*c2;
+}
+
+_complex128 complexDivide128(_complex128 c1, _complex128 c2) {
+  return c1/c2;
+}
+
+_complex128 complexAdd128(_complex128 c1, _complex128 c2) {
+  return c1+c2;
+}
+
+_complex128 complexSubtract128(_complex128 c1, _complex128 c2) {
+  return c1-c2;
+}
+
+_complex128 complexUnaryMinus128(_complex128 c1) {
+  return -c1;
+}
+
+/* 64 bit complex operators for LLVM use */
+
+_complex64 complexMultiply64(_complex64 c1, _complex64 c2) {
+  return c1*c2;
+}
+
+_complex64 complexDivide64(_complex64 c1, _complex64 c2) {
+  return c1/c2;
+}
+
+_complex64 complexAdd64(_complex64 c1, _complex64 c2) {
+  return c1+c2;
+}
+
+_complex64 complexSubtract64(_complex64 c1, _complex64 c2) {
+  return c1-c2;
+}
+
+_complex64 complexUnaryMinus64(_complex64 c1) {
+  return -c1;
+}
+
 int64_t real2int( _real64 f) {
   // need to use a union here rather than a pointer cast to avoid gcc
   // warnings when compiling -O3

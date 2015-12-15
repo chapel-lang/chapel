@@ -252,6 +252,18 @@ _real64* complex128GetRealRef(_complex128* cplx);
 _real64* complex128GetImagRef(_complex128* cplx);
 _real32* complex64GetRealRef(_complex64* cplx);
 _real32* complex64GetImagRef(_complex64* cplx);
+
+_complex128 complexMultiply128(_complex128 c1, _complex128 c2);
+_complex128 complexDivide128(_complex128 c1, _complex128 c2);
+_complex128 complexAdd128(_complex128 c1, _complex128 c2);
+_complex128 complexSubtract128(_complex128 c1, _complex128 c2);
+_complex128 complexUnaryMinus128(_complex128 c1);
+
+_complex64 complexMultiply64(_complex64 c1, _complex64 c2);
+_complex64 complexDivide64(_complex64 c1, _complex64 c2);
+_complex64 complexAdd64(_complex64 c1, _complex64 c2);
+_complex64 complexSubtract64(_complex64 c1, _complex64 c2);
+_complex64 complexUnaryMinus64(_complex64 c1);
 #endif
 
 /* This should be moved somewhere else, but where is the question */
