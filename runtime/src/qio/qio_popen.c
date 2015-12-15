@@ -486,9 +486,9 @@ qioerr qio_proc_communicate(
       rc = select(nfds, &rfds, &wfds, &efds, NULL);
       if (rc > 0) {
         // read ready file descriptors
-        input_ready = FD_ISSET(input_fd, &wfds);
-        output_ready = FD_ISSET(output_fd, &rfds);
-        error_ready = FD_ISSET(error_fd, &rfds);
+        input_ready = input_fd != -1 && FD_ISSET(input_fd, &wfds);
+        output_ready = output_fd != -1 && FD_ISSET(output_fd, &rfds);
+        error_ready = error_fd != -1 && FD_ISSET(error_fd, &rfds);
       }
       // Ignore EAGAIN and EINTR
       if (rc == EAGAIN || rc == EINTR) rc = 0;
