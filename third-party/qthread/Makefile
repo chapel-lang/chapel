@@ -120,25 +120,24 @@ qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE) install
 
 #
-# The if-checks on the scheduler value look the same here, but they're
-# actually asking different questions.  In the first, it's "Will remote
+# The two variables here answer different questions even though they're
+# set using the same logic.  For the first, the question is "Will remote
 # caching work with this Qthreads build?", which is true iff qthreads do
-# not move from one worker to another (thus invalidating TLS).  In the
+# not move from one worker to another (thus invalidating TLS).  For the
 # second, it's "Is there only one worker per shepherd?", which changes
 # how the shim sets certain QT_* environment variables to parameterize
-# Qthreads behavior.  These have the same answer now, but in a future
-# scheduler they could differ.
+# Qthreads behavior.  These two questions have the same scheduler-based
+# answer now, but that may not always be true.  If and when it's not,
+# we'll need separate checks to set them.
 #
-ifeq (,$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
-SUPPORTS_REMOTE_CACHE = 0
-else
+ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
 SUPPORTS_REMOTE_CACHE = 1
-endif
-
-ifeq (,$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
+ONE_WORKER_PER_SHEPHERD = 1
+else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),nottingham sherwood))
+SUPPORTS_REMOTE_CACHE = 0
 ONE_WORKER_PER_SHEPHERD = 0
 else
-ONE_WORKER_PER_SHEPHERD = 1
+$(error Unrecognized Qthreads scheduler '$(SCHEDULER)')
 endif
 
 qthread-chapel-h: FORCE
