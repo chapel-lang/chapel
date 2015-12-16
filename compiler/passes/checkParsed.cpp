@@ -25,6 +25,7 @@
 #include "expr.h"
 #include "astutil.h"
 #include "stlUtil.h"
+#include "docsDriver.h"
 
 
 static void checkNamedArguments(CallExpr* call);
@@ -36,6 +37,19 @@ static void checkModule(ModuleSymbol* mod);
 
 void
 checkParsed() {
+  //
+  // Let's not bother checking the parsed code if we're generating
+  // docs.  In part because it seems reasonable to generate
+  // documentation for incorrect code; in part because there are other
+  // checks that occur post-docs pass that won't fire (i.e., this pass
+  // doesn't check everything); and in part because the code below, as
+  // written, doesn't work if you're documenting just a single file
+  // and haven't parsed all the other files it depends on.
+  //
+  if (fDocs) {
+    return;
+  }
+
   forv_Vec(CallExpr, call, gCallExprs) {
     checkNamedArguments(call);
   }
