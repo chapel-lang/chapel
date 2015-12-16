@@ -87,10 +87,10 @@ struct PassInfo {
 static PassInfo sPassList[] = {
   // Chapel to AST
   RUN(parse),                   // parse files and create AST
+  RUN(checkParsed),             // checks semantics of parsed AST
   RUN(docs),                    // if fDocs is set, this will generate docs.
                                 // if the executable is named "chpldoc" then
                                 // the application will stop after this phase
-  RUN(checkParsed),             // checks semantics of parsed AST
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -204,7 +204,10 @@ static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   considerExitingEndOfPass();
 
   //
-  // Clean up the global pointers to AST
+  // Clean up the global pointers to AST.  If we're running chpldoc,
+  // there's no real reason to run this step (and at the time of this
+  // writing, it didn't work if we hadn't parsed all the 'use'd
+  // modules.
   //
   if (!isChpldoc) {
     tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
