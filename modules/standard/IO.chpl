@@ -2848,7 +2848,8 @@ proc channel.offset():int(64) {
    Move a channel offset forward.
    
    For a reading channel, this function will consume the next ``amount``
-   bytes.
+   bytes. If EOF is reached, the channel position may be left at the
+   EOF.
    
    For a writing channel, this function will write ``amount`` zeros - or some
    other data if it is stored in the channel's buffer, for example with
