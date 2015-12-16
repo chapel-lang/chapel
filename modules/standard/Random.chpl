@@ -590,11 +590,12 @@ module Random {
       }
       /*
         Return the next random value but within a particular range.
+        Returns a number between min and max (inclusive).
        */
       proc getNext(min: eltType, max:eltType): eltType {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
-        const result = PCGRandomStreamPrivate_getNext_noLock();
+        const result = PCGRandomStreamPrivate_getNext_noLock(min,max);
         if parSafe then
           PCGRandomStreamPrivate_lock$;
         return result;
