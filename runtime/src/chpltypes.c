@@ -60,6 +60,7 @@ _real32* complex64GetImagRef(_complex64* cplx) {
   return ((_real32*)cplx) + 1;
 }
 
+
 int64_t real2int( _real64 f) {
   // need to use a union here rather than a pointer cast to avoid gcc
   // warnings when compiling -O3
