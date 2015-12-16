@@ -281,6 +281,69 @@ void deadCodeElimination(FnSymbol* fn) {
   freeDefUseChains(DU, UD);
 }
 
+// Eliminates dead string literals. Any string that are introduced get created
+// by the `new_StringSymbol()` function. This includes strings used internally
+// by the compiler (such as "boundedNone" for BoundedRangeType) and param
+// string used for things like compiler error messages as well as user level
+// strings that may actually be used at runtime. `new_StringSymbol()` adds all
+// strings to the stringLiteralModule, but strings that are only used for
+// compilation or whose runtime path was param folded away are never removed
+// because the code paths that are removed don't include the string literal
+// initialization. This code removes dead string literals and all the support
+// code that turns them into Chapel level strings. Note that this code is
+// pretty fragile because it is very specific to the current way code is
+// created in `new_StringSymbol()`
+//
+// Essentially we're looking for code of the form:
+//
+//     var call_tmp:c_ptr(uint(8));
+//     call_tmp = (c_ptr_uint8_t)"string literal";
+//     var ret_to_arg_ref_tmp: _ref(string);
+//     ret_to_arg_ref_tmp = &str_literal_id
+//     string(call_tmp, len, size, false, false, ret_to_arg_ref_tmp);
+//
+//  where there is only one use of the global "str_literal_id" (the rhs of
+//  ret_to_arg_ref_tmp = &str_literal_id) and just removing all the code to
+//  init the string from the string literal.
+static void deadStringLiteralElimination() {
+
+  // build up global defUse Maps
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(defMap, useMap);
+
+  // find all the symExprs in the string literal module
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(stringLiteralModule, symExprs);
+
+  for_vector(SymExpr, symExpr, symExprs) {
+    // if we're looking at a string literal
+    if (symExpr->var->hasFlag(FLAG_STRING_LITERAL_ID)) {
+      // and there's only a single use of it
+      Vec<SymExpr*>* uses = useMap.get(symExpr->var);
+      if (uses && uses->n == 1) {
+        // and that use is the current symExpr, we know we're looking at
+        // `ret_to_arg_ref_tmp = &str_literal_id` and there are no other uses
+        // of the string_literal_id, so it's dead and can be removed.
+        if (uses->v[0] == symExpr) {
+          // remove `var ret_to_arg_ref_tmp: _ref(string);`
+          symExpr->getStmtExpr()->prev->remove();
+          // remove `call_tmp = (c_ptr_uint8_t)"string literal";`
+          symExpr->getStmtExpr()->prev->remove();
+          // remove `var call_tmp:c_ptr(uint(8));`
+          symExpr->getStmtExpr()->prev->remove();
+          // remove `string(call_tmp, len, size, false, false, ret_to_arg_ref_tmp);`
+          symExpr->getStmtExpr()->next->remove();
+          // remove the defExpr of `str_literal_id` (it's a global)
+          symExpr->var->defPoint->remove();
+           // remove `ret_to_arg_ref_tmp = &str_literal_id`
+          symExpr->getStmtExpr()->remove();
+        }
+      }
+    }
+  }
+}
+
 
 // Determines if a module is dead. A module is dead if the module's init
 // function can only be called from module code, and the init function
@@ -316,6 +379,7 @@ static bool isDeadModule(ModuleSymbol* mod) {
 
 // Eliminates all dead modules
 static void deadModuleElimination() {
+  deadModuleCount = 0;
   forv_Vec(ModuleSymbol, mod, allModules) {
     if (isDeadModule(mod) == true) {
       deadModuleCount++;
@@ -334,12 +398,12 @@ static void deadModuleElimination() {
   }
 }
 
-
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     deadBlockElimination();
 
-    deadModuleCount = 0;
+    deadStringLiteralElimination();
+
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
 
