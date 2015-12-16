@@ -2000,8 +2000,13 @@ GenRet codegenAdd(GenRet a, GenRet b)
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
 
-    // Handle pointer arithmetic ( e.g. int8* + int64)
-    if(av.val->getType()->isPointerTy() || bv.val->getType()->isPointerTy()) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexAdd64", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexAdd128", av, bv);
+    } else if(av.val->getType()->isPointerTy() ||
+              bv.val->getType()->isPointerTy()) {
+      // Handle pointer arithmetic ( e.g. int8* + int64)
       // We must have one integer and one pointer, not two pointers.
       GenRet *ptr = NULL;
       GenRet *i = NULL;
@@ -2046,7 +2051,11 @@ GenRet codegenSub(GenRet a, GenRet b)
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
 
-    if(av.val->getType()->isPointerTy()) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexSubtract64", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexSubtract128", av, bv);
+    } else if(av.val->getType()->isPointerTy()) {
       // Handle pointer arithmetic by calling codegenAdd
       // with a negative value.
       INT_ASSERT(bv.val->getType()->isIntegerTy());
@@ -2079,7 +2088,11 @@ GenRet codegenNeg(GenRet a)
   else {
 #ifdef HAVE_LLVM
     llvm::Value *value = av.val;
-    if(value->getType()->isFPOrFPVectorTy()) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexUnaryMinus64", av);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexUnaryMinus128", av);
+    } else if(value->getType()->isFPOrFPVectorTy()) {
       ret.val = info->builder->CreateFNeg(value);
     } else {
       ret.val = info->builder->CreateNeg(value);
@@ -2105,14 +2118,20 @@ GenRet codegenMul(GenRet a, GenRet b)
     bool b_signed = false;
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
-    PromotedPair values =
-      convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
-    if(values.a->getType()->isFPOrFPVectorTy()) {
-      ret.val = info->builder->CreateFMul(values.a, values.b);
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexMultiply64", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexMultiply128", av, bv);
     } else {
-      ret.val = info->builder->CreateMul(values.a, values.b);
+      PromotedPair values =
+        convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
+      if(values.a->getType()->isFPOrFPVectorTy()) {
+        ret.val = info->builder->CreateFMul(values.a, values.b);
+      } else {
+        ret.val = info->builder->CreateMul(values.a, values.b);
+      }
+      ret.isUnsigned = !values.isSigned;
     }
-    ret.isUnsigned = !values.isSigned;
 #endif
   }
   return ret;
@@ -2129,17 +2148,23 @@ GenRet codegenDiv(GenRet a, GenRet b)
   if( info->cfile ) ret.c = "(" + av.c + " / " + bv.c + ")";
   else {
 #ifdef HAVE_LLVM
-    PromotedPair values =
-      convertValuesToLarger(av.val, bv.val, 
-                            is_signed(av.chplType), 
-                            is_signed(bv.chplType));
-    if(values.a->getType()->isFPOrFPVectorTy()) {
-      ret.val = info->builder->CreateFDiv(values.a, values.b);
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexDivide64", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexDivide128", av, bv);
     } else {
-      if(!values.isSigned) {
-        ret.val = info->builder->CreateUDiv(values.a, values.b);
+      PromotedPair values =
+        convertValuesToLarger(av.val, bv.val, 
+                              is_signed(av.chplType), 
+                              is_signed(bv.chplType));
+      if(values.a->getType()->isFPOrFPVectorTy()) {
+        ret.val = info->builder->CreateFDiv(values.a, values.b);
       } else {
-        ret.val = info->builder->CreateSDiv(values.a, values.b);
+        if(!values.isSigned) {
+          ret.val = info->builder->CreateUDiv(values.a, values.b);
+        } else {
+          ret.val = info->builder->CreateSDiv(values.a, values.b);
+        }
       }
     }
 #endif
