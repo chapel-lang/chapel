@@ -329,6 +329,25 @@ static void processImportExprs() {
     use->getStmtExpr()->remove();
 
     useParent->moduleUseAdd(use);
+
+    // Verifies that all the symbols in the include and exclude lists of use
+    // statements refer to symbols that are visible from that module.
+    if (use->excludes.size() > 0) {
+      for_vector(const char, toExclude, use->excludes) {
+        SymExpr* se = toSymExpr(use->mod);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+
+        Symbol* sym = lookup(mod->block, toExclude);
+
+        if (!sym) {
+          USR_FATAL_CONT(use, "Bad identifier in 'except' clause, no known '%s'", toExclude);
+        } else if (!sym->isVisible(use)) {
+          USR_FATAL_CONT(use, "Bad identifier in 'except' clause, '%s' is already private", toExclude);
+        }
+      }
+    }
   }
 }
 
