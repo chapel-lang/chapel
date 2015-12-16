@@ -120,7 +120,14 @@ static void profile_print(void)
 # define PROFILE_INCR(counter,count)
 #endif /* CHAPEL_PROFILE */
 
+//
+// Startup and shutdown control.  The mutex is used just for the side
+// effect of its (very portable) memory fence.
+//
 volatile int chpl_qthread_done_initializing;
+static syncvar_t canexit = SYNCVAR_STATIC_EMPTY_INITIALIZER;
+static volatile int done_finalizing;
+static pthread_mutex_t done_init_final_mux = PTHREAD_MUTEX_INITIALIZER;
 
 // Make qt env sizes uniform. Same as qt, but they use the literal everywhere
 #define QT_ENV_S 100
@@ -352,20 +359,20 @@ static void SIGINT_handler(int sig)
 
 // Tasks
 
-static syncvar_t canexit            = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-static volatile int done_finalizing = 0;
-
 static void *initializer(void *junk)
 {
     qthread_initialize();
-    __sync_synchronize();
+    (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
     chpl_qthread_done_initializing = 1;
+    (void) pthread_mutex_unlock(&done_init_final_mux);
 
     qthread_syncvar_readFF(NULL, &canexit);
 
     qthread_finalize();
-    __sync_synchronize();
+    (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
     done_finalizing = 1;
+    (void) pthread_mutex_unlock(&done_init_final_mux);
+
     return NULL;
 }
 
