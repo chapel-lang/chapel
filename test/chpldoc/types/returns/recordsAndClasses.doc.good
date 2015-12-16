@@ -1,4 +1,4 @@
-Module: recordsAndClasses.doc
+recordsAndClasses.doc
    Record: thingy
    proc takesAThingy(): thingy
       This method returns a record 

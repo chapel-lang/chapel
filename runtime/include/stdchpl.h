@@ -50,6 +50,7 @@
 #include "chplio.h"
 #include "chplmath.h"
 #include "chpl-init.h"
+#include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-prefetch.h"

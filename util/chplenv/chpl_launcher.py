@@ -1,8 +1,13 @@
 #!/usr/bin/env python
-import sys, os
+import os
+import sys
 
-import chpl_comm, chpl_comm_substrate, chpl_platform, chpl_compiler, utils
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_comm, chpl_comm_substrate, chpl_compiler, chpl_platform, utils
 from utils import memoize
+
 
 @memoize
 def get():

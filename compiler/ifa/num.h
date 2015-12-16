@@ -41,6 +41,11 @@ enum IF1_const_kind {
   CONST_KIND_STRING = NUM_KIND_COMPLEX + 1, CONST_KIND_SYMBOL
 };
 
+enum IF1_string_kind {
+  STRING_KIND_STRING,
+  STRING_KIND_C_STRING
+};
+
 enum IF1_bool_type {
   BOOL_SIZE_1, BOOL_SIZE_SYS, BOOL_SIZE_8, BOOL_SIZE_16, BOOL_SIZE_32, 
   BOOL_SIZE_64, BOOL_SIZE_NUM
@@ -77,23 +82,38 @@ enum IF1_complex_type {
 
 class Immediate { public:
   uint32_t const_kind;
+  IF1_string_kind string_kind;
   uint32_t num_index;
   union {
-    uint64_t   v_bool;
-    int8_t     v_int8;
-    int16_t    v_int16;
-    int32_t    v_int32;
-    int64_t    v_int64;
-    // int128     v_int128;
-    uint8_t    v_uint8;
-    uint16_t   v_uint16;
-    uint32_t   v_uint32;
-    uint64_t   v_uint64;
-    // uint128    v_uint128;
-    float      v_float32;
-    double     v_float64;
-    complex64  v_complex64;
+    // Unions are initalized based off the first element, so we need to have
+    // the largest thing first to make sure it is all zero initalized
+
+    // complex values
     complex128 v_complex128;
+    complex64  v_complex64;
+
+    // floating-point values
+    double     v_float64;
+    float      v_float32;
+
+    // signed integer values
+    // int128     v_int128;
+    int64_t    v_int64;
+    int32_t    v_int32;
+    int16_t    v_int16;
+    int8_t     v_int8;
+
+    // unsigned integer values
+    // uint128    v_uint128;
+    uint64_t   v_uint64;
+    uint32_t   v_uint32;
+    uint16_t   v_uint16;
+    uint8_t    v_uint8;
+
+    // boolean value
+    uint64_t   v_bool;
+
+    // string value
     const char *v_string;
   };
 
@@ -110,20 +130,26 @@ class Immediate { public:
   }
   Immediate& operator=(char *s) {
     const_kind = CONST_KIND_STRING;
+    string_kind = STRING_KIND_C_STRING;
     v_string = s;
     return *this;
   }
-  Immediate(bool b) {
-    memset(this, 0, sizeof(*this));
-    const_kind = NUM_KIND_BOOL;
-    num_index = BOOL_SIZE_SYS;
+  Immediate(bool b) :
+    const_kind(NUM_KIND_BOOL),
+    string_kind(STRING_KIND_STRING),
+    num_index(BOOL_SIZE_SYS)
+  {
     v_bool = b;
   }
-  Immediate(const char *s) {
-    memset(this, 0, sizeof(*this));
-    const_kind = CONST_KIND_STRING;
+
+  Immediate(const char *s, IF1_string_kind kind) :
+    const_kind(CONST_KIND_STRING),
+    string_kind(kind),
+    num_index(0)
+  {
     v_string = s;
   }
+
   Immediate();
   Immediate(const Immediate &im);
 };

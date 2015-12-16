@@ -1,4 +1,4 @@
-Module: hasGlobalConstants
+hasGlobalConstants
    This module has some global scoped constants. 
    const first: int
    const second = 16

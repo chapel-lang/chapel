@@ -27,6 +27,7 @@ isTrue = $(filter yes Yes YES y Y true True TRUE t T, $(1))
 
 MAKEFLAGS = --no-print-directory
 
+
 ifndef CHPL_MAKE_HOST_TARGET
 CHPL_MAKE_HOST_TARGET = --host
 endif
@@ -67,7 +68,10 @@ endif
 ifndef CHPL_MAKE_SETTINGS_NO_NEWLINES
 # ... but it involves a little bit of Make-craziness because
 # $(shell) changes newlines into spaces.
-export CHPL_MAKE_SETTINGS_NO_NEWLINES = $(shell $(CHPL_MAKE_HOME)/util/printchplenv --make | tr '\n' '|' )
+# Evaluate all of the definitions in CHPL_MAKE_ALL_VARS before running
+# printchplenv in order to pass the existing values from the compiler forward
+
+export CHPL_MAKE_SETTINGS_NO_NEWLINES = $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --make | tr '\n' '|' )
 endif
 
 # This really needs TWO newlines!

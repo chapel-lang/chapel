@@ -48,11 +48,13 @@ void localizeGlobals() {
 
         // Is var a global constant?
         // Don't replace the var name in its init function since that's
-        //      where we're setting the value.
+        //      where we're setting the value. Similarly, dont replace them
+        //      inside initStringLiterals
         // If the parentSymbol is the rootModule, the var is 'void,'
         //      'false,' '0,' ...
         if (parentmod &&
             fn != parentmod->initFn &&
+            fn != initStringLiterals &&
             var->hasFlag(FLAG_CONST) &&
             var->defPoint->parentSymbol != rootModule) {
           VarSymbol* local_global = globals.get(var);

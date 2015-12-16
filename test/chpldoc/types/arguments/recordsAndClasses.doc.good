@@ -1,4 +1,4 @@
-Module: recordsAndClasses.doc
+recordsAndClasses.doc
    Record: thingy
    proc takesAThingy(val: thingy)
       This method takes a record as its argument 

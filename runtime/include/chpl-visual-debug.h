@@ -52,19 +52,19 @@ extern void chpl_vdebug_mark(void);
 
 //  communication logging routines 
 void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                            int32_t elemSize, int32_t typeIndex,
-                            int32_t len, int ln, c_string fn);
+                            size_t size, int32_t typeIndex,
+                            int ln, c_string fn);
 
 void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                            int32_t elemSize, int32_t typeIndex,
-                            int32_t len, int ln, c_string fn);
+                            size_t size, int32_t typeIndex,
+                            int ln, c_string fn);
 
 void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
-                         int32_t elemSize, int32_t typeIndex, int32_t len,
+                         size_t size, int32_t typeIndex,
                          int ln, c_string fn);
 
 void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
-                         int32_t elemSize, int32_t typeIndex, int32_t len,
+                         size_t size, int32_t typeIndex,
                          int ln, c_string fn);
 
 void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,

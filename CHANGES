@@ -1079,7 +1079,7 @@ New Semantic Checks (for old semantics)
 Bug Fixes
 ---------
 * fixed a bug in which int literals > max(int(32)) could not coerce to uint(32)
-* fixed support for uppercase binary and hexidecimal literals
+* fixed support for uppercase binary and hexadecimal literals
   (e.g. 0B1101101 and 0Xbabe1055)
 * fixed a bug in which ~1% of compiles would segfault on Macs
 * fixed a bug relating to nested records and default constructors

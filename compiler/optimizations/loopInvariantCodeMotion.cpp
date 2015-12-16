@@ -353,6 +353,11 @@ rhsAlias(CallExpr* call) {
           SymExpr* rhs = toSymExpr(rhsCall->get(1));
           INT_ASSERT(rhs);
           return rhs->var;
+        } else if (rhsCall->isPrimitive(PRIM_GET_REAL) ||
+                   rhsCall->isPrimitive(PRIM_GET_IMAG)) {
+          SymExpr* rhs = toSymExpr(rhsCall->get(1));
+          INT_ASSERT(rhs);
+          return rhs->var;
         }
       } else {
         // alias via autocopy
