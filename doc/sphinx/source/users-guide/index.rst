@@ -1,7 +1,7 @@
 .. _users-guide-index:
 
-Chapel Users Guide
-==================
+Chapel Users Guide (work-in-progress)
+=====================================
 
 .. toctree::
    :maxdepth: 1
@@ -17,6 +17,8 @@ Base Language
 
    base/simpleConsoleOutput
    base/variableDeclarations
+   base/basicTypes
+   base/basicValues
 
 Task Parallelism
 ----------------

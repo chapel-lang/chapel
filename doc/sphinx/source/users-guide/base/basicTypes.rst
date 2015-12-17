@@ -1,0 +1,64 @@
+:title: Users Guide: Basic Types
+
+Basic Types
+===========
+
+Chapel supports a number of basic types and values to represent
+logical values, numbers, and strings.  Specifically, these types
+provide support for Boolean types and values; signed and unsigned
+integers; real, imaginary, and complex floating point values; and
+strings.  These types, along with the `void` type (not covered in this
+section), are known as Chapel's *primitive* types.  In the previous
+sections, we've seen simple uses of string and integer types and
+values.
+
+
+Bit-Widths of Numeric Types
+---------------------------
+
+Chapel's boolean and numeric types are each supported in a variety of
+*bit-widths* which specify how much memory is used for their
+representation.  For the numeric types, it also governs the
+accuracy/range of the values that the type represents.
+
+For example, ``int(8)`` specifies an 8-bit integer, capable of storing
+values from -128 through 127, while ``int(64)`` specifies a 64-bit
+integer, capable of storing values from -9,223,372,036,854,775,808
+through 9,223,372,036,854,775,807.
+
+These types also have a default size that is used when no bit-width is
+specified.  For example, integers default to 64 bits, permitting
+``int(64)`` to simply be written ``int``, as we've seen in previous
+examples.
+
+Since Boolean values only require a single bit of data, the use of
+different bit-widths for the ``bool`` type only affects memory usage
+and layout, not program semantics.  The default bit-width for the
+``bool`` type is implementation-dependent.
+
+
+Basic Type Summary
+------------------
+
+The following table summarizes each of the basic types, indicating its
+role and default value, along with its supported bit widths and
+default bit width, when applicable.
+
++-------------+--------------------------------+---------------+------------------+--------------------------+
+| Type        | Description                    | Default Value | Legal Bit-Widths | Default Bit-Width        |
++=============+================================+===============+==================+==========================+
+| ``bool``    | logical value                  | false         | 8, 16, 32, 64    | implementation-dependent |
++-------------+--------------------------------+---------------+------------------+--------------------------+
+| ``int``     | signed integer value           | 0             | 8, 16, 32, 64    |  64                      |
++-------------+--------------------------------+---------------+------------------+--------------------------+
+| ``uint``    | unsigned integer value         | 0             | 8, 16, 32, 64    |  64                      |
++-------------+--------------------------------+---------------+------------------+--------------------------+
+| ``real``    | real floating-point value      | 0.0           | 32, 64           |  64                      |
++-------------+--------------------------------+---------------+------------------+--------------------------+
+| ``imag``    | imaginary floating-point value | 0.0i          | 32, 64           |  64                      |
++-------------+--------------------------------+---------------+------------------+--------------------------+
+| ``complex`` | complex floating-point value   | 0.0 + 0.0i    | 64, 128          | 128                      |
++-------------+--------------------------------+---------------+------------------+--------------------------+
+| ``string``  | ASCII character string         | ""            | N/A              | N/A                      |
++-------------+--------------------------------+---------------+------------------+--------------------------+
+

@@ -1,3 +1,11 @@
+Next Steps
+----------
+Base:
+ - type, .type, casts
+ - param
+ - const
+ 
+
 ASAP
 ----
 * fix poorly formatted code in locale type vars section.
