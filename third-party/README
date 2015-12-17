@@ -20,9 +20,8 @@ chpl-venv/
 
 
 dlmalloc/
-  Summary: Doug Lea's memory allocator (dlmalloc) which we use to
-           support malloc/free calls when running GASNet programs
-           using segment fast.
+  Summary: Doug Lea's memory allocator (dlmalloc) is a portable
+           allocator that can be used when a shared heap is required.
 
   License: dlmalloc has been placed in the public domain as explained
            at http://creativecommons.org/publicdomain/zero/1.0/
@@ -126,9 +125,9 @@ re2/
 
 
 tcmalloc/
-  Summary: the Google perf-tools memory allocator (tcmalloc) which we
-           use to support malloc/free calls when running programs using
-           Cray's Gemini network interconnect chip
+  Summary: the Google perf-tools memory allocator (tcmalloc) is
+           optimized for high concurrency code and can be used when a
+           shared heap is required.
 
   License: Google-perftools is released under the New BSD License (see
            tcmalloc/google-perftools-<version>/COPYING)
