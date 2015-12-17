@@ -857,7 +857,7 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         refSet.set_add(def->sym);
         refVec.add(def->sym);
       } else if (!isPrimitiveType(def->sym->type) ||
-                 toFnSymbol(def->parentSymbol)->retTag==RET_REF) {
+                 toFnSymbol(def->parentSymbol)->returnsRefOrConstRef()) {
         varSet.set_add(def->sym);
         varVec.add(def->sym);
       }
