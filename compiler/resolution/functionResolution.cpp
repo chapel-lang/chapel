@@ -5368,8 +5368,9 @@ preFold(Expr* expr) {
                     !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   // Should this conditional include domains, distributions, sync and/or single?
                   USR_FATAL(ret, "illegal expression to return by ref");
-                if (ret->var->isConstant() || ret->var->isParameter())
-                  USR_FATAL(ret, "function cannot return constant by ref");
+                if (fn->retTag == RET_REF)
+                  if (ret->var->isConstant() || ret->var->isParameter())
+                    USR_FATAL(ret, "function cannot return constant by ref");
               }
             }
           }
@@ -5386,12 +5387,20 @@ preFold(Expr* expr) {
                     INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
                   }
                 } else {
-                  // This probably indicates that an invalid 'addr of' primitive
-                  // was inserted, which would be the compiler's fault, not the
-                  // user's.
-                  // At least, we might perform the check at or before the 'addr
-                  // of' primitive is inserted.
-                  INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
+                  // It is not a problem to return a const value
+                  if (fn->retTag == RET_CONST_REF &&
+                      lhs && lhs->var == fn->getReturnSymbol() ) {
+                    // It's OK
+                    // TODO -- this should be handled differently
+                    // by including the idea of 'const ref' types
+                    // throughout resolution
+                  } else {
+                    // This probably indicates that an invalid 'addr of'
+                    // primitive was inserted, which would be the compiler's
+                    // fault, not the user's.  At least, we might perform the
+                    // check at or before the 'addr of' primitive is inserted.
+                    INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
+                  }
                 }
               }
             }
