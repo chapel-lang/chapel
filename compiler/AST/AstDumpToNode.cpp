@@ -763,6 +763,12 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
       write("RetTag:      ref");
       break;
 
+    case RET_CONST_REF:
+      newline();
+      write("RetTag:      const ref");
+      break;
+
+
     case RET_PARAM:
       newline();
       write("RetTag:      param");

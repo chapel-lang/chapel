@@ -1050,6 +1050,7 @@ const char* retTagDescrString(RetTag retTag) {
   switch (retTag) {
     case RET_VALUE: return "value";
     case RET_REF:   return "ref";
+    case RET_CONST_REF:   return "const ref";
     case RET_PARAM: return "param";
     case RET_TYPE:  return "type";
     default:        return "<unknown RetTag>";
@@ -2357,6 +2358,10 @@ bool FnSymbol::isIterator() const {
   return hasFlag(FLAG_ITERATOR_FN);
 }
 
+// This function returns by ref or const ref
+bool FnSymbol::returnsRefOrConstRef() const {
+  return (retTag == RET_REF || retTag == RET_CONST_REF);
+}
 
 std::string FnSymbol::docsDirective() {
   if (fDocsTextOnly) {
@@ -2408,6 +2413,9 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   switch (this->retTag) {
   case RET_REF:
     *file << " ref";
+    break;
+  case RET_CONST_REF:
+    *file << " const ref";
     break;
   case RET_PARAM:
     *file << " param";
