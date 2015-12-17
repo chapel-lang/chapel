@@ -751,7 +751,7 @@ lambda_decl_expr:
   opt_ret_tag opt_type opt_where_part function_body_stmt
     {
       $3->retTag = $5;
-      if ($5 == RET_REF)
+      if ($5 == RET_REF || $5 == RET_CONST_REF)
         USR_FATAL("'ref' return types are not allowed in lambdas");
       if ($5 == RET_PARAM)
         USR_FATAL("'param' return types are not allowed in lambdas");
@@ -953,7 +953,7 @@ proc_or_iter:
 opt_ret_tag:
             { $$ = RET_VALUE; }
 | TCONST    { $$ = RET_VALUE; }
-| TREF      { $$ = RET_REF; }
+| TREF      { $$ = RET_REF; } // TODO -- handle const ref
 | TPARAM    { $$ = RET_PARAM; }
 | TTYPE     { $$ = RET_TYPE; }
 ;

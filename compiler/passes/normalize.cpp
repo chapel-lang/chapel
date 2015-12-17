@@ -539,7 +539,7 @@ static bool is_void_return(CallExpr* call) {
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
   Expr* ret_expr = ret->get(1);
   ret_expr->remove();
-  if (fn->retTag == RET_REF)
+  if (fn->returnsRefOrConstRef())
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
   {
