@@ -34,7 +34,7 @@
 
 #include <assert.h>
 
-// 64kb blocks... note tile64 page size is 64K
+// 64kb blocks...
 // this really should be a multiple of page size...
 // but we can't know page size at compile time
 size_t qbytes_iobuf_size = 64*1024;
