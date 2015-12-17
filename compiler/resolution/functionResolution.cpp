@@ -2802,6 +2802,20 @@ getVisibleFunctions(BlockStmt* block,
     for_actuals(expr, block->modUses) {
       UseExpr* use = toUseExpr(expr);
       INT_ASSERT(use);
+      if (use->excludes.size() > 0) {
+        // If the name we're searching for is in the exclude list of this
+        // use statement, don't go into this module to look for the name.
+        bool skip = false;
+        for_vector(const char, toExclude, use->excludes) {
+          if (!strcmp(toExclude, name)) {
+            skip = true;
+            break;
+          }
+        }
+        if (skip)
+          continue;
+      }
+
       SymExpr* se = toSymExpr(use->mod);
       INT_ASSERT(se);
       ModuleSymbol* mod = toModuleSymbol(se->var);
