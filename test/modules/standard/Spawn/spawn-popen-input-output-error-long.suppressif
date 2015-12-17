@@ -1,5 +1,5 @@
-# Suppress this test on Cygwin due to an apparent
-# Cygwin bug.
+# Suppress this test on Cygwin
+# due to an apparent Cygwin bug.
 CHPL_TARGET_PLATFORM <= cygwin 
 #
 # This test spawns a subprocess that echos its input but
