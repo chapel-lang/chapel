@@ -318,6 +318,16 @@ static void processImportExprs() {
     if (mod == rootModule)
       continue;
 
+    if (!use->parentExpr) {
+      // This happens for the uses I create when traversing use chains which
+      // contain excepts, so that the excepted keywords are skipped down all
+      // paths from that chain head (see buildBreadthFirstModuleList).  In
+      // that case, we don't need to do any further work here beyond make
+      // sure the mod is a SymExpr
+      use->mod = new SymExpr(mod);
+      continue;
+    }
+
     use->mod->replace(new SymExpr(mod));
     // Need to update the use now that we've found what it refers to
 
@@ -2126,8 +2136,23 @@ static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
               // parent.  Therefore, if the symbol is private, we will not
               // traverse it further and will merely add it to the alreadySeen
               // vector.
-              next.add(use);
-              modules->add(use);
+
+              if (module->excludes.size() > 0) {
+                // In order to properly block except'ed identifiers from being
+                // in scope, we need to propogate them to later uses.  This
+                // should only affect the starting module's use chain.
+                UseExpr* newUse = use->copy();
+                for_vector(const char, toExclude, module->excludes) {
+                  newUse->excludes.push_back(toExclude);
+                }
+                next.add(newUse);
+                modules->add(newUse);
+              } else {
+                // There wasn't any additional work to perform, just add the
+                // use as is.
+                next.add(use);
+                modules->add(use);
+              }
             }
             // If the use statement was made with except or only, we can't
             // guarantee that a later use of this module will be a waste of

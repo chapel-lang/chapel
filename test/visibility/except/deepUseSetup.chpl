@@ -20,8 +20,6 @@ module M2 {
 // module also defines the 'except'ed symbol, merely the behavior where such
 // a variable is not also defined elsewhere.  Non-transitive uses would prevent
 // the current behavior
-//
-// Note: I'm not entirely convinced that allowing this is the correct choice.
 module M3 {
   use M1;
 
