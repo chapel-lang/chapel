@@ -9,8 +9,9 @@ Chapel itself.  Current subdirectories include:
 
 chpl-venv/
 
-  Summary: Directory where several python packages are downloaded and installed.
-           Used for chpldoc and the testing system. See requirements.txt and
+  Summary: Directory where several python packages are downloaded and
+           installed. Used for chpldoc and the testing system. See
+           chpldoc-requirements.txt, test-requirements.txt, and
            virtualenv.txt files for a complete list of packages that are
            installed.
 
@@ -89,9 +90,7 @@ llvm/
 
 massivethreads/
   Summary: MassiveThreads is a lightweight thread library being
-           developed by the University of Tokyo.  This package
-           represents a lighter-weight tasking alternative
-           to the default fifo/pthreads choice.
+           developed by the University of Tokyo.
 
   License: MassiveThreads is released under the Simplified BSD License,
            which can be found in:
@@ -103,9 +102,8 @@ massivethreads/
 
 
 qthread/ 
-  Summary: the Qthreads user-level tasking package being developed by
-           Sandia National Laboratory.  We are working on using this
-           as a lighter-weight tasking alternative to pthreads.
+  Summary: the Qthreads user-level tasking package developed by Sandia
+           National Laboratory.
 
   License: Qthreads is released under the New BSD License, which can
            be found in qthread/qthread-<version>/COPYING
@@ -118,11 +116,8 @@ qthread/
 
 
 re2/
-  Summary: This is a directory where the RE2 regular expression
-           library will be downloaded when running 'make re2' in the
-           third-party directory.  We use RE2 to support regular
-           expression operations as described in
-           doc/technotes/regexp.rst).
+  Summary: The RE2 regular expression library used to support regular
+           expression operations described in doc/technotes/regexp.rst
 
   License: New BSD license (see re2/re2/LICENSE)
 
