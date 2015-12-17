@@ -28,12 +28,12 @@ module LCALSConfiguration {
   config const run_refLoop = true;
 
   // Loop Subset A: Loops extracted from LLNL app codes.
-  config const runA_pressureCalc = false; // M and S have bad checksums
+  config const runA_pressureCalc = true;
   config const runA_energyCalc   = true;
   config const runA_vol3DCalc    = true;
   config const runA_delDotVec2D  = true;
   config const runA_couple       = true;
-  config const runA_fir          = false; // bad checksums
+  config const runA_fir          = true;
 
   // Loop Subset B: "Basic" Loops.
   config const runB_init3     = true;

@@ -15,7 +15,6 @@ module RunParallelRawLoops {
 
         select iloop {
           when LoopKernelID.PRESSURE_CALC {
-            halt("loop not implemented: ", iloop:LoopKernelID);
             loopInit(iloop, stat);
             var compression => loop_data.RealArray_1D[0];
             var bvc => loop_data.RealArray_1D[1];
@@ -366,7 +365,6 @@ module RunParallelRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.FIR {
-            halt("loop not implemented: ", iloop:LoopKernelID);
             loopInit(iloop, stat);
             var output => loop_data.RealArray_1D[0];
             var input => loop_data.RealArray_1D[1];
@@ -380,10 +378,10 @@ module RunParallelRawLoops {
 
             ltimer.start();
             for isamp in 0..#num_samples {
-              for i in 0..#len_minus_coeff {
+              forall i in 0..#len_minus_coeff {
                 var sum = 0.0;
                 for j in 0..#coefflen {
-                  sum += coeff[j]*input[i+j];
+                  sum += coeff[j+1]*input[i+j];
                 }
                 output[i] = sum;
               }
