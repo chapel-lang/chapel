@@ -122,6 +122,7 @@ tags
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
+/test/chpldoc/compflags/folder/save-sphinx/deep-sphinx
 
 /test/chplvis/TREEvis
 /test/chplvis/benchmarks-hpcc/FFTvis
