@@ -13,18 +13,18 @@ sections, we've seen simple uses of string and integer types and
 values.
 
 
-Bit-Widths of Numeric Types
----------------------------
+Bit-Widths
+----------
 
 Chapel's boolean and numeric types are each supported in a variety of
-*bit-widths* which specify how much memory is used for their
+*bit-widths* which specify how much memory to use for their
 representation.  For the numeric types, it also governs the
-accuracy/range of the values that the type represents.
+range/accuracy of the values that the type can represent.
 
 For example, ``int(8)`` specifies an 8-bit integer, capable of storing
 values from -128 through 127, while ``int(64)`` specifies a 64-bit
 integer, capable of storing values from -9,223,372,036,854,775,808
-through 9,223,372,036,854,775,807.
+(-2\ :sup:`63`) through 9,223,372,036,854,775,807 (2\ :sup:`63` - 1).
 
 These types also have a default size that is used when no bit-width is
 specified.  For example, integers default to 64 bits, permitting
