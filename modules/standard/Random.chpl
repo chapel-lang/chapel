@@ -20,15 +20,16 @@
 /*
    Support for pseudorandom number generation
 
-   This module defines an abstraction for a stream of pseudorandom
-   numbers, :class:`RandomStreamInterface`, supporting methods to get the next
-   random number in the stream (:proc:`.getNext`), to fast-forward to
-   a specific value in the stream (:proc:`.skipToNth` and
-   :proc:`.getNth`), or to fill an array with random numbers in
-   parallel (:proc:`~Random.RandomStream.fillRandom`).  The module
-   also provides a standalone convenience function, :proc:`fillRandom`
-   that can be used to fill an array with random numbers in parallel
-   without manually creating a :class:`RandomStream` object.
+   This module defines an abstraction for a stream of pseudorandom numbers,
+   :class:`~Random.RandomStreamInterface`, supporting methods to get the next random
+   number in the stream (:proc:`~Random.RandomStreamInterface.getNext`), to
+   fast-forward to a specific value in the stream
+   (:proc:`~Random.RandomStreamInterface.skipToNth` and
+   :proc:`~Random.RandomStreamInterface.getNth`), or to fill an array with random
+   numbers in parallel (:proc:`~Random.RandomStream.fillRandom`).  The module
+   also provides a standalone convenience function, :proc:`fillRandom` that can
+   be used to fill an array with random numbers in parallel without manually
+   creating a :class:`RandomStream` object.
 
    Use :proc:`makeRandomStream` or the constructor for a specific RNG
    implementation to get a RandomStream.
