@@ -72,12 +72,6 @@ CHPL_GASNET_CFG_SCRIPT=configure
 endif
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),tile-cc)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-tilera
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
-endif
-
 CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)'
 
 # Copied this usage from other/contrib/cross-configure-intel-mic

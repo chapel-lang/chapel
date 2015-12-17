@@ -22,6 +22,9 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
 endif
 
+#
+# standard header
+#
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 TASKS_OBJDIR = $(RUNTIME_OBJDIR)

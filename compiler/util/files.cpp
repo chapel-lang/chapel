@@ -29,7 +29,6 @@
 
 #include "beautify.h"
 #include "driver.h"
-#include "docsDriver.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "stringutil.h"
@@ -753,15 +752,9 @@ void setupModulePaths() {
                       CHPL_COMM));
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal"));
 
-  if (fDocs) {
-    // We use a special sysCTypes when running with chpldoc to gloss over
-    // machine differences
-    stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard/gen/doc"));
-  } else {
-    stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard/gen/",
-                        CHPL_TARGET_PLATFORM,
-                        "-", CHPL_TARGET_COMPILER));
-  }
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard/gen/",
+                      CHPL_TARGET_PLATFORM,
+                      "-", CHPL_TARGET_COMPILER));
 
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));

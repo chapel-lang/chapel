@@ -40,8 +40,6 @@ def get():
                     'set CHPL_LAUNCHER in the environment.\n')
         elif platform_val == 'marenostrum':
             launcher_val = 'marenostrum'
-        elif compiler_val == 'tile-cc':
-            launcher_val = 'tile-monitor'
         elif comm_val == 'gasnet':
             substrate_val = chpl_comm_substrate.get()
             if substrate_val == 'udp':
