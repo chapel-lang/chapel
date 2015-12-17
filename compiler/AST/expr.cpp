@@ -4370,6 +4370,8 @@ GenRet CallExpr::codegen() {
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
     case PRIM_ON_LOCALE_NUM:
+    case PRIM_GET_REAL:
+    case PRIM_GET_IMAG:
       // generated during generation of PRIM_MOVE
       break;
     case PRIM_WIDE_GET_LOCALE:
