@@ -109,31 +109,9 @@ void cullOverReferences() {
           SET_LINENO(move);
 
           if (!refNecessary(se, defMap, useMap)) {
+            // Change the call to the const ref version with (setter=false)
             SymExpr*   base = toSymExpr(call->baseExpr);
-            VarSymbol* tmp  = newTemp(copy->retType);
-
             base->var = copy;
-
-            move->insertBefore(new DefExpr(tmp));
-
-            if (requiresImplicitDestroy(call)) {
-              if (isString(copy->retType) == false) {
-                tmp->addFlag(FLAG_INSERT_AUTO_COPY);
-                tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-              } else {
-                tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-              }
-            }
-
-            if (useMap.get(se->var) && useMap.get(se->var)->n > 0) {
-              move->insertAfter(new CallExpr(PRIM_MOVE,
-                                             se->var,
-                                             new CallExpr(PRIM_ADDR_OF, tmp)));
-            } else {
-              se->var->defPoint->remove();
-            }
-
-            se->var = tmp;
           }
         } else
           INT_FATAL(call, "unexpected case");
