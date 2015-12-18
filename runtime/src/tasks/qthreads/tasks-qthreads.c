@@ -34,42 +34,36 @@
 #endif
 
 #include "chplrt.h"
-#include "chplsys.h"
-#include "tasks-qthreads.h"
+
+#include "arg.h"
+#include "error.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
+#include "chplexit.h"
 #include "chpl-locale-model.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
-#include "config.h"
-#include "error.h"
-#include "arg.h"
-#include "signal.h"
-#include "chplexit.h"
+#include "tasks-qthreads.h"
+
+#include "qthread.h"
+#include "qthread/qtimer.h"
+#include "qthread-chapel.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <inttypes.h>
-#include <errno.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <sched.h>
 
-#include "qthread/qthread.h"
-#include "qthread/qtimer.h"
-#include "qt_feb.h"
-#include "qt_syncvar.h"
-#include "qt_hash.h"
-#include "qt_atomics.h"
-#include "qt_shepherd_innards.h"
-#include "qt_envariables.h"
-#include "qt_debug.h"
 
-#ifdef QTHREAD_MULTINODE
-#include "qthread/spr.h"
-#endif /* QTHREAD_MULTINODE */
-
-#include <pthread.h>
+//#define SUPPORT_BLOCKREPORT
+//#define SUPPORT_TASKREPORT
 
 #ifdef CHAPEL_PROFILE
 # define PROFILE_INCR(counter,count) do { (void)qthread_incr(&counter,count); } while (0)
@@ -126,9 +120,14 @@ static void profile_print(void)
 # define PROFILE_INCR(counter,count)
 #endif /* CHAPEL_PROFILE */
 
-#ifndef QTHREAD_MULTINODE
+//
+// Startup and shutdown control.  The mutex is used just for the side
+// effect of its (very portable) memory fence.
+//
 volatile int chpl_qthread_done_initializing;
-#endif
+static syncvar_t canexit = SYNCVAR_STATIC_EMPTY_INITIALIZER;
+static volatile int done_finalizing;
+static pthread_mutex_t done_init_final_mux = PTHREAD_MUTEX_INITIALIZER;
 
 // Make qt env sizes uniform. Same as qt, but they use the literal everywhere
 #define QT_ENV_S 100
@@ -156,12 +155,6 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
     PRV_DATA_IMPL_VAL("<comm thread>", 0, chpl_nullTaskID, false,
                       c_sublocid_any_val, false),
     NULL, 0 };
-
-//
-// QTHREADS_SUPPORTS_REMOTE_CACHE is set in the Chapel Qthreads
-// Makefile, based on the Qthreads scheduler configuration.
-//
-int chpl_qthread_supports_remote_cache = QTHREADS_SUPPORTS_REMOTE_CACHE;
 
 //
 // structs chpl_task_prvDataImpl_t, chpl_qthread_wrapper_args_t and
@@ -309,6 +302,7 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_destroyAux, 1);
 }
 
+#ifdef SUPPORT_BLOCKREPORT
 static void chapel_display_thread(qt_key_t     addr,
                                   qthread_f    f,
                                   void        *arg,
@@ -336,18 +330,28 @@ static void report_locked_threads(void)
     qthread_feb_callback(chapel_display_thread, NULL);
     qthread_syncvar_callback(chapel_display_thread, NULL);
 }
+#endif  // SUPPORT_BLOCKREPORT
 
 static void SIGINT_handler(int sig)
 {
     signal(sig, SIG_IGN);
 
     if (blockreport) {
+#ifdef SUPPORT_BLOCKREPORT
         report_locked_threads();
+#else
+        fprintf(stderr,
+                "Blockreport is currently unsupported by the qthreads "
+                "tasking layer.\n");
+#endif
     }
 
     if (taskreport) {
+#ifdef SUPPORT_TASKREPORT
+        report_all_tasks();
+#else
         fprintf(stderr, "Taskreport is currently unsupported by the qthreads tasking layer.\n");
-        // report_all_tasks();
+#endif
     }
 
     chpl_exit_any(1);
@@ -355,24 +359,53 @@ static void SIGINT_handler(int sig)
 
 // Tasks
 
-#ifndef QTHREAD_MULTINODE
-static syncvar_t canexit            = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-static volatile int done_finalizing = 0;
-
 static void *initializer(void *junk)
 {
     qthread_initialize();
-    MACHINE_FENCE;
+    (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
     chpl_qthread_done_initializing = 1;
+    (void) pthread_mutex_unlock(&done_init_final_mux);
 
     qthread_syncvar_readFF(NULL, &canexit);
 
     qthread_finalize();
-    MACHINE_FENCE;
+    (void) pthread_mutex_lock(&done_init_final_mux);  // implicit memory fence
     done_finalizing = 1;
+    (void) pthread_mutex_unlock(&done_init_final_mux);
+
     return NULL;
 }
-#endif /* ! QTHREAD_MULTINODE */
+
+//
+// Qthreads environment helper functions.
+//
+
+static char* chpl_qt_getenv_str(const char* var) {
+    char name[100];
+    char* ev;
+
+    snprintf(name, sizeof(name), "QT_%s", var);
+    if ((ev = getenv(name)) == NULL) {
+        snprintf(name, sizeof(name), "QTHREAD_%s", var);
+        ev = getenv(name);
+    }
+
+    return ev;
+}
+
+static unsigned long int chpl_qt_getenv_num(const char* var,
+                                            unsigned long int default_val) {
+    char* ev;
+    unsigned long int ret_val = default_val;
+
+    if ((ev = chpl_qt_getenv_str(var)) != NULL) {
+        unsigned long int val;
+        if (sscanf(ev, "%lu", &val) == 1)
+            ret_val = val;
+    }
+
+    return ret_val;
+}
 
 // Helper function to set a qthreads env var. This is meant to mirror setenv
 // functionality, but qthreads has two environment variables for every setting:
@@ -380,7 +413,8 @@ static void *initializer(void *junk)
 // wraps the overriding logic. In verbose mode it prints out if we overrode
 // values, or if we were prevented from setting values because they existed
 // (and override was 0.)
-static void chpl_qt_setenv(char* var, char* val, int32_t override) {
+static void chpl_qt_setenv(const char* var, const char* val,
+                           int32_t override) {
     char      qt_env[QT_ENV_S]  = { 0 };
     char      qthread_env[QT_ENV_S] = { 0 };
     char      *qt_val;
@@ -419,6 +453,16 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
     }
 }
 
+static void chpl_qt_unsetenv(const char* var) {
+  char name[100];
+
+  snprintf(name, sizeof(name), "QT_%s", var);
+  (void) unsetenv(name);
+
+  snprintf(name, sizeof(name), "QTHREAD_%s", var);
+  (void) unsetenv(name);
+}
+
 // Determine the number of workers based on environment settings. If a user set
 // HWPAR, they are saying they want to use HWPAR many workers, but let the
 // runtime figure out the details. If they explicitly set NUM_SHEPHERDS and/or
@@ -428,14 +472,14 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
 // set since we can't figure out before Qthreads init what this will actually
 // turn into without duplicating Qthreads logic (-1 is a sentinel for don't
 // adjust the values, and give them as is to Qthreads.)
-static int32_t chpl_qt_getenv_num_workers() {
+static int32_t chpl_qt_getenv_num_workers(void) {
     int32_t  hwpar;
     int32_t  num_wps;
     int32_t  num_sheps;
 
-    hwpar = qt_internal_get_env_num("HWPAR", 0, 0);
-    num_wps = qt_internal_get_env_num("NUM_WORKERS_PER_SHEPHERD", 0, 0);
-    num_sheps = qt_internal_get_env_num("NUM_SHEPHERDS", 0, 0);
+    hwpar = (int32_t) chpl_qt_getenv_num("HWPAR", 0);
+    num_wps = (int32_t) chpl_qt_getenv_num("NUM_WORKERS_PER_SHEPHERD", 0);
+    num_sheps = (int32_t) chpl_qt_getenv_num("NUM_SHEPHERDS", 0);
 
     if (hwpar) {
         return hwpar;
@@ -511,12 +555,12 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
         }
 
         // Unset relevant Qthreads environment variables.
-        qt_internal_unset_envstr("HWPAR");
-        qt_internal_unset_envstr("NUM_SHEPHERDS");
-        qt_internal_unset_envstr("NUM_WORKERS_PER_SHEPHERD");
+        chpl_qt_unsetenv("HWPAR");
+        chpl_qt_unsetenv("NUM_SHEPHERDS");
+        chpl_qt_unsetenv("NUM_WORKERS_PER_SHEPHERD");
 
         snprintf(newenv_workers, sizeof(newenv_workers), "%i", (int)hwpar);
-        if (THREADQUEUE_POLICY_TRUE == qt_threadqueue_policy(SINGLE_WORKER)) {
+        if (CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD) {
             chpl_qt_setenv("NUM_SHEPHERDS", newenv_workers, 1);
             chpl_qt_setenv("NUM_WORKERS_PER_SHEPHERD", "1", 1);
         } else {
@@ -551,7 +595,7 @@ static void setupCallStacks(int32_t hwpar) {
     // 2) QTHREAD_STACK_SIZE
     // 3) Chapel default
     if ((callStackSize = chpl_task_getEnvCallStackSize()) > 0 ||
-        (qt_internal_get_env_num("STACK_SIZE", 0, 0) == 0 &&
+        (chpl_qt_getenv_num("STACK_SIZE", 0) == 0 &&
          (callStackSize = chpl_task_getDefaultCallStackSize()) > 0)) {
         char newenv_stack[QT_ENV_S];
         snprintf(newenv_stack, sizeof(newenv_stack), "%zu", callStackSize);
@@ -606,7 +650,8 @@ void chpl_task_init(void)
 
     // Initialize qthreads
     pthread_create(&initer, NULL, initializer, NULL);
-    while (chpl_qthread_done_initializing == 0) SPINLOCK_BODY();
+    while (chpl_qthread_done_initializing == 0)
+        sched_yield();
 
     // Now that Qthreads is up and running, do a sanity check and make sure
     // that the number of workers is less than any comm layer limit. This is
@@ -628,19 +673,17 @@ void chpl_task_exit(void)
     profile_print();
 #endif /* CHAPEL_PROFILE */
 
-#ifdef QTHREAD_MULTINODE
-#else
     if (qthread_shep() == NO_SHEPHERD) {
         /* sometimes, tasking is told to shutdown even though it hasn't been
          * told to start yet */
         if (chpl_qthread_done_initializing == 1) {
             qthread_syncvar_fill(&canexit);
-            while (done_finalizing == 0) SPINLOCK_BODY();
+            while (done_finalizing == 0)
+                sched_yield();
         }
     } else {
         qthread_syncvar_fill(&exit_ret);
     }
-#endif /* QTHREAD_MULTINODE */
 }
 
 static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
@@ -707,21 +750,10 @@ void chpl_task_callMain(void (*chpl_main)(void))
                            chpl_qthread_process_tls.chpl_data.id, false,
                            c_sublocid_any_val, false) };
 
-    qthread_debug(CHAPEL_CALLS, "[%d] begin chpl_task_callMain()\n", chpl_nodeID);
-
-#ifdef QTHREAD_MULTINODE
-    qthread_debug(CHAPEL_BEHAVIOR, "[%d] calling spr_unify\n", chpl_nodeID);
-    int const rc = spr_unify();
-    assert(SPR_OK == rc);
-#endif /* QTHREAD_MULTINODE */
-
     wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
 
     qthread_fork_syncvar(chapel_wrapper, &wrapper_args, &exit_ret);
     qthread_syncvar_readFF(NULL, &exit_ret);
-
-    qthread_debug(CHAPEL_BEHAVIOR, "[%d] main task finished\n", chpl_nodeID);
-    qthread_debug(CHAPEL_CALLS, "[%d] end chpl_task_callMain()\n", chpl_nodeID);
 }
 
 void chpl_task_stdModulesInitialized(void)
@@ -738,7 +770,6 @@ void chpl_task_stdModulesInitialized(void)
 int chpl_task_createCommTask(chpl_fn_p fn,
                              void     *arg)
 {
-#ifndef QTHREAD_MULTINODE
     //
     // The wrapper info must be static because it won't be referred to
     // until the new pthread calls comm_task_wrapper().  And, it is
@@ -751,9 +782,6 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     wrapper_info.arg = arg;
     return pthread_create(&chpl_qthread_comm_pthread,
                           NULL, comm_task_wrapper, &wrapper_info);
-#else
-    return 0;
-#endif
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
@@ -815,13 +843,13 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
                               chpl_taskID_t  id,
                               chpl_bool      serial_state)
 {
-    assert(subloc != c_sublocid_none);
-    assert(id == chpl_nullTaskID);
-
     chpl_qthread_wrapper_args_t wrapper_args =
         {fp, arg, canCountRunningTasks,
          PRV_DATA_IMPL_VAL("<unknown>", 0, chpl_nullTaskID, true,
                            subloc, serial_state) };
+
+    assert(subloc != c_sublocid_none);
+    assert(id == chpl_nullTaskID);
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 

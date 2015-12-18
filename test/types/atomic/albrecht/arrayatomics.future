@@ -1,6 +1,4 @@
-bug: compiler unable to compile atomic operations on arrays that should behave
-as the short hand notation of  looping through the array and performing an
-atomic operation one by one.
+bug: compiler unable to compile promoted atomic operation, fetchAdd()
 
 The example used in this test is fetchAdd(). The desired behavior is
 demonstrated as the first part of the test. Consequently the .good output
