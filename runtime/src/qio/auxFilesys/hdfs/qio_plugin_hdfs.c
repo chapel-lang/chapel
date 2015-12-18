@@ -149,8 +149,6 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
 
 #ifdef HDFS3
 
-  DO_RETAIN(((hdfs_fs*)fs));
-  
   const hdfs_file orig_hfl = *to_hdfs_file(file);
   const hdfs_fs orig_hfs = *to_hdfs_fs(fs);
 
@@ -172,8 +170,8 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
   for(i = 0; i < count; i++) {
 
 #ifdef HDFS3
-  hdfsSeek(hfs, hfl, offset+got_total);
-  got = hdfsRead(hfs, hfl, (void*)vector[i].iov_base, vector[i].iov_len);
+    hdfsSeek(hfs, hfl, offset+got_total);
+    got = hdfsRead(hfs, hfl, (void*)vector[i].iov_base, vector[i].iov_len);
 #else
     got = hdfsPread(to_hdfs_fs(fs)->hfs, to_hdfs_file(file)->file, offset + got_total, (void*)vector[i].iov_base, vector[i].iov_len);
 #endif
