@@ -67,6 +67,18 @@ hwloc/
   See also: hwloc/README and hwloc/hwloc-<version>/README
 
 
+jemalloc/
+  Summary: Jason Evan's memory allocator (jemalloc) which "emphasizes
+           fragmentation avoidance and scalable concurrency support."
+
+  License: jemalloc is released under a BSD-derived License (see
+           jemalloc/jemalloc-*/COPYING)
+
+  Website: http://www.canonware.com/jemalloc/
+
+  See also: jemalloc/README
+
+
 llvm/
   Summary: This directory holds LLVM and Clang.  LLVM is provided as
            an optional back-end target in place of C (see
