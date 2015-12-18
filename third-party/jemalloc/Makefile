@@ -51,7 +51,7 @@ configure-jemalloc: FORCE
 	cd $(JEMALLOC_BUILD_DIR) && $(JEMALLOC_SUBDIR)/configure CC='$(CC)' EXTRA_CFLAGS='$(CHPL_JEMALLOC_EXTRA_CFLAGS)' $(CHPL_JEMALLOC_CFG_OPTIONS)
 
 build-jemalloc: FORCE
-	cd $(JEMALLOC_BUILD_DIR) && CRAYPE_LINK_TYPE=dynamic $(MAKE) build_lib_static
+	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) build_lib_static
 
 install-jemalloc: FORCE
 	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) install_lib_static install_bin install_include
