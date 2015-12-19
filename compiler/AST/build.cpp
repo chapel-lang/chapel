@@ -413,22 +413,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   //
   for_actuals(expr, args) {
     Expr* useArg = expr->remove();
-    //
-    // 'use' statements no longer accept string literals, but let's
-    // let it slide for one release to ease transition to the
-    // 'require' statement.  Generate a warning and process it as
-    // though the user had typed 'require'.  This check can be removed
-    // after the 1.12 release.
-    //
-    if (const char* str = toImmediateString(useArg)) {
-      USR_WARN(useArg, "'use' no longer accepts string literals == use 'require' instead");
-      processStringInRequireStmt(str);
-    } else {
-      //
-      // Otherwise, handle it in the traditional way
-      //
-      list = buildUseList(useArg, list);
-    }
+    list = buildUseList(useArg, list);
   }
 
   //
