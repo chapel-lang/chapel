@@ -63,7 +63,7 @@ Chapel's locality-oriented features describe how data and tasks should
 be mapped to the target architecture for the purposes of performance
 and scalability.
 
-  .. toctree::
+.. toctree::
    :maxdepth: 1
    :glob:
 
