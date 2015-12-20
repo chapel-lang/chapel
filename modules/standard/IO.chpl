@@ -2272,7 +2272,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     if port_start > 0 then port = path[port_start..port_end];
     var file_path = "";
     if path_start > 0 then file_path = path[path_start..];
-    return file_path;
+    return (host, port:int, file_path);
   }
 
   var local_style = style;
