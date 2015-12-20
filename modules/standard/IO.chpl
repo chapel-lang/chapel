@@ -2242,7 +2242,7 @@ to create a channel to actually perform I/O operations
 proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
     style:iostyle = defaultIOStyle(), url:string=""):file {
 
-  proc parse_hdfs_path() {
+  proc parse_hdfs_path(path:string) {
     // hdfs://<host>:<port>/<path>
     var host_start = path.find("//") + 2;
     var colon = path.find(":", host_start..);
