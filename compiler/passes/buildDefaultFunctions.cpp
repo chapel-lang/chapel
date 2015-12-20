@@ -272,6 +272,7 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
   } else {
+    // TODO -- handle const ref
     fn->retTag = RET_REF;
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }

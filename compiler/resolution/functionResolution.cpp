@@ -766,7 +766,7 @@ protoIteratorClass(FnSymbol* fn) {
   // TODO -- do a better job of deciding if an iterator record is
   // POD or not POD.
   rts->addFlag(FLAG_NOT_POD);
-  if (fn->retTag == RET_REF)
+  if (fn->retTag == RET_REF) // TODO -- handle RET_CONST_REF
     rts->addFlag(FLAG_REF_ITERATOR_CLASS);
   fn->defPoint->insertBefore(new DefExpr(rts));
 
@@ -901,7 +901,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = retType;
 
   if (retType != dtUnknown) {
-    if (fn->retTag == RET_REF) {
+    if (fn->returnsRefOrConstRef()) {
       makeRefType(retType);
       retType = fn->retType->refType;
       fn->retType = retType;
@@ -5368,8 +5368,9 @@ preFold(Expr* expr) {
                     !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   // Should this conditional include domains, distributions, sync and/or single?
                   USR_FATAL(ret, "illegal expression to return by ref");
-                if (ret->var->isConstant() || ret->var->isParameter())
-                  USR_FATAL(ret, "function cannot return constant by ref");
+                if (fn->retTag == RET_REF)
+                  if (ret->var->isConstant() || ret->var->isParameter())
+                    USR_FATAL(ret, "function cannot return constant by ref");
               }
             }
           }
@@ -5386,12 +5387,20 @@ preFold(Expr* expr) {
                     INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
                   }
                 } else {
-                  // This probably indicates that an invalid 'addr of' primitive
-                  // was inserted, which would be the compiler's fault, not the
-                  // user's.
-                  // At least, we might perform the check at or before the 'addr
-                  // of' primitive is inserted.
-                  INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
+                  // It is not a problem to return a const value
+                  if (fn->retTag == RET_CONST_REF &&
+                      lhs && lhs->var == fn->getReturnSymbol() ) {
+                    // It's OK
+                    // TODO -- this should be handled differently
+                    // by including the idea of 'const ref' types
+                    // throughout resolution
+                  } else {
+                    // This probably indicates that an invalid 'addr of'
+                    // primitive was inserted, which would be the compiler's
+                    // fault, not the user's.  At least, we might perform the
+                    // check at or before the 'addr of' primitive is inserted.
+                    INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
+                  }
                 }
               }
             }
@@ -6455,13 +6464,6 @@ replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret) {
   if (SymExpr* se = toSymExpr(ast)) {
     if (se->var == fn->setter->sym)
       se->var = gFalse;
-    else if (se->var == ret) {
-      if (CallExpr* move = toCallExpr(se->parentExpr))
-        if (move->isPrimitive(PRIM_MOVE))
-          if (CallExpr* call = toCallExpr(move->get(2)))
-            if (call->isPrimitive(PRIM_ADDR_OF))
-              call->primitive = primitives[PRIM_DEREF];
-    }
   }
   AST_CHILDREN_CALL(ast, replaceSetterArgWithFalse, fn, ret);
 }
@@ -6620,11 +6622,11 @@ static void buildValueFunction(FnSymbol* fn) {
       copy->addFlag(FLAG_INVISIBLE_FN);
       if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
         copy->addFlag(FLAG_NO_IMPLICIT_COPY);
-      copy->retTag = RET_VALUE;   // Change ret flag to value (not ref).
+      copy->retTag = RET_CONST_REF;   // Change ret flag to const ref
       fn->defPoint->insertBefore(new DefExpr(copy));
       fn->valueFunction = copy;
       Symbol* ret = copy->getReturnSymbol();
-      // Reset the type sof the return symbol and any declared return type.
+      // Reset the types of the return symbol and any declared return type.
       ret->type = dtUnknown;
       copy->retType = dtUnknown;
       replaceSetterArgWithFalse(copy, copy, ret);
@@ -6771,6 +6773,8 @@ resolveFns(FnSymbol* fn) {
   }
 
   if (fn->retTag == RET_REF) {
+    // Value function returns const ref (RET_CONST_REF);
+    // if it returned RET_REF, we would loop here
     buildValueFunction(fn);
   }
 

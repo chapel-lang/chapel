@@ -47,6 +47,7 @@ class SymExpr;
 enum RetTag {
   RET_VALUE,
   RET_REF,
+  RET_CONST_REF,
   RET_PARAM,
   RET_TYPE
 };
@@ -409,6 +410,7 @@ class FnSymbol : public Symbol {
   bool            isPrimaryMethod()                            const;
   bool            isSecondaryMethod()                          const;
   bool            isIterator()                                 const;
+  bool            returnsRefOrConstRef()                       const;
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
