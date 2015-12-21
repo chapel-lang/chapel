@@ -1,5 +1,5 @@
-Module: basic.doc
-   Module: basic.doc.Other
+basic.doc
+   basic.doc.Other
       proc inside(): int
          Comment for method inside module 
 

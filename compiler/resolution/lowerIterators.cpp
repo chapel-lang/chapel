@@ -542,7 +542,7 @@ createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   if (addedRecursiveCall) {
     Symbol* cond = newTemp("cond", dtBool);
     argBundleFreeFn->insertAtHead(new CondStmt(new SymExpr(cond), block));
-    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap[loopBodyFnWrapper]))));
     argBundleFreeFn->insertAtHead(new DefExpr(cond));
   }
 }
@@ -642,7 +642,7 @@ createArgBundleCopyFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   //  { <body_as_defined_above> }
   Symbol* cond = newTemp(dtBool);
   argBundleCopyFn->insertBeforeReturn(new DefExpr(cond));
-  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap[loopBodyFnWrapper]))));
   argBundleCopyFn->insertBeforeReturn(new CondStmt(new SymExpr(cond), block));
 }
 
@@ -843,61 +843,9 @@ static void localizeIteratorReturnSymbols() {
   }
 }
 
-
-//
-// Convert:
-// (248842 CallExpr move
-//   (248843 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//   (248839 CallExpr
-//     (838015 SymExpr 'fn =[835984]:[domain(...)] int(64)[803094]')
-//     (248841 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//     (193499 SymExpr 'p[113796]:[domain(...)] int(64)[803094]'))
-// to:
-// (248842 CallExpr move
-//   (248843 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//   (193499 SymExpr 'p[113796]:[domain(...)] int(64)[803094]'))
-//
-static void
-yieldArraysByRef() {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    // The ifs are ordered with simpler checks first.
-    // Watch out for *initializations* of 'ret' - they look similar.
-    if (call->isPrimitive(PRIM_MOVE)) {
-      if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
-        if (fn->isIterator() &&
-            fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
-        {
-          Symbol* ret = fn->getReturnSymbol();
-          INT_ASSERT(ret);
-          if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-            if (SymExpr* dest = toSymExpr(call->get(1))) {
-              if (dest->var == ret) {
-                CallExpr* source = toCallExpr(call->get(2));
-                INT_ASSERT(source);
-                FnSymbol* sourceFun = source->isResolved();
-                INT_ASSERT(sourceFun);
-                INT_ASSERT(!strcmp(sourceFun->name, "="));
-                SymExpr* sourceArg1 = toSymExpr(source->get(1));
-                INT_ASSERT(sourceArg1);
-                INT_ASSERT(sourceArg1->var == ret);
-                Expr* sourceArg2 = source->get(2);
-                INT_ASSERT(sourceArg2);
-                // OK, got it. Do the replacement.
-                source->replace(sourceArg2->remove());
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
 // processIteratorYields is a separate pass, called before flattenFunctions.
 // TODO: Move this and supporting functions into their own source file.
 void processIteratorYields() {
-  yieldArraysByRef();
   localizeIteratorReturnSymbols();
 }
 
@@ -1102,7 +1050,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   parent->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
 
   ftableVec.add(loopBodyFnWrapper);
-  ftableMap.put(loopBodyFnWrapper, ftableVec.n-1);
+  ftableMap[loopBodyFnWrapper] = ftableVec.n-1;
 
   //
   // insert a call to the iterator function (using iterator as a
@@ -1113,7 +1061,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   //
   Symbol*    ic             = forLoop->iteratorGet()->var;
   FnSymbol*  iterator       = getTheIteratorFn(ic);
-  CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
+  CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap[loopBodyFnWrapper]));
 
   // replace function in iteratorFnCall with iterator function once that is created
   CallExpr*  loopBodyFnCall = new CallExpr(loopBodyFn, gVoid);
@@ -1844,7 +1792,7 @@ expandForLoop(ForLoop* forLoop) {
 
           forLoop->insertAtHead(new CondStmt(new SymExpr(isFinished),
                                              new CallExpr(PRIM_RT_ERROR,
-                                                          new_StringSymbol("zippered iterations have non-equal lengths"))));
+                                                          new_CStringSymbol("zippered iterations have non-equal lengths"))));
 
           forLoop->insertAtHead(new CallExpr(PRIM_MOVE, isFinished, new CallExpr(PRIM_UNARY_LNOT, hasMore)));
 
@@ -1852,7 +1800,7 @@ expandForLoop(ForLoop* forLoop) {
 
           forLoop->insertAfter(new CondStmt(new SymExpr(hasMore),
                                             new CallExpr(PRIM_RT_ERROR,
-                                                         new_StringSymbol("zippered iterations have non-equal lengths"))));
+                                                         new_CStringSymbol("zippered iterations have non-equal lengths"))));
 
           forLoop->insertAfter(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
         }

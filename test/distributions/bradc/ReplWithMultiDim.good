@@ -1,0 +1,1 @@
+ReplWithMultiDim.chpl:5: error: ReplicatedDist only accepts a 1D targetLocales array

@@ -17,15 +17,35 @@
  * limitations under the License.
  */
 
+// This comment is a lie for chpl-docs sake. It only applies to the
+// vectorizeOnly iterators found at the bottom of this file.
+/*
+  Data parallel constructs (such as ``forall`` loops) are implicitly
+  vectorizable. If the ``--vectorize`` compiler flag is thrown (implied by
+  ``--fast``), the Chapel compiler will emit vectorization hints to the backend
+  compiler, though the effects will vary based on the target compiler.
+
+  In order to allow users to explicitly request vectorization, this prototype
+  vectorizing iterator is being provided. Loops that invoke this iterator will
+  be marked with vectorization hints, provided the ``--vectorize`` flag is
+  thrown.
+
+  This iterator is currently available for all Chapel programs and does not
+  require a ``use`` statement to make it available. In future releases it will
+  be moved to a standard module and will likely require a ``use`` statement to
+  make it available.
+ */
 module ChapelIteratorSupport {
   //
   // module support for iterators
   //
+  pragma "no doc"
   proc iteratorIndex(ic: _iteratorClass) {
     ic.advance();
     return ic.getValue();
   }
 
+  pragma "no doc"
   pragma "expand tuples with values"
   proc iteratorIndex(t: _tuple) {
     pragma "expand tuples with values"
@@ -40,6 +60,7 @@ module ChapelIteratorSupport {
     return iteratorIndexHelp(t, 1);
   }
 
+  pragma "no doc"
   proc iteratorIndexType(x) type {
     pragma "no copy" var ic = _getIterator(x);
     pragma "no copy" var i = iteratorIndex(ic);
@@ -353,10 +374,12 @@ module ChapelIteratorSupport {
 
   // helper functions used by the below iterators to check if the argument is a
   // value or reference iterator.
+  pragma "no doc"
   proc singleValIter(iterables: _tuple) param {
     return iterables.size == 1 && !isRefIter(_getIterator(iterables(1)));
   }
 
+  pragma "no doc"
   proc singleRefIter(iterables: _tuple) param  {
     return iterables.size == 1 && isRefIter(_getIterator(iterables(1)));
   }
@@ -373,36 +396,48 @@ module ChapelIteratorSupport {
      creation for loops with small trip counts or where task creation isn't
      desirable.
 
-     Data parallel operations in Chapel such as forall loops are order
-     independent. However, a forall is implemented in terms of either
+     Data parallel operations in Chapel such as forall loops are
+     order-independent. However, a forall is implemented in terms of either
      leader/follower or standalone iterators which typically create tasks.
-     This iterator exists to allow vectorization of order independent loops
+     This iterator exists to allow vectorization of order-independent loops
      without requiring task creation. By using this wrapper iterator you are
-     asserting that the loop is order independent (and thus a candidate for
+     asserting that the loop is order-independent (and thus a candidate for
      vectorization) just as you are when using a forall loop.
 
      When invoked from a serial for loop, this iterator will simply mark your
-     iterator(s) as order independent. When invoked from a parallel forall loop
-     this iterator will implicitly be order independent because of the
+     iterator(s) as order-independent. When invoked from a parallel forall loop
+     this iterator will implicitly be order-independent because of the
      semantics of a forall, and additionally it will invoke the serial
      iterator instead of the parallel iterators. For instance:
 
-       `forall i in vectorizeOnly(1..10) do;`
-       `for    i in vectorizeOnly(1..10) do;`
+     .. code-block:: chapel
+
+         forall i in vectorizeOnly(1..10) do;
+         for    i in vectorizeOnly(1..10) do;
 
      will both effectively generate:
 
-       `CHPL_PRAGMA_IVDEP`
-       `for (i=0; i<=10; i+=1) {}`
+     .. code-block:: c
 
-     The vectorizeOnly automatically handles zippering, so the "zip" keyword is
-     not needed. For instance, to vectorize:
+         CHPL_PRAGMA_IVDEP
+         for (i=0; i<=10; i+=1) {}
 
-       `for (i, j) in zip(1..10, 1..10) do;`
+     The ``vectorizeOnly`` iterator  automatically handles zippering, so the
+     ``zip`` keyword is not needed. For instance, to vectorize:
+
+     .. code-block:: chapel
+
+         for (i, j) in zip(1..10, 1..10) do;
 
      simply write:
 
-       `for (i, j) in vectorizeOnly(1..10, 1..10) do;`
+     .. code-block:: chapel
+
+         for (i, j) in vectorizeOnly(1..10, 1..10) do;
+
+     Note that the use of ``zip`` is not explicitly prevented, but all
+     iterators being zipped must be wrapped by a ``vectorizeOnly`` iterator.
+     Future releases may explicitly prevent the use ``zip`` with this iterator.
   */
 
   // DEV NOTES:
@@ -435,11 +470,13 @@ module ChapelIteratorSupport {
     for i in iterables(1) do yield i;
   }
 
+  pragma "no doc"
   pragma "vectorize yielding loops"
   iter vectorizeOnly(iterables...) ref where singleRefIter(iterables) {
     for i in iterables(1) do yield i;
   }
 
+  pragma "no doc"
   pragma "vectorize yielding loops"
   iter vectorizeOnly(iterables...?numiterables) where numiterables > 1 {
     for i in zip((...iterables)) do yield i;
@@ -449,16 +486,19 @@ module ChapelIteratorSupport {
   //
   // standalone versions
   //
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, iterables...)
     where tag == iterKind.standalone && singleValIter(iterables) {
     for i in iterables(1) do yield i;
   }
 
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, iterables...) ref
     where tag == iterKind.standalone && singleRefIter(iterables) {
     for i in iterables(1) do yield i;
   }
 
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, iterables...?numiterables)
     where tag == iterKind.standalone && numiterables > 1  {
     for i in zip((...iterables)) do yield i;
@@ -468,16 +508,19 @@ module ChapelIteratorSupport {
   //
   // leader versions
   //
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, iterables...)
     where tag == iterKind.leader && singleValIter(iterables) {
       yield iterables(1);
   }
 
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, iterables...) ref
     where tag == iterKind.leader && singleRefIter(iterables) {
       yield iterables(1);
   }
 
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, iterables...?numiterables)
     where tag == iterKind.leader && numiterables > 1  {
       yield iterables;
@@ -487,16 +530,19 @@ module ChapelIteratorSupport {
   //
   // follower versions
   //
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...)
     where tag == iterKind.follower && singleValIter(iterables) {
       for i in iterables(1) do yield i;
   }
 
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...) ref
     where tag == iterKind.follower && singleRefIter(iterables) {
       for i in iterables(1) do yield i;
   }
 
+  pragma "no doc"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...?numiterables)
     where tag == iterKind.follower && numiterables > 1 {
     for i in zip((...iterables)) do yield i;

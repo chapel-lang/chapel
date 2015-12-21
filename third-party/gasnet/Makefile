@@ -14,7 +14,14 @@ CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-a
 # disable it in all others.
 SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
 ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large))
+
+# Enable pshm but not on Mac OS X because it doesn't build there
+ifeq ($(CHPL_MAKE_PLATFORM), darwin)
+CHPL_GASNET_CFG_OPTIONS += --disable-pshm
+else
 CHPL_GASNET_CFG_OPTIONS += --enable-pshm
+endif
+
 else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
 endif
@@ -63,12 +70,6 @@ endif
 else
 CHPL_GASNET_CFG_SCRIPT=configure
 endif
-endif
-
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),tile-cc)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-tilera
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 endif
 
 CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)'

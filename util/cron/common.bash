@@ -83,9 +83,12 @@ export CHPL_TARGET_ARCH=none
 #       working tree (under $CHPL_HOME), and b) less specific to our file
 #       system hierarchy. (thomasvandoren, 2014-01-24)
 
+explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
 cascade_prefix=/data/sea/chapel
-if [ -d $cascade_prefix ] ; then
+if [ -n "$explicit_prefix" ]; then
+    logdir_prefix=$explicit_prefix
+elif [ -d $cascade_prefix ] ; then
     logdir_prefix=$cascade_prefix
 else
     logdir_prefix=$default_prefix

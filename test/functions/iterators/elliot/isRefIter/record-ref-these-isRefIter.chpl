@@ -30,7 +30,7 @@ writeln(isRefIter(r.these(tag=iterKind.standalone)));
 
 writeln(isRefIter(r.these(tag=iterKind.leader)));
 
-writeln(isRefIter(r.these(tag=iterKind.follower, nil)));
+writeln(isRefIter(r.these(tag=iterKind.follower, 0)));
 
 
 //
@@ -46,7 +46,7 @@ printIterRefness(r.these(tag=iterKind.standalone));
 
 printIterRefness(r.these(tag=iterKind.leader));
 
-printIterRefness(r.these(tag=iterKind.follower, nil));
+printIterRefness(r.these(tag=iterKind.follower, 0));
 
 
 //
@@ -68,7 +68,7 @@ for i in printIterRefnessWrapper(r.these(tag=iterKind.standalone)) do;
 
 for i in printIterRefnessWrapper(r.these(tag=iterKind.leader)) do;
 
-for i in printIterRefnessWrapper(r.these(tag=iterKind.follower, nil)) do;
+for i in printIterRefnessWrapper(r.these(tag=iterKind.follower, 0)) do;
 
 
 //

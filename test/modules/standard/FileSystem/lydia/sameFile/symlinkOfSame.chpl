@@ -13,3 +13,11 @@ writeln(sameFile(f1, f2));
 f1.close();
 f2.close();
 remove(symlinkName);
+
+// This section tests sameFile over directories where one is a symlink of the
+// other.
+var origDir = "../";
+var sym2 = "foo3";
+symlink(origDir, sym2); // Creates foo3 as a symlink of ../
+writeln(sameFile(origDir, sym2));
+remove(sym2);

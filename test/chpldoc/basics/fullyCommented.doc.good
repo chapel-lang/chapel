@@ -1,5 +1,5 @@
-Module: fullyCommented.doc
-   Module: fullyCommented.doc.Other
+fullyCommented.doc
+   fullyCommented.doc.Other
       proc inside
          Comment for method inside module 
 

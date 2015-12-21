@@ -1,0 +1,2 @@
+intents.chpl:41: error: unresolved call 'fio(c_string)'
+intents.chpl:8: note: candidates are: fio(inout s: string)

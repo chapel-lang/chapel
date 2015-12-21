@@ -50,6 +50,7 @@ var a: [Bspace] int;
 var b: [Bspace] int;
 var c: [Bspace] int;
 var d: [Bspace] int;
+var e: [Bspace] int;
 
 tagVdebug ("simple forall");
 
@@ -210,8 +211,6 @@ pauseVdebug();
 // writeln ("id2com tests: ");
 // for a in id2com(0,8) do write (a, " ");
 // writeln ();
-
-var e: [Bspace] int;
 
 resumeVdebug("cubeiter2");
 

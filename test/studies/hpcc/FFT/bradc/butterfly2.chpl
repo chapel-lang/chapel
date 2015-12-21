@@ -1,19 +1,23 @@
 proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
-              abcd: [1..4] complex) {
-  var x0 = abcd(1) + abcd(2);
-  var x1 = abcd(1) - abcd(2);
-  var x2 = abcd(3) + abcd(4);
-  var x3 = abcd(3) - abcd(4);
+              abcd: [?D] complex) {
+  const a = D.low,
+        b = a + D.stride,
+        c = b + D.stride,
+        d = c + D.stride;
+  var x0 = abcd(a) + abcd(b);
+  var x1 = abcd(a) - abcd(b);
+  var x2 = abcd(c) + abcd(d);
+  var x3 = abcd(c) - abcd(d);
 
 //  writeln("abcd is: ", abcd);
 
-  abcd(1) = x0 + x2;
+  abcd(a) = x0 + x2;
   x0 -= x2;
-  abcd(3) = wk2 * x0;
+  abcd(c) = wk2 * x0;
   x0 = (x1.re - x3.im, x1.im + x3.re):complex;
-  abcd(2) = wk1 * x0;
+  abcd(b) = wk1 * x0;
   x0 = (x1.re + x3.im, x1.im - x3.re):complex;
-  abcd(4) = wk3 * x0;
+  abcd(d) = wk3 * x0;
 
 //  writeln("abcd is: ", abcd);
 }

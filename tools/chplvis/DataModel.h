@@ -24,6 +24,7 @@
 #include <list>
 #include <vector>
 #include <map>
+#include "StringCache.h"
 
 // This class builds a list of events 
 //   Start, Stop, Pause, and Tag events are grouped together 
@@ -37,29 +38,9 @@
 // both this class and runtime/src/chpl-visual-debug.c need to be modified to
 // write (chpl-visual-debug.c) and read (this class) in binary.
 
-struct taskData {
-  E_task *taskRec;
-  E_begin_task *beginRec;
-  E_end_task *endRec;
+// Support Structs used by DataModel
 
-  taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL) {};
-};
-
-struct localeData {
-  double userCpu;
-  double sysCpu;
-  double Cpu;
-  double refUserCpu;
-  double refSysCpu;
-  double clockTime;
-  double refTime;
-  long    numTasks;
-  std::map<long,taskData> tasks;
-
-  localeData() : userCpu(0), sysCpu(0), Cpu(0), refUserCpu(0), refSysCpu(0),
-                 clockTime(0), refTime(0), numTasks(0) {};
-};
-
+// Used to track communication,  each tag has a 2D array of commData, one for each direction
 struct commData {
   long numComms;
   long numGets;
@@ -70,82 +51,111 @@ struct commData {
   commData() :  numComms(0), numGets(0), numPuts(0), numForks(0), commSize(0) {};
 };
 
+// Used to track tasks,  each tag/locale has a map of taskData
+struct taskData {
+  E_task *taskRec;
+  E_begin_task *beginRec;
+  E_end_task *endRec;
+  int endTagNo;
+  double taskClock;
+  std::list<Event *>commList;
+  commData commSum;
+
+  taskData() : taskRec(NULL), beginRec(NULL), endRec(NULL), endTagNo(-2) {};
+};
+
+// Used to track a locale,  each tag has an array of locales
+struct localeData {
+  double userCpu;
+  double sysCpu;
+  double Cpu;
+  double refUserCpu;
+  double refSysCpu;
+  double clockTime;
+  double refTime;
+  double maxTaskClock;
+  long    numTasks;
+  long    runConc;
+  long    maxConc;
+
+  std::map<long,taskData> tasks;
+
+  localeData() : userCpu(0), sysCpu(0), Cpu(0), refUserCpu(0), refSysCpu(0),
+                 clockTime(0), refTime(0), maxTaskClock(0), // minTaskClock(1E10),
+                 numTasks(0), runConc(0), maxConc(0) {};
+};
+
+// Primary data structure built by reading the data files dumped by using VisualDebug.chpl
+
 class DataModel {
-
- private:
-
-   typedef std::list<Event*>::iterator evItr;
-
-   int LoadFile (const char *filename, int index, double seq);
-
-   void newList ();
 
  public:
 
-  static const int TagALL = -2, TagStart = -1;
+  // Forward declaration
+  struct tagData;
 
-  // Constructor
+  // Task Event (begin, end) timeline for task concurrency,
+  //     one linear structure per locale
+  //     long => task number or tag number
+  enum Tl_Kind { Tl_Tag, Tl_Begin, Tl_End };
+  typedef std::pair < Tl_Kind, long > timelineEntry;
+  std::list < timelineEntry > *taskTimeline;
 
-  DataModel() {
-     numLocales = -1;
-     numTags = 0;
-     tagList = NULL;
-     curEvent = theEvents.begin();
-  }
+ private:
 
-  // Destructor
-  ~DataModel() {
-    if (tagList != NULL)
-      delete [] tagList;
-  }
+  taskData mainTask;
 
-  //  LoadData loads data from a collection of files
-  //  filename of the form  basename-n, where n can
-  //  be a multi-digit number
-  //  Returns 1 if successful, 0 if not
+  StringCache strDB;
 
-  int LoadData (const char *filename);
+  typedef std::list<Event*>::iterator evItr;
 
-  //  Number of locales found in loading files
-
-  int NumLocales () { return numLocales; }
-
-  int NumEvents () { return theEvents.size(); }
-
-  Event * getFirstEvent()
-      {
-        curEvent = theEvents.begin();
-        if (curEvent == theEvents.end())
-          return NULL;
-        return *curEvent;
-      }
+  int numLocales;
+  int numTags;
   
-  Event * getNextEvent()
-      {
-        curEvent++; 
-        if (curEvent == theEvents.end())
-          return NULL;
-        return *curEvent;
-      }
+  // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
+  tagData **tagList;    // 1D array of pointers to tagData
 
+  // Unique named tags ... if names repeat
+  bool uniqueTags;
+  std::map<const char *, int> name2tag;
+  tagData **utagList;
+
+  std::list < Event* > theEvents;
+  std::list < Event* >::iterator curEvent;
+  
+  // Utility routines
+  
+  int LoadFile (const char *filename, int index, double seq);
+  
+  void newList ();
+  
+ public:
+  
+  // Tag array has two extra entries, one for "All" and
+  // one for Start (startVdebug() call) to the first tag.
+  // Tags are numbered 0 to numTags-1
+  
+  static const int TagALL = -2, TagStart = -1;
+  
   // Tags and manipulation of them
-
-  struct tagData {
+  
+  struct tagData { // a class with public elements the default
     friend class DataModel;
     const long numLocales;
-    std::string name;
+    const char *name;
     localeData *locales;
     commData **comms;
-
-    // Local Maxes
+    
+    // Local Maxes and Minimums
     double maxCpu;
     double maxClock;
     long   maxTasks;
+    long   maxConc;
     long   maxComms;
     long   maxSize;
     
-  tagData(long numLoc) : numLocales(numLoc), name(""),
-                         maxCpu(0), maxClock(0), maxTasks(0), maxComms(0), maxSize(0) {
+    tagData(long numLoc) : numLocales(numLoc), name(""),  maxCpu(0), maxClock(0),
+                           maxTasks(0),  maxConc(0), maxComms(0), maxSize(0) {
       locales = new localeData[numLocales];
       comms = new  commData * [numLocales];
       for (int i = 0; i < numLocales; i++ )
@@ -164,55 +174,79 @@ class DataModel {
     }
 
     private:
-    evItr firstTag;
-
+      evItr firstTag;
   };
+  // End of struct tagData
 
+  // DataModel methods
+
+  bool hasUniqueTags () { return uniqueTags; }
+  
   int NumTags () { return numTags; }
 
-  std::string getTagName (const int tagNo) 
-      {
-        if (tagNo < 0 || tagNo >= numLocales) 
-          return "";
-        else
-          return tagList[tagNo-TagALL]->name;
-      }
-
-  Event * getTagNo(int n)
-      {
-        printf ("getTagNo %d: ", n);
-
-        printf ("maxComms: %ld, maxSize %ld, maxTasks: %ld, maxClock %lf, maxCpu %lf\n",
-                tagList[n+2]->maxComms, tagList[n+2]->maxSize, tagList[n+2]->maxTasks,
-                tagList[n+2]->maxClock, tagList[n+2]->maxCpu);
-
-	if (n >= 0 && n < numTags) {
-	  curEvent = tagList[n+2]->firstTag;
-	} else {
-          curEvent = theEvents.begin();
-        }
-	//(*curEvent)->print();
-	return *curEvent;
-      }
-
-  tagData * getTagData(int tagno)
-      {
-        if (tagno < TagALL || tagno >= numLocales) 
-          return NULL;
-        return tagList[tagno-TagALL];
-      }
-
- private:
-
-  int numLocales;
-  int numTags;
+  int NumUTags () { return name2tag.size(); }
   
-  // Includes entries for -2 (TagAll), and -1 (TagStart->0),  size is numTags+2
-  tagData **tagList;  
+  tagData * getTagData(int tagno) {
+    if (tagno < TagALL || tagno >= numTags) 
+      return NULL;
+    return tagList[tagno-TagALL];
+  }
 
-  std::list<Event*> theEvents;
-  std::list<Event*>::iterator curEvent;
+  tagData * getUTagData(int tagno) {
+    if (tagno == TagALL)
+      return tagList[0];
+    if (tagno == TagStart)
+      return tagList[1];
+    if (uniqueTags || tagno >= (int)name2tag.size() || tagno < 0)
+      return NULL;
+    return utagList[tagno];
+  }
 
+  taskData * getTaskData (long locale, long taskId, long tagNo = TagALL);
+
+  double start_clock() {
+    return (*theEvents.begin())->clock_time();
+  }
+  
+  // Constructor for DataModel
+  
+  DataModel() {
+    numLocales = -1;
+    numTags = 0;
+    tagList = NULL;
+    taskTimeline = NULL;
+    curEvent = theEvents.begin();
+    uniqueTags = true;
+    utagList = NULL;
+  }
+  
+  // Destructor for DataModel
+  ~DataModel() {
+    if (tagList != NULL) {
+      for (int ix = 0; ix < numTags + 2; ix++)
+        delete tagList[ix];
+      delete [] tagList;
+    }
+    if (taskTimeline != NULL)
+      delete [] taskTimeline;
+    if (utagList != NULL) {
+      for (unsigned int ix = 0; ix < name2tag.size(); ix++)
+        delete utagList[ix];
+      delete [] utagList;
+    }
+  }
+  
+  //  LoadData loads data from a collection of files
+  //  filename of the form  basename-n, where n can
+  //  be a multi-digit number
+  //  Returns 1 if successful, 0 if not
+  
+  int LoadData (const char *filename);
+  
+  //  Number of locales found in loading files
+  
+  int NumLocales () { return numLocales; }
+  
 };
 
 #endif

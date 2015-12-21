@@ -40,8 +40,8 @@ writeln(isRefIter(c.myRefIter(tag=iterKind.standalone)));
 writeln(isRefIter(c.myValIter(tag=iterKind.leader)));
 writeln(isRefIter(c.myRefIter(tag=iterKind.leader)));
 
-writeln(isRefIter(c.myValIter(tag=iterKind.follower, nil)));
-writeln(isRefIter(c.myRefIter(tag=iterKind.follower, nil)));
+writeln(isRefIter(c.myValIter(tag=iterKind.follower, 0)));
+writeln(isRefIter(c.myRefIter(tag=iterKind.follower, 0)));
 
 
 //
@@ -59,8 +59,8 @@ printIterRefness(c.myRefIter(tag=iterKind.standalone));
 printIterRefness(c.myValIter(tag=iterKind.leader));
 printIterRefness(c.myRefIter(tag=iterKind.leader));
 
-printIterRefness(c.myValIter(tag=iterKind.follower, nil));
-printIterRefness(c.myRefIter(tag=iterKind.follower, nil));
+printIterRefness(c.myValIter(tag=iterKind.follower, 0));
+printIterRefness(c.myRefIter(tag=iterKind.follower, 0));
 
 
 //
@@ -84,5 +84,5 @@ for i in printIterRefnessWrapper(c.myRefIter(tag=iterKind.standalone)) do;
 for i in printIterRefnessWrapper(c.myValIter(tag=iterKind.leader)) do;
 for i in printIterRefnessWrapper(c.myRefIter(tag=iterKind.leader)) do
 
-for i in printIterRefnessWrapper(c.myValIter(tag=iterKind.follower, nil)) do;
-for i in printIterRefnessWrapper(c.myRefIter(tag=iterKind.follower, nil)) do;
+for i in printIterRefnessWrapper(c.myValIter(tag=iterKind.follower, 0)) do;
+for i in printIterRefnessWrapper(c.myRefIter(tag=iterKind.follower, 0)) do;

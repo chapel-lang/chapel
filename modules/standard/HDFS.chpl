@@ -35,7 +35,7 @@ environment variables must be set as described below in
 the flags are set. As well, the HDFS functionality is also dependent upon the
 ``CHPL_AUXIO_INCLUDE`` and ``CHPL_AUXIO_LIBS`` environment variables being set
 properly. For more information on how to set these properly, see 
-doc/technotes/README.auxIO in a Chapel release.
+doc/technotes/auxIO.rst in a Chapel release.
 
 
 Enabling HDFS Support
@@ -269,7 +269,7 @@ First reflect your directory structure and version numbers (etc) in the
 6. Set up Chapel to run in distributed mode:
 
    * You'll need to set up your Chapel environment to target multiple
-     locales in the standard way (see README.multilocale and the
+     locales in the standard way (see multilocale.rst and the
      "Settings to run Chapel on multiple nodes" section of the
      .bashrc below).
 
@@ -403,10 +403,7 @@ proc hdfsChapelConnect(path: string, port: int): hdfsChapelFileSystem {
   forall loc in Locales {
     on loc {
       var err: syserr;
-      // TODO XXX: HACK: this accessing of locale.id copies the string onto this locale...
-      // If you get rid of this IT WILL BREAK. (at least as strings currently stand)
-      var hack = path.locale.id;
-      const tmpstr = path;
+      const tmpstr = path.localize();
       rcLocal(ret._internal_file) = hdfsChapelConnect(err, tmpstr.c_str(), port);
       if err then ioerror(err, "Unable to connect to HDFS", tmpstr);
     }
@@ -527,7 +524,7 @@ pragma "no doc"
 proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFileSystem_local{
   var ret:hdfsChapelFileSystem_local;
   ret.home = here;
-  error = hdfs_connect(ret._internal_, path.c_str(), port);
+  error = hdfs_connect(ret._internal_, path.localize().c_str(), port);
   return ret;
 }
 
@@ -537,7 +534,7 @@ proc getHosts(f: file) {
   var ret_num: c_int;
   var arr: char_ptr_ptr = hdfs_alloc_array(numLocales);
   for loc in Locales {
-    hdfs_create_locale_mapping(arr, loc.id, loc.name.c_str());
+    hdfs_create_locale_mapping(arr, loc.id, loc.name.localize().c_str());
   }
   var err = hdfs_get_owners(f._file_internal, ret._internal_, ret_num, arr, numLocales);
   if err then ioerror(err, "Unable to get owners for HDFS file");

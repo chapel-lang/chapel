@@ -21,6 +21,11 @@ config const imgType = imageType.color;
 config const filename = "mandelbrot";
 
 //
+// Format for the output file
+//
+config var format = "bmp";
+
+//
 // Maximum color depth for image file
 //
 config const maxColor = 15;
@@ -36,25 +41,30 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   // types are fully-populated by default.
   //
   const extensionSpace: domain(imageType);
-  const extensions: [extensionSpace] string = (".pbm", ".pgm", ".ppm");
+  const extensions: [extensionSpace] string = ("pbm", "pgm", "ppm");
+
+  if format == "pbm" || format == "pgm" || format == "ppm" {
+    format = extensions(imgType);
+  }
 
   //
   // Compute the full output filename and open the file and a writer
   // to it.
   //
-  const outfilename = filename + extensions(imgType);
+  const outfilename = filename + "." + format;
   const outfile = open(outfilename, iomode.cw).writer();
 
   //
   // Plot the image to the file (could also pass stdout in as the file...)
   //
-  plotToFile(NumSteps, outfile);
+  if format == "bmp" then plotToFileBMP(NumSteps, outfile);
+  else plotToFilePPM(NumSteps, outfile);
 
   //
   // Close file and tell user what it was called
   //
   outfile.close();
-  writeln("Wrote output to ", outfilename);
+  writeln("Wrote ", imgType, " output to ", outfilename);
 }
 
 
@@ -63,7 +73,7 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
 // channel could simply be stdout or some other channel instead of an
 // actual file channel.
 //
-proc plotToFile(NumSteps: [?Dom], outfile) {
+proc plotToFilePPM(NumSteps: [?Dom], outfile) {
   //
   // Capture the number of rows and columns in the array to be plotted
   //
@@ -118,6 +128,117 @@ proc plotToFile(NumSteps: [?Dom], outfile) {
           outfile.write((maxColor*NumSteps[i,j])/maxSteps, " ", 0, " ", 0, " ");
         }
         outfile.writeln();
+      }
+    }
+  }
+}
+
+//
+// This is a helper routine that plots a BMP to an outfile 'channel'; this
+// channel could simply be stdout or some other channel instead of an
+// actual file channel.
+//
+proc plotToFileBMP(NumSteps: [?Dom], outfile) {
+  //
+  // Capture the number of rows and columns in the array to be plotted
+  //
+  const rows = Dom.dim(1).length,
+        cols = Dom.dim(2).length;
+
+  const header_size = 14;
+  const dib_header_size = 40;  // always use old BITMAPINFOHEADER
+  const   bits_per_pixel = 24;
+
+  // row size in bytes. Pad each row out to 4 bytes.
+  const row_quads = (bits_per_pixel * cols + 31) / 32;
+  const row_size = 4 * row_quads;
+  const row_size_bits = 8 * row_size;
+
+  const pixels_size = row_size * rows;
+  const size = header_size + dib_header_size + pixels_size;
+
+  const offset_to_pixel_data = header_size + dib_header_size;
+
+  // Write the BMP image header
+  outfile.writef("BM%<4u %<2u %<2u %<4u",
+                 size,
+                 0 /* reserved1 */,
+                 0 /* reserved2 */,
+                 offset_to_pixel_data);
+  
+  // Write the DIB header BITMAPINFOHEADER
+  outfile.writef("%<4u %<4i %<4i %<2u %<2u %<4u %<4u %<4u %<4u %<4u %<4u",
+                 dib_header_size, cols, -rows /*neg for swap*/,
+                 1 /* 1 color plane */, bits_per_pixel,
+                 0 /* no compression */,
+                 pixels_size,
+                 2835, 2835 /*pixels/meter print resolution=72dpi*/,
+                 0 /* colors in palette */,
+                 0 /* "important" colors */);
+
+  //
+  // compute the maximum number of steps that were taken, just in case
+  // it wasn't the user-supplied cutoff.
+  //
+  const maxSteps = max reduce NumSteps;
+
+  //
+  // Write the output data.  Though verbose, we use three loop nests
+  // here to avoid extra conditionals in the inner loop.
+  //
+  select (imgType) {
+    when imageType.bw {
+      for i in Dom.dim(1) {
+        var nbits = 0;
+        for j in Dom.dim(2) {
+          var bit = (if NumSteps[i,j] then 255 else 0):uint;
+          outfile.writebits(bit, 8);
+          outfile.writebits(bit, 8);
+          outfile.writebits(bit, 8);
+          nbits += 24;
+        }
+        // write the padding.
+        // The padding is only rounding up to 4 bytes so
+        // can be written in a single writebits call.
+        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+      }
+    }
+
+    when imageType.grey {
+      for i in Dom.dim(1) {
+        var nbits = 0;
+        for j in Dom.dim(2) {
+          var grey = ((255*NumSteps[i,j])/maxSteps):uint;
+          // write 24-bit color value by repeating grey
+          outfile.writebits(grey, 8);
+          outfile.writebits(grey, 8);
+          outfile.writebits(grey, 8);
+          nbits += 24;
+        }
+        // write the padding.
+        // The padding is only rounding up to 4 bytes so
+        // can be written in a single writebits call.
+        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+      }
+    }
+
+    when imageType.color {
+      for i in Dom.dim(1) {
+        var nbits = 0;
+        for j in Dom.dim(2) {
+          var green:uint = 0;
+          var blue:uint = 0;
+          var red = ((255*NumSteps[i,j])/maxSteps):uint;
+          // write 24-bit color value
+          outfile.writebits(blue, 8);
+          outfile.writebits(green, 8);
+          outfile.writebits(red, 8);
+          nbits += 24;
+        }
+        // write the padding.
+        // The padding is only rounding up to 4 bytes so
+        // can be written in a single writebits call.
+        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
   }
