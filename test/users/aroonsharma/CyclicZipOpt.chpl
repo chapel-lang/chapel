@@ -86,7 +86,7 @@ class CyclicZipOpt: BaseDist {
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and
     // dataParMinGranularity<0
-    this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+    this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numPUs(physical=true)
                                  else dataParTasksPerLocale;
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
     this.dataParMinGranularity = dataParMinGranularity;

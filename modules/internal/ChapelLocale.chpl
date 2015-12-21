@@ -48,8 +48,29 @@ module ChapelLocale {
     // The parent of the root locale is nil (by definition).
     const parent : locale;
 
-    // To be removed from the required interface once legacy code is adjusted.
-    // Modified in RootLocale.init().
+    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, OS accessible
+    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
+    pragma "no doc" var nPUsLogAcc: int;     // HW threads, OS accessible
+    pragma "no doc" var nPUsLogAll: int;     // HW threads, all
+
+    /*
+      This returns the number of instances of the CPU architecture on
+      this locale.  If ``physical==true`` this is the number of physical
+      PUs ("cores").  Otherwise, it is the number of hardware threads,
+      which on a multithreaded hardware architecture would be larger.
+      If ``accessible==true`` then the count reflects any OS limitations
+      on which PUs may be accessed.  If ``accessible==false`` then all
+      CPUs that seem to exist are included.
+     */
+    inline
+    proc numPUs(physical: bool = true, accessible: bool = true)
+      return if physical
+             then if accessible then nPUsPhysAcc else nPUsPhysAll
+             else if accessible then nPUsLogAcc else nPUsLogAll;
+
+    /*
+      ``numCores`` is deprecated and will be removed in Chapel 1.14.
+     */
     var numCores: int;
 
     var maxTaskPar: int; // max parallelism tasking layer expects to deliver

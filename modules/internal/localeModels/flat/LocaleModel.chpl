@@ -173,8 +173,13 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
+      extern proc chpl_getNumPhysicalCpus(accessible_only: bool): c_int;
+      nPUsPhysAcc = chpl_getNumPhysicalCpus(true);
+      nPUsPhysAll = chpl_getNumPhysicalCpus(false);
+
       extern proc chpl_getNumLogicalCpus(accessible_only: bool): c_int;
-      numCores = chpl_getNumLogicalCpus(true);
+      nPUsLogAcc = chpl_getNumLogicalCpus(true);
+      nPUsLogAll = chpl_getNumLogicalCpus(false);
 
       extern proc chpl_task_getMaxPar(): uint(32);
       maxTaskPar = chpl_task_getMaxPar();
@@ -196,7 +201,10 @@ module LocaleModel {
 
     proc RootLocale() {
       parent = nil;
-      numCores = 0;
+      nPUsPhysAcc = 0;
+      nPUsPhysAll = 0;
+      nPUsLogAcc = 0;
+      nPUsLogAll = 0;
       maxTaskPar = 0;
     }
 
@@ -207,7 +215,10 @@ module LocaleModel {
       forall locIdx in chpl_initOnLocales() {
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
-        numCores += node.numCores;
+        nPUsPhysAcc += node.nPUsPhysAcc;
+        nPUsPhysAll += node.nPUsPhysAll;
+        nPUsLogAcc += node.nPUsLogAcc;
+        nPUsLogAll += node.nPUsLogAll;
         maxTaskPar += node.maxTaskPar;
       }
 
