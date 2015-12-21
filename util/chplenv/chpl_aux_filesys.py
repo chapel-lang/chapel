@@ -1,8 +1,13 @@
 #!/usr/bin/env python
+import sys
 import os
-from sys import stdout, stderr
+from sys import stderr, stdout
+
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 from utils import memoize
+
 
 @memoize
 def get():

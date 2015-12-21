@@ -1,4 +1,4 @@
-Module: intents
+intents
    proc one(in val)
       This function has an argument with the in intent 
 
@@ -44,7 +44,7 @@ Module: intents
    proc fourteen()
       This function has a return intent (other than ref) and a body 
 
-   Module: intents.Inner
+   intents.Inner
       proc one(in val)
          This function has an argument with the in intent 
 

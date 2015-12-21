@@ -8,6 +8,7 @@ import json
 try:
     import annotate
 except ImportError:
+    sys.stdout.write('[Warning: "annotate" import failed, no annotations will be generated]\n')
     annotate = None
 
 usage =  '%prog [options] <graphfiles>'

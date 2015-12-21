@@ -12,7 +12,28 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_HWLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
 
-CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci --disable-cairo
+ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
+CFLAGS += -mmic
+endif
+endif
+
+#
+# Something with ffsl is broken with cce >= 8.4.0 (and older
+# versions with -hgnu thrown.)
+#
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
+CFLAGS += -DHWLOC_HAVE_BROKEN_FFS
+endif
+
+CHPL_HWLOC_CFG_OPTIONS += --enable-static \
+                          --disable-shared \
+                          --disable-cairo \
+                          --disable-libxml2 \
+                          --disable-libudev \
+                          --disable-libnuma \
+                          --disable-opencl \
+                          --disable-pci
 
 CHPL_HWLOC_CFG_OPTIONS += $(CHPL_HWLOC_MORE_CFG_OPTIONS)
 

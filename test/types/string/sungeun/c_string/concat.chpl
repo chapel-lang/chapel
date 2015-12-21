@@ -1,7 +1,8 @@
 use decls;
 use checkType;
 
-checkType(c_string, ("8"+n).type);
+checkType(c_string, (c"8"+n).type);
+checkType(string, ("8"+n).type);
 checkType(c_string, (cstr+n).type);
 checkType(string, (vcstr+n).type);
 checkType(string, ("8"+nn).type);
@@ -26,14 +27,16 @@ checkType(string, ("8"+c).type);   // no param complex
 checkType(string, (cstr+c).type);
 checkType(string, (vcstr+c).type);
 
-checkType(c_string, ("8"+e).type);
+checkType(c_string, (c"8"+e).type);
+checkType(string, ("8"+e).type);
 checkType(c_string, (cstr+e).type);
 checkType(string, (vcstr+e).type);
 checkType(string, ("8"+ee).type);
 checkType(string, (cstr+ee).type);
 checkType(string, (vcstr+ee).type);
 
-checkType(c_string, ("8"+b).type);
+checkType(c_string, (c"8"+b).type);
+checkType(string, ("8"+b).type);
 checkType(c_string, (cstr+b).type);
 checkType(string, (vcstr+b).type);
 checkType(string, ("8"+bb).type);

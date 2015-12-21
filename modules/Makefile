@@ -19,6 +19,16 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 
+# Generate tags only if $TAGS turned on explicitly, or if $CHPL_DEVELOPER is on
+ifdef CHPL_DEVELOPER
+TAGS=1
+endif
+
+# Generate tags command, dependent on if Make variable, TAGS == 1
+ifeq ($(TAGS), 1)
+TAGS_COMMAND=-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS...")
+endif
+
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
@@ -32,7 +42,7 @@ DOC_SPHINX=${CHPL_MAKE_HOME}/doc/sphinx
 default: all
 
 all: $(SYS_CTYPES_MODULE)
-	-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS...")
+	$(TAGS_COMMAND)
 
 clean: FORCE
 
@@ -40,6 +50,7 @@ cleanall: FORCE
 
 clobber: FORCE clean-documentation
 	rm -rf standard/gen
+	rm -f TAGS tags
 
 depend:
 
@@ -113,8 +124,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} $(MODULES_TO_DOCUMENT) \
-	$(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/

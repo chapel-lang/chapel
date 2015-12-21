@@ -1,6 +1,9 @@
-import os, re, subprocess
-from distutils.spawn import find_executable
+import os
+import re
+import subprocess
 from collections import namedtuple
+from distutils.spawn import find_executable
+
 
 def memoize(func):
     cache = func.cache = {}
@@ -34,7 +37,7 @@ def get_compiler_version(compiler):
     version_string = '0'
     if 'gnu' in compiler:
         version_string = run_command(['gcc', '-dumpversion'])
-    elif 'cray' in compiler:
+    elif 'cray-prgenv-cray' == compiler:
         version_string = os.environ.get('CRAY_CC_VERSION', '0')
     return CompVersion(version_string)
 
@@ -45,7 +48,7 @@ def get_compiler_version(compiler):
 @memoize
 def CompVersion(version_string):
     CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
-    match = re.search(r'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
+    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', str(version_string))
     if match:
         major    = int(match.group(1))
         minor    = int(match.group(3) or 0)
@@ -83,5 +86,3 @@ def run_command(command, stdout=True, stderr=False):
 def compiler_is_prgenv(compiler_val):
   return (compiler_val.startswith('cray-prgenv') or
      os.environ.get('CHPL_ORIG_TARGET_COMPILER','').startswith('cray-prgenv'))
-
-

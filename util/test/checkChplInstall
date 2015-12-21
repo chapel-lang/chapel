@@ -25,16 +25,29 @@
 # To use something other than $HOME/.chpl, set the CHPL_CHECK_INSTALL_DIR
 # environment variable.
 
-
-# Base name for test job in $CHPL_HOME/test/release/examples
-TEST_JOB_BASENAME=hello6-taskpar-dist
-
-err() {
-    echo "error: $@" >&2
+function log_info()
+{
+    local msg=$@
+    echo "[Info] ${msg}"
 }
 
+function log_warning()
+{
+    local msg=$@
+    echo "[Warn] ${msg}"
+}
+
+function log_error()
+{
+    local msg=$@
+    echo "[Fail] ${msg}" >&2
+}
+
+# Base name for test job in examples
+TEST_JOB_BASENAME=hello6-taskpar-dist
+
 # Notify user we are running this script
-echo "Running minimal test script: checkChplInstall"
+log_info "Running minimal test script: \$CHPL_HOME/util/test/checkChplInstall"
 
 BIN_NAME=chpl
 
@@ -42,47 +55,49 @@ CHPL_BIN="$(which ${BIN_NAME} 2> /dev/null)"
 
 # Verify chpl is in $PATH
 if [ -z "${CHPL_BIN}" ] ; then
-    err "${BIN_NAME} not found. Make sure it available in the current PATH."
+    log_error "${BIN_NAME} not found. Make sure it available in the current PATH."
     exit 1
 elif [ ! -x ${CHPL_BIN} ] ; then
-    err "Found ${BIN_NAME} at ${CHPL_BIN} but it is not executable."
+    log_error "Found ${BIN_NAME} at ${CHPL_BIN} but it is not executable."
     exit 1
 else
-    echo "Found executable ${BIN_NAME} in ${CHPL_BIN}."
+    log_info "Found executable ${BIN_NAME} in ${CHPL_BIN}."
 fi
 
 # Verify CHPL_HOME is correctly set.
 if [ -z "${CHPL_HOME+x}" ] ; then
-    err "CHPL_HOME is not set in environment."
+    log_error "CHPL_HOME is not set in environment."
     exit 1
 elif [ ! -d ${CHPL_HOME} ] ; then
-    err "CHPL_HOME is not a directory: ${CHPL_HOME}"
+    log_error "CHPL_HOME is not a directory: ${CHPL_HOME}"
     exit 1
 else
-    echo "Found \$CHPL_HOME directory: ${CHPL_HOME}"
+    log_info "Found \$CHPL_HOME directory: ${CHPL_HOME}"
 fi
 
 # Create ~/.chpl directory, if it does not already exist
 CHPL_DIR=${CHPL_CHECK_INSTALL_DIR:-${HOME}/.chpl}
 if [ ! -d ${CHPL_DIR} ] ; then
-    echo "${CHPL_DIR} does not exist. Creating it."
-    mkdir -p ${CHPL_DIR} || { echo "Failed to create ${CHPL_DIR}." && exit 1 ; }
+    log_info "${CHPL_DIR} does not exist. Creating it."
+    mkdir -p ${CHPL_DIR} || { log_error "Failed to create ${CHPL_DIR}." && exit 1 ; }
 fi
 
 # Location of test job
 if [ -d ${CHPL_HOME}/test/release/examples ] ; then
     # Install from source repo.
     TEST_DIR=${CHPL_HOME}/test/release/examples
+    REL_TEST_DIR=test/release/examples
 elif [ -d ${CHPL_HOME}/examples ] ; then
     # Install from tarball.
     TEST_DIR=${CHPL_HOME}/examples
+    REL_TEST_DIR=examples
 else
-    err "Could not find test cases in CHPL_HOME: ${CHPL_HOME}."
+    log_error "Could not find test cases in CHPL_HOME: ${CHPL_HOME}."
     exit 1
 fi
 
 TMP_TEST_DIR="$(mktemp -d ${CHPL_DIR}/chapel-test-XXXXX)"
-echo "Temporary test job directory: ${TMP_TEST_DIR}"
+log_info "Temporary test job directory: ${TMP_TEST_DIR}"
 
 TEST_JOB=${TEST_JOB_BASENAME}
 
@@ -97,23 +112,23 @@ TEST_COMP_OUT=${TEST_JOB}.comp.out
 COMP_FLAGS="--cc-warnings"
 
 # Compile test job into temporary directory
-echo "Compiling \$CHPL_HOME/${TEST_DIR}/${TEST_JOB}.chpl"
+log_info "Compiling \$CHPL_HOME/${REL_TEST_DIR}/${TEST_JOB}.chpl"
 ${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/${TEST_COMP_OUT} 2>&1
 
 # Check that compile was successful
 COMPILE_STATUS=$?
 if [ ${COMPILE_STATUS} -ne 0 ]; then
-    err "Test job failed to compile - Chapel is not installed correctly"
-    echo "Compilation output:"
+    log_error "Test job failed to compile - Chapel is not installed correctly"
+    log_error "Compilation output:"
     cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
     exit 1
 elif [ -s ${TMP_TEST_DIR}/${TEST_COMP_OUT} ]; then
-    err "Test job compiled with output - Chapel is not installed correctly"
-    echo "Compilation output:"
+    log_error "Test job compiled with output - Chapel is not installed correctly"
+    log_error "Compilation output:"
     cat ${TMP_TEST_DIR}/${TEST_COMP_OUT}
     exit 1
 else
-    echo "Test job compiled into ${TMP_TEST_DIR}/${TEST_JOB}"
+    log_info "Test job compiled into ${TMP_TEST_DIR}/${TEST_JOB}"
 fi
 
 # Cleanup the tmp directory whenever exit is invoked
@@ -134,12 +149,11 @@ fi
 
 # Check for valid launchers
 if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "none" ]; then
-    echo "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
+    log_info "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
 else
-    echo ""
-    echo "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
-    echo "This does not necessarily indicate that your Chapel installation is incorrect."
-    echo "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
+    log_warning "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
+    log_warning "This does not necessarily indicate that your Chapel installation is incorrect."
+    log_warning "See \$CHPL_HOME/doc/launcher.rst for information on manually launching Chapel programs."
     # This exit code should be recognized as a failure to complete check, but
     # not necessarily failure of build
     exit 10
@@ -153,20 +167,20 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
 
     EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
 
-    echo "Running test job."
+    log_info "Running test job."
     ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} | sort > ${TEST_EXEC_OUT} 2>&1
-    echo "Test job complete."
+    log_info "Test job complete."
 
     # Check result
     DIFF_OUTPUT=$(diff -q ${TEST_EXEC_OUT} ${GOOD})
 
     # Return success code (0) if diff is good
     if [ -z "${DIFF_OUTPUT}" ]; then
-    echo "Installation works as expected!"
+    echo "SUCCESS: 'make check' passed!"
     exit 0
     else
         # Rerun test job with -v flag to help user identify discrepancy
-        echo "There was an issue with the installation, test job output incorrect."
+        log_error "There was an issue with the installation, test job output incorrect."
         echo ""
         echo "== Verbose Test Job Execution Output =="
         ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} -v

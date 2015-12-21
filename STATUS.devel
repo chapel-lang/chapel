@@ -263,7 +263,6 @@ Functions and Iterators
   for the type.
   # functions/vass/paramret-1.future
   # functions/vass/paramret-diten.future
-  # users/bartosz/paramfn2.future
 - Var functions returning multiple class types should be illegal, but
   instead they are compiled and result in runtime error.
   # functions/diten/varFnRetClasses.future
@@ -335,9 +334,6 @@ Strings
 - Implicit conversion of c_string to string does not work for ref,
   out, or inout intents.
   # types/string/sungeun/c_string/intents.future
-- Implicit conversion of string literals returned from functions does
-  not work.
-  # types/string/sungeun/c_string/returnString.future
 - c_string variable are sometimes copied to remote locales.
   # types/string/sungeun/c_string/multilocale/c_str_on_remote_global_string.future
   # types/string/sungeun/c_string/multilocale/remote_assign_c_string.future
@@ -435,6 +431,10 @@ Classes, Records, and Unions
 - Generic types in default value for type fields result in a compile time error
   # functions/typeMethods/genericRecordTypeMethod.future
   # users/ferguson/generic_type_method.future
+- Some records with param members fail to compile because the compiler
+  does not generate assignment operators for them.
+  # functions/ferguson/generic-record-assign.future
+  # param/nelson/defaultParamValue.future
 - Record and class members that are defined to be array aliases fail
   to compile without an explicitly specified element type.
   # classes/stonea/arrayAliasRecordMember.future
@@ -467,7 +467,7 @@ Classes, Records, and Unions
   # types/records/sungeun/constructor2.future
   # users/vass/km/array-of-records-crash-1.explicit-type.future
   # users/vass/km/array-of-records-crash-1.future
-- Generic methods called with params actuals may result in "unresolved
+- Generic methods called with param actuals may result in "unresolved
   call" error at compile time or incorrect generated code.
   # classes/vass/generic-method-with-param-arg-1.future
   # classes/vass/generic-method-with-param-arg-2.future
@@ -591,6 +591,8 @@ Domain Maps, Domains and Arrays
   # functions/iterators/bradc/badzip/misZipArrays.future
 - Arrays of subdomains may not work.
   # users/jglewis/bfs_102207/driver_breadth_first_search.future
+- Indexing of array literals may be mis-parsed.
+  # arrays/vass/literal-indexing.future
 - Arrays declared over domains with negative strides may result in errors.
   # users/weili/arrNegDom-blc.future
   # users/weili/arrNegDom2.future
@@ -834,6 +836,10 @@ Miscellaneous
   # types/tuple/diten/tupleOfArray2.future
   # types/tuple/diten/tupleOfArrayReturnType.future
   # types/tuple/stonea/returnArrayTuple.future
+- Comm=ugni network atomic ops fail for vars on tasks=qthreads stacks
+  # runtime/gbt/atomic-on-stack.future
+- Indexing string literals results in a parse error
+  # types/string/sungeun/c_string/substr.future
 
 
 Performance
@@ -882,11 +888,6 @@ Developer
 
 LLVM (experimental)
 -------------------
-- Extern C blocks do not properly handle C "void *" types.
-  # extern/tzakian/void_ptr.future
-- The LLVM backend does not properly handle C macros (and for that
-  reason will not work with GMP)
-
 
 Multi-locale/GASNet executions
 ------------------------------

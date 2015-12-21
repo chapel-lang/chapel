@@ -1,4 +1,4 @@
-Module: enum.doc
+enum.doc
    enum Color { Red, Yellow, Blue }
       This is a color enum. 
 

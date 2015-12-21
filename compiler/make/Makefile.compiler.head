@@ -22,10 +22,12 @@ DEPEND=1
 ifdef CHPL_DEVELOPER
 DEBUG=1
 WARNINGS=1
+TAGS=1
 else
 OPTIMIZE=1
 endif
 #PROFILE=1
+
 
 #
 # include the standard Chapel Makefile.base

@@ -80,6 +80,11 @@ module ChapelTuple {
     return _fill(p, oneTuple).type;
   }
   
+  pragma "compiler generated"
+  proc *(type t, param p: int) {
+    compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");
+  }
+
   proc *(p: int, type t) type {
     compilerError("tuple size must be static");
   }
@@ -101,7 +106,7 @@ module ChapelTuple {
     return false;
   
   pragma "no doc"
-  proc isHomogeneousTupleValue(x: _tuple) param
+  proc isHomogeneousTupleValue(x) param
     return __primitive("is star tuple type", x);
   
   /*

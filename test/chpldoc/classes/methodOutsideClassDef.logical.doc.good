@@ -1,4 +1,4 @@
-Module: methodOutsideClassDef
+methodOutsideClassDef
    proc Foo.externalMeth1()
    proc Foo.externalMeth2()
       This method has a comment attached to it 

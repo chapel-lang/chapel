@@ -36,6 +36,7 @@ cleanall: cleanall.helpme
 cleandeps: cleandeps.helpme
 
 clobber: clobber.helpme
+	rm -f tags TAGS
 
 %.helpme:
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 CHPL_MAKE_RULE=$* $*

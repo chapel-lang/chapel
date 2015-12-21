@@ -11,4 +11,4 @@ export CHPL_UTIL_SMTP_HOST=relaya
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.darwin"
 
-$CWD/nightly -cron -examples
+$CWD/nightly -cron

@@ -88,7 +88,6 @@ tags
 /runtime/include/chpl_rt_utils.h
 /runtime/include/comm/ugni
 /runtime/include/tasks/muxed
-/runtime/include/tasks/qthreads/
 /runtime/include/threads/soft-threads
 /runtime/src/comm/ugni
 /runtime/src/tasks/muxed
@@ -123,6 +122,7 @@ tags
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
+/test/chpldoc/compflags/folder/save-sphinx/deep-sphinx
 
 /test/chplvis/TREEvis
 /test/chplvis/benchmarks-hpcc/FFTvis
@@ -130,6 +130,8 @@ tags
 /test/chplvis/benchmarks-hpcc/RAvis
 /test/chplvis/overhead/OH
 /test/chplvis/overhead/OH2
+
+/test/compflags/albrecht/chplenv/chplenv.good
 
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
@@ -257,8 +259,11 @@ tags
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
 /test/io/ferguson/asserteof.test.nums
+/test/io/ferguson/ctests/test.bin
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
+/test/io/ferguson/test.txt
+/test/io/ferguson/test_file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
 
@@ -285,6 +290,9 @@ tags
 /test/modules/standard/FileSystem/lydia/copyTree/denseDest
 /test/modules/standard/FileSystem/lydia/copyTree/cutoffDest
 /test/modules/standard/FileSystem/lydia/copyTree/existing_dir
+/test/modules/standard/FileSystem/lydia/copyTree/hasLink
+/test/modules/standard/FileSystem/lydia/copyTree/willLink
+/test/modules/standard/FileSystem/lydia/copyTree/willCopy
 /test/modules/standard/FileSystem/lydia/exists/broken_link
 /test/modules/standard/FileSystem/lydia/exists/dir
 /test/modules/standard/FileSystem/lydia/exists/dir_link
@@ -299,6 +307,12 @@ tags
 /test/modules/standard/FileSystem/lydia/isLink/my_link_file
 /test/modules/standard/FileSystem/lydia/isMount/symlinkToRoot
 /test/modules/standard/FileSystem/lydia/isMount/notAMonkey/symlinkToRoot
+/test/modules/standard/FileSystem/lydia/moveDir/complexCopy
+/test/modules/standard/FileSystem/lydia/moveDir/complexDest
+/test/modules/standard/FileSystem/lydia/moveDir/hasLink
+/test/modules/standard/FileSystem/lydia/moveDir/linkDest
+/test/modules/standard/FileSystem/lydia/sameFile/linkToIt
+/test/modules/standard/FileSystem/lydia/sameFile/moveMe.txt
 /test/modules/standard/FileSystem/lydia/symlink/bar.txt
 /test/modules/standard/Path/lydia/realpath/blahblahblah.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
@@ -322,6 +336,7 @@ tags
 /test/release/examples/benchmarks/hpcc/variants/stream-promoted
 /test/release/examples/benchmarks/hpcc/variants/ra-cleanloop
 /test/release/examples/benchmarks/lulesh/coords.out
+/test/release/examples/patterns/test.txt
 /test/release/examples/primers/docs
 /test/release/examples/primers/Arr.dat
 /test/release/examples/primers/arrays
@@ -360,6 +375,8 @@ tags
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
 /test/runtime/kbrady/goodAllocSize.good
+/test/runtime/sungeun/chpl-env-gen.h
+/test/runtime/sungeun/chpl-env-gen.test.gen.c
 
 test/separate_compilation/jturner/libclassextern2.so.a
 test/separate_compilation/jturner/libfcfunc.so.a

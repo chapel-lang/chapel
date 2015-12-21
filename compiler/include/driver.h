@@ -24,9 +24,10 @@
 #include "map.h"
 
 #include <cstdio>
+#include <map>
+#include <string>
 
 class Timer;
-
 
 extern int  instantiation_limit;
 
@@ -65,7 +66,14 @@ extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
 extern int  tuple_copy_limit;
 
+
 extern bool report_inlining;
+
+// Chapel Envs
+bool useDefaultEnv(std::string key);
+
+extern std::map<std::string, const char*> envMap;
+
 extern char CHPL_HOME[FILENAME_MAX+1];
 
 extern const char* CHPL_HOST_PLATFORM;
@@ -78,7 +86,6 @@ extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_TASKS;
-extern const char* CHPL_THREADS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
 extern const char* CHPL_MEM;
@@ -91,9 +98,6 @@ extern const char* CHPL_REGEXP;
 extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
-extern int num_chpl_env_vars;
-extern const char* chpl_env_vars[];
-extern const char* chpl_env_var_names[];
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -134,6 +138,7 @@ extern bool fCacheRemote;
 // with clang and then added to the enclosing module's scope
 extern bool externC;
 extern char breakOnCodegenCname[256];
+extern int breakOnCodegenID;
 
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 

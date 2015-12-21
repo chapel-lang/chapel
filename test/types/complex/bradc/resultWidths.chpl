@@ -109,7 +109,7 @@ proc testit(param numbits) {
   
   {
     var z = x / y;
-    writeln("z is ", z, " and requires ", numBits(z.type), " bits");
+    writef("z is %.4z and requires %i bits\n", z, numBits(z.type));
   }
   
   {

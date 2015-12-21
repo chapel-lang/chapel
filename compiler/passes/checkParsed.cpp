@@ -25,6 +25,7 @@
 #include "expr.h"
 #include "astutil.h"
 #include "stlUtil.h"
+#include "docsDriver.h"
 
 
 static void checkNamedArguments(CallExpr* call);
@@ -36,6 +37,19 @@ static void checkModule(ModuleSymbol* mod);
 
 void
 checkParsed() {
+  //
+  // Let's not bother checking the parsed code if we're generating
+  // docs.  In part because it seems reasonable to generate
+  // documentation for incorrect code; in part because there are other
+  // checks that occur post-docs pass that won't fire (i.e., this pass
+  // doesn't check everything); and in part because the code below, as
+  // written, doesn't work if you're documenting just a single file
+  // and haven't parsed all the other files it depends on.
+  //
+  if (fDocs) {
+    return;
+  }
+
   forv_Vec(CallExpr, call, gCallExprs) {
     checkNamedArguments(call);
   }
@@ -47,7 +61,7 @@ checkParsed() {
       if ((!def->init || def->init->isNoInitExpr())
           && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
         if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
-          if (def->parentExpr != rootModule->block)
+          if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
             if (!def->sym->hasFlag(FLAG_INDEX_VAR))
               USR_FATAL_CONT(def->sym,
                              "Variable '%s' is not initialized or has no type",
@@ -192,9 +206,6 @@ checkFunction(FnSymbol* fn) {
 
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
-
-  if (fn->retTag == RET_PARAM && fn->retExprType != NULL)
-    USR_WARN(fn, "providing an explicit return type on a 'param' function currently leads to incorrect results; as a workaround, remove the return type specification in function '%s'", fn->name);
 
   if (fn->thisTag != INTENT_BLANK && !fn->hasFlag(FLAG_METHOD)) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");

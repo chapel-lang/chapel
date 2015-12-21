@@ -1,16 +1,21 @@
 #!/usr/bin/env python
-import sys, os
+import os
+import sys
 
-import chpl_tasks, chpl_arch
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_tasks
 from utils import memoize
+
+
 
 @memoize
 def get():
     hwloc_val = os.environ.get('CHPL_HWLOC')
     if not hwloc_val:
         tasks_val = chpl_tasks.get()
-        arch_val = chpl_arch.get('target', get_lcd=True)
-        if tasks_val == 'qthreads' and arch_val != 'knc':
+        if tasks_val == 'qthreads':
             hwloc_val = 'hwloc'
         else:
             hwloc_val = 'none'

@@ -217,7 +217,7 @@ instantiate_tuple_init(FnSymbol* fn) {
   for_formals(formal, ct->defaultInitializer) {
     VarSymbol* tmp = newTemp(formal->name);
     if (!strcmp(formal->name, "size"))
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_StringSymbol(formal->name))));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_CStringSymbol(formal->name))));
     else if (!formal->hasFlag(FLAG_IS_MEME)) {
       if (formal->isParameter()) {
         tmp->addFlag(FLAG_PARAM);
@@ -278,34 +278,10 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
-  if (getSyncFlags(value).any() &&
-      strcmp(fn->name, "_construct__tuple") &&
-      !fn->hasFlag(FLAG_REF)) {
-    if (!getSyncFlags(fn).any() ||
-        (fn->hasFlag(FLAG_METHOD) &&
-         (value->type->instantiatedFrom != fn->_this->type))) {
-      // allow types to be instantiated to sync types
-      if (!key->hasFlag(FLAG_TYPE_VARIABLE)) {
-        // instantiation of a non-type formal of sync type loses sync
-
-        // unless sync is explicitly specified as the generic
-        if (isSyncType(key->type))
-          return value;
-
-        // ... or it is passed by blank or [const] ref
-        if (ArgSymbol* keyArg = toArgSymbol(key))
-          if (keyArg->intent == INTENT_BLANK ||
-              (keyArg->intent & INTENT_FLAG_REF))
-            return value;
-
-        TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
-        return getNewSubType(fn, key, nt);
-      }
-    }
-  } else if (value->hasFlag(FLAG_REF) &&
-             !fn->hasFlag(FLAG_REF) &&
-             !fn->hasFlag(FLAG_ALLOW_REF) &&
-             !fn->hasFlag(FLAG_TUPLE)) {
+  if (value->hasFlag(FLAG_REF) &&
+      !fn->hasFlag(FLAG_REF) &&
+      !fn->hasFlag(FLAG_ALLOW_REF) &&
+      !fn->hasFlag(FLAG_TUPLE)) {
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, key, value->getValType()->symbol);
   }
@@ -490,7 +466,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
         VarSymbol* var = toVarSymbol(value);
         if (var && var->immediate) {
           Immediate* immediate = var->immediate;
-          if (var->type == dtStringC)
+          if (var->type == dtString || var->type == dtStringC)
             renameInstantiatedTypeString(sym, var);
           else if (immediate->const_kind == NUM_KIND_BOOL) {
             // Handle boolean types specially.

@@ -477,6 +477,14 @@ module Math {
      `false` otherwise. */
   inline proc isnan(x: real(32)): bool return chpl_macro_float_isnan(x):bool;
 
+  /* Multiply by an integer power of 2.
+     Returns x * 2**n.
+     */
+  extern proc ldexp(x:real(64), n:int(32)):real(64);
+  inline proc ldexp(x:real(32), n:int(32)):real(32) {
+    extern proc ldexpf(x:real(32), n:int(32)):real(32);
+    return ldexpf(x, n);
+  }
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.

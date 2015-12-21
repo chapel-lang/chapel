@@ -1,0 +1,3 @@
+COMPOPTS <= --no-local
+CHPL_COMM!=none
+CHPL_LOCALE_MODEL == numa
