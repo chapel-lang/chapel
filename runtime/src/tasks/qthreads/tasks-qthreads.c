@@ -477,9 +477,9 @@ static int32_t chpl_qt_getenv_num_workers(void) {
     int32_t  num_wps;
     int32_t  num_sheps;
 
-    hwpar = chpl_qt_getenv_num("HWPAR", 0);
-    num_wps = chpl_qt_getenv_num("NUM_WORKERS_PER_SHEPHERD", 0);
-    num_sheps = chpl_qt_getenv_num("NUM_SHEPHERDS", 0);
+    hwpar = (int32_t) chpl_qt_getenv_num("HWPAR", 0);
+    num_wps = (int32_t) chpl_qt_getenv_num("NUM_WORKERS_PER_SHEPHERD", 0);
+    num_sheps = (int32_t) chpl_qt_getenv_num("NUM_SHEPHERDS", 0);
 
     if (hwpar) {
         return hwpar;
