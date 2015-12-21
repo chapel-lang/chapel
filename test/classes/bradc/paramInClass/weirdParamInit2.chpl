@@ -10,8 +10,8 @@ var c = new C(2);
 
 var d = new D(c.x);
 
-writeln("c is: ", c);
-writeln("d is: ", d);
+writeln("c is: {x = ", c.x, "}");
+writeln("d is: {x = ", d.x, "}");
 
 delete c;
 delete d;
