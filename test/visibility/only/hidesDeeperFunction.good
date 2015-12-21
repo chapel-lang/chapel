@@ -1,0 +1,2 @@
+hidesDeeperFunction.chpl:18: In function 'main':
+hidesDeeperFunction.chpl:19: error: unresolved call 'bar()'
