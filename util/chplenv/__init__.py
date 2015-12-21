@@ -23,6 +23,7 @@ __all__ = [
     'chpl_3p_dlmalloc_configs',
     'chpl_3p_gmp_configs',
     'chpl_3p_hwloc_configs',
+    'chpl_3p_jemalloc_configs',
     'chpl_3p_massivethreads_configs',
     'chpl_3p_qthreads_configs',
     'chpl_3p_re2_configs',

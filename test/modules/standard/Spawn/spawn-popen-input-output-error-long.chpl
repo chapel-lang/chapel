@@ -18,14 +18,16 @@ sub.communicate();
 var i = 1;
 var x:int;
 while sub.stdout.read(x) {
-  //writeln("stdout line: ", x);
+  if x != i then
+    writeln("got stdout ", x, " expected ", i);
   assert(x == i);
   i += 2;
 }
 
 i = 2;
 while sub.stderr.read(x) {
-  //writeln("stderr line: ", x);
+  if x != i then
+    writeln("got stderr ", x, " expected ", i);
   assert(x == i);
   i += 2;
 }

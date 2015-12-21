@@ -150,7 +150,7 @@ static PassInfo sPassList[] = {
   RUN(makeBinary)               // invoke underlying C compiler
 };
 
-static void runPass(PhaseTracker& tracker, size_t passIndex);
+static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc);
 
 void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
@@ -162,7 +162,7 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   }
 
   for (size_t i = 0; i < passListSize; i++) {
-    runPass(tracker, i);
+    runPass(tracker, i, isChpldoc);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
@@ -178,7 +178,7 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   teardownLogfiles();
 }
 
-static void runPass(PhaseTracker& tracker, size_t passIndex) {
+static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   PassInfo* info = &sPassList[passIndex];
 
   //
@@ -204,12 +204,16 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
   considerExitingEndOfPass();
 
   //
-  // Clean up the global pointers to AST
+  // Clean up the global pointers to AST.  If we're running chpldoc,
+  // there's no real reason to run this step (and at the time of this
+  // writing, it didn't work if we hadn't parsed all the 'use'd
+  // modules.
   //
+  if (!isChpldoc) {
+    tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
 
-  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-
-  cleanAst();
+    cleanAst();
+  }
 
   //
   // An optional verify pass

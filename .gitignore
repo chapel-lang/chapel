@@ -88,7 +88,6 @@ tags
 /runtime/include/chpl_rt_utils.h
 /runtime/include/comm/ugni
 /runtime/include/tasks/muxed
-/runtime/include/tasks/qthreads/
 /runtime/include/threads/soft-threads
 /runtime/src/comm/ugni
 /runtime/src/tasks/muxed
@@ -123,6 +122,7 @@ tags
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
+/test/chpldoc/compflags/folder/save-sphinx/deep-sphinx
 
 /test/chplvis/TREEvis
 /test/chplvis/benchmarks-hpcc/FFTvis

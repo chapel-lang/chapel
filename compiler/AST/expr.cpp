@@ -818,7 +818,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
   if( raddr.chplType && !wideType ) {
     INT_ASSERT(raddr.isLVPtr != GEN_WIDE_PTR);
-    Type* refType;
+    Type* refType = NULL;
     if( raddr.isLVPtr == GEN_VAL ) {
       // Then we should have a ref or a class.
       INT_ASSERT(raddr.chplType == dtNil ||
@@ -852,8 +852,16 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       info->cStatements.push_back(addrAssign);
     } else {
 #ifdef HAVE_LLVM
-      llvm::Value* adr = info->builder->CreateStructGEP(ret.val, WIDE_GEP_ADDR);
-      llvm::Value* loc = info->builder->CreateStructGEP(ret.val, WIDE_GEP_LOC);
+      llvm::Value* adr = info->builder->CreateStructGEP(
+#if HAVE_LLVM_VER >= 37
+          NULL,
+#endif
+          ret.val, WIDE_GEP_ADDR);
+      llvm::Value* loc = info->builder->CreateStructGEP(
+#if HAVE_LLVM_VER >= 37
+          NULL,
+#endif
+          ret.val, WIDE_GEP_LOC);
 
       // cast address if needed. This is necessary for building a wide
       // NULL pointer since NULL is actually an i8*.
@@ -886,7 +894,12 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       // we are supposed to have since null has type void*.
       llvm::Value* locAddr = raddr.val;
       locAddr = info->builder->CreatePointerCast(locAddr, locAddrType);
+#if HAVE_LLVM_VER >= 37
+      ret.val = info->builder->CreateCall(fn, {locale.val, locAddr});
+#else
       ret.val = info->builder->CreateCall2(fn, locale.val, locAddr);
+#endif
+
 #endif
     } else {
       // Packed wide pointers.
@@ -1174,6 +1187,17 @@ static GenRet codegenWideThingField(GenRet ws, int field)
              field == WIDE_GEP_ADDR ||
              field == WIDE_GEP_SIZE );
 
+  if( field == WIDE_GEP_SIZE ) {
+    ret.chplType = SIZE_TYPE;
+  } else if( field == WIDE_GEP_LOC ) {
+    ret.chplType = LOCALE_ID_TYPE;
+  } else if( field == WIDE_GEP_ADDR ) {
+    // get the local reference type
+    // this will probably be overwritten by the caller,
+    // but it is used below in the LLVM code.
+    ret.chplType = getRefTypesForWideThing(ws, NULL);
+  }
+
   const char* fname = wide_fields[field];
 
   if( info->cfile ) {
@@ -1191,19 +1215,17 @@ static GenRet codegenWideThingField(GenRet ws, int field)
 #ifdef HAVE_LLVM
     if (ws.val->getType()->isPointerTy()){
       ret.isLVPtr = GEN_PTR;
-      ret.val = info->builder->CreateConstInBoundsGEP2_32(ws.val, 0, field);
+      ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                                          NULL,
+#endif
+                                          ws.val, 0, field);
     } else {
       ret.isLVPtr = GEN_VAL;
       ret.val = info->builder->CreateExtractValue(ws.val, field);
     }
     assert(ret.val);
 #endif
-  }
-
-  if( field == WIDE_GEP_SIZE ) {
-    ret.chplType = SIZE_TYPE;
-  } else if( field == WIDE_GEP_LOC ) {
-    ret.chplType = LOCALE_ID_TYPE;
   }
 
   return ret;
@@ -1475,11 +1497,17 @@ GenRet codegenFieldPtr(
 
     AggregateType *cBaseType = toAggregateType(baseType);
 
+    // We need the LLVM type of the field we're getting
+    INT_ASSERT(ret.chplType);
+    GenRet retType = ret.chplType;
+
     if( isUnion(ct) && !special ) {
       // Get a pointer to the union data then cast it to the right type
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+          NULL,
+#endif
           baseValue, 0, cBaseType->getMemberGEP("_u"));
-      GenRet retType = ret.chplType;
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1489,6 +1517,9 @@ GenRet codegenFieldPtr(
     } else {
       // Normally, we just use a GEP.
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+          NULL,
+#endif
           baseValue, 0, cBaseType->getMemberGEP(c_field_name));
     }
 #endif
@@ -2000,8 +2031,13 @@ GenRet codegenAdd(GenRet a, GenRet b)
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
 
-    // Handle pointer arithmetic ( e.g. int8* + int64)
-    if(av.val->getType()->isPointerTy() || bv.val->getType()->isPointerTy()) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexAdd64", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexAdd128", av, bv);
+    } else if(av.val->getType()->isPointerTy() ||
+              bv.val->getType()->isPointerTy()) {
+      // Handle pointer arithmetic ( e.g. int8* + int64)
       // We must have one integer and one pointer, not two pointers.
       GenRet *ptr = NULL;
       GenRet *i = NULL;
@@ -2046,7 +2082,11 @@ GenRet codegenSub(GenRet a, GenRet b)
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
 
-    if(av.val->getType()->isPointerTy()) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexSubtract64", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexSubtract128", av, bv);
+    } else if(av.val->getType()->isPointerTy()) {
       // Handle pointer arithmetic by calling codegenAdd
       // with a negative value.
       INT_ASSERT(bv.val->getType()->isIntegerTy());
@@ -2079,7 +2119,11 @@ GenRet codegenNeg(GenRet a)
   else {
 #ifdef HAVE_LLVM
     llvm::Value *value = av.val;
-    if(value->getType()->isFPOrFPVectorTy()) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexUnaryMinus64", av);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexUnaryMinus128", av);
+    } else if(value->getType()->isFPOrFPVectorTy()) {
       ret.val = info->builder->CreateFNeg(value);
     } else {
       ret.val = info->builder->CreateNeg(value);
@@ -2105,14 +2149,20 @@ GenRet codegenMul(GenRet a, GenRet b)
     bool b_signed = false;
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
-    PromotedPair values =
-      convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
-    if(values.a->getType()->isFPOrFPVectorTy()) {
-      ret.val = info->builder->CreateFMul(values.a, values.b);
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexMultiply64", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexMultiply128", av, bv);
     } else {
-      ret.val = info->builder->CreateMul(values.a, values.b);
+      PromotedPair values =
+        convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
+      if(values.a->getType()->isFPOrFPVectorTy()) {
+        ret.val = info->builder->CreateFMul(values.a, values.b);
+      } else {
+        ret.val = info->builder->CreateMul(values.a, values.b);
+      }
+      ret.isUnsigned = !values.isSigned;
     }
-    ret.isUnsigned = !values.isSigned;
 #endif
   }
   return ret;
@@ -2129,17 +2179,23 @@ GenRet codegenDiv(GenRet a, GenRet b)
   if( info->cfile ) ret.c = "(" + av.c + " / " + bv.c + ")";
   else {
 #ifdef HAVE_LLVM
-    PromotedPair values =
-      convertValuesToLarger(av.val, bv.val, 
-                            is_signed(av.chplType), 
-                            is_signed(bv.chplType));
-    if(values.a->getType()->isFPOrFPVectorTy()) {
-      ret.val = info->builder->CreateFDiv(values.a, values.b);
+    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+      ret = codegenCallExpr("complexDivide64", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
+      ret = codegenCallExpr("complexDivide128", av, bv);
     } else {
-      if(!values.isSigned) {
-        ret.val = info->builder->CreateUDiv(values.a, values.b);
+      PromotedPair values =
+        convertValuesToLarger(av.val, bv.val, 
+                              is_signed(av.chplType), 
+                              is_signed(bv.chplType));
+      if(values.a->getType()->isFPOrFPVectorTy()) {
+        ret.val = info->builder->CreateFDiv(values.a, values.b);
       } else {
-        ret.val = info->builder->CreateSDiv(values.a, values.b);
+        if(!values.isSigned) {
+          ret.val = info->builder->CreateUDiv(values.a, values.b);
+        } else {
+          ret.val = info->builder->CreateSDiv(values.a, values.b);
+        }
       }
     }
 #endif

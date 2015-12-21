@@ -252,6 +252,40 @@ _real64* complex128GetRealRef(_complex128* cplx);
 _real64* complex128GetImagRef(_complex128* cplx);
 _real32* complex64GetRealRef(_complex64* cplx);
 _real32* complex64GetImagRef(_complex64* cplx);
+
+/* 128 bit complex operators for LLVM use */
+static inline _complex128 complexMultiply128(_complex128 c1, _complex128 c2) {
+  return c1*c2;
+}
+static inline _complex128 complexDivide128(_complex128 c1, _complex128 c2) {
+  return c1/c2;
+}
+static inline _complex128 complexAdd128(_complex128 c1, _complex128 c2) {
+  return c1+c2;
+}
+static inline _complex128 complexSubtract128(_complex128 c1, _complex128 c2) {
+  return c1-c2;
+}
+static inline _complex128 complexUnaryMinus128(_complex128 c1) {
+  return -c1;
+}
+
+/* 64 bit complex operators for LLVM use */
+static inline _complex64 complexMultiply64(_complex64 c1, _complex64 c2) {
+  return c1*c2;
+}
+static inline _complex64 complexDivide64(_complex64 c1, _complex64 c2) {
+  return c1/c2;
+}
+static inline _complex64 complexAdd64(_complex64 c1, _complex64 c2) {
+  return c1+c2;
+}
+static inline _complex64 complexSubtract64(_complex64 c1, _complex64 c2) {
+  return c1-c2;
+}
+static inline _complex64 complexUnaryMinus64(_complex64 c1) {
+  return -c1;
+}
 #endif
 
 /* This should be moved somewhere else, but where is the question */

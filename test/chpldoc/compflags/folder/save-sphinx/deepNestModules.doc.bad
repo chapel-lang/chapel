@@ -1,0 +1,26 @@
+.. default-domain:: chpl
+
+.. module:: Foo
+   :synopsis: * There's a problem with the placement of definitions when nest modules are
+
+Foo
+===
+
+* There's a problem with the placement of definitions when nest modules are
+* involved
+*
+* Doesn't work :proc:`gob`
+* Also broken :proc:`Foo.gob`
+* But this works :proc:`Foo.Bar.gob`
+
+
+.. default-domain:: chpl
+
+.. module:: Foo.Bar
+
+Foo.Bar
+=======
+.. function:: proc baz()
+
+.. function:: proc gob()
+

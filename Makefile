@@ -109,7 +109,6 @@ test-venv: third-party-test-venv
 
 chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
-	cd modules && $(MAKE) sys-ctypes-docs
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
 
 always-build-test-venv: FORCE
