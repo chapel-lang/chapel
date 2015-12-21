@@ -404,7 +404,7 @@ static void processStringInRequireStmt(const char* str) {
 //
 // Build a 'use' statement with an 'except' list
 //
-BlockStmt* buildUseStmt(Expr* mod, CallExpr* names) {
+BlockStmt* buildUseStmt(Expr* mod, CallExpr* names, bool except) {
   Vec<const char*> namesList;
 
   // Iterate through the list of names to exclude when using mod
@@ -414,11 +414,15 @@ BlockStmt* buildUseStmt(Expr* mod, CallExpr* names) {
       name->remove();
     } else {
       // Currently we expect only unresolved sym exprs
-      USR_FATAL(expr, "incorrect expression in 'except' list, identifier expected");
+      if (except) {
+        USR_FATAL(expr, "incorrect expression in 'except' list, identifier expected");
+      } else {
+        USR_FATAL(expr, "incorrect expression in 'only' list, identifier expected");
+      }
     }
   }
 
-  UseExpr* newUse = new UseExpr(mod, &namesList, true);
+  UseExpr* newUse = new UseExpr(mod, &namesList, except);
 
   return buildChapelStmt(newUse);
 }
