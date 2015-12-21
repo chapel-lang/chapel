@@ -4720,8 +4720,6 @@ static bool
 isNormalField(Symbol* field)
 {
   if( field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ) return false;
-  if( field->hasFlag(FLAG_TYPE_VARIABLE) ) return false;
-  if( field->hasFlag(FLAG_PARAM) ) return false;
   if( field->hasFlag(FLAG_SUPER_CLASS) ) return false;
   // TODO -- this will break user fields named outer!
   if( 0 == strcmp("outer", field->name)) return false;
@@ -6012,10 +6010,11 @@ postFold(Expr* expr) {
       const char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
       SymExpr* left = toSymExpr(call->get(1));
+      VarSymbol* varSym = toVarSymbol(sym);
       if (left && left->var->hasFlag(FLAG_TYPE_VARIABLE)) {
         result = new SymExpr(sym->type->symbol);
         call->replace(result);
-      } else if (sym->isParameter()) {
+      } else if (sym->isParameter() || (varSym && varSym->isType())) {
         Vec<Symbol*> keys;
         baseType->substitutions.get_keys(keys);
         forv_Vec(Symbol, key, keys) {
