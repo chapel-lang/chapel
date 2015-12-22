@@ -1,4 +1,5 @@
-# Skip this test on Cygwin due to an apparent Cygwin bug.
+# Skip this test on Cygwin
+# due to an apparent Cygwin bug
 # Skip vs suppress because it fails intermittently.
 CHPL_TARGET_PLATFORM <= cygwin 
 #
