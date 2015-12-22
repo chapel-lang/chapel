@@ -1,7 +1,0 @@
-semantic: memory testing
-
-What exactly is this testing?
-
-Was:
-bug: no way to distinguish new's that are explicit in user code from those
-that are not

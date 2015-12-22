@@ -364,6 +364,7 @@ CHPL_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         dlmalloc  use Doug Lea's memory allocation package
+        jemalloc  use Jason Evan's memory allocation package
         tcmalloc  use the tcmalloc package from Google Performance Tools
         ========= =======================================================
 

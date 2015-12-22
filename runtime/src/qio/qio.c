@@ -2553,8 +2553,8 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
           break;
         // no default to get warnings when new methods are added
       }
-      if( err ) goto error;
       qbuffer_iter_advance(&ch->buf, &write_start, num_written);
+      if( err ) goto error;
     }
   } else {
     // just pretend like we wrote it; in fact we just deallocate
