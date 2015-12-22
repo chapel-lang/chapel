@@ -54,13 +54,16 @@ module ChapelLocale {
     pragma "no doc" var nPUsLogAll: int;     // HW threads, all
 
     /*
-      This returns the number of instances of the CPU architecture on
-      this locale.  If ``physical==true`` this is the number of physical
-      PUs ("cores").  Otherwise, it is the number of hardware threads,
-      which on a multithreaded hardware architecture would be larger.
-      If ``accessible==true`` then the count reflects any OS limitations
-      on which PUs may be accessed.  If ``accessible==false`` then all
-      CPUs that seem to exist are included.
+      A *processing unit* or *PU* is an instance of the processor
+      architecture, basically the thing that executes instructions.
+      ``numPUs()`` tells how many of these are present on this locale.
+      If ``physical==true`` (the default) this is the number of physical
+      PUs, commonly known as *cores*.  Otherwise it is the number of
+      hardware threads (such as hyperthreads), which on a multithreaded
+      hardware architecture would typically be more numerous.  If
+      ``accessible==true`` (the default) then the count reflects only
+      those PUs the program has access to, due to limiting by the OS for
+      example.  Otherwise, all PUs that seem to exist are included.
      */
     inline
     proc numPUs(physical: bool = true, accessible: bool = true)
