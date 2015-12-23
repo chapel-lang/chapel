@@ -6640,7 +6640,6 @@ static FnSymbol* doBuildValueFunction(FnSymbol* fn, bool retConstRef)
   ret->type = dtUnknown;
   copy->retType = dtUnknown;
   replaceSetterArgWithFalse(copy, copy, ret);
-  replaceSetterArgWithTrue(fn, fn);
 
   resolveFns(copy);
   return copy;
@@ -6660,12 +6659,15 @@ static void buildValueFunction(FnSymbol* fn) {
       // Select the value or const ref version depending on
       // whether or not the return type is POD
       bool notPOD = propagateNotPOD(retType);
-      if (notPOD)
+      if (notPOD) {
         // Build and use the const ref version of the value function
         copy = doBuildValueFunction(fn, true);
-      else
+      } else {
         // Use the value-return version
         copy = valueFn;
+      }
+      replaceSetterArgWithTrue(fn, fn);
+
       fn->valueFunction = copy;
     } else {
       copy = fn->valueFunction;
