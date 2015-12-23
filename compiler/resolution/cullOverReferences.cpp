@@ -113,13 +113,16 @@ void cullOverReferences() {
           SET_LINENO(move);
 
           if (!refNecessary(se, defMap, useMap)) {
-            // Change the call to the const ref version with (setter=false)
+            // Change the call to the "getter" version with (setter=false)
             SymExpr*   base = toSymExpr(call->baseExpr);
+
             base->var = copy;
 
+            // Adjust code to use value return version.
+            // The other option is that retTag is RET_CONST_REF,
+            // in which case no further adjustment is necessary.
             if (copy->retTag == RET_VALUE) {
               VarSymbol* tmp  = newTemp(copy->retType);
-
               move->insertBefore(new DefExpr(tmp));
 
               // This code should not be necessary if we only
