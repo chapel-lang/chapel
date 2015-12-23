@@ -513,18 +513,30 @@ module ChapelBase {
   // complex component methods re and im
   //
   inline proc ref chpl_anycomplex.re ref {
-    // MPF note:
-    // This function used to use complex_get_real only
-    // for the setter version, and creal/crealf for the
-    // !setter version, but that doesn't work with
-    // the language change that ref intent functions
-    // always return ref or const ref ("value" version).
-    // David tells me that complex_get_real does not
-    // show reduced performance in benchmarks.
-    return __primitive("complex_get_real", this);
+    if setter {
+      return __primitive("complex_get_real", this);
+    } else {
+      if this.type == complex(128) {
+        extern proc creal(x:complex(128)): real(64);
+        return creal(this);
+      } else {
+        extern proc crealf(x:complex(64)): real(32);
+        return crealf(this);
+      }
+    }
   }
   inline proc ref chpl_anycomplex.im ref {
-    return __primitive("complex_get_imag", this);
+    if setter {
+      return __primitive("complex_get_imag", this);
+    } else {
+      if this.type == complex(128) {
+        extern proc cimag(x:complex(128)): real(64);
+        return cimag(this);
+      } else {
+        extern proc cimagf(x:complex(64)): real(32);
+        return cimagf(this);
+      }
+    }
   }
   
   //
