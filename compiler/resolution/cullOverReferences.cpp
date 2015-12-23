@@ -62,7 +62,8 @@ refNecessary(SymExpr* se,
         // Return true only for ref-return functions
         // but not const-ref-return functions (which are
         // the "value" versions).
-        if (inFn->retTag == RET_REF) return true;
+        if (inFn->retTag == RET_CONST_REF) return false;
+        return true;
       } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                  call->isPrimitive(PRIM_WIDE_GET_NODE)) {
         // If we are extracting a field from the wide pointer, we need to keep it as a pointer.
