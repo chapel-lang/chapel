@@ -1,0 +1,2 @@
+intents.chpl:38: error: unresolved call 'fo(c_string)'
+intents.chpl:7: note: candidates are: fo(out s: string)

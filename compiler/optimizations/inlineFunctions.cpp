@@ -123,6 +123,10 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
       return false;
     } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
       return false;
+    } else if (call->isPrimitive(PRIM_GET_REAL)) {
+      return false;
+    } else if (call->isPrimitive(PRIM_GET_IMAG)) {
+      return false;
     }
   }
 

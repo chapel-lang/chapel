@@ -1,5 +1,5 @@
-Module: intents.doc
-   Module: intents.doc.Inner
+intents.doc
+   intents.doc.Inner
       proc one(in val)
          This function has an argument with the in intent 
 

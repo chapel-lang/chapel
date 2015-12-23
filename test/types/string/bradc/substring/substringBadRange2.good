@@ -1,1 +1,1 @@
-str.substring(13..-1) = 
+substringBadRange2.chpl:3: error: halt reached - range out of bounds of string

@@ -12,7 +12,7 @@ echo blocksize=$blocksize
 
 if -e pascal then
 else
-	chpl --fast pascal.chpl -o pascal
+  chpl --fast pascal.chpl -o pascal
 endif
 
 echo 'Block (B)'

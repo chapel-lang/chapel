@@ -1,0 +1,1 @@
+moveOverFile.chpl:14: error: Not a directory in moveDir(foo, existed.txt)

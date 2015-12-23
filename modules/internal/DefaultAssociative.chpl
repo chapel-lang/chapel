@@ -229,27 +229,29 @@ module DefaultAssociative {
   
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
-      if followThisDom != this {
-        // check to see if domains match
-        var followThisTab = followThisDom.table;
-        var myTab = table;
-        var mismatch = false;
-        // could use a reduction
-        for slot in chunk.low..chunk.high do
-          if followThisTab[slot].status != myTab[slot].status {
-            mismatch = true;
-            break;
-          }
-        if mismatch then
-          halt("zippered associative domains do not match");
-      }
-  
+
       if debugDefaultAssoc then
         writeln("In domain follower code: Following ", chunk);
-  
-      for slot in chunk.low..chunk.high do
-        if table[slot].status == chpl__hash_status.full then
-          yield table[slot].idx;
+
+      const sameDom = followThisDom == this;
+      
+      if !sameDom then
+        if followThisDom.dsiNumIndices != this.dsiNumIndices then
+          halt("zippered associative domains do not match");
+
+      var otherTable = followThisDom.table;
+      for slot in chunk.low..chunk.high {
+        var entry = otherTable[slot];
+        if entry.status == chpl__hash_status.full {
+          var idx = slot;
+          if !sameDom {
+            const (match, loc) = _findFilledSlot(entry.idx, haveLock=true);
+            if !match then halt("zippered associative domains do not match");
+            idx = loc;
+          }
+          yield table[idx].idx;
+        }
+      }
     }
   
     //
@@ -584,26 +586,29 @@ module DefaultAssociative {
   
     iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
-      if followThisDom != dom {
-        // check to see if domains match
-        var followThisTab = followThisDom.table;
-        var myTab = dom.table;
-        var mismatch = false;
-        // could use a reduction
-        for slot in chunk.low..chunk.high do
-          if followThisTab[slot].status != myTab[slot].status {
-            mismatch = true;
-            break;
-          }
-        if mismatch then
-          halt("zippered associative array does not match the iterated domain");
-      }
+
       if debugDefaultAssoc then
         writeln("In array follower code: Following ", chunk);
-      var tab = dom.table;  // cache table for performance
-      for slot in chunk.low..chunk.high do
-        if tab[slot].status == chpl__hash_status.full then
-          yield data(slot);
+
+      const sameDom = followThisDom == this.dom;
+
+      if !sameDom then
+        if followThisDom.dsiNumIndices != this.dom.dsiNumIndices then
+          halt("zippered associative array does not match the iterated domain");
+
+      var otherTable = followThisDom.table;
+      for slot in chunk.low..chunk.high {
+        var entry = otherTable[slot];
+        if entry.status == chpl__hash_status.full {
+          var idx = slot;
+          if !sameDom {
+            const (match, loc) = dom._findFilledSlot(entry.idx, haveLock=true);
+            if !match then halt("zippered associative array does not match the iterated domain");
+            idx = loc;
+          }
+          yield data[idx];
+        }
+      }
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
@@ -716,19 +721,16 @@ module DefaultAssociative {
     return _gen_key(u:int(64));
   }
   
+  // TODO: maybe move this into Strings.chpl
   // Use djb2 (Dan Bernstein in comp.lang.c)
   inline proc chpl__defaultHash(x : string): int(64) {
-    return chpl__defaultHash(x.c_str());
-  }
-
-  inline proc chpl__defaultHash(x : c_string): int(64) {
     var hash: int(64) = 0;
-    for c in 1..(x.length) {
-      hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
+    for c in 0..#(x.length) {
+      hash = ((hash << 5) + hash) ^ x.buff[c];
     }
     return _gen_key(hash);
   }
-  
+
   inline proc chpl__defaultHash(l : []) {
       var hash : int(64) = 0;
       for obj in l {

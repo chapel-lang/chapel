@@ -110,6 +110,11 @@ WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
 
 #
+# Don't warn for signed pointer issues (ex. c_ptr(c_char) )
+#
+WARN_GEN_CFLAGS += -Wno-pointer-sign
+
+#
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)

@@ -23,6 +23,14 @@
 \setlength{\cftsubsecindent}{1.3em} % cftchapnumwidth
 \setlength{\cftsubsubsecindent}{4.5em} % cftchapnumwidth + cftsecnumwidth
 
+% This can be re-enabled in order to aid in spec editing/reviewing.
+%% bring in todonotes and make sure we have enough space in the margins. Also
+%% note, even side margin is changed below since I couldn't figure out how to
+%% force notes to the right side.
+%\usepackage[paperwidth=9.5in, paperheight=11in]{geometry}
+%\setlength{\marginparwidth}{1.8in}
+%\usepackage[colorinlistoftodos, textwidth=1.8in, shadow]{todonotes}
+
 \usepackage{ifpdf}
 \ifpdf
 \usepackage[pdftex,
@@ -122,13 +130,13 @@
 \textheight 8.5in
 
 \makeindex
-\title{Chapel Language Specification\\Version 0.97}
+\title{Chapel Language Specification\\Version 0.98}
 
 \author{Cray Inc\\
 901 Fifth Avenue, Suite 1000\\
 Seattle, WA 98164}
 
-\date{April 2, 2015}
+\date{October 1, 2015}
 
 \setcounter{tocdepth}{3}
 
@@ -142,6 +150,7 @@ Seattle, WA 98164}
 \fi
 \maketitle
 
+\setcounter{page}{2}
 \null\vfill
 \noindent
 \begin{center}
@@ -225,17 +234,9 @@ Seattle, WA 98164}
 \cleardoublepage
 \input{User_Defined_Reductions_and_Scans}
 \cleardoublepage
-\input{User_Defined_Domain_Maps}
-\cleardoublepage
 \input{Memory_Consistency}
 \cleardoublepage
 \input{Interoperation}
-\cleardoublepage
-\input{Standard_Modules}
-\cleardoublepage
-\input{Standard_Distributions}
-\cleardoublepage
-\input{Standard_Layouts}
 \cleardoublepage
 \appendix
 \input{Syntax}

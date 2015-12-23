@@ -15,14 +15,15 @@ endif
 
 default: all
 
-all: chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
+all: test-venv chpldoc-venv dlmalloc gasnet gmp hwloc jemalloc qthread tcmalloc llvm
 
 clean: FORCE
-	cd chpldoc-venv && $(MAKE) clean
+	cd chpl-venv && $(MAKE) clean
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
+	cd jemalloc && $(MAKE) clean
 	cd llvm && $(MAKE) clean
 	cd massivethreads && $(MAKE) clean
 	cd qthread && $(MAKE) clean
@@ -31,11 +32,12 @@ clean: FORCE
 	cd fltk && $(MAKE) clean
 
 cleanall: FORCE
-	cd chpldoc-venv && $(MAKE) cleanall
+	cd chpl-venv && $(MAKE) cleanall
 	cd dlmalloc && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
+	cd jemalloc && $(MAKE) cleanall
 	cd llvm && $(MAKE) cleanall
 	cd massivethreads && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
@@ -44,11 +46,12 @@ cleanall: FORCE
 	cd fltk && $(MAKE) cleanall
 
 clobber: FORCE
-	cd chpldoc-venv && $(MAKE) clobber
+	cd chpl-venv && $(MAKE) clobber
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
+	cd jemalloc && $(MAKE) clobber
 	cd llvm && $(MAKE) clobber
 	cd massivethreads && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
@@ -58,9 +61,13 @@ clobber: FORCE
 
 depend:
 
-chpldoc-venv: $(CHPLDOC_VENV_SPHINX_BUILD)
-$(CHPLDOC_VENV_SPHINX_BUILD):
-	cd chpldoc-venv && $(MAKE)
+test-venv: $(CHPL_VENV_TEST_REQS)
+$(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
+	cd chpl-venv && $(MAKE) test-venv
+
+chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
+$(CHPL_VENV_SPHINX_BUILD):
+	cd chpl-venv && $(MAKE) chpldoc-venv
 
 dlmalloc: $(DLMALLOC_INSTALL_DIR)
 $(DLMALLOC_INSTALL_DIR):
@@ -86,6 +93,10 @@ $(GMP_H_FILE):
 hwloc: $(HWLOC_INSTALL_DIR)
 $(HWLOC_INSTALL_DIR):
 	cd hwloc && $(MAKE)
+
+jemalloc: $(JEMALLOC_INSTALL_DIR)
+$(JEMALLOC_INSTALL_DIR):
+	cd jemalloc && $(MAKE)
 
 massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
 $(MASSIVETHREADS_INSTALL_DIR):

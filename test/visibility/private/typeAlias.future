@@ -1,0 +1,6 @@
+unimplemented feature: allow private type aliases
+
+Right now, public and private can't be applied to type aliases.  We would like
+to be able to do that, and catch any outside use of publicly visible instances
+of the private type.  When we can apply private to type alias definitions,
+please add additional tests to be certain we catch those cases.

@@ -31,16 +31,16 @@ proc foo(TD: domain, A: [TD] int, TA) {
 }
 
 for e in TA1D do e = next();
-writeln("TA1D: ", foo(TD1D, TA1D, TA1D), " errors");
+writeln("TA1D: ", foo(TD1D, TA1D.reindex(TD1D), TA1D), " errors");
 
 for e in TA2D do e = next();
-writeln("TA2D: ", foo(TD2D, TA2D, TA2D), " errors");
+writeln("TA2D: ", foo(TD2D, TA2D.reindex(TD2D), TA2D), " errors");
 
 for e in TA3D do e = next();
-writeln("TA3D: ", foo(TD3D, TA3D, TA3D), " errors");
+writeln("TA3D: ", foo(TD3D, TA3D.reindex(TD3D), TA3D), " errors");
 
 for e in TA4D do e = next();
-writeln("TA4D: ", foo(TD4D, TA4D, TA4D), " errors");
+writeln("TA4D: ", foo(TD4D, TA4D.reindex(TD4D), TA4D), " errors");
 
 for e in TA2D32 do e = next();
-writeln("TA2D32: ", foo(TD2D32, TA2D32, TA2D32), " errors");
+writeln("TA2D32: ", foo(TD2D32, TA2D32.reindex(TD2D32), TA2D32), " errors");

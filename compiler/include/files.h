@@ -21,8 +21,9 @@
 #define _files_H_
 
 #include <cstdio>
-#include <vector>
+#include <map>
 #include <string>
+#include <vector>
 #include "vec.h"
 
 extern char executableFilename[FILENAME_MAX+1];
@@ -76,7 +77,8 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
-const std::string runUtilScript(const char* script);
+std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
+std::string runCommand(std::string& command);
 
 void setupModulePaths(void);
 void addFlagModulePath(const char* newpath);

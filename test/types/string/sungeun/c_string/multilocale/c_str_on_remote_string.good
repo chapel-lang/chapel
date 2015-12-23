@@ -1,1 +1,1 @@
-0123456789
+c_str_on_remote_string.chpl:4: error: halt reached - Cannot call .c_str() on a remote string

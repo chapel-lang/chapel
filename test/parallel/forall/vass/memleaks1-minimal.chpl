@@ -7,8 +7,10 @@ proc main() {
   var MY_VAR = 1;
   const m1 = memoryUsed();
 
-  forall idx in MYITER() do
-    useMe(MY_VAR);
+  // serial to quiet a sporadic (1 in 1000) regression (see JIRA issue 112)
+  serial do
+    forall idx in MYITER() do
+      useMe(MY_VAR);
 
   const m2 = memoryUsed();
   writeln("leaked: ", m2-m1);
@@ -28,7 +30,7 @@ iter MYITER(param tag, followThis) where tag == iterKind.follower {
 
 iter OTHER_ITER(param tag) where tag == iterKind.leader {
   cobegin {
-    on RELOC do     // on_fn() with FLAG_NON_BLOCKING
+    on RELOC do
       yield 77777;
     var jjjjj: int;
   }

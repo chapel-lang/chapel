@@ -5,10 +5,10 @@ use Time;
 use CommDiagnostics;
 
 /****************************
-	printMatrices: Set to false if you don't want to see the matrices printed
-		Default = false
-	M and N: size (square, M x N) of the matrices
-		Default = 128
+  printMatrices: Set to false if you don't want to see the matrices printed
+    Default = false
+  M and N: size (square, M x N) of the matrices
+    Default = 64
     dist: the distribution of the domain which the matrices are based on. 
         Default: cyclical with modulo unrolling
 *****************************/
@@ -17,8 +17,8 @@ config var timeit = false;
 config var messages = false;
 config var printMatrices: bool = false;
 config var dist: string = "C";
-config var M: int = 128;
-config var N: int = 128;
+config var M: int = 64;
+config var N: int = 64;
 
 const float_n: real = 1.2;
 
@@ -29,6 +29,10 @@ proc initialize_matrix(distribution, m_dim: int) {
         matrix[i,j] = ((i - 1) * (j - 1)):real / m_dim;
     }
     return matrix;
+}
+
+proc within_epsilon(a: real, b: real, eps=1e-6) {
+    return abs(a-b) < eps;
 }
 
 /* Prints out the matrix passed in */
@@ -56,21 +60,21 @@ proc print_matrix(A: [], m_dim: int, n_dim: int) {
 
 /* The process which runs the benchmark */
 proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
-	var still_correct = true;
+  var still_correct = true;
     var t:Timer;
-	
-	if messages {
-		resetCommDiagnostics();
-		startCommDiagnostics();
-	}
-	
+  
+  if messages {
+    resetCommDiagnostics();
+    startCommDiagnostics();
+  }
+  
     /******* Start the timer: this is where we do work *******/
-	if timeit {
-		t = new Timer();
-		t.start();
-	}
-	
-	var data = initialize_matrix(dist_square, m_dim);
+  if timeit {
+    t = new Timer();
+    t.start();
+  }
+  
+  var data = initialize_matrix(dist_square, m_dim);
     var symmat: [dist_square] real = 0.0;
     var mean: [dist_linear] real = 0.0;
     var stddev: [dist_linear] real = 0.0;
@@ -107,76 +111,76 @@ proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
             symmat[i,j] = 1;
         }
     }
-	
+  
     /******* End the timer *******/
-	if timeit {
-	    t.stop();
-		writeln("took ", t.elapsed(), " seconds");
-	}
-	
-	//Print out communication counts (gets and puts)
-	if messages {
-		stopCommDiagnostics();	
-		var messages=0;
-		var coms=getCommDiagnostics();
-		for i in 0..numLocales-1 {
-			messages+=coms(i).get:int;
-			messages+=coms(i).put:int;
-		}
-		writeln('message count=', messages);	
-	}
-	
-	var dataTest = initialize_matrix({1..m_dim, 1..n_dim}, m_dim);
+  if timeit {
+      t.stop();
+    writeln("took ", t.elapsed(), " seconds");
+  }
+  
+  //Print out communication counts (gets and puts)
+  if messages {
+    stopCommDiagnostics();  
+    var messages=0;
+    var coms=getCommDiagnostics();
+    for i in 0..numLocales-1 {
+      messages+=coms(i).get:int;
+      messages+=coms(i).put:int;
+    }
+    writeln('message count=', messages);  
+  }
+  
+  var dataTest = initialize_matrix({1..m_dim, 1..n_dim}, m_dim);
     var symmatTest: [{1..m_dim, 1..n_dim}] real = 0.0;
     var meanTest: [1..m_dim] real = 0.0;
     var stddevTest: [1..m_dim] real = 0.0;
-	
-	//confirm correctness of calculation
-	if correct {
-	    const eps: real = 0.1;
+  
+  //confirm correctness of calculation
+  if correct {
+      const eps: real = 0.1;
     
-	    /* 
-	     * Determine mean of column vectors of input data matrix as well as 
-	     * standard deviations of column vectors.
-	     */
-	    forall (m, s, i) in zip(meanTest, stddevTest, 1..) {
-	        m = (+ reduce(dataTest[1..n_dim, i])):real / float_n;
-	        s = (+ reduce((dataTest[1..n_dim, i] - m) ** 2)):real / float_n;
-	        s = sqrt(s);
-	        if (s <= eps) {
-	            s = 1.0;
-	        }
-	    }
+      /* 
+       * Determine mean of column vectors of input data matrix as well as 
+       * standard deviations of column vectors.
+       */
+      forall (m, s, i) in zip(meanTest, stddevTest, 1..) {
+          m = (+ reduce(dataTest[1..n_dim, i])):real / float_n;
+          s = (+ reduce((dataTest[1..n_dim, i] - m) ** 2)):real / float_n;
+          s = sqrt(s);
+          if (s <= eps) {
+              s = 1.0;
+          }
+      }
     
-	    /* Center and reduce the column vectors */
-	    forall (i,j) in {1..m_dim, 1..n_dim} {
-	        dataTest[i,j] -= meanTest[j];
-	        dataTest[i,j] /= sqrt(float_n) * stddevTest[j];
-	    }
+      /* Center and reduce the column vectors */
+      forall (i,j) in {1..m_dim, 1..n_dim} {
+          dataTest[i,j] -= meanTest[j];
+          dataTest[i,j] /= sqrt(float_n) * stddevTest[j];
+      }
 
-	    /* Calculate the m * m correlation matrix. Computes only upper triangle */
-	    forall (i, j) in {1..m_dim, 1..n_dim} {
-	        if (i < j) {
-	            var tempArray: [1..m_dim] real;
-	            forall(d1, d2, k) in zip(dataTest[1..m_dim, i], dataTest[1..m_dim, j], 1..) {
-	                tempArray[k] = d1 * d2;
-	            }
-	            symmatTest[i,j] = + reduce(tempArray);
-	        } else if (i == j) {
-	            symmatTest[i,j] = 1;
-	        }
-	    }
-		
-		for ii in 1..m_dim {
-			for jj in 1..m_dim {
-				still_correct &&= symmat[ii,jj] == symmatTest[ii,jj];
-			}
-		}
-		writeln("Is the calculation correct? ", still_correct);
-		writeln("correlation computation complete.");
-	}
-	
-	//Print out results
+      /* Calculate the m * m correlation matrix. Computes only upper triangle */
+      forall (i, j) in {1..m_dim, 1..n_dim} {
+          if (i < j) {
+              var tempArray: [1..m_dim] real;
+              forall(d1, d2, k) in zip(dataTest[1..m_dim, i], dataTest[1..m_dim, j], 1..) {
+                  tempArray[k] = d1 * d2;
+              }
+              symmatTest[i,j] = + reduce(tempArray);
+          } else if (i == j) {
+              symmatTest[i,j] = 1;
+          }
+      }
+    
+    for ii in 1..m_dim {
+      for jj in 1..m_dim {
+        still_correct &&= within_epsilon(symmat[ii,jj], symmatTest[ii,jj]);
+      }
+    }
+    writeln("Is the calculation correct? ", still_correct);
+    writeln("correlation computation complete.");
+  }
+  
+  //Print out results
     if (printMatrices) {
         writeln("data:");
         print_matrix(data, m_dim, n_dim);
@@ -190,7 +194,7 @@ proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
         writeln("symmat:");
         print_matrix(symmat, m_dim, m_dim);
         writeln();
-		
+    
         writeln("dataTest:");
         print_matrix(dataTest, m_dim, n_dim);
         writeln();

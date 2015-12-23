@@ -109,13 +109,46 @@ qthread-config: FORCE
 # Then configure
 #
 	mkdir -p $(QTHREAD_BUILD_DIR)
-	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CHPL_MAKE_HOME) $(CHPL_QTHREAD_CFG_OPTIONS) 
+	cd $(QTHREAD_BUILD_DIR) \
+	&& $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' \
+	       CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' \
+	       --prefix=$(QTHREAD_INSTALL_DIR) CHPL_HOME=$(CHPL_MAKE_HOME) \
+	       $(CHPL_QTHREAD_CFG_OPTIONS) 
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE) install
 
-qthread: qthread-config qthread-build
+#
+# The two variables here answer different questions even though they're
+# set using the same logic.  For the first, the question is "Will remote
+# caching work with this Qthreads build?", which is true iff qthreads do
+# not move from one worker to another (thus invalidating TLS).  For the
+# second, it's "Is there only one worker per shepherd?", which changes
+# how the shim sets certain QT_* environment variables to parameterize
+# Qthreads behavior.  These two questions have the same scheduler-based
+# answer now, but that may not always be true.  If and when it's not,
+# we'll need separate checks to set them.
+#
+ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
+SUPPORTS_REMOTE_CACHE = 1
+ONE_WORKER_PER_SHEPHERD = 1
+else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),nottingham sherwood))
+SUPPORTS_REMOTE_CACHE = 0
+ONE_WORKER_PER_SHEPHERD = 0
+else
+$(error Unrecognized Qthreads scheduler '$(SCHEDULER)')
+endif
+
+qthread-chapel-h: FORCE
+	echo "#define CHPL_QTHREAD_SUPPORTS_REMOTE_CACHE" \
+	     $(SUPPORTS_REMOTE_CACHE) \
+	     > $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_SCHEDULER_ONE_WORKER_PER_SHEPHERD" \
+	     $(ONE_WORKER_PER_SHEPHERD) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+
+qthread: qthread-config qthread-build qthread-chapel-h
 
 qthread-reconfig:
 	cd $(QTHREAD_SUBDIR) && autoreconf -f -i

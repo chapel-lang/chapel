@@ -43,8 +43,8 @@ fi
 
 # If we had an easy way to get the names of the C/C++ compilers
 # we could support non-gnu
-COMP=`$CHPL_HOME/util/chplenv/chpl_compiler.py`
-PLAT=`$CHPL_HOME/util/chplenv/chpl_platform.py`
+COMP=`$CHPL_HOME/util/chplenv/chpl_compiler.py --target`
+PLAT=`$CHPL_HOME/util/chplenv/chpl_platform.py --target`
 if [ "$COMP" = "gnu" ]
 then
   echo C tests will run using gnu compiler

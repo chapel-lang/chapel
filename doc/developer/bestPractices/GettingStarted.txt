@@ -29,7 +29,7 @@ project via the following steps:
   trunk subsumes everything in the release.  $CHPL_HOME/README.devel
   exists to help map between the two views).  
 
-  Start from the top-level README to build the compiler, run it, and
+  Start from the top-level README.rst to build the compiler, run it, and
   execute the resulting binary.  Follow as many of the "What's next?"
   steps as possible in order to explore the contents of the release
   and familiarize yourself with the language, compiler, documentation,

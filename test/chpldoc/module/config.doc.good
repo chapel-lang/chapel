@@ -1,4 +1,4 @@
-Module: config.doc
+config.doc
    config var normal = "hello"
       This is a normal config var 
    config param other = 1

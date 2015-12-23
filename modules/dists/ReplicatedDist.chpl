@@ -17,96 +17,7 @@
  * limitations under the License.
  */
 
-/*****************************************************************************
-*** THE REPLICATED DISTRIBUTION ***
 
-This ReplicatedDist distribution causes a domain and its arrays
-to be replicated across the desired locales (all the locales by default).
-An array receives a distinct set of elements - a "replicand" -
-allocated on each locale.
-
-In other words, mapping a domain with ReplicatedDist gives it
-an implicit additional dimension - over the locales,
-making it behave as if there is one copy of its indices per locale.
-
-Replication over locales is observable:
-- when iterating over a domain or array
-- when printing with write() et al.
-- when zippering and the replicated domain/array is
-  the first among the zippered items
-- when assigning into the replicated array
-- when inquiring about the domain's numIndices
-  or the array's numElements
-- when accessing array element(s) from a locale that was not included
-  in the array passed explicitly to the ReplicatedDist constructor,
-  an out-of-bounds error will result
-
-Only the replicand *on the current locale* is accessed
-(i.e. replication is not observable):
-- when examining certain domain properties:
-  dim(d), dims(), low, high, stride;
-  but not numIndices
-- when indexing into an array
-- when slicing an array  TODO: right?
-- when zippering and the first zippered item is not replicated
-- when assigning to a non-replicated array,
-  i.e. the replicated array is on the right-hand side of the assignment
-- when there is only a single locale (trivially: only one replicand)
-
-E.g. when iterating, the number of iterations will be (the number of
-locales involved) times (the number of iterations over this domain if
-it were distributed with the default distribution).
-
-Note that the above behavior may change in the future.
-
-Features/limitations:
-* Consistency/coherence among replicands' array elements is NOT maintained.
-* Only rectangular domains are presently supported.
-* Serial iteration over a replicated domain (or array) visits the indices
-  (or array elements) of all replicands *from the current locale*.
-* When replicating over user-provided array of locales, that array
-  must be "consistent" (see below).
-
-"Consistent" array requirement:
-* The array of locales passed to the ReplicatedDist constructor, if any,
-  must be "consistent".
-* A is "consistent" if for each ix in A.domain, A[ix].id == ix.
-* Tip: if the domain of the desired array of locales cannot be described
-  as a rectangular domain (which could be strided, multi-dimensional,
-  and/or sparse), make that array's domain associative over int.
-
-Examples:
-
-const Dbase = {1..5};
-const Drepl: domain(1) dmapped ReplicatedDist() = Dbase;
-var Abase: [Dbase] int;
-var Arepl: [Drepl] int;
-
-// only the current locale's replicand is accessed
-Arepl[3] = 4;
-
-// these iterate over Dbase, so
-// only the current locale's replicand is accessed
-forall (b,r) in zip(Abase,Arepl) b = r;
-Abase = Arepl;
-
-// these iterate over Drepl;
-// each replicand will be zippered against (and copied from) the entire Abase
-forall (r,b) in zip(Arepl,Abase) r = b;
-Arepl = Abase;
-
-// sequential zippering will detect difference in sizes
-// (if multiple locales)
-for (b,r) in zip(Abase,Arepl) ... // error
-for (r,b) in zip(Arepl,Abase) ... // error
-
-Potential extensions:
-- support other kinds of domains
-- allow run-time change in locales
-*/
-
-
-/*****************************************************************************/
 // THE REPLICATED DISTRIBUTION IMPLEMENTATION
 //
 // Classes defined:
@@ -115,6 +26,10 @@ Potential extensions:
 //  LocReplicatedDom -- Local domain descriptor
 //  ReplicatedArray -- Global array descriptor
 //  LocReplicatedArray -- Local array descriptor
+//
+// Potential extensions:
+// - support other kinds of domains
+// - allow run-time change in locales
 
 // include locale information when printing out domains and arrays
 config param printReplicatedLocales = true;
@@ -129,6 +44,138 @@ config param traceReplicatedDist = false;
 //
 // (global) distribution class
 //
+// chpldoc TODO
+//   nicer example - pull from primers/distributions.chpl
+
+/*
+This Replicated distribution causes a domain and its arrays
+to be replicated across the desired locales (all the locales by default).
+An array receives a distinct set of elements - a "replicand" -
+allocated on each locale.
+
+In other words, a ReplicatedDist-distributed domain has
+an implicit additional dimension - over the locales,
+making it behave as if there is one copy of its indices per locale.
+
+Consistency among the replicands is not preserved automatically.
+That is, changes to one replicand of an array are never propagated to
+the other replicands by the distribution implementation.
+If desired, consistency needs to be maintained by the user.
+
+Replication over locales is observable when:
+
+* iterating over a domain or array
+
+* printing with ``writeln()`` et al.
+
+* zippering, when the replicated domain/array is
+  the first among the zippered items
+
+* assigning into the replicated array
+  (each replicand gets a copy)
+
+* inquiring about the domain's ``numIndices``
+  or the array's ``numElements``
+
+* accessing array element(s) from a locale *not* in the set of desired locales,
+  i.e. from a locale which the array is not replicated onto.
+  Upon such an access, an out-of-bounds error is reported.
+
+Only the replicand *on the current locale* is accessed
+(i.e. existence of multiple replicands is not observable) when:
+
+* examining certain domain properties:
+  ``dim(d)``, ``dims()``, ``low``, ``high``, ``stride``
+  -- not ``numIndices``
+
+* indexing into an array
+
+* zippering, when the first zippered item is not replicated
+
+* assigning to a non-replicated array,
+  i.e. the replicated array is on the right-hand side of the assignment
+
+* there is only a single locale
+  (trivially: there is only one replicand in this case)
+
+.. when slicing an array?
+
+E.g. when iterating, the number of iterations will be (the number of
+locales involved) times (the number of iterations over this domain if
+it were distributed with the default distribution).
+
+Note that the above behavior may change in the future. In particular,
+we are considering changing it so that replication is never observable.
+For example, only the local replicand would be accessed in all cases.
+
+
+**Example**
+
+  .. code-block:: chapel
+
+    const Dbase = {1..5};  // a default-distributed domain
+    const Drepl: domain(1) dmapped ReplicatedDist() = Dbase;
+    var Abase: [Dbase] int;
+    var Arepl: [Drepl] int;
+
+    // only the current locale's replicand is accessed
+    Arepl[3] = 4;
+
+    // these iterate over Dbase;
+    // only the current locale's replicand is accessed
+    forall (b,r) in zip(Abase,Arepl) do b = r;
+    Abase = Arepl;
+
+    // these iterate over Drepl; each replicand of Drepl
+    // will be zippered against (and copied from) the entire Abase
+    forall (r,b) in zip(Arepl,Abase) do r = b;
+    Arepl = Abase;
+
+    // sequential zippering will detect difference in sizes
+    // (if multiple locales)
+    for (b,r) in zip(Abase,Arepl) ... // error
+    for (r,b) in zip(Arepl,Abase) ... // error
+
+
+**Constructor Arguments**
+
+The ``ReplicatedDist`` class constructor is defined as follows:
+
+  .. code-block:: chapel
+
+    proc ReplicatedDist(
+      targetLocales: [] locale = Locales,
+      purposeMessage: string = "used to create a ReplicatedDist")
+
+The array ``targetLocales`` must be "consistent", as defined below.
+
+The optional ``purposeMessage`` may be useful for debugging
+when the constructor encounters an error.
+
+
+**Features/Limitations**
+
+* Only rectangular domains are presently supported.
+
+* Serial iteration over a replicated domain (or array) visits the indices
+  (or array elements) of all replicands *from the current locale*.
+
+* When replicating over user-provided array of locales, that array
+  must be "consistent" (see below).
+
+"Consistent" array requirement:
+
+* The array of desired locales, if passed explicitly as ``targetLocales``
+  to the ReplicatedDist constructor, must be "consistent".
+
+* The array ``A`` is "consistent" if
+  for each ``ix`` in ``A.domain``, this holds: ``A[ix].id == ix``.
+
+* Tip: if the domain of your ``targetLocales`` cannot be described
+  as a rectangular domain (whether strided, multi-dimensional,
+  and/or sparse), make the domain associative over the `int` type.
+
+*/
 class ReplicatedDist : BaseDist {
   // the desired locales (an array of locales)
   const targetLocales;
@@ -145,6 +192,8 @@ class ReplicatedDist : BaseDist {
 proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
                  purposeMessage: string = "used to create a ReplicatedDist")
 {
+  if targetLocales.rank != 1 then
+    compilerError("ReplicatedDist only accepts a 1D targetLocales array");
   if traceReplicatedDist then
     writeln("ReplicatedDist constructor over ", targetLocales);
   _localesCheckHelper(purposeMessage);
@@ -161,6 +210,13 @@ proc ReplicatedDist._localesCheckHelper(purposeMessage: string): void {
     }
 }
 
+proc ReplicatedDist.dsiEqualDMaps(that: ReplicatedDist(?)) {
+  return this.targetLocales.equals(that.targetLocales);
+}
+
+proc ReplicatedDist.dsiEqualDMaps(that) param {
+  return false;
+}
 
 // privatization
 

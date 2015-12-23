@@ -1,4 +1,4 @@
-Module: longerComments
+longerComments
    proc method1()
       This is a comment for method1, which lies
       outside of a defined module 
@@ -17,7 +17,7 @@ Module: longerComments
       argument and body which lies outside of a
       defined module 
 
-   Module: longerComments.Other
+   longerComments.Other
       proc inside
          This is a comment for a method inside of
          a module 

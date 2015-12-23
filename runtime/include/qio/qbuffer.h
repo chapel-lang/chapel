@@ -228,6 +228,7 @@ qbuffer_iter_t qbuffer_iter_null(void) {
 
 void debug_print_qbuffer_iter(qbuffer_iter_t* iter);
 void debug_print_qbuffer(qbuffer_t* buf);
+void debug_print_iovec(const struct iovec* iov, int iovcnt, size_t maxbytes);
 
 
 static inline

@@ -154,6 +154,10 @@ module ChapelUtil {
     var return_value: int(32);
   }
 
+  proc =(ref lhs:chpl_main_argument, rhs:chpl_main_argument) {
+    __primitive("=", lhs, rhs);
+  }
+
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;
     extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_string;
@@ -163,7 +167,7 @@ module ChapelUtil {
 
     for i in 0..#arg.argc {
       // FIX ME: leak c_string
-      array[i] = toString(chpl_get_argument_i(local_arg, i:int(32)));
+      array[i] = chpl_get_argument_i(local_arg, i:int(32)):string;
     }
 
     return array;

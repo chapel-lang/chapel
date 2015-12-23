@@ -117,7 +117,7 @@ writeRange(evensBetween1and10);
 // or in many other cases.
 //
 // The 'align' operator always defines the alignment, overriding
-// the exiting alignment, if any.
+// the existing alignment, if any.
 // When creating a strided range from a range literal, 'by' will define
 // the alignment to be the literal's low bound for positive stride,
 // or the literal's high bound for negative stride.

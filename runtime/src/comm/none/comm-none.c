@@ -55,22 +55,20 @@ static int mysystem(const char* command, const char* description,
 
 // Chapel interface
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       size_t elemSize, int32_t typeIndex,
-                                       size_t len,
+                                       size_t size, int32_t typeIndex,
                                        int ln, c_string fn)
 {
   assert(node == 0);
-  chpl_memcpy(raddr, addr, len*elemSize);
+  chpl_memcpy(raddr, addr, size);
   return NULL;
 }
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       size_t elemSize, int32_t typeIndex,
-                                       size_t len,
+                                       size_t size, int32_t typeIndex,
                                        int ln, c_string fn)
 {
   assert(node == 0);
-  chpl_memcpy(addr, raddr, len*elemSize);
+  chpl_memcpy(addr, raddr, size);
   return NULL;
 }
 
@@ -148,19 +146,19 @@ void chpl_comm_pre_task_exit(int all) { }
 void chpl_comm_exit(int all, int status) { }
 
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
-                    size_t size, int32_t typeIndex, size_t len,
+                    size_t size, int32_t typeIndex,
                     int ln, c_string fn) {
   assert(locale==0);
 
-  memmove(raddr, addr, size*len);
+  memmove(raddr, addr, size);
 }
 
 void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
-                    size_t size, int32_t typeIndex, size_t len,
+                    size_t size, int32_t typeIndex,
                     int ln, c_string fn) {
   assert(locale==0);
 
-  memmove(addr, raddr, size*len);
+  memmove(addr, raddr, size);
 }
 
 void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
