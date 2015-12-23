@@ -6618,30 +6618,59 @@ static void instantiate_default_constructor(FnSymbol* fn) {
 }
 
 
+static FnSymbol* doBuildValueFunction(FnSymbol* fn, bool retConstRef)
+{
+  FnSymbol* copy;
+  // Build the value function when it does not already exist.
+  copy = fn->copy();
+  copy->removeFlag(FLAG_RESOLVED);
+  copy->addFlag(FLAG_INVISIBLE_FN);
+  if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
+    copy->addFlag(FLAG_NO_IMPLICIT_COPY);
+
+  fn->defPoint->insertBefore(new DefExpr(copy));
+
+  if (retConstRef)
+    copy->retTag = RET_CONST_REF;   // Change ret flag to const ref
+  else
+    copy->retTag = RET_VALUE;   // Change ret flag to return value
+
+  Symbol* ret = copy->getReturnSymbol();
+  // Reset the types of the return symbol and any declared return type.
+  ret->type = dtUnknown;
+  copy->retType = dtUnknown;
+  replaceSetterArgWithFalse(copy, copy, ret);
+  replaceSetterArgWithTrue(fn, fn);
+
+  resolveFns(copy);
+  return copy;
+}
+
 static void buildValueFunction(FnSymbol* fn) {
   if (!fn->isIterator()) {
     FnSymbol* copy;
     bool valueFunctionExists = fn->valueFunction;
     if (!valueFunctionExists) {
-      // Build the value function when it does not already exist.
-      copy = fn->copy();
-      copy->removeFlag(FLAG_RESOLVED);
-      copy->addFlag(FLAG_INVISIBLE_FN);
-      if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
-        copy->addFlag(FLAG_NO_IMPLICIT_COPY);
-      copy->retTag = RET_CONST_REF;   // Change ret flag to const ref
-      fn->defPoint->insertBefore(new DefExpr(copy));
+      // Resolve the value version of the function so that we
+      // can know the return type. We might not use the value
+      // function if the return type is not POD.
+      FnSymbol* valueFn = doBuildValueFunction(fn, false);
+      Type* retType = valueFn->retType;
+      INT_ASSERT(retType && retType != dtUnknown);
+      // Select the value or const ref version depending on
+      // whether or not the return type is POD
+      bool notPOD = propagateNotPOD(retType);
+      if (notPOD)
+        // Build and use the const ref version of the value function
+        copy = doBuildValueFunction(fn, true);
+      else
+        // Use the value-return version
+        copy = valueFn;
       fn->valueFunction = copy;
-      Symbol* ret = copy->getReturnSymbol();
-      // Reset the types of the return symbol and any declared return type.
-      ret->type = dtUnknown;
-      copy->retType = dtUnknown;
-      replaceSetterArgWithFalse(copy, copy, ret);
-      replaceSetterArgWithTrue(fn, fn);
     } else {
       copy = fn->valueFunction;
+      resolveFns(copy);
     }
-    resolveFns(copy);
   } else {
     replaceSetterArgWithTrue(fn, fn);
   }
