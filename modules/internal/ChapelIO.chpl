@@ -485,7 +485,7 @@ module ChapelIO {
     pragma "no doc"
     proc writeThisDefaultImpl(writer, x:?t) {
       if !writer.binary() {
-        var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var start:ioLiteral;
         if st == QIO_AGGREGATE_FORMAT_JSON {
           start = new ioLiteral("{");
