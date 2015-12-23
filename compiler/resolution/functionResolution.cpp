@@ -6464,6 +6464,13 @@ replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret) {
   if (SymExpr* se = toSymExpr(ast)) {
     if (se->var == fn->setter->sym)
       se->var = gFalse;
+    else if (se->var == ret && fn->retTag == RET_VALUE) {
+      if (CallExpr* move = toCallExpr(se->parentExpr))
+        if (move->isPrimitive(PRIM_MOVE))
+          if (CallExpr* call = toCallExpr(move->get(2)))
+            if (call->isPrimitive(PRIM_ADDR_OF))
+              call->primitive = primitives[PRIM_DEREF];
+    }
   }
   AST_CHILDREN_CALL(ast, replaceSetterArgWithFalse, fn, ret);
 }
