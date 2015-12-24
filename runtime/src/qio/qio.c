@@ -2328,6 +2328,9 @@ qioerr _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
     left -= num_read;
     qbuffer_iter_advance(&ch->buf, &read_start, num_read);
 
+    // Ignore interrupted system call, just keep reading.
+    if( err && qio_err_to_int(err) == EINTR ) err = 0;
+
     if( err ) break;
   }
 
@@ -2554,6 +2557,10 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
         // no default to get warnings when new methods are added
       }
       qbuffer_iter_advance(&ch->buf, &write_start, num_written);
+
+      // Ignore interrupted system call, just keep writing.
+      if( err && qio_err_to_int(err) == EINTR ) err = 0;
+
       if( err ) goto error;
     }
   } else {
