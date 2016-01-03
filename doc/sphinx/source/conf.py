@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# chpldoc documentation build configuration file, created by
+# Chapel documentation build configuration file, created by
 # sphinx-quickstart on Thu Jan 29 08:44:44 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -26,7 +26,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.0'
+needs_sphinx = '1.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -144,7 +144,7 @@ html_title = version
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-#html_favicon = None
+html_favicon = '_static/cray-chapel-nowords.ico'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -184,7 +184,7 @@ html_static_path = ['_static']
 #html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
-#html_show_sphinx = True
+html_show_sphinx = False
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
 #html_show_copyright = True
@@ -198,7 +198,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'chpldocdoc'
+htmlhelp_basename = 'chpldoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -279,7 +279,9 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-## Monkey patch to disable nonlocal image warning for Chapel logo
+# -- Custom options -------------------------------------------------------
+
+## Patch to disable nonlocal image warning for Chapel logo in README.rst
 original_warn_mode = sphinx.environment.BuildEnvironment.warn_node
 
 def allow_nonlocal_image_warn_node(self, msg, node):
