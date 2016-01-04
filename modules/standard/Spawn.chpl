@@ -173,24 +173,26 @@ module Spawn {
     // TODO -- these could be private to this module
     pragma "no doc"
     var stdin_pipe:bool;
+    // true if we are currently buffering up stdin, meaning that
+    // we need to 'commit' in order to actually send the data.
     pragma "no doc"
     var stdin_buffering:bool;
     pragma "no doc"
     var stdin_file:file;
     pragma "no doc"
-    var stdin:channel(writing=true, kind=kind, locking=locking);
+    var stdin_channel:channel(writing=true, kind=kind, locking=locking);
     pragma "no doc"
     var stdout_pipe:bool;
     pragma "no doc"
     var stdout_file:file;
     pragma "no doc"
-    var stdout:channel(writing=false, kind=kind, locking=locking);
+    var stdout_channel:channel(writing=false, kind=kind, locking=locking);
     pragma "no doc"
     var stderr_pipe:bool;
     pragma "no doc"
     var stderr_file:file;
     pragma "no doc"
-    var stderr:channel(writing=false, kind=kind, locking=locking);
+    var stderr_channel:channel(writing=false, kind=kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
@@ -198,6 +200,62 @@ module Spawn {
 
     pragma "no doc" 
     var spawn_error:syserr;
+
+    pragma "no doc"
+    proc _halt_on_launch_error() {
+      if !running {
+        ioerror(spawn_error,
+                "encountered when launching subprocess");
+      }
+    }
+
+    /*
+       Access the stdin pipe for the subprocess. The parent process
+       can write to the subprocess through this pipe if the subprocess
+       was created with stdin=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stdin pipe open.
+     */
+    proc stdin {
+      _halt_on_launch_error();
+      if stdin_pipe == false {
+        halt("subprocess was not configured with a stdin pipe");
+      }
+      return stdin_channel;
+    }
+
+    /*
+       Access the stdout pipe for the subprocess. The parent process
+       can read from the subprocess through this pipe if the subprocess
+       was created with stdout=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stdout pipe open.
+     */
+    proc stdout {
+      _halt_on_launch_error();
+      if stdout_pipe == false {
+        halt("subprocess was not configured with a stdout pipe");
+      }
+      return stdout_channel;
+    }
+
+    /*
+       Access the stderr pipe for the subprocess. The parent process
+       can read from the subprocess through this pipe if the subprocess
+       was created with stderr=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stderr pipe open.
+     */
+    proc stderr {
+      _halt_on_launch_error();
+      if stderr_pipe == false {
+        halt("subprocess was not configured with a stderr pipe");
+      }
+      return stderr_channel;
+    }
   }
 
   private extern const QIO_FD_FORWARD:c_int;
@@ -408,7 +466,7 @@ module Spawn {
       if err {
         ret.spawn_error = err; return ret;
       }
-      ret.stdin = ret.stdin_file.writer(error=err);
+      ret.stdin_channel = ret.stdin_file.writer(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -417,7 +475,7 @@ module Spawn {
         // mark stdin so that we don't actually send any data
         // until communicate() is called.
 
-        err = ret.stdin._mark();
+        err = ret.stdin_channel._mark();
         if err {
           ret.spawn_error = err; return ret;
         }
@@ -432,7 +490,7 @@ module Spawn {
         ret.spawn_error = err; return ret;
       }
 
-      ret.stdout = ret.stdout_file.reader(error=err);
+      ret.stdout_channel = ret.stdout_file.reader(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -445,7 +503,7 @@ module Spawn {
         ret.spawn_error = err; return ret;
       }
 
-      ret.stderr = ret.stderr_file.reader(error=err);
+      ret.stderr_channel = ret.stderr_file.reader(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -583,8 +641,11 @@ module Spawn {
       // Close stdin.
       if this.stdin_pipe {
         // send data to stdin
-        if this.stdin_buffering then this.stdin._commit();
-        this.stdin.close(error=error);
+        if this.stdin_buffering {
+          this.stdin._commit();
+          this.stdin_buffering = false; // Don't commit again on close again
+        }
+        this.stdin_channel.close(error=error);
         this.stdin_file.close(error=error);
       }
 
@@ -597,7 +658,7 @@ module Spawn {
         this.exit_status = exitcode;
       }
 
-      // Close stdout/stderr files.
+      // Close stdout/stderr files. Leave the channels open.
       if this.stdout_pipe {
         this.stdout_file.close(error=error);
       }
@@ -613,8 +674,10 @@ module Spawn {
   proc subprocess.wait(buffer=true) {
     var err:syserr = ENOERR;
 
+    _halt_on_launch_error();
+
     this.wait(error=err, buffer=buffer);
-    if err then halt("Error in subprocess.wait: " + errorToString(err));
+    if err then ioerror(err, "in subprocess.wait");
   }
 
   /*
@@ -638,17 +701,20 @@ module Spawn {
     on home {
       if this.stdin_pipe {
         // send data to stdin
-        if this.stdin_buffering then this.stdin._commit();
+        if this.stdin_buffering {
+          this.stdin._commit();
+          this.stdin_buffering = false; // Don't commit again on close again
+        }
       }
 
       error = qio_proc_communicate(
         locking,
         stdin_file._file_internal,
-        stdin._channel_internal,
+        stdin_channel._channel_internal,
         stdout_file._file_internal,
-        stdout._channel_internal,
+        stdout_channel._channel_internal,
         stderr_file._file_internal,
-        stderr._channel_internal);
+        stderr_channel._channel_internal);
     }
 
     if !error {
@@ -668,8 +734,10 @@ module Spawn {
   proc subprocess.communicate() {
     var err:syserr = ENOERR;
 
+    _halt_on_launch_error();
+
     this.communicate(error=err);
-    if err then halt("Error in subprocess.communicate: " + errorToString(err));
+    if err then ioerror(err, "in subprocess.communicate");
   }
 
 
