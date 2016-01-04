@@ -6,7 +6,7 @@ Chapel Documentation
 Contents:
 
 .. toctree::
-   :caption: Compiling and Running Chapel Programs
+   :caption: Compiling and Running Chapel
    :maxdepth: 1
 
    Quickstart Instructions <usingchapel/README>
