@@ -709,7 +709,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                  // TODO - should this handle PRIM_GET_SVEC_MEMBER_VALUE?
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                   call->isPrimitive(PRIM_WIDE_GET_NODE))
                 // Treat the use of these primitives as a use of their arguments.
