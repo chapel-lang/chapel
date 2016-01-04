@@ -1015,6 +1015,7 @@ qioerr qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, 
 static inline
 qioerr qio_channel_lock(qio_channel_t* ch)
 {
+  assert( ch != NULL );
   return qio_lock(&ch->lock);
 }
 
