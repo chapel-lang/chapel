@@ -1357,6 +1357,33 @@ qioerr qio_channel_close(const int threadsafe, qio_channel_t* ch)
   return err;
 }
 
+// Returns true for ch=NULL channel if ch has been closed
+// (but not yet deallocated).
+static inline
+bool qio_channel_isclosed(const int threadsafe, qio_channel_t* ch)
+{
+  qioerr err;
+  bool ret;
+
+  if( ch == NULL ) return true;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+  }
+
+  ret = false;
+  {
+    qio_chtype_t type = (qio_chtype_t) (ch->hints & QIO_CHTYPEMASK);
+    if( type == QIO_CHTYPE_CLOSED ) ret = true;
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return ret;
+}
+
 qioerr qio_channel_mark(const int threadsafe, qio_channel_t* ch);
 qioerr qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch, int flushbits);
 
