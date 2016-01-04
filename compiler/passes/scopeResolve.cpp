@@ -358,6 +358,21 @@ static void processImportExprs() {
           USR_FATAL_CONT(use, "Bad identifier in 'except' clause, '%s' is already private", toExclude);
         }
       }
+    } else if (use->includes.size() > 0) {
+      for_vector(const char, toInclude, use->includes) {
+        SymExpr* se = toSymExpr(use->mod);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+
+        Symbol* sym = lookup(mod->block, toInclude);
+
+        if (!sym) {
+          USR_FATAL_CONT(use, "Bad identifier in 'only' clause, no known '%s'", toInclude);
+        } else if (!sym->isVisible(use)) {
+          USR_FATAL_CONT(use, "Bad identifier in 'only' clause, '%s' is private", toInclude);
+        }
+      }
     }
   }
 }
@@ -1974,6 +1989,11 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
               // of checking for the match.
               if (matched != use->excludes.end())
                 continue;
+            } else if (use->includes.size() > 0) {
+              if (std::find(use->includes.begin(), use->includes.end(), name) == use->includes.end())
+                continue;
+              // If we had a match in the only list, we can safely check for
+              // that symbol in this scope.  Otherwise, we should continue
             }
 
             SymExpr* se = toSymExpr(use->mod);
