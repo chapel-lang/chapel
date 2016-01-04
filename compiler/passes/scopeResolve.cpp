@@ -35,6 +35,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include <algorithm>
 #include <map>
 #include <set>
 
@@ -1967,19 +1968,11 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
           if (use) {
             // Make sure we skip the symbols we should skip
             if (use->excludes.size() > 0) {
-              bool matched = false;
-              for_vector(const char, toExclude, use->excludes) {
-                if (!strcmp(toExclude, name)) {
-                  matched = true;
-                  break;
-                  // Need to break with the information, since we want to
-                  // continue to the next use statement, but don't need to
-                  // keep looking through the excludes list.
-                }
-              }
+              std::vector<const char*>::iterator matched;
+              matched = std::find(use->excludes.begin(), use->excludes.end(), name);
               // If we had a match, move on to the next use statement instead
               // of checking for the match.
-              if (matched)
+              if (matched != use->excludes.end())
                 continue;
             }
 
