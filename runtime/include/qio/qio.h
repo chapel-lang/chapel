@@ -1363,13 +1363,12 @@ qioerr qio_channel_close(const int threadsafe, qio_channel_t* ch)
 static inline
 bool qio_channel_isclosed(const int threadsafe, qio_channel_t* ch)
 {
-  qioerr err;
   bool ret;
 
   if( ch == NULL ) return true;
 
   if( threadsafe ) {
-    err = qio_lock(&ch->lock);
+    qio_lock(&ch->lock);
   }
 
   ret = false;
