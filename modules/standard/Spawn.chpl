@@ -80,9 +80,12 @@ back its input.
   while sub.stdout.readline(line) {
     write("Got line: ", line);
   }
+  sub.close();
+
   // prints out:
   // Got line: Hello
   // Got line: World
+
 
 
 .. note::
@@ -128,6 +131,17 @@ module Spawn {
 
   /* 
      This record represents a subprocess.
+
+     Note that the subprocess will not be waited for if this record
+     goes out of scope. Memory used by the subprocess record itself
+     to implement pipes will be freed if the record goes out of scope,
+     however.
+
+     Generally, it is important to call :proc:`subprocess.wait` to wait for the
+     process to complete. If the parent process is using pipes to communicate
+     with the subprocess, the parent process may call :proc:`subprocess.close`
+     in order to close the pipes and free any buffers.
+
    */
   record subprocess {
     /* The kind of a subprocess is used to create the types
@@ -740,6 +754,47 @@ module Spawn {
     if err then ioerror(err, "in subprocess.communicate");
   }
 
+  /*
+    Close any open channels and pipes for interacting with a subprocess.  This
+    function does not wait for the subprocess to complete.  Note that it is
+    generally not necessary to call this function since these channels will be
+    closed when the subprocess record goes out of scope.
+
+    :arg error: optional argument to capture any error encountered
+                when closing the pipes.
+   */
+  proc subprocess.close(out error:syserr) {
+    error = ENOERR;
+    // Close stdin.
+    if this.stdin_pipe {
+      // send data to stdin
+      if this.stdin_buffering {
+        this.stdin._commit();
+        this.stdin_buffering = false; // Don't commit again on close again
+      }
+      this.stdin_channel.close(error=error);
+      this.stdin_file.close(error=error);
+    }
+    // Close stdout.
+    if this.stdout_pipe {
+      this.stdout_channel.close(error=error);
+      this.stdout_file.close(error=error);
+    }
+    // Close stderr.
+    if this.stderr_pipe {
+      this.stderr_channel.close(error=error);
+      this.stderr_file.close(error=error);
+    }
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.close() {
+    var err:syserr = ENOERR;
+
+    this.close(error=err);
+    if err then ioerror(err, "in subprocess.close");
+  }
 
 // Future work: support
 // send_signal
