@@ -370,7 +370,7 @@ typedef struct _chpl_commDiagnostics {
   uint64_t try_nb;
   uint64_t execute_on;
   uint64_t execute_on_fast;
-  uint64_t executo_on_nb;
+  uint64_t execute_on_nb;
 } chpl_commDiagnostics;
 
 void chpl_startVerboseComm(void);
