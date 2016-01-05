@@ -1565,9 +1565,6 @@ void initPrimitiveTypes() {
   dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
 
-  dtBoolean = createInternalType ("boolean", "boolean");
-  dtBoolean->symbol->addFlag(FLAG_GENERIC);
-
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
