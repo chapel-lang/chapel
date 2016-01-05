@@ -639,6 +639,9 @@ initPrimitive() {
   // It coerces its first argument to the type stored in the second argument.
   prim_def(PRIM_COERCE, "coerce", returnInfoSecondType);
 
+  prim_def(PRIM_CALL_RESOLVES, "call resolves", returnInfoBool);
+  prim_def(PRIM_METHOD_CALL_RESOLVES, "method call resolves", returnInfoBool);
+
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
 
