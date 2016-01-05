@@ -340,50 +340,76 @@ static ModuleSymbol* getUsedModule(Expr* expr) {
   return getUsedModule(call->get(1), call);
 }
 
+
+//
+// Helper routine to factor some 'use' error messages into a single place
+//
+static void printModuleUseError(CallExpr* useExpr, 
+                                Symbol* sym = NULL) {
+  if (sym) {
+    if (sym->name && !sym->isImmediate()) {
+      USR_FATAL(useExpr, "'use' of non-module symbol %s", sym->name);
+    } else {
+      USR_FATAL(useExpr, "'use' of non-module symbol");
+    }
+  } else {
+    USR_FATAL(useExpr, "'use' statements must refer to module symbols "
+              "(e.g., 'use <module>[.<submodule>]*;')");
+  }
+}
+
+
+//static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* sym) {
+  
+//}
+
 //
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
-  ModuleSymbol* mod    = NULL;
-  Symbol*       symbol = NULL;
-
+  //
+  // This handles the simple case of 'use <symbol>' (as well as error
+  // cases that try to use non-module symbols)
+  //
   if (SymExpr* sym = toSymExpr(expr)) {
-    Symbol* symbol = sym->var;
-
-    mod = toModuleSymbol(symbol);
-
-    if (symbol && !mod) {
-      //
-      // If this is a string literal, print out the string itself.
-      //
-      if (VarSymbol* var = toVarSymbol(symbol)) {
-        if (var->immediate->const_kind == CONST_KIND_STRING) {
-          USR_FATAL(useCall, "Illegal use of non-module \"%s\"", 
-                    var->immediate->v_string);
-        }
+    if (Symbol* symbol = sym->var) {
+      if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
+        //
+        // This 'use' is of a module symbol (yay!)  Return it.
+        //
+        return mod;
       } else {
         //
-        // otherwise, print out the name of the symbol
+        // This 'use's a symbol, but it's not a module
         //
-        USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
+        printModuleUseError(useCall, symbol);
       }
+    } else {
+      printModuleUseError(useCall);
     }
 
+    return NULL;
+
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    Symbol* symbol = lookup(useCall, sym->unresolved);
-
-    mod = toModuleSymbol(symbol);
-
-    if (symbol && !mod) {
-      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
-    } else if (!symbol) {
+    if (Symbol* symbol = lookup(useCall, sym->unresolved)) {
+      if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
+        return mod;
+      } else {
+        printModuleUseError(useCall, symbol);
+      }
+    } else {
       USR_FATAL(useCall, "Cannot find module '%s'", sym->unresolved);
     }
 
-  } else if(CallExpr* call = toCallExpr(expr)) {
+  }  else if (CallExpr* call = toCallExpr(expr)) {
+    //
+    // This handles the case of 'use <symbol>.<symbol>' (as well as
+    // error cases in which other expressions than '.' are used)
+    //
+
     if (!call->isNamed("."))
-      USR_FATAL(useCall, "Bad use statement in getUsedModule");
+      printModuleUseError(useCall);
 
     ModuleSymbol* lhs = getUsedModule(call->get(1), useCall);
 
@@ -399,19 +425,32 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
     if (!get_string(rhs, &rhsName))
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
 
-    symbol = lookup(lhs->block, rhsName);
-    mod    = toModuleSymbol(symbol);
-
-    if (symbol && !mod) {
-      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
-    } else if (!symbol) {
+    if (Symbol* symbol = lookup(lhs->block, rhsName)) {
+      if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
+        //
+        // We found a module symbol!  Return it.
+        //
+        return mod;
+      } else {
+        printModuleUseError(useCall, symbol);
+      }
+    } else {
       USR_FATAL(useCall, "Cannot find module '%s'", rhsName);
     }
-  } else {
-    INT_FATAL(useCall, "Bad use statement in getUsedModule");
-  }
 
-  return mod;
+    //
+    // We hit some sort of error condition (and will have exited by now,
+    // but include this to make tools happy)
+    //
+    return NULL;
+  } else {
+    //
+    // This is a general fall-through case that we may never reach, but
+    // better safe than sorry?
+    //
+    printModuleUseError(useCall);
+    return NULL;
+  }
 }
 
 /************************************ | *************************************
