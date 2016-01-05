@@ -354,7 +354,20 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
     mod = toModuleSymbol(symbol);
 
     if (symbol && !mod) {
-      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
+      //
+      // If this is a string literal, print out the string itself.
+      //
+      if (VarSymbol* var = toVarSymbol(symbol)) {
+        if (var->immediate->const_kind == CONST_KIND_STRING) {
+          USR_FATAL(useCall, "Illegal use of non-module \"%s\"", 
+                    var->immediate->v_string);
+        }
+      } else {
+        //
+        // otherwise, print out the name of the symbol
+        //
+        USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
+      }
     }
 
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
