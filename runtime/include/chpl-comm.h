@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -81,17 +81,15 @@ extern const int chpl_heterogeneous;
 // wait for the GET to complete. The destination buffer must not be modified
 // before the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                     int32_t elemSize, int32_t typeIndex,
-                                     int32_t len,
-                                     int ln, c_string fn);
+                                       size_t size, int32_t typeIndex,
+                                       int ln, c_string fn);
 
 // Do a PUT in a nonblocking fashion, returning a handle which can be used to
 // wait for the PUT to complete. The source buffer must not be modified before
 // the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                    int32_t elemSize, int32_t typeIndex,
-                                    int32_t len,
-                                    int ln, c_string fn);
+                                       size_t size, int32_t typeIndex,
+                                       int ln, c_string fn);
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
@@ -221,7 +219,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 // currently in use on any platforms, but is being retained in the
 // event that we wish to re-enable this capability in the future.
 // 
-void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid);
+void chpl_comm_broadcast_private(int id, size_t size, int32_t tid);
 
 //
 // Barrier for synchronization between all top-level locales; currently
@@ -267,7 +265,7 @@ void chpl_comm_exit(int all, int status);
 //   size and locale are part of p
 //
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    size_t size, int32_t typeIndex,
                     int ln, c_string fn);
 
 //
@@ -278,7 +276,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 //   size and locale are part of p
 //
 void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                    int32_t elemSize, int32_t typeIndex, int32_t len,
+                    size_t size, int32_t typeIndex,
                     int ln, c_string fn);
 
 //
@@ -293,17 +291,17 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 //   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 //
-void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale, 
-                     void* srcaddr, void* srcstrides, void* count,
-                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, int32_t dstlocale, 
+                     void* srcaddr, size_t* srcstrides, size_t* count,
+                     int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                      int ln, c_string fn);
 
 //
 // same as chpl_comm_puts(), but do get instead
 //
-void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale, 
-                     void* srcaddr, void* srcstrides, void* count,
-                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, int32_t srclocale, 
+                     void* srcaddr, size_t* srcstrides, size_t* count,
+                     int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
                      int ln, c_string fn);
 
 //
@@ -313,8 +311,8 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale,
 // a locally-allocated char[] and the locale field is set to "here".
 // The local char[] buffer is leaked. :(
 //
-void chpl_gen_comm_wide_string_get(void* addr,
-  c_nodeid_t node, void* raddr, int32_t elemSize, int32_t typeIndex, int32_t len,
+void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
+                                   size_t size, int32_t typeIndex,
                                    int ln, c_string fn);
 
 //
@@ -327,19 +325,19 @@ void chpl_gen_comm_wide_string_get(void* addr,
 //   multiple executeOns to the same locale should be handled concurrently
 //
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid, void *arg, int32_t arg_size);
+                          chpl_fn_int_t fid, void *arg, size_t arg_size);
 
 //
 // non-blocking execute_on
 //
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                       chpl_fn_int_t fid, void *arg, int32_t arg_size);
+                             chpl_fn_int_t fid, void *arg, size_t arg_size);
 
 //
 // fast execute_on (i.e., run in handler)
 //
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                               chpl_fn_int_t fid, void *arg, int32_t arg_size);
+                         chpl_fn_int_t fid, void *arg, size_t arg_size);
 
 
 //

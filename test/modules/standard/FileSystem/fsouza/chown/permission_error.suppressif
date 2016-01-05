@@ -1,0 +1,2 @@
+# Fails when run as a windows service, see JIRA issue 81
+SERVICE_ID == jenkinsslave-c__jenkins_chapel-ci

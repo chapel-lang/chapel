@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,7 +63,8 @@
 
 static int  processIdentifier(yyscan_t scanner);
 static int  processToken(yyscan_t scanner, int t);
-static int  processStringLiteral(yyscan_t scanner, const char* q);
+static int  processStringLiteral(yyscan_t scanner, const char* q, int type);
+
 static int  processExtern(yyscan_t scanner);
 static int  processExternCode(yyscan_t scanner);
 
@@ -151,13 +152,15 @@ on               return processToken(yyscanner, TON);
 otherwise        return processToken(yyscanner, TOTHERWISE);
 out              return processToken(yyscanner, TOUT);
 param            return processToken(yyscanner, TPARAM);
-zip              return processToken(yyscanner, TZIP);
 pragma           return processToken(yyscanner, TPRAGMA);
 __primitive      return processToken(yyscanner, TPRIMITIVE);
+private          return processToken(yyscanner, TPRIVATE);
 proc             return processToken(yyscanner, TPROC);
+public           return processToken(yyscanner, TPUBLIC);
 record           return processToken(yyscanner, TRECORD);
 reduce           return processToken(yyscanner, TREDUCE);
 ref              return processToken(yyscanner, TREF);
+require          return processToken(yyscanner, TREQUIRE);
 return           return processToken(yyscanner, TRETURN);
 scan             return processToken(yyscanner, TSCAN);
 select           return processToken(yyscanner, TSELECT);
@@ -176,6 +179,7 @@ where            return processToken(yyscanner, TWHERE);
 while            return processToken(yyscanner, TWHILE);
 with             return processToken(yyscanner, TWITH);
 yield            return processToken(yyscanner, TYIELD);
+zip              return processToken(yyscanner, TZIP);
 
 "_"              return processToken(yyscanner, TUNDERSCORE);
 
@@ -252,15 +256,17 @@ yield            return processToken(yyscanner, TYIELD);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
 {ident}          return processIdentifier(yyscanner);
-"\""             return processStringLiteral(yyscanner, "\"");
-"\'"             return processStringLiteral(yyscanner, "\'");
+"\""             return processStringLiteral(yyscanner, "\"", STRINGLITERAL);
+"\'"             return processStringLiteral(yyscanner, "\'", STRINGLITERAL);
+"c\""            return processStringLiteral(yyscanner, "\"", CSTRINGLITERAL);
+"c\'"            return processStringLiteral(yyscanner, "\'", CSTRINGLITERAL);
 
 "//"             return processSingleLineComment(yyscanner);
 "/*"             return processBlockComment(yyscanner);
 
 \n               return processNewline(yyscanner);
 
-[ \t\r]          processWhitespace(yyscanner);
+[ \t\r\f]        processWhitespace(yyscanner);
 .                processInvalidToken(yyscanner);
 
 %%
@@ -311,6 +317,13 @@ int processNewline(yyscan_t scanner) {
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
+
+void stringBufferInit() {
+  if (stringBuffer == NULL) {
+    stringBuffer  = (char*) malloc(1024);
+    stringBuffer[0] = '\0';
+  }
+}
 
 static int  processIdentifier(yyscan_t scanner) {
   YYSTYPE* yyLval = yyget_lval(scanner);
@@ -375,11 +388,11 @@ static int processToken(yyscan_t scanner, int t) {
 
 static char* eatStringLiteral(yyscan_t scanner, const char* startChar);
 
-static int processStringLiteral(yyscan_t scanner, const char* q) {
+static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE*    yyLval = yyget_lval(scanner);
 
-  yyLval->pch = eatStringLiteral(scanner, q);
+  yyLval->pch = astr(eatStringLiteral(scanner, q));
 
   countToken(astr(q, yyLval->pch, q));
 
@@ -396,7 +409,7 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
     remain = remain - strlen(yyText);
   }
 
-  return STRINGLITERAL;
+  return type;
 }
 
 static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {

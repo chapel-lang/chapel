@@ -1,0 +1,2 @@
+staticCalledOnWrongType.chpl:13: error: unresolved call 'type R.foo()'
+staticCalledOnWrongType.chpl:1: note: candidates are: type int.foo()

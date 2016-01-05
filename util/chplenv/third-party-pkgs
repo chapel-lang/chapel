@@ -23,6 +23,8 @@
 #   that package is emitted if --compiler is passed,
 #   and not by default (which gives dependencies for runtime).
 #
+from __future__ import print_function, absolute_import
+
 import os, os.path, sys, subprocess
 
 utildir = os.path.split(sys.argv[0])
@@ -53,7 +55,7 @@ for dir in third_party_pkgs:
 
 printchplenv = chpl_home+'/util/printchplenv'
 chplenv=subprocess.Popen([printchplenv, '--simple'],
-                         stdout=subprocess.PIPE).communicate()[0]
+                         stdout=subprocess.PIPE).communicate()[0].decode()
 
 pkgs=''
 for l in chplenv.split('\n'):
@@ -86,5 +88,5 @@ else:
 
 pkgs = pkgs.strip()
 
-print pkgs
+print(pkgs)
 

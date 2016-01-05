@@ -17,21 +17,21 @@ var bInferFromTrue              =  true;
 
 
 
-writeln('iDefault            = ', iDefault);
-writeln('iSetToZero          = ', iSetToZero);
-writeln('iSetToTen           = ', iSetToTen);
-writeln('iInferFromTwenty    = ', iInferFromTwenty);
-writeln('');
+writeln(c'iDefault            = ', iDefault);
+writeln(c'iSetToZero          = ', iSetToZero);
+writeln(c'iSetToTen           = ', iSetToTen);
+writeln(c'iInferFromTwenty    = ', iInferFromTwenty);
+writeln(c'');
 
-writeln('rDefault            =   ', rDefault);
-writeln('rSetToZero          =   ', rSetToZero);
-writeln('rSetToTenIsh        =   ', rSetToTenIsh);
-writeln('rInferFromTwentyIsh =   ', rInferFromTwentyIsh);
-writeln('');
+writeln(c'rDefault            =   ', rDefault);
+writeln(c'rSetToZero          =   ', rSetToZero);
+writeln(c'rSetToTenIsh        =   ', rSetToTenIsh);
+writeln(c'rInferFromTwentyIsh =   ', rInferFromTwentyIsh);
+writeln(c'');
 
-writeln('bDefault            = ', bDefault);
-writeln('bSetToFalse         = ', bSetToFalse);
-writeln('bSetToTrue          = ', bSetToTrue);
-writeln('bInferFromTrue      = ', bInferFromTrue);
+writeln(c'bDefault            = ', bDefault);
+writeln(c'bSetToFalse         = ', bSetToFalse);
+writeln(c'bSetToTrue          = ', bSetToTrue);
+writeln(c'bInferFromTrue      = ', bInferFromTrue);
 
 quit();

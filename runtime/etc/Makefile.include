@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -41,7 +41,7 @@ endif
 ifeq ($(COMP_GEN_FLOAT_OPT), -1)
   MAKE_COMP_GEN_CFLAGS += $(IEEE_FLOAT_GEN_CFLAGS)
 endif
-# COMP_GEN_FLOAT_OPT = -1 -> IEEE lax, optimize please
+# COMP_GEN_FLOAT_OPT = 1 -> IEEE lax, optimize please
 ifeq ($(COMP_GEN_FLOAT_OPT), 1)
   MAKE_COMP_GEN_CFLAGS += $(FAST_FLOAT_GEN_CFLAGS)
 endif
@@ -86,21 +86,21 @@ CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 CHPL_RT_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_RT_DIR)
 
 printincludesanddefines:
-	@echo $(RUNTIME_DEFS) $(RUNTIME_INCLS)
+	@echo $(CHPL_MAKE_BASE_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS)
 
 printcompileline:
-	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
+	@echo $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
 
 printcflags:
-	@echo $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
+	@echo $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
 
 printlibraries:
 	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
 printlinkline:
 	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
+	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
 
 
 printmaino:

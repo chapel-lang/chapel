@@ -10,8 +10,8 @@ proc foo(D: domain, A:[D], i) {
 
 var A: [D4D0] int;
 A = -1;
-foo(D4D0, A, -1);
+foo(D4D0, A.reindex(D4D0), -1);
 A += -2;
-foo(D4D1, A, -2);
+foo(D4D1, A.reindex(D4D1), -2);
 
 writeln("FAIL: We should not get here!");

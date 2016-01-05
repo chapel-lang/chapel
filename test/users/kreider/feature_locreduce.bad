@@ -1,0 +1,2 @@
+feature_locreduce.chpl:17: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+feature_locreduce.chpl:17: error: unresolved access of 'int(64)' by '(1)'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -165,10 +165,10 @@ module LocaleModel {
       var comm, spawnfn : c_string;
       extern proc chpl_nodeName() : c_string;
       // sys_getenv returns zero on success.
-      if sys_getenv("CHPL_COMM".c_str(), comm) == 0 && comm == "gasnet" &&
-        sys_getenv("GASNET_SPAWNFN".c_str(), spawnfn) == 0 && spawnfn == "L"
-      then local_name = toString(chpl_nodeName()) + "-" + _node_id : string;
-      else local_name = toString(chpl_nodeName());
+      if sys_getenv(c"CHPL_COMM", comm) == 0 && comm == c"gasnet" &&
+        sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 0 && spawnfn == c"L"
+      then local_name = chpl_nodeName() + "-" + _node_id : string;
+      else local_name = chpl_nodeName():string;
 
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
@@ -223,7 +223,7 @@ module LocaleModel {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     proc chpl_name() return local_name();
-    proc local_name() return toString("rootLocale");
+    proc local_name() return "rootLocale";
 
     proc readWriteThis(f) {
       f <~> name;
@@ -313,11 +313,11 @@ module LocaleModel {
   // runtime interface
   //
   extern proc chpl_comm_fork(loc_id: int, subloc_id: int,
-                             fn: int, args: c_void_ptr, arg_size: int(32));
+                             fn: int, args: c_void_ptr, arg_size: size_t);
   extern proc chpl_comm_fork_fast(loc_id: int, subloc_id: int,
-                                  fn: int, args: c_void_ptr, args_size: int(32));
+                                  fn: int, args: c_void_ptr, args_size: size_t);
   extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
-                                fn: int, args: c_void_ptr, args_size: int(32));
+                                fn: int, args: c_void_ptr, args_size: size_t);
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   //
   // regular "on"
@@ -327,7 +327,7 @@ module LocaleModel {
   proc chpl_executeOn(loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: c_void_ptr,     // function args
-                      args_size: int(32)    // args size
+                      args_size: size_t     // args size
                      ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
@@ -348,7 +348,7 @@ module LocaleModel {
   proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: c_void_ptr,     // function args
-                          args_size: int(32)    // args size
+                          args_size: size_t     // args size
                          ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
@@ -368,7 +368,7 @@ module LocaleModel {
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: c_void_ptr,     // function args
-                        args_size: int(32)    // args size
+                        args_size: size_t     // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than

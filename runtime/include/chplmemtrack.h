@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@ void chpl_printMemAllocStats(int32_t lineno, c_string filename);
 void chpl_printMemAllocsByType(int32_t lineno, c_string filename);
 void chpl_printMemAllocs(int64_t threshold,
                          int32_t lineno, c_string filename);
-void chpl_printMemAllocsByDesc(const char* descString, int64_t threshold,
+void chpl_printMemAllocsByDesc(c_string descString, int64_t threshold,
                                int32_t lineno, c_string filename);
 void chpl_startVerboseMem(void);
 void chpl_stopVerboseMem(void);

@@ -1,6 +1,15 @@
 #!/usr/bin/env python
-import platform, os, os.path, re, sys, optparse
+import optparse
+import os
+import os.path
+import platform
+import re
+import sys
 
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import utils
 from utils import memoize
 
 @memoize

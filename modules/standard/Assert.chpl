@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +38,7 @@ module Assert {
 */
 proc assert(test: bool) {
   if !test then
-    __primitive("chpl_error", "assert failed");
+    __primitive("chpl_error", c"assert failed");
 }
   
 
@@ -54,9 +54,9 @@ proc assert(test: bool) {
 */
 proc assert(test: bool, args ...?numArgs) {
   if !test {
-    var tmpstring: c_string;
+    var tmpstring: string;
     tmpstring.write((...args));
-    __primitive("chpl_error", "assert failed - " + tmpstring);
+    __primitive("chpl_error", c"assert failed - " + tmpstring.c_str());
   }
 }
 

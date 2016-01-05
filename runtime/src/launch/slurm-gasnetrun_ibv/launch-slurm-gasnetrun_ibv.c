@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -108,7 +108,7 @@ static int getNumCoresPerLocale(void) {
 static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch, 
                                  int32_t numLocales,
                                  int32_t numCoresPerLocale) {
-  char* queue = getenv("CHPL_LAUNCHER_QUEUE");
+  //char* queue = getenv("CHPL_LAUNCHER_QUEUE");
   char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
 
@@ -141,6 +141,8 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     break;
   case torque:
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
+    break;
+  default:
     break;
   }
 }
@@ -212,7 +214,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "spawn -noecho salloc ");
   fprintf(expectFile, "-J %.10s ",basenamePtr); // pass 
   fprintf(expectFile, "-N %d ",numLocales); 
-  fprintf(expectFile, "--ntasks-per-node=1 ",numLocales); 
+  fprintf(expectFile, "--ntasks-per-node=1 ");
   fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
   fprintf(expectFile, "--time=%s ",walltime); 
   if (constraint) {

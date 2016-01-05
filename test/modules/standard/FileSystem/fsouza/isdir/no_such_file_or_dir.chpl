@@ -1,2 +1,2 @@
 use FileSystem;
-isDir("unknown.txt");
+writeln(isDir("unknown.txt"));

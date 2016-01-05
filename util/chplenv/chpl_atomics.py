@@ -1,8 +1,14 @@
 #!/usr/bin/env python
-import sys, os, optparse
+import optparse
+import os
+import sys
 
-import chpl_platform, chpl_comm, chpl_compiler, utils
-from utils import memoize
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_comm, chpl_compiler, chpl_platform, utils
+from utils import CompVersion, memoize
+
 
 @memoize
 def get(flag='target'):
@@ -27,13 +33,10 @@ def get(flag='target'):
             # with an older gcc, we fall back to locks
             if compiler_val == 'gnu' or compiler_val == 'cray-prgenv-gnu':
                 version = utils.get_compiler_version('gnu')
-                if version.major > 4:
+                if version >= CompVersion('4.8'):
                     atomics_val = 'intrinsics'
-                if version.major == 4:
-                    if version.minor >= 8:
-                        atomics_val = 'intrinsics'
-                    elif version.minor >= 1 and not platform_val.endswith('32'):
-                        atomics_val = 'intrinsics'
+                elif version >= CompVersion('4.1') and not platform_val.endswith('32'):
+                    atomics_val = 'intrinsics'
             elif compiler_val == 'intel' or compiler_val == 'cray-prgenv-intel':
                 atomics_val = 'intrinsics'
             elif compiler_val == 'cray-prgenv-cray':

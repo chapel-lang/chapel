@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,23 @@
 module MemConsistency {
   pragma "memory order type"
   extern type memory_order;
+
+  // When I finish removing PRIM_INIT before initialization to a known
+  // value, then this method should work.  Until then, my stopgap will be
+  // an external function in the runtime.
+
+  //inline proc _defaultOf(type t) where t == memory_order
+  //  return memory_order_seq_cst;
+
+  pragma "no instantiation limit"
+  pragma "compiler generated"
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t == memory_order {
+    pragma "no doc"
+    extern proc _defaultOfMemoryOrder(): memory_order;
+
+    return _defaultOfMemoryOrder();
+  }
 
   extern const memory_order_relaxed:memory_order;
   extern const memory_order_consume:memory_order;

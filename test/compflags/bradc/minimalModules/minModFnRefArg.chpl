@@ -6,7 +6,6 @@ proc isInt(type t) param return
 inline proc _defaultOf(type t) param where isInt(t) return 0:t;
 inline proc _defaultOf(type t) param where t: string return defaultStringValue;
 
-pragma "trivial assignment"
 inline proc =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
 
 extern proc printf(f:c_string, x...);
@@ -26,6 +25,6 @@ printf("%d\n", x);
   }
   
   pragma "build tuple"
-  inline proc _build_tuple_always(x ...?size)
+  inline proc _build_tuple(x...)
     return x;
   

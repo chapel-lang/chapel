@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,12 @@
 
 #include "LoopStmt.h"
 
+// A ForLoop represents the for-statement language construct as described in
+// the specification (see "The For Loop" section in the chapter on "Statements").
+// The buildForLoop() method transforms the elements of the for-statement
+// parser production into its internal representation.
+// ForLoop objects are also used to represent coforall-statements and zippered
+// iteration.
 class ForLoop : public LoopStmt
 {
   //
@@ -40,7 +46,8 @@ public:
 public:
                          ForLoop(VarSymbol* index,
                                  VarSymbol* iterator,
-                                 BlockStmt* initBody);
+                                 BlockStmt* initBody,
+                                 bool       zippered);
   virtual               ~ForLoop();
 
   virtual ForLoop*       copy(SymbolMap* map      = NULL,
@@ -51,7 +58,7 @@ public:
   virtual void           accept(AstVisitor* visitor);
 
   // Interface to Expr
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+  virtual void           replaceChild(Expr* oldAst, Expr* newAst);
   virtual Expr*          getFirstExpr();
   virtual Expr*          getNextExpr(Expr* expr);
 
@@ -65,6 +72,7 @@ public:
 
   SymExpr*               indexGet()                                   const;
   SymExpr*               iteratorGet()                                const;
+  bool                   zipperedGet()                                const;
 
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
@@ -74,6 +82,7 @@ private:
 
   SymExpr*               mIndex;
   SymExpr*               mIterator;
+  bool                   mZippered;
 };
 
 #endif

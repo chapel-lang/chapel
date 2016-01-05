@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -217,6 +217,10 @@ void chpl_rt_finalize(int return_value) {
 // "main-task" which is either "chpl_executable_init" or "chpl_library_init".
 //
 void chpl_std_module_init(void) {
+  // chpl__initStringLiterals runs the constructors for all string literals. We
+  // need to setup the literals on every locale before any other chapel code is
+  // run.
+  chpl__initStringLiterals();
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
 
   if (chpl_nodeID == 0) {

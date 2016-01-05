@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@ qioerr chpl_fs_cwd(const char** working_dir);
 
 qioerr chpl_fs_exists(int* ret, const char* name);
 
+qioerr chpl_fs_get_size(int64_t* ret, const char* name);
 qioerr chpl_fs_get_uid(int* ret, const char* name);
 qioerr chpl_fs_get_gid(int* ret, const char* name);
 

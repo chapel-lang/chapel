@@ -1,0 +1,2 @@
+privateTypeAlias.doc.chpl:2: syntax error: near 'type'
+cat: docs/privateTypeAlias.txt: No such file or directory

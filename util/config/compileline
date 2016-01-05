@@ -57,6 +57,7 @@ $ENV{"COMP_GEN_IEEE_FLOAT"} = 1;
 
 for my $arg (@ARGV) {
   if( $arg eq "--llvm" ) {
+    $ENV{"CHPL_ORIG_TARGET_COMPILER"}=`$chpl_home_dir/util/chplenv/chpl_compiler.py --target`;
     $ENV{"CHPL_TARGET_COMPILER"}="clang-included";
 
     # get the name of main.o and check that it exits.

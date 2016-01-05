@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -198,6 +198,7 @@ bool AstDump::enterDefExpr(DefExpr* node) {
         write("single");
 
       writeSymbol("var", sym, true);
+      writeFlags(mFP, sym);
 
     } else if (isLabelSymbol(sym)) {
       writeSymbol("label", sym, true);
@@ -451,6 +452,7 @@ void AstDump::visitEblockStmt(ExternBlockStmt* node) {
 // GotoStmt
 //
 bool AstDump::enterGotoStmt(GotoStmt* node) {
+  newline();
   switch (node->gotoTag) {
     case GOTO_NORMAL:      write("goto");           break;
     case GOTO_BREAK:       write("break");          break;
@@ -528,6 +530,8 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
   if (fn->retType && fn->retType->symbol) {
     writeSymbol(":", fn->retType->symbol, false);
   }
+
+  writeFlags(mFP, fn);
 }
 
 void AstDump::writeSymbol(const char* tag, Symbol* sym, bool def) {

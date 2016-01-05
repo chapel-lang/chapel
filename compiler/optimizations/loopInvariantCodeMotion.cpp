@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -350,6 +350,11 @@ rhsAlias(CallExpr* call) {
           // we note that the lhs aliases the field and not just an integer 
           return getSvecSymbol(rhsCall);
         } else if(rhsCall->isPrimitive(PRIM_ADDR_OF)) {
+          SymExpr* rhs = toSymExpr(rhsCall->get(1));
+          INT_ASSERT(rhs);
+          return rhs->var;
+        } else if (rhsCall->isPrimitive(PRIM_GET_REAL) ||
+                   rhsCall->isPrimitive(PRIM_GET_IMAG)) {
           SymExpr* rhs = toSymExpr(rhsCall->get(1));
           INT_ASSERT(rhs);
           return rhs->var;
@@ -1013,28 +1018,6 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
   return true;
 }
 
-
- /*
- * Collect all of the function symbols that belong to function calls 
- * and nested function calls that occur from baseAST. In other words
- * look through the baseAST and find all the function and nested function
- * calls and collect their fnsymbols. 
- */
-static void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
-  AST_CHILDREN_CALL(ast, collectUsedFnSymbols, fnSymbols);
-  //if there is a function call, get the FnSymbol associated with it 
-  //and look through that FnSymbol for other function calls. Do not 
-  //look through an already visited FnSymbol, or you'll have an infinite
-  //loop in the case of recursion. 
-  if (CallExpr* call = toCallExpr(ast)) {
-    if (FnSymbol* fnSymbol = call->isResolved()) {
-      if(fnSymbols.count(fnSymbol) == 0) {
-        fnSymbols.insert(fnSymbol);
-        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbols, fnSymbols);
-      }
-    }
-  }
-}
 
 
 /*

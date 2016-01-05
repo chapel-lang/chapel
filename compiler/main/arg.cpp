@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -481,7 +481,7 @@ static void ApplyValue(const ArgumentState*       state,
   }
 
   if (desc->pfn)
-    desc->pfn(state, value);
+    desc->pfn(desc, value);
 }
 
 /************************************* | **************************************
@@ -705,7 +705,7 @@ static void process_arg(const ArgumentState*       state,
   }
 
   if (desc->pfn)
-    desc->pfn(state, arg);
+    desc->pfn(desc, arg);
 }
 
 static void bad_flag(const char* flag)

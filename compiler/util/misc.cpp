@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,9 @@
 #include <csignal>
 #include <fcntl.h>
 #include <sys/stat.h>
+
+
+static const char* help_url = "http://chapel.cray.com/bugs.html";
 
 static void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -116,9 +119,7 @@ print_user_internal_error() {
   fprintf(stderr, "%s ", error);
   char version[128];
   get_version(version);
-  fprintf(stderr, "chpl Version %s\n", version);
-  if (err_fatal)
-    clean_exit(1);
+  fprintf(stderr, "chpl Version %s", version);
 }
 
 
@@ -160,8 +161,8 @@ setupError(const char *filename, int lineno, int tag) {
 }
 
 
-static void
-printDevelErrorHeader(BaseAST* ast) {
+static bool
+printErrorHeader(BaseAST* ast) {
   if (!err_print) {
     if (Expr* expr = toExpr(ast)) {
       Symbol* parent = expr->parentSymbol;
@@ -196,9 +197,33 @@ printDevelErrorHeader(BaseAST* ast) {
     }
   }
 
+  bool have_ast_line = false;
+  const char* filename;
+  int linenum;
 
-  if (ast && ast->linenum())
-    fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
+  if ( ast && ast->linenum() ) {
+    have_ast_line = true;
+    filename = cleanFilename(ast);
+    linenum = ast->linenum();
+  } else {
+    have_ast_line = false;
+    if ( !err_print && currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
+      // Use our best guess for the line number for user errors,
+      // but don't do that for err_print (USR_PRINT) notes that don't
+      // come with line numbers.
+      filename = cleanFilename(currentAstLoc.filename);
+      linenum = currentAstLoc.lineno;
+    } else {
+      filename = NULL;
+      linenum = -1;
+    }
+  }
+
+  bool guess = filename && !have_ast_line;
+
+  if (filename) {
+    fprintf(stderr, "%s:%d: ", filename, linenum);
+  }
 
   if (err_print) {
     fprintf(stderr, "note: ");
@@ -212,15 +237,50 @@ printDevelErrorHeader(BaseAST* ast) {
     fprintf(stderr, "warning: ");
   }
 
-  if (!err_user && !developer) {
-    print_user_internal_error();
+  if (!err_user) {
+    if (!developer) {
+      print_user_internal_error();
+    }
   }
-
+  return guess;
 }
 
-static void printDevelErrorFooter(void) {
-  if (developer)
+
+static void printErrorFooter(bool guess) {
+  //
+  // For developers, indicate the compiler source location where an
+  // internal error was generated.
+  //
+  if (developer && !err_user)
     fprintf(stderr, " [%s:%d]", err_filename, err_lineno);
+
+  //
+  // For users and developers, if the source line was a guess (i.e., an
+  // AST was not passed to the INT_FATAL() macro and we relied on the
+  // global SET_LINENO() information instead), indicate that.
+  //
+  if (guess) {
+    fprintf(stderr, "\nNote: This source location is a guess.");
+  }
+
+  //
+  // Apologize for our internal errors to the end-user
+  //
+  if (!developer && !err_user) {
+    fprintf(stderr, "\n\n"
+            "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
+            "and we're sorry for the hassle.  We would appreciate your reporting this bug -- \n"
+            "please see %s for instructions.  In the meantime,\n"
+            "the filename + line number above may be useful in working around the issue.\n\n", 
+            help_url);
+
+    //
+    // and exit if it's fatal (isn't it always?)
+    //
+    if (err_fatal) {
+      clean_exit(1);
+    }
+  }
 }
 
 
@@ -281,22 +341,27 @@ void handleError(const char *fmt, ...) {
   if (err_ignore)
     return;
 
-  printDevelErrorHeader(NULL);
+  bool guess = printErrorHeader(NULL);
 
-  if (!err_user && !developer)
-    return;
+  //
+  // Only print out the arguments if this is a user error or we're
+  // in developer mode.
+  //
+  if (err_user || developer) {
+    va_list args;
 
-  va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+  }
 
-  va_start(args, fmt);
-  vfprintf(stderr, fmt, args);
-  va_end(args);
-
-  printDevelErrorFooter();
-
+  printErrorFooter(guess);
   fprintf(stderr, "\n");
 
   printCallStackOnError();
+
+  if (!err_user && !developer)
+    return;
 
   if (exit_immediately) {
     if (ignore_errors_for_pass) {
@@ -328,24 +393,26 @@ static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args
   if (err_ignore)
     return;
 
+  bool guess = false;
   if (file == stderr)
-    printDevelErrorHeader(ast);
+    guess = printErrorHeader(ast);
 
-  if (!err_user && !developer)
-    return;
-
-  vfprintf(file, fmt, args);
+  if (err_user || developer) {
+    vfprintf(file, fmt, args);
+  }
 
   if (fPrintIDonError && ast)
     fprintf(file, " [%d]", ast->id);
 
   if (file == stderr)
-    printDevelErrorFooter();
-
+    printErrorFooter(guess);
   fprintf(file, "\n");
 
   if (file == stderr)
     printCallStackOnError();
+
+  if (!err_user && !developer)
+    return;
 
   if (exit_immediately) {
     if (ignore_errors_for_pass) {

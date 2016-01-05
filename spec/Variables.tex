@@ -16,7 +16,7 @@ by its type.
 Variables are declared with the following syntax:
 \begin{syntax}
 variable-declaration-statement:
-  config-or-extern[OPT] variable-kind variable-declaration-list ;
+  privacy-specifier[OPT] config-or-extern[OPT] variable-kind variable-declaration-list ;
 
 config-or-extern: one of
   `config' $ $ $ $ `extern'
@@ -56,6 +56,11 @@ variables.  If the statement is a top-level module statement, the
 variables are module level; otherwise they are local.  Module level variables are
 discussed in~\rsec{Module_Level_Variables}.  Local variables are discussed
 in~\rsec{Local_Variables}.
+
+The optional \sntx{privacy-specifier} keywords indicate the visibility
+of module level variables to outside modules.  By default, variables
+are publicly visible.  More details on visibility can be found in
+~\rsec{Visibility_Of_Symbols}.
 
 The optional keyword \chpl{config} specifies that the variables are
 configuration variables, described in
@@ -288,8 +293,8 @@ state.
 Variables declared in statements that are in a module but not in a
 function or block within that module are module level variables.
 Module level variables can be accessed anywhere within that module
-after the declaration of that variable.  They can also be accessed
-in other modules that use that module.
+after the declaration of that variable.  If they are public, they can
+also be accessed in other modules that use that module.
 
 \section{Local Variables}
 \label{Local_Variables}

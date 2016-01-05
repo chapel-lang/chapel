@@ -1,4 +1,4 @@
-Module: inlineTest
+inlineTest
    proc method1()
       Comment for method1 
 
@@ -36,7 +36,7 @@ Module: inlineTest
       This method has a return type, an argument, and a function body 
 
    proc allThreeCommentless(val: int): int
-   Module: inlineTest.Other
+   inlineTest.Other
       proc inside
          Comment for inline method inside module 
 

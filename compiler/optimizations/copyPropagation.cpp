@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -371,6 +371,7 @@ static bool isUse(SymExpr* se)
   }
   else
   {
+    INT_ASSERT(call->primitive);
     switch(call->primitive->tag)
     {
      default:
@@ -398,6 +399,8 @@ static bool isUse(SymExpr* se)
       return false;
      case PRIM_CHPL_COMM_GET:
      case PRIM_CHPL_COMM_PUT:
+     case PRIM_CHPL_COMM_ARRAY_GET:
+     case PRIM_CHPL_COMM_ARRAY_PUT:
      case PRIM_CHPL_COMM_GET_STRD:
      case PRIM_CHPL_COMM_PUT_STRD:
       // ('comm_get/put' locAddr locale widePtr len)
@@ -579,19 +582,6 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
       // If so, replace the alias with its definition.
       if (alias_def_pair != available.end())
       {
-        // This special case is needed to prevent propagating a string literal
-        // into the return statement of a function.  Right now,
-        // insertWideReferences does not automatically widen the result of a
-        // function returning a narrow string.  Instead, it relies on there
-        // being a return value variable that is widened before it is
-        // returned.  If we return a literal, that variable doesn't exist, so
-        // the return type ends up being narrow (which is not correct).
-        // After chapel strings become records, this special-case code can be
-        // removed.
-        if (CallExpr* call = toCallExpr(se->parentExpr))
-          if (call->isPrimitive(PRIM_RETURN) &&
-              se->var->typeInfo() == dtString)
-            continue;
 #if DEBUG_CP
         if (debug > 0)
           printf("Replacing %s[%d] with %s[%d]\n",
@@ -772,6 +762,21 @@ static void extractCopies(Expr* expr,
         if (lhs->type->symbol->hasFlag(FLAG_REF) &&
             !rhs->type->symbol->hasFlag(FLAG_REF))
           return; // Not a pair.
+
+        // Assignment between two references "peels" the RHS, so performs a
+        // copy of the *value* of the RHS into the lvalue pointed to by the
+        // LHS.  In contrast a move between two refs just copies one ref into
+        // the other.
+        // In the PRIM_ASSIGN case, the two references may point to different
+        // objects, so the primitive does not create a pair as far as CP is
+        // concerned.
+        // TODO: Based on the semantics of PRIM_ASSIGN, if both LHS and RHS are
+        // references, we *could* create a pair between the symbols they refer
+        // to.  There might be a neat recursive way to do this....
+        if (lhs->type->symbol->hasFlag(FLAG_REF) &&
+            rhs->type->symbol->hasFlag(FLAG_REF))
+          if (call->isPrimitive(PRIM_ASSIGN))
+            return;
 
         // We can't make substitutions if the lhs or rhs may change at any
         // time.

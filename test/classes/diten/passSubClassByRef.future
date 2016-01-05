@@ -1,0 +1,5 @@
+error message: passing subclass to ref arg of super class type needs clean error
+
+This test currently makes it to codegen and then gets an error from the C
+compiler.  It should get a clean error message instead, most likely the
+unresolved call error in the .good.

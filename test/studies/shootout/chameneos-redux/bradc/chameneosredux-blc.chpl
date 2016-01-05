@@ -86,6 +86,12 @@ proc simulate(numChameneos) {
   // print information about the population once we're done
   //
   printInfo(chameneos);
+
+  //
+  // Clean up after ourselves
+  //
+  destroyChameneos(chameneos);
+  delete meetingPlace;
 }
 
 
@@ -291,6 +297,13 @@ proc createChameneos(size): [1..size] Chameneos {
 
 
 //
+// Destroy the array of chameneos
+//
+proc destroyChameneos(ca: [] Chameneos) {
+  for c in ca do delete c;
+}
+
+//
 // getNewColor() returns the complement of two colors; if the two colors
 // are the same value, the color stays the same; otherwise, it becomes the
 // third color.
@@ -381,7 +394,7 @@ proc spellInt(n) {
   // TODO: would be nice to replace this with a character iterator?
   //
   for i in 1..s.length do
-    write(" ", (s.substring(i):int):Digit);
+    write(" ", (s[i]:int):Digit);
   writeln();
 }
 

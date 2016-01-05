@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -97,8 +97,14 @@ void LoopStmt::codegenOrderIndependence()
     std:: string ivdepStr = "CHPL_PRAGMA_IVDEP";
     if (fReportOrderIndependentLoops)
     {
-      printf("Adding %s to %s for %s:%d\n", ivdepStr.c_str(),
-          this->astTagAsString(), this->getModule()->name, this->linenum());
+      ModuleSymbol *mod = toModuleSymbol(this->getModule());
+      INT_ASSERT(mod);
+
+      if (developer || mod->modTag == MOD_USER)
+      {
+        printf("Adding %s to %s for %s:%d\n", ivdepStr.c_str(),
+            this->astTagAsString(), mod->name, this->linenum());
+      }
     }
 
     info->cStatements.push_back(ivdepStr+'\n');

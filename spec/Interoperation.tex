@@ -16,11 +16,6 @@ in \rsec{Shared_Language_Elements}.
 %  The creation and use of Chapel libraries is
 %treated in~\rsec{Interop_Libraries}.  
 
-\begin{craychapel}
-For information on specific packages which have been integrated with
-Chapel, see \chpl{doc/technotes}.
-\end{craychapel}
-
 \begin{future}
 
 At present, the backend language for Chapel is C, which makes it relatively
@@ -121,6 +116,10 @@ An exported procedure declaration has the following syntax:
 exported-procedure-declaration-statement:
   `export' external-name[OPT] `proc' function-name argument-list return-intent[OPT] return-type[OPT]
     function-body
+
+external-name:
+  identifier
+  string-literal
 \end{syntax}
 
 If the optional \sntx{external-name} is
@@ -228,7 +227,7 @@ External C struct types can be referred to within Chapel by prefixing
 a Chapel \chpl{record} definition with the \chpl{extern} keyword.
 \begin{syntax}
 external-record-declaration-statement:
-  `extern' simple-record-declaration-statement
+  `extern' external-name[OPT] simple-record-declaration-statement
 \end{syntax}
 
 For example, consider an external C structure defined in \chpl{foo.h} called \chpl{fltdbl}.
@@ -257,10 +256,31 @@ effort is made to preserve the values of the undefined fields when copying
 these structs but Chapel cannot guarantee the contents or memory story of
 fields of which it has no knowledge.
 
+If the optional \sntx{external-name} is supplied, then it is used verbatim as
+the exported struct symbol.
+
 A C header file containing the struct's definition in C must be specified on the
-chpl compiler command line.  Note that currently only typdef'd C structures are
-supported.  That is, in the C header file, the \chpl{struct} must be supplied
-with a type name through a \chpl{typedef} declaration.
+chpl compiler command line.  Note that only typdef'd C structures are supported
+by default.  That is, in the C header file, the \chpl{struct} must be supplied
+with a type name through a \chpl{typedef} declaration. If this is not true, you
+can use the \sntx{external-name} part to apply the \chpl{struct} specifier.
+As an example of this, given a C declaration of:
+
+% Not a spec test, we would need to be able to provide .c and .h files
+\begin{chapel}
+  struct Vec3 {
+    double x, y, z;
+  };
+\end{chapel}
+
+in Chapel you would refer to this \chpl{struct} via
+
+\begin{chapel}
+  extern "struct Vec3" record Vec3 {
+    var x, y, z: real(64);
+  }
+\end{chapel}
+
 
 \subsubsection{Referring to External Structs Through Pointers}
 \label{Referring_to_External_Structs_Through_Pointers}
@@ -271,7 +291,7 @@ Chapel using an external \chpl{class} declaration.  External class declarations
 have the following syntax.
 \begin{syntax}
 external-class-declaration-statement:
-  `extern' simple-class-declaration-statement
+  `extern' external-name[OPT] simple-class-declaration-statement
 \end{syntax}
 External class declarations are similar to external record declarations as
 discussed above, but place additional requirements on the C code.
@@ -303,6 +323,9 @@ declaration shown above:
 \end{chapel}
 where the Chapel compiler would not know about the 'y' field and
 therefore could not refer to it or manipulate it.
+
+If the optional \sntx{external-name} is supplied, then it is used verbatim as
+the exported class symbol.
 
 
 \subsubsection{Opaque Types}

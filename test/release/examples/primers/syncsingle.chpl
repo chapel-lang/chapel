@@ -168,12 +168,12 @@ f_withIntFormal(sy$);
 f_withBoolFormal(si$);
 
 // When passing a sync or single variable to a generic formal,
-// whether with a ref intent or a blank intent, the variable
+// whether with a ref intent or a default intent, the variable
 // is passed by reference. The state of the variable does not
 // change and sync operations are available.
 //
-f_withGenericBlankIntentFormal(sy$);
-f_withGenericBlankIntentFormal(si$);
+f_withGenericDefaultIntentFormal(sy$);
+f_withGenericDefaultIntentFormal(si$);
 f_withGenericRefFormal(sy$);
 f_withGenericRefFormal(si$);
 
@@ -201,7 +201,7 @@ proc f_withBoolFormal(x: bool) {
   writeln(x);
 }
 
-proc f_withGenericBlankIntentFormal(x) {
+proc f_withGenericDefaultIntentFormal(x) {
   writeln("the full bit is: ", x.isFull);
 }
 

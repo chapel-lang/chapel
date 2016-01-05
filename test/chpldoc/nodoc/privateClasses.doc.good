@@ -1,0 +1,3 @@
+privateClasses
+   Class: bar
+      var showMe: bool

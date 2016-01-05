@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -63,6 +63,9 @@ module DefaultRectangular {
   
     proc dsiCreateReindexDist(newSpace, oldSpace) return this;
     proc dsiCreateRankChangeDist(param newRank, args) return this;
+
+    proc dsiEqualDMaps(d:DefaultDist) param return true;
+    proc dsiEqualDMaps(d) param return false;
   }
   
   //
@@ -70,8 +73,17 @@ module DefaultRectangular {
   // model initialization
   //
   pragma "locale private" var defaultDist = new dmap(new DefaultDist());
-  inline proc chpl_defaultDistInitPrivate() {
-    if defaultDist._value==nil then defaultDist = new dmap(new DefaultDist());
+   proc chpl_defaultDistInitPrivate() {
+    if defaultDist._value==nil {
+      // FIXME benharsh: Here's what we want to do:
+      //   defaultDist = new dmap(new DefaultDist());
+      // The problem is that the LHS of the "proc =" for _distributions
+      // loses its ref intent in the removeWrapRecords pass.
+      //
+      // The code below is copied from the contents of the "proc =".
+      const nd = new dmap(new DefaultDist());
+      __primitive("move", defaultDist, chpl__autoCopy(nd.clone()));
+    }
   }
   
   class DefaultRectangularDom: BaseRectangularDom {
@@ -87,7 +99,7 @@ module DefaultRectangular {
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
     }
-  
+
     proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }
@@ -158,9 +170,11 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.standalone && !localeModelHasSublocales {
-      if debugDefaultDist {
+      if chpl__testParFlag then
+        chpl__testPar("default rectangular domain standalone invoked on ", ranges);
+      if debugDefaultDist then
         writeln("*** In domain standalone code:");
-      }
+
       const numTasks = if tasksPerLocale == 0 then here.maxTaskPar
                        else tasksPerLocale;
       if debugDefaultDist {
@@ -397,9 +411,9 @@ module DefaultRectangular {
 
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain follower invoked on ", followThis);
-
       if debugDefaultDist then
         writeln("In domain follower code: Following ", followThis);
+
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=idxType, stridable=stridable);
       if stridable {
@@ -769,6 +783,11 @@ module DefaultRectangular {
 
     inline proc initShiftedData() {
       if earlyShiftData && !stridable {
+        // Lydia note 11/04/15: a question was raised as to whether this
+        // check on dsiNumIndices added any value.  Performance results
+        // from removing this line seemed inconclusive, which may indicate
+        // that the check is not necessary, but it seemed like unnecessary
+        // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 {
           if isIntType(idxType) then
             shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
@@ -991,6 +1010,11 @@ module DefaultRectangular {
         // has not yet been updated (this is called from within the
         // = function for domains.
         if earlyShiftData && !d._value.stridable then
+          // Lydia note 11/04/15: a question was raised as to whether this
+          // check on numIndices added any value.  Performance results
+          // from removing this line seemed inconclusive, which may indicate
+          // that the check is not necessary, but it seemed like unnecessary
+          // work for something with no immediate reward.
           if d.numIndices > 0 then
             shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
@@ -1014,6 +1038,11 @@ module DefaultRectangular {
       rad.factoredOffs = factoredOffs;
       rad.data = data;
       if earlyShiftData && !stridable then
+        // Lydia note 11/04/15: a question was raised as to whether this
+        // check on dsiNumIndices added any value.  Performance results
+        // from removing this check seemed inconclusive, which may indicate
+        // that the check is not necessary, but it seemed like unnecessary
+        // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 then rad.shiftedData = shiftedData;
       return rad;
     }
@@ -1203,7 +1232,7 @@ module DefaultRectangular {
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
   
-    const len = dom.dsiNumIndices:int(32);
+    const len = dom.dsiNumIndices.safeCast(size_t);
 
     if len == 0 then return;
 
@@ -1225,7 +1254,7 @@ module DefaultRectangular {
       const dest = this.theData;
       const src = B._value.theData;
       if dest != src {
-        __primitive("chpl_comm_get",
+        __primitive("chpl_comm_array_get",
                   __primitive("array_get", dest, getDataIndex(Alo)),
                   B._value.data.locale.id,
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),
@@ -1236,7 +1265,7 @@ module DefaultRectangular {
         writeln("\tlocal put() to ", this.locale.id);
       const dest = this.theData;
       const src = B._value.theData;
-      __primitive("chpl_comm_put",
+      __primitive("chpl_comm_array_put",
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),
                   this.data.locale.id,
                   __primitive("array_get", dest, getDataIndex(Alo)),
@@ -1246,7 +1275,7 @@ module DefaultRectangular {
         writeln("\tremote get() on ", here.id, " from ", B.locale.id);
       const dest = this.theData;
       const src = B._value.theData;
-      __primitive("chpl_comm_get",
+      __primitive("chpl_comm_array_get",
                   __primitive("array_get", dest, getDataIndex(Alo)),
                   B._value.data.locale.id,
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),
@@ -1304,7 +1333,7 @@ module DefaultRectangular {
     
     //These variables should be actually of size stridelevels+1, but stridelevels is not param...
     
-    var srcCount, dstCount:[1..rank+1] int(32);
+    var srcCount, dstCount:[1..rank+1] size_t;
     
     // Covering the case in which stridelevels has to be incremented after
     // unifying srcCount and dstCount into a single count array. To illustrate the problem:
@@ -1346,7 +1375,7 @@ module DefaultRectangular {
     srcCount= B.computeBulkCount(stridelevels,srcWholeDim,srcAux);
     
   /*Then the Stride arrays for source and destination arrays*/
-    var dstStride, srcStride: [1..rank] int(32);
+    var dstStride, srcStride: [1..rank] size_t;
     /*When the source and destination arrays have different sizes 
       (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
       so we have to calculate the minimun count array */
@@ -1451,9 +1480,9 @@ module DefaultRectangular {
   
       //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliarry
       //arrays to the locale that hosts A. This should translate into some more gets...
-      const countAux=count:int(32);
-      const srcstrides=srcStride:int(32);
-      const dststrides=dstStride:int(32);
+      const countAux=count.safeCast(size_t);
+      const srcstrides=srcStride.safeCast(size_t);
+      const dststrides=dstStride.safeCast(size_t);
 
       const dststr=dststrides._value.theData;
       const srcstr=srcstrides._value.theData;
@@ -1529,21 +1558,21 @@ module DefaultRectangular {
       if (dom.dsiDim(i-1).length>1 && !checkStrideDistance(i)) //CASE 3
         then stridelevels+=1; 
     
-    return stridelevels:int(32);
+    return stridelevels;
   }
   
   /* This function returns the count array for the default rectangular array. */
-  proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*int(32) where rank ==1
+  proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*size_t where rank ==1
   {
-    var c: (rank+1)*int(32);
+    var c: (rank+1)*size_t;
     //To understand the blk(1)>1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 4)
     if dom.dsiStride > 1 || blk(1)>1 {
       c[1]=1;
-      c[2]=dom.dsiDim(1).length:int(32);
+      c[2]=dom.dsiDim(1).length.safeCast(size_t);
     }
     else
-      c[1]=dom.dsiDim(1).length:int(32);
+      c[1]=dom.dsiDim(1).length.safeCast(size_t);
     return c;
   }
   
@@ -1576,14 +1605,13 @@ module DefaultRectangular {
   //        join to dimension 1, and the value of count[3] will be the number 
   //        of elements in dimension 2 x number of elements in dimesion 1 (1 x 4).
   //More in test/optimizations/bulkcomms/alberto/3dAgTestStride.chpl (example 6 and 7)
-  proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*int(32) where rank >1
+  proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*size_t where rank >1
   {
-    var c: (rank+1)*int(32) ;
+    var c: (rank+1)*size_t ;
     var init:int(32)=1;
   //var dim is used to point to the analyzed dimension at each iteration
   //due to the same stride can be valid across two contiguous dimensions
     var dim:int =rank;
-    var tmp:int(32)=1;
     if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1
       ||(blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 2
       {c[1]=1; init=2;}
@@ -1594,9 +1622,9 @@ module DefaultRectangular {
       if dim == 0 then c[i]=1;//the leftmost dimension 
       else
         {
-          c[i]=this.dom.dsiDim(dim).length:int(32);
+          c[i]=this.dom.dsiDim(dim).length.safeCast(size_t);
   //find the next dimension for which the next different stride arises
-    for h in 2..dim by -1:int(32) 
+    for h in 2..dim by -1:size_t 
           {
   //The aux variable is to cover the case in which stridelevels has to be
   // incremented after unifying srcCount and dstCount into a single count array,
@@ -1606,7 +1634,7 @@ module DefaultRectangular {
       if( (checkStrideDistance(h) && (!aux || h!=rank))//CASE 3
                || (dom.dsiDim(h).length==1&& h!=rank)) //CASE 4
         {
-          c[i]*=dom.dsiDim(h-1).length:int(32);
+          c[i]*=dom.dsiDim(h-1).length.safeCast(size_t);
                 dim -= 1;
         }
       else break;  
@@ -1643,27 +1671,28 @@ module DefaultRectangular {
   
   proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32)/*, aFromBD=false*/)
   {
-    var c: rank*int(32); 
+    var c: rank*size_t; 
     var h=1; //Stride array index
-    var cum=1; //cumulative variable
+    var cum:size_t=1; //cumulative variable
     
     if (cnt[h]==1 && dom.dsiDim(rank).length>1)
     {//To understand the blk[rank]==1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 12)
-      c[h]=blk[rank]:int(32); //CASE 1
+      c[h]=blk[rank].safeCast(size_t); //CASE 1
       h+=1;
     }
    
-    for param i in 2..rank by -1:int(32){
+    for param i in 2..rank by -1:size_t{
       if (levels>=h)
       {
-        if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1) //CASE 2
+        const dimILength = dom.dsiDim(i).length.safeCast(size_t);
+        if (cnt[h]==dimILength*cum && dom.dsiDim(i-1).length>1) //CASE 2
         {//now, we are in the right dimension (i dimension) to obtain the stride value
-          c[h]=blk(i-1):int(32);
+          c[h]=blk(i-1).safeCast(size_t);
           h+=1; //Increment the index
           cum=1; //reset the cumulative variable
         }
-        else cum=cum*dom.dsiDim(i).length;
+        else cum *= dimILength;
       }
       
     }

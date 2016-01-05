@@ -1,0 +1,17 @@
+here=0 home=0
+here=0 home=1
+here=0 home=2
+
+initializing
+printing element directly
+0
+1
+2
+printing array directly
+0
+0
+0
+printing array via temp
+0
+1
+2

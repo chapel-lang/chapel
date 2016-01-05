@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -205,15 +205,11 @@ static void addPrintModInitOrder(FnSymbol* fn)
   int myLen = strlen(s2);
   char lenStr[5];
   sprintf(lenStr, "%d", myLen);
-  Expr *es1 = buildStringLiteral(s1);
-  Expr *es2 = buildStringLiteral(s2);
+  Expr *es1 = buildCStringLiteral(s1);
+  Expr *es2 = buildCStringLiteral(s2);
   Expr *elen = buildIntLiteral(lenStr);
-  CallExpr* s1Init = new CallExpr(PRIM_MOVE, new SymExpr(s1tmp),
-                                  new CallExpr(PRIM_C_STRING_FROM_STRING,
-                                               es1));
-  CallExpr* s2Init = new CallExpr(PRIM_MOVE, new SymExpr(s2tmp),
-                                  new CallExpr(PRIM_C_STRING_FROM_STRING,
-                                               es2));
+  CallExpr* s1Init = new CallExpr(PRIM_MOVE, new SymExpr(s1tmp), es1);
+  CallExpr* s2Init = new CallExpr(PRIM_MOVE, new SymExpr(s2tmp), es2);
   CallExpr *printModInit = new CallExpr(gPrintModuleInitFn,
                                         new SymExpr(s1tmp),
                                         new SymExpr(s2tmp), elen);

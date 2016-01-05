@@ -1,4 +1,4 @@
-Module: exportTest
+exportTest
    export proc method1()
       Comment for method1 
 
@@ -36,7 +36,7 @@ Module: exportTest
       This method has a return type, an argument, and a function body 
 
    export proc allThreeCommentless2(val: int): int
-   Module: exportTest.Other
+   exportTest.Other
       export proc inside()
          Comment for method inside module 
 

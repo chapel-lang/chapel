@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -94,9 +94,10 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
 }
 
 static inline
-void* chpl_mem_calloc(size_t size, chpl_mem_descInt_t description,
+void* chpl_mem_calloc(size_t number, size_t size,
+                      chpl_mem_descInt_t description,
                       int32_t lineno, c_string filename) {
-  return chpl_mem_allocManyZero(1, size, description, lineno, filename);
+  return chpl_mem_allocManyZero(number, size, description, lineno, filename);
 }
 
 static inline
@@ -128,7 +129,7 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
 static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
-  assert(dest != src);
+  assert(dest != src || num == 0);
   return memcpy(dest, src, num);
 }
 

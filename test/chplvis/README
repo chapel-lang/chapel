@@ -1,0 +1,18 @@
+======================
+chplvis test direcotry
+======================
+
+This directory consists of a number of tests for the chplvis program.
+Each Chapel program here uses the "VisualDebug" module.
+
+Automated tests only test to see if the programs run correctly.  It
+requires a human to verify that the generated data for chplvis is
+correct.
+
+overhead: Programs that only use VisualDebug (or a for loop) and 
+          should not generate any tasks or communitction.
+
+benchmarks-hpcc:  Programs taken from test/examples/benchmarks/hpcc and
+                  had VisualDebug added.
+
+

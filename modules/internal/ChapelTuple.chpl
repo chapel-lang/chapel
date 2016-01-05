@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,10 +17,26 @@
  * limitations under the License.
  */
 
-// ChapelTuple.chpl
-//
-// tuple data implementation as a record
-//
+/*
+Predefined Functions on Tuples.
+
+Tuples are a predefined structured type in Chapel. They are specified
+in the Tuples chapter of the Chapel Language Specification.
+This page lists the predefined functions on tuples.
+They are always available to all Chapel programs.
+
+Besides the functions defined here, the Chapel Language specification
+defines other operations available on tuples: indexing, iteration,
+assignment, and unary, binary, and relational operators.
+
+The following method is also availble:
+
+  .. code-block:: chapel
+
+    proc tuple.size param
+
+It returns the number of components of the tuple.
+*/
 module ChapelTuple {
   
   pragma "tuple" record _tuple {
@@ -30,27 +46,25 @@ module ChapelTuple {
   //
   // syntactic support for tuples
   //
+
+  // tuple type
+  pragma "build tuple"
+  inline proc _build_tuple(type t...) type
+    return t;
+
+  // tuple value with intents by default
   pragma "build tuple"
   inline proc _build_tuple(x...) {
       return x;
   }
   
+  // tuple value with ref intents for actuals of ref types
   pragma "allow ref" 
   pragma "build tuple"
-  inline proc _build_tuple_always_allow_ref(x ...?size)
+  inline proc _build_tuple_always_allow_ref(x...)
     return x;
   
-  pragma "build tuple"
-  inline proc _build_tuple(type t ...?size) type
-    return t;
-  
-  pragma "build tuple"
-  inline proc _build_tuple_always(x ...?size)
-    return x;
-  
-  //
-  // homogeneous tuple type syntax
-  //
+  // homogeneous tuple type
   proc *(param p: int, type t) type {
     var oneTuple: _build_tuple(t);
     proc _fill(param p: int, x: _tuple) {
@@ -66,6 +80,11 @@ module ChapelTuple {
     return _fill(p, oneTuple).type;
   }
   
+  pragma "compiler generated"
+  proc *(type t, param p: int) {
+    compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");
+  }
+
   proc *(p: int, type t) type {
     compilerError("tuple size must be static");
   }
@@ -78,18 +97,29 @@ module ChapelTuple {
   //
   // isTuple, isTupleType and isHomogeneousTuple param functions
   //
+  pragma "no doc" // we are not advertising isXxxValue() functions at present
   proc isTupleValue(x: _tuple) param
     return true;
   
+  pragma "no doc"
   proc isTupleValue(x) param
     return false;
-
-  proc isHomogeneousTupleValue(x: _tuple) param
+  
+  pragma "no doc"
+  proc isHomogeneousTupleValue(x) param
     return __primitive("is star tuple type", x);
   
+  /*
+    Returns `true` if its argument is a tuple type.
+    The argument must be a type.
+  */
   proc isTupleType(type t) param
     return __primitive("is tuple type", t);
   
+  /*
+    Returns `true` if its argument is a homogeneous tuple type.
+    The argument must be a type.
+  */
   proc isHomogeneousTupleType(type t) param
     return __primitive("is star tuple type", t);
   
@@ -106,6 +136,7 @@ module ChapelTuple {
   // homogeneous tuple accessor
   // the result is const when the tuple is
   //
+  pragma "no doc"
   pragma "reference to const when const this"
   proc _tuple.this(i : integral) ref {
     if !isHomogeneousTuple(this) then
@@ -116,10 +147,23 @@ module ChapelTuple {
     return __primitive("get svec member", this, i);
   }
 
+  // This is controlled with --[no-]warn-tuple-iteration
+  // so we are not chpldoc-ing it.
+  //
+  // When this param is set to the string "true",
+  // the compiler will issue a warning when iterating over components
+  // of a homogeneous tuple, e.g. ``for i in (A,B,C)``.
+  //
+  // This is useful to expose code where zippered iteration,
+  // e.g. ``for abc in zip(A,B,C)``, may have been intended.
+  //
+  pragma "no doc"
   config param CHPL_WARN_TUPLE_ITERATION = "unset";
+  
   //
   // iterator support for tuples
   //
+  pragma "no doc"
   iter _tuple.these() {
 
     if !isHomogeneousTuple(this) then
@@ -133,6 +177,7 @@ module ChapelTuple {
     }
   }
   
+  pragma "no doc"
   iter _tuple.these(param tag:iterKind) 
       where tag == iterKind.leader 
   {
@@ -160,6 +205,7 @@ module ChapelTuple {
     }
   }
   
+  pragma "no doc"
   iter _tuple.these(param tag:iterKind, followThis)
       where tag == iterKind.follower
   {
@@ -169,6 +215,7 @@ module ChapelTuple {
   //
   // tuple methods
   //
+  pragma "no doc"
   proc _tuple.readWriteThis(f) {
     var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
     var start:ioLiteral;
@@ -269,9 +316,10 @@ module ChapelTuple {
     return result;
   }
   
-  //
-  // Return a tuple of type t with all values set to the max/min for that type
-  //
+  /*
+    Returns a tuple of type t with each component set to ``max``
+    of the type in the corresponding component of the argument.
+  */
   proc max(type t): t where isTupleType(t) {
     var result: t;
     for param i in 1..result.size {
@@ -280,6 +328,10 @@ module ChapelTuple {
     return result;
   }
   
+  /*
+  Returns a tuple of type t with each component set to ``min``
+  of the type in the corresponding component of the argument.
+  */
   proc min(type t): t where isTupleType(t) {
     var result: t;
     for param i in 1..result.size {

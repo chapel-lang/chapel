@@ -1,0 +1,6 @@
+bug: the test works for a single node, but not for two nil tests
+
+ref_nil_conjunction.chpl:9: error: unresolved call 'isTrue(Node)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:493: note: candidates are: isTrue(a: bool)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:494: note:                 isTrue(param a: bool)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:496: note:                 isTrue(a: integral)

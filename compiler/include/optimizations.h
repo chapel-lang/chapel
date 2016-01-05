@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -73,11 +73,5 @@ freeDefUseChains(std::map<SymExpr*,Vec<SymExpr*>*>& DU,
 void
 remoteValueForwarding(Vec<FnSymbol*>& fns);
 
-void
-narrowWideReferences();
-
-// Debug functions from narrowWideReferences.cpp
-void printNode(BaseAST*);
-void printNode(int id);
 
 #endif

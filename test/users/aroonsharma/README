@@ -1,0 +1,16 @@
+This directory contains implementations of Polybench parallel
+benchmarks as originally completed for the Modulo Unrolling in Chapel
+work at University of Maryland by Aroon Sharma, Darren Smith, Joshua
+Koehler, and Rajeev Barua.
+This work was published in the paper "Affine Loop Optimization Based on
+Modulo Unrolling in Chapel" in PGAS 2014.
+
+
+These benchmarks originally compared different distributions, including
+a custom versions of Cyclic and Block Cyclic. These remain in this
+directory as a historical artifact but have been disabled from the
+tests.
+
+They are CyclicZipOpt.chpl and MyBlockCyclic.chpl. See the paper
+for the results of using these optimizations.
+
