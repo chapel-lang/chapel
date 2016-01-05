@@ -5654,7 +5654,11 @@ preFold(Expr* expr) {
       // the rest are arguments.
       Immediate* imm = var->immediate;
       // fail horribly if immediate is not a string .
-      INT_ASSERT(imm && imm->const_kind == CONST_KIND_STRING);
+      if (!imm)
+        INT_FATAL(call, "proc name required");
+      if (imm->const_kind != CONST_KIND_STRING)
+        INT_FATAL(call, "proc name must be a string");
+
       const char* name = imm->v_string;
 
       // temporarily add a call to try resolving.
@@ -5669,8 +5673,6 @@ preFold(Expr* expr) {
 
       // Add our new call to the AST temporarily.
       call->getStmtExpr()->insertAfter(tryCall);
-      // normalize it (important for methods)
-      //normalize(tryCall);
 
       // copy actual args into tryCall.
       int i = 1;
