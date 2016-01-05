@@ -5639,7 +5639,7 @@ preFold(Expr* expr) {
       // That is, if this call could contain a whole expression subtree.
       int first_arg;
       if( call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ) {
-        // get(1) should be a a receiver
+        // get(1) should be a receiver
         // get(2) should be a string function name.
         callThis = call->get(1);
         fnName = call->get(2);
