@@ -2140,7 +2140,7 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
 
     // Can we prefetch len bytes starting at prefetch_raddr?
     // If not, compute the smaller amount that we can prefetch.
-    if( chpl_comm_is_in_segment(node, (void*)prefetch_start, len) ) {
+    if( chpl_comm_addr_gettable(node, (void*)prefetch_start, len) ) {
       ok = 1;
     }
 

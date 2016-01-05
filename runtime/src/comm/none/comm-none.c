@@ -94,7 +94,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return 0;
 }
 
-int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
   return 0;
 }
@@ -474,7 +474,7 @@ typedef struct {
   char          arg[0];       // variable-sized data here
 } fork_t;
 
-void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                     chpl_fn_int_t fid, void *arg, size_t arg_size) {
   assert(node==0);
 
@@ -489,7 +489,7 @@ static void fork_nb_wrapper(fork_t* f) {
   chpl_mem_free(f, 0, 0);
 }
 
-void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                        chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
   size_t  info_size;
@@ -507,8 +507,8 @@ void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
                            subloc, chpl_nullTaskID, false);
 }
 
-// Same as chpl_comm_fork()
-void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+// Same as chpl_comm_execute_on()
+void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                          chpl_fn_int_t fid, void *arg, size_t arg_size) {
   assert(node==0);
 
