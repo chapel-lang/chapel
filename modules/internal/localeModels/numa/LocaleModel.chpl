@@ -387,12 +387,12 @@ module LocaleModel {
   //
   // runtime interface
   //
-  extern proc chpl_comm_fork(loc_id: int, subloc_id: int,
-                             fn: int, args: c_void_ptr, arg_size: int(32));
-  extern proc chpl_comm_fork_fast(loc_id: int, subloc_id: int,
-                                  fn: int, args: c_void_ptr, args_size: int(32));
-  extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
-                                fn: int, args: c_void_ptr, args_size: int(32));
+  extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int,
+                             fn: int, args: c_void_ptr, arg_size: size_t);
+  extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int,
+                                  fn: int, args: c_void_ptr, args_size: size_t);
+  extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int,
+                                fn: int, args: c_void_ptr, args_size: size_t);
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   extern proc chpl_task_setSubloc(subloc: int(32));
 
@@ -404,12 +404,12 @@ module LocaleModel {
   proc chpl_executeOn(loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: c_void_ptr,     // function args
-                      args_size: int(32)    // args size
+                      args_size: size_t     // args size
                      ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
-      chpl_comm_fork(dnode, dsubloc, fn, args, args_size);
+      chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
     } else {
       // run directly on this node
       var origSubloc = chpl_task_getRequestedSubloc();
@@ -433,12 +433,12 @@ module LocaleModel {
   proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: c_void_ptr,     // function args
-                          args_size: int(32)    // args size
+                          args_size: size_t     // args size
                          ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
-      chpl_comm_fork_fast(dnode, dsubloc, fn, args, args_size);
+      chpl_comm_execute_on_fast(dnode, dsubloc, fn, args, args_size);
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
@@ -470,19 +470,19 @@ module LocaleModel {
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: c_void_ptr,     // function args
-                        args_size: int(32)    // args size
+                        args_size: size_t     // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than
-    // non-blocking "on" in order to serialize the forks.
+    // non-blocking "on" in order to serialize the execute_ons.
     //
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
       if __primitive("task_get_serial") then
-        chpl_comm_fork(dnode, dsubloc, fn, args, args_size);
+        chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
       else
-        chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+        chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
       // We'd like to call chpl_executeOnNBaux() here, but the begin
@@ -496,7 +496,7 @@ module LocaleModel {
             chpl_ftable_call(fn, args);
           else
             // begin chpl_ftable_call(fn, args);
-            chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+            chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
         }
       } else {
         // move to a different sublocale
@@ -508,7 +508,7 @@ module LocaleModel {
             chpl_ftable_call(fn, args);
           else
             // begin chpl_ftable_call(fn, args);
-            chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+            chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
         }
         chpl_task_setSubloc(origSubloc);
       }
