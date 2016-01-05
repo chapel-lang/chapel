@@ -216,6 +216,24 @@ module Spawn {
     var spawn_error:syserr;
 
     pragma "no doc"
+    proc _start_stdin_buffering() {
+      var err = stdin_channel._mark();
+      if ! err {
+        stdin_buffering = true;
+      }
+      return err;
+    }
+
+    pragma "no doc"
+    proc _stop_stdin_buffering() {
+      if this.stdin_buffering {
+        this.stdin._commit();
+        this.stdin_buffering = false; // Don't commit again on close again
+      }
+    }
+
+
+    pragma "no doc"
     proc _halt_on_launch_error() {
       if !running {
         ioerror(spawn_error,
@@ -655,10 +673,7 @@ module Spawn {
       // Close stdin.
       if this.stdin_pipe {
         // send data to stdin
-        if this.stdin_buffering {
-          this.stdin._commit();
-          this.stdin_buffering = false; // Don't commit again on close again
-        }
+        _stop_stdin_buffering();
         this.stdin_channel.close(error=error);
         this.stdin_file.close(error=error);
       }
@@ -715,10 +730,7 @@ module Spawn {
     on home {
       if this.stdin_pipe {
         // send data to stdin
-        if this.stdin_buffering {
-          this.stdin._commit();
-          this.stdin_buffering = false; // Don't commit again on close again
-        }
+        _stop_stdin_buffering();
       }
 
       error = qio_proc_communicate(
@@ -768,10 +780,7 @@ module Spawn {
     // Close stdin.
     if this.stdin_pipe {
       // send data to stdin
-      if this.stdin_buffering {
-        this.stdin._commit();
-        this.stdin_buffering = false; // Don't commit again on close again
-      }
+      _stop_stdin_buffering();
       this.stdin_channel.close(error=error);
       this.stdin_file.close(error=error);
     }
