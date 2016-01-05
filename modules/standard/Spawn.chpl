@@ -133,15 +133,15 @@ module Spawn {
      This record represents a subprocess.
 
      Note that the subprocess will not be waited for if this record
-     goes out of scope. Memory used by the subprocess record itself
-     to implement pipes will be freed if the record goes out of scope,
-     however.
+     goes out of scope. Channels opened to communicate with the subprocess
+     will be closed if the record goes out of scope, however.
 
      Generally, it is important to call :proc:`subprocess.wait` to wait for the
      process to complete. If the parent process is using pipes to communicate
      with the subprocess, the parent process may call :proc:`subprocess.close`
-     in order to close the pipes and free any buffers.
-
+     in order to close the pipes and free any buffers. Such calls are
+     generally not needed since the channels will be closed when the
+     subprocess record is automatically destroyed.
    */
   record subprocess {
     /* The kind of a subprocess is used to create the types
