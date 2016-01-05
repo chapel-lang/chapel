@@ -1,0 +1,8 @@
+error message: 'use' of literal string prints temp name rather than string
+
+In deprecating the support for 'use "foo.c"' in favor of 'require "foo.c"'
+I noticed that this error message isn't as clear as it should be.  I'm
+not sure whether it's always been this way or whether it requires some
+updates as a result of the recent string changes.
+
+

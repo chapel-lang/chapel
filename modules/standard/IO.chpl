@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -1620,6 +1620,7 @@ private extern proc qio_channel_style_element(ch:qio_channel_ptr_t, element:int(
 
 private extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 private extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+private extern proc qio_channel_isclosed(threadsafe:c_int, ch:qio_channel_ptr_t):bool;
 
 private extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t, ref amt_read:ssize_t):syserr;
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t):syserr;
@@ -2358,6 +2359,8 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
 Create a Chapel file that works with a system file descriptor  Note that once
 the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
+
+The system file descriptor will be closed when the Chapel file is closed.
 
 .. note::
 
@@ -4612,6 +4615,17 @@ proc channel.close() {
   var e:syserr = ENOERR;
   this.close(error=e);
   if e then this._ch_ioerror(e, "in channel.close");
+}
+
+/*
+   Return `true` if a channel is currently closed.
+ */
+proc channel.isclosed() {
+  var ret:bool;
+  on this.home {
+    ret = qio_channel_isclosed(locking, _channel_internal);
+  }
+  return ret;
 }
 
 // TODO -- we should probably have separate c_ptr ddata and ref versions
