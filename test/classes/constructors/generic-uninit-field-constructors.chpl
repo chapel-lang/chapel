@@ -24,7 +24,7 @@ class B {
 }
 
 var b = new B("hello-user");
-writeln(b);
+writeln("{p = ", b.p, "}");
 
 class C {
   const cst;
@@ -63,7 +63,7 @@ class Bd {
 }
 
 var bd = new Bd("hello-default");
-writeln(bd);
+writeln("{p = ", bd.p, "}");
 
 class Cd {
   const cst;
