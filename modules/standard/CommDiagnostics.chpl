@@ -21,8 +21,7 @@
   This module provides support for reporting and counting
   communication operations between network-connected locales.  The
   operations include various kinds of remote reads (GETs), remote
-  writes (PUTs), and remote execute_ons (which are actually more like remote
-  procedure calls, and are used to implement ``on`` statements).
+  writes (PUTs), and remote executions.
   Callers can request on-the-fly output each time a remote operation
   occurs, or count such operations as they occur and retrieve the
   counts later.  The former gives more detailed information but has
