@@ -346,8 +346,8 @@ static ModuleSymbol* getUsedModule(Expr* expr) {
 //
 static void printModuleUseError(CallExpr* useExpr, 
                                 Symbol* sym = NULL) {
-  if (sym) {
-    if (sym->name && !sym->isImmediate()) {
+  if (sym && !sym->isImmediate()) {
+    if (sym->name) {
       USR_FATAL(useExpr, "'use' of non-module symbol %s", sym->name);
     } else {
       USR_FATAL(useExpr, "'use' of non-module symbol");
@@ -356,12 +356,21 @@ static void printModuleUseError(CallExpr* useExpr,
     USR_FATAL(useExpr, "'use' statements must refer to module symbols "
               "(e.g., 'use <module>[.<submodule>]*;')");
   }
+  return;
 }
 
 
-//static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* sym) {
-  
-//}
+//
+// if the symbol in question is a module symbol return it; otherwise,
+// generate an error.
+//
+static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* symbol) {
+  if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
+    return mod;
+  } else {
+    printModuleUseError(useExpr, symbol);
+  }
+}
 
 //
 // Return the module imported by a use call.  The module returned could be
@@ -374,32 +383,22 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
   //
   if (SymExpr* sym = toSymExpr(expr)) {
     if (Symbol* symbol = sym->var) {
-      if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
-        //
-        // This 'use' is of a module symbol (yay!)  Return it.
-        //
-        return mod;
-      } else {
-        //
-        // This 'use's a symbol, but it's not a module
-        //
-        printModuleUseError(useCall, symbol);
-      }
+      return getUsedModuleSymbol(useCall, symbol);
     } else {
       printModuleUseError(useCall);
+      return NULL;
     }
 
-    return NULL;
-
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
+    //
+    // This case handles the (common) case that we're 'use'ing a
+    // symbol that we have not yet resolved.
+    //
     if (Symbol* symbol = lookup(useCall, sym->unresolved)) {
-      if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
-        return mod;
-      } else {
-        printModuleUseError(useCall, symbol);
-      }
+      return getUsedModuleSymbol(useCall, symbol);
     } else {
       USR_FATAL(useCall, "Cannot find module '%s'", sym->unresolved);
+      return NULL;
     }
 
   }  else if (CallExpr* call = toCallExpr(expr)) {
@@ -426,27 +425,16 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
 
     if (Symbol* symbol = lookup(lhs->block, rhsName)) {
-      if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
-        //
-        // We found a module symbol!  Return it.
-        //
-        return mod;
-      } else {
-        printModuleUseError(useCall, symbol);
-      }
+      return getUsedModuleSymbol(useCall, symbol);
     } else {
       USR_FATAL(useCall, "Cannot find module '%s'", rhsName);
+      return NULL;
     }
 
-    //
-    // We hit some sort of error condition (and will have exited by now,
-    // but include this to make tools happy)
-    //
-    return NULL;
   } else {
     //
-    // This is a general fall-through case that we may never reach, but
-    // better safe than sorry?
+    // This is a general fall-through case that I suspect we may never
+    // reach, but better safe than sorry...
     //
     printModuleUseError(useCall);
     return NULL;
