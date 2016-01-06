@@ -3534,6 +3534,9 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (call->partialTag && (!best || !best->fn ||
                            !best->fn->hasFlag(FLAG_NO_PARENS))) {
     if (best != NULL) {
+      // MPF 2016-0106 - this appears to be dead code
+      // at least in a full single-locale test run.
+
       // best is deleted below with the other candidates
       best = NULL;
     }
