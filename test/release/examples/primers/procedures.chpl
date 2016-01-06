@@ -25,7 +25,7 @@
 //
 
 //
-// Here is a procedure which takes an integer argument and returns and integer
+// Here is a procedure which takes an integer argument and returns an integer
 // result.  It computes the factorial of the argument.
 //
 proc factorial(x: int) : int
