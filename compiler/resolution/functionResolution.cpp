@@ -4716,6 +4716,10 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
   return false;
 }
 
+// This function returns true for user fields, including
+// const, param, and type fields.
+// It returns false for compiler-introduced fields like
+// super and outer.
 static bool
 isNormalField(Symbol* field)
 {
