@@ -25,3 +25,10 @@ Contents:
    modules/builtins
    modules/standardlibrary
    users-guide/index
+
+
+.. toctree::
+   :caption: Language History
+   :maxdepth: 1
+
+   Chapel Evolution <language/evolution>
