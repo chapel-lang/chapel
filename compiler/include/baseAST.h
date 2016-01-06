@@ -422,6 +422,7 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
     break;                                                              \
   case E_UseExpr:                                                       \
     AST_CALL_CHILD(_a, UseExpr, mod, call, __VA_ARGS__);                \
+    break;                                                              \
   case E_DefExpr:                                                       \
     AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \
     AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
