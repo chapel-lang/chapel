@@ -167,13 +167,6 @@
  */
 module CommDiagnostics
 {
-  // There should be a type like this declared in chpl-comm.h with a single
-  // function that returns the C struct.  We're not doing it that way yet
-  // due to some shortcomings in our extern records implementation.
-  // Once that gets sorted out, we can turn this into an extern record,
-  // and remove the 8 or so individual functions below that return the
-  // various counters.
-
   /* Aggregated communication operation counts.  This record type is
      defined in the same way by both the underlying comm layer(s) and
      this module, because we don't have a good way to inherit types back
@@ -312,27 +305,6 @@ module CommDiagnostics
     chpl_resetCommDiagnosticsHere();
   }
 
-  // See note above regarding extern records
-  private extern proc chpl_numCommGets(): uint(64);
-
-  private extern proc chpl_numCommNBGets(): uint(64);
-
-  private extern proc chpl_numCommPuts(): uint(64);
-
-  private extern proc chpl_numCommNBPuts(): uint(64);
-
-  private extern proc chpl_numCommTestNB(): uint(64);
-
-  private extern proc chpl_numCommWaitNB(): uint(64);
-
-  private extern proc chpl_numCommTryNB(): uint(64);
-
-  private extern proc chpl_numCommForks(): uint(64);
-
-  private extern proc chpl_numCommFastForks(): uint(64);
-
-  private extern proc chpl_numCommNBForks(): uint(64);
-
   /*
     Retrieve aggregate communication counts for the whole program.
 
@@ -342,17 +314,7 @@ module CommDiagnostics
   proc getCommDiagnostics() {
     var D: [LocaleSpace] commDiagnostics;
     for loc in Locales do on loc {
-      // See note above regarding extern records
-      D(loc.id).get = chpl_numCommGets();
-      D(loc.id).get_nb = chpl_numCommNBGets();
-      D(loc.id).put = chpl_numCommPuts();
-      D(loc.id).put_nb = chpl_numCommNBPuts();
-      D(loc.id).test_nb = chpl_numCommTestNB();
-      D(loc.id).wait_nb = chpl_numCommWaitNB();
-      D(loc.id).try_nb = chpl_numCommTryNB();
-      D(loc.id).execute_on = chpl_numCommForks();
-      D(loc.id).execute_on_fast = chpl_numCommFastForks();
-      D(loc.id).execute_on_nb = chpl_numCommNBForks();
+      D(loc.id) = getCommDiagnosticsHere();
     }
     return D;
   }
@@ -365,16 +327,7 @@ module CommDiagnostics
    */
   proc getCommDiagnosticsHere() {
     var cd: commDiagnostics;
-    cd.get = chpl_numCommGets();
-    cd.get_nb = chpl_numCommNBGets();
-    cd.put = chpl_numCommPuts();
-    cd.put_nb = chpl_numCommNBPuts();
-    cd.test_nb = chpl_numCommTestNB();
-    cd.wait_nb = chpl_numCommWaitNB();
-    cd.try_nb = chpl_numCommTryNB();
-    cd.execute_on = chpl_numCommForks();
-    cd.execute_on_fast = chpl_numCommFastForks();
-    cd.execute_on_nb = chpl_numCommNBForks();
+    chpl_getCommDiagnosticsHere(cd);
     return cd;
   }
 

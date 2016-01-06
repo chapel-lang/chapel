@@ -389,21 +389,6 @@ void chpl_gen_stopCommDiagnosticsHere(void);
 void chpl_resetCommDiagnosticsHere(void);
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 
-//
-// These are still supported because our extern record support is
-//  still a bit lacking.
-//
-uint64_t chpl_numCommGets(void);
-uint64_t chpl_numCommNBGets(void);
-uint64_t chpl_numCommPuts(void);
-uint64_t chpl_numCommNBPuts(void);
-uint64_t chpl_numCommTestNB(void);
-uint64_t chpl_numCommWaitNB(void);
-uint64_t chpl_numCommTryNB(void);
-uint64_t chpl_numCommForks(void);
-uint64_t chpl_numCommFastForks(void);
-uint64_t chpl_numCommNBForks(void);
-
 #else // LAUNCHER
 
 #define chpl_comm_barrier(x)

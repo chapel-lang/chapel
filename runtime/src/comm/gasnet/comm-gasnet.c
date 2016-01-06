@@ -1441,47 +1441,6 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_sync_unlock(&chpl_comm_diagnostics_sync);
 }
 
-uint64_t chpl_numCommGets(void) {
-  return chpl_comm_commDiagnostics.get;
-}
-
-uint64_t chpl_numCommNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb;
-}
-
-uint64_t chpl_numCommPuts(void) {
-  return chpl_comm_commDiagnostics.put;
-}
-
-uint64_t chpl_numCommNBPuts(void) {
-  return chpl_comm_commDiagnostics.put_nb;
-}
-
-uint64_t chpl_numCommTestNB(void) {
-  return chpl_comm_commDiagnostics.test_nb;
-}
-
-uint64_t chpl_numCommWaitNB(void) {
-  return chpl_comm_commDiagnostics.wait_nb;
-}
-
-uint64_t chpl_numCommTryNB(void) {
-  return chpl_comm_commDiagnostics.try_nb;
-}
-
-uint64_t chpl_numCommFastForks(void) {
-  return chpl_comm_commDiagnostics.execute_on_fast;
-}
-
-uint64_t chpl_numCommForks(void) {
-  return chpl_comm_commDiagnostics.execute_on;
-}
-
-uint64_t chpl_numCommNBForks(void) {
-  return chpl_comm_commDiagnostics.execute_on_nb;
-}
-
-
 void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
   if (chpl_nodeID == 0) {
     ((wide_ptr_t*)seginfo_table[0].addr)[i] = wide_addr;
