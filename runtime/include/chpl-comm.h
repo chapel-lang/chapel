@@ -316,11 +316,11 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
                                    int ln, c_string fn);
 
 //
-// Launch a task on a remote locale to run function f, passing it
+// Runs a function f on a remote locale, passing it
 // arg where size of arg is stored in arg_size.
 //
-// This call will block the current task until the remote task has completed.
-// Use chpl_comm_execute_on_nb if you do not want to wait.
+// This call will block the current task until the remote function has
+// completed. Use chpl_comm_execute_on_nb if you do not want to wait.
 // notes:
 //   multiple executeOns to the same locale should be handled concurrently
 //
