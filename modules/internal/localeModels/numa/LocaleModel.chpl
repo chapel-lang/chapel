@@ -387,12 +387,12 @@ module LocaleModel {
   //
   // runtime interface
   //
-  extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int,
-                             fn: int, args: c_void_ptr, arg_size: size_t);
-  extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int,
-                                  fn: int, args: c_void_ptr, args_size: size_t);
-  extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int,
-                                fn: int, args: c_void_ptr, args_size: size_t);
+  extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int, fn: int,
+                                   args: c_void_ptr, arg_size: size_t);
+  extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int, fn: int,
+                                        args: c_void_ptr, args_size: size_t);
+  extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
+                                      args: c_void_ptr, args_size: size_t);
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   extern proc chpl_task_setSubloc(subloc: int(32));
 
