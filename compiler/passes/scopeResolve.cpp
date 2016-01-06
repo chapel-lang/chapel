@@ -369,6 +369,7 @@ static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* symbol) {
     return mod;
   } else {
     printModuleUseError(useExpr, symbol);
+    return NULL;
   }
 }
 
