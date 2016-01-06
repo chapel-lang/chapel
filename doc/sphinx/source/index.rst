@@ -3,8 +3,6 @@
 Chapel Documentation
 ====================
 
-Contents:
-
 .. toctree::
    :caption: Compiling and Running Chapel
    :maxdepth: 1
