@@ -14,8 +14,8 @@ docs: html
 symlink-docs: clean-symlink-docs
 	@echo "Setting up symlinks from /doc/release to /doc/sphinx/source"
 	./symlinks.py
-	cp  ../release/quickReference.pdf     source/language/reference.pdf
-	cp  ../release/chapelLanguageSpec.pdf source/language/spec.pdf
+	cp  ../release/quickReference.pdf     source/language/quickReference.pdf
+	cp  ../release/chapelLanguageSpec.pdf source/language/chapelLanguageSpec.pdf
 
 clean: clean-source
 
