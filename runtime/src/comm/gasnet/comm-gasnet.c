@@ -503,7 +503,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return gasnet_try_syncnb_some((gasnet_handle_t*) h, nhandles) == GASNET_OK;
 }
 
-int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
 #ifdef GASNET_SEGMENT_EVERYTHING
   return 0;
@@ -1215,7 +1215,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
-void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t* info;
   size_t  info_size;
@@ -1233,7 +1233,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.fork++;
+      chpl_comm_commDiagnostics.execute_on++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
@@ -1276,7 +1276,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
-void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                         chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
   size_t  info_size;
@@ -1325,7 +1325,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.fork_nb++;
+      chpl_comm_commDiagnostics.execute_on_nb++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     if (passArg) {
@@ -1338,7 +1338,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 // GASNET - should only be called for "small" functions
-void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid, void *arg, size_t arg_size) {
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
@@ -1358,7 +1358,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
                chpl_nodeID, node);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
         chpl_sync_lock(&chpl_comm_diagnostics_sync);
-        chpl_comm_commDiagnostics.fork_fast++;
+        chpl_comm_commDiagnostics.execute_on_fast++;
         chpl_sync_unlock(&chpl_comm_diagnostics_sync);
       }
       info = (fork_t *) &infod;
@@ -1380,8 +1380,8 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
       wait_done_obj(&done);
 
     } else {
-      // Call the normal chpl_comm_fork()
-      chpl_comm_fork(node, subloc, fid, arg, arg_size);
+      // Call the normal chpl_comm_execute_on()
+      chpl_comm_execute_on(node, subloc, fid, arg, arg_size);
     }
   }
 }
@@ -1451,47 +1451,6 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_memcpy(cd, &chpl_comm_commDiagnostics, sizeof(chpl_commDiagnostics));
   chpl_sync_unlock(&chpl_comm_diagnostics_sync);
 }
-
-uint64_t chpl_numCommGets(void) {
-  return chpl_comm_commDiagnostics.get;
-}
-
-uint64_t chpl_numCommNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb;
-}
-
-uint64_t chpl_numCommPuts(void) {
-  return chpl_comm_commDiagnostics.put;
-}
-
-uint64_t chpl_numCommNBPuts(void) {
-  return chpl_comm_commDiagnostics.put_nb;
-}
-
-uint64_t chpl_numCommTestNB(void) {
-  return chpl_comm_commDiagnostics.test_nb;
-}
-
-uint64_t chpl_numCommWaitNB(void) {
-  return chpl_comm_commDiagnostics.wait_nb;
-}
-
-uint64_t chpl_numCommTryNB(void) {
-  return chpl_comm_commDiagnostics.try_nb;
-}
-
-uint64_t chpl_numCommFastForks(void) {
-  return chpl_comm_commDiagnostics.fork_fast;
-}
-
-uint64_t chpl_numCommForks(void) {
-  return chpl_comm_commDiagnostics.fork;
-}
-
-uint64_t chpl_numCommNBForks(void) {
-  return chpl_comm_commDiagnostics.fork_nb;
-}
-
 
 void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
   if (chpl_nodeID == 0) {

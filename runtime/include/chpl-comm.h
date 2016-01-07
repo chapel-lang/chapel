@@ -107,13 +107,19 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 
 // Returns whether or not the passed wide address is known to be in
-// a communicable memory region - that is, a region for which it is
-// guaranteed that puts/gets will succeed without access violation or
-// other memory protection error.
-// Returns 1 if the entire passed region is known to be in the
-// registered memory region, or 0 if some or all of it is not (or
-// the communicable memory region is totally unknown).
-int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len);
+// a communicable memory region and known to be readable. That is,
+// GET to that address should succeed without an access violation
+// or other memory protection error.
+// Returns 1 if the entire passed region can be read with a GET.
+// Returns 0 if it might not be safely readable.
+//
+// This function returns 1 if the requested region is known to be in a
+// pre-mapped registered memory region that can be read with GET without
+// any segmentation errors. For GASNET_SEGMENT=everything, for example,
+// this function always returns 0 since although any address is in the
+// segment, not all addresses are readable without causing a segmentation
+// violation on the remote locale.
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len);
 
 //
 // returns the maximum number of threads that can be handled
@@ -205,7 +211,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals);
 //
 // Note that this routine is currently used only during program
 // initialization, so it is arguably not as performance critical as
-// other more core communication routines (like puts, gets, forks).
+// other more core communication routines (like puts, gets, executeOns).
 //
 // The third argument, 'tid' (type ID) is intended for use when
 // targeting heterogeneous architectures where byte swapping may be
@@ -310,24 +316,27 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
                                    int ln, int32_t fn);
 
 //
-// remote fork should launch a thread on locale that runs function f
-// passing it arg where the size of arg is stored in arg_size
+// Runs a function f on a remote locale, passing it
+// arg where size of arg is stored in arg_size.
+//
+// This call will block the current task until the remote function has
+// completed. Use chpl_comm_execute_on_nb if you do not want to wait.
 // notes:
-//   multiple forks to the same locale should be handled concurrently
+//   multiple executeOns to the same locale should be handled concurrently
 //
-void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
-                    chpl_fn_int_t fid, void *arg, size_t arg_size);
+void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
+                          chpl_fn_int_t fid, void *arg, size_t arg_size);
 
 //
-// non-blocking fork
+// non-blocking execute_on
 //
-void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
-                       chpl_fn_int_t fid, void *arg, size_t arg_size);
+void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
+                             chpl_fn_int_t fid, void *arg, size_t arg_size);
 
 //
-// fast (non-forking) fork (i.e., run in handler)
+// fast execute_on (i.e., run in handler)
 //
-void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                          chpl_fn_int_t fid, void *arg, size_t arg_size);
 
 
@@ -359,9 +368,9 @@ typedef struct _chpl_commDiagnostics {
   uint64_t test_nb;
   uint64_t wait_nb;
   uint64_t try_nb;
-  uint64_t fork;
-  uint64_t fork_fast;
-  uint64_t fork_nb;
+  uint64_t execute_on;
+  uint64_t execute_on_fast;
+  uint64_t execute_on_nb;
 } chpl_commDiagnostics;
 
 void chpl_startVerboseComm(void);
@@ -379,21 +388,6 @@ void chpl_stopCommDiagnosticsHere(void);
 void chpl_gen_stopCommDiagnosticsHere(void);
 void chpl_resetCommDiagnosticsHere(void);
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
-
-//
-// These are still supported because our extern record support is
-//  still a bit lacking.
-//
-uint64_t chpl_numCommGets(void);
-uint64_t chpl_numCommNBGets(void);
-uint64_t chpl_numCommPuts(void);
-uint64_t chpl_numCommNBPuts(void);
-uint64_t chpl_numCommTestNB(void);
-uint64_t chpl_numCommWaitNB(void);
-uint64_t chpl_numCommTryNB(void);
-uint64_t chpl_numCommForks(void);
-uint64_t chpl_numCommFastForks(void);
-uint64_t chpl_numCommNBForks(void);
 
 #else // LAUNCHER
 
