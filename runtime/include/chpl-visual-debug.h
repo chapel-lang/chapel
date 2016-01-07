@@ -53,29 +53,29 @@ extern void chpl_vdebug_mark(void);
 //  communication logging routines 
 void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
                             size_t size, int32_t typeIndex,
-                            int ln, c_string fn);
+                            int ln, int32_t fn);
 
 void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
                             size_t size, int32_t typeIndex,
-                            int ln, c_string fn);
+                            int ln, int32_t fn);
 
 void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, c_string fn);
+                         int ln, int32_t fn);
 
 void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, c_string fn);
+                         int ln, int32_t fn);
 
 void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
                                void* srcaddr, void* srcstrides, void* count,
                                int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
-                               int ln, c_string fn);
+                               int ln, int32_t fn);
 
 void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
                               void* srcaddr, void* srcstrides, void* count,
                               int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
-                              int ln, c_string fn);
+                              int ln, int32_t fn);
 
 void chpl_vdebug_log_fork(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid, void *arg, int32_t arg_size);

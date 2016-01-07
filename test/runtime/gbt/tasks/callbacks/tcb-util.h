@@ -25,6 +25,7 @@ void tcb_report(void);
 #include <unistd.h>
 
 #include "chpl-tasks-callbacks.h"
+#include "chpl-linefile-support.h"
 
 
 // This seems not to come from <string.h> without effort; just declare it.
@@ -71,7 +72,7 @@ static void tcb_record(const char* prefix,
 
     switch (info->info_kind) {
     case chpl_task_cb_info_kind_full:
-      p->info.iu.full.filename = strdup(info->iu.full.filename);
+      p->info.iu.full.filename = info->iu.full.filename;
       break;
 
     case chpl_task_cb_info_kind_id_only:
@@ -252,7 +253,7 @@ void tcb_report(void) {
                (long int) pi->nodeID,
                event_names[pi->event_kind],
                (long int) pi->iu.full.id,
-               pi->iu.full.filename,
+               chpl_lookupFilename(pi->iu.full.filename),
                pi->iu.full.lineno,
                pi->iu.full.is_executeOn ? "is" : "not");
         break;

@@ -32,7 +32,7 @@ module ChapelTaskTable {
 
   export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                     lineno   : uint(32),
-                                    filename : c_string,
+                                    filename : int(32),
                                     tl_info  : uint(64))
   {
   }

@@ -82,14 +82,14 @@ extern const int chpl_heterogeneous;
 // before the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, c_string fn);
+                                       int ln, int32_t fn);
 
 // Do a PUT in a nonblocking fashion, returning a handle which can be used to
 // wait for the PUT to complete. The source buffer must not be modified before
 // the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, c_string fn);
+                                       int ln, int32_t fn);
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
@@ -260,7 +260,7 @@ void chpl_comm_exit(int all, int status);
 //
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
-                    int ln, c_string fn);
+                    int ln, int32_t fn);
 
 //
 // get 'size' bytes of remote data at 'raddr' on locale 'locale' to
@@ -271,7 +271,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 //
 void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
-                    int ln, c_string fn);
+                    int ln, int32_t fn);
 
 //
 // put the number of elements pointed out by count array, with strides pointed
@@ -288,7 +288,7 @@ void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, int32_t dstlocale, 
                      void* srcaddr, size_t* srcstrides, size_t* count,
                      int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                     int ln, c_string fn);
+                     int ln, int32_t fn);
 
 //
 // same as chpl_comm_puts(), but do get instead
@@ -296,7 +296,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, int32_t dstlocale,
 void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, int32_t srclocale, 
                      void* srcaddr, size_t* srcstrides, size_t* count,
                      int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                     int ln, c_string fn);
+                     int ln, int32_t fn);
 
 //
 // Get a local copy of a wide string.
@@ -307,7 +307,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, int32_t srclocale,
 //
 void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
                                    size_t size, int32_t typeIndex,
-                                   int ln, c_string fn);
+                                   int ln, int32_t fn);
 
 //
 // remote fork should launch a thread on locale that runs function f

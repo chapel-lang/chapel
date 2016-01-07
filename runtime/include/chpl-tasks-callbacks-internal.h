@@ -34,7 +34,7 @@ int chpl_task_callback_counts[chpl_task_cb_num_event_kinds];
 
 
 void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t,
-                                     const char* filename,
+                                     int32_t filename,
                                      int lineno,
                                      uint64_t id,
                                      int is_executeOn);
@@ -49,7 +49,7 @@ int chpl_task_have_callbacks(chpl_task_cb_event_kind_t event_kind) {
 
 static inline
 void chpl_task_do_callbacks(chpl_task_cb_event_kind_t event_kind,
-                            const char* filename,
+                            int32_t filename,
                             int lineno,
                             uint64_t id,
                             int is_executeOn) {
