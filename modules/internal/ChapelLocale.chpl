@@ -48,33 +48,16 @@ module ChapelLocale {
     // The parent of the root locale is nil (by definition).
     const parent : locale;
 
-    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, OS accessible
-    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
-    pragma "no doc" var nPUsLogAcc: int;     // HW threads, OS accessible
+    pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
     pragma "no doc" var nPUsLogAll: int;     // HW threads, all
+    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, accessible
+    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
 
-    /*
-      A *processing unit* or *PU* is an instance of the processor
-      architecture, basically the thing that executes instructions.
-      ``numPUs()`` tells how many of these are present on this locale.
-      If ``physical==true`` (the default) this is the number of physical
-      PUs, commonly known as *cores*.  Otherwise it is the number of
-      hardware threads (such as hyperthreads), which on a multithreaded
-      hardware architecture would typically be more numerous.  If
-      ``accessible==true`` (the default) then the count reflects only
-      those PUs the program has access to, due to limiting by the OS for
-      example.  Otherwise, all PUs that seem to exist are included.
-     */
     inline
-    proc numPUs(physical: bool = true, accessible: bool = true)
-      return if physical
-             then if accessible then nPUsPhysAcc else nPUsPhysAll
-             else if accessible then nPUsLogAcc else nPUsLogAll;
-
-    /*
-      ``numCores`` is deprecated and will be removed in Chapel 1.14.
-     */
-    var numCores: int;
+    proc numPUs(logical: bool = false, accessible: bool = true)
+      return if logical
+             then if accessible then nPUsLogAcc else nPUsLogAll
+             else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     var maxTaskPar: int; // max parallelism tasking layer expects to deliver
 

@@ -83,37 +83,50 @@ module ChapelLocale {
     pragma "no doc"
     const parent : locale;
 
-    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, OS accessible
-    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
-    pragma "no doc" var nPUsLogAcc: int;     // HW threads, OS accessible
+    pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
     pragma "no doc" var nPUsLogAll: int;     // HW threads, all
+    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, accessible
+    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
 
     /*
       A *processing unit* or *PU* is an instance of the processor
       architecture, basically the thing that executes instructions.
-      ``numPUs()`` tells how many of these are present on this locale.
-      If ``physical==true`` (the default) this is the number of physical
-      PUs, commonly known as *cores*.  Otherwise it is the number of
-      hardware threads (such as hyperthreads), which on a multithreaded
-      hardware architecture would typically be more numerous.  If
-      ``accessible==true`` (the default) then the count reflects only
-      those PUs the program has access to, due to limiting by the OS for
-      example.  Otherwise, all PUs that seem to exist are included.
+      :proc:`numPUs` tells how many of these are present on this
+      locale.  It can count either physical PUs (commonly known as
+      *cores*) or hardware threads such as hyperthreads and the like.
+      It can also either take into account any OS limits on which PUs
+      the program has access to or do its best to ignore such limits.
+      By default it returns the number of accessible physical cores.
+
+      :arg logical: Count logical PUs (hyperthreads and the like),
+                    or physical ones (cores)?  Defaults to `false`,
+                    for cores.
+      :type logical: :type:`bool`
+      :arg accessible: Count only PUs that can be reached, or all of
+                       them?  Defaults to `true`, for accessible PUs.
+      :type accessible: :type:`bool`
+      :returns: number of PUs
+      :rtype: :type:`int`
+
+      There are several things that can cause the OS to limit the
+      processor resources available to a Chapel program.  On plain
+      Linux systems using the ``taskset(1)`` command will do it.  On
+      Cray systems the ``CHPL_LAUNCHER_CORES_PER_LOCALE`` environment
+      variable may do it, indirectly via the system job launcher.
+      Also on Cray systems, using a system job launcher (``aprun`` or
+      ``slurm``) to run a Chapel program manually may do it, as can
+      running programs within Cray batch jobs that have been set up
+      with limited processor resources.
      */
     inline
-    proc numPUs(physical: bool = true, accessible: bool = true)
-      return if physical
-             then if accessible then nPUsPhysAcc else nPUsPhysAll
-             else if accessible then nPUsLogAcc else nPUsLogAll;
-
-    /*
-      ``numCores`` is deprecated and will be removed in Chapel 1.14.
-     */
-    var numCores: int;
+    proc numPUs(logical: bool = false, accessible: bool = true)
+      return if logical
+             then if accessible then nPUsLogAcc else nPUsLogAll
+             else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     /*
       This is the maximum task concurrency that one can expect to
-      achieve on this locale.  The value comes from an estimate by the
+      achieve on this locale.  The value is an estimate by the
       runtime tasking layer.  Typically it is the number of physical
       processor cores available to the program.  Creating more tasks
       than this will probably increase walltime rather than decrease

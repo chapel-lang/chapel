@@ -117,7 +117,7 @@ class MyBlockCyclic : BaseDist {
         locDist(locid) = new LocMyBlockCyclic(rank, idxType, locid, this);
 
     if tasksPerLocale == 0 then
-      this.tasksPerLocale = 1;   // TODO: here.numPUs(physical=true);
+      this.tasksPerLocale = 1;   // TODO: here.numPUs() or here.maxTaskPar?
     else
       this.tasksPerLocale = tasksPerLocale;
 
@@ -353,7 +353,7 @@ iter MyBlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 //     writeln(dist.blocksize(1));
 
 //begin new code
-    var tasks=here.numPUs(physical=true);
+    var tasks=here.numPUs();
     coforall core in 0..tasks-1 do
     for i in core..blocksize-1 by tasks {
       var ind=locDom.myStarts.low+i;

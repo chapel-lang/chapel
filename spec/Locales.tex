@@ -106,12 +106,13 @@ Returns the name of the locale.
 \index{predefined functions!numPUs@\chpl{numPUs}}
 \index{locales!numPUs@\chpl{numPUs}}
 \begin{protohead}
-proc numPUs(physical: bool = true, accessible: bool = true);
+proc numPUs(logical: bool = false, accessible: bool = true);
 \end{protohead}
 \begin{protobody}
-Returns the number of processing unit (CPU) instances
+Returns the number of processing unit instances
 available on a given locale.
-If \chpl{physical} is \chpl{true}
+Basically these are the things that execute instructions.
+If \chpl{logical} is \chpl{false}
 then the count reflects physical instances,
 often referred to as {\em cores}.
 Otherwise it reflects logical instances,
