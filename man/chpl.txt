@@ -248,7 +248,10 @@ OPTIONS
   C Code Compilation Options
 
   --ccflags <flags>   Add the specified flags to the C compiler command line
-                     when compiling the generated code.
+                     when compiling the generated code. Multiple
+                     --ccflags options can be provided and in that case the
+                     combination of the flags will be forwarded to the C
+                     compiler.
 
   -g, --[no-]debug  Causes the generated C code to be compiled with debugging
                     turned on. If you are trying to debug a Chapel program,
@@ -264,7 +267,9 @@ OPTIONS
                      path for header files.
 
   --ldflags <flags>  Add the specified flags to the C compiler link line
-                     when linking the generated code.
+                     when linking the generated code. Multiple --ldflags
+                     options can be provided and in that case the combination
+                     of the flags will be forwarded to the C compiler.
 
   -l, --lib-linkage <library>   Specify a C library to link in on the C
                      compiler command line.

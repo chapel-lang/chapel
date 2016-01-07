@@ -375,17 +375,25 @@ static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unus
 // being passed to the backend C compiler).
 static void setCCFlags(const ArgumentDescription* desc, const char* arg) {
   // Append arg to the end of ccflags.
-  int curlen = strlen(ccflags);
-  int space = sizeof(ccflags) - curlen - 1 - 1; // room for ' ' and \0
-  int arglen = strlen(arg);
-  if( arglen <= space ) {
-    // add a space if there are already arguments here
-    if( curlen != 0 ) ccflags[curlen++] = ' ';
-    memcpy(&ccflags[curlen], arg, arglen);
-  } else {
-    USR_FATAL("ccflags argument too long");
-  }
+
+  // add a space if there are already arguments here
+  if( ccflags.length() > 0 )
+    ccflags += ' ';
+
+  ccflags += arg;
 }
+
+// similar to setCCFlags
+static void setLDFlags(const ArgumentDescription* desc, const char* arg) {
+  // Append arg to the end of ldflags.
+
+  // add a space if there are already arguments here
+  if( ldflags.length() > 0 )
+    ldflags += ' ';
+
+  ldflags += arg;
+}
+
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
@@ -686,11 +694,11 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
- {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
+ {"ccflags", ' ', "<flags>", "Back-end C compiler flags (can be specified multiple times)", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
  {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
- {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
+ {"ldflags", ' ', "<flags>", "Back-end C linker flags (can be specified multiple times)", "S", NULL, "CHPL_LD_FLAGS", setLDFlags},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
