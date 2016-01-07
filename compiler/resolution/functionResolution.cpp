@@ -46,6 +46,7 @@
 #include "../ifa/prim_data.h"
 #include "view.h"
 
+#include <algorithm>
 #include <inttypes.h>
 #include <map>
 #include <sstream>
@@ -2811,15 +2812,15 @@ getVisibleFunctions(BlockStmt* block,
       if (use->excludes.size() > 0) {
         // If the name we're searching for is in the exclude list of this
         // use statement, don't go into this module to look for the name.
-        bool skip = false;
-        for_vector(const char, toExclude, use->excludes) {
-          if (!strcmp(toExclude, name)) {
-            skip = true;
-            break;
-          }
-        }
-        if (skip)
+        std::vector<const char*>::iterator matched;
+        matched = std::find(use->excludes.begin(), use->excludes.end(), name);
+        if (matched != use->excludes.end())
           continue;
+      } else if (use->includes.size() > 0) {
+        if (std::find(use->includes.begin(), use->includes.end(), name) == use->includes.end())
+          continue;
+        // If we had a match in the only list, we can safely check for
+        // that symbol in this scope.  Otherwise, we should continue
       }
 
       SymExpr* se = toSymExpr(use->mod);
