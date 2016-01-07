@@ -532,5 +532,7 @@ void chpl_startCommDiagnosticsHere() { }
 void chpl_stopCommDiagnosticsHere() { }
 
 void chpl_resetCommDiagnosticsHere() { }
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) { }
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  memset(cd, 0, sizeof(chpl_commDiagnostics));
+}
 
