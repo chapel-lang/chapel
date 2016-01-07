@@ -24,6 +24,23 @@
 #include "stmt.h"
 #include "symbol.h"
 
+//
+// MDN: 2016/01/07
+//
+// Update the sense of "a reference is necessary", i.e. the call-site
+// being examined should preserve the reference, to include the case
+// in which the ref-return function is returning a _ref(string).
+//
+// The goal is to avoid inserting a string value for the result of
+// the library functions that return strings as this will then drive
+// the insertion of an autoCopy/autoDestory pair.  This is particularly
+// problematic when accessing an array of strings.
+//
+// This update is acceptable for the current string libraries but may
+// have problems in the not-too-distant future.  Trying to handle the
+// general case of user-defined records as well as handling return with
+// ref-intent more thoughtfully is likely to require additional work.
+
 static bool
 refNecessary(SymExpr*                      se,
              Map<Symbol*, Vec<SymExpr*>*>& defMap,
@@ -96,6 +113,11 @@ refNecessary(SymExpr*                      se,
                 return true;
             }
           }
+
+        // Hueristic: if we are deferencing a string reference,
+        // that reference may still be needed.
+        } else if (isString(se->var->type->getValType())) {
+          return true;
         }
       }
     }
