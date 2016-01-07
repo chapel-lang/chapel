@@ -1,7 +1,7 @@
 use barrierWF;
 
 // num tasks
-config const tk = 8; //here.numPUs(); should be maxTaskPar?
+config const tk = here.maxTaskPar;
 
 // num tries
 config const ty = 1000;
