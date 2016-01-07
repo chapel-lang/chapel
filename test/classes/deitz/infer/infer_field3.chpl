@@ -9,7 +9,7 @@ var c2 = new C(2, 12.0, 14);
 var tmp1 = c1.x;
 var tmp2 = c2.x;
 
-writeln(c1);
-writeln(c2);
+writeln("(rank = ", c1.rank, ", x = ", c1.x, ", y = ", c1.y, ")");
+writeln("(rank = ", c2.rank, ", x = ", c2.x, ", y = ", c2.y, ")");
 writeln(tmp1);
 writeln(tmp2);

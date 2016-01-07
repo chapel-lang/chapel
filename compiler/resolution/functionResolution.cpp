@@ -314,7 +314,7 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
                  CallInfo& info);
 
-static void resolveNormalCall(CallExpr* call);
+static FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
 static void lvalueCheck(CallExpr* call);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
@@ -558,7 +558,8 @@ FnSymbol* getAutoDestroy(Type* t) {
 
 
 const char* toString(Type* type) {
-  return type->getValType()->symbol->name;
+  if( type ) return type->getValType()->symbol->name;
+  return "null type";
 }
 
 
@@ -1263,6 +1264,8 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
 // returns true iff dispatching the actualType to the formalType
 // results in a coercion.
 //
+// fn is the function being called usually but in resolveReturnType it
+// is the function we're finding return types for.
 bool
 canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes) {
   if (canParamCoerce(actualType, actualSym, formalType))
@@ -1308,6 +1311,7 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
 // Returns true iff the actualType can dispatch to the formalType.
 // The function symbol is used to avoid scalar promotion on =.
 // param is set if the actual is a parameter (compile-time constant).
+// fn is the function being called
 bool
 canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, bool* promotes, bool paramCoerce) {
   if (promotes)
@@ -2473,6 +2477,8 @@ static void
 printResolutionErrorUnresolved(
                      Vec<FnSymbol*>& visibleFns,
                      CallInfo* info) {
+  if( ! info ) INT_FATAL("CallInfo is NULL");
+  if( ! info->call ) INT_FATAL("call is NULL");
   CallExpr* call = userCall(info->call);
 
   if( developer ) {
@@ -3053,6 +3059,7 @@ static void handleTaskIntentArgs(CallExpr* call, FnSymbol* taskFn,
 }
 
 
+// Resolves a param or type expression
 static Expr*
 resolve_type_expr(Expr* expr) {
   Expr* result = NULL;
@@ -3435,7 +3442,16 @@ resolveCall(CallExpr* call)
 }
 
 
-void resolveNormalCall(CallExpr* call) {
+FnSymbol* tryResolveCall(CallExpr* call) {
+  return resolveNormalCall(call, true);
+}
+
+// if checkonly is provided, don't print any errors; just check
+// to see if the particular function could be resolved.
+// returns the result of resolving - or NULL if we couldn't do it.
+// If checkonly is set, NULL can be returned - otherwise that would
+// be a fatal error.
+FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if( call->id == breakOnResolveID ) {
     printf("breaking on call:\n");
@@ -3445,7 +3461,10 @@ void resolveNormalCall(CallExpr* call) {
 
   resolveDefaultGenericType(call);
 
-  CallInfo info(call);
+  CallInfo info(call, checkonly);
+
+  // Return early if creating the call info would have been an error.
+  if( checkonly && info.badcall ) return NULL;
 
   Vec<FnSymbol*> visibleFns; // visible functions
 
@@ -3520,6 +3539,7 @@ void resolveNormalCall(CallExpr* call) {
      * Finish instantiating the body.  This is a noop if the function wasn't
      * partially instantiated.
      */
+
     instantiateBody(best->fn);
 
     if (explainCallLine && explainCallMatch(call)) {
@@ -3532,24 +3552,32 @@ void resolveNormalCall(CallExpr* call) {
   if (call->partialTag && (!best || !best->fn ||
                            !best->fn->hasFlag(FLAG_NO_PARENS))) {
     if (best != NULL) {
-      delete best;
+      // MPF 2016-0106 - this appears to be dead code
+      // at least in a full single-locale test run.
+
+      // best is deleted below with the other candidates
       best = NULL;
     }
   } else if (!best) {
     if (tryStack.n) {
-      tryFailure = true;
-      return;
+      // MPF -- doesn't this leak memory for the ResolutionCandidates?
+      if( ! checkonly ) tryFailure = true;
+      return NULL;
 
     } else {
-      if (candidates.n > 0) {
-        Vec<FnSymbol*> candidateFns;
-        forv_Vec(ResolutionCandidate*, candidate, candidates) {
-          candidateFns.add(candidate->fn);
-        }
+      // if we're just checking, don't print errors
+      if( ! checkonly ) {
 
-        printResolutionErrorAmbiguous(candidateFns, &info);
-      } else {
-        printResolutionErrorUnresolved(visibleFns, &info);
+        if (candidates.n > 0) {
+          Vec<FnSymbol*> candidateFns;
+          forv_Vec(ResolutionCandidate*, candidate, candidates) {
+            candidateFns.add(candidate->fn);
+          }
+
+          printResolutionErrorAmbiguous(candidateFns, &info);
+        } else {
+          printResolutionErrorUnresolved(visibleFns, &info);
+        }
       }
     }
   } else {
@@ -3567,48 +3595,55 @@ void resolveNormalCall(CallExpr* call) {
 
   if (call->partialTag) {
     if (!resolvedFn) {
-      return;
+      return NULL;
     }
     call->partialTag = false;
   }
 
-  if (resolvedFn &&
-      !strcmp("=", resolvedFn->name) &&
-      isRecord(resolvedFn->getFormal(1)->type) &&
-      resolvedFn->getFormal(2)->type == dtNil) {
-    USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
-              toString(resolvedFn->getFormal(1)->type));
+
+  if( ! checkonly ) {
+    if (resolvedFn &&
+        !strcmp("=", resolvedFn->name) &&
+        isRecord(resolvedFn->getFormal(1)->type) &&
+        resolvedFn->getFormal(2)->type == dtNil) {
+      USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
+                toString(resolvedFn->getFormal(1)->type));
+    }
+
+    if (!resolvedFn) {
+      INT_FATAL(call, "unable to resolve call");
+    }
   }
 
-  if (!resolvedFn) {
-    INT_FATAL(call, "unable to resolve call");
-  }
-
-  if (call->parentSymbol) {
+  if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
     call->baseExpr->replace(new SymExpr(resolvedFn));
   }
 
-  if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
-    // Not allowed if it is not called directly from a constructor.
-    if (!isInConstructorLikeFunction(call) ||
-        !getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS)
-        )
-      USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed", resolvedFn->name);
+  if( ! checkonly ) {
+    if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
+      // Not allowed if it is not called directly from a constructor.
+      if (!isInConstructorLikeFunction(call) ||
+          !getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS)
+          )
+        USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed", resolvedFn->name);
 
-  lvalueCheck(call);
-  checkForStoringIntoTuple(call, resolvedFn);
+    lvalueCheck(call);
+    checkForStoringIntoTuple(call, resolvedFn);
 
-  if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 2);
-    if (callStack.n >= 2)
-      if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
-        outerCompilerWarningMap.put(fn, str);
+    if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
+      reissueCompilerWarning(str, 2);
+      if (callStack.n >= 2)
+        if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-2]->isResolved()))
+          outerCompilerWarningMap.put(fn, str);
+    }
+
+    if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
+      reissueCompilerWarning(str, 1);
+    }
   }
 
-  if (const char* str = outerCompilerWarningMap.get(resolvedFn)) {
-    reissueCompilerWarning(str, 1);
-  }
+  return resolvedFn;
 }
 
 
@@ -4734,11 +4769,14 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
   return false;
 }
 
+// This function returns true for user fields, including
+// const, param, and type fields.
+// It returns false for compiler-introduced fields like
+// super and outer.
 static bool
 isNormalField(Symbol* field)
 {
   if( field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ) return false;
-  if( field->hasFlag(FLAG_TYPE_VARIABLE) ) return false;
   if( field->hasFlag(FLAG_SUPER_CLASS) ) return false;
   // TODO -- this will break user fields named outer!
   if( 0 == strcmp("outer", field->name)) return false;
@@ -5616,6 +5654,70 @@ preFold(Expr* expr) {
         }
       }
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_CALL_RESOLVES) ||
+               call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
+      Expr* fnName = NULL;
+      Expr* callThis = NULL;
+
+      // this would be easier if we had a non-normalized AST!
+      // That is, if this call could contain a whole expression subtree.
+      int first_arg;
+      if( call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ) {
+        // get(1) should be a receiver
+        // get(2) should be a string function name.
+        callThis = call->get(1);
+        fnName = call->get(2);
+        first_arg = 3;
+      } else {
+        // get(1) should be a string function name.
+        fnName = call->get(1);
+        first_arg = 2;
+      }
+      VarSymbol* var = toVarSymbol(toSymExpr(fnName)->var);
+      INT_ASSERT( var != NULL );
+      // the rest are arguments.
+      Immediate* imm = var->immediate;
+      // fail horribly if immediate is not a string .
+      if (!imm)
+        INT_FATAL(call, "proc name required");
+      if (imm->const_kind != CONST_KIND_STRING)
+        INT_FATAL(call, "proc name must be a string");
+
+      const char* name = imm->v_string;
+
+      // temporarily add a call to try resolving.
+      CallExpr* tryCall = NULL;
+      if( call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ) {
+        tryCall = new CallExpr(new UnresolvedSymExpr(name),
+                               gMethodToken,
+                               callThis->copy());
+      } else {
+        tryCall = new CallExpr(name);
+      }
+
+      // Add our new call to the AST temporarily.
+      call->getStmtExpr()->insertAfter(tryCall);
+
+      // copy actual args into tryCall.
+      int i = 1;
+      for_actuals(actual, call) {
+        if( i >= first_arg ) { // skip fn name, maybe method receiver
+          tryCall->insertAtTail(actual->copy());
+        }
+        i++;
+      }
+
+      // Try to resolve it.
+      if( tryResolveCall(tryCall) ) {
+        result = new SymExpr(gTrue);
+      } else {
+        result = new SymExpr(gFalse);
+      }
+
+      // remove the call from the AST
+      tryCall->remove();
+
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS) || call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
       EnumType* et = toEnumType(toSymExpr(call->get(1))->var->type);
 
@@ -6029,10 +6131,11 @@ postFold(Expr* expr) {
       const char* memberName = get_string(call->get(2));
       Symbol* sym = baseType->getField(memberName);
       SymExpr* left = toSymExpr(call->get(1));
+      VarSymbol* varSym = toVarSymbol(sym);
       if (left && left->var->hasFlag(FLAG_TYPE_VARIABLE)) {
         result = new SymExpr(sym->type->symbol);
         call->replace(result);
-      } else if (sym->isParameter()) {
+      } else if (sym->isParameter() || (varSym && varSym->isType())) {
         Vec<Symbol*> keys;
         baseType->substitutions.get_keys(keys);
         forv_Vec(Symbol, key, keys) {

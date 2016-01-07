@@ -256,15 +256,15 @@ enum PrimitiveTag {
 
   PRIM_COERCE,
 
+  PRIM_CALL_RESOLVES,
+  PRIM_METHOD_CALL_RESOLVES,
+
   PRIM_ENUM_MIN_BITS,
   PRIM_ENUM_IS_SIGNED,
 
   PRIM_START_RMEM_FENCE,
   PRIM_FINISH_RMEM_FENCE,
 
-  PRIM_FIND_FILENAME_IDX, // search for a filename's index in a lookup table
-                          // used when converting line/file info into a form
-                          // that can be passed into argument bundles
   PRIM_LOOKUP_FILENAME,   // Given an index, get a given filename (c_string)
 
   PRIM_GET_COMPILER_VAR,

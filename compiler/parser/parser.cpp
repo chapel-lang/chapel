@@ -125,7 +125,7 @@ ModuleSymbol* parseFile(const char* filename,
   ModuleSymbol* retval = NULL;
 
   if (FILE* fp = openInputFile(filename)) {
-    gFilenameLookup.insert(filename);
+    gFilenameLookup.push_back(filename);
 
     // State for the lexer
     int             lexerStatus  = 100;

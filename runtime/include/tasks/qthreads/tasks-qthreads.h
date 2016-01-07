@@ -117,7 +117,7 @@ extern
 volatile int chpl_qthread_done_initializing;
 
 typedef struct {
-    c_string task_filename;
+    int32_t task_filename;
     int task_lineno;
     chpl_taskID_t id;
     chpl_bool is_executeOn;
@@ -146,7 +146,7 @@ typedef struct chpl_qthread_tls_s {
     /* Task private data: serial state, etc. */
     chpl_task_prvDataImpl_t chpl_data;
     /* Reports */
-    c_string    lock_filename;
+    int32_t    lock_filename;
     size_t      lock_lineno;
 } chpl_qthread_tls_t;
 

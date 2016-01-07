@@ -445,7 +445,7 @@ c_string chpl_nodeName(void) {
     uname(&utsinfo);
     namelen = strlen(utsinfo.nodename)+1;
     namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
-                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, NULL);
+                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, 0);
     strcpy(namespace, utsinfo.nodename);
   }
   return namespace;
