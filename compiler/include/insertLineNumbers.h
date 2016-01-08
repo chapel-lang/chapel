@@ -20,10 +20,14 @@
 #ifndef _INSERT_LINE_NUMBERS_H_
 #define _INSERT_LINE_NUMBERS_H_
 
-#include <set>
+#include <map>
 #include <string>
+#include <vector>
 
 // used to generate chpl_filenameTable
-extern std::set<std::string> gFilenameLookup;
+extern std::vector<std::string> gFilenameLookup;
+
+// Caches the location of filenames in gFilenameLookup
+extern std::map<std::string, int> gFilenameLookupCache;
 
 #endif //_INSERT_LINE_NUMBERS_H

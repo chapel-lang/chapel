@@ -94,8 +94,6 @@ VarSymbol *gModuleInitIndentLevel = NULL;
 FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gChplHereAlloc = NULL;
 FnSymbol* gChplHereFree = NULL;
-Symbol *gCLine = NULL;
-Symbol *gCFile = NULL;
 
 std::map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;

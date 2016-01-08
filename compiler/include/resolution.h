@@ -65,6 +65,7 @@ void      instantiateBody(FnSymbol* fn);
 void resolveFormals(FnSymbol* fn);
 void resolveBlockStmt(BlockStmt* blockStmt);
 void resolveCall(CallExpr* call);
+FnSymbol* tryResolveCall(CallExpr* call);
 void resolveFns(FnSymbol* fn);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);

@@ -26,6 +26,7 @@
 #include "chpl-comm.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks.h"
+#include "chpl-linefile-support.h"
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -247,7 +248,7 @@ void chpl_vdebug_pause (void) {
 
 void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
                             size_t size, int32_t typeIndex,
-                            int ln, c_string fn) {
+                            int ln, int32_t fn) {
   if (chpl_vdebug) {
     struct timeval tv;
     chpl_taskID_t commTask = chpl_task_getId();
@@ -255,7 +256,7 @@ void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
     chpl_dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
                   (unsigned long) commTask, (long) addr, (long) raddr, 1, typeIndex, (int)size,
-                  ln, fn);
+                  ln, chpl_lookupFilename(fn));
   }
 }
 
@@ -266,7 +267,7 @@ void chpl_vdebug_log_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
 void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
                             size_t size, int32_t typeIndex,
-                            int ln, c_string fn) {
+                            int ln, int32_t fn) {
   if (chpl_vdebug) {
     struct timeval tv;
     chpl_taskID_t commTask = chpl_task_getId();
@@ -274,7 +275,7 @@ void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
     chpl_dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
                   (unsigned long)commTask, (long) addr, (long) raddr, 1, typeIndex, (int)size,
-                  ln, fn);
+                  ln, chpl_lookupFilename(fn));
   }
 }
 
@@ -284,7 +285,7 @@ void chpl_vdebug_log_get_nb(void* addr, c_nodeid_t node, void* raddr,
 
 void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, c_string fn) {
+                         int ln, int32_t fn) {
   if (chpl_vdebug) {
     struct timeval tv;
     chpl_taskID_t commTask = chpl_task_getId();
@@ -292,7 +293,7 @@ void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
     chpl_dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node,
                   (unsigned long) commTask, (long) addr, (long) raddr, 1, typeIndex, (int)size,
-                  ln, fn);
+                  ln, chpl_lookupFilename(fn));
   }
 }
 
@@ -303,7 +304,7 @@ void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
 
 void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, c_string fn) {
+                         int ln, int32_t fn) {
   if (chpl_vdebug) {
     struct timeval tv;
     chpl_taskID_t commTask = chpl_task_getId();
@@ -312,7 +313,7 @@ void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
              "get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %s\n",
              (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node,
              (unsigned long) commTask, (long) addr, (long) raddr, 1,
-             typeIndex, (int)size, ln, fn); 
+             typeIndex, (int)size, ln, chpl_lookupFilename(fn));
   }
 }
 
@@ -322,7 +323,7 @@ void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
 void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
                                void* srcaddr, void* srcstrides, void* count,
                                int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
-                               int ln, c_string fn) {
+                               int ln, int32_t fn) {
   if (chpl_vdebug) {
     struct timeval tv;
     chpl_taskID_t commTask = chpl_task_getId();
@@ -330,7 +331,7 @@ void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstno
     chpl_dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %ld %lu 0x%lx 0x%lx %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, 
                   (long) dstnode_id, (unsigned long) commTask, (long) srcaddr, (long) dstaddr,
-                  elemSize, typeIndex, ln, fn);
+                  elemSize, typeIndex, ln, chpl_lookupFilename(fn));
     // printout srcstrides and dststrides and stridelevels?
   }
 
@@ -344,7 +345,7 @@ void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstno
 void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
                               void* srcaddr, void* srcstrides, void* count,
                               int32_t stridelevels, int32_t elemSize, int32_t typeIndex,
-                              int ln, c_string fn) {
+                              int ln, int32_t fn) {
   if (chpl_vdebug) {
     struct timeval tv;
     chpl_taskID_t commTask = chpl_task_getId();
@@ -352,7 +353,7 @@ void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnod
     chpl_dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %ld %lu 0x%lx 0x%lx %d %d %d %s\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID,
                   (long) srcnode_id, (unsigned long) commTask, (long) dstaddr, (long) srcaddr,
-                  elemSize, typeIndex, ln, fn);
+                  elemSize, typeIndex, ln, chpl_lookupFilename(fn));
     // print out the srcstrides and dststrides and stridelevels?
   }
 }
@@ -450,7 +451,7 @@ void cb_task_create(const chpl_task_cb_info_t *info) {
                   (unsigned long) taskId,
                   (info->iu.full.is_executeOn ? "O" : "L"),
                   (long int) info->iu.full.lineno,
-                  (info->iu.full.filename ? info->iu.full.filename : ""));
+                  chpl_lookupFilename(info->iu.full.filename));
    }
 }
 

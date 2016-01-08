@@ -128,7 +128,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   size = strlen(baseCommand) + 1;
 
-  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   
   sprintf(command, "%s", baseCommand);
 

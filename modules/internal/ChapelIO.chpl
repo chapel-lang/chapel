@@ -429,23 +429,28 @@ module ChapelIO {
       if !isUnionType(t) {
         // print out all fields for classes and records
         for param i in 1..num_fields {
-          if !isBinary {
-            var comma = new ioLiteral(", ");
-            if !first then writer.readwrite(comma);
-  
-            var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-            var eq:ioLiteral;
-            if st == QIO_AGGREGATE_FORMAT_JSON {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
-            } else {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
+          if isType(__primitive("field value by num", x, i)) ||
+             isParam(__primitive("field value by num", x, i)) {
+             // do nothing, don't output types or params
+          } else {
+            if !isBinary {
+              var comma = new ioLiteral(", ");
+              if !first then writer.readwrite(comma);
+    
+              var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+              var eq:ioLiteral;
+              if st == QIO_AGGREGATE_FORMAT_JSON {
+                eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
+              } else {
+                eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
+              }
+              writer.readwrite(eq);
             }
-            writer.readwrite(eq);
+    
+            writer.readwrite(__primitive("field value by num", x, i));
+  
+            first = false;
           }
-  
-          writer.readwrite(__primitive("field value by num", x, i));
-  
-          first = false;
         }
       } else {
         // Handle unions.
@@ -674,26 +679,31 @@ module ChapelIO {
         // read all fields for classes and records
   
         for param i in 1..num_fields {
-          if !isBinary {
-            var comma = new ioLiteral(",", true);
-            if !first then reader.readwrite(comma);
-  
-            var fname = new ioLiteral(__primitive("field num to name", t, i), true);
-            reader.readwrite(fname);
-  
-            var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-            var eq:ioLiteral;
-            if st == QIO_AGGREGATE_FORMAT_JSON {
-              eq = new ioLiteral(":", true);
-            } else {
-              eq = new ioLiteral("=", true);
+          if isType(__primitive("field value by num", x, i)) ||
+             isParam(__primitive("field value by num", x, i)) {
+             // do nothing, don't read types or params
+          } else {
+            if !isBinary {
+              var comma = new ioLiteral(",", true);
+              if !first then reader.readwrite(comma);
+    
+              var fname = new ioLiteral(__primitive("field num to name", t, i), true);
+              reader.readwrite(fname);
+    
+              var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+              var eq:ioLiteral;
+              if st == QIO_AGGREGATE_FORMAT_JSON {
+                eq = new ioLiteral(":", true);
+              } else {
+                eq = new ioLiteral("=", true);
+              }
+              reader.readwrite(eq);
             }
-            reader.readwrite(eq);
+    
+            reader.readwrite(__primitive("field value by num", x, i));
+    
+            first = false;
           }
-  
-          reader.readwrite(__primitive("field value by num", x, i));
-  
-          first = false;
         }
       } else {
         // Handle unions.
@@ -1054,7 +1064,8 @@ module ChapelIO {
   pragma "no doc"
   proc chpl__testPar(args...) {
     if chpl__testParFlag && chpl__testParOn {
-      const file : c_string = __primitive("_get_user_file");
+      const file : c_string = __primitive("chpl_lookupFilename",
+                                          __primitive("_get_user_file"));
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }

@@ -245,7 +245,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   size = strlen(baseCommand) + 1;
 
-  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   
   sprintf(command, "%s", baseCommand);
 
@@ -284,7 +284,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, c_string filename) {
+                           int32_t lineno, int32_t filename) {
   return 0;
 }
 

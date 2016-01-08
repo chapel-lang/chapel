@@ -42,6 +42,7 @@
 #include "chplexit.h"
 #include "chpl-locale-model.h"
 #include "chplsys.h"
+#include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
 #include "tasks-qthreads.h"
@@ -136,7 +137,7 @@ static pthread_mutex_t done_init_final_mux = PTHREAD_MUTEX_INITIALIZER;
 struct chpl_task_list {
     chpl_fn_p        fun;
     void            *arg;
-    c_string         filename;
+    int32_t          filename;
     int              lineno;
     chpl_task_list_p next;
 };
@@ -147,14 +148,14 @@ pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
 chpl_qthread_tls_t chpl_qthread_process_tls = {
-    PRV_DATA_IMPL_VAL("<main task>", 0, chpl_nullTaskID, false,
+    PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK, 0, chpl_nullTaskID, false,
                       c_sublocid_any_val, false),
-    NULL, 0 };
+    0, 0};
 
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-    PRV_DATA_IMPL_VAL("<comm thread>", 0, chpl_nullTaskID, false,
+    PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_COMM_TASK, 0, chpl_nullTaskID, false,
                       c_sublocid_any_val, false),
-    NULL, 0 };
+    0, 0 };
 
 //
 // structs chpl_task_prvDataImpl_t, chpl_qthread_wrapper_args_t and
@@ -221,7 +222,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
 }
 
 static inline void about_to_block(int32_t  lineno,
-                                  c_string filename)
+                                  int32_t filename)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     assert(data);
@@ -232,7 +233,7 @@ static inline void about_to_block(int32_t  lineno,
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                int32_t          lineno,
-                               c_string         filename)
+                               int32_t         filename)
 {
     PROFILE_INCR(profile_sync_waitFullAndLock, 1);
 
@@ -247,7 +248,7 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                 int32_t          lineno,
-                                c_string         filename)
+                                int32_t         filename)
 {
     PROFILE_INCR(profile_sync_waitEmptyAndLock, 1);
 
@@ -315,11 +316,21 @@ static void chapel_display_thread(qt_key_t     addr,
 
     if (rep) {
         if ((rep->lock_lineno > 0) && rep->lock_filename) {
-            fprintf(stderr, "Waiting at: %s:%zu (task %s:%zu)\n", rep->lock_filename, rep->lock_lineno, rep->chpl_data.task_filename, rep->chpl_data.task_lineno);
+          fprintf(stderr, "Waiting at: %s:%zu (task %s:%zu)\n",
+                  chpl_lookupFilename(rep->lock_filename), rep->lock_lineno,
+                  chpl_lookupFilename(rep->chpl_data.task_filename),
+                  rep->chpl_data.task_lineno);
         } else if (rep->lock_lineno == 0 && rep->lock_filename) {
-            fprintf(stderr, "Waiting for more work (line 0? file:%s) (task %s:%zu)\n", rep->lock_filename, rep->chpl_data.task_filename, rep->chpl_data.task_lineno);
+          fprintf(stderr,
+                  "Waiting for more work (line 0? file:%s) (task %s:%zu)\n",
+                  chpl_lookupFilename(rep->lock_filename),
+                  chpl_lookupFilename(rep->chpl_data.task_filename),
+                  rep->chpl_data.task_lineno);
         } else if (rep->lock_lineno == 0) {
-            fprintf(stderr, "Waiting for dependencies (uninitialized task %s:%zu)\n", rep->chpl_data.task_filename, rep->chpl_data.task_lineno);
+          fprintf(stderr,
+                  "Waiting for dependencies (uninitialized task %s:%zu)\n",
+                  chpl_lookupFilename(rep->chpl_data.task_filename),
+                  rep->chpl_data.task_lineno);
         }
         fflush(stderr);
     }
@@ -705,11 +716,11 @@ static aligned_t chapel_wrapper(void *arg)
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
 
     data->chpl_data = rarg->chpl_data;
-    data->lock_filename = NULL;
+    data->lock_filename = 0;
     data->lock_lineno = 0;
 
     if (rarg->countRunning) {
-        chpl_taskRunningCntInc(0, NULL);
+        chpl_taskRunningCntInc(0, 0);
     }
 
     wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
@@ -719,7 +730,7 @@ static aligned_t chapel_wrapper(void *arg)
     wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
 
     if (rarg->countRunning) {
-        chpl_taskRunningCntDec(0, NULL);
+        chpl_taskRunningCntDec(0, 0);
     }
 
     return 0;
@@ -746,7 +757,7 @@ void chpl_task_callMain(void (*chpl_main)(void))
 {
     chpl_qthread_wrapper_args_t wrapper_args =
         {chpl_main, NULL, false,
-         PRV_DATA_IMPL_VAL("<main task>", 0,
+         PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK , 0,
                            chpl_qthread_process_tls.chpl_data.id, false,
                            c_sublocid_any_val, false) };
 
@@ -764,7 +775,7 @@ void chpl_task_stdModulesInitialized(void)
     // when this function is called, so now count the main task.
     //
     canCountRunningTasks = true;
-    chpl_taskRunningCntInc(0, NULL);
+    chpl_taskRunningCntInc(0, 0);
 }
 
 int chpl_task_createCommTask(chpl_fn_p fn,
@@ -791,7 +802,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              int32_t           task_list_locale,
                              chpl_bool         is_begin_stmt,
                              int               lineno,
-                             c_string          filename)
+                             int32_t          filename)
 {
     chpl_bool serial_state = chpl_task_getSerial();
 
@@ -845,7 +856,7 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
 {
     chpl_qthread_wrapper_args_t wrapper_args =
         {fp, arg, canCountRunningTasks,
-         PRV_DATA_IMPL_VAL("<unknown>", 0, chpl_nullTaskID, true,
+         PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_UNKNOWN, 0, chpl_nullTaskID, true,
                            subloc, serial_state) };
 
     assert(subloc != c_sublocid_none);
