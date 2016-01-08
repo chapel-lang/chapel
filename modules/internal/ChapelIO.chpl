@@ -437,7 +437,7 @@ module ChapelIO {
               var comma = new ioLiteral(", ");
               if !first then writer.readwrite(comma);
     
-              var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+              var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
               var eq:ioLiteral;
               if st == QIO_AGGREGATE_FORMAT_JSON {
                 eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
@@ -690,7 +690,7 @@ module ChapelIO {
               var fname = new ioLiteral(__primitive("field num to name", t, i), true);
               reader.readwrite(fname);
     
-              var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+              var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
               var eq:ioLiteral;
               if st == QIO_AGGREGATE_FORMAT_JSON {
                 eq = new ioLiteral(":", true);
