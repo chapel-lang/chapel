@@ -431,7 +431,7 @@ CallExpr* ParamForLoop::foldForResolve()
 
     uint64_t low    = lvar->immediate->to_uint();
     uint64_t high   = hvar->immediate->to_uint();
-    int64_t  stride = svar->immediate->to_uint();
+    int64_t  stride = svar->immediate->to_int();
 
     if (stride <= 0)
     {
