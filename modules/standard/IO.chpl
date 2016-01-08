@@ -3657,11 +3657,12 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, para
   }
 
   // Set the channel pointer to NULL to make the
-  // destruction of the local writer record safe
+  // destruction of the local reader record safe
   // (it shouldn't release anything since it's a local copy).
   reader._channel_internal = QIO_CHANNEL_PTR_NULL;
 
-  return qio_channel_error(_channel_internal);
+  err = qio_channel_error(_channel_internal);
+  return err;
 }
 
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
@@ -3718,7 +3719,8 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, par
   // (it shouldn't release anything since it's a local copy).
   writer._channel_internal = QIO_CHANNEL_PTR_NULL;
 
-  return qio_channel_error(_channel_internal);
+  err = qio_channel_error(_channel_internal);
+  return err;
 }
 
 pragma "no doc"
