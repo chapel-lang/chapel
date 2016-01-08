@@ -915,7 +915,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
 #else
-    remote_in_segment = chpl_comm_is_in_segment(node, raddr, size);
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
 #endif
 
     if( remote_in_segment ) {
@@ -1002,7 +1002,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
 #else
-    remote_in_segment = chpl_comm_is_in_segment(node, raddr, size);
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
 #endif
 
     if( remote_in_segment ) {
@@ -1023,7 +1023,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
       local_in_segment = 1;
 #else
-      local_in_segment = chpl_comm_is_in_segment(chpl_nodeID, addr, size);
+      local_in_segment = chpl_comm_addr_gettable(chpl_nodeID, addr, size);
 #endif
 
       // If the local address isn't in a registered segment,
@@ -1039,7 +1039,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
         // local_buf is definately in our segment
 #else
-        assert(chpl_comm_is_in_segment(chpl_nodeID, local_buf, buf_sz));
+        assert(chpl_comm_addr_gettable(chpl_nodeID, local_buf, buf_sz));
 #endif
       }
 
