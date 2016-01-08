@@ -50,11 +50,13 @@ module main {
 
 
   proc main {
+    const LoopKernelDom: domain(LoopKernelID);
+    const LoopLengthDom: domain(LoopLength);
     const sample_frac = 1.0;
     const loop_length_factor = 1.0;
-    const run_loop_length: [0..#LoopLength.NUM_LENGTHS] bool =
+    const run_loop_length: [LoopLengthDom] bool =
       (run_longLoops, run_mediumLoops, run_shortLoops);
-    var run_loop: [0..#LoopKernelID.NUM_LOOP_KERNELS] bool = false;
+    var run_loop: [LoopKernelDom] bool;
     var run_variants = new vector(LoopVariantID);
 
     run_loop[LoopKernelID.REF_LOOP] = run_refLoop;
@@ -122,8 +124,6 @@ module main {
     writeln("\n Running loop suite on ", host_name);
 
     allocateLoopSuiteRunInfo(host_name,
-                             LoopKernelID.NUM_LOOP_KERNELS,
-                             LoopLength.NUM_LENGTHS,
                              num_suite_passes,
                              run_loop_length,
                              cache_size);
@@ -141,7 +141,7 @@ module main {
       for variant in run_variants {
         const loop_variant_name = getVariantName(variant);
         writeln("\t run loop variant ---> ", loop_variant_name);
-        for ilen in 0..#LoopLength.NUM_LENGTHS {
+        for ilen in LoopLengthDom {
           var rilen = ilen: LoopLength;
           if run_loop_length[ilen] {
             runLoopVariant(variant, run_loop, rilen);
@@ -631,8 +631,6 @@ module main {
 
 
   proc allocateLoopSuiteRunInfo(host_name: string,
-                                num_loops: int,
-                                num_loop_lengths: int,
                                 num_suite_passes: int,
                                 run_loop_length: [] bool,
                                 cache_size: int) {
@@ -640,11 +638,9 @@ module main {
     writeln("\n allocateLoopSuiteRunInfo...");
 
     s_loop_suite_run_info.host_name = host_name;
-    s_loop_suite_run_info.num_loops = num_loops;
-    s_loop_suite_run_info.num_loop_lengths = num_loop_lengths;
     s_loop_suite_run_info.num_suite_passes = num_suite_passes;
-    for ilen in 0..#num_loop_lengths {
-      s_loop_suite_run_info.run_loop_length.push_back(run_loop_length[ilen]);
+    for loop_len in run_loop_length {
+      s_loop_suite_run_info.run_loop_length.push_back(loop_len);
     }
     const sizeofReal = 8;
 
@@ -677,18 +673,18 @@ module main {
 
     lstat0 = ref_loop_stat;
 
-    for ilen in 0..#LoopLength.NUM_LENGTHS {
+    for ilen in suite_info.loop_length_dom {
       runReferenceLoop0(lstat0, ilen);
     }
 
     var lstat1: LoopStat;
     lstat1 = ref_loop_stat;
 
-    for ilen in 0..#LoopLength.NUM_LENGTHS {
+    for ilen in suite_info.loop_length_dom {
       runReferenceLoop1(lstat1, ilen);
     }
 
-    for ilen in 0..#LoopLength.NUM_LENGTHS {
+    for ilen in suite_info.loop_length_dom {
       ref_loop_stat.loop_run_time[ilen].push_back(
         min(lstat0.loop_run_time[ilen][0], lstat1.loop_run_time[ilen][0]));
     }
@@ -696,7 +692,7 @@ module main {
 
   proc defineReferenceLoopRunInfo() {
     var suite_info = getLoopSuiteRunInfo();
-    var ref_loop_stat = new LoopStat(LoopLength.NUM_LENGTHS);
+    var ref_loop_stat = new LoopStat(suite_info.loop_length_dom.numIndices);
     suite_info.ref_loop_stat = ref_loop_stat;
 
     ref_loop_stat.loop_length[LoopLength.LONG]        = 24336;
@@ -712,6 +708,7 @@ module main {
 
     var suite_info = getLoopSuiteRunInfo();
     var run_variant_names = getVariantNames(run_variants);
+    const num_lengths = suite_info.loop_length_dom.numIndices;
 
     writeln("\n defineLoopSuiteRunInfo...");
 
@@ -725,7 +722,7 @@ module main {
     suite_info.loop_weights[WeightGroup.POINTER_NEST] = 1.4;
     suite_info.loop_weights[WeightGroup.COMPLEX] = 1.0;
 
-    suite_info.loop_length_names.resize(LoopLength.NUM_LENGTHS);
+    suite_info.loop_length_names.resize(num_lengths);
     suite_info.loop_length_names[LoopLength.LONG] = "LONG";
     suite_info.loop_length_names[LoopLength.MEDIUM] = "MEDIUM";
     suite_info.loop_length_names[LoopLength.SHORT] = "SHORT";
@@ -740,22 +737,22 @@ module main {
 
       if suite_info.num_loops_run[ilv] == nil then
         suite_info.num_loops_run[ilv] = new vector(int);
-      suite_info.num_loops_run[ilv].resize(LoopLength.NUM_LENGTHS);
+      suite_info.num_loops_run[ilv].resize(num_lengths);
 
       if suite_info.tot_time[ilv] == nil then
         suite_info.tot_time[ilv] = new vector(real);
-      suite_info.tot_time[ilv].resize(LoopLength.NUM_LENGTHS);
+      suite_info.tot_time[ilv].resize(num_lengths);
 
       if suite_info.fom_rel[ilv] == nil then
         suite_info.fom_rel[ilv] = new vector(real);
-      suite_info.fom_rel[ilv].resize(LoopLength.NUM_LENGTHS);
+      suite_info.fom_rel[ilv].resize(num_lengths);
 
       if suite_info.fom_rate[ilv] == nil then
         suite_info.fom_rate[ilv] = new vector(real);
-      suite_info.fom_rate[ilv].resize(LoopLength.NUM_LENGTHS);
+      suite_info.fom_rate[ilv].resize(num_lengths);
     }
 
-    var shared_loop_length: [0..#LoopLength.NUM_LENGTHS] int;
+    var shared_loop_length: [suite_info.loop_length_dom] int;
     shared_loop_length[LoopLength.LONG]   = (44217 * loop_length_factor):int;
     shared_loop_length[LoopLength.MEDIUM] = (5001 * loop_length_factor):int;
     shared_loop_length[LoopLength.SHORT]  = (171 * loop_length_factor):int;
@@ -764,9 +761,9 @@ module main {
     var weight: vector(real) = suite_info.loop_weights;
     var max_loop_length: int = 0;
     for ilv in 0..#run_variant_names.size() {
-      for iloop in 0..#suite_info.num_loops {
-        var loop_name = (iloop:LoopKernelID):string;
-        var loop_stat = new LoopStat(suite_info.num_loop_lengths);
+      for iloop in suite_info.loop_kernel_dom {
+        var loop_name = iloop:string;
+        var loop_stat = new LoopStat(suite_info.loop_length_dom.numIndices);
         var max_loop_indx = 0;
         if run_loop[iloop] {
           select iloop {
@@ -775,7 +772,7 @@ module main {
             }
             when LoopKernelID.PRESSURE_CALC {
               loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -785,7 +782,7 @@ module main {
             }
             when LoopKernelID.PRESSURE_CALC_ALT {
               loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -795,7 +792,7 @@ module main {
             }
             when LoopKernelID.ENERGY_CALC {
               loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -806,7 +803,7 @@ module main {
             }
             when LoopKernelID.ENERGY_CALC_ALT {
               loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -871,7 +868,7 @@ module main {
             when LoopKernelID.FIR {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -883,7 +880,7 @@ module main {
             when LoopKernelID.INIT3 {
               loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -895,7 +892,7 @@ module main {
             when LoopKernelID.MULADDSUB {
               loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -907,7 +904,7 @@ module main {
             when LoopKernelID.IF_QUAD {
               loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -919,7 +916,7 @@ module main {
             when LoopKernelID.TRAP_INT {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -931,7 +928,7 @@ module main {
             when LoopKernelID.HYDRO_1D {
               loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -943,7 +940,7 @@ module main {
             when LoopKernelID.ICCG {
               loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -955,7 +952,7 @@ module main {
             when LoopKernelID.INNER_PROD {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -967,7 +964,7 @@ module main {
             when LoopKernelID.BAND_LIN_EQ {
               loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -979,7 +976,7 @@ module main {
             when LoopKernelID.TRIDIAG_ELIM {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -991,7 +988,7 @@ module main {
             when LoopKernelID.EOS {
               loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1003,7 +1000,7 @@ module main {
             when LoopKernelID.ADI {
               loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1015,7 +1012,7 @@ module main {
             when LoopKernelID.INT_PREDICT {
               loop_stat.loop_weight = weight[WeightGroup.POINTER_NEST];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1027,7 +1024,7 @@ module main {
             when LoopKernelID.DIFF_PREDICT {
               loop_stat.loop_weight = weight[WeightGroup.POINTER_NEST];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1039,7 +1036,7 @@ module main {
             when LoopKernelID.FIRST_SUM {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1051,7 +1048,7 @@ module main {
             when LoopKernelID.FIRST_DIFF {
               loop_stat.loop_weight = weight[WeightGroup.DATA_PARALLEL];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1063,7 +1060,7 @@ module main {
             when LoopKernelID.PIC_2D {
               loop_stat.loop_weight = weight[WeightGroup.COMPLEX];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1075,7 +1072,7 @@ module main {
             when LoopKernelID.PIC_1D {
               loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1087,7 +1084,7 @@ module main {
             when LoopKernelID.HYDRO_2D {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1099,7 +1096,7 @@ module main {
             when LoopKernelID.GEN_LIN_RECUR {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1111,7 +1108,7 @@ module main {
             when LoopKernelID.DISC_ORD {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1123,7 +1120,7 @@ module main {
             when LoopKernelID.MAT_X_MAT {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1135,7 +1132,7 @@ module main {
             when LoopKernelID.PLANCKIAN {
               loop_stat.loop_weight = weight[WeightGroup.TRANSCENDENTAL];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1147,7 +1144,7 @@ module main {
             when LoopKernelID.IMP_HYDRO_2D {
               loop_stat.loop_weight = weight[WeightGroup.ORDER_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1159,7 +1156,7 @@ module main {
             when LoopKernelID.FIND_FIRST_MIN {
               loop_stat.loop_weight = weight[WeightGroup.DATA_DEPENDENT];
 
-              for i in 0..#LoopLength.NUM_LENGTHS {
+              for i in suite_info.loop_length_dom {
                 loop_stat.loop_length[i] = shared_loop_length[i];
               }
               max_loop_indx = loop_stat.loop_length[LoopLength.LONG];
@@ -1177,7 +1174,7 @@ module main {
           suite_info.loop_names.push_back(loop_name);
         max_loop_length = max(max_loop_length, max_loop_indx);
 
-        for i in 0..#suite_info.num_loop_lengths {
+        for i in 0..#suite_info.loop_length_dom.numIndices {
           loop_stat.samples_per_pass[i] =
             (loop_stat.samples_per_pass[i] * suite_info.loop_samp_frac /
              loop_length_factor):int;

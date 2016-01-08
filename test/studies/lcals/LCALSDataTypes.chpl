@@ -29,10 +29,10 @@ module LCALSDataTypes {
   class LoopSuiteRunInfo {
     var host_name: string;
 
-    var num_loops: int;
+    var loop_kernel_dom: domain(LoopKernelID);
     var loop_names = new vector(string);
 
-    var num_loop_lengths: int;
+    var loop_length_dom: domain(LoopLength);
     var run_loop_length = new vector(bool);
     var loop_length_names = new vector(string);
 

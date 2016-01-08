@@ -43,16 +43,15 @@ module LCALSChecksums {
   Checksums[LoopKernelID.FIND_FIRST_MIN] = (135961480.71599999070167541503906,  101474692.50000000000000000000000,  83639989.545000001788139343261719);
 
   config const checksumTolerence = 0.05;
+  config const noisyChecksumChecks = false;
 
   proc checkChecksums(run_variants: vector(LoopVariantID), run_loop: [] bool, run_loop_length: [] bool) {
     var suite_run_info = getLoopSuiteRunInfo();
     var run_variant_names = getVariantNames(run_variants);
     for variant_name in run_variant_names {
       for loopKernel in chpl_enumerate(LoopKernelID) {
-        if LoopKernelID.NUM_LOOP_KERNELS == loopKernel then continue;
         var stat = suite_run_info.getLoopStats(variant_name)[loopKernel];
         for length in chpl_enumerate(LoopLength) {
-         if length == LoopLength.NUM_LENGTHS then continue;
           if run_loop[loopKernel] && stat.loop_is_run && stat.loop_run_count[length] > 0 {
             if run_loop_length[length] {
               const diff = abs(Checksums[loopKernel](1+length:int) - stat.loop_chksum[length]);
@@ -61,6 +60,13 @@ module LCALSChecksums {
                         " expected: ", Checksums[loopKernel](length:int),
                         " computed: ", stat.loop_chksum[length],
                         " difference: ", diff);
+              } else {
+                if noisyChecksumChecks {
+                  writeln((loopKernel, length),
+                          " Pass (expected, computed) = ",
+                          (Checksums[loopKernel](length:int),
+                           stat.loop_chksum[length]));
+                }
               }
             }
           }

@@ -6,7 +6,7 @@ module RunParallelRawLoops {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
 
-    for iloop in 0..#loop_suite_run_info.num_loops {
+    for iloop in loop_suite_run_info.loop_kernel_dom {
       if run_loop[iloop] {
         var stat = loop_stats[iloop];
         var len = stat.loop_length[ilength];
