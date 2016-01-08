@@ -281,7 +281,7 @@ def test_directory(test, test_type):
                         # error that would have already reported.
                         if not error == 0 and not error == 173:
                             logger.write("[Error running sub_test in {0} {1}]"
-                                    .format(root, e.returncode))
+                                    .format(root, error))
                                 
             # let user know no tests were found
             else:

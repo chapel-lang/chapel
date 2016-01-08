@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -312,12 +312,12 @@ module LocaleModel {
   //
   // runtime interface
   //
-  extern proc chpl_comm_fork(loc_id: int, subloc_id: int,
-                             fn: int, args: c_void_ptr, arg_size: size_t);
-  extern proc chpl_comm_fork_fast(loc_id: int, subloc_id: int,
-                                  fn: int, args: c_void_ptr, args_size: size_t);
-  extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
-                                fn: int, args: c_void_ptr, args_size: size_t);
+  extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int, fn: int,
+                                   args: c_void_ptr, arg_size: size_t);
+  extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int, fn: int,
+                                        args: c_void_ptr, args_size: size_t);
+  extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
+                                      args: c_void_ptr, args_size: size_t);
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   //
   // regular "on"
@@ -331,10 +331,10 @@ module LocaleModel {
                      ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
-      // don't call the runtime fork function if we can stay local
+      // don't call the runtime execute_on function if we can stay local
       chpl_ftable_call(fn, args);
     } else {
-      chpl_comm_fork(node, chpl_sublocFromLocaleID(loc),
+      chpl_comm_execute_on(node, chpl_sublocFromLocaleID(loc),
                      fn, args, args_size);
     }
   }
@@ -352,10 +352,10 @@ module LocaleModel {
                          ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
-      // don't call the runtime fast fork function if we can stay local
+      // don't call the runtime fast execute_on function if we can stay local
       chpl_ftable_call(fn, args);
     } else {
-      chpl_comm_fork_fast(node, chpl_sublocFromLocaleID(loc),
+      chpl_comm_execute_on_fast(node, chpl_sublocFromLocaleID(loc),
                           fn, args, args_size);
     }
   }
@@ -372,25 +372,25 @@ module LocaleModel {
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than
-    // non-blocking "on" in order to serialize the forks.
+    // non-blocking "on" in order to serialize the execute_ons.
     //
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       if __primitive("task_get_serial") then
-        // don't call the runtime nb fork function if we can stay local
+        // don't call the runtime nb execute_on function if we can stay local
         chpl_ftable_call(fn, args);
       else
         // We'd like to use a begin, but unfortunately doing so as
         // follows does not compile for --no-local:
         // begin chpl_ftable_call(fn, args);
-        chpl_comm_fork_nb(node, chpl_sublocFromLocaleID(loc),
+        chpl_comm_execute_on_nb(node, chpl_sublocFromLocaleID(loc),
                           fn, args, args_size);
     } else {
       const subloc = chpl_sublocFromLocaleID(loc);
       if __primitive("task_get_serial") then
-        chpl_comm_fork(node, subloc, fn, args, args_size);
+        chpl_comm_execute_on(node, subloc, fn, args, args_size);
       else
-        chpl_comm_fork_nb(node, subloc, fn, args, args_size);
+        chpl_comm_execute_on_nb(node, subloc, fn, args, args_size);
     }
   }
 

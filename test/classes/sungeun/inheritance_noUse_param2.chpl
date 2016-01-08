@@ -7,5 +7,5 @@ class B: A {
 }
 
 var a = new A();
-writeln(a);
+writeln("{x = ", a.x, "}");
 var b: B;

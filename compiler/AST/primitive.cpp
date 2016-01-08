@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -607,7 +607,7 @@ initPrimitive() {
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
-  prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoStringC, true, true);
+  prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoInt32, true, true);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
@@ -639,13 +639,15 @@ initPrimitive() {
   // It coerces its first argument to the type stored in the second argument.
   prim_def(PRIM_COERCE, "coerce", returnInfoSecondType);
 
+  prim_def(PRIM_CALL_RESOLVES, "call resolves", returnInfoBool);
+  prim_def(PRIM_METHOD_CALL_RESOLVES, "method call resolves", returnInfoBool);
+
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
 
-  prim_def(PRIM_FIND_FILENAME_IDX, "chpl_findFilenameIdx", returnInfoUInt64, false, false);
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoStringC);

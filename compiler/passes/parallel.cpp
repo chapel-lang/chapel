@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -709,7 +709,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                  // TODO - should this handle PRIM_GET_SVEC_MEMBER_VALUE?
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                   call->isPrimitive(PRIM_WIDE_GET_NODE))
                 // Treat the use of these primitives as a use of their arguments.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -58,7 +58,7 @@
 // task.
 
 static inline
-void chpl_rmem_consist_release(int ln, c_string fn)
+void chpl_rmem_consist_release(int ln, int32_t fn)
 {
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_release(ln, fn);
@@ -66,7 +66,7 @@ void chpl_rmem_consist_release(int ln, c_string fn)
 }
 
 static inline
-void chpl_rmem_consist_acquire(int ln, c_string fn)
+void chpl_rmem_consist_acquire(int ln, int32_t fn)
 {
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_acquire(ln, fn);
@@ -79,8 +79,8 @@ void chpl_rmem_consist_acquire(int ln, c_string fn)
 // operations/fences. 
 
 static inline
-//void chpl_atomic_rmem_fence_pre(memory_order order, int ln, c_string fn) {
-void chpl_rmem_consist_maybe_release(memory_order order, int ln, c_string fn) {
+//void chpl_atomic_rmem_fence_pre(memory_order order, int ln, int32_t fn) {
+void chpl_rmem_consist_maybe_release(memory_order order, int ln, int32_t fn) {
   if(order==memory_order_acquire || order==memory_order_relaxed) {
     // do nothing
   } else {
@@ -89,8 +89,8 @@ void chpl_rmem_consist_maybe_release(memory_order order, int ln, c_string fn) {
   }
 }
 static inline
-//void chpl_atomic_rmem_fence_post(memory_order order, int ln, c_string fn) {
-void chpl_rmem_consist_maybe_acquire(memory_order order, int ln, c_string fn) {
+//void chpl_atomic_rmem_fence_post(memory_order order, int ln, int32_t fn) {
+void chpl_rmem_consist_maybe_acquire(memory_order order, int ln, int32_t fn) {
   if(order==memory_order_release || order==memory_order_relaxed) {
     // do nothing
   } else {
@@ -100,8 +100,8 @@ void chpl_rmem_consist_maybe_acquire(memory_order order, int ln, c_string fn) {
 }
 
 static inline
-//void chpl_atomic_rmem_fence(memory_order order, int ln, c_string fn) {
-void chpl_rmem_consist_fence(memory_order order, int ln, c_string fn) {
+//void chpl_atomic_rmem_fence(memory_order order, int ln, int32_t fn) {
+void chpl_rmem_consist_fence(memory_order order, int ln, int32_t fn) {
   if(order==memory_order_relaxed) {
     // do nothing
   } else {

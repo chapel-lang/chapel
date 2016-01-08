@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,26 @@
 
 #include "chpltypes.h"
 
-uint64_t chpl_findFilenameIdx(const c_string name);
-c_string chpl_lookupFilename(const uint64_t idx);
+#define CHPL_FILE_IDX_INTERNAL 1 // <internal>
+
+#define CHPL_FILE_IDX_COMMAND_LINE -1     // (command-line)
+#define CHPL_FILE_IDX_COMMAND_LINE_ARG -2 // <command-line arg>
+#define CHPL_FILE_IDX_FORK_LARGE -3       // "fork large"
+#define CHPL_FILE_IDX_MAIN_PROGRAM -4     // "main program"
+#define CHPL_FILE_IDX_UNKNOWN -5          // "<unknown>"
+#define CHPL_FILE_IDX_IDLE_TASK -6        // "|idle|"
+#define CHPL_FILE_IDX_COMM_TASK -7        // "<comm thread>"
+#define CHPL_FILE_IDX_MAIN_TASK -8        // "<main task>"
+#define CHPL_FILE_IDX_ON_BODY_TASK -9     // "on-body task"
+#define CHPL_FILE_IDX_SAVED_FILENAME -10  // variable, see below
+
+// chpl_saveFilename stores the passed in char*, subsequent calls to
+// chpl_lookupFilename(CHPL_FILE_IDX_SAVED_FILENAME) will return that stored
+// pointer. CHPL_FILE_IDX_SAVED_FILENAME may only be used while the original
+// filename pointer is still valid.  This was added to support reporting errors
+// in a user-supplied file for config vars.
+void chpl_saveFilename(const char *filename);
+
+c_string chpl_lookupFilename(const int32_t idx);
 
 #endif // _chpl_linefile_support_h_

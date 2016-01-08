@@ -4,6 +4,10 @@
 from __future__ import print_function
 
 import os
+"""
+Symlink some files from doc/* to the sphinx project for generating
+the web documentation
+"""
 
 
 def extfilter(directory, extension='.rst'):
