@@ -111,12 +111,18 @@ proc getCurrentDayOfWeek() : Day {
 }
 
 /* Delay a task for t seconds */
-inline proc sleep(t: uint) : void {
-  extern proc chpl_task_sleep(t:uint) : void;
+inline proc sleep(t: uint, units: TimeUnits = TimeUnits.seconds) : void {
+  extern proc chpl_task_sleep(t:c_int, s:c_double) : void;
 
-  chpl_task_sleep(t);
+  select units {
+    when TimeUnits.microseconds do chpl_task_sleep(t:c_int, 1e-6:c_double);
+    when TimeUnits.milliseconds do chpl_task_sleep(t:c_int, 1e-3:c_double);
+    when TimeUnits.seconds      do chpl_task_sleep(t:c_int, 1.0:c_double);
+    when TimeUnits.minutes      do chpl_task_sleep(t:c_int, 60.0:c_double);
+    when TimeUnits.hours        do chpl_task_sleep(t:c_int, 3600.0:c_double);
+    otherwise halt("Invalid TimeUnits parameter");
+    }
 }
-
 
 /*
    Implements basic stopwatch behavior with a potential resolution of

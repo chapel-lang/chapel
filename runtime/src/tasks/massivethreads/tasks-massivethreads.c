@@ -476,9 +476,13 @@ void chpl_task_yield(void) {
   myth_yield(1);
 }
 
-void chpl_task_sleep(int secs) {
-  //sleep specified seconds
-  sleep(secs);
+
+void chpl_task_sleep(int time, double scale) {
+  //sleep scaled time units
+  struct timespec delay;
+  delay.tv_sec = (time_t)(scale*time);
+  delay.tv_nsec = (long)(1e3*(scale*time - floor(scale*time)));
+  nanosleep(&delay, NULL);
 }
 
 chpl_bool chpl_task_getSerial(void)
