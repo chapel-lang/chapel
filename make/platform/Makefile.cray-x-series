@@ -23,5 +23,6 @@ endif
 # This ensures that the Chapel binary can find and link against the latest
 # gcc-lib versions. This addition was motivated by an error where chapel
 # could not find a version of GLIBCXX when compiling with intel/cray compilers
+# This particular approach was suggested by CCE build/integration staff.
 # Note: This is assuming gcc-libs maintain forward compatibility
 LDFLAGS += -Wl,-rpath,/opt/cray/gcc-libs
