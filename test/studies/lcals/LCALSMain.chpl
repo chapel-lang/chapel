@@ -6,6 +6,7 @@ module main {
   use LCALSLoops;
   use LCALSStatic;
   use LCALSConfiguration;
+  use LCALSChecksums;
 
   use RunARawLoops;
   use RunBRawLoops;
@@ -155,6 +156,8 @@ module main {
     generateTimingReport(run_variant_names, output_dirname);
     generateChecksumReport(run_variant_names, output_dirname);
     generateFOMReport(run_variant_names, output_dirname);
+
+    checkChecksums(run_variants, run_loop, run_loop_length);
 
     freeLoopData();
     writeln("\n freeLoopSuiteRunInfo...");
