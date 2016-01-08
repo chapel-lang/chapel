@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,7 @@ const char* chpl_get_real_binary_name(void);
 //
 int chpl_launch(int argc, char* argv[], int32_t numLocales);
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum, 
-                           int32_t lineno, c_string filename);
+                           int32_t lineno, int32_t filename);
 void chpl_launch_print_help(void);
 
 #endif

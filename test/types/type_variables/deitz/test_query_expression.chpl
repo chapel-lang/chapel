@@ -7,11 +7,11 @@ var c1 = new C(2,1);
 var c2 = new C(6,2);
 
 proc f(c: C(1+1,?p)) {
-  writeln("1: ", p, ": ", c);
+  writeln("1: ", p, ": {p1 = ", c.p1, ", p2 = ", c.p2, "}");
 }
 
 proc f(c: C(1+2+3,?p)) {
-  writeln("2: ", p, ": ", c);
+  writeln("2: ", p, ": {p1 = ", c.p1, ", p2 = ", c.p2, "}");
 }
 
 f(c1);

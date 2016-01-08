@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -618,7 +618,6 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
-extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

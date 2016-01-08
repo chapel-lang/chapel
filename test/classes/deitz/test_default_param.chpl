@@ -6,6 +6,6 @@ var c: C;
 
 c = new C();
 
-writeln(c);
+writeln("{p = ", c.p, "}");
 
 delete c;

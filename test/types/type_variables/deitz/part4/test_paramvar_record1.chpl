@@ -9,5 +9,5 @@ var f2 : foo(3);
 f1.str = "hello";
 f2.str = "world";
 
-writeln(f1);
-writeln(f2);
+writeln("(x = ", f1.x, ", str = ", f1.str, ")");
+writeln("(x = ", f2.x, ", str = ", f2.str, ")");

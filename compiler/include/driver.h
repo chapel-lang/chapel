@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -118,7 +118,6 @@ extern bool fExplainVerbose;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;
-extern bool fCLineNumbers;
 extern bool fPrintEmittedCodeSize;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;

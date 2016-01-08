@@ -6,10 +6,10 @@ class C {
 }
 
 var c = new C();
-writeln(c);
+writeln("{color = ", c.color, ", x = ", c.x, "}");
 
 var cc = new C(Colors.Blue);
-writeln(cc);
+writeln("{color = ", cc.color, ", x = ", cc.x, "}");
 
 delete c;
 delete cc;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,6 +29,7 @@
 #include "codegen.h"
 #include "ForLoop.h"
 #include "genret.h"
+#include "insertLineNumbers.h"
 #include "misc.h"
 #include "passes.h"
 #include "stmt.h"
@@ -1315,7 +1316,9 @@ static GenRet codegenRnode(GenRet wide){
 
   if( widePointersStruct ) {
     ret = codegenCallExpr("chpl_nodeFromLocaleID",
-                          codegenAddrOf(codegenValuePtr(codegenWideThingField(wide,WIDE_GEP_LOC))), codegenZero(), codegenNullPointer());
+                          codegenAddrOf(codegenValuePtr(
+                              codegenWideThingField(wide, WIDE_GEP_LOC))),
+                          codegenZero(), codegenZero());
   } else {
     if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
@@ -3425,7 +3428,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRaddr(from),
                       codegenSizeof(type),
                       genTypeStructureIndex(type->symbol),
-                      info->lineno, info->filename );
+                      info->lineno, gFilenameLookupCache[info->filename] );
         }
       }
     } else { // PUT
@@ -3447,7 +3450,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRaddr(to_ptr),
                       codegenSizeof(type),
                       genTypeStructureIndex(type->symbol),
-                      info->lineno, info->filename);
+                      info->lineno, gFilenameLookupCache[info->filename]);
         }
       }
     }
@@ -4891,7 +4894,8 @@ GenRet CallExpr::codegen() {
       GenRet ptr = get(1);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         ptr = codegenRaddr(ptr);
-      codegenCall("chpl_check_nil", ptr, info->lineno, info->filename); 
+      codegenCall("chpl_check_nil", ptr, info->lineno,
+                  gFilenameLookupCache[info->filename]);
       break; }
     case PRIM_LOCAL_CHECK:
     {
@@ -5573,7 +5577,6 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr(fngen, args, fn, true);
       break;
     }
-    case PRIM_FIND_FILENAME_IDX:
     case PRIM_LOOKUP_FILENAME:
       ret = codegenBasicPrimitiveExpr(this);
       break;
@@ -5632,7 +5635,7 @@ GenRet CallExpr::codegen() {
     args[3] = taskList;
     args[4] = codegenValue(taskListNode);
     args[5] = fn->linenum();
-    args[6] = fn->fname();
+    args[6] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
     genComment(fn->cname, true);
     codegenCall(genFnName, args);
@@ -5659,7 +5662,7 @@ GenRet CallExpr::codegen() {
     args[2] = get(2);
     args[3] = get(3);
     args[4] = fn->linenum();
-    args[5] = fn->fname();
+    args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
     genComment(fn->cname, true);
     codegenCall(fname, args);
