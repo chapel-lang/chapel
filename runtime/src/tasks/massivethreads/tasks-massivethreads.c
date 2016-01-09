@@ -40,6 +40,7 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "myth.h"
 
