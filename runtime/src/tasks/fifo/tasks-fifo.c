@@ -1017,7 +1017,7 @@ static void report_locked_threads(void) {
       if (rep->lineno > 0 && rep->filename)
         fprintf(stderr, "Waiting at: %s:%d\n",
                 chpl_lookupFilename(rep->filename), rep->lineno);
-      else if (rep->lineno == 0 && rep->filename != CHPL_FILE_IDX_IDLE_TASK)
+      else if (rep->lineno == 0 && rep->filename == CHPL_FILE_IDX_IDLE_TASK)
         fprintf(stderr, "Waiting for more work\n");
     }
     rep = rep->next;

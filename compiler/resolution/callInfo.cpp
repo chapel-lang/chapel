@@ -58,7 +58,7 @@ CallInfo::CallInfo(CallExpr* icall, bool checkonly) :
     Type* t = se->var->type;
     if (t == dtUnknown && ! se->var->hasFlag(FLAG_TYPE_VARIABLE) ) {
       if (checkonly) badcall = true;
-      else USR_FATAL(call, "use of '%s' before encountering its definition,"
+      else USR_FATAL(call, "use of '%s' before encountering its definition, "
                            "type unknown", se->var->name);
     }
     if (t->symbol->hasFlag(FLAG_GENERIC)) {

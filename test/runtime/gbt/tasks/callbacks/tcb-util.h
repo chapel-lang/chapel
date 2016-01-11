@@ -21,15 +21,12 @@ void tcb_report(void);
 
 #include <pthread.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "chpl-tasks-callbacks.h"
 #include "chpl-linefile-support.h"
-
-
-// This seems not to come from <string.h> without effort; just declare it.
-extern char* strdup(const char*);
 
 
 static struct tcb_data {

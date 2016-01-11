@@ -399,9 +399,9 @@ CallExpr* ParamForLoop::foldForResolve()
 
   if (is_int_type(idxType))
   {
-    int64_t low    = lvar->immediate->int_value();
-    int64_t high   = hvar->immediate->int_value();
-    int64_t stride = svar->immediate->int_value();
+    int64_t low    = lvar->immediate->to_int();
+    int64_t high   = hvar->immediate->to_int();
+    int64_t stride = svar->immediate->to_int();
 
     if (stride <= 0)
     {
@@ -429,9 +429,9 @@ CallExpr* ParamForLoop::foldForResolve()
   {
     INT_ASSERT(is_uint_type(idxType) || is_bool_type(idxType));
 
-    uint64_t low    = lvar->immediate->uint_value();
-    uint64_t high   = hvar->immediate->uint_value();
-    int64_t  stride = svar->immediate->int_value();
+    uint64_t low    = lvar->immediate->to_uint();
+    uint64_t high   = hvar->immediate->to_uint();
+    int64_t  stride = svar->immediate->to_int();
 
     if (stride <= 0)
     {
