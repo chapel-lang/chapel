@@ -35,7 +35,8 @@ DESCRIPTION
 
   --save-sphinx <directory>  Save generated Sphinx project in directory.
 
-  --text-only       Generate text based documentation instead of HTML. Takes precedence over --[no-]html
+  --text-only       Generate text based documentation instead of HTML. Takes
+		     precedence over --[no-]html
 
   --[no-]html       [Don't] generate HTML based documentation (on by default)
 
@@ -49,22 +50,23 @@ DESCRIPTION
                     purpose.
 
   --help-env        Print the command line option help message, listing
-                    the environment variable equivalent for each flag (see
-                    ENVIRONMENT VARIABLES FOR OPTIONS) and its current value.
+                    the environment variable equivalent for each flag, if
+		     applicable (see ENVIRONMENT VARIABLES FOR OPTIONS), and
+		     its current value.
 
   --help-settings   Print the command line option help message, listing
                     the current setting of each option as specified by
                     environment variables and other flags on the command line.
 
-  --version         Print the version number of the compiler.
+  --version         Print chpldoc's version number.
 
-  --copyright       Print the compiler's copyright information.
+  --copyright       Print chpldoc's copyright information.
 
-  --license         Print the compiler's license information.
+  --license         Print chpldoc's license information.
 
 ENVIRONMENT VARIABLES FOR OPTIONS
 
-  Most compiler command-line options have an environment variable that can
+  Some compiler command-line options have an environment variable that can
   be used to specify a default value. Use the --help-env option to list the 
   environment variable equivalent for each option. Command-line options 
   will always override environment variable settings in the event of a 
