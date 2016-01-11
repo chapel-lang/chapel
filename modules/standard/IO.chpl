@@ -2659,7 +2659,7 @@ record ioChar {
   var ch:int(32);
   pragma "no doc"
   proc writeThis(f) {
-    halt("ioChar.writeThis must be written in Writer subclasses");
+    halt("ioChar.writeThis must handled by channel");
   }
 }
 
@@ -4440,8 +4440,7 @@ inline proc channel.write(args ...?k):bool {
 
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
-              value.writeThis() with a ``Writer`` argument as described
-              in the specification.
+              value.writeThis() with the channel as an argument.
    :arg style: optional argument to provide an :type:`iostyle` for this write.
                If this argument is not provided, use the current style
                associated with this channel.
@@ -4527,8 +4526,7 @@ proc channel.writeln(args ...?k,
    :arg args: a variable number of arguments to write. This method can be
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
-              value.writeThis() with a ``Writer`` argument as described
-              in the specification.
+              value.writeThis() with the channel as an argument.
    :arg style: optional argument to provide an :type:`iostyle` for this write.
                If this argument is not provided, use the current style
                associated with this channel.
