@@ -397,15 +397,27 @@ void AstDumpToHtml::visitUseExpr(UseExpr* node) {
   node->mod->accept(this);
 
   if (node->includes.size() > 0) {
+    bool first = true;
     fprintf(mFP, " 'only' ");
     for_vector(const char, str, node->includes) {
+      if (first) {
+	first = false;
+      } else {
+	fprintf(mFP, ", ");
+      }
       fprintf(mFP, "%s", str);
     }
   }
 
   if (node->excludes.size() > 0) {
+    bool first = true;
     fprintf(mFP, " 'except' ");
     for_vector(const char, str, node->excludes) {
+      if (first) {
+	first = false;
+      } else {
+	fprintf(mFP, ", ");
+      }
       fprintf(mFP, "%s", str);
     }
   }
