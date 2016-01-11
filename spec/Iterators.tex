@@ -166,7 +166,7 @@ iter postorder(tree: Tree): string {
 }
 \end{chapel}
 \begin{chapelnoprint}
-proc Tree.writeThis(x: Writer)
+proc Tree.writeThis(x)
 {
   var first = true;
   for node in postorder(tree) {
