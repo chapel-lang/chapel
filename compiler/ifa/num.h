@@ -120,6 +120,9 @@ class Immediate { public:
   int64_t  int_value( void);
   uint64_t uint_value( void);
   uint64_t bool_value( void);
+  // calls int_value, uint_value, or bool_value as appropriate.
+  int64_t  to_int( void);
+  uint64_t to_uint( void);
 
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
@@ -156,12 +159,14 @@ class Immediate { public:
 
 inline uint64_t
 Immediate::bool_value( void) {
+  INT_ASSERT(const_kind == NUM_KIND_BOOL);
   return v_bool;
 }
 
 inline int64_t
 Immediate::int_value( void) {
   int64_t val = 0;
+  INT_ASSERT(const_kind == NUM_KIND_INT);
   switch (num_index) {
   case INT_SIZE_8 : val = v_int8;  break;
   case INT_SIZE_16: val = v_int16; break;
@@ -177,6 +182,7 @@ Immediate::int_value( void) {
 inline uint64_t
 Immediate::uint_value( void) {
   uint64_t val = 0;
+  INT_ASSERT(const_kind == NUM_KIND_UINT);
   switch (num_index) {
   case INT_SIZE_8 : val = v_uint8;  break;
   case INT_SIZE_16: val = v_uint16; break;
@@ -188,6 +194,32 @@ Immediate::uint_value( void) {
   return val;
 }
 
+inline int64_t
+Immediate::to_int( void) {
+  int64_t val = 0;
+  switch (const_kind) {
+    case NUM_KIND_INT : val = int_value();  break;
+    case NUM_KIND_UINT: val = uint_value(); break;
+    case NUM_KIND_BOOL: val = bool_value(); break;
+  default:
+    INT_FATAL("kind not handled in to_int");
+  }
+  return val;
+}
+
+
+inline uint64_t
+Immediate::to_uint( void) {
+  uint64_t val = 0;
+  switch (const_kind) {
+    case NUM_KIND_INT : val = int_value();  break;
+    case NUM_KIND_UINT: val = uint_value(); break;
+    case NUM_KIND_BOOL: val = bool_value(); break;
+  default:
+    INT_FATAL("kind not handled in to_uint");
+  }
+  return val;
+}
 
 class ImmHashFns { public:
   static unsigned int hash(Immediate *);
