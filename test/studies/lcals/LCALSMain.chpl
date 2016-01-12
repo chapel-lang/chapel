@@ -45,7 +45,6 @@ module main {
     for i in 0..#s_loop_data.s_num_3D_2xNx4_Real_arrays {
       initData(s_loop_data.RealArray_3D_2xNx4[i], i+1);
     }
-    initData(s_loop_data.scalar_Real, 21);
   }
 
 

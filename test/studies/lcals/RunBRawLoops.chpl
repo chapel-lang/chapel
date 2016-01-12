@@ -83,11 +83,11 @@ module RunBRawLoops {
           }
           when LoopKernelID.TRAP_INT {
             loopInit(iloop, stat);
-            var xn = loop_data.scalar_Real[0];
-            var x0 = loop_data.scalar_Real[1];
-            var xp = loop_data.scalar_Real[2];
-            var y  = loop_data.scalar_Real[3];
-            var yp = loop_data.scalar_Real[4];
+            var xn = loop_data.RealArray_scalars[0];
+            var x0 = loop_data.RealArray_scalars[1];
+            var xp = loop_data.RealArray_scalars[2];
+            var y  = loop_data.RealArray_scalars[3];
+            var yp = loop_data.RealArray_scalars[4];
 
             var nx =  loop_data.IndxArray_1D[0][0] + 1;
 
@@ -104,7 +104,7 @@ module RunBRawLoops {
               val = sumx * h;
             }
             ltimer.stop();
-            loop_data.scalar_Real[0] = (val + 0.00123) / (val - 0.00123);
+            loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
           otherwise {

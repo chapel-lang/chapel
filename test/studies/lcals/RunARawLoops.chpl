@@ -16,16 +16,18 @@ module RunARawLoops {
         select iloop {
           when LoopKernelID.PRESSURE_CALC {
             loopInit(iloop, stat);
+
             var compression => loop_data.RealArray_1D[0];
             var bvc => loop_data.RealArray_1D[1];
             var p_new => loop_data.RealArray_1D[2];
             var e_old => loop_data.RealArray_1D[3];
             var vnewc => loop_data.RealArray_1D[4];
 
-            const cls = loop_data.scalar_Real[0];
-            const p_cut = loop_data.scalar_Real[1];
-            const pmin = loop_data.scalar_Real[2];
-            const eosvmax = loop_data.scalar_Real[3];
+            const cls = loop_data.RealArray_scalars[0];
+            const p_cut = loop_data.RealArray_scalars[1];
+            const pmin = loop_data.RealArray_scalars[2];
+            const eosvmax = loop_data.RealArray_scalars[3];
+
             ltimer.start();
             for isamp in 0..#num_samples {
               for i in 0..#len {
@@ -62,10 +64,10 @@ module RunARawLoops {
             var qq_old => loop_data.RealArray_1D[13];
             var vnewc => loop_data.RealArray_1D[14];
 
-            const rho0 = loop_data.scalar_Real[0];
-            const e_cut = loop_data.scalar_Real[1];
-            const emin = loop_data.scalar_Real[2];
-            const q_cut = loop_data.scalar_Real[3];
+            const rho0 = loop_data.RealArray_scalars[0];
+            const e_cut = loop_data.RealArray_scalars[1];
+            const emin = loop_data.RealArray_scalars[2];
+            const q_cut = loop_data.RealArray_scalars[3];
 
             ltimer.start();
             for isamp in 0..#num_samples {
@@ -382,7 +384,7 @@ module RunARawLoops {
               val = isamp;
             }
             ltimer.stop();
-            loop_data.scalar_Real[0] = (val + 0.00123) / (val - 0.00123);
+            loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
           otherwise {

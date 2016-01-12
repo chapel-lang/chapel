@@ -22,10 +22,10 @@ module RunVectorizeOnlyRawLoops {
             var e_old => loop_data.RealArray_1D[3];
             var vnewc => loop_data.RealArray_1D[4];
 
-            const cls = loop_data.scalar_Real[0];
-            const p_cut = loop_data.scalar_Real[1];
-            const pmin = loop_data.scalar_Real[2];
-            const eosvmax = loop_data.scalar_Real[3];
+            const cls = loop_data.RealArray_scalars[0];
+            const p_cut = loop_data.RealArray_scalars[1];
+            const pmin = loop_data.RealArray_scalars[2];
+            const eosvmax = loop_data.RealArray_scalars[3];
             ltimer.start();
             for isamp in 0..#num_samples {
               for i in vectorizeOnly(0..#len) {
@@ -65,10 +65,10 @@ module RunVectorizeOnlyRawLoops {
             var qq_old => loop_data.RealArray_1D[13];
             var vnewc => loop_data.RealArray_1D[14];
 
-            const rho0 = loop_data.scalar_Real[0];
-            const e_cut = loop_data.scalar_Real[1];
-            const emin = loop_data.scalar_Real[2];
-            const q_cut = loop_data.scalar_Real[3];
+            const rho0 = loop_data.RealArray_scalars[0];
+            const e_cut = loop_data.RealArray_scalars[1];
+            const emin = loop_data.RealArray_scalars[2];
+            const q_cut = loop_data.RealArray_scalars[3];
 
             ltimer.start();
             for isamp in 0..#num_samples {
@@ -388,7 +388,7 @@ module RunVectorizeOnlyRawLoops {
               val = isamp;
             }
             ltimer.stop();
-            loop_data.scalar_Real[0] = (val + 0.00123) / (val - 0.00123);
+            loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.INIT3 {
@@ -455,11 +455,11 @@ module RunVectorizeOnlyRawLoops {
 /*
           when LoopKernelID.TRAP_INT {
             loopInit(iloop, stat);
-            var xn = loop_data.scalar_Real[0];
-            var x0 = loop_data.scalar_Real[1];
-            var xp = loop_data.scalar_Real[2];
-            var y  = loop_data.scalar_Real[3];
-            var yp = loop_data.scalar_Real[4];
+            var xn = loop_data.RealArray_scalars[0];
+            var x0 = loop_data.RealArray_scalars[1];
+            var xp = loop_data.RealArray_scalars[2];
+            var y  = loop_data.RealArray_scalars[3];
+            var yp = loop_data.RealArray_scalars[4];
 
             var nx =  loop_data.IndxArray_1D[0][0] + 1;
 
@@ -479,7 +479,7 @@ module RunVectorizeOnlyRawLoops {
               val = sumx * h;
             }
             ltimer.stop();
-            loop_data.scalar_Real[0] = (val + 0.00123) / (val - 0.00123);
+            loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
 */

@@ -32,11 +32,11 @@ module LCALSLoops {
     }
   }
 
-  proc loopInit(iloop:int, stat: LoopStat) {
+  proc loopInit(iloop:LoopKernelID, stat: LoopStat) {
     var loop_data = getLoopData();
     flushCache();
     stat.loop_is_run = true;
-    select iloop:LoopKernelID {
+    select iloop {
       when LoopKernelID.REF_LOOP {
         initData(loop_data.RealArray_1D[0], 1);
         initData(loop_data.RealArray_1D[1], 2);
@@ -288,7 +288,7 @@ module LCALSLoops {
         initData(loop_data.RealArray_1D[0], 1);
       }
       otherwise {
-        halt("Unhandled loop type: ", (iloop:LoopKernelID):string);
+        halt("Unhandled loop type: ", iloop:string);
       }
     }
   }
@@ -297,7 +297,7 @@ module LCALSLoops {
     stat.loop_chksum[ilength] = 0.0;
   }
 
-  proc loopFinalize(iloop: int, stat: LoopStat, ilength: LoopLength) {
+  proc loopFinalize(iloop: LoopKernelID, stat: LoopStat, ilength: LoopLength) {
     initChksum(stat, ilength);
     var loop_data = getLoopData();
     select iloop {
@@ -347,7 +347,7 @@ module LCALSLoops {
         updateChksum(stat, ilength, loop_data.RealArray_1D[4]);
       }
       when LoopKernelID.TRAP_INT {
-        updateChksum(stat, ilength, loop_data.scalar_Real[0]);
+        updateChksum(stat, ilength, loop_data.RealArray_scalars[0]);
       }
       when LoopKernelID.HYDRO_1D {
         updateChksum(stat, ilength, loop_data.RealArray_1D[0]);
@@ -356,7 +356,7 @@ module LCALSLoops {
        updateChksum(stat, ilength, loop_data.RealArray_1D_Nx4[0]);
       }
       when LoopKernelID.INNER_PROD {
-        updateChksum(stat, ilength, loop_data.scalar_Real[0]);
+        updateChksum(stat, ilength, loop_data.RealArray_scalars[0]);
       }
       when LoopKernelID.BAND_LIN_EQ {
         updateChksum(stat, ilength, loop_data.RealArray_1D[0]);
@@ -413,7 +413,7 @@ module LCALSLoops {
         updateChksum(stat, ilength, loop_data.RealArray_2D_7xN[0]);
       }
       when LoopKernelID.FIND_FIRST_MIN {
-        updateChksum(stat, ilength, loop_data.scalar_Real[0]);
+        updateChksum(stat, ilength, loop_data.RealArray_scalars[0]);
       }
       otherwise {
         halt("Unknown loop id = ", iloop);
