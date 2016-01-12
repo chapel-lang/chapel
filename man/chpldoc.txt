@@ -41,7 +41,7 @@ DESCRIPTION
   --[no-]html       [Don't] generate HTML-based documentation (on by default)
 
   --[no-]print-commands  Prints the system commands that chpldoc executes
-		    in order to create the documentation.
+  		    in order to create the documentation.
 
 
   Information Options
@@ -52,8 +52,7 @@ DESCRIPTION
 
   --help-env        Print the command line option help message, listing
                     the environment variable equivalent for each flag, if
-		    applicable (see ENVIRONMENT VARIABLES FOR OPTIONS), and
-		    its current value.
+		    applicable (see ENVIRONMENT), and its current value.
 
   --help-settings   Print the command line option help message, listing
                     the current setting of each option as specified by
@@ -68,7 +67,7 @@ DESCRIPTION
 ENVIRONMENT
 
   Some command-line options have an environment variable that can be used
-  to specify a default value. Use the --help-env option to list the
+  to specify a default value. Use the --help-env option to list the 
   environment variable equivalent for each option. Command-line options 
   will always override environment variable settings in the event of a 
   conflict.
