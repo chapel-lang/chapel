@@ -3,4 +3,4 @@ class B {
 }
 
 var b = new B(1.0);
-writeln(b);
+writeln("{p = ", b.p, "}");

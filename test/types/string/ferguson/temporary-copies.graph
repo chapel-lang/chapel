@@ -1,0 +1,4 @@
+perfkeys: 0 temporaries, 1 temporaries, 2 temporaries, 3 temporaries, 4 temporaries
+graphkeys: 0 temporaries, 1 temporaries, 2 temporaries, 3 temporaries, 4 temporaries
+graphtitle: String temporary copies
+ylabel: Time (seconds)

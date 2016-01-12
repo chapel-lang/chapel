@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -197,7 +197,7 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
   int len = argc+largc+2;
   int newargc = 0;
   char **newargv = chpl_mem_allocMany(len, sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   if (!newargv) {
     chpl_internal_error("Could not allocate memory");
   }
@@ -324,14 +324,14 @@ char* chpl_get_enviro_keys(char sep)
       }
     }
     if( pass == 0 ) ret = chpl_mem_allocMany(k+1, sizeof(char),
-                                             CHPL_RT_MD_COMMAND_BUFFER,-1,"");
+                                             CHPL_RT_MD_COMMAND_BUFFER,-1,0);
   }
 
   return ret;
 }
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
-                         int32_t lineno, c_string filename) {
+                         int32_t lineno, int32_t filename) {
   int numHandled = chpl_launch_handle_arg(*argc, argv, argNum, 
                                           lineno, filename);
   if (numHandled == 0) {
@@ -422,7 +422,7 @@ int main(int argc, char* argv[]) {
 
   // Set up main argument parsing.
   chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   chpl_gen_main_arg.argv[0] = argv[0];
   chpl_gen_main_arg.argc = 1;
   chpl_gen_main_arg.return_value = 0;

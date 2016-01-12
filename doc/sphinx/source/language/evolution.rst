@@ -1,7 +1,7 @@
 .. _chapel-evolution:
 
-Language Evolution
-==================
+Chapel Evolution
+================
 
 Like any language, Chapel has changed over time. This page is designed to
 capture significant language changes that have the possibility of breaking

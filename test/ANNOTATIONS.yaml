@@ -104,6 +104,10 @@ all:
       config: Single node XC
   12/09/15:
     - Added record-based strings (#2884)
+  12/16/15:
+    - Enable the Qthreads tasking shim (#3040)
+  01/06/16:
+    - Replace filenames with indices into a lookup table (#3049)
 
 AllCompTime:
   11/09/14:

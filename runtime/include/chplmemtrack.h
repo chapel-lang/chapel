@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -39,13 +39,13 @@ extern chpl_bool chpl_memTrack;
 void chpl_setMemFlags(void);
 void chpl_reportMemInfo(void);
 
-uint64_t chpl_memoryUsed(int32_t lineno, c_string filename);
-void chpl_printMemAllocStats(int32_t lineno, c_string filename);
-void chpl_printMemAllocsByType(int32_t lineno, c_string filename);
+uint64_t chpl_memoryUsed(int32_t lineno, int32_t filename);
+void chpl_printMemAllocStats(int32_t lineno, int32_t filename);
+void chpl_printMemAllocsByType(int32_t lineno, int32_t filename);
 void chpl_printMemAllocs(int64_t threshold,
-                         int32_t lineno, c_string filename);
+                         int32_t lineno, int32_t filename);
 void chpl_printMemAllocsByDesc(c_string descString, int64_t threshold,
-                               int32_t lineno, c_string filename);
+                               int32_t lineno, int32_t filename);
 void chpl_startVerboseMem(void);
 void chpl_stopVerboseMem(void);
 void chpl_startVerboseMemHere(void);
@@ -56,15 +56,15 @@ void chpl_stopVerboseMemHere(void);
 //    at memory allocation and deallocation points.
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
-                       int32_t lineno, c_string filename);
-void chpl_track_free(void* memAlloc, int32_t lineno, c_string filename);
+                       int32_t lineno, int32_t filename);
+void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename);
 void chpl_track_realloc_pre(void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
-                         int32_t lineno, c_string filename);
+                         int32_t lineno, int32_t filename);
 void chpl_track_realloc_post(void* moreMemAlloc,
                          void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
-                         int32_t lineno, c_string filename);
+                         int32_t lineno, int32_t filename);
 
 #else // LAUNCHER
 

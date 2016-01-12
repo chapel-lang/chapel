@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,8 +28,8 @@
 
 extern char executableFilename[FILENAME_MAX+1];
 extern char saveCDir[FILENAME_MAX+1];
-extern char ccflags[256];
-extern char ldflags[256];
+extern std::string ccflags;
+extern std::string ldflags;
 extern bool ccwarnings;
 extern Vec<const char*> incDirs;
 extern int numLibFlags;

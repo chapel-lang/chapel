@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -148,6 +148,7 @@ include $(THIRD_PARTY_DIR)/dlmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/tcmalloc/Makefile.include
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include

@@ -1,5 +1,5 @@
 extern proc chpl_cache_print();
-extern proc chpl_cache_fence(acquire:c_int, release:c_int, ln:int(32), fn:c_string);
+extern proc chpl_cache_fence(acquire:c_int, release:c_int, ln:int(32), fn:int(32));
 extern proc printf(fmt: c_string, vals...?numvals): int;
 config const verbose=false;
 
@@ -13,7 +13,7 @@ proc do_barrier(i:int, testnum:int)
   var release = ((i>>release_num) & 1):c_int;
   if verbose && acquire!=0 then printf("on %d running acquire barrier\n", here.id:c_int);
   if verbose && release!=0 then printf("on %d running release barrier\n", here.id:c_int);
-  chpl_cache_fence(acquire, release, -1, "");
+  chpl_cache_fence(acquire, release, -1, 0);
 }
 
 proc doit(a:locale, b:locale, i:int)

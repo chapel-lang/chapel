@@ -718,14 +718,22 @@ var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
                             real, 2, 222, 222.2, 22);
 \end{chapel}
 \begin{chapelpost}
+writeln(g1.p1);
+writeln(g1.p5);
 writeln(g1);
+writeln(g2.p1);
+writeln(g2.p5);
 writeln(g2);
 delete g1;
 delete g2;
 \end{chapelpost}
 \begin{chapeloutput}
-{p1 = 1, c1 = 11, v1 = 111, x1 = 0, p5 = a string, c5 = 5.5, v5 = 555, x5 = 0.0}
-{p1 = 2, c1 = 222, v1 = 222.2, x1 = 0.0, p5 = this is g2, c5 = 5.5, v5 = 555, x5 = 0}
+1
+a string
+{c1 = 11, v1 = 111, x1 = 0, c5 = 5.5, v5 = 555, x5 = 0.0}
+2
+this is g2
+{c1 = 222, v1 = 222.2, x1 = 0.0, c5 = 5.5, v5 = 555, x5 = 0}
 \end{chapeloutput}
 The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
 required in all constructors for \chpl{MyGenericClass}. They can appear
