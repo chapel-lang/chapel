@@ -4350,8 +4350,8 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   if (SymExpr* sym = toSymExpr(call->get(2))) {
     if (LcnSymbol* var = toLcnSymbol(sym->var)) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
-        Type* oldType = var->type;
-        Type* newType = sym->var->type;
+        Type* oldType = var->type->getValType();
+        Type* newType = sym->var->type->getValType();
 
         if (newType == oldType) {
           result = new SymExpr(var);
