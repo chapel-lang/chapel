@@ -906,12 +906,12 @@ chpl_taskID_t chpl_task_getId(void)
     return tls->chpl_data.id;
 }
 
-void chpl_task_sleep(int time, double scale)
+void chpl_task_sleep(double secs)
 {
     if (qthread_shep() == NO_SHEPHERD) {
         struct timespec delay;
-        delay.tv_sec = (time_t)(scale*time);
-        delay.tv_nsec = (long)(1e3*(scale*time - floor(scale*time)));
+        delay.tv_sec = (time_t)(secs);
+        delay.tv_nsec = (long)(1e9*(secs - floor(secs)));
         nanosleep(&delay, NULL);
     } else {
         qtimer_t t = qtimer_create();
@@ -919,7 +919,7 @@ void chpl_task_sleep(int time, double scale)
         do {
             qthread_yield();
             qtimer_stop(t);
-        } while (qtimer_secs(t) < scale*time);
+        } while (qtimer_secs(t) < secs);
     }
 }
 

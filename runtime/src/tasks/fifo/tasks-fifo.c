@@ -882,10 +882,10 @@ void chpl_task_yield(void) {
 }
 
 
-void chpl_task_sleep(int time, double scale) {
+void chpl_task_sleep(double secs) {
   struct timespec delay;
-  delay.tv_sec = (time_t)(scale*time);
-  delay.tv_nsec = (long)(1e3*(scale*time - floor(scale*time)));
+  delay.tv_sec = (time_t)(secs);
+  delay.tv_nsec = (long)(1e9*(secs - floor(secs)));
   nanosleep(&delay, NULL);
 }
 

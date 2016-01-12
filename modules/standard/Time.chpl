@@ -112,16 +112,9 @@ proc getCurrentDayOfWeek() : Day {
 
 /* Delay a task for t seconds */
 inline proc sleep(t: uint, units: TimeUnits = TimeUnits.seconds) : void {
-  extern proc chpl_task_sleep(t:c_int, s:c_double) : void;
+  extern proc chpl_task_sleep(s:c_double) : void;
 
-  select units {
-    when TimeUnits.microseconds do chpl_task_sleep(t:c_int, 1e-6:c_double);
-    when TimeUnits.milliseconds do chpl_task_sleep(t:c_int, 1e-3:c_double);
-    when TimeUnits.seconds      do chpl_task_sleep(t:c_int, 1.0:c_double);
-    when TimeUnits.minutes      do chpl_task_sleep(t:c_int, 60.0:c_double);
-    when TimeUnits.hours        do chpl_task_sleep(t:c_int, 3600.0:c_double);
-    otherwise halt("Invalid TimeUnits parameter");
-    }
+  chpl_task_sleep(_convert_to_seconds(units, t:real));
 }
 
 /*
@@ -217,6 +210,22 @@ private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   var us2 = chpl_timevalue_microseconds(t2);
 
   return (s1 * 1.0e+6 + us1) - (s2 * 1.0e+6 + us2);
+}
+
+// converts a time specified by unit into seconds
+private proc _convert_to_seconds(unit: TimeUnits, us: real) {
+  select unit {
+    when TimeUnits.microseconds do return us *    1.0e-6;
+    when TimeUnits.milliseconds do return us *    1.0e-3;
+    when TimeUnits.seconds      do return us;
+    when TimeUnits.minutes      do return us *   60.0;
+    when TimeUnits.hours        do return us * 3600.0;
+  }
+
+  halt("internal error in module Time");
+
+  // will never get here, but to avoid warnings:
+  return -1.0;
 }
 
 // converts microseconds to another unit
