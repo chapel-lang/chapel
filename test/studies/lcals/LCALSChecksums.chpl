@@ -57,14 +57,15 @@ module LCALSChecksums {
               const diff = abs(Checksums[loopKernel](1+length:int) - stat.loop_chksum[length]);
               if diff > checksumTolerence {
                 writeln((loopKernel, length),
-                        " expected: ", Checksums[loopKernel](length:int),
-                        " computed: ", stat.loop_chksum[length],
+                        " Fail (expected, computed) = ",
+                        (Checksums[loopKernel](1+length:int),
+                         stat.loop_chksum[length]),
                         " difference: ", diff);
               } else {
                 if noisyChecksumChecks {
                   writeln((loopKernel, length),
                           " Pass (expected, computed) = ",
-                          (Checksums[loopKernel](length:int),
+                          (Checksums[loopKernel](1+length:int),
                            stat.loop_chksum[length]));
                 }
               }
