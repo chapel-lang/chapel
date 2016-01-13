@@ -88,7 +88,7 @@ OPTIONS
                     adding aggregation, write behind, and read ahead. This
                     cache is not enabled by any other optimization options
                     such as --fast.
-.
+
   --conditional-dynamic-dispatch-limit   When greater than zero, this
                     limit controls when the compiler will generate
                     code to handle dynamic dispatch with conditional
@@ -410,27 +410,7 @@ OPTIONS
 
   --no-warnings      Turns off compiler warnings.
 
-  Compiler Information Options
-
-  --copyright     Print the compiler's copyright information.
-
-  -h, --help      Print a list of the command line options, indicating
-                  the arguments that they expect and a brief summary of their
-                  purpose.
-
-  --help-env      Print the command line option help message, listing
-                  the environment variable equivalent for each flag (see
-                  ENVIRONMENT VARIABLES FOR OPTIONS) and its current value.
-
-  --help-settings   Print the command line option help message, listing
-                 the current setting of each option as specified by
-                 environment variables and other flags on the command line.
-
-  --license       Print the compiler's license information.
-
-  --version       Print the version number of the compiler.
-
-  Primary Configuration Options
+  Compiler Configuration Options
 
   --home <path>                   Specify the location of the Chapel
                                   installation directory. This flag corresponds
@@ -561,7 +541,27 @@ OPTIONS
                                   $CHPL_WIDE_POINTERS environment variable
                                   (defaults to 'struct').
 
-ENVIRONMENT VARIABLES FOR OPTIONS
+  Compiler Information Options
+
+  --copyright     Print the compiler's copyright information.
+
+  -h, --help      Print a list of the command line options, indicating
+                  the arguments that they expect and a brief summary of their
+                  purpose.
+
+  --help-env      Print the command line option help message, listing
+                  the environment variable equivalent for each flag (see
+                  ENVIRONMENT VARIABLES FOR OPTIONS) and its current value.
+
+  --help-settings   Print the command line option help message, listing
+                 the current setting of each option as specified by
+                 environment variables and other flags on the command line.
+
+  --license       Print the compiler's license information.
+
+  --version       Print the version number of the compiler.
+
+ENVIRONMENT
 
   Most compiler command-line options have an environment variable that can
   be used to specify a default value. Use the --help-env option to list the
@@ -587,9 +587,6 @@ ENVIRONMENT VARIABLES FOR OPTIONS
   non-empty value of the environment variable equivalent has the same effect
   as passing that option once.
 
-
-ENVIRONMENT
-
   See $CHPL_HOME/doc/chplenv.rst for detailed information about
   general environment variable settings, legal values, and default
   settings. Run $CHPL_HOME/util/printchplenv to view your current
@@ -600,17 +597,6 @@ ENVIRONMENT
                       which generates line numbers in internal module
                       code and throws extra warning flags when
                       compiling the generated C code.
-
-  CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
-                      running (defaults to our best guess).
-
-
-  CHPL_HOST_COMPILER  Specifies the compiler suite that should be used
-                      to build the Chapel compiler (defaults to a best
-                      guess based on $CHPL_HOST_PLATFORM).
-
-  CHPL_LLVM           Specifies whether or not to build the LLVM back-end to
-                      the Chapel compiler.
 
   CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be
                       added to the module search path. The module search path
