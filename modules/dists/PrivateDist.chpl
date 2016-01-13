@@ -47,7 +47,7 @@ corresponding to that locale to that locale's number of cores.
 
     var A: [PrivateSpace] int;
     forall a in A do
-      a = here.numCores;
+      a = here.numPUs();
 
 
 **Data-Parallel Iteration**
