@@ -452,7 +452,6 @@ module RunVectorizeOnlyRawLoops {
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
-/*
           when LoopKernelID.TRAP_INT {
             loopInit(iloop, stat);
             var xn = loop_data.RealArray_scalars[0];
@@ -470,8 +469,7 @@ module RunVectorizeOnlyRawLoops {
             var val = 0.0;
             ltimer.start();
             for isamp in 0..#num_samples {
-              for i in vectorizeOnly(0..#len) with (+ reduce sumx) {
-              // do vectorizeOnly loops work with reduce intents?
+              forall i in vectorizeOnly(0..#len) with (+ reduce sumx) {
                 var x = x0 + i*h;
                 sumx += trap_int_func(x, y, xp, yp);
               }
@@ -482,7 +480,6 @@ module RunVectorizeOnlyRawLoops {
             loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
-*/
           when LoopKernelID.PIC_2D {
             halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
