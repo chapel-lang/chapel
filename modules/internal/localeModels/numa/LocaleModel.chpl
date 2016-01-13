@@ -242,8 +242,8 @@ module LocaleModel {
 
       if numSublocales >= 1 {
         childSpace = {0..#numSublocales};
-        # These nPUs* values are estimates only; better values await
-        # full hwloc support.
+        // These nPUs* values are estimates only; better values await
+        // full hwloc support.
         const nPUsPhysAccPerSubloc = nPUsPhysAcc/numSublocales;
         const nPUsPhysAllPerSubloc = nPUsPhysAll/numSublocales;
         const nPUsLogAccPerSubloc = nPUsLogAcc/numSublocales;
