@@ -211,7 +211,7 @@ module StringCasts {
   // This is marked as compiler generated so it doesn't take precedence over
   // genereated casts for types like enums
   pragma "compiler generated"
-  proc _cast(type t, x) where t == string {
+  proc _cast(type t, x) where t == string && x.type != string {
     var ret: string;
     ret.write(x);
     return ret;

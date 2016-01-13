@@ -225,8 +225,13 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
+      extern proc chpl_getNumPhysicalCpus(accessible_only: bool): c_int;
+      nPUsPhysAcc = chpl_getNumPhysicalCpus(true);
+      nPUsPhysAll = chpl_getNumPhysicalCpus(false);
+
       extern proc chpl_getNumLogicalCpus(accessible_only: bool): c_int;
-      numCores = chpl_getNumLogicalCpus(true);
+      nPUsLogAcc = chpl_getNumLogicalCpus(true);
+      nPUsLogAll = chpl_getNumLogicalCpus(false);
 
       extern proc chpl_task_getNumSublocales(): int(32);
       numSublocales = chpl_task_getNumSublocales();
@@ -237,15 +242,23 @@ module LocaleModel {
 
       if numSublocales >= 1 {
         childSpace = {0..#numSublocales};
-        const numCoresPerNumaDomain = numCores/numSublocales;
-        const maxTaskParPerNumaDomain = chpl_task_getMaxPar()/numSublocales;
+        // These nPUs* values are estimates only; better values await
+        // full hwloc support.
+        const nPUsPhysAccPerSubloc = nPUsPhysAcc/numSublocales;
+        const nPUsPhysAllPerSubloc = nPUsPhysAll/numSublocales;
+        const nPUsLogAccPerSubloc = nPUsLogAcc/numSublocales;
+        const nPUsLogAllPerSubloc = nPUsLogAll/numSublocales;
+        const maxTaskParPerSubloc = chpl_task_getMaxPar()/numSublocales;
         const origSubloc = chpl_task_getRequestedSubloc(); // this should be any
         for i in childSpace {
           // allocate the structure on the proper sublocale
           chpl_task_setSubloc(i:chpl_sublocID_t);
           childLocales[i] = new NumaDomain(i:chpl_sublocID_t, this);
-          childLocales[i].numCores = numCoresPerNumaDomain;
-          childLocales[i].maxTaskPar = maxTaskParPerNumaDomain;
+          childLocales[i].nPUsPhysAcc = nPUsPhysAccPerSubloc;
+          childLocales[i].nPUsPhysAll = nPUsPhysAllPerSubloc;
+          childLocales[i].nPUsLogAcc = nPUsLogAccPerSubloc;
+          childLocales[i].nPUsLogAll = nPUsLogAllPerSubloc;
+          childLocales[i].maxTaskPar = maxTaskParPerSubloc;
         }
         chpl_task_setSubloc(origSubloc);
       }
@@ -269,7 +282,10 @@ module LocaleModel {
 
     proc RootLocale() {
       parent = nil;
-      numCores = 0;
+      nPUsPhysAcc = 0;
+      nPUsPhysAll = 0;
+      nPUsLogAcc = 0;
+      nPUsLogAll = 0;
       maxTaskPar = 0;
     }
 
@@ -281,7 +297,10 @@ module LocaleModel {
         chpl_task_setSubloc(c_sublocid_any);
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
-        numCores += node.numCores;
+        nPUsPhysAcc += node.nPUsPhysAcc;
+        nPUsPhysAll += node.nPUsPhysAll;
+        nPUsLogAcc += node.nPUsLogAcc;
+        nPUsLogAll += node.nPUsLogAll;
         maxTaskPar += node.maxTaskPar;
       }
 

@@ -2153,12 +2153,12 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
 {
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {
     if( t == dtInt[i] ) {
-      return new_IntSymbol(s->immediate->int_value(), (IF1_int_type) i);
+      return new_IntSymbol(s->immediate->to_int(), (IF1_int_type) i);
     }
   }
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {
     if( t == dtUInt[i] ) {
-      return new_UIntSymbol(s->immediate->uint_value(), (IF1_int_type) i);
+      return new_UIntSymbol(s->immediate->to_uint(), (IF1_int_type) i);
     }
   }
   return NULL;
