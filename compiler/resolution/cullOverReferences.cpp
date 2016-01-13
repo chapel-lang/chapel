@@ -28,6 +28,38 @@
 static bool
 refNecessary(SymExpr*                      se,
              Map<Symbol*, Vec<SymExpr*>*>& defMap,
+             Map<Symbol*, Vec<SymExpr*>*>& useMap);
+
+//
+// Should we switch to the "value" function?
+//
+// Generally we continue to so do for non-lvalue references when a value
+// is acceptable.  However functions that return strings prefer to use
+// the by-ref version so long as there is no specialization on
+// the setter param
+static bool
+shouldUseByValueFunction(FnSymbol*                     fn,
+                         SymExpr*                      se,
+                         Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                         Map<Symbol*, Vec<SymExpr*>*>& useMap) {
+  bool retval = false;
+
+  if (refNecessary(se, defMap, useMap) == false) {
+    if (isString(se->var->type->getValType()) &&
+        fn->hasFlag(FLAG_FN_REF_USES_SETTER) == false) {
+      retval = false;
+
+    } else {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
+static bool
+refNecessary(SymExpr*                      se,
+             Map<Symbol*, Vec<SymExpr*>*>& defMap,
              Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<SymExpr*>* defs = defMap.get(se->var);
 
@@ -66,8 +98,8 @@ refNecessary(SymExpr*                      se,
 
       } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         if (!call->get(2)->typeInfo()->refType)
-
           return true;
+
       } else if (call->isPrimitive(PRIM_RETURN) ||
                  call->isPrimitive(PRIM_YIELD)) {
         return true;
@@ -78,6 +110,7 @@ refNecessary(SymExpr*                      se,
         // we need to keep it as a pointer.
         // Dereferencing would be premature.
         return true;
+
       } else if (call->isPrimitive(PRIM_DEREF) &&
                  isRecordWrappedType(se->var->type->getValType())) {
         // Heuristic: if we are dereferencing an array reference,
@@ -165,7 +198,7 @@ void cullOverReferences() {
           INT_ASSERT(se);
 
           // Should we switch to the by-value form?
-          if (!refNecessary(se, defMap, useMap)) {
+          if (shouldUseByValueFunction(fn, se, defMap, useMap) == true) {
             SET_LINENO(move);
 
             SymExpr*   base = toSymExpr(call->baseExpr);
