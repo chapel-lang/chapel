@@ -110,11 +110,21 @@ proc getCurrentDayOfWeek() : Day {
   return wday : Day;
 }
 
-/* Delay a task for t seconds */
-inline proc sleep(t: uint, units: TimeUnits = TimeUnits.seconds) : void {
+/*
+   Delay a task for a duration in the units specified
+
+   :arg  t: The duration for the time to sleep
+   :type t: real
+
+   :arg  unit: The units for the duration
+   :type unit: TimeUnits
+*/
+inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
   extern proc chpl_task_sleep(s:c_double) : void;
 
-  chpl_task_sleep(_convert_to_seconds(units, t:real));
+  if t < 0 then
+    stderr.writeln("Warning: sleep() called with negative time parameter");
+  chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);
 }
 
 /*
