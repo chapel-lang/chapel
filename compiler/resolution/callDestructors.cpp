@@ -1701,7 +1701,8 @@ static void expiringValueOptimization(FnSymbol* fn) {
         // Is it a local variable?
         // Is the initialization or assignment occurring in
         // the same block as the variable definition for the RHS?
-        if ( rhsSym->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+        if ( rhsSym->hasFlag(FLAG_TEMP) &&
+             rhsSym->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
              rhsSym->defPoint->parentSymbol == fn &&
              RHS->getScopeBlock() == RHS->var->defPoint->getScopeBlock() ) {
           // Is RHS dead at this point?
