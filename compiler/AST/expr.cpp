@@ -5842,6 +5842,7 @@ UseExpr::UseExpr(BaseAST* module):
   Expr(E_UseExpr),
   includes(),
   excludes(),
+  impactedSymbols(),
   mod(NULL)
 {
   if (Symbol* b = toSymbol(module)) {
@@ -5860,6 +5861,7 @@ UseExpr::UseExpr(BaseAST* module, Vec<const char*>* args, bool exclude) :
   Expr(E_UseExpr),
   includes(),
   excludes(),
+  impactedSymbols(),
   mod(NULL)
 {
   if (Symbol* b = toSymbol(module)) {
@@ -5896,6 +5898,7 @@ UseExpr::UseExpr(BaseAST* module, std::vector<const char*>* args, bool exclude) 
   Expr(E_UseExpr),
   includes(),
   excludes(),
+  impactedSymbols(),
   mod(NULL)
 {
   if (Symbol* b = toSymbol(module)) {
@@ -5933,6 +5936,9 @@ UseExpr* UseExpr::copyInner(SymbolMap* map) {
     _this = new UseExpr(COPY_INT(mod), &includes, false);
   } else {
     _this = new UseExpr(COPY_INT(mod));
+  }
+  for_vector(const char, sym, impactedSymbols) {
+    _this->impactedSymbols.push_back(sym);
   }
   return _this;
 }

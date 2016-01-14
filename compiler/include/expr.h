@@ -241,6 +241,10 @@ class UseExpr: public Expr {
  public:
   std::vector<const char *> includes;
   std::vector<const char *> excludes;
+  std::vector<const char *> impactedSymbols;
+  // impactedSymbols are the fields or methods on an excluded or included
+  // type, so that they can be treated as if they, too, were listed in the
+  // 'except' or 'only' list of this 'use' statement.
 
   Expr* mod; // Can be either an UnresolvedSymExpr, SymExpr, or CallExpr to
   // specify an explicit module name.
