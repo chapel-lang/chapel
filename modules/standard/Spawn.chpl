@@ -91,10 +91,10 @@ back its input.
 .. note::
 
   As of Chapel v1.12, creating a subprocess that uses :const:`PIPE` to provide
-  input or capture output does not work when using the ugni communications
-  layer and when using more than one locale. In this circumstance, the program
-  will halt with an error message. These scenarios do work when using GASNet
-  instead of the ugni layer.
+  input or capture output does not work when using the ugni communications layer
+  with hugepages enabled and when using more than one locale. In this
+  circumstance, the program will halt with an error message. These scenarios do
+  work when using GASNet instead of the ugni layer.
 
  */
 module Spawn {
@@ -431,9 +431,17 @@ module Spawn {
     // under those circumstances. See JIRA issue 113 for more details.
     if CHPL_COMM == "ugni" then
       if stdin != FORWARD || stdout != FORWARD || stderr != FORWARD then
-        if numLocales > 1 then
-          halt("spawn with more than 1 locale for CHPL_COMM=ugni currently ",
-               "requires stdin, stdout, stderr=FORWARD");
+        if numLocales > 1 {
+          var env_c_str:c_string;
+          var env_str:string;
+          if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
+            env_str = env_c_str;
+            if env_str.count("HUGETLB") > 0 then
+              halt("spawn with more than 1 locale for CHPL_COMM=ugni ",
+                   "with hugepages currently ",
+                   "requires stdin, stdout, stderr=FORWARD");
+          }
+        }
 
     if stdin == QIO_FD_PIPE then stdin_pipe = true;
     if stdout == QIO_FD_PIPE then stdout_pipe = true;
