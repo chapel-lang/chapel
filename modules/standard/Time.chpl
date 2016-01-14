@@ -122,8 +122,10 @@ proc getCurrentDayOfWeek() : Day {
 inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
   extern proc chpl_task_sleep(s:c_double) : void;
 
-  if t < 0 then
+  if t < 0 {
     stderr.writeln("Warning: sleep() called with negative time parameter");
+    return;
+  }
   chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);
 }
 
