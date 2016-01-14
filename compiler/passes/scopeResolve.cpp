@@ -303,6 +303,8 @@ static void addOneToSymbolTable(DefExpr* def)
 static ModuleSymbol* getUsedModule(Expr* expr);
 static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall);
 
+static void addImpactedSymbols(UseExpr* use, Symbol* maybeType);
+
 static void processImportExprs() {
   // handle "use mod;" where mod is a module
   forv_Vec(UseExpr, use, gUseExprs) {
@@ -357,6 +359,7 @@ static void processImportExprs() {
         } else if (!sym->isVisible(use)) {
           USR_FATAL_CONT(use, "Bad identifier in 'except' clause, '%s' is already private", toExclude);
         }
+        addImpactedSymbols(use, sym);
       }
     } else if (use->includes.size() > 0) {
       for_vector(const char, toInclude, use->includes) {
@@ -372,6 +375,7 @@ static void processImportExprs() {
         } else if (!sym->isVisible(use)) {
           USR_FATAL_CONT(use, "Bad identifier in 'only' clause, '%s' is private", toInclude);
         }
+        addImpactedSymbols(use, sym);
       }
     }
   }
@@ -489,6 +493,23 @@ static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall) {
     //
     printModuleUseError(useCall);
     return NULL;
+  }
+}
+
+// If maybeType refers to a type symbol, add all methods on that type
+// to the list of other impacted symbols in a module.  If the type is
+// also an AggregateType, add all its fields
+static void addImpactedSymbols(UseExpr* use, Symbol* maybeType) {
+  if (TypeSymbol* ts = toTypeSymbol(maybeType)) {
+    Type* type = ts->type;
+    forv_Vec(FnSymbol, method, type->methods) {
+      use->impactedSymbols.push_back(method->name);
+    }
+    if (AggregateType* at = toAggregateType(type)) {
+      for_fields(sym, at) {
+        use->impactedSymbols.push_back(sym->name);
+      }
+    }
   }
 }
 

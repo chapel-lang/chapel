@@ -1,2 +1,0 @@
-typeIncludedAccessMethod.chpl:5: In function 'main':
-typeIncludedAccessMethod.chpl:7: error: unresolved call 'foo.someMethod(3)'

@@ -2833,6 +2833,13 @@ getVisibleFunctions(BlockStmt* block,
         }
         if (matched)
           continue;
+
+        if (use->impactedSymbols.size() > 0) {
+          // Check to see if the name we're looking for is one related to a
+          // type in our except list and if so, skip this use.
+          if (std::find(use->impactedSymbols.begin(), use->impactedSymbols.end(), name) != use->impactedSymbols.end())
+            continue;
+        }
       } else if (use->includes.size() > 0) {
         bool matched = false;
         for_vector(const char, toInclude, use->includes) {
@@ -2853,10 +2860,17 @@ getVisibleFunctions(BlockStmt* block,
             break;
           }
         }
-        if (!matched)
-          continue;
-        // If we had a match in the only list, we can safely check for
-        // that symbol in this scope.  Otherwise, we should continue
+        // If we had a match in the only list, or if the name we're looking
+        // for is one related to a type in our only list, we can safely check
+        // for that symbol in this scope.  Otherwise, we should continue
+        if (!matched) {
+          if (use->impactedSymbols.size() > 0) {
+            if (std::find(use->impactedSymbols.begin(), use->impactedSymbols.end(), name) == use->impactedSymbols.end())
+              continue;
+          } else {
+            continue;
+          }
+        }
       }
 
       SymExpr* se = toSymExpr(use->mod);
