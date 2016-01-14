@@ -1125,7 +1125,6 @@ module String {
   inline proc _string_contains(param a: string, param b: string) param
     return __primitive("string_contains", a, b);
 
-
   //
   // Append
   //
@@ -1135,34 +1134,61 @@ module String {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      const rhsLen = rhs.len;
-      const newLength = lhs.len+rhsLen; //TODO: check for overflow
-      if lhs._size <= newLength {
-        const newSize = chpl_mem_goodAllocSize(
-            max(newLength+1,
-                (lhs.len * chpl_stringGrowthFactor):int).safeCast(size_t));
+      var   lhsBuff   = lhs.buff;
+      var   lhsSize   = lhs._size;
+      const lhsLen    = lhs.len;
 
-        if lhs.owned {
-          lhs.buff = chpl_mem_realloc(lhs.buff, newSize.safeCast(size_t),
-                                      CHPL_RT_MD_STR_COPY_DATA):bufferType;
+      const rhsLen    = rhs.len;
+      const rhsRemote = rhs.locale_id != chpl_nodeID;
+
+      const newLength = lhsLen + rhsLen; // TODO: check for overflow
+
+      // Do we need to resize lhs.buff?
+      // Care is required if lhs.buff == rhs.buff
+      if lhs._size <= newLength {
+        const newSize0 = (lhsLen * chpl_stringGrowthFactor) : int;
+	const newSize1 = max(newLength + 1, newSize0);
+        const newSize2 = newSize1.safeCast(size_t);
+        const newSize  = chpl_mem_goodAllocSize(newSize2);
+
+        // We can attempt to benefit from realloc
+        if lhs.owned && (rhsRemote || rhs.buff != lhs.buff) {
+          lhsBuff = chpl_mem_realloc(lhs.buff,
+                                     newSize.safeCast(size_t),
+                                     CHPL_RT_MD_STR_COPY_DATA):bufferType;
+
         } else {
-          var newBuff = chpl_mem_alloc(newSize.safeCast(size_t),
-                                       CHPL_RT_MD_STR_COPY_DATA):bufferType;
-          memcpy(newBuff, lhs.buff, lhs.len.safeCast(size_t));
-          lhs.buff = newBuff;
+          lhsBuff = chpl_mem_alloc(newSize.safeCast(size_t),
+                                   CHPL_RT_MD_STR_COPY_DATA):bufferType;
+
+          memcpy(lhsBuff, lhs.buff, lhsLen.safeCast(size_t));
           lhs.owned = true;
         }
 
-        lhs._size = newSize.safeCast(int);
+        lhsSize = newSize.safeCast(int);
       }
-      const rhsRemote = rhs.locale_id != chpl_nodeID;
+
+      // Now copy the rhs
       if rhsRemote {
-        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale_id,
-                              rhs.buff, rhsLen.safeCast(size_t));
+        chpl_string_comm_get(lhsBuff + lhsLen,
+                             rhs.locale_id,
+                             rhs.buff,
+                             rhsLen.safeCast(size_t));
       } else {
-        memcpy(lhs.buff+lhs.len, rhs.buff, rhsLen.safeCast(size_t));
+        memcpy(lhsBuff + lhsLen, rhs.buff, rhsLen.safeCast(size_t));
       }
-      lhs.len = newLength;
+
+      // Did we resize the buff?
+      if lhs._size <= newLength {
+        if lhs.owned && !rhsRemote && lhs.buff == rhs.buff {
+          chpl_mem_free(lhs.buff);
+	}
+
+        lhs.buff  = lhsBuff;
+        lhs._size = lhsSize;
+      }
+
+      lhs.len             = newLength;
       lhs.buff[newLength] = 0;
     }
   }
