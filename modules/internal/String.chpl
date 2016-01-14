@@ -1147,7 +1147,7 @@ module String {
       // Care is required if lhs.buff == rhs.buff
       if lhs._size <= newLength {
         const newSize0 = (lhsLen * chpl_stringGrowthFactor) : int;
-	const newSize1 = max(newLength + 1, newSize0);
+        const newSize1 = max(newLength + 1, newSize0);
         const newSize2 = newSize1.safeCast(size_t);
         const newSize  = chpl_mem_goodAllocSize(newSize2);
 
@@ -1182,7 +1182,7 @@ module String {
       if lhs._size <= newLength {
         if lhs.owned && !rhsRemote && lhs.buff == rhs.buff {
           chpl_mem_free(lhs.buff);
-	}
+        }
 
         lhs.buff  = lhsBuff;
         lhs._size = lhsSize;
