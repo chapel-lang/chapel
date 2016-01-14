@@ -1,0 +1,2 @@
+typeIncludedAccessMethod.chpl:5: In function 'main':
+typeIncludedAccessMethod.chpl:6: error: unresolved call 'foo(2)'
