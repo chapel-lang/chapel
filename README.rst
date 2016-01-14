@@ -200,3 +200,10 @@ What's next?
 
 .. _cray.rst: http://chapel.cray.com/docs/1.12/platforms/cray.html
 .. _cygwin.rst: http://chapel.cray.com/docs/1.12/platforms/cygwin.html
+
+JIRA Issues
+-----------
+
+In addition to SourceForge, the Chapel team is active on Chapel's `JIRA project site`_. Accounts are free.
+
+.. _JIRA project site: https://chapel.atlassian.net/projects/CHAPEL/issues/
