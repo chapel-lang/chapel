@@ -61,6 +61,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <math.h>
 
 
 //#define SUPPORT_BLOCKREPORT
@@ -905,10 +906,13 @@ chpl_taskID_t chpl_task_getId(void)
     return tls->chpl_data.id;
 }
 
-void chpl_task_sleep(int secs)
+void chpl_task_sleep(double secs)
 {
     if (qthread_shep() == NO_SHEPHERD) {
-        sleep(secs);
+        struct timespec delay;
+        delay.tv_sec = (time_t)(secs);
+        delay.tv_nsec = (long)(1e9*(secs - floor(secs)));
+        nanosleep(&delay, NULL);
     } else {
         qtimer_t t = qtimer_create();
         qtimer_start(t);
