@@ -281,6 +281,77 @@ void deadCodeElimination(FnSymbol* fn) {
   freeDefUseChains(DU, UD);
 }
 
+// Eliminate dead string literals. Any string literals that are introduced get
+// created by the `new_StringSymbol()` function. This includes strings used
+// internally by the compiler (such as "boundedNone" for BoundedRangeType) and
+// param string used for things like compiler error messages as well as strings
+// that may actually be used at runtime. `new_StringSymbol()` adds all strings
+// to the stringLiteralModule, but strings that are only used for compilation
+// or whose runtime path was param folded away are never removed because the
+// code paths that are removed don't include the string literal initialization.
+// This code removes dead string literals and all the support code that turns
+// them into Chapel level strings.
+//
+// Essentially we're looking for code of the form:
+//
+//     var _str_literal_id:string;                                         // string
+//
+//     var call_tmp:c_ptr(uint(8));                                        // call_tmp 
+//     call_tmp = (c_ptr_uint8_t)"string literal";                         // call_tmp_assign
+//     var ret_to_arg_ref_tmp: _ref(string);                               // ret_to_arg
+//     ret_to_arg_ref_tmp = &_str_literal_id                               // ret_to_arg_assign
+//     string(call_tmp, len, size, false, false, ret_to_arg_ref_tmp);      // stringCtor
+//
+//  where there is only one use of the global "str_literal_id" (the rhs of
+//  ret_to_arg_ref_tmp = &str_literal_id) and just removing all the code to
+//  init the Chapel string from the string literal.
+//
+// TODO See if this can be made into a more general dead record elimination.
+// (EJR 01/12/15)
+static void deadStringLiteralElimination() {
+
+  // build up global defUse maps
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(defMap, useMap);
+
+  // find all the symExprs in the string literal module
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(stringLiteralModule, symExprs);
+
+  for_vector(SymExpr, stringUse, symExprs) {
+    // if we're looking at a Chapel string created from a string literal
+    if (stringUse->var->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+      // and there's only a single use of it
+      Vec<SymExpr*>* stringUses = useMap.get(stringUse->var);
+      if (stringUses && stringUses->n == 1) {
+        // then that use is the RHS of `ret_to_arg_ref_tmp = &str_literal_id`,
+        // which is only used in the string constructor so the string is dead. 
+        assert(stringUses->v[0] == stringUse);
+
+        // gather the AST used to create a Chapel string from the literal,
+        // using variable names that mimic the current generated code
+        CallExpr*      ret_to_arg_assign = toCallExpr(stringUse->getStmtExpr());
+        SymExpr*       ret_to_arg        = toSymExpr(ret_to_arg_assign->get(1));
+        Vec<SymExpr*>* ret_to_arg_uses   = useMap.get(ret_to_arg->var);
+        CallExpr*      stringCtor        = toCallExpr(ret_to_arg_uses->v[0]->parentExpr);
+        SymExpr*       call_tmp          = toSymExpr(stringCtor->get(1));
+        Vec<SymExpr*>* call_tmp_defs     = defMap.get(call_tmp->var);
+        CallExpr*      call_tmp_assign   = toCallExpr(call_tmp_defs->v[0]->parentExpr);
+
+        // remove all the AST, in the order listed in the function comment
+        stringUse->var->defPoint->remove();
+        call_tmp->var->defPoint->remove();
+        call_tmp_assign->remove();
+        ret_to_arg->remove();
+        ret_to_arg_assign->remove();
+        stringCtor->remove();
+      }
+    }
+  }
+  freeDefUseMaps(defMap, useMap);
+}
+
 
 // Determines if a module is dead. A module is dead if the module's init
 // function can only be called from module code, and the init function
@@ -316,6 +387,7 @@ static bool isDeadModule(ModuleSymbol* mod) {
 
 // Eliminates all dead modules
 static void deadModuleElimination() {
+  deadModuleCount = 0;
   forv_Vec(ModuleSymbol, mod, allModules) {
     if (isDeadModule(mod) == true) {
       deadModuleCount++;
@@ -334,12 +406,12 @@ static void deadModuleElimination() {
   }
 }
 
-
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     deadBlockElimination();
 
-    deadModuleCount = 0;
+    deadStringLiteralElimination();
+
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
 
