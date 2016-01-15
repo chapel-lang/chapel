@@ -21,9 +21,9 @@
 
 Basic types and utilities in support of I/O operation.
  
-Most of Chapel's I/O support is within the :mod:`IO` module.
-This automatically included module provides several basic
-types and routines that support the :mod:`IO` module.
+Most of Chapel's I/O support is within the :mod:`IO` module.  This section
+describes automatically included basic types and routines that support the
+:mod:`IO` module.
  
 Writing and Reading
 ~~~~~~~~~~~~~~~~~~~
@@ -57,20 +57,13 @@ a pair of variables ``x`` and ``y``.
   /* reading via multiple type arguments */
   (x, y) = read(int, real);
 
-The write method on strings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ``write`` method can also be called on strings to write the output to a
-string instead of a channel. The string will be appended to.
-
 The readThis(), writeThis(), and readWriteThis() Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When programming the input and output method for a custom data type, it is
 often useful to define both the read and write routines at the same time. That
 is possible to do in a Chapel program by defining a ``readWriteThis`` method,
-which is a generic method expecting a single argument: a channel that
-can read or write.
+which is a generic method expecting a single :record:`~IO.channel` argument.
 
 In cases when the reading routine and the writing routine are more naturally
 separate, or in which only one should be defined, a Chapel program can define
@@ -83,8 +76,8 @@ defined, the compiler will generate ``readThis`` or ``writeThis`` methods - if
 they do not already exist - which call ``readWriteThis``.
 
 Note that arguments to ``readThis`` and ``writeThis`` may represent a locked
-channel; as a result, using parallelism constructs to call methods on the
-channel may result in undefined behavior.
+channel; as a result, calling methods on the channel in parallel from within a
+``readThis``, ``writeThis``, or ``readWriteThis`` may cause undefined behavior.
 
 Because it is often more convenient to use an operator for I/O, instead of
 writing
