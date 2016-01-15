@@ -7637,6 +7637,36 @@ static void resolveDynamicDispatches() {
       }
     }
   }
+
+  // remove entries in virtualChildrenMap that are not in
+  // virtualMethodTable. When a parent has a generic method and
+  // a subclass has a specific one, the virtualChildrenMap might
+  // get multilpe entries while the logic above with childSet
+  // ensures that the virtualMethodTable only has one entry.
+  std::set<FnSymbol*> fns_in_vmt;
+  typedef MapElem<Type*,Vec<FnSymbol*>*> VmtMapElem;
+  typedef MapElem<FnSymbol*,Vec<FnSymbol*>*> ChildMapElem;
+  form_Map(VmtMapElem, el,  virtualMethodTable) {
+    if (el->value) {
+      forv_Vec(FnSymbol, fn, *el->value) {
+        fns_in_vmt.insert(fn);
+      }
+    }
+  }
+  form_Map(ChildMapElem, el, virtualChildrenMap) {
+    if (el->value) {
+      Vec<FnSymbol*>* v = el->value;
+      Vec<FnSymbol*>* newV = new Vec<FnSymbol*>();
+      forv_Vec(FnSymbol, fn, *v) {
+        if (fns_in_vmt.count(fn)) {
+          newV->add(fn);
+        }
+      }
+      el->value = newV;
+      delete v;
+    }
+  }
+
   inDynamicDispatchResolution = false;
 
   if (fPrintDispatch) {
