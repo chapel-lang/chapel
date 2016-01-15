@@ -404,6 +404,7 @@ static void removeMootFields();
 static void expandInitFieldPrims();
 static void fixTypeNames(AggregateType* ct);
 static void setScalarPromotionType(AggregateType* ct);
+static bool functionUsesSetter(FnSymbol* fn);
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   if (alignedActuals.n != 0) alignedActuals.clear();
@@ -4349,13 +4350,17 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
 
   if (SymExpr* sym = toSymExpr(call->get(2))) {
     if (LcnSymbol* var = toLcnSymbol(sym->var)) {
-      if (SymExpr* sym = toSymExpr(call->get(1))) {
-        Type* oldType = var->type->getValType();
-        Type* newType = sym->var->type->getValType();
+      // Casts of type variables are always required
+      // eg. foo.type:string
+      if (!var->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (SymExpr* sym = toSymExpr(call->get(1))) {
+          Type* oldType = var->type->getValType();
+          Type* newType = sym->var->type->getValType();
 
-        if (newType == oldType) {
-          result = new SymExpr(var);
-          call->replace(result);
+          if (newType == oldType) {
+            result = new SymExpr(var);
+            call->replace(result);
+          }
         }
       }
     } else if (EnumSymbol* e = toEnumSymbol(sym->var)) {
@@ -6545,10 +6550,15 @@ replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn) {
   if (SymExpr* se = toSymExpr(ast)) {
     if (se->var == fn->setter->sym) {
       se->var = gTrue;
+
+      // This variation relies on the setter param directly
+      fn->addFlag(FLAG_FN_REF_USES_SETTER);
+
       if (fn->isIterator())
         USR_WARN(fn, "setter argument is not supported in iterators");
     }
   }
+
   AST_CHILDREN_CALL(ast, replaceSetterArgWithTrue, fn);
 }
 
@@ -6873,6 +6883,7 @@ resolveFns(FnSymbol* fn) {
     stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
   }
 
+  // Does this function return by ref-intent?
   if (fn->retTag == RET_REF) {
     buildValueFunction(fn);
   }
@@ -6880,6 +6891,15 @@ resolveFns(FnSymbol* fn) {
   insertFormalTemps(fn);
 
   resolveBlockStmt(fn->body);
+
+  // Does this function return by ref-intent?
+  if (fn->retTag == RET_REF) {
+    // Determine if it might rely on the setter param recursively
+    if (fn->hasFlag(FLAG_FN_REF_USES_SETTER) == false &&
+        functionUsesSetter(fn)               == true) {
+      fn->addFlag(FLAG_FN_REF_USES_SETTER);
+    }
+  }
 
   if (tryFailure) {
     fn->removeFlag(FLAG_RESOLVED);
@@ -8882,4 +8902,26 @@ setScalarPromotionType(AggregateType* ct) {
     if (!strcmp(field->name, "_promotionType"))
       ct->scalarPromotionType = field->type;
   }
+}
+
+//
+// Does this function call a ref-return function that relies on the
+// setter param?  By induction this handles the general recursive case.
+//
+static bool functionUsesSetter(FnSymbol* fn) {
+  std::vector<CallExpr*> calls;
+  bool                   retval = false;
+
+  collectCallExprs(fn, calls);
+
+  for (size_t i = 0; i < calls.size() && retval == false; i++) {
+    CallExpr* call = calls[i];
+
+    if (FnSymbol* calledFn = call->isResolved()) {
+      if (calledFn->hasFlag(FLAG_FN_REF_USES_SETTER))
+        retval = true;
+    }
+  }
+
+  return retval;
 }

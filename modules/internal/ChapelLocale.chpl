@@ -48,9 +48,16 @@ module ChapelLocale {
     // The parent of the root locale is nil (by definition).
     const parent : locale;
 
-    // To be removed from the required interface once legacy code is adjusted.
-    // Modified in RootLocale.init().
-    var numCores: int;
+    pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
+    pragma "no doc" var nPUsLogAll: int;     // HW threads, all
+    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, accessible
+    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
+
+    inline
+    proc numPUs(logical: bool = false, accessible: bool = true)
+      return if logical
+             then if accessible then nPUsLogAcc else nPUsLogAll
+             else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     var maxTaskPar: int; // max parallelism tasking layer expects to deliver
 

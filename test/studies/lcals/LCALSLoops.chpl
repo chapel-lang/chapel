@@ -32,11 +32,11 @@ module LCALSLoops {
     }
   }
 
-  proc loopInit(iloop:int, stat: LoopStat) {
+  proc loopInit(iloop:LoopKernelID, stat: LoopStat) {
     var loop_data = getLoopData();
     flushCache();
     stat.loop_is_run = true;
-    select iloop:LoopKernelID {
+    select iloop {
       when LoopKernelID.REF_LOOP {
         initData(loop_data.RealArray_1D[0], 1);
         initData(loop_data.RealArray_1D[1], 2);
@@ -148,47 +148,147 @@ module LCALSLoops {
         initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.HYDRO_1D {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.ICCG {
+        initData(loop_data.RealArray_1D_Nx4[0], 1);
+        initData(loop_data.RealArray_1D_Nx4[1], 2);
       }
       when LoopKernelID.INNER_PROD {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
       }
       when LoopKernelID.BAND_LIN_EQ {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
       }
       when LoopKernelID.TRIDIAG_ELIM {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
       }
       when LoopKernelID.EOS {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.ADI {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_3D_2xNx4[0], 1);
+        initData(loop_data.RealArray_3D_2xNx4[1], 2);
+        initData(loop_data.RealArray_3D_2xNx4[2], 3);
+        initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.INT_PREDICT {
+        initData(loop_data.RealArray_2D_Nx25[0], 1);
+        initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.DIFF_PREDICT {
+        initData(loop_data.RealArray_2D_Nx25[0], 1);
+        initData(loop_data.RealArray_2D_Nx25[1], 2);
       }
       when LoopKernelID.FIRST_SUM {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
       }
       when LoopKernelID.FIRST_DIFF {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
       }
       when LoopKernelID.PIC_2D {
+        initData(loop_data.RealArray_2D_Nx25[0], 1);
+        initData(loop_data.RealArray_2D_Nx25[1], 2);
+        initData(loop_data.RealArray_2D_Nx25[2], 3);
+
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.IndxArray_1D[0], 1);
+        initData(loop_data.IndxArray_1D[1], 2);
+
+        initData(loop_data.RealArray_2D_64x64[0], 1);
       }
       when LoopKernelID.PIC_1D {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
+        initData(loop_data.RealArray_1D[5], 6);
+        initData(loop_data.RealArray_1D[6], 7);
+        initData(loop_data.RealArray_1D[7], 8);
+        initData(loop_data.RealArray_1D[8], 9);
+
+        initData(loop_data.RealArray_scalars, 1);
+
+        initData(loop_data.IndxArray_1D[2], 3);
+        initData(loop_data.IndxArray_1D[3], 4);
+        initData(loop_data.IndxArray_1D[4], 5);
       }
       when LoopKernelID.HYDRO_2D {
+        initData(loop_data.RealArray_2D_7xN[0], 1);
+        initData(loop_data.RealArray_2D_7xN[1], 2);
+        initData(loop_data.RealArray_2D_7xN[2], 3);
+        initData(loop_data.RealArray_2D_7xN[3], 4);
+        initData(loop_data.RealArray_2D_7xN[4], 5);
+        initData(loop_data.RealArray_2D_7xN[5], 6);
+        initData(loop_data.RealArray_2D_7xN[6], 7);
+        initData(loop_data.RealArray_2D_7xN[7], 8);
+        initData(loop_data.RealArray_2D_7xN[8], 9);
+        initData(loop_data.RealArray_2D_7xN[9], 10);
+        initData(loop_data.RealArray_2D_7xN[10], 11);
       }
       when LoopKernelID.GEN_LIN_RECUR {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+
+        initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.DISC_ORD {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
+        initData(loop_data.RealArray_1D[5], 6);
+        initData(loop_data.RealArray_1D[6], 7);
+        initData(loop_data.RealArray_1D[7], 8);
+        initData(loop_data.RealArray_1D[8], 9);
+
+        initData(loop_data.RealArray_scalars, 1);
       }
       when LoopKernelID.MAT_X_MAT {
+        initData(loop_data.RealArray_2D_Nx25[0], 1);
+        initData(loop_data.RealArray_2D_Nx25[1], 2);
+        initData(loop_data.RealArray_2D_64x64[0], 1);
       }
       when LoopKernelID.PLANCKIAN {
+        initData(loop_data.RealArray_1D[0], 1);
+        initData(loop_data.RealArray_1D[1], 2);
+        initData(loop_data.RealArray_1D[2], 3);
+        initData(loop_data.RealArray_1D[3], 4);
+        initData(loop_data.RealArray_1D[4], 5);
       }
       when LoopKernelID.IMP_HYDRO_2D {
+        initData(loop_data.RealArray_2D_7xN[0], 1);
+        initData(loop_data.RealArray_2D_7xN[1], 2);
+        initData(loop_data.RealArray_2D_7xN[2], 3);
+        initData(loop_data.RealArray_2D_7xN[3], 4);
+        initData(loop_data.RealArray_2D_7xN[4], 5);
+        initData(loop_data.RealArray_2D_7xN[5], 6);
       }
       when LoopKernelID.FIND_FIRST_MIN {
+        initData(loop_data.RealArray_1D[0], 1);
       }
       otherwise {
-        halt("Unhandled loop type: ", (iloop:LoopKernelID):string);
+        halt("Unhandled loop type: ", iloop:string);
       }
     }
   }
@@ -197,7 +297,7 @@ module LCALSLoops {
     stat.loop_chksum[ilength] = 0.0;
   }
 
-  proc loopFinalize(iloop: int, stat: LoopStat, ilength: LoopLength) {
+  proc loopFinalize(iloop: LoopKernelID, stat: LoopStat, ilength: LoopLength) {
     initChksum(stat, ilength);
     var loop_data = getLoopData();
     select iloop {
@@ -247,7 +347,7 @@ module LCALSLoops {
         updateChksum(stat, ilength, loop_data.RealArray_1D[4]);
       }
       when LoopKernelID.TRAP_INT {
-        updateChksum(stat, ilength, loop_data.scalar_Real[0]);
+        updateChksum(stat, ilength, loop_data.RealArray_scalars[0]);
       }
       when LoopKernelID.HYDRO_1D {
         updateChksum(stat, ilength, loop_data.RealArray_1D[0]);
@@ -256,7 +356,7 @@ module LCALSLoops {
        updateChksum(stat, ilength, loop_data.RealArray_1D_Nx4[0]);
       }
       when LoopKernelID.INNER_PROD {
-        updateChksum(stat, ilength, loop_data.scalar_Real[0]);
+        updateChksum(stat, ilength, loop_data.RealArray_scalars[0]);
       }
       when LoopKernelID.BAND_LIN_EQ {
         updateChksum(stat, ilength, loop_data.RealArray_1D[0]);
@@ -313,7 +413,7 @@ module LCALSLoops {
         updateChksum(stat, ilength, loop_data.RealArray_2D_7xN[0]);
       }
       when LoopKernelID.FIND_FIRST_MIN {
-        updateChksum(stat, ilength, loop_data.scalar_Real[0]);
+        updateChksum(stat, ilength, loop_data.RealArray_scalars[0]);
       }
       otherwise {
         halt("Unknown loop id = ", iloop);
