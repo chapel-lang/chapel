@@ -3713,58 +3713,101 @@ proc channel.writeIt(x) {
 }
 
 
+/*
+   For a writing channel, writes as with :proc:`channel.write`.
+   For a reading channel, reads as with :proc:`channel.read`.
+   Stores any error encountered in the channel. Does not return anything.
+ */
 inline proc channel.readwrite(x) where this.writing {
   this.writeIt(x);
 }
+// documented in the writing version.
+pragma "no doc"
 inline proc channel.readwrite(ref x) where !this.writing {
   this.readIt(x);
 }
 
-  inline proc <~>(w: channel, x) where w.writing {
+  /*
+
+     The `<~>` operator is the same as calling :proc:`channel.readwrite`,
+     except that it returns the channel so that multiple operator
+     calls can be chained together.
+
+     :returns: ch
+   */
+  inline proc <~>(ch: channel, x) where w.writing {
     w.writeIt(x);
-    return w;
+    return ch;
   }
-  inline proc <~>(r: channel, ref x) where !r.writing {
-    r.readIt(x);
-    return r;
+  // documented in the writing version.
+  pragma "no doc"
+  inline proc <~>(ch: channel, ref x) where !r.writing {
+    ch.readIt(ch);
+    return ch;
   }
 
   // these are overridden to not be inout
   // since they don't change when read anyway
   // and it's much more convenient to be able to do e.g.
   //   reader & new ioLiteral("=")
+
+  /* Overload to support reading an :type:`IO.ioLiteral` without
+     passing ioLiterals by reference, so that
+
+     .. code-block:: chapel
+
+       reader <~> new ioLiteral("=")
+
+     works without requiring an explicit temporary value to store
+     the ioLiteral.
+   */
   inline proc <~>(r: channel, lit:ioLiteral) where !r.writing {
     var litCopy = lit;
     r.readwrite(litCopy);
     return r;
   }
+
+  /* Overload to support reading an :type:`IO.ioNewline` without
+     passing ioNewline by reference, so that
+
+     .. code-block:: chapel
+
+       reader <~> new ioNewline("=")
+
+     works without requiring an explicit temporary value to store
+     the ioNewline.
+   */
   inline proc <~>(r: channel, nl:ioNewline) where !r.writing {
     var nlCopy = nl;
     r.readwrite(nlCopy);
     return r;
   }
 
-  // Move to IO.chpl ?
+  /* Explicit call for reading or writing a literal as an
+     alternative to using :type:`IO.ioLiteral`.
+   */
   inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
-    /***
-    var iolit = new ioLiteral(lit.c_str(), ignoreWhiteSpace);
-    this.readwrite(iolit);
-    ***/
     this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
   }
+  pragma "no doc"
   inline proc channel.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
   {
     var iolit = new ioLiteral(lit, ignoreWhiteSpace);
     this.readwrite(iolit);
   }
 
+  /* Explicit call for reading or writing a newline as an
+     alternative to using :type:`IO.ioNewline`.
+   */
   inline proc channel.readWriteNewline()
   {
     var ionl = new ioNewline();
     this.readwrite(ionl);
   }
 
+  /* Returns `true` if this channel is configured for binary I/O.
+   */
   proc channel.binary():bool {
     var ret:uint(8);
     on this {
@@ -3773,7 +3816,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
     return ret != 0;
   }
 
-
+  /* return other style elements. */
+  pragma "no doc"
   proc channel.styleElement(element:int):int {
     var ret:int = 0;
     on this {
@@ -3782,6 +3826,9 @@ inline proc channel.readwrite(ref x) where !this.writing {
     return ret;
   }
 
+  /*
+     Return any saved error code.
+   */
   proc channel.error():syserr {
     var ret:syserr;
     on this.home {
@@ -3793,6 +3840,10 @@ inline proc channel.readwrite(ref x) where !this.writing {
     }
     return ret;
   }
+
+  /*
+     Save an error code.
+   */
   proc channel.setError(e:syserr) {
     on this.home {
       var error = e;
@@ -3801,6 +3852,10 @@ inline proc channel.readwrite(ref x) where !this.writing {
       this.unlock();
     }
   }
+
+  /*
+     Clear any saved error code.
+   */
   proc channel.clearError() {
     on this.home {
       this.lock();
@@ -3809,6 +3864,9 @@ inline proc channel.readwrite(ref x) where !this.writing {
     }
   }
 
+  /*
+     Write a sequence of bytes.
+   */
   proc channel.writeBytes(x, len:ssize_t) {
     // TODO -- do nothing if error in channel?
     on this.home {
@@ -3845,6 +3903,12 @@ inline proc channel.read(ref args ...?k,
   return !error;
 }
 
+/*
+    Creates a string representing the result of writing the arguments.
+
+    Writes each argument, possibly using a `writeThis` method,
+    to a string and returns the result.
+  */
 proc stringify(args ...?k):string {
   var all_primitive = true;
   
