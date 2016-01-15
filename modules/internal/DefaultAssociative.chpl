@@ -83,7 +83,7 @@ module DefaultAssociative {
                                dist: DefaultDist) {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
-                      typeToString(idxType), " are not allowed", 2);
+                      idxType:string, " are not allowed", 2);
       this.dist = dist;
     }
   
