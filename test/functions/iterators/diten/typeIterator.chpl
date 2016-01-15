@@ -4,5 +4,5 @@ iter foo() type {
 }
 
 for t in foo() {
-  writeln(t); // should be writeln(typeToString(t));
+  writeln(t); // should be writeln(t:string);
 }

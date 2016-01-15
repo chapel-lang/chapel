@@ -1,2 +1,2 @@
 var (x): (int);
-writeln(typeToString(x.type));
+writeln(x.type:string);

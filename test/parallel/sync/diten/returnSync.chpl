@@ -6,4 +6,4 @@ proc retSync(x: ?t): sync t {
 var x = retSync(3);
 var y: sync int = retSync(4);
 
-writeln((typeToString(x.type), typeToString(y.type)));
+writeln(x.type:string, ", ", y.type:string);

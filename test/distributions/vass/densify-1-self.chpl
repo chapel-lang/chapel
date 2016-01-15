@@ -16,7 +16,7 @@ proc t2(arg) {
   const result = densifySelf(arg);
   proc shouldbe(r) return 0:r.length.type..#r.length;
   writeln("densifySelf ", arg, " -> ", result,
-          " : ", typeToString(result.type));
+          " : ", result.type:string);
 
   if isDomain(arg) {
     const doublecheck = computeZeroBasedDomain(arg);

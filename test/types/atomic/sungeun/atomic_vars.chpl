@@ -8,13 +8,13 @@ proc doit(type myType) {
   if printResults then writeln(x);
 
   if numBits(x.type) != numBits(myType) then
-    writeln(typeToString(myType), ": ERROR: numBits=", numBits(x.type),
+    writeln(myType:string, ": ERROR: numBits=", numBits(x.type),
             " (should be ", numBits(myType), ")");
   if printResults then writeln(numBits(x.type));
 
   on Locales[numLocales-1] do ax.write(min(myType), mo);
   if ax.read(mo) != min(myType) then
-    writeln(typeToString(myType), ": ERROR: (read) ax=", ax.read(mo),
+    writeln(myType:string, ": ERROR: (read) ax=", ax.read(mo),
             " (should be ", min(myType), ")");
   if printResults then writeln(ax.read(mo));
 
@@ -24,7 +24,7 @@ proc doit(type myType) {
   }
   if printResults then writeln(ax.read(mo));
   if ax.read() != max(myType) then
-    writeln(typeToString(myType), ": ERROR: (exchange) ax=", ax.read(mo),
+    writeln(myType:string, ": ERROR: (exchange) ax=", ax.read(mo),
             " (should be ", max(myType), ")");
 
   ax.write(0:myType, mo);
@@ -34,7 +34,7 @@ proc doit(type myType) {
     }
   x = ax.read(mo);
   if x != 120:myType then
-    writeln(typeToString(myType), ": ERROR: (fetchAdd/compareExchange) x=", x, " (should be 120)");
+    writeln(myType:string, ": ERROR: (fetchAdd/compareExchange) x=", x, " (should be 120)");
   if printResults then writeln(x);
 
   ax.write(0:myType, mo);
@@ -44,7 +44,7 @@ proc doit(type myType) {
     }
   x = ax.read(mo);
   if x != 120:myType then
-    writeln(typeToString(myType), ": ERROR: (fetchAdd/compareExchangeStrong) x=", x, " (should be 120)");
+    writeln(myType:string, ": ERROR: (fetchAdd/compareExchangeStrong) x=", x, " (should be 120)");
   if printResults then writeln(x);
 
   ax.write(0:myType, mo);
@@ -54,7 +54,7 @@ proc doit(type myType) {
     }
   x = ax.read(mo);
   if x != 120:myType then
-    writeln(typeToString(myType), ": ERROR: (fetchAdd/compareExchangeWeak) x=", x, " (should be 120)");
+    writeln(myType:string, ": ERROR: (fetchAdd/compareExchangeWeak) x=", x, " (should be 120)");
   if printResults then writeln(x);
 
   var b: atomic bool;
@@ -63,7 +63,7 @@ proc doit(type myType) {
     ax.waitFor(120:myType);
     const x = ax.read(mo);
     if x != 120:myType then
-      writeln(typeToString(myType), ": ERROR: (waitFor/add) x=", x, " (should be 120)");
+      writeln(myType:string, ": ERROR: (waitFor/add) x=", x, " (should be 120)");
     if printResults then writeln(x);
     b.testAndSet();
   }
@@ -77,7 +77,7 @@ proc doit(type myType) {
     ax.waitFor(0:myType);
     const x = ax.read(mo);
     if x != 0:myType then
-      writeln(typeToString(myType), ": ERROR: (waitFor/sub) x=", x, " (should be 0)");
+      writeln(myType:string, ": ERROR: (waitFor/sub) x=", x, " (should be 0)");
     if printResults then writeln(x);
     b.testAndSet();
   }
@@ -93,7 +93,7 @@ proc doit(type myType) {
       ax.waitFor(0:myType);
       const x = ax.read(mo);
       if x != 0:myType then
-        writeln(typeToString(myType), ": ERROR: (waitFor/and) x=", x, " (should be 1)");
+        writeln(myType:string, ": ERROR: (waitFor/and) x=", x, " (should be 1)");
       if printResults then writeln(x);
       b.testAndSet();
     }
@@ -109,7 +109,7 @@ proc doit(type myType) {
       ax.waitFor(max(int(8)):myType);
       const x = ax.read(mo);
       if x != max(int(8)):myType then
-        writeln(typeToString(myType), ": ERROR: (waitFor/or) x=", x, " (should be ", max(int(8)), ")");
+        writeln(myType:string, ": ERROR: (waitFor/or) x=", x, " (should be ", max(int(8)), ")");
       if printResults then writeln(x);
       b.testAndSet();
     }
@@ -125,7 +125,7 @@ proc doit(type myType) {
       ax.waitFor(max(int(8)):myType);
       const x = ax.read(mo);
       if x != max(int(8)):myType then
-        writeln(typeToString(myType), ": ERROR: (waitfOr/xor) x=", x, " (should be ", max(int(8)), ")");
+        writeln(myType:string, ": ERROR: (waitfOr/xor) x=", x, " (should be ", max(int(8)), ")");
       if printResults then writeln(x);
       b.testAndSet();
     }
@@ -143,7 +143,7 @@ proc doit(type myType) {
   var A = [a in aA] a.read(mo);
   for i in D {
     if A[i-D.dim(1).low+1] != i:myType then
-      writeln(typeToString(myType), ": ERROR: A[", i-D.dim(1).low+1, "]=",
+      writeln(myType:string, ": ERROR: A[", i-D.dim(1).low+1, "]=",
               A[i-D.dim(1).low+1], " (should be ", i, ")");
   }
   if printResults then writeln(A);
@@ -152,7 +152,7 @@ proc doit(type myType) {
   A = aA.read(mo);
   for i in D {
     if A[i-D.dim(1).low+1] != (i+1):myType then
-      writeln(typeToString(myType), ": ERROR: A[", i-D.dim(1).low+1, "]=",
+      writeln(myType:string, ": ERROR: A[", i-D.dim(1).low+1, "]=",
               A[i-D.dim(1).low+1], " (should be ", i+1, ")");
   }
   if printResults then writeln(A);
