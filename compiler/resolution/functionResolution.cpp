@@ -7645,8 +7645,32 @@ static void resolveDynamicDispatches() {
       if (Type* t = virtualMethodTable.v[i].key) {
         printf("  %s\n", toString(t));
         for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
-          printf("    %s\n", toString(virtualMethodTable.v[i].value->v[j]));
+          FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
+          printf("    %s", toString(fn));
+          if (developer) {
+            int index = virtualMethodMap.get(fn);
+            printf(" index %i", index);
+            if ( fn->getFormal(2)->typeInfo() == t ) {
+              // print dispatch children if the function is
+              // the method in type t (and not, say, the version in
+              // some parent class e.g. object).
+              Vec<FnSymbol*>* childFns = virtualChildrenMap.get(fn);
+              if (childFns) {
+                printf(" %i children:\n", childFns->n);
+                for (int k = 0; k < childFns->n; k++) {
+                  FnSymbol* childFn = childFns->v[k];
+                  printf("      %s\n", toString(childFn));
+                }
+              }
+              if( childFns == NULL || childFns->n == 0 ) printf("\n");
+            } else {
+              printf(" inherited\n");
+            }
+          }
+          printf("\n");
         }
+        if (developer)
+          printf("\n");
       }
     }
   }
