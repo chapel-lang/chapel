@@ -120,7 +120,7 @@ module LocaleModel {
     proc chpl_name() return local_name;
 
 
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       // Most classes will define it like this:
 //      f <~> name;
       // but here it is defined thus for backward compatibility.
@@ -236,7 +236,7 @@ module LocaleModel {
     proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       f <~> name;
     }
 

@@ -124,7 +124,7 @@ module ChapelLocale {
     }
 
     // A useful default definition is provided (not pure virtual).
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       f <~> name;
     }
 
