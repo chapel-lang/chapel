@@ -7065,9 +7065,23 @@ isVirtualChild(FnSymbol* child, FnSymbol* parent) {
 }
 
 
+// This method is ultimately called from buildVirtualMaps
+// which goes through all functions. Then, for each function,
+// that is a method, it calls addAllToVirtualMaps, which
+// goes through the (transitive) dispatch children for that class
+// and calls addToVirtualMaps for each one, keeping the same function.
+//
+// addToVirtualMaps re-instantiates generic methods instead of re-using
+// an existing instantiation, for some reason.
+//
+// addToVirtualMaps itself goes through each method in ct and if
+// that method could override pfn, adds it to the virtual maps
 static void
 addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
+    // checking that subtype method is not a generic instantiation
+    //  (we will instantiate again)
+    // checking that signature matches
     if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
@@ -7078,6 +7092,9 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
       forv_Vec(Type, type, types) {
         SymbolMap subs;
         if (ct->symbol->hasFlag(FLAG_GENERIC))
+          // formal 1: method token
+          // formal 2: this
+          // instantiateSignature handles subs from formal to a type
           subs.put(cfn->getFormal(2), type->symbol);
         for (int i = 3; i <= cfn->numFormals(); i++) {
           ArgSymbol* arg = cfn->getFormal(i);
@@ -7186,6 +7203,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 }
 
 
+// Add overrides of fn to virtual maps down the inheritance heirarchy
 static void
 addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
   forv_Vec(Type, t, ct->dispatchChildren) {
@@ -7193,9 +7211,12 @@ addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
          ct->defaultTypeConstructor->isResolved()))
+      // add to maps for the subclass
       addToVirtualMaps(fn, ct);
 
+    // if sub-class is not a generic instantiation
     if (!ct->instantiatedFrom)
+      // add to maps transitively
       addAllToVirtualMaps(fn, ct);
   }
 }
@@ -7224,7 +7245,10 @@ buildVirtualMaps() {
     if (fn->numFormals() > 1 && fn->getFormal(1)->type == dtMethodToken) {
       // Only methods go in the virtual function table.
       if (AggregateType* pt = toAggregateType(fn->getFormal(2)->type)) {
+
         if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
+          // MPF - note the check for generic seemed to originate
+          // in SVN revision 7103
           addAllToVirtualMaps(fn, pt);
         }
       }
@@ -7233,6 +7257,8 @@ buildVirtualMaps() {
 }
 
 
+// if exclusive=true, check for it already existing in the virtual method
+// table and do not add it a second time if it is already present.
 static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive /*= false*/) {
   Vec<FnSymbol*>* fns = virtualMethodTable.get(type);
@@ -7573,6 +7599,8 @@ static void resolveDynamicDispatches() {
   forv_Vec(Type, ct, ctq) {
     if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(ct)) {
       forv_Vec(FnSymbol, pfn, *parentFns) {
+        // Each subtype can contribute only one function to the
+        // virtual method table.
         Vec<Type*> childSet;
         if (Vec<FnSymbol*>* childFns = virtualChildrenMap.get(pfn)) {
           forv_Vec(FnSymbol, cfn, *childFns) {
@@ -7599,6 +7627,8 @@ static void resolveDynamicDispatches() {
     }
   }
 
+  // reverse the entries in the virtual method table
+  // populate the virtualMethodMap
   for (int i = 0; i < virtualMethodTable.n; i++) {
     if (virtualMethodTable.v[i].key) {
       virtualMethodTable.v[i].value->reverse();
