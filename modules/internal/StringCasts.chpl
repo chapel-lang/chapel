@@ -26,7 +26,7 @@ module StringCasts {
   // Type -- Foo.type:string
   //
   proc _cast(type t, type x)  param : string where t == string {
-    return typeToString(x);
+    return __primitive("typeToString", x);
   }
 
   //
