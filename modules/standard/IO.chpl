@@ -3754,7 +3754,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   // documented in the writing version.
   pragma "no doc"
   inline proc <~>(ch: channel, ref x) where !ch.writing {
-    ch.readIt(ch);
+    ch.readIt(x);
     return ch;
   }
 
