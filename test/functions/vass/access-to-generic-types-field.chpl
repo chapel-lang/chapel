@@ -1,18 +1,18 @@
 class C { type myCtype; }
 type CT = C(string);
-writeln(typeToString(C(int(32)).myCtype));
-writeln(typeToString(CT));
+writeln(C(int(32)).myCtype:string);
+writeln(CT:string);
 
 class R { type myRtype; }
 type RT = R(real);
-writeln(typeToString(R(int(64)).myRtype));
-writeln(typeToString(RT));
+writeln(R(int(64)).myRtype:string);
+writeln(RT:string);
 
 proc p(type t, x, type q, y) {
-  writeln(typeToString(t.myCtype));
-  writeln(typeToString(x.type.myCtype));
-  writeln(typeToString(q.myRtype));
-  writeln(typeToString(y.type.myRtype));
+  writeln(t.myCtype:string);
+  writeln(x.type.myCtype:string);
+  writeln(q.myRtype:string);
+  writeln(y.type.myRtype:string);
 }
 
 var x: C(complex), y: R(imag);

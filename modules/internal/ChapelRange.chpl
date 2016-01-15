@@ -197,7 +197,7 @@ module ChapelRange {
   // for debugging
   pragma "no doc"
   proc range.displayRepresentation(msg: string = ""): void {
-    writeln(msg, "(", typeToString(idxType), ",", boundedType, ",", stridable,
+    writeln(msg, "(", idxType:string, ",", boundedType, ",", stridable,
             " : ", low, ",", high, ",", stride, ",",
             if aligned then alignment:string else "?", ")");
   }
@@ -848,7 +848,7 @@ module ChapelRange {
   inline proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then
       compilerError("can't apply 'by' using step of a non-integral type ",
-                    typeToString(step.type));
+                    step.type:string);
   }
 
   proc chpl_need_to_check_step(step, type strType) param {
@@ -867,8 +867,8 @@ module ChapelRange {
     // At present, step must coerce to range's idxType or strType.
     if numBits(step.type) > numBits(strType) then
       compilerError("can't apply 'by' to a range with idxType ",
-                    typeToString(idxType), " using a step of type ",
-                    typeToString(step.type));
+                    idxType:string, " using a step of type ",
+                    step.type:string);
 
     if boundsChecking {
       if step == 0 then
@@ -877,7 +877,7 @@ module ChapelRange {
       if chpl_need_to_check_step(step, strType) &&
          step > (max(strType):step.type)
       then
-        __primitive("chpl_error", c"the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
+        __primitive("chpl_error", c"the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
     }
   }
 
@@ -892,7 +892,7 @@ module ChapelRange {
     if chpl_need_to_check_step(step, strType) &&
        step > (max(strType):step.type)
     then
-      compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
+      compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
   }
   
   proc chpl_by_help(r: range(?i,?b,?s), step) {
@@ -940,8 +940,8 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc align(r : range(?i, ?b, ?s), algn) {
-    compilerError("can't align a range with idxType ", typeToString(i), 
-                  " using a value of type ", typeToString(algn.type));
+    compilerError("can't align a range with idxType ", i:string, 
+                  " using a value of type ", algn.type:string);
     return r;
   }
   
@@ -1169,8 +1169,8 @@ module ChapelRange {
 
   proc #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ", 
-                  typeToString(i), " using a count of type ", 
-                  typeToString(count.type));
+                  i:string, " using a count of type ", 
+                  count.type:string);
     return r;
   }
 
@@ -1281,15 +1281,15 @@ module ChapelRange {
   // cases for when stride isn't valid
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
-                  typeToString(int(w)), " using a step of type ",
-                  typeToString(stride.type));
+                  int(w):string, " using a step of type ",
+                  stride.type:string);
     yield nil; // iters needs a yield in them
   }
 
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
-                  typeToString(uint(w)), " using a step of type ",
-                  typeToString(stride.type));
+                  uint(w):string, " using a step of type ",
+                  stride.type:string);
     yield nil; // iters needs a yield in them
   }
 

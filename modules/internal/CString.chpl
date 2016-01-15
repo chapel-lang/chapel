@@ -72,14 +72,6 @@ module CString {
     return x;
   }
 
-  //proc typeToString(type t) param {
-  //  return __primitive("typeToString", t);
-  //}
-
-  //proc typeToString(x) param {
-  //  compilerError("typeToString()'s argument must be a type, not a value");
-  //}
-
   inline proc ==(param s0: c_string, param s1: c_string) param {
     return __primitive("string_compare", s0, s1) == 0;
   }

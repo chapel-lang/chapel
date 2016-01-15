@@ -8,5 +8,5 @@ proc fun2(type args ... ?n){
         return val;
 }
 
-writeln(typeToString(fun1(int, bool).type));
-writeln(typeToString(fun2(int, bool).type));
+writeln(fun1(int, bool).type:string);
+writeln(fun2(int, bool).type:string);

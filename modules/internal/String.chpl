@@ -1065,10 +1065,12 @@ module String {
   // Param procs
   //
   proc typeToString(type t) param {
+    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
     return __primitive("typeToString", t);
   }
 
   proc typeToString(x) param {
+    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
     compilerError("typeToString()'s argument must be a type, not a value");
   }
 

@@ -11,7 +11,7 @@ class CLASS_PARAM {
 
 proc TEST_CLASS(param ARG_PARAM) {
   type LOC_TYPE = CLASS_PARAM(ARG_PARAM);
-  compilerWarning(typeToString(LOC_TYPE));
+  compilerWarning(LOC_TYPE:string);
 }
 
 
@@ -24,7 +24,7 @@ class RECORD_PARAM {
 
 proc TEST_RECORD(param ARG_PARAM) {
   type LOC_TYPE = RECORD_PARAM(ARG_PARAM);
-  compilerWarning(typeToString(LOC_TYPE));
+  compilerWarning(LOC_TYPE:string);
 }
 
 compilerError("done"); // no need to execute

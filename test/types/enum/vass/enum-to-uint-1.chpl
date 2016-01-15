@@ -17,7 +17,7 @@ proc test(param w) {
   var j1: tt = e2.b;
   var j2: tt = e2var;
 
-  writeln((typeToString(tt), i1,i2,j1,j2));
+  writeln((tt:string, i1,i2,j1,j2));
 }
 
 test(8);

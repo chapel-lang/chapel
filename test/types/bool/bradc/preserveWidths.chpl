@@ -1,19 +1,19 @@
 proc testit(x) {
-  writeln("For type ", typeToString(x.type));
+  writeln("For type ", x.type:string);
   var r1 = !x;
-  writeln("r1 is: ", r1, ", type = ", typeToString(r1.type));
+  writeln("r1 is: ", r1, ", type = ", r1.type:string);
   var r2 = ~x;
-  writeln("r2 is: ", r2, ", type = ", typeToString(r2.type));
+  writeln("r2 is: ", r2, ", type = ", r2.type:string);
   var r3 = x & x;
-  writeln("r3 is: ", r3, ", type = ", typeToString(r3.type));
+  writeln("r3 is: ", r3, ", type = ", r3.type:string);
   var r4 = x | x;
-  writeln("r4 is: ", r4, ", type = ", typeToString(r4.type));
+  writeln("r4 is: ", r4, ", type = ", r4.type:string);
   var r5 = x ^ x;
-  writeln("r5 is: ", r5, ", type = ", typeToString(r5.type));
+  writeln("r5 is: ", r5, ", type = ", r5.type:string);
   var r6 = (x == x);
-  writeln("r6 is: ", r6, ", type = ", typeToString(r6.type));
+  writeln("r6 is: ", r6, ", type = ", r6.type:string);
   var r7 = (x != x);
-  writeln("r7 is: ", r7, ", type = ", typeToString(r7.type));
+  writeln("r7 is: ", r7, ", type = ", r7.type:string);
   writeln();
 }
 

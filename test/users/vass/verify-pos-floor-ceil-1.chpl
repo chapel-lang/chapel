@@ -7,7 +7,7 @@ proc test(type T, m: T, n: T) {
   // actual
   const rc = divceilpos(m,n);
   const rf = divfloorpos(m,n);
-  writeln(typeToString(T), "  ", m, ",", n, "  ceil ", rc, "  floor ", rf);
+  writeln(T:string, "  ", m, ",", n, "  ceil ", rc, "  floor ", rf);
   // expected
   const floor = m/n;
   const ceil = floor + if floor * n == m then 0:T else 1:T;

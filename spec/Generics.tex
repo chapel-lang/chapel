@@ -122,7 +122,7 @@ proc fillTuple(param p: int, x) {
 \begin{chapelpost}
 var x = fillTuple(3, 3.14);
 writeln(x);
-writeln(typeToString(x.type));
+writeln(x.type:string);
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
@@ -157,7 +157,7 @@ proc fillTuple(param p: int, x: ?t) {
 \begin{chapelpost}
 var x = fillTuple(3, 3.14);
 writeln(x);
-writeln(typeToString(x.type));
+writeln(x.type:string);
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
@@ -469,7 +469,7 @@ class Node {
 var n: Node(real) = new Node(real, 3.14);
 writeln(n.data);
 writeln(n.next);
-writeln(typeToString(n.next.type));
+writeln(n.next.type:string);
 delete n;
 \end{chapelpost}
 \begin{chapeloutput}
@@ -819,7 +819,7 @@ diagnostics to generate warnings and errors:
 proc foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ", 
-                  typeToString(x.type), " != ", typeToString(y.type));
+                  x.type:string, " != ", y.type:string);
   writeln("In 2-argument foo...");
 }
 
