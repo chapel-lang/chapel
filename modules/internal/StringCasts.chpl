@@ -23,6 +23,13 @@ module StringCasts {
   // would use a tagged union return val as well.
 
   //
+  // Type -- Foo.type:string
+  //
+  proc _cast(type t, type x)  param : string where t == string {
+    return typeToString(x);
+  }
+
+  //
   // Bool
   //
   const _true_s: string = "true";
