@@ -876,8 +876,13 @@ module DefaultRectangular {
   
     inline proc dsiAccess(ind : rank*idxType) ref {
       if boundsChecking then
-        if !dom.dsiMember(ind) then
-          halt("array index out of bounds: ", ind);
+        if !dom.dsiMember(ind) {
+          // Note -- because of module load order dependency issues,
+          // the multiple-arguments implementation of halt cannot
+          // be called at this point. So we call a special routine
+          // that does the right thing here.
+          halt("array index out of bounds: " + _stringify_index(ind));
+        }
       var dataInd = getDataIndex(ind);
       //assert(dataInd >= 0);
       //assert(numelm >= 0); // ensure it has been initialized
@@ -1065,8 +1070,8 @@ module DefaultRectangular {
     f <~> new ioLiteral("}");
   }
   
-  proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-  proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
     proc writeSpaces(dim:int) {
@@ -1084,6 +1089,9 @@ module DefaultRectangular {
 
       type strType = chpl__signedType(idxType);
       var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
+
+      // TODO -- should binary reads start out with a length?
+      // It's not necessarily possible to change the shape of the array...
 
       if isjson || ischpl {
         if dim != rank {
@@ -1133,11 +1141,101 @@ module DefaultRectangular {
       }
 
     }
-    const zeroTup: rank*idxType;
-    recursiveArrayWriter(zeroTup);
+
+    if !f.writing && !f.binary() && rank == 1 && dom.ranges(1).stride == 1
+        && dom._arrs.length == 1 {
+
+      // Special handling for reading 1-D stride-1 arrays in order
+      // to read them without requiring that the array length be
+      // specified ahead of time.
+
+      var binary = f.binary();
+      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+      var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+      if isjson || ischpl {
+        f <~> new ioLiteral("[");
+      }
+
+      var first = true;
+
+      var offset = dom.ranges(1).low;
+      var i = 0;
+
+      var read_end = false;
+
+      while ! f.error() {
+        if first {
+          first = false;
+          // but check for a ]
+          if isjson || ischpl {
+            f <~> new ioLiteral("]");
+          } else if isspace {
+            f <~> new ioNewline(skipWhitespaceOnly=true);
+          }
+          if f.error() == EFORMAT {
+            f.clearError();
+          } else {
+            read_end = true;
+            break;
+          }
+        } else {
+          // read a comma or a space.
+          if isspace then f <~> new ioLiteral(" ");
+          else if isjson || ischpl then f <~> new ioLiteral(",");
+
+          if f.error() == EFORMAT {
+            f.clearError();
+            // No comma.
+            break;
+          }
+        }
+
+        if i >= dom.ranges(1).size {
+          // Create more space.
+          var sz = dom.ranges(1).size;
+          if sz < 4 then sz = 4;
+          sz = 2 * sz;
+
+          // like push_back
+          const newDom = {offset..#sz};
+
+          dsiReallocate( newDom );
+          // This is different from how push_back does it
+          // because push_back might lead to a call to
+          // _reprivatize but I don't see how to do that here.
+          dom.dsiSetIndices( newDom.getIndices() );
+          dsiPostReallocate();
+        }
+
+        f <~> dsiAccess(offset + i);
+
+        i += 1;
+      }
+
+      if ! read_end {
+        if isjson || ischpl {
+          f <~> new ioLiteral("]");
+        }
+      }
+
+      {
+        // trim down to actual size read.
+        const newDom = {offset..#i};
+        dsiReallocate( newDom );
+        dom.dsiSetIndices( newDom.getIndices() );
+        dsiPostReallocate();
+      }
+
+    } else {
+      const zeroTup: rank*idxType;
+      recursiveArrayWriter(zeroTup);
+    }
   }
 
-  proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
+  proc DefaultRectangularArr.dsiSerialWrite(f) {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     if _isSimpleIoType(this.eltType) && f.binary() &&
@@ -1159,7 +1257,7 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularArr.dsiSerialRead(f: Reader) {
+  proc DefaultRectangularArr.dsiSerialRead(f) {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     if _isSimpleIoType(this.eltType) && f.binary() &&

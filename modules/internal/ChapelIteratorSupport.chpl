@@ -68,7 +68,7 @@ module ChapelIteratorSupport {
     return i.type;
   }
 
-  proc _iteratorRecord.writeThis(f: Writer) {
+  proc _iteratorRecord.writeThis(f) {
     var first: bool = true;
     for e in this {
       if !first then

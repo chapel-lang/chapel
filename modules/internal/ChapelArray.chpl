@@ -1340,12 +1340,12 @@ module ChapelArray {
       return _value.dsiGetIndices();
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
 
@@ -1860,12 +1860,12 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
 

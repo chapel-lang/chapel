@@ -69,7 +69,7 @@ module ChapelUtil {
       return top;
     }
   
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       for i in 0..top-1 do f.write(" ", data[i]);
     }
   }

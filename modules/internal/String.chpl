@@ -33,6 +33,9 @@ module BaseStringType {
   type bufferType = c_ptr(uint(8));
 }
 
+// Note - the I/O module has
+// :proc:`string.format` and :proc:`stringify`.
+
 // Chapel Strings
 module String {
   use BaseStringType;
@@ -337,11 +340,11 @@ module String {
 
     // These should never be called (but are default functions for records)
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       compilerError("not implemented: readThis");
     }
 

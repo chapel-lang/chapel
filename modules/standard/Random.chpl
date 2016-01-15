@@ -306,7 +306,7 @@ module Random {
       }
 
       pragma "no doc"
-      proc writeThis(f: Writer) {
+      proc writeThis(f) {
         f <~> "NPBRandomStream(eltType=";
         f <~> typeToString(eltType);
         f <~> ", parSafe=";
@@ -1629,7 +1629,7 @@ module Random {
     }
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       f <~> "RandomStream(eltType=";
       f <~> typeToString(eltType);
       f <~> ", parSafe=";

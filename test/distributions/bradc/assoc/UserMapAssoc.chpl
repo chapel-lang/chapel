@@ -120,7 +120,7 @@ class UserMapAssoc : BaseDist {
   //
   // print out the distribution
   //
-  proc WriteThis(x:Writer) {
+  proc WriteThis(x) {
     x.writeln("UserMapAssoc");
     x.writeln("-------");
     x.writeln("distributed using: ", mapper);
@@ -195,7 +195,7 @@ class LocUserMapAssocDist {
   //
   // print out the local distribution class
   //
-  proc writeThis(x:Writer) {
+  proc writeThis(x) {
     x.write("locale ", loc.id, " owns some indices");
   }
 }
@@ -337,7 +337,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // the print method for the domain
   //
-  proc dsiSerialWrite(x:Writer) {
+  proc dsiSerialWrite(x) {
     for locDom in locDoms do
       // TODO: This doesn't work -- accesses a bad file descriptor
       //      on locDom {
@@ -488,7 +488,7 @@ class LocUserMapAssocDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x:Writer) {
+  proc writeThis(x) {
     x.write(myInds);
   }
 
@@ -687,7 +687,7 @@ class UserMapAssocArr: BaseArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc dsiSerialWrite(x: Writer) {
+  proc dsiSerialWrite(x) {
 
     var first = true;
     for locArr in locArrs {
@@ -782,7 +782,7 @@ class LocUserMapAssocArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x: Writer) {
+  proc writeThis(x) {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl

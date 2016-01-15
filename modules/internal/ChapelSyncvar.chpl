@@ -235,13 +235,13 @@ module ChapelSyncvar {
 
   // Do not allow implicit reads of sync/single vars.
   pragma "no doc"
-  proc _syncvar.readThis(x: Reader) {
+  proc _syncvar.readThis(x) {
     compilerError("sync/single variables cannot currently be read - use writeEF/writeFF instead");
   }
 
   // Do not allow implicit writes of sync/single vars.
   pragma "no doc"
-  proc _syncvar.writeThis(x: Writer) {
+  proc _syncvar.writeThis(x) {
     compilerError("sync/single variables cannot currently be written - apply readFE/readFF() to those variables first");
   }
 
@@ -369,13 +369,13 @@ module ChapelSyncvar {
 
   // Do not allow implicit reads of sync/single vars.
   pragma "no doc"
-  proc _singlevar.readThis(x: Reader) {
+  proc _singlevar.readThis(x) {
     compilerError("single/sync variables cannot currently be read - use writeEF/writeFF instead");
   }
 
   // Do not allow implicit writes of sync/single vars.
   pragma "no doc"
-  proc _singlevar.writeThis(x: Writer) {
+  proc _singlevar.writeThis(x) {
     compilerError("single/sync variables cannot currently be written - apply readFF/readFE() to those variables first");
   }
 

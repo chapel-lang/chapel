@@ -254,6 +254,12 @@ number of arguments. See:
  * :proc:`channel.readbits`
  * :proc:`channel.readf` (see also :ref:`about-io-formatted-io`)
 
+In addition, there are several convenient synonyms for :proc:`channel.write` and
+:proc:`channel.read`:
+
+ * :proc:`channel.readwrite`
+ * :proc:`<~>`
+
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 .flush() method. Flushing the buffer will make all writes available to other
 applications or other views of the file (ie, it will call e.g. the OS call
@@ -401,13 +407,19 @@ Overview of Format Strings
 ++++++++++++++++++++++++++
 
 In a manner similar to C's 'printf' and 'scanf', the IO package includes
-writef and readf functions. These functions take in a format string
-and some arguments. For example, one might do:
+:proc:`channel.writef` and :proc:`channel.readf` functions. These functions take
+in a format string and some arguments. The :proc:`string.format` method is also
+available and is loosly equivalent to C's 'sprintf'. For example, one might do:
 
 .. code-block:: chapel
 
   writef("My favorite %s is %i\n", "number", 7);
+
+  var s:string = "My favorite %s is %i".format("number", 7);
+  writeln(s);
+
   // prints:
+  // My favorite number is 7
   // My favorite number is 7
 
 The following sections offer a tour through the conversions to illustrate the
@@ -1602,6 +1614,11 @@ private extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr
 private extern proc qio_channel_retain(ch:qio_channel_ptr_t);
 private extern proc qio_channel_release(ch:qio_channel_ptr_t);
 
+private extern proc qio_channel_clear_error(ch:qio_channel_ptr_t);
+private extern proc _qio_channel_set_error_unlocked(ch:qio_channel_ptr_t, err:syserr);
+private extern proc qio_channel_error(ch:qio_channel_ptr_t):syserr;
+
+
 private extern proc qio_channel_lock(ch:qio_channel_ptr_t):syserr;
 private extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 
@@ -1743,6 +1760,7 @@ private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_
 private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
 private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
 
+extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 /*********************** Curl/HDFS support ******************/
 
@@ -2653,8 +2671,8 @@ record ioChar {
   /* The code point value */
   var ch:int(32);
   pragma "no doc"
-  proc writeThis(f: Writer) {
-    halt("ioChar.writeThis must be written in Writer subclasses");
+  proc writeThis(f) {
+    halt("ioChar.writeThis must handled by channel");
   }
 }
 
@@ -2688,7 +2706,7 @@ record ioNewline {
    */
   var skipWhitespaceOnly: bool = false;
   pragma "no doc"
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
     f.write("\n");
   }
@@ -2717,7 +2735,7 @@ record ioLiteral {
      whitespace before the literal?
    */
   var ignoreWhiteSpace: bool = true;
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
     f.write(val);
   }
@@ -2743,7 +2761,7 @@ record ioBits {
   /* How many of the low-order bits of ``v`` should we read or write? */
   var nbits:int(8);
   pragma "no doc"
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     // Normally this is handled explicitly in read/write.
     f.write(v);
   }
@@ -3615,64 +3633,264 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, par
 }
 
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, ref x:?t):syserr {
-  var reader = new ChannelReader(_channel_internal=_channel_internal);
+  
+  // Create a new channel that borrows the pointer in the
+  // existing channel so we can avoid locking (because we
+  // already have the lock)
+
+  var reader = new channel(writing=false, iokind.dynamic, locking=false,
+                           home=here,
+                           _channel_internal=_channel_internal);
   var err:syserr = ENOERR;
-  var save_style:iostyle;
-  var saved_style = false;
 
-  // Adjust the style to use Chapel strings in quotes
-  // unless the string style was already overridden
-  // (that way, writef("%j") will still use JSON-style strings)
-  if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
-    qio_channel_get_style(_channel_internal, save_style);
-    var mystyle = save_style;
-    mystyle.string_format = QIO_STRING_FORMAT_CHPL;
-    qio_channel_set_style(_channel_internal, mystyle);
-    saved_style = true;
-  }
+  // Clear the channel error so we can use the error
+  // to stop reading if there was an error.
+  qio_channel_clear_error(_channel_internal);
 
-  reader.read(x);
+  x.readThis(reader);
 
-  // Put the style back
-  if saved_style {
-    qio_channel_set_style(_channel_internal, save_style);
-  }
+  // Set the channel pointer to NULL to make the
+  // destruction of the local reader record safe
+  // (it shouldn't release anything since it's a local copy).
+  reader._channel_internal = QIO_CHANNEL_PTR_NULL;
 
-  err = reader.err;
-  delete reader;
-
+  err = qio_channel_error(_channel_internal);
   return err;
 }
 
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
-  var writer = new ChannelWriter(_channel_internal=_channel_internal);
+  // Create a new channel that borrows the pointer in the
+  // existing channel so we can avoid locking (because we
+  // already have the lock)
+  var writer = new channel(writing=true, iokind.dynamic, locking=false,
+                           home=here,
+                           _channel_internal=_channel_internal);
+
   var err:syserr = ENOERR;
-  var save_style:iostyle;
-  var saved_style = false;
 
-  // Adjust the style to use Chapel strings in quotes
-  // unless the string style was already overridden
-  // (that way, writef("%j") will still use JSON-style strings)
-  if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
-    qio_channel_get_style(_channel_internal, save_style);
-    var mystyle = save_style;
-    mystyle.string_format = QIO_STRING_FORMAT_CHPL;
-    qio_channel_set_style(_channel_internal, mystyle);
-    saved_style = true;
+  // Clear the channel error so we can use the error
+  // to stop writing if there was an error.
+  qio_channel_clear_error(_channel_internal);
+
+  if (isClassType(t) || chpl_isDdata(t)) && x == nil {
+    // future - write class IDs, have serialization format
+    var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+    var iolit:ioLiteral;
+    if st == QIO_AGGREGATE_FORMAT_JSON {
+      iolit = new ioLiteral("null");
+    } else {
+      iolit = new ioLiteral("nil");
+    }
+    _write_one_internal(_channel_internal, iokind.dynamic, iolit);
+  } else {
+    x.writeThis(writer);
   }
 
-  writer.write(x);
+  // Set the channel pointer to NULL to make the
+  // destruction of the local writer record safe
+  // (it shouldn't release anything since it's a local copy).
+  writer._channel_internal = QIO_CHANNEL_PTR_NULL;
 
-  // Put the style back
-  if saved_style {
-    qio_channel_set_style(_channel_internal, save_style);
-  }
-
-  err = writer.err;
-  delete writer;
-
+  err = qio_channel_error(_channel_internal);
   return err;
 }
+
+pragma "no doc"
+proc channel.readIt(ref x) {
+  if writing then compilerError("read on write-only channel");
+  on this.home {
+    this.lock();
+    var error:syserr;
+    error = qio_channel_error(_channel_internal);
+    if ! error {
+      error = _read_one_internal(_channel_internal, kind, x);
+      _qio_channel_set_error_unlocked(_channel_internal, error);
+    }
+    this.unlock();
+  }
+}
+
+pragma "no doc"
+proc channel.writeIt(x) {
+  if !writing then compilerError("write on read-only channel");
+  on this.home {
+    this.lock();
+    var error:syserr;
+    error = qio_channel_error(_channel_internal);
+    if ! error {
+      error = _write_one_internal(_channel_internal, kind, x);
+      _qio_channel_set_error_unlocked(_channel_internal, error);
+    }
+    this.unlock();
+  }
+}
+
+
+/*
+   For a writing channel, writes as with :proc:`channel.write`.
+   For a reading channel, reads as with :proc:`channel.read`.
+   Stores any error encountered in the channel. Does not return anything.
+ */
+inline proc channel.readwrite(x) where this.writing {
+  this.writeIt(x);
+}
+// documented in the writing version.
+pragma "no doc"
+inline proc channel.readwrite(ref x) where !this.writing {
+  this.readIt(x);
+}
+
+  /*
+
+     The `<~>` operator is the same as calling :proc:`channel.readwrite`,
+     except that it returns the channel so that multiple operator
+     calls can be chained together.
+
+     :returns: ch
+   */
+  inline proc <~>(ch: channel, x) where ch.writing {
+    ch.writeIt(x);
+    return ch;
+  }
+  // documented in the writing version.
+  pragma "no doc"
+  inline proc <~>(ch: channel, ref x) where !ch.writing {
+    ch.readIt(ch);
+    return ch;
+  }
+
+  // these are overridden to not be inout
+  // since they don't change when read anyway
+  // and it's much more convenient to be able to do e.g.
+  //   reader & new ioLiteral("=")
+
+  /* Overload to support reading an :type:`IO.ioLiteral` without
+     passing ioLiterals by reference, so that
+
+     .. code-block:: chapel
+
+       reader <~> new ioLiteral("=")
+
+     works without requiring an explicit temporary value to store
+     the ioLiteral.
+   */
+  inline proc <~>(r: channel, lit:ioLiteral) where !r.writing {
+    var litCopy = lit;
+    r.readwrite(litCopy);
+    return r;
+  }
+
+  /* Overload to support reading an :type:`IO.ioNewline` without
+     passing ioNewline by reference, so that
+
+     .. code-block:: chapel
+
+       reader <~> new ioNewline("=")
+
+     works without requiring an explicit temporary value to store
+     the ioNewline.
+   */
+  inline proc <~>(r: channel, nl:ioNewline) where !r.writing {
+    var nlCopy = nl;
+    r.readwrite(nlCopy);
+    return r;
+  }
+
+  /* Explicit call for reading or writing a literal as an
+     alternative to using :type:`IO.ioLiteral`.
+   */
+  inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+  {
+    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
+  }
+  pragma "no doc"
+  inline proc channel.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
+  {
+    var iolit = new ioLiteral(lit, ignoreWhiteSpace);
+    this.readwrite(iolit);
+  }
+
+  /* Explicit call for reading or writing a newline as an
+     alternative to using :type:`IO.ioNewline`.
+   */
+  inline proc channel.readWriteNewline()
+  {
+    var ionl = new ioNewline();
+    this.readwrite(ionl);
+  }
+
+  /* Returns `true` if this channel is configured for binary I/O.
+   */
+  proc channel.binary():bool {
+    var ret:uint(8);
+    on this {
+      ret = qio_channel_binary(_channel_internal);
+    }
+    return ret != 0;
+  }
+
+  /* return other style elements. */
+  pragma "no doc"
+  proc channel.styleElement(element:int):int {
+    var ret:int = 0;
+    on this {
+      ret = qio_channel_style_element(_channel_internal, element);
+    }
+    return ret;
+  }
+
+  /*
+     Return any saved error code.
+   */
+  proc channel.error():syserr {
+    var ret:syserr;
+    on this.home {
+      var local_error:syserr;
+      this.lock();
+      local_error = qio_channel_error(_channel_internal);
+      this.unlock();
+      ret = local_error;
+    }
+    return ret;
+  }
+
+  /*
+     Save an error code.
+   */
+  proc channel.setError(e:syserr) {
+    on this.home {
+      var error = e;
+      this.lock();
+      _qio_channel_set_error_unlocked(_channel_internal, error);
+      this.unlock();
+    }
+  }
+
+  /*
+     Clear any saved error code.
+   */
+  proc channel.clearError() {
+    on this.home {
+      this.lock();
+      qio_channel_clear_error(_channel_internal);
+      this.unlock();
+    }
+  }
+
+  /*
+     Write a sequence of bytes.
+   */
+  proc channel.writeBytes(x, len:ssize_t) {
+    // TODO -- do nothing if error in channel?
+    on this.home {
+      this.lock();
+      var err:syserr;
+      err = qio_channel_write_amt(false, _channel_internal, x, len);
+      _qio_channel_set_error_unlocked(_channel_internal, err);
+      this.unlock();
+    }
+  }
+
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
@@ -3696,6 +3914,65 @@ inline proc channel.read(ref args ...?k,
     this.unlock();
   }
   return !error;
+}
+
+/*
+    Creates a string representing the result of writing the arguments.
+
+    Writes each argument, possibly using a `writeThis` method,
+    to a string and returns the result.
+  */
+proc stringify(args ...?k):string {
+  var all_primitive = true;
+  
+  for param i in 1..k {
+    if !isPrimitiveType(args[i].type) then all_primitive = false;
+  }
+
+  if all_primitive {
+    // As an optimization, use string concatenation for
+    // all primitive type stringify...
+
+    var str = "";
+
+    for param i in 1..k {
+      if args[i].type == string ||
+         args[i].type == c_string ||
+         args[i].type == c_string_copy {
+        str += args[i];
+      } else if isPrimitiveType(args[i].type) {
+        str += args[i]:string;
+      }
+    }
+
+    return str;
+  } else {
+    // otherwise, write it using the I/O system.
+
+    // Open a memory buffer to store the result
+    var f = openmem();
+
+    var w = f.writer(locking=false);
+
+    w.write((...args));
+
+    var offset = w.offset();
+
+    var buf = c_calloc(uint(8), offset+1);
+
+    // you might need a flush here if
+    // close went away
+    w.close();
+
+    var r = f.reader(locking=false);
+
+    r.readBytes(buf, offset:ssize_t);
+    r.close();
+
+    f.close();
+
+    return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+  }
 }
 
 private var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
@@ -4199,8 +4476,7 @@ inline proc channel.write(args ...?k):bool {
 
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
-              value.writeThis() with a ``Writer`` argument as described
-              in the specification.
+              value.writeThis() with the channel as an argument.
    :arg style: optional argument to provide an :type:`iostyle` for this write.
                If this argument is not provided, use the current style
                associated with this channel.
@@ -4286,8 +4562,7 @@ proc channel.writeln(args ...?k,
    :arg args: a variable number of arguments to write. This method can be
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
-              value.writeThis() with a ``Writer`` argument as described
-              in the specification.
+              value.writeThis() with the channel as an argument.
    :arg style: optional argument to provide an :type:`iostyle` for this write.
                If this argument is not provided, use the current style
                associated with this channel.
@@ -4545,109 +4820,6 @@ proc readln(type t ...?numTypes) {
 /* Equivalent to stdin.read. See :proc:`channel.read` for types */
 proc read(type t ...?numTypes) {
   return stdin.read((...t));
-}
-
-// used to make readThis/writeThis work
-pragma "no doc"
-class ChannelWriter : Writer {
-  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
-  var err:syserr = ENOERR;
-  proc binary():bool {
-    var ret:uint(8);
-    on this {
-      ret = qio_channel_binary(_channel_internal);
-    }
-    return ret != 0;
-  }
-  proc styleElement(element:int):int {
-    var ret:int = 0;
-    on this {
-      ret = qio_channel_style_element(_channel_internal, element);
-    }
-    return ret;
-  }
-
-  proc error():syserr {
-    return err;
-  }
-  proc setError(e:syserr) {
-    err = e;
-  }
-  proc clearError() {
-    err = 0;
-  }
-  proc writePrimitive(x) {
-    if !err {
-      on this {
-        err = _write_one_internal(_channel_internal, iokind.dynamic, x);
-      }
-    }
-  }
-
-  proc writeBytes(x, len:ssize_t) {
-    if ! err {
-      on this {
-        err = qio_channel_write_amt(false, _channel_internal, x, len);
-      }
-    }
-  }
-
-  proc writeThis(w:Writer) {
-    // MPF - I don't understand why I had to add this,
-    // but without it test/modules/diten/returnClassDiffModule5.chpl fails.
-    compilerError("writeThis on ChannelWriter called");
-  }
-  // writeThis + no readThis -> ChannelWriter itself cannot be read
-}
-// used to make readThis/writeThis work
-pragma "no doc"
-class ChannelReader : Reader {
-  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
-  var err:syserr = ENOERR;
-  proc binary():bool {
-    var ret:uint(8);
-    on this {
-      ret = qio_channel_binary(_channel_internal);
-    }
-    return ret != 0;
-  }
-  proc styleElement(element:int):int {
-    var ret:int = 0;
-    on this {
-      ret = qio_channel_style_element(_channel_internal, element);
-    }
-    return ret;
-  }
-
-  proc error():syserr {
-    return err;
-  }
-  proc setError(e:syserr) {
-    err = e;
-  }
-  proc clearError() {
-    err = ENOERR;
-  }
-
-  proc readPrimitive(ref x:?t) where _isIoPrimitiveTypeOrNewline(t) {
-    if !err {
-      on this {
-        err = _read_one_internal(_channel_internal, iokind.dynamic, x);
-      }
-    }
-  }
-
-  // TODO -- we should probably have separate c_ptr ddata and ref versions
-  proc readBytes(x, len:ssize_t) {
-    if ! err {
-      err = qio_channel_read_amt(false, _channel_internal, x, len);
-    }
-  }
-
-  proc writeThis(w:Writer) {
-    compilerError("writeThis on ChannelReader called");
-  }
-  // writeThis + no readThis -> ChannelReader itself cannot be read
 }
 
 
@@ -6164,7 +6336,21 @@ proc readf(fmt:string):bool {
 }
 
 
-private inline proc _do_format(fmt:c_string, args ...?k, out error:syserr):string {
+proc channel.skipJsonField(out error:syserr) {
+  on this.home {
+    this.lock();
+    error = qio_channel_skip_json_field(false, _channel_internal);
+    this.unlock();
+  }
+}
+proc channel.skipJsonField() {
+  var err:syserr;
+  this.skipJsonField(err);
+  if err then this._ch_ioerror(err, "in skipJsonField");
+}
+
+
+private inline proc _do_format(fmt:string, args ...?k, out error:syserr):string {
   // Open a memory buffer to store the result
   var f = openmem();
 
@@ -6210,7 +6396,6 @@ proc format(fmt:string, args ...?k):string {
   :returns: the resulting string
 
  */
-
 proc string.format(args ...?k, out error:syserr):string {
   return _do_format(this.localize().c_str(), (...args), error);
 }
