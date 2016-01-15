@@ -1185,7 +1185,6 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     if( hasReadWriteThis ) {
       fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
     } else {
-      //fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
       fn->insertAtTail(new CallExpr("writeThisDefaultImpl", fileArg, fn->_this));
     }
 
@@ -1215,7 +1214,6 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     if( hasReadWriteThis ) {
       fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
     } else {
-      //fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "readThisDefaultImpl"), fn->_this));
       fn->insertAtTail(new CallExpr("readThisDefaultImpl", fileArg, fn->_this));
     }
 
