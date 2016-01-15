@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import os
 import sys
 
@@ -6,7 +5,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_compiler, chpl_llvm, chpl_locale_model, third_party_utils, utils
-from utils import memoize
+from utils import memoize, compiler_is_prgenv
 
 
 @memoize
@@ -22,7 +21,8 @@ def get_link_args():
                                                 libs=['libqthread_chpl.la',
                                                       '-lchpl',
                                                       'libqthread.la'])
-    if ( chpl_compiler.get('target').startswith('cray-prgenv') and
-         chpl_llvm.get() != 'none' ):
+    compiler_val = chpl_compiler.get('target')
+    if ( compiler_val == 'cray-prgenv-cray' or
+         (compiler_is_prgenv(compiler_val) and chpl_llvm.get() != 'none' )):
         link_args.append('-lrt')
     return link_args

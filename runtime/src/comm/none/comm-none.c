@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
+#include "chpl-linefile-support.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -45,9 +46,9 @@ static int mysystem(const char* command, const char* description,
   int status = system(command);
 
   if (status == -1) {
-    chpl_error("system() fork failed", 0, "(command-line)");
+    chpl_error("system() fork failed", 0, CHPL_FILE_IDX_COMMAND_LINE);
   } else if (status != 0 && !ignorestatus) {
-    chpl_error(description, 0, "(command-line)");
+    chpl_error(description, 0, CHPL_FILE_IDX_COMMAND_LINE);
   }
 
   return status;
@@ -55,22 +56,20 @@ static int mysystem(const char* command, const char* description,
 
 // Chapel interface
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       size_t elemSize, int32_t typeIndex,
-                                       size_t len,
-                                       int ln, c_string fn)
+                                       size_t size, int32_t typeIndex,
+                                       int ln, int32_t fn)
 {
   assert(node == 0);
-  chpl_memcpy(raddr, addr, len*elemSize);
+  chpl_memcpy(raddr, addr, size);
   return NULL;
 }
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       size_t elemSize, int32_t typeIndex,
-                                       size_t len,
-                                       int ln, c_string fn)
+                                       size_t size, int32_t typeIndex,
+                                       int ln, int32_t fn)
 {
   assert(node == 0);
-  chpl_memcpy(addr, raddr, len*elemSize);
+  chpl_memcpy(addr, raddr, size);
   return NULL;
 }
 
@@ -96,7 +95,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return 0;
 }
 
-int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
   return 0;
 }
@@ -148,25 +147,25 @@ void chpl_comm_pre_task_exit(int all) { }
 void chpl_comm_exit(int all, int status) { }
 
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
-                    size_t size, int32_t typeIndex, size_t len,
-                    int ln, c_string fn) {
+                    size_t size, int32_t typeIndex,
+                    int ln, int32_t fn) {
   assert(locale==0);
 
-  memmove(raddr, addr, size*len);
+  memmove(raddr, addr, size);
 }
 
 void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
-                    size_t size, int32_t typeIndex, size_t len,
-                    int ln, c_string fn) {
+                    size_t size, int32_t typeIndex,
+                    int ln, int32_t fn) {
   assert(locale==0);
 
-  memmove(addr, raddr, size*len);
+  memmove(addr, raddr, size);
 }
 
 void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex,
-                         int ln, c_string fn)
+                         int ln, int32_t fn)
 {
   const size_t strlvls = (size_t)stridelevels;
   size_t i,j,k,l,m,t,total,off,x,carry;
@@ -320,7 +319,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocal
 void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
                          void* srcaddr_arg, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex,
-                         int ln, c_string fn)
+                         int ln, int32_t fn)
 {
   const size_t strlvls = (size_t)stridelevels;
   size_t i,j,k,l,m,t,total,off,x,carry;
@@ -476,7 +475,7 @@ typedef struct {
   char          arg[0];       // variable-sized data here
 } fork_t;
 
-void chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                     chpl_fn_int_t fid, void *arg, size_t arg_size) {
   assert(node==0);
 
@@ -491,7 +490,7 @@ static void fork_nb_wrapper(fork_t* f) {
   chpl_mem_free(f, 0, 0);
 }
 
-void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                        chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
   size_t  info_size;
@@ -509,8 +508,8 @@ void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
                            subloc, chpl_nullTaskID, false);
 }
 
-// Same as chpl_comm_fork()
-void chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+// Same as chpl_comm_execute_on()
+void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                          chpl_fn_int_t fid, void *arg, size_t arg_size) {
   assert(node==0);
 
@@ -534,15 +533,7 @@ void chpl_startCommDiagnosticsHere() { }
 void chpl_stopCommDiagnosticsHere() { }
 
 void chpl_resetCommDiagnosticsHere() { }
-void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) { }
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  memset(cd, 0, sizeof(chpl_commDiagnostics));
+}
 
-uint64_t chpl_numCommGets(void) { return 0; }
-uint64_t chpl_numCommNBGets(void) { return 0; }
-uint64_t chpl_numCommPuts(void) { return 0; }
-uint64_t chpl_numCommNBPuts(void) { return 0; }
-uint64_t chpl_numCommTestNB(void) { return 0; }
-uint64_t chpl_numCommWaitNB(void) { return 0; }
-uint64_t chpl_numCommTryNB(void) { return 0; }
-uint64_t chpl_numCommForks(void) { return 0; }
-uint64_t chpl_numCommFastForks(void) { return 0; }
-uint64_t chpl_numCommNBForks(void) { return 0; }

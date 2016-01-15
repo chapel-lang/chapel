@@ -682,7 +682,7 @@ static yyconst flex_int16_t yy_chk[588] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "chapel.lex"
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -3005,6 +3005,13 @@ int processNewline(yyscan_t scanner) {
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
+
+void stringBufferInit() {
+  if (stringBuffer == NULL) {
+    stringBuffer  = (char*) malloc(1024);
+    stringBuffer[0] = '\0';
+  }
+}
 
 static int  processIdentifier(yyscan_t scanner) {
   YYSTYPE* yyLval = yyget_lval(scanner);

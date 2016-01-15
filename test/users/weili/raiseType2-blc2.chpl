@@ -11,5 +11,5 @@ proc raiseType(x) {
 
 var h1 = raiseType(true);
 var h2 = raiseType(3);
-writeln(typeToString(h1.type));
-writeln(typeToString(h2.type));
+writeln(h1.type:string);
+writeln(h2.type:string);

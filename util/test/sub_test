@@ -92,7 +92,9 @@
 #  <test executable>.suffix (where suffix is one of the following).
 #
 # .good: "Golden" output file (can have different basenames)
+# .compenv: Additional environment variables for the compile
 # .compopts: Additional compiler options
+# .perfcompenv: Additional environment variables for performance compiling
 # .perfcompopts: Additional compiler options for performance testing
 # .lastcompopts: Additional compiler options to be added at the end of the
 #    command line
@@ -240,11 +242,37 @@ def PerfDirFile(s):
 def PerfTFile(test_filename, sfx):
     return test_filename + '.' + perflabel + sfx
 
-# read file with comments
+# Read a file or if the file is executable read its output. If the file is
+# executable, the current chplenv is copied into the env before executing.
+# Expands shell variables and strip out comments/whitespace. Returns a list of
+# string, one per line in the file.
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
-    # sys.stdout.write('Opening: %s\n'%(f))
-    with open(f, 'r') as myfile:
-      mylines = myfile.readlines()
+    mylines = ""
+    # if the file is executable, run it and grab the output. If we get an
+    # OSError while trying to run, report it and try to keep going
+    if os.access(f, os.X_OK):
+        try:
+            # grab the chplenv so it can be stuffed into the subprocess env
+            env_cmd = [os.path.join(utildir, 'printchplenv'), '--simple']
+            chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
+            chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
+            file_env = os.environ.copy()
+            file_env.update(chpl_env)
+
+            # execute the file and grab its output
+            cmd = subprocess.Popen([os.path.abspath(f)], stdout=subprocess.PIPE, env=file_env)
+            mylines = cmd.communicate()[0].splitlines()
+
+        except OSError as e:
+            global localdir
+            f_name = os.path.join(localdir, f)
+            sys.stdout.write("[Error trying to execute '{0}': {1}]\n".format(f_name, str(e)))
+
+    # otherwise, just read the file
+    else:
+        with open(f, 'r') as myfile:
+            mylines = myfile.readlines()
+
     mylist=list()
     for line in mylines:
         line = line.rstrip()
@@ -616,6 +644,7 @@ compoptssuffix = PerfSfx('compopts')  # .compopts or .perfcompopts or ...
 # If compiler is chpldoc, use .chpldocopts for options.
 chpldocsuffix = '.chpldocopts'
 
+compenvsuffix  = PerfSfx('compenv')   # compenv  or .perfcompenv  or ...
 execenvsuffix  = PerfSfx('execenv')   # .execenv  or .perfexecenv  or ...
 execoptssuffix = PerfSfx('execopts')  # .execopts or .perfexecopts or ...
 timeoutsuffix  = PerfSfx('timeout')   # .timeout  or .perftimeout  or ...
@@ -750,35 +779,35 @@ else:
 printpassesfile = None
 if os.getenv('CHPL_TEST_COMP_PERF')!=None:
     compperftest=True
-    
+
     # check for the main compiler performance directory
     if os.getenv('CHPL_TEST_COMP_PERF_DIR')!=None:
         compperfdir=os.getenv('CHPL_TEST_COMP_PERF_DIR')
     else:
         compperfdir=chpl_home+'/test/compperfdat/' 
-    
+
     # The env var CHPL_PRINT_PASSES_FILE will cause the 
     # compiler to save the pass timings to specified file.
     if os.getenv('CHPL_PRINT_PASSES_FILE')!=None:
         printpassesfile=os.getenv('CHPL_PRINT_PASSES_FILE')
     else:
         printpassesfile='timing.txt'
-        os.putenv('CHPL_PRINT_PASSES_FILE', 'timing.txt')
-      
+        os.environ['CHPL_PRINT_PASSES_FILE'] = 'timing.txt'
+
     # check for the perfkeys file
     if os.getenv('CHPL_TEST_COMP_PERF_KEYS')!=None:
         keyfile=os.getenv('CHPL_TEST_COMP_PERF_KEYS')
-    else: 
+    else:
         keyfile=chpl_home+'/test/performance/compiler/compilerPerformance.perfkeys'
-        
+
     # Check for the directory to store the tempory .dat files that will get 
-    # combined into one.    
+    # combined into one.
     if os.getenv('CHPL_TEST_COMP_PERF_TEMP_DAT_DIR')!=None:
         tempDatFilesDir = os.getenv('CHPL_TEST_COMP_PERF_TEMP_DAT_DIR')
-    else: 
+    else:
         tempDatFilesDir = compperfdir + 'tempCompPerfDatFiles/'
-        
-else: 
+
+else:
     compperftest=False
 
 #
@@ -834,7 +863,14 @@ if os.access('./EXECENV',os.R_OK):
     globalExecenv=ReadFileWithComments('./EXECENV')
 else:
     globalExecenv=list()
-# sys.stdout.write('globalExecenv=%s\n'%(globalExecenv))
+
+#
+# Global COMPENV
+#
+if os.access('./COMPENV',os.R_OK):
+    globalCompenv=ReadFileWithComments('./COMPENV')
+else:
+    globalCompenv=list()
 
 #
 # Global EXECOPTS/PERFEXECOPTS
@@ -994,6 +1030,7 @@ for testname in testsrc:
             suffix=='.compopts' or suffix=='.perfcompopts' or
             suffix=='.chpldocopts' or
             suffix=='.execenv' or suffix=='.perfexecenv' or
+            suffix=='.compenv' or suffix=='.perfcompenv' or
             suffix=='.execopts' or suffix=='.perfexecopts'):
             continue # on to next file
 
@@ -1178,13 +1215,23 @@ for testname in testsrc:
     else:
         execenv = list()
 
+    if os.access(test_filename+compenvsuffix, os.R_OK):
+        compenv = ReadFileWithComments(test_filename+compenvsuffix)
+    else:
+        compenv = list()
+
     testenv = {}
-    if len(globalExecenv)!=0 or len(execenv)!=0:
-        for tev in globalExecenv:
-            testenv[tev.split('=')[0].strip()] = tev.split('=')[1].strip()
-        for tev in execenv:
-            testenv[tev.split('=')[0].strip()] = tev.split('=')[1].strip()
-        del tev
+    for var, val in [env.split('=') for env in globalExecenv]:
+        testenv[var.strip()] = val.strip()
+    for var, val in [env.split('=') for env in execenv]:
+        testenv[var.strip()] = val.strip()
+
+    testcompenv = {}
+    for var, val in [env.split('=') for env in globalCompenv]:
+        testcompenv[var.strip()] = val.strip()
+    for var, val in [env.split('=') for env in compenv]:
+        testcompenv[var.strip()] = val.strip()
+
 
     # Get list of test specific exec options
     if os.access(test_filename+execoptssuffix, os.R_OK):
@@ -1234,14 +1281,22 @@ for testname in testsrc:
         if globalPrecomp:
             sys.stdout.write('[Executing ./PRECOMP]\n')
             sys.stdout.flush()
-            subprocess.Popen(['./PRECOMP',
-                             execname,complog,compiler]).wait()
+            p = subprocess.Popen(['./PRECOMP',
+                                  execname,complog,compiler],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+            sys.stdout.write(p.communicate()[0])
+            sys.stdout.flush()
 
         if precomp:
             sys.stdout.write('[Executing precomp %s.precomp]\n'%(test_filename))
             sys.stdout.flush()
-            subprocess.Popen(['./'+test_filename+'.precomp',
-                             execname,complog,compiler]).wait()
+            p = subprocess.Popen(['./'+test_filename+'.precomp',
+                                  execname,complog,compiler],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+            sys.stdout.write(p.communicate()[0])
+            sys.stdout.flush()
 
 
         #
@@ -1312,6 +1367,7 @@ for testname in testsrc:
         if useTimedExec:
             wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
             p = subprocess.Popen([timedexec, str(comptimeout), wholecmd],
+                                 env=dict(os.environ.items() + testcompenv.items()),
                                  stdin=open(compstdin, 'r'),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
@@ -1328,7 +1384,9 @@ for testname in testsrc:
                 continue # on to next compopts
 
         else:
-            p = subprocess.Popen([cmd]+args, stdin=open(cmpstdin, 'r'),
+            p = subprocess.Popen([cmd]+args,
+                                 env=dict(os.environ.items() + testcompenv.items()),
+                                 stdin=open(cmpstdin, 'r'),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             try:
@@ -1383,26 +1441,38 @@ for testname in testsrc:
             if systemPrediff:
                 sys.stdout.write('[Executing system-wide prediff]\n')
                 sys.stdout.flush()
-                subprocess.Popen([systemPrediff,
-                                  execname,complog,compiler,
-                                  ' '.join(envCompopts)+' '+compopts,
-                                  ' '.join(args)]).wait()
+                p = subprocess.Popen([systemPrediff,
+                                      execname,complog,compiler,
+                                      ' '.join(envCompopts)+' '+compopts,
+                                      ' '.join(args)],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')
                 sys.stdout.flush()
-                subprocess.Popen(['./PREDIFF',
-                                  execname,complog,compiler,
-                                  ' '.join(envCompopts)+' '+compopts,
-                                  ' '.join(args)]).wait()
+                p = subprocess.Popen(['./PREDIFF',
+                                      execname,complog,compiler,
+                                      ' '.join(envCompopts)+' '+compopts,
+                                      ' '.join(args)],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             if prediff:
                 sys.stdout.write('[Executing prediff %s.prediff]\n'%(test_filename))
                 sys.stdout.flush()
-                subprocess.Popen(['./'+test_filename+'.prediff',
-                                  execname,complog,compiler,
-                                  ' '.join(envCompopts)+' '+compopts,
-                                  ' '.join(args)]).wait()
+                p = subprocess.Popen(['./'+test_filename+'.prediff',
+                                      execname,complog,compiler,
+                                      ' '.join(envCompopts)+' '+compopts,
+                                      ' '.join(args)],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             
             # find the compiler .good file to compare against. The compiler
@@ -1592,20 +1662,32 @@ for testname in testsrc:
             if systemPreexec:
                 sys.stdout.write('[Executing system-wide preexec]\n')
                 sys.stdout.flush()
-                subprocess.Popen([systemPreexec,
-                                  execname,execlog,compiler]).wait()
+                p = subprocess.Popen([systemPreexec,
+                                      execname,execlog,compiler],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
                 sys.stdout.flush()
-                subprocess.Popen(['./PREEXEC',
-                                  execname,execlog,compiler]).wait()
+                p = subprocess.Popen(['./PREEXEC',
+                                      execname,execlog,compiler],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             if preexec:
                 sys.stdout.write('[Executing preexec %s.preexec]\n'%(test_filename))
                 sys.stdout.flush()
-                subprocess.Popen(['./'+test_filename+'.preexec',
-                                  execname,execlog,compiler]).wait()
+                p = subprocess.Popen(['./'+test_filename+'.preexec',
+                                      execname,execlog,compiler],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+                sys.stdout.write(p.communicate()[0])
+                sys.stdout.flush()
 
             pre_exec_output = ''
             if os.path.exists(execlog):
@@ -1843,7 +1925,8 @@ for testname in testsrc:
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
-                                                          stdout=subprocess.PIPE).
+                                                          stdout=subprocess.PIPE,
+                                                          stderr=subprocess.STDOUT).
                                         communicate()[0])
 
                     if globalPrediff:
@@ -1854,7 +1937,8 @@ for testname in testsrc:
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
-                                                          stdout=subprocess.PIPE).
+                                                          stdout=subprocess.PIPE,
+                                                          stderr=subprocess.STDOUT).
                                         communicate()[0])
 
                     if prediff:
@@ -1865,7 +1949,8 @@ for testname in testsrc:
                                                           ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
-                                                          stdout=subprocess.PIPE).
+                                                          stdout=subprocess.PIPE,
+                                                          stderr=subprocess.STDOUT).
                                         communicate()[0])
 
                     if not perftest:

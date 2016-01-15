@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,9 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
 endif
 
+#
+# standard header
+#
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 TASKS_OBJDIR = $(RUNTIME_OBJDIR)

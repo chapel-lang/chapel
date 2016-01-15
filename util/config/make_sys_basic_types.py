@@ -19,6 +19,7 @@ import optparse
 import os
 import os.path
 import re
+import subprocess
 import sys
 
 
@@ -91,8 +92,17 @@ def get_sys_c_types(docs=False):
 
     # Get the C compile line.
     compileline_cmd = os.path.join(util_cfg_dir, 'compileline')
-    cmd = '{compileline_cmd} --compile'.format(**locals())
-    compileline = os.popen(cmd).read().strip()
+
+    compileline_env = os.environ.copy()
+    # Make CHPL_COMM=none for the compile line command, we dont want any of the
+    # stuff from gasnet (we dont want to require gasnet to be built)
+    compileline_env['CHPL_COMM'] = 'none'
+    # We need to clear CHPL_MAKE_SETTINGS_NO_NEWLINES for our change to
+    # CHPL_COMM to actually work
+    compileline_env.pop('CHPL_MAKE_SETTINGS_NO_NEWLINES', None)
+    compileline_proc = subprocess.Popen([compileline_cmd, '--compile'],
+        stdout=subprocess.PIPE, env=compileline_env)
+    compileline = compileline_proc.communicate()[0].decode().strip();
     logging.debug('Compile line: {0}'.format(compileline))
 
     # Create temp header file with *_MAX macros, then run it through the C

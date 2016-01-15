@@ -1,6 +1,6 @@
 var t = (1,);
 
-writeln("t is: ", t, " (type = ", typeToString(t.type), ")");
+writeln("t is: ", t, " (type = ", t.type:string, ")");
 
 writeln("(...t) is: ", (...t));
 

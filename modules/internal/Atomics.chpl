@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -70,6 +70,7 @@ pragma "atomic module"
 module Atomics {
 
   use MemConsistency;
+  use ChapelEnv;
 
   extern type atomic_int_least8_t;
   extern type atomic_int_least16_t;

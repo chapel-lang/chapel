@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -47,8 +47,8 @@ static void add_env_options(int* argc, char** argv[]) {
   // Create a new argv with space for -E options for the env vars.
   //
   new_argc = *argc + 2 * envc;
-  new_argv = (char**) chpl_mem_allocMany(new_argc, sizeof((*argv)[0]),
-                                         CHPL_RT_MD_COMMAND_BUFFER, -1, "");  
+  new_argv = (char **)chpl_mem_allocMany(new_argc, sizeof((*argv)[0]),
+                                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
   //
   // Duplicate the old argv into the start of the new one.
@@ -99,7 +99,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int len = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("amudprun") + 1;
-  char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   snprintf(cmd, len, "%samudprun", WRAP_TO_STR(LAUNCH_PATH));
 
   return chpl_launch_using_exec(cmd,
@@ -110,7 +110,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, c_string filename) {
+                           int32_t lineno, int32_t filename) {
   return 0;
 }
 

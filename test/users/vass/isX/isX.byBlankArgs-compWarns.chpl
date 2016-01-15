@@ -110,7 +110,7 @@ proc report(param is: bool, param msg: c_string) {
 }
 
 proc test(arg) {
-  compilerWarning(typeToString(arg.type));
+  compilerWarning(arg.type:string);
   report(isBool(arg), "isBool");
   report(isBoolValue(arg), "isBoolValue");
   report(isBoolType(arg.type), "isBoolType");

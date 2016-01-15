@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -410,7 +410,7 @@ proc Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
 }
 
 proc Cyclic.writeThis(x: Writer) {
-  x.writeln(typeToString(this.type));
+  x.writeln(this.type:string);
   x.writeln("------");
   for locid in targetLocDom do
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ", locDist(locid).myChunk); 
@@ -557,7 +557,7 @@ proc CyclicDom.dsiSetIndices(x) {
 
 proc CyclicDom.dsiSerialWrite(x: Writer) {
   if verboseCyclicDistWriters {
-    x.writeln(typeToString(this.type));
+    x.writeln(this.type:string);
     x.writeln("------");
     for loc in dist.targetLocDom {
       x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
@@ -983,12 +983,20 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   const myFollowThis = {(...t)};
   if fast {
     const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThis.low));
+
+    //
+    // Slicing arrSection.myElems will require reference counts to be updated.
+    // If myElems is an array of arrays, the inner array's domain or dist may
+    // live on a different locale and require communication for reference
+    // counting. Simply put: don't slice inside a local block.
+    //
+    // TODO: Can myLocArr be used here to simplify things?
+    //
+    var chunk => arrSection.myElems(myFollowThis);
     if arrSection.locale.id == here.id then local {
-      for e in arrSection.myElems(myFollowThis) do
-        yield e;
+      for i in chunk do yield i;
     } else {
-      for e in arrSection.myElems(myFollowThis) do
-        yield e;
+      for i in chunk do yield i;
     }
   } else {
     proc accessHelper(i) ref {
@@ -1007,7 +1015,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
 
 proc CyclicArr.dsiSerialWrite(f: Writer) {
   if verboseCyclicDistWriters {
-    writeln(typeToString(this.type));
+    writeln(this.type:string);
     writeln("------");
   }
   if dom.dsiNumIndices == 0 then return;

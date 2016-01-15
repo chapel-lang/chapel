@@ -2,7 +2,7 @@
 (AAA, AAA)
 (BBB, AAA)
 (BBB, AAA, BBB)
-(CCC, AAA, BBB)
+(CCC, AAA, CCC)
 (CCC, AAA, (CCC, AAA))
 (DDD, AAA, (CCC, AAA))
 (DDD, AAA, (DDD, AAA))

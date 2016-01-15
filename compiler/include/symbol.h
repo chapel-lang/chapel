@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include <bitset>
 #include <iostream>
 #include <vector>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -150,6 +151,8 @@ private:
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
+
+bool isString(Symbol* symbol);
 
 /******************************** | *********************************
 *                                                                   *
@@ -577,12 +580,15 @@ bool argMustUseCPtr(Type* t);
 extern bool localTempNames;
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+extern HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 extern StringChainHash uniqueStringHash;
 
 extern ModuleSymbol* rootModule;
 extern ModuleSymbol* theProgram;
 extern ModuleSymbol* mainModule;
 extern ModuleSymbol* baseModule;
+extern ModuleSymbol* stringLiteralModule;
+extern FnSymbol* initStringLiterals;
 extern ModuleSymbol* standardModule;
 extern ModuleSymbol* printModuleInitModule;
 extern Symbol *gNil;
@@ -612,14 +618,13 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
-extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
 
-extern Map<FnSymbol*,int> ftableMap;
+extern std::map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;
 
 //

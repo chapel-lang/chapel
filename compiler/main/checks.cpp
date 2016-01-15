@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -213,15 +213,6 @@ void check_prune()
   check_afterCallDestructors();
   check_afterLowerIterators();
   // Suggestion: Ensure no dead classes or functions.
-}
-
-void check_complex2record()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterCallDestructors();
-  check_afterLowerIterators();
-  // Suggestion: Ensure no more constants or variables of complex type.
 }
 
 void check_bulkCopyRecords()

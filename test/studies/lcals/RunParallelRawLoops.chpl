@@ -6,7 +6,7 @@ module RunParallelRawLoops {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
 
-    for iloop in 0..#loop_suite_run_info.num_loops {
+    for iloop in loop_suite_run_info.loop_kernel_dom {
       if run_loop[iloop] {
         var stat = loop_stats[iloop];
         var len = stat.loop_length[ilength];
@@ -15,7 +15,6 @@ module RunParallelRawLoops {
 
         select iloop {
           when LoopKernelID.PRESSURE_CALC {
-            halt("loop not implemented: ", iloop:LoopKernelID);
             loopInit(iloop, stat);
             var compression => loop_data.RealArray_1D[0];
             var bvc => loop_data.RealArray_1D[1];
@@ -23,10 +22,10 @@ module RunParallelRawLoops {
             var e_old => loop_data.RealArray_1D[3];
             var vnewc => loop_data.RealArray_1D[4];
 
-            const cls = loop_data.scalar_Real[0];
-            const p_cut = loop_data.scalar_Real[1];
-            const pmin = loop_data.scalar_Real[2];
-            const eosvmax = loop_data.scalar_Real[3];
+            const cls = loop_data.RealArray_scalars[0];
+            const p_cut = loop_data.RealArray_scalars[1];
+            const pmin = loop_data.RealArray_scalars[2];
+            const eosvmax = loop_data.RealArray_scalars[3];
             ltimer.start();
             for isamp in 0..#num_samples {
               forall i in 0..#len {
@@ -66,10 +65,10 @@ module RunParallelRawLoops {
             var qq_old => loop_data.RealArray_1D[13];
             var vnewc => loop_data.RealArray_1D[14];
 
-            const rho0 = loop_data.scalar_Real[0];
-            const e_cut = loop_data.scalar_Real[1];
-            const emin = loop_data.scalar_Real[2];
-            const q_cut = loop_data.scalar_Real[3];
+            const rho0 = loop_data.RealArray_scalars[0];
+            const e_cut = loop_data.RealArray_scalars[1];
+            const emin = loop_data.RealArray_scalars[2];
+            const q_cut = loop_data.RealArray_scalars[3];
 
             ltimer.start();
             for isamp in 0..#num_samples {
@@ -366,7 +365,6 @@ module RunParallelRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.FIR {
-            halt("loop not implemented: ", iloop:LoopKernelID);
             loopInit(iloop, stat);
             var output => loop_data.RealArray_1D[0];
             var input => loop_data.RealArray_1D[1];
@@ -380,17 +378,17 @@ module RunParallelRawLoops {
 
             ltimer.start();
             for isamp in 0..#num_samples {
-              for i in 0..#len_minus_coeff {
+              forall i in 0..#len_minus_coeff {
                 var sum = 0.0;
                 for j in 0..#coefflen {
-                  sum += coeff[j]*input[i+j];
+                  sum += coeff[j+1]*input[i+j];
                 }
                 output[i] = sum;
               }
               val = isamp;
             }
             ltimer.stop();
-            loop_data.scalar_Real[0] = (val + 0.00123) / (val - 0.00123);
+            loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.INIT3 {
@@ -456,11 +454,11 @@ module RunParallelRawLoops {
           }
           when LoopKernelID.TRAP_INT {
             loopInit(iloop, stat);
-            var xn = loop_data.scalar_Real[0];
-            var x0 = loop_data.scalar_Real[1];
-            var xp = loop_data.scalar_Real[2];
-            var y  = loop_data.scalar_Real[3];
-            var yp = loop_data.scalar_Real[4];
+            var xn = loop_data.RealArray_scalars[0];
+            var x0 = loop_data.RealArray_scalars[1];
+            var xp = loop_data.RealArray_scalars[2];
+            var y  = loop_data.RealArray_scalars[3];
+            var yp = loop_data.RealArray_scalars[4];
 
             var nx =  loop_data.IndxArray_1D[0][0] + 1;
 
@@ -479,7 +477,7 @@ module RunParallelRawLoops {
               val = sumx * h;
             }
             ltimer.stop();
-            loop_data.scalar_Real[0] = (val + 0.00123) / (val - 0.00123);
+            loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.PIC_2D {
@@ -492,6 +490,7 @@ module RunParallelRawLoops {
           }
         }
         copyTimer(stat, ilength, ltimer);
+        delete ltimer;
       }
     }
   }

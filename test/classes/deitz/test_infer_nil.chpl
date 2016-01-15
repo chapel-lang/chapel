@@ -5,5 +5,5 @@ class C {
 var c = nil;
 c = new C();
 writeln(c);
-compilerWarning(typeToString(c.type));
+compilerWarning(c.type:string);
 writeln(c.x);

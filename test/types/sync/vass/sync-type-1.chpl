@@ -1,1 +1,1 @@
-compilerError(typeToString(sync int));
+compilerError((sync int):string);

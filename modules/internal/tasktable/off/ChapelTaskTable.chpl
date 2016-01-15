@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,7 @@ module ChapelTaskTable {
 
   export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                     lineno   : uint(32),
-                                    filename : c_string,
+                                    filename : int(32),
                                     tl_info  : uint(64))
   {
   }

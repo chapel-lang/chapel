@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -80,18 +80,21 @@ back its input.
   while sub.stdout.readline(line) {
     write("Got line: ", line);
   }
+  sub.close();
+
   // prints out:
   // Got line: Hello
   // Got line: World
 
 
+
 .. note::
 
   As of Chapel v1.12, creating a subprocess that uses :const:`PIPE` to provide
-  input or capture output does not work when using the ugni communications
-  layer and when using more than one locale. In this circumstance, the program
-  will halt with an error message. These scenarios do work when using GASNet
-  instead of the ugni layer.
+  input or capture output does not work when using the ugni communications layer
+  with hugepages enabled and when using more than one locale. In this
+  circumstance, the program will halt with an error message. These scenarios do
+  work when using GASNet instead of the ugni layer.
 
  */
 module Spawn {
@@ -105,6 +108,13 @@ module Spawn {
                                    ref pid:int(64)):syserr;
   private extern proc qio_waitpid(pid:int(64),
     blocking:c_int, ref done:c_int, ref exitcode:c_int):syserr;
+  private extern proc qio_proc_communicate(threadsafe:c_int,
+                                           input_file:qio_file_ptr_t,
+                                           input:qio_channel_ptr_t,
+                                           output_file:qio_file_ptr_t,
+                                           output:qio_channel_ptr_t,
+                                           error_file:qio_file_ptr_t,
+                                           error:qio_channel_ptr_t):syserr;
 
   // When spawning, we need to allocate the command line
   // and environment to spawn with the C allocator (instead
@@ -121,6 +131,17 @@ module Spawn {
 
   /* 
      This record represents a subprocess.
+
+     Note that the subprocess will not be waited for if this record
+     goes out of scope. Channels opened to communicate with the subprocess
+     will be closed if the record goes out of scope, however.
+
+     Generally, it is important to call :proc:`subprocess.wait` to wait for the
+     process to complete. If the parent process is using pipes to communicate
+     with the subprocess, the parent process may call :proc:`subprocess.close`
+     in order to close the pipes and free any buffers. Such calls are
+     generally not needed since the channels will be closed when the
+     subprocess record is automatically destroyed.
    */
   record subprocess {
     /* The kind of a subprocess is used to create the types
@@ -166,24 +187,26 @@ module Spawn {
     // TODO -- these could be private to this module
     pragma "no doc"
     var stdin_pipe:bool;
+    // true if we are currently buffering up stdin, meaning that
+    // we need to 'commit' in order to actually send the data.
     pragma "no doc"
     var stdin_buffering:bool;
     pragma "no doc"
     var stdin_file:file;
     pragma "no doc"
-    var stdin:channel(writing=true, kind=kind, locking=locking);
+    var stdin_channel:channel(writing=true, kind=kind, locking=locking);
     pragma "no doc"
     var stdout_pipe:bool;
     pragma "no doc"
     var stdout_file:file;
     pragma "no doc"
-    var stdout:channel(writing=false, kind=kind, locking=locking);
+    var stdout_channel:channel(writing=false, kind=kind, locking=locking);
     pragma "no doc"
     var stderr_pipe:bool;
     pragma "no doc"
     var stderr_file:file;
     pragma "no doc"
-    var stderr:channel(writing=false, kind=kind, locking=locking);
+    var stderr_channel:channel(writing=false, kind=kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
@@ -191,6 +214,80 @@ module Spawn {
 
     pragma "no doc" 
     var spawn_error:syserr;
+
+    pragma "no doc"
+    proc _start_stdin_buffering() {
+      var err = stdin_channel._mark();
+      if ! err {
+        stdin_buffering = true;
+      }
+      return err;
+    }
+
+    pragma "no doc"
+    proc _stop_stdin_buffering() {
+      if this.stdin_buffering {
+        this.stdin._commit();
+        this.stdin_buffering = false; // Don't commit again on close again
+      }
+    }
+
+
+    pragma "no doc"
+    proc _halt_on_launch_error() {
+      if !running {
+        ioerror(spawn_error,
+                "encountered when launching subprocess");
+      }
+    }
+
+    /*
+       Access the stdin pipe for the subprocess. The parent process
+       can write to the subprocess through this pipe if the subprocess
+       was created with stdin=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stdin pipe open.
+     */
+    proc stdin {
+      _halt_on_launch_error();
+      if stdin_pipe == false {
+        halt("subprocess was not configured with a stdin pipe");
+      }
+      return stdin_channel;
+    }
+
+    /*
+       Access the stdout pipe for the subprocess. The parent process
+       can read from the subprocess through this pipe if the subprocess
+       was created with stdout=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stdout pipe open.
+     */
+    proc stdout {
+      _halt_on_launch_error();
+      if stdout_pipe == false {
+        halt("subprocess was not configured with a stdout pipe");
+      }
+      return stdout_channel;
+    }
+
+    /*
+       Access the stderr pipe for the subprocess. The parent process
+       can read from the subprocess through this pipe if the subprocess
+       was created with stderr=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stderr pipe open.
+     */
+    proc stderr {
+      _halt_on_launch_error();
+      if stderr_pipe == false {
+        halt("subprocess was not configured with a stderr pipe");
+      }
+      return stderr_channel;
+    }
   }
 
   private extern const QIO_FD_FORWARD:c_int;
@@ -310,9 +407,9 @@ module Spawn {
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
              param kind=iokind.dynamic, param locking=true)
   {
-    var stdin_fd:c_int;
-    var stdout_fd:c_int;
-    var stderr_fd:c_int;
+    var stdin_fd:c_int = QIO_FD_FORWARD;
+    var stdout_fd:c_int = QIO_FD_FORWARD;
+    var stderr_fd:c_int = QIO_FD_FORWARD;
     var stdin_pipe = false;
     var stdout_pipe = false;
     var stderr_pipe = false;
@@ -334,9 +431,17 @@ module Spawn {
     // under those circumstances. See JIRA issue 113 for more details.
     if CHPL_COMM == "ugni" then
       if stdin != FORWARD || stdout != FORWARD || stderr != FORWARD then
-        if numLocales > 1 then
-          halt("spawn with more than 1 locale for CHPL_COMM=ugni currently ",
-               "requires stdin, stdout, stderr=FORWARD");
+        if numLocales > 1 {
+          var env_c_str:c_string;
+          var env_str:string;
+          if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
+            env_str = env_c_str;
+            if env_str.count("HUGETLB") > 0 then
+              halt("spawn with more than 1 locale for CHPL_COMM=ugni ",
+                   "with hugepages currently ",
+                   "requires stdin, stdout, stderr=FORWARD");
+          }
+        }
 
     if stdin == QIO_FD_PIPE then stdin_pipe = true;
     if stdout == QIO_FD_PIPE then stdout_pipe = true;
@@ -401,7 +506,7 @@ module Spawn {
       if err {
         ret.spawn_error = err; return ret;
       }
-      ret.stdin = ret.stdin_file.writer(error=err);
+      ret.stdin_channel = ret.stdin_file.writer(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -410,7 +515,7 @@ module Spawn {
         // mark stdin so that we don't actually send any data
         // until communicate() is called.
 
-        err = ret.stdin._mark();
+        err = ret.stdin_channel._mark();
         if err {
           ret.spawn_error = err; return ret;
         }
@@ -425,7 +530,7 @@ module Spawn {
         ret.spawn_error = err; return ret;
       }
 
-      ret.stdout = ret.stdout_file.reader(error=err);
+      ret.stdout_channel = ret.stdout_file.reader(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -438,7 +543,7 @@ module Spawn {
         ret.spawn_error = err; return ret;
       }
 
-      ret.stderr = ret.stderr_file.reader(error=err);
+      ret.stderr_channel = ret.stderr_file.reader(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -511,7 +616,9 @@ module Spawn {
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
     args.push_front(executable);
-    return spawn(args, env, executable, kind=kind, locking=locking);
+    return spawn(args, env, executable,
+                 stdin=stdin, stdout=stdout, stderr=stderr,
+                 kind=kind, locking=locking);
   }
 
   /*
@@ -537,37 +644,49 @@ module Spawn {
     returns, :attr:`~subprocess.running` is `false` and
     :attr:`~subprocess.exit_status` stores the exit code returned
     by the subprocess.
-     
+
+    If `buffer` is `true`, then this call will handle cases in which
+    stdin, stdout, or stderr for the child process is :const:`PIPE` by writing
+    any input to the child process and buffering up the output of the child
+    process as necessary while waiting for it to terminate. It will do
+    so in the same manner as :proc:`subprocess.communicate`.
+
+
     .. note::
      
-        Use :proc:`subprocess.communicate` instead of this function when using
-        :const:`PIPE` for stdin, stdout, or stderr.  This function does not try
-        to send any buffered input to the child process and so could result in
-        a hang if the child process is waiting for input to finish. Similarly,
-        this function does not consume the output from the child process and so
-        the child process could hang while waiting to write data to its output
-        while the parent process is waiting for it to complete (and not
-        consuming its output).
+        Do not use `buffer` `false` when using :const:`PIPE` for stdin,
+        stdout, or stderr.  If `buffer` is `false`, this function does not
+        try to send any buffered input to the child process and so could result
+        in a hang if the child process is waiting for input to finish.
+        Similarly, this function does not consume the output from the child
+        process and so the child process could hang while waiting to write data
+        to its output while the parent process is waiting for it to complete
+        (and not consuming its output).
 
     :arg error: optional argument to capture any error encountered
                 when waiting for the child process.
    */
-  proc subprocess.wait(out error:syserr) {
+  proc subprocess.wait(out error:syserr, buffer=true) {
+
+    if buffer {
+      this.communicate(error);
+      return;
+    }
 
     error = this.spawn_error;
     if !running then return;
 
     on home {
-      
+
       // Close stdin.
       if this.stdin_pipe {
         // send data to stdin
-        if this.stdin_buffering then this.stdin._commit();
-        this.stdin.close(error=error);
+        _stop_stdin_buffering();
+        this.stdin_channel.close(error=error);
         this.stdin_file.close(error=error);
       }
 
-      // check if child process has terminated.
+      // wait for child process to terminate
       var done:c_int = 0;
       var exitcode:c_int = 0;
       error = qio_waitpid(pid, 1, done, exitcode);
@@ -575,16 +694,27 @@ module Spawn {
         this.running = false;
         this.exit_status = exitcode;
       }
+
+      // Close stdout/stderr files. Leave the channels open.
+      if this.stdout_pipe {
+        this.stdout_file.close(error=error);
+      }
+      if this.stderr_pipe {
+        this.stderr_file.close(error=error);
+      }
+
     }
   }
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.wait() {
+  proc subprocess.wait(buffer=true) {
     var err:syserr = ENOERR;
 
-    this.wait(error=err);
-    if err then halt("Error in subprocess.wait: " + errorToString(err));
+    _halt_on_launch_error();
+
+    this.wait(error=err, buffer=buffer);
+    if err then ioerror(err, "in subprocess.wait");
   }
 
   /*
@@ -606,13 +736,30 @@ module Spawn {
   proc subprocess.communicate(out error:syserr) {
     
     on home {
-      stdin._commit();
+      if this.stdin_pipe {
+        // send data to stdin
+        _stop_stdin_buffering();
+      }
 
       error = qio_proc_communicate(
-        locking, 
-        stdin._channel_internal,
-        stdout._channel_internal,
-        stderr._channel_internal);
+        locking,
+        stdin_file._file_internal,
+        stdin_channel._channel_internal,
+        stdout_file._file_internal,
+        stdout_channel._channel_internal,
+        stderr_file._file_internal,
+        stderr_channel._channel_internal);
+    }
+
+    if !error {
+      // wait for child process to terminate
+      var done:c_int = 0;
+      var exitcode:c_int = 0;
+      error = qio_waitpid(pid, 1, done, exitcode);
+      if done {
+        this.running = false;
+        this.exit_status = exitcode;
+      }
     }
   }
 
@@ -621,10 +768,50 @@ module Spawn {
   proc subprocess.communicate() {
     var err:syserr = ENOERR;
 
-    this.wait(error=err);
-    if err then halt("Error in subprocess.communicate: " + errorToString(err));
+    _halt_on_launch_error();
+
+    this.communicate(error=err);
+    if err then ioerror(err, "in subprocess.communicate");
   }
 
+  /*
+    Close any open channels and pipes for interacting with a subprocess.  This
+    function does not wait for the subprocess to complete.  Note that it is
+    generally not necessary to call this function since these channels will be
+    closed when the subprocess record goes out of scope.
+
+    :arg error: optional argument to capture any error encountered
+                when closing the pipes.
+   */
+  proc subprocess.close(out error:syserr) {
+    error = ENOERR;
+    // Close stdin.
+    if this.stdin_pipe {
+      // send data to stdin
+      _stop_stdin_buffering();
+      this.stdin_channel.close(error=error);
+      this.stdin_file.close(error=error);
+    }
+    // Close stdout.
+    if this.stdout_pipe {
+      this.stdout_channel.close(error=error);
+      this.stdout_file.close(error=error);
+    }
+    // Close stderr.
+    if this.stderr_pipe {
+      this.stderr_channel.close(error=error);
+      this.stderr_file.close(error=error);
+    }
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.close() {
+    var err:syserr = ENOERR;
+
+    this.close(error=err);
+    if err then ioerror(err, "in subprocess.close");
+  }
 
 // Future work: support
 // send_signal

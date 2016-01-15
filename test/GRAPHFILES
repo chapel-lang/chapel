@@ -99,7 +99,6 @@ studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
-studies/shootout/chameneos-redux/hannah/chameneos-redux-all.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
@@ -142,6 +141,7 @@ distributions/robust/associative/performance/array_iter.graph
 distributions/robust/associative/performance/domain_iter.graph
 domains/bradc/domEqualityPerf.graph
 performance/thomasvandoren/matrix-multiply.graph
+types/string/ferguson/array-of-strings-read.graph
 # suite: Dynamic iterators
 functions/iterators/angeles/dynamic.graph
 functions/iterators/angeles/distAdaptativeWSv1.graph
@@ -194,6 +194,7 @@ spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
 studies/rbc/tvandoren/RBC.graph
+types/string/ferguson/temporary-copies.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph

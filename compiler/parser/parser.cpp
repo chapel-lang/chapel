@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,7 @@
 #include "flex-chapel.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "insertLineNumbers.h"
 
 #include <cstdlib>
 
@@ -127,6 +128,8 @@ ModuleSymbol* parseFile(const char* filename,
   ModuleSymbol* retval = NULL;
 
   if (FILE* fp = openInputFile(filename)) {
+    gFilenameLookup.push_back(filename);
+
     // State for the lexer
     int             lexerStatus  = 100;
 
@@ -165,6 +168,7 @@ ModuleSymbol* parseFile(const char* filename,
     }
 
     yylex_init(&context.scanner);
+    stringBufferInit();
     yyset_in(fp, context.scanner);
 
     while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
@@ -361,6 +365,7 @@ BlockStmt* parseString(const char* string,
   ParserContext   context;
 
   yylex_init(&(context.scanner));
+  stringBufferInit();
 
   handle              = yy_scan_string(string, context.scanner);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -466,7 +466,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
         VarSymbol* var = toVarSymbol(value);
         if (var && var->immediate) {
           Immediate* immediate = var->immediate;
-          if (var->type == dtStringC)
+          if (var->type == dtString || var->type == dtStringC)
             renameInstantiatedTypeString(sym, var);
           else if (immediate->const_kind == NUM_KIND_BOOL) {
             // Handle boolean types specially.
