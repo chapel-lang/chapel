@@ -189,6 +189,24 @@ module ChapelIO {
     return helper(val);
   }
  
+  pragma "no doc"
+  proc writerDeprecated() param {
+    compilerError("Writer deprecated: make writeThis argument generic");
+  }
+  pragma "no doc"
+  proc readerDeprecated() param {
+    compilerError("Reader deprecated: make readThis argument generic");
+  }
+
+  pragma "no doc"
+  class Writer {
+    param dummy = writerDeprecated();
+  }
+  pragma "no doc"
+  class Reader {
+    param dummy = readerDeprecated();
+  }
+
   // This routine is called in DefaultRectangular in order
   // to report an out of bounds access for a halt. A normal
   // call to halt with a tuple can't be made because of module
@@ -561,6 +579,11 @@ module ChapelIO {
   pragma "compiler generated"
   proc _cast(type t, x) where t == string && ! isPrimitiveType(x.type) {
     return stringify(x);
+  }
+
+  pragma "no doc"
+  proc ref string.write(args ...?n) {
+    compilerError("string.write deprecated: use string.format or stringify");
   }
 
   //
