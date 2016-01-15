@@ -254,6 +254,7 @@ symbolFlag( FLAG_WIDE_REF , npr, "wide" , ncm )
 symbolFlag( FLAG_WIDE_CLASS , npr, "wide class" , ncm )
 symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )
 symbolFlag( FLAG_WRAP_WRITTEN_FORMAL , npr, "wrap written formal" , "formal argument for wrapper for out/inout intent" )
+symbolFlag( FLAG_STRING_LITERAL_ID, npr, "string literal id" , "used to mark the global Chapel string resulting from a string literal")
 
 #undef ypr
 #undef npr
