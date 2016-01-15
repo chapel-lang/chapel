@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,7 @@ how to install libcurl, see the
 
 The environment variables CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS must be set to
 point to the include and lib directories for libcurl respectively. More
-information on these variables can be found in README.auxIO
+information on these variables can be found in auxIO.rst
 
 .. note::
 
@@ -75,7 +75,7 @@ Then, rebuild Chapel by executing 'make' from $CHPL_HOME:
 
 For information on how to enable and use Curl while also using other auxiliary
 IO extensions, as well as how to setup the CHPL_AUXIO_INCLUDE and
-CHPL_AUXIO_LIBS environment variables see doc/technotes/README.auxIO in a
+CHPL_AUXIO_LIBS environment variables see doc/technotes/auxIO.rst in a
 Chapel release.
 
 
@@ -427,7 +427,7 @@ record slist {
 proc slist.append(str:string) {
   var err: syserr = ENOERR;
   on this.home {
-    err = chpl_curl_slist_append(this.list, str.c_str());
+    err = chpl_curl_slist_append(this.list, str.localize().c_str());
   }
   if err then ioerror(err, "in slist.append()");
 }

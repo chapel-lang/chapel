@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include <bitset>
 #include <iostream>
 #include <vector>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -115,6 +116,9 @@ public:
 
   virtual void       codegenDef();
 
+  // Returns the scope block in which this symbol is declared.
+  BlockStmt*         getDeclarationScope()                     const;
+
   bool               hasFlag(Flag flag)                        const;
   bool               hasEitherFlag(Flag aflag, Flag bflag)     const;
 
@@ -147,6 +151,8 @@ private:
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
+
+bool isString(Symbol* symbol);
 
 /******************************** | *********************************
 *                                                                   *
@@ -513,8 +519,14 @@ class LabelSymbol : public Symbol {
 *                                                                   *
 ********************************* | ********************************/
 
+// Processes a char* to replace any escape sequences with the actual bytes
+std::string unescapeString(const char* const str);
+
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
+
+// Creates a new C string literal with the given value.
+VarSymbol *new_CStringSymbol(const char *s);
 
 // Creates a new boolean literal with the given value and bit-width.
 VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
@@ -568,12 +580,15 @@ bool argMustUseCPtr(Type* t);
 extern bool localTempNames;
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+extern HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 extern StringChainHash uniqueStringHash;
 
 extern ModuleSymbol* rootModule;
 extern ModuleSymbol* theProgram;
 extern ModuleSymbol* mainModule;
 extern ModuleSymbol* baseModule;
+extern ModuleSymbol* stringLiteralModule;
+extern FnSymbol* initStringLiterals;
 extern ModuleSymbol* standardModule;
 extern ModuleSymbol* printModuleInitModule;
 extern Symbol *gNil;
@@ -586,6 +601,7 @@ extern Symbol *gNoInit;
 extern Symbol *gVoid;
 extern Symbol *gStringC;
 extern Symbol *gStringCopy;
+extern Symbol *gCVoidPtr;
 extern Symbol *gFile;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
@@ -602,14 +618,13 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
-extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
 extern Symbol *gTaskList;
 
-extern Map<FnSymbol*,int> ftableMap;
+extern std::map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;
 
 //

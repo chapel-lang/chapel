@@ -1,0 +1,2 @@
+# Problem with C99 complex when optimizations with PGI are -O2 or higher.
+CHPL_TARGET_COMPILER <= pgi

@@ -12,7 +12,9 @@ proc foo() {
       writeln(x);
     }
   }
-  bar();
+  sync {  // make sure bar() is done before letting 'x' leave scope
+    bar();
+  }
 }
 
 foo();

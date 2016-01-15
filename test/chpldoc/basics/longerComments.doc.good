@@ -1,5 +1,5 @@
-Module: longerComments.doc
-   Module: longerComments.doc.Other
+longerComments.doc
+   longerComments.doc.Other
       proc inside
          This is a comment for a method inside of
          a module 

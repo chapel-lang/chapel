@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -73,13 +73,8 @@ IEEE_FLOAT_GEN_CFLAGS = -fno-fast-math
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
 ARCH := $(shell test -x /usr/bin/machine -a `/usr/bin/machine` = ppc970 && echo -arch ppc64)
-# -Wa,-q passes control over from the horribly outdated version of as to clang's
-#  as this is needed to set things like -march=native or else gcc will generate
-#  instructions as can't actually assemble.
-RUNTIME_CFLAGS += $(ARCH) -Wa,-q
-RUNTIME_CXXFLAGS += $(ARCH) -Wa,-q
 # the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
-GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH) -Wa,-q
+GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
 GEN_LFLAGS += $(ARCH)
 endif
 
@@ -115,6 +110,13 @@ WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasi
 # decl-after-stmt for non c99 compilers. See commit message 21665
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
+
+#
+# Don't warn for signed pointer issues (ex. c_ptr(c_char) )
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4; echo "$$?"),1)
+WARN_GEN_CFLAGS += -Wno-pointer-sign
+endif
 
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations

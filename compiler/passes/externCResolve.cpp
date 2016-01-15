@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -45,22 +45,25 @@ static int query_uid = 1;
 static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName=NULL) {
   //pointers
   if (type->isPointerType()) {
-    Expr* pointee = convertToChplType(module, type->getPointeeType().getTypePtr(), results);
-    if (UnresolvedSymExpr* se = toUnresolvedSymExpr(pointee)) {
-      const char* name = se->unresolved;
-      //Pointers to c_char must be converted to Chapel's C string type.
-      //Question: Should this only apply to const char*?
-      if ( 0 == strcmp(name, "c_char") )
-        return new UnresolvedSymExpr("c_string"); 
+    clang::QualType pointeeType = type->getPointeeType();
+
+    //Pointers to c_char must be converted to Chapel's C string type
+    // but only if they are const char*.
+    if ( pointeeType.isConstQualified() &&
+         pointeeType.getTypePtr()->isCharType() ) {
+      return new UnresolvedSymExpr("c_string"); 
     }
+
+    Expr* pointee = convertToChplType(module, pointeeType.getTypePtr(), results);
 
     // void *  generates as c_void_ptr.
     if(!pointee) {
       return new UnresolvedSymExpr("c_void_ptr");
     }
 
+
     //Pointers (other than char*) are represented as calls to
-    //_ddata(chapel_type).
+    // c_ptr(chapel_type).
     // PRIM_ACTUALS_LIST is not needed here.
     return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
 
@@ -195,27 +198,28 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
   //  avoid multiple Chapel definitions.
   if( alreadyConvertedExtern(module, name) ) return;
 
-  clang::NamedDecl* cdecl = NULL;
+  clang::TypeDecl* cType = NULL;
+  clang::ValueDecl* cValue = NULL;
   Type* chplType = NULL;
 
   // If we've got nothing... give up.
-  if(!lookupInExternBlock(module, name, &cdecl, &chplType)) return;
+  if(!lookupInExternBlock(module, name, &cType, &cValue, &chplType)) return;
 
   // Now, if we have no cdecl, it may be a macro.
-  if( ! cdecl ) {
+  if( (!cType) && (!cValue) ) {
     convertMacroToChpl(module, name, chplType, results);
     return;
   }
 
   //struct
-  if (clang::RecordDecl *rd = llvm::dyn_cast<clang::RecordDecl>(cdecl)) {
+  if (clang::RecordDecl *rd =
+      llvm::dyn_cast_or_null<clang::RecordDecl>(cType)) {
     results.add(convertToChplType(module, rd->getTypeForDecl(), results));
   }
 
   //enum constant
   if (clang::EnumConstantDecl *ed = 
-      llvm::dyn_cast<clang::EnumConstantDecl>(cdecl)) {
-    //results.add(convertToChplType(module, rd->getTypeForDecl(), results));
+      llvm::dyn_cast_or_null<clang::EnumConstantDecl>(cValue)) {
     VarSymbol* v = new VarSymbol(name);
     v->addFlag(FLAG_EXTERN);
     v->addFlag(FLAG_CONST);
@@ -224,14 +228,16 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
 
 
   //vars
-  else if (clang::VarDecl *vd = llvm::dyn_cast<clang::VarDecl>(cdecl)) {
+  if (clang::VarDecl *vd =
+      llvm::dyn_cast_or_null<clang::VarDecl>(cValue)) {
     VarSymbol* v = new VarSymbol(name);
     v->addFlag(FLAG_EXTERN);
     results.add(new DefExpr(v, NULL, convertToChplType(module, vd->getType().getTypePtr(), results)));
   }
 
   //typedefs
-  else if (clang::TypedefNameDecl *tdn = llvm::dyn_cast<clang::TypedefNameDecl>(cdecl)) {
+  if (clang::TypedefNameDecl *tdn =
+      llvm::dyn_cast_or_null<clang::TypedefNameDecl>(cType)) {
 
     bool do_typedef = true;
     const clang::Type* contents_type = tdn->getUnderlyingType().getTypePtr();
@@ -265,7 +271,10 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
     }
     
   //functions
-  } else if (clang::FunctionDecl *fd = llvm::dyn_cast<clang::FunctionDecl>(cdecl)) { 
+  }
+
+  if (clang::FunctionDecl *fd =
+      llvm::dyn_cast_or_null<clang::FunctionDecl>(cValue)) {
 #if HAVE_LLVM_VER >= 35
     clang::QualType resultType = fd->getReturnType();
 #else

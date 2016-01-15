@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -101,6 +101,17 @@ void chpl_task_setSubloc(c_sublocid_t subloc) {
 static inline
 c_sublocid_t chpl_task_getRequestedSubloc(void) {
   return c_sublocid_any;
+}
+
+
+#ifdef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
+#error "CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL is already defined!"
+#else
+#define CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL 1
+#endif
+static inline
+int chpl_task_supportsRemoteCache(void) {
+  return 1;
 }
 
 #endif

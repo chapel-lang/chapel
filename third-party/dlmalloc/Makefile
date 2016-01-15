@@ -13,7 +13,7 @@ endif
 default: all
 
 all: FORCE
-	cd src && $(MAKE) DLMALLOC_CFLAGS=$(CHPL_DLMALLOC_CFLAGS)
+	cd src && $(MAKE) CHPL_DLMALLOC_CFLAGS=$(CHPL_DLMALLOC_CFLAGS)
 
 clean: FORCE
 	rm -rf $(DLMALLOC_BUILD_SUBDIR)

@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -108,6 +108,11 @@ WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasi
 # decl-after-stmt for non c99 compilers. See commit message 21665
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
+
+#
+# Don't warn for signed pointer issues (ex. c_ptr(c_char) )
+#
+WARN_GEN_CFLAGS += -Wno-pointer-sign
 
 #
 # compiler warnings settings

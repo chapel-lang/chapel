@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,4 +30,5 @@
 #include "sys.h"
 #include "qio_plugin_hdfs.h"
 #include "qio_plugin_curl.h"
+#include "qio_popen.h"
 

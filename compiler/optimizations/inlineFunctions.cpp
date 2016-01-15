@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -122,6 +122,10 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
     if (!call->primitive) {
       return false;
     } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+      return false;
+    } else if (call->isPrimitive(PRIM_GET_REAL)) {
+      return false;
+    } else if (call->isPrimitive(PRIM_GET_IMAG)) {
       return false;
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,6 +52,7 @@
   typedef void* yyscan_t;
 
   int processNewline(yyscan_t scanner);
+  void stringBufferInit();
 
   #endif
 }
@@ -262,6 +263,7 @@
 %token <pch> REALLITERAL
 %token <pch> IMAGLITERAL
 %token <pch> STRINGLITERAL
+%token <pch> CSTRINGLITERAL
 %token <pch> EXTERNCODE
 
 //
@@ -274,7 +276,7 @@
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TON TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
-%token TRECORD TREDUCE TREF TRETURN
+%token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TWITH TYIELD TZIP
@@ -347,7 +349,7 @@
 %type <pblockstmt> block_stmt
 %type <pblockstmt> stmt_ls
 
-%type <pblockstmt> use_stmt
+%type <pblockstmt> use_stmt require_stmt
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -357,7 +359,7 @@
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> private_decl
 %type <pblockstmt> extern_block_stmt
-%type <pblockstmt> type_select_stmt return_stmt
+%type <pblockstmt> return_stmt
 
 %type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt
 %type <pblockstmt> enum_decl_stmt
@@ -426,13 +428,13 @@ stmt:
   module_decl_stmt
 | block_stmt
 | use_stmt
+| require_stmt
 | class_level_stmt
 | assignment_stmt
 | extern_block_stmt
 | if_stmt
 | loop_stmt
 | select_stmt
-| type_select_stmt
 | return_stmt
 | stmt_level_expr TSEMI                { $$ = buildChapelStmt($1); }
 | TATOMIC stmt                         { $$ = buildAtomicStmt($2); }
@@ -489,6 +491,10 @@ stmt_ls:
 
 use_stmt:
   TUSE expr_ls TSEMI                   { $$ = buildUseStmt($2); }
+;
+
+require_stmt:
+  TREQUIRE expr_ls TSEMI               { $$ = buildRequireStmt($2); }
 ;
 
 assignment_stmt:
@@ -646,11 +652,6 @@ when_stmt:
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $3); }
 | TOTHERWISE stmt
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $2); }
-;
-
-type_select_stmt:
-  TTYPE TSELECT expr_ls TLCBR when_stmt_ls TRCBR
-    { USR_FATAL($3, "'type select' is no longer supported. Use 'select'"); }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/
@@ -1485,6 +1486,7 @@ literal_expr:
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
+| CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR

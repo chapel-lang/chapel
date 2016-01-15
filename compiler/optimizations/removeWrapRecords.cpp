@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,16 +17,17 @@
  * limitations under the License.
  */
 
+#include "passes.h"
+
 #include "astutil.h"
 #include "expr.h"
 #include "optimizations.h"
-#include "passes.h"
 #include "resolveIntents.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
-#include "stlUtil.h"
 
 
 static Type* getWrapRecordBaseType(Type* type);
@@ -40,8 +41,8 @@ removeWrapRecords() {
   //
   // do not remove wrap records if dead code elimination is disabled
   // (or weakened because inlining or copy propagation is disabled)
-  // because code associated with accesses to the removed
-  // _valueType field will remain
+  // because code associated with accesses to the removed _valueType
+  // field will remain
   //
   if (fNoDeadCodeElimination || fNoInline || fNoCopyPropagation)
     return;
@@ -85,13 +86,14 @@ removeWrapRecords() {
   // Remove actuals bound to _valueType formals.
   //
   compute_call_sites();
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     for_formals(formal, fn) {
       if (!strcmp(formal->name, "_valueType")) {
         forv_Vec(CallExpr, call, *fn->calledBy) {
           formal_to_actual(call, formal)->remove();
         }
-      }        
+      }
     }
   }
 
@@ -125,7 +127,9 @@ removeWrapRecords() {
       if (!strcmp(formal->name, "_valueType")) {
         // Remove all uses of _valueType within the body of this function.
         std::vector<SymExpr*> symExprs;
+
         collectSymExprs(fn->body, symExprs);
+
         for_vector(SymExpr, se, symExprs) {
           // Ignore dead ones.
           if (se->parentSymbol == NULL)
@@ -137,8 +141,9 @@ removeWrapRecords() {
           Expr* stmt = se->getStmtExpr();
           stmt->remove();
         }
+
         formal->defPoint->remove();
-      }        
+      }
     }
   }
 
@@ -244,6 +249,6 @@ getWrapRecordBaseType(Type* type) {
       return vt->getField("_value")->type->refType;
     }
   }
+
   return NULL;
 }
-

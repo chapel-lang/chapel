@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -117,6 +117,11 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
 WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
+
+#
+# Don't warn for signed pointer issues (ex. c_ptr(c_char) )
+#
+WARN_GEN_CFLAGS += -Wno-pointer-sign
 
 #
 # compiler warnings settings

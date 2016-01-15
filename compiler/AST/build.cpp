@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,9 @@
 #include "type.h"
 
 static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
+static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
+                                  Expr* expr, Expr* cond, Expr* indices,
+                                  bool zippered, Expr*& stmt);
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -131,11 +134,6 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
           USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
         }
         fn->retTag = RET_TYPE;
-      } else if (flag == FLAG_DEFAULT_STRING_VALUE) {
-        INT_ASSERT(dtString->defaultValue==NULL);
-        INT_ASSERT(toVarSymbol(sym));
-        sym->type = dtString;
-        dtString->defaultValue = sym;
       }
     }
   }
@@ -184,29 +182,13 @@ static const char* toImmediateString(Expr* expr) {
 }
 
 
-static Expr* convertStringLiteral(Expr *e) {
-  if (toImmediateString(e) != NULL) {
-    return new CallExpr("toString", e);
-  } else {
-    return e;
-  }
-}
-
-static void convertStringLiteralArgList(CallExpr* call) {
-  // Automatically convert string literals into Chapel strings
-  for (int i = 1; i <= call->numActuals(); i++) {
-    call->argList.insertAtTail(convertStringLiteral(call->argList.head->remove()));
-  }
-}
-
 CallExpr* buildOneTuple(Expr* elem) {
-  return new CallExpr("_build_tuple", convertStringLiteral(elem));
+  return new CallExpr("_build_tuple", elem);
 }
 
 CallExpr* buildTuple(CallExpr* call) {
   // The call is expected to be a PRIM_ACTUALS_LIST.
   INT_ASSERT(call->isPrimitive(PRIM_ACTUALS_LIST));
-  convertStringLiteralArgList(call);
   return new CallExpr("_build_tuple", call);
 }
 
@@ -287,6 +269,10 @@ Expr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
 }
 
+Expr* buildCStringLiteral(const char* pch) {
+  return new SymExpr(new_CStringSymbol(pch));
+}
+
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   // The following optimization was added to avoid calling
@@ -319,7 +305,7 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
     return new CallExpr("chpl_localeID_to_locale",
                         new CallExpr(PRIM_WIDE_GET_LOCALE, base));
   else
-    return new CallExpr(".", base, new_StringSymbol(member));
+    return new CallExpr(".", base, new_CStringSymbol(member));
 }
 
 
@@ -337,7 +323,7 @@ static Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
                                 new CallExpr("isTrue", right),
                                 new SymExpr(gFalse));
 
-  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
+  VarSymbol* eMsg = new_CStringSymbol("cannot promote short-circuiting && operator");
 
   ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
                                   new CallExpr("compilerError", eMsg)));
@@ -358,7 +344,7 @@ static Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
                                new SymExpr(gTrue),
                                new CallExpr("isTrue", right));
 
-  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
+  VarSymbol* eMsg = new_CStringSymbol("cannot promote short-circuiting || operator");
 
   ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
                                   new CallExpr("compilerError", eMsg)));
@@ -397,7 +383,7 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 }
 
 //
-// Given a string literal argument from a 'use' statement, process
+// Given a string literal argument from a 'require' statement, process
 // that argument.  We assume it's either a "-llib" flag,
 // or a source filename like "foo.h", "foo.c", "foo.o", etc.  
 //
@@ -407,7 +393,7 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 // - Otherwise, assume it's the latter and pass it to our source file
 //   handler (which itself handles cases it doesn't recognize).
 //
-static void processStringInUseStmt(const char* str) {
+static void processStringInRequireStmt(const char* str) {
   if (strncmp(str, "-l", 2) == 0) {
     addLibInfo(str);
   } else {
@@ -427,17 +413,39 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   //
   for_actuals(expr, args) {
     Expr* useArg = expr->remove();
+    list = buildUseList(useArg, list);
+  }
+
+  //
+  // If all of them are consumed, replace the use statement by a no-op
+  //
+  if (list == NULL) {
+    list = buildChapelStmt(new CallExpr(PRIM_NOOP));
+  }
+  
+  return list;
+}
+
+
+//
+// Build a 'require' statement
+//
+BlockStmt* buildRequireStmt(CallExpr* args) {
+  BlockStmt* list = NULL;
+
+  //
+  // Iterate over the expressions being 'require'd, processing them
+  //
+  for_actuals(expr, args) {
+    Expr* useArg = expr->remove();
 
     //
-    // if this is a string argument to 'use', process it
+    // if this is a string argument to 'require', process it
     //
     if (const char* str = toImmediateString(useArg)) {
-      processStringInUseStmt(str);
+      processStringInRequireStmt(str);
     } else {
-      //
-      // Otherwise, handle it in the traditional way
-      //
-      list = buildUseList(useArg, list);
+      USR_FATAL(useArg, "'require' currently only accepts string literal arguments");
     }
   }
 
@@ -769,7 +777,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
     // we want to swap something like the below commented-out
     // statement with the compiler error statement but skyline
     // arrays are not yet supported...
-    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_StringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
+    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_CStringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
     //      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
     //                                          new CallExpr("chpl__buildArrayRuntimeType",
     //                                                       domain, expr->copy(),
@@ -806,18 +814,9 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
-  //
-  // build serial iterator function
-  //
-  FnSymbol* sifn = new FnSymbol(iteratorName);
-  sifn->addFlag(FLAG_ITERATOR_FN);
-  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
-  sifn->insertFormalAtTail(sifnIterator);
-  fn->insertAtHead(new DefExpr(sifn));
-  Expr* stmt = new CallExpr(PRIM_YIELD, expr);
-  if (cond)
-    stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  sifn->insertAtTail(ForLoop::buildForLoop(indices, new SymExpr(sifnIterator), new BlockStmt(stmt), false, zippered));
+  Expr* stmt = NULL; // Initialized by buldSerialIteratorFn
+  buildSerialIteratorFn(fn, iteratorName, expr, cond, indices, zippered, stmt);
+
   return new CallExpr(new DefExpr(fn));
 }
 
@@ -927,7 +926,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
-  Expr* stmt; // Initialized by buildSerialIteratorFn.
+  Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
   buildSerialIteratorFn(fn, iteratorName, expr, cond, indices, zippered, stmt);
   buildLeaderIteratorFn(fn, iteratorName, zippered);
   VarSymbol* followerIterator; // Initialized by buildFollowerIteratorFn.
@@ -1364,10 +1363,10 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     //
     VarSymbol* coforallCount = newTemp("_coforallCount");
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, body, true, zippered);
-    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
     block->insertAtHead(new DefExpr(coforallCount));
-    body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
+    body->insertAtHead(new CallExpr("_upEndCount", coforallCount, gFalse));
+    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, gFalse));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
     addByrefVars(onBlock, byref_vars);
@@ -1386,7 +1385,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, beginBlk, true, zippered);
-    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
     block->insertAtHead(new DefExpr(coforallCount));
     block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, coforallCount));
     beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
@@ -1538,7 +1537,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   serialBlock->insertAtTail(ForLoop::buildForLoop(new SymExpr(index),
                                                   new SymExpr(data),
                                                   new BlockStmt(new CallExpr(new CallExpr(".", globalOp,
-                                                                                          new_StringSymbol("accumulate")), index)),
+                                                                                          new_CStringSymbol("accumulate")), index)),
                                                   false,
                                                   zippered));
 
@@ -1599,7 +1598,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leadBlock, serialBlock));
 
   VarSymbol* result = new VarSymbol("result");
-  fn->insertAtTail(new DefExpr(result, new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("generate")))));
+  fn->insertAtTail(new DefExpr(result, new CallExpr(new CallExpr(".", globalOp, new_CStringSymbol("generate")))));
   fn->insertAtTail("'delete'(%S)", globalOp);
   fn->insertAtTail("'return'(%S)", result);
   return new CallExpr(new DefExpr(fn));
@@ -1714,13 +1713,13 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
     Expr* varCount = stmts->blockInfoGet()->get(2);
     tuple->var->defPoint->insertAfter(
       buildIfStmt(new CallExpr("!=", new CallExpr(".", tuple->remove(),
-                                                  new_StringSymbol("size")),
+                                                  new_CStringSymbol("size")),
                                varCount->remove()),
-                  new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+                  new CallExpr("compilerError", new_CStringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
 
     tuple->var->defPoint->insertAfter(
       buildIfStmt(new CallExpr("!", new CallExpr("isTuple", tuple->copy())),
-                  new CallExpr("compilerError", new_StringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
+                  new CallExpr("compilerError", new_CStringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
     stmts->blockInfoSet(NULL);
   }
   return stmts;
@@ -1736,6 +1735,21 @@ buildClassDefExpr(const char* name,
                   Flag        isExtern,
                   const char* docs) {
   AggregateType* ct = toAggregateType(type);
+  // Hook the string type in the modules
+  // We have to do this here so we can reason about dtString as soon as
+  // possible in the compiler. gatherWellKnownTypes runs too late to be of use
+  // to us.
+  if (strcmp("string", name) == 0) {
+    *dtString = *ct;
+    // These fields get overwritten with `ct` by the assignment. These fields are
+    // set to `this` by the AggregateType constructor so they should still be
+    // `dtString`. Fix them back up.
+    dtString->fields.parent = dtString;
+    dtString->inherits.parent = dtString;
+    gAggregateTypes.remove(gAggregateTypes.index(ct));
+    delete ct;
+    ct = dtString;
+  }
   INT_ASSERT(ct);
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);
@@ -1824,7 +1838,7 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
     buildLogicalAndExpr(
       new CallExpr("isTuple", base->copy()),
       new CallExpr("==", new_IntSymbol(i),
-        new CallExpr(".", base->copy(), new_StringSymbol("size"))));
+        new CallExpr(".", base->copy(), new_CStringSymbol("size"))));
 
   if (fn->where) {
     where = buildLogicalAndExpr(fn->where->body.head->remove(), where);
@@ -2090,7 +2104,7 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
   if (onBlock) {
-    body->insertAtHead(new CallExpr("_upEndCount"));
+    body->insertAtHead(new CallExpr("_upEndCount", gFalse));
     onBlock->insertAtTail(new CallExpr("_downEndCount"));
     onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_BEGIN_ON];
     addByrefVars(onBlock, byref_vars);
@@ -2116,7 +2130,7 @@ buildSyncStmt(Expr* stmt) {
   VarSymbol* endCountSave = newTemp("_endCountSave");
   block->insertAtTail(new DefExpr(endCountSave));
   block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_END_COUNT)));
-  block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc")));
+  block->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
   block->insertAtTail(stmt);
   block->insertAtTail(new CallExpr("_waitEndCount"));
   block->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_END_COUNT)));
@@ -2158,7 +2172,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     block->insertAtHead(new CallExpr("_upEndCount", cobeginCount));
   }
 
-  block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc")));
+  block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
   block->insertAtHead(new DefExpr(cobeginCount));
   block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, cobeginCount));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));

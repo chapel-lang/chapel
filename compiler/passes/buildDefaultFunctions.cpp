@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -226,7 +226,7 @@ static void build_getter(AggregateType* ct, Symbol *field) {
             Expr* arg2 = call->get(2);
             call->replace(new CallExpr(PRIM_GET_MEMBER,
                                        arg2->remove(),
-                                       new_StringSymbol(field->name)));
+                                       new_CStringSymbol(field->name)));
           }
         }
       }
@@ -285,7 +285,7 @@ static void build_getter(AggregateType* ct, Symbol *field) {
           new CallExpr("!=",
             new CallExpr(PRIM_GET_UNION_ID, _this),
               new_IntSymbol(field->id)),
-          new CallExpr("halt", new_StringSymbol("illegal union access")))));
+          new CallExpr("halt", new_CStringSymbol("illegal union access")))));
 
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
@@ -295,12 +295,12 @@ static void build_getter(AggregateType* ct, Symbol *field) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                   new CallExpr(PRIM_GET_MEMBER_VALUE,
                                                new SymExpr(_this),
-                                               new SymExpr(new_StringSymbol(field->name)))));
+                                               new SymExpr(new_CStringSymbol(field->name)))));
   else
     fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                   new CallExpr(PRIM_GET_MEMBER,
                                                new SymExpr(_this),
-                                               new SymExpr(new_StringSymbol(field->name)))));
+                                               new SymExpr(new_CStringSymbol(field->name)))));
 
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
@@ -461,7 +461,7 @@ static void build_chpl_entry_points() {
   // support them).
   //
   if (fMinimalModules == false) {
-    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
   }
 
@@ -677,7 +677,7 @@ static void build_enum_cast_function(EnumType* et) {
     CondStmt* otherwise =
       new CondStmt(new CallExpr(PRIM_WHEN),
                    new BlockStmt(new CallExpr("halt",
-                                 new_StringSymbol(errorString))));
+                                 new_CStringSymbol(errorString))));
     whenstmts->insertAtTail(otherwise);
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
   }
@@ -690,12 +690,12 @@ static void build_enum_cast_function(EnumType* et) {
   reset_ast_loc(def, et->symbol);
   normalize(fn);
 
-  // c_string to enumerated type cast function
+  // string to enumerated type cast function
   fn = new FnSymbol("_cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   arg1 = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg1->addFlag(FLAG_TYPE_VARIABLE);
-  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtStringC);
+  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
 
@@ -710,10 +710,10 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertAtTail(cond);
 
   fn->insertAtTail(new CallExpr("halt",
-                                new_StringSymbol("illegal conversion of string \\\""),
+                                new_CStringSymbol("illegal conversion of string \\\""),
                                 arg2,
-                                new_StringSymbol("\\\" to "),
-                                new_StringSymbol(et->symbol->name)));
+                                new_CStringSymbol("\\\" to "),
+                                new_CStringSymbol(et->symbol->name)));
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                 toDefExpr(et->constants.first())->sym));
@@ -780,7 +780,7 @@ static void build_record_assignment_function(AggregateType* ct) {
 
   if (externRecord) {
     fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
-    fn->addFlag(FLAG_TRIVIAL_ASSIGNMENT);
+    ct->symbol->addFlag(FLAG_POD);
     fn->addFlag(FLAG_INLINE);
   } else {
     for_fields(tmp, ct) {
@@ -789,8 +789,8 @@ static void build_record_assignment_function(AggregateType* ct) {
             !tmp->isParameter()               &&
             strcmp(tmp->name, "_promotionType"))
           fn->insertAtTail(new CallExpr("=",
-                                        new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
-                                        new CallExpr(".", arg2, new_StringSymbol(tmp->name))));
+                                        new CallExpr(".", arg1, new_CStringSymbol(tmp->name)),
+                                        new CallExpr(".", arg2, new_CStringSymbol(tmp->name))));
       }
     }
   }
@@ -839,7 +839,7 @@ static void build_extern_assignment_function(Type* type)
 
   FnSymbol* fn = new FnSymbol("=");
   fn->addFlag(FLAG_ASSIGNOP);
-  fn->addFlag(FLAG_TRIVIAL_ASSIGNMENT);
+  type->symbol->addFlag(FLAG_POD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
 
@@ -905,8 +905,8 @@ static void build_union_assignment_function(AggregateType* ct) {
               new CallExpr(PRIM_GET_UNION_ID, arg2),
               new_IntSymbol(tmp->id)),
             new CallExpr("=",
-              new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
-              new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
+              new CallExpr(".", arg1, new_CStringSymbol(tmp->name)),
+              new CallExpr(".", arg2, new_CStringSymbol(tmp->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
@@ -934,7 +934,7 @@ static void build_record_copy_function(AggregateType* ct) {
     if (!strcmp("_promotionType", tmp->name))
       continue;
 
-    CallExpr* init = new CallExpr(".", arg, new_StringSymbol(tmp->name));
+    CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
     call->insertAtTail(new NamedExpr(tmp->name, init));
 
     // Special handling for nested record types:
@@ -1073,7 +1073,7 @@ static void build_record_init_function(AggregateType* ct) {
                                       tmp,
                                       new CallExpr(PRIM_QUERY_PARAM_FIELD,
                                                    arg,
-                                                   new_StringSymbol(formal->name))));
+                                                   new_CStringSymbol(formal->name))));
         fn->insertAtHead(new DefExpr(tmp));
         call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
 
@@ -1083,7 +1083,7 @@ static void build_record_init_function(AggregateType* ct) {
                                       tmp,
                                       new CallExpr(PRIM_QUERY_TYPE_FIELD,
                                                    arg,
-                                                   new_StringSymbol(formal->name))));
+                                                   new_CStringSymbol(formal->name))));
         fn->insertAtHead(new DefExpr(tmp));
         call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
 
@@ -1108,7 +1108,7 @@ static void build_record_init_function(AggregateType* ct) {
                                           callTemp,
                                           new CallExpr(PRIM_GET_MEMBER_VALUE,
                                                        arg,
-                                                       new_StringSymbol(formal->name))));
+                                                       new_CStringSymbol(formal->name))));
 
             fn->insertAtTail(new CallExpr(PRIM_MOVE,
                                           typeTemp,
@@ -1185,7 +1185,6 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     if( hasReadWriteThis ) {
       fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
     } else {
-      //fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
       fn->insertAtTail(new CallExpr("writeThisDefaultImpl", fileArg, fn->_this));
     }
 
@@ -1215,7 +1214,6 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     if( hasReadWriteThis ) {
       fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
     } else {
-      //fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "readThisDefaultImpl"), fn->_this));
       fn->insertAtTail(new CallExpr("readThisDefaultImpl", fileArg, fn->_this));
     }
 
@@ -1232,7 +1230,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
 
 static void buildStringCastFunction(EnumType* et) {
-  if (function_exists("_cast", 2, dtStringC, et))
+  if (function_exists("_cast", 2, dtString, et))
     return;
 
   FnSymbol* fn = new FnSymbol("_cast");
@@ -1243,7 +1241,7 @@ static void buildStringCastFunction(EnumType* et) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
   arg->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr("==", t, dtStringC->symbol));
+  fn->where = new BlockStmt(new CallExpr("==", t, dtString->symbol));
 
   for_enums(constant, et) {
     fn->insertAtTail(

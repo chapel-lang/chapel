@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,7 +35,7 @@ environment variables must be set as described below in
 the flags are set. As well, the HDFS functionality is also dependent upon the
 ``CHPL_AUXIO_INCLUDE`` and ``CHPL_AUXIO_LIBS`` environment variables being set
 properly. For more information on how to set these properly, see 
-doc/technotes/README.auxIO in a Chapel release.
+doc/technotes/auxIO.rst in a Chapel release.
 
 
 Enabling HDFS Support
@@ -269,7 +269,7 @@ First reflect your directory structure and version numbers (etc) in the
 6. Set up Chapel to run in distributed mode:
 
    * You'll need to set up your Chapel environment to target multiple
-     locales in the standard way (see README.multilocale and the
+     locales in the standard way (see multilocale.rst and the
      "Settings to run Chapel on multiple nodes" section of the
      .bashrc below).
 
@@ -342,12 +342,9 @@ extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings
 pragma "no doc"
 extern type char_ptr_ptr;             // char**
 
-pragma "no doc"
-extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
-pragma "no doc"
-extern const hdfs_function_struct:qio_file_functions_t;
-pragma "no doc"
-extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
+private extern const QIO_LOCALE_MAP_PTR_T_NULL: qio_locale_map_ptr_t;
+private extern const hdfs_function_struct:qio_file_functions_t;
+private extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
 
 pragma "no doc"
 extern record hdfs_block_byte_map_t {
@@ -357,30 +354,24 @@ extern record hdfs_block_byte_map_t {
 }
 
 // Connect to HDFS
-pragma "no doc"
-extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr; 
+private extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr;
 
 // Disconnect from HDFS
-pragma "no doc"
-extern proc hdfs_disconnect(fs: c_void_ptr): syserr;
+private extern proc hdfs_disconnect(fs: c_void_ptr): syserr;
 
 // Allocate an array for our locale mappings
-pragma "no doc"
-extern proc hdfs_alloc_array(n: int): char_ptr_ptr;
+private extern proc hdfs_alloc_array(n: int): char_ptr_ptr;
 
 // Create a mapping locale_name -> locale_id (need this due to hdfs and since
 // we cant pass strings inside extern records when multilocale)
-pragma "no doc"
-extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name: c_string);
+private extern proc hdfs_create_locale_mapping(ref arr: char_ptr_ptr, num: int, loc_name: c_string);
 
 // Return arr[i]
-pragma "no doc"
-extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
+private extern proc hdfs_index_array(locs: qio_locale_map_ptr_t, i: int): hdfs_block_byte_map_t;
 
 // Get block owners.
 // Returns an array of hdfs_block_byte_map_t's
-pragma "no doc"
-extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
+private extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
 
 // ********* For multilocale ************
 /* Holds a file per locale */
@@ -412,10 +403,7 @@ proc hdfsChapelConnect(path: string, port: int): hdfsChapelFileSystem {
   forall loc in Locales {
     on loc {
       var err: syserr;
-      // TODO XXX: HACK: this accessing of locale.id copies the string onto this locale...
-      // If you get rid of this IT WILL BREAK. (at least as strings currently stand)
-      var hack = path.locale.id;
-      const tmpstr = path;
+      const tmpstr = path.localize();
       rcLocal(ret._internal_file) = hdfsChapelConnect(err, tmpstr.c_str(), port);
       if err then ioerror(err, "Unable to connect to HDFS", tmpstr);
     }
@@ -536,7 +524,7 @@ pragma "no doc"
 proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFileSystem_local{
   var ret:hdfsChapelFileSystem_local;
   ret.home = here;
-  error = hdfs_connect(ret._internal_, path.c_str(), port);
+  error = hdfs_connect(ret._internal_, path.localize().c_str(), port);
   return ret;
 }
 
@@ -546,7 +534,7 @@ proc getHosts(f: file) {
   var ret_num: c_int;
   var arr: char_ptr_ptr = hdfs_alloc_array(numLocales);
   for loc in Locales {
-    hdfs_create_locale_mapping(arr, loc.id, loc.name.c_str());
+    hdfs_create_locale_mapping(arr, loc.id, loc.name.localize().c_str());
   }
   var err = hdfs_get_owners(f._file_internal, ret._internal_, ret_num, arr, numLocales);
   if err then ioerror(err, "Unable to get owners for HDFS file");

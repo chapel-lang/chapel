@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,14 +30,16 @@ char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
 bool fDocsTextOnly = false;
 char fDocsSphinxDir[256] = "";
+bool fDocsHTML = true;
 
 // TODO: Whether or not to support this flag is an open discussion. Currently,
 //       it is not supported, so the flag is always true.
 //       (thomasvandoren, 2015-03-08)
 bool fDocsIncludeExterns = true;
+bool fDocsProcessUsedModules = false;
 
 
-void docsArgSetCommentLabel(const ArgumentState* arg_state, const char* label) {
+void docsArgSetCommentLabel(const ArgumentDescription* desc, const char* label) {
   assert(label != NULL);
   size_t len = strlen(label);
   if (len != 0) {
@@ -80,10 +82,13 @@ ArgumentDescription docs_arg_desc[] = {
  // {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
 
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
- {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
  {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
- {"text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
+ {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
+ {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+ {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
+ {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
+
 
  // TODO: Whether or not to support this flag is an open discussion. Currently,
  //       it is not supported, so the flag is always true.

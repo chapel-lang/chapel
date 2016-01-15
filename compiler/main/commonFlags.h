@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,8 +35,8 @@ extern bool fRungdb;
 extern bool fRunlldb;
 
 // Shared setter functions.
-void driverSetHelpTrue(const ArgumentState* state, const char* unused);
-void driverSetDevelSettings(const ArgumentState* state, const char* arg_unused);
+void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused);
+void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused);
 
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}

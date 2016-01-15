@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -77,6 +77,7 @@ public:
 
   // Interface to Expr
   virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+  virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
@@ -100,7 +101,7 @@ public:
 
   void                insertAtHead(Expr* ast);
   void                insertAtTail(Expr* ast);
-  void                insertAtTailBeforeGoto(Expr* ast);
+  void                insertAtTailBeforeFlow(Expr* ast);
 
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);
@@ -150,6 +151,7 @@ public:
   virtual void        verify();
   virtual void        accept(AstVisitor* visitor);
 
+  virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
@@ -193,6 +195,7 @@ class GotoStmt : public Stmt {
   virtual void        verify();
   virtual void        accept(AstVisitor* visitor);
 
+  virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
 
   const char*         getName();
@@ -217,6 +220,7 @@ public:
   // Interface to Expr
   virtual void        replaceChild(Expr* oldAst, Expr* newAst);
 
+  virtual Expr*       getFirstChild();
   virtual Expr*       getFirstExpr();
 
   // Local interface

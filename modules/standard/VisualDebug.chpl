@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -45,33 +45,51 @@ module VisualDebug
 
   private extern proc chpl_vdebug_pause ();
 
-  private extern proc chpl_vdebug_nolog ();
+  private extern proc chpl_vdebug_mark ();
 
 
-/* Tree "coforall procedure .... calls one of the above routines */
+/* Instead of using a "coforall l in Locales" which is an O(n) operation
+   at the present time, vis_op, hc_id2com, and VDebugTree implement
+   a hyper-cube broadcast tree to execute on all locales.  The vis_op
+   is used to select which of the above routine to run at each locale.
+   This code is O(log n), n the number of Locales.
+*/
 
 pragma "no doc"
   enum vis_op {v_start, v_stop, v_tag, v_pause};
 
-  private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0) {
-      var child = id * 2 + 1;
-      chpl_vdebug_nolog();
-      cobegin {
-         /* left */
-         if child < numLocales then
-             on Locales[child] do VDebugTree (what, name, time, child);
-         /* right */
-         if child+1 < numLocales then
-             on Locales[child+1] do VDebugTree (what, name, time, child+1);
+private iter hc_id2com ( id: int, off: int ) {
+   var offset = off;
+   var ix = 1;
+   while (offset > 0) {
+      yield (id+offset, ix);
+      offset = offset >> 1;
+      ix = ix + 1;
+   }
+}
+  
+private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
+                   n: int = numLocales, off: int = -1) {
+      var offset = 1;
+      if off < 0 then
+         while offset >> 1 + id < n do offset = offset << 1;
+      else
+         offset = off;
+
+      chpl_vdebug_mark();
+      coforall (rid, shift) in hc_id2com(id, offset) do
+         if rid < n then
+             on Locales[rid] do VDebugTree (what, name, time, rid, n, offset >> shift);
+
+     /* Do the op at the root  */
+     select what {
+         when vis_op.v_start    do chpl_vdebug_start (name.localize().c_str(), time);
+         when vis_op.v_stop     do chpl_vdebug_stop ();
+         when vis_op.v_tag      do chpl_vdebug_tag (name.localize().c_str());
+         when vis_op.v_pause    do chpl_vdebug_pause ();
      }
-         /* Do the op at the root  */
-         select what {
-            when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
-            when vis_op.v_stop     do chpl_vdebug_stop ();
-            when vis_op.v_tag      do chpl_vdebug_tag (name.c_str());
-            when vis_op.v_pause    do chpl_vdebug_pause ();
-         }
-  }
+}
+
 
 /* 
   Start logging events for VisualDebug.  Open a new set of data
@@ -86,7 +104,7 @@ pragma "no doc"
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();
     //coforall l in Locales do
-    //  on l do chpl_vdebug_start (rootname.c_str(), now);
+    //  on l do chpl_vdebug_start (rootname.localize().c_str(), now);
     VDebugTree (vis_op.v_start, rootname, now);
   }
 
@@ -97,8 +115,8 @@ pragma "no doc"
 */
   proc tagVdebug ( tagname : string ) {
     //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_tag (tagname.c_str(), 0);
-    //chpl_vdebug_tag (tagname.c_str(), 0);
+    //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 0);
+    //chpl_vdebug_tag (tagname.localize().c_str(), 0);
     VDebugTree (vis_op.v_tag, tagname, 0);
   }
 
@@ -117,8 +135,8 @@ pragma "no doc"
 */
   proc pauseVdebug () {
     //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_tag (tagname.c_str(), 1);
-    //chpl_vdebug_tag(tagname.c_str(), 1);
+    //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 1);
+    //chpl_vdebug_tag(tagname.localize().c_str(), 1);
     VDebugTree (vis_op.v_pause, "", 0);
   }
 

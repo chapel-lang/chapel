@@ -23,19 +23,33 @@ a \emph{domain map class}.
 Chapel provides a set of standard domain map classes.
 Users can create domain map classes as well.
 
-%REVIEW: vass: I am proposing to present the roadmap using bullets.
-% This is shorter and more visual, so should be easier to read/comprehend.
-% Ideally we should make the vertical spacing tighter.
 Domain maps are presented as follows:
 \begin{itemize}
+
 \item domain maps for domain types \rsec{Domain_Maps_For_Types},
       domain values \rsec{Domain_Maps_For_Values}, and
       arrays \rsec{Domain_Maps_For_Arrays}
+
 \item domain maps are not retained upon domain assignment
       \rsec{Domain_Maps_Not_Assigned}
-\item standard layouts \rsec{Standard_Layouts}
-\item standard distributions \rsec{Standard_Distributions}
-\item user-defined domain maps \rsec{User_Defined_Domain_Maps}
+
+\item standard layouts and distributions, such as Block and Cyclic,
+are documented under \emph{Standard Library}
+in Cray Chapel online documentation here:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+% Should this be "craychapel"?
+\url{http://chapel.cray.com/docs/latest/}
+
+\item specification of user-defined domain maps is forthcoming;
+please refer to the \emph{Domain Map Standard Interface} page
+under \emph{Technical Notes}
+in Cray Chapel online documentation here:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+% Should this be "craychapel"?
+\url{http://chapel.cray.com/docs/latest/}
+
 \end{itemize}
 
 
@@ -98,8 +112,11 @@ var MyBlockDist: dmap(Block(rank=2));
 \end{chapel}
 declares a variable capable of storing dmap values
 for a two-dimensional Block distribution.
-The Block distribution is described in more
-detail in~\rsec{Block_Dist}.
+The Block distribution is described in more detail here:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+% Should this be "craychapel"?
+\url{http://chapel.cray.com/docs/latest/}
 \end{example}
 
 \begin{example}

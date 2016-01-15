@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,13 @@
 #include "symbol.h"
 
 
-// getTheIteratorFn(): get the corresponding original iterator's FnSymbol.
+//
+// getTheIteratorFn(): get the original (user-written) iterator function
+// that corresponds to an _iteratorClass type or symbol
+// or a CallExpr therewith. Its uses were simply:
+//
+//   ... ->defaultInitializer->getFormal(1)->type->defaultInitializer
+//
 
 // 'ic' must be an instance of _iteratorClass
 FnSymbol* getTheIteratorFn(Symbol* ic) {
@@ -44,22 +50,25 @@ FnSymbol* getTheIteratorFn(CallExpr* call) {
   return getTheIteratorFn(call->get(1)->typeInfo());
 }
 
-// getTheIteratorFn() - was:
-//   ...->defaultInitializer->getFormal(1)->type->defaultInitializer
-//
-// * _iteratorClass's defaultInitializer's first arg type is _iteratorRecord
-// * _iteratorRecord type's defaultInitializer gives us the iterator
-//
-FnSymbol* getTheIteratorFn(Type* icType) {
-  // either an IC or a tuple thereof
+// either an _iteratorClass type or a tuple thereof
+FnSymbol* getTheIteratorFn(Type* icType)
+{
   // the asserts document the current state
   bool gotTuple = icType->symbol->hasFlag(FLAG_TUPLE);
   INT_ASSERT(gotTuple || icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-  Type* irType = icType->defaultInitializer->getFormal(1)->type;
+
+  // The _getIterator function is in _iteratorClass's defaultInitializer.
+  FnSymbol* getIterFn = icType->defaultInitializer;
+
+  // The type of _getIterator's first formal arg is _iteratorRecord.
+  Type* irType = getIterFn->getFormal(1)->type;
   INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
              (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
+
+  // The original iterator function is in _iteratorRecord's defaultInitializer.
   FnSymbol* result = irType->defaultInitializer;
   INT_ASSERT(gotTuple || result->hasFlag(FLAG_ITERATOR_FN));
+
   return result;
 }
 
@@ -533,7 +542,7 @@ createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   if (addedRecursiveCall) {
     Symbol* cond = newTemp("cond", dtBool);
     argBundleFreeFn->insertAtHead(new CondStmt(new SymExpr(cond), block));
-    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap[loopBodyFnWrapper]))));
     argBundleFreeFn->insertAtHead(new DefExpr(cond));
   }
 }
@@ -633,7 +642,7 @@ createArgBundleCopyFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   //  { <body_as_defined_above> }
   Symbol* cond = newTemp(dtBool);
   argBundleCopyFn->insertBeforeReturn(new DefExpr(cond));
-  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap[loopBodyFnWrapper]))));
   argBundleCopyFn->insertBeforeReturn(new CondStmt(new SymExpr(cond), block));
 }
 
@@ -834,61 +843,9 @@ static void localizeIteratorReturnSymbols() {
   }
 }
 
-
-//
-// Convert:
-// (248842 CallExpr move
-//   (248843 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//   (248839 CallExpr
-//     (838015 SymExpr 'fn =[835984]:[domain(...)] int(64)[803094]')
-//     (248841 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//     (193499 SymExpr 'p[113796]:[domain(...)] int(64)[803094]'))
-// to:
-// (248842 CallExpr move
-//   (248843 SymExpr 'ret[248825]:[domain(...)] int(64)[803094]')
-//   (193499 SymExpr 'p[113796]:[domain(...)] int(64)[803094]'))
-//
-static void
-yieldArraysByRef() {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    // The ifs are ordered with simpler checks first.
-    // Watch out for *initializations* of 'ret' - they look similar.
-    if (call->isPrimitive(PRIM_MOVE)) {
-      if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
-        if (fn->isIterator() &&
-            fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
-        {
-          Symbol* ret = fn->getReturnSymbol();
-          INT_ASSERT(ret);
-          if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-            if (SymExpr* dest = toSymExpr(call->get(1))) {
-              if (dest->var == ret) {
-                CallExpr* source = toCallExpr(call->get(2));
-                INT_ASSERT(source);
-                FnSymbol* sourceFun = source->isResolved();
-                INT_ASSERT(sourceFun);
-                INT_ASSERT(!strcmp(sourceFun->name, "="));
-                SymExpr* sourceArg1 = toSymExpr(source->get(1));
-                INT_ASSERT(sourceArg1);
-                INT_ASSERT(sourceArg1->var == ret);
-                Expr* sourceArg2 = source->get(2);
-                INT_ASSERT(sourceArg2);
-                // OK, got it. Do the replacement.
-                source->replace(sourceArg2->remove());
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-
 // processIteratorYields is a separate pass, called before flattenFunctions.
 // TODO: Move this and supporting functions into their own source file.
 void processIteratorYields() {
-  yieldArraysByRef();
   localizeIteratorReturnSymbols();
 }
 
@@ -1093,7 +1050,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   parent->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
 
   ftableVec.add(loopBodyFnWrapper);
-  ftableMap.put(loopBodyFnWrapper, ftableVec.n-1);
+  ftableMap[loopBodyFnWrapper] = ftableVec.n-1;
 
   //
   // insert a call to the iterator function (using iterator as a
@@ -1104,7 +1061,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   //
   Symbol*    ic             = forLoop->iteratorGet()->var;
   FnSymbol*  iterator       = getTheIteratorFn(ic);
-  CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
+  CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap[loopBodyFnWrapper]));
 
   // replace function in iteratorFnCall with iterator function once that is created
   CallExpr*  loopBodyFnCall = new CallExpr(loopBodyFn, gVoid);
@@ -1835,7 +1792,7 @@ expandForLoop(ForLoop* forLoop) {
 
           forLoop->insertAtHead(new CondStmt(new SymExpr(isFinished),
                                              new CallExpr(PRIM_RT_ERROR,
-                                                          new_StringSymbol("zippered iterations have non-equal lengths"))));
+                                                          new_CStringSymbol("zippered iterations have non-equal lengths"))));
 
           forLoop->insertAtHead(new CallExpr(PRIM_MOVE, isFinished, new CallExpr(PRIM_UNARY_LNOT, hasMore)));
 
@@ -1843,7 +1800,7 @@ expandForLoop(ForLoop* forLoop) {
 
           forLoop->insertAfter(new CondStmt(new SymExpr(hasMore),
                                             new CallExpr(PRIM_RT_ERROR,
-                                                         new_StringSymbol("zippered iterations have non-equal lengths"))));
+                                                         new_CStringSymbol("zippered iterations have non-equal lengths"))));
 
           forLoop->insertAfter(buildIteratorCall(hasMore, HASMORE, iterators.v[i], children));
         }
@@ -1922,15 +1879,7 @@ inlineIterators() {
 
     if (ForLoop* forLoop = toForLoop(block)) {
       Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
-      // The _getIterator function is stashed in the defaultInitializer field
-      // of the iterator class.
-      FnSymbol* getIterFn = iterator->type->defaultInitializer;
-      // The operand of the getIterator function is an iterator record.
-      Type* irecord = getIterFn->getFormal(1)->type;
-      // The original iterator function is stored in the defaultInitializer
-      // field of an iterator record.
-      FnSymbol* ifn      = irecord->defaultInitializer;
-
+      FnSymbol* ifn = getTheIteratorFn(iterator);
       if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
         // The Boolean return value from expandIteratorInline() is being
         // ignored here, which means that forLoop might not have been replaced.

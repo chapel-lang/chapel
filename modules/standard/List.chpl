@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -79,7 +79,7 @@ record list {
   /*
     Append `e` to the list.
    */
-  proc append(e : eltType) {
+  proc ref append(e : eltType) {
     if last {
       last.next = new listNode(eltType, e);
       last = last.next;
@@ -135,7 +135,7 @@ record list {
   /*
     Remove the first encountered instance of `x` from the list.
    */
-  proc remove(x: eltType) {
+  proc ref remove(x: eltType) {
     var tmp = first,
         prev: first.type = nil;
     while tmp != nil && tmp.data != x {

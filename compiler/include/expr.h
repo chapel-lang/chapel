@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,12 +45,17 @@ public:
   virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
 
+  virtual Expr*   getFirstChild()                                      = 0;
+
   virtual Expr*   getFirstExpr()                                       = 0;
   virtual Expr*   getNextExpr(Expr* expr);
 
   virtual bool    isNoInitExpr()                                     const;
 
   virtual void    prettyPrint(std::ostream* o);
+
+  /* Returns true if the given expression is contained by this one. */
+  bool            contains(const Expr* expr)                         const;
 
   bool            isModuleDefinition();
 
@@ -66,6 +71,8 @@ public:
 
   bool            isStmtExpr()                                       const;
   Expr*           getStmtExpr();
+
+  BlockStmt*      getScopeBlock();
 
   Symbol*         parentSymbol;
   Expr*           parentExpr;
@@ -97,6 +104,8 @@ public:
 
   virtual GenRet  codegen();
 
+  virtual Expr*   getFirstChild();
+
   virtual Expr*   getFirstExpr();
 
   const char*     name()                               const;
@@ -124,6 +133,8 @@ class SymExpr : public Expr {
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
 
+  virtual Expr*   getFirstChild();
+
   virtual Expr*   getFirstExpr();
 };
 
@@ -143,6 +154,8 @@ class UnresolvedSymExpr : public Expr {
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
 
+  virtual Expr*   getFirstChild();
+
   virtual Expr*   getFirstExpr();
 };
 
@@ -161,13 +174,13 @@ class CallExpr : public Expr {
   bool square; // true if call made with square brackets
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   ~CallExpr();
 
   virtual void    verify();
@@ -182,6 +195,8 @@ class CallExpr : public Expr {
   virtual void    prettyPrint(std::ostream* o);
   virtual Type*   typeInfo();
 
+  virtual Expr*   getFirstChild();
+
   virtual Expr*   getFirstExpr();
   virtual Expr*   getNextExpr(Expr* expr);
 
@@ -195,8 +210,9 @@ class CallExpr : public Expr {
   Expr*           get(int index);
   FnSymbol*       findFnSymbol();
 
-  bool            isPrimitive(PrimitiveTag primitiveTag);
-  bool            isPrimitive(const char*  primitiveName);
+  bool            isPrimitive()                                          const;
+  bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
+  bool            isPrimitive(const char*  primitiveName)                const;
 };
 
 class NamedExpr : public Expr {
@@ -215,6 +231,8 @@ class NamedExpr : public Expr {
   virtual Type*   typeInfo();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
+
+  virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
 };

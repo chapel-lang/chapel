@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -340,37 +340,76 @@ static ModuleSymbol* getUsedModule(Expr* expr) {
   return getUsedModule(call->get(1), call);
 }
 
+
+//
+// Helper routine to factor some 'use' error messages into a single place
+//
+static void printModuleUseError(CallExpr* useExpr, 
+                                Symbol* sym = NULL) {
+  if (sym && !sym->isImmediate()) {
+    if (sym->name) {
+      USR_FATAL(useExpr, "'use' of non-module symbol %s", sym->name);
+    } else {
+      USR_FATAL(useExpr, "'use' of non-module symbol");
+    }
+  } else {
+    USR_FATAL(useExpr, "'use' statements must refer to module symbols "
+              "(e.g., 'use <module>[.<submodule>]*;')");
+  }
+  return;
+}
+
+
+//
+// if the symbol in question is a module symbol return it; otherwise,
+// generate an error.
+//
+static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* symbol) {
+  if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
+    return mod;
+  } else {
+    printModuleUseError(useExpr, symbol);
+    return NULL;
+  }
+}
+
 //
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
-  ModuleSymbol* mod    = NULL;
-  Symbol*       symbol = NULL;
-
+  //
+  // This handles the simple case of 'use <symbol>' (as well as error
+  // cases that try to use non-module symbols)
+  //
   if (SymExpr* sym = toSymExpr(expr)) {
-    Symbol* symbol = sym->var;
-
-    mod = toModuleSymbol(symbol);
-
-    if (symbol && !mod) {
-      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
+    if (Symbol* symbol = sym->var) {
+      return getUsedModuleSymbol(useCall, symbol);
+    } else {
+      printModuleUseError(useCall);
+      return NULL;
     }
 
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    Symbol* symbol = lookup(useCall, sym->unresolved);
-
-    mod = toModuleSymbol(symbol);
-
-    if (symbol && !mod) {
-      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
-    } else if (!symbol) {
+    //
+    // This case handles the (common) case that we're 'use'ing a
+    // symbol that we have not yet resolved.
+    //
+    if (Symbol* symbol = lookup(useCall, sym->unresolved)) {
+      return getUsedModuleSymbol(useCall, symbol);
+    } else {
       USR_FATAL(useCall, "Cannot find module '%s'", sym->unresolved);
+      return NULL;
     }
 
-  } else if(CallExpr* call = toCallExpr(expr)) {
+  }  else if (CallExpr* call = toCallExpr(expr)) {
+    //
+    // This handles the case of 'use <symbol>.<symbol>' (as well as
+    // error cases in which other expressions than '.' are used)
+    //
+
     if (!call->isNamed("."))
-      USR_FATAL(useCall, "Bad use statement in getUsedModule");
+      printModuleUseError(useCall);
 
     ModuleSymbol* lhs = getUsedModule(call->get(1), useCall);
 
@@ -386,19 +425,21 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
     if (!get_string(rhs, &rhsName))
       INT_FATAL(useCall, "Bad use statement in getUsedModule");
 
-    symbol = lookup(lhs->block, rhsName);
-    mod    = toModuleSymbol(symbol);
-
-    if (symbol && !mod) {
-      USR_FATAL(useCall, "Illegal use of non-module %s", symbol->name);
-    } else if (!symbol) {
+    if (Symbol* symbol = lookup(lhs->block, rhsName)) {
+      return getUsedModuleSymbol(useCall, symbol);
+    } else {
       USR_FATAL(useCall, "Cannot find module '%s'", rhsName);
+      return NULL;
     }
-  } else {
-    INT_FATAL(useCall, "Bad use statement in getUsedModule");
-  }
 
-  return mod;
+  } else {
+    //
+    // This is a general fall-through case that I suspect we may never
+    // reach, but better safe than sorry...
+    //
+    printModuleUseError(useCall);
+    return NULL;
+  }
 }
 
 /************************************ | *************************************
@@ -647,7 +688,7 @@ static void build_type_constructor(AggregateType* ct) {
         fn->insertAtTail(
           new BlockStmt(
             new CallExpr(PRIM_SET_MEMBER, fn->_this, 
-              new_StringSymbol(field->name),
+              new_CStringSymbol(field->name),
               new CallExpr(PRIM_TYPE_INIT, exprType->remove())),
             BLOCK_TYPE));
 
@@ -668,14 +709,14 @@ static void build_type_constructor(AggregateType* ct) {
           if (field->hasFlag(FLAG_PARAM) || field->isType())
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
-                                          new_StringSymbol(field->name), arg));
+                                          new_CStringSymbol(field->name), arg));
 
           else if (arg->type == dtAny &&
                    !ct->symbol->hasFlag(FLAG_REF))
             // It would be nice to be able to remove this case.
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
-                                          new_StringSymbol(field->name),
+                                          new_CStringSymbol(field->name),
                                           new CallExpr("chpl__initCopy",
                                                        new CallExpr(PRIM_TYPE_INIT, arg))));
           #if 0
@@ -684,45 +725,22 @@ static void build_type_constructor(AggregateType* ct) {
           else
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
-                                          new_StringSymbol(field->name),
+                                          new_CStringSymbol(field->name),
                                           new CallExpr(PRIM_TYPE_INIT, arg)));
           #endif
         } else if (exprType) {
           CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
                                            fn->_this,
-                                           new_StringSymbol(field->name),
+                                           new_CStringSymbol(field->name),
                                            newInit);
           fn->insertAtTail(newSet);
 
         } else if (init) {
-          // Non-param fields initialized with a string literal but
-          // without a type are assumed to be of type string.  Note
-          // that we do this for other functions/methods in
-          // fix_def_expr() in normalize.cpp.
-          if ((toSymExpr(init) &&
-               (toSymExpr(init)->typeInfo() == dtStringC)) &&
-              !field->hasFlag(FLAG_PARAM)) {
-
-            // Put in an explicit type expression for string
-            exprType = new UnresolvedSymExpr("string");
-
-            field->defPoint->exprType = exprType;
-            insert_help(exprType, init->parentExpr, init->parentSymbol);
-
-            // Now do the same as above in the 'if (exprType)' case
-            CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
-            CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
-                                             fn->_this,
-                                             new_StringSymbol(field->name),
-                                             newInit);
-            fn->insertAtTail(newSet);
-          } else {
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_StringSymbol(field->name),
-                                          new CallExpr("chpl__initCopy", init->copy())));
-          }
+          fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+                                        fn->_this,
+                                        new_CStringSymbol(field->name),
+                                        new CallExpr("chpl__initCopy", init->copy())));
         }
       }
     }
@@ -749,7 +767,7 @@ static void build_type_constructor(AggregateType* ct) {
     ct->fields.insertAtTail(new DefExpr(outer));
     fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
                                   fn->_this,
-                                  new_StringSymbol("outer"),
+                                  new_CStringSymbol("outer"),
                                   fn->_outer));
 
     ct->outer = outer;
@@ -898,7 +916,7 @@ static void build_constructor(AggregateType* ct) {
                        tmp,
                        new CallExpr(PRIM_GET_MEMBER_VALUE,
                                     fn->_this,
-                                    new_StringSymbol("super"))));
+                                    new_CStringSymbol("super"))));
       }
     }
   }
@@ -1000,7 +1018,7 @@ static void build_constructor(AggregateType* ct) {
         !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, 
                                     fn->_this, 
-                                    new_StringSymbol(arg->name),
+                                    new_CStringSymbol(arg->name),
                                     new CallExpr("chpl__initCopy", arg)));
     else
       // Since we don't copy the argument before stuffing it in a field,
@@ -1011,7 +1029,7 @@ static void build_constructor(AggregateType* ct) {
       // (See NOTE 1 in callDestructors.cpp.)
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, 
                                     fn->_this, 
-                                    new_StringSymbol(arg->name),
+                                    new_CStringSymbol(arg->name),
                                     arg));
   }
 
@@ -1028,7 +1046,7 @@ static void build_constructor(AggregateType* ct) {
     // Save the pointer to the outer class
     fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                   fn->_this,
-                                  new_StringSymbol("outer"),
+                                  new_CStringSymbol("outer"),
                                   fn->_outer));
   }
 
@@ -1043,6 +1061,10 @@ static void build_constructor(AggregateType* ct) {
       if (method->numFormals() == 2) {
         CallExpr* init = new CallExpr("initialize", gMethodToken, fn->_this);
         fn->insertAtTail(init);
+        // If a record type has an initialize method, it's not Plain Old Data.
+        if (!isClass(ct)) {
+          ct->symbol->addFlag(FLAG_NOT_POD);
+        }
         break;
       }
     }
@@ -1376,24 +1398,24 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                   if (i < nestDepth) {
                     dot = new CallExpr(".",
                                        method->_this,
-                                       new_StringSymbol("outer"));
+                                       new_CStringSymbol("outer"));
                   } else {
                     if (isTypeSymbol(sym))
                       dot = new CallExpr(".", method->_this, sym);
                     else
                       dot = new CallExpr(".",
                                          method->_this,
-                                         new_StringSymbol(name));
+                                         new_CStringSymbol(name));
                   }
                 } else {
                   if (i < nestDepth) {
                     dot = new CallExpr(".",
-                                       dot, new_StringSymbol("outer"));
+                                       dot, new_CStringSymbol("outer"));
                   } else {
                     if (isTypeSymbol(sym))
                       dot = new CallExpr(".", dot, sym);
                     else
-                      dot = new CallExpr(".", dot, new_StringSymbol(name));
+                      dot = new CallExpr(".", dot, new_CStringSymbol(name));
                   }
                 }
               }
@@ -1877,6 +1899,17 @@ static Symbol* inType(BaseAST* scope, const char* name) {
   return NULL;
 }
 
+// Returns true if the symbol is already present in the vector, false otherwise
+static bool isRepeat(std::vector<Symbol* >& symbols, Symbol* toAdd) {
+  for (std::vector<Symbol* >::iterator it = symbols.begin();
+       it != symbols.end(); ++it) {
+    if (*it == toAdd) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Assumes that symbols contains nothing before entering this function
 static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
                                    std::vector<Symbol* >& symbols,
@@ -1891,7 +1924,6 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
         // symbols
         if (!sym->isVisible(callingContext)) {
           rejectedPrivateIds.insert(sym->id);
-          USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, sym->stringLoc());
         } else {
           symbols.push_back(sym);
         }
@@ -1902,17 +1934,10 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
   }
 
   if (Symbol* sym = inType(scope, name)) {
-    if (symbols.size() == 1) {
-      if (symbols.front() == sym) {
-        // Upon entrance to this function, symbols.size() should be 0
-        // The previous if statement will add at most 1 element
-        // If that element does not match this field/method we just found,
-        // then there is actually a conflict, so it should be added (which
-        // continuing through the if statement will allow).  Otherwise, we're
-        // looking at the exact same Symbol, so there's no need to add it and
-        // we can just return.
-        return true;
-      }
+    if (isRepeat(symbols, sym)) {
+      // If we're looking at the exact same Symbol, there's no need to add it
+      // and we can just return.
+      return true;
     }
     // When methods and fields can be private, need to check against the
     // rejected private symbols here.  But that's in the future.
@@ -1958,13 +1983,16 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
                   // private symbols
                   if (!sym->isVisible(callingContext)) {
                     rejectedPrivateIds.insert(sym->id);
-                    USR_WARN(callingContext, "A visible '%s' is an inaccessible private symbol, defined at:\n %s", name, sym->stringLoc());
                   } else {
-                    symbols.push_back(sym);
+                    if (!isRepeat(symbols, sym)) {
+                      symbols.push_back(sym);
+                    }
                   }
                 }
                 // If it was already rejected, we don't want to add it.
-              } else {
+
+              } else if (!isRepeat(symbols, sym)) {
+                // Don't want to add if the symbol itself was already present.
                 symbols.push_back(sym);
               }
             }

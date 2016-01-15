@@ -91,8 +91,8 @@ specified filename.  If the resulting name is not a legal Chapel
 identifier, it cannot be referenced in a use statement.
 
 \begin{chapelexample}{implicit.chpl}
-The following file, named myModule.chpl, defines an implicitly named
-module called myModule.
+The following file, named implicit.chpl, defines an implicitly named
+module called implicit.
 \begin{chapel}
 var x: int = 0;
 var y: int = 1;
@@ -112,7 +112,7 @@ printY();
 0
 1
 \end{chapeloutput}
-Module myModule defines the top-level module symbols x, y, printX, and
+Module implicit defines the top-level module symbols x, y, printX, and
 printY.
 \end{chapelexample}
 
@@ -155,8 +155,8 @@ Files with both module declarations and top-level statements result in
 nested modules.
 
 \begin{chapelexample}{nested.chpl}
-The following file, named myModule.chpl, defines an
-implicitly named module called myModule, with nested modules
+The following file, named nested.chpl, defines an
+implicitly named module called nested, with nested modules
 MX and MY.
 \begin{chapel}
 module MX {
@@ -211,13 +211,15 @@ of~\rsec{Visibility_Of_Symbols}. There, the nested module is
 considered a "symbol defined at the top level scope" of its outer
 module.
 
-\subsection{Visibility Of Module's Symbols}
+\subsection{Visibility Of A Module's Symbols}
 \label{Visibility_Of_Symbols}
 \index{modules!access}
 
 A symbol defined at the top level scope of a module is \emph{visible}
 from outside the module when the \sntx{privacy-specifier} of its
-definition is \chpl{public} or is omitted (i.e. by default).  A
+definition is \chpl{public} or is omitted (i.e. by default). When a
+symbol defined at the top level scope of a module is declared
+\chpl{private}, it is not visible outside of that module. A
 symbol's visibility inside its module is controlled by normal lexical
 scoping and is not affected by its \sntx{privacy-specifier}.  A
 module's visible symbols are accessible via explicit

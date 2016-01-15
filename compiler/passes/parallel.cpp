@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,6 @@
 //
 // MHA and IWR take care of the following, among others:
 // - heap allocation for remote access
-// - heap allocation for 'begin'
 // - change acces to variable -> access to its ._value
 // - set up wide references
 // - broadcasting of globals
@@ -67,12 +66,6 @@
 //    requireWideReferences()
 // - for a local - in MHA, if:
 //    needHeapVars() && the local can be passed to an 'on'
-//
-// Heap allocation for 'begin' is done:
-// - for globals - n/a
-//    see above instead
-// - for a local - in MHA, if:
-//    the local can be passed to a 'begin'
 //
 // Change acces to variable -> access to its ._value
 // - for globals - in MHA, if:
@@ -105,7 +98,7 @@ static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 static void insertEndCounts();
 static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions);
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn);
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
@@ -171,7 +164,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 ///
 /// This routine optionally inserts an autoCopy ahead of each invocation of a
 /// task function that begins asynchronous execution (currently just "begin" and
-/// "nonblocking on" functions).  
+/// "nonblocking on" functions).
 /// If such an autoCopy call is inserted, a matching autoDestroy call is placed
 /// at the end of the tasking routine before the call to _downEndCount.  Since a
 /// tasking function may be called from several call sites, the task function is
@@ -187,21 +180,22 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 /// \param firstCall Should be set to \p true for the first invocation of a
 /// given task function and \p false thereafter.
 /// \ret Returns the result of calling autoCopy on the given arg, if necessary;
-/// otherwise, just returns 
+/// otherwise, just returns
 static Symbol* insertAutoCopyDestroyForTaskArg
   (Expr* arg, ///< The actual argument being passed.
    CallExpr* fcall, ///< The call that invokes the task function.
    FnSymbol* fn, ///< The task function.
    bool firstCall)
 {
-  SymExpr* s = toSymExpr(arg);
-  Symbol* var = s->var;
+  SymExpr* s        = toSymExpr(arg);
+  Symbol*  var      = s->var;
+  Type*    baseType = arg->getValType();
 
-  // This applies only to arguments being passed to asynchronous task functions.
-  // No need to increment+decrement the reference counters for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN))
+  // This applies only to arguments being passed to asynchronous task
+  // functions. No need to increment+decrement the reference counters
+  // for cobegins/coforalls.
+  if (fn->hasFlag(FLAG_BEGIN) || isString(baseType))
   {
-    Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
 
@@ -255,7 +249,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         insertReferenceTemps(autoDestroyCall);
       }
     }
-    else if (isRecord(baseType))
+
+    else if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
+             isString(baseType))
     {
       // Do this only if the record is passed by value.
       if (arg->typeInfo() == baseType)
@@ -284,6 +280,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       }
     }
   }
+
   return var;
 }
 
@@ -322,9 +319,94 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     i++;
   }
 
+
+
+  // Put the bundle into a void* argument
+  VarSymbol *allocated_args = newTemp(astr("_args_vfor", fn->name), dtCVoidPtr);
+  fcall->insertBefore(new DefExpr(allocated_args));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, allocated_args,
+                               new CallExpr(PRIM_CAST_TO_VOID_STAR, tempc)));
+
+  // Put the size of the bundle into the next argument
+  VarSymbol *tmpsz = newTemp(astr("_args_size", fn->name),
+                             dtInt[INT_SIZE_DEFAULT]);
+  fcall->insertBefore(new DefExpr(tmpsz));
+  fcall->insertBefore(new CallExpr(PRIM_MOVE, tmpsz,
+                                   new CallExpr(PRIM_SIZEOF, ctype->symbol)));
+
+  // Find the _EndCount argument so we can pass that explicitly as the
+  // first argument to a task launch function.
+  Symbol* endCount = NULL;
+  VarSymbol *taskList = NULL;
+  VarSymbol *taskListNode = NULL;
+
+  if (!fn->hasFlag(FLAG_ON)) {
+    for_actuals(arg, fcall) {
+      bool strcmp_found = false;
+      bool type_found = false;
+
+      Type* baseType = arg->getValType();
+      if (baseType->symbol->hasFlag(FLAG_END_COUNT)) {
+        type_found = true;
+      }
+
+      // This strcmp code was moved from expr.cpp codegen,
+      // but there has got to be a better way to do this! 
+      if (strstr(baseType->symbol->name, "_EndCount") != NULL) {
+        strcmp_found = true;
+      }
+
+      // If this assert never fires, we can remove the strcmp version.
+      INT_ASSERT(type_found == strcmp_found);
+
+      if( type_found || strcmp_found ) {
+        SymExpr* symexp = toSymExpr(arg);
+        endCount = symexp->var;
+
+        // Turns out there can be more than one such field. See e.g.
+        //   spectests:Task_Parallelism_and_Synchronization/singleVar.chpl
+        // INT_ASSERT(endCountField == 0);
+        // We have historically picked the first such field.
+        break;
+      }
+    }
+
+    INT_ASSERT(endCount);
+
+    // Now get the taskList field out of the end count.
+
+    taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+
+    // If the end count is a reference, dereference it.
+    // EndCount is a class.
+    if (endCount->type->symbol->hasFlag(FLAG_REF)) {
+      VarSymbol *endCountDeref = newTemp(astr("_end_count_deref", fn->name),
+                                         endCount->getValType());
+      fcall->insertBefore(new DefExpr(endCountDeref));
+      fcall->insertBefore(new CallExpr(PRIM_MOVE, endCountDeref,
+                                         new CallExpr(PRIM_DEREF, endCount)));
+      endCount = endCountDeref;
+    }
+
+    fcall->insertBefore(new DefExpr(taskList));
+    fcall->insertBefore(new CallExpr(PRIM_MOVE, taskList,
+                                     new CallExpr(PRIM_GET_MEMBER,
+                                                  endCount,
+                                                  endCount->typeInfo()->getField("taskList"))));
+
+
+    // Now get the node ID field for the end count,
+    // which is where the task list is stored.
+    taskListNode = newTemp(astr("_taskListNode", fn->name), dtInt[INT_SIZE_DEFAULT]);
+    fcall->insertBefore(new DefExpr(taskListNode));
+    fcall->insertBefore(new CallExpr(PRIM_MOVE, taskListNode,
+                                     new CallExpr(PRIM_WIDE_GET_NODE,
+                                                  endCount)));
+  }
+
   // create wrapper-function that uses the class instance
   create_block_fn_wrapper(fn, fcall, baData);
-  call_block_fn_wrapper(fn, fcall, tempc, baData.wrap_fn);
+  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, taskList, taskListNode);
   baData.firstCall = false;
 }
 
@@ -364,16 +446,34 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     // into the wrapper here, and then later on remove it completely.
     // The on_fn does not need this extra argument, and can find out its locale
     // by reading the task-private "here" pointer.
-    DefExpr* localeArg = toDefExpr(fn->formals.get(1)->copy());
+    ArgSymbol *localeArg = fn->getFormal(1)->copy();
     // The above copy() used to be a remove(), based on the assumption that there was
     // exactly one wrapper for each on.  Now, the on_fn is outlined early and has
     // several callers, therefore severall wrapon_fns are generated.
     // So, we leave the extra locale arg in place here and remove it later 
     // (see the last if (fn->hasFlag(FLAG_ON)) clause in passArgsToNestedFns()).
+    localeArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(localeArg);
+  } else {
+    // create a task list argument.
+    ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
+                                            dtTaskList->refType );
+    taskListArg->addFlag(FLAG_NO_CODEGEN);
+    wrap_fn->insertFormalAtTail(taskListArg);
+    ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 
+                                             dtInt[INT_SIZE_DEFAULT]);
+    taskListNode->addFlag(FLAG_NO_CODEGEN);
+    wrap_fn->insertFormalAtTail(taskListNode);
   }
 
-  ArgSymbol *wrap_c = new ArgSymbol( INTENT_CONST_REF, "c", ctype);
+  ArgSymbol *allocated_args = new ArgSymbol( INTENT_IN, "buf", dtCVoidPtr);
+  wrap_fn->insertFormalAtTail(allocated_args);
+  allocated_args->addFlag(FLAG_NO_CODEGEN);
+  ArgSymbol *allocated_sz = new ArgSymbol( INTENT_IN, "buf_size",  dtInt[INT_SIZE_DEFAULT]);
+  allocated_sz->addFlag(FLAG_NO_CODEGEN);
+  wrap_fn->insertFormalAtTail(allocated_sz);
+  ArgSymbol *wrap_c = new ArgSymbol( INTENT_IN, "dummy_c", ctype);
+  //wrap_c->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
@@ -421,16 +521,21 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   baData.wrap_fn = wrap_fn;
 }
 
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* tempc, FnSymbol *wrap_fn)
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode)
 {
   // The wrapper function is called with the bundled argument list.
   if (fn->hasFlag(FLAG_ON)) {
     // For an on block, the first argument is also passed directly
     // to the wrapper function.
     // The forking function uses this to fork a task on the target locale.
-    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
-  } else
-    fcall->insertBefore(new CallExpr(wrap_fn, tempc));
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), args_buf, args_buf_len, tempc));
+  } else {
+    // For non-on blocks, the task list is passed directly to the function
+    // (so that codegen can find it).
+    // We need the taskList.
+    INT_ASSERT(taskList);
+    fcall->insertBefore(new CallExpr(wrap_fn, new SymExpr(taskList), new SymExpr(taskListNode), args_buf, args_buf_len, tempc));
+  }
 
   if (fn->hasFlag(FLAG_ON))
     fcall->insertAfter(callChplHereFree(tempc));
@@ -551,10 +656,9 @@ static void
 freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   Vec<FnSymbol*> fnsContainingTaskll;
 
-  // start with the functions created from begin, cobegin, and coforall statements
+  // start with functions created by begin statements
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
-        fn->hasFlag(FLAG_NON_BLOCKING))
+    if (fn->hasFlag(FLAG_BEGIN))
       fnsContainingTaskll.add(fn);
   }
   // add any functions that call the functions added so far
@@ -589,8 +693,8 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 
   forv_Vec(Symbol, var, heapAllocatedVars) {
     // find out if a variable that was put on the heap could be passed in as an
-    // argument to a function created from a begin, cobegin, or coforall statement;
-    // if not, free the heap memory just allocated at the end of the block
+    // argument to a function created by a begin statement; if not, free the
+    // heap memory just allocated at the end of the block
     Vec<SymExpr*>* defs = defMap.get(var);
     if (defs == NULL) {
       INT_FATAL(var, "Symbol is never defined.");
@@ -605,7 +709,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                  // TODO - should this handle PRIM_GET_SVEC_MEMBER_VALUE?
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                   call->isPrimitive(PRIM_WIDE_GET_NODE))
                 // Treat the use of these primitives as a use of their arguments.
@@ -674,18 +780,18 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         else {
           BlockStmt* block = toBlockStmt(innermostBlock);
           INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+          block->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
         }
       }
     }
-    // else ... 
+    // else ...
     // TODO: After the new constructor story is implemented, every declaration
     // should have exactly one definition associated with it, so the
     // (defs-> == 1) test above can be replaced by an assertion.
   }
 }
 
-// Returns false if 
+// Returns false if
 //  fLocal == true
 // or
 //  CHPL_COMM == "ugni"
@@ -710,16 +816,15 @@ needHeapVars() {
 //   varSet, varVec - symbols that themselves need to be heap-allocated
 //
 
-// Traverses all 'begin' or 'on' task functions flagged as needing heap
-// allocation (for its formals) or flagged as nonblockikng.
+// Traverses all 'on' task functions flagged as needing heap
+// allocation (for its formals), as determined by the comm layer
+// and/or --local setting..
 // Traverses all ref formals of these functions and adds them to the refSet and
 // refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN) ||
-        (fn->hasFlag(FLAG_ON) &&
-         (needHeapVars() || fn->hasFlag(FLAG_NON_BLOCKING)))) {
+    if (fn->hasFlag(FLAG_ON) && needHeapVars()) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
@@ -775,7 +880,10 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !isSyncType(def->sym->type)))) {
+            !isSyncType(def->sym->type) &&
+            // Dont try to broadcast string literals, they'll get fixed in
+            // another manner
+            (def->sym->type != dtString)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {
@@ -964,12 +1072,18 @@ makeHeapAllocations() {
     for_defs(def, defMap, var) {
       if (CallExpr* call = toCallExpr(def->parentExpr)) {
         SET_LINENO(call);
-        // Do we need a case for PRIM_ASSIGN?
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
           call->replace(new CallExpr(PRIM_SET_MEMBER, call->get(1)->copy(), heapType->getField(1), tmp));
+        } else if (call->isPrimitive(PRIM_ASSIGN)) {
+          // ensure what we assign into is what we expect
+          INT_ASSERT(toSymExpr(call->get(1))->var == var);
+          VarSymbol* tmp = newTemp(var->type->refType);
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
+          def->replace(new SymExpr(tmp));
         } else if (call->isResolved() &&
                    call->isResolved()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
           call->remove();
@@ -1165,7 +1279,8 @@ static void insertEndCounts()
       FnSymbol* pfn = call->getFunction();
       if (!endCountMap.get(pfn))
         insertEndCount(pfn, endCountType, queue, endCountMap);
-      call->insertAtTail(endCountMap.get(pfn));
+      Symbol* endCount = endCountMap.get(pfn);
+      call->insertAtTail(endCount);
     }
   }
 }
@@ -1258,32 +1373,5 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
     wideRefMap.put(refType, wide);
   }
   return wide;
-}
-
- 
-//
-// Returns true if the type t is a reference to a wide string
-//
-// This is used to handle cases where wide strings are passed to
-// functions that require local arguments.  If strings were a little
-// better behaved, it arguably wouldn't/shouldn't be required.
-//
-bool isRefWideString(Type* t) {
-  if (isReferenceType(t)) {
-    AggregateType* ct = toAggregateType(t);
-    INT_ASSERT(ct);
-    Symbol* valField = ct->getField("_val", false);
-    INT_ASSERT(valField);
-    return isWideString(valField->type);
-  }
-  return false;
-}
-
-bool isWideString(Type* t) {
-  if (!requireWideReferences()) return false; // no wide string type will exist if wide references weren't created
-  INT_ASSERT(wideStringType); // should only be called after it exists!
-  if (t == NULL) return false;
-  if( t == wideStringType ) return true;
-  return false;
 }
 

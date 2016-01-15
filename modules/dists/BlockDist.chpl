@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -119,6 +119,136 @@ config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 // dataParMinGranularity: the minimum required number of elements per
 //                        task created
 //
+
+// chpldoc TODO:
+//   a good reference to
+//     dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity
+//   remove the above comments to avoid duplication/maintenance?
+//   talk about RAD - here or in DefaultRectangular?
+//   supports RAD opt, Bulk Transfer optimization, localSubdomain
+//   disableBlockLazyRAD
+//   disableAliasedBulkTransfer
+//
+/*
+This Block distribution partitions indices into blocks
+according to a ``boundingBox`` domain
+and maps each entire block onto a locale from a ``targetLocales`` array.
+
+The indices inside the bounding box are partitioned "evenly" across
+the target locales. An index outside the bounding box is mapped to the
+same locale as the nearest index inside the bounding box.
+
+Formally, an index ``idx`` is mapped to ``targetLocales[locIdx]``,
+where ``locIdx`` is computed as follows.
+
+In the 1-dimensional case, for a Block distribution with:
+
+
+  =================   ====================
+  ``boundingBox``     ``{low..high}``
+  ``targetLocales``   ``[0..N-1] locale``
+  =================   ====================
+
+we have:
+
+  ===================    ==========================================
+  if ``idx`` is ...      ``locIdx`` is ...
+  ===================    ==========================================
+  ``low<=idx<=high``     ``floor(  (idx-low)*N / (high-low+1)  )``
+  ``idx < low``          ``0``
+  ``idx > high``         ``N-1``
+  ===================    ==========================================
+
+In the multidimensional case, ``idx`` and ``locIdx`` are tuples
+of indices; ``boundingBox`` and ``targetLocales`` are multi-dimensional;
+the above computation is applied in each dimension.
+
+
+**Example**
+
+The following code declares a domain ``D`` distributed over
+a Block distribution with a bounding box equal to the domain ``Space``,
+and declares an array ``A`` over that domain.
+The `forall` loop sets each array element
+to the ID of the locale to which it is mapped.
+
+  .. code-block:: chapel
+
+    use BlockDist;
+
+    const Space = {1..8, 1..8};
+    const D: domain(2) dmapped Block(boundingBox=Space) = Space;
+    var A: [D] int;
+
+    forall a in A do
+      a = a.locale.id;
+
+    writeln(A);
+
+When run on 6 locales, the output is:
+
+  ::
+
+    0 0 0 0 1 1 1 1
+    0 0 0 0 1 1 1 1
+    0 0 0 0 1 1 1 1
+    2 2 2 2 3 3 3 3
+    2 2 2 2 3 3 3 3
+    2 2 2 2 3 3 3 3
+    4 4 4 4 5 5 5 5
+    4 4 4 4 5 5 5 5
+
+
+**Constructor Arguments**
+
+The ``Block`` class constructor is defined as follows:
+
+  .. code-block:: chapel
+
+    proc Block(
+      boundingBox: domain,
+      targetLocales: [] locale  = Locales, 
+      dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
+      dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
+      dataParMinGranularity     = // value of  dataParMinGranularity      config const,
+      param rank                = boundingBox.rank,
+      type  idxType             = boundingBox.idxType)
+
+The arguments ``boundingBox`` (a domain) and ``targetLocales`` (an array)
+define the mapping of any index of ``idxType`` type to a locale
+as described above.
+
+The rank of ``targetLocales`` must match the rank of the distribution,
+or be ``1``.  If the rank of ``targetLocales`` is ``1``, a greedy
+heuristic is used to reshape the array of target locales so that it
+matches the rank of the distribution and each dimension contains an
+approximately equal number of indices.
+
+The arguments ``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``,
+and ``dataParMinGranularity`` set the knobs that are used to
+control intra-locale data parallelism for Block-distributed domains
+and arrays in the same way that the like-named config constants
+control data parallelism for ranges and default-distributed domains
+and arrays.
+
+The ``rank`` and ``idxType`` arguments are inferred from the
+``boundingBox`` argument unless explicitly set.
+They must match the rank and index type of the domains
+"dmapped" using that Block instance.
+
+
+**Data-Parallel Iteration**
+
+A `forall` loop over a Block-distributed domain or array
+executes each iteration on the locale where that iteration's index
+is mapped to.
+
+Parallelism within each locale is guided by the values of
+``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``, and
+``dataParMinGranularity`` of the respective Block instance.
+Updates to these values, if any, take effect only on the locale
+where the updates are made.
+*/
 class Block : BaseDist {
   param rank: int;
   type idxType = int;
@@ -295,6 +425,22 @@ proc Block.dsiAssign(other: this.type) {
     on targetLocales(locid) do
       locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
                                     targetLocDomDims);
+}
+
+//
+// Block distributions are equivalent if they share the same bounding
+// box and target locale set.
+//
+proc Block.dsiEqualDMaps(that: Block(?)) {
+  return (this.boundingBox == that.boundingBox &&
+          this.targetLocales.equals(that.targetLocales));
+}
+
+//
+// Block distributions are not equivalent to other domain maps.
+//
+proc Block.dsiEqualDMaps(that) param {
+  return false;
 }
 
 proc Block.dsiClone() {
@@ -855,11 +1001,18 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-proc BlockArr.dsiAccess(i: rank*idxType) ref {
+// By splitting the non-local case into its own function, we can inline the
+// fast/local path and get better performance.
+//
+inline proc BlockArr.dsiAccess(i: rank*idxType) ref {
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
   }
+  return nonLocalAccess(i);
+}
+
+proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
       if boundsChecking then
@@ -951,6 +1104,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     lowIdx(i) = myFollowThis(i).low;
   }
 
+  const myFollowThisDom = {(...myFollowThis)};
   if fast {
     //
     // TODO: The following is a buggy hack that will only work when we're
@@ -966,24 +1120,23 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     //
     if arrSection.locale.id != here.id then
       arrSection = myLocArr;
+
+    //
+    // Slicing arrSection.myElems will require reference counts to be updated.
+    // If myElems is an array of arrays, the inner array's domain or dist may
+    // live on a different locale and require communication for reference
+    // counting. Simply put: don't slice inside a local block.
+    //
+    var chunk => arrSection.myElems(myFollowThisDom);
     local {
-      for e in arrSection.myElems((...myFollowThis)) do
-        yield e;
+      for i in chunk do yield i;
     }
   } else {
     //
     // we don't necessarily own all the elements we're following
     //
-    proc accessHelper(i) ref {
-      if myLocArr then local {
-        if myLocArr.locDom.member(i) then
-          return myLocArr.this(i);
-      }
-      return dsiAccess(i);
-    }
-    const myFollowThisDom = {(...myFollowThis)};
     for i in myFollowThisDom {
-      yield accessHelper(i);
+      yield dsiAccess(i);
     }
   }
 }
@@ -1194,6 +1347,8 @@ proc BlockArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
+// TODO: Should this be inlined?
+//
 proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
@@ -1347,7 +1502,7 @@ proc BlockArr.doiBulkTransfer(B) {
           // once that is fixed.
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       rid,
@@ -1370,7 +1525,7 @@ proc BlockArr.doiBulkTransfer(B) {
                                         );
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       dom.dist.targetLocales(rid).id,

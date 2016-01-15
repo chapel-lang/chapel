@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,11 +18,11 @@
  */
 
 module ChapelDistribution {
-  
+
   use List;
-  
+
   extern proc chpl_task_yield();
-  
+
   //
   // Abstract distribution class
   //
@@ -32,7 +32,7 @@ module ChapelDistribution {
     // will use explicit processor atomics, even when network
     // atomics are available
     var _distCnt: atomic_refcnt; // distribution reference count
-    var _doms: list(BaseDom);   // domains declared over this domain
+    var _doms: list(BaseDom);   // domains declared over this distribution
     var _domsLock: atomicflag;  //   and lock for concurrent access
   
     pragma "dont disable remote value forwarding"

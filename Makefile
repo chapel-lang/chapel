@@ -1,14 +1,14 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@
 #
 # This is the one Makefile that does not/should not include
 # $CHPL_HOME/make/Makefile.base.  The reasons are:
-# 
+#
 # (1) it does not need to include that file because it does not rely
 # on any of its settings; it only is responsible for cd-ing into
 # subdirectories and having them make things (where they should
@@ -56,6 +56,7 @@ all: comprt
 comprt: FORCE
 	@$(MAKE) compiler
 	@$(MAKE) third-party-try-opt
+	@$(MAKE) always-build-test-venv
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -98,12 +99,22 @@ third-party-try-gmp: FORCE
 	fi \
 	fi
 
+third-party-test-venv: FORCE
+	cd third-party && $(MAKE) test-venv
+
 third-party-chpldoc-venv: FORCE
 	cd third-party && $(MAKE) chpldoc-venv
+
+test-venv: third-party-test-venv
 
 chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
+
+always-build-test-venv: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_TEST_VENV" ]; then \
+	$(MAKE) test-venv; \
+	fi
 
 clean-module-docs:
 	cd modules && $(MAKE) clean-documentation
@@ -116,9 +127,7 @@ module-docs: chpldoc
 # dependency so parallel make executions correctly build chpldoc first.
 	$(MAKE) module-docs-only
 
-docs: module-docs
-
-chplvis: compiler third-party-fltk FORCE 
+chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
@@ -130,12 +139,16 @@ clean: FORCE
 	cd modules && $(MAKE) clean
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
+	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clean
+	rm -f util/chplenv/*.pyc
 
 cleanall: FORCE
 	cd compiler && $(MAKE) cleanall
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
+	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) cleanall
+	rm -f util/chplenv/*.pyc
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -147,17 +160,19 @@ clobber: FORCE
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
+	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
+	rm -f util/chplenv/*.pyc
 
 depend:
 	@echo "make depend has been deprecated for the time being"
 
-check: all
+check:
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
-check-chpldoc: chpldoc
-	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall --chpldoc
+check-chpldoc: chpldoc third-party-test-venv
+	@bash $(CHPL_MAKE_HOME)/util/test/checkChplDoc
 
 -include Makefile.devel
 

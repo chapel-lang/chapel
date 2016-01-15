@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@
 #include "error.h"
 
 #ifdef __linux__
+#include <pthread.h>
 #include <sched.h>
 #endif
 #include <stdio.h>
@@ -397,6 +398,37 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
 }
 
 
+//
+// Move to the last available hardware thread.  Tasking layers use
+// this to get predictable placement for comm layer polling threads,
+// in order to help manage execution resources.
+//
+void chpl_moveToLastCPU(void) {
+  //
+  // This is currently a no-op except on non-MIC Linux.
+  //
+#if defined(__linux__) && !defined(__MIC__)
+  {
+    cpu_set_t mask;
+    int i, cnt;
+
+    if (pthread_getaffinity_np(pthread_self(), sizeof(mask), &mask) < 0)
+      chpl_internal_error("sched_getaffinity() failed");
+
+    for (i = cnt = 0; !CPU_ISSET(i, &mask) || ++cnt < CPU_COUNT(&mask); i++)
+      ;
+
+    CPU_ZERO(&mask);
+    CPU_SET(i, &mask);
+    if (pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) < 0)
+      chpl_internal_error("sched_setaffinity() failed");
+  }
+#endif
+
+  return;
+}
+
+
 // Using a static buffer is a bad idea from the standpoint of thread-safety.
 // However, since the node name is not expected to change it is OK to
 // initialize it once and share the singleton string.
@@ -413,7 +445,7 @@ c_string chpl_nodeName(void) {
     uname(&utsinfo);
     namelen = strlen(utsinfo.nodename)+1;
     namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
-                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, NULL);
+                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, 0);
     strcpy(namespace, utsinfo.nodename);
   }
   return namespace;

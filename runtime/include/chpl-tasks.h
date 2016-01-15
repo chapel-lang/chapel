@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -50,9 +50,9 @@
 void      chpl_sync_lock(chpl_sync_aux_t *);
 void      chpl_sync_unlock(chpl_sync_aux_t *);
 void      chpl_sync_waitFullAndLock(chpl_sync_aux_t *,
-                                       int32_t, c_string);
+                                       int32_t, int32_t);
 void      chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *,
-                                        int32_t, c_string);
+                                        int32_t, int32_t);
 void      chpl_sync_markAndSignalFull(chpl_sync_aux_t *);     // and unlock
 void      chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *);    // and unlock
 chpl_bool chpl_sync_isFull(void *, chpl_sync_aux_t *);
@@ -70,7 +70,7 @@ static inline
 void chpl_single_unlock(chpl_sync_aux_t * s) { chpl_sync_unlock(s); }
 static inline
 void chpl_single_waitFullAndLock(chpl_sync_aux_t * s,
-                                 int32_t lineno, c_string filename) {
+                                 int32_t lineno, int32_t filename) {
   chpl_sync_waitFullAndLock(s,lineno,filename);
 }
 static inline
@@ -144,7 +144,7 @@ void chpl_task_addToTaskList(
          c_nodeid_t,         // locale (node) where task list resides
          chpl_bool,          // is begin{} stmt?  (vs. cobegin or coforall)
          int,                // line at which function begins
-         c_string);          // name of file containing functions
+         int32_t);          // name of file containing functions
 void chpl_task_processTaskList(chpl_task_list_p);
 void chpl_task_executeTasksInList(chpl_task_list_p);
 void chpl_task_freeTaskList(chpl_task_list_p);
@@ -193,7 +193,7 @@ void chpl_task_yield(void);
 //
 // Suspend.
 //
-void chpl_task_sleep(int);
+void chpl_task_sleep(double);
 
 //
 // Get and set dynamic serial state.
@@ -208,6 +208,20 @@ void      chpl_task_setSerial(chpl_bool);
 // Get pointer to task private data.
 #ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
 chpl_task_prvData_t* chpl_task_getPrvData(void);
+#endif
+
+//
+// Can this tasking layer support remote caching?
+//
+// (In practice this answers: "Are tasks bound to specific pthreads
+// or, if not, does the tasking layer make memory consistency calls
+// whenever it might move a task from one pthread to another?"  Remote
+// caching uses pthread-specific data (TLS) extensively, so it turns
+// itself off when it's used with a tasking layer that can't support
+// that.)
+//
+#ifndef CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL
+int chpl_task_supportsRemoteCache(void);
 #endif
 
 //
@@ -300,8 +314,8 @@ size_t chpl_task_getDefaultCallStackSize(void);
 // These are service functions provided to the runtime by the module
 // code.
 //
-extern void chpl_taskRunningCntInc(int64_t _ln, c_string _fn);
-extern void chpl_taskRunningCntDec(int64_t _ln, c_string _fn);
+extern void chpl_taskRunningCntInc(int64_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntDec(int64_t _ln, int32_t _fn);
 
 #include "chpl-tasks-callbacks.h"
 

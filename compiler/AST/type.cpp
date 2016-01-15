@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,13 +31,14 @@
 #include "intlimits.h"
 #include "ipe.h"
 #include "misc.h"
-#include "passes.h" // for isWideString
+#include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
 
 #include "AstVisitor.h"
 
+static bool isDerivedType(Type* type, Flag flag);
 
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   BaseAST(astTag),
@@ -116,8 +117,22 @@ PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
 
 PrimitiveType*
 PrimitiveType::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
-  return this;
+  //
+  // If we're trying to make a copy of an internal Chapel primitive
+  // type (say 'int'), that's a sign that something is wrong.  For
+  // external primitive types, it should be OK to make such copies.
+  // This may be desired/required if the extern type declaration is
+  // local to a generic Chapel procedure for example and we're
+  // creating multiple instantiations of that procedure, each of which
+  // wants/needs its own local type symbol.  This exception may
+  // suggest that external primitive types should really be
+  // represented as their own ExternType class...
+  //
+  if (!symbol->hasFlag(FLAG_EXTERN)) {
+    INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
+  }
+
+  return new PrimitiveType(NULL);
 }
 
 
@@ -798,7 +813,6 @@ void AggregateType::codegenDef() {
   } else {
     if( outfile ) {
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -915,7 +929,6 @@ void AggregateType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -1346,6 +1359,12 @@ void initRootModule() {
   rootModule->filename = astr("<internal>");
 }
 
+void initStringLiteralModule() {
+  stringLiteralModule = new ModuleSymbol("ChapelStringLiterals", MOD_INTERNAL, new BlockStmt());
+  stringLiteralModule->filename = astr("<internal>");
+  theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
+}
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -1411,6 +1430,8 @@ void initPrimitiveTypes() {
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
+  dtString                             = new AggregateType(AGGREGATE_RECORD);
+
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
 
@@ -1434,7 +1455,7 @@ void initPrimitiveTypes() {
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
-  dtStringC->defaultValue              = new_StringSymbol("");
+  dtStringC->defaultValue              = new_CStringSymbol("");
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];
 
@@ -1493,8 +1514,15 @@ void initPrimitiveTypes() {
   gStringCopy->cname = "NULL";
   gStringCopy->addFlag(FLAG_EXTERN);
 
-  dtString = createPrimitiveType( "string", "chpl_string");
-  dtString->defaultValue = NULL;
+  // Like c_string_copy but unowned.
+  // Could be == c_ptr(int(8)) e.g.
+  // used in some runtime interfaces
+  dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCVoidPtr->defaultValue = gOpaque;
+  CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
+  gCVoidPtr->cname = "NULL";
+  gCVoidPtr->addFlag(FLAG_EXTERN);
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
@@ -1639,16 +1667,13 @@ DefExpr* defineObjectClass() {
 }
 
 void initChplProgram(DefExpr* objectDef) {
-  CallExpr* base = 0;
-  CallExpr* std  = 0;
-
   theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
 
   theProgram->block->insertAtTail(base);
 
@@ -1768,10 +1793,6 @@ bool is_enum_type(Type *t) {
   return toEnumType(t);
 }
 
-bool is_string_type(Type *t) {
-  return t == dtString;
-}
-
 int get_width(Type *t) {
   if (t == dtBools[BOOL_SIZE_SYS]) {
     return 1;
@@ -1843,12 +1864,65 @@ bool isRecordWrappedType(Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
+// Returns true if the given type is one which can be returned by one of the
+// dsiNew*Dom() functions; false otherwise.
+// This check is performed by looking to see if the given type derives from the
+// BaseDom class.
+bool isDomImplType(Type* type)
+{
+  return isDerivedType(type, FLAG_BASE_DOMAIN);
+}
+
+// Returns true if the given type is one which can be returned by
+// dsiBuildArray() or similar function returning a "nude" array implementation;
+// false otherwise.
+// The test is actually performed by looking to see if the given type derives
+// from the BaseArr class.
+bool isArrayImplType(Type* type)
+{
+  return isDerivedType(type, FLAG_BASE_ARRAY);
+}
+
+bool isDistImplType(Type* type)
+{
+  return isDerivedType(type, FLAG_BASE_DIST);
+}
+
+static bool isDerivedType(Type* type, Flag flag)
+{
+  AggregateType* at     =  NULL;
+  bool           retval = false;
+
+  while ((at = toAggregateType(type)) != NULL && retval == false)
+  {
+    if (at->symbol->hasFlag(flag) == true)
+      retval = true;
+    else
+      type   = at->dispatchParents.only();
+  }
+
+  return retval;
+}
+
 bool isSyncType(Type* t) {
   return getSyncFlags(t->symbol).any();
 }
 
 bool isAtomicType(Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
+}
+
+bool isRefIterType(Type* t) {
+  Symbol* iteratorRecord = NULL;
+
+  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+    iteratorRecord = t->defaultInitializer->getFormal(1)->type->symbol;
+  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    iteratorRecord = t->symbol;
+
+  if (iteratorRecord)
+    return iteratorRecord->hasFlag(FLAG_REF_ITERATOR_CLASS);
+  return false;
 }
 
 bool isSubClass(Type* type, Type* baseType)
@@ -1863,34 +1937,46 @@ bool isSubClass(Type* type, Type* baseType)
   return false;
 }
 
-bool
-isDistClass(Type* type) {
+bool isDistClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DIST))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDistClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isDomainClass(Type* type) {
+bool isDomainClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DOMAIN))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDomainClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isArrayClass(Type* type) {
+bool isArrayClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_ARRAY))
     return true;
+
   forv_Vec(Type, t, type->dispatchParents)
     if (isArrayClass(t))
       return true;
+
   return false;
+}
+
+bool isString(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* aggr = toAggregateType(type))
+    retval = strcmp(aggr->symbol->name, "string") == 0;
+
+  return retval;
 }
 
 static Vec<TypeSymbol*> typesToStructurallyCodegen;
@@ -1908,20 +1994,12 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if (fHeterogeneous) {
-    // strings are special
-    if (toPrimitiveType(typesym) == dtString) {
-      if( info->cfile )
-        ret.c = std::string("-") + typesym->cname;
-      else
-        INT_FATAL("TODO: genTypeStructureIndex llvm strings");
-    } else {
-      if( info->cfile )
-        ret.c = genChplTypeEnumString(typesym);
-      else {
+    if( info->cfile )
+      ret.c = genChplTypeEnumString(typesym);
+    else {
 #ifdef HAVE_LLVM
-        ret = info->lvt->getValue(genChplTypeEnumString(typesym));
+      ret = info->lvt->getValue(genChplTypeEnumString(typesym));
 #endif
-      }
     }
   } else {
     if( info->cfile )
@@ -2050,7 +2128,6 @@ bool needsCapture(Type* t) {
       is_imag_type(t) ||
       is_complex_type(t) ||
       is_enum_type(t) ||
-      is_string_type(t) ||
       t == dtStringC ||
       isClass(t) ||
       isRecord(t) ||
@@ -2076,14 +2153,45 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
 {
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {
     if( t == dtInt[i] ) {
-      return new_IntSymbol(s->immediate->int_value(), (IF1_int_type) i);
+      return new_IntSymbol(s->immediate->to_int(), (IF1_int_type) i);
     }
   }
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {
     if( t == dtUInt[i] ) {
-      return new_UIntSymbol(s->immediate->uint_value(), (IF1_int_type) i);
+      return new_UIntSymbol(s->immediate->to_uint(), (IF1_int_type) i);
     }
   }
   return NULL;
+}
+
+
+/* After resolution, other passes can call isPOD
+   in order to find out if a record type is POD.
+
+   During resolution, one should call propagateNotPOD
+   instead, so that the relevant calls can be resolved
+   and POD fields can be properly handled.
+ */
+bool isPOD(Type* t)
+{
+  // things that aren't aggregate types are POD
+  //   e.g. int, boolean, complex, etc
+  if (!isAggregateType(t))
+    return true;
+
+  // sync/single and atomic types are not POD
+  // but they should be marked with FLAG_NOT_POD
+  // by propagateNotPOD in function resolution.
+
+  // handle anything already marked
+  if (t->symbol->hasFlag(FLAG_POD))
+    return true;
+  if (t->symbol->hasFlag(FLAG_NOT_POD))
+    return false;
+
+  // if we have not calculated POD-ness,
+  // we should not be calling this function
+  INT_ASSERT(false);
+  return false;
 }
 

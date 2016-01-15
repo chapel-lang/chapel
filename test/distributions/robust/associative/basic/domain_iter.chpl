@@ -15,7 +15,7 @@ for i in D {
   DomRealType += myIdx:realType;
   if doString {
     var s: string;
-    s.write(myIdx);
+    s = myIdx:string;
     ArithStringRef(i) = s;
     DomStringType += s;
   }

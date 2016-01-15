@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -285,7 +285,7 @@ buildDefaultWrapper(FnSymbol* fn,
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), copyTemp));
+                             new_CStringSymbol(formal->name), copyTemp));
               copy_map.put(formal, copyTemp);
               call->argList.tail->replace(new SymExpr(copyTemp));
             }
@@ -353,7 +353,7 @@ buildDefaultWrapper(FnSymbol* fn,
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), temp));
+                             new_CStringSymbol(formal->name), temp));
     }
   }
   update_symbols(wrapper->body, &copy_map);
@@ -482,13 +482,16 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   TypeSymbol* fts = formal->type->symbol;
   CallExpr* castCall;
   VarSymbol* castTemp = newTemp("coerce_tmp"); // ..., formal->type ?
+
   castTemp->addFlag(FLAG_COERCE_TEMP);
+
   // gotta preserve this-ness, so can write to this's fields in constructors
   if (actualSym->hasFlag(FLAG_ARG_THIS) &&
       isDispatchParent(actualSym->type, formal->type))
     castTemp->addFlag(FLAG_ARG_THIS);
 
   Expr* newActual = new SymExpr(castTemp);
+
   if (NamedExpr* namedActual = toNamedExpr(prevActual)) {
     // preserve the named portion
     Expr* newCurrActual = namedActual->actual;
@@ -573,9 +576,13 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     castCall = NULL;
   }
 
-  if (castCall == NULL)
+  if (castCall == NULL) {
     // the common case
     castCall = new CallExpr("_cast", fts, prevActual);
+
+    if (isString(fts))
+      castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
 
   // move the result to the temp
   CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
@@ -584,8 +591,22 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   call->getStmtExpr()->insertBefore(castMove);
 
   resolveCall(castCall);
-  if (castCall->isResolved())
-    resolveFns(castCall->isResolved());
+  if (FnSymbol* castTarget = castCall->isResolved()) {
+    resolveFns(castTarget);
+
+    // Perhaps equivalently, we could check "if (tryToken)",
+    // except tryToken is not visible in this file.
+    if (!castTarget->hasFlag(FLAG_RESOLVED)) {
+      // This happens e.g. when castTarget itself has an error.
+      // Todo: in this case, we should report the error at the point
+      // where it arises, supposedly within resolveFns(castTarget).
+      // Why is it not reported there?
+      USR_FATAL_CONT(call, "Error resolving a cast from %s to %s",
+                     ats->name, fts->name);
+      USR_PRINT(castTarget, "  the troublesome function is here");
+      USR_STOP();
+    }
+  }
 
   resolveCall(castMove);
 }
@@ -650,8 +671,18 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
       c2 = false;
       Type* actualType = actualSym->type;
       if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
-        // addArgCoercion() updates currActual, actualSym, c2
-        addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        if (formalType == dtStringC && actualType == dtString && actualSym->isImmediate()) {
+          // We do this swap since we know the string is a valid literal
+          // There also is no cast defined for string->c_string on purpose (you
+          // need to use .c_str()) so the common case below does not work.
+          VarSymbol *var = toVarSymbol(actualSym);
+          SymExpr *newActual = new SymExpr(new_CStringSymbol(var->immediate->v_string));
+          currActual->replace(newActual);
+          currActual = newActual;
+        } else {
+          // addArgCoercion() updates currActual, actualSym, c2
+          addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        }
       }
     } while (c2 && --checksLeft > 0);
 

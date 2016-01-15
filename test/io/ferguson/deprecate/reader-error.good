@@ -1,0 +1,2 @@
+reader-error.chpl:4: In function 'readThis':
+reader-error.chpl:4: error: Reader deprecated: make readThis argument generic

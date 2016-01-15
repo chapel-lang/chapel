@@ -10,8 +10,8 @@ SYNOPSIS
 DESCRIPTION
 
   chpldoc is a tool for generating HTML based documentation from Chapel
-  source code and embedded comments. It does this by parsing Chapel
-  source files and associating comments with symbols, then generating
+  source code and its comments. It does this by parsing Chapel source
+  files and associating comments with symbols, then generating
   reStructuredText, and finally building the output documentation
   with Sphinx. Most users will not need to be aware of the use of
   reStructuredText as an intermediate format.
@@ -21,8 +21,6 @@ DESCRIPTION
   -o, --output-dir <dirname>  Specify the directory name into which documentation
                     should be saved (defaults to 'docs' if unspecified).
 
-  --save-sphinx <directory>  Save generated Sphinx project in directory.
-
   --author <authortext>  Documentation author string. authortext becomes the copyright
                     and author in the output documentation.
 
@@ -30,11 +28,21 @@ DESCRIPTION
                     sequence used to distinguish a documentation comment
                     from a normal one (defaults to '/*' if unspecified).
 
-  --text-only       Specify that documents should use a text output file
-                    format rather than HTML.
+  --process-used-modules  By default, chpldoc  only generates documentation
+                    for the source file(s) named on the command-line. When
+                    this flag is thrown, modules that it 'use's are also
+                    parsed and processed.
 
-  --[no-]print-commands  Prints the system commands that the compiler
-                    executes in order to create the documentation.
+  --save-sphinx <directory>  Save generated Sphinx project in directory.
+
+  --text-only       Generate text-based documentation instead of HTML. Takes
+		    precedence over --[no-]html
+
+  --[no-]html       [Don't] generate HTML-based documentation (on by default)
+
+  --[no-]print-commands  Prints the system commands that chpldoc executes
+  		    in order to create the documentation.
+
 
   Information Options
 
@@ -43,23 +51,23 @@ DESCRIPTION
                     purpose.
 
   --help-env        Print the command line option help message, listing
-                    the environment variable equivalent for each flag (see
-                    ENVIRONMENT VARIABLES FOR OPTIONS) and its current value.
+                    the environment variable equivalent for each flag, if
+		    applicable (see ENVIRONMENT), and its current value.
 
   --help-settings   Print the command line option help message, listing
                     the current setting of each option as specified by
                     environment variables and other flags on the command line.
 
-  --version         Print the version number of the compiler.
+  --version         Print chpldoc's version number.
 
-  --copyright       Print the compiler's copyright information.
+  --copyright       Print chpldoc's copyright information.
 
-  --license         Print the compiler's license information.
+  --license         Print chpldoc's license information.
 
-ENVIRONMENT VARIABLES FOR OPTIONS
+ENVIRONMENT
 
-  Most compiler command-line options have an environment variable that can
-  be used to specify a default value. Use the --help-env option to list the 
+  Some command-line options have an environment variable that can be used
+  to specify a default value. Use the --help-env option to list the 
   environment variable equivalent for each option. Command-line options 
   will always override environment variable settings in the event of a 
   conflict.
@@ -83,27 +91,11 @@ ENVIRONMENT VARIABLES FOR OPTIONS
   as passing that option once.
 
 
-ENVIRONMENT
-
-  See $CHPL_HOME/doc/README.chplenv for detailed information about 
-  general environment variable settings, legal values, and default
-  settings. Run $CHPL_HOME/util/printchplenv to view your current
-  settings (as explicitly set and inferred). Some of the most
-  commonly-used environment variables are summarized here.
-
-  CHPL_HOME           Specifies the location of the Chapel installation directory.
-
-  CHPL_DEVELOPER      When set, build and compile in developer mode,
-                      which generates line numbers in internal module
-                      code and throws extra warning flags when
-                      compiling the generated C code.
-
-
 BUGS
-  See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
+  See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/bugs.rst
   for instructions on reporting bugs.
 SEE ALSO
-  $CHPL_HOME/README for more information on how to get started with Chapel.
+  $CHPL_HOME/README.rst for more information on how to get started with Chapel.
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT

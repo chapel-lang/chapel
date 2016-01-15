@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,15 +48,22 @@ module ChapelLocale {
     // The parent of the root locale is nil (by definition).
     const parent : locale;
 
-    // To be removed from the required interface once legacy code is adjusted.
-    // Modified in RootLocale.init().
-    var numCores: int;
+    pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
+    pragma "no doc" var nPUsLogAll: int;     // HW threads, all
+    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, accessible
+    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
+
+    inline
+    proc numPUs(logical: bool = false, accessible: bool = true)
+      return if logical
+             then if accessible then nPUsLogAcc else nPUsLogAll
+             else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     var maxTaskPar: int; // max parallelism tasking layer expects to deliver
 
     proc id : int return chpl_id();  // just the node part
     proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
-    proc name return chpl_name();
+    proc name return chpl_name() : string;
 
     // This many tasks are running on this locale.
     //
@@ -72,7 +79,10 @@ module ChapelLocale {
     // now, we make the assumption that all requests for the number of
     // running tasks want the count from the locale the calling task is
     // running on, so the minimum possible value must be 1.
-    var runningTaskCounter : atomic int;
+    //
+    // This field should only be accessed locally, so we will have better
+    // performance if we always use a processor atomic.
+    var runningTaskCounter : chpl__processorAtomicType(int);
 
     inline proc runningTaskCntSet(val : int) {
       runningTaskCounter.write(val, memory_order_relaxed);
@@ -328,11 +338,11 @@ module ChapelLocale {
       // We must directly implement a bulk copy here, as the mechanisms
       // for doing so via a whole array assignment are not initialized
       // yet and copying element-by-element via a for loop is is costly.
-      __primitive("chpl_comm_get",
+      __primitive("chpl_comm_array_get",
                   __primitive("array_get", newRL, 0),
                   0 /* locale 0 */,
                   __primitive("array_get", origRL, 0), 
-                  numLocales.safeCast(size_t));
+                  numLocales:size_t);
       // Set the rootLocale to the local copy
       rootLocale = newRootLocale;
     }

@@ -2,6 +2,7 @@
 a.out
 a.out_real
 *.bak
+*~
 output
 gen
 *.ntoks
@@ -10,6 +11,8 @@ gen
 *.tmp
 TAGS
 tags
+*.DS_Store
+
 
 # Top level ignores.
 /BUILD_VERSION
@@ -18,7 +21,6 @@ tags
 /SVNLOG
 /.SVNLOG-revnum
 /bin
-/docs
 /lib
 /tar
 
@@ -38,6 +40,8 @@ tags
 # Doc ignores.
 /doc/**/*.aux
 /doc/**/*.log
+/doc/chips/html
+/doc/chips/tmp
 /doc/developer/compilerOverview/compiler.pdf
 /doc/developer/compilerOverview/compiler.dvi
 /doc/developer/compilerOverview/compiler.toc
@@ -50,6 +54,21 @@ tags
 /doc/tutorial/workbooks/*.dvi
 /doc/tutorial/workbooks/*.bbl
 /doc/tutorial/workbooks/*.blg
+/doc/sphinx/build
+/doc/sphinx/source/*.rst
+/doc/sphinx/source/platforms/*.rst
+/doc/sphinx/source/technotes/*.rst
+/doc/sphinx/source/usingchapel/*.rst
+/doc/sphinx/source/modules/standard
+/doc/sphinx/source/modules/dists
+/doc/sphinx/source/modules/layouts
+/doc/sphinx/source/modules/internal
+/doc/sphinx/source/language/*.pdf
+!/doc/sphinx/source/index.rst
+!/doc/sphinx/source/technotes/index.rst
+!/doc/sphinx/source/platforms/index.rst
+!/doc/sphinx/source/usingchapel/index.rst
+
 
 # Make ignores.
 /make/Chapel.xcodeproj/*.pbxuser
@@ -62,6 +81,7 @@ tags
 /modules/docs
 /modules/internal/tasks/muxed
 /modules/internal/threads/soft-threads
+/modules/webdocs
 
 # Runtime ignores.
 /runtime/etc/Makefile.comm-ugni
@@ -69,7 +89,6 @@ tags
 /runtime/include/chpl_rt_utils.h
 /runtime/include/comm/ugni
 /runtime/include/tasks/muxed
-/runtime/include/tasks/qthreads/
 /runtime/include/threads/soft-threads
 /runtime/src/comm/ugni
 /runtime/src/tasks/muxed
@@ -104,6 +123,16 @@ tags
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
+/test/chpldoc/compflags/folder/save-sphinx/deep-sphinx
+
+/test/chplvis/TREEvis
+/test/chplvis/benchmarks-hpcc/FFTvis
+/test/chplvis/benchmarks-hpcc/HPLvis
+/test/chplvis/benchmarks-hpcc/RAvis
+/test/chplvis/overhead/OH
+/test/chplvis/overhead/OH2
+
+/test/compflags/albrecht/chplenv/chplenv.good
 
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
@@ -121,6 +150,8 @@ tags
 /test/compflags/bradc/printstuff/zhelplice.good
 /test/compflags/bradc/printstuff/zhelpvers.good
 /test/compflags/bradc/printstuff/zlicevers.good
+
+/test/compflags/lydia/library/libtesting.a
 
 /test/compflags/shannon/cpplines/cppLines.OUTPUT
 /test/compflags/shannon/cpplines/noCppLines.OUTPUT
@@ -217,6 +248,7 @@ tags
 /test/execflags/shannon/configs/help/*.good
 /test/execflags/sungeun/about.good
 
+/test/exercises/Mandelbrot/mandelbrot.bmp
 /test/exercises/Mandelbrot/mandelbrot.ppm
 /test/exercises/Mandelbrot/solutions/mandelbrot.ppm
 
@@ -228,8 +260,11 @@ tags
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
 /test/io/ferguson/asserteof.test.nums
+/test/io/ferguson/ctests/test.bin
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
+/test/io/ferguson/test.txt
+/test/io/ferguson/test_file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
 
@@ -256,6 +291,9 @@ tags
 /test/modules/standard/FileSystem/lydia/copyTree/denseDest
 /test/modules/standard/FileSystem/lydia/copyTree/cutoffDest
 /test/modules/standard/FileSystem/lydia/copyTree/existing_dir
+/test/modules/standard/FileSystem/lydia/copyTree/hasLink
+/test/modules/standard/FileSystem/lydia/copyTree/willLink
+/test/modules/standard/FileSystem/lydia/copyTree/willCopy
 /test/modules/standard/FileSystem/lydia/exists/broken_link
 /test/modules/standard/FileSystem/lydia/exists/dir
 /test/modules/standard/FileSystem/lydia/exists/dir_link
@@ -270,6 +308,12 @@ tags
 /test/modules/standard/FileSystem/lydia/isLink/my_link_file
 /test/modules/standard/FileSystem/lydia/isMount/symlinkToRoot
 /test/modules/standard/FileSystem/lydia/isMount/notAMonkey/symlinkToRoot
+/test/modules/standard/FileSystem/lydia/moveDir/complexCopy
+/test/modules/standard/FileSystem/lydia/moveDir/complexDest
+/test/modules/standard/FileSystem/lydia/moveDir/hasLink
+/test/modules/standard/FileSystem/lydia/moveDir/linkDest
+/test/modules/standard/FileSystem/lydia/sameFile/linkToIt
+/test/modules/standard/FileSystem/lydia/sameFile/moveMe.txt
 /test/modules/standard/FileSystem/lydia/symlink/bar.txt
 /test/modules/standard/Path/lydia/realpath/blahblahblah.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
@@ -293,6 +337,7 @@ tags
 /test/release/examples/benchmarks/hpcc/variants/stream-promoted
 /test/release/examples/benchmarks/hpcc/variants/ra-cleanloop
 /test/release/examples/benchmarks/lulesh/coords.out
+/test/release/examples/patterns/test.txt
 /test/release/examples/primers/docs
 /test/release/examples/primers/Arr.dat
 /test/release/examples/primers/arrays
@@ -323,8 +368,23 @@ tags
 /test/release/examples/primers/varargs
 /test/release/examples/primers/test.bin
 
+/test/release/examples/primers/chplvis/E1
+/test/release/examples/primers/chplvis/E2
+/test/release/examples/primers/chplvis/E3
+/test/release/examples/primers/chplvis/E4
+
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
+/test/runtime/kbrady/goodAllocSize.good
+/test/runtime/sungeun/chpl-env-gen.h
+/test/runtime/sungeun/chpl-env-gen.test.gen.c
+
+test/separate_compilation/jturner/libclassextern2.so.a
+test/separate_compilation/jturner/libfcfunc.so.a
+test/separate_compilation/jturner/libiterator.so.a
+test/separate_compilation/jturner/libmethodextern2.so.a
+test/separate_compilation/jturner/libsimplefloat.so.a
+test/separate_compilation/jturner/libsubclass.so.a
 
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output
@@ -413,6 +473,8 @@ tags
 /test/users/franzf/v1/c99/*.icproj
 /test/users/franzf/v1/c99/*.vcproj
 /test/users/franzf/v2/chpl/chapel.hash
+
+/test/variables/bradc/docs/pragmaMultipleVars.doc.txt
 
 /test/users/thom/returnGenericLineno/strassen
 

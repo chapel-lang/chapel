@@ -11,7 +11,7 @@ record mytuple {
   }
 }
 
-proc mytuple.writeThis(f ) {
+proc mytuple.writeThis(f) {
   f.write("(", f1, ", ", f2, ")");
 }
 

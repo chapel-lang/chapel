@@ -61,7 +61,9 @@ def collect_chpl_files(file_list, recurse):
                         result.append(os.path.join(root, f))
                 # skip hidden
                 dirs[:] = [d for d in dirs if d[0] != '.']
-    return result
+    # strip off any leading "./"s from the path to work around a bug in ctags
+    # (which was fixed ~5 years ago) that results in mangled output
+    return [p[2:] if p.startswith("./") else p for p in result]
 
 
 def _main():
