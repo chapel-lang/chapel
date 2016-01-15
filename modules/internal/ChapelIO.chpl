@@ -193,6 +193,7 @@ module ChapelIO {
   // to report an out of bounds access for a halt. A normal
   // call to halt with a tuple can't be made because of module
   // order issues.
+  pragma "no doc"
   proc _stringify_index(tup:?t) where isTuple(t)
   {
     var str = "(";
@@ -556,6 +557,7 @@ module ChapelIO {
   //
   // This version only applies to non-primitive types
   // (primitive types should support :string directly)
+  pragma "no doc"
   pragma "compiler generated"
   proc _cast(type t, x) where t == string && ! isPrimitiveType(x.type) {
     return stringify(x);

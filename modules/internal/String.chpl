@@ -33,6 +33,9 @@ module BaseStringType {
   type bufferType = c_ptr(uint(8));
 }
 
+// Note - the I/O module has
+// :proc:`string.format` and :proc:`stringify`.
+
 // Chapel Strings
 module String {
   use BaseStringType;

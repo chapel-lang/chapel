@@ -254,6 +254,12 @@ number of arguments. See:
  * :proc:`channel.readbits`
  * :proc:`channel.readf` (see also :ref:`about-io-formatted-io`)
 
+In addition, there are several convenient synonyms for :proc:`channel.write` and
+:proc:`channel.read`:
+
+ * :proc:`channel.readwrite`
+ * :proc:`<~>`
+
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 .flush() method. Flushing the buffer will make all writes available to other
 applications or other views of the file (ie, it will call e.g. the OS call
@@ -401,13 +407,19 @@ Overview of Format Strings
 ++++++++++++++++++++++++++
 
 In a manner similar to C's 'printf' and 'scanf', the IO package includes
-writef and readf functions. These functions take in a format string
-and some arguments. For example, one might do:
+:proc:`channel.writef` and :proc:`channel.readf` functions. These functions take
+in a format string and some arguments. The :proc:`string.format` method is also
+available and is loosly equivalent to C's 'sprintf'. For example, one might do:
 
 .. code-block:: chapel
 
   writef("My favorite %s is %i\n", "number", 7);
+
+  var s:string = "My favorite %s is %i".format("number", 7);
+  writeln(s);
+
   // prints:
+  // My favorite number is 7
   // My favorite number is 7
 
 The following sections offer a tour through the conversions to illustrate the
@@ -3735,13 +3747,13 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
      :returns: ch
    */
-  inline proc <~>(ch: channel, x) where w.writing {
-    w.writeIt(x);
+  inline proc <~>(ch: channel, x) where ch.writing {
+    ch.writeIt(x);
     return ch;
   }
   // documented in the writing version.
   pragma "no doc"
-  inline proc <~>(ch: channel, ref x) where !r.writing {
+  inline proc <~>(ch: channel, ref x) where !ch.writing {
     ch.readIt(ch);
     return ch;
   }
@@ -6369,7 +6381,6 @@ proc format(fmt:string, args ...?k):string {
   :returns: the resulting string
 
  */
-
 proc string.format(args ...?k, out error:syserr):string {
   return _do_format(this.localize().c_str(), (...args), error);
 }
