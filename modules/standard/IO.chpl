@@ -3625,36 +3625,16 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, para
   // existing channel so we can avoid locking (because we
   // already have the lock)
 
-  //var reader = new ChannelReader(_channel_internal=_channel_internal);
   var reader = new channel(writing=false, iokind.dynamic, locking=false,
                            home=here,
                            _channel_internal=_channel_internal);
   var err:syserr = ENOERR;
-  var save_style:iostyle;
-  var saved_style = false;
 
   // Clear the channel error so we can use the error
   // to stop reading if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  // Adjust the style to use Chapel strings in quotes
-  // unless the string style was already overridden
-  // (that way, writef("%j") will still use JSON-style strings)
-  //if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
-  //  qio_channel_get_style(_channel_internal, save_style);
-  //  var mystyle = save_style;
-  //  mystyle.string_format = QIO_STRING_FORMAT_CHPL;
-  //  qio_channel_set_style(_channel_internal, mystyle);
-  //  saved_style = true;
-  //}
-
-  //reader.read(x);
   x.readThis(reader);
-
-  // Put the style back
-  if saved_style {
-    qio_channel_set_style(_channel_internal, save_style);
-  }
 
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
@@ -3666,8 +3646,6 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, para
 }
 
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
-  //var writer = new ChannelWriter(_channel_internal=_channel_internal);
-
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
@@ -3676,25 +3654,11 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, par
                            _channel_internal=_channel_internal);
 
   var err:syserr = ENOERR;
-  var save_style:iostyle;
-  var saved_style = false;
 
   // Clear the channel error so we can use the error
   // to stop writing if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  // Adjust the style to use Chapel strings in quotes
-  // unless the string style was already overridden
-  // (that way, writef("%j") will still use JSON-style strings)
-  //if qio_channel_str_style(_channel_internal) == QIO_STRING_FORMAT_WORD {
-  //  qio_channel_get_style(_channel_internal, save_style);
-  //  var mystyle = save_style;
-  //  mystyle.string_format = QIO_STRING_FORMAT_CHPL;
-  //  qio_channel_set_style(_channel_internal, mystyle);
-  //  saved_style = true;
-  //}
-
-  //writer.write(x);
   if (isClassType(t) || chpl_isDdata(t)) && x == nil {
     // future - write class IDs, have serialization format
     var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
@@ -3707,11 +3671,6 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, par
     _write_one_internal(_channel_internal, iokind.dynamic, iolit);
   } else {
     x.writeThis(writer);
-  }
-
-  // Put the style back
-  if saved_style {
-    qio_channel_set_style(_channel_internal, save_style);
   }
 
   // Set the channel pointer to NULL to make the
