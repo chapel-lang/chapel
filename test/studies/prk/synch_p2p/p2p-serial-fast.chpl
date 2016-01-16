@@ -1,13 +1,14 @@
 // Chapel's serial implementation of synch_p2p
 
-use PRK;
+use Time;
 
-config const iterations = 1000;
+param PRKVERSION = "2.15";
+config const iterations = 10;
 config const m = 1000;
-config const n = 1000;
+config const n = 100;
 config const debug: bool = false;
 
-param timer: Timer;
+var timer: Timer;
 
 if (iterations < 1) {
   writeln("ERROR: iterations must be >= 1 : ", iterations);
