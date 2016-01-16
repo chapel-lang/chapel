@@ -1,21 +1,22 @@
 // isx-spmd.chpl
 // 
-// Port of ISx to Chapel, co-developed by Brad Chamberlain,
-// Lydia Duncan, and Jacob Hemstad on 2015-10-30.  Based on
-// the OpenSHMEM version available from:
+// This is a port of ISx to Chapel, co-developed by Brad Chamberlain,
+// Lydia Duncan, and Jacob Hemstad on 2015-10-30.  Additional cleanups
+// were done later by Brad.
+//
+// This version is based on the OpenSHMEM version available from:
 //
 //   https://github.com/ParRes/ISx
 //
 // This version is very literally SPMD, using a task per locale
 // (and parallel loops to get multicore parallelism within each
-// locale).  Later cleanups done by Brad Chamberlain.
+// locale).
 //
 
 //
 // Top priorities:
-// - timer insertion
+// - timer insertion and printout of timings
 // - performance analysis / chplvis
-
 
 // TODO:
 // * variants that we should try
@@ -23,16 +24,22 @@
 //   - some sort of hybrid between the current 1 bucket per locale scheme
 //     and the previous?
 
-
 //
 // TODO: What are the potential performance issues?
 // * put as one message?
+//   - not currently happening due to int(32)/int(64) mismatch that
+//     prevents direct copying -- will fix in future revision to
+//     see performance impact.
 // * how do Ben's locality optimizations do?
 // * does returning arrays cost us anything?  Do we leak them?
 // * other?
 // * (this would be a good chplvis demo)
 //
 
+//
+// We want to use block-distributed arrays (BlockDist) and barrier
+// synchronization (Barrier).
+//
 use BlockDist, Barrier;
 
 //
@@ -90,8 +97,10 @@ config const keysPerLocale = if mode == scaling.strong then n/numLocales
 // The bucket width to use per locale when running in weakISO mode
 //
 config const isoBucketWidth = if mode == scaling.weakISO then 8192 else 0;
+
+
 //
-// Issue a warning if this has been set in modes other than weakISO
+// (Issue a warning if this has been set in modes other than weakISO)
 //
 if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
   warning("Note that isoBucketWidth has no effect for weakISO scaling mode");
@@ -99,17 +108,18 @@ if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
 //
 // The maximum key value to use.  When debugging, use a small size.
 //
-config const maxKeyVal = if mode == scaling.weakISO 
-                           then numLocales * isoBucketWidth
-			   else (if testrun then 32 else 2**28);
+config const maxKeyVal = (if mode == scaling.weakISO 
+                            then (numLocales * isoBucketWidth)
+                            else (if testrun then 32 else 2**28)): keyType;
 
 //
-// When running in the weakISO scaling mode, this width of each bucket
+// When running in the weakISO scaling mode, the width of each bucket
 // is fixed.  Otherwise, it's the largest key value divided by the
 // number of locales.
 //
-config const bucketWidth = if mode == scaling.weakISO then isoBucketWidth
-                                                      else maxKeyVal/numLocales;
+config const bucketWidth = if mode == scaling.weakISO
+                             then isoBucketWidth
+                             else maxKeyVal/numLocales;
 
 //
 // This tells how large the receive buffer should be relative to the
@@ -128,8 +138,6 @@ config const numBurnInRuns = 1,
              numTrials = 1;
 
 
-// TODO: add timers and timing printouts
-
 if printConfig then
   printConfiguration();
 
@@ -141,18 +149,22 @@ const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 var allBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
 var recvOffset: [OnePerLocale] atomic int;
 var verifyKeyCount: atomic int;
-  
+
+//
 // TODO: better name?
+//
 var barrier = new Barrier(numLocales);
 
 coforall loc in Locales do
   on loc {
+    //
     // SPMD-style across locales
     //
-    // TODO: remove this
+    // TODO: remove this once we feel confident it's working
     //
     if allBucketKeys[here.id][0].locale != here then
       warning("Need to distribute allBucketKeys");
+
     //
     // The non-positive iterations represent burn-in runs, so don't
     // time those.  To reduce time spent in verification, verify only
@@ -180,6 +192,7 @@ proc bucketSort(time = false, verify = false) {
   // .read()?
   //
   // TODO: We really want an exclusive scan, but Chapel's is inclusive... :(
+  // Weren't we planning on supporting both?
   //
   var sendOffsets: [LocaleSpace] int = + scan bucketSizes.read();
   sendOffsets -= bucketSizes.read();
@@ -217,9 +230,8 @@ proc bucketSort(time = false, verify = false) {
 }
 
 
-// TODO: Is all this returning of local arrays going to cause problems?
-
-
+//
+// TODO: remove this?
 //
 // const BucketSpace = {0..#numBuckets);
 
@@ -255,8 +267,6 @@ proc countLocalBucketSizes(myKeys) {
   return bucketSizes;
 }
 
-// TODO: does emacs not highlight 'here'?
-
 
 proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
   forall locid in LocaleSpace {
@@ -269,7 +279,9 @@ proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
     const srcOffset = sendOffsets[dstlocid];
     //
     // TODO: are we implementing this with one communication?
-    // If not, and we turn on Rafa's optimization, is it better?
+    // Answer (BenH): No, due to int(32)/int(64) mismatch.  Leaving
+    // it as is now in order to measure the perf difference in the
+    // test system.
     //
     allBucketKeys[dstlocid][dstOffset..#transferSize] = 
              myBucketedKeys[srcOffset..#transferSize];
@@ -279,9 +291,11 @@ proc exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys) {
 
 
 proc countLocalKeys(myBucketSize) {
+  //
   // TODO: what if we used a global histogram here instead?
   // Note that if we did so and moved this outside of the coforall,
   // we could also remove the barrier from within the coforall
+  //
   const myMinKeyVal = here.id * bucketWidth;
   var myLocalKeyCounts: [myMinKeyVal..#bucketWidth] atomic int;
   //
@@ -332,9 +346,9 @@ proc verifyResults(myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput() {
-  use PCG;
+  use Random.PCGRandom;
 
-  var rng: pcg32_random_t;
+//  var rng: pcg32_random_t;
   var myKeys: [0..#keysPerLocale] keyType;
 
   //
@@ -343,15 +357,41 @@ proc makeInput() {
   if (debug) then
     writeln(here.id, ": Calling pcg32_srandom_r with ", here.id);
 
-  pcg32_srandom_r(rng, here.id:uint(64), here.id:uint(64));
-
+  //
+  // TODO: The reference version of ISx uses pcg32_srandom_r(), which
+  // takes a second argument in addition to the seed to specify a stream
+  // ID.  Should/can our PCG interface do that as well?
+  //
+  var MyRandStream = new PCGRandomStream(seed = here.id,
+                                         parSafe=false,
+                                         eltType = keyType);
 
   //
   // Fill local array
   //
-  for key in myKeys do
-    key = pcg32_boundedrand_r(rng, maxKeyVal.safeCast(uint(32))).safeCast(keyType);
 
+  //
+  // The following code ensures that the value we get from the stream
+  // is in [0, maKeyVal) before storing it to key.  This is tricky when
+  // maxKeyVal isn't a power of two and so we take some care to keep the
+  // value distributed evenly.
+  //
+  // TODO: Double-check that I don't have an off-by-one error here.
+  // Having one would not make the code break, but would imply
+  // that we're not evenly distributing the random numbers.
+  //
+  // TODO: The C PCG takes care of this bounding automatically.  Should
+  // our PCG interface do so as well?  (Can it if it's being called
+  // in parallel?  Seems unlikely...)
+  //
+  const maxModdableKeyVal = max(keyType) - max(keyType)%maxKeyVal;
+  for key in myKeys do
+    do {
+      key = MyRandStream.getNext();
+      if key <= maxModdableKeyVal
+        then key %= maxKeyVal;
+    } while (key >= maxKeyVal || key < 0);
+    
   if (debug) then
     writeln(here.id, ": myKeys: ", myKeys);
 
@@ -377,22 +417,3 @@ proc writelnPotentialPowerOfTwo(desc, n) {
     write(" (2**", lgn, ")");
   writeln();
 }
-
-
-module PCG {
-  //
-  // TODO: can we get this to work?
-  // extern {
-  // #include "pcg_basic.h"
-  // }
-  require "ref-version/pcg_basic.h", "ref-version/pcg_basic.c";
-
-  extern type pcg32_random_t;
-  extern proc pcg32_srandom_r(ref rng: pcg32_random_t, 
-                              initstate: uint(64),
-                              initseq: uint(64));
-  extern proc pcg32_boundedrand_r(ref rng: pcg32_random_t, 
-                                  bound: uint(32)
-				  ): uint(32);
-}
-
