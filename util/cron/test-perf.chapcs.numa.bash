@@ -10,6 +10,8 @@ source $CWD/common-numa.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.numa"
 
+export CHPL_TEST_TIMEOUT=600
+
 perf_args="-performance-description numa -performance-configs default:v,numa:v -sync-dir-suffix numa"
 perf_args="${perf_args} -performance -numtrials 5 -startdate 01/15/16"
 
