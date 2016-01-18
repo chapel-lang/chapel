@@ -112,6 +112,8 @@ all:
 AllCompTime:
   11/09/14:
     - disable the task table by default
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 arrayPerformance-1d:
   03/19/15:
@@ -225,6 +227,8 @@ jacobi:
     - disable the task table by default
   01/30/15:
     - param protect all calls to chpl__testPar (#1200)
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 knucleotide:
   10/16/15:
@@ -316,6 +320,8 @@ nbody:
     - removed extra formal temps
   07/24/14:
     - chap04 Subtest random glitch
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 parOpEquals:
   09/06/13:
