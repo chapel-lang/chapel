@@ -290,7 +290,8 @@ module Random {
 
       pragma "no doc"
       proc fillRandom(arr: []) {
-        compilerError("NPBRandomStream(eltType=", typeToString(eltType), ") can only be used to fill arrays of ", typeToString(eltType));
+        compilerError("NPBRandomStream(eltType=", eltType:string, 
+                      ") can only be used to fill arrays of ", eltType:string);
       }
         
       pragma "no doc"
@@ -308,7 +309,7 @@ module Random {
       pragma "no doc"
       proc writeThis(f) {
         f <~> "NPBRandomStream(eltType=";
-        f <~> typeToString(eltType);
+        f <~> eltType:string;
         f <~> ", parSafe=";
         f <~> parSafe;
         f <~> ", seed=";
@@ -697,7 +698,8 @@ module Random {
 
       pragma "no doc"
       proc fillRandom(arr: []) {
-        compilerError("PCGRandomStream(eltType=", typeToString(eltType), ") can only be used to fill arrays of ", typeToString(eltType));
+        compilerError("PCGRandomStream(eltType=", eltType:string, 
+                      ") can only be used to fill arrays of ", eltType:string);
       }
         
       pragma "no doc"
@@ -715,7 +717,7 @@ module Random {
       pragma "no doc"
       proc writeThis(f) {
         f <~> "PCGRandomStream(eltType=";
-        f <~> typeToString(eltType);
+        f <~> eltType:string;
         f <~> ", parSafe=";
         f <~> parSafe;
         f <~> ", seed=";
@@ -1613,7 +1615,8 @@ module Random {
 
     pragma "no doc"
     proc fillRandom(arr: []) {
-      compilerError("RandomStream(eltType=", typeToString(eltType), ") can only be used to fill arrays of ", typeToString(eltType));
+      compilerError("RandomStream(eltType=", eltType:string, 
+                    ") can only be used to fill arrays of ", eltType:string);
     }
       
     pragma "no doc"
@@ -1631,7 +1634,7 @@ module Random {
     pragma "no doc"
     proc writeThis(f) {
       f <~> "RandomStream(eltType=";
-      f <~> typeToString(eltType);
+      f <~> eltType:string;
       f <~> ", parSafe=";
       f <~> parSafe;
       f <~> ", seed=";

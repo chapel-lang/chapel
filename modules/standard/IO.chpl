@@ -3374,7 +3374,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
     }
     return err;
   } else {
-    compilerError("Unknown primitive type in _read_text_internal ", typeToString(t));
+    compilerError("Unknown primitive type in _read_text_internal ", t:string);
   }
   return EINVAL;
 }
@@ -3411,7 +3411,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     var s = x:string;
     return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
   } else {
-    compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
+    compilerError("Unknown primitive type in _write_text_internal ", t:string);
   }
   return EINVAL;
 }
@@ -3450,7 +3450,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     } else if t == uint(64) {
       return qio_channel_read_uint64(false, byteorder, _channel_internal, x);
     } else {
-      compilerError("Unknown int type in _read_binary_internal ", typeToString(t));
+      compilerError("Unknown int type in _read_binary_internal ", t:string);
     }
   } else if isFloatType(t) {
     // handles real, imag
@@ -3459,7 +3459,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     } else if t == real(64) || t == imag(64) {
       return qio_channel_read_float64(false, byteorder, _channel_internal, x);
     } else {
-      compilerError("Unknown float type in _read_binary_internal ", typeToString(t));
+      compilerError("Unknown float type in _read_binary_internal ", t:string);
     }
   } else if isComplexType(t)  {
     // handle complex types
@@ -3477,7 +3477,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
         err = qio_channel_read_float64(false, byteorder, _channel_internal, im);
       }
     } else {
-      compilerError("Unknown complex type in _read_binary_internal ", typeToString(t));
+      compilerError("Unknown complex type in _read_binary_internal ", t:string);
     }
     x = (re, im):t; // cast tuple to complex to get complex num.
     return err;
@@ -3499,7 +3499,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     x = i:t;
     return err;
   } else {
-    compilerError("Unknown primitive type in _read_binary_internal ", typeToString(t));
+    compilerError("Unknown primitive type in _read_binary_internal ", t:string);
   }
   return EINVAL;
 }
@@ -3524,7 +3524,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     } else if t == uint(64) {
       return qio_channel_write_uint64(false, byteorder, _channel_internal, x);
     } else {
-      compilerError("Unknown int type in _write_binary_internal ", typeToString(t));
+      compilerError("Unknown int type in _write_binary_internal ", t:string);
     }
   } else if isFloatType(t) {
     if t == real(32) || t == imag(32) {
@@ -3532,7 +3532,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     } else if t == real(64) || t == imag(64) {
       return qio_channel_write_float64(false, byteorder, _channel_internal, x);
     } else {
-      compilerError("Unknown float type in _write_binary_internal ", typeToString(t));
+      compilerError("Unknown float type in _write_binary_internal ", t:string);
     }
   } else if isComplexType(t)  {
     // handle complex types
@@ -3550,7 +3550,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
         err = qio_channel_write_float64(false, byteorder, _channel_internal, im);
       }
     } else {
-      compilerError("Unknown complex type in _write_binary_internal ", typeToString(t));
+      compilerError("Unknown complex type in _write_binary_internal ", t:string);
     }
     return err;
   } else if t == c_string {
@@ -3563,7 +3563,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     // call the integer version
     return _write_binary_internal(_channel_internal, byteorder, i);
   } else {
-    compilerError("Unknown primitive type in write_binary_internal ", typeToString(t));
+    compilerError("Unknown primitive type in write_binary_internal ", t:string);
   }
   return EINVAL;
 }
@@ -3985,7 +3985,7 @@ private proc _args_to_proto(args ...?k,
     var name: string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
     else name = "x" + i:string;
-    err_args += preArg + name + ":" + typeToString(args(i).type):string;
+    err_args += preArg + name + ":" + args(i).type:string;
     if i != k then err_args += ", ";
   }
   const ret = err_args:string;
@@ -6517,7 +6517,7 @@ proc channel.extractMatch(m:reMatch, ref arg) {
     _extractMatch(m, arg, err);
     if err {
       this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
-                             typeToString(arg.type) + ")");
+                             arg.type:string + ")");
     }
     this.unlock();
   }

@@ -311,7 +311,7 @@ module ChapelIO {
         if st == QIO_AGGREGATE_FORMAT_JSON {
           start = new ioLiteral("{");
         } else if st == QIO_AGGREGATE_FORMAT_CHPL {
-          start = new ioLiteral("new " + typeToString(t).c_str() + "(");
+          start = new ioLiteral("new " + t:string + "(");
         } else {
           // the default 'braces' type
           if isClassType(t) {
@@ -350,7 +350,7 @@ module ChapelIO {
       param num_fields = __primitive("num fields", t);
       var isBinary = reader.binary();
   
-      //writeln("Scanning fields for ", typeToString(t));
+      //writeln("Scanning fields for ", t:string);
   
       if (isClassType(t)) {
         if t != object {
@@ -433,7 +433,7 @@ module ChapelIO {
         var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var start:ioLiteral;
         if st == QIO_AGGREGATE_FORMAT_CHPL {
-          start = new ioLiteral("new " + typeToString(t) + "(");
+          start = new ioLiteral("new " + t:string + "(");
         } else {
           // json and braces type
           start = new ioLiteral("{");
@@ -464,7 +464,7 @@ module ChapelIO {
         var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var start:ioLiteral;
         if st == QIO_AGGREGATE_FORMAT_CHPL {
-          start = new ioLiteral("new " + typeToString(t) + "(");
+          start = new ioLiteral("new " + t:string + "(");
         } else if st == QIO_AGGREGATE_FORMAT_JSON {
           start = new ioLiteral("{");
         } else {

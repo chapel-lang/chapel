@@ -1,6 +1,6 @@
 proc swap(ref l: ?t, ref r: t) {
   l <=> r;
-  writeln("End of swap(", typeToString(t), ")");
+  writeln("End of swap(", t:string, ")");
 }
 
 proc main {

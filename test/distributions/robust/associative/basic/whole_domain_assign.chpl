@@ -39,7 +39,7 @@ proc testWhole(DA) {
       break;
     }
   }
-  writeln("Whole domain assignment (", typeToString(idxType), ") : ",
+  writeln("Whole domain assignment (", idxType:string, ") : ",
           if success then "SUCCESS" else "FAILED");
 }
 

@@ -3,7 +3,7 @@ proc foo(x, y) {
 }
 
 proc foo(x) {
-  compilerWarning("1-argument version of foo called with type: ", typeToString(x.type));
+  compilerWarning("1-argument version of foo called with type: ", x.type:string);
   writeln("In generic foo!");
 }
 

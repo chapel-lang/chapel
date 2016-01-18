@@ -15,5 +15,5 @@ proc foo(x) type {
 
 proc main {
   var a: foo(3);
-  writeln(typeToString(a.type));
+  writeln(a.type:string);
 }

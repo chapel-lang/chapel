@@ -77,8 +77,8 @@ var A: [D] real;
 var x: A.eltType;
 \end{chapel}
 \begin{chapelpost}
-writeln(typeToString(x.type));
-writeln(typeToString(A.eltType));
+writeln(x.type:string);
+writeln(A.eltType:string);
 \end{chapelpost}
 \begin{chapeloutput}
 real(64)

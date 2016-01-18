@@ -392,7 +392,7 @@ proc BlockCyclic.getStarts(inds, locid) {
 //
 proc BlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
   const ind0 = ind - lowIdx(1);
-  //  compilerError(typeToString((ind0/blocksize(1)%targetLocDom.dim(1).type));
+  //  compilerError((ind0/blocksize(1)%targetLocDom.dim(1).type:string);
   return (ind0 / blocksize(1)) % targetLocDom.dim(1).length;
 }
 
@@ -821,7 +821,7 @@ proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
-  //  compilerError(typeToString(loci.type));
+  //  compilerError(loci.type:string);
   //  var desc = locArr(loci);
   //  return locArr(loci)(i);
   return locArr(dom.dist.idxToLocaleInd(i))(i);

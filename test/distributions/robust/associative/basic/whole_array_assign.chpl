@@ -49,7 +49,7 @@ proc testWhole(AAssoc) {
       break;
     }
   }
-  writeln("Whole array assignment (", typeToString(idxType), ") : ",
+  writeln("Whole array assignment (", idxType:string, ") : ",
           if success then "SUCCESS" else "FAILED");
 }
 

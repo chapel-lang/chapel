@@ -356,7 +356,7 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
   : ReplicatedDom(rank, idxType, stridable, this.type)
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiNewRectangularDom ",
-                                      (rank, typeToString(idxType), stridable));
+                                      (rank, idxType:string, stridable));
 
   // Have to call the default constructor because we need to initialize 'dist'
   // prior to initializing 'localDoms' (which needs a non-nil value for 'dist'.

@@ -3092,6 +3092,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
   s->addFlag(FLAG_LOCALE_PRIVATE);
+  s->addFlag(FLAG_CHAPEL_STRING_LITERAL);
 
   DefExpr* stringLitDef = new DefExpr(s);
   // DefExpr(s) always goes into the module scope to make it a global
