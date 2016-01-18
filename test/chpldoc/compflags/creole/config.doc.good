@@ -1,5 +1,5 @@
 ----
-==Module: config
+==config
 **config** **var **normal\\
  This is a normal config var \\
 **config** **param **other\\

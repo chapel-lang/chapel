@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,8 +25,7 @@ bool intentsResolved = false;
 static IntentTag constIntentForType(Type* t) {
   if (isSyncType(t) ||
       isRecordWrappedType(t) ||  // domain, array, or distribution
-      isRecord(t) ||  // may eventually want to decide based on size
-      is_string_type(t)) {  
+      isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
   } else if (is_bool_type(t) ||
              is_int_type(t) ||
@@ -65,7 +64,6 @@ IntentTag blankIntentForType(Type* t) {
              is_imag_type(t) ||
              is_complex_type(t) ||
              is_enum_type(t) ||
-             is_string_type(t) ||
              t == dtStringC ||
              t == dtStringCopy ||
              t == dtCVoidPtr ||

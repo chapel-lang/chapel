@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -427,7 +427,7 @@ record slist {
 proc slist.append(str:string) {
   var err: syserr = ENOERR;
   on this.home {
-    err = chpl_curl_slist_append(this.list, str.c_str());
+    err = chpl_curl_slist_append(this.list, str.localize().c_str());
   }
   if err then ioerror(err, "in slist.append()");
 }

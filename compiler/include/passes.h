@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -40,7 +40,6 @@ void checkParsed();
 void checkResolved();
 void cleanup();
 void codegen();
-void complex2record();
 void copyPropagation();
 void createTaskFunctions();
 void cullOverReferences();
@@ -110,8 +109,6 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 void insertReferenceTemps(CallExpr* call);
 
 // parallel.cpp
-bool isRefWideString(Type* t);
-bool isWideString(Type* t);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 

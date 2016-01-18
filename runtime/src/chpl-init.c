@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,7 @@
 #include "chplmemtrack.h"
 #include "chpl-privatization.h"
 #include "chpl-tasks.h"
+#include "chpl-linefile-support.h"
 #include "chplsys.h"
 #include "config.h"
 #include "error.h"
@@ -41,19 +42,14 @@
 #include <time.h>
 #include <sys.h>
 
-static const char myFilename[] = 
-#ifdef CHPL_DEVELOPER
-  __FILE__;
-#else
-  "<internal>";
-#endif
+static const int32_t myFilename = CHPL_FILE_IDX_INTERNAL;
 
 chpl_main_argument chpl_gen_main_arg;
 
 char* chpl_executionCommand;
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
-                         int32_t lineno, c_string filename) {
+                         int32_t lineno, int32_t filename) {
 
   if (mainHasArgs) {
     chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
@@ -217,6 +213,10 @@ void chpl_rt_finalize(int return_value) {
 // "main-task" which is either "chpl_executable_init" or "chpl_library_init".
 //
 void chpl_std_module_init(void) {
+  // chpl__initStringLiterals runs the constructors for all string literals. We
+  // need to setup the literals on every locale before any other chapel code is
+  // run.
+  chpl__initStringLiterals();
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
 
   if (chpl_nodeID == 0) {

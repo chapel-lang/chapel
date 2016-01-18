@@ -1,4 +1,4 @@
-Module: multipleInheritance.doc
+multipleInheritance.doc
    Class: Child
       proc nose()
          A method all its own 

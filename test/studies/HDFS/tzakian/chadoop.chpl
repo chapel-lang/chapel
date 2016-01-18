@@ -125,7 +125,7 @@ sync coforall loc in Locales { // look at this more
       // ==== Get the host that the block resides on
       var owner_tmp = HDFS.chadoopGetHost(blockHosts, block: int(32), (block % fileInfo.mReplication): int(32)) + domainSuffix;
       var IDX = indexOf(".", owner_tmp, 1);
-      var owner = owner_tmp.substring(1..IDX-1);
+      var owner = owner_tmp[1..IDX-1];
 
       // Past one (that apparently worked)
       //var owner = HDFS.chadoopGetHost(blockHosts, block: int(32), (block % fileInfo.mReplication): int(32)) + domainSuffix;
@@ -187,7 +187,7 @@ sync coforall loc in Locales { // look at this more
           var recordLength = (j - i + 1);
           // ==== Split what you read in, so now we have ss = review in question
           // Include the final field delimiter
-          var ss = s.substring(i..j);
+          var ss = s[i..j];
           //writeln("Found record with start " + i + ", end " + (j - 1) + ", length " + recordLength + ": ");
 
           // Deserialize structured record from text

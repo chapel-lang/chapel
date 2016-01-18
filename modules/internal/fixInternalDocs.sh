@@ -62,7 +62,7 @@ function fixTitle() {
   # Module: ChapelFoo
   local titleLen=${#1}
   local header="$(printf '=%.0s' $(seq 1 $titleLen))"
-  perl -0777 -i -pe "s/Module: $base\n=+\n/$1\n$header\n/g" $2
+  perl -0777 -i -pe "s/$base\n=+\n/$1\n$header\n/g" $2
 }
 
 # Remove unwanted functions:

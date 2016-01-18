@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -138,7 +138,7 @@ typedef struct {
 
     struct chpl_task_info_full {
                                 // chpl_task_cb_info_kind_full:
-      const char* filename;     //   source file of task definition
+      int32_t filename;         //   source file of task definition
       int lineno;               //   source line of task definition
       uint64_t id;              //   unique ID, within locale
       int is_executeOn;         //   !=0: task is for executeOn body

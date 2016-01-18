@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -206,6 +206,8 @@ void checkPrimitives()
      case PRIM_TUPLE_AND_EXPAND:
      case PRIM_CHPL_COMM_GET:           // Direct calls to the Chapel comm layer
      case PRIM_CHPL_COMM_PUT:           // may eventually add others (e.g.: non-blocking)
+     case PRIM_CHPL_COMM_ARRAY_GET:
+     case PRIM_CHPL_COMM_ARRAY_PUT:
      case PRIM_CHPL_COMM_REMOTE_PREFETCH:
      case PRIM_CHPL_COMM_GET_STRD:      // Direct calls to the Chapel comm layer for strided comm
      case PRIM_CHPL_COMM_PUT_STRD:      //  may eventually add others (e.g.: non-blocking)
@@ -260,6 +262,7 @@ void checkPrimitives()
      case PRIM_GET_SVEC_MEMBER_VALUE:
      case PRIM_VIRTUAL_METHOD_CALL:
      case PRIM_NUM_FIELDS:
+     case PRIM_IS_POD:
       break;
     }
   }

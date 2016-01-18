@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1240,6 +1240,7 @@ void AstDumpToNode::visitEnumSym(EnumSymbol* node)
 void AstDumpToNode::visitLabelSym(LabelSymbol* node)
 {
   enterNode(node);
+  fputc(' ', mFP);
   mOffset = mOffset + 2;
   ast_symbol(node, true);
   mOffset = mOffset - 2;
@@ -1401,7 +1402,6 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     if (sym->type != 0)
     {
-      writeLongString("      ", "");
       writeType(sym->type);
     }
 

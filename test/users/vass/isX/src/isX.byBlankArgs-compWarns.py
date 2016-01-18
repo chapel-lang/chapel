@@ -91,7 +91,7 @@ def compilerWarning(*args):
 # declare test()
 
 say("proc test(arg) {")
-say("  compilerWarning(typeToString(arg.type));")
+say("  compilerWarning(arg.type:string);")
 
 for pred in predList:
   say("  report(", pred,      "(arg), \"",      pred,      "\");")

@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TASKS_SRCS = 
+TASKS_SRCS = tasks-$(CHPL_MAKE_TASKS).c
 
 SVN_SRCS = $(TASKS_SRCS)
 SRCS = $(SVN_SRCS)
 
 TASKS_OBJS = $(TASKS_SRCS:%.c=$(TASKS_OBJDIR)/%.o)
 
-RUNTIME_CFLAGS += -I$(QTHREAD_INCLUDE)
+RUNTIME_CFLAGS += -I$(QTHREAD_INCLUDE_DIR)

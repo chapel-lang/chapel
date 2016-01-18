@@ -1,8 +1,14 @@
 #!/usr/bin/env python
-import sys, os, optparse
+import optparse
+import os
+import sys
+
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_arch, chpl_comm, chpl_comm_segment, chpl_compiler, chpl_platform
 from utils import memoize
+
 
 @memoize
 def get(flag='host'):

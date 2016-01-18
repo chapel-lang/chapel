@@ -124,6 +124,9 @@ Building Chapel for a Cray System from Source
        PrgEnv-intel
        PrgEnv-pgi
 
+   For PrgEnv-cray we recommend using CCE 8.4 or newer for best performance.
+   This allows us to build our recommended third-party packages (i.e. allows
+   us to default to CHPL_TASKS=qthreads instead of CHPL_TASKS=fifo)
 
 4) By default, ``g++`` will be used to compile code that runs on the login
    node, such as the Chapel compiler and launcher code.  Optionally, you can
@@ -132,16 +135,14 @@ Building Chapel for a Cray System from Source
 
      :``gnu``: the GNU compiler suite -- ``gcc`` and ``g++``
      :``intel``: the Intel compiler suite -- ``icc`` and ``icpc``
-     :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgCC``
+     :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgc++``
 
 
 5) Optionally, set one or more of the following environment variables to
    configure the Chapel build.  These are described in greater detail in
    :ref:`readme-chplenv`.
 
-     :``CHPL_TASKS``: tasking implementation, default ``fifo`` when using
-                      target compiler ``cray-prgenv-cray``, otherwise
-                      ``qthreads``
+     :``CHPL_TASKS``: tasking implementation, default ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``gasnet``
 
    Other configuration environment variables such as ``CHPL_MEM`` can also
@@ -197,9 +198,7 @@ Using Chapel on a Cray System
    select a Chapel configuration.  These are described in greater detail
    in :ref:`readme-chplenv`.
 
-     :``CHPL_TASKS``: tasking implementation, default ``fifo`` with target
-                      compiler ``cray-prgenv-cray``, ``muxed`` on Cray
-                      XC/XE with pre-built module, otherwise ``qthreads``
+     :``CHPL_TASKS``: tasking implementation, default ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``ugni`` on Cray
                      XC/XE with pre-built module, else ``gasnet``
 
@@ -370,16 +369,16 @@ program heap will grow to during execution::
 
 or::
 
-  CHPL_COMM=ugni
+  CHPL_COMM=ugni, with a craype-hugepages module loaded
 
 With ``CHPL_COMM=gasnet``, by default the heap will occupy as much of the
 free memory on each locale (compute node) as the runtime can acquire,
 less some amount to allow for demands from other (system) programs
-running there.  With ``CHPL_COMM=ugni``, by default the heap will occupy 2/3
-of the free memory on each locale.  With the ugni comm layer and slurm
-job placement, however, the default is reduced to 16 GiB if that is
-less.  See `Communication Layer Concurrency and Slurm`_, below, for more
-information.
+running there.  With ``CHPL_COMM=ugni`` when a craype-hugepages module is
+loaded, by default the heap will occupy 2/3 of the free memory on each
+locale.  With the ugni comm layer and slurm job placement, however, this
+default is reduced to 16 GiB if that is less.  See `Communication Layer
+Concurrency and Slurm`_, below, for more information.
 
 Advanced users may want to make the heap smaller than this.  Programs
 start more quickly with a smaller heap, and in the unfortunate event
@@ -404,7 +403,7 @@ following would set the heap size to 1 GiB, for example:
 
 Note that the value you set in ``CHPL_RT_MAX_HEAP_SIZE`` may get rounded up
 internally to match the page alignment.  How much, if any, this will add
-depends on the hugepage size in the hugepage module you have loaded at
+depends on the hugepage size in any craype-hugepage module you have loaded at
 the time you execute the program.
 
 Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
@@ -496,15 +495,21 @@ To use ugni communications:
    with those to be selected automatically.
 
 
-4) Load an appropriate craype-hugepages module.  For example::
+4) *(Optional)* Load an appropriate craype-hugepages module.  For example::
 
      module load craype-hugepages16M
 
-   Use of the ugni communication layer requires that the program's data
-   reside on so-called *hugepages*.  To arrange for this, you must have
-   a ``craype-hugepages`` module loaded both when building your program and
-   when running it.
+   The ugni communication layer can be used with or without so-called
+   *hugepages*.  Performance for remote variable references is better
+   when hugepages are used.  However, using hugepages effectively may
+   require setting ``CHPL_RT_MAX_HEAP_SIZE`` to a value large enough to
+   encompass the program's memory needs (see `Controlling the Heap
+   Size`_, above), and that quantity can be hard to know.  Using
+   hugepages also means that the tasking layer cannot use guard pages to
+   detect task stack overflows (see below).
 
+   To use hugepages, you must have a ``craype-hugepages`` module loaded
+   both when building your program and when running it.
    There are several hugepage modules, with suffixes indicating the page
    size they support.  For example, ``craype-hugepages16M`` supports 16 MiB
    hugepages.  It does not matter which ``craype-hugepages`` module you have
@@ -532,7 +537,7 @@ To use ugni communications:
    fairly large 16 MiB hugepages will typically only result in around 1%
    of the total locale memory being wasted.
 
-Due to the use of hugepages in the ugni comm layer, tasking layers
+When hugepages are used with the ugni comm layer, tasking layers
 cannot use guard pages for stack overflow detection.  Qthreads tasking
 can only use guard pages for stack overflow detection, so if ugni
 communications is combined with qthreads tasking, overflow detection is
@@ -682,7 +687,8 @@ also trustworthy because it relies on OS services.
 Guard pages cannot be used when the heap is on hugepages, because
 the system call that makes memory pages inaccessible cannot be
 applied to hugepages.  Currently the heap is on hugepages when
-``CHPL_COMM=ugni``.  In this case muxed tasking does synchronous
+``CHPL_COMM=ugni`` and there is a craype-hugepages module loaded.
+In this case muxed tasking does synchronous
 stack overflow detection instead.  Explicit checks against the
 task's stack limit are done on entry to selected functions in the
 muxed tasking layer.  If overflow is seen, the runtime prints an

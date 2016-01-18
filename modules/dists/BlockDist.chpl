@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -1001,11 +1001,18 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-proc BlockArr.dsiAccess(i: rank*idxType) ref {
+// By splitting the non-local case into its own function, we can inline the
+// fast/local path and get better performance.
+//
+inline proc BlockArr.dsiAccess(i: rank*idxType) ref {
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
   }
+  return nonLocalAccess(i);
+}
+
+proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
       if boundsChecking then
@@ -1097,6 +1104,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     lowIdx(i) = myFollowThis(i).low;
   }
 
+  const myFollowThisDom = {(...myFollowThis)};
   if fast {
     //
     // TODO: The following is a buggy hack that will only work when we're
@@ -1112,24 +1120,23 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     //
     if arrSection.locale.id != here.id then
       arrSection = myLocArr;
+
+    //
+    // Slicing arrSection.myElems will require reference counts to be updated.
+    // If myElems is an array of arrays, the inner array's domain or dist may
+    // live on a different locale and require communication for reference
+    // counting. Simply put: don't slice inside a local block.
+    //
+    var chunk => arrSection.myElems(myFollowThisDom);
     local {
-      for e in arrSection.myElems((...myFollowThis)) do
-        yield e;
+      for i in chunk do yield i;
     }
   } else {
     //
     // we don't necessarily own all the elements we're following
     //
-    proc accessHelper(i) ref {
-      if myLocArr then local {
-        if myLocArr.locDom.member(i) then
-          return myLocArr.this(i);
-      }
-      return dsiAccess(i);
-    }
-    const myFollowThisDom = {(...myFollowThis)};
     for i in myFollowThisDom {
-      yield accessHelper(i);
+      yield dsiAccess(i);
     }
   }
 }
@@ -1340,6 +1347,8 @@ proc BlockArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
+// TODO: Should this be inlined?
+//
 proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
@@ -1493,7 +1502,7 @@ proc BlockArr.doiBulkTransfer(B) {
           // once that is fixed.
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       rid,
@@ -1516,7 +1525,7 @@ proc BlockArr.doiBulkTransfer(B) {
                                         );
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       dom.dist.targetLocales(rid).id,

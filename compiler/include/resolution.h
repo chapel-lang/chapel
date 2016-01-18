@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,6 +65,7 @@ void      instantiateBody(FnSymbol* fn);
 void resolveFormals(FnSymbol* fn);
 void resolveBlockStmt(BlockStmt* blockStmt);
 void resolveCall(CallExpr* call);
+FnSymbol* tryResolveCall(CallExpr* call);
 void resolveFns(FnSymbol* fn);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
@@ -74,5 +75,7 @@ FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
+
+bool isPOD(Type* t);
 
 #endif

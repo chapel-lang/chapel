@@ -58,7 +58,7 @@ module test_elemental_explicitly_strided_cholesky {
     writeln ("Parallel Environment");
     writeln ("   Number of Locales         : ", numLocales );
     if !reproducible_output then {
-      writeln ("   Number of cores per locale: ", Locales.numCores );
+      writeln ("   Number of cores per locale: ", Locales.numPUs() );
       writeln ("   Max tasking parallelism   : ", Locales.maxTaskPar );
     }
 

@@ -24,7 +24,7 @@ proc indexOf(substring: string, s: string, start: int): int {
 
   for i in start..(s.length - substring.length + 1) {
     //writeln("i: " + i + ", s.length:" + s.length + ", substring.length: " + substring.length);
-    var ss = s.substring(i..#substring.length);
+    var ss = s[i..#substring.length];
     //writeln("ss: " + ss);
     if (ss == substring) {
       return i;
@@ -68,7 +68,7 @@ proc findFieldValue(s: string, fieldStart: string, base: int): (string, int) {
   if (j == -1) {
     return ("", 1);
   } else {
-    return (s.substring(i + fieldStart.length..(j - 1)), j + 1);
+    return (s[i + fieldStart.length..(j - 1)], j + 1);
   }
 }
 // ==== findFieldValueReal(s: string, fieldStart: string, base: int) -- Returns a

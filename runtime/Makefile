@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,7 @@ cleanall: cleanall.helpme
 cleandeps: cleandeps.helpme
 
 clobber: clobber.helpme
+	rm -f tags TAGS
 
 %.helpme:
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 CHPL_MAKE_RULE=$* $*

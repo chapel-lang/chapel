@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -41,7 +41,7 @@ endif
 ifeq ($(COMP_GEN_FLOAT_OPT), -1)
   MAKE_COMP_GEN_CFLAGS += $(IEEE_FLOAT_GEN_CFLAGS)
 endif
-# COMP_GEN_FLOAT_OPT = -1 -> IEEE lax, optimize please
+# COMP_GEN_FLOAT_OPT = 1 -> IEEE lax, optimize please
 ifeq ($(COMP_GEN_FLOAT_OPT), 1)
   MAKE_COMP_GEN_CFLAGS += $(FAST_FLOAT_GEN_CFLAGS)
 endif

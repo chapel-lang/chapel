@@ -6,7 +6,7 @@ proc testio(fmts: [] string, values: [])
 {
   for fmt in fmts {
     for v in values {
-      if noisy then writeln("Testing ",fmt," ",typeToString(v.type)," ",v);
+      if noisy then writeln("Testing ",fmt," ",v.type:string," ",v);
       for try in 1..4 {
         // We do it 4x:
         // try 1 is the simple way

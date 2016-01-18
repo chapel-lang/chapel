@@ -22,7 +22,7 @@ proc test(d) {
 
   const vd = d._value.dom2;
   if verbose {
-    hd("vd = ", vd, "  : ", typeToString(vd.type));
+    hd("vd = ", vd, "  : ", vd.type:string);
     tl();
   } else {
     nextphase();
@@ -76,9 +76,9 @@ proc test(d) {
 } // test()
 
 proc testsuite(type T, initphase) {
-//compilerWarning("testsuite -- ", typeToString(T), 0);
+//compilerWarning("testsuite -- ", T:string, 0);
   phase = initphase; leapphase();
-  hd("testsuite(", typeToString(T), ")");
+  hd("testsuite(", T:string, ")");
   tl();
 
   const df8 = new BlockCyclicDim(lowIdx=100, blockSize=7, numLocales=s1, name="D1");

@@ -29,40 +29,40 @@ record Z {
 
 proc main() {
   const a : R;
-  writeln(typeToString(a.type));
+  writeln(a.type:string);
 
   const b : R(p=0);
-  writeln(typeToString(b.type));
+  writeln(b.type:string);
 
   const c : R(p=1);
-  writeln(typeToString(c.type));
+  writeln(c.type:string);
 
 
   const d : S;
-  writeln(typeToString(d.type));
+  writeln(d.type:string);
 
   const e : S(p=0);
-  writeln(typeToString(e.type));
+  writeln(e.type:string);
 
   const f : S(p=1);
-  writeln(typeToString(f.type));
+  writeln(f.type:string);
 
   const g : T();
-  writeln(typeToString(g.type));
+  writeln(g.type:string);
 
   const h : T(q="foo");
-  writeln(typeToString(h.type));
+  writeln(h.type:string);
 
   const i : U;
-  writeln(typeToString(i.type));
+  writeln(i.type:string);
 
   const j : U(r=10);
-  writeln(typeToString(j.type));
+  writeln(j.type:string);
 
-  writeln(typeToString( Z          )); // Z(1)(2)(3)  
-  writeln(typeToString( Z(p=0)     )); // Z(0)(2)(3) 
-  writeln(typeToString( Z(q=0)     )); // Z(1,0)(3)  
-  writeln(typeToString( Z(q=2)     )); // Z(1)(2)(3)  
-  writeln(typeToString( Z(r=0)     )); // Z(1)(2,0)  
-  writeln(typeToString( Z(q=0,r=0) )); // Z(1,0,0)   
+  writeln( Z         :string ); // Z(1)(2)(3)
+  writeln( Z(p=0)    :string ); // Z(0)(2)(3)
+  writeln( Z(q=0)    :string ); // Z(1,0)(3)
+  writeln( Z(q=2)    :string ); // Z(1)(2)(3)
+  writeln( Z(r=0)    :string ); // Z(1)(2,0)
+  writeln( Z(q=0,r=0):string ); // Z(1,0,0)
 }
