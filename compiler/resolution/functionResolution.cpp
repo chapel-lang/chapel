@@ -7065,15 +7065,24 @@ isVirtualChild(FnSymbol* child, FnSymbol* parent) {
 }
 
 
-// This method is ultimately called from buildVirtualMaps
-// which goes through all functions. Then, for each function,
-// that is a method, it calls addAllToVirtualMaps, which
-// goes through the (transitive) dispatch children for that class
-// and calls addToVirtualMaps for each one, keeping the same function.
-//
-// addToVirtualMaps re-instantiates generic methods instead of re-using
-// an existing instantiation, for some reason.
-//
+/*
+
+-----------
+addToVirtualMaps, addAllToVirtualMaps, buildVirtualMaps
+
+buildVirtualMaps invokes addAllToVirtualMaps on each method 'fn' declared in
+each class.  Only non-generic classes and instantiations of generic classes are
+considered.
+
+addAllToVirtualMaps invokes addToVirtualMaps on each (transitive) dispatch
+child for that class, passing that same method 'fn'.
+
+addToVirtualMaps adds to the virtual maps all methods
+in that dispatch child that could override the above 'fn'.
+-----------
+*/
+
+
 // addToVirtualMaps itself goes through each method in ct and if
 // that method could override pfn, adds it to the virtual maps
 static void
@@ -7081,7 +7090,6 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     // checking that subtype method is not a generic instantiation
     //  (we will instantiate again)
-    // checking that signature matches
     if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
@@ -7092,8 +7100,6 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
       forv_Vec(Type, type, types) {
         SymbolMap subs;
         if (ct->symbol->hasFlag(FLAG_GENERIC))
-          // formal 1: method token
-          // formal 2: this
           // instantiateSignature handles subs from formal to a type
           subs.put(cfn->getFormal(2), type->symbol);
         for (int i = 3; i <= cfn->numFormals(); i++) {
@@ -7211,7 +7217,6 @@ addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
          ct->defaultTypeConstructor->isResolved()))
-      // add to maps for the subclass
       addToVirtualMaps(fn, ct);
 
     // if sub-class is not a generic instantiation
@@ -7257,7 +7262,7 @@ buildVirtualMaps() {
 }
 
 
-// if exclusive=true, check for it already existing in the virtual method
+// if exclusive=true, check for fn already existing in the virtual method
 // table and do not add it a second time if it is already present.
 static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive /*= false*/) {
@@ -7561,6 +7566,35 @@ static void resolveEnumTypes() {
   }
 }
 
+// removes entries in virtualChildrenMap that are not in virtualMethodTable.
+// such entries could not be called and should be dead-code eliminated.
+void filterVirtualChildren()
+{
+  std::set<FnSymbol*> fns_in_vmt;
+  typedef MapElem<Type*,Vec<FnSymbol*>*> VmtMapElem;
+  typedef MapElem<FnSymbol*,Vec<FnSymbol*>*> ChildMapElem;
+  form_Map(VmtMapElem, el,  virtualMethodTable) {
+    if (el->value) {
+      forv_Vec(FnSymbol, fn, *el->value) {
+        fns_in_vmt.insert(fn);
+      }
+    }
+  }
+  form_Map(ChildMapElem, el, virtualChildrenMap) {
+    if (el->value) {
+      Vec<FnSymbol*>* oldV = el->value;
+      Vec<FnSymbol*>* newV = new Vec<FnSymbol*>();
+      forv_Vec(FnSymbol, fn, *oldV) {
+        if (fns_in_vmt.count(fn)) {
+          newV->add(fn);
+        }
+      }
+      el->value = newV;
+      delete oldV;
+    }
+  }
+}
+
 static void resolveDynamicDispatches() {
   inDynamicDispatchResolution = true;
   int num_types;
@@ -7643,29 +7677,7 @@ static void resolveDynamicDispatches() {
   // a subclass has a specific one, the virtualChildrenMap might
   // get multilpe entries while the logic above with childSet
   // ensures that the virtualMethodTable only has one entry.
-  std::set<FnSymbol*> fns_in_vmt;
-  typedef MapElem<Type*,Vec<FnSymbol*>*> VmtMapElem;
-  typedef MapElem<FnSymbol*,Vec<FnSymbol*>*> ChildMapElem;
-  form_Map(VmtMapElem, el,  virtualMethodTable) {
-    if (el->value) {
-      forv_Vec(FnSymbol, fn, *el->value) {
-        fns_in_vmt.insert(fn);
-      }
-    }
-  }
-  form_Map(ChildMapElem, el, virtualChildrenMap) {
-    if (el->value) {
-      Vec<FnSymbol*>* v = el->value;
-      Vec<FnSymbol*>* newV = new Vec<FnSymbol*>();
-      forv_Vec(FnSymbol, fn, *v) {
-        if (fns_in_vmt.count(fn)) {
-          newV->add(fn);
-        }
-      }
-      el->value = newV;
-      delete v;
-    }
-  }
+  filterVirtualChildren();
 
   inDynamicDispatchResolution = false;
 
