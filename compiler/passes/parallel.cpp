@@ -1033,6 +1033,11 @@ makeHeapAllocations() {
       }
     }
 
+    if (isString(var) && var->isImmediate()) {
+      // String immediates are privatized; do not widen them
+      continue;
+    }
+
     SET_LINENO(var);
 
     if (ArgSymbol* arg = toArgSymbol(var)) {
