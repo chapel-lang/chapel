@@ -1,41 +1,41 @@
-// Chapel's serial implementation of transpose
-
+// Chapel's shared memory parallel implementation of transpose
 use Time;
 
 param PRKVERSION = "2.15";
 
-config const iterations : int = 100;
-config const order : int = 100;
-config const tileSize : int = 32;
+config const iterations : int = 100,
+             order : int = 100,
+             tileSize : int = 32;
 
-// Additional output for debugging
-config const debug: bool = false;
-
-// Only print the validation string
-config const validate: bool = false;
-
-// Timer
-var timer: Timer;
-
-var bytes = 2.0 * numBytes(real) * order * order;
-var tiled = false;
+// Additional output for debugging and reduced output for validation
+config const debug: bool = false,
+             validate: bool = false;
 
 const Dom = {0.. # order, 0.. # order},
  tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
-var A, B : [Dom] real;
 
+var timer: Timer,
+    bytes = 2.0 * numBytes(real) * order * order,
+    A, B : [Dom] real;
+
+// Read and test input parameters
+if (iterations < 1) {
+  writeln("ERROR: iterations must be >= 1: ", iterations);
+  exit(1);
+}
+if (order < 0 ) {
+  writeln("ERROR: Matrix Order must be greater than 0 : ", order);
+  exit(1);
+}
+
+var tiled = (tileSize < order && tileSize > 0);
 
 if (!validate) {
   writeln("Parallel Research Kernels version ", PRKVERSION);
   writeln("Serial Matrix transpose: B = A^T");
   writeln("Matrix order          = ", order);
-  if (tileSize < order && tileSize > 0) {
-    writeln("Tile size              = ", tileSize);
-    tiled = true;
-  } else {
-    writeln("Untiled");
-    tiled = false;
-  }
+  if (tiled) then writeln("Tile size              = ", tileSize);
+  else            writeln("Untiled");
   writeln("Number of iterations = ", iterations);
 }
 
