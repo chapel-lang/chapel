@@ -1151,12 +1151,15 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
 // At present, params cannot be passed to 'const ref'.
 static bool
 isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
+  bool retval = true;
+
   if (SymExpr* se = toSymExpr(actual))
-    if (se->var->isParameter())
-      if (okToConvertFormalToRefType(formal->type))
-        return false;
-  // Perhaps more checks are needed.
-  return true;
+    if (se->var->isParameter()                   ==  true &&
+        okToConvertFormalToRefType(formal->type) ==  true &&
+        isString(se->var)                        == false)
+      retval = false;
+
+  return retval;
 }
 
 
