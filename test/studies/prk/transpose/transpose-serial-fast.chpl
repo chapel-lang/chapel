@@ -18,12 +18,12 @@ var timer: Timer,
     bytes = 2.0 * numBytes(real) * order * order,
     A, B : [Dom] real;
 
-// Read and test input parameters
+// Read and test input configs
 if (iterations < 1) {
   writeln("ERROR: iterations must be >= 1: ", iterations);
   exit(1);
 }
-if (order < 0 ) {
+if (order < 0) {
   writeln("ERROR: Matrix Order must be greater than 0 : ", order);
   exit(1);
 }

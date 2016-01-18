@@ -1,5 +1,7 @@
-// Chapel's shared-memory parallel stencil
-use PRK;
+// Chapel's shared-memory parallel stencil implementation
+use Time;
+
+param PRKVERSION = "2.15";
 
 // Note: Defaulting to STAR stencil (defines weight)
 // Configurable runtime constants
@@ -76,33 +78,34 @@ for iteration in 0..iterations {
 
 timer.stop();
 
+// Analyze and output results
+
 // Timings
-var stencilTime = timer.elapsed();
-writeln("stencil_time: ", stencilTime);
+var stencilTime = timer.elapsed(),
+    flops = (2*stencilSize + 1) * activePoints,
+    avgTime = stencilTime / iterations;
 
-// Compute L1 norm in parallel
-var norm = + reduce abs(output);
-
+// Compute L1 norm
+var referenceNorm = (iterations + 1) * (coefx + coefy),
+    norm = + reduce abs(output);
 norm /= activePoints;
 
-/*******************************************************************************
-** Analyze and output results.
-********************************************************************************/
+// Error threshold
+const epsilon = 1.e-8;
 
 // Verify correctness
-var referenceNorm = (iterations + 1) * (coefx + coefy);
-
-if (abs(norm-referenceNorm) > epsilon) {
+if abs(norm-referenceNorm) > epsilon then {
   writeln("ERROR: L1 norm = ", norm, ", Reference L1 norm = ", referenceNorm);
   exit(1);
 } else {
   writeln("Solution validates");
+
   if debug {
     writeln("L1 norm = ", norm, ", Reference L1 norm = ", referenceNorm);
   }
-}
 
-var flops = (2*stencilSize + 1) * activePoints;
-var avgTime = stencilTime / iterations;
-writeln("Rate (MFlops/s): ", 1.0E-06 * flops/avgTime,
-        "  Avg time (s): ", avgTime);
+  if (!validate) {
+    writeln("Rate (MFlops/s): ", 1.0E-06 * flops/avgTime, "  Avg time (s): ", 
+            avgTime);
+  }
+}

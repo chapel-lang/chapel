@@ -1,41 +1,66 @@
 // Chapel's serial stencil implementation
-use PRK;
+use Time;
 
-// Note: Defaulting to STAR stencil (defines weight)
-// Configurable runtime constants
+param PRKVERSION = "2.15";
+
 config const iterations: int = 10,
-             n: int = 1000,
-             debug: bool = false;
+             order: int = 1000,
+             tileSize: int = 0;
 
+// Additional output for debugging and reduced output for validation
+config const debug: bool = false,
+             validate: bool = false;
+
+// Stencil radius
+config param R = 2,
+             compact = false; // not yet implemented
+
+// Configurable type for array elements
 config type dtype = real;
 
-// Configurable compile constants
-config param R = 2;
-
-// Runtime constants
-const activePoints = (n-2*R)*(n-2*R),
-      coefx : dtype = 1.0,
-      coefy : dtype = 1.0;
+const activePoints = (order-2*R)*(order-2*R),
+      coefx: dtype = 1.0,
+      coefy: dtype = 1.0;
 
 param stencilSize = 4*R + 1,
       weightSize = 2*R + 1,
       Wsize = 2*R + 1,
-      R1 = R+1,
-      epsilon = 1.e-8;
+      R1 = R+1;
 
-// Timer
 var timer: Timer;
 
 // Domains
-const Dom = {0.. # n, 0.. # n},
+const Dom = {0.. # order, 0.. # order},
       InnerDom = Dom.expand(-R);
 
 // Arrays
 var input, output: [Dom] dtype = 0.0;
 
-// Tuple
+// Tuple of tuples
 var weight: Wsize*(Wsize*(dtype));
 
+// Process and test input configs
+if (iterations < 1) {
+  writeln("ERROR: iterations must be >= 1: ", iterations);
+  exit(1);
+}
+if (order < 1) {
+  writeln("ERROR: Matrix Order must be greater than 0 : ", order);
+  exit(1);
+}
+if (R < 1) {
+  writeln("ERROR: Stencil radius ", R, " should be positive");
+  exit(1);
+}
+if (2*R + 1 > order) {
+  writeln("ERROR: Stencil radius ", R, " exceeds grid size ", order);
+  exit(1);
+}
+
+// Determine tiling
+var tiling = (tileSize > 0 && tileSize < order);
+
+// Set up weight matrix
 for i in 1..R {
   const element : dtype = 1 / (2*i*R) : dtype;
   weight[R1][R1+i]  =  element;
@@ -48,16 +73,21 @@ for i in 1..R {
 [(i, j) in Dom] input[i,j] = coefx*i + coefy*j;
 
 // Print information before main loop
-writeln("Parallel Research Kernels Version ", PRKVERSION);
-writeln("Serial stencil execution on 2D grid");
-writeln("Grid size            = ", n);
-writeln("Radius of stencil    = ", R);
-writeln("Type of stencil      = star"); // Temporarily hard-coded
-writeln("Data type            = double precision");
-writeln("Untiled");                     // Temporarily hard-coded
-writeln("Number of iterations = ", iterations);
+if (!validate) {
+  writeln("Parallel Research Kernels Version ", PRKVERSION);
+  writeln("Serial stencil execution on 2D grid");
+  writeln("Grid size            = ", order);
+  writeln("Radius of stencil    = ", R);
+  if compact then writeln("Type of stencil      = compact"); // TODO
+  else              writeln("Type of stencil      = star");
+  writeln("Data type            = ", dtype:string);
+  if tiling then writeln("Tile size             = ", tileSize); // TODO
+  else             writeln("Untiled");
+  writeln("Number of iterations = ", iterations);
+}
 
 for iteration in 0..iterations {
+
   // Start timer after warmup iteration
   if (iteration == 1) {
     timer.start();
@@ -69,7 +99,6 @@ for iteration in 0..iterations {
     for param ii in 1..R   do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
   }
 
-
   // Add constant to solution to force refresh of neighbor data, if any
   for (i,j) in Dom do input[i,j] += 1.0;
 
@@ -77,33 +106,34 @@ for iteration in 0..iterations {
 
 timer.stop();
 
+// Analyze and output results
+
 // Timings
-var stencilTime = timer.elapsed();
-writeln("stencil_time: ", stencilTime);
+var stencilTime = timer.elapsed(),
+    flops = (2*stencilSize + 1) * activePoints,
+    avgTime = stencilTime / iterations;
 
-// Compute L1 norm in parallel
-var norm = + reduce abs(output);
-
+// Compute L1 norm
+var referenceNorm = (iterations + 1) * (coefx + coefy),
+    norm = + reduce abs(output);
 norm /= activePoints;
 
-/*******************************************************************************
-** Analyze and output results.
-********************************************************************************/
+// Error threshold
+const epsilon = 1.e-8;
 
 // Verify correctness
-var referenceNorm = (iterations + 1) * (coefx + coefy);
-
 if abs(norm-referenceNorm) > epsilon then {
   writeln("ERROR: L1 norm = ", norm, ", Reference L1 norm = ", referenceNorm);
   exit(1);
 } else {
   writeln("Solution validates");
-  if debug then {
+
+  if debug {
     writeln("L1 norm = ", norm, ", Reference L1 norm = ", referenceNorm);
   }
-}
 
-var flops = (2*stencilSize + 1) * activePoints;
-var avgTime = stencilTime / iterations;
-writeln("Rate (MFlops/s): ", 1.0E-06 * flops/avgTime,
-        "  Avg time (s): ", avgTime);
+  if (!validate) {
+    writeln("Rate (MFlops/s): ", 1.0E-06 * flops/avgTime, "  Avg time (s): ", 
+            avgTime);
+  }
+}
