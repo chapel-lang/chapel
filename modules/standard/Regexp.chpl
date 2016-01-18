@@ -950,7 +950,7 @@ record regexp {
   }
 
   pragma "no doc"
-  proc writeThis(f: Writer) {
+  proc writeThis(f) {
     var pattern:c_string;
     on this.home {
       qio_regexp_get_pattern(this._regexp, pattern);
@@ -961,7 +961,7 @@ record regexp {
   }
 
   pragma "no doc"
-  proc readThis(f: Reader) {
+  proc readThis(f) {
     var pattern:c_string;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags

@@ -8,9 +8,7 @@ for i in D {
   DomIntType += myIdx;
   DomUintType += myIdx:uintType;
   DomRealType += myIdx:realType;
-  var s: string;
-  s.write(myIdx);
-  DomStringType += s;
+  DomStringType += stringify(myIdx);
 }
 
 forall ai in DomIntType do

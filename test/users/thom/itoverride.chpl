@@ -1,12 +1,12 @@
 
 class C
 {
-    proc writeThis(w:Writer) { w.write("C"); }
+    proc writeThis(w) { w.write("C"); }
 }
 
 class SubC : C
 {
-    proc writeThis(w:Writer) { w.write("SubC"); }
+    proc writeThis(w) { w.write("SubC"); }
 }
 
 class OverrideMe

@@ -83,15 +83,15 @@ class List {
   //
   // Define the style of the output when a list is passed to the write or
   // writeln functions. The values will be written separated by spaces.
-  // 
-  proc writeThis(x: Writer) {
+  // The argument 'w' is a writeable channel.
+  proc writeThis(w) {
     var first = true;
     for i in this do
       if first {
-        x.write(i);
+        w.write(i);
         first = false;
       } else {
-        x.write(" " + i);
+        w.write(" " + i);
       }
   }
 }

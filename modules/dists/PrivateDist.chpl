@@ -71,7 +71,7 @@ class Private: BaseDist {
     return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable);
   }
 
-  proc writeThis(x: Writer) {
+  proc writeThis(x) {
     x.writeln("Private Distribution");
   }
 }
@@ -98,7 +98,7 @@ class PrivateDom: BaseRectangularDom {
       yield i;
   }
 
-  proc dsiSerialWrite(x: Writer) { x.write("Private Domain"); }
+  proc dsiSerialWrite(x) { x.write("Private Domain"); }
 
   proc dsiBuildArray(type eltType)
     return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
@@ -185,7 +185,7 @@ iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind
     yield dsiAccess(i);
 }
 
-proc PrivateArr.dsiSerialWrite(x: Writer) {
+proc PrivateArr.dsiSerialWrite(x) {
   var first: bool = true;
   for i in dom {
     if first then first = !first; else write(" ");

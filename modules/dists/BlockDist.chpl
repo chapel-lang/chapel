@@ -486,7 +486,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Block.writeThis(x:Writer) {
+proc Block.writeThis(x) {
   x.writeln("Block");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -820,7 +820,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 //
 // output domain
 //
-proc BlockDom.dsiSerialWrite(x:Writer) {
+proc BlockDom.dsiSerialWrite(x) {
   x.write(whole);
 }
 
@@ -1144,7 +1144,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
 //
 // output array
 //
-proc BlockArr.dsiSerialWrite(f: Writer) {
+proc BlockArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
   var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
