@@ -1134,7 +1134,7 @@ module String {
   //
   // Append
   //
-  proc +=(ref lhs: string, rhs: string) : void {
+  proc +=(ref lhs: string, const ref rhs: string) : void {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 
