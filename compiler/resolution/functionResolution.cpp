@@ -7568,7 +7568,7 @@ static void resolveEnumTypes() {
 
 // removes entries in virtualChildrenMap that are not in virtualMethodTable.
 // such entries could not be called and should be dead-code eliminated.
-void filterVirtualChildren()
+static void filterVirtualChildren()
 {
   std::set<FnSymbol*> fns_in_vmt;
   typedef MapElem<Type*,Vec<FnSymbol*>*> VmtMapElem;
