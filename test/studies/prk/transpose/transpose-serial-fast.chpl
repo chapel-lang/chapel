@@ -3,44 +3,48 @@
 use Time;
 
 param PRKVERSION = "2.15";
+
 config const iterations : int = 100;
 config const order : int = 100;
 config const tileSize : int = 32;
+
+// Additional output for debugging
 config const debug: bool = false;
+
+// Only print the validation string
+config const validate: bool = false;
 
 // Timer
 var timer: Timer;
 
-var tiled : bool;
 var bytes = 2.0 * numBytes(real) * order * order;
+var tiled = false;
 
 const Dom = {0.. # order, 0.. # order},
  tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
 var A, B : [Dom] real;
 
 
-writeln("Parallel Research Kernels version ", PRKVERSION);
-writeln("Serial Matrix transpose: B = A^T");
-writeln("Matrix order          = ", order);
-if (tileSize < order && tileSize > 0) {
-  writeln("Tile size              = ", tileSize);
-  tiled = true;
-} else {
-  writeln("Untiled");
-  tiled = false;
+if (!validate) {
+  writeln("Parallel Research Kernels version ", PRKVERSION);
+  writeln("Serial Matrix transpose: B = A^T");
+  writeln("Matrix order          = ", order);
+  if (tileSize < order && tileSize > 0) {
+    writeln("Tile size              = ", tileSize);
+    tiled = true;
+  } else {
+    writeln("Untiled");
+    tiled = false;
+  }
+  writeln("Number of iterations = ", iterations);
 }
-writeln("Number of iterations = ", iterations);
-
 
 // Fill original column matrix
-for (i,j) in Dom {
-  A[i,j] = order*j + i;
-}
+[(i, j) in Dom] A[i,j] = order*j + i;
 
 // Set transpose matrix to known garbage value
 B = -1.0;
 
-var work = 0;
 // Main loop
 for iteration in 0..iterations {
   // Start timer after a warmup lap
@@ -51,7 +55,6 @@ for iteration in 0..iterations {
       for it in i .. # min(order - i, tileSize) {
         for jt in j .. # min(order - j, tileSize) {
           B[jt,it] = A[it,jt];
-          work += 1;
         }
       }
     }
@@ -59,7 +62,6 @@ for iteration in 0..iterations {
   else {
     for (i,j) in Dom {
       B[j,i] = A[i,j];
-      work += 1;
     }
   }
 
@@ -70,28 +72,26 @@ timer.stop();
 // Analyze and output results
 
 var transposeTime = timer.elapsed();
-
-
-var abserr = 0.0;
-for (i,j) in Dom {
-  abserr += abs(B[i,j] - (order*i + j));
-}
-
-if (debug) {
-  writeln("transposeTime = ", transposeTime);
-  writeln("work = ", work);
-  writeln("Sum of absolute differences: ", abserr);
-}
+var avgTime = transposeTime / iterations;
 
 // Error tolerance
 const epsilon = 1.e-8;
 
-if (abserr < epsilon) {
-  writeln("Solution validates\n");
-  var avgtime = transposeTime / iterations;
-  writeln("Rate (MB/s): ", 1.0E-06 * bytes / avgtime,
-          " Avg time (s): ", avgtime);
+var absErr = 0.0;
+for (i,j) in Dom {
+  absErr += abs(B[i,j] - (order*i + j));
+}
+
+if (debug) {
+  writeln("transposeTime = ", transposeTime);
+  writeln("Sum of absolute differences: ", absErr);
+}
+
+if (absErr < epsilon) {
+  writeln("Solution validates");
+  if (!validate) then writeln("Rate (MB/s): ", 1.0E-06 * bytes / avgTime,
+                              " Avg time (s): ", avgTime);
 } else {
-  writeln("ERROR: Aggregate squared error", abserr,
+  writeln("ERROR: Aggregate squared error", absErr,
           " exceeds threshold ", epsilon);
 }
