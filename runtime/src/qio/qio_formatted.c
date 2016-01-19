@@ -3633,6 +3633,7 @@ qioerr qio_conv_parse(c_string fmt,
   int minus_flag = 0;
   int space_flag = 0;
   int plus_flag = 0;
+  int sloppy_flag = 0;
   char base_flag = 0;
   char specifier = 0;
   char binary = 0;
@@ -3742,6 +3743,10 @@ qioerr qio_conv_parse(c_string fmt,
         space_flag = 1;
       } else if( fmt[i] == '+' ) {
         plus_flag = 1;
+      } else if( fmt[i] == '~' ) {
+        // ~ might one day mean allow non-quoted JSON field names
+        // but it also means to skip JSON fields not in use.
+        sloppy_flag = 1;
       } else {
         break;
       }
@@ -4122,6 +4127,10 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->pad_char = ' ';
       style_out->realfmt = 2;
       style_out->string_format = QIO_STRING_FORMAT_CHPL;
+
+      if( sloppy_flag ) {
+        style_out->skip_unknown_fields = 1;
+      }
 
       if( base_flag == 'j' ) {
         style_out->realfmt = 2;
