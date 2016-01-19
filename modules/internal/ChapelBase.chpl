@@ -567,7 +567,7 @@ module ChapelBase {
   }
 
   config param parallelInitElts=true;
-  proc init_elts(x, s, type t) {
+  proc init_elts(x, s, type t) : void {
     //
     // Q: why is the declaration of 'y' in the following loops?
     //
