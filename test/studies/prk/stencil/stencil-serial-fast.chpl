@@ -5,17 +5,15 @@ use Time;
 
 param PRKVERSION = "2.15";
 
+config var tileSize: int = 0;
+
 config const iterations: int = 10,
              order: int = 1000,
-             tileSize: int = 0;
-
-// Additional output for debugging and reduced output for validation
-config const debug: bool = false,
+             debug: bool = false,
              validate: bool = false;
 
-// Stencil radius
 config param R = 2,
-             compact = false; // not yet implemented
+             compact = false;
 
 // Configurable type for array elements
 config type dtype = real;

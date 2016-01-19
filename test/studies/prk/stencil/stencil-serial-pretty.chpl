@@ -25,7 +25,6 @@ const activePoints = (order-2*R)*(order-2*R),
       coefx : dtype = 1.0,
       coefy : dtype = 1.0;
 
-// Timer
 var timer: Timer;
 
 //
@@ -84,10 +83,10 @@ if (!validate) {
   writeln("Serial stencil execution on 2D grid");
   writeln("Grid size            = ", order);
   writeln("Radius of stencil    = ", R);
-  if compact then writeln("Type of stencil      = compact"); // TODO
+  if compact then writeln("Type of stencil      = compact");
   else              writeln("Type of stencil      = star");
   writeln("Data type            = ", dtype:string);
-  if tiling then writeln("Tile size             = ", tileSize); // TODO
+  if tiling then writeln("Tile size             = ", tileSize);
   else             writeln("Untiled");
   writeln("Number of iterations = ", iterations);
 }
