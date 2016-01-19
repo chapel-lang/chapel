@@ -84,8 +84,8 @@ of array ``A`` in the call to ``QuickSort``. A secondary problem with the error
 message is that it exposes the internals of the ``QuickSort`` function to the
 user, reducing the modularity of the ``QuickSort`` function. In more complex
 library functions, the error may originate from within deeply nested auxiliary
-functions, resulting in exceedingly long and impenetrable error messages. (C++
-template libraries have become infamous for this problem [1].
+functions, resulting in exceedingly long and impenetrable error messages (C++
+template libraries have become infamous for this problem [1]).
 
 The Chapel compiler needs more information in order to determine whether the
 error is in the implementation of QuickSort or in the call to it.
