@@ -29,9 +29,9 @@ const activePoints = (order-2*R)*(order-2*R),
 var timer: Timer;
 
 // Domains
-const Dom = {0.. # order, 0.. # order},
+const      Dom = {0.. # order, 0.. # order},
       InnerDom = Dom.expand(-R),
-      W = {-R..R, -R..R};
+             W = {-R..R, -R..R};
 
 // Arrays
 var input, output: [Dom] dtype = 0.0;

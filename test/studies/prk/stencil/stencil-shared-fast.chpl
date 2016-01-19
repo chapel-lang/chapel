@@ -1,39 +1,62 @@
-// Chapel's shared-memory parallel stencil implementation
+// Chapel's serial stencil implementation
 use Time;
 
 param PRKVERSION = "2.15";
 
-// Note: Defaulting to STAR stencil (defines weight)
-// Configurable runtime constants
 config const iterations: int = 10,
-             n: int = 1000,
-             debug: bool = false;
+             order: int = 1000,
+             tileSize: int = 0;
 
+// Additional output for debugging and reduced output for validation
+config const debug: bool = false,
+             validate: bool = false;
+
+// Stencil radius
+config param R = 2,
+             compact = false; // not yet implemented
+
+// Configurable type for array elements
 config type dtype = real;
 
-// Configurable compile constants
-config param R = 2;
-
 // Runtime constants
-const activePoints = (n-2*R)*(n-2*R),
+const activePoints = (order-2*R)*(order-2*R),
+      stencilSize = 4*R + 1,
+      weightSize = 2*R + 1,
       coefx : dtype = 1.0,
       coefy : dtype = 1.0;
-
-param stencilSize = 4*R + 1,
-      weightSize = 2*R + 1,
-      epsilon = 1.e-8;
 
 // Timer
 var timer: Timer;
 
 // Domains
-const    Dom = {0.. # n, 0.. # n},
+const    Dom = {0.. # order, 0.. # order},
     InnerDom = Dom.expand(-R),
            W = {-R..R, -R..R};
 
 // Arrays (initialized to zeros)
 var input, output:  [Dom] dtype = 0.0,
     weight: [W] dtype = 0.0;
+
+// Process and test input configs
+if (iterations < 1) {
+  writeln("ERROR: iterations must be >= 1: ", iterations);
+  exit(1);
+}
+if (order < 1) {
+  writeln("ERROR: Matrix Order must be greater than 0 : ", order);
+  exit(1);
+}
+if (R < 1) {
+  writeln("ERROR: Stencil radius ", R, " should be positive");
+  exit(1);
+}
+if (2*R + 1 > order) {
+  writeln("ERROR: Stencil radius ", R, " exceeds grid size ", order);
+  exit(1);
+}
+
+// Determine tiling
+var tiling = (tileSize > 0 && tileSize < order);
 
 forall i in 1..R do {
   const element = 1.0 / (2.0*i*R);
@@ -47,14 +70,19 @@ forall i in 1..R do {
 [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
 
 // Print information before main loop
-writeln("Parallel Research Kernels Version ", PRKVERSION);
-writeln("Serial stencil execution on 2D grid");
-writeln("Grid size            = ", n);
-writeln("Radius of stencil    = ", R);
-writeln("Type of stencil      = star"); // Temporarily hard-coded
-writeln("Data type            = double precision");
-writeln("Untiled");                     // Temporarily hard-coded
-writeln("Number of iterations = ", iterations);
+if (!validate) {
+  writeln("Parallel Research Kernels Version ", PRKVERSION);
+  writeln("Serial stencil execution on 2D grid");
+  writeln("Grid size            = ", order);
+  writeln("Radius of stencil    = ", R);
+  if compact then writeln("Type of stencil      = compact"); // TODO
+  else              writeln("Type of stencil      = star");
+  writeln("Data type            = ", dtype:string);
+  if tiling then writeln("Tile size             = ", tileSize); // TODO
+  else             writeln("Untiled");
+  writeln("Number of iterations = ", iterations);
+}
+
 
 for iteration in 0..iterations {
 
