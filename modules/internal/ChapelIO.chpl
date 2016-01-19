@@ -256,13 +256,15 @@ module ChapelIO {
               var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
               var eq:ioLiteral;
               if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
+                eq = new ioLiteral('"' +
+                                   __primitive("field num to name", t, i) +
+                                   '":');
               } else {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
               }
               writer.readwrite(eq);
             }
-    
+
             writer.readwrite(__primitive("field value by num", x, i));
   
             first = false;
@@ -281,9 +283,11 @@ module ChapelIO {
               var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
               var eq:ioLiteral;
               if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
+                eq = new ioLiteral('"' +
+                                   __primitive("field num to name", t, i) +
+                                   '":');
               } else {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
               }
               writer.readwrite(eq);
             }
@@ -345,50 +349,225 @@ module ChapelIO {
       }
     }
  
+    private
+    proc skipFieldsAtEnd(reader, inout needsComma:bool) {
+
+      var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
+
+      if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
+
+        while true {
+          if needsComma {
+            // read a comma
+            var comma = new ioLiteral(",", true);
+            reader.readwrite(comma);
+
+            if !reader.error() {
+              needsComma = false; // we read a comma
+            } else if reader.error() == EFORMAT {
+              // break out of the loop if we didn't read a comma
+              // and we're expecting to read one.
+              // We clear the error since we
+              // might be at the end (without error)
+              reader.clearError();
+              break;
+            }
+          }
+
+          // Skip an unknown JSON field.
+          var e:syserr;
+          reader.skipJsonField(error=e);
+          if !e {
+            needsComma = true;
+          }
+          reader.setError(e);
+        }
+      }
+    }
+
     pragma "no doc"
-    proc readThisFieldsDefaultImpl(reader, type t, ref x, inout first:bool) {
+    proc readThisFieldsDefaultImpl(reader, type t, ref x,
+                                   inout needsComma:bool) {
       param num_fields = __primitive("num fields", t);
       var isBinary = reader.binary();
+      var superclass_error : syserr = ENOERR;
   
-      //writeln("Scanning fields for ", t:string);
+      //writeln("in readThisFieldsDefaultImpl type ", t:string, " num_fields=", num_fields, " needsComma=", needsComma);
   
       if (isClassType(t)) {
         if t != object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
-          readThisFieldsDefaultImpl(reader, x.super.type, x, first);
+          type superType = x.super.type;
+          //writeln("super type ", superType:string);
+          var castTmp:superType = x; // make a copy of the ptr so we
+                                     // can pass it by ref
+          readThisFieldsDefaultImpl(reader, superType, castTmp, needsComma);
+          // Any error reading superclass must be preserved.
+          superclass_error = reader.error();
         }
       }
   
+      //writeln("in readThisFieldsDefaultImpl after super. type is ", t:string, " needsComma=", needsComma);
+
       if !isUnionType(t) {
         // read all fields for classes and records
-  
-        for param i in 1..num_fields {
-          if isType(__primitive("field value by num", x, i)) ||
-             isParam(__primitive("field value by num", x, i)) {
-             // do nothing, don't read types or params
-          } else {
-            if !isBinary {
-              var comma = new ioLiteral(",", true);
-              if !first then reader.readwrite(comma);
-    
-              var fname = new ioLiteral(__primitive("field num to name", t, i), true);
-              reader.readwrite(fname);
-    
-              var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-              var eq:ioLiteral;
-              if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral(":", true);
-              } else {
-                eq = new ioLiteral("=", true);
-              }
-              reader.readwrite(eq);
+        if isBinary {
+          for param i in 1..num_fields {
+            if isType(__primitive("field value by num", x, i)) ||
+               isParam(__primitive("field value by num", x, i)) {
+              // do nothing, don't read types or params
+            } else {
+              reader.readwrite(__primitive("field value by num", x, i));
             }
-    
-            reader.readwrite(__primitive("field value by num", x, i));
-    
-            first = false;
           }
+        } else if num_fields > 0 {
+          // track whether or not we've read all of the fields.
+
+          // this tuple helps us not read the same field twice.
+          var read_field:(num_fields)*bool;
+          var num_to_read = 0;
+          var num_read = 0;
+          for param i in 1..num_fields {
+            if isType(__primitive("field value by num", x, i)) ||
+               isParam(__primitive("field value by num", x, i)) {
+              // do nothing, don't read types or params
+            } else {
+              num_to_read += 1;
+            }
+          }
+
+          // the order should not matter.
+          while num_read < num_to_read {
+            //writeln("IN LOOP read_field=", read_field);
+
+            if needsComma {
+              // read a comma
+
+              //writeln("READING COMMA");
+              var comma = new ioLiteral(",", true);
+              reader.readwrite(comma);
+
+              if !reader.error() {
+                needsComma = false; // we read a comma
+              } else if reader.error() == EFORMAT {
+                //writeln("NO COMMA");
+                // break out of the loop if we didn't read a comma
+                // and we're expecting to read one.
+                break;
+              }
+            }
+
+            // find a field name that matches.
+            // TODO: this is not particularly efficient. If we
+            // have a lot of fields, this is O(n**2), and there
+            // are other potential problems with string reallocation.
+            var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+            var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
+
+            // the field name
+            var fname:ioLiteral;
+
+            var read_field_name = false;
+
+            //writeln("BEFORE PARAM FOR type ", t:string, " num_fields=", num_fields, " read_field_name=", read_field_name);
+
+            for param i in 1..num_fields {
+              if isType(__primitive("field value by num", x, i)) ||
+                 isParam(__primitive("field value by num", x, i)) {
+                // do nothing, don't read types or params
+              } else {
+
+                if !read_field_name && !read_field[i] {
+                  if st == QIO_AGGREGATE_FORMAT_JSON {
+                    fname = new ioLiteral('"' +
+                                          __primitive("field num to name", t, i)
+                                          + '"',
+                                          true);
+                  } else {
+                    fname = new ioLiteral(__primitive("field num to name", t, i),
+                                          true);
+                  }
+
+                  //writeln("ERROR IS ", reader.error():int);
+                  //writeln("OFFSET IS ", reader.offset());
+                  //writeln("TRYING TO READ ", fname);
+                  reader.readwrite(fname);
+                  //writeln("POST FNAME ERROR IS ", reader.error():int);
+
+                  if reader.error() == EFORMAT || reader.error() == EEOF {
+                    // Try reading again with a different union element.
+                    reader.clearError();
+                  } else {
+                    read_field_name = true;
+                    needsComma = true;
+
+                    //writeln("DID     FIND ", fname);
+
+                    var eq:ioLiteral;
+                    if st == QIO_AGGREGATE_FORMAT_JSON {
+                      eq = new ioLiteral(":", true);
+                    } else {
+                      eq = new ioLiteral("=", true);
+                    }
+                    reader.readwrite(eq);
+
+                    reader.readwrite(__primitive("field value by num", x, i));
+                    if !reader.error() {
+                      //writeln("setting read_field[", i, "]");
+                      read_field[i] = true;
+                      num_read += 1;
+                    }
+                  }
+                }
+              }
+            }
+
+            //writeln("AFTER PARAM FOR");
+
+            // Stop with an error if we didn't read a field name
+            // ... unless we skip unknown fields...
+            if !read_field_name {
+              if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
+
+                //writeln("SKIPPING FIELD");
+
+                // Skip an unknown JSON field.
+                var e:syserr;
+                reader.skipJsonField(error=e);
+                if !e {
+                  needsComma = true;
+                }
+                reader.setError(e);
+              } else {
+                //writeln("ERROR - MISSING FIELD NAME");
+                reader.setError(EFORMAT:syserr);
+                break;
+              }
+            }
+          }
+
+          //writeln("POST WHILE ERROR IS ", reader.error():int);
+
+          // check that we've read all fields, return error if not.
+          {
+            var ok = num_read == num_to_read;
+            /*for param i in 1..num_fields {
+              if isType(__primitive("field value by num", x, i)) ||
+                 isParam(__primitive("field value by num", x, i)) {
+                 // do nothing, don't read types or params
+              } else {
+                ok &= read_field[i];
+                //writeln("read_field[", i, "] is ", read_field[i]);
+              }
+            }*/
+
+            if ok then reader.setError(superclass_error);
+            else reader.setError(EFORMAT:syserr);
+          }
+
+          //writeln("POST CHECK ERROR IS ", reader.error():int);
         }
       } else {
         // Handle unions.
@@ -403,22 +582,47 @@ module ChapelIO {
           }
         } else {
           // Read the field name = part until we get one that worked.
+          var found_field = false;
           for param i in 1..num_fields {
             var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
             var eq:ioLiteral;
+
+            // the field name
+            var fname:ioLiteral;
+
             if st == QIO_AGGREGATE_FORMAT_JSON {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+              fname = new ioLiteral('"' +
+                                    __primitive("field num to name", t, i)
+                                    + '"',
+                                    true);
             } else {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+              fname = new ioLiteral(__primitive("field num to name", t, i),
+                                    true);
             }
 
-            reader.readwrite(eq);
-            if error() == EFORMAT {
-              clearError();
+            reader.readwrite(fname);
+
+            // Read : or = if there was no error reading field name.
+            if reader.error() == EFORMAT || reader.error() == EEOF {
+              // Try reading again with a different union element.
+              reader.clearError();
             } else {
+              found_field = true;
+              var eq:ioLiteral;
+              if st == QIO_AGGREGATE_FORMAT_JSON {
+                eq = new ioLiteral(":", true);
+              } else {
+                eq = new ioLiteral("=", true);
+              }
+              readIt(eq);
+
               // We read the 'name = ', so now read the value!
               reader.readwrite(__primitive("field value by num", x, i));
             }
+          }
+          // Create an error if we never found a field in our union.
+          if !found_field {
+            reader.setError(EFORMAT:syserr);
           }
         }
       }
@@ -441,11 +645,16 @@ module ChapelIO {
         reader.readwrite(start);
       }
   
-      var first = true;
+      var needsComma = false;
   
       var obj = x; // make obj point to x so ref works
-      readThisFieldsDefaultImpl(reader, t, obj, first);
-  
+      if ! reader.error() {
+        readThisFieldsDefaultImpl(reader, t, obj, needsComma);
+      }
+      if ! reader.error() {
+        skipFieldsAtEnd(reader, needsComma);
+      }
+
       if !reader.binary() {
         var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var end:ioLiteral;
@@ -470,13 +679,22 @@ module ChapelIO {
         } else {
           start = new ioLiteral("(");
         }
+        //writeln("BEFORE READING START");
+        //writeln("ERROR IS ", reader.error():int);
         reader.readwrite(start);
+        //writeln("POST ERROR IS ", reader.error():int);
       }
   
-      var first = true;
+      var needsComma = false;
   
-      readThisFieldsDefaultImpl(reader, t, x, first);
-  
+      if ! reader.error() {
+        //writeln("READING FIELDS\n");
+        readThisFieldsDefaultImpl(reader, t, x, needsComma);
+      }
+      if ! reader.error() {
+        skipFieldsAtEnd(reader, needsComma);
+      }
+
       if !reader.binary() {
         var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var end:ioLiteral;
@@ -485,7 +703,10 @@ module ChapelIO {
         } else {
           end = new ioLiteral(")");
         }
+        //writeln("BEFORE READING END ERROR IS ", reader.error():int);
+        //writeln("BEFORE READING END OFFSET IS ", reader.offset());
         reader.readwrite(end);
+        //writeln("AFTER READING END ERROR IS ", reader.error():int);
       }
     }
   
