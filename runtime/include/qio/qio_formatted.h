@@ -773,8 +773,13 @@ qioerr qio_channel_print_literal(const int threadsafe, qio_channel_t* restrict c
 qioerr qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, /*const char* */ void* ptr, ssize_t len);
 
 
+int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch);
+int32_t qio_skip_json_array_unlocked(qio_channel_t* restrict ch);
+int32_t qio_skip_json_value_unlocked(qio_channel_t* restrict ch);
+int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch);
+int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch);
 
-
+qioerr qio_channel_skip_json_field(const int threadsafe, qio_channel_t* ch);
 
 enum {
   QIO_CONV_UNK = 0,
