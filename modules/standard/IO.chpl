@@ -3922,15 +3922,13 @@ inline proc channel.read(ref args ...?k,
     to a string and returns the result.
   */
 proc stringify(args ...?k):string {
-  var all_primitive = true;
-  
-  for param i in 1..k {
-    if !isPrimitiveType(args[i].type) then all_primitive = false;
-  }
+  param all_primitive = isTupleOfPrimitiveTypes(args);
 
   if all_primitive {
     // As an optimization, use string concatenation for
     // all primitive type stringify...
+    // This helps to work around some resolution errors
+    // when internal modules use halt, which calls stringify.
 
     var str = "";
 
