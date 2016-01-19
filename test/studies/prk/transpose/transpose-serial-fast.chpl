@@ -1,24 +1,20 @@
+//
 // Chapel's serial implementation of transpose
+//
 use Time;
 
 param PRKVERSION = "2.15";
 
 config const iterations : int = 100,
              order : int = 100,
-             tileSize : int = 32;
-
-// Additional output for debugging and reduced output for validation
-config const debug: bool = false,
+             debug: bool = false,
              validate: bool = false;
 
-const Dom = {0.. # order, 0.. # order},
- tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
+config var tileSize: int = 0;
 
-var timer: Timer,
-    bytes = 2.0 * numBytes(real) * order * order,
-    A, B : [Dom] real;
-
-// Read and test input configs
+//
+// Process and test input configs
+//
 if (iterations < 1) {
   writeln("ERROR: iterations must be >= 1: ", iterations);
   exit(1);
@@ -28,8 +24,23 @@ if (order < 0) {
   exit(1);
 }
 
+// Determine tiling
 var tiled = (tileSize < order && tileSize > 0);
 
+// Safety check for creation of tiledDom
+if (!tiled) then tileSize = 1;
+
+// Domains
+const    Dom = {0.. # order, 0.. # order};
+var tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
+
+var timer: Timer,
+    bytes = 2.0 * numBytes(real) * order * order,
+    A, B : [Dom] real;
+
+//
+// Print information before main loop
+//
 if (!validate) {
   writeln("Parallel Research Kernels version ", PRKVERSION);
   writeln("Serial Matrix transpose: B = A^T");
@@ -45,7 +56,9 @@ if (!validate) {
 // Set transpose matrix to known garbage value
 B = -1.0;
 
+//
 // Main loop
+//
 for iteration in 0..iterations {
   // Start timer after a warmup lap
   if (iteration == 1) then timer.start();
@@ -69,10 +82,13 @@ for iteration in 0..iterations {
 
 timer.stop();
 
+//
 // Analyze and output results
+//
 
-var transposeTime = timer.elapsed();
-var avgTime = transposeTime / iterations;
+// Timings
+var transposeTime = timer.elapsed(),
+    avgTime = transposeTime / iterations;
 
 // Error tolerance
 const epsilon = 1.e-8;
@@ -87,6 +103,7 @@ if (debug) {
   writeln("Sum of absolute differences: ", absErr);
 }
 
+// Verify correctness
 if (absErr < epsilon) {
   writeln("Solution validates");
   if (!validate) then writeln("Rate (MB/s): ", 1.0E-06 * bytes / avgTime,

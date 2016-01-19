@@ -1,4 +1,6 @@
-// Chapel's serial stencil implementation
+//
+// Chapel's shared parallel stencil implementation
+//
 use Time;
 
 param PRKVERSION = "2.15";
@@ -48,6 +50,9 @@ if (2*R + 1 > order) {
 // Determine tiling
 var tiling = (tileSize > 0 && tileSize < order);
 
+// Safety check for creation of tiledDom
+if (!tiling) then tileSize = 1;
+
 // Domains
 const    Dom = {0.. # order, 0.. # order},
     innerDom = Dom.expand(-R),
@@ -58,9 +63,6 @@ var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 // Arrays (initialized to zeros)
 var input, output:  [Dom] dtype = 0.0,
     weight: [weightDom] dtype = 0.0;
-
-// Safety check for creation of tiledDom
-if (!tiling) then tileSize = 1;
 
 forall i in 1..R do {
   const element = 1.0 / (2.0*i*R);
@@ -137,7 +139,9 @@ for iteration in 0..iterations {
 
 timer.stop();
 
+//
 // Analyze and output results
+//
 
 // Timings
 var stencilTime = timer.elapsed(),

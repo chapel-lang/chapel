@@ -49,19 +49,24 @@ if (2*R + 1 > order) {
   exit(1);
 }
 
+// Determine tiling
+var tiling = (tileSize > 0 && tileSize < order);
+
+// Safety check for creation of tiledDom
+if (!tiling) then tileSize = 1;
+
 // Domains
-const      Dom = {0.. # order, 0.. # order},
-      InnerDom = Dom.expand(-R),
-      tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
+const    Dom = {0.. # order, 0.. # order},
+    innerDom = Dom.expand(-R),
+   weightDom = {-R..R, -R..R};
+
+var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
 // Arrays
 var input, output: [Dom] dtype = 0.0;
 
 // Tuple of tuples
 var weight: Wsize*(Wsize*(dtype));
-
-// Determine tiling
-var tiling = (tileSize > 0 && tileSize < order);
 
 // Set up weight matrix
 for i in 1..R {
@@ -83,10 +88,10 @@ if (!validate) {
   writeln("Serial stencil execution on 2D grid");
   writeln("Grid size            = ", order);
   writeln("Radius of stencil    = ", R);
-  if compact then writeln("Type of stencil      = compact"); // TODO
+  if compact then writeln("Type of stencil      = compact");
   else              writeln("Type of stencil      = star");
   writeln("Data type            = ", dtype:string);
-  if tiling then writeln("Tile size             = ", tileSize); // TODO
+  if tiling then writeln("Tile size             = ", tileSize);
   else             writeln("Untiled");
   writeln("Number of iterations = ", iterations);
 }
@@ -102,14 +107,31 @@ for iteration in 0..iterations {
   }
 
   if (!tiling) {
-    for (i,j) in InnerDom {
-      for param jj in -R..R  do output[i, j] += weight[R1][R1+jj] * input[i, j+jj];
-      for param ii in -R..-1 do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
-      for param ii in 1..R   do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+    for (i,j) in innerDom {
+      if (!compact) {
+        for param jj in -R..R  do output[i, j] += weight[R1][R1+jj] * input[i, j+jj];
+        for param ii in -R..-1 do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+        for param ii in 1..R   do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+      } else {
+        for (ii, jj) in weightDom do
+          output[i, j] += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+      }
     }
   } else {
-    writeln("Not yet implemented");
-    exit(1);
+    for (it,jt) in tiledDom {
+      for i in it .. # min(order - R - it, tileSize) {
+        for j in jt .. # min(order - R - jt, tileSize) {
+          if (!compact) {
+            for param jj in -R..R  do output[i, j] += weight[R1][R1+jj] * input[i, j+jj];
+            for param ii in -R..-1 do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+            for param ii in 1..R   do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+          } else {
+            for (ii, jj) in weightDom do
+              output[i, j] += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+          }
+        }
+      }
+    }
   }
 
   // Add constant to solution to force refresh of neighbor data, if any
@@ -119,7 +141,9 @@ for iteration in 0..iterations {
 
 timer.stop();
 
+//
 // Analyze and output results
+//
 
 // Timings
 var stencilTime = timer.elapsed(),

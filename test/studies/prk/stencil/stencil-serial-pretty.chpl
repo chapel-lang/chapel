@@ -137,7 +137,9 @@ for iteration in 0..iterations do {
 
 timer.stop();
 
+//
 // Analyze and output results
+//
 
 // Timings
 var stencilTime = timer.elapsed(),
