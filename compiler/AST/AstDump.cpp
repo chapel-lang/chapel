@@ -35,8 +35,6 @@
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 
-#include "stlUtil.h"
-
 AstDump::AstDump() {
   mName      =     0;
   mPath      =     0;
@@ -296,29 +294,13 @@ void AstDump::visitUseExpr(UseExpr* node) {
   node->mod->accept(this);
 
   if (node->includes.size() > 0) {
-    bool first = true;
     fprintf(mFP, " 'only' ");
-    for_vector(const char, str, node->includes) {
-      if (first) {
-	first = false;
-      } else {
-	fprintf(mFP, ", ");
-      }
-      fprintf(mFP, "%s", str);
-    }
+    outputVector(mFP, node->includes);
   }
 
   if (node->excludes.size() > 0) {
-    bool first = true;
     fprintf(mFP, " 'except' ");
-    for_vector(const char, str, node->excludes) {
-      if (first) {
-	first = false;
-      } else {
-	fprintf(mFP, ", ");
-      }
-      fprintf(mFP, "%s", str);
-    }
+    outputVector(mFP, node->excludes);
   }
 
   write(false, ")", true);
