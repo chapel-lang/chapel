@@ -1,19 +1,19 @@
+//
 // Chapel's serial stencil implementation
+//
 use Time;
 
 param PRKVERSION = "2.15";
 
+config var tileSize: int = 0;
+
 config const iterations: int = 10,
              order: int = 1000,
-             tileSize: int = 0;
-
-// Additional output for debugging and reduced output for validation
-config const debug: bool = false,
+             debug: bool = false,
              validate: bool = false;
 
-// Stencil radius
 config param R = 2,
-             compact = false; // not yet implemented
+             compact = false;
 
 // Configurable type for array elements
 config type dtype = real;
@@ -28,16 +28,9 @@ const activePoints = (order-2*R)*(order-2*R),
 // Timer
 var timer: Timer;
 
-// Domains
-const      Dom = {0.. # order, 0.. # order},
-      InnerDom = Dom.expand(-R),
-             W = {-R..R, -R..R};
-
-// Arrays
-var input, output: [Dom] dtype = 0.0;
-var weight: [W] dtype = 0.0;
-
+//
 // Process and test input configs
+//
 if (iterations < 1) {
   writeln("ERROR: iterations must be >= 1: ", iterations);
   exit(1);
@@ -58,6 +51,20 @@ if (2*R + 1 > order) {
 // Determine tiling
 var tiling = (tileSize > 0 && tileSize < order);
 
+// Safety check for creation of tiledDom
+if (!tiling) then tileSize = 1;
+
+// Domains
+const      Dom = {0.. # order, 0.. # order},
+      innerDom = Dom.expand(-R),
+     weightDom = {-R..R, -R..R};
+
+var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
+
+// Arrays
+var input, output: [Dom] dtype = 0.0;
+var weight: [weightDom] dtype = 0.0;
+
 for i in 1..R do {
   const element : dtype = 1 / (2*i*R) : dtype;
   weight[0, i]  =  element;
@@ -69,7 +76,9 @@ for i in 1..R do {
 // Initialize the input and output arrays
 [(i, j) in Dom] input[i,j] = coefx*i + coefy*j;
 
+//
 // Print information before main loop
+//
 if (!validate) {
   writeln("Parallel Research Kernels Version ", PRKVERSION);
   writeln("Serial stencil execution on 2D grid");
@@ -84,6 +93,9 @@ if (!validate) {
 }
 
 
+//
+// Main loop
+//
 for iteration in 0..iterations do {
 
   // Start timer after warmup iteration
@@ -91,10 +103,32 @@ for iteration in 0..iterations do {
     timer.start();
   }
 
-  for (i,j) in InnerDom {
-    for jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
-    for ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
-    for ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
+  if (!tiling) {
+    for (i,j) in innerDom {
+      if (!compact) {
+        for jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
+        for ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
+        for ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
+      } else {
+        for (ii, jj) in weightDom do
+          output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
+      }
+    }
+  } else {
+    for (it,jt) in tiledDom {
+      for i in it .. # min(order - R - it, tileSize) {
+        for j in jt .. # min(order - R - jt, tileSize) {
+          if (!compact) {
+            for jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
+            for ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
+            for ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
+          } else {
+            for (ii, jj) in weightDom do
+              output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
+          }
+        }
+      }
+    }
   }
 
   // Add constant to solution to force refresh of neighbor data, if any

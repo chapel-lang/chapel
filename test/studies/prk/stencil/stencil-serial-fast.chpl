@@ -1,4 +1,6 @@
+//
 // Chapel's serial stencil implementation
+//
 use Time;
 
 param PRKVERSION = "2.15";
@@ -29,17 +31,9 @@ param stencilSize = 4*R + 1,
 
 var timer: Timer;
 
-// Domains
-const Dom = {0.. # order, 0.. # order},
-      InnerDom = Dom.expand(-R);
-
-// Arrays
-var input, output: [Dom] dtype = 0.0;
-
-// Tuple of tuples
-var weight: Wsize*(Wsize*(dtype));
-
+//
 // Process and test input configs
+//
 if (iterations < 1) {
   writeln("ERROR: iterations must be >= 1: ", iterations);
   exit(1);
@@ -57,6 +51,17 @@ if (2*R + 1 > order) {
   exit(1);
 }
 
+// Domains
+const      Dom = {0.. # order, 0.. # order},
+      InnerDom = Dom.expand(-R),
+      tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
+
+// Arrays
+var input, output: [Dom] dtype = 0.0;
+
+// Tuple of tuples
+var weight: Wsize*(Wsize*(dtype));
+
 // Determine tiling
 var tiling = (tileSize > 0 && tileSize < order);
 
@@ -72,7 +77,9 @@ for i in 1..R {
 // Initialize the input and output arrays
 [(i, j) in Dom] input[i,j] = coefx*i + coefy*j;
 
+//
 // Print information before main loop
+//
 if (!validate) {
   writeln("Parallel Research Kernels Version ", PRKVERSION);
   writeln("Serial stencil execution on 2D grid");
@@ -86,6 +93,9 @@ if (!validate) {
   writeln("Number of iterations = ", iterations);
 }
 
+//
+// Main loop
+//
 for iteration in 0..iterations {
 
   // Start timer after warmup iteration
@@ -93,10 +103,15 @@ for iteration in 0..iterations {
     timer.start();
   }
 
-  for (i,j) in InnerDom {
-    for param jj in -R..R  do output[i, j] += weight[R1][R1+jj] * input[i, j+jj];
-    for param ii in -R..-1 do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
-    for param ii in 1..R   do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+  if (!tiling) {
+    for (i,j) in InnerDom {
+      for param jj in -R..R  do output[i, j] += weight[R1][R1+jj] * input[i, j+jj];
+      for param ii in -R..-1 do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+      for param ii in 1..R   do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+    }
+  } else {
+    writeln("Not yet implemented");
+    exit(1);
   }
 
   // Add constant to solution to force refresh of neighbor data, if any
