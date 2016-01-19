@@ -1,24 +1,29 @@
+//
 // Chapel's serial implementation of synch_p2p
-
+//
 use Time;
 
 param PRKVERSION = "2.15";
-config const iterations = 10;
-config const m = 1000;
-config const n = 100;
-config const debug: bool = false;
 
-var timer: Timer;
+config const iterations = 10,
+             m = 1000,
+             n = 100,
+             debug: bool = false,
+             validate: bool = false;
 
+//
+// Process and test input configs
+//
 if (iterations < 1) {
   writeln("ERROR: iterations must be >= 1 : ", iterations);
   exit(1);
 }
-
 if (m < 1 || n < 1) {
   writeln("ERROR: grid dimensions must be positive:", m, ", ", n);
   exit(1);
 }
+
+var timer: Timer;
 
 // Initialize and zero out vector
 const mrange = 0 .. # m,
@@ -28,15 +33,23 @@ const mrange = 0 .. # m,
 
 var vector : [Dom] real = 0.0;
 
-writeln("Parallel Research Kernels version ", PRKVERSION);
-writeln("Serial pipeline execution on 2D grid");
-writeln("Grid sizes                = ", m, ", ", n);
-writeln("Number of iterations      = ", iterations);
+//
+// Print information before main loop
+//
+if (!validate) {
+  writeln("Parallel Research Kernels version ", PRKVERSION);
+  writeln("Serial pipeline execution on 2D grid");
+  writeln("Grid sizes                = ", m, ", ", n);
+  writeln("Number of iterations      = ", iterations);
+}
 
 // Set boundary values (top and left side of grid)
-serial do [j in nrange] vector[0,j] = j;
-serial do [i in mrange] vector[i,0] = i;
+[j in nrange] vector[0,j] = j;
+[i in mrange] vector[i,0] = i;
 
+//
+// Main loop
+//
 for iteration in 0 .. iterations {
 
   // Start timer after warmup iteration
@@ -48,13 +61,18 @@ for iteration in 0 .. iterations {
 
   // Copy bottom right corner value to top left, creating dependency
   vector[0, 0] = -vector[m-1, n-1];
-}
+
+} // end of iterations
 
 timer.stop();
 
-var pipelineTime = timer.elapsed();
-
+//
 // Analyze and output results
+//
+
+// Timing
+var pipelineTime = timer.elapsed(),
+    avgTime = pipelineTime / iterations;
 
 // Error threshold
 const epsilon = 1.e-8;
@@ -65,15 +83,13 @@ if (abs(vector[m-1, n-1] - cornerValue) / cornerValue > epsilon) {
   writeln("ERROR: checksum ", vector[m-1, n-1], " does not match verification \
       value", cornerValue);
   exit(1);
-}
-
-if (debug) {
-  writeln("Solution validates; verification value = ", cornerValue);
 } else {
   writeln("Solution validates");
+
+  if (debug) then writeln("Verification value = ", cornerValue);
+
+  if (!validate) {
+    writeln("Rate (MFlops/s): ", 1.0e-6 * 2 * ((m-1)*(n-1)) / avgTime,
+            " Avg time (s): ", avgTime);
+  }
 }
-
-var avgTime = pipelineTime / iterations;
-
-writeln("Rate (MFlops/s): ", 1.0e-6 * 2 * ((m-1)*(n-1)) / avgTime,
-        " Avg time (s): ", avgTime);

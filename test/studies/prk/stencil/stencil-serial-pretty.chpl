@@ -149,6 +149,7 @@ var stencilTime = timer.elapsed(),
 // Compute L1 norm
 var referenceNorm = (iterations + 1) * (coefx + coefy),
     norm = + reduce abs(output);
+
 norm /= activePoints;
 
 // Error threshold
