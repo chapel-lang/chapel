@@ -72,14 +72,6 @@ module CString {
     return x;
   }
 
-  //proc typeToString(type t) param {
-  //  return __primitive("typeToString", t);
-  //}
-
-  //proc typeToString(x) param {
-  //  compilerError("typeToString()'s argument must be a type, not a value");
-  //}
-
   inline proc ==(param s0: c_string, param s1: c_string) param {
     return __primitive("string_compare", s0, s1) == 0;
   }
@@ -381,12 +373,12 @@ module CString {
   }
   */
 
-  proc c_string.writeThis(x: Writer) {
+  proc c_string.writeThis(x) {
     x.write(this);
   }
   // The c_string_copy version is required, since apparently coercions are not
   // applied to "this".
-  proc c_string_copy.writeThis(x: Writer) {
+  proc c_string_copy.writeThis(x) {
     x.write(this:c_string);
   }
 

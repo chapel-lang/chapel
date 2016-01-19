@@ -290,7 +290,8 @@ module Random {
 
       pragma "no doc"
       proc fillRandom(arr: []) {
-        compilerError("NPBRandomStream(eltType=", typeToString(eltType), ") can only be used to fill arrays of ", typeToString(eltType));
+        compilerError("NPBRandomStream(eltType=", eltType:string, 
+                      ") can only be used to fill arrays of ", eltType:string);
       }
         
       pragma "no doc"
@@ -306,9 +307,9 @@ module Random {
       }
 
       pragma "no doc"
-      proc writeThis(f: Writer) {
+      proc writeThis(f) {
         f <~> "NPBRandomStream(eltType=";
-        f <~> typeToString(eltType);
+        f <~> eltType:string;
         f <~> ", parSafe=";
         f <~> parSafe;
         f <~> ", seed=";
@@ -485,9 +486,6 @@ module Random {
   module PCGRandom {
 
     use RandomSupport;
-
-    proc isSupportedNumericType(type t) param
-      return isNumericType(t) || isBoolType(t);
 
     // How many generators do we need for this type?
     private
@@ -675,7 +673,9 @@ module Random {
           arr[k] <=> arr[j];
         }
       }
-      /* Produce a random permutation.
+      /* Produce a random permutation, storing it in a 1-D array.
+         The resulting array will include each value from low..high
+         exactly once.
          */
       proc permutation(arr: [] eltType) {
         var low = arr.domain.dim(1).low;
@@ -697,7 +697,8 @@ module Random {
 
       pragma "no doc"
       proc fillRandom(arr: []) {
-        compilerError("PCGRandomStream(eltType=", typeToString(eltType), ") can only be used to fill arrays of ", typeToString(eltType));
+        compilerError("PCGRandomStream(eltType=", eltType:string, 
+                      ") can only be used to fill arrays of ", eltType:string);
       }
         
       pragma "no doc"
@@ -715,7 +716,7 @@ module Random {
       pragma "no doc"
       proc writeThis(f) {
         f <~> "PCGRandomStream(eltType=";
-        f <~> typeToString(eltType);
+        f <~> eltType:string;
         f <~> ", parSafe=";
         f <~> parSafe;
         f <~> ", seed=";
@@ -758,38 +759,44 @@ module Random {
     // the state changes and can be any value.
 
 
+    private
     param PCG_DEFAULT_MULTIPLIER_8 = 141;
+
+    private
     param PCG_DEFAULT_MULTIPLIER_16 = 12829;
+
+    private
     param PCG_DEFAULT_MULTIPLIER_32 = 747796405;
+
+    private
     param PCG_DEFAULT_MULTIPLIER_64 = 6364136223846793005;
 
-    inline
+    private inline
     proc pcg_setseq_8_step_r(ref state:uint(8), inc:uint(8))
     {
       state = state * PCG_DEFAULT_MULTIPLIER_8 + inc;
     }
 
-    inline
+    private inline
     proc pcg_setseq_16_step_r(ref state:uint(16), inc:uint(16))
     {
       state = state * PCG_DEFAULT_MULTIPLIER_16 + inc;
     }
 
 
-    inline
+    private inline
     proc pcg_setseq_32_step_r(ref state:uint(32), inc:uint(32))
     {
       state = state * PCG_DEFAULT_MULTIPLIER_32 + inc;
     }
 
-
-    inline
+    private inline
     proc pcg_setseq_64_step_r(ref state:uint(64), inc:uint(64))
     {
       state = state * PCG_DEFAULT_MULTIPLIER_64 + inc;
     }
 
-    inline
+    private inline
     proc pcg_rotr_32(value:uint(32), rot:uint(32)):uint(32)
     {
       // having trouble using BitOps...
@@ -800,7 +807,7 @@ module Random {
       return ret;
     }
 
-    inline
+    private inline
     proc pcg_output_xsh_rr_64_32(state:uint(64)):uint(32)
     {
       const xorshifted:uint(32) = (((state >> 18) ^ state) >> 27):uint(32);
@@ -811,28 +818,28 @@ module Random {
     }
 
 
-    inline
+    private inline
     proc pcg_output_rxs_m_xs_8_8(state:uint(8)):uint(8)
     {
       const word:uint(8) = ((state >> ((state >> 6) + 2)) ^ state) * 217;
       return (word >> 6) ^ word;
     }
 
-    inline
+    private inline
     proc pcg_output_rxs_m_xs_16_16(state:uint(16)):uint(16)
     {
       const word:uint(16) = ((state >> ((state >> 13) + 3)) ^ state) * 62169;
       return (word >> 11) ^ word;
     }
 
-    inline
+    private inline
     proc pcg_output_rxs_m_xs_32_32(state:uint(32)):uint(32)
     {
       const word:uint(32) = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
       return (word >> 22) ^ word;
     }
 
-    inline
+    private inline
     proc pcg_output_rxs_m_xs_64_64(state:uint(64)):uint(64)
     {
       const word:uint(64) = ((state >> ((state >> 59) + 5)) ^ state)
@@ -841,9 +848,44 @@ module Random {
     }
 
 
+    /*
+       Low-level PCG random number generation interface (64-bits of state,
+       32-bits output).
+
+       This record implements the same RNG as pcg32_random_r does in
+       PCG-C-0.9.4.
+
+       This RNG has 64-bits of internal state and outputs 32-bits at a time.
+
+       Conceptually, a PCG RNG consists of three things:
+
+         * the algorithm variant (e.g. pcg_setseq_64_xsh_rr_32_rng)
+         * the current state
+         * the RNG sequence constant
+
+       This RNG will iterate through all possible 64-bit values of state.
+       The sequence constant chooses between 2**63 random sequences that the
+       RNG is iterating through.
+
+       Note that the sequence constant must be odd for this generator to
+       function correctly. The function :proc`pcg_getvalid_inc` is available
+       to construct an odd number based upon an arbitrary input.
+
+       When using this low-level interface, the sequence constant is not
+       actually stored inside the RNG. Instead, users of this interface
+       must pass the same sequence constant used in `srandom` to each of
+       the other calls for that RNG object.
+     */
     record pcg_setseq_64_xsh_rr_32_rng {
+      /* The RNG state */
       var state:uint(64);
 
+      /* Seed the random number generator.
+         This function corresponds to pcg32_srandom_r.
+
+         :arg seed: The initial internal state.
+         :arg inc: The sequence constant.
+       */
       inline proc srandom(seed:uint(64), inc:uint(64))
       {
         // this is pcg_setseq_64_srandom_r
@@ -856,6 +898,12 @@ module Random {
         pcg_setseq_64_step_r(state, inc);
       }
 
+      /* Get the next 32-bit random number.
+         This function corresponds to pcg32_random_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :returns: 32 bits generated by the RNG.
+       */
       inline proc random(inc:uint(64)):uint(32)
       {
         // this is pcg_setseq_64_xsh_rr_32_random_r
@@ -865,12 +913,27 @@ module Random {
         return pcg_output_xsh_rr_64_32(oldstate);
       }
 
-      // unlike the PCG version, this version advances the RNG only
-      // one iteration - if more iterations are necessary, it computes
-      // a different stream each time a new bounded random number is needed.
+      /* Generate a random number in [0,bound).
+
+         This function corresponds to pcg32_boundedrand_r, but has one
+         difference. Because parallel random number generation relies
+         upon advancing to a known position, this function only advances
+         the RNG state once per call. Where the pcg32_boundedrand_r would
+         advance the RNG state multiple times, this function creates
+         a new RNG with a different sequence constant but the same state
+         in order to generate more numbers.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :arg bound: The returned value will be < `bound`.
+         :returns: a random number in [0,bound].
+       */
       inline
       proc bounded_random(inc:uint(64), bound:uint(32))
       {
+        // unlike the PCG-C version, this version advances the RNG only
+        // one iteration - if more iterations are necessary, it computes
+        // a different stream each time a new bounded random number is needed.
+
 
             // This comment is from pcg32_boundedrand_r:
             // To avoid bias, we need to make the range of the RNG a multiple of
@@ -928,7 +991,14 @@ module Random {
         return 0;
       }
 
+      /* Advance the RNG. Adjusts the state of the RNG to be the
+         same as if `delta` calls were made to `random`.
 
+         This function corresponds to pcg32_advance_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :arg delta: The number of steps to jump ahead
+       */
       inline
       proc advance(inc:uint(64), delta:uint(64))
       {
@@ -937,9 +1007,33 @@ module Random {
       }
     }
 
+    /*
+       Low-level PCG random number generation interface (64-bits of state,
+       64-bits output).
+
+       This record implements the same RNG as pcg64i_random_r does
+       in PCG-C-09.4.
+
+       This RNG has 64-bits of internal state and outputs 64-bits at a time.
+
+       This generator produces each 64-bit value exactly once.
+
+       This generator should not be considered secure since it reveals
+       its entire internal state with each output.
+
+       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
+       to use this low-level interface.
+
+     */
     record pcg_setseq_64_rxs_m_xs_64_rng {
       var state:uint(64);
 
+      /* Seed the random number generator.
+         This function corresponds to pcg64i_srandom_r.
+
+         :arg seed: The initial internal state.
+         :arg inc: The sequence constant.
+       */
       inline proc srandom(seed:uint(64), inc:uint(64))
       {
         // this is pcg_setseq_64_srandom_r
@@ -948,6 +1042,12 @@ module Random {
         pcg_setseq_64_step_r(state, inc);
       }
 
+      /* Get the next 64-bit random number.
+         This function corresponds to pcg64i_random_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :returns: 64 bits generated by the RNG.
+       */
       inline proc random(inc:uint(64)):uint(64)
       {
         // this is pcg_setseq_64_rxs_m_xs_64_random_r
@@ -956,6 +1056,14 @@ module Random {
         return pcg_output_rxs_m_xs_64_64(oldstate);
       }
 
+      /* Advance the RNG. Adjusts the state of the RNG to be the
+         same as if `delta` calls were made to `random`.
+
+         This function corresponds to pcg64i_advance_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :arg delta: The number of steps to jump ahead
+       */
       inline
       proc advance(inc:uint(64), delta:uint(64))
       {
@@ -964,9 +1072,33 @@ module Random {
       }
     }
 
+    /*
+       Low-level PCG random number generation interface (32-bits of state,
+       32-bits output).
+
+       This record implements the same RNG as pcg32i_random_r does
+       in PCG-C-09.4.
+
+       This RNG has 32-bits of internal state and outputs 32-bits at a time.
+
+       This generator produces each 32-bit value exactly once.
+
+       This generator should not be considered secure since it reveals
+       its entire internal state with each output.
+
+       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
+       to use this low-level interface.
+
+     */
     record pcg_setseq_32_rxs_m_xs_32_rng {
       var state:uint(32);
 
+      /* Seed the random number generator.
+         This function corresponds to pcg32i_srandom_r.
+
+         :arg seed: The initial internal state.
+         :arg inc: The sequence constant
+       */
       inline proc srandom(seed:uint(32), inc:uint(32))
       {
         // this is pcg_setseq_32_srandom_r
@@ -975,6 +1107,12 @@ module Random {
         pcg_setseq_32_step_r(state, inc);
       }
 
+      /* Get the next 32-bit random number.
+         This function corresponds to pcg32i_random_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :returns: 32 bits generated by the RNG.
+       */
       inline proc random(inc:uint(32)):uint(32)
       {
         // this is pcg_setseq_32_rxs_m_xs_32_random_r
@@ -983,6 +1121,14 @@ module Random {
         return pcg_output_rxs_m_xs_32_32(oldstate);
       }
 
+      /* Advance the RNG. Adjusts the state of the RNG to be the
+         same as if `delta` calls were made to `random`.
+
+         This function corresponds to pcg32i_advance_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :arg delta: The number of steps to jump ahead
+       */
       inline
       proc advance(inc:uint(32), delta:uint(32))
       {
@@ -991,9 +1137,33 @@ module Random {
       }
     }
 
+    /*
+       Low-level PCG random number generation interface (16-bits of state,
+       16-bits output).
+
+       This record implements the same RNG as pcg16i_random_r does
+       in PCG-C-09.4.
+
+       This RNG has 16-bits of internal state and outputs 16-bits at a time.
+
+       This generator produces each 16-bit value exactly once.
+
+       This generator should not be considered secure since it reveals
+       its entire internal state with each output.
+
+       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
+       to use this low-level interface.
+
+     */
     record pcg_setseq_16_rxs_m_xs_16_rng {
       var state:uint(16);
 
+      /* Seed the random number generator.
+         This function corresponds to pcg16i_srandom_r.
+
+         :arg seed: The initial internal state.
+         :arg inc: The sequence constant
+       */
       inline proc srandom(seed:uint(16), inc:uint(16))
       {
         // this is pcg_setseq_16_srandom_r
@@ -1002,6 +1172,12 @@ module Random {
         pcg_setseq_16_step_r(state, inc);
       }
 
+      /* Get the next 16-bit random number.
+         This function corresponds to pcg16i_random_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :returns: 16 bits generated by the RNG.
+       */
       inline proc random(inc:uint(16)):uint(16)
       {
         // this is pcg_setseq_16_rxs_m_xs_16_random_r
@@ -1010,6 +1186,14 @@ module Random {
         return pcg_output_rxs_m_xs_16_16(oldstate);
       }
 
+      /* Advance the RNG. Adjusts the state of the RNG to be the
+         same as if `delta` calls were made to `random`.
+
+         This function corresponds to pcg16i_advance_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :arg delta: The number of steps to jump ahead
+       */
       inline
       proc advance(inc:uint(16), delta:uint(16))
       {
@@ -1018,9 +1202,33 @@ module Random {
       }
     }
 
+    /*
+       Low-level PCG random number generation interface (8-bits of state,
+       8-bits output).
+
+       This record implements the same RNG as pcg8i_random_r does
+       in PCG-C-09.4.
+
+       This RNG has 8-bits of internal state and outputs 8-bits at a time.
+
+       This generator produces each 8-bit value exactly once.
+
+       This generator should not be considered secure since it reveals
+       its entire internal state with each output.
+
+       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
+       to use this low-level interface.
+
+     */
     record pcg_setseq_8_rxs_m_xs_8_rng {
       var state:uint(8);
 
+      /* Seed the random number generator.
+         This function corresponds to pcg16i_srandom_r.
+
+         :arg seed: The initial internal state.
+         :arg inc: The sequence constant
+       */
       inline proc srandom(seed:uint(8), inc:uint(8))
       {
         // this is pcg_setseq_8_srandom_r
@@ -1029,6 +1237,12 @@ module Random {
         pcg_setseq_8_step_r(state, inc);
       }
 
+      /* Get the next 16-bit random number.
+         This function corresponds to pcg16i_random_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :returns: 16 bits generated by the RNG.
+       */
       inline proc random(inc:uint(8)):uint(8)
       {
         // this is pcg_setseq_8_rxs_m_xs_8_random_r
@@ -1037,6 +1251,14 @@ module Random {
         return pcg_output_rxs_m_xs_8_8(oldstate);
       }
 
+      /* Advance the RNG. Adjusts the state of the RNG to be the
+         same as if `delta` calls were made to `random`.
+
+         This function corresponds to pcg16i_advance_r.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :arg delta: The number of steps to jump ahead
+       */
       inline
       proc advance(inc:uint(8), delta:uint(8))
       {
@@ -1046,6 +1268,7 @@ module Random {
     }
 
 
+    private
     proc uint_with_bits(param nbits) type {
       if nbits <= 8 then return uint(8);
       else if nbits <= 16 then return uint(16);
@@ -1054,7 +1277,8 @@ module Random {
     }
 
     // zero all but the bottom nbits of x
-    inline proc normalize(nbits:int, x:uint) {
+    private inline
+    proc normalize(nbits:int, x:uint) {
       var oldx = x;
       var shiftamt = 64 - nbits;
       oldx <<= shiftamt;
@@ -1062,6 +1286,7 @@ module Random {
     }
 
 
+    private
     proc pcg_output_rxs_m_xs_N_mine(nbits:int, state_in)
     {
       // no sense it trying to get randomness for really small examples.
@@ -1072,6 +1297,7 @@ module Random {
       if nbits == 32 then return pcg_output_rxs_m_xs_32_32(state_in:uint(32));
       if nbits == 64 then return pcg_output_rxs_m_xs_64_64(state_in:uint(64));
 
+      // Generic output function, adapted for a different number of bits.
       {
         var shiftamt = nbits - 4;
         var state = state_in:uint;
@@ -1082,99 +1308,144 @@ module Random {
     }
 
 
+    /*
+       Low-level PCG random number generation interface for N bits of
+       state, N bits output. This generator can be useful for generating
+       a permutation since it produces each N-bit output exactly once
+       and N is variable.
+
+       This record implements an N-bit random number generator based upon
+       :record:`pcg_setseq_64_rxs_m_xs_64_rng`,
+       :record:`pcg_setseq_32_rxs_m_xs_32_rng`,
+       :record:`pcg_setseq_16_rxs_m_xs_16_rng`,
+       :record:`pcg_setseq_8_rxs_m_xs_8_rng`, and a custom generalization of
+       these generators. This generator always truncates its internal state to N
+       bits.
+
+       This generator should not be considered secure since it reveals its
+       entire internal state with each output.  It produces each N-bit value
+       exactly once.
+
+       See :record:`pcg_setseq_64_xsh_rr_32_rng` for more information about how
+       to use this low-level interface.
+
+     */
     record pcg_setseq_N_rxs_m_xs_N_rng {
-      const nbits;
+      /* the number of bits in state and in each output random number */
+      const N;
+      /* the state */
       var state:uint;
 
-      // zero all but the bottom nbits of state
-      inline proc mask_state() {
-        state = normalize(nbits, state);
+      // zero all but the bottom N bits of state
+      pragma "no doc"
+      inline
+      proc mask_state() {
+        state = normalize(N, state);
       }
 
+      /* Seed the random number generator.
+
+         :arg seed: The initial internal state.
+         :arg inc: The sequence constant
+       */
       inline proc srandom(seed:uint, inc:uint)
       {
         state = inc + seed;
-        if nbits <= 8 {
+        if N <= 8 {
           var tmpstate = state:uint(8);
           pcg_setseq_8_step_r(tmpstate, inc:uint(8));
           state = tmpstate;
-        } else if nbits <= 16 {
+        } else if N <= 16 {
           var tmpstate = state:uint(16);
           pcg_setseq_16_step_r(tmpstate, inc:uint(16));
           state = tmpstate;
-        } else if nbits <= 32 {
+        } else if N <= 32 {
           var tmpstate = state:uint(32);
           pcg_setseq_32_step_r(tmpstate, inc:uint(32));
           state = tmpstate;
-        } else if nbits <= 64 {
+        } else if N <= 64 {
           pcg_setseq_64_step_r(state, inc);
         }
         mask_state();
       }
 
+      /* Get the next N-bit random number.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :returns: N bits generated by the RNG.
+       */
       inline proc random(inc:uint):uint
       {
-        if nbits <= 8 {
+        if N <= 8 {
           var tmpstate = state:uint(8);
           var oldstate = tmpstate;
           pcg_setseq_8_step_r(tmpstate, inc:uint(8));
           state = tmpstate;
           mask_state();
-          return normalize(nbits, pcg_output_rxs_m_xs_N_mine(nbits, oldstate));
-        } else if nbits <= 16 {
+          return normalize(N, pcg_output_rxs_m_xs_N_mine(N, oldstate));
+        } else if N <= 16 {
           var tmpstate = state:uint(16);
           var oldstate = tmpstate;
           pcg_setseq_16_step_r(tmpstate, inc:uint(16));
           state = tmpstate;
           mask_state();
-          return normalize(nbits, pcg_output_rxs_m_xs_N_mine(nbits, oldstate));
-        } else if nbits <= 32 {
+          return normalize(N, pcg_output_rxs_m_xs_N_mine(N, oldstate));
+        } else if N <= 32 {
           var tmpstate = state:uint(32);
           var oldstate = tmpstate;
           pcg_setseq_32_step_r(tmpstate, inc:uint(32));
           state = tmpstate;
           mask_state();
-          return normalize(nbits, pcg_output_rxs_m_xs_N_mine(nbits, oldstate));
-        } else if nbits <= 64 {
+          return normalize(N, pcg_output_rxs_m_xs_N_mine(N, oldstate));
+        } else if N <= 64 {
           var oldstate = state;
           pcg_setseq_64_step_r(state, inc);
           mask_state();
-          return normalize(nbits, pcg_output_rxs_m_xs_N_mine(nbits, oldstate));
+          return normalize(N, pcg_output_rxs_m_xs_N_mine(N, oldstate));
         }
         return 0;
       }
 
+      /* Advance the RNG. Adjusts the state of the RNG to be the
+         same as if `delta` calls were made to `random`.
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :arg delta: The number of steps to jump ahead
+       */
       inline
       proc advance(inc:uint, delta:uint)
       {
-        if nbits <= 8 {
+        if N <= 8 {
           state = pcg_advance_lcg(8, state:uint(8), delta:uint(8),
                                   PCG_DEFAULT_MULTIPLIER_8, inc:uint(8));
           mask_state();
-        } else if nbits <= 16 {
+        } else if N <= 16 {
           state = pcg_advance_lcg(16, state:uint(16), delta:uint(16),
                                   PCG_DEFAULT_MULTIPLIER_16, inc:uint(16));
           mask_state();
-        } else if nbits <= 32 {
+        } else if N <= 32 {
           state = pcg_advance_lcg(32, state:uint(32), delta:uint(32),
                                   PCG_DEFAULT_MULTIPLIER_32, inc:uint(32));
           mask_state();
-        } else if nbits <= 64 {
+        } else if N <= 64 {
           state = pcg_advance_lcg(64, state, delta, PCG_DEFAULT_MULTIPLIER_64, inc);
           mask_state();
         }
       }
     }
 
-    // the 'inc' field in the PCG RNG must be odd
-    // these functions arrange for that to be the case given any input.
+    /* The `inc` field in the PCG RNG must be odd.
+       This function arranges for that to be the case given any input.
+     */
     inline
     proc pcg_getvalid_inc(initseq:uint(64)):uint(64) return (initseq<<1) | 1;
+    pragma "no doc" // documented in the not param version
     inline
     proc pcg_getvalid_inc(param initseq:uint(64)) param return (initseq<<1) | 1;
 
 
     // pcg_advance_lcg_8/16/32/64
+    private
     proc pcg_advance_lcg(param bits,
                          state:uint_with_bits(bits),
                          in delta:uint_with_bits(bits),
@@ -1447,6 +1718,7 @@ module Random {
     NPB = 2
   }
 
+  /* The default RNG */
   param defaultRNG = RNG.NPB;
 
   // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the 
@@ -1498,14 +1770,24 @@ module Random {
     compilerError("Random.fillRandom is only defined for numeric arrays");
   }
 
-  // shuffle might also be a bad name
+  /* Shuffle the elements of an array into a random order.
+
+     :arg arr: a 1-D non-strided array
+     :arg seed: the seed to use when shuffling
+   */
   proc shuffle(arr: [], seed: int(64) = SeedGenerator.currentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.shuffle(arr);
     delete randNums;
   }
 
-  /// permutation is a poor name
+  /* Produce a random permutation, storing it in a 1-D array.
+     The resulting array will include each value from low..high
+     exactly once.
+
+     :arg arr: a 1-D non-strided array
+     :arg seed: the seed to use when creating the permutation
+   */
   proc permutation(arr: [], seed: int(64) = SeedGenerator.currentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.permutation(arr);
@@ -1513,8 +1795,8 @@ module Random {
   }
 
   /*
-    Models a stream of pseudorandom numbers.  This is an abstract
-    base class that should not be instantiated. See :class:`PCGRandom` and
+    Models a stream of pseudorandom numbers.  This class is defined for
+    documentation purposes and should not be instantiated. See :class:`PCGRandom` and
     :class:`NPBRandom` for details on the PRNG used. To create a random stream,
     use :proc:`makeRandomStream`.
   */
@@ -1613,7 +1895,8 @@ module Random {
 
     pragma "no doc"
     proc fillRandom(arr: []) {
-      compilerError("RandomStream(eltType=", typeToString(eltType), ") can only be used to fill arrays of ", typeToString(eltType));
+      compilerError("RandomStream(eltType=", eltType:string, 
+                    ") can only be used to fill arrays of ", eltType:string);
     }
       
     pragma "no doc"
@@ -1629,9 +1912,9 @@ module Random {
     }
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       f <~> "RandomStream(eltType=";
-      f <~> typeToString(eltType);
+      f <~> eltType:string;
       f <~> ", parSafe=";
       f <~> parSafe;
       f <~> ", seed=";
@@ -1659,7 +1942,7 @@ module Random {
     and parallel safety.  Ensures that the seed value meets the PRNG's
     constraints.
 
-    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`..
+    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`.
     :type seed: int(64)
 
     :arg parSafe: The parallel safety setting.  Defaults to `true`.

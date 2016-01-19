@@ -14,7 +14,7 @@ for l in Locales do on l {
 
 writeln("done");
 
-compilerWarning("Dist1D is a ", typeToString(Dist1D.type));
+compilerWarning("Dist1D is a ", Dist1D.type:string);
 
 proc testit(printit:bool) {
   var Dom1D: domain(1) dmapped Dist1D;

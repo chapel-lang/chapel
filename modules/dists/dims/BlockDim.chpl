@@ -200,8 +200,8 @@ proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 {
   // ignore stoIndexT - all we need is for other places to work out
   if idxType != this.idxType then
-    compilerError("The index type ", typeToString(idxType),
-                  " does not match the index type ",typeToString(this.idxType),
+    compilerError("The index type ", idxType:string,
+                  " does not match the index type ",this.idxType:string,
                   " of the 'BlockDim' 1-d distribution");
   return new Block1dom(idxType = idxType, stridable = stridable, pdist = this);
 }

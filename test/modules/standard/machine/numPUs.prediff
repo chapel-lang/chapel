@@ -6,7 +6,7 @@ numCores = multiprocessing.cpu_count()
 goodfile = sys.argv[1]+".good"
 
 f = open(goodfile, 'w')
-f.write("Number of cores on locale 0 = %d\n"%(numCores))
+f.write("Number of PUs on locale 0 = %d\n"%(numCores))
 f.close()
 
 sys.exit(0)

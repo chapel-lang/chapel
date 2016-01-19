@@ -131,7 +131,7 @@ const zeroT = fillIt(0);
 const oneT = fillIt(1);
 
 proc main() {
-  writeln(rank, " dimensional array of ", typeToString(myType));
+  writeln(rank, " dimensional array of ", myType:string);
 
   if doBlock {
     writeln();

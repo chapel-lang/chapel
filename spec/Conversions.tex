@@ -378,3 +378,24 @@ An expression of record type \chpl{C} can be explicitly converted to
 another record type \chpl{D} provided that \chpl{C} is derived
 from \chpl{D}.  There are no explicit record conversions that are not
 also implicit record conversions.
+
+
+\subsection{Explicit Type to String Conversions}
+\label{Explicit_Type_to_String_Conversions}
+\index{conversions!type to string}
+\index{conversions!explicit!type to string}
+
+A type expression can be explicitly converted to a \chpl{string}. The resultant
+\chpl{string} is the name of the type.
+
+\begin{chapelexample}{explicit-type-to-string.chpl}
+For example:
+\begin{chapel}
+var x: real(64) = 10.0;
+writeln(x.type:string);
+\end{chapel}
+\begin{chapeloutput}
+real(64)
+\end{chapeloutput}
+This program will print out the string \chpl{"real(64)"}.
+\end{chapelexample}

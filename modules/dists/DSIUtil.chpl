@@ -363,7 +363,7 @@ proc _densiIdxCheck(type subIdxType, type wholeIdxType, type argtypes) {
 }
 
 proc _densiCheck(param cond, type argtypes, param errlevel = 2) {
-  if !cond then compilerError("densify() is defined only on matching domains, ranges, and quasi-homogenous tuples of ranges (except stridability and range boundedness do not need to match), but is invoked on ", typeToString(argtypes), errlevel);
+  if !cond then compilerError("densify() is defined only on matching domains, ranges, and quasi-homogenous tuples of ranges (except stridability and range boundedness do not need to match), but is invoked on ", argtypes:string, errlevel);
 }
 
 //
@@ -444,7 +444,7 @@ proc _undensEnsureBounded(arg) {
 }
 
 proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
-  if !cond then compilerError("unDensify() is defined only on matching domains, ranges, and quasi-homogenous tuples of ranges, but is invoked on ", typeToString(argtypes), errlevel);
+  if !cond then compilerError("unDensify() is defined only on matching domains, ranges, and quasi-homogenous tuples of ranges, but is invoked on ", argtypes:string, errlevel);
 }
 
 

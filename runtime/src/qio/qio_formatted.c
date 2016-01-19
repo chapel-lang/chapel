@@ -809,10 +809,13 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     }
 
     // ignore EOF when looking for whitespace.
-    if( qio_err_to_int(err) == EEOF ) err = 0;
     // ignore EILSEQ (illegal unicode sequence) when
     // looking for whitespace (that just means it wasn't whitespace)
-    if( qio_err_to_int(err) == EILSEQ ) err = 0;
+    if( qio_err_to_int(err) == EEOF ||
+        qio_err_to_int(err) == EILSEQ ) {
+      err = 0;
+      qio_channel_clear_error(ch);
+    }
 
     qio_channel_revert_unlocked(ch);
 

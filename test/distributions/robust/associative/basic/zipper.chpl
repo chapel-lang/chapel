@@ -9,7 +9,7 @@ for i in D {
   DomUintType += myIdx:uintType;
   DomRealType += myIdx:realType;
   var s: string;
-  s.write(myIdx);
+  s = myIdx:string;
   DomStringType += s;
 }
 if debug then writeln(DomIntType);
@@ -49,7 +49,7 @@ proc testZip(D1: domain, D2: domain) {
   forall (i1, i2) in zip(D1, D2) with (ref success) do
     if i1 != i2 then success = false;
   writeln("Parallel domain-domain zipping ",
-          (typeToString(idxType1), typeToString(idxType2)), " : ",
+          (idxType1:string, idxType2:string), " : ",
           if success then "SUCCESS" else "FAILED");
 }
 
@@ -60,7 +60,7 @@ proc testZip(D1: domain, A2: []) {
   forall (i1, i2) in zip(D1, A2) with (ref success) do
     if A2(i1) != i2 then success = false;
   writeln("Parallel domain-array zipping ",
-          (typeToString(idxType1), typeToString(idxType2)), " : ",
+          (idxType1:string, idxType2:string), " : ",
           if success then "SUCCESS" else "FAILED");
 }
 
@@ -71,7 +71,7 @@ proc testZip(A1: [], D2: domain) {
   forall (i1, i2) in zip(A1, D2) with (ref success) do
     if i1 != A1(i2) then success = false;
   writeln("Parallel array-domain zipping ",
-          (typeToString(idxType1), typeToString(idxType2)), " : ",
+          (idxType1:string, idxType2:string), " : ",
           if success then "SUCCESS" else "FAILED");
 }
 
@@ -82,6 +82,6 @@ proc testZip(A1: [], A2: []) {
   forall (i1, i2) in zip(A1, A2) with (ref success) do
     if i1 != i2 then success = false;
   writeln("Parallel array-array zipping ",
-          (typeToString(idxType1), typeToString(idxType2)), " : ",
+          (idxType1:string, idxType2:string), " : ",
           if success then "SUCCESS" else "FAILED");
 }

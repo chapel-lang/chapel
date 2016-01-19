@@ -193,7 +193,7 @@ void chpl_task_yield(void);
 //
 // Suspend.
 //
-void chpl_task_sleep(int);
+void chpl_task_sleep(double);
 
 //
 // Get and set dynamic serial state.

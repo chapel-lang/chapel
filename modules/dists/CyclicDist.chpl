@@ -409,8 +409,8 @@ proc Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
   return new Cyclic(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
 }
 
-proc Cyclic.writeThis(x: Writer) {
-  x.writeln(typeToString(this.type));
+proc Cyclic.writeThis(x) {
+  x.writeln(this.type:string);
   x.writeln("------");
   for locid in targetLocDom do
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ", locDist(locid).myChunk); 
@@ -555,9 +555,9 @@ proc CyclicDom.dsiSetIndices(x) {
   setup();
 }
 
-proc CyclicDom.dsiSerialWrite(x: Writer) {
+proc CyclicDom.dsiSerialWrite(x) {
   if verboseCyclicDistWriters {
-    x.writeln(typeToString(this.type));
+    x.writeln(this.type:string);
     x.writeln("------");
     for loc in dist.targetLocDom {
       x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
@@ -1013,9 +1013,9 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   }
 }
 
-proc CyclicArr.dsiSerialWrite(f: Writer) {
+proc CyclicArr.dsiSerialWrite(f) {
   if verboseCyclicDistWriters {
-    writeln(typeToString(this.type));
+    writeln(this.type:string);
     writeln("------");
   }
   if dom.dsiNumIndices == 0 then return;

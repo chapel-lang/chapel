@@ -10,5 +10,5 @@ proc raiseType(type x) where (x==bool){
 var h1:raiseType(int).type;
 var h2:raiseType(bool).type;
 
-writeln(typeToString(h1.type));
-writeln(typeToString(h2.type));
+writeln(h1.type:string);
+writeln(h2.type:string);

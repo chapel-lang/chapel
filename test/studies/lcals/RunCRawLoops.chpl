@@ -5,7 +5,7 @@ module RunCRawLoops {
   proc runCRawLoops(loop_stats: vector(LoopStat), run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
-    for iloop in 0..#loop_suite_run_info.num_loops {
+    for iloop in loop_suite_run_info.loop_kernel_dom {
       if run_loop[iloop] {
         var stat = loop_stats[iloop];
         var len = stat.loop_length[ilength];
@@ -19,9 +19,9 @@ module RunCRawLoops {
                 y => loop_data.RealArray_1D[1],
                 z => loop_data.RealArray_1D[2];
 
-            const q = loop_data.scalar_Real[0],
-                  r = loop_data.scalar_Real[1],
-                  t = loop_data.scalar_Real[2];
+            const q = loop_data.RealArray_scalars[0],
+                  r = loop_data.RealArray_scalars[1],
+                  t = loop_data.RealArray_scalars[2];
             ltimer.start();
             for isamp in 0..#num_samples {
               for k in 0..#len {
@@ -33,8 +33,8 @@ module RunCRawLoops {
           }
           when LoopKernelID.ICCG {
             loopInit(iloop, stat);
-            var x => loop_data.RealArray_1D[0],
-                v => loop_data.RealArray_1D[1];
+            var x => loop_data.RealArray_1D_Nx4[0],
+                v => loop_data.RealArray_1D_Nx4[1];
             var ii, ipnt, ipntp, i: int;
             ltimer.start();
             for isamp in 0..#num_samples {
@@ -46,6 +46,7 @@ module RunCRawLoops {
                 ii /= 2;
                 i = ipntp;
                 for k in ipnt+1..ipntp-1 by 2 {
+                  i += 1;
                   x[i] = x[k] - v[k]*x[k-1] - v[k+1]*x[k+1];
                 }
               } while (ii > 0);
@@ -67,7 +68,7 @@ module RunCRawLoops {
               val = q*isamp;
             }
             ltimer.stop();
-            loop_data.scalar_Real[0] = (val+0.00123) / (val-0.00123);
+            loop_data.RealArray_scalars[0] = (val+0.00123) / (val-0.00123);
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.BAND_LIN_EQ {
@@ -113,9 +114,9 @@ module RunCRawLoops {
                 z => loop_data.RealArray_1D[2],
                 u => loop_data.RealArray_1D[3];
 
-            const q = loop_data.scalar_Real[0],
-                  r = loop_data.scalar_Real[1],
-                  t = loop_data.scalar_Real[2];
+            const q = loop_data.RealArray_scalars[0],
+                  r = loop_data.RealArray_scalars[1],
+                  t = loop_data.RealArray_scalars[2];
             ltimer.start();
             for isamp in 0..#num_samples {
               for k in 0..#len {
@@ -179,17 +180,17 @@ module RunCRawLoops {
           }
           when LoopKernelID.PIC_1D {
             loopInit(iloop, stat);
-            var vx = loop_data.RealArray_1D[0],
-                xx = loop_data.RealArray_1D[1],
-                xi = loop_data.RealArray_1D[2],
-                ex = loop_data.RealArray_1D[3],
-                ex1 = loop_data.RealArray_1D[4],
-                dex = loop_data.RealArray_1D[5],
-                dex1 = loop_data.RealArray_1D[6],
-                rh = loop_data.RealArray_1D[7],
-                rx = loop_data.RealArray_1D[8];
+            var vx => loop_data.RealArray_1D[0],
+                xx => loop_data.RealArray_1D[1],
+                xi => loop_data.RealArray_1D[2],
+                ex => loop_data.RealArray_1D[3],
+                ex1 => loop_data.RealArray_1D[4],
+                dex => loop_data.RealArray_1D[5],
+                dex1 => loop_data.RealArray_1D[6],
+                rh => loop_data.RealArray_1D[7],
+                rx => loop_data.RealArray_1D[8];
 
-            const flx = loop_data.scalar_Real[0];
+            const flx = loop_data.RealArray_scalars[0];
             var ix => loop_data.IndxArray_1D[2],
                 ir => loop_data.IndxArray_1D[3],
                 grd => loop_data.IndxArray_1D[4];
@@ -234,7 +235,7 @@ module RunCRawLoops {
                 sa => loop_data.RealArray_1D[1],
                 sb => loop_data.RealArray_1D[2];
 
-            var stb5 = loop_data.scalar_Real[0];
+            var stb5 = loop_data.RealArray_scalars[0];
             var kb5i = 0;
             ltimer.start();
             for isamp in 0..#num_samples {
@@ -262,9 +263,9 @@ module RunCRawLoops {
                 g => loop_data.RealArray_1D[6],
                 xx => loop_data.RealArray_1D[7],
                 vx => loop_data.RealArray_1D[9];
-            const s = loop_data.scalar_Real[0],
-                  t = loop_data.scalar_Real[1],
-                  dk = loop_data.scalar_Real[2];
+            const s = loop_data.RealArray_scalars[0],
+                  t = loop_data.RealArray_scalars[1],
+                  dk = loop_data.RealArray_scalars[2];
             ltimer.start();
             for isamp in 0..#num_samples {
               for k in 0..#len {
@@ -333,7 +334,7 @@ module RunCRawLoops {
               val = isamp;
             }
             ltimer.stop();
-            loop_data.scalar_Real[0] = 0.123*val*m;
+            loop_data.RealArray_scalars[0] = 0.123*val*m;
             loopFinalize(iloop, stat, ilength);
           }
           otherwise {

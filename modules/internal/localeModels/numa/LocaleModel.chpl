@@ -110,8 +110,8 @@ module LocaleModel {
       parent = _parent;
     }
 
-    proc readWriteThis(f) {
-      parent.readWriteThis(f);
+    proc writeThis(f) {
+      parent.writeThis(f);
       f <~> '.'+name;
     }
 
@@ -171,7 +171,7 @@ module LocaleModel {
     proc chpl_name() return local_name;
 
 
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       // Most classes will define it like this:
 //      f <~> name;
       // but here it is defined thus for backward compatibility.
@@ -318,7 +318,7 @@ module LocaleModel {
     proc chpl_name() return local_name();
     proc local_name() return "rootLocale":string;
 
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       f <~> name;
     }
 

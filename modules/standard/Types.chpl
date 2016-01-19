@@ -166,7 +166,7 @@ pragma "no doc"
 proc chpl__unsignedType(type t) type 
 {
   if ! isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", typeToString(t));
+    compilerError("range idxType is non-integral: ", t:string);
 
   return uint(numBits(t));
 }
@@ -177,7 +177,7 @@ pragma "no doc"
 proc chpl__signedType(type t) type 
 {
   if ! isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", typeToString(t));
+    compilerError("range idxType is non-integral: ", t:string);
 
   return int(numBits(t));
 }
@@ -185,7 +185,7 @@ proc chpl__signedType(type t) type
 pragma "no doc"
 proc chpl__maxIntTypeSameSign(type t) type {
   if ! isIntegralType(t) then
-    compilerError("type t is non-integral: ", typeToString(t));
+    compilerError("type t is non-integral: ", t:string);
 
   if (isIntType(t)) then
     return int(64);
@@ -307,6 +307,20 @@ pragma "no doc"
 proc isRefIter(type t)   param  return isRefIterType(t);
 pragma "no doc"
 proc isPOD(type t)       param  return isPODType(t);
+pragma "no doc"
+proc isTupleOfPrimitiveTypes(e) param
+{
+  if !isTuple(e) then return false;
+
+  // compute && reduce isPrimitiveValue over the tuple
+  proc help(x) param
+    return isPrimitiveValue(x);
+
+  proc help(x, args ...) param
+    return isPrimitiveValue(x) && help((...args));
+
+  return help((...e));
+}
 
 // Set 2 - values.
 /*
@@ -419,16 +433,16 @@ proc chpl__legalIntCoerce(type t1, type t2) param
 private proc chpl__commonType(type s, type t) type
 {
   if ! isIntegralType(s) then
-    compilerError("Type ", typeToString(s) , " is non-integral: ");
+    compilerError("Type ", s:string , " is non-integral: ");
   if ! isIntegralType(t) then
-    compilerError("Type ", typeToString(t) , " is non-integral: ");
+    compilerError("Type ", t:string , " is non-integral: ");
 
   if numBits(s) > numBits(t) then return s;
   if numBits(s) < numBits(t) then return t;
 
   if isIntType(s) && ! isIntType(t) ||
      isIntType(t) && ! isIntType(s) then
-    compilerError("Types ", typeToString(s) , " and ", typeToString(t), " are incompatible.");
+    compilerError("Types ", s:string , " and ", t:string, " are incompatible.");
 
   return s;
 }
@@ -614,14 +628,14 @@ inline proc integral.safeCast(type T) : T where isUintType(T) {
     if isIntType(this.type) {
       // int(?) -> uint(?)
       if this < 0 then // runtime check
-        halt("casting "+typeToString(this.type)+" less than 0 to "+typeToString(T));
+        halt("casting "+this.type:string+" less than 0 to "+T:string);
     }
 
     if max(this.type):uint > max(T):uint {
       // [u]int(?) -> uint(?)
       if (this:uint > max(T):uint) then // runtime check
-        halt("casting "+typeToString(this.type)+" with a value greater than the maximum of "+
-             typeToString(T)+" to "+typeToString(T));
+        halt("casting "+this.type:string+" with a value greater than the maximum of "+
+             T:string+" to "+T:string);
     }
   }
   return this:T;
@@ -635,22 +649,22 @@ inline proc integral.safeCast(type T) : T where isIntType(T) {
       if isUintType(this.type) {
         // uint(?) -> int(?)
         if this:uint > max(T):uint then // runtime check
-          halt("casting "+typeToString(this.type)+" with a value greater than the maximum of "+
-               typeToString(T)+" to "+typeToString(T));
+          halt("casting "+this.type:string+" with a value greater than the maximum of "+
+               T:string+" to "+T:string);
       } else {
         // int(?) -> int(?)
         // max(T) <= max(int), so cast to int is safe
         if this:int > max(T):int then // runtime check
-          halt("casting "+typeToString(this.type)+" with a value greater than the maximum of "+
-               typeToString(T)+" to "+typeToString(T));
+          halt("casting "+this.type:string+" with a value greater than the maximum of "+
+               T:string+" to "+T:string);
       }
     }
     if isIntType(this.type) {
       if min(this.type):int < min(T):int {
         // int(?) -> int(?)
         if this:int < min(T):int then // runtime check
-          halt("casting "+typeToString(this.type)+" with a value less than the minimum of "+
-               typeToString(T)+" to "+typeToString(T));
+          halt("casting "+this.type:string+" with a value less than the minimum of "+
+               T:string+" to "+T:string);
       }
     }
   }

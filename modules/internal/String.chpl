@@ -33,6 +33,9 @@ module BaseStringType {
   type bufferType = c_ptr(uint(8));
 }
 
+// Note - the I/O module has
+// :proc:`string.format` and :proc:`stringify`.
+
 // Chapel Strings
 module String {
   use BaseStringType;
@@ -337,11 +340,11 @@ module String {
 
     // These should never be called (but are default functions for records)
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       compilerError("not implemented: readThis");
     }
 
@@ -1065,10 +1068,12 @@ module String {
   // Param procs
   //
   proc typeToString(type t) param {
+    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
     return __primitive("typeToString", t);
   }
 
   proc typeToString(x) param {
+    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
     compilerError("typeToString()'s argument must be a type, not a value");
   }
 
@@ -1129,7 +1134,7 @@ module String {
   //
   // Append
   //
-  proc +=(ref lhs: string, rhs: string) : void {
+  proc +=(ref lhs: string, const ref rhs: string) : void {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 

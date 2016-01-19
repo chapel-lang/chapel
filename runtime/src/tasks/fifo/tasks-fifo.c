@@ -41,6 +41,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <math.h>
 
 
 //
@@ -881,8 +882,11 @@ void chpl_task_yield(void) {
 }
 
 
-void chpl_task_sleep(int secs) {
-  sleep(secs);
+void chpl_task_sleep(double secs) {
+  struct timespec delay;
+  delay.tv_sec = (time_t)(secs);
+  delay.tv_nsec = (long)(1e9*(secs - floor(secs)));
+  nanosleep(&delay, NULL);
 }
 
 chpl_bool chpl_task_getSerial(void) {

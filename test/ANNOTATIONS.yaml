@@ -112,6 +112,8 @@ all:
 AllCompTime:
   11/09/14:
     - disable the task table by default
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 arrayPerformance-1d:
   03/19/15:
@@ -176,6 +178,8 @@ fasta:
     - enabled unlocked I/O on fasta and fasta-printf
   10/07/14:
     - Add c_string_copy type
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
 
 forall-dom-range:
   01/21/15:
@@ -223,6 +227,8 @@ jacobi:
     - disable the task table by default
   01/30/15:
     - param protect all calls to chpl__testPar (#1200)
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 knucleotide:
   10/16/15:
@@ -280,6 +286,8 @@ memleaks:
     - Fixed string leak in DimensionalDist2D (#3013)
   12/13/15:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
 
 memleaksfull:
   07/08/14:
@@ -290,6 +298,8 @@ memleaksfull:
     - Fixed string leak in DimensionalDist2D (#3013)
   12/13/15:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
 
 meteor:
   12/18/13:
@@ -310,6 +320,8 @@ nbody:
     - removed extra formal temps
   07/24/14:
     - chap04 Subtest random glitch
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 parOpEquals:
   09/06/13:

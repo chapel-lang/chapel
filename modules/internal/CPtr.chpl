@@ -203,7 +203,7 @@ module CPtr {
     :arg size: the number of elements to allocate
     :returns: a c_ptr(eltType) to allocated memory
     */
-  inline proc c_calloc(type eltType, size: integral) {
+  inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
     var ret:c_ptr(eltType);
     __primitive("array_alloc", ret, eltType, size);
     init_elts(ret, size, eltType);

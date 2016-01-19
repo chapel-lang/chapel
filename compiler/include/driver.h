@@ -62,7 +62,6 @@ extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
 extern bool fRemoveUnreachableBlocks;
-extern bool fNoExpiringValueOpt;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
 extern int  tuple_copy_limit;

@@ -1,0 +1,2 @@
+writer-error.chpl:4: In function 'writeThis':
+writer-error.chpl:4: error: Writer deprecated: make writeThis argument generic

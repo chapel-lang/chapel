@@ -1,18 +1,18 @@
 class C {
   param x;
   proc f1: int {
-//    compilerWarning(typeToString(this.type));
+//    compilerWarning(this.type:string);
     return 11;
   }
 }
 
 proc C.f2: int {
-//  compilerWarning(typeToString(this.type));
+//  compilerWarning(this.type:string);
   return 22;
 }
 
 proc C.f3(): int {
-//  compilerWarning(typeToString(this.type));
+//  compilerWarning(this.type:string);
   return 33;
 }
 

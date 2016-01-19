@@ -360,7 +360,7 @@ proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Stencil.writeThis(x:Writer) {
+proc Stencil.writeThis(x) {
   x.writeln("Stencil");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -694,7 +694,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 //
 // output domain
 //
-proc StencilDom.dsiSerialWrite(x:Writer) {
+proc StencilDom.dsiSerialWrite(x) {
   x.write(whole);
 }
 
@@ -1089,7 +1089,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
 //
 // output array
 //
-proc StencilArr.dsiSerialWrite(f: Writer) {
+proc StencilArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
   var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;

@@ -16,7 +16,7 @@ var nodeVar = new Node(1000);
 // ... and initialize with a literal
 const nodesConstInitializedTyped: domain(Node) = { nodeVar };
 const nodesConstInitializedUntyped = { nodeVar };
-//compilerWarning("nodesConstInitializedUntyped.type = ", typeToString(nodesConstInitializedUntyped.type));
+//compilerWarning("nodesConstInitializedUntyped.type = ", nodesConstInitializedUntyped.type:string);
 writeln(nodesConstInitializedTyped);
 writeln(nodesConstInitializedUntyped);
 
@@ -36,7 +36,7 @@ writeln(coeffs1);
 // Meanwhile initialize from a literal.
 
 var coeffs2 = [ new Node(2) => new Coeff(22) ];
-//compilerWarning("coeffs2.type = ", typeToString(coeffs2.type));
+//compilerWarning("coeffs2.type = ", coeffs2.type:string);
 writeln(coeffs2[new Node(2)]);
 writeln(coeffs2);
 

@@ -23,6 +23,13 @@ module StringCasts {
   // would use a tagged union return val as well.
 
   //
+  // Type -- Foo.type:string
+  //
+  proc _cast(type t, type x)  param : string where t == string {
+    return __primitive("typeToString", x);
+  }
+
+  //
   // Bool
   //
   const _true_s: string = "true";
@@ -201,20 +208,7 @@ module StringCasts {
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
   }
-
-  //
-  // Catch all
-  //
-  // Convert 'x' to a string just the way it would be written out.
-  // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
-  //
-  // This is marked as compiler generated so it doesn't take precedence over
-  // genereated casts for types like enums
-  pragma "compiler generated"
-  proc _cast(type t, x) where t == string && x.type != string {
-    var ret: string;
-    ret.write(x);
-    return ret;
-  }
+ 
+  // Catch all cast anything -> string is in ChapelIO
 
 }
