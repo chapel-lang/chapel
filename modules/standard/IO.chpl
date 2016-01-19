@@ -1760,6 +1760,7 @@ private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_
 private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
 private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
 
+extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 /*********************** Curl/HDFS support ******************/
 
@@ -6345,6 +6346,20 @@ proc readf(fmt:c_string):bool {
 pragma "no doc"
 proc readf(fmt:string):bool {
   return stdin.readf(fmt);
+}
+
+
+proc channel.skipJsonField(out error:syserr) {
+  on this.home {
+    this.lock();
+    error = qio_channel_skip_json_field(false, _channel_internal);
+    this.unlock();
+  }
+}
+proc channel.skipJsonField() {
+  var err:syserr;
+  this.skipJsonField(err);
+  if err then this._ch_ioerror(err, "in skipJsonField");
 }
 
 
