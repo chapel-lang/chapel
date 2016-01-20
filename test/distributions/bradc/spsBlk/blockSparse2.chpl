@@ -1,27 +1,82 @@
 use BlockDist;
 
+//
+// The size of the bounding box.
+//
 config const n =8;
 
+//
+// The block-distributed dense domain that will serve as the parent
+// domain for the sparse one.
+//
 const Elems = {0..#n, 0..#n} dmapped Block({0..#n, 0..#n});
+
+//
+// The sparse domain.  In the current code framework, the dense parent
+// domain gets to pick the domain map for the sparse and (I believe)
+// can't be overridden.  Block-distributed domains currently pick
+// Block-COO as their sparse representation.
+//
 var MatElems: sparse subdomain(Elems);
 
+//
+// Populate the sparse domain.  Note that for best performance (a)
+// adding indices in pre-sorted order works best and (b) declaring
+// your dense array after your sparse domain has been finalized is
+// ideal.
+//
 for i in 0..#n {
   MatElems += (i,i);
   MatElems += (i,n-i-1);
 }
 //writeln("MatElems = ", MatElems);
 
+//
+// This is a dense array
+//
 var Dns: [Elems] int;
 
-forall i in MatElems do
-  Dns[i] = here.id + 1;
 
+//
+// For all indices in the sparse domain, set the dense value as a
+// function of the owning locale's ID.
+//
+forall ij in MatElems do
+  Dns[ij] = here.id + 1;
+
+//
+// Print the dense array
+//
 writeln("Dns is:\n", Dns);
-/*
+
+//
+// Declare a sparse array
+//
 var Sps: [MatElems] int;
 
-forall i in MatElems do
-  Sps[i] = here.id + 1;
+//
+// Fill it similarly to the dense above
+//
+forall ij in MatElems do
+  Sps[ij] = here.id + 1;
 
-writeln("Sps is: ", Sps);
-*/
+//
+// Future work:  How would we want this to print out?
+//
+// writeln("Sps is:\n", Sps);
+//
+
+//
+// Manually print out the sparse array as a dense array for now
+//
+writeln("Sps is:");
+for i in Elems.dim(1) do
+  for j in Elems.dim(2) {
+    write(Sps[i,j]);
+    if (j == Elems.dim(2).high) then
+      writeln();
+    else
+      write(" ");
+  }
+
+
