@@ -6349,17 +6349,32 @@ proc readf(fmt:string):bool {
 }
 
 
-proc channel.skipJsonField(out error:syserr) {
+/*
+   Skip a field in the current aggregate format. This method is currently only
+   supported for JSON format and returns ENOTSUP for other formats. In other
+   formats, it may not be possible in general to know when a field ends.
+
+   :arg error: optional argument to capture an error code. If this argument
+               is not provided and an error is encountered, this function
+               will halt with an error message.
+ */
+proc channel.skipField(out error:syserr) {
   on this.home {
     this.lock();
-    error = qio_channel_skip_json_field(false, _channel_internal);
+    var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+    if st == QIO_AGGREGATE_FORMAT_JSON {
+      error = qio_channel_skip_json_field(false, _channel_internal);
+    } else {
+      error = ENOTSUP;
+    }
     this.unlock();
   }
 }
-proc channel.skipJsonField() {
+pragma "no doc"
+proc channel.skipField() {
   var err:syserr;
-  this.skipJsonField(err);
-  if err then this._ch_ioerror(err, "in skipJsonField");
+  this.skipField(err);
+  if err then this._ch_ioerror(err, "in skipField");
 }
 
 

@@ -377,7 +377,7 @@ module ChapelIO {
 
           // Skip an unknown JSON field.
           var e:syserr;
-          reader.skipJsonField(error=e);
+          reader.skipField(error=e);
           if !e {
             needsComma = true;
           }
@@ -535,7 +535,7 @@ module ChapelIO {
 
                 // Skip an unknown JSON field.
                 var e:syserr;
-                reader.skipJsonField(error=e);
+                reader.skipField(error=e);
                 if !e {
                   needsComma = true;
                 }
