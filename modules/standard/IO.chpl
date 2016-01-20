@@ -6354,6 +6354,16 @@ proc readf(fmt:string):bool {
    supported for JSON format and returns ENOTSUP for other formats. In other
    formats, it may not be possible in general to know when a field ends.
 
+   The field skipped includes a field name and value but not a following
+   separator. For example, for a JSON format channel, given the input:
+
+   ::
+
+      "fieldName":"fieldValue", "otherField":3
+
+   this function will skip to (but leave unread) the comma after
+   the first field value.
+
    :arg error: optional argument to capture an error code. If this argument
                is not provided and an error is encountered, this function
                will halt with an error message.
