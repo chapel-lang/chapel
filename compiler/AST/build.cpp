@@ -2014,7 +2014,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
   BlockStmt* body = toBlockStmt(stmt);
 
   //
-  // detect on-statement directly inside begin statement
+  // detect on-statement directly inside local statement
   //
   BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
