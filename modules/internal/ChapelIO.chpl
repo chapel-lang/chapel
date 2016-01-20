@@ -230,7 +230,7 @@ module ChapelIO {
   use IO;
 
     private
-    proc isIoField(x, param i) {
+    proc isIoField(x, param i) param {
       if isType(__primitive("field value by num", x, i)) ||
          isParam(__primitive("field value by num", x, i)) {
         // I/O should ignore type or param fields
