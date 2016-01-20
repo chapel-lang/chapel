@@ -5855,45 +5855,7 @@ UseExpr::UseExpr(BaseAST* module):
   gUseExprs.add(this);
 }
 
-
 //
-UseExpr::UseExpr(BaseAST* module, Vec<const char*>* args, bool exclude) :
-  Expr(E_UseExpr),
-  includes(),
-  excludes(),
-  impactedSymbols(),
-  mod(NULL)
-{
-  if (Symbol* b = toSymbol(module)) {
-    mod = new SymExpr(b);
-  } else if (Expr* b = toExpr(module)) {
-    mod = b;
-  } else {
-    INT_FATAL(this, "Bad mod in UseExpr constructor");
-  }
-
-  if (exclude) {
-    // Symbols to exclude when searching this module's scope from an outside
-    // scope
-    if (args->n == 0) {
-      INT_FATAL(this, "In UseExpr constructor, exclude should not be true without names to exclude!");
-    }
-    forv_Vec(const char, str, *args) {
-      excludes.push_back(str);
-    }
-  } else if (args->n > 0) {
-    // Symbols to search when going through this module's scope from an outside
-    // scope
-    forv_Vec(const char, str, *args) {
-      includes.push_back(str);
-    }
-  }
-  // args shouldn't be needed any more, it has served its purpose
-  gUseExprs.add(this);
-}
-
-// This should only be used when copying UseExprs, so the args value will be
-// deleted when the original UseExpr is deleted.
 UseExpr::UseExpr(BaseAST* module, std::vector<const char*>* args, bool exclude) :
   Expr(E_UseExpr),
   includes(),

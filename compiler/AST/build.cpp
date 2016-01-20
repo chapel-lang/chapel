@@ -405,12 +405,12 @@ static void processStringInRequireStmt(const char* str) {
 // Build a 'use' statement with an 'except' list
 //
 BlockStmt* buildUseStmt(Expr* mod, CallExpr* names, bool except) {
-  Vec<const char*> namesList;
+  std::vector<const char*> namesList;
 
   // Iterate through the list of names to exclude when using mod
   for_actuals(expr, names) {
     if (UnresolvedSymExpr* name = toUnresolvedSymExpr(expr)) {
-      namesList.add(name->unresolved);
+      namesList.push_back(name->unresolved);
       name->remove();
     } else {
       // Currently we expect only unresolved sym exprs

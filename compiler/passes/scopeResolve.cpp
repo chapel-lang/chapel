@@ -303,6 +303,7 @@ static void addOneToSymbolTable(DefExpr* def)
 static ModuleSymbol* getUsedModule(Expr* expr);
 static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall);
 
+static void validateExceptOnlyElem(UseExpr* use, const char* name, bool except);
 static void addImpactedSymbols(UseExpr* use, Symbol* maybeType);
 
 static void processImportExprs() {
@@ -347,35 +348,11 @@ static void processImportExprs() {
     // statements refer to symbols that are visible from that module.
     if (use->excludes.size() > 0) {
       for_vector(const char, toExclude, use->excludes) {
-        SymExpr* se = toSymExpr(use->mod);
-        INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-
-        Symbol* sym = lookup(mod->block, toExclude);
-
-        if (!sym) {
-          USR_FATAL_CONT(use, "Bad identifier in 'except' clause, no known '%s'", toExclude);
-        } else if (!sym->isVisible(use)) {
-          USR_FATAL_CONT(use, "Bad identifier in 'except' clause, '%s' is already private", toExclude);
-        }
-        addImpactedSymbols(use, sym);
+        validateExceptOnlyElem(use, toExclude, true);
       }
     } else if (use->includes.size() > 0) {
       for_vector(const char, toInclude, use->includes) {
-        SymExpr* se = toSymExpr(use->mod);
-        INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-
-        Symbol* sym = lookup(mod->block, toInclude);
-
-        if (!sym) {
-          USR_FATAL_CONT(use, "Bad identifier in 'only' clause, no known '%s'", toInclude);
-        } else if (!sym->isVisible(use)) {
-          USR_FATAL_CONT(use, "Bad identifier in 'only' clause, '%s' is private", toInclude);
-        }
-        addImpactedSymbols(use, sym);
+        validateExceptOnlyElem(use, toInclude, false);
       }
     }
   }
@@ -494,6 +471,27 @@ static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall) {
     printModuleUseError(useCall);
     return NULL;
   }
+}
+
+// Ensures that the symbol we're searching for can be found in the scope
+// indicated by this use.  It is an error if not.  If it is found and is a type,
+// will add the type's methods (and fields if applicable) to the use's list
+// of impacted symbols.
+static void validateExceptOnlyElem(UseExpr* use, const char* name, bool except) {
+  SymExpr* se = toSymExpr(use->mod);
+  INT_ASSERT(se);
+  ModuleSymbol* mod = toModuleSymbol(se->var);
+  INT_ASSERT(mod);
+
+  Symbol* sym = lookup(mod->block, name);
+
+  const char* listName = except ? "except" : "only";
+  if (!sym) {
+    USR_FATAL_CONT(use, "Bad identifier in '%s' clause, no known '%s'", listName, name);
+  } else if (!sym->isVisible(use)) {
+    USR_FATAL_CONT(use, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+  }
+  addImpactedSymbols(use, sym);
 }
 
 // If maybeType refers to a type symbol, add all methods on that type

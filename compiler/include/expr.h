@@ -250,7 +250,6 @@ class UseExpr: public Expr {
   // specify an explicit module name.
 
   UseExpr(BaseAST* module);
-  UseExpr(BaseAST* module, Vec<const char*>* args, bool exclude);
   UseExpr(BaseAST* module, std::vector<const char*>* args, bool exclude);
 
   virtual void    verify();
