@@ -1,0 +1,7 @@
+perfkeys: Rate (MFlops/s): 
+files: p2p-serial-fast.dat
+graphtitle: Performance for synch_p2p
+ylabel: Rate (MFlops/s)
+graphname: synch_p2p
+
+
