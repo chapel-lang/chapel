@@ -1520,7 +1520,7 @@ static inline bool is_json_whitespace(int32_t c)
            c == '\f' || c == '\n' || c == '\r' || c == '\t' );
 }
 
-// Read and skip an abritrary JSON object, assuming the leading '{'
+// Read and skip an arbitrary JSON object, assuming the leading '{'
 // has already been read. Returns 0 on success or a negative error code.
 int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch)
 {
@@ -1561,7 +1561,7 @@ int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch)
   }
 }
 
-// Read and skip an abritrary JSON array, assuming the leading '['
+// Read and skip an arbitrary JSON array, assuming the leading '['
 // has already been read. Returns 0 on success or a negative error code.
 int32_t qio_skip_json_array_unlocked(qio_channel_t* restrict ch)
 {
@@ -1596,7 +1596,7 @@ int32_t qio_skip_json_array_unlocked(qio_channel_t* restrict ch)
   }
 }
 
-// Read and skip an abritrary JSON value.
+// Read and skip an arbitrary JSON value.
 // Returns any unhandled character, 0 if all characters
 // were handled, or a negative error code.
 // unhandled characters could easily be , ] }
@@ -1720,7 +1720,7 @@ int32_t qio_skip_json_value_unlocked(qio_channel_t* restrict ch)
   }
 }
 
-// Read and skip an abritrary JSON string, assuming the leading "
+// Read and skip an arbitrary JSON string, assuming the leading "
 // has already been read. Returns 0 on success, or a negative
 // error code.
 int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
