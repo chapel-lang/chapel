@@ -146,7 +146,7 @@ void chpl_task_addToTaskList(
          int,                // line at which function begins
          int32_t);          // name of file containing functions
 void chpl_task_processTaskList(chpl_task_list_p);
-void chpl_task_executeTasksInList(chpl_task_list_p);
+void chpl_task_executeTasksInList(chpl_task_list_p*);
 void chpl_task_freeTaskList(chpl_task_list_p);
 
 //

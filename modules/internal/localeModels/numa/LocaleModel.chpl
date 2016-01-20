@@ -528,7 +528,7 @@ module LocaleModel {
                                       ref tlist: _task_list, tlist_node_id: int,
                                       is_begin: bool);
   extern proc chpl_task_processTaskList(tlist: _task_list);
-  extern proc chpl_task_executeTasksInList(tlist: _task_list);
+  extern proc chpl_task_executeTasksInList(ref tlist: _task_list);
   extern proc chpl_task_freeTaskList(tlist: _task_list);
 
   //
@@ -574,7 +574,7 @@ module LocaleModel {
   //
   pragma "insert line file info"
   export
-  proc chpl_taskListExecute(task_list: _task_list) {
+  proc chpl_taskListExecute(ref task_list: _task_list) {
     chpl_task_executeTasksInList(task_list);
   }
 
