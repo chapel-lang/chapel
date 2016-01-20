@@ -28,10 +28,10 @@ var timer: Timer;
 // Initialize and zero out vector
 const mrange = 0 .. # m,
       nrange = 0 .. # n,
-      Dom = {mrange, nrange},
-      Dom1 = {1 ..(m-1), 1 .. (n-1)};
+      outerDom = {mrange, nrange},
+      innerDom = {1 ..(m-1), 1 .. (n-1)};
 
-var vector : [Dom] real = 0.0;
+var vector : [outerDom] real = 0.0;
 
 //
 // Print information before main loop
@@ -55,7 +55,7 @@ for iteration in 0 .. iterations {
   // Start timer after warmup iteration
   if (iteration == 1) then timer.start();
 
-  for (i,j) in Dom1 {
+  for (i,j) in innerDom {
     vector[i, j] = vector[i-1, j] + vector[i, j-1] - vector[i-1, j-1];
   }
 
