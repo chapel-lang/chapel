@@ -1,4 +1,4 @@
-testing json write: {"numbers":[1,2,3]}
+testing json write: {"numbers":[1, 2, 3]}
 Writing JSON: {"numbers": []}
 Read: (numbers = )
 Writing JSON: {"numbers": [1]}
