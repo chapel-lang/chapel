@@ -229,6 +229,8 @@ performance test foo-c.test.c.  Like any other test, the C test needs
 a .good file for correctness testing and a .perfkeys file for
 performance testing.
 
+## Third party codes? Mention of internal repository?
+
 To compare a single Chapel test compiled or run in multiple
 configurations, the approach taken is to use multi-line versions of
 the .perfcompopts OR .perfexecopts files, where each line represents a
@@ -301,6 +303,7 @@ suite(s) in which your graph appears, and you should see data for it.
 (Note that for a new graph with only one day of data, it can be hard
 to see the singleton points at first).
 
+## Other features? graphname?
 
 Test Your Test Before Submitting
 --------------------------------
