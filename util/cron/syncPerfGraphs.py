@@ -55,29 +55,39 @@ def syncToSourceForge(dirToSync, destDir, logFile):
 
     # Assumes correct username and authentication for web.sourceforge.net is
     # configured for the current system.
-    sfHost = 'web.sourceforge.net'
+    sfWebHost = 'web.sourceforge.net'
+    sfShellHost = 'shell.sourceforge.net'
     sfPerfBaseDir = '/home/project-web/chapel/htdocs/perf/'
     sfPerfDir = posixpath.join(sfPerfBaseDir, destDir)
-    rsyncDest = '{0}:{1}'.format(sfHost, sfPerfDir)
 
-    logFile.write('Attempting to rsync {0} to {1}\n'.format(dirToSync, rsyncDest))
+    # Delete files older than 10 days. Don't just use `rsync --del` because
+    # there might be subdirectories we don't want to delete, ignore errors
+    delOldCommand = 'ssh {0} "find {1} -ctime +10 | xargs rm -rf "'.format(sfShellHost, sfPerfDir)
+    delOldDesc = 'delete old files'
+    executeCommand(delOldCommand, delOldDesc, logFile)
 
-    # The rsync command that we will execute -- authenticates over ssh
-    # --del to remove any old data (graphs merged, changed names, removed etc)
+    # rsync, authenticating with ssh
+    rsyncDest = '{0}:{1}'.format(sfWebHost, sfPerfDir)
     rsyncCommand = 'rsync -avz -e ssh {0} {1}'.format(dirToSync, rsyncDest)
-    logFile.write('Sync to sourceforge command was: {0}\n\n'.format(rsyncCommand))
-    logFile.write('Rsync output is: \n')
+    rsyncDesc = 'rsync perf graphs to sourceforge'
+    return executeCommand(rsyncCommand, rsyncDesc, logFile)
+
+
+# Helper function for execute a command and log results/progress
+def executeCommand(command, commandDesc, logFile):
+    logFile.write('Attempting to {0} with `{1}`...\n'.format(commandDesc, command))
     logFile.flush()
 
-    # Actually send graphs to sourceforge and pipe output to the logfile
-    rsync = subprocess.call(shlex.split(rsyncCommand), stdout=logFile, stderr=subprocess.STDOUT)
+    commandRet = subprocess.call(shlex.split(command), stdout=logFile, stderr=subprocess.STDOUT)
 
-    if rsync == 0:
-        logFile.write('\n\nSuccessfully sent performance graphs to sourceforge\n')
+    if commandRet == 0:
+        logFile.write('\nCommand to {0} succeeded\n\n'.format(commandDesc))
     else:
-        logFile.write('\n\nFailure sending performance graphs to sourceforge\n')
+        logFile.write('\nCommand to {0} failed with error code {1}\n\n'.format(commandDesc, commandRet))
 
-    return rsync
+    logFile.flush()
+
+    return commandRet
 
 
 if __name__ == "__main__":
