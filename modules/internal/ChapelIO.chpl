@@ -229,6 +229,46 @@ module ChapelIO {
 
   use IO;
 
+    private
+    proc isIoField(x, param i) {
+      if isType(__primitive("field value by num", x, i)) ||
+         isParam(__primitive("field value by num", x, i)) {
+        // I/O should ignore type or param fields
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    // ch is the channel
+    // x is the record/class/union
+    // i is the field number of interest
+    private
+    proc ioFieldNameEqLiteral(ch, type t, param i) {
+      var st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      if st == QIO_AGGREGATE_FORMAT_JSON {
+        return new ioLiteral('"' +
+                             __primitive("field num to name", t, i) +
+                             '":');
+      } else {
+        return new ioLiteral(__primitive("field num to name", t, i) + " = ");
+      }
+    }
+    private
+    proc ioFieldNameLiteral(ch, type t, param i) {
+      var st = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      if st == QIO_AGGREGATE_FORMAT_JSON {
+        return new ioLiteral('"' +
+                             __primitive("field num to name", t, i) +
+                             '"');
+      } else {
+        return new ioLiteral(__primitive("field num to name", t, i));
+      }
+    }
+
+
+
+
     pragma "no doc"
     proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) {
       param num_fields = __primitive("num fields", t);
@@ -245,23 +285,12 @@ module ChapelIO {
       if !isUnionType(t) {
         // print out all fields for classes and records
         for param i in 1..num_fields {
-          if isType(__primitive("field value by num", x, i)) ||
-             isParam(__primitive("field value by num", x, i)) {
-             // do nothing, don't output types or params
-          } else {
+          if isIoField(x, i) {
             if !isBinary {
               var comma = new ioLiteral(", ");
               if !first then writer.readwrite(comma);
     
-              var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-              var eq:ioLiteral;
-              if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral('"' +
-                                   __primitive("field num to name", t, i) +
-                                   '":');
-              } else {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
-              }
+              var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
               writer.readwrite(eq);
             }
 
@@ -275,20 +304,12 @@ module ChapelIO {
         // print out just the set field for a union.
         var id = __primitive("get_union_id", x);
         for param i in 1..num_fields {
-          if __primitive("field id by num", t, i) == id {
+          if isIoField(x, i) && __primitive("field id by num", t, i) == id {
             if isBinary {
               // store the union ID
               write(id);
             } else {
-              var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-              var eq:ioLiteral;
-              if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral('"' +
-                                   __primitive("field num to name", t, i) +
-                                   '":');
-              } else {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
-              }
+              var eq:ioLiteral = ioFieldNameEqLiteral(writer, x, i);
               writer.readwrite(eq);
             }
             writer.readwrite(__primitive("field value by num", x, i));
@@ -393,14 +414,11 @@ module ChapelIO {
       var isBinary = reader.binary();
       var superclass_error : syserr = ENOERR;
   
-      //writeln("in readThisFieldsDefaultImpl type ", t:string, " num_fields=", num_fields, " needsComma=", needsComma);
-  
       if (isClassType(t)) {
         if t != object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
           type superType = x.super.type;
-          //writeln("super type ", superType:string);
           var castTmp:superType = x; // make a copy of the ptr so we
                                      // can pass it by ref
           readThisFieldsDefaultImpl(reader, superType, castTmp, needsComma);
@@ -409,50 +427,39 @@ module ChapelIO {
         }
       }
   
-      //writeln("in readThisFieldsDefaultImpl after super. type is ", t:string, " needsComma=", needsComma);
-
       if !isUnionType(t) {
         // read all fields for classes and records
         if isBinary {
           for param i in 1..num_fields {
-            if isType(__primitive("field value by num", x, i)) ||
-               isParam(__primitive("field value by num", x, i)) {
-              // do nothing, don't read types or params
-            } else {
+            if isIoField(x, i) {
               reader.readwrite(__primitive("field value by num", x, i));
             }
           }
         } else if num_fields > 0 {
-          // track whether or not we've read all of the fields.
 
           // this tuple helps us not read the same field twice.
           var read_field:(num_fields)*bool;
+          // these two help us know if we've read all the fields.
           var num_to_read = 0;
           var num_read = 0;
           for param i in 1..num_fields {
-            if isType(__primitive("field value by num", x, i)) ||
-               isParam(__primitive("field value by num", x, i)) {
-              // do nothing, don't read types or params
-            } else {
+            if isIoField(x, i) {
               num_to_read += 1;
             }
           }
 
           // the order should not matter.
           while num_read < num_to_read {
-            //writeln("IN LOOP read_field=", read_field);
 
             if needsComma {
               // read a comma
 
-              //writeln("READING COMMA");
               var comma = new ioLiteral(",", true);
               reader.readwrite(comma);
 
               if !reader.error() {
                 needsComma = false; // we read a comma
               } else if reader.error() == EFORMAT {
-                //writeln("NO COMMA");
                 // break out of the loop if we didn't read a comma
                 // and we're expecting to read one.
                 break;
@@ -463,38 +470,22 @@ module ChapelIO {
             // TODO: this is not particularly efficient. If we
             // have a lot of fields, this is O(n**2), and there
             // are other potential problems with string reallocation.
+            // We could do better if we put the field names to
+            // scan for into a regular expression, possibly
+            // with | and ( ) for capture groups so we can know
+            // which field was read.
             var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
             var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
 
-            // the field name
-            var fname:ioLiteral;
-
             var read_field_name = false;
 
-            //writeln("BEFORE PARAM FOR type ", t:string, " num_fields=", num_fields, " read_field_name=", read_field_name);
-
             for param i in 1..num_fields {
-              if isType(__primitive("field value by num", x, i)) ||
-                 isParam(__primitive("field value by num", x, i)) {
-                // do nothing, don't read types or params
-              } else {
+              if isIoField(x, i) {
 
                 if !read_field_name && !read_field[i] {
-                  if st == QIO_AGGREGATE_FORMAT_JSON {
-                    fname = new ioLiteral('"' +
-                                          __primitive("field num to name", t, i)
-                                          + '"',
-                                          true);
-                  } else {
-                    fname = new ioLiteral(__primitive("field num to name", t, i),
-                                          true);
-                  }
+                  var fname:ioLiteral = ioFieldNameLiteral(reader, t, i);
 
-                  //writeln("ERROR IS ", reader.error():int);
-                  //writeln("OFFSET IS ", reader.offset());
-                  //writeln("TRYING TO READ ", fname);
                   reader.readwrite(fname);
-                  //writeln("POST FNAME ERROR IS ", reader.error():int);
 
                   if reader.error() == EFORMAT || reader.error() == EEOF {
                     // Try reading again with a different union element.
@@ -502,8 +493,6 @@ module ChapelIO {
                   } else {
                     read_field_name = true;
                     needsComma = true;
-
-                    //writeln("DID     FIND ", fname);
 
                     var eq:ioLiteral;
                     if st == QIO_AGGREGATE_FORMAT_JSON {
@@ -515,7 +504,6 @@ module ChapelIO {
 
                     reader.readwrite(__primitive("field value by num", x, i));
                     if !reader.error() {
-                      //writeln("setting read_field[", i, "]");
                       read_field[i] = true;
                       num_read += 1;
                     }
@@ -524,14 +512,10 @@ module ChapelIO {
               }
             }
 
-            //writeln("AFTER PARAM FOR");
-
             // Stop with an error if we didn't read a field name
             // ... unless we skip unknown fields...
             if !read_field_name {
               if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
-
-                //writeln("SKIPPING FIELD");
 
                 // Skip an unknown JSON field.
                 var e:syserr;
@@ -541,33 +525,19 @@ module ChapelIO {
                 }
                 reader.setError(e);
               } else {
-                //writeln("ERROR - MISSING FIELD NAME");
                 reader.setError(EFORMAT:syserr);
                 break;
               }
             }
           }
 
-          //writeln("POST WHILE ERROR IS ", reader.error():int);
-
           // check that we've read all fields, return error if not.
           {
             var ok = num_read == num_to_read;
-            /*for param i in 1..num_fields {
-              if isType(__primitive("field value by num", x, i)) ||
-                 isParam(__primitive("field value by num", x, i)) {
-                 // do nothing, don't read types or params
-              } else {
-                ok &= read_field[i];
-                //writeln("read_field[", i, "] is ", read_field[i]);
-              }
-            }*/
 
             if ok then reader.setError(superclass_error);
             else reader.setError(EFORMAT:syserr);
           }
-
-          //writeln("POST CHECK ERROR IS ", reader.error():int);
         }
       } else {
         // Handle unions.
@@ -576,7 +546,7 @@ module ChapelIO {
           // Read the ID
           reader.readwrite(id);
           for param i in 1..num_fields {
-            if __primitive("field id by num", t, i) == id {
+            if isIoFied(x, x) && __primitive("field id by num", t, i) == id {
               reader.readwrite(__primitive("field value by num", x, i));
             }
           }
@@ -584,40 +554,31 @@ module ChapelIO {
           // Read the field name = part until we get one that worked.
           var found_field = false;
           for param i in 1..num_fields {
-            var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-            var eq:ioLiteral;
+            if isIoField(x, i) {
+              var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
 
-            // the field name
-            var fname:ioLiteral;
+              // the field name
+              var fname:ioLiteral = ioFieldNameLiteral(reader, t, i);
 
-            if st == QIO_AGGREGATE_FORMAT_JSON {
-              fname = new ioLiteral('"' +
-                                    __primitive("field num to name", t, i)
-                                    + '"',
-                                    true);
-            } else {
-              fname = new ioLiteral(__primitive("field num to name", t, i),
-                                    true);
-            }
+              reader.readwrite(fname);
 
-            reader.readwrite(fname);
-
-            // Read : or = if there was no error reading field name.
-            if reader.error() == EFORMAT || reader.error() == EEOF {
-              // Try reading again with a different union element.
-              reader.clearError();
-            } else {
-              found_field = true;
-              var eq:ioLiteral;
-              if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral(":", true);
+              // Read : or = if there was no error reading field name.
+              if reader.error() == EFORMAT || reader.error() == EEOF {
+                // Try reading again with a different union element.
+                reader.clearError();
               } else {
-                eq = new ioLiteral("=", true);
-              }
-              readIt(eq);
+                found_field = true;
+                var eq:ioLiteral;
+                if st == QIO_AGGREGATE_FORMAT_JSON {
+                  eq = new ioLiteral(":", true);
+                } else {
+                  eq = new ioLiteral("=", true);
+                }
+                readIt(eq);
 
-              // We read the 'name = ', so now read the value!
-              reader.readwrite(__primitive("field value by num", x, i));
+                // We read the 'name = ', so now read the value!
+                reader.readwrite(__primitive("field value by num", x, i));
+              }
             }
           }
           // Create an error if we never found a field in our union.
