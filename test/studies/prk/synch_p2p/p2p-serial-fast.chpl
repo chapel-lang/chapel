@@ -29,7 +29,7 @@ var timer: Timer;
 const mrange = 0 .. # m,
       nrange = 0 .. # n,
       outerDom = {mrange, nrange},
-      innerDom = {1 ..(m-1), 1 .. (n-1)};
+      innerDom = outerDom(1.., 1..);
 
 var vector : [outerDom] real = 0.0;
 
