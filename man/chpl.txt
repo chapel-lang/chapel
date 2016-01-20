@@ -408,7 +408,8 @@ OPTIONS
                      zippering syntax. All uses of tuple iteration
                      will produce warnings.
 
-  --no-warnings      Turns off compiler warnings.
+  --[no-]warnings    Enable [disable] the printing of compiler warnings.
+                     Defaults to printing warnings.
 
   Compiler Information Options
 
