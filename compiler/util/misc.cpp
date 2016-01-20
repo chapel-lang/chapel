@@ -74,13 +74,13 @@ bool requireWideReferences() {
 }
 
 //
-// If the --no-local flag is used or the locale model is not 'flat'
-// (i.e., has sub-locales that on-clauses might target), we should
-// not drop on-clauses on the floor.  I.e., we should require them
-// to be "outlined."
+// If the --no-local flag is used, or the locale model is not 'flat'
+// (i.e., has sub-locales that an on-clause might target), we should
+// require on-clauses to be "outlined" (i.e., we should not assume the
+// on-clause is a no-op and execute the associated statement locally.
 //
 bool requireOutlinedOn() {
-  return !fLocal || strcmp(CHPL_LOCALE_MODEL, "flat");
+  return !fLocal || strcmp(CHPL_LOCALE_MODEL, "flat") != 0;
 }
 
 const char* cleanFilename(const char* name) {
