@@ -951,9 +951,11 @@ record regexp {
 
   pragma "no doc"
   proc writeThis(f) {
-    var pattern:c_string;
+    var pattern:string;
     on this.home {
-      qio_regexp_get_pattern(this._regexp, pattern);
+      var patternTemp:c_string;
+      qio_regexp_get_pattern(this._regexp, patternTemp);
+      pattern = new string(patternTemp);
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
@@ -962,16 +964,17 @@ record regexp {
 
   pragma "no doc"
   proc readThis(f) {
-    var pattern:c_string;
+    var pattern:string;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
     if(f.read(litOne, pattern, litTwo)) {
       on this.home {
+        var localPattern = pattern.localize();
         var opts:qio_regexp_options_t;
         qio_regexp_init_default_options(opts);
-        qio_regexp_create_compile(pattern, pattern.length, opts, this._regexp);
+        qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
       }
     }
   }

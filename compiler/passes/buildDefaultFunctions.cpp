@@ -677,7 +677,7 @@ static void build_enum_cast_function(EnumType* et) {
     CondStmt* otherwise =
       new CondStmt(new CallExpr(PRIM_WHEN),
                    new BlockStmt(new CallExpr("halt",
-                                 new_CStringSymbol(errorString))));
+                                 new_StringSymbol(errorString))));
     whenstmts->insertAtTail(otherwise);
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
   }
@@ -710,10 +710,10 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertAtTail(cond);
 
   fn->insertAtTail(new CallExpr("halt",
-                                new_CStringSymbol("illegal conversion of string \\\""),
+                                new_StringSymbol("illegal conversion of string \\\""),
                                 arg2,
-                                new_CStringSymbol("\\\" to "),
-                                new_CStringSymbol(et->symbol->name)));
+                                new_StringSymbol("\\\" to "),
+                                new_StringSymbol(et->symbol->name)));
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                 toDefExpr(et->constants.first())->sym));
