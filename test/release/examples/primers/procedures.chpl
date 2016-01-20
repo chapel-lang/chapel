@@ -25,7 +25,7 @@
 //
 
 //
-// Here is a procedure which takes an integer argument and returns and integer
+// Here is a procedure which takes an integer argument and returns an integer
 // result.  It computes the factorial of the argument.
 //
 proc factorial(x: int) : int
@@ -85,7 +85,7 @@ proc +(p1: Point, p2: Point)
 //
 // We can also overload the writeThis() routine called by writeln.
 //
-proc Point.writeThis(w: Writer)
+proc Point.writeThis(w)
 {
   // Writes it out as a coordinate pair.
   w.write("(");
@@ -156,7 +156,7 @@ config param useSleep = true;
 use Time;
 
 //
-// Normal (blank) intent means that a formal argument cannot be modified
+// Normal (default) intent means that a formal argument cannot be modified
 // in the body of a procedure.
 // To allow changing the formal (but not the actual), use the "in" intent.
 //

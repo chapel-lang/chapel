@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -152,7 +152,6 @@ void qbytes_free_null(qbytes_t* b);
 // unmap the data
 void qbytes_free_munmap(qbytes_t* b);
 // free the data
-void qbytes_free_sys_free(qbytes_t* b);
 void qbytes_free_qio_free(qbytes_t* b);
 
 void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_free_t free_function);
@@ -229,6 +228,7 @@ qbuffer_iter_t qbuffer_iter_null(void) {
 
 void debug_print_qbuffer_iter(qbuffer_iter_t* iter);
 void debug_print_qbuffer(qbuffer_t* buf);
+void debug_print_iovec(const struct iovec* iov, int iovcnt, size_t maxbytes);
 
 
 static inline
@@ -459,10 +459,11 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #ifdef _chplrt_H_
 
 #include "chpl-mem.h"
-#define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
-#define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
-#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
-#define qio_free(ptr) chpl_mem_free(ptr, __LINE__, __FILE__)
+#define qio_malloc(size) chpl_mem_alloc(size, CHPL_RT_MD_IO_BUFFER, 0, 0)
+#define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
+#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, 0, 0)
+#define qio_valloc(size) chpl_valloc(size)
+#define qio_free(ptr) chpl_mem_free(ptr, 0, 0)
 #define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 
 static inline char* qio_strdup(const char* ptr)
@@ -479,8 +480,8 @@ typedef chpl_bool qio_bool;
 #define qio_malloc(size) malloc(size)
 #define qio_calloc(nmemb, size) calloc(nmemb,size)
 #define qio_realloc(ptr, size) realloc(ptr, size)
+#define qio_valloc(size) valloc(size)
 #define qio_free(ptr) free(ptr)
-#define sys_free(ptr) free(ptr)
 #define qio_strdup(ptr) strdup(ptr)
 #define qio_memcpy(dest, src, num) memcpy(dest, src, num)
 

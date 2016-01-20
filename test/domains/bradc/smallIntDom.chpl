@@ -3,14 +3,14 @@ var j8 = 3:int(8);
 
 var r = i8..j8;
 
-writeln("r.idxType = ", typeToString(r.idxType));
+writeln("r.idxType = ", r.idxType:string);
 
 for i in r do
-  writeln("i: ", i, "(", typeToString(i.type), ")");
+  writeln("i: ", i, "(", i.type:string, ")");
 
 var D = {r, r};
 
-writeln("D.idxType = ", typeToString(D.idxType));
+writeln("D.idxType = ", D.idxType:string);
 
 for ij in D do
-  writeln("ij: ", ij, "(", typeToString(ij(1).type), ",", typeToString(ij(2).type), ")");
+  writeln("ij: ", ij, "(", ij(1).type:string, ",", ij(2).type:string, ")");

@@ -1,8 +1,8 @@
 proc launch(a,b) {
-  writeln("divceil(", a, ":", typeToString(a.type), ",",
-          b, ":", typeToString(b.type), ") = ", divceil(a,b));
-  writeln("divfloor(", a, ":", typeToString(a.type), ",",
-          b, ":", typeToString(b.type), ") = ", divfloor(a,b));
+  writeln("divceil(", a, ":", a.type:string, ",",
+          b, ":", b.type:string, ") = ", divceil(a,b));
+  writeln("divfloor(", a, ":", a.type:string, ",",
+          b, ":", b.type:string, ") = ", divfloor(a,b));
 }
 
 launch(7:int(32),  5:uint(64));

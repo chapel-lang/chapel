@@ -1,4 +1,4 @@
-Module: basic
+basic
    proc method1(): string
       Comment for method1 
 
@@ -28,7 +28,7 @@ Module: basic
       This proc has an implicit return type and a return statement 
 
    proc returnCommentless()
-   Module: basic.Other
+   basic.Other
       proc inside(): int
          Comment for method inside module 
 

@@ -153,7 +153,7 @@ can make for this construct in the presence of optimizations...
 
 These are orthogonal.  I added an example.
 
-* add const intents to spec and define blank intents in terms of const
+* add const intents to spec and define default intents in terms of const
   intents (and "by reference" for arrays/domains):
 
   Steve's definition of const intents:
@@ -165,8 +165,8 @@ These are orthogonal.  I added an example.
   Brad's mental definition had been the same except:
   - records: pass by ref and disallow modification
 
-  Joint definition of blank intents:
-  - scalars, classes, records: same as blank:
+  Joint definition of default intents:
+  - scalars, classes, records: same as default:
   - domains/arrays: pass by ref and allow modification
 
 * Does spec talk about declaring methods for types other than

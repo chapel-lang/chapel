@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -36,30 +36,34 @@ uint32_t c_string_to_uint32_t_precise(c_string str, int* invalid, char* invalidC
 uint64_t c_string_to_uint64_t_precise(c_string str, int* invalid, char* invalidChar);
 
 /* string to every other primitive type */
-int8_t c_string_to_int8_t(c_string str, int lineno, c_string filename);
-int16_t c_string_to_int16_t(c_string str, int lineno, c_string filename);
-int32_t c_string_to_int32_t(c_string str, int lineno, c_string filename);
-int64_t c_string_to_int64_t(c_string str, int lineno, c_string filename);
-uint8_t c_string_to_uint8_t(c_string str, int lineno, c_string filename);
-uint16_t c_string_to_uint16_t(c_string str, int lineno, c_string filename);
-uint32_t c_string_to_uint32_t(c_string str, int lineno, c_string filename);
-uint64_t c_string_to_uint64_t(c_string str, int lineno, c_string filename);
+int8_t c_string_to_int8_t(c_string str, int lineno, int32_t filename);
+int16_t c_string_to_int16_t(c_string str, int lineno, int32_t filename);
+int32_t c_string_to_int32_t(c_string str, int lineno, int32_t filename);
+int64_t c_string_to_int64_t(c_string str, int lineno, int32_t filename);
+uint8_t c_string_to_uint8_t(c_string str, int lineno, int32_t filename);
+uint16_t c_string_to_uint16_t(c_string str, int lineno, int32_t filename);
+uint32_t c_string_to_uint32_t(c_string str, int lineno, int32_t filename);
+uint64_t c_string_to_uint64_t(c_string str, int lineno, int32_t filename);
 
-chpl_bool c_string_to_chpl_bool(c_string str, int lineno, c_string filename);
+chpl_bool c_string_to_chpl_bool(c_string str, int lineno, int32_t filename);
 
 _real32 c_string_to_real32_precise(c_string str, int* invalid, char* invalidCh);
 _real64 c_string_to_real64_precise(c_string str, int* invalid, char* invalidCh);
 _imag32 c_string_to_imag32_precise(c_string str, int* invalid, char* invalidCh);
 _imag64 c_string_to_imag64_precise(c_string str, int* invalid, char* invalidCh);
+#ifndef __cplusplus
 _complex64 c_string_to_complex64_precise(c_string str, int* invalid, char* invalidCh);
 _complex128 c_string_to_complex128_precise(c_string str, int* invalid, char* invalidCh);
+#endif
 
-_real32 c_string_to_real32(c_string str, int lineno, c_string filename);
-_real64 c_string_to_real64(c_string str, int lineno, c_string filename);
-_imag32 c_string_to_imag32(c_string str, int lineno, c_string filename);
-_imag64 c_string_to_imag64(c_string str, int lineno, c_string filename);
-_complex64 c_string_to_complex64(c_string str, int lineno, c_string filename);
-_complex128 c_string_to_complex128(c_string str, int lineno, c_string filename);
+_real32 c_string_to_real32(c_string str, int lineno, int32_t filename);
+_real64 c_string_to_real64(c_string str, int lineno, int32_t filename);
+_imag32 c_string_to_imag32(c_string str, int lineno, int32_t filename);
+_imag64 c_string_to_imag64(c_string str, int lineno, int32_t filename);
+#ifndef __cplusplus
+_complex64 c_string_to_complex64(c_string str, int lineno, int32_t filename);
+_complex128 c_string_to_complex128(c_string str, int lineno, int32_t filename);
+#endif
 
 
 /* every other primitive type to string */
@@ -98,26 +102,4 @@ c_string chpl_bool64_to_c_string(chpl_bool64 x) {
 }
 
 #include "chpl-string.h"
-
-// Note that this routine returns a reference to the character buffer in the
-// underlying chpl_string, so the chpl_string must last longer than the
-// returned c_string or the caller must make a copy of the result.  The caller
-// should not free the returned string.
-static inline
-c_string chpl_string_to_c_string(chpl_string s, int lineno, c_string filename) {
-  c_string ret;
-  c_string_from_string(&ret, &s, lineno, filename);
-  return ret; // leaky? No. (see above)
-}
-
-// This routine returns a chpl_string containing a verbatim copy of the
-// passed-in C string.  The (chpl_)string destructor will take care of
-// deallocating that memory.
-static inline
-chpl_string c_string_to_chpl_string(c_string s, int lineno, c_string filename) {
-  chpl_string ret;
-  string_from_c_string(&ret, s, 0, -1, lineno, filename);
-  return ret; // leaky? No. (see above)
-}
-
 #endif // _chplcast_h_

@@ -7,7 +7,7 @@ structure.  Most subdirectories contain a README file to provide
 further information about the files and directories that they contain.
 
 ./
-  README            : top-level README with quick-start information
+  README.rst        : top-level README with quick-start information
   README.files      : this file
   ACKNOWLEDGEMENTS  : funding agencies and HPC centers who supported this work
   CHANGES           : a list of changes since the previous releases
@@ -29,4 +29,5 @@ further information about the files and directories that they contain.
   modules/          : standard and internal Chapel modules
   runtime/          : source code for Chapel's runtime libraries
   third-party/      : third-party software used by Chapel
+  tools/            : tools that can be used with Chapel programs
   util/             : utility scripts

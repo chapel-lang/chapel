@@ -1,1 +1,1 @@
-no_src.chpl:3: error: No such file or directory in copyTree(shesNotThere, pleaseDontBotherTryingToFindHer)
+no_src.chpl:3: error: Not a directory in copyTree(shesNotThere, pleaseDontBotherTryingToFindHer)

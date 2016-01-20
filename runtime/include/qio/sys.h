@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,9 @@ extern "C" {
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#ifndef __CYGWIN__
 #include <netinet/tcp.h>
+#endif
 #include <netdb.h>
 #include <unistd.h>
 #include <stdio.h>

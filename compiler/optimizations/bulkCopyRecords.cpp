@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,102 +27,11 @@
 #include "stmt.h"
 #include "astutil.h"
 #include "stlUtil.h"
-#include <set>
+#include "resolution.h" // isPOD
 
 
-// Can be an unoredered_set.
-typedef std::set<FnSymbol*> FnSet;
-
-
-static bool isTrivial(FnSymbol* fn, FnSet& visited);
 static bool isAssignment(FnSymbol* fn);
-static bool isTrivialAssignment(FnSymbol* fn, FnSet& visited);
-
-// The argument is assumed to be an assignment function.
-// It is deemed to be simple if it contains only 'move', 'addr of', '=',
-// 'return' primitives and calls only simple assignments (recursively).
-// We also require that it return void (for now).
-// The FLAG_TRIVIAL_ASSIGNMENT is used to ensure that we visit each such
-// function only once.
-static bool isTrivial(FnSymbol* fn, FnSet& visited)
-{
-  // Visit each function only once.
-  if (visited.find(fn) != visited.end())
-  {
-    // Found it.
-    if (fn->hasFlag(FLAG_TRIVIAL_ASSIGNMENT))
-      return true;
-    else
-      return false;
-  }
-  visited.insert(fn);
-
-  // We assume that compiler-generated assignments are field-by-field copies.
-  // Note that this overloads the meaning of this flag with:
-  // "Assignment operations flagged as 'compiler generated' shall contain only
-  // field assignments and assignment primitives."
-  // We can then assume that all nested calls are field extractions or
-  // assignments, and we only have to check the latter.
-  if (! fn->hasFlag(FLAG_COMPILER_GENERATED))
-    return false;
-
-  // After all compiler-supplied assignments use the new signature, this can
-  // become an assert.
-  if (fn->retType != dtVoid)
-    return false;
-
-  // The base argument types must match.
-  ArgSymbol* lhs = fn->getFormal(1);
-  ArgSymbol* rhs = fn->getFormal(2);
-  if (lhs->type->getValType() != rhs->type->getValType())
-    return false;
-
-  // Assume this is a field-by-field copy.
-  // If none of the fields of this record (or tuple) has a user-defined
-  // assignment (recursively), then it can be replaced by a bulk copy.
-  // Traverse the call expressions in the body of the function.
-  // These should all be one of the allowed primitives or calls to simple
-  // assignments.  If anything else, the assignment is "interesting", and
-  // cannot be replaced.
-  std::vector<BaseAST*> asts;
-  collect_asts(fn->body, asts);
-  for_vector(BaseAST, ast, asts)
-  {
-    if (CallExpr* call = toCallExpr(ast))
-    {
-      if (FnSymbol* fieldAsgn = call->isResolved())
-      {
-        if (isAssignment(fieldAsgn))
-          if (! isTrivial(fieldAsgn, visited))
-            return false;
-      }
-      else
-      {
-        // This is a primitive.
-        switch(call->primitive->tag)
-        {
-         default:
-          return false;
-
-          // These are the allowable primitives.
-         case PRIM_MOVE:
-         case PRIM_ASSIGN:
-         case PRIM_ADDR_OF:
-         case PRIM_DEREF:
-         case PRIM_GET_MEMBER:
-         case PRIM_GET_MEMBER_VALUE:
-         case PRIM_SET_MEMBER:
-         case PRIM_RETURN: // We expect return _void.
-          break;
-        }
-      }
-    }
-  }
-
-  fn->addFlag(FLAG_TRIVIAL_ASSIGNMENT);
-  return true;
-}
-
+static bool isTrivialAssignment(FnSymbol* fn);
 
 static bool isAssignment(FnSymbol* fn)
 {
@@ -134,12 +43,35 @@ static bool isAssignment(FnSymbol* fn)
   return true;
 }
 
+/* Find assignment functions that this optimization
+   should replace with bit copies.
 
-static bool isTrivialAssignment(FnSymbol* fn, FnSet& visited)
+   This function returns true if all of these conditions are met:
+    - fn is an assignment function
+    - the lhs and rhs arguments have the same type
+    - the lhs and rhs arguments are POD types
+ */
+static bool isTrivialAssignment(FnSymbol* fn)
 {
   if (! isAssignment(fn))
     return false;
-  if (isTrivial(fn, visited))
+  
+  // The base argument types must match.
+  ArgSymbol* lhs = fn->getFormal(1);
+  ArgSymbol* rhs = fn->getFormal(2);
+  Type* argType = lhs->type->getValType();
+  if (argType != rhs->type->getValType())
+    return false;
+
+  // Skip this optimization for string/wide string types
+  // (due to problems providing additional arguments for
+  //  PRIM_ASSIGN).
+  if (argType == dtString)
+    return false;
+
+  // Both argument types must be POD types
+  // (but at this point they are the same type, so we only check one)
+  if (isPOD(argType))
     return true;
 
   return false;
@@ -164,7 +96,6 @@ static void replaceSimpleAssignment(FnSymbol* fn)
 
 void bulkCopyRecords()
 {
-  FnSet visited;
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
     // We do not convert wrapper functions (only the functions that do the
@@ -172,7 +103,7 @@ void bulkCopyRecords()
     if (fn->hasFlag(FLAG_WRAPPER))
       continue;
 
-    if (isTrivialAssignment(fn, visited))
+    if (isTrivialAssignment(fn))
       replaceSimpleAssignment(fn);
   }
 }

@@ -1,0 +1,4 @@
+feature request: Help message (-h) to print defaults for config vars.
+
+Request is for the table of config values to also show the default value
+assigned to the variable/const.

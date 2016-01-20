@@ -122,7 +122,7 @@ proc fillTuple(param p: int, x) {
 \begin{chapelpost}
 var x = fillTuple(3, 3.14);
 writeln(x);
-writeln(typeToString(x.type));
+writeln(x.type:string);
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
@@ -157,7 +157,7 @@ proc fillTuple(param p: int, x: ?t) {
 \begin{chapelpost}
 var x = fillTuple(3, 3.14);
 writeln(x);
-writeln(typeToString(x.type));
+writeln(x.type:string);
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
@@ -469,7 +469,7 @@ class Node {
 var n: Node(real) = new Node(real, 3.14);
 writeln(n.data);
 writeln(n.next);
-writeln(typeToString(n.next.type));
+writeln(n.next.type:string);
 delete n;
 \end{chapelpost}
 \begin{chapeloutput}
@@ -544,7 +544,7 @@ specified by \chpl{IntegerTuple} is a generic type.
 
 If a \chpl{var} or \chpl{const} field in a class or record has no specified type or
 initialization expression, the class or record is generic over the
-type of that field.  The field becomes an argument with blank intent to
+type of that field.  The field becomes an argument with default intent to
 the compiler-generated constructor (\rsec{Generic_Compiler_Generated_Constructors}).
 That argument has no specified type and no default
 value. This makes the compiler-generated constructor generic.
@@ -656,7 +656,7 @@ parameter for a parameter field. It accepts the type to be bound
 to the type alias and the value to be bound to the parameter, respectively.
 This is the same as for the type constructor.
 For a generic \chpl{var} or \chpl{const} field, the corresponding
-formal argument has the blank intent and accepts the value
+formal argument has the default intent and accepts the value
 for the field to be initialized with. The type of the field
 is inferred automatically to be the type of the initialization value.
 
@@ -718,14 +718,22 @@ var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
                             real, 2, 222, 222.2, 22);
 \end{chapel}
 \begin{chapelpost}
+writeln(g1.p1);
+writeln(g1.p5);
 writeln(g1);
+writeln(g2.p1);
+writeln(g2.p5);
 writeln(g2);
 delete g1;
 delete g2;
 \end{chapelpost}
 \begin{chapeloutput}
-{p1 = 1, c1 = 11, v1 = 111, x1 = 0, p5 = a string, c5 = 5.5, v5 = 555, x5 = 0.0}
-{p1 = 2, c1 = 222, v1 = 222.2, x1 = 0.0, p5 = this is g2, c5 = 5.5, v5 = 555, x5 = 0}
+1
+a string
+{c1 = 11, v1 = 111, x1 = 0, c5 = 5.5, v5 = 555, x5 = 0.0}
+2
+this is g2
+{c1 = 222, v1 = 222.2, x1 = 0.0, c5 = 5.5, v5 = 555, x5 = 0}
 \end{chapeloutput}
 The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
 required in all constructors for \chpl{MyGenericClass}. They can appear
@@ -811,7 +819,7 @@ diagnostics to generate warnings and errors:
 proc foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ", 
-                  typeToString(x.type), " != ", typeToString(y.type));
+                  x.type:string, " != ", y.type:string);
   writeln("In 2-argument foo...");
 }
 

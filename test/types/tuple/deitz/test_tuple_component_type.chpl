@@ -1,2 +1,2 @@
-writeln(typeToString((int,int)(2)));
-writeln(typeToString((int,(real,imag))(2)(2)));
+writeln((int,int)(2):string);
+writeln((int,(real,imag))(2)(2):string);

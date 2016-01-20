@@ -5,7 +5,7 @@ class D {
 class C {
   var Ds: [LocaleSpace] D;
 
-  proc writeThis(x:Writer) {
+  proc writeThis(x) {
     for loc in Locales do
       on loc do
 	Ds[loc.id].writeThis(x);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,9 +30,11 @@
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
+#include "chpl-linefile-support.h"
 #include "error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-cache.h" // to call chpl_cache_init()
+#include "chpl-visual-debug.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -74,7 +76,6 @@ void* get_ptr_from_args(gasnet_handlerarg_t a0, gasnet_handlerarg_t a1 )
            (((uint64_t) (uint32_t) a0)
             | (((uint64_t) (uint32_t) a1) << 32UL));
 }
-
 
 //
 // Build acknowledgement address arguments for gasnetAMRequest*() calls.
@@ -192,19 +193,22 @@ typedef struct {
 //
 // AM functions
 //
-#define FORK          128 // synchronous fork
-#define FORK_LARGE    129 // synchronous fork with a huge argument
-#define FORK_NB       130 // non-blocking fork 
-#define FORK_NB_LARGE 131 // non-blocking fork with a huge argument
-#define FORK_FAST     132 // run the function in the handler (use with care)
-#define SIGNAL        133 // ack of synchronous fork
-#define PRIV_BCAST    134 // put data at addr (used for private broadcast)
-#define PRIV_BCAST_LARGE 135 // put data at addr (used for private broadcast)
-#define FREE          136 // free data at addr
-#define EXIT_ANY      137 // free data at addr
-#define BCAST_SEGINFO 138 // broadcast for segment info table
-#define DO_REPLY_PUT  139 // do a PUT here from another locale
-#define DO_COPY_PAYLOAD 140 // copy AM payload to another address
+typedef enum {
+  FORK = 128,           // synchronous fork
+  FORK_LARGE,           // synchronous fork with a huge argument
+  FORK_NB,              // non-blocking fork
+  FORK_NB_LARGE,        // non-blocking fork with a huge argument
+  FORK_FAST,            // run the function in the handler (use with care)
+  SIGNAL,               // ack to a done_t via gasnet_AMReplyShortM()
+  SIGNAL_LONG,          // ack to a done_t via gasnet_AMReplyLongM()
+  PRIV_BCAST,           // put data at addr (used for private broadcast)
+  PRIV_BCAST_LARGE,     // put data at addr (used for private broadcast)
+  FREE,                 // free data at addr
+  EXIT_ANY,             // <unused> to be used for exit_any() cleanup
+  BCAST_SEGINFO,        // broadcast for segment info table
+  DO_REPLY_PUT,         // do a PUT here from another locale
+  DO_COPY_PAYLOAD       // copy AM payload to another address
+} AM_handler_function_idx_t;
 
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = buf;
@@ -252,8 +256,8 @@ static void fork_large_wrapper(fork_t* f) {
   void* f_arg;
   chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
-  chpl_comm_get(arg, f->caller, f_arg,
-                f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
+  chpl_comm_get(arg, f->caller, f_arg, f->arg_size, -1 /*typeIndex: unused*/,
+                0, CHPL_FILE_IDX_FORK_LARGE);
   chpl_ftable_call(f->fid, arg);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
@@ -303,8 +307,8 @@ static void fork_nb_large_wrapper(fork_t* f) {
   void* f_arg;
   chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
-  chpl_comm_get(arg, f->caller, f_arg,
-                f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
+  chpl_comm_get(arg, f->caller, f_arg, f->arg_size, -1 /*typeIndex: unused*/,
+                0, CHPL_FILE_IDX_FORK_LARGE);
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       FREE,
                                       &(f->ack),
@@ -325,6 +329,16 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
+  done_t* done = (done_t*) get_ptr_from_args(a0, a1);
+  uint_least32_t prev;
+  prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
+                                                  memory_order_seq_cst);
+  if (prev + 1 == done->target)
+    done->flag = 1;
+}
+
+static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
+                           gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
   done_t* done = (done_t*) get_ptr_from_args(a0, a1);
   uint_least32_t prev;
   prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
@@ -394,7 +408,7 @@ static void AM_reply_put(gasnet_token_t token, void* buf, size_t nbytes) {
 
   assert(nbytes == sizeof(xfer_info_t));
 
-  GASNET_Safe(gasnet_AMReplyLong2(token, SIGNAL,
+  GASNET_Safe(gasnet_AMReplyLong2(token, SIGNAL_LONG,
                                   x->src, x->size, x->tgt,
                                   AckArg0(x->ack), AckArg1(x->ack)));
 }
@@ -419,6 +433,7 @@ static gasnet_handlerentry_t ftable[] = {
   {FORK_NB_LARGE, AM_fork_nb_large},
   {FORK_FAST,     AM_fork_fast},
   {SIGNAL,        AM_signal},
+  {SIGNAL_LONG,   AM_signal_long},
   {PRIV_BCAST,    AM_priv_bcast},
   {PRIV_BCAST_LARGE, AM_priv_bcast_large},
   {FREE,          AM_free},
@@ -432,14 +447,15 @@ static gasnet_handlerentry_t ftable[] = {
 // Chapel interface starts here
 //
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                       int32_t elemSize, int32_t typeIndex,
-                                       int32_t len,
-                                       int ln, c_string fn)
+                                       size_t size, int32_t typeIndex,
+                                       int ln, int32_t fn)
 {
-  size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
 
-  ret = gasnet_put_nb_bulk(node, raddr, addr, nbytes);
+  // Should be in the compiler macros file?
+  chpl_vdebug_log_put_nb(addr, node, raddr, size, typeIndex, ln, fn);
+
+  ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
@@ -451,14 +467,15 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 }
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                       int32_t elemSize, int32_t typeIndex,
-                                       int32_t len,
-                                       int ln, c_string fn)
+                                       size_t size, int32_t typeIndex,
+                                       int ln, int32_t fn)
 {
-  size_t nbytes = elemSize*len;
   gasnet_handle_t ret;
 
-  ret = gasnet_get_nb_bulk(addr, node, raddr, nbytes);
+  // Visual Debug Support
+  chpl_vdebug_log_get_nb(addr, node, raddr, size, typeIndex, ln, fn);
+
+  ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
@@ -486,7 +503,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return gasnet_try_syncnb_some((gasnet_handle_t*) h, nhandles) == GASNET_OK;
 }
 
-int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
 #ifdef GASNET_SEGMENT_EVERYTHING
   return 0;
@@ -542,7 +559,7 @@ static void set_max_segsize_env_var(size_t size) {
 
   snprintf(segsizeval, sizeof(segsizeval), "%zd", size);
   if (setenv("GASNET_MAX_SEGSIZE", segsizeval, 1) != 0) {
-    chpl_error("Cannot setenv(\"GASNET_MAX_SEGSIZE\")", 0, NULL);
+    chpl_error("Cannot setenv(\"GASNET_MAX_SEGSIZE\")", 0, 0);
   }
 }
 
@@ -712,12 +729,12 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0,
                     &((wide_ptr_t*)seginfo_table[0].addr)[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 1, 0, "");
+                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 0, 0);
     }
   }
 }
 
-void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
+void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
   int  node, offset;
   int  payloadSize = size + sizeof(priv_bcast_t);
   done_t* done;
@@ -741,8 +758,8 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     }
     chpl_mem_free(pbp, 0, 0);
   } else {
-    int maxpayloadsize = gasnet_AMMaxMedium();
-    int maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
+    size_t maxpayloadsize = gasnet_AMMaxMedium();
+    size_t maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
     priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRV_BCAST_DATA, 0, 0);
     pblp->id = id;
     numOffsets = (size+maxsize)/maxsize;
@@ -751,7 +768,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
         init_done_obj(&done[node], numOffsets);
     }
     for (offset = 0; offset < size; offset += maxsize) {
-      int thissize = size - offset;
+      size_t thissize = size - offset;
       if (thissize > maxsize)
         thissize = maxsize;
       pblp->offset = offset;
@@ -875,15 +892,19 @@ void chpl_comm_exit(int all, int status) {
 }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    int32_t elemSize, int32_t typeIndex, int32_t len,
-                    int ln, c_string fn) {
-  const int size = elemSize*len;
+                    size_t size, int32_t typeIndex,
+                    int ln, int32_t fn) {
   int remote_in_segment;
+
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
   } else {
+    // Visual Debug support
+    chpl_vdebug_log_put(addr, node, raddr, size, typeIndex, ln, fn);
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote put to %d\n", chpl_nodeID, fn, ln, node);
+      printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
+             chpl_lookupFilename(fn), ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.put++;
@@ -894,7 +915,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
 #else
-    remote_in_segment = chpl_comm_is_in_segment(node, raddr, size);
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
 #endif
 
     if( remote_in_segment ) {
@@ -948,16 +969,19 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
-                    int32_t elemSize, int32_t typeIndex, int32_t len,
-                    int ln, c_string fn) {
-  const int size = elemSize*len;
+                    size_t size, int32_t typeIndex,
+                    int ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
   } else {
+    // Visual Debug support
+    chpl_vdebug_log_get(addr, node, raddr, size, typeIndex, ln, fn);
+    
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, node);
+      printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
+             chpl_lookupFilename(fn), ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.get++;
@@ -978,7 +1002,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
 #else
-    remote_in_segment = chpl_comm_is_in_segment(node, raddr, size);
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
 #endif
 
     if( remote_in_segment ) {
@@ -999,7 +1023,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
       local_in_segment = 1;
 #else
-      local_in_segment = chpl_comm_is_in_segment(chpl_nodeID, addr, size);
+      local_in_segment = chpl_comm_addr_gettable(chpl_nodeID, addr, size);
 #endif
 
       // If the local address isn't in a registered segment,
@@ -1015,7 +1039,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
         // local_buf is definately in our segment
 #else
-        assert(chpl_comm_is_in_segment(chpl_nodeID, local_buf, buf_sz));
+        assert(chpl_comm_addr_gettable(chpl_nodeID, local_buf, buf_sz));
 #endif
       }
 
@@ -1037,6 +1061,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
         init_done_obj(&done, 1);
 
+        info.ack = &done;
         info.tgt = local_buf?local_buf:addr_chunk;
         info.src = ((char*) raddr) + start;
         info.size = this_size;
@@ -1066,13 +1091,11 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 // This is an adaptor from Chapel code to GASNet's gasnet_gets_bulk. It does:
 // * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
 //   to counts of bytes,
-// * convert the element types of the above C arrays from int32_t to size_t.
-// Maybe this can be done in Chapel, but would it be as efficient?
 //
-void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id, 
-                         void* srcaddr, void* srcstrides, void* count,
-                         int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-                         int ln, c_string fn) {
+void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_id, 
+                         void* srcaddr, size_t* srcstrides, size_t* count,
+                         int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
+                         int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   const gasnet_node_t srcnode = (gasnet_node_t)srcnode_id;
@@ -1082,35 +1105,44 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
   size_t cnt[strlvls+1];
 
   // Only count[0] and strides are measured in number of bytes.
-  cnt[0] = ((int32_t*)count)[0] * elemSize;
+  cnt[0] = count[0] * elemSize;
 
   if (strlvls>0) {
-    srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+    srcstr[0] = srcstrides[0] * elemSize;
+    dststr[0] = dststrides[0] * elemSize;
     for (i=1; i<strlvls; i++) { 
-      srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((int32_t*)count)[i];
+      srcstr[i] = srcstrides[i] * elemSize;
+      dststr[i] = dststrides[i] * elemSize;
+      cnt[i] = count[i];
     }
-    cnt[strlvls] = ((int32_t*)count)[strlvls];
+    cnt[strlvls] = count[strlvls];
   }
 
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_nodeID, fn, ln, srcnode,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  "
+           "sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n",
+           chpl_nodeID, chpl_lookupFilename(fn), ln, srcnode, (long)strlvls,
+           (long)elemSize, (long)sizeof(size_t), (long)sizeof(gasnet_node_t));
 
-    printf("dststrides in bytes:\n");                 
-    for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
-    printf("\n");                     
-    printf("srcstrides in bytes:\n");                 
-    for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
-    printf("\n");                     
-    printf("count (count[0] in bytes):\n");                   
-    for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
-    printf("\n");                     
+    printf("dststrides in bytes:\n");
+    for (i=0;i<strlvls;i++) printf(" %ld ",(long)dststr[i]);
+    printf("\n");
+    printf("srcstrides in bytes:\n");
+    for (i=0;i<strlvls;i++) printf(" %ld ",(long)srcstr[i]);
+    printf("\n");
+    printf("count (count[0] in bytes):\n");
+    for (i=0;i<=strlvls;i++) printf(" %ld ",(long)cnt[i]);
+    printf("\n");
   }
+
+  // Visual Debug Support
+  chpl_vdebug_log_get_strd(dstaddr, dststrides, srcnode_id, srcaddr, srcstrides, count,
+                           stridelevels, elemSize, typeIndex, ln, fn);
+
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, srcnode);
+    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
+           chpl_lookupFilename(fn), ln, srcnode);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
     chpl_comm_commDiagnostics.get++;
@@ -1122,10 +1154,10 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
 }
 
 // See the comment for cmpl_comm_gets().
-void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id, 
-                         void* srcaddr, void* srcstrides, void* count,
-                         int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-                         int ln, c_string fn) {
+void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id, 
+                         void* srcaddr, size_t* srcstrides, size_t* count,
+                         int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
+                         int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   const gasnet_node_t dstnode = (gasnet_node_t)dstnode_id;
@@ -1135,34 +1167,42 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
   size_t cnt[strlvls+1];
 
   // Only count[0] and strides are measured in number of bytes.
-  cnt[0] = ((int32_t*)count)[0] * elemSize;
+  cnt[0] = count[0] * elemSize;
   if (strlvls>0) {
-    srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
-    dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+    srcstr[0] = srcstrides[0] * elemSize;
+    dststr[0] = dststrides[0] * elemSize;
     for (i=1; i<strlvls; i++) { 
-      srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-      dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-      cnt[i] = ((int32_t*)count)[i];
+      srcstr[i] = srcstrides[i] * elemSize;
+      dststr[i] = dststrides[i] * elemSize;
+      cnt[i] = count[i];
     }
-    cnt[strlvls] = ((int32_t*)count)[strlvls];
+    cnt[strlvls] = count[strlvls];
   }
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_nodeID, fn, ln, dstnode,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  "
+           "sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n",
+           chpl_nodeID, chpl_lookupFilename(fn), ln, dstnode, (long)strlvls,
+           (long)elemSize, (long)sizeof(size_t), (long)sizeof(gasnet_node_t));
 
-    printf("dststrides in bytes:\n");                 
-    for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
-    printf("\n");                     
-    printf("srcstrides in bytes:\n");                 
-    for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
-    printf("\n");                     
-    printf("count (count[0] in bytes):\n");                   
-    for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
-    printf("\n");                     
+    printf("dststrides in bytes:\n");
+    for (i=0;i<strlvls;i++) printf(" %ld ",(long)dststr[i]);
+    printf("\n");
+    printf("srcstrides in bytes:\n");
+    for (i=0;i<strlvls;i++) printf(" %ld ",(long)srcstr[i]);
+    printf("\n");
+    printf("count (count[0] in bytes):\n");
+    for (i=0;i<=strlvls;i++) printf(" %ld ",(long)cnt[i]);
+    printf("\n");
   }
+
+  // Visual Debug Support
+  chpl_vdebug_log_put_strd(dstaddr, dststrides, dstnode_id, srcaddr, srcstrides,
+                           count, stridelevels, elemSize, typeIndex, ln, fn);
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, dstnode);
+    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
+           chpl_lookupFilename(fn), ln, dstnode);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
     chpl_comm_commDiagnostics.put++;
@@ -1175,21 +1215,25 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
-void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
-                     chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
+                     chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t* info;
-  int     info_size;
+  size_t  info_size;
   done_t  done;
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+
 
   if (chpl_nodeID == node) {
     chpl_ftable_call(fid, arg);
   } else {
+    // Visual Debug Support
+    chpl_vdebug_log_fork(node, subloc, fid, arg, arg_size);
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.fork++;
+      chpl_comm_commDiagnostics.execute_on++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
@@ -1232,10 +1276,10 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
-void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
-                        chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
+                        chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
-  int     info_size;
+  size_t  info_size;
   int     passArg = (chpl_nodeID == node
                      || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium());
 
@@ -1266,6 +1310,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
   }
 
   if (chpl_nodeID == node) {
+    // Visual Debug?  Should we generate a task here???
     if (info->serial_state)
       fork_nb_wrapper(info);
     else
@@ -1273,11 +1318,14 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
                                subloc, chpl_nullTaskID,
                                info->serial_state);
   } else {
+    // Visual Debug Support
+    chpl_vdebug_log_fork_nb(node, subloc, fid, arg, arg_size);
+
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.fork_nb++;
+      chpl_comm_commDiagnostics.execute_on_nb++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     if (passArg) {
@@ -1290,24 +1338,27 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 // GASNET - should only be called for "small" functions
-void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid, void *arg, int32_t arg_size) {
+void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
+                          chpl_fn_int_t fid, void *arg, size_t arg_size) {
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
-  int     info_size = sizeof(fork_t) + arg_size;
+  size_t  info_size = sizeof(fork_t) + arg_size;
   done_t  done;
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
   if (chpl_nodeID == node) {
     chpl_ftable_call(fid, arg);
   } else {
+    // Visual Debug Support
+    chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
+
     if (passArg) {
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)
         printf("%d: remote (no-fork) task created on %d\n",
                chpl_nodeID, node);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
         chpl_sync_lock(&chpl_comm_diagnostics_sync);
-        chpl_comm_commDiagnostics.fork_fast++;
+        chpl_comm_commDiagnostics.execute_on_fast++;
         chpl_sync_unlock(&chpl_comm_diagnostics_sync);
       }
       info = (fork_t *) &infod;
@@ -1329,8 +1380,8 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
       wait_done_obj(&done);
 
     } else {
-      // Call the normal chpl_comm_fork()
-      chpl_comm_fork(node, subloc, fid, arg, arg_size);
+      // Call the normal chpl_comm_execute_on()
+      chpl_comm_execute_on(node, subloc, fid, arg, arg_size);
     }
   }
 }
@@ -1400,47 +1451,6 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_memcpy(cd, &chpl_comm_commDiagnostics, sizeof(chpl_commDiagnostics));
   chpl_sync_unlock(&chpl_comm_diagnostics_sync);
 }
-
-uint64_t chpl_numCommGets(void) {
-  return chpl_comm_commDiagnostics.get;
-}
-
-uint64_t chpl_numCommNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb;
-}
-
-uint64_t chpl_numCommPuts(void) {
-  return chpl_comm_commDiagnostics.put;
-}
-
-uint64_t chpl_numCommNBPuts(void) {
-  return chpl_comm_commDiagnostics.put_nb;
-}
-
-uint64_t chpl_numCommTestNB(void) {
-  return chpl_comm_commDiagnostics.test_nb;
-}
-
-uint64_t chpl_numCommWaitNB(void) {
-  return chpl_comm_commDiagnostics.wait_nb;
-}
-
-uint64_t chpl_numCommTryNB(void) {
-  return chpl_comm_commDiagnostics.try_nb;
-}
-
-uint64_t chpl_numCommFastForks(void) {
-  return chpl_comm_commDiagnostics.fork_fast;
-}
-
-uint64_t chpl_numCommForks(void) {
-  return chpl_comm_commDiagnostics.fork;
-}
-
-uint64_t chpl_numCommNBForks(void) {
-  return chpl_comm_commDiagnostics.fork_nb;
-}
-
 
 void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
   if (chpl_nodeID == 0) {

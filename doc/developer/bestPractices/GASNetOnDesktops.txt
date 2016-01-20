@@ -4,7 +4,7 @@ Running Chapel Programs with GASNet on your Desktop
 
 This document give a few pointers on using Chapel with the GASNet
 communication layer on your desktop.  For more general information
-about using the GASNet communication layer, see README.multilocale in
+about using the GASNet communication layer, see multilocale.rst in
 the release docs.
 
 
@@ -12,7 +12,7 @@ RUNNING
 =======
 
 Set GASNet environment variables for simulating multiple Chapel
-locales on a single workstation as described in README.multilocale.
+locales on a single workstation as described in multilocale.rst.
 
 GASNet may detect the existence of an Infiniband network even if one
 does not exist (due to the inclusion of Infiniband in the Linux
@@ -24,7 +24,7 @@ warning messages from GASNet regarding using the Infiniband conduit.
 
 DEBUGGING
 =========
-See README.executing regarding debugging with CHPL_COMM_USE_GDB.
+See executing.rst regarding debugging with CHPL_COMM_USE_GDB.
 
 Sometimes GASNet issues are general multi-locale issues that can be
 recreated by compiling the program with the --no-local flag and using
@@ -34,7 +34,7 @@ communication related calls into the code.  During program execution,
 the runtime checks to see if the reference is remote (which it will
 never will be), and if the generated code is correct, the program will
 execute without issue.  If the program does not complete as expected,
-you can use the --gdb flags to debug in gdb (see README.executing).
+you can use the --gdb flags to debug in gdb (see executing.rst).
 
 DEBUGGING WITH VALGRIND
 =======================

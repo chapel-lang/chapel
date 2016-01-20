@@ -294,7 +294,7 @@ proc DimensionalDist.dsiIndexToLocale(indexx: indexT): locale {
   if !isTuple(indexx) || indexx.size != 2 then
     compilerError("DimensionalDist presently supports only indexing with",
                   " 2-tuples; got an index of the type ",
-                  typeToString(indexx.type));
+                  indexx.type:string);
 
   return targetLocales(di1.dsiIndexToLocale1d(indexx(1), (this, 1)):int,
                        di2.dsiIndexToLocale1d(indexx(2), (this, 2)):int);
@@ -476,7 +476,7 @@ proc DimensionalDom.subordinate1dDist(param dim: int) {
 
 //== writing
 
-proc DimensionalDom.dsiSerialWrite(f: Writer): void {
+proc DimensionalDom.dsiSerialWrite(f): void {
   f.write(whole);
 }
 
@@ -490,14 +490,14 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
 //  : DimensionalDom(rank, idxType, stridable, this.type, ...)
 {
   _traceddd(this, ".dsiNewRectangularDom ",
-           (rank, typeToString(idxType), stridable));
+           (rank, idxType:string, stridable));
   if rank != 2 then
     compilerError("DimensionalDist presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
   if idxType != this.idxType then
-    compilerError("The domain index type ", typeToString(idxType),
-                  " does not match the index type ",typeToString(this.idxType),
+    compilerError("The domain index type ", idxType:string,
+                  " does not match the index type ",this.idxType:string,
                   " of the DimensionalDist used to map that domain");
   if rank != this.rank then
     compilerError("The rank of the domain (", rank,
@@ -638,7 +638,7 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
   if !isTuple(indexx) || indexx.size != 2 then
     compilerError("DimensionalDist presently supports only indexing with",
                   " 2-tuples; got an array index of the type ",
-                  typeToString(indexx.type));
+                  indexx.type:string);
 
   const (l1,i1):(locIdT, stoSzT) = dom.dom1.dsiAccess1d(indexx(1), (this, 1));
   const (l2,i2):(locIdT, stoSzT) = dom.dom2.dsiAccess1d(indexx(2), (this, 2));
@@ -650,7 +650,7 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
 
 //== writing
 
-proc DimensionalArr.dsiSerialWrite(f: Writer): void {
+proc DimensionalArr.dsiSerialWrite(f): void {
   const dom = this.dom;
   _traceddd(this, ".dsiSerialWrite on ", here.id);
   assert(dom.rank == 2);
@@ -1290,8 +1290,8 @@ proc sdom.dsiNeedLocalLocID1d() param return false;
 
 proc sdist.dsiNewRectangularDom1d(type idxType, param stridable: bool) {
   if idxType != this.idxType then
-    compilerError("The index type ", typeToString(idxType),
-                  " does not match the index type ",typeToString(this.idxType),
+    compilerError("The index type ", idxType:string,
+                  " does not match the index type ",this.idxType:string,
                   " of the 'sdist' 1-d distribution");
   return new sdom(idxType = idxType, stridable = stridable);
 }

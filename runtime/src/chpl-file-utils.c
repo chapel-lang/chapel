@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -85,10 +85,12 @@ qioerr chpl_fs_cwd(const char** working_dir) {
   char* bufptr;
   char* pathbuf = (char *)qio_malloc(bufsize);
   bufptr = getcwd(pathbuf, bufsize);
-  if (bufptr == NULL)
+  if (bufptr == NULL) {
     err = qio_mkerror_errno();
-  else
+    qio_free(pathbuf);
+  } else {
     *working_dir = pathbuf;
+  }
   return err;
 }
 
@@ -109,6 +111,15 @@ qioerr chpl_fs_exists(int* ret, const char* name) {
     *ret = 1;
   }
   return err;
+}
+
+qioerr chpl_fs_get_size(int64_t* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = buf.st_size;
+  return 0;
 }
 
 qioerr chpl_fs_get_uid(int* ret, const char* name) {
@@ -152,8 +163,13 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
   // comparison is also not valid when an unlinked file is provided.
   struct stat buf;
   int exitStatus = lstat(name, &buf);
-  if (exitStatus)
+  if (exitStatus == -1 && errno == ENOENT) {
+    // The link examined does not exist, return false
+    *ret = 0;
+    return 0;
+  } else if (exitStatus) {
     return qio_mkerror_errno();
+  }
   *ret = S_ISLNK(buf.st_mode);
   return 0;
 }
@@ -318,11 +334,18 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
 
 qioerr chpl_fs_realpath(const char* path, const char **shortened) {
   qioerr err = 0;
-  *shortened = realpath(path, NULL);
-  if (*shortened == NULL) {
-    // If an error occurred, shortened will be NULL.  Otherwise, it will
-    // contain the cleaned up path.
+  size_t bufsize = MAXPATHLEN*sizeof(char);
+  char* bufptr;
+  char* pathbuf = (char *)qio_malloc(bufsize);
+
+  bufptr = realpath(path, pathbuf);
+  if (bufptr == NULL) {
+    // If an error occurred, bufptr will be NULL.  Otherwise, it will
+    // point to pathbuf anyways
     err = qio_mkerror_errno();
+    qio_free(pathbuf);
+  } else {
+    *shortened = pathbuf;
   }
   return err;
 }

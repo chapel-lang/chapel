@@ -1,0 +1,1 @@
+bug: Enum constants don't resolve type, raising compiler error.

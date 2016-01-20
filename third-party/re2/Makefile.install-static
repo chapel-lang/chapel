@@ -1,5 +1,0 @@
-
-install-static: obj/libre2.a
-	mkdir -p $(DESTDIR)$(includedir)/re2 $(DESTDIR)$(libdir)
-	$(INSTALL_DATA) $(INSTALL_HFILES) $(DESTDIR)$(includedir)/re2
-	$(INSTALL) obj/libre2.a $(DESTDIR)$(libdir)/libre2.a

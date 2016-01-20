@@ -1,0 +1,3 @@
+bug: cannot iterate over byte range using for
+
+for_byte.chpl:1: error: halt reached - Iteration over a bounded range may be incorrect due to overflow.

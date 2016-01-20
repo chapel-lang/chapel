@@ -117,7 +117,7 @@ Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 Procedures are defined with the following syntax:
 \begin{syntax}
 procedure-declaration-statement:
-  linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+  privacy-specifier[OPT] linkage-specifier[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
     function-body
 
 linkage-specifier:
@@ -227,6 +227,11 @@ discussed in~\rsec{Function_Overloading}.
 Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
 
+The optional \sntx{privacy-specifier} keywords indicate the visibility
+of module level procedures to outside modules.  By default, procedures are
+publicly visible.  More details on visibility can be found in
+~\rsec{Visibility_Of_Symbols}.
+
 The linkage specifier \chpl{inline} indicates that the function body must be inlined at
 every call site.
 
@@ -270,7 +275,7 @@ when calling \chpl{bar}.
 
 A formal argument's intent~(\rsec{Argument_Intents}) specifies how the
 actual argument is passed to the function.  If no intent is specified,
-the blank intent~(\rsec{The_Blank_Intent}) is applied, resulting in
+the default intent~(\rsec{The_Default_Intent}) is applied, resulting in
 type-dependent behavior.
 
 \subsection{Named Arguments}
@@ -489,8 +494,8 @@ local changes affect the actual? & no  & on return & on return & immediately & N
 \label{Abstract Intents}
 \index{intents!abstract}
 
-The abstract intents are \chpl{const} and ``the blank intent'', when
-no intent is specified.
+The abstract intents are \chpl{const} and the \emph{default intent}
+(when no intent is specified).
 
 \subsubsection{The Const Intent}
 \label{The_Const_Intent}
@@ -550,21 +555,21 @@ array          & \chpl{const ref} \\
 
 
 
-\subsubsection{The Blank Intent}
-\label{The_Blank_Intent}
-\index{intents!blank}
+\subsubsection{The Default Intent}
+\label{The_Default_Intent}
+\index{intents!default}
 
-When no intent is specified for a formal argument, the \emph{blank
+When no intent is specified for a formal argument, the \emph{default
 intent} is applied.  It is designed to take the most natural/least
 surprising action for the argument, based on its type.  The following
-table shows how blank intents are interpreted based on the argument's
+table shows how default intents are interpreted based on the argument's
 type:
 
 \begin{center}
 \begin{tabular}[c]{|l|c|}
 \hline
      & meaning of \\
-type & blank intent \\
+type & default intent \\
 \hline
 \hline
 \chpl{bool}    & \chpl{const} \\
@@ -588,15 +593,15 @@ array          & \chpl{ref}   \\
 \end{center}
 
 \begin{openissue}
-How tuples should be handled under blank intents is an open issue;
+How tuples should be handled under default intents is an open issue;
 particularly for heterogeneous tuples whose components would fall into
 separate categories in the table above.  One proposed approach is to
-apply the blank intent to each component of the tuple independently.
+apply the default intent to each component of the tuple independently.
 
 Another open issue arises if the meaning of the \chpl{const} intent is
 not defined by the language completely. If so, should the meaning of
-the blank intent have that same flexibility? In particular, should the
-blank intent for records mean \chpl{const} or \chpl{const in}?
+the default intent have that same flexibility? In particular, should the
+default intent for records mean \chpl{const} or \chpl{const in}?
 \end{openissue}
 
 
@@ -1076,9 +1081,9 @@ Given a function call, a function is determined to be a \emph{visible
 function} if the name of the function is the same as the name of the
 function call and the function is defined in the same scope as the
 function call or a lexical outer scope of the function call, or if the
-function is defined in a module that is used from the same scope as
-the function call or a lexical outer scope of the function call.
-Function visibility in generic functions is discussed
+function is publicly declared in a module that is used from the same
+scope as the function call or a lexical outer scope of the function
+call.  Function visibility in generic functions is discussed
 in~\rsec{Function_Visibility_in_Generic_Functions}.
 
 \subsection{Determining Candidate Functions}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,7 +59,6 @@ struct PassInfo {
 #define LOG_lowerIterators                     'L'
 #define LOG_parallel                           'P'
 #define LOG_prune                              'X'
-#define LOG_complex2record                     'C'
 #define LOG_bulkCopyRecords                    'B'
 #define LOG_removeUnnecessaryAutoCopyCalls     'U'
 #define LOG_inlineFunctions                    'I'
@@ -74,7 +73,6 @@ struct PassInfo {
 #define LOG_prune2                             'Y'
 #define LOG_returnStarTuplesByRefArgs          's'
 #define LOG_insertWideReferences               'W'
-#define LOG_narrowWideReferences               'a'
 #define LOG_optimizeOnClauses                  'o'
 #define LOG_addInitCalls                       'M'
 #define LOG_insertLineNumbers                  'n'
@@ -126,7 +124,6 @@ static PassInfo sPassList[] = {
   RUN(prune),                   // prune AST of dead functions and types
 
   // Optimizations
-  RUN(complex2record),          // change complex numbers into records
   RUN(bulkCopyRecords),         // replace simple assignments with PRIM_ASSIGN.
   RUN(removeUnnecessaryAutoCopyCalls),
   RUN(inlineFunctions),         // function inlining
@@ -144,7 +141,6 @@ static PassInfo sPassList[] = {
   RUN(returnStarTuplesByRefArgs),
 
   RUN(insertWideReferences),    // inserts wide references for on clauses
-  RUN(narrowWideReferences),    // narrows wide references where possible
   RUN(optimizeOnClauses),       // Optimize on clauses
   RUN(addInitCalls),            // Add module init calls and guards.
 
@@ -154,7 +150,7 @@ static PassInfo sPassList[] = {
   RUN(makeBinary)               // invoke underlying C compiler
 };
 
-static void runPass(PhaseTracker& tracker, size_t passIndex);
+static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc);
 
 void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
@@ -166,7 +162,7 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   }
 
   for (size_t i = 0; i < passListSize; i++) {
-    runPass(tracker, i);
+    runPass(tracker, i, isChpldoc);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
@@ -182,7 +178,7 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   teardownLogfiles();
 }
 
-static void runPass(PhaseTracker& tracker, size_t passIndex) {
+static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   PassInfo* info = &sPassList[passIndex];
 
   //
@@ -208,12 +204,16 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
   considerExitingEndOfPass();
 
   //
-  // Clean up the global pointers to AST
+  // Clean up the global pointers to AST.  If we're running chpldoc,
+  // there's no real reason to run this step (and at the time of this
+  // writing, it didn't work if we hadn't parsed all the 'use'd
+  // modules.
   //
+  if (!isChpldoc) {
+    tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
 
-  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-
-  cleanAst();
+    cleanAst();
+  }
 
   //
   // An optional verify pass

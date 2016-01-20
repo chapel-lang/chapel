@@ -1,0 +1,21 @@
+{
+	global:
+		# re2::RE2*
+		_ZN3re23RE2*;
+		_ZNK3re23RE2*;
+		# re2::StringPiece*
+		_ZN3re211StringPiece*;
+		_ZNK3re211StringPiece*;
+		# re2::FilePiece*
+		_ZN3re211FilePiece*;
+		_ZNK3re211FilePiece*;
+		# operator<<(std::ostream&, re2::StringPiece const&)
+		_ZlsRSoRKN3re211StringPieceE;
+		# re2::FilteredRE2*
+		_ZN3re211FilteredRE2*;
+		_ZNK3re211FilteredRE2*;
+		# flags
+		_ZN3re2*FLAGS_*;
+	local:
+		*;
+};

@@ -12,11 +12,11 @@ var vcstrc:c_string = cstrc;
 var vcstrE:c_string = cstrE;
 var vcstrB:c_string = cstrB;
 
-const str = toString(cstr);
-const stri = toString(cstri);
-const strc = toString(cstrc);
-const strE = toString(cstrE);
-const strB = toString(cstrB);
+const str = cstr:string;
+const stri = cstri:string;
+const strc = cstrc:string;
+const strE = cstrE:string;
+const strB = cstrB:string;
 
 param n = 4;
 const nn = n;

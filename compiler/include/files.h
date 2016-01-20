@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,14 +21,15 @@
 #define _files_H_
 
 #include <cstdio>
-#include <vector>
+#include <map>
 #include <string>
+#include <vector>
 #include "vec.h"
 
 extern char executableFilename[FILENAME_MAX+1];
 extern char saveCDir[FILENAME_MAX+1];
-extern char ccflags[256];
-extern char ldflags[256];
+extern std::string ccflags;
+extern std::string ldflags;
 extern bool ccwarnings;
 extern Vec<const char*> incDirs;
 extern int numLibFlags;
@@ -76,7 +77,8 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
-const std::string runUtilScript(const char* script);
+std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
+std::string runCommand(std::string& command);
 
 void setupModulePaths(void);
 void addFlagModulePath(const char* newpath);

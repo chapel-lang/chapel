@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,6 @@ void check_callDestructors();
 void check_lowerIterators();
 void check_parallel();
 void check_prune();
-void check_complex2record();
 void check_bulkCopyRecords();
 void check_removeUnnecessaryAutoCopyCalls();
 void check_inlineFunctions();
@@ -59,7 +58,6 @@ void check_loopInvariantCodeMotion();
 void check_prune2();
 void check_returnStarTuplesByRefArgs();
 void check_insertWideReferences();
-void check_narrowWideReferences();
 void check_optimizeOnClauses();
 void check_addInitCalls();
 void check_insertLineNumbers();

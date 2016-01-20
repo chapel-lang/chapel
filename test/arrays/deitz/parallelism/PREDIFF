@@ -22,7 +22,7 @@ close(INFILE);
 system("rm $file.tmp");
 
 sub printTestLines() {
-    if ($#testLines > 0) {
+    if ($#testLines >= 0) {
         @sortedTestLines = sort @testLines;
         foreach $testLine (@sortedTestLines) {
             print OUTFILE $testLine;

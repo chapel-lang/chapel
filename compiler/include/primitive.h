@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -151,6 +151,8 @@ enum PrimitiveTag {
 
   PRIM_CHPL_COMM_GET,           // Direct calls to the Chapel comm layer
   PRIM_CHPL_COMM_PUT,           // may eventually add others (e.g., non-blocking)
+  PRIM_CHPL_COMM_ARRAY_GET,
+  PRIM_CHPL_COMM_ARRAY_PUT,
   PRIM_CHPL_COMM_REMOTE_PREFETCH,
   PRIM_CHPL_COMM_GET_STRD,      // Direct calls to the Chapel comm layer for strided comm
   PRIM_CHPL_COMM_PUT_STRD,      //  may eventually add others (e.g., non-blocking)
@@ -219,8 +221,6 @@ enum PrimitiveTag {
   PRIM_CREATE_FN_TYPE,
 
   PRIM_STRING_COPY,
-  PRIM_STRING_FROM_C_STRING,
-  PRIM_C_STRING_FROM_STRING,
   PRIM_CAST_TO_VOID_STAR,       // Cast the object argument to void*.
 
   PRIM_RT_ERROR,
@@ -251,12 +251,24 @@ enum PrimitiveTag {
   PRIM_FIELD_VALUE_BY_NAME,
   PRIM_IS_UNION_TYPE,
   PRIM_IS_ATOMIC_TYPE,
+  PRIM_IS_REF_ITER_TYPE,
+
+  PRIM_IS_POD,
+
+  PRIM_COERCE,
+
+  PRIM_CALL_RESOLVES,
+  PRIM_METHOD_CALL_RESOLVES,
 
   PRIM_ENUM_MIN_BITS,
   PRIM_ENUM_IS_SIGNED,
 
   PRIM_START_RMEM_FENCE,
   PRIM_FINISH_RMEM_FENCE,
+
+  PRIM_LOOKUP_FILENAME,   // Given an index, get a given filename (c_string)
+
+  PRIM_GET_COMPILER_VAR,
 
   NUM_KNOWN_PRIMS
 };

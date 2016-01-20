@@ -30,7 +30,6 @@ callDestructors :
 lowerIterators :
 parallel :
 prune :
-complex2record :
 bulkCopyRecords :
 removeUnnecessaryAutoCopyCalls :
 inlineFunctions :
@@ -45,7 +44,6 @@ loopInvariantCodeMotion :
 prune2 :
 returnStarTuplesByRefArgs :
 insertWideReferences :
-narrowWideReferences :
 optimizeOnClauses :
 addInitCalls :
 insertLineNumbers :

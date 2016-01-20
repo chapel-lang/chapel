@@ -1,0 +1,4 @@
+bug: i is ambiguous.  The i used to address arr intuitively should be the outer i, while the comprehension uses an inner i.
+
+comprehension.chpl:3: In function '_parloopexpr3':
+comprehension.chpl:3: error: 'i' used before defined (first used here)

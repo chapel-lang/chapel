@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,7 @@
  */
 
 #include "chplrt.h"
+#include "chpl-linefile-support.h"
 
 #include "error.h"
 #include "chplexit.h"
@@ -34,7 +35,19 @@
 
 int verbosity = 1;
 
-void chpl_warning(const char* message, int32_t lineno, c_string filename) {
+void chpl_warning(const char* message, int32_t lineno, int32_t filenameIdx) {
+  const char* filename = NULL;
+  // squash warnings if --quiet flag is used
+  if (verbosity == 0) {
+    return;
+  }
+  if (filenameIdx != 0)
+    filename = chpl_lookupFilename(filenameIdx);
+  chpl_warning_explicit(message, lineno, filename);
+}
+
+void chpl_warning_explicit(const char *message, int32_t lineno,
+                           const char *filename) {
   // squash warnings if --quiet flag is used
   if (verbosity == 0) {
     return;
@@ -47,7 +60,6 @@ void chpl_warning(const char* message, int32_t lineno, c_string filename) {
   else
     fprintf(stderr, "warning: %s\n", message);
 }
-
 
 #ifndef LAUNCHER
 static atomic_flag thisLocaleAlreadyExiting;
@@ -67,7 +79,8 @@ static void spinhaltIfAlreadyExiting(void) {
 #endif
 }
 
-static void chpl_error_common(const char* message, int32_t lineno, c_string filename) {
+void chpl_error_explicit(const char *message, int32_t lineno,
+                         const char *filename) {
   spinhaltIfAlreadyExiting();
   fflush(stdout);
   if (lineno > 0)
@@ -76,13 +89,15 @@ static void chpl_error_common(const char* message, int32_t lineno, c_string file
     fprintf(stderr, "%s: error: %s", filename, message);
   else
     fprintf(stderr, "error: %s", message);
-}
-
-
-void chpl_error(const char* message, int32_t lineno, c_string filename) {
-  chpl_error_common(message, lineno, filename);
   fprintf(stderr, "\n");
   chpl_exit_any(1);
+}
+
+void chpl_error(const char *message, int32_t lineno, int32_t filenameIdx) {
+  const char *filename = NULL;
+  if (filenameIdx != 0)
+    filename= chpl_lookupFilename(filenameIdx);
+  chpl_error_explicit(message, lineno, filename);
 }
 
 

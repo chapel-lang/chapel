@@ -1,6 +1,0 @@
-bug: functions that are converted to methods are not scoped properly
-
-In this test, the function int.print_me is implicitly converted to a method of
-the form print_me(MethodToken, this). In doing so it loses it's original scope
-of being a function on the type 'int'. This causes it to shadow the formal
-print_me when it should not.

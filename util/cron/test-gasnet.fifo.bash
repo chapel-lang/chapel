@@ -9,4 +9,6 @@ source $CWD/common-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.fifo"
 
+export GASNET_QUIET=Y
+
 $CWD/nightly -cron

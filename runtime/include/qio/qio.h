@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -138,7 +138,8 @@ typedef qioerr (*qio_open_fptr)(void**,      // file information on return
                                 qio_hint_t,  // Hints for opening the file
                                 void*);      // plugin filesystem pointer
 
-typedef qioerr (*qio_close_fptr)(void*, void*); // file information, fs info
+typedef qioerr (*qio_close_fptr)(void*, // file information
+                                 void*); // fs info
 
 typedef qioerr (*qio_fsync_fptr)(void*, void*); // file information, fs info
 
@@ -536,7 +537,8 @@ qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_st
 
 qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, 
                         int flags, mode_t mode, qio_hint_t iohints, 
-                        const qio_style_t* style, void* fs_info,
+                        const qio_style_t* style,
+                        void* fs_info,
                         const qio_file_functions_t* s);
 
 qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, 
@@ -546,7 +548,8 @@ qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info,
 
 qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, 
                                const char* access, qio_hint_t iohints, 
-                               const qio_style_t* style, void* fs_info,
+                               const qio_style_t* style,
+                               void* fs_info,
                                const qio_file_functions_t* s);
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
@@ -1012,6 +1015,7 @@ qioerr qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, 
 static inline
 qioerr qio_channel_lock(qio_channel_t* ch)
 {
+  assert( ch != NULL );
   return qio_lock(&ch->lock);
 }
 
@@ -1352,6 +1356,32 @@ qioerr qio_channel_close(const int threadsafe, qio_channel_t* ch)
   }
 
   return err;
+}
+
+// Returns true for ch=NULL channel if ch has been closed
+// (but not yet deallocated).
+static inline
+bool qio_channel_isclosed(const int threadsafe, qio_channel_t* ch)
+{
+  bool ret;
+
+  if( ch == NULL ) return true;
+
+  if( threadsafe ) {
+    qio_lock(&ch->lock);
+  }
+
+  ret = false;
+  {
+    qio_chtype_t type = (qio_chtype_t) (ch->hints & QIO_CHTYPEMASK);
+    if( type == QIO_CHTYPE_CLOSED ) ret = true;
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return ret;
 }
 
 qioerr qio_channel_mark(const int threadsafe, qio_channel_t* ch);

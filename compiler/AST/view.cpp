@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -336,6 +336,11 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
   }
 
   AST_CHILDREN_CALL(ast, view_ast, number, mark, indent+2);
+
+  if (DefExpr* def = toDefExpr(ast)) {
+    printf(" ");
+    writeFlags(stdout, def->sym);
+  }
 
   if (toExpr(ast))
     printf(")");

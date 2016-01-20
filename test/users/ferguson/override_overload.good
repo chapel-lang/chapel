@@ -1,5 +1,5 @@
 Calling from a type BaseWriter
 in SubWriterOne writing 5
 in SubWriterOne writing baz
-in SubWriterTwo writing 7
+in SubWriterTwo writing int 7
 in SubWriterTwo writing bar

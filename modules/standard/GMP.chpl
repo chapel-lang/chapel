@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -238,7 +238,7 @@ module GMP {
   extern proc mpz_mul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
 
   extern proc mpz_addmul(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-  extern proc mpz_addmul_ui(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: c_ulong);
+  extern proc mpz_addmul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
 
   extern proc mpz_submul(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
   extern proc mpz_submul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
@@ -396,8 +396,6 @@ module GMP {
 
   extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
 
-  extern proc mpz_addmul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OPT2: c_ulong);
-
   // floating-point functions
   extern proc mpf_init(ref X: mpf_t);
   extern proc mpf_set_z(ref ROP: mpf_t, ref OP: mpz_t);
@@ -424,16 +422,14 @@ module GMP {
 
 
 
-  pragma "no doc"
   // Initialize GMP to use Chapel's allocator
-  extern proc chpl_gmp_init();
+  private extern proc chpl_gmp_init();
   /* Get an MPZ value stored on another locale */
-  pragma "no doc"
-  extern proc chpl_gmp_get_mpz(ref ret:mpz_t,src_local:int,from:__mpz_struct);
+  private extern proc chpl_gmp_get_mpz(ref ret:mpz_t,src_local:int,from:__mpz_struct);
   /* Get a randstate value stored on another locale */
-  extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);
+  private extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);
   /* Return the number of limbs in an __mpz_struct */
-  extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
+  private extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
   /* Print out an mpz_t (for debugging) */
   extern proc chpl_gmp_mpz_print(x:mpz_t);
   /* Get an mpz_t as a string */
@@ -478,7 +474,7 @@ module GMP {
     }
     proc BigInt(str:string, base:int=0) {
       var e:c_int;
-      e = mpz_init_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
+      e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
       if e {
         mpz_clear(this.mpz);
         halt("Error initializing big integer: bad format");
@@ -487,7 +483,7 @@ module GMP {
     proc BigInt(str:string, base:int=0, out error:syserr) {
       var e:c_int;
       error = ENOERR;
-      e = mpz_init_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
+      e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
       if e {
         mpz_clear(this.mpz);
         error = EFORMAT;
@@ -564,7 +560,7 @@ module GMP {
     }
     proc set_str(str:string, base:int=0)
     {
-      on this do mpz_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
+      on this do mpz_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
     }
     proc swap(a:BigInt)
     {
@@ -617,7 +613,7 @@ module GMP {
       var ret:string;
       on this {
         var tmp = chpl_gmp_mpz_get_str(base.safeCast(c_int), this.mpz);
-        ret = toString(tmp);
+        ret = tmp:string;
       }
       return ret;
     }
@@ -1530,7 +1526,7 @@ module GMP {
   }
 
 
-  proc BigInt.writeThis(writer:Writer) {
+  proc BigInt.writeThis(writer) {
     var (acopy,a_) = this.maybeCopy();
     var s:string = a_.get_str();
     //gmp_asprintf(s, "%Zd", a_.mpz);

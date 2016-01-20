@@ -1,0 +1,5 @@
+semantic: What is the visibility of private secondary methods?
+
+Should they be private to the class?  Private to the module in which they
+are defined?  At the moment, we don't allow private methods in general, but
+this is something to consider when we get to implementing them.

@@ -224,8 +224,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 // calculate C = C - A * B.
 //
 proc dgemmNativeInds(A: [] elemType,
-                    B: [] elemType,
-                    C: [] elemType) {
+                     B: [] elemType,
+                     C: [] elemType) {
   for (iA, iC) in zip(A.domain.dim(1), C.domain.dim(1)) do
     for (jA, iB) in zip(A.domain.dim(2), B.domain.dim(1)) do
       for (jB, jC) in zip(B.domain.dim(2), C.domain.dim(2)) do

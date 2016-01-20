@@ -2,7 +2,7 @@
 
 class C {
   const home = here.id;
-  proc writeThis(f:Writer) { f.write("here=", here.id, " home=", home); }
+  proc writeThis(f) { f.write("here=", here.id, " home=", home); }
 }
 
 for l in Locales do on l do { const c = new C(); writeln(c); }
@@ -18,7 +18,7 @@ const dim2 = new BlockCyclicDim(1, 1, 2);
 const dmp = newDimensionalDist2D(dim1, dim2, Locales);
 
 const ix = (1, 1);
-const D = [1..1, 1..1];
+const D = {1..1, 1..1};
 const R = D dmapped new dmap(dmp);
 var A: [R] int;
 

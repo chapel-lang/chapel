@@ -183,7 +183,7 @@ class SparseBlockDom: BaseSparseDom {
   //
   // output domain
   //
-  proc dsiSerialWrite(f:Writer) {
+  proc dsiSerialWrite(f) {
     if (rank == 1) {
       f.write("{");
       for locdom in locDoms do {
@@ -294,7 +294,7 @@ class LocSparseBlockDom {
     mySparseBlock.clear();
   }
 
-  proc dsiSerialWrite(w: Writer) {
+  proc dsiSerialWrite(w) {
     mySparseBlock._value.dsiSerialWrite(w, printBrackets=false);
     // w.write(mySparseBlock); // works, but gets brackets printed out redundantly
     //    w <~> mySparseBlock;
@@ -514,7 +514,7 @@ proc SparseBlock.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc SparseBlock.writeThis(x:Writer) {
+proc SparseBlock.writeThis(x) {
   x.writeln("SparseBlock");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -1068,7 +1068,7 @@ proc SparseBlock.dsiReprivatize(other, reprivatizeData) {
 //
 // output array
 //
-proc SparseBlockArr.dsiSerialWrite(f: Writer) {
+proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
     f.write("[");
     for locarr in locArr do {
@@ -1085,7 +1085,7 @@ proc SparseBlockArr.dsiSerialWrite(f: Writer) {
   }
 }
 
-proc LocSparseBlockArr.dsiSerialWrite(f: Writer) {
+proc LocSparseBlockArr.dsiSerialWrite(f) {
   myElems._value.dsiSerialWrite(f);
 }
 

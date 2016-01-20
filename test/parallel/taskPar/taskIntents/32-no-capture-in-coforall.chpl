@@ -57,18 +57,16 @@ var m32: imag(32);
 var m64: imag(64);
 var z64: complex(64);
 var z128: complex(128);
-var str: string;
+/* no strings for now */
 var enm: EnumType;
-var rec1: RecordSmall;
-var rec2: RecordLarge;
+/* no records for now */
+/* no unions for now */
 var cls: ClassType;
-var unn: UnionType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-str = "."; // patch up
 var kkkkkk: int;
 coforall jjjjj in 1..2 with (
 ref b0,
@@ -90,12 +88,11 @@ ref m32,
 ref m64,
 ref z64,
 ref z128,
-ref str,
+/* no strings for now */
 ref enm,
-ref rec1,
-ref rec2,
+/* no records for now */
+/* no unions for now */
 ref cls,
-ref unn,
 /* no tuples for now */
 ref dom1,
 ref dom2,
@@ -125,12 +122,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -156,12 +152,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -192,12 +187,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -229,18 +223,16 @@ var m32: imag(32);
 var m64: imag(64);
 var z64: complex(64);
 var z128: complex(128);
-var str: string;
+/* no strings for now */
 var enm: EnumType;
-var rec1: RecordSmall;
-var rec2: RecordLarge;
+/* no records for now */
+/* no unions for now */
 var cls: ClassType;
-var unn: UnionType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-str = "."; // patch up
 var kkkkkk: int;
 coforall jjjjj in 1..2 with (
 ref b0,
@@ -262,12 +254,11 @@ ref m32,
 ref m64,
 ref z64,
 ref z128,
-ref str,
+/* no strings for now */
 ref enm,
-ref rec1,
-ref rec2,
+/* no records for now */
+/* no unions for now */
 ref cls,
-ref unn,
 /* no tuples for now */
 ref dom1,
 ref dom2,
@@ -297,12 +288,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -328,12 +318,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -364,12 +353,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -404,18 +392,16 @@ var m32: imag(32);
 var m64: imag(64);
 var z64: complex(64);
 var z128: complex(128);
-var str: string;
+/* no strings for now */
 var enm: EnumType;
-var rec1: RecordSmall;
-var rec2: RecordLarge;
+/* no records for now */
+/* no unions for now */
 var cls: ClassType;
-var unn: UnionType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-str = "."; // patch up
 var kkkkkk: int;
 coforall jjjjj in 1..2 with (
 ref b0,
@@ -437,12 +423,11 @@ ref m32,
 ref m64,
 ref z64,
 ref z128,
-ref str,
+/* no strings for now */
 ref enm,
-ref rec1,
-ref rec2,
+/* no records for now */
+/* no unions for now */
 ref cls,
-ref unn,
 /* no tuples for now */
 ref dom1,
 ref dom2,
@@ -472,12 +457,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -503,12 +487,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -539,12 +522,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -581,18 +563,16 @@ var m32: imag(32);
 var m64: imag(64);
 var z64: complex(64);
 var z128: complex(128);
-var str: string;
+/* no strings for now */
 var enm: EnumType;
-var rec1: RecordSmall;
-var rec2: RecordLarge;
+/* no records for now */
+/* no unions for now */
 var cls: ClassType;
-var unn: UnionType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-str = "."; // patch up
 var kkkkkk: int;
 coforall jjjjj in 1..2 with (
 ref b0,
@@ -614,12 +594,11 @@ ref m32,
 ref m64,
 ref z64,
 ref z128,
-ref str,
+/* no strings for now */
 ref enm,
-ref rec1,
-ref rec2,
+/* no records for now */
+/* no unions for now */
 ref cls,
-ref unn,
 /* no tuples for now */
 ref dom1,
 ref dom2,
@@ -649,12 +628,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -680,12 +658,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -716,12 +693,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -756,18 +732,16 @@ var m32: imag(32);
 var m64: imag(64);
 var z64: complex(64);
 var z128: complex(128);
-var str: string;
+/* no strings for now */
 var enm: EnumType;
-var rec1: RecordSmall;
-var rec2: RecordLarge;
+/* no records for now */
+/* no unions for now */
 var cls: ClassType;
-var unn: UnionType;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-str = "."; // patch up
 var kkkkkk: int;
 coforall jjjjj in 1..2 with (
 ref b0,
@@ -789,12 +763,11 @@ ref m32,
 ref m64,
 ref z64,
 ref z128,
-ref str,
+/* no strings for now */
 ref enm,
-ref rec1,
-ref rec2,
+/* no records for now */
+/* no unions for now */
 ref cls,
-ref unn,
 /* no tuples for now */
 ref dom1,
 ref dom2,
@@ -824,12 +797,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
@@ -855,12 +827,11 @@ m32 = (6.032i:imag(32));
 m64 = 6.064i;
 z64 = ((-2+64i):complex(64));
 z128 = (-2+128i);
-str = "a_string";
+/* no strings for now */
 enm = EnumType.eLast;
-rec1 = rSmall;
-rec2 = rLarge;
+/* no records for now */
+/* no unions for now */
 cls = cInstance;
-unn = uInstance;
 /* no tuples for now */
 dom1 = init1dom;
 dom2 = init2dom;
@@ -891,12 +862,11 @@ writeln("m32", " ", m32);
 writeln("m64", " ", m64);
 writeln("z64", " ", z64);
 writeln("z128", " ", z128);
-writeln("str", " ", str);
+/* no strings for now */
 writeln("enm", " ", enm);
-writeln("rec1", " ", rec1);
-writeln("rec2", " ", rec2);
+/* no records for now */
+/* no unions for now */
 writeln("cls", " ", cls);
-writeln("unn", " ", unn);
 /* no tuples for now */
 writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);

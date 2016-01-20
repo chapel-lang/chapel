@@ -1,0 +1,5 @@
+feature request: ability to define private fields and methods
+
+There's a semantic issue present here as well: what impact should declaring
+a field or method private have on the ability of subclasses to access it?  Do
+we want something like "protected"?

@@ -3,7 +3,7 @@ class C: D { var y = 2; }
 proc **(d:D,i:int) return d.x..i;
 
 write("C(): ");
-writeln(typeToString(C()));
+writeln(C():string);
 write("new C(): ");
 writeln(new C());
 write("new C():D: ");

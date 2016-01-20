@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 import os
-from sys import stdout, stderr
+import sys
+from sys import stderr, stdout
 
-import chpl_platform, chpl_comm, chpl_comm_substrate
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_comm, chpl_comm_substrate, chpl_platform
 from utils import memoize
+
 
 # this one doesnt really need to cache anything, but it doesnt need to run more
 # than once to print out any warnings
@@ -20,10 +25,6 @@ def check():
                 stderr.write("Warning: compiling with the craype-hugepages module while "
                              "using the GASNet {0} conduit is not supported and "
                              "will lead to link errors\n".format(substrate_val))
-        elif comm_val == 'ugni' and not is_using_hugepages:
-            stderr.write("Warning: a craype-hugepages module must be loaded when using "
-                         "the {0} communication layer, or link errors will "
-                         "result\n".format(comm_val))
 
 
 if __name__ == '__main__':

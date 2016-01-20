@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,125 @@ config param testFastFollowerOptimization = false;
 //
 config param disableCyclicLazyRAD = defaultDisableLazyRADOpt;
 
+// chpldoc TODO:
+//   a good reference to
+//     dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity
+//   supports RAD opt, Bulk Transfer optimization, localSubdomain
+//   disableCyclicLazyRAD
+//   
+/*
+This Cyclic distribution maps indices to locales in a round-robin pattern
+starting at a given index.
+
+Formally, consider a Cyclic distribution with:
+
+  =============  ====================================================
+  rank           ``d``
+  start index    ``(s_1, ...., s_d)``
+  over locales   ``targetLocales: [0..N_1-1, ...., 0..N_d-1] locale``
+  =============  ====================================================
+
+It maps an index ``(i_1, ...., i_d)``
+to the locale ``targetLocales[j_1, ...., j_d]``
+where, for each ``k`` in ``1..d``,
+we have:
+
+  ``j_k = (i_k - s_k) (mod N_k)``
+
+
+**Example**
+
+The following code declares a domain ``D`` distributed
+using a Cyclic distribution with a start index of ``(1,1)``,
+and declares an array ``A`` over that domain.
+The `forall` loop sets each array element
+to the ID of the locale to which it is mapped.
+
+  .. code-block:: chapel
+
+    use CyclicDist;
+
+    const Space = {1..8, 1..8};
+    const D: domain(2) dmapped Cyclic(startIdx=Space.low) = Space;
+    var A: [D] int;
+
+    forall a in A do
+      a = a.locale.id;
+
+    writeln(A);
+
+When run on 6 locales, the output is:
+
+  ::
+
+    0 1 0 1 0 1 0 1
+    2 3 2 3 2 3 2 3
+    4 5 4 5 4 5 4 5
+    0 1 0 1 0 1 0 1
+    2 3 2 3 2 3 2 3
+    4 5 4 5 4 5 4 5
+    0 1 0 1 0 1 0 1
+    2 3 2 3 2 3 2 3
+
+
+**Constructor Arguments**
+
+The ``Cyclic`` class constructor is defined as follows:
+
+  .. code-block:: chapel
+
+    proc Cyclic(
+      startIdx,
+      targetLocales: [] locale = Locales,
+      dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
+      dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
+      dataParMinGranularity     = // value of  dataParMinGranularity      config const,
+      param rank: int  = // inferred from startIdx argument,
+      type idxType     = // inferred from startIdx argument )
+
+The argument ``startIdx`` is a tuple of integers defining an index that
+will be distributed to the first locale in ``targetLocales``.
+In the 1-dimensional case, ``startIdx`` can be an integer
+or a tuple with a single element.
+
+The argument ``targetLocales`` is an array containing the target
+locales to which this distribution maps indices and data.
+The rank of ``targetLocales`` must match the rank of the distribution,
+or be ``1``.  If the rank of ``targetLocales`` is ``1``, a greedy
+heuristic is used to reshape the array of target locales so that it
+matches the rank of the distribution and each dimension contains an
+approximately equal number of indices.
+
+The arguments ``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``,
+and ``dataParMinGranularity`` set the knobs that are used to
+control intra-locale data parallelism for Cyclic-distributed domains
+and arrays in the same way that the like-named config constants
+control data parallelism for ranges and default-distributed domains
+and arrays.
+
+The ``rank`` and ``idxType`` arguments are inferred from the
+``startIdx`` argument unless explicitly set.
+They must match the rank and index type of the domains
+"dmapped" using that Cyclic instance.
+
+
+**Data-Parallel Iteration**
+
+A `forall` loop over a Cyclic-distributed domain or array
+executes each iteration on the locale where that iteration's index
+is mapped to.
+
+Parallelism within each locale is guided by the values of
+``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``, and
+``dataParMinGranularity`` of the respective Cyclic instance.
+Updates to these values, if any, take effect only on the locale
+where the updates are made.
+
+
+**Limitations**
+
+This distribution has not been tuned for performance.
+*/
 class Cyclic: BaseDist {
   param rank: int;
   type idxType = int;
@@ -140,6 +259,15 @@ class Cyclic: BaseDist {
     coforall locid in targetLocDom do
       on targetLocs(locid) do
         locDist(locid) = new LocCyclic(rank, idxType, locid, this);
+  }
+
+  proc dsiEqualDMaps(that: Cyclic(?)) {
+    return (this.startIdx == that.startIdx &&
+            this.targetLocs.equals(that.targetLocs));
+  }
+
+  proc dsiEqualDMaps(that) param {
+    return false;
   }
 
   proc dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
@@ -281,8 +409,8 @@ proc Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
   return new Cyclic(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
 }
 
-proc Cyclic.writeThis(x: Writer) {
-  x.writeln(typeToString(this.type));
+proc Cyclic.writeThis(x) {
+  x.writeln(this.type:string);
   x.writeln("------");
   for locid in targetLocDom do
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ", locDist(locid).myChunk); 
@@ -427,9 +555,9 @@ proc CyclicDom.dsiSetIndices(x) {
   setup();
 }
 
-proc CyclicDom.dsiSerialWrite(x: Writer) {
+proc CyclicDom.dsiSerialWrite(x) {
   if verboseCyclicDistWriters {
-    x.writeln(typeToString(this.type));
+    x.writeln(this.type:string);
     x.writeln("------");
     for loc in dist.targetLocDom {
       x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
@@ -855,12 +983,20 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   const myFollowThis = {(...t)};
   if fast {
     const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThis.low));
+
+    //
+    // Slicing arrSection.myElems will require reference counts to be updated.
+    // If myElems is an array of arrays, the inner array's domain or dist may
+    // live on a different locale and require communication for reference
+    // counting. Simply put: don't slice inside a local block.
+    //
+    // TODO: Can myLocArr be used here to simplify things?
+    //
+    var chunk => arrSection.myElems(myFollowThis);
     if arrSection.locale.id == here.id then local {
-      for e in arrSection.myElems(myFollowThis) do
-        yield e;
+      for i in chunk do yield i;
     } else {
-      for e in arrSection.myElems(myFollowThis) do
-        yield e;
+      for i in chunk do yield i;
     }
   } else {
     proc accessHelper(i) ref {
@@ -877,9 +1013,9 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   }
 }
 
-proc CyclicArr.dsiSerialWrite(f: Writer) {
+proc CyclicArr.dsiSerialWrite(f) {
   if verboseCyclicDistWriters {
-    writeln(typeToString(this.type));
+    writeln(this.type:string);
     writeln("------");
   }
   if dom.dsiNumIndices == 0 then return;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -84,7 +84,7 @@ c_string_copy chpl_format(c_string format, ...) {
 //
 static inline void*
 chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
-                 int32_t lineno, c_string filename) {
+                 int32_t lineno, int32_t filename) {
 #ifndef LAUNCHER
   return chpl_mem_alloc(size, description, lineno, filename);
 #else
@@ -94,7 +94,7 @@ chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
 
 
 c_string_copy
-string_copy(c_string x, int32_t lineno, c_string filename)
+string_copy(c_string x, int32_t lineno, int32_t filename)
 {
   char *z;
 
@@ -109,7 +109,7 @@ string_copy(c_string x, int32_t lineno, c_string filename)
 
 // string_concat always returns a newly-allocated c_string (or NULL).
 c_string_copy
-string_concat(c_string x, c_string y, int32_t lineno, c_string filename) {
+string_concat(c_string x, c_string y, int32_t lineno, int32_t filename) {
   char* z;
   size_t xlen;
   size_t ylen;
@@ -149,7 +149,7 @@ int string_index_of(c_string haystack, c_string needle) {
 // It is up to the caller to make sure low and high are within the string
 // bounds and that stride is not 0.
 c_string_copy
-string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename) {
+string_select(c_string x, int low, int high, int stride, int32_t lineno, int32_t filename) {
   char* result = NULL;
   char* dst = NULL;
   int size;
@@ -185,7 +185,7 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, c_strin
 // Returns a string containing the character at the given index of the input
 // string, or an empty string if the index is out of bounds.
 c_string_copy
-string_index(c_string x, int i, int32_t lineno, c_string filename) {
+string_index(c_string x, int i, int32_t lineno, int32_t filename) {
   char* buffer;
   if (i-1 < 0 || i-1 >= string_length(x))
   {

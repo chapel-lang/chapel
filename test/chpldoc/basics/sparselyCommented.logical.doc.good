@@ -1,4 +1,4 @@
-Module: sparselyCommented
+sparselyCommented
    proc method1()
       Comment for method1 
 
@@ -15,7 +15,7 @@ Module: sparselyCommented
       Comment for method with argument and body 
 
    proc argAndBodyCommentless(val: int)
-   Module: sparselyCommented.Other
+   sparselyCommented.Other
       proc inside()
          Comment for method inside module 
 

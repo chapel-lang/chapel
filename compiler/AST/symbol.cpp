@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -60,6 +60,7 @@ ModuleSymbol* rootModule = NULL;
 ModuleSymbol* theProgram = NULL;
 ModuleSymbol* mainModule = NULL;
 ModuleSymbol* baseModule = NULL;
+ModuleSymbol* stringLiteralModule = NULL;
 ModuleSymbol* standardModule = NULL;
 ModuleSymbol* printModuleInitModule = NULL;
 Symbol *gNil = NULL;
@@ -73,6 +74,7 @@ Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
 Symbol *gStringCopy = NULL;
+Symbol *gCVoidPtr = NULL;
 Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
@@ -92,10 +94,8 @@ VarSymbol *gModuleInitIndentLevel = NULL;
 FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gChplHereAlloc = NULL;
 FnSymbol* gChplHereFree = NULL;
-Symbol *gCLine = NULL;
-Symbol *gCFile = NULL;
 
-Map<FnSymbol*,int> ftableMap;
+std::map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
 
 Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
@@ -112,10 +112,15 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
   type(init_type),
   flags(),
-  name(astr(init_name)),
-  cname(name),
   defPoint(NULL)
-{}
+{
+  if (init_name) {
+    name = astr(init_name);
+  } else {
+    name = astr("");
+  }
+  cname = name;
+}
 
 
 Symbol::~Symbol() {
@@ -161,6 +166,11 @@ bool Symbol::isRenameable() const {
   return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
 }
 
+
+// Returns the scope in which the given symbol is declared; NULL otherwise.
+BlockStmt* Symbol::getDeclarationScope() const {
+  return (defPoint != NULL) ? defPoint->getScopeBlock() : NULL;
+}
 
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
@@ -209,11 +219,20 @@ bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
   return hasFlag(aflag) || hasFlag(bflag);
 }
 
+// Don't generate documentation for this symbol, either because it is private,
+// or because the symbol should not be documented independent of privacy
+bool Symbol::noDocGen() const {
+  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE);
+}
+
 
 bool Symbol::isImmediate() const {
   return false;
 }
 
+bool isString(Symbol* symbol) {
+  return isString(symbol->type);
+}
 
 /******************************** | *********************************
 *                                                                   *
@@ -339,7 +358,7 @@ std::string VarSymbol::docsDirective() {
 
 
 void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_SUPER_CLASS)) {
+  if (this->noDocGen() || this->hasFlag(FLAG_SUPER_CLASS)) {
       return;
   }
 
@@ -384,7 +403,6 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 void VarSymbol::makeField() {
   this->isField = true;
 }
-
 
 #ifdef HAVE_LLVM
 static
@@ -498,7 +516,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               llvm::Type::getFloatTy(info->module->getContext()),
               i->v_complex64.i);
           ret = llvm::ConstantStruct::get(
-              llvm::cast<llvm::StructType>(getTypeLLVM("complex(64)")),
+              llvm::cast<llvm::StructType>(getTypeLLVM("_complex64")),
               elements);
           break;
         }
@@ -511,76 +529,19 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               llvm::Type::getDoubleTy(info->module->getContext()),
               i->v_complex128.i);
           ret = llvm::ConstantStruct::get(
-              llvm::cast<llvm::StructType>(getTypeLLVM("complex(128)")),
+              llvm::cast<llvm::StructType>(getTypeLLVM("_complex128")),
               elements);
           break;
         }
       }
       break;
     case CONST_KIND_STRING:
-
-        // Note that string immediate values are stored
-        // with C escapes - that is newline is 2 chars \ n
-        // so we have to convert to a sequence of bytes
-        // for LLVM (the C backend can just print it out).
-
-        std::string newString = "";
-        char nextChar;
-        int pos = 0;
-
-        while((nextChar = i->v_string[pos++]) != '\0') {
-          if(nextChar != '\\') {
-            newString += nextChar;
-            continue;
-          }
-
-          nextChar = i->v_string[pos++];
-          switch(nextChar) {
-            case '\'':
-            case '\"':
-            case '?':
-            case '\\':
-              newString += nextChar;
-              break;
-            case 'a':
-              newString += '\a';
-              break;
-            case 'b':
-              newString += '\b';
-              break;
-            case 'f':
-              newString += '\f';
-              break;
-            case 'n':
-              newString += '\n';
-              break;
-            case 'r':
-              newString += '\r';
-              break;
-            case 't':
-              newString += '\t';
-              break;
-            case 'v':
-              newString += '\v';
-              break;
-            case 'x':
-              {
-                char buf[3];
-                long num;
-                buf[0] = buf[1] = buf[2] = '\0';
-                if( i->v_string[pos] ) buf[0] = i->v_string[pos++];
-                if( i->v_string[pos] ) buf[1] = i->v_string[pos++];
-                num = strtol(buf, NULL, 16);
-                newString += (char) num;
-              }
-              break;
-            default:
-              INT_FATAL("Unknown C string escape");
-              break;
-          }
-        }
-
-        ret = info->builder->CreateGlobalString(newString);
+      // Note that string immediate values are stored
+      // with C escapes - that is newline is 2 chars \ n
+      // so we have to convert to a sequence of bytes
+      // for LLVM (the C backend can just print it out).
+      std::string newString = unescapeString(i->v_string);
+      ret = info->builder->CreateGlobalString(newString);
       break;
   }
 
@@ -595,7 +556,9 @@ GenRet VarSymbol::codegen() {
   ret.chplType = typeInfo();
 
   if( outfile ) {
-    if (immediate) {
+    // dtString immediates don't actually codegen as immediates, we just use
+    // them for param string functionality.
+    if (immediate && ret.chplType != dtString) {
       ret.isLVPtr = GEN_VAL;
       if (immediate->const_kind == CONST_KIND_STRING) {
         ret.c += '"';
@@ -736,7 +699,11 @@ GenRet VarSymbol::codegen() {
                   (name, info->builder->getInt8PtrTy()));
         globalValue->setConstant(true);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->builder->CreateConstInBoundsGEP2_32(constString, 0, 0)));
+              info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                NULL,
+#endif
+                constString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -793,8 +760,7 @@ void VarSymbol::codegenDefC(bool global) {
     } else if (ct->symbol->hasFlag(FLAG_WIDE_REF) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol)) {
-        if( widePointersStruct || isWideString(ct) ) {
-
+        if (widePointersStruct) {
           //
           // CHPL_LOCALEID_T_INIT is #defined in the chpl-locale-model.h
           // file in the runtime, for the selected locale model.
@@ -812,8 +778,9 @@ void VarSymbol::codegenDefC(bool global) {
 void VarSymbol::codegenGlobalDef() {
   GenInfo* info = gGenInfo;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -893,7 +860,11 @@ void VarSymbol::codegenDef() {
           llvm::GlobalVariable *globalString =
             llvm::cast<llvm::GlobalVariable>(constString);
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP2_32(globalString, 0, 0)));
+                info->builder->CreateConstInBoundsGEP2_32(
+#if HAVE_LLVM_VER >= 37
+                  NULL,
+#endif
+                  globalString, 0, 0)));
         } else {
           llvm::GlobalVariable *globalString =
             new llvm::GlobalVariable(
@@ -906,7 +877,11 @@ void VarSymbol::codegenDef() {
           globalString->setInitializer(llvm::Constant::getNullValue(
                 llvm::IntegerType::getInt8Ty(info->module->getContext())));
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP1_32(globalString, 0)));
+                info->builder->CreateConstInBoundsGEP1_32(
+#if HAVE_LLVM_VER >= 37
+                  NULL,
+#endif
+                  globalString, 0)));
         }
       } else {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
@@ -1036,8 +1011,6 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 bool argMustUseCPtr(Type* type) {
-  if (isWideString(type))
-    return false;
   if (isRecord(type) || isUnion(type))
     return true;
   return false;
@@ -1076,6 +1049,10 @@ bool ArgSymbol::isConstValWillNotChange() const {
 
 bool ArgSymbol::isParameter() const {
   return (intent == INTENT_PARAM);
+}
+
+bool ArgSymbol::isVisible(BaseAST* scope) const {
+  return true;
 }
 
 
@@ -1255,8 +1232,9 @@ void TypeSymbol::codegenPrototype() {
 void TypeSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -1823,8 +1801,8 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     } else {
       int count = 0;
       for_formals(formal, this) {
-        if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-          continue; // do not print locale argument for on blocks
+        if (formal->hasFlag(FLAG_NO_CODEGEN))
+          continue; // do not print locale argument, end count, dummy class
         if (count > 0)
           str += ", ";
         str += formal->codegenType().c;
@@ -1844,8 +1822,8 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 
     int count = 0;
     for_formals(formal, this) {
-      if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-        continue; // do not print locale argument for on blocks
+      if (formal->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(formal->codegenType().type);
       count++;
     }
@@ -1916,8 +1894,9 @@ void FnSymbol::codegenPrototype() {
   if (hasFlag(FLAG_NO_PROTOTYPE)) return;
   if (hasFlag(FLAG_NO_CODEGEN))   return;
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -1934,9 +1913,8 @@ void FnSymbol::codegenPrototype() {
 
     int numArgs = 0;
     for_formals(arg, this) {
-      if(arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK)) {
-        continue;
-      }
+      if (arg->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
       argumentTypes.push_back(arg->codegenType().type);
       argumentNames.push_back(arg->cname);
       numArgs++;
@@ -1997,8 +1975,9 @@ void FnSymbol::codegenDef() {
   llvm::Function *func = NULL;
 #endif
 
-  if( breakOnCodegenCname[0] &&
-      0 == strcmp(cname, breakOnCodegenCname) ) {
+  if( id == breakOnCodegenID ||
+      (breakOnCodegenCname[0] &&
+       0 == strcmp(cname, breakOnCodegenCname)) ) {
     gdbShouldBreakHere();
   }
 
@@ -2032,8 +2011,8 @@ void FnSymbol::codegenDef() {
 
     llvm::Function::arg_iterator ai = func->arg_begin();
     for_formals(arg, this) {
-      if (arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-        continue; // do not print locale argument for on blocks
+      if (arg->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
 
       if (arg->requiresCPtr()){
         info->lvt->addValue(arg->cname, ai,  GEN_PTR, !is_signed(type));
@@ -2217,35 +2196,31 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
 }
 
 
-// Return the last, outermost Expr within 'ast' that is not a local block.
-static Expr* descendIntoLocalBlocks(Expr* ast) {
-  while (ast) {
-    if (BlockStmt* block = toBlockStmt(ast))
-      if (CallExpr* bInfo = block->blockInfoGet())
-        if (bInfo->isPrimitive(PRIM_BLOCK_LOCAL)) {
-          // descend into 'block'
-          ast = block->body.last();
-          continue;
-        }
-    // not a local block
-    break;
-  }
-  return ast;
-}
-
+// Inserts the given ast ahead of the _downEndCount call at the end of this
+// function, if present.  Otherwise, inserts it ahead of the return.
 void
-FnSymbol::insertBeforeDownEndCount(Expr* ast,
-                                   bool descendLocalBlocks)
-{
+FnSymbol::insertBeforeDownEndCount(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());
+
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
-  CallExpr* last = toCallExpr(ret->prev);
-  if (!last && descendLocalBlocks)
-    last = toCallExpr(descendIntoLocalBlocks(ret->prev));
-  if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
-    INT_FATAL(last, "Expected call to _downEndCount");
-  last->insertBefore(ast);
+
+  Expr* prev = ret->prev;
+
+  while (isBlockStmt(prev))
+    prev = toBlockStmt(prev)->body.last();
+
+  CallExpr* last = toCallExpr(prev);
+
+  if (last               &&
+      last->isResolved() &&
+      strcmp(last->isResolved()->name, "_downEndCount") == 0) {
+    last->insertBefore(ast);
+
+  } else {
+    // No _downEndCount() call, so insert the ast before the return.
+    ret->insertBefore(ast);
+  }
 }
 
 
@@ -2411,7 +2386,7 @@ std::string FnSymbol::docsDirective() {
 
 
 void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->noDocGen()) {
     return;
   }
 
@@ -2658,7 +2633,7 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 
 
 void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->noDocGen()) {
     return;
   }
 
@@ -2679,7 +2654,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   this->printTabs(file, tabs);
-  const char *moduleTitle = astr("Module: ", this->docsName().c_str());
+  const char *moduleTitle = astr(this->docsName().c_str());
   *file << moduleTitle << std::endl;
 
   if (!fDocsTextOnly) {
@@ -2875,6 +2850,9 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     block->moduleUseAdd(rootModule);
+
+    UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
+    block->insertAtHead(new CallExpr(PRIM_USE, modRef));
   }
 }
 
@@ -2999,29 +2977,169 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 *                                                                   *
 ********************************* | ********************************/
 
+std::string unescapeString(const char* const str) {
+  std::string newString = "";
+  char nextChar;
+  int pos = 0;
+
+  while((nextChar = str[pos++]) != '\0') {
+    if(nextChar != '\\') {
+      newString += nextChar;
+      continue;
+    }
+
+    nextChar = str[pos++];
+    switch(nextChar) {
+      case '\'':
+      case '\"':
+      case '?':
+      case '\\':
+        newString += nextChar;
+        break;
+      case 'a':
+        newString += '\a';
+        break;
+      case 'b':
+        newString += '\b';
+        break;
+      case 'f':
+        newString += '\f';
+        break;
+      case 'n':
+        newString += '\n';
+        break;
+      case 'r':
+        newString += '\r';
+        break;
+      case 't':
+        newString += '\t';
+        break;
+      case 'v':
+        newString += '\v';
+        break;
+      case 'x':
+        {
+          char buf[3];
+          long num;
+          buf[0] = buf[1] = buf[2] = '\0';
+          if( str[pos] ) buf[0] = str[pos++];
+          if( str[pos] ) buf[1] = str[pos++];
+          num = strtol(buf, NULL, 16);
+          newString += (char) num;
+        }
+        break;
+      default:
+        INT_FATAL("Unknown C string escape");
+        break;
+    }
+  }
+  return newString;
+}
+
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
+FnSymbol* initStringLiterals = NULL;
 
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
 VarSymbol *new_StringSymbol(const char *str) {
+  SET_LINENO(stringLiteralModule);
+
+  // Hash the string and return an existing symbol if found.
+  // Aka. uniqify all string literals
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
+  imm.string_kind = STRING_KIND_STRING;
+  imm.v_string = astr(str);
+  VarSymbol *s = stringLiteralsHash.get(&imm);
+  if (s) {
+    return s;
+  }
+
+  if (resolved) {
+    INT_FATAL("new_StringSymbol called after function resolution.");
+  }
+
+  // String (as record) literals are inserted from the very beginning on the
+  // parser all the way through resolution (postFold). Since resolution happens
+  // after normalization we need to insert everything in normalized form. We
+  // also need to disable parts of normalize from running on literals inserted
+  // at parse time.
+
+  VarSymbol* cptrTemp = newTemp("call_tmp");
+  cptrTemp->addFlag(FLAG_TYPE_VARIABLE);
+  CallExpr *cptrCall = new CallExpr(PRIM_MOVE,
+      cptrTemp,
+      new CallExpr("_type_construct_c_ptr", new SymExpr(dtUInt[INT_SIZE_8]->symbol)));
+
+  VarSymbol* castTemp = newTemp("call_tmp");
+  CallExpr *castCall = new CallExpr(PRIM_MOVE,
+      castTemp,
+      new CallExpr("_cast", cptrTemp, new_CStringSymbol(str)));
+
+  int strLength = unescapeString(str).length();
+
+  CallExpr *ctor = new CallExpr("_construct_string",
+      castTemp,
+      new_IntSymbol(strLength),   // length
+      new_IntSymbol(strLength ? strLength+1 : 0), // size, empty string needs 0
+      gFalse);                    // owned = false
+  ctor->insertAtTail(gFalse);     // needToCopy = false
+
+  s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
+  s->addFlag(FLAG_NO_AUTO_DESTROY);
+  s->addFlag(FLAG_CONST);
+  s->addFlag(FLAG_LOCALE_PRIVATE);
+  s->addFlag(FLAG_CHAPEL_STRING_LITERAL);
+
+  DefExpr* stringLitDef = new DefExpr(s);
+  // DefExpr(s) always goes into the module scope to make it a global
+  stringLiteralModule->block->insertAtTail(stringLitDef);
+
+  CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
+
+  // We need to initalize strings literals on every locale, so we make this an
+  // exported function that will be called in the runtime
+  if (initStringLiterals == NULL) {
+    initStringLiterals = new FnSymbol("chpl__initStringLiterals");
+    initStringLiterals->addFlag(FLAG_EXPORT);
+    initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
+    initStringLiterals->retType = dtVoid;
+    initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
+  }
+
+  initStringLiterals->insertBeforeReturn(new DefExpr(cptrTemp));
+  initStringLiterals->insertBeforeReturn(cptrCall);
+  initStringLiterals->insertBeforeReturn(new DefExpr(castTemp));
+  initStringLiterals->insertBeforeReturn(castCall);
+  initStringLiterals->insertBeforeReturn(ctorCall);
+
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  stringLiteralsHash.put(s->immediate, s);
+  return s;
+}
+
+VarSymbol *new_CStringSymbol(const char *str) {
+  Immediate imm;
+  imm.const_kind = CONST_KIND_STRING;
+  imm.string_kind = STRING_KIND_C_STRING;
   imm.v_string = astr(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtStringC;
   if (s) {
     return s;
   }
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
+  s = new VarSymbol(astr("_cstr_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
 }
-
 
 VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   Immediate imm;
@@ -3195,8 +3313,16 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
 static Type*
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
-    case CONST_KIND_STRING:
-      return dtStringC;
+    case CONST_KIND_STRING: {
+      if (imm->string_kind == STRING_KIND_STRING) {
+        return dtString;
+      } else if (imm->string_kind == STRING_KIND_C_STRING) {
+        return dtStringC;
+      } else {
+        INT_FATAL("unhandled string immedate type");
+        break;
+      }
+    }
     case NUM_KIND_BOOL:
       return dtBools[imm->num_index];
     case NUM_KIND_UINT:

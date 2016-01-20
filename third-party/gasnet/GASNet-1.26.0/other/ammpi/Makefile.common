@@ -1,0 +1,28 @@
+#   $Source: bitbucket.org:berkeleylab/gasnet.git/other/ammpi/Makefile.common $
+# Description: Platform-independent variable init, overridden by pre-baked makefiles
+# Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
+
+# variables added here should also go in Makefile.titanium.in, and vice-versa
+
+srcdir = .
+altincdir = $(srcdir)
+testdir = $(srcdir)
+
+# compiler
+CC = mpicc
+#ccdebugflags = -O0 -g3 -ansi -Wall -Wno-unused-variable -Wno-unused-function
+ccdebugflags = -g
+ccoptflags = -O3
+
+MPIRUN_CMD = mpirun -np %N %P %A
+
+# system utilities
+ranlib = ranlib
+ar = ar
+PERL = perl
+
+# To be set by pre-baked makefiles:
+platform_defines = 
+platform_ldflags =
+platform_libraries = 
+

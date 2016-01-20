@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,11 +31,11 @@ bool fPrintVersion = false;
 bool fRungdb = false;
 bool fRunlldb = false;
 
-void driverSetHelpTrue(const ArgumentState* state, const char* unused) {
+void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused) {
   fPrintHelp = true;
 }
 
-void driverSetDevelSettings(const ArgumentState* state, const char* arg_unused) {
+void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused) {
   // have to handle both cases since this will be called with --devel
   // and --no-devel
   if (developer) {

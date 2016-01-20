@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -49,21 +49,21 @@ static char _nlbuf[16];
 static char** chpl_launch_create_argv(int argc, char* argv[],
                                       int32_t numLocales) {
   int len = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_ibv") + 1;
-  char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   sprintf(cmd, "%sgasnetrun_ibv", WRAP_TO_STR(LAUNCH_PATH));
 
   const int largc = 9;
   char *largv[largc];
 
-  largv[0] = "bsub";
-  largv[1] = "-Ip";
-  largv[2] = "-R";
-  largv[3] = "span[ptile=1]";
-  largv[4] = "-n";
+  largv[0] = (char *)"bsub";
+  largv[1] = (char *)"-Ip";
+  largv[2] = (char *)"-R";
+  largv[3] = (char *)"span[ptile=1]";
+  largv[4] = (char *)"-n";
   sprintf(_nlbuf, "%d", numLocales);
   largv[5] = _nlbuf;
   largv[6] = cmd;
-  largv[7] = "-n";
+  largv[7] = (char *)"-n";
   largv[8] = _nlbuf;
   
   return chpl_bundle_exec_args(argc, argv, largc, largv);
@@ -78,7 +78,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, c_string filename) {
+                           int32_t lineno, int32_t filename) {
   return 0;
 }
 

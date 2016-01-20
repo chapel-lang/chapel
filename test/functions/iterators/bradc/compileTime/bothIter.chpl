@@ -12,5 +12,5 @@ proc intTypes() type {
 }
 
 for type t in intTypes() {
-  writeln("t is: ", typeToString(t));
+  writeln("t is: ", t:string);
 }

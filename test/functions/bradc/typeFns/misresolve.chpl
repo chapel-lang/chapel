@@ -4,7 +4,7 @@ proc foo(r: range(?et, ?bt, ?sbl), s: et) {
 
 /*
 proc foo(r: range(?et, ?bt, ?sbl), s: typeToSignedType(et)) where (et != typeToSignedType(et)) {
-  compilerWarning("Got into my second foo!  ", typeToString(typeToSignedType(et)));
+  compilerWarning("Got into my second foo!  ", typeToSignedType(et):string);
 }
 */
 

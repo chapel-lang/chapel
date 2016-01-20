@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,10 +29,9 @@
 
 module Time {
 
-pragma "no doc"
 // Returns the number of seconds since midnight.  Has the potential for
 // microsecond resolution if supported by the runtime platform
-extern proc chpl_now_time():real;
+private extern proc chpl_now_time():real;
 
 
 
@@ -43,30 +42,27 @@ extern type _timevalue;
 
 
 
-pragma "no doc"
-extern proc chpl_null_timevalue(): _timevalue;
+private extern proc chpl_null_timevalue(): _timevalue;
 
 
 
-pragma "no doc"
 // The number of seconds/microseconds since Jan 1, 1970 in UTC
-extern proc chpl_now_timevalue():  _timevalue;
+private extern proc chpl_now_timevalue():  _timevalue;
 
 
 
-pragma "no doc"
 // The components of time in the local time zone
-extern proc chpl_timevalue_parts(t:           _timevalue,
+private extern proc chpl_timevalue_parts(t:           _timevalue,
 
-                                 out seconds: int(32),
-                                 out minutes: int(32),
-                                 out hours:   int(32),
-                                 out mday:    int(32),
-                                 out month:   int(32),
-                                 out year:    int(32),
-                                 out wday:    int(32),
-                                 out yday:    int(32),
-                                 out isdst:   int(32));
+                                         out seconds: int(32),
+                                         out minutes: int(32),
+                                         out hours:   int(32),
+                                         out mday:    int(32),
+                                         out month:   int(32),
+                                         out year:    int(32),
+                                         out wday:    int(32),
+                                         out yday:    int(32),
+                                         out isdst:   int(32));
 
 /* Specifies the units to be used when certain functions return a time */
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
@@ -114,13 +110,24 @@ proc getCurrentDayOfWeek() : Day {
   return wday : Day;
 }
 
-/* Delay a task for t seconds */
-inline proc sleep(t: uint) : void {
-  extern proc chpl_task_sleep(t:uint) : void;
+/*
+   Delay a task for a duration in the units specified
 
-  chpl_task_sleep(t);
+   :arg  t: The duration for the time to sleep
+   :type t: real
+
+   :arg  unit: The units for the duration
+   :type unit: TimeUnits
+*/
+inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
+  extern proc chpl_task_sleep(s:c_double) : void;
+
+  if t < 0 {
+    stderr.writeln("Warning: sleep() called with negative time parameter");
+    return;
+  }
+  chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);
 }
-
 
 /*
    Implements basic stopwatch behavior with a potential resolution of
@@ -204,8 +211,7 @@ record Timer {
 }
 
 // returns diff of two time values in microseconds
-pragma "no doc"
-inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
+private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   extern proc chpl_timevalue_seconds(t:_timevalue):      int(64);
   extern proc chpl_timevalue_microseconds(t:_timevalue): int(64);
 
@@ -218,9 +224,24 @@ inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   return (s1 * 1.0e+6 + us1) - (s2 * 1.0e+6 + us2);
 }
 
+// converts a time specified by unit into seconds
+private proc _convert_to_seconds(unit: TimeUnits, us: real) {
+  select unit {
+    when TimeUnits.microseconds do return us *    1.0e-6;
+    when TimeUnits.milliseconds do return us *    1.0e-3;
+    when TimeUnits.seconds      do return us;
+    when TimeUnits.minutes      do return us *   60.0;
+    when TimeUnits.hours        do return us * 3600.0;
+  }
+
+  halt("internal error in module Time");
+
+  // will never get here, but to avoid warnings:
+  return -1.0;
+}
+
 // converts microseconds to another unit
-pragma "no doc"
-proc _convert_microseconds(unit: TimeUnits, us: real) {
+private proc _convert_microseconds(unit: TimeUnits, us: real) {
   select unit {
     when TimeUnits.microseconds do return us;
     when TimeUnits.milliseconds do return us /    1.0e+3;

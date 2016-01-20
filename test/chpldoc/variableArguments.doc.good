@@ -1,5 +1,5 @@
-Module: variableArguments.doc
-   Module: variableArguments.doc.Other
+variableArguments.doc
+   variableArguments.doc.Other
       proc variable(x ...)
          This method has a variable number of arguments 
 

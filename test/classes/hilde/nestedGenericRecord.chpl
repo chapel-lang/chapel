@@ -26,4 +26,4 @@ record Circle
 
 var c:Circle(real, Color.green, false);
 
-writeln(typeToString(c.type));
+writeln(c.type:string);

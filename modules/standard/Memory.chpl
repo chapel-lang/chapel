@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -84,8 +84,7 @@
  */
 module Memory {
 
-pragma "no doc"
-pragma "insert line file info" extern proc chpl_memoryUsed(): uint(64);
+pragma "insert line file info" private extern proc chpl_memoryUsed(): uint(64);
 
 /*
   The amount of memory returned by :proc:`locale.physicalMemory` can
@@ -166,14 +165,6 @@ proc printMemAllocs(thresh=0) {
   chpl_printMemAllocs(thresh);
 }
 
-pragma "no doc"
-proc printMemTable(thresh=0) {
-  warning('printMemTable() is deprecated ' +
-          'and will be removed in Chapel 1.13; ' +
-          'please use printMemAllocs() instead.');
-  printMemAllocs(thresh);
-}
-
 /*
   Print summary information about allocated memory to ``memLog``.  The
   report contains a section for each top-level locale, containing a
@@ -190,14 +181,6 @@ proc printMemAllocsByType() {
   chpl_printMemAllocsByType();
 }
 
-pragma "no doc"
-proc printMemLeaksTable() {
-  warning('printMemLeaksTable() is deprecated ' +
-          'and will be removed in Chapel 1.13.' +
-          'Please use printMemAllocsByType() instead.');
-  printMemAllocsByType();
-}
-
 /*
   Print summary memory statistics to ``memLog``.  The report contains
   a section for each top-level locale showing the number of bytes of
@@ -210,14 +193,6 @@ proc printMemAllocStats() {
   extern proc chpl_printMemAllocStats();
 
   chpl_printMemAllocStats();
-}
-
-pragma "no doc"
-proc printMemStat() {
-  warning('printMemStat() is deprecated ' +
-          'and will be removed in Chapel 1.13.' +
-          'please use printMemAllocStats() instead.');
-  printMemAllocStats();
 }
 
 /*

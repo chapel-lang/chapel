@@ -1,0 +1,4 @@
+innerBlockBad2.chpl:1: In function 'main':
+innerBlockBad2.chpl:4: warning: Private declarations within function bodies are meaningless
+12
+13

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -57,8 +57,35 @@
 
 #include <assert.h>
 
+// Default to using close-on-exec for systems that support it.
+#ifdef O_CLOEXEC
+#define QIO_OCLOEXEC O_CLOEXEC
+#else
+#define QIO_OCLOEXEC 0
+#endif
+
+
+// Figure out if we have GLIBC 2.7 or greater
+// (to enable 'e' added to fopen mode strings to
+// enable close-on-exec).
+#define QIO_FOPEN_CLOEXEC
+
+#ifdef __GLIBC__
+#ifdef __GLIBC_MINOR__
+#if __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 7
+#undef QIO_FOPEN_CLOEXEC
+#define QIO_FOPEN_CLOEXEC "e"
+#endif
+#endif
+#endif
+
+// A few global variables that control which I/O strategy is used.
+// See choose_io_method.
+
+// We don't want to use mmap to work with files that are too small
+// because operating on such files would use a lot of extra memory
+// when rounding up to 4k pages.
 ssize_t qio_too_small_for_default_mmap = 16*1024;
-ssize_t qio_too_large_for_default_mmap = 64*1024*((size_t)1024*1024);
 ssize_t qio_mmap_chunk_iobufs = 128; // mmap 128 iobufs at a time (8M)
 
 // Future - possibly set this based on ulimit?
@@ -545,8 +572,6 @@ qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t defau
             // default case
             if( qio_allow_default_mmap && (!writing) &&
                 qio_too_small_for_default_mmap <= file_size &&
-                file_size < SSIZE_MAX &&
-                file_size < qio_too_large_for_default_mmap &&
                 (qbytes_iobuf_size & 4095) == 0) {
               // not writing, not too small, not too big, iobuf size multiple of 4k.
               method = QIO_METHOD_MMAP;
@@ -1017,6 +1042,7 @@ qioerr qio_file_close(qio_file_t* f)
   return _qio_file_do_close(f);
 }
 
+
 qioerr qio_file_sync(qio_file_t* f)
 {
   qioerr err = 0;
@@ -1085,15 +1111,23 @@ qioerr open_flags_for_string(const char* s, int *flags_out)
 static
 const char* string_for_open_flags(int flags)
 {
-  if( flags == O_RDONLY ) return "r";
-  else if( flags == O_RDWR ) return "r+";
-  else if( flags == (O_WRONLY | O_CREAT | O_TRUNC) ) return "w";
-  else if( flags == (O_RDWR | O_CREAT | O_TRUNC) ) return "w+";
-  else if( flags == (O_WRONLY | O_CREAT | O_APPEND) ) return "a";
-  else if( flags == (O_RDWR | O_CREAT | O_APPEND) ) return "a+";
+  // Also add 'e' at the end to indicate to glibc that the
+  // file should be opened with close-on-exec enabled.
+  if( flags == O_RDONLY )
+    return "r" QIO_FOPEN_CLOEXEC;
+  else if( flags == O_RDWR )
+    return "r+" QIO_FOPEN_CLOEXEC;
+  else if( flags == (O_WRONLY | O_CREAT | O_TRUNC) )
+    return "w" QIO_FOPEN_CLOEXEC;
+  else if( flags == (O_RDWR | O_CREAT | O_TRUNC) )
+    return "w+" QIO_FOPEN_CLOEXEC;
+  else if( flags == (O_WRONLY | O_CREAT | O_APPEND) )
+    return "a" QIO_FOPEN_CLOEXEC;
+  else if( flags == (O_RDWR | O_CREAT | O_APPEND) )
+    return "a+" QIO_FOPEN_CLOEXEC;
   else {
     assert(0);
-    return "r";
+    return "r" QIO_FOPEN_CLOEXEC;
   }
 }
 // always enable reading (possibly in addition to writing).
@@ -1129,6 +1163,7 @@ qioerr qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mod
     if( method == QIO_METHOD_MMAP ) {
       flags = flags_for_mmap_open(flags);
     }
+    flags |= QIO_OCLOEXEC;
     err = qio_int_to_err(sys_open(pathname, flags, mode, &fd));
   }
 
@@ -1142,7 +1177,11 @@ qioerr qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mod
   return qio_file_init(file_out, fp, fd, iohints | QIO_HINT_OWNED, style, fp != NULL);
 }
 
-qioerr qio_file_open_usr(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style, void* fs_info, const qio_file_functions_t* s)
+qioerr qio_file_open_usr(
+    qio_file_t** file_out, const char* pathname,
+    int flags, mode_t mode, qio_hint_t iohints, const qio_style_t* style,
+    void* fs_info,
+    const qio_file_functions_t* s)
 {
   qioerr err = 0;
   void* file_info;
@@ -1244,7 +1283,10 @@ qioerr qio_file_open_access(qio_file_t** file_out, const char* pathname, const c
   return qio_file_open(file_out, pathname, flags, mode, iohints, style);
 }
 
-qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, const qio_style_t* style, void* fs_info, const qio_file_functions_t* s)
+qioerr qio_file_open_access_usr(
+    qio_file_t** file_out, const char* pathname, const char* access,
+    qio_hint_t iohints, const qio_style_t* style,
+    void* fs_info, const qio_file_functions_t* s)
 {
   qioerr err = 0;
   int flags = 0;
@@ -1253,7 +1295,8 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname, con
   err = open_flags_for_string(access, &flags);
   if( err ) return err;
 
-  return qio_file_open_usr(file_out, pathname, flags, mode, iohints, style, fs_info, s);
+  return qio_file_open_usr(file_out, pathname, flags, mode, iohints,
+      style, fs_info, s);
 }
 
 qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_style_t* style)
@@ -1484,6 +1527,12 @@ qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
   }
 
   qbuffer_reposition(&ch->buf, start);
+
+  // Since we are just making the buffer, make sure that the
+  // available position is to the right of the start position.
+  if( ch->av_end < start ) {
+    ch->av_end = start;
+  }
 
   // Further matters... if the file has been MMAP'd,
   // put the mmap'd region into our buffer.
@@ -2279,6 +2328,9 @@ qioerr _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
     left -= num_read;
     qbuffer_iter_advance(&ch->buf, &read_start, num_read);
 
+    // Ignore interrupted system call, just keep reading.
+    if( err && qio_err_to_int(err) == EINTR ) err = 0;
+
     if( err ) break;
   }
 
@@ -2383,6 +2435,7 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
     // before a read or a write, we'll recompute it in a jiffy.
     ch->cached_cur = NULL;
     ch->cached_end = NULL;
+    ch->cached_start = NULL;
   }
 
   _qio_channel_set_error_unlocked(ch, err);
@@ -2503,8 +2556,12 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
           break;
         // no default to get warnings when new methods are added
       }
-      if( err ) goto error;
       qbuffer_iter_advance(&ch->buf, &write_start, num_written);
+
+      // Ignore interrupted system call, just keep writing.
+      if( err && qio_err_to_int(err) == EINTR ) err = 0;
+
+      if( err ) goto error;
     }
   } else {
     // just pretend like we wrote it; in fact we just deallocate
@@ -2921,7 +2978,7 @@ int _use_buffered(qio_channel_t* ch, ssize_t len)
   // Do not bother initializing the buffer if we are going
   // to read outside of the channel's region.
   else if (offset == ch->end_pos) return 0; 
-  else if (offset > ch->start_pos ||
+  else if (offset > ch->start_pos &&
            offset + len < ch->end_pos) return 1;
   else return 0;
 }
@@ -3450,16 +3507,22 @@ qioerr qio_channel_mark(const int threadsafe, qio_channel_t* ch)
   return qio_channel_mark_maybe_flush_bits(threadsafe, ch, 1);
 }
 
-/* Always advances, may call qio_buffered_behind and
- * then returns an error code. This error code may be ignored
+/* For a non-readable channel, advances even if there was
+ * an I/O error or EOF - may call qio_buffered_behind and
+ * then return an error code. This error code may be ignored
  * because it presumably will come up again in a call
  * to read/write/flush.
  *
+ * For a readable channel, calls qio_channel_require_read.
+ * Leaves the channel position at the minimum of cur+nbytes
+ * or wherever EOF was encountered.
+ *
  * Returns EEOF if we got to EOF before advancing that many bytes.
+ * Advances the channel position even if we got to EOF.
  */
 qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
 {
-  int use_buffered;
+  int use_buffered = 0;
   qioerr err = 0;
 
   // clear out any bits.
@@ -3477,21 +3540,48 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
   // Slow path: not all data is available in the cached area.
   use_buffered = _use_buffered(ch, nbytes);
   if( use_buffered ) {
+
     err = _qio_channel_needbuffer_unlocked(ch);
     if( err ) return err;
 
     _qio_buffered_advance_cached(ch);
   }
 
-  _add_right_mark_start(ch, nbytes);
+  if( ch->flags & QIO_FDFLAG_READABLE ) {
+    if (use_buffered) {
+      // Read some data
+      err = _qio_channel_require_unlocked(ch, nbytes, false);
+      if( err ) return err;
+      // Set the channel position to be the minimum
+      // of EOF read and cur+nbytes
+      {
+        // update right mark start += nbytes
+        // but no more than EOF.
+        int64_t avail = ch->av_end - _right_mark_start(ch);
+        int64_t advance;
+        if(nbytes > avail) advance = avail;
+        else advance = nbytes;
 
-  // If qio_buffered_behind fails, it will presumably
-  // fail again on flush/close. So it is OK to
-  // ignore the error code.
-  //
-  // _qio_buffered_behind calls _qio_buffered_setup_cached
-  if( use_buffered ) {
-    err = _qio_buffered_behind(ch, false);
+        _add_right_mark_start(ch, advance);
+      }
+    } else {
+      // for a nonbuffered reading channel, just add to the position
+      _add_right_mark_start(ch, nbytes);
+    }
+  } else {
+    // For writing channels, just add to the position
+    _add_right_mark_start(ch, nbytes);
+  }
+
+  if( ch->flags & QIO_FDFLAG_WRITEABLE ) {
+    // If qio_buffered_behind fails, it will presumably
+    // fail again on flush/close. So it is OK to
+    // ignore the error code.
+    //
+    // _qio_buffered_behind calls _qio_buffered_setup_cached
+    if( use_buffered ) {
+      err = _qio_buffered_behind(ch, false);
+    }
   }
   return err;
 }
