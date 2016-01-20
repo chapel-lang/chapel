@@ -1,2 +1,2 @@
---fast -sassertNoSlicing
---fast -sassertNoSlicing --set compact
+--set compact=false
+--set compact=true
