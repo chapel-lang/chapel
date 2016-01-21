@@ -1288,7 +1288,7 @@ proc StencilArr.dsiUpdateFluff() {
         if !zeroTuple(L) {
           if !dom.dist.targetLocDom.member(i+L) && dom.periodic then
             locArr[i].myElems[D] = locArr[N].myElems[S];
-          else 
+          else if dom.dist.targetLocDom.member(N) then
             locArr[i].myElems[D] = locArr[N].myElems[D];
         }
       }

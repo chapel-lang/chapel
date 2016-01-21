@@ -574,6 +574,7 @@ initPrimitive() {
   // functions for debugging.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoUInt64, false, true);
+  prim_def(PRIM_IS_WIDE_PTR, "is wide pointer", returnInfoBool);
 
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
@@ -622,7 +623,7 @@ initPrimitive() {
   prim_def(PRIM_VIRTUAL_METHOD_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
-  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoStringC);
+  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
   prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
@@ -650,7 +651,7 @@ initPrimitive() {
 
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
-  prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoStringC);
+  prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

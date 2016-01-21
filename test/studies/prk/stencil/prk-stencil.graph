@@ -1,0 +1,8 @@
+perfkeys: Rate (MFlops/s):, Rate (MFlops/s):, Rate (MFlops/s):
+files: stencil-serial-pretty.dat, stencil-serial-fast.dat, stencil-shared-fast.dat
+graphkeys: serial-pretty, serial-fast, shared-fast
+graphtitle: stencil
+ylabel: Rate (MFlops/s)
+graphname: prk-stencil
+
+
