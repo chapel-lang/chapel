@@ -81,9 +81,8 @@ OPTIONS
                     the Chapel compiler.
 
   --[no-]print-search-dirs   Print the module search path used to resolve module
-                    'use' statements. See the description of -M flag
-                    in the OPTIONS section of this man page for more
-                    details.
+                    'use' statements. See the description of the -M flag
+                    for further details.
 
   Parallelism Control Options
 
