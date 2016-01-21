@@ -143,7 +143,7 @@ Miscellaneous Options:
                                       syntax warnings
       --[no-]warn-tuple-iteration     Enable [disable] warnings for tuple
                                       iteration
-      --no-warnings                   Disable output of warnings
+      --[no-]warnings                 Enable [disable] output of warnings
 
 Compiler Information Options:
       --copyright                     Show copyright

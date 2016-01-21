@@ -118,6 +118,9 @@ $(TCMALLOC_INSTALL_DIR):
 llvm: FORCE
 	cd llvm && $(MAKE)
 
+libhdfs3: FORCE
+	cd libhdfs3 && $(MAKE)
+
 try-re2: FORCE
 ifeq ($(wildcard $(RE2_BUILD_DIR)),)
 	@echo "Speculatively attempting to build re2"

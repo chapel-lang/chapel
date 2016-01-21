@@ -112,6 +112,10 @@ studies/parsec/blackscholes.graph
 studies/parsec/blackscholes_promote.graph
 # suite: LCALS benchmarks
 studies/lcals/LCALSMain.graph
+# suite: PRK benchmarks
+studies/prk/synch_p2p/prk-synch_p2p.graph
+studies/prk/stencil/prk-stencil.graph
+studies/prk/transpose/prk-transpose.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
 npb/ep/ep.graph
