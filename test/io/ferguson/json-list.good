@@ -1,0 +1,11 @@
+testing json write: [1, 2, 3]
+Writing JSON: []
+Read: 
+Writing JSON: [ ]
+Read: 
+Writing JSON: [1]
+Read: 1
+Writing JSON: [1,2]
+Read: 1 2
+Writing JSON: [ 1, 2, 3 ]
+Read: 1 2 3

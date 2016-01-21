@@ -1760,6 +1760,7 @@ private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_
 private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
 private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
 
+extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 /*********************** Curl/HDFS support ******************/
 
@@ -6276,6 +6277,45 @@ proc readf(fmt:string, ref args ...?k):bool {
 pragma "no doc"
 proc readf(fmt:string):bool {
   return stdin.readf(fmt);
+}
+
+
+/*
+   Skip a field in the current aggregate format. This method is currently only
+   supported for JSON format and returns ENOTSUP for other formats. In other
+   formats, it may not be possible in general to know when a field ends.
+
+   The field skipped includes a field name and value but not a following
+   separator. For example, for a JSON format channel, given the input:
+
+   ::
+
+      "fieldName":"fieldValue", "otherField":3
+
+   this function will skip to (but leave unread) the comma after
+   the first field value.
+
+   :arg error: optional argument to capture an error code. If this argument
+               is not provided and an error is encountered, this function
+               will halt with an error message.
+ */
+proc channel.skipField(out error:syserr) {
+  on this.home {
+    this.lock();
+    var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+    if st == QIO_AGGREGATE_FORMAT_JSON {
+      error = qio_channel_skip_json_field(false, _channel_internal);
+    } else {
+      error = ENOTSUP;
+    }
+    this.unlock();
+  }
+}
+pragma "no doc"
+proc channel.skipField() {
+  var err:syserr;
+  this.skipField(err);
+  if err then this._ch_ioerror(err, "in skipField");
 }
 
 
