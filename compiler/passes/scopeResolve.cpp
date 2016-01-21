@@ -2274,9 +2274,9 @@ static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
                 // clause, we need to propogate its contents to later uses.
                 // This should only affect the starting module's use chain.
 
-                // Things become more complicated if the use we are propogating
-                // these 'only'ed symbols to specifies an 'except' or 'only'
-                // list.
+                // Things become more complicated if we are propogating these
+                // 'only'ed symbols to a use which specifies an 'except' or
+                // 'only' list.
                 if (use->excludes.size() > 0) {
                   std::vector<const char*>* newOnlyList = new std::vector<const char*>();
                   for_vector(const char, includeMe, module->includes) {
@@ -2290,7 +2290,8 @@ static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
                     // At least some of the identifiers in the 'only' list
                     // weren't in the inner 'except' list.  Modify the use to
                     // 'only' include those from the original 'only' list which
-                    // weren't in the inner 'except' list (could be all of them)
+                    // weren't in the inner 'except' list (could be all of the
+                    // outer 'only' list)
                     SET_LINENO(use);
                     newUse = new UseExpr(use->mod, newOnlyList, false);
                     next.add(newUse);
@@ -2298,6 +2299,7 @@ static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
                     limitations = *newOnlyList;
                   } // else, all the 'only' identifiers were in the 'except'
                   // list so this module use will give us nothing.
+
                 } else if (use->includes.size() > 0) {
                   SET_LINENO(use);
                   std::vector<const char*>* newOnlyList = new std::vector<const char*>();
@@ -2319,6 +2321,7 @@ static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
                   } // else, all of the 'only' identifiers in the outer use
                   // were missing from the inner use's 'only' list, so this
                   // module use will give us nothing.
+
                 } else {
                   // The inner use did not specify an 'except' or 'only' list,
                   // so propogate our 'only' list to it.
@@ -2356,19 +2359,27 @@ static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
   }
 }
 
-// Mod is the module whose use we are interested in
-// seen is a map of modules to the uses of them we've seen
-// limitations is the 'except'/'only' list of the use we are currently in
-// except indicates whether limitations refers to an 'except' list or an 'only'
-//   list
+// Determine whether prior 'use's of a module have been thorough enough to
+// warrant skipping the current 'use'.  For instance, if we saw a 'use' of
+// this module without an 'except' or 'only' list, then we don't need to look
+// at it again because all the symbols it contains have been looked at.
+// However, if we saw a 'use' that was limited to only a subsection of the
+// symbols in the module, we need to check if the current 'use' would look for
+// symbols that were ignored in the previous 'use's.
+//
+// 'mod' is the module whose use we are interested in
+// 'seen' is a map of modules to the uses of them we've seen
+// 'limitations' is the 'except'/'only' list of the use we are currently in
+// 'except' indicates whether limitations refers to an 'except' list or an
+//          'only' list
 static bool skipMod(ModuleSymbol* mod,
                     std::map<ModuleSymbol*, std::vector<UseExpr*> >* seen,
                     std::vector<const char*> limitations,
                     bool except) {
   std::vector<UseExpr*> vec = (*seen)[mod];
   if (vec.size() > 0) {
-    // We've already seen a use of this module, but it might not be thorough
-    // enough to justify skipping it.
+    // We've already seen at least one use of this module, but it might not be
+    // thorough enough to justify skipping the newest 'use'.
     for_vector(UseExpr, use, vec) {
       if (use->includes.size() == 0 && use->excludes.size() == 0) {
         // The use we saw covered the entire module.  No need to look at it
@@ -2376,10 +2387,10 @@ static bool skipMod(ModuleSymbol* mod,
         return true;
       }
       if (limitations.size() > 0) {
-        // Limitations helps determine whether this use or the new use is
+        // Limitations helps determine whether this prior use or the new use is
         // more specific.  If the new use generates a subset of the symbols
-        // this current use covers, then we don't need to go into it again.
-        // If the new use would include a symbol that the current use does
+        // this prior use covers, then we don't need to go into it again.
+        // If the new use would include a symbol that the prior use does
         // not, then we must traverse it.
         // As an example, `use Foo except A, B` is a subset of
         // `use Foo except A` and `use Foo except B`, but not of
@@ -2390,12 +2401,12 @@ static bool skipMod(ModuleSymbol* mod,
         // `use Foo only A`.
 
         if (except) {
-          // New use has 'except' list.  This may be more general than current
+          // New use has 'except' list.  This may be more general than the prior
           // use, so we might want to dive into it.
           if (use->excludes.size() > 0) {
-            // Current use has 'except' list.
+            // Prior use has 'except' list.
             if (use->excludes.size() <= limitations.size()) {
-              // We are excluding more symbols than the current use, or the
+              // We are excluding more symbols than the prior use, or the
               // same number of symbols.
               uint numSame = 0;
               for_vector(const char, exclude, use->excludes) {
@@ -2403,18 +2414,19 @@ static bool skipMod(ModuleSymbol* mod,
                   numSame++;
                 }
               }
-              // If all of the current use's excludes are in the new use's
-              // list, it is unnecessary so should be skipped.
+              // If all of the prior use's excludes are in the new use's
+              // list, no new symbols would be found so the new use should be
+              // skipped.
               if (numSame == use->excludes.size()) {
                 return true;
               }
             } else {
-              // We are excluding less symbols than the current use.  We are
+              // We are excluding less symbols than this prior use.  We are
               // more general. Keep looking for a more general use.
               continue;
             }
           } else if (use->includes.size() > 0) {
-            // current use has 'only' list.  'Only' lists are usually more
+            // prior use has 'only' list.  'Only' lists are usually more
             // restrictive than 'except' lists, and determining whether a
             // long 'only' list is less restrictive than a long 'except' list
             // doesn't seem beneficial in the long run, so continue looking for
@@ -2423,7 +2435,7 @@ static bool skipMod(ModuleSymbol* mod,
           }
         } else {
           // New use has 'only' list.  This is likely more specific than the
-          // current use, so we might not need to dive into it.
+          // prior use, so we might not need to dive into it.
           if (use->excludes.size() > 0) {
             int numSame = 0;
             for_vector(const char, include, limitations) {
@@ -2437,11 +2449,11 @@ static bool skipMod(ModuleSymbol* mod,
               continue;
             } else {
               // None of the 'only' names were excluded, so the new use was
-              // covered by this use.
+              // covered by this prior use.
               return true;
             }
           } else if (use->includes.size() < limitations.size()) {
-            // We know the current use has an 'only' list.  Since it is smaller
+            // We know the prior use has an 'only' list.  Since it is smaller
             // than the new 'only' list, the new one must include more symbols.
             // Keep searching for a more general use.
             continue;
@@ -2454,7 +2466,7 @@ static bool skipMod(ModuleSymbol* mod,
             }
             if (numSame == limitations.size()) {
               // The new use has an 'only' list that is completely covered by
-              // the current use, so it is more general.
+              // the prior use, so the prior is more general.
               return true;
             }
           }

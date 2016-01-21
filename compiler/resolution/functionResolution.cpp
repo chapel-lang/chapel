@@ -2769,6 +2769,8 @@ static void buildVisibleFunctionMap() {
   nVisibleFunctions = gFnSymbols.n;
 }
 
+static bool matchedNameOrConstructor(const char* name, std::vector<const char*> vec);
+
 static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
@@ -2816,26 +2818,7 @@ getVisibleFunctions(BlockStmt* block,
       if (use->excludes.size() > 0) {
         // If the name we're searching for is in the exclude list of this
         // use statement, don't go into this module to look for the name.
-        bool matched = false;
-        for_vector(const char, toExclude, use->excludes) {
-          uint constructorLen = strlen(toExclude) + strlen("_construct_");
-          char constructorName[constructorLen];
-          strcpy(constructorName, "_construct_");
-          strcat(constructorName, toExclude);
-          uint typeConstLen = constructorLen + strlen("_type");
-          char typeConstructorName[typeConstLen];
-          strcpy(typeConstructorName, "_type_construct_");
-          strcat(typeConstructorName, toExclude);
-          if (!strcmp(name, toExclude) || !strcmp(constructorName, name) ||
-              !strcmp(typeConstructorName, name)) {
-            // Matches the name we're searching for, or the name we're
-            // searching for is a constructor or type constructor on this
-            // type
-            matched = true;
-            break;
-          }
-        }
-        if (matched)
+        if (matchedNameOrConstructor(name, use->excludes))
           continue;
 
         if (use->impactedSymbols.size() > 0) {
@@ -2845,29 +2828,10 @@ getVisibleFunctions(BlockStmt* block,
             continue;
         }
       } else if (use->includes.size() > 0) {
-        bool matched = false;
-        for_vector(const char, toInclude, use->includes) {
-          uint constructorLen = strlen(toInclude) + strlen("_construct_");
-          char constructorName[constructorLen];
-          strcpy(constructorName, "_construct_");
-          strcat(constructorName, toInclude);
-          uint typeConstLen = constructorLen + strlen("_type");
-          char typeConstructorName[typeConstLen];
-          strcpy(typeConstructorName, "_type_construct_");
-          strcat(typeConstructorName, toInclude);
-          if (!strcmp(name, toInclude) || !strcmp(constructorName, name) ||
-              !strcmp(typeConstructorName, name)) {
-            // Matches the exact name we're searching for, or the name we're
-            // searching for is a constructor or type constructor on this
-            // type
-            matched = true;
-            break;
-          }
-        }
         // If we had a match in the only list, or if the name we're looking
         // for is one related to a type in our only list, we can safely check
         // for that symbol in this scope.  Otherwise, we should continue
-        if (!matched) {
+        if (!matchedNameOrConstructor(name, use->includes)) {
           if (use->impactedSymbols.size() > 0) {
             if (std::find(use->impactedSymbols.begin(), use->impactedSymbols.end(), name) == use->impactedSymbols.end())
               continue;
@@ -2905,6 +2869,29 @@ getVisibleFunctions(BlockStmt* block,
   }
 
   return NULL;
+}
+
+// Determine if the provided name we're looking for is either in the vector
+// provided, or is a (type) constructor on a name in the vector.
+static bool matchedNameOrConstructor(const char* name, std::vector<const char*> vec) {
+  for_vector(const char, toCheck, vec) {
+    uint constructorLen = strlen(toCheck) + strlen("_construct_");
+    char constructorName[constructorLen];
+    strcpy(constructorName, "_construct_");
+    strcat(constructorName, toCheck);
+    uint typeConstLen = constructorLen + strlen("_type");
+    char typeConstructorName[typeConstLen];
+    strcpy(typeConstructorName, "_type_construct_");
+    strcat(typeConstructorName, toCheck);
+    if (!strcmp(name, toCheck) || !strcmp(constructorName, name) ||
+        !strcmp(typeConstructorName, name)) {
+      // Matches the name we're searching for, or the name we're
+      // searching for is a constructor or type constructor on this
+      // type
+      return true;
+    }
+  }
+  return false;
 }
 
 // Ensure 'parent' is the block before which we want to do the capturing.
