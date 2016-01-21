@@ -8,7 +8,14 @@ config const printLocaleData = false,
              printArrays = false;
 
 //
-// global domains -- describing whole problem; use to boostrap
+// global domains -- describing whole problem; I'm using these to boostrap
+// things like the computation of how to arrange the locales, who owns
+// what, etc.  In a truly SPMD-style computation, you'd compute all that
+// from nothing based on your locale ID and numLocales.  Since the Block
+// distribution already encodes all this stuff, I took the shortcut of
+// creating a block-distributed domain and then querying all of this
+// information out of its guts.  A little lame, but you can only write
+// such logic so many times in your life before it gets really old.
 //
 const LocDom = {1..n  , 1..n  },
          Dom = LocDom dmapped Block(LocDom),
@@ -16,6 +23,12 @@ const LocDom = {1..n  , 1..n  },
 
 //
 // query out the domain and array of the locales we're targeting
+//
+// TODO: Even though this is a bit lame (as noted in the comment above)
+// it could be even less lame if we relied on the targetLocales() query
+// that we support on distributed arrays, but for some reason not on
+// distributed domains.  BenH and I are trying to remember whether there
+// was a good reason we couldn't support the queries on domains as well.
 //
 const LocaleGridDom = Dom._value.dist.targetLocDom,
       LocaleGrid = Dom._value.dist.targetLocales;
@@ -35,6 +48,9 @@ if printLocaleData {
 
   //
   // query the sub-block of the whole problem space that each locale owns
+  //
+  // TODO: See the TODO above about querying the targetLocales() from
+  // Dom.  By that same argument, we could use localSubdomain() here.
   //
   for (lr,lc) in LocaleGridDom {
     on LocaleGrid[lr,lc] {
@@ -76,6 +92,8 @@ coforall (lr,lc) in LocaleGridDom {
   on LocaleGrid[lr,lc] {
     //
     // What I own; and extended to include overlap with neighbors ("fluff")
+    //
+    // TODO: See the TODO above about localSubDomain()
     //
     const MyLocDom = Dom._value.locDoms[lr,lc].myBlock;
     const WithFluff = MyLocDom.expand(1);
