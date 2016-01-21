@@ -256,9 +256,9 @@ module ChapelIO {
               var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
               var eq:ioLiteral;
               if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
               } else {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
               }
               writer.readwrite(eq);
             }
@@ -281,9 +281,9 @@ module ChapelIO {
               var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
               var eq:ioLiteral;
               if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
               } else {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
               }
               writer.readwrite(eq);
             }
@@ -609,8 +609,9 @@ module ChapelIO {
   pragma "no doc"
   proc chpl__testPar(args...) {
     if chpl__testParFlag && chpl__testParOn {
-      const file : c_string = __primitive("chpl_lookupFilename",
-                                          __primitive("_get_user_file"));
+      const file_cs : c_string = __primitive("chpl_lookupFilename",
+                                        __primitive("_get_user_file"));
+      const file = file_cs:string;
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }

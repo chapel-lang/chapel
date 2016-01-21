@@ -113,10 +113,10 @@ module unitTest {
     {
       const x: t = c"cs";
       if useExpr {
-        writeMe(x.c_str());
+        writeMe(x.c_str():t);
       } else {
         const s = x.c_str();
-        writeMe(s);
+        writeMe(s:t);
       }
     }
     checkMemLeaks(m0);
