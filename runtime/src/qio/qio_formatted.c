@@ -1526,9 +1526,6 @@ int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch)
 {
   int32_t c;
 
-  //printf("in qio_skip_json_object_unlocked offset=%i\n",
-  //       (int) qio_channel_offset_unlocked(ch));
-
   while( true ) {
     // Read a field.
     c = qio_skip_json_field_unlocked(ch);
@@ -1546,9 +1543,6 @@ int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch)
         }
       }
     }
-
-    //printf("in qio_skip_json_object_unlocked offset=%i c=%c\n",
-    //       (int) qio_channel_offset_unlocked(ch), c);
 
     if( c == ',' ) {
       // OK, move on to the next value.
@@ -1731,9 +1725,6 @@ int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
     c = qio_channel_read_byte(false, ch);
     if( c < 0 ) return c;
 
-    //printf("in qio_skip_json_string_unlocked offset=%i c=%c\n",
-    //       (int) qio_channel_offset_unlocked(ch), c);
-
     // quote: end of string.
     if( c == '\"' ) return 0;
 
@@ -1744,29 +1735,9 @@ int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
 
       // As long as we handle \" correctly, there is
       // no need to validate the JSON in the string.
-      /*
-      if( c == '"' || c == '\\' || c == '/' || c == 'b' ||
-          c == 'f' || c == 'n' || c == 'r' || c == 't' ) {
-        // OK, continue.
-      } else if( c == 'u' ) {
-        int i;
-        // read an escaped unicode symbol \uXXXX
-        for( i = 0; i < 4; i++ ) {
-          c = qio_channel_read_byte(false, ch);
-          if( ('0' <= c && c <= '9') ||
-              ('a' <= c && c <= 'z') ||
-              ('A' <= c && c <= 'Z') ) {
-            // OK, continue
-          } else {
-            if( c < 0 ) return c;
-            return -EFORMAT;
-          }
-        }
-      } else {
-        // bad \ escape sequence
-        return -EFORMAT;
-      }
-      */
+      // Furthermore, since we are just skipping over it,
+      // there is no need to take special action for
+      // particular backslash-escapes.
     }
   }
 }
@@ -1855,9 +1826,6 @@ qioerr qio_channel_skip_json_field(const int threadsafe, qio_channel_t* ch)
     qio_channel_revert_unlocked(ch);
 
     qio_channel_advance_unlocked(ch, offset - start_offset);
-
-    //printf("SKIPPING %i bytes of json field from %i to %i\n",
-    //       (int) (offset - start_offset), (int) start_offset, (int) offset);
   }
 
 
