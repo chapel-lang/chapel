@@ -309,7 +309,7 @@ module ChapelIO {
               // store the union ID
               write(id);
             } else {
-              var eq:ioLiteral = ioFieldNameEqLiteral(writer, x, i);
+              var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
               writer.readwrite(eq);
             }
             writer.readwrite(__primitive("field value by num", x, i));
@@ -546,7 +546,7 @@ module ChapelIO {
           // Read the ID
           reader.readwrite(id);
           for param i in 1..num_fields {
-            if isIoField(x, x) && __primitive("field id by num", t, i) == id {
+            if isIoField(x, i) && __primitive("field id by num", t, i) == id {
               reader.readwrite(__primitive("field value by num", x, i));
             }
           }
