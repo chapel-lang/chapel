@@ -546,7 +546,7 @@ module ChapelIO {
           // Read the ID
           reader.readwrite(id);
           for param i in 1..num_fields {
-            if isIoFied(x, x) && __primitive("field id by num", t, i) == id {
+            if isIoField(x, x) && __primitive("field id by num", t, i) == id {
               reader.readwrite(__primitive("field value by num", x, i));
             }
           }
