@@ -6,15 +6,17 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap04.playground"
 
-# Test performance of Michael's ref-rvalue change
+# Test performance of jemalloc
 #
 # Graph the default config and this config side by side to make comparison
 # easy, but sync to a different direction so the default chap04 graphs don't
 # have multiple configurations.
-GITHUB_USER=mppf
-GITHUB_BRANCH=ref-return-not-value
-SHORT_NAME=ref-rvalue
-START_DATE=12/22/15
+GITHUB_USER=ronawho
+GITHUB_BRANCH=add-jemalloc-source
+SHORT_NAME=jemalloc
+START_DATE=01/21/16
+
+export CHPL_MEM=jemalloc
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
