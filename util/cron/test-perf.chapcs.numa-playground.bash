@@ -24,7 +24,7 @@ SHORT_NAME=numa-no-steal
 START_DATE=01/20/16
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
-git checkout -b $GITHUB_USER-$GITHUB_BRANCH master
+git checkout -b $GITHUB_USER-$GITHUB_BRANCH
 git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,numa:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
