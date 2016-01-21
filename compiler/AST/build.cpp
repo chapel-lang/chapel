@@ -2006,15 +2006,31 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
 BlockStmt* buildLocalStmt(Expr* stmt) {
   BlockStmt* block = buildChapelStmt();
 
-  if (fLocal) {
+  if (!requireWideReferences()) {
     block->insertAtTail(stmt);
     return block;
   }
 
-  BlockStmt* localBlock = new BlockStmt(stmt);
-  localBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
-  block->insertAtTail(localBlock);
-  return block;
+  BlockStmt* body = toBlockStmt(stmt);
+
+  //
+  // detect on-statement directly inside local statement
+  //
+  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
+
+  if (onBlock) {
+    CallExpr* call = toCallExpr(onBlock->blockInfoGet());
+
+    // first argument of a primitive on is a param bool that distinguishes
+    // between a local-on and a regular on-statement.
+    call->argList.head->replace(new SymExpr(gTrue));
+    return body;
+  } else {
+    BlockStmt* localBlock = new BlockStmt(stmt);
+    localBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
+    block->insertAtTail(localBlock);
+    return block;
+  }
 }
 
 
@@ -2075,7 +2091,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
-    beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN_ON, tmp));
+    beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN_ON, gFalse, tmp));
     // If there are beginBlock->byrefVars, they will be preserved.
     return body;
   } else {
@@ -2085,7 +2101,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, onExpr));
     BlockStmt* onBlock = new BlockStmt(stmt);
-    onBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_ON, tmp));
+    onBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_ON, gFalse, tmp));
     block->insertAtTail(onBlock);
     return block;
   }
