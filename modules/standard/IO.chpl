@@ -3837,7 +3837,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
    */
   proc channel.binary():bool {
     var ret:uint(8);
-    on this {
+    on this.home {
       ret = qio_channel_binary(_channel_internal);
     }
     return ret != 0;
@@ -3847,7 +3847,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   pragma "no doc"
   proc channel.styleElement(element:int):int {
     var ret:int = 0;
-    on this {
+    on this.home {
       ret = qio_channel_style_element(_channel_internal, element);
     }
     return ret;
