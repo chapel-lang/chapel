@@ -42,9 +42,25 @@ OPTIONS
                      to specify which module should serve as the starting
                      point for program execution.
 
-  -M, --module-dir <directory>   Add the specified directory to the module
-                    search path. See the description of $CHPL_MODULE_PATH in
-                    the ENVIRONMENT section of this man page for more details.
+  -M, --module-dir <directory>   Add the specified directory to the
+                     module search path. The module search path is used to
+                     satisfy module 'use' statements. In the current
+                     implementation, the compiler tries to locate unresolved
+                     modules by searching for a filename whose name matches
+                     that of the module. For example, if the user program
+                     contains 'use foo' and the .chpl files listed by the
+                     programmer on the compiler's command line do not define
+                     a module named 'foo', the compiler will search for files
+                     named 'foo.chpl' in the module search path.
+                     The complete path that will be searched can be displayed
+                     using the --print-search-dirs flag and is composed of
+                     (1) the directories containing the .chpl files that were
+                     specified on the compiler command-line (in left-to-right
+                     order), (2) all directories specified by -M flags (in
+                     left-to-right order), (3) all directories specified by the
+                     $CHPL_MODULE_PATH environment variable (colon-separated
+                     directories), (4) the compiler's standard module search
+                     path.
 
   --[no-]print-code-size    Prints out the size of the Chapel code files named
                     on the command line in great detail: For each code file,
@@ -586,27 +602,6 @@ ENVIRONMENT
   For the other options that enable, disable or toggle some feature, any
   non-empty value of the environment variable equivalent has the same effect
   as passing that option once.
-
-  CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be
-                      added to the module search path. The module search path
-                      is used to satisfy module 'use' statements. In the current
-                      implementation, the compiler tries to locate unresolved
-                      modules by searching for a filename whose name matches
-                      that of the module. For example, if the user program
-                      contains 'use foo' and the .chpl files listed by the
-                      programmer on the compiler's command line do not define
-                      a module named 'foo', the compiler will search for files
-                      named 'foo.chpl' in the module search path.
-
-                      The complete path that will be searched can be displayed
-                      using the --print-search-dirs flag and is composed of
-                      (1) the directories containing the .chpl files that were
-                      specified on the compiler command-line (in left-to-right
-                      order), (2) all directories specified by -M flags (in
-                      left-to-right order), (3) all directories specified by the
-                      $CHPL_MODULE_PATH environment variable, (4) the
-                      compiler's standard module search path.
-
 
 BUGS
   See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/bugs.rst
