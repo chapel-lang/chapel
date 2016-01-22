@@ -2988,6 +2988,7 @@ std::string unescapeString(const char* const str) {
       continue;
     }
 
+    // handle \ ecapes
     nextChar = str[pos++];
     switch(nextChar) {
       case '\'':
