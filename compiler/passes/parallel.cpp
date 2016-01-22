@@ -838,10 +838,7 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 
 
 // Traverses all DefExprs.
-//  If the symbol is a coforall index expression,
-//   If it is of reference type,
-//    Add it to refSet and refVec.
-//   Otherwise, if it is not of primitive type or other undesired cases,
+//  If the symbol is not of primitive type or other undesired cases,
 //    Add it to varSet and varVec.
 //  Otherwise, select module-level vars that are not private or extern.
 //   If the var is const and has value semantics except record-wrapped types,
@@ -855,16 +852,7 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
-    if (def->sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
-      if (def->sym->type->symbol->hasFlag(FLAG_REF)) {
-        refSet.set_add(def->sym);
-        refVec.add(def->sym);
-      } else if (!isPrimitiveType(def->sym->type) ||
-                 toFnSymbol(def->parentSymbol)->retTag==RET_REF) {
-        varSet.set_add(def->sym);
-        varVec.add(def->sym);
-      }
-    } else if (!fLocal &&
+    if (!fLocal &&
                isModuleSymbol(def->parentSymbol) &&
                def->parentSymbol != rootModule &&
                isVarSymbol(def->sym) &&
