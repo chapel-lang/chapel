@@ -468,10 +468,10 @@ static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall) {
   }
 }
 
-// Ensures that the symbol we're searching for can be found in the scope
-// indicated by this use.  It is an error if not.  If it is found and is a type,
-// will add the type's methods (and fields if applicable) to the use's list
-// of impacted symbols.
+// Given a name from either an 'except' or 'only' list on the module being
+// used, validate that the symbol can be found in that scope and error if not.
+// If it is found and is a type, will add the type's methods (and fields if
+// applicable) to the use's list of impacted symbols.
 static void validateExceptOnlyElem(UseExpr* use, const char* name, bool except) {
   SymExpr* se = toSymExpr(use->mod);
   INT_ASSERT(se);
