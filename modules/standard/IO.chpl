@@ -3967,7 +3967,7 @@ proc stringify(args ...?k):string {
 
     var offset = w.offset();
 
-    var buf = c_calloc(uint(8), offset+1);
+    var buf = c_malloc(uint(8), offset+1);
 
     // you might need a flush here if
     // close went away
@@ -3976,6 +3976,8 @@ proc stringify(args ...?k):string {
     var r = f.reader(locking=false);
 
     r.readBytes(buf, offset:ssize_t);
+    // Add the terminating NULL byte to make C string conversion easy.
+    buf[offset] = 0;
     r.close();
 
     f.close();
@@ -6329,7 +6331,7 @@ private inline proc _do_format(fmt:c_string, args ...?k, out error:syserr):strin
 
   var offset = w.offset();
 
-  var buf = c_calloc(uint(8), offset+1);
+  var buf = c_malloc(uint(8), offset+1);
 
   // you might need a flush here if
   // close went away
@@ -6338,6 +6340,8 @@ private inline proc _do_format(fmt:c_string, args ...?k, out error:syserr):strin
   var r = f.reader(locking=false);
 
   r.readBytes(buf, offset:ssize_t);
+  // Add the terminating NULL byte to make C string conversion easy.
+  buf[offset] = 0;
   r.close();
 
   f.close();

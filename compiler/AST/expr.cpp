@@ -4006,6 +4006,9 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_ARRAY_ALLOC:
     {
+      // get(1): return symbol
+      // get(2): element type
+      // get(3): number of elements
       GenRet dst = get(1);
       GenRet alloced;
       INT_ASSERT(dst.isLVPtr);
