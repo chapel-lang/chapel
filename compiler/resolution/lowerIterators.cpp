@@ -1303,6 +1303,8 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         if (!fcopy) {
           // Clone the function. Just once per 'body' should suffice.
           fcopy = cfn->copy();
+          if (!preserveInlinedLineNumbers)
+            reset_ast_loc(fcopy, call);
 
           // Note that 'fcopy' will likely get a copy of 'body',
           // so we need to preserve correct scoping of its SymExprs.
