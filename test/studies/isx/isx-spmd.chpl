@@ -144,6 +144,8 @@ if printConfig then
 if numTrials == 0 then
   exit(0);
 
+
+
 const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 
 var allBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
@@ -229,11 +231,6 @@ proc bucketSort(time = false, verify = false) {
   barrier.barrier();
 }
 
-
-//
-// TODO: remove this?
-//
-// const BucketSpace = {0..#numBuckets);
 
 proc bucketizeLocalKeys(myKeys, sendOffsets) {
   var bucketOffsets: [LocaleSpace] atomic int;
@@ -348,7 +345,6 @@ proc verifyResults(myBucketSize, myLocalKeyCounts) {
 proc makeInput() {
   use Random.PCGRandom;
 
-//  var rng: pcg32_random_t;
   var myKeys: [0..#keysPerLocale] keyType;
 
   //

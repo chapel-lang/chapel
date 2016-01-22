@@ -1,12 +1,12 @@
 // isx-bucket-spmd.chpl
 // 
-// Port of ISx to Chapel, developed by Brad Chamberlain as a variant
-// of the version co-developed by Brad Chamberlain, Lydia Duncan, and
-// Jacob Hemstad on 2015-10-30.  The difference between this version
-// and isx-spmd.chpl is that the SPMD in the original version was
-// written in terms of locales whereas here it is written in terms of
-// more abstract "buckets", permitting multiple buckets to be mapped
-// to each locale.
+// This is a port of ISx to Chapel, developed by Brad Chamberlain as a
+// variant on the isx-spmd.chpl version co-developed by Brad Chamberlain,
+// Lydia Duncan, and Jacob Hemstad.
+//
+// This version is SPMD, like the original port, but is written in terms
+// of more abstract "buckets" rather than locales, permitting multiple
+// buckets to be mapped to each locale, potentially.
 //
 
 //
@@ -14,23 +14,28 @@
 // - timer insertion
 // - performance analysis / chplvis
 
-
 // TODO:
 // * variants that we should try
 //   - multiple buckets per locale w/out any atomic ints
 //   - some sort of hybrid between the current 1 bucket per locale scheme
 //     and the previous?
 
-
 //
 // TODO: What are the potential performance issues?
 // * put as one message?
+//   - not currently happening due to int(32)/int(64) mismatch that
+//     prevents direct copying -- will fix in future revision to
+//     see performance impact.
 // * how do Ben's locality optimizations do?
 // * does returning arrays cost us anything?  Do we leak them?
 // * other?
 // * (this would be a good chplvis demo)
 //
 
+//
+// We want to use block-distributed arrays (BlockDist) and barrier
+// synchronization (Barrier).
+//
 use BlockDist, Barrier;
 
 //
@@ -70,7 +75,9 @@ config const mode = scaling.weak;
 //
 config const n = if testrun then 32 else 2**27;
 
+//
 // TODO: permit these to be configurable
+//
 const bucketsPerLocale = 1;
 const numBuckets = numLocales;
 
@@ -92,8 +99,10 @@ config const keysPerBucket = if mode == scaling.strong then n/numBuckets
 // The bucket width to use per bucket when running in weakISO mode
 //
 config const isoBucketWidth = if mode == scaling.weakISO then 8192 else 0;
+
+
 //
-// Issue a warning if this has been set in modes other than weakISO
+// (Issue a warning if this has been set in modes other than weakISO)
 //
 if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
   warning("Note that isoBucketWidth has no effect for weakISO scaling mode");
@@ -101,17 +110,18 @@ if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
 //
 // The maximum key value to use.  When debugging, use a small size.
 //
-config const maxKeyVal = if mode == scaling.weakISO 
-                           then numBuckets * isoBucketWidth
-			   else (if testrun then 32 else 2**28);
+config const maxKeyVal = (if mode == scaling.weakISO 
+                            then (numBuckets * isoBucketWidth)
+                            else (if testrun then 32 else 2**28)): keyType;
 
 //
-// When running in the weakISO scaling mode, this width of each bucket
+// When running in the weakISO scaling mode, the width of each bucket
 // is fixed.  Otherwise, it's the largest key value divided by the
 // number of buckets.
 //
-config const bucketWidth = if mode == scaling.weakISO then isoBucketWidth
-                                                      else maxKeyVal/numBuckets;
+config const bucketWidth = if mode == scaling.weakISO
+                             then isoBucketWidth
+                             else maxKeyVal/numBuckets;
 
 //
 // This tells how large the receive buffer should be relative to the
@@ -130,8 +140,6 @@ config const numBurnInRuns = 1,
              numTrials = 1;
 
 
-// TODO: add timers and timing printouts
-
 if printConfig then
   printConfiguration();
 
@@ -139,25 +147,30 @@ if numTrials == 0 then
   exit(0);
 
 const LocBucketSpace = {0..#numBuckets};
-const BucketSpace = LocBucketSpace dmapped Block(LocBucketSpace);
+const BucketDist = new dmap(new Block(LocBucketSpace));
+const BucketSpace = LocBucketSpace dmapped BucketDist;
 
 var allBucketKeys: [BucketSpace] [0..#recvBuffSize] int;
 var recvOffset: [BucketSpace] atomic int;
 var verifyKeyCount: atomic int;
-  
+
+//
 // TODO: better name?
+//
 var barrier = new Barrier(numBuckets);
 
-// TODO: This seems attractive, but like it will break the barrier:
+// TODO: This seems attractive, but also like it will break the barrier:
 // forall bucketID in BucketSpace {
 coforall bucketID in BucketSpace do
-  on Locales[bucketID/bucketsPerLocale] {
-    // SPMD-style (but across buckets) here
+  on BucketDist.idxToLocale(bucketID) {
+    //
+    // Execution is SPMD-style across buckets here
     //
     // TODO: remove this
     //
     if allBucketKeys[bucketID][0].locale != here then
       warning("Need to distribute allBucketKeys");
+
     //
     // The non-positive iterations represent burn-in runs, so don't
     // time those.  To reduce time spent in verification, verify only
@@ -190,6 +203,7 @@ proc bucketSort(bucketID, time = false, verify = false) {
   // .read()?
   //
   // TODO: We really want an exclusive scan, but Chapel's is inclusive... :(
+  // Weren't we planning on supporting both?
   //
   var sendOffsets: [LocBucketSpace] int = + scan bucketSizes.read();
   sendOffsets -= bucketSizes.read();
@@ -227,12 +241,6 @@ proc bucketSort(bucketID, time = false, verify = false) {
 }
 
 
-// TODO: Is all this returning of local arrays going to cause problems?
-
-
-//
-// const BucketSpace = {0..#numBuckets);
-
 proc bucketizeLocalKeys(bucketID, myKeys, sendOffsets) {
   var bucketOffsets: [LocBucketSpace] atomic int;
 
@@ -265,8 +273,6 @@ proc countLocalBucketSizes(myKeys) {
   return bucketSizes;
 }
 
-// TODO: does emacs not highlight 'here'?
-
 
 proc exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys) {
   forall rawDstBucketID in LocBucketSpace {
@@ -279,7 +285,9 @@ proc exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys) {
     const srcOffset = sendOffsets[dstBucketID];
     //
     // TODO: are we implementing this with one communication?
-    // If not, and we turn on Rafa's optimization, is it better?
+    // Answer (BenH): No, due to int(32)/int(64) mismatch.  Leaving
+    // it as is now in order to measure the perf difference in the
+    // test system.
     //
     allBucketKeys[dstBucketID][dstOffset..#transferSize] = 
              myBucketedKeys[srcOffset..#transferSize];
@@ -289,9 +297,11 @@ proc exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys) {
 
 
 proc countLocalKeys(bucketID, myBucketSize) {
+  //
   // TODO: what if we used a global histogram here instead?
   // Note that if we did so and moved this outside of the coforall,
   // we could also remove the barrier from within the coforall
+  //
   const myMinKeyVal = bucketID * bucketWidth;
   var myLocalKeyCounts: [myMinKeyVal..#bucketWidth] atomic int;
   //
@@ -342,9 +352,8 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput(bucketID) {
-  use PCG;
+  use Random.PCGRandom;
 
-  var rng: pcg32_random_t;
   var myKeys: [0..#keysPerBucket] keyType;
 
   //
@@ -353,15 +362,41 @@ proc makeInput(bucketID) {
   if (debug) then
     writeln(bucketID, ": Calling pcg32_srandom_r with ", bucketID);
 
-  pcg32_srandom_r(rng, bucketID:uint(64), bucketID:uint(64));
-
+  //
+  // TODO: The reference version of ISx uses pcg32_srandom_r(), which
+  // takes a second argument in addition to the seed to specify a stream
+  // ID.  Should/can our PCG interface do that as well?
+  //
+  var MyRandStream = new PCGRandomStream(seed = here.id,
+                                         parSafe=false,
+                                         eltType = keyType);
 
   //
   // Fill local array
   //
-  for key in myKeys do
-    key = pcg32_boundedrand_r(rng, maxKeyVal.safeCast(uint(32))).safeCast(keyType);
 
+  //
+  // The following code ensures that the value we get from the stream
+  // is in [0, maKeyVal) before storing it to key.  This is tricky when
+  // maxKeyVal isn't a power of two and so we take some care to keep the
+  // value distributed evenly.
+  //
+  // TODO: Double-check that I don't have an off-by-one error here.
+  // Having one would not make the code break, but would imply
+  // that we're not evenly distributing the random numbers.
+  //
+  // TODO: The C PCG takes care of this bounding automatically.  Should
+  // our PCG interface do so as well?  (Can it if it's being called
+  // in parallel?  Seems unlikely...)
+  //
+  const maxModdableKeyVal = max(keyType) - max(keyType)%maxKeyVal;
+  for key in myKeys do
+    do {
+      key = MyRandStream.getNext();
+      if key <= maxModdableKeyVal
+        then key %= maxKeyVal;
+    } while (key >= maxKeyVal || key < 0);
+    
   if (debug) then
     writeln(bucketID, ": myKeys: ", myKeys);
 
@@ -386,22 +421,4 @@ proc writelnPotentialPowerOfTwo(desc, n) {
   if 2**lgn == n then
     write(" (2**", lgn, ")");
   writeln();
-}
-
-
-module PCG {
-  //
-  // TODO: can we get this to work?
-  // extern {
-  // #include "pcg_basic.h"
-  // }
-  require "ref-version/pcg_basic.h", "ref-version/pcg_basic.c";
-
-  extern type pcg32_random_t;
-  extern proc pcg32_srandom_r(ref rng: pcg32_random_t, 
-                              initstate: uint(64),
-                              initseq: uint(64));
-  extern proc pcg32_boundedrand_r(ref rng: pcg32_random_t, 
-                                  bound: uint(32)
-				  ): uint(32);
 }
