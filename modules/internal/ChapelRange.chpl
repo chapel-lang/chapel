@@ -1570,7 +1570,7 @@ module ChapelRange {
         yield (0..len-1,);
       } else {
         coforall chunk in 0..#numChunks {
-          on here.getChild(chunk) {
+          local on here.getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
                 writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
